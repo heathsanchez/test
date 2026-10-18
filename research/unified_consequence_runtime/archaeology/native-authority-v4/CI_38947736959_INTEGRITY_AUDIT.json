@@ -1,0 +1,104 @@
+{
+  "archive_error_scope": "Three original method object reads fail because readiness prevented external component/source-repository installation; errors remain explicit and no native result exists. These are not hidden or promoted.",
+  "artifact_bytes": 120100343,
+  "artifact_code_executed": false,
+  "artifact_sha256": "67e197f7953cf3a90cf7c0706bc9b071c722ccdd2831e67e67a23eac6bf5f79f",
+  "baseline_files_preserved": 1406,
+  "committed_source_total_files": 1570,
+  "issues": [],
+  "native_or_collection_experiments_by_auditor": 0,
+  "nested_manifest_file_entries": 5,
+  "outer_zip_entries": 6,
+  "reported_original_method_archive_errors": [
+    {
+      "error": "ValueError: original source object not available or hash differs",
+      "source": "consequence_selection.py"
+    },
+    {
+      "error": "ValueError: original source object not available or hash differs",
+      "source": "developmental_choice.py"
+    },
+    {
+      "error": "ValueError: original source object not available or hash differs",
+      "source": "decisive_native.py"
+    }
+  ],
+  "run_id": 38947736959,
+  "safe_evidence_path": "/workspace/qualification/native-authority-v4-artifact-audit/SCIENTIFIC_RED_38947736959/evidence",
+  "schema": "UDM_NATIVE_AUTHORITY_V4_SCIENTIFIC_RED_INTEGRITY_AUDIT_V1",
+  "screening_bundles_opaque_hash_verified_against_commit": {
+    "research/unified_consequence_runtime/archaeology/native-authority-v4/SCREENING_INDEPENDENT_AUDIT/archive/native-authority-v4-screening-complete-evidence.tar.gz": {
+      "bytes": 2986413,
+      "opaque_local_path": "/workspace/qualification/native-authority-v4-artifact-audit/SCIENTIFIC_RED_38947736959/OPAQUE_SCREENING_BUNDLES/native-authority-v4-screening-complete-evidence.tar.gz",
+      "sha256": "33257164d46fc777fcd9fc971ce4d335d2d76f3ad15c856adf1c0aeea143bff7"
+    },
+    "research/unified_consequence_runtime/archaeology/native-authority-v4/SCREENING_INDEPENDENT_AUDIT/archive/native-authority-v4-screening-evidence.tar.gz": {
+      "bytes": 2981194,
+      "opaque_local_path": "/workspace/qualification/native-authority-v4-artifact-audit/SCIENTIFIC_RED_38947736959/OPAQUE_SCREENING_BUNDLES/native-authority-v4-screening-evidence.tar.gz",
+      "sha256": "623a0b6dedd151fe552268bec69425ec021123ce0bbf1fe91ded29d5fb179437"
+    }
+  },
+  "screening_source_tar_members_opaque_hashes": {
+    "research/unified_consequence_runtime/archaeology/native-authority-v4/SCREENING_INDEPENDENT_AUDIT/archive/native-authority-v4-screening-complete-evidence.tar.gz": [
+      {
+        "bytes": 28300,
+        "compressed_source_archive_sha256": "6d46ebd5dd89fa7673592370ef735b4bd59e99227e5a57ca8c0c089d00e1d80f",
+        "path": "qualification/native-authority-v4-prospective-screening/case-000/source-environment/metadata-source.tar.gz"
+      },
+      {
+        "bytes": 545683,
+        "compressed_source_archive_sha256": "61cf270d9b355f7444b65cdd9e4c9616dc884e1833efaab7f25cc16e87db6fef",
+        "path": "qualification/native-authority-v4-prospective-screening/case-001/source-environment/metadata-source.tar.gz"
+      },
+      {
+        "bytes": 175716,
+        "compressed_source_archive_sha256": "e9d998df37fbc2edddd76bada75bb02c4c7544acff390ba921a9e311e6542f27",
+        "path": "qualification/native-authority-v4-prospective-screening/case-002/source-environment/metadata-source.tar.gz"
+      },
+      {
+        "bytes": 53082,
+        "compressed_source_archive_sha256": "6f2be422cb09fe1e37eb1b7d5ae01a1a7bdd0995b49ab1c7fd64d3ae2e677bad",
+        "path": "qualification/native-authority-v4-prospective-screening/case-003/source-environment/metadata-source.tar.gz"
+      },
+      {
+        "bytes": 77801,
+        "compressed_source_archive_sha256": "6f5d75a023084bedbd875dde5db77299f9e364e8a310e049ac62df6f7c521c54",
+        "path": "qualification/native-authority-v4-prospective-screening/case-004/source-environment/metadata-source.tar.gz"
+      }
+    ],
+    "research/unified_consequence_runtime/archaeology/native-authority-v4/SCREENING_INDEPENDENT_AUDIT/archive/native-authority-v4-screening-evidence.tar.gz": [
+      {
+        "bytes": 28300,
+        "compressed_source_archive_sha256": "6d46ebd5dd89fa7673592370ef735b4bd59e99227e5a57ca8c0c089d00e1d80f",
+        "path": "qualification/native-authority-v4-prospective-screening/case-000/source-environment/metadata-source.tar.gz"
+      },
+      {
+        "bytes": 545683,
+        "compressed_source_archive_sha256": "61cf270d9b355f7444b65cdd9e4c9616dc884e1833efaab7f25cc16e87db6fef",
+        "path": "qualification/native-authority-v4-prospective-screening/case-001/source-environment/metadata-source.tar.gz"
+      },
+      {
+        "bytes": 175716,
+        "compressed_source_archive_sha256": "e9d998df37fbc2edddd76bada75bb02c4c7544acff390ba921a9e311e6542f27",
+        "path": "qualification/native-authority-v4-prospective-screening/case-002/source-environment/metadata-source.tar.gz"
+      },
+      {
+        "bytes": 53082,
+        "compressed_source_archive_sha256": "6f2be422cb09fe1e37eb1b7d5ae01a1a7bdd0995b49ab1c7fd64d3ae2e677bad",
+        "path": "qualification/native-authority-v4-prospective-screening/case-003/source-environment/metadata-source.tar.gz"
+      },
+      {
+        "bytes": 77801,
+        "compressed_source_archive_sha256": "6f5d75a023084bedbd875dde5db77299f9e364e8a310e049ac62df6f7c521c54",
+        "path": "qualification/native-authority-v4-prospective-screening/case-004/source-environment/metadata-source.tar.gz"
+      }
+    ]
+  },
+  "screening_source_text_or_outcomes_inspected": false,
+  "source_archive_exact_research_and_workflow_path_bytes": true,
+  "source_archive_files": 1059,
+  "source_commit": "6f1ae2001a89380c622efdd2883ae0971e305d87",
+  "source_tar_commit": "6f1ae2001a89380c622efdd2883ae0971e305d87",
+  "status": "PASS_BOUNDED_ARTIFACT_INTEGRITY",
+  "utc": "2026-10-16T18:33:33.826414+00:00"
+}

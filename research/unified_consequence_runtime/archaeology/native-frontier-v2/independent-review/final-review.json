@@ -1,0 +1,75 @@
+{
+  "admission_gate": {
+    "artifact_id": 12027916982,
+    "artifact_sha256": "de8534883c760c2129b592a665c3cb735a4af360794409debe23660366853510",
+    "qualification_result_sha256": "ff76a020d59c1d9f2c90fb944e3124a0f2465aec38fe00fbde7751d55679ffe5",
+    "result_path": "research/unified_consequence_runtime/archaeology/native-admission-v2/f8c0b06d-qualified/RESULT.json",
+    "run_id": 38856738333,
+    "source_commit": "f8c0b06da1bbaddfd67229ca87cb53a0dab67ae0",
+    "status": "ADMISSION_ONLY_QUALIFIED"
+  },
+  "closed_current_findings": [
+    {
+      "fix": "Pass scope=scope and original global deadline to informed-ledger search.",
+      "id": "F4_TRAINING_LEDGER_BUDGET",
+      "red": "budget-partial-red.log"
+    },
+    {
+      "fix": "Independent replay finally falls back to checked-report; producer probe fills only existing empty matching native cost row.",
+      "id": "F5_PARTIAL_NATIVE_COST",
+      "red": "budget-partial-red.log"
+    },
+    {
+      "fix": "Final save recovers empty execution cost rows from actual checked-report; fixture proves costs [1,7] preserved against raw reports [1,9].",
+      "id": "F6_FINAL_SAVE_PARTIAL_COST",
+      "red": "final-save-partial-red.log"
+    },
+    {
+      "fix": "Root added old admission workflow to frozen and archived source; independently confirmed current paths.",
+      "id": "F7_SELF_CONTAINED_WORKFLOW_SOURCE"
+    }
+  ],
+  "confirmed_design": [
+    "Original V104 catalog and original 36 MSI V10 orders plus cold emission order remain fixed; actual MSI/MDA decision and invocation functions called.",
+    "Independent profile replay uses independent=True with live exact probe/source/external-authority lineage, exact candidate catalog/order, native source and frozen test-blob boundaries.",
+    "All search/baseline/ledger acquisition paths share inclusive 128 native-call budget including independent receipt reexecution; 1200s global wall boundary starts at controller entry; training informed ledger now receives same scope and original deadline.",
+    "Actual ledger uses a separate cache and native calls. Agent arm declares same operators, history, per-search8, total128 native and1200s wall; READY_NOT_EXECUTED does not claim an actual comparator result.",
+    "Interrupted execution retains checked-report actual cost without additive duplicate; final save recovers missing costs from direct runtime calls and preserves nonempty charges.",
+    "G2 requires complete untouched-future cold FAIL and policy-causal warm PASS with independent replay, native capability admission/execution and budget checks. G3 absent second-generation correspondence stays UNKNOWN; G4/G5/G6 remain UNKNOWN.",
+    "Source gate binds exact qualified f8c0b06d bridge plus admission workflow. Both old admission workflow and new scientific workflow are included in fresh freeze and source archive. Workflow color alone does not promote scientific verdicts."
+  ],
+  "evidence_sha256": {
+    "budget-partial-final-green.log": "fd46b6a85d1be24693f4ce4d75725b62e121e6ff946f11318548fc4b9a4a3819",
+    "budget-partial-red.log": "64090fd4c8f4e4bcb13f8dd43079d11eb69fc8129ab833b0f1f9cd293c26fec1",
+    "final-save-partial-red.log": "2623159c6372667de3923344dd4bd973e5747b0dd5860b079fdc59e8aa47be96",
+    "final-source-gate.log": "800ca34c2bfe42979069dcfaf68ada8782c1e5bf0b1dedde0598a300b4e0d5df"
+  },
+  "remaining_limits": [
+    "Trusted original tests/hooks and explicitly licensed plugins; hostile Python introspection remains outside finite monitor guarantee and G6 UNKNOWN.",
+    "No selected target source access or scientific outcome is licensed or established by this review. Commit and deterministic pre-access freeze remain required.",
+    "Agent comparator has not run; fully charged advantage and G4 remain UNKNOWN.",
+    "No second-generation or restoration correspondence established; G3 remains UNKNOWN.",
+    "Actual integration may expose unsupported native behavior; preserve failures and UNKNOWN rather than weakening gate."
+  ],
+  "review_completed_utc": "2026-10-16T05:54:33.874664+00:00",
+  "reviewed_source_sha256": {
+    ".github/workflows/udm-native-admission-v2.yml": "c71b6c780beac594ed0621f0238a153ab131f16cfdce310c933ffd1fe6bc9dfc",
+    ".github/workflows/udm-native-frontier-v2.yml": "1ef175c11605d5673511f4e277764a0425db708e813c362961b8b856bffb5565",
+    "research/unified_consequence_runtime/archaeology/native-frontier-v2/PROTOCOL.json": "4eec48b7cef91b41e15cfd54df2b3415b60b64f6c4117d1b67f505f398b370db",
+    "research/unified_consequence_runtime/qualify_native_frontier_v2.py": "e06c148bc8fe701d703615186143f64545b26f1c338f775b87b5c0621473b9e2",
+    "research/unified_consequence_runtime/test_qualify_native_frontier_v2.py": "8d3e3079c0920b173d436021dc4596e02a74600b480340f670f88831a7319d2e"
+  },
+  "schema": "UDM_NATIVE_FRONTIER_V2_PREEXPOSURE_SECURITY_REVIEW",
+  "scope": "Prepared controller, local synthetic unit fixtures, workflow, protocol and static admission-source gate only. No selected task source/test bytes or native outcomes accessed by this reviewer; no source preparation or scientific qualification executed.",
+  "status": "NO_OPEN_BLOCKER_IN_PREPARED_CONTROLLER_WITHIN_DECLARED_SCOPE",
+  "verification": {
+    "exit_code": 0,
+    "green_log": "budget-partial-final-green.log",
+    "green_summary": "Ran 16 tests in 0.012s\n\nOK",
+    "original_four_source_diff": "git diff --exit-code 64ce25cd: clean",
+    "qualified_bridge_worktree_diff": "git diff --exit-code HEAD: clean for five v2 modules and admission workflow",
+    "static_source_gate": "PASS exact source/result binding; actual archived Actions audit performed separately by parent",
+    "tests": 16,
+    "unit_suite": "research.unified_consequence_runtime.test_qualify_native_frontier_v2"
+  }
+}

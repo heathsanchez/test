@@ -1,0 +1,36 @@
+{
+  "schema": "UDM_G2_TRAINING_NATIVE_CATALOG_LOCK_V1",
+  "state": "COMMITTED_AFTER_CATALOG_SOURCE_ONLY_BEFORE_ANY_CANDIDATE_NATIVE",
+  "training": "agronholm/anyio@1805944a9f6a062527c10aa044ded959782bfc3e",
+  "author_test": "tests/test_pytest_plugin.py@b15d4da74a17b7f80fa07b0d172c03eb752be7f4",
+  "admission_run": 39077610372,
+  "catalog_source_run": 39078250942,
+  "catalog_source_commit": "39c45e55b1d2730a96773b4ebb43a468d080ab84",
+  "catalog_artifact_id": 12117742923,
+  "catalog_artifact_provider_sha256": "3140ce752b3b9b43cba6aafbe914c6e5f48a22f350237965e7ca5ab4edb411ae",
+  "catalog_canonical_sha256": "7199e478dc9c5dd247571559475bcdbfaa8e737ac21c39bf179cbbe977f4d9c6",
+  "catalog_source_manifest_sha256": "41e2e88fcceb5052ee29ab4671dae28083b9f41d47b04ae230960dacc38958ff",
+  "catalog_index_sha256": "3118888fec00163e3882a1cee8cd9ffa7a6e90c5531e2a2b0819b41f0b20f0f7",
+  "complete_catalog_candidate_count": 64,
+  "original_policy_count": 37,
+  "horizon_per_policy": 8,
+  "unique_policy_prefixes": 2,
+  "unique_scheduled_candidate_count": 15,
+  "scheduled_candidate_ids_digest_sha256": "c39c8f935842d43f2a77d56ea0b7c55761c5da6770afd74c5f2ed4a7b5d8b168",
+  "budget": {
+    "max_candidate_native_calls": 64,
+    "baseline_native_calls": 2,
+    "total_native_calls_ceiling": 66,
+    "one_native_timeout_seconds": 120,
+    "training_wall_seconds": 900,
+    "ci_timeout_minutes": 20
+  },
+  "evidence_rules": "Reconstruct byte-exact V104 candidate text and MSI orders from original Git-pinned methods and source, require canonical full catalog SHA and schedule digest equal committed lock before testing any candidate. Every candidate has two native replays with original head-authored protected assertions and unchanged baseline source. Any UNKNOWN aborts complete-profile selection; no post-outcome change to candidate list.",
+  "frozen_method_sources": {
+    "v104": "heathsanchez/triskelion@426c54f7c774560e0fabe7213c5ef333b1327c71",
+    "msi": "heathsanchez/Minimal-Sufficient-Interface@56cfd7b523e3592cae4eafa5468f437ccb94dbe9"
+  },
+  "post_native_gate": "Only complete 37 policy vectors and original independently source-checked Pareto chooser may authorize unique noncold selected policy. No selection, no future source access. G2 still demands heldout O2, physical ablation/restoration and independent verification.",
+  "heldout": "alexmojaki/executing PR50: metadata-only, source UNOPENED",
+  "scientific_claim": "NONE yet; this is a pre-native admissible candidate catalog and test-horizon lock."
+}

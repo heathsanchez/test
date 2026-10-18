@@ -1,0 +1,75 @@
+{
+  "schema": "G2_ACQUIRED_OPERATION_FROZEN_BEFORE_SEALED_FUTURE_V1",
+  "state": "WARRANTED_BOUNDED_TRAINING_OPERATOR_FROZEN_BEFORE_FUTURE_SOURCE",
+  "original_prequery_role_freeze": "57c400ea49881e440f7895acaeebeee5854363e3",
+  "cross_source_protocol_freeze": "de234c7e180467bbb0b957cac2016263bf80920b",
+  "training": {
+    "repo": "pallets/werkzeug",
+    "pr": 3215,
+    "original_source_sha256": "02c0bbdf7c9254021b10ce296e8e9545cd60779b94053c4cf595790b868a47fd",
+    "selected_candidate_source_sha256": "06214a68a3029c75d3734e5fdb6774197d2c0f890e25c4c4b808277d9f3cdc2a",
+    "generated_patch_sha256": "e708aa12998d24f337a389f330024bbcbe87bce99fa686cc3b47adbdb2555fe1",
+    "operator_receipt_sha256": "21015351c6c4cdab0f3d7bd0ea29d513e80761ee5a85535b67593231a8c0c6db",
+    "original_native_run": 39112676106,
+    "original_native_artifact": 12130926846,
+    "original_artifact_zip_sha256": "ef5cc7764d7b27699c10628e1bd292712c7a19b2936763942f99dcc9b82278ab",
+    "independent_receipt_audit_run": 39112953905,
+    "audit_artifact": 12131441052,
+    "audit_artifact_zip_sha256": "f78236426854ee9aa77b9aa85d125fe1e1adfce9b6f57b1ee1d4e2dab21fc537",
+    "protected_original": {
+      "tests": 2,
+      "failures": 1
+    },
+    "protected_repaired": {
+      "tests": 2,
+      "failures": 0
+    },
+    "full_routing_pass": 150,
+    "causal_withdrawal_restoration": true
+  },
+  "acquired_operator": {
+    "name": "context_disabled_guard_fallback_v1",
+    "path": "research/unified_consequence_runtime/g2_werkzeug_guard_genesis_v1.py",
+    "frozen_git_commit": "216f960c18fd8a5d1e3f78a5c811333153802e0c",
+    "frozen_git_blob": "7e017b258c6a1b31268a9b79235168f11a7b57ab",
+    "callable": "enumerate_candidates",
+    "method_rule": "A AND (B OR C) AND D with guarded return -> A AND (NOT (B OR C) OR D)",
+    "max_candidates": 16,
+    "selector": "smallest absolute source bytes delta then line and guard index",
+    "do_not_modify_after_future_source": true
+  },
+  "comparators": [
+    {
+      "name": "original_no_added_operator",
+      "same_source_and_native_oracle": true
+    },
+    {
+      "name": "drop_context_guard_v1",
+      "path": "research/unified_consequence_runtime/g2_cross_source_matched_baseline_v1.py",
+      "frozen_git_commit": "c6b14cbdefa7049a14a001a9f1ce68c89a69394e",
+      "frozen_git_blob": "2e2d314d783d1b206c4c48c751c1c5473482d7c1",
+      "callable": "enumerate_candidates",
+      "max_candidates": 16,
+      "same_native_oracle_and_budget": true
+    }
+  ],
+  "future": {
+    "repo": "pypa/packaging",
+    "pr": 1446,
+    "role": "SEALED_FUTURE",
+    "source_read": false,
+    "test_body_read": false,
+    "native_result_read": false,
+    "opened_after_this_commit_only_if_next_probe_runs": true,
+    "allowed_selection": "EXACT_ORIGINAL_PREQUERY_ROLE_NO_REPLACEMENT"
+  },
+  "admission": "Require native original future FAIL, complete named protected cases without skips/errors, unchanged acquired operator; independent patch and causal withdrawal/restoration; compare match-informed baseline, verification costs and source identities; Lean/CLC/FLASH only after native success with real mapping. Any failure remains UNKNOWN/REJECTED within declared scope.",
+  "G2": "UNKNOWN",
+  "claims_not_made": [
+    "source-distinct method transfer",
+    "general law",
+    "full CLC proof",
+    "MathGraph verified future advantage",
+    "strong agent superiority"
+  ]
+}

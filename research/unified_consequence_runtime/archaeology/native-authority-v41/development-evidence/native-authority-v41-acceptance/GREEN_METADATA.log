@@ -1,0 +1,1096 @@
+test_duplicate_include_is_not_a_cycle_and_deduplicates_equal_leaf_rows (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_duplicate_include_is_not_a_cycle_and_deduplicates_equal_leaf_rows) ... ok
+test_dynamic_tox_substitution_and_factor_deps_are_not_evaluated (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_dynamic_tox_substitution_and_factor_deps_are_not_evaluated) ... 
+  test_dynamic_tox_substitution_and_factor_deps_are_not_evaluated (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_dynamic_tox_substitution_and_factor_deps_are_not_evaluated) (directive='-r {toxinidir}/deps/root.in') ... ERROR
+  test_dynamic_tox_substitution_and_factor_deps_are_not_evaluated (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_dynamic_tox_substitution_and_factor_deps_are_not_evaluated) (directive='-r {env:REQ_FILE}') ... ERROR
+  test_dynamic_tox_substitution_and_factor_deps_are_not_evaluated (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_dynamic_tox_substitution_and_factor_deps_are_not_evaluated) (directive='-r {env:REQ_FILE:deps/root.in}') ... ERROR
+test_every_included_and_unparsed_byte_remains_in_complete_inventory (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_every_included_and_unparsed_byte_remains_in_complete_inventory) ... ok
+test_existing_requirement_roots_retain_all_three_include_forms (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_existing_requirement_roots_retain_all_three_include_forms) ... ok
+test_existing_root_unsatisfied_dependency_control_remains_unknown (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_existing_root_unsatisfied_dependency_control_remains_unknown) ... ok
+test_forged_requirements_evidence_hash_scope_and_profile_are_rejected (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_forged_requirements_evidence_hash_scope_and_profile_are_rejected) ... ok
+test_global_tox_compact_include_is_supported (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_global_tox_compact_include_is_supported) ... ok
+test_global_tox_long_spaced_include_is_supported (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_global_tox_long_spaced_include_is_supported) ... ok
+test_global_tox_spaced_include_constrains_real_catalog_pins (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_global_tox_spaced_include_constrains_real_catalog_pins) ... ok
+test_invalid_source_paths_and_nonbyte_values_remain_source_unknown (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_invalid_source_paths_and_nonbyte_values_remain_source_unknown) ... ok
+test_long_equals_and_malformed_include_spellings_remain_precise_unknown (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_long_equals_and_malformed_include_spellings_remain_precise_unknown) ... ok
+test_malformed_and_dynamic_setup_controls_keep_exact_refusals (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_malformed_and_dynamic_setup_controls_keep_exact_refusals) ... ok
+test_markers_use_external_profile_environment_and_retain_provenance (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_markers_use_external_profile_environment_and_retain_provenance) ... ok
+test_missing_self_and_mutual_cyclic_includes_are_precise_unknown (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_missing_self_and_mutual_cyclic_includes_are_precise_unknown) ... ERROR
+test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused) ... 
+  test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused) (target='../escape.in', prefix='-r ') ... ERROR
+  test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused) (target='../escape.in', prefix='-r') ... ERROR
+  test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused) (target='../escape.in', prefix='--requirement ') ... ERROR
+  test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused) (target='/tmp/dependency.in', prefix='-r ') ... ERROR
+  test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused) (target='/tmp/dependency.in', prefix='-r') ... ERROR
+  test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused) (target='/tmp/dependency.in', prefix='--requirement ') ... ERROR
+  test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused) (target='./deps/root.in', prefix='-r ') ... ERROR
+  test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused) (target='./deps/root.in', prefix='-r') ... ERROR
+  test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused) (target='./deps/root.in', prefix='--requirement ') ... ERROR
+  test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused) (target='deps//root.in', prefix='-r ') ... ERROR
+  test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused) (target='deps//root.in', prefix='-r') ... ERROR
+  test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused) (target='deps//root.in', prefix='--requirement ') ... ERROR
+  test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused) (target='https://example.invalid/deps.in', prefix='-r ') ... ERROR
+  test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused) (target='https://example.invalid/deps.in', prefix='-r') ... ERROR
+  test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused) (target='https://example.invalid/deps.in', prefix='--requirement ') ... ERROR
+  test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused) (target='file:///tmp/deps.in', prefix='-r ') ... ERROR
+  test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused) (target='file:///tmp/deps.in', prefix='-r') ... ERROR
+  test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused) (target='file:///tmp/deps.in', prefix='--requirement ') ... ERROR
+  test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused) (target='deps\\root.in', prefix='-r ') ... ERROR
+  test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused) (target='deps\\root.in', prefix='-r') ... ERROR
+  test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused) (target='deps\\root.in', prefix='--requirement ') ... ERROR
+test_python_specific_nested_includes_keep_markers_and_scope (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_python_specific_nested_includes_keep_markers_and_scope) ... ok
+test_recursive_relative_includes_preserve_leaf_provenance_and_raw_hashes (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_recursive_relative_includes_preserve_leaf_provenance_and_raw_hashes) ... ok
+test_scoped_only_leaf_is_not_promoted_to_a_global_requirement (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_scoped_only_leaf_is_not_promoted_to_a_global_requirement) ... ok
+test_selection_replay_after_included_or_unparsed_byte_change_is_rejected (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_selection_replay_after_included_or_unparsed_byte_change_is_rejected) ... ok
+test_shared_leaf_retains_global_and_each_python_applicability_context (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_shared_leaf_retains_global_and_each_python_applicability_context) ... ok
+test_static_setup_and_unparsed_python_are_not_executed_during_inference (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_static_setup_and_unparsed_python_are_not_executed_during_inference) ... ok
+test_unchanged_input_order_has_identical_constraints_and_selection (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_unchanged_input_order_has_identical_constraints_and_selection) ... ok
+test_unreferenced_requirement_like_files_do_not_become_metadata (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_unreferenced_requirement_like_files_do_not_become_metadata) ... ok
+test_unsatisfied_included_dependency_remains_unknown (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_unsatisfied_included_dependency_remains_unknown) ... ok
+test_unsupported_pip_directives_and_hash_suffix_are_not_package_authority (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_unsupported_pip_directives_and_hash_suffix_are_not_package_authority) ... ok
+
+======================================================================
+ERROR: test_dynamic_tox_substitution_and_factor_deps_are_not_evaluated (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_dynamic_tox_substitution_and_factor_deps_are_not_evaluated) (directive='-r {toxinidir}/deps/root.in')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 77, in _include_target
+    _unknown('UNKNOWN_REQUIREMENT_GRAMMAR', 'nonliteral requirements include')
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 52, in _unknown
+    raise _Unknown(reason, detail)
+research.unified_consequence_runtime.native_environment_selection_v3._Unknown: UNKNOWN_REQUIREMENT_GRAMMAR: nonliteral requirements include
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 299, in test_dynamic_tox_substitution_and_factor_deps_are_not_evaluated
+    self.refused(tox_files(directive))
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 72, in refused
+    result = self.select(files)
+             ^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 56, in select
+    return selector().select_profile(files, metadata_helpers.catalog(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 755, in select_profile
+    constraints = derive_constraints(files)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 110, in derive_constraints
+    result = FunctionType(_DERIVE_CODE, context, 'derive_constraints')(files)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 530, in derive_constraints
+    add_requirement(value, path, 'testenv.deps')
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 56, in add_requirement
+    return _dispatch_requirement(result, value, path, field, extra, python_versions)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 103, in dispatch
+    line = _split(r'\s+#', value)[0].strip()
+           ^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 88, in _split
+    target = _include_target(line)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 79, in _include_target
+    except _Unknown:
+           ^^^^^^^^
+NameError: name '_Unknown' is not defined. Did you mean: '_unknown'?
+
+======================================================================
+ERROR: test_dynamic_tox_substitution_and_factor_deps_are_not_evaluated (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_dynamic_tox_substitution_and_factor_deps_are_not_evaluated) (directive='-r {env:REQ_FILE}')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 77, in _include_target
+    _unknown('UNKNOWN_REQUIREMENT_GRAMMAR', 'nonliteral requirements include')
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 52, in _unknown
+    raise _Unknown(reason, detail)
+research.unified_consequence_runtime.native_environment_selection_v3._Unknown: UNKNOWN_REQUIREMENT_GRAMMAR: nonliteral requirements include
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 299, in test_dynamic_tox_substitution_and_factor_deps_are_not_evaluated
+    self.refused(tox_files(directive))
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 72, in refused
+    result = self.select(files)
+             ^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 56, in select
+    return selector().select_profile(files, metadata_helpers.catalog(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 755, in select_profile
+    constraints = derive_constraints(files)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 110, in derive_constraints
+    result = FunctionType(_DERIVE_CODE, context, 'derive_constraints')(files)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 530, in derive_constraints
+    add_requirement(value, path, 'testenv.deps')
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 56, in add_requirement
+    return _dispatch_requirement(result, value, path, field, extra, python_versions)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 103, in dispatch
+    line = _split(r'\s+#', value)[0].strip()
+           ^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 88, in _split
+    target = _include_target(line)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 79, in _include_target
+    except _Unknown:
+           ^^^^^^^^
+NameError: name '_Unknown' is not defined. Did you mean: '_unknown'?
+
+======================================================================
+ERROR: test_dynamic_tox_substitution_and_factor_deps_are_not_evaluated (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_dynamic_tox_substitution_and_factor_deps_are_not_evaluated) (directive='-r {env:REQ_FILE:deps/root.in}')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 77, in _include_target
+    _unknown('UNKNOWN_REQUIREMENT_GRAMMAR', 'nonliteral requirements include')
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 52, in _unknown
+    raise _Unknown(reason, detail)
+research.unified_consequence_runtime.native_environment_selection_v3._Unknown: UNKNOWN_REQUIREMENT_GRAMMAR: nonliteral requirements include
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 299, in test_dynamic_tox_substitution_and_factor_deps_are_not_evaluated
+    self.refused(tox_files(directive))
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 72, in refused
+    result = self.select(files)
+             ^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 56, in select
+    return selector().select_profile(files, metadata_helpers.catalog(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 755, in select_profile
+    constraints = derive_constraints(files)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 110, in derive_constraints
+    result = FunctionType(_DERIVE_CODE, context, 'derive_constraints')(files)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 530, in derive_constraints
+    add_requirement(value, path, 'testenv.deps')
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 56, in add_requirement
+    return _dispatch_requirement(result, value, path, field, extra, python_versions)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 103, in dispatch
+    line = _split(r'\s+#', value)[0].strip()
+           ^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 88, in _split
+    target = _include_target(line)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 79, in _include_target
+    except _Unknown:
+           ^^^^^^^^
+NameError: name '_Unknown' is not defined. Did you mean: '_unknown'?
+
+======================================================================
+ERROR: test_missing_self_and_mutual_cyclic_includes_are_precise_unknown (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_missing_self_and_mutual_cyclic_includes_are_precise_unknown)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 124, in derive_constraints
+    walk(str(PurePosixPath('tox.ini').parent / target))
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 555, in requirements_file
+    _unknown('UNKNOWN_REQUIREMENT_GRAMMAR', 'missing or cyclic requirements include')
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 52, in _unknown
+    raise _Unknown(reason, detail)
+research.unified_consequence_runtime.native_environment_selection_v3._Unknown: UNKNOWN_REQUIREMENT_GRAMMAR: missing or cyclic requirements include
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 273, in test_missing_self_and_mutual_cyclic_includes_are_precise_unknown
+    self.refused(tox_files('-r absent.in'))
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 72, in refused
+    result = self.select(files)
+             ^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 56, in select
+    return selector().select_profile(files, metadata_helpers.catalog(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 755, in select_profile
+    constraints = derive_constraints(files)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 127, in derive_constraints
+    except _Unknown as error:
+           ^^^^^^^^
+NameError: name '_Unknown' is not defined. Did you mean: '_unknown'?
+
+======================================================================
+ERROR: test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused) (target='../escape.in', prefix='-r ')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 78, in _include_target
+    _path(target)
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 59, in _path
+    _unknown('UNKNOWN_SOURCE_INPUT', 'noncanonical source path')
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 52, in _unknown
+    raise _Unknown(reason, detail)
+research.unified_consequence_runtime.native_environment_selection_v3._Unknown: UNKNOWN_SOURCE_INPUT: noncanonical source path
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 281, in test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused
+    self.refused({'pyproject.toml': METADATA,
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 72, in refused
+    result = self.select(files)
+             ^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 56, in select
+    return selector().select_profile(files, metadata_helpers.catalog(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 755, in select_profile
+    constraints = derive_constraints(files)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 110, in derive_constraints
+    result = FunctionType(_DERIVE_CODE, context, 'derive_constraints')(files)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 574, in derive_constraints
+    requirements_file(name)
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 558, in requirements_file
+    line = re.split(r'\s+#', line, 1)[0].strip()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 88, in _split
+    target = _include_target(line)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 79, in _include_target
+    except _Unknown:
+           ^^^^^^^^
+NameError: name '_Unknown' is not defined. Did you mean: '_unknown'?
+
+======================================================================
+ERROR: test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused) (target='../escape.in', prefix='-r')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 78, in _include_target
+    _path(target)
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 59, in _path
+    _unknown('UNKNOWN_SOURCE_INPUT', 'noncanonical source path')
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 52, in _unknown
+    raise _Unknown(reason, detail)
+research.unified_consequence_runtime.native_environment_selection_v3._Unknown: UNKNOWN_SOURCE_INPUT: noncanonical source path
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 281, in test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused
+    self.refused({'pyproject.toml': METADATA,
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 72, in refused
+    result = self.select(files)
+             ^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 56, in select
+    return selector().select_profile(files, metadata_helpers.catalog(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 755, in select_profile
+    constraints = derive_constraints(files)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 110, in derive_constraints
+    result = FunctionType(_DERIVE_CODE, context, 'derive_constraints')(files)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 574, in derive_constraints
+    requirements_file(name)
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 558, in requirements_file
+    line = re.split(r'\s+#', line, 1)[0].strip()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 88, in _split
+    target = _include_target(line)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 79, in _include_target
+    except _Unknown:
+           ^^^^^^^^
+NameError: name '_Unknown' is not defined. Did you mean: '_unknown'?
+
+======================================================================
+ERROR: test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused) (target='../escape.in', prefix='--requirement ')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 78, in _include_target
+    _path(target)
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 59, in _path
+    _unknown('UNKNOWN_SOURCE_INPUT', 'noncanonical source path')
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 52, in _unknown
+    raise _Unknown(reason, detail)
+research.unified_consequence_runtime.native_environment_selection_v3._Unknown: UNKNOWN_SOURCE_INPUT: noncanonical source path
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 281, in test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused
+    self.refused({'pyproject.toml': METADATA,
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 72, in refused
+    result = self.select(files)
+             ^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 56, in select
+    return selector().select_profile(files, metadata_helpers.catalog(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 755, in select_profile
+    constraints = derive_constraints(files)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 110, in derive_constraints
+    result = FunctionType(_DERIVE_CODE, context, 'derive_constraints')(files)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 574, in derive_constraints
+    requirements_file(name)
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 558, in requirements_file
+    line = re.split(r'\s+#', line, 1)[0].strip()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 88, in _split
+    target = _include_target(line)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 79, in _include_target
+    except _Unknown:
+           ^^^^^^^^
+NameError: name '_Unknown' is not defined. Did you mean: '_unknown'?
+
+======================================================================
+ERROR: test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused) (target='/tmp/dependency.in', prefix='-r ')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 78, in _include_target
+    _path(target)
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 59, in _path
+    _unknown('UNKNOWN_SOURCE_INPUT', 'noncanonical source path')
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 52, in _unknown
+    raise _Unknown(reason, detail)
+research.unified_consequence_runtime.native_environment_selection_v3._Unknown: UNKNOWN_SOURCE_INPUT: noncanonical source path
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 281, in test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused
+    self.refused({'pyproject.toml': METADATA,
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 72, in refused
+    result = self.select(files)
+             ^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 56, in select
+    return selector().select_profile(files, metadata_helpers.catalog(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 755, in select_profile
+    constraints = derive_constraints(files)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 110, in derive_constraints
+    result = FunctionType(_DERIVE_CODE, context, 'derive_constraints')(files)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 574, in derive_constraints
+    requirements_file(name)
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 558, in requirements_file
+    line = re.split(r'\s+#', line, 1)[0].strip()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 88, in _split
+    target = _include_target(line)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 79, in _include_target
+    except _Unknown:
+           ^^^^^^^^
+NameError: name '_Unknown' is not defined. Did you mean: '_unknown'?
+
+======================================================================
+ERROR: test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused) (target='/tmp/dependency.in', prefix='-r')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 78, in _include_target
+    _path(target)
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 59, in _path
+    _unknown('UNKNOWN_SOURCE_INPUT', 'noncanonical source path')
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 52, in _unknown
+    raise _Unknown(reason, detail)
+research.unified_consequence_runtime.native_environment_selection_v3._Unknown: UNKNOWN_SOURCE_INPUT: noncanonical source path
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 281, in test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused
+    self.refused({'pyproject.toml': METADATA,
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 72, in refused
+    result = self.select(files)
+             ^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 56, in select
+    return selector().select_profile(files, metadata_helpers.catalog(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 755, in select_profile
+    constraints = derive_constraints(files)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 110, in derive_constraints
+    result = FunctionType(_DERIVE_CODE, context, 'derive_constraints')(files)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 574, in derive_constraints
+    requirements_file(name)
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 558, in requirements_file
+    line = re.split(r'\s+#', line, 1)[0].strip()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 88, in _split
+    target = _include_target(line)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 79, in _include_target
+    except _Unknown:
+           ^^^^^^^^
+NameError: name '_Unknown' is not defined. Did you mean: '_unknown'?
+
+======================================================================
+ERROR: test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused) (target='/tmp/dependency.in', prefix='--requirement ')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 78, in _include_target
+    _path(target)
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 59, in _path
+    _unknown('UNKNOWN_SOURCE_INPUT', 'noncanonical source path')
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 52, in _unknown
+    raise _Unknown(reason, detail)
+research.unified_consequence_runtime.native_environment_selection_v3._Unknown: UNKNOWN_SOURCE_INPUT: noncanonical source path
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 281, in test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused
+    self.refused({'pyproject.toml': METADATA,
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 72, in refused
+    result = self.select(files)
+             ^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 56, in select
+    return selector().select_profile(files, metadata_helpers.catalog(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 755, in select_profile
+    constraints = derive_constraints(files)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 110, in derive_constraints
+    result = FunctionType(_DERIVE_CODE, context, 'derive_constraints')(files)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 574, in derive_constraints
+    requirements_file(name)
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 558, in requirements_file
+    line = re.split(r'\s+#', line, 1)[0].strip()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 88, in _split
+    target = _include_target(line)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 79, in _include_target
+    except _Unknown:
+           ^^^^^^^^
+NameError: name '_Unknown' is not defined. Did you mean: '_unknown'?
+
+======================================================================
+ERROR: test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused) (target='./deps/root.in', prefix='-r ')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 78, in _include_target
+    _path(target)
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 59, in _path
+    _unknown('UNKNOWN_SOURCE_INPUT', 'noncanonical source path')
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 52, in _unknown
+    raise _Unknown(reason, detail)
+research.unified_consequence_runtime.native_environment_selection_v3._Unknown: UNKNOWN_SOURCE_INPUT: noncanonical source path
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 281, in test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused
+    self.refused({'pyproject.toml': METADATA,
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 72, in refused
+    result = self.select(files)
+             ^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 56, in select
+    return selector().select_profile(files, metadata_helpers.catalog(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 755, in select_profile
+    constraints = derive_constraints(files)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 110, in derive_constraints
+    result = FunctionType(_DERIVE_CODE, context, 'derive_constraints')(files)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 574, in derive_constraints
+    requirements_file(name)
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 558, in requirements_file
+    line = re.split(r'\s+#', line, 1)[0].strip()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 88, in _split
+    target = _include_target(line)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 79, in _include_target
+    except _Unknown:
+           ^^^^^^^^
+NameError: name '_Unknown' is not defined. Did you mean: '_unknown'?
+
+======================================================================
+ERROR: test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused) (target='./deps/root.in', prefix='-r')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 78, in _include_target
+    _path(target)
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 59, in _path
+    _unknown('UNKNOWN_SOURCE_INPUT', 'noncanonical source path')
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 52, in _unknown
+    raise _Unknown(reason, detail)
+research.unified_consequence_runtime.native_environment_selection_v3._Unknown: UNKNOWN_SOURCE_INPUT: noncanonical source path
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 281, in test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused
+    self.refused({'pyproject.toml': METADATA,
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 72, in refused
+    result = self.select(files)
+             ^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 56, in select
+    return selector().select_profile(files, metadata_helpers.catalog(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 755, in select_profile
+    constraints = derive_constraints(files)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 110, in derive_constraints
+    result = FunctionType(_DERIVE_CODE, context, 'derive_constraints')(files)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 574, in derive_constraints
+    requirements_file(name)
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 558, in requirements_file
+    line = re.split(r'\s+#', line, 1)[0].strip()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 88, in _split
+    target = _include_target(line)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 79, in _include_target
+    except _Unknown:
+           ^^^^^^^^
+NameError: name '_Unknown' is not defined. Did you mean: '_unknown'?
+
+======================================================================
+ERROR: test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused) (target='./deps/root.in', prefix='--requirement ')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 78, in _include_target
+    _path(target)
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 59, in _path
+    _unknown('UNKNOWN_SOURCE_INPUT', 'noncanonical source path')
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 52, in _unknown
+    raise _Unknown(reason, detail)
+research.unified_consequence_runtime.native_environment_selection_v3._Unknown: UNKNOWN_SOURCE_INPUT: noncanonical source path
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 281, in test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused
+    self.refused({'pyproject.toml': METADATA,
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 72, in refused
+    result = self.select(files)
+             ^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 56, in select
+    return selector().select_profile(files, metadata_helpers.catalog(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 755, in select_profile
+    constraints = derive_constraints(files)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 110, in derive_constraints
+    result = FunctionType(_DERIVE_CODE, context, 'derive_constraints')(files)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 574, in derive_constraints
+    requirements_file(name)
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 558, in requirements_file
+    line = re.split(r'\s+#', line, 1)[0].strip()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 88, in _split
+    target = _include_target(line)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 79, in _include_target
+    except _Unknown:
+           ^^^^^^^^
+NameError: name '_Unknown' is not defined. Did you mean: '_unknown'?
+
+======================================================================
+ERROR: test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused) (target='deps//root.in', prefix='-r ')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 78, in _include_target
+    _path(target)
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 59, in _path
+    _unknown('UNKNOWN_SOURCE_INPUT', 'noncanonical source path')
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 52, in _unknown
+    raise _Unknown(reason, detail)
+research.unified_consequence_runtime.native_environment_selection_v3._Unknown: UNKNOWN_SOURCE_INPUT: noncanonical source path
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 281, in test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused
+    self.refused({'pyproject.toml': METADATA,
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 72, in refused
+    result = self.select(files)
+             ^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 56, in select
+    return selector().select_profile(files, metadata_helpers.catalog(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 755, in select_profile
+    constraints = derive_constraints(files)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 110, in derive_constraints
+    result = FunctionType(_DERIVE_CODE, context, 'derive_constraints')(files)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 574, in derive_constraints
+    requirements_file(name)
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 558, in requirements_file
+    line = re.split(r'\s+#', line, 1)[0].strip()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 88, in _split
+    target = _include_target(line)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 79, in _include_target
+    except _Unknown:
+           ^^^^^^^^
+NameError: name '_Unknown' is not defined. Did you mean: '_unknown'?
+
+======================================================================
+ERROR: test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused) (target='deps//root.in', prefix='-r')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 78, in _include_target
+    _path(target)
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 59, in _path
+    _unknown('UNKNOWN_SOURCE_INPUT', 'noncanonical source path')
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 52, in _unknown
+    raise _Unknown(reason, detail)
+research.unified_consequence_runtime.native_environment_selection_v3._Unknown: UNKNOWN_SOURCE_INPUT: noncanonical source path
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 281, in test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused
+    self.refused({'pyproject.toml': METADATA,
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 72, in refused
+    result = self.select(files)
+             ^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 56, in select
+    return selector().select_profile(files, metadata_helpers.catalog(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 755, in select_profile
+    constraints = derive_constraints(files)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 110, in derive_constraints
+    result = FunctionType(_DERIVE_CODE, context, 'derive_constraints')(files)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 574, in derive_constraints
+    requirements_file(name)
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 558, in requirements_file
+    line = re.split(r'\s+#', line, 1)[0].strip()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 88, in _split
+    target = _include_target(line)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 79, in _include_target
+    except _Unknown:
+           ^^^^^^^^
+NameError: name '_Unknown' is not defined. Did you mean: '_unknown'?
+
+======================================================================
+ERROR: test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused) (target='deps//root.in', prefix='--requirement ')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 78, in _include_target
+    _path(target)
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 59, in _path
+    _unknown('UNKNOWN_SOURCE_INPUT', 'noncanonical source path')
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 52, in _unknown
+    raise _Unknown(reason, detail)
+research.unified_consequence_runtime.native_environment_selection_v3._Unknown: UNKNOWN_SOURCE_INPUT: noncanonical source path
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 281, in test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused
+    self.refused({'pyproject.toml': METADATA,
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 72, in refused
+    result = self.select(files)
+             ^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 56, in select
+    return selector().select_profile(files, metadata_helpers.catalog(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 755, in select_profile
+    constraints = derive_constraints(files)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 110, in derive_constraints
+    result = FunctionType(_DERIVE_CODE, context, 'derive_constraints')(files)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 574, in derive_constraints
+    requirements_file(name)
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 558, in requirements_file
+    line = re.split(r'\s+#', line, 1)[0].strip()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 88, in _split
+    target = _include_target(line)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 79, in _include_target
+    except _Unknown:
+           ^^^^^^^^
+NameError: name '_Unknown' is not defined. Did you mean: '_unknown'?
+
+======================================================================
+ERROR: test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused) (target='https://example.invalid/deps.in', prefix='-r ')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 78, in _include_target
+    _path(target)
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 59, in _path
+    _unknown('UNKNOWN_SOURCE_INPUT', 'noncanonical source path')
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 52, in _unknown
+    raise _Unknown(reason, detail)
+research.unified_consequence_runtime.native_environment_selection_v3._Unknown: UNKNOWN_SOURCE_INPUT: noncanonical source path
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 281, in test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused
+    self.refused({'pyproject.toml': METADATA,
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 72, in refused
+    result = self.select(files)
+             ^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 56, in select
+    return selector().select_profile(files, metadata_helpers.catalog(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 755, in select_profile
+    constraints = derive_constraints(files)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 110, in derive_constraints
+    result = FunctionType(_DERIVE_CODE, context, 'derive_constraints')(files)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 574, in derive_constraints
+    requirements_file(name)
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 558, in requirements_file
+    line = re.split(r'\s+#', line, 1)[0].strip()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 88, in _split
+    target = _include_target(line)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 79, in _include_target
+    except _Unknown:
+           ^^^^^^^^
+NameError: name '_Unknown' is not defined. Did you mean: '_unknown'?
+
+======================================================================
+ERROR: test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused) (target='https://example.invalid/deps.in', prefix='-r')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 78, in _include_target
+    _path(target)
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 59, in _path
+    _unknown('UNKNOWN_SOURCE_INPUT', 'noncanonical source path')
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 52, in _unknown
+    raise _Unknown(reason, detail)
+research.unified_consequence_runtime.native_environment_selection_v3._Unknown: UNKNOWN_SOURCE_INPUT: noncanonical source path
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 281, in test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused
+    self.refused({'pyproject.toml': METADATA,
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 72, in refused
+    result = self.select(files)
+             ^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 56, in select
+    return selector().select_profile(files, metadata_helpers.catalog(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 755, in select_profile
+    constraints = derive_constraints(files)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 110, in derive_constraints
+    result = FunctionType(_DERIVE_CODE, context, 'derive_constraints')(files)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 574, in derive_constraints
+    requirements_file(name)
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 558, in requirements_file
+    line = re.split(r'\s+#', line, 1)[0].strip()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 88, in _split
+    target = _include_target(line)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 79, in _include_target
+    except _Unknown:
+           ^^^^^^^^
+NameError: name '_Unknown' is not defined. Did you mean: '_unknown'?
+
+======================================================================
+ERROR: test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused) (target='https://example.invalid/deps.in', prefix='--requirement ')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 78, in _include_target
+    _path(target)
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 59, in _path
+    _unknown('UNKNOWN_SOURCE_INPUT', 'noncanonical source path')
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 52, in _unknown
+    raise _Unknown(reason, detail)
+research.unified_consequence_runtime.native_environment_selection_v3._Unknown: UNKNOWN_SOURCE_INPUT: noncanonical source path
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 281, in test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused
+    self.refused({'pyproject.toml': METADATA,
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 72, in refused
+    result = self.select(files)
+             ^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 56, in select
+    return selector().select_profile(files, metadata_helpers.catalog(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 755, in select_profile
+    constraints = derive_constraints(files)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 110, in derive_constraints
+    result = FunctionType(_DERIVE_CODE, context, 'derive_constraints')(files)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 574, in derive_constraints
+    requirements_file(name)
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 558, in requirements_file
+    line = re.split(r'\s+#', line, 1)[0].strip()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 88, in _split
+    target = _include_target(line)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 79, in _include_target
+    except _Unknown:
+           ^^^^^^^^
+NameError: name '_Unknown' is not defined. Did you mean: '_unknown'?
+
+======================================================================
+ERROR: test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused) (target='file:///tmp/deps.in', prefix='-r ')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 78, in _include_target
+    _path(target)
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 59, in _path
+    _unknown('UNKNOWN_SOURCE_INPUT', 'noncanonical source path')
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 52, in _unknown
+    raise _Unknown(reason, detail)
+research.unified_consequence_runtime.native_environment_selection_v3._Unknown: UNKNOWN_SOURCE_INPUT: noncanonical source path
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 281, in test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused
+    self.refused({'pyproject.toml': METADATA,
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 72, in refused
+    result = self.select(files)
+             ^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 56, in select
+    return selector().select_profile(files, metadata_helpers.catalog(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 755, in select_profile
+    constraints = derive_constraints(files)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 110, in derive_constraints
+    result = FunctionType(_DERIVE_CODE, context, 'derive_constraints')(files)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 574, in derive_constraints
+    requirements_file(name)
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 558, in requirements_file
+    line = re.split(r'\s+#', line, 1)[0].strip()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 88, in _split
+    target = _include_target(line)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 79, in _include_target
+    except _Unknown:
+           ^^^^^^^^
+NameError: name '_Unknown' is not defined. Did you mean: '_unknown'?
+
+======================================================================
+ERROR: test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused) (target='file:///tmp/deps.in', prefix='-r')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 78, in _include_target
+    _path(target)
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 59, in _path
+    _unknown('UNKNOWN_SOURCE_INPUT', 'noncanonical source path')
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 52, in _unknown
+    raise _Unknown(reason, detail)
+research.unified_consequence_runtime.native_environment_selection_v3._Unknown: UNKNOWN_SOURCE_INPUT: noncanonical source path
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 281, in test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused
+    self.refused({'pyproject.toml': METADATA,
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 72, in refused
+    result = self.select(files)
+             ^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 56, in select
+    return selector().select_profile(files, metadata_helpers.catalog(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 755, in select_profile
+    constraints = derive_constraints(files)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 110, in derive_constraints
+    result = FunctionType(_DERIVE_CODE, context, 'derive_constraints')(files)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 574, in derive_constraints
+    requirements_file(name)
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 558, in requirements_file
+    line = re.split(r'\s+#', line, 1)[0].strip()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 88, in _split
+    target = _include_target(line)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 79, in _include_target
+    except _Unknown:
+           ^^^^^^^^
+NameError: name '_Unknown' is not defined. Did you mean: '_unknown'?
+
+======================================================================
+ERROR: test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused) (target='file:///tmp/deps.in', prefix='--requirement ')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 78, in _include_target
+    _path(target)
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 59, in _path
+    _unknown('UNKNOWN_SOURCE_INPUT', 'noncanonical source path')
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 52, in _unknown
+    raise _Unknown(reason, detail)
+research.unified_consequence_runtime.native_environment_selection_v3._Unknown: UNKNOWN_SOURCE_INPUT: noncanonical source path
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 281, in test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused
+    self.refused({'pyproject.toml': METADATA,
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 72, in refused
+    result = self.select(files)
+             ^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 56, in select
+    return selector().select_profile(files, metadata_helpers.catalog(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 755, in select_profile
+    constraints = derive_constraints(files)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 110, in derive_constraints
+    result = FunctionType(_DERIVE_CODE, context, 'derive_constraints')(files)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 574, in derive_constraints
+    requirements_file(name)
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 558, in requirements_file
+    line = re.split(r'\s+#', line, 1)[0].strip()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 88, in _split
+    target = _include_target(line)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 79, in _include_target
+    except _Unknown:
+           ^^^^^^^^
+NameError: name '_Unknown' is not defined. Did you mean: '_unknown'?
+
+======================================================================
+ERROR: test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused) (target='deps\\root.in', prefix='-r ')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 78, in _include_target
+    _path(target)
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 59, in _path
+    _unknown('UNKNOWN_SOURCE_INPUT', 'noncanonical source path')
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 52, in _unknown
+    raise _Unknown(reason, detail)
+research.unified_consequence_runtime.native_environment_selection_v3._Unknown: UNKNOWN_SOURCE_INPUT: noncanonical source path
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 281, in test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused
+    self.refused({'pyproject.toml': METADATA,
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 72, in refused
+    result = self.select(files)
+             ^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 56, in select
+    return selector().select_profile(files, metadata_helpers.catalog(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 755, in select_profile
+    constraints = derive_constraints(files)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 110, in derive_constraints
+    result = FunctionType(_DERIVE_CODE, context, 'derive_constraints')(files)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 574, in derive_constraints
+    requirements_file(name)
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 558, in requirements_file
+    line = re.split(r'\s+#', line, 1)[0].strip()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 88, in _split
+    target = _include_target(line)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 79, in _include_target
+    except _Unknown:
+           ^^^^^^^^
+NameError: name '_Unknown' is not defined. Did you mean: '_unknown'?
+
+======================================================================
+ERROR: test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused) (target='deps\\root.in', prefix='-r')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 78, in _include_target
+    _path(target)
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 59, in _path
+    _unknown('UNKNOWN_SOURCE_INPUT', 'noncanonical source path')
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 52, in _unknown
+    raise _Unknown(reason, detail)
+research.unified_consequence_runtime.native_environment_selection_v3._Unknown: UNKNOWN_SOURCE_INPUT: noncanonical source path
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 281, in test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused
+    self.refused({'pyproject.toml': METADATA,
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 72, in refused
+    result = self.select(files)
+             ^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 56, in select
+    return selector().select_profile(files, metadata_helpers.catalog(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 755, in select_profile
+    constraints = derive_constraints(files)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 110, in derive_constraints
+    result = FunctionType(_DERIVE_CODE, context, 'derive_constraints')(files)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 574, in derive_constraints
+    requirements_file(name)
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 558, in requirements_file
+    line = re.split(r'\s+#', line, 1)[0].strip()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 88, in _split
+    target = _include_target(line)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 79, in _include_target
+    except _Unknown:
+           ^^^^^^^^
+NameError: name '_Unknown' is not defined. Did you mean: '_unknown'?
+
+======================================================================
+ERROR: test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused (research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused) (target='deps\\root.in', prefix='--requirement ')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 78, in _include_target
+    _path(target)
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 59, in _path
+    _unknown('UNKNOWN_SOURCE_INPUT', 'noncanonical source path')
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 52, in _unknown
+    raise _Unknown(reason, detail)
+research.unified_consequence_runtime.native_environment_selection_v3._Unknown: UNKNOWN_SOURCE_INPUT: noncanonical source path
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 281, in test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused
+    self.refused({'pyproject.toml': METADATA,
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 72, in refused
+    result = self.select(files)
+             ^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_dependency_includes_v41.py", line 56, in select
+    return selector().select_profile(files, metadata_helpers.catalog(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 755, in select_profile
+    constraints = derive_constraints(files)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 110, in derive_constraints
+    result = FunctionType(_DERIVE_CODE, context, 'derive_constraints')(files)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 574, in derive_constraints
+    requirements_file(name)
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v3.py", line 558, in requirements_file
+    line = re.split(r'\s+#', line, 1)[0].strip()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 88, in _split
+    target = _include_target(line)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py", line 79, in _include_target
+    except _Unknown:
+           ^^^^^^^^
+NameError: name '_Unknown' is not defined. Did you mean: '_unknown'?
+
+----------------------------------------------------------------------
+Ran 25 tests in 0.083s
+
+FAILED (errors=25)

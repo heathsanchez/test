@@ -1,0 +1,15 @@
+test_agent_arm_uses_same_per_search_and_total_acquisition_budgets (research.unified_consequence_runtime.test_qualify_native_frontier_v2.NativeFrontierV2ProtocolContracts.test_agent_arm_uses_same_per_search_and_total_acquisition_budgets) ... ERROR
+
+======================================================================
+ERROR: test_agent_arm_uses_same_per_search_and_total_acquisition_budgets (research.unified_consequence_runtime.test_qualify_native_frontier_v2.NativeFrontierV2ProtocolContracts.test_agent_arm_uses_same_per_search_and_total_acquisition_budgets)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_qualify_native_frontier_v2.py", line 73, in test_agent_arm_uses_same_per_search_and_total_acquisition_budgets
+    self.assertEqual(arm['total_acquisition_native_calls'], 128)
+                     ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyError: 'total_acquisition_native_calls'
+
+----------------------------------------------------------------------
+Ran 1 test in 0.001s
+
+FAILED (errors=1)

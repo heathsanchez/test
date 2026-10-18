@@ -1,0 +1,30 @@
+{
+  "G2": "UNKNOWN",
+  "G3": "UNKNOWN",
+  "G4": "UNKNOWN",
+  "actual_collection_calls": 1,
+  "actual_collection_seconds": 1.3752719069999984,
+  "actual_native_calls": 0,
+  "actual_native_seconds": 0,
+  "coding_agent_executed_by_controller": false,
+  "comparison": "UNKNOWN; zero native outcomes cannot establish a measured baseline tie",
+  "controller_contracts": {
+    "all_individual_entries_ok": true,
+    "count": 16,
+    "seconds": 0.015
+  },
+  "controller_wall_seconds": 16.515841517999995,
+  "cost_boundary": "Setup, collection and controller are nested scopes; do not sum them. Separate blind ledger/coding-agent runs are outside this provider artifact and have not been inspected. Model-token/dollar/human-engineering totals remain UNKNOWN.",
+  "local_freeze_equals_CI": true,
+  "local_freeze_sha256": "a74d3c0811dd919dcdf59427aa49b710c46a7ab2af58ed441a3a25bd22f3ebac",
+  "provider_run_window_seconds": 40.0,
+  "run_id": "38858369216",
+  "schema": "UDM_NATIVE_FRONTIER_V2_AUDITED_COST_COUNTS",
+  "scientific_acquisitions": 0,
+  "source_commit": "22e6dfef6601e8f6c6a804ec05baab9f06b028b3",
+  "task_setup_seconds": {
+    "grahamdumpleton/wrapt": 12.220687571,
+    "jab/bidict": null,
+    "pallets/markupsafe": null
+  }
+}

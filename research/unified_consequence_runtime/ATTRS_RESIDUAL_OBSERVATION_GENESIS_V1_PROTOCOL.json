@@ -1,0 +1,78 @@
+{
+  "schema": "UDM_ATTRS_RESIDUAL_OBSERVATION_GENESIS_V1",
+  "state": "FROZEN_BEFORE_IMPLEMENTATION_OR_OBSERVATION_SELECTION",
+  "date": "2026-10-18",
+  "parent_authority": {
+    "branch": "research/udm-g2-prospective-pair-v1-20261018",
+    "source_commit": "390d71e21d55eecd1234e170bd4668ff8d9ea432",
+    "run": 39095944875,
+    "artifact": 12123888906,
+    "artifact_digest": "sha256:fe2b551a57b047af42e9ae8253d069d77f02f0579cb0855499fbb04109454210",
+    "training": "python-attrs/attrs#1593",
+    "status": "WARRANTED_BOUNDED_PROSPECTIVE_NEGATIVE_ON_FROZEN_MUTABLE_CLOSURE_METHOD"
+  },
+  "source": {
+    "repository": "python-attrs/attrs",
+    "base": "6851ab593cd25f3c14393e9355d57d22bec2a074",
+    "author_head": "2e082f1c1efb019885fbdb601b32f8464dbe5d47",
+    "production": "src/attr/_make.py",
+    "author_test": "tests/test_annotations.py",
+    "protected_nodes": [
+      "tests/test_annotations.py::TestAnnotations::test_missing_classvar_import",
+      "tests/test_annotations.py::test_is_class_var"
+    ],
+    "target_resolution": "derive the called Boolean production function from the failing protected assertion/dependency trace; no repaired-head production may be read"
+  },
+  "observation_language": {
+    "name": "GENERIC_PRIMITIVE_ATTRIBUTE_PROJECTION_CLOSURE_V1",
+    "seed": "existing failing Boolean classifier f(x)",
+    "projections": "for the failing runtime argument x, enumerate one-step attributes returned by dir(x), excluding names that raise on getattr; retain only values of type None/bool/int/float/str/bytes or tuples composed solely of those primitive types",
+    "candidates": [
+      "identity: f(x)",
+      "projection: f(getattr(x,a)) for every retained one-step attribute a"
+    ],
+    "generation_order": "identity first, then attribute names in lexicographic order",
+    "admissibility": [
+      "candidate changes the failing classifier result to the verifier-required Boolean label",
+      "candidate preserves the classifier result on every passing runtime argument captured from the same protected test family",
+      "candidate introduces no new exception on captured cases",
+      "candidate is genuinely distinct from identity on the residual"
+    ],
+    "selection": "minimum projection depth, then lexicographic attribute path; extensionally equal candidates quotient before selection",
+    "forbidden": [
+      "hard-coded ForwardRef",
+      "hard-coded ClassVar",
+      "hard-coded __forward_arg__",
+      "source line or target attribute supplied to the generator",
+      "upstream repaired production",
+      "tox future source/test body"
+    ]
+  },
+  "repair_constructor": {
+    "name": "GUARDED_RECURSIVE_PROJECTION_V1",
+    "form": "for selected projection p and required Boolean label L: before existing classifier body, safely obtain p(x); if recursive call f(p(x)) equals L, return L; otherwise execute original body unchanged",
+    "recursion_guard": "only recurse when projected value is not identical to the original object; attribute lookup failure falls through",
+    "candidate_count": "exactly one repair for the selected minimal observation; no alternate edits after native outcome",
+    "preservation": "original body byte-for-byte retained after inserted guard"
+  },
+  "gates": {
+    "observation": "mechanically captured residual cases must yield a unique minimal behavioural observation class",
+    "native_repair": "selected generated repair passes both protected nodes twice and full tests/test_annotations.py with zero failures/errors",
+    "withdrawal": "exact frozen original production restores the original protected failure",
+    "restoration": "byte-identical generated repair restores PASS",
+    "future": "tox-dev/tox#4168 remains sealed; this experiment cannot promote G2 by itself"
+  },
+  "reuse": {
+    "MSI": "observation-language genesis principle: verifier residual licenses minimum generated observation refinement",
+    "consequential_quotient": "extensionally equal projection observations are one class",
+    "AnyIO": "class-relative selection and source-bound native withdrawal/restoration"
+  },
+  "epistemic": {
+    "if_green": "WARRANTED_BOUNDED_REAL_SOURCE_RESIDUAL_TO_OBSERVATION_TO_REPAIR",
+    "prospective_G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN"
+  }
+}

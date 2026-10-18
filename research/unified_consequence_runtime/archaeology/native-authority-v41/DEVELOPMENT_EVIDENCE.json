@@ -1,0 +1,34 @@
+{
+  "all_errors_retained": true,
+  "cost_boundary": "Observed commands and native wall only; full engineering/model/tool costs UNKNOWN",
+  "files": {
+    "native-authority-v41-acceptance/GREEN_METADATA.log": "4ae5e51109093343b16fbc8b717b3d4867d056e3b670a1c80d1b1b0259e6951f",
+    "native-authority-v41-acceptance/GREEN_METADATA_2.log": "6d4a5d3cd7ac3cb0c2dd61c2d754a7e206c1147229c7c66ecd2763ed62b56e2c",
+    "native-authority-v41-acceptance/GREEN_METADATA_BINDINGS.log": "553c62473c3d1d23fdbb1fe6829bfc8a00a426a1157c902eb5e1f072ef7a1121",
+    "native-authority-v41-acceptance/PUBLIC_BINDING_RED.log": "282fa24a26294d8202540db42e64ccfd335ceccafa39ffefa679545937cdec82",
+    "native-authority-v41-acceptance/RED.log": "2a371b3a842996d00c6feb45bd9b0d42854def85c8ccf9f15b0c0426b92509ad",
+    "native-authority-v41-core-review/alias-recheck/cost.json": "25fba7bf5b8961c1aa9f7ace41c86ff0403450894a8d17dabf7d13a3f5d28b41",
+    "native-authority-v41-core-review/alias-recheck/tests.log": "dd07df117b6024a12ee7ac557cd9f69d93346ff37e6282139d0e68a340d76fb0",
+    "native-authority-v41-core-review/probe-results-and-costs.json": "03fa06f7ff55b7af58bc56998ede645eadd9a1efd47dcdf8cebd866bee5fd3e0",
+    "native-authority-v41-core-review/probes.py": "da7b1d6cc3391b5f8f1d50397dc4eeb055a97bf1fad33d2cf86a26c58937c7c4",
+    "native-authority-v41-core-review/provisioning-api-probe-and-costs.json": "ffe47ae0350fcb6e2d555989e80dbc4391663cce293400cfec371a534fc5805d",
+    "native-authority-v41-preparation/PLUMBING_AND_PRIOR_CONTROLS_GREEN.log": "b6a65e34ca659a552ab8714cfb4c9ee1d515de99e5e8d54f93c39046dbefea46",
+    "native-authority-v41-preparation/PLUMBING_BASELINE_V4_RED.log": "82d95b9a5d13c104de2e42a77250ca99c350a8d57e3b390693ca1f26934ae074",
+    "native-authority-v41-preparation/PLUMBING_BASELINE_V4_RED_V2.log": "5d015d8ac820d753753aac8384a3632d610df902bc8afac8f30f98724a23efc6",
+    "native-authority-v41-preparation/PLUMBING_FINAL_VALIDATION.json": "6d7ba621b357cce0e7c09bf608c48cb89c5432be822f16808901362d30650a39",
+    "native-authority-v41-preparation/PLUMBING_FIRST_GREEN.log": "5bc42df870c90ad61a9a2fe1c2e066e3f38b1b5176a07a422533fcd60c79310c",
+    "native-authority-v41-preparation/PLUMBING_TEST_FREEZE.json": "6edc8ac2ccda29e2dcbcdeda129e4e98d86795d526fc0c0f7cfd43327c723e2b"
+  },
+  "initial_metadata_log_GREEN_METADATA_log_actually_failed": "25 errors NameError _Unknown alias; corrected and rerun in GREEN_METADATA_2.log",
+  "new_native_smoke": {
+    "collection_calls": 3,
+    "native_calls": 2,
+    "result": "/workspace/qualification/native-authority-v41-native-smoke/RESULT.json",
+    "scope": "Synthetic local pre-CI diagnostic only; raw outputs retained outside Git",
+    "seconds": 10.773857368999415
+  },
+  "plumbing_baseline_logs": "first RED contained baseline alias errors, corrected explicit V4 behavioral baseline frozen in V2 log before implementation; both retained",
+  "public_alias_failure": "independent reviewer found provisioning exports absent; frozen RED before fix",
+  "schema": "UDM_NATIVE_AUTHORITY_V41_DEVELOPMENT_EVIDENCE_V1",
+  "scope": "Exposed diagnostic/admission development, never prospective success"
+}

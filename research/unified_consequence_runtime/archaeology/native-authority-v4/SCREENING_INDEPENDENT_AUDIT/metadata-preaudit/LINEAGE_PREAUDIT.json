@@ -1,0 +1,173 @@
+{
+  "audited_commit": "565b210dd882cb2663c094a6f1c418dcf6687d87",
+  "auditor_operations": {
+    "artifact_code_executed": false,
+    "git_writes": 0,
+    "github_queries": 0,
+    "index_restorations": 0,
+    "native_or_collection_calls": 0,
+    "target_source_reads": 0
+  },
+  "checks": {
+    "all_gate_records_identical": true,
+    "all_queries_inside_declared_universe": true,
+    "all_recorded_queries_after_commitment_receipt": true,
+    "all_recorded_queries_allowlisted_exact_projections": true,
+    "authority_exact_external_sha256": true,
+    "case_0_commit_and_tree_blob_identity": true,
+    "case_0_exact_four_identity_queries": true,
+    "case_0_selected_pr_identity": true,
+    "case_1_commit_and_tree_blob_identity": true,
+    "case_1_exact_four_identity_queries": true,
+    "case_1_selected_pr_identity": true,
+    "case_2_commit_and_tree_blob_identity": true,
+    "case_2_exact_four_identity_queries": true,
+    "case_2_selected_pr_identity": true,
+    "case_3_commit_and_tree_blob_identity": true,
+    "case_3_exact_four_identity_queries": true,
+    "case_3_selected_pr_identity": true,
+    "case_4_commit_and_tree_blob_identity": true,
+    "case_4_exact_four_identity_queries": true,
+    "case_4_selected_pr_identity": true,
+    "catalog_authority_identity": true,
+    "committed_authority_pool_digest": true,
+    "committed_authority_prequery_digest": true,
+    "metadata_call_coverage_exact_132": true,
+    "metadata_plan_digest": true,
+    "metadata_wall_within_fixed_budget": true,
+    "no_duplicate_recorded_endpoints": true,
+    "no_native_or_collection_calls_in_metadata_ledger": true,
+    "output_root_exact_external_authority": true,
+    "own_indexes_and_absences_unchanged_this_interval": true,
+    "plan_code_digest": true,
+    "pool_and_meta_receipt_digest": true,
+    "pool_curation_digest": true,
+    "pool_exact_same_as_curation": true,
+    "prequery_commit_time_precedes_receipt": true,
+    "receipt_code_exact_original_and_pool_commit_bytes": true,
+    "receipt_declares_zero_queries_before_receipt": true,
+    "receipt_gate_descriptor_exact_original_and_pool_commit_bytes": true,
+    "receipt_plan_exact_original_and_pool_commit_bytes": true,
+    "recorded_queries_all_success": true,
+    "request_count_identity": true,
+    "screening_budget_identity": true,
+    "source_commit_ancestor_of_pool_commit": true,
+    "universe_digest_qualified_plan": true,
+    "universe_exact_sorted_unique": true,
+    "universe_in_plan_receipt_metadata_order": true
+  },
+  "commit_chronology": {
+    "pool": [
+      "565b210dd882cb2663c094a6f1c418dcf6687d87",
+      "40c55be590bc772d966ee4d65c1a608304422b91",
+      "2026-10-16T18:17:38Z"
+    ],
+    "prequery": [
+      "40c55be590bc772d966ee4d65c1a608304422b91",
+      "a6521e27dcabdf69cf8e6ecd283432730d6aa846",
+      "2026-10-16T18:16:07Z"
+    ]
+  },
+  "coverage": {
+    "changed_file_page_calls": 103,
+    "closed_pr_list_calls": 9,
+    "commit_metadata_calls": 10,
+    "first_recorded_query": "2026-10-16T18:16:29.504233+00:00",
+    "last_recorded_query": "2026-10-16T18:17:00.738306+00:00",
+    "metadata_costs": {
+      "collection_calls": 0,
+      "metadata_api_calls": 132,
+      "metadata_budget_seconds": 900,
+      "metadata_wall_seconds": 31.70335103699972,
+      "native_calls": 0,
+      "total_curation_wall_seconds": 31.959356598999875
+    },
+    "retained_api_calls": 132,
+    "sum_recorded_call_wall_seconds": 72.43252179500041,
+    "tree_metadata_calls": 10
+  },
+  "failures": [],
+  "index_interval_end": [
+    {
+      "exists": true,
+      "path": "/workspace/repos/test/.git/worktrees/udm-v54/index",
+      "same_existence_and_hash_as_interval_start": true,
+      "scope": "linked",
+      "sha256": "a83bbbb9d0d47e25fcea63e46b810ba4a764003c8435103237be4fb8761a1eae"
+    },
+    {
+      "exists": false,
+      "path": "/workspace/repos/test/.git/worktrees/udm-v54/index.lock",
+      "same_existence_and_hash_as_interval_start": true,
+      "scope": "linked"
+    },
+    {
+      "exists": false,
+      "path": "/workspace/repos/test/.git/index",
+      "same_existence_and_hash_as_interval_start": true,
+      "scope": "common"
+    },
+    {
+      "exists": false,
+      "path": "/workspace/repos/test/.git/index.lock",
+      "same_existence_and_hash_as_interval_start": true,
+      "scope": "common"
+    }
+  ],
+  "limits": [
+    "Counts and chronology are independently recomputed from the retained metadata request ledger, exact committed code ordering and exact Git bytes; no separate network proxy log was supplied, so this does not prove absence of out-of-band requests.",
+    "The declared zero-query receipt is corroborated by static code order, commit binding and all retained request timestamps after that receipt; it is not a universal proof about unrelated processes.",
+    "Task-source identities are metadata-only at this stage. Native admission and source-byte identity await finished sealed packets.",
+    "Candidate predicate/reason/order reimplementation is a parallel subaudit and is not yet included in this report."
+  ],
+  "pool_identity": [
+    {
+      "base_commit": "170b63afc58af0456f40b139199272caa3a99d99",
+      "changed_files": 2,
+      "head_commit": "9f49badc5eb306408a53c9468025505c8dde55e9",
+      "pool_index": 0,
+      "pr": 430,
+      "repo": "dbader/schedule",
+      "spec_sha256": "51815c67651bfcd1a0d782c335e71f9e61a2940038036837663ff7f80db4fdd8"
+    },
+    {
+      "base_commit": "06966f9c6c3604ec0d2ea043039423bd5ebc9a03",
+      "changed_files": 3,
+      "head_commit": "aa6d8233cf959310cace1d93880654b965c0f4aa",
+      "pool_index": 1,
+      "pr": 2306,
+      "repo": "fsspec/filesystem_spec",
+      "spec_sha256": "949311719bf7f2aa7dbba0622da33f69ad19a0587fe43819bd1a5f7f2936d08e"
+    },
+    {
+      "base_commit": "a1b50bc12e066e5707ff797f821829bfcdab03b5",
+      "changed_files": 2,
+      "head_commit": "aa5f0acb31ed2e796a52b4b55fe0529b21eada39",
+      "pool_index": 2,
+      "pr": 487,
+      "repo": "lepture/mistune",
+      "spec_sha256": "9a68d845470c8b082c6a82841e1d075ef7d2de73899354a8e52bc77ed7eef5f6"
+    },
+    {
+      "base_commit": "9ff37744f33a5aaf9459c7a9b3c9062f6952c349",
+      "changed_files": 3,
+      "head_commit": "963a2912e8a673eb0c0fc9d82a41d55b72abe756",
+      "pool_index": 3,
+      "pr": 131,
+      "repo": "micheles/decorator",
+      "spec_sha256": "1f63ef78fdc68eff3661c6863eba8c1de30d8591c6c4e208c6941ccc8cde0656"
+    },
+    {
+      "base_commit": "a1e25cbd2c398b534f0736f5838e416202b0cb28",
+      "changed_files": 2,
+      "head_commit": "22b34ec472ef02041a688b4131ab246353e21932",
+      "pool_index": 4,
+      "pr": 635,
+      "repo": "pytoolz/toolz",
+      "spec_sha256": "594182098f8f4ede5520959616ad6826b1f183e13bdeb747d721828d8b734087"
+    }
+  ],
+  "schema": "UDM_NATIVE_AUTHORITY_V4_METADATA_LINEAGE_PREAUDIT_V1",
+  "status": "PASS_METADATA_LINEAGE_ONLY",
+  "utc": "2026-10-16T18:20:19.843540+00:00"
+}

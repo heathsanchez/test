@@ -1,0 +1,21 @@
+{
+  "command": "/workspace/generic-verifier-test-venv/bin/python -m unittest research.unified_consequence_runtime.test_native_admission_v2_adversarial -v",
+  "copied_final_summary": "Ran 24 tests in 52.876s\n\nOK\n",
+  "duration_seconds": 52.876,
+  "evidence_kind": "OBSERVED_TOOL_EXECUTION_METADATA_WITH_COPIED_FINAL_SUMMARY",
+  "exit_code": 0,
+  "interpreter": "/workspace/generic-verifier-test-venv/bin/python",
+  "pytest_version": "8.3.5",
+  "result": "OK",
+  "schema": "UDM_NATIVE_ADMISSION_SECURITY_TEST_OBSERVATION_V2",
+  "scope": "Disposable local Git/pytest fixtures only; no native benchmark or prospective task reruns.",
+  "source_timing_note": "This observed run preceded the later AST class-mapping/import-time source guard changes. Root owns the final aggregate contract rerun. The final nested-class refusal was separately rechecked read-only.",
+  "test_count": 24,
+  "tool_output_chunks": [
+    "1b35d1",
+    "44a682",
+    "d8ac72"
+  ],
+  "tool_session_id": 24480,
+  "working_directory": "/workspace/udm-v54"
+}

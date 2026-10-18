@@ -1,0 +1,154 @@
+{
+  "schema": "UDM_NATIVE_AUTHORITY_V4_INDEPENDENT_SOURCE_REVIEW_V1",
+  "review_date_utc": "2026-10-16",
+  "status": "SOURCE_AND_LOCAL_CONTROLS_REVIEWED_WITH_EXPLICIT_LIMITATIONS",
+  "scope": {
+    "sources": [
+      "native_environment_selection_v4.py",
+      "native_environment_v4.py",
+      "qualify_environment_selection_v4.py",
+      "test_native_authority_v4.py",
+      "test_native_environment_v4.py",
+      "audit_index_v4.py"
+    ],
+    "retained_local_controls": "/workspace/qualification/native-authority-v4-local",
+    "fresh_frontier_inspected": false,
+    "fresh_task_outcomes_inspected": false,
+    "additional_qualification_runs": 0,
+    "native_or_collection_calls_by_reviewer": 0,
+    "source_edits_by_reviewer": false,
+    "review_artifact_writes_only": true
+  },
+  "source_sha256": {
+    "native_environment_selection_v4.py": "bfb3c57d61bb8bcbb44e8a10c95dbe3162bc3adef58174c9c75eb27e728f0efb",
+    "native_environment_v4.py": "c4a569e4a0abdaa8fe69d2d5b6e58af356bbc6469a2eeaf6e64ae4d76435cbbd",
+    "qualify_environment_selection_v4.py": "1707d9e9b5ef1b7b8b24c69f68471eb8730f4f6c03d350af428b70eb06e9ecc2",
+    "test_native_authority_v4.py": "dd23f7325bac1c4e0dd895a1f93f84ce122e3f58443bd8986f3cc1115070b564",
+    "test_native_environment_v4.py": "9431dbb3a9bc71b986bd305ff8177c77cd407a63db4397e542342be34f0d852e",
+    "audit_index_v4.py": "94a83c21c44a69e86abedfd87a991283be1ccd277e794d9465ba64a85930f34c"
+  },
+  "material_findings": [
+    {
+      "id": "V4-REVIEW-001",
+      "severity": "material",
+      "status": "ADDRESSED_IN_REVIEWED_SOURCE",
+      "location": "qualify_environment_selection_v4.py:write_freeze and qualify wrappers",
+      "finding": "The initial implementation took its index snapshot after check_freeze had read Git and did not measure source-freeze reads. The revised public entrypoints now snapshot before Git, force GIT_OPTIONAL_LOCKS=0 and retain final index hashes/absence on ordinary refusal paths. Frozen predecessor modules remain unchanged.",
+      "validation": "Independent static inspection of the revised wrappers; no extra qualification run."
+    },
+    {
+      "id": "V4-REVIEW-002",
+      "severity": "material",
+      "status": "ADDRESSED_IN_REVIEWED_SOURCE",
+      "location": "qualify_environment_selection_v4.py:_qualify",
+      "finding": "The initial implementation promoted the first task gate before the final check_freeze and could retain a promoted result when that check raised. The revised implementation checks source before promotion and catches ordinary qualification errors into UNKNOWN_ADMISSION with first_task_gate UNKNOWN. The outer index comparison also demotes on changes.",
+      "validation": "Independent static inspection of final source-check ordering and both refusal paths."
+    },
+    {
+      "id": "V4-REVIEW-003",
+      "severity": "material_scope_limit",
+      "status": "REQUIRES_SEPARATE_FULL_BASELINE_WORKING_BYTE_AUDIT_FOR_BROADER_CLAIM",
+      "location": "qualify_environment_selection_v4.py:check_freeze; qualify_environment_selection_v3.py:_source_paths and _preserved_baseline",
+      "finding": "Qualification freeze rechecks working bytes under research/unified_consequence_runtime and .github/workflows. The all-repository baseline-preservation check compares committed trees. A postfreeze working-byte change to an existing tracked file outside those subtrees is not detected by check_freeze itself.",
+      "implication": "Do not derive an all-repository working-byte-preservation claim from this qualifier alone. The separately authorized complete baseline inventory audit can support that broader claim. No such change was observed in this review."
+    },
+    {
+      "id": "V4-REVIEW-004",
+      "severity": "evidence_limit",
+      "status": "LOCAL_CONTROLS_ONLY_NOT_COMPLETE_QUALIFICATION",
+      "location": "/workspace/qualification/native-authority-v4-local",
+      "finding": "The local 39-control retention contains contracts.log and native-evidence, but no qualification RESULT.json, source/runtime freeze or standalone private attempt/index-before ledger. It supports the observed acceptance controls and retained replay, not a complete qualification or total launch/index-preservation claim.",
+      "implication": "Require the separately retained qualification freeze/result/index sidecar and complete accounting for any ADMISSION_ONLY_QUALIFIED statement."
+    }
+  ],
+  "frozen_controls": {
+    "log_total_tests": 39,
+    "log_outcome": "OK",
+    "frozen_acceptance_test_ids": 29,
+    "all_29_present_exactly_once": true,
+    "additional_controls": {
+      "environment_binding": 2,
+      "index_audit": 8
+    },
+    "acceptance_protocol_sha256": "652c2f5117be0e61d6953c509228580a7441e2a8bc23fa1b67c2b5fc240b8671",
+    "all_acceptance_pinned_source_and_helper_hashes_match": true,
+    "all_retained_fixture_test_source_copies_match_pins": true
+  },
+  "metadata_native_separation": {
+    "finding": "V4 reuses exact V3 derivation/selection bytecode in private globals and changes only its ast.parse binding: setup.py parses normally; all other Python source yields an empty metadata AST. Every raw tracked file still contributes to the original complete path-to-SHA256 inventory. Non-Python supported metadata and catalog licensing semantics remain unchanged.",
+    "metadata_choice_is_native_warrant": false,
+    "native_worker_admission_runtime_v3_changed": false,
+    "frozen_tests_cover": [
+      "unparsed malformed and non-UTF8 Python",
+      "all-byte inventory mutation and replay refusal",
+      "authoritative malformed/dynamic metadata refusals",
+      "nonmetadata API inference deferred to native authority",
+      "collection-time import refusal",
+      "static and dynamic runtime import native failures",
+      "exact collection/source/import/plugin/protected-assertion preservation"
+    ]
+  },
+  "retained_raw_checks": {
+    "checked_report_files": 51,
+    "retained_report_costs": {
+      "native_calls": 14,
+      "collection_calls": 37
+    },
+    "cost_claim_scope": "Counts in retained raw reports only; standalone private launch-attempt ledger absent. Missing or failed launches cannot be independently excluded.",
+    "receipt_packet_files_checked": 84,
+    "packet_hash_or_disk_discrepancies": [],
+    "producer_vs_checked_report_discrepancies": [],
+    "receipt_statuses": {
+      "UNKNOWN_EXACT_COLLECTION": 7,
+      "FAIL_NATIVE": 3,
+      "PASS_NATIVE": 4
+    },
+    "local_evidence_file_count": 529,
+    "all_file_manifest": "SOURCE_REVIEW_LOCAL_MANIFEST.json",
+    "all_file_manifest_sha256": "1a5b419db1ada82b0ce5c12b3bb75d26961624afb72c9b7c02270cc8e3ab529e"
+  },
+  "positive_independent_native": {
+    "test": "MalformedPythonNativeAuthorityV4.test_unimported_malformed_fixture_allows_real_native_pass",
+    "producer_directory": "evidence-2",
+    "independent_directory": "evidence-3",
+    "native_runs_retained": 2,
+    "collections_retained": 3,
+    "both_status": "PASS_NATIVE",
+    "junit": {
+      "tests": 2,
+      "passed": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "selected_nodes": [
+      "test_subject.py::test_old",
+      "test_subject.py::test_new"
+    ],
+    "complete_original_source_manifest_matches_retained_head_archive": true,
+    "contract_authority_policy_certificate_fingerprints_match": true,
+    "execution_agreement_excluding_only_top_level_costs": true,
+    "checked_receipt_exact_producer_plus_independent_reexecution_field": true,
+    "changed_code_source_import_plugin_deselection_collection_error_flags": [],
+    "independence_limit": "Distinct trusted-controller retained executions, not an external execution attestation or containment proof."
+  },
+  "index_audit": {
+    "before": "SOURCE_REVIEW_INDEX_BEFORE.json",
+    "after_and_comparison": "SOURCE_REVIEW_INDEX_AFTER.json",
+    "git_read_record": "SOURCE_REVIEW_GIT_READ.json",
+    "index_paths": 5,
+    "observed_endpoint_changes": 0,
+    "own_git_read_optional_locks": "0",
+    "own_git_read_index_delta": 0,
+    "root_concurrent_staging_commits_reported": true,
+    "exclusive_whole_task_unchanged_claim": false,
+    "restoration_or_reset_performed": false
+  },
+  "unchanged_claim_limits": [
+    "Native G6 remains UNKNOWN.",
+    "Original tests and licensed plugins remain trusted Python.",
+    "Native PASS/FAIL fixture results do not establish a fresh frontier outcome.",
+    "No total lifecycle/model/tool/engineering cost or complete OS-image/sandbox proof is supplied.",
+    "Current original runtime/distribution identity was not reprovisioned or reexecuted during this artifact-only review."
+  ]
+}

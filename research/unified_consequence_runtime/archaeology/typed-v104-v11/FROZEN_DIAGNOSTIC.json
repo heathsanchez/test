@@ -1,0 +1,35 @@
+{
+  "schema": "UDM_V11_EXPOSED_TENACITY_ORIGINAL_V104_MSI_DIAGNOSTIC",
+  "status": "FROZEN_BEFORE_V104_CANDIDATE_NATIVE_OUTCOMES",
+  "base": "4e6540d5cbd21ea73e4fdf032f8a46f4ad205794",
+  "source": "jd/tenacity PR741 original base+head-authored tests as frozen by V9",
+  "source_status": "EXPOSED_AFTER_V9_RED",
+  "v9_scientific_red_run": 38985251065,
+  "v10_source_native_qualified_run": 38985872094,
+  "v10_existing_original_head_production_fetch": false,
+  "heldout_future": "pypa/packaging",
+  "heldout_source_opened": false,
+  "original_methods": {
+    "v104": "426c54f7c774560e0fabe7213c5ef333b1327c71",
+    "msi": "56cfd7b523e3592cae4eafa5468f437ccb94dbe9",
+    "pareto": "6031466188046f56b4660d772d13ad731ed4c0f2"
+  },
+  "bridge": "V9 original _execute_training, _observation, _native rebound privately only to source-pinned V10 native class-method verifier; no original module/global mutations",
+  "budgets": {
+    "candidate_cap_per_file": 64,
+    "search_horizon": 8,
+    "native_replays_per_candidate": 2,
+    "maximum_training_native_calls": 130,
+    "training_wall_seconds": 1900
+  },
+  "no_outcome_selected_replacement": true,
+  "prohibited": [
+    "Opening Packaging source",
+    "Editing original V6/V7/V9/V10",
+    "G2 promotion from exposed Tenacity",
+    "Universal grammar inadequacy inference",
+    "Model comparator simulation",
+    "Any upstream or production write"
+  ],
+  "purpose": "Distinguish already available policy reordering from missing expressivity within declared V104 emitted candidate horizon, on genuine scoped original Tenacity native assertions. Distinguish collection UNKNOWN from verified FAIL."
+}

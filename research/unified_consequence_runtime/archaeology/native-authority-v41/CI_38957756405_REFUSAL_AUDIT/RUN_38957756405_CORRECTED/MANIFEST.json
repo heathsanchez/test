@@ -1,0 +1,60 @@
+{
+  "archive_errors": [
+    {
+      "error": "ValueError: original source object not available or hash differs",
+      "source": "consequence_selection.py"
+    },
+    {
+      "error": "ValueError: original source object not available or hash differs",
+      "source": "developmental_choice.py"
+    },
+    {
+      "error": "ValueError: original source object not available or hash differs",
+      "source": "decisive_native.py"
+    }
+  ],
+  "archive_member_readback_verification": {
+    "members": 5,
+    "status": "PASS_EXACT_MANIFEST_MEMBERS_AND_BYTES"
+  },
+  "boundary": "Raw native/source/state/evidence/cost packets retained; executable venvs, Git object stores and runtime installer trees are omitted. Exact source/runtime identities and recipes remain in evidence.",
+  "excluded_runtime_directories": [
+    ".git",
+    "miniconda-base",
+    "venv",
+    "wheels"
+  ],
+  "files": {
+    "CI_ASSESSMENT.json": {
+      "bytes": 344,
+      "sha256": "81dcb2fd916d19f166a4d2768138e7ea994e5a386ee14e5a3f045a268280c2b6"
+    },
+    "CI_BOUNDARY.json": {
+      "bytes": 1024,
+      "sha256": "86c32c9a3f92c7aa8761a086a1d76490121650e780d3ee81f3ddc15852ba3177"
+    },
+    "ORIGINAL_METHOD_OBJECTS.json": {
+      "bytes": 448,
+      "sha256": "7b04a9a932c7b05c57ec9a1d9c38ea8fcb82c0a525dfd68f364f0d1af51b0ae1"
+    },
+    "READINESS.json": {
+      "bytes": 289,
+      "sha256": "4b2f9c8e51a1aa8ea9ba88d0035cef8cc73098e5e9eab59dce0c9ab507a3c809"
+    },
+    "source-packs/UDM_SOURCE.tar.gz": {
+      "bytes": 161065326,
+      "sha256": "7f51ddb10df23bb0e6f0fd9b9078dfe521cd489976fba30f840bb599b7c02b81"
+    }
+  },
+  "mode": "REPRODUCTION_OF_COMMITTED_PREOUTCOME_PROTOCOL",
+  "packet": {
+    "bytes": 161067326,
+    "path": "NATIVE_SELECTION_V41_EVIDENCE.tar.gz",
+    "sha256": "4c81145e70825172f4b9225569e2b75ca9a7efb080a520034d0731e3ac7f600b"
+  },
+  "run_attempt": "1",
+  "run_id": "38957756405",
+  "schema": "UDM_NATIVE_SELECTION_EVIDENCE_MANIFEST_V41",
+  "source_commit": "c55350361a443875a23751a3ffec312497819484",
+  "symlinks": {}
+}

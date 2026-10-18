@@ -1,0 +1,27 @@
+{
+  "G2": "UNKNOWN",
+  "G3": "UNKNOWN",
+  "G4": "UNKNOWN",
+  "actual_collection_calls": 7,
+  "actual_collection_seconds": 13.868767789999993,
+  "actual_native_calls": 4,
+  "actual_native_seconds": 309.3636281259999,
+  "admission_controller_wall_seconds": 398.645547712,
+  "contract_fixtures": {
+    "all_individual_entries_ok": true,
+    "count": 193,
+    "seconds": 248.685
+  },
+  "cost_boundary": "Provider window, contracts and controller are distinct nested/overlapping scopes; do not sum them as disjoint costs. No model-token/dollar/human-engineering completeness claim.",
+  "provider_run_window_seconds": 679.0,
+  "run_id": "38856738333",
+  "schema": "UDM_NATIVE_ADMISSION_V21_AUDITED_COST_COUNTS",
+  "scientific_acquisitions": 0,
+  "source_commit": "f8c0b06da1bbaddfd67229ca87cb53a0dab67ae0",
+  "task_wall_seconds": {
+    "more-itertools/more-itertools": 88.35491286299998,
+    "python-attrs/attrs": 41.23792993500001,
+    "python-attrs/cattrs": 265.652556504
+  },
+  "winning_candidates_supplied": 0
+}

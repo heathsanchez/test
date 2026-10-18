@@ -1,0 +1,66 @@
+{
+  "all_manifest_entries_verified": true,
+  "artifact_code_executed_by_auditor": false,
+  "artifact_sha256": "00f5cb614eea76954d9a6f8f6f791e72f2b28304d1c425fc01c2309a26c5c059",
+  "artifact_size_bytes": 283553307,
+  "baseline_file_count": 1406,
+  "baseline_preserved_and_protocol_inventory_matches": true,
+  "binding_failure": "missing historical exclusion input caused assert all status != MISSING to fail",
+  "binding_test_errors": 0,
+  "binding_tests_failed": [
+    "research.unified_consequence_runtime.test_frontier_v4_preparation_tools.FrontierV4PreparationTools.test_curator_excludes_all_previous_v3_universe_members"
+  ],
+  "binding_tests_passed": 25,
+  "binding_tests_run": 26,
+  "first_task_gate": "UNKNOWN_NOT_RUN",
+  "freeze_complete_source_inventory_matches_commit": true,
+  "freeze_index_changes": [],
+  "freeze_tracked_file_count": 1457,
+  "fresh_target_source_or_outcomes_accessed": false,
+  "frozen_runtimes": [
+    {
+      "id": "cpython-3.12.14-pytest-8.4.1-linux-x86_64",
+      "interpreter": "/opt/hostedtoolcache/Python/3.12.14/x64/bin/python3.12",
+      "stdlib_file_count": 7239,
+      "stdlib_manifest_identity_matches": true,
+      "version_info": [
+        3,
+        12,
+        14,
+        "final",
+        0
+      ]
+    },
+    {
+      "id": "cpython-3.6.5-pytest-5.4.3-linux-x86_64",
+      "interpreter": "/home/runner/work/_temp/v4-runtimes/cpython-3.6.5-pytest-5.4.3-linux-x86_64/venv/bin/python",
+      "stdlib_file_count": 3318,
+      "stdlib_manifest_identity_matches": true,
+      "version_info": [
+        3,
+        6,
+        5,
+        "final",
+        0
+      ]
+    }
+  ],
+  "issues": [],
+  "manifest_entries": 22,
+  "native_G2_G6": "UNKNOWN",
+  "native_execution_evidence_entries": 0,
+  "native_or_collection_execution_by_auditor": 0,
+  "nested_evidence_file_count": 21,
+  "outer_entries": 9,
+  "post_control_runtime_audit_status": "PASS_FROZEN_RUNTIME_BYTES",
+  "qualification_result_entries": [],
+  "run_id": 38941859931,
+  "schema": "UDM_NATIVE_AUTHORITY_V4_RED_ARTIFACT_INDEPENDENT_AUDIT_V1",
+  "scope_limit": "This RED artifact stopped at the binding preflight. It contains no 29-control modern run, five-control legacy run, independent native replay, seven metadata diagnostics, or qualification RESULT. No native attempt counter was emitted; zero native work is supported by skipped workflow steps and absence of current-run evidence, rather than a standalone zero counter.",
+  "source_archive_all_expected_committed_bytes_match": true,
+  "source_archive_file_count": 947,
+  "source_archive_pax_commit": "d0557438b7586d0a6480f80d50012c9616d0e371",
+  "source_commit": "d0557438b7586d0a6480f80d50012c9616d0e371",
+  "status": "VERIFIED_RED_NO_ADMISSION_PROMOTION",
+  "utc": "2026-10-16T17:53:25.749199+00:00"
+}

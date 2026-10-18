@@ -1,0 +1,116 @@
+name: Native CSLib source-induced method transfer
+on:
+  push:
+    branches: [research/unified-consequence-runtime-20261013]
+    paths:
+      - 'research/unified_consequence_runtime/native_semantic_genesis_v1/**'
+      - '.github/workflows/unified-native-source-method.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: coordinator
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: leanprover/cslib
+          ref: 4b88bcac4c0dec65b3f45b59e85f5397045efd8d
+          path: cslib
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Freeze original native source and construct methods without per-case proof patches
+        run: |
+          set -euo pipefail
+          test "$(git -C cslib rev-parse HEAD)" = 4b88bcac4c0dec65b3f45b59e85f5397045efd8d
+          test "$(git -C cslib hash-object CslibTests/LTS.lean)" = 34f3c3db9378e11906bba456f0178497531c6a26
+          test "$(git -C cslib hash-object CslibTests/Bisimulation.lean)" = edaa81af04bb06bf12ac66368a2badd8b4a33edf
+          python coordinator/research/unified_consequence_runtime/native_semantic_genesis_v1/source_bisim.py \
+            --cslib cslib \
+            --protocol coordinator/research/unified_consequence_runtime/native_semantic_genesis_v1/FROZEN_PROTOCOL.json \
+            --out coordinator/native-bisim-output
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('coordinator/native-bisim-output/report.json').read_text())
+          assert len(d['sources'])==2
+          assert all(x['reference']=='INDEPENDENT_FIXED_POINT_AND_PARTITION_AGREE' for x in d['sources'])
+          assert all(x['native_proof']['relation_pairs']>=4 for x in d['sources'])
+          assert d['negative_infinite_support']=='UNKNOWN_INFINITE_SUPPORT'
+          assert d['scientific_L7']=='UNKNOWN'
+          PY
+      - name: Source corruption must fail before method authority
+        run: |
+          set -euo pipefail
+          cp cslib/CslibTests/LTS.lean /tmp/native-original-source.lean
+          printf '\n-- INVALID_EXTERNAL_SOURCE_MUTATION\n' >> cslib/CslibTests/LTS.lean
+          if python coordinator/research/unified_consequence_runtime/native_semantic_genesis_v1/source_bisim.py \
+            --cslib cslib \
+            --protocol coordinator/research/unified_consequence_runtime/native_semantic_genesis_v1/FROZEN_PROTOCOL.json \
+            --out /tmp/native-corruption-run > /tmp/tamper.out 2>&1; then
+            echo 'TAMPERED_SOURCE_WAS_ACCEPTED'
+            exit 1
+          fi
+          grep 'EXACT_SOURCE_BLOB_MISMATCH' /tmp/tamper.out
+          mv /tmp/native-original-source.lean cslib/CslibTests/LTS.lean
+          test "$(git -C cslib hash-object CslibTests/LTS.lean)" = 34f3c3db9378e11906bba456f0178497531c6a26
+          echo SOURCE_TAMPER_REJECTED
+      - name: Install exact upstream Lean and compile original CSLib test modules
+        run: |
+          set -euo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          cd cslib
+          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.35.0-rc4
+          "$HOME/.elan/bin/lake" exe cache get
+          "$HOME/.elan/bin/lake" build CslibTests.LTS CslibTests.Bisimulation
+      - name: Check independently generated source-native Lean proofs
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          cd cslib
+          test "$(lean --version | grep -o '4.35.0-rc4')" = '4.35.0-rc4'
+          count=0
+          for file in "$GITHUB_WORKSPACE"/coordinator/native-bisim-output/*.lean; do
+            test -f "$file"
+            if grep -nE '(^|[^[:alnum:]_])(sorry|admit|axiom)([^[:alnum:]_]|$)' "$file"; then
+              echo UNTRUSTED_GENERATED_PROOF
+              exit 1
+            fi
+            echo "SOURCE_NATIVE_LEAN_CHECK=$(basename "$file")"
+            lake env lean "$file"
+            count=$((count+1))
+          done
+          test "$count" -eq 2
+          echo TWO_ORIGINAL_SOURCE_GRAMMARS_NATIVE_CHECKED
+      - name: Seal source-scoped proof evidence
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('coordinator/native-bisim-output/report.json')
+          d=json.loads(p.read_text())
+          assert len(d['sources'])==2
+          for item in d['sources']:
+              item['native_proof']['native_lean']='PASS'
+          d['native_verdict']='WARRANTED_BOUNDED_SOURCE_NATIVE_PROOF_CONSTRUCTION'
+          d['generalized_self_improvement']='UNKNOWN'
+          p.write_text(json.dumps(d,sort_keys=True,indent=2)+'\n')
+          PY
+      - name: Retain exact native source-derived products and obligations
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-source-induced-method-v1
+          path: coordinator/native-bisim-output/
+          if-no-files-found: warn

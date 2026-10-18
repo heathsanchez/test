@@ -1,0 +1,95 @@
+{
+  "admission_gate": {
+    "artifact_id": 12065396366,
+    "artifact_sha256": "5437ada6b403643d0b9e76358633ecc436a84377ac36ba18da103c1530b8c9fa",
+    "qualification_result_sha256": "73fee835eb36377d85bed169c871e540552b2e0db5e130133cc48a0b62dcb637",
+    "result_path": "research/unified_consequence_runtime/archaeology/native-authority-v4/CI_38944901241_RESULT.json",
+    "run_id": 38944901241,
+    "source_commit": "a6521e27dcabdf69cf8e6ecd283432730d6aa846",
+    "status": "ADMISSION_ONLY_QUALIFIED"
+  },
+  "case_refusals": [
+    {
+      "index": 0,
+      "reason": "UNKNOWN_REQUIREMENT_GRAMMAR",
+      "repo": "dbader/schedule"
+    },
+    {
+      "index": 1,
+      "reason": "UNKNOWN_NO_COMPATIBLE_PROFILE",
+      "repo": "fsspec/filesystem_spec"
+    },
+    {
+      "index": 2,
+      "reason": "UNKNOWN_NO_COMPATIBLE_PROFILE",
+      "repo": "lepture/mistune"
+    },
+    {
+      "index": 3,
+      "reason": "UNKNOWN_DYNAMIC_METADATA",
+      "repo": "micheles/decorator"
+    },
+    {
+      "index": 4,
+      "reason": "UNKNOWN_NO_COMPATIBLE_PROFILE",
+      "repo": "pytoolz/toolz"
+    }
+  ],
+  "conditions": {
+    "baseline": "NOT_EXECUTED_NATIVE_OBLIGATION_NOT_ADMITTED",
+    "collection_calls": 0,
+    "comparative_win": "UNKNOWN_NOT_ESTABLISHED",
+    "ledger_execution": "NOT_EXECUTED_NATIVE_OBLIGATION_NOT_ADMITTED",
+    "matched_agent_execution": "NOT_EXECUTED_NATIVE_OBLIGATION_NOT_ADMITTED",
+    "native_calls": 0
+  },
+  "cost_boundary": "Native and collection attempt counters cover the native worker only. Git init/fetch/checkout, static selection, runtime preflight and q4 controller subprocess costs are retained separately. Nested wall times are nonadditive. Model/tool/engineering/full lifecycle costs remain UNKNOWN.",
+  "costs": {
+    "collection_calls": 0,
+    "controller_child_system_seconds": 8.74645,
+    "controller_child_user_seconds": 25.06891,
+    "metadata_api_calls": 132,
+    "metadata_total_curation_wall_seconds": 31.959356598999875,
+    "native_calls": 0,
+    "ordered_q4_meter_interval_seconds": 61.641629457473755,
+    "sum_case_wall_seconds": 11.094844195999485,
+    "sum_controller_wall_seconds": 36.26489780300017,
+    "sum_setup_phase_seconds": 10.044199897001363,
+    "sum_setup_wall_seconds": 11.093675847000668,
+    "whole_screening_controller_session_interval_seconds": 103.23838448524475
+  },
+  "first_remaining_obstruction": "Original tox.ini dependency-file include -rrequirements-dev.txt is outside frozen requirement grammar; no native learning obligation admitted.",
+  "pool_before_source_commit": "565b210dd882cb2663c094a6f1c418dcf6687d87",
+  "preserved_limitations": [
+    "The metadata ledger contains 132 request rows and exact allowed projections; no independent proxy/network log was supplied, so unlogged/out-of-band calls are not globally excluded.",
+    "The frozen first eligible choice is reproduced from retained returned order. Three returned timestamp inversions are retained; globally latest-100 membership and GitHub response chronology are not independently authenticated.",
+    "Cases001/002/004 retain finite-catalog UNKNOWN; metadata profile refusals do not establish actual native incompatibility or impossibility of another environment.",
+    "Only complete base source was fetched and hash-verified. No head source overlay, admitted task contract, collection certificate, native receipt, assertion trace, learning ledger, candidate search, policy outcome or matched agent comparison exists.",
+    "Audit coverage is the supplied committed records, five completed cases and retained controller roots. It does not prove hostile-process nonbypassability or absence of unrelated external processes.",
+    "Root reports learner/root exposure was limited to public envelopes and costs before these bounded refusal disclosures; no global access log was supplied."
+  ],
+  "prospective_pool": {
+    "admitted": 0,
+    "cases": 5,
+    "collection_calls": 0,
+    "native_calls": 0,
+    "repositories": 9,
+    "role_selection_status": "UNKNOWN_ADMISSION_SHORTFALL"
+  },
+  "schema": "UDM_NATIVE_AUTHORITY_V4_RESEARCH_RESULT_V1",
+  "screening_audit": {
+    "path": "research/unified_consequence_runtime/archaeology/native-authority-v4/SCREENING_INDEPENDENT_AUDIT/SCREENING_AUDIT.json",
+    "sha256": "5f71a05a52790413d817395da5415ae3c132149384a8bf51a06d2570bdba3bb9"
+  },
+  "status": "ADMISSION_QUALIFIED_PROSPECTIVE_ADMISSION_SHORTFALL",
+  "universe_prequery_commit": "40c55be590bc772d966ee4d65c1a608304422b91",
+  "verdicts": {
+    "G0_G1": "PRESERVED_EXACT_PRIOR_SOURCE_AUTHORITY",
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN",
+    "native_admission": "WARRANTED_BOUNDED"
+  }
+}

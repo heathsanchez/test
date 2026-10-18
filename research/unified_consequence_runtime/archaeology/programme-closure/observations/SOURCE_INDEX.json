@@ -1,0 +1,1218 @@
+{
+  "schema": "metalogic.observation-choice-source-review.v1",
+  "coverage": "TARGETED_READ_ONLY_REVIEW_NOT_EXHAUSTIVE_SOURCE_UNIVERSE",
+  "results": [
+    {
+      "id": "experiment-language-genesis",
+      "repository": "heathsanchez/test",
+      "branch": "verified-experiment-language-genesis-v1",
+      "branch_head": "fa07d7d1b916730932e2c6b2ea17049950e53615",
+      "source_commit": "795756a752a2d4857ef7f5ff5884920dc3c1432b",
+      "authority": {
+        "experiment": "Verified Experiment-Language Genesis V1",
+        "branch": "verified-experiment-language-genesis-v1",
+        "base_commit": "29e9c7d1b64fb5080717ff644c9e4614e2309694",
+        "scientific_commit": "795756a752a2d4857ef7f5ff5884920dc3c1432b",
+        "scientific_run": 34670317510,
+        "scientific_job": 103490329298,
+        "artifact_id": 10290558060,
+        "artifact_sha256": "211aad00fd89e724184358b1ae8942fb63936cce79102a0f1c6db4239ea682f0",
+        "verdict": "VERIFIED_EXPERIMENT_LANGUAGE_GENESIS"
+      },
+      "installed_before_this_mission": false,
+      "native_rerun": false,
+      "evidence_level": "SOURCE_AND_ORIGINAL_ARTIFACT_INSPECTED_NO_SCIENTIFIC_RERUN",
+      "implementation": {
+        "path": "experiments/verified_experiment_language_genesis_v1/run.py",
+        "sha256": "a0797a55f47d8e74ad9a359a55eca59a6db4ff5254fe830f663046614f43c4f5",
+        "entrypoints": [
+          {
+            "name": "authority",
+            "line": 9
+          },
+          {
+            "name": "denotation",
+            "line": 19
+          },
+          {
+            "name": "synthesize_meta",
+            "line": 28
+          },
+          {
+            "name": "main",
+            "line": 50
+          }
+        ]
+      },
+      "primary_artifact_inspected": true
+    },
+    {
+      "id": "experiment-meta-substrate-genesis",
+      "repository": "heathsanchez/test",
+      "branch": "verified-experiment-meta-substrate-genesis-v1",
+      "branch_head": "3f8cca9c5bd09673efc7354202d54ce4722e42aa",
+      "source_commit": "b1c56bc2ec4c1defed7060f8dfff81fdc6ae12f3",
+      "authority": {
+        "experiment": "Verified Experiment-Meta-Substrate Genesis V1",
+        "status": "VERIFIED_EXPERIMENT_META_SUBSTRATE_GENESIS",
+        "parent_freeze": "af224f4108a3ed545ffad23fc4080225d1157b54",
+        "terminal_verdicts": [
+          "VERIFIED_EXPERIMENT_META_SUBSTRATE_GENESIS",
+          "NEGATIVE_OR_PARTIAL"
+        ],
+        "scientific_commit": "b1c56bc2ec4c1defed7060f8dfff81fdc6ae12f3",
+        "workflow_run": 34682784242,
+        "workflow_job": 103524385216,
+        "artifact_id": 10293399981,
+        "artifact_sha256": "acfad65c309876fa6d2c50da21b4457ed4d3fee2c4d6b77d1810437e4522b1b2",
+        "no_post_run_tuning": true
+      },
+      "installed_before_this_mission": false,
+      "native_rerun": false,
+      "evidence_level": "SOURCE_AND_ORIGINAL_ARTIFACT_INSPECTED_NO_SCIENTIFIC_RERUN",
+      "implementation": {
+        "path": "experiments/verified_experiment_meta_substrate_genesis_v1/run.py",
+        "sha256": "822541b0900d6b4342b37a2ca0bc87708834f5df7c0f7c5997e76b4229c962da",
+        "entrypoints": [
+          {
+            "name": "stateless_denotation",
+            "line": 10
+          },
+          {
+            "name": "stateless_eval",
+            "line": 13
+          },
+          {
+            "name": "run_machine",
+            "line": 16
+          },
+          {
+            "name": "synthesize_stateful_separator",
+            "line": 22
+          },
+          {
+            "name": "main",
+            "line": 34
+          }
+        ]
+      },
+      "primary_artifact_inspected": true
+    },
+    {
+      "id": "prospective-repair-selection",
+      "repository": "heathsanchez/test",
+      "branch": "verified-prospective-repair-selection-v1",
+      "branch_head": "af224f4108a3ed545ffad23fc4080225d1157b54",
+      "source_commit": "6031466188046f56b4660d772d13ad731ed4c0f2",
+      "authority": {
+        "experiment": "Verified Prospective Repair Selection V1",
+        "branch": "verified-prospective-repair-selection-v1",
+        "base_commit": "53ef767c47281659776020ea4543e8ea56533443",
+        "scientific_commit": "6031466188046f56b4660d772d13ad731ed4c0f2",
+        "scientific_run": 34681030732,
+        "scientific_job": 103519580868,
+        "artifact_id": 10293778953,
+        "artifact_sha256": "573879832c18e92763832aaf3b8489907115c337d358a110dce2d826b83cad3a",
+        "verdict": "AUTHORIZED_REPAIR"
+      },
+      "installed_before_this_mission": false,
+      "native_rerun": false,
+      "evidence_level": "SOURCE_AND_ORIGINAL_ARTIFACT_INSPECTED_NO_SCIENTIFIC_RERUN",
+      "implementation": {
+        "path": "experiments/verified_prospective_repair_selection_v1/run.py",
+        "sha256": "ef46969e2182a5ced64e3c80f5266c03f864d72dcd8133539e6b1a71c42a4b94",
+        "entrypoints": [
+          {
+            "name": "bits",
+            "line": 9
+          },
+          {
+            "name": "separates",
+            "line": 10
+          },
+          {
+            "name": "partition",
+            "line": 11
+          },
+          {
+            "name": "edges",
+            "line": 14
+          },
+          {
+            "name": "consequence",
+            "line": 21
+          },
+          {
+            "name": "dominates",
+            "line": 30
+          },
+          {
+            "name": "choose",
+            "line": 34
+          },
+          {
+            "name": "main",
+            "line": 39
+          }
+        ]
+      },
+      "primary_artifact_inspected": true
+    },
+    {
+      "id": "value-evidence-separator-genesis",
+      "repository": "heathsanchez/test",
+      "branch": "verified-value-evidence-separator-genesis-v1",
+      "branch_head": "29e9c7d1b64fb5080717ff644c9e4614e2309694",
+      "source_commit": "74a44981a766da23df87780496191014fcd41215",
+      "authority": {
+        "status": "FROZEN_VERIFIED_VALUE_EVIDENCE_SEPARATOR_GENESIS",
+        "branch": "verified-value-evidence-separator-genesis-v1",
+        "base_commit": "185476c1aa0d9fa7caa5327152b254bec45c4988",
+        "scientific_commit": "74a44981a766da23df87780496191014fcd41215",
+        "scientific_run": 34668270318,
+        "scientific_job": 103484544719,
+        "artifact_id": 10289800538,
+        "artifact_sha256": "a86b6729ed0ef758cc5f5ad1ef99677c373a0467574921bfd96d62a0370b03c6",
+        "verdict": "VERIFIED_VALUE_EVIDENCE_SEPARATOR_GENESIS",
+        "diagnosis": "VALUE_EVIDENCE_INSUFFICIENCY"
+      },
+      "installed_before_this_mission": false,
+      "native_rerun": false,
+      "evidence_level": "SOURCE_AND_ORIGINAL_ARTIFACT_INSPECTED_NO_SCIENTIFIC_RERUN",
+      "implementation": {
+        "path": "experiments/verified_value_evidence_separator_genesis_v1/run.py",
+        "sha256": "62aa93ab7fb5ab2b3dec55308ee2a30d958a5d8ae1a41122e676f637ee510c75",
+        "entrypoints": [
+          {
+            "name": "policy_cost",
+            "line": 16
+          },
+          {
+            "name": "acquire",
+            "line": 17
+          },
+          {
+            "name": "main",
+            "line": 32
+          }
+        ]
+      },
+      "primary_artifact_inspected": true
+    },
+    {
+      "id": "canonical-repair-nonuniqueness",
+      "repository": "heathsanchez/test",
+      "branch": "canonical-experiment-language-repair-v1",
+      "branch_head": "53ef767c47281659776020ea4543e8ea56533443",
+      "source_commit": "b2f336a84412226ef4a95f8291275deb47cb4ff0",
+      "authority": {
+        "experiment": "Canonical Experiment-Language Repair V1",
+        "branch": "canonical-experiment-language-repair-v1",
+        "base_commit": "fa07d7d1b916730932e2c6b2ea17049950e53615",
+        "invalid_infrastructure_run": 34671571345,
+        "invalid_infrastructure_job": 103493772535,
+        "scientific_commit": "b2f336a84412226ef4a95f8291275deb47cb4ff0",
+        "scientific_run": 34671633624,
+        "scientific_job": 103493945408,
+        "artifact_id": 10290854580,
+        "artifact_sha256": "2b7b3507c6893a981326eaf990b5375eed01088f490b17a416fa7dbee8ad492e",
+        "verdict": "MULTIPLE_MINIMAL_REPAIRS"
+      },
+      "installed_before_this_mission": false,
+      "native_rerun": false,
+      "evidence_level": "SOURCE_AND_ORIGINAL_ARTIFACT_INSPECTED_NO_SCIENTIFIC_RERUN",
+      "implementation": {
+        "path": "experiments/canonical_experiment_language_repair_v1/run.py",
+        "sha256": "61e96544181e33905297f044b5766200a303d56a87bcf233efa54af25883fab0",
+        "entrypoints": [
+          {
+            "name": "bits",
+            "line": 9
+          },
+          {
+            "name": "separates",
+            "line": 10
+          },
+          {
+            "name": "partition",
+            "line": 12
+          },
+          {
+            "name": "refines",
+            "line": 17
+          },
+          {
+            "name": "main",
+            "line": 21
+          }
+        ]
+      },
+      "primary_artifact_inspected": true
+    },
+    {
+      "id": "retention-policy-genesis-negative",
+      "repository": "heathsanchez/test",
+      "branch": "verified-retention-policy-genesis-v1",
+      "branch_head": "185476c1aa0d9fa7caa5327152b254bec45c4988",
+      "source_commit": "f00bccabee25319bc0cc41ac9918c1d3a08108ad",
+      "authority": {
+        "status": "FROZEN_NEGATIVE_PARTIAL_AUTHORITY",
+        "branch": "verified-retention-policy-genesis-v1",
+        "base_commit": "616d6007a85ed74bd2a2479b1cf44e885a0ea5fe",
+        "scientific_commit": "f00bccabee25319bc0cc41ac9918c1d3a08108ad",
+        "scientific_run": 34648832202,
+        "scientific_job": 103425973195,
+        "artifact_id": 10282562232,
+        "artifact_sha256": "a636cd20092cabb19ff106490f578a7b9b891e0697b6d2d2e9101b33180e8fad",
+        "verdict": "NEGATIVE_OR_PARTIAL",
+        "failed_gate": "prospective_beats_hand_geometry",
+        "invalid_obsolete_runs": [
+          {
+            "run": 34648396877,
+            "reason": "Lean action setup failed before experiment execution"
+          },
+          {
+            "run": 34648508248,
+            "reason": "Lean certificate did not compile"
+          },
+          {
+            "run": 34648604462,
+            "reason": "unordered finite-set serialization made evidence hash-seed dependent"
+          },
+          {
+            "run": 34648686000,
+            "reason": "replayed the same hash-seed-dependent implementation"
+          }
+        ]
+      },
+      "installed_before_this_mission": false,
+      "native_rerun": false,
+      "evidence_level": "EXACT_SOURCE_AND_FROZEN_AUTHORITY_PRIMARY_ARTIFACT_NOT_RETRIEVED",
+      "implementation": {
+        "path": "experiments/verified_retention_policy_genesis_v1/run.py",
+        "sha256": "7a73ea610128f954a44cb53776616c5114a072625e213e14958246e274e015ed",
+        "entrypoints": [
+          {
+            "name": "closure",
+            "line": 17
+          },
+          {
+            "name": "make_stream",
+            "line": 31
+          },
+          {
+            "name": "raw_score",
+            "line": 50
+          },
+          {
+            "name": "choose",
+            "line": 55
+          },
+          {
+            "name": "scalar",
+            "line": 58
+          },
+          {
+            "name": "synthesize",
+            "line": 63
+          },
+          {
+            "name": "evaluate",
+            "line": 73
+          },
+          {
+            "name": "main",
+            "line": 76
+          }
+        ]
+      },
+      "primary_artifact_inspected": false
+    }
+  ],
+  "sources": [
+    {
+      "repository": "heathsanchez/test",
+      "commit": "795756a752a2d4857ef7f5ff5884920dc3c1432b",
+      "path": "experiments/verified_experiment_language_genesis_v1/ExperimentLanguage.lean",
+      "sha256": "dd08da806b22c7a93563fea4e77fc5eff7f12fe35feee929d786d0e3daf43860",
+      "bytes": 1401,
+      "inspection": "SOURCE_SEMANTIC_READ"
+    },
+    {
+      "repository": "heathsanchez/test",
+      "commit": "795756a752a2d4857ef7f5ff5884920dc3c1432b",
+      "path": "experiments/verified_experiment_language_genesis_v1/PROTOCOL.md",
+      "sha256": "6083fd2287297512e8fc643ebbbbc5ef8a8017e4aba2014c07b605e838603ca4",
+      "bytes": 847,
+      "inspection": "HASH_BOUNDARY_AND_METADATA_READ"
+    },
+    {
+      "repository": "heathsanchez/test",
+      "commit": "795756a752a2d4857ef7f5ff5884920dc3c1432b",
+      "path": "experiments/verified_experiment_language_genesis_v1/RESULTS.md",
+      "sha256": "958e6d0be1bcf56883be367a266fbf8ede056a9a0ff91c1d64b253771060c5ff",
+      "bytes": 152,
+      "inspection": "SOURCE_SEMANTIC_READ"
+    },
+    {
+      "repository": "heathsanchez/test",
+      "commit": "795756a752a2d4857ef7f5ff5884920dc3c1432b",
+      "path": "experiments/verified_experiment_language_genesis_v1/run.py",
+      "sha256": "a0797a55f47d8e74ad9a359a55eca59a6db4ff5254fe830f663046614f43c4f5",
+      "bytes": 6344,
+      "inspection": "SOURCE_SEMANTIC_READ",
+      "entrypoints": [
+        {
+          "name": "authority",
+          "line": 9
+        },
+        {
+          "name": "denotation",
+          "line": 19
+        },
+        {
+          "name": "synthesize_meta",
+          "line": 28
+        },
+        {
+          "name": "main",
+          "line": 50
+        }
+      ]
+    },
+    {
+      "repository": "heathsanchez/test",
+      "commit": "795756a752a2d4857ef7f5ff5884920dc3c1432b",
+      "path": ".github/workflows/verified-experiment-language-genesis-v1.yml",
+      "sha256": "2bbcf23ccd586e933ac1a550559f1c8fb3ef94c89ef6f58e477a52131cc0ecf0",
+      "bytes": 1791,
+      "inspection": "WORKFLOW_COMMANDS_READ"
+    },
+    {
+      "repository": "heathsanchez/test",
+      "commit": "b1c56bc2ec4c1defed7060f8dfff81fdc6ae12f3",
+      "path": "experiments/verified_experiment_meta_substrate_genesis_v1/AUTHORITY.json",
+      "sha256": "03072061081257c4efd85c9adfd4310ff7f6b8f3fbfc894dc5e8aa6c92d7fca8",
+      "bytes": 312,
+      "inspection": "HASH_BOUNDARY_AND_METADATA_READ"
+    },
+    {
+      "repository": "heathsanchez/test",
+      "commit": "b1c56bc2ec4c1defed7060f8dfff81fdc6ae12f3",
+      "path": "experiments/verified_experiment_meta_substrate_genesis_v1/ExperimentMetaSubstrate.lean",
+      "sha256": "488d5120bb92c09b4b7642040b63759be24c942366e61cda599efe5175a5f280",
+      "bytes": 1909,
+      "inspection": "SOURCE_SEMANTIC_READ"
+    },
+    {
+      "repository": "heathsanchez/test",
+      "commit": "b1c56bc2ec4c1defed7060f8dfff81fdc6ae12f3",
+      "path": "experiments/verified_experiment_meta_substrate_genesis_v1/PROTOCOL.md",
+      "sha256": "62bceac998e70ddf033558d3eb1ba7708674b354e5508e92720247a2e6acd7d6",
+      "bytes": 1510,
+      "inspection": "HASH_BOUNDARY_AND_METADATA_READ"
+    },
+    {
+      "repository": "heathsanchez/test",
+      "commit": "b1c56bc2ec4c1defed7060f8dfff81fdc6ae12f3",
+      "path": "experiments/verified_experiment_meta_substrate_genesis_v1/RESULTS.md",
+      "sha256": "cf38bebe5eaf223d2746f927ce1a3c0e5b5dc7b77a851a012a7a89796c332ab7",
+      "bytes": 276,
+      "inspection": "SOURCE_SEMANTIC_READ"
+    },
+    {
+      "repository": "heathsanchez/test",
+      "commit": "b1c56bc2ec4c1defed7060f8dfff81fdc6ae12f3",
+      "path": "experiments/verified_experiment_meta_substrate_genesis_v1/run.py",
+      "sha256": "822541b0900d6b4342b37a2ca0bc87708834f5df7c0f7c5997e76b4229c962da",
+      "bytes": 5369,
+      "inspection": "SOURCE_SEMANTIC_READ",
+      "entrypoints": [
+        {
+          "name": "stateless_denotation",
+          "line": 10
+        },
+        {
+          "name": "stateless_eval",
+          "line": 13
+        },
+        {
+          "name": "run_machine",
+          "line": 16
+        },
+        {
+          "name": "synthesize_stateful_separator",
+          "line": 22
+        },
+        {
+          "name": "main",
+          "line": 34
+        }
+      ]
+    },
+    {
+      "repository": "heathsanchez/test",
+      "commit": "b1c56bc2ec4c1defed7060f8dfff81fdc6ae12f3",
+      "path": ".github/workflows/verified-experiment-meta-substrate-genesis-v1.yml",
+      "sha256": "24266db43f811cf13f80d664658bb6982eb5a61503057eb88324c1117d2b9c9d",
+      "bytes": 1849,
+      "inspection": "WORKFLOW_COMMANDS_READ"
+    },
+    {
+      "repository": "heathsanchez/test",
+      "commit": "6031466188046f56b4660d772d13ad731ed4c0f2",
+      "path": "experiments/verified_prospective_repair_selection_v1/PROTOCOL.md",
+      "sha256": "dd592edb2690973f9e94482980af026f8f5c1d38e1a5c99b5c7aa915fceb8fb8",
+      "bytes": 753,
+      "inspection": "HASH_BOUNDARY_AND_METADATA_READ"
+    },
+    {
+      "repository": "heathsanchez/test",
+      "commit": "6031466188046f56b4660d772d13ad731ed4c0f2",
+      "path": "experiments/verified_prospective_repair_selection_v1/RESULTS.md",
+      "sha256": "9b2806c29046443880eb624ecbf897b53658ce0695c8b2cdb0680d0ab491ac36",
+      "bytes": 70,
+      "inspection": "SOURCE_SEMANTIC_READ"
+    },
+    {
+      "repository": "heathsanchez/test",
+      "commit": "6031466188046f56b4660d772d13ad731ed4c0f2",
+      "path": "experiments/verified_prospective_repair_selection_v1/RepairSelection.lean",
+      "sha256": "899db3ea5969f0d3ca5eb715d2acec857bf41e3a4496a2b2889210cabe12feb3",
+      "bytes": 1305,
+      "inspection": "SOURCE_SEMANTIC_READ"
+    },
+    {
+      "repository": "heathsanchez/test",
+      "commit": "6031466188046f56b4660d772d13ad731ed4c0f2",
+      "path": "experiments/verified_prospective_repair_selection_v1/run.py",
+      "sha256": "ef46969e2182a5ced64e3c80f5266c03f864d72dcd8133539e6b1a71c42a4b94",
+      "bytes": 4853,
+      "inspection": "SOURCE_SEMANTIC_READ",
+      "entrypoints": [
+        {
+          "name": "bits",
+          "line": 9
+        },
+        {
+          "name": "separates",
+          "line": 10
+        },
+        {
+          "name": "partition",
+          "line": 11
+        },
+        {
+          "name": "edges",
+          "line": 14
+        },
+        {
+          "name": "consequence",
+          "line": 21
+        },
+        {
+          "name": "dominates",
+          "line": 30
+        },
+        {
+          "name": "choose",
+          "line": 34
+        },
+        {
+          "name": "main",
+          "line": 39
+        }
+      ]
+    },
+    {
+      "repository": "heathsanchez/test",
+      "commit": "6031466188046f56b4660d772d13ad731ed4c0f2",
+      "path": ".github/workflows/verified-prospective-repair-selection-v1.yml",
+      "sha256": "a1772881623facea64a6ce1dcc172301649b443ea0546fc132ab3e79da629765",
+      "bytes": 1752,
+      "inspection": "WORKFLOW_COMMANDS_READ"
+    },
+    {
+      "repository": "heathsanchez/test",
+      "commit": "74a44981a766da23df87780496191014fcd41215",
+      "path": "experiments/verified_value_evidence_separator_genesis_v1/EvidenceSeparator.lean",
+      "sha256": "d2b1f44f405e8d5e6f7dc2cdf67001c9abd74662469df4e99d331fdc47ee051c",
+      "bytes": 661,
+      "inspection": "SOURCE_SEMANTIC_READ"
+    },
+    {
+      "repository": "heathsanchez/test",
+      "commit": "74a44981a766da23df87780496191014fcd41215",
+      "path": "experiments/verified_value_evidence_separator_genesis_v1/PROTOCOL.md",
+      "sha256": "2d08c1b88a6bd07474ff5e4c13b23a85eba5391ddc83d6d341d9567ca9d57a15",
+      "bytes": 1270,
+      "inspection": "HASH_BOUNDARY_AND_METADATA_READ"
+    },
+    {
+      "repository": "heathsanchez/test",
+      "commit": "74a44981a766da23df87780496191014fcd41215",
+      "path": "experiments/verified_value_evidence_separator_genesis_v1/RESULTS.md",
+      "sha256": "4540e542add79f4e35e3a3ada76315ecf259fa775bd3b9af0d89eff5e4ba91f1",
+      "bytes": 916,
+      "inspection": "SOURCE_SEMANTIC_READ"
+    },
+    {
+      "repository": "heathsanchez/test",
+      "commit": "74a44981a766da23df87780496191014fcd41215",
+      "path": "experiments/verified_value_evidence_separator_genesis_v1/results/evidence.json",
+      "sha256": "cd2446d1a5d376b1ad370a8fb5ad03489e916540298268741f7c9381d1917eba",
+      "bytes": 3097,
+      "inspection": "HASH_BOUNDARY_AND_METADATA_READ"
+    },
+    {
+      "repository": "heathsanchez/test",
+      "commit": "74a44981a766da23df87780496191014fcd41215",
+      "path": "experiments/verified_value_evidence_separator_genesis_v1/results/snapshot.json",
+      "sha256": "029a1398b366a97025f49b1feaee58e8bb6c8f7194a3aebf1974489732b36e8c",
+      "bytes": 494,
+      "inspection": "HASH_BOUNDARY_AND_METADATA_READ"
+    },
+    {
+      "repository": "heathsanchez/test",
+      "commit": "74a44981a766da23df87780496191014fcd41215",
+      "path": "experiments/verified_value_evidence_separator_genesis_v1/run.py",
+      "sha256": "62aa93ab7fb5ab2b3dec55308ee2a30d958a5d8ae1a41122e676f637ee510c75",
+      "bytes": 4563,
+      "inspection": "SOURCE_SEMANTIC_READ",
+      "entrypoints": [
+        {
+          "name": "policy_cost",
+          "line": 16
+        },
+        {
+          "name": "acquire",
+          "line": 17
+        },
+        {
+          "name": "main",
+          "line": 32
+        }
+      ]
+    },
+    {
+      "repository": "heathsanchez/test",
+      "commit": "74a44981a766da23df87780496191014fcd41215",
+      "path": ".github/workflows/verified-value-evidence-separator-genesis-v1.yml",
+      "sha256": "4466f735e26be064e5256f63980dbb3e1e460ce166236dbe59627118a27fc9a5",
+      "bytes": 1752,
+      "inspection": "WORKFLOW_COMMANDS_READ"
+    },
+    {
+      "repository": "heathsanchez/test",
+      "commit": "b2f336a84412226ef4a95f8291275deb47cb4ff0",
+      "path": "experiments/canonical_experiment_language_repair_v1/CanonicalRepair.lean",
+      "sha256": "99dab0cd7c4e208df3bfc49f1254cd5207d0f8ac93d5c1b816fac425978442b3",
+      "bytes": 1340,
+      "inspection": "SOURCE_SEMANTIC_READ"
+    },
+    {
+      "repository": "heathsanchez/test",
+      "commit": "b2f336a84412226ef4a95f8291275deb47cb4ff0",
+      "path": "experiments/canonical_experiment_language_repair_v1/PROTOCOL.md",
+      "sha256": "eae58af5a5564e882679b64ce7fd2ac1565f8023028a89a361a337389e7e78bf",
+      "bytes": 671,
+      "inspection": "HASH_BOUNDARY_AND_METADATA_READ"
+    },
+    {
+      "repository": "heathsanchez/test",
+      "commit": "b2f336a84412226ef4a95f8291275deb47cb4ff0",
+      "path": "experiments/canonical_experiment_language_repair_v1/RESULTS.md",
+      "sha256": "2c29e9d4ce07dd9fed45b23dfe891f3b94773c97ace5a7e15b2de26ebcd18e4a",
+      "bytes": 64,
+      "inspection": "SOURCE_SEMANTIC_READ"
+    },
+    {
+      "repository": "heathsanchez/test",
+      "commit": "b2f336a84412226ef4a95f8291275deb47cb4ff0",
+      "path": "experiments/canonical_experiment_language_repair_v1/run.py",
+      "sha256": "61e96544181e33905297f044b5766200a303d56a87bcf233efa54af25883fab0",
+      "bytes": 3782,
+      "inspection": "SOURCE_SEMANTIC_READ",
+      "entrypoints": [
+        {
+          "name": "bits",
+          "line": 9
+        },
+        {
+          "name": "separates",
+          "line": 10
+        },
+        {
+          "name": "partition",
+          "line": 12
+        },
+        {
+          "name": "refines",
+          "line": 17
+        },
+        {
+          "name": "main",
+          "line": 21
+        }
+      ]
+    },
+    {
+      "repository": "heathsanchez/test",
+      "commit": "b2f336a84412226ef4a95f8291275deb47cb4ff0",
+      "path": ".github/workflows/canonical-experiment-language-repair-v1.yml",
+      "sha256": "be92fe2d6650f29887ff06d17187ba45c17ab9d50e8578fb1d188e5d25f2a998",
+      "bytes": 1785,
+      "inspection": "WORKFLOW_COMMANDS_READ"
+    },
+    {
+      "repository": "heathsanchez/test",
+      "commit": "f00bccabee25319bc0cc41ac9918c1d3a08108ad",
+      "path": "experiments/verified_retention_policy_genesis_v1/AUTHORITY.json",
+      "sha256": "fcfd95d71a473312997c897dc9ee7a14ed5862f510aa699c9e91ba6d3b1668f3",
+      "bytes": 776,
+      "inspection": "HASH_BOUNDARY_AND_METADATA_READ"
+    },
+    {
+      "repository": "heathsanchez/test",
+      "commit": "f00bccabee25319bc0cc41ac9918c1d3a08108ad",
+      "path": "experiments/verified_retention_policy_genesis_v1/PROTOCOL.md",
+      "sha256": "e661c564e52e8367074696bb930f84e984986d90f6b8e5c8aaaaab4c55a326aa",
+      "bytes": 1520,
+      "inspection": "HASH_BOUNDARY_AND_METADATA_READ"
+    },
+    {
+      "repository": "heathsanchez/test",
+      "commit": "f00bccabee25319bc0cc41ac9918c1d3a08108ad",
+      "path": "experiments/verified_retention_policy_genesis_v1/RESULTS.md",
+      "sha256": "af33166319d019158c1ca49a98857eacc3ac09d1a8e6b8bbe0691b332ca0a38e",
+      "bytes": 1186,
+      "inspection": "SOURCE_SEMANTIC_READ"
+    },
+    {
+      "repository": "heathsanchez/test",
+      "commit": "f00bccabee25319bc0cc41ac9918c1d3a08108ad",
+      "path": "experiments/verified_retention_policy_genesis_v1/RetentionPolicy.lean",
+      "sha256": "29a1740f85a5136ed408fc92dcc5b9e3b21a6030da7487ef82960727a341d33a",
+      "bytes": 545,
+      "inspection": "HASH_ONLY_NOT_FORMAL_SEMANTICS_AUDITED"
+    },
+    {
+      "repository": "heathsanchez/test",
+      "commit": "f00bccabee25319bc0cc41ac9918c1d3a08108ad",
+      "path": "experiments/verified_retention_policy_genesis_v1/results/evidence.json",
+      "sha256": "1cd84b8e020e8d11c6fdec2fe78449c3cc6b845a137243bb4d4467fdf6920c62",
+      "bytes": 1984,
+      "inspection": "HASH_BOUNDARY_AND_METADATA_READ"
+    },
+    {
+      "repository": "heathsanchez/test",
+      "commit": "f00bccabee25319bc0cc41ac9918c1d3a08108ad",
+      "path": "experiments/verified_retention_policy_genesis_v1/results/snapshot.json",
+      "sha256": "fe0af1f05b205a0b882407199ba08126e6ad75d6c829f90471a25cb1974a9277",
+      "bytes": 1105,
+      "inspection": "HASH_BOUNDARY_AND_METADATA_READ"
+    },
+    {
+      "repository": "heathsanchez/test",
+      "commit": "f00bccabee25319bc0cc41ac9918c1d3a08108ad",
+      "path": "experiments/verified_retention_policy_genesis_v1/run.py",
+      "sha256": "7a73ea610128f954a44cb53776616c5114a072625e213e14958246e274e015ed",
+      "bytes": 7550,
+      "inspection": "SOURCE_SEMANTIC_READ",
+      "entrypoints": [
+        {
+          "name": "closure",
+          "line": 17
+        },
+        {
+          "name": "make_stream",
+          "line": 31
+        },
+        {
+          "name": "raw_score",
+          "line": 50
+        },
+        {
+          "name": "choose",
+          "line": 55
+        },
+        {
+          "name": "scalar",
+          "line": 58
+        },
+        {
+          "name": "synthesize",
+          "line": 63
+        },
+        {
+          "name": "evaluate",
+          "line": 73
+        },
+        {
+          "name": "main",
+          "line": 76
+        }
+      ]
+    },
+    {
+      "repository": "heathsanchez/test",
+      "commit": "f00bccabee25319bc0cc41ac9918c1d3a08108ad",
+      "path": ".github/workflows/verified-retention-policy-genesis-v1.yml",
+      "sha256": "e6ce8cbd0db2a6c79e1da0eb5473f4db7939f8ff07185d89016d96bba704e451",
+      "bytes": 1769,
+      "inspection": "WORKFLOW_COMMANDS_READ"
+    },
+    {
+      "repository": "heathsanchez/test",
+      "commit": "660e2e7b71f52b735d2ffc209ebfc66244a860c5",
+      "path": "research/necessary_inquiry_v2/generator_v3.py",
+      "sha256": "9b604161e65d4bc47b7600ee6231939937bc6a2cac102df8ea524909ae00f505",
+      "bytes": 2750,
+      "inspection": "SOURCE_SEMANTIC_READ"
+    },
+    {
+      "repository": "heathsanchez/test",
+      "commit": "660e2e7b71f52b735d2ffc209ebfc66244a860c5",
+      "path": "research/necessary_inquiry_v2/verify_v3.py",
+      "sha256": "421e67b0bae81a09498b82068db1212dc120115c5547ba7932836e5592a95bde",
+      "bytes": 4339,
+      "inspection": "SOURCE_SEMANTIC_READ"
+    },
+    {
+      "repository": "heathsanchez/test",
+      "commit": "660e2e7b71f52b735d2ffc209ebfc66244a860c5",
+      "path": "research/necessary_inquiry_v2/V3_FROZEN_GATE.md",
+      "sha256": "9a46afd12522458a584c8697ab094a73c71874118575c71807600067c827dd10",
+      "bytes": 2302,
+      "inspection": "SOURCE_SEMANTIC_READ"
+    },
+    {
+      "repository": "heathsanchez/test",
+      "commit": "660e2e7b71f52b735d2ffc209ebfc66244a860c5",
+      "path": "research/necessary_inquiry_v2/PROPOSITION.md",
+      "sha256": "2252a93f80ed623e5c4e0a84da941dcc4679d17b2d6957f8b4c5d42799d45b73",
+      "bytes": 4377,
+      "inspection": "SOURCE_SEMANTIC_READ"
+    },
+    {
+      "repository": "heathsanchez/test",
+      "commit": "660e2e7b71f52b735d2ffc209ebfc66244a860c5",
+      "path": ".github/workflows/necessary-inquiry-v2-v3.yml",
+      "sha256": "a0677cdb8d3f3aa2a0acf30d567dfc3fe16bba27d31ac163c3f4269251f43a80",
+      "bytes": 1336,
+      "inspection": "SOURCE_SEMANTIC_READ"
+    },
+    {
+      "repository": "heathsanchez/test",
+      "commit": "bda00d75ac186b02b44eac93d0e64f67d19c5b9a",
+      "path": "research/real_native_observation_basis_20261015/native_basis.py",
+      "sha256": "188fa09e7cbb9fa347bb1b3b7b2d283d518c294267c6aa0ba6a8575ebd371e1e",
+      "bytes": 12943,
+      "inspection": "SOURCE_SEMANTIC_READ"
+    },
+    {
+      "repository": "heathsanchez/test",
+      "commit": "bda00d75ac186b02b44eac93d0e64f67d19c5b9a",
+      "path": "research/flash_genesis_v11/learned_repair.py",
+      "sha256": "1200898dfafa0c431c49f4eeab23f500e8dca92d0fdebfa72d6aca2ec9861506",
+      "bytes": 772,
+      "inspection": "SOURCE_SEMANTIC_READ"
+    },
+    {
+      "repository": "heathsanchez/test",
+      "commit": "32a31e261fdef54fce3cdef902077100cf7c7094",
+      "path": "research/real_native_observation_basis_20261015/audit_independent.py",
+      "sha256": "c3fbfffe3598763d76efb983668faa6ba7881a1d6069ba1ecd6635820d7dc344",
+      "bytes": 10190,
+      "inspection": "SOURCE_SEMANTIC_READ"
+    }
+  ],
+  "run_metadata": [
+    {
+      "id": 34670317510,
+      "head_sha": "795756a752a2d4857ef7f5ff5884920dc3c1432b",
+      "head_branch": "verified-experiment-language-genesis-v1",
+      "path": ".github/workflows/verified-experiment-language-genesis-v1.yml",
+      "conclusion": "success",
+      "created_at": "2026-09-12T03:25:17Z",
+      "updated_at": "2026-09-12T03:25:43Z"
+    },
+    {
+      "id": 34682784242,
+      "head_sha": "b1c56bc2ec4c1defed7060f8dfff81fdc6ae12f3",
+      "head_branch": "verified-experiment-meta-substrate-genesis-v1",
+      "path": ".github/workflows/verified-experiment-meta-substrate-genesis-v1.yml",
+      "conclusion": "success",
+      "created_at": "2026-09-12T08:15:03Z",
+      "updated_at": "2026-09-12T08:15:21Z"
+    },
+    {
+      "id": 34681030732,
+      "head_sha": "6031466188046f56b4660d772d13ad731ed4c0f2",
+      "head_branch": "verified-prospective-repair-selection-v1",
+      "path": ".github/workflows/verified-prospective-repair-selection-v1.yml",
+      "conclusion": "success",
+      "created_at": "2026-09-12T07:33:11Z",
+      "updated_at": "2026-09-12T07:33:29Z"
+    },
+    {
+      "id": 34668270318,
+      "head_sha": "74a44981a766da23df87780496191014fcd41215",
+      "head_branch": "verified-value-evidence-separator-genesis-v1",
+      "path": ".github/workflows/verified-value-evidence-separator-genesis-v1.yml",
+      "conclusion": "success",
+      "created_at": "2026-09-12T02:39:36Z",
+      "updated_at": "2026-09-12T02:40:39Z"
+    },
+    {
+      "id": 34671633624,
+      "head_sha": "b2f336a84412226ef4a95f8291275deb47cb4ff0",
+      "head_branch": "canonical-experiment-language-repair-v1",
+      "path": ".github/workflows/canonical-experiment-language-repair-v1.yml",
+      "conclusion": "success",
+      "created_at": "2026-09-12T03:55:02Z",
+      "updated_at": "2026-09-12T03:55:22Z"
+    },
+    {
+      "id": 34648832202,
+      "head_sha": "f00bccabee25319bc0cc41ac9918c1d3a08108ad",
+      "head_branch": "verified-retention-policy-genesis-v1",
+      "path": ".github/workflows/verified-retention-policy-genesis-v1.yml",
+      "conclusion": "success",
+      "created_at": "2026-09-11T21:19:54Z",
+      "updated_at": "2026-09-11T21:20:25Z"
+    }
+  ],
+  "artifacts": [
+    {
+      "repository": "heathsanchez/test",
+      "artifact_id": 10290558060,
+      "zip_sha256": "211aad00fd89e724184358b1ae8942fb63936cce79102a0f1c6db4239ea682f0",
+      "bytes": 3441,
+      "local_path": "/workspace/attachments/34f28597-2e6f-4e1e-aed0-3ddf1ed2b982/observation-recovery-10290558060.zip",
+      "inspected": true,
+      "native_scientific_rerun": false,
+      "files": [
+        {
+          "path": "RUN_COMMIT",
+          "bytes": 41,
+          "sha256": "165f5b695215b3b5547f93b2dbb53e36d27a432a773f0f00c02c9ce1cb9c90aa"
+        },
+        {
+          "path": "SHA256SUMS",
+          "bytes": 494,
+          "sha256": "6fbb83fb4c26b5f495718cf99be7d5e7bdab0fbe145e9e332b96e2652587ce79"
+        },
+        {
+          "path": "evidence-lean.log",
+          "bytes": 596,
+          "sha256": "9b48cae85db7e3cab322419ba3dfaccc2724079354d7daaa22530cee03f565ee"
+        },
+        {
+          "path": "evidence.json",
+          "bytes": 2649,
+          "sha256": "1401c86fb0de77d1f339c8f4a6b3463dc61a5c8256c1a061d73d54073d10737e"
+        },
+        {
+          "path": "snapshot.json",
+          "bytes": 766,
+          "sha256": "a61412ec912a07c0f506590c03936615579ca58f0a2058b47528fa39b754618a"
+        },
+        {
+          "path": "workflow-evidence.json",
+          "bytes": 2649,
+          "sha256": "1401c86fb0de77d1f339c8f4a6b3463dc61a5c8256c1a061d73d54073d10737e"
+        }
+      ],
+      "result": "VERIFIED_EXPERIMENT_LANGUAGE_GENESIS",
+      "all_reported_gates_true": true
+    },
+    {
+      "repository": "heathsanchez/test",
+      "artifact_id": 11721891110,
+      "zip_sha256": "0a7a6dddc856640d19af3f63c14db5496a0672d282502d59338bed8d5c46bfb6",
+      "bytes": 617,
+      "local_path": "/workspace/attachments/4dbb47ad-a6d4-4565-8b2b-ca8a1831a4ff/observation-recovery-11721891110.zip",
+      "inspected": true,
+      "native_scientific_rerun": false,
+      "files": [
+        {
+          "path": "ci_receipt.json",
+          "bytes": 2816,
+          "sha256": "83a870dc4f6e7a2ec756164962ff912513c504eefa3d426858e4e0aa741ff40c"
+        }
+      ],
+      "result": "PASS_EXACT_BOUNDED",
+      "all_reported_gates_true": null,
+      "configurations": 9,
+      "interpreted_worlds": 1536
+    },
+    {
+      "repository": "heathsanchez/test",
+      "artifact_id": 10293399981,
+      "zip_sha256": "acfad65c309876fa6d2c50da21b4457ed4d3fee2c4d6b77d1810437e4522b1b2",
+      "bytes": 3428,
+      "local_path": "/workspace/attachments/7bac4b03-6658-4f15-991a-231cd1b23ed3/observation-recovery-10293399981.zip",
+      "inspected": true,
+      "native_scientific_rerun": false,
+      "files": [
+        {
+          "path": "RUN_COMMIT",
+          "bytes": 41,
+          "sha256": "85f27faecb04ad4aed4edc08412d57dfa693ce07fc2d122e0c2f374e02d29190"
+        },
+        {
+          "path": "evidence-lean.log",
+          "bytes": 596,
+          "sha256": "9b48cae85db7e3cab322419ba3dfaccc2724079354d7daaa22530cee03f565ee"
+        },
+        {
+          "path": "SHA256SUMS",
+          "bytes": 499,
+          "sha256": "228dbee5dbcf8f1a883468121dfecd6095ec73f430d8215abf9d5552bb37145d"
+        },
+        {
+          "path": "evidence.json",
+          "bytes": 2030,
+          "sha256": "5edbd3d33a19bf30d43147171d2ccda06dc298a0e727f2dd82d001bcd9eb2eb5"
+        },
+        {
+          "path": "snapshot.json",
+          "bytes": 735,
+          "sha256": "b4205e84a36d15411848b8ba5b187f676ae8ac84b273cda1a6e360f21520bbf4"
+        },
+        {
+          "path": "workflow-evidence.json",
+          "bytes": 2030,
+          "sha256": "5edbd3d33a19bf30d43147171d2ccda06dc298a0e727f2dd82d001bcd9eb2eb5"
+        }
+      ],
+      "result": "VERIFIED_EXPERIMENT_META_SUBSTRATE_GENESIS",
+      "all_reported_gates_true": true
+    },
+    {
+      "repository": "heathsanchez/test",
+      "artifact_id": 10293778953,
+      "zip_sha256": "573879832c18e92763832aaf3b8489907115c337d358a110dce2d826b83cad3a",
+      "bytes": 3084,
+      "local_path": "/workspace/attachments/9833a930-334c-4d40-8ecb-564cb132449c/observation-recovery-10293778953.zip",
+      "inspected": true,
+      "native_scientific_rerun": false,
+      "files": [
+        {
+          "path": "RUN_COMMIT",
+          "bytes": 41,
+          "sha256": "7bab19b9561bd82fa792b3508df2a192fed0262c98e0d73fde4050e78fe6f1d8"
+        },
+        {
+          "path": "SHA256SUMS",
+          "bytes": 491,
+          "sha256": "162a5312a074c905a5a75922807f593ab2a8a0fa77aef0c721cbbe061b1c8b5e"
+        },
+        {
+          "path": "evidence.json",
+          "bytes": 10090,
+          "sha256": "c620d10ad7ac3d2cce27657de2b2580bf40134bab9f26f94c2ad7a203f2c562f"
+        },
+        {
+          "path": "lean.log",
+          "bytes": 596,
+          "sha256": "9b48cae85db7e3cab322419ba3dfaccc2724079354d7daaa22530cee03f565ee"
+        },
+        {
+          "path": "snapshot.json",
+          "bytes": 762,
+          "sha256": "854a314fc0aef024b6519120721fbfcf155fabdcc1de5166f4d78bf5ee79bb02"
+        },
+        {
+          "path": "workflow-evidence.json",
+          "bytes": 10090,
+          "sha256": "c620d10ad7ac3d2cce27657de2b2580bf40134bab9f26f94c2ad7a203f2c562f"
+        }
+      ],
+      "result": "AUTHORIZED_REPAIR",
+      "all_reported_gates_true": true
+    },
+    {
+      "repository": "heathsanchez/test",
+      "artifact_id": 10289800538,
+      "zip_sha256": "a86b6729ed0ef758cc5f5ad1ef99677c373a0467574921bfd96d62a0370b03c6",
+      "bytes": 2337,
+      "local_path": "/workspace/attachments/ad948601-86ff-4ccb-bcac-0e030681fef4/observation-recovery-10289800538.zip",
+      "inspected": true,
+      "native_scientific_rerun": false,
+      "files": [
+        {
+          "path": "RUN_COMMIT",
+          "bytes": 41,
+          "sha256": "c6e567e47600a663b2d5af04325f35dadb8d71606a6d5d4989d80f15d045522d"
+        },
+        {
+          "path": "SHA256SUMS",
+          "bytes": 493,
+          "sha256": "05932813254325c28953debbfa1231b6b8e14f0a88bb200f925f5d091230995a"
+        },
+        {
+          "path": "evidence-lean.log",
+          "bytes": 596,
+          "sha256": "9b48cae85db7e3cab322419ba3dfaccc2724079354d7daaa22530cee03f565ee"
+        },
+        {
+          "path": "evidence.json",
+          "bytes": 3097,
+          "sha256": "cd2446d1a5d376b1ad370a8fb5ad03489e916540298268741f7c9381d1917eba"
+        },
+        {
+          "path": "snapshot.json",
+          "bytes": 494,
+          "sha256": "029a1398b366a97025f49b1feaee58e8bb6c8f7194a3aebf1974489732b36e8c"
+        }
+      ],
+      "result": "VERIFIED_VALUE_EVIDENCE_SEPARATOR_GENESIS",
+      "all_reported_gates_true": true
+    },
+    {
+      "repository": "heathsanchez/test",
+      "artifact_id": 11930265105,
+      "zip_sha256": "aa1032471cb171d165fe2cc7238a8c4b25ac2d717c5157b4bad71347f6027752",
+      "bytes": 1442,
+      "local_path": "/workspace/attachments/ba9e6bae-fb82-4840-aed1-8128dde8d58b/observation-recovery-11930265105.zip",
+      "inspected": true,
+      "native_scientific_rerun": false,
+      "files": [
+        {
+          "path": "independent_receiver_audit.json",
+          "bytes": 2674,
+          "sha256": "d73209d13a39c02957ddd6c9292452a9f5d5ba0a7f095504ed42a07ac7c36d81"
+        },
+        {
+          "path": "source_report_sha256.txt",
+          "bytes": 125,
+          "sha256": "923260486b34741f584812a4486d71e91423087728cac637b47def6eaff0d603"
+        }
+      ],
+      "result": "INDEPENDENT_AUDIT_PASS_EXACT_FINITE",
+      "all_reported_gates_true": null
+    },
+    {
+      "repository": "heathsanchez/test",
+      "artifact_id": 10290854580,
+      "zip_sha256": "2b7b3507c6893a981326eaf990b5375eed01088f490b17a416fa7dbee8ad492e",
+      "bytes": 2850,
+      "local_path": "/workspace/attachments/e699a870-9a92-410e-8dfd-d2846d1c4916/observation-recovery-10290854580.zip",
+      "inspected": true,
+      "native_scientific_rerun": false,
+      "files": [
+        {
+          "path": "RUN_COMMIT",
+          "bytes": 41,
+          "sha256": "1377af5b1188585c822a048b88d884d0bc68046c4f92a55b4226dd9e9878512c"
+        },
+        {
+          "path": "SHA256SUMS",
+          "bytes": 491,
+          "sha256": "1a32eb2372b521e4a42a124ccbf8e0325b5f5b327478f5ac2c0de7df587473f0"
+        },
+        {
+          "path": "evidence.json",
+          "bytes": 2080,
+          "sha256": "4ccfc620df1e0f5b7c3594f6b2f92923fb131470b908c7ab959d84a75fd403f3"
+        },
+        {
+          "path": "lean.log",
+          "bytes": 596,
+          "sha256": "9b48cae85db7e3cab322419ba3dfaccc2724079354d7daaa22530cee03f565ee"
+        },
+        {
+          "path": "snapshot.json",
+          "bytes": 306,
+          "sha256": "9ef48ca75a3eaa492c9bc2005c62abc108ecd620bc787e3ef4f97a0b369624fc"
+        },
+        {
+          "path": "workflow-evidence.json",
+          "bytes": 2080,
+          "sha256": "4ccfc620df1e0f5b7c3594f6b2f92923fb131470b908c7ab959d84a75fd403f3"
+        }
+      ],
+      "result": "MULTIPLE_MINIMAL_REPAIRS",
+      "all_reported_gates_true": true
+    },
+    {
+      "repository": "heathsanchez/test",
+      "artifact_id": 11929272911,
+      "zip_sha256": "2ab47701fa213e417b528ccd2e46a9233143c9b5191bd2c5aea112a24412d057",
+      "bytes": 8768,
+      "local_path": "/workspace/attachments/f7dbcde2-7b99-42fe-b3ad-ad27afed7831/observation-recovery-11929272911.zip",
+      "inspected": true,
+      "native_scientific_rerun": false,
+      "files": [
+        {
+          "path": "Ahead.json",
+          "bytes": 19632,
+          "sha256": "6bdd9b88f479accde15036464e0d1a29308622824231dc313964d8b750075523"
+        },
+        {
+          "path": "Bhead.json",
+          "bytes": 12295,
+          "sha256": "25f8535cfc714cc58c6d3e86ef3ae3135bccd12a8b0b2a94ae91a2fe42cd70a3"
+        },
+        {
+          "path": "Aold.json",
+          "bytes": 19471,
+          "sha256": "6e59c4616e7bf2a269e3309ba91b3c7db5c102a15035c7f7a8cc02d1d584aab8"
+        },
+        {
+          "path": "Bold.json",
+          "bytes": 12327,
+          "sha256": "bf155e804a9f9ccf3f98162049f37d4ba2c26959609d45edfb35287c91679c40"
+        },
+        {
+          "path": "Chead.json",
+          "bytes": 7049,
+          "sha256": "4ca8b7f2db2ab4dee9956a21b1000d8818c8ba36f6e3afe639e5b839d8f819ef"
+        },
+        {
+          "path": "Cold.json",
+          "bytes": 7029,
+          "sha256": "217f7f6f70aeea0d8fb0923322760106d5929057c832a01aad3bbda0dae8797b"
+        },
+        {
+          "path": "final_report.json",
+          "bytes": 12826,
+          "sha256": "047997e3c939f8bbfbbcb494c9e5c5bc7fbe66ec1c2e50a30371c44abe506d32"
+        },
+        {
+          "path": "frozen_A_capability_sha256.txt",
+          "bytes": 126,
+          "sha256": "d92ac8fd0653b0ce57a7e92c34e7f2d890a294e7a00c6e4e86e937da47670ad6"
+        },
+        {
+          "path": "learned_capability_A.json",
+          "bytes": 740,
+          "sha256": "2407927cfc0a7b5061aefecce70ae69ddd19a70820883d08439da5fb2aa363d1"
+        },
+        {
+          "path": "report_sha256.txt",
+          "bytes": 65,
+          "sha256": "dbef612d0b12b78c3ca4840d0d44f60bb4bc41c2d8bfeced0f892883fa2eea20"
+        }
+      ],
+      "result": "PASS_BOUNDED_NATIVE_SOURCE_A_TO_TWO_FUTURE_OPERATIONS",
+      "all_reported_gates_true": null
+    }
+  ],
+  "fresh_native_archive_review": {
+    "native_rows_reconstructed": 158,
+    "observation_subsets_exhausted": 128,
+    "admissible_subsets": 100,
+    "unique_minimum": [
+      "coherence"
+    ],
+    "B_repaired_detected": 8,
+    "C_repaired_detected": 4,
+    "false_warrants": 0,
+    "primary_zip_digest_matched": true,
+    "independent_audit_zip_digest_matched": true,
+    "native_scientific_experiments_repeated": false
+  }
+}

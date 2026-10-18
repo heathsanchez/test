@@ -1,0 +1,70 @@
+{
+  "schema": "UDM_V13_EXPOSED_NATIVE_BRANCH_OBSERVATION_QUALIFIED",
+  "base_branch": "research/udm-v12-exposed-guard-intervention-20261017",
+  "frozen_protocol_commit": "384b5aae82679743c5105df0b618cff975005ae1",
+  "frozen_protocol_blob": "5985d2a0a81e27bf8003a63985d09634bf4d26db",
+  "frozen_test_commit": "a30d15c61077ad1cf17ff219fd3e672d958c8310",
+  "frozen_test_blob": "db0ce347756bc0dacd0818fbbd6edcce77c39981",
+  "qualified_source_commit": "1532d2ec982bcc8879c5a88f9ffcd26f96083fa2",
+  "qualified_run_id": 39014314120,
+  "prior_green_run_id": 39013949321,
+  "qualified_artifact_id": 12094535558,
+  "qualified_zip_sha256": "22449b1aff08b270f685434a840a4965298984069944278155ee4a162e9471c1",
+  "independently_downloaded_and_verified_sha256": true,
+  "passed_tests": {
+    "frozen_V13": 10,
+    "inherited_V10": 10,
+    "total": 20
+  },
+  "source": {
+    "repository": "jd/tenacity",
+    "role": "PREVIOUSLY_EXPOSED_TRAINING_DIAGNOSTIC",
+    "original_v9_scientific_RED": 38985251065,
+    "original_v11_scientific_RED": 38986306451,
+    "original_v12_scientific_RED": 39013082924,
+    "heldout_packaging_unopened": true
+  },
+  "protected_native": {
+    "source_bound_original_test_suite": "tests/test_tenacity.py",
+    "independent_replays": 2,
+    "result": "VERIFIED_REPEATED_FAIL_NATIVE_PROTECTED",
+    "passed_per_run": 141,
+    "failed_per_run": 1,
+    "skipped_per_run": 0
+  },
+  "observed_branch": {
+    "original_test_unchanged": true,
+    "source_location_not_hardcoded_in_detector": true,
+    "target_source": "tenacity/__init__.py",
+    "original_line": 425,
+    "then_line": 426,
+    "original_attribute": "wait",
+    "attribute_callable": true,
+    "then_branch_taken": true,
+    "independent_tracer_replays": 2,
+    "matched_events": 2,
+    "event_sha256": "eb80ce75eee4a8b93789e66d98cf5521b27c4bfb622cebd402a87904c5082d20",
+    "authority": "EXPOSED_EXECUTED_BRANCH_HINT_NOT_UNIQUE_CAUSAL_PROOF"
+  },
+  "original_catalog": {
+    "v104_grammar_unchanged": true,
+    "MSI_policy_language_unchanged": true,
+    "original_candidate_count": 128,
+    "same_candidate_ids_before_after": true,
+    "original_policy_count": 37,
+    "changed_source_distance_K_candidates": 64,
+    "changed_first_eight_prefix_policy_count": 20,
+    "direct_emitted_candidate_changes_at_observed_guard": 0,
+    "candidate_acquisition": "NOT_RUN",
+    "native_evaluations_of_new_policies": "NOT_RUN"
+  },
+  "native_calls": 4,
+  "false_promotions": 0,
+  "G0_G1": "PRESERVED",
+  "G2": "UNKNOWN",
+  "G3": "UNKNOWN",
+  "G4": "UNKNOWN",
+  "G5": "UNKNOWN",
+  "G6": "UNKNOWN",
+  "next_residual": "Source-relative V104 operation emission/constructor adequacy at authenticated observed source slot; only then prospective new source-distinct tasks and matched cost accounting."
+}

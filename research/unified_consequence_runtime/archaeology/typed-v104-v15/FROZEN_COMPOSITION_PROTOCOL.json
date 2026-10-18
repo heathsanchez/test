@@ -1,0 +1,58 @@
+{
+  "schema": "UDM_V15_EXPOSED_OBSERVATION_CONDITIONED_COMPOSITION_PROTOCOL",
+  "source_history": {
+    "v13_qualified_run": 39014314120,
+    "v13_github_blob": "b2abfda202753a5a2dfc51fa66de69f17c8a2d1c",
+    "v14_qualified_run": 39017793736,
+    "v14_source": "e9f4c058c3435c9f2e51694eb8d5c99c36fe5b57",
+    "v14_native_artifact_sha256": "828133726d8f123acfb9cebdfc6acf151c3cdcaea7da96642b47fbd189b1b10c",
+    "v14_no_verified_repair": 8,
+    "v14_mixed_negative_unknown": true
+  },
+  "task_scope": "PREVIOUSLY_EXPOSED_TENACITY_PR741_ONLY",
+  "heldout_future": "pypa/packaging source and tests remain unopened",
+  "input_authority": "Only independently repeated V13 protected native failure/branch evidence, exact original source Git blob and unchanged author test. No V12 human supplied edits, repaired production, manually selected winning candidate or target-specific predicate AST.",
+  "generation": {
+    "target": "Unique AST If.test whose source-bound observed edge is IF_NOT_SELF_ATTRIBUTE and callable value entered THEN branch",
+    "atoms": [
+      "OLD_NOT_ATTRIBUTE",
+      "ATTRIBUTE_IS_NONE",
+      "ATTRIBUTE_EQUALS_ZERO",
+      "NOT_CALLABLE_ATTRIBUTE",
+      "CALLABLE_ATTRIBUTE",
+      "BOOL_ATTRIBUTE"
+    ],
+    "composition": [
+      "AND",
+      "OR"
+    ],
+    "construction": "Cartesian product atoms for pairwise BoolOp, depth<=2, plus atomic candidates, deduplicate ast.dump, reject original, deterministic MDL node count plus SHA256 signature",
+    "admissibility": "No repairs imported from V12, no arbitrary exec/eval, no source-named special cases, only source-observed AST self attribute substitution; original V104 bytes unchanged",
+    "candidate_limit": 24,
+    "per_candidate_native_replays": 2,
+    "native_timeout_seconds": 14,
+    "baseline_native_calls": 2,
+    "withdrawal_native_calls": 2,
+    "restoration_native_calls": 2,
+    "maximum_native_calls": 54,
+    "native_scope": "Entire original author-test module tests/test_tenacity.py, independent source/collection/assertion authority"
+  },
+  "arms": [
+    "ORIGINAL_BASE",
+    "GENERIC_COMPOSITE_SEARCH",
+    "REMOVE_ACQUIRED_METHOD",
+    "FRESH_RESTORED_METHOD"
+  ],
+  "comparisons": "Original V104 cap8 previously native-qualified RED/UNKNOWN; informed ledger and agent baseline NOT_RUN in this exposed-only diagnostic",
+  "cost_boundary": "Every native subprocess including timeout, source generation, verification, source/pytest/ledger costs charged. Incomplete lifetime/model/engineering cost UNKNOWN.",
+  "verdicts": {
+    "G0_G1": "PRESERVED",
+    "V15": "UNKNOWN_UNTIL_ACTUAL_NATIVE",
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN"
+  },
+  "promotion": "Only bounded source-exposed compositional acquisition if actual baseline repeated FAIL, independent generated candidate repeated PASS, physically returned original FAIL, freshly restored candidate PASS. Even then G2 remains UNKNOWN because the source and bug mechanism are already exposed, grammar hand-supplied and comparisons/futures untested."
+}

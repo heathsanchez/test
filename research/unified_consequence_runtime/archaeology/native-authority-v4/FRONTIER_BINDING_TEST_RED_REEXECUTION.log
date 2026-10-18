@@ -1,0 +1,77 @@
+test_native_v3_execution_and_original_search_algorithms_remain_bound (research.unified_consequence_runtime.test_qualify_native_frontier_v4.NativeFrontierV4BindingContracts.test_native_v3_execution_and_original_search_algorithms_remain_bound) ... FAIL
+test_profile_checker_has_real_importable_v4_source_identity (research.unified_consequence_runtime.test_qualify_native_frontier_v4.NativeFrontierV4BindingContracts.test_profile_checker_has_real_importable_v4_source_identity) ... FAIL
+test_qualified_environment_v4_is_used_without_mutating_v3_globals (research.unified_consequence_runtime.test_qualify_native_frontier_v4.NativeFrontierV4BindingContracts.test_qualified_environment_v4_is_used_without_mutating_v3_globals) ... FAIL
+test_screening_keeps_pass_and_fail_equal_in_fixed_source_order (research.unified_consequence_runtime.test_qualify_native_frontier_v4.NativeFrontierV4BindingContracts.test_screening_keeps_pass_and_fail_equal_in_fixed_source_order) ... FAIL
+test_unqualified_metadata_bridge_cannot_freeze_or_read_source (research.unified_consequence_runtime.test_qualify_native_frontier_v4.NativeFrontierV4BindingContracts.test_unqualified_metadata_bridge_cannot_freeze_or_read_source) ... FAIL
+test_v3_admission_result_does_not_qualify_v4_metadata_inference (research.unified_consequence_runtime.test_qualify_native_frontier_v4.NativeFrontierV4BindingContracts.test_v3_admission_result_does_not_qualify_v4_metadata_inference) ... FAIL
+test_v4_freeze_rejects_an_omitted_committed_file_set (research.unified_consequence_runtime.test_qualify_native_frontier_v4.NativeFrontierV4BindingContracts.test_v4_freeze_rejects_an_omitted_committed_file_set) ... FAIL
+test_v4_source_reading_cli_refuses_missing_external_authority (research.unified_consequence_runtime.test_qualify_native_frontier_v4.NativeFrontierV4BindingContracts.test_v4_source_reading_cli_refuses_missing_external_authority) ... FAIL
+
+======================================================================
+FAIL: test_native_v3_execution_and_original_search_algorithms_remain_bound (research.unified_consequence_runtime.test_qualify_native_frontier_v4.NativeFrontierV4BindingContracts.test_native_v3_execution_and_original_search_algorithms_remain_bound)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_qualify_native_frontier_v4.py", line 24, in setUp
+    self.assertIsNotNone(importlib.util.find_spec(MODULE),
+AssertionError: unexpectedly None : new metadata-only v4 frontier binding required
+
+======================================================================
+FAIL: test_profile_checker_has_real_importable_v4_source_identity (research.unified_consequence_runtime.test_qualify_native_frontier_v4.NativeFrontierV4BindingContracts.test_profile_checker_has_real_importable_v4_source_identity)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_qualify_native_frontier_v4.py", line 24, in setUp
+    self.assertIsNotNone(importlib.util.find_spec(MODULE),
+AssertionError: unexpectedly None : new metadata-only v4 frontier binding required
+
+======================================================================
+FAIL: test_qualified_environment_v4_is_used_without_mutating_v3_globals (research.unified_consequence_runtime.test_qualify_native_frontier_v4.NativeFrontierV4BindingContracts.test_qualified_environment_v4_is_used_without_mutating_v3_globals)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_qualify_native_frontier_v4.py", line 24, in setUp
+    self.assertIsNotNone(importlib.util.find_spec(MODULE),
+AssertionError: unexpectedly None : new metadata-only v4 frontier binding required
+
+======================================================================
+FAIL: test_screening_keeps_pass_and_fail_equal_in_fixed_source_order (research.unified_consequence_runtime.test_qualify_native_frontier_v4.NativeFrontierV4BindingContracts.test_screening_keeps_pass_and_fail_equal_in_fixed_source_order)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_qualify_native_frontier_v4.py", line 24, in setUp
+    self.assertIsNotNone(importlib.util.find_spec(MODULE),
+AssertionError: unexpectedly None : new metadata-only v4 frontier binding required
+
+======================================================================
+FAIL: test_unqualified_metadata_bridge_cannot_freeze_or_read_source (research.unified_consequence_runtime.test_qualify_native_frontier_v4.NativeFrontierV4BindingContracts.test_unqualified_metadata_bridge_cannot_freeze_or_read_source)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_qualify_native_frontier_v4.py", line 24, in setUp
+    self.assertIsNotNone(importlib.util.find_spec(MODULE),
+AssertionError: unexpectedly None : new metadata-only v4 frontier binding required
+
+======================================================================
+FAIL: test_v3_admission_result_does_not_qualify_v4_metadata_inference (research.unified_consequence_runtime.test_qualify_native_frontier_v4.NativeFrontierV4BindingContracts.test_v3_admission_result_does_not_qualify_v4_metadata_inference)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_qualify_native_frontier_v4.py", line 24, in setUp
+    self.assertIsNotNone(importlib.util.find_spec(MODULE),
+AssertionError: unexpectedly None : new metadata-only v4 frontier binding required
+
+======================================================================
+FAIL: test_v4_freeze_rejects_an_omitted_committed_file_set (research.unified_consequence_runtime.test_qualify_native_frontier_v4.NativeFrontierV4BindingContracts.test_v4_freeze_rejects_an_omitted_committed_file_set)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_qualify_native_frontier_v4.py", line 24, in setUp
+    self.assertIsNotNone(importlib.util.find_spec(MODULE),
+AssertionError: unexpectedly None : new metadata-only v4 frontier binding required
+
+======================================================================
+FAIL: test_v4_source_reading_cli_refuses_missing_external_authority (research.unified_consequence_runtime.test_qualify_native_frontier_v4.NativeFrontierV4BindingContracts.test_v4_source_reading_cli_refuses_missing_external_authority)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_qualify_native_frontier_v4.py", line 24, in setUp
+    self.assertIsNotNone(importlib.util.find_spec(MODULE),
+AssertionError: unexpectedly None : new metadata-only v4 frontier binding required
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.001s
+
+FAILED (failures=8)

@@ -1,0 +1,1543 @@
+{
+  "Git_read_ledger_for_final_integrity_checks": [
+    {
+      "GIT_OPTIONAL_LOCKS": "0",
+      "argv": [
+        "git",
+        "--no-replace-objects",
+        "-C",
+        "/workspace/qualification/native-frontier-v3-independent-screening/case-000/source-environment/metadata-source",
+        "rev-parse",
+        "HEAD",
+        "HEAD^{tree}"
+      ],
+      "exit_code": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "82af9f012d65e1a934feb78722965013911df6ca1a0014b5d586ebb15edb8c06"
+    },
+    {
+      "GIT_OPTIONAL_LOCKS": "0",
+      "argv": [
+        "git",
+        "--no-replace-objects",
+        "-C",
+        "/workspace/qualification/native-frontier-v3-independent-screening/case-000/source-environment/metadata-source",
+        "ls-tree",
+        "-rz",
+        "--full-tree",
+        "1e4076f9d9ac57052151193af5cb2d72f8b1113b"
+      ],
+      "exit_code": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "556d9d150b400dd2bbd8c2934668ab4ccf7aaf1e5d1d57bdfe7f2399ecf42540"
+    },
+    {
+      "GIT_OPTIONAL_LOCKS": "0",
+      "argv": [
+        "git",
+        "--no-replace-objects",
+        "-C",
+        "/workspace/qualification/native-frontier-v3-independent-screening/case-001/source-environment/metadata-source",
+        "rev-parse",
+        "HEAD",
+        "HEAD^{tree}"
+      ],
+      "exit_code": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "9e541e329177ec3a851b05abead982dcdcdda1acd444f6977067a22be18f286f"
+    },
+    {
+      "GIT_OPTIONAL_LOCKS": "0",
+      "argv": [
+        "git",
+        "--no-replace-objects",
+        "-C",
+        "/workspace/qualification/native-frontier-v3-independent-screening/case-001/source-environment/metadata-source",
+        "ls-tree",
+        "-rz",
+        "--full-tree",
+        "13d30bc654eb9e6be092282ca502967fcb7f0113"
+      ],
+      "exit_code": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "4e4242ad7f47e0cb2afce8786a1ee620a5a6f5233b076d2826f0a2f727c6ffd6"
+    },
+    {
+      "GIT_OPTIONAL_LOCKS": "0",
+      "argv": [
+        "git",
+        "--no-replace-objects",
+        "-C",
+        "/workspace/qualification/native-frontier-v3-independent-screening/case-002/source-environment/metadata-source",
+        "rev-parse",
+        "HEAD",
+        "HEAD^{tree}"
+      ],
+      "exit_code": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "f1d5a0cdfd8993895416d6b6c573432b1955fab8052a999debeb0e7d69ed12cf"
+    },
+    {
+      "GIT_OPTIONAL_LOCKS": "0",
+      "argv": [
+        "git",
+        "--no-replace-objects",
+        "-C",
+        "/workspace/qualification/native-frontier-v3-independent-screening/case-002/source-environment/metadata-source",
+        "ls-tree",
+        "-rz",
+        "--full-tree",
+        "340d3f0596b985db9e7c81a1233f784648d7c101"
+      ],
+      "exit_code": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "5e05af0c99c1984eca87fee6a26bddfb82a8a21066b9c10f78c7f632a1d42a13"
+    },
+    {
+      "GIT_OPTIONAL_LOCKS": "0",
+      "argv": [
+        "git",
+        "--no-replace-objects",
+        "-C",
+        "/workspace/qualification/native-frontier-v3-independent-screening/case-003/source-environment/metadata-source",
+        "rev-parse",
+        "HEAD",
+        "HEAD^{tree}"
+      ],
+      "exit_code": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "f954ec4431e386a18f716b97e062ad21a7f49696f5875bfa607bafccc4a3a33e"
+    },
+    {
+      "GIT_OPTIONAL_LOCKS": "0",
+      "argv": [
+        "git",
+        "--no-replace-objects",
+        "-C",
+        "/workspace/qualification/native-frontier-v3-independent-screening/case-003/source-environment/metadata-source",
+        "ls-tree",
+        "-rz",
+        "--full-tree",
+        "967864f89791509f9eb36b22b4579d36b72a6df2"
+      ],
+      "exit_code": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "0f416126c4afe92d70320c536d46bdfb641f90277b3629d56e68f27297d85d38"
+    },
+    {
+      "GIT_OPTIONAL_LOCKS": "0",
+      "argv": [
+        "git",
+        "--no-replace-objects",
+        "-C",
+        "/workspace/qualification/native-frontier-v3-independent-screening/case-004/source-environment/metadata-source",
+        "rev-parse",
+        "HEAD",
+        "HEAD^{tree}"
+      ],
+      "exit_code": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "1d85ccfb157943e95fb81343e3bbfca9bb0f09ff52517964b37c4e8e40e014e1"
+    },
+    {
+      "GIT_OPTIONAL_LOCKS": "0",
+      "argv": [
+        "git",
+        "--no-replace-objects",
+        "-C",
+        "/workspace/qualification/native-frontier-v3-independent-screening/case-004/source-environment/metadata-source",
+        "ls-tree",
+        "-rz",
+        "--full-tree",
+        "45b96aeebc9b389f556e4af9e456d16b1d871f9d"
+      ],
+      "exit_code": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "8ef595fb3556413f40f9022c9146cdbe66174c0b15999905c607ef3e55a2c500"
+    },
+    {
+      "GIT_OPTIONAL_LOCKS": "0",
+      "argv": [
+        "git",
+        "--no-replace-objects",
+        "-C",
+        "/workspace/qualification/native-frontier-v3-independent-screening/case-005/source-environment/metadata-source",
+        "rev-parse",
+        "HEAD",
+        "HEAD^{tree}"
+      ],
+      "exit_code": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "c7037dc9dab4b8943dddd1158823a2363dfbc0d3b55b872fff36f1f7c72b853a"
+    },
+    {
+      "GIT_OPTIONAL_LOCKS": "0",
+      "argv": [
+        "git",
+        "--no-replace-objects",
+        "-C",
+        "/workspace/qualification/native-frontier-v3-independent-screening/case-005/source-environment/metadata-source",
+        "ls-tree",
+        "-rz",
+        "--full-tree",
+        "4c85c352664f6ed33b00b98e52c2232081ca943d"
+      ],
+      "exit_code": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "673df3456eb24942c46647e5b8f4ecc7bcb5af656a32608726626d01ad78a01a"
+    },
+    {
+      "GIT_OPTIONAL_LOCKS": "0",
+      "argv": [
+        "git",
+        "--no-replace-objects",
+        "-C",
+        "/workspace/qualification/native-frontier-v3-independent-screening/case-006/source-environment/metadata-source",
+        "rev-parse",
+        "HEAD",
+        "HEAD^{tree}"
+      ],
+      "exit_code": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "591cc6504098ef7412275864a02f6d525290f6fffc9c5c7bf8ba4f9e44a32ffe"
+    },
+    {
+      "GIT_OPTIONAL_LOCKS": "0",
+      "argv": [
+        "git",
+        "--no-replace-objects",
+        "-C",
+        "/workspace/qualification/native-frontier-v3-independent-screening/case-006/source-environment/metadata-source",
+        "ls-tree",
+        "-rz",
+        "--full-tree",
+        "f4f288579dc3c8f82f62d0eaca7774303d9d3768"
+      ],
+      "exit_code": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "fd55bb45a0cf0f0d94c06a1b245aa45da1fbcd386f0d1da63da906dda5cf3e0f"
+    },
+    {
+      "GIT_OPTIONAL_LOCKS": "0",
+      "argv": [
+        "git",
+        "--no-replace-objects",
+        "-C",
+        "/workspace/udm-v54",
+        "rev-parse",
+        "HEAD"
+      ],
+      "exit_code": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "5e47ab1ac4af1093dbedcf1ffad9a12bd8ea8700f52a68e9efe0f63770311f5f"
+    }
+  ],
+  "cases": [
+    {
+      "archives": [
+        {
+          "bytes": 397692,
+          "extracted": false,
+          "path": "/workspace/qualification/native-frontier-v3-independent-screening/case-000/source-environment/metadata-source.tar.gz",
+          "sha256": "f7754289d8d435c3885ee703b38014953465130f8fbe97b8edd2346981929fb8",
+          "tracked_members": 133,
+          "worktree_bytes_match": true
+        }
+      ],
+      "case_id": "case-000",
+      "development_disposition": "EXPOSED_DIAGNOSTIC_ONLY; NOT_PROSPECTIVE; NO_RERUN; NO_ELIGIBILITY_PROMOTION",
+      "diagnostic_category": "MALFORMED_NONEXECUTABLE_FIXTURE_VETOES_METADATA",
+      "independent_byte_checks": {
+        "all_archives_match_expected_source_bytes": true,
+        "git_HEAD_and_tree_match_original": true,
+        "selector_source_sha256_matches_original": true,
+        "tracked_blob_ids_match_worktree_bytes": true,
+        "tracked_files_checked": 133,
+        "tracked_manifest_sha256_matches_original": true
+      },
+      "metadata_and_configuration_sources": [
+        {
+          "bytes": 1788,
+          "evidence": "Python >=2.7 with exclusions through3.3; testing extra pytest>=3.0.7 and docopt.",
+          "path": "setup.py",
+          "sha256": "5e809b543f4bed437b95b058471f048c0b01a4dad7f4499ed48fc83c9ff466cc"
+        },
+        {
+          "bytes": 356,
+          "evidence": "doctest modules; testpaths parso test; norecursedirs includes normalizer_issue_files.",
+          "path": "pytest.ini",
+          "sha256": "ac8226ed908d2953550daec722eaaad7752b4a136d8ca48e539dc4c8936a7275"
+        },
+        {
+          "bytes": 430,
+          "evidence": "Versioned environments include py36; testing extra is active.",
+          "path": "tox.ini",
+          "sha256": "760c13942673c64b52dadcaa282f4a1b9eb7e0718d2ed6ff442df133660ed2a8"
+        },
+        {
+          "bytes": 448,
+          "evidence": "Explicit Python3.6 test lane.",
+          "path": ".travis.yml",
+          "sha256": "0c035796f2efd07e36ba9ca8b15291cd15b5156ee93d0e192732525aeb8c539b"
+        },
+        {
+          "bytes": 5113,
+          "evidence": "Enumerates normalizer_issue_files/*.py and parametrizes input fixtures.",
+          "path": "conftest.py",
+          "sha256": "17c2de93e401898bd8270f398aa6e5d24096a9f4e4cdcde92a2138185dd21daa"
+        },
+        {
+          "bytes": 2153,
+          "evidence": "Reads source bytes and sends them to grammar.parse; does not import the fixture.",
+          "path": "test/test_normalizer_issues_files.py",
+          "sha256": "5c4701e7ed7b8fc2c11492b4454039ff8e377897de9c3a3f7566c431b8186c7a"
+        },
+        {
+          "bytes": 758,
+          "evidence": "Intentional tabs/spaces error annotated as expected parser errors.",
+          "path": "test/normalizer_issue_files/E10.py",
+          "sha256": "b98d9fe562a529980ea59a5b8d122851f94235ce6d66fe458f5687d91c28590b"
+        },
+        {
+          "bytes": 10504,
+          "evidence": "Default grammar follows running Python version.",
+          "path": "parso/grammar.py",
+          "sha256": "5a1f907dc8a405147009f30bf834d5fa4762b5832d978cf9867ce2d9c6f52be5"
+        },
+        {
+          "bytes": 1607,
+          "evidence": "Grammar loading/public parser entrypoints.",
+          "path": "parso/__init__.py",
+          "sha256": "ceeee48b01fa54c90c2cc0d33a055ecf08f8b814bce0cd63dd43ba6bccf6f5d2"
+        }
+      ],
+      "minimum_justified_general_behavior": [
+        "Inventory every tracked byte and hash, including invalid syntax used as data; inventory success must not require compiling all .py files.",
+        "Derive environment constraints from actual metadata and declared interpreter/test configuration; intentional nonimported fixture syntax must not veto unrelated environment inference.",
+        "Preserve configured exclusions, doctests, conftest parametrization, and tests consuming malformed input.",
+        "Let native collection and execution compile/import modules exactly as the suite normally does. Preserve suite-declared skips and expected/caught errors; do not suppress uncaught syntax/import collection failures."
+      ],
+      "original": {
+        "candidates": [
+          {
+            "id": "cpython-3.6.5-pytest-5.4.3-linux-x86_64",
+            "reason": "UNKNOWN_SOURCE_PARSER",
+            "reasons": [
+              {
+                "detail": "test/normalizer_issue_files/E10.py: inconsistent use of tabs and spaces in indentation (E10.py, line 5)",
+                "reason": "UNKNOWN_SOURCE_PARSER"
+              }
+            ],
+            "status": "UNKNOWN"
+          },
+          {
+            "id": "cpython-3.12.14-pytest-8.4.1-linux-x86_64",
+            "reason": "UNKNOWN_SOURCE_PARSER",
+            "reasons": [
+              {
+                "detail": "test/normalizer_issue_files/E10.py: inconsistent use of tabs and spaces in indentation (E10.py, line 5)",
+                "reason": "UNKNOWN_SOURCE_PARSER"
+              }
+            ],
+            "status": "UNKNOWN"
+          }
+        ],
+        "controller_attempts": {
+          "collection_calls": 0,
+          "native_calls": 0,
+          "subprocess_attempts": 0
+        },
+        "eligible": false,
+        "envelope_status": "UNKNOWN_ADMISSION_SCREENING",
+        "native_receipts_present": false,
+        "native_suite_authority": null,
+        "reason": "UNKNOWN_SOURCE_PARSER",
+        "reason_details": [
+          {
+            "detail": "test/normalizer_issue_files/E10.py: inconsistent use of tabs and spaces in indentation (E10.py, line 5)",
+            "reason": "UNKNOWN_SOURCE_PARSER"
+          }
+        ],
+        "selected_profile": null,
+        "status": "UNKNOWN_ENVIRONMENT_SELECTION"
+      },
+      "original_metadata_sha256": {},
+      "original_selector_source_sha256": "6606bb358b2c4c8d1e9b05abf2354d8fc8c8b674f7b8f0688da106c73b11cc0c",
+      "raw_records": [
+        {
+          "bytes": 3993,
+          "path": "/workspace/qualification/native-frontier-v3-independent-screening/case-000/SCREENING_CASE.json",
+          "sha256": "5373898b997cba355805358f1306bd79b00c1bfbb974402d929b99102a2cea69"
+        },
+        {
+          "bytes": 567,
+          "path": "/workspace/qualification/native-frontier-v3-independent-screening/case-000/SCREENING_ENVELOPE.json",
+          "sha256": "2cd58dd363d43f269f4e09124fbab00efb49b30fc97f40430193f58c55e1f133"
+        },
+        {
+          "bytes": 3414,
+          "path": "/workspace/qualification/native-frontier-v3-independent-screening/case-000/source-environment/admission-v3.json",
+          "sha256": "421e9ccdfd67335d58021d38f912d2497d905e6676c5c791eb11fcbe2e7446b4"
+        },
+        {
+          "bytes": 1343,
+          "path": "/workspace/qualification/native-frontier-v3-independent-screening/case-000/source-environment/selection.json",
+          "sha256": "2ec4d343082990a397fe8066dc070a6bd33e5987ac8aa0277890f94659c9eea9"
+        }
+      ],
+      "remaining_unknowns": [
+        {
+          "detail": "The frozen catalog has no docopt pin, required by the testing extra; removing the parser veto alone cannot admit either frozen profile.",
+          "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED"
+        },
+        {
+          "detail": "Python3.6 has direct tox/CI evidence. Broad python_requires alone does not establish Python3.12: this source ships grammar files only through3.10 and defaults grammar to the running Python.",
+          "reason": "UNKNOWN_RUNTIME_COMPATIBILITY"
+        },
+        {
+          "detail": "Doctest/import collection, original-plus-author tests, and native behavior have not run.",
+          "reason": "UNKNOWN_NATIVE_AUTHORITY"
+        }
+      ],
+      "repository": "davidhalter/parso",
+      "source_commits": {
+        "augmented_commit": null,
+        "base_commit": "1e4076f9d9ac57052151193af5cb2d72f8b1113b",
+        "declared_author_test_content_fetched": false,
+        "declared_author_test_head_commit": "88874a5a9fb6114cb1a8236a4f30fa2e103f91e5",
+        "head_production_fetched": false
+      },
+      "source_identity": {
+        "file_count": 133,
+        "git_tree": "398e1921df2ed4406c78bbeb9591797fd094fc9d",
+        "tracked_tree_sha256": "abf44acf30f261bff2cf159c620d529c55683c08d8786bb5db11fb25bae6b742"
+      },
+      "summary": "The selector parses every tracked .py file before setup metadata; E10.py is intentional malformed parser input, excluded by pytest configuration and consumed as bytes."
+    },
+    {
+      "archives": [
+        {
+          "bytes": 9220081,
+          "extracted": false,
+          "path": "/workspace/qualification/native-frontier-v3-independent-screening/case-001/source-environment/metadata-source.tar.gz",
+          "sha256": "71c2ac7c5000bf5ef699072cd266c6c9e065e3f5fcf3a0bff86fd1d25f14300e",
+          "tracked_members": 260,
+          "worktree_bytes_match": true
+        },
+        {
+          "bytes": 9220081,
+          "extracted": false,
+          "path": "/workspace/qualification/native-frontier-v3-independent-screening/case-001/source-environment/native/base-source.tar.gz",
+          "sha256": "71c2ac7c5000bf5ef699072cd266c6c9e065e3f5fcf3a0bff86fd1d25f14300e",
+          "tracked_members": 260,
+          "worktree_bytes_match": true
+        },
+        {
+          "bytes": 9220623,
+          "extracted": false,
+          "path": "/workspace/qualification/native-frontier-v3-independent-screening/case-001/source-environment/native/contract-source.tar.gz",
+          "sha256": "370e36a5fb961fb0b594bd1ac7d0023dc1bbea502515d4a7c62ec62cdeccc3fb",
+          "tracked_members": 260,
+          "worktree_bytes_match": true
+        }
+      ],
+      "case_id": "case-001",
+      "development_disposition": "EXPOSED_DIAGNOSTIC_ONLY; NOT_PROSPECTIVE; NO_RERUN; NO_ELIGIBILITY_PROMOTION",
+      "diagnostic_category": "DOCTEST_COLLECTION_AUTHORITY_UNSUPPORTED",
+      "independent_byte_checks": {
+        "all_archives_match_expected_source_bytes": true,
+        "git_HEAD_and_tree_match_original": true,
+        "selector_source_sha256_matches_original": true,
+        "tracked_blob_ids_match_worktree_bytes": true,
+        "tracked_files_checked": 260,
+        "tracked_manifest_sha256_matches_original": true
+      },
+      "metadata_and_configuration_sources": [
+        {
+          "bytes": 1749,
+          "evidence": "Literal interpreter classifiers and tests_require tox; no install_requires.",
+          "path": "setup.py",
+          "sha256": "411d9c239ff43a5af1ca13ebb209751432513ce31143b26ad5b4d0e27500cd0e"
+        },
+        {
+          "bytes": 601,
+          "evidence": "python -m pytest; --doctest-modules, --doctest-glob *.rst, explicit benchmark/plot ignores; testpaths docs sortedcontainers tests.",
+          "path": "tox.ini",
+          "sha256": "b0a9858365a71f0576ce60ebefbc37d7a3aa8bbe08cd20f3b7f8d1e83bc0ffa2"
+        },
+        {
+          "bytes": 455,
+          "evidence": "Explicit tox Python3.6 lane; lint is a separate environment.",
+          "path": ".travis.yml",
+          "sha256": "b88eb260290875b04df49766b8c6c89791a69893eb476ce8b616d2a291fd881f"
+        }
+      ],
+      "minimum_justified_general_behavior": [
+        "Represent declared doctest module/file collection, globs, configured roots, and ignores in immutable suite authority.",
+        "Retain pytest-native doctest item identities and expected outcomes alongside ordinary Python tests; do not drop doctests or rewrite addopts.",
+        "Bind original and author-test sources separately and preserve production bytes; compare authentic native collections/executions before eligibility.",
+        "Unsupported collection/authority options remain precise UNKNOWN_INTERFACE instead of silently being waived."
+      ],
+      "original": {
+        "candidates": [
+          {
+            "id": "cpython-3.6.5-pytest-5.4.3-linux-x86_64",
+            "pytest_version": "5.4.3",
+            "python_version": "3.6.5",
+            "reason": null,
+            "reasons": [],
+            "status": "COMPATIBLE"
+          },
+          {
+            "id": "cpython-3.12.14-pytest-8.4.1-linux-x86_64",
+            "pytest_version": "8.4.1",
+            "python_version": "3.12.14",
+            "reason": "INCOMPATIBLE_DECLARED_PYTHON",
+            "reasons": [
+              {
+                "detail": "3.12",
+                "reason": "INCOMPATIBLE_DECLARED_PYTHON"
+              },
+              {
+                "detail": "tox",
+                "installed_pin": null,
+                "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED"
+              }
+            ],
+            "status": "REJECTED"
+          }
+        ],
+        "controller_attempts": {
+          "collection_calls": 0,
+          "native_calls": 0,
+          "subprocess_attempts": 0
+        },
+        "eligible": false,
+        "envelope_status": "UNKNOWN_ADMISSION_SCREENING",
+        "native_receipts_present": false,
+        "native_suite_authority": null,
+        "reason": "UNKNOWN_INTERFACE: unsupported native test configuration: unsupported addopts collection/authority option: --doctest-modules",
+        "reason_details": [],
+        "selected_profile": {
+          "id": "cpython-3.6.5-pytest-5.4.3-linux-x86_64",
+          "plugins": [],
+          "pytest_version": "5.4.3",
+          "python_implementation": "CPython",
+          "python_version": "3.6.5"
+        },
+        "status": "UNKNOWN_CONTRACT"
+      },
+      "original_metadata_sha256": {
+        "setup.py": "411d9c239ff43a5af1ca13ebb209751432513ce31143b26ad5b4d0e27500cd0e",
+        "tox.ini": "b0a9858365a71f0576ce60ebefbc37d7a3aa8bbe08cd20f3b7f8d1e83bc0ffa2"
+      },
+      "original_selector_source_sha256": "a5fff3038cf8061a6e2cb8901c375ab2c1e7c7c9104cb8e8ff4df86a25bef1b7",
+      "raw_records": [
+        {
+          "bytes": 877118,
+          "path": "/workspace/qualification/native-frontier-v3-independent-screening/case-001/SCREENING_CASE.json",
+          "sha256": "90aeafd738373eed873038c839b7a084893461b1265585115da6552e5baa390f"
+        },
+        {
+          "bytes": 584,
+          "path": "/workspace/qualification/native-frontier-v3-independent-screening/case-001/SCREENING_ENVELOPE.json",
+          "sha256": "f6fc60c4cef544dbbbc9157d36097a76a39b457d695ca0e9c7a914097749c1ab"
+        },
+        {
+          "bytes": 876535,
+          "path": "/workspace/qualification/native-frontier-v3-independent-screening/case-001/source-environment/admission-v3.json",
+          "sha256": "92d8b093ffbaead7273c4f363217730de55e3eb49ff3e1af0ae67b052e654735"
+        },
+        {
+          "bytes": 20812,
+          "path": "/workspace/qualification/native-frontier-v3-independent-screening/case-001/source-environment/selection.json",
+          "sha256": "493104ad3d4a1cd30b96de8a8ccf78ff16ba90beed289ab5645df1ad5b61608a"
+        }
+      ],
+      "remaining_unknowns": [
+        {
+          "detail": "No native collection or execution receipt exists. Static recognition of doctest switches cannot establish their item inventory, execution outcomes, or admission.",
+          "reason": "UNKNOWN_NATIVE_AUTHORITY"
+        },
+        {
+          "detail": "Doctest module collection imports executable modules; syntax/import errors must fail normally.",
+          "reason": "UNKNOWN_EXECUTABLE_SOURCE"
+        }
+      ],
+      "repository": "grantjenks/python-sortedcontainers",
+      "source_commits": {
+        "augmented_commit": "46eb78ca59e3f51ddc55b2df53a2fb69e16659d1",
+        "base_commit": "13d30bc654eb9e6be092282ca502967fcb7f0113",
+        "declared_author_test_content_fetched": true,
+        "declared_author_test_head_commit": "80a1ce9f8b353918974a0ca7ffdfb32c43821026",
+        "head_production_fetched": false
+      },
+      "source_identity": {
+        "file_count": 260,
+        "git_tree": "fe92b5886f47c90270ce565a77b68e1809e4bd3c",
+        "tracked_tree_sha256": "fa41f66bd3a8b201084a64cffacdc1346f15e9c3d6989c48fdbe3acc5ae23679"
+      },
+      "summary": "Source environment selection succeeded for CPython3.6.5/pytest5.4.3, but static suite authority refused --doctest-modules before collection."
+    },
+    {
+      "archives": [
+        {
+          "bytes": 34820,
+          "extracted": false,
+          "path": "/workspace/qualification/native-frontier-v3-independent-screening/case-002/source-environment/metadata-source.tar.gz",
+          "sha256": "c4baced5774ba7509a628181635224874339986dad96d0fa228ee4eba6d535f1",
+          "tracked_members": 20,
+          "worktree_bytes_match": true
+        }
+      ],
+      "case_id": "case-002",
+      "development_disposition": "EXPOSED_DIAGNOSTIC_ONLY; NOT_PROSPECTIVE; NO_RERUN; NO_ELIGIBILITY_PROMOTION",
+      "diagnostic_category": "SOURCE_LOCAL_REQUIREMENTS_FILE_EXPRESSION_UNSUPPORTED",
+      "independent_byte_checks": {
+        "all_archives_match_expected_source_bytes": true,
+        "git_HEAD_and_tree_match_original": true,
+        "selector_source_sha256_matches_original": true,
+        "tracked_blob_ids_match_worktree_bytes": true,
+        "tracked_files_checked": 20,
+        "tracked_manifest_sha256_matches_original": true
+      },
+      "metadata_and_configuration_sources": [
+        {
+          "bytes": 1516,
+          "evidence": "Install requirements read from a local file; version is separately read from schema/__init__.py; classifiers list Python3.6\u20133.11.",
+          "path": "setup.py",
+          "sha256": "bc5ac2d278352a5fcb0c38b93b8a2f51b7be69e6437ff90f530b7181f3a6b3e4"
+        },
+        {
+          "bytes": 43,
+          "evidence": "contextlib2>=0.5.5; python_version < \"3.3\".",
+          "path": "requirements.txt",
+          "sha256": "9b3a49b29af7246e04263d978d3bf588e2aa930c73a19727ca83af9925f68702"
+        },
+        {
+          "bytes": 878,
+          "evidence": "Ordinary Python test env deps pytest, mock, mypy; py38 docs and coverage/checks are separate lanes.",
+          "path": "tox.ini",
+          "sha256": "f21111d141c531b698d5cb223c615dce77169141938c09057dca56a56c3f7107"
+        },
+        {
+          "bytes": 128,
+          "evidence": "Ruff-only configuration; no substitute project dependency table.",
+          "path": "pyproject.toml",
+          "sha256": "f8236fe3b1d99681e49e99ca9a26313760fa424b7bc1c8e8011f26740e5de0b8"
+        },
+        {
+          "bytes": 571,
+          "evidence": "Python3.10 lane installs pytest/mypy and requirements, then runs pytest.",
+          "path": ".github/workflows/python-test.yml",
+          "sha256": "b21f49e5ff7a3392ccf24fe819bf915e740fe2e0236f3791efd9509476872705"
+        },
+        {
+          "bytes": 607,
+          "evidence": "Versioned tox test lanes through3.9.",
+          "path": ".travis.yml",
+          "sha256": "254107362e29ec5258b8c8da047ec03c3a2dd578dffea6103f747a7b0a9cc12b"
+        },
+        {
+          "bytes": 5709,
+          "evidence": "Test invokes mypy as a subprocess and conditionally skips if missing.",
+          "path": "test_mypy_use_callable.py",
+          "sha256": "062e7dd2d5e8ae1c2b7a18da85f1a2052cf901a86a88bf09db3cef3a8a70c6b7"
+        }
+      ],
+      "minimum_justified_general_behavior": [
+        "Support a finite source-local read-only requirements-file expression only if its exact syntax, literal canonical path, encoding/read/split semantics, and referenced bytes are understood and hashed.",
+        "Preserve requirement markers and provenance; evaluate the python_version<3.3 marker against each candidate runtime.",
+        "Continue refusing arbitrary setup execution, aliases, reflection, unknown calls, mutable metadata, traversal, and unbound file inputs.",
+        "Preserve selected test-lane dependencies, mypy subprocess/skip behavior, and any supported documentation obligations."
+      ],
+      "original": {
+        "candidates": [
+          {
+            "id": "cpython-3.6.5-pytest-5.4.3-linux-x86_64",
+            "reason": "UNKNOWN_DYNAMIC_METADATA",
+            "reasons": [
+              {
+                "detail": "metadata is outside literal AST grammar",
+                "reason": "UNKNOWN_DYNAMIC_METADATA"
+              }
+            ],
+            "status": "UNKNOWN"
+          },
+          {
+            "id": "cpython-3.12.14-pytest-8.4.1-linux-x86_64",
+            "reason": "UNKNOWN_DYNAMIC_METADATA",
+            "reasons": [
+              {
+                "detail": "metadata is outside literal AST grammar",
+                "reason": "UNKNOWN_DYNAMIC_METADATA"
+              }
+            ],
+            "status": "UNKNOWN"
+          }
+        ],
+        "controller_attempts": {
+          "collection_calls": 0,
+          "native_calls": 0,
+          "subprocess_attempts": 0
+        },
+        "eligible": false,
+        "envelope_status": "UNKNOWN_ADMISSION_SCREENING",
+        "native_receipts_present": false,
+        "native_suite_authority": null,
+        "reason": "UNKNOWN_DYNAMIC_METADATA",
+        "reason_details": [
+          {
+            "detail": "metadata is outside literal AST grammar",
+            "reason": "UNKNOWN_DYNAMIC_METADATA"
+          }
+        ],
+        "selected_profile": null,
+        "status": "UNKNOWN_ENVIRONMENT_SELECTION"
+      },
+      "original_metadata_sha256": {},
+      "original_selector_source_sha256": "4b8b00f667dd44db88b8f7add79180011435a23e850cc7941804622ae442d060",
+      "raw_records": [
+        {
+          "bytes": 3817,
+          "path": "/workspace/qualification/native-frontier-v3-independent-screening/case-002/SCREENING_CASE.json",
+          "sha256": "d623c81fc2674cfd3ebd99fdfb4f1e6dd826fc2c317e79ea6787913bc081e4ca"
+        },
+        {
+          "bytes": 565,
+          "path": "/workspace/qualification/native-frontier-v3-independent-screening/case-002/SCREENING_ENVELOPE.json",
+          "sha256": "7eac00cae9150d3f102e5adf281320e6f573dcd6a2f0d664ced56981d4e9e898"
+        },
+        {
+          "bytes": 3240,
+          "path": "/workspace/qualification/native-frontier-v3-independent-screening/case-002/source-environment/admission-v3.json",
+          "sha256": "de31944d2824806899245eaf0010281f7771af75b6952bb84540e4255b42626b"
+        },
+        {
+          "bytes": 1169,
+          "path": "/workspace/qualification/native-frontier-v3-independent-screening/case-002/source-environment/selection.json",
+          "sha256": "2eb884a37ddd04873924ae5a811df749c2fe9546431440bf62d7fda23d82fc09"
+        }
+      ],
+      "remaining_unknowns": [
+        {
+          "detail": "The exact read/split expression needs bounded generic support; no setup.py was executed for this analysis.",
+          "reason": "UNKNOWN_DYNAMIC_METADATA"
+        },
+        {
+          "detail": "Frozen profiles do not pin mock or mypy from the tox test environment. The original grammar failure occurred before this dependency question.",
+          "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED"
+        },
+        {
+          "detail": "Source-file extraction alone cannot establish native test or subprocess coverage, nor authorize suppressing skipped tests.",
+          "reason": "UNKNOWN_NATIVE_AUTHORITY"
+        }
+      ],
+      "repository": "keleshev/schema",
+      "source_commits": {
+        "augmented_commit": null,
+        "base_commit": "340d3f0596b985db9e7c81a1233f784648d7c101",
+        "declared_author_test_content_fetched": false,
+        "declared_author_test_head_commit": "d81871b8644e3b5dcc36b63904f7e3463c92a947",
+        "head_production_fetched": false
+      },
+      "source_identity": {
+        "file_count": 20,
+        "git_tree": "fedb9efbcfedb243c8ca5ce0df95d4dd53ea98af",
+        "tracked_tree_sha256": "32466685110820cc1ed6d5d7de4b7d3d2f76695fa1ca8419c466fd4f2e7754a9"
+      },
+      "summary": "setup.py uses install_requires=open(\"requirements.txt\", \"r\").read().split(\"\\n\"), which is outside V3 literal AST metadata grammar."
+    },
+    {
+      "archives": [
+        {
+          "bytes": 256007,
+          "extracted": false,
+          "path": "/workspace/qualification/native-frontier-v3-independent-screening/case-003/source-environment/metadata-source.tar.gz",
+          "sha256": "06f77be893f360e6b85d756db749d0fd42277d9934a5980bac2747803b74011d",
+          "tracked_members": 112,
+          "worktree_bytes_match": true
+        }
+      ],
+      "case_id": "case-003",
+      "development_disposition": "EXPOSED_DIAGNOSTIC_ONLY; NOT_PROSPECTIVE; NO_RERUN; NO_ELIGIBILITY_PROMOTION",
+      "diagnostic_category": "REAL_BUILD_BACKEND_CATALOG_MISMATCH",
+      "independent_byte_checks": {
+        "all_archives_match_expected_source_bytes": true,
+        "git_HEAD_and_tree_match_original": true,
+        "selector_source_sha256_matches_original": true,
+        "tracked_blob_ids_match_worktree_bytes": true,
+        "tracked_files_checked": 112,
+        "tracked_manifest_sha256_matches_original": true
+      },
+      "metadata_and_configuration_sources": [
+        {
+          "bytes": 1820,
+          "evidence": "Python>=3.7, flit_core>=3.2,<4, dev dependency group pytest>=8 for Python>=3.8; doctest option flags.",
+          "path": "pyproject.toml",
+          "sha256": "23d689cf1d468c6af6442869eb7483402aaea8b3cabdbfb2d7aa9df3a293aa04"
+        },
+        {
+          "bytes": 232,
+          "evidence": "tox-uv; dependency_groups=dev; changedir .tox; pytest --doctest-modules against installed boltons plus original tests.",
+          "path": "tox.ini",
+          "sha256": "70e31d3c3aee330493ffed40d540a55fc46a5db61dcb610e3359b05eda4f7e6c"
+        },
+        {
+          "bytes": 1630,
+          "evidence": "Explicit Python3.12 tox py312 lane.",
+          "path": ".github/workflows/tests.yaml",
+          "sha256": "cd00dc3c2efa0149fcaa5b4acad80f2f57e0daf4c015d1ea839ee3963b74a7f0"
+        }
+      ],
+      "minimum_justified_general_behavior": [
+        "Retain the exact flit_core<4 constraint and reject or report UNKNOWN for the frozen incompatible inventory; do not weaken a source requirement to create compatibility.",
+        "A future catalog may add a separately pinned/provenance-bound compatible backend before task admission, with dependency closure verified.",
+        "Resolve the selected tox dependency group and marker-aware pytest requirement; preserve changedir, installed-package doctests, original tests, and effective command semantics."
+      ],
+      "original": {
+        "candidates": [
+          {
+            "id": "cpython-3.6.5-pytest-5.4.3-linux-x86_64",
+            "pytest_version": "5.4.3",
+            "python_version": "3.6.5",
+            "reason": "INCOMPATIBLE_DECLARED_PYTHON",
+            "reasons": [
+              {
+                "detail": "3.6",
+                "reason": "INCOMPATIBLE_DECLARED_PYTHON"
+              },
+              {
+                "detail": "3.6.5",
+                "reason": "INCOMPATIBLE_PYTHON_RANGE"
+              },
+              {
+                "detail": "flit_core<4,>=3.2",
+                "installed_pin": null,
+                "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED"
+              }
+            ],
+            "status": "REJECTED"
+          },
+          {
+            "id": "cpython-3.12.14-pytest-8.4.1-linux-x86_64",
+            "pytest_version": "8.4.1",
+            "python_version": "3.12.14",
+            "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED",
+            "reasons": [
+              {
+                "detail": "flit_core<4,>=3.2",
+                "installed_pin": "4.0.1",
+                "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED"
+              }
+            ],
+            "status": "UNKNOWN"
+          }
+        ],
+        "controller_attempts": {
+          "collection_calls": 0,
+          "native_calls": 0,
+          "subprocess_attempts": 0
+        },
+        "eligible": false,
+        "envelope_status": "UNKNOWN_ADMISSION_SCREENING",
+        "native_receipts_present": false,
+        "native_suite_authority": null,
+        "reason": "UNKNOWN_NO_COMPATIBLE_PROFILE",
+        "reason_details": [],
+        "selected_profile": null,
+        "status": "UNKNOWN_ENVIRONMENT_SELECTION"
+      },
+      "original_metadata_sha256": {
+        "pyproject.toml": "23d689cf1d468c6af6442869eb7483402aaea8b3cabdbfb2d7aa9df3a293aa04",
+        "tox.ini": "70e31d3c3aee330493ffed40d540a55fc46a5db61dcb610e3359b05eda4f7e6c"
+      },
+      "original_selector_source_sha256": "9dfdb5cc6e533f38fede59ec5b94844ed2342fdd71ef1e649eb9ba0baabbaa92",
+      "raw_records": [
+        {
+          "bytes": 5419,
+          "path": "/workspace/qualification/native-frontier-v3-independent-screening/case-003/SCREENING_CASE.json",
+          "sha256": "1ea15d2d233af7129d9b352dbde4f9bb4b19561128aad23ac39f0395a723d1b0"
+        },
+        {
+          "bytes": 565,
+          "path": "/workspace/qualification/native-frontier-v3-independent-screening/case-003/SCREENING_ENVELOPE.json",
+          "sha256": "332d3eacf928cd528e62eded3b937f6fd3c97ddfe7ecf545cf38dfb8f656ffb4"
+        },
+        {
+          "bytes": 4842,
+          "path": "/workspace/qualification/native-frontier-v3-independent-screening/case-003/source-environment/admission-v3.json",
+          "sha256": "a7c06ed42fdd4db8d64ab7d8b4286d9ecda2eeb98646b98cf1b461d62de0de9f"
+        },
+        {
+          "bytes": 2767,
+          "path": "/workspace/qualification/native-frontier-v3-independent-screening/case-003/source-environment/selection.json",
+          "sha256": "8d93dafc7046dfa756f493b77ca9eb6d4e01bd0d6ccecff7caed5906b57b41b4"
+        }
+      ],
+      "remaining_unknowns": [
+        {
+          "detail": "The original frozen catalog has no compatible profile; no provisioning or inventory amendment occurred.",
+          "reason": "UNKNOWN_NO_COMPATIBLE_PROFILE"
+        },
+        {
+          "detail": "Doctests, installed-package import paths, tox-uv/dependency group behavior, and native execution remain unqualified.",
+          "reason": "UNKNOWN_NATIVE_AUTHORITY"
+        }
+      ],
+      "repository": "mahmoud/boltons",
+      "source_commits": {
+        "augmented_commit": null,
+        "base_commit": "967864f89791509f9eb36b22b4579d36b72a6df2",
+        "declared_author_test_content_fetched": false,
+        "declared_author_test_head_commit": "f268ec349d4a4f13e3e8f2dd86db059959514222",
+        "head_production_fetched": false
+      },
+      "source_identity": {
+        "file_count": 112,
+        "git_tree": "5f96239ad4d6613b175f4d57732963a99ecb125a",
+        "tracked_tree_sha256": "df0fff49b828fe6077acc4ae5260c36d22f8bb09a65711920a61c1a3eea52886"
+      },
+      "summary": "Metadata was derived successfully. Python3.6 is incompatible, and Python3.12 has flit_core4.0.1 while the project requires >=3.2,<4."
+    },
+    {
+      "archives": [
+        {
+          "bytes": 42812,
+          "extracted": false,
+          "path": "/workspace/qualification/native-frontier-v3-independent-screening/case-004/source-environment/metadata-source.tar.gz",
+          "sha256": "deaf9c0d70c3d2f9ebdfbc3133fe053f7ab6951c00d9afdd8eb9e39e204b0ec2",
+          "tracked_members": 33,
+          "worktree_bytes_match": true
+        }
+      ],
+      "case_id": "case-004",
+      "development_disposition": "EXPOSED_DIAGNOSTIC_ONLY; NOT_PROSPECTIVE; NO_RERUN; NO_ELIGIBILITY_PROMOTION",
+      "diagnostic_category": "INTERPRETER_CONDITIONAL_REQUIREMENTS_MUTATION_UNSUPPORTED",
+      "independent_byte_checks": {
+        "all_archives_match_expected_source_bytes": true,
+        "git_HEAD_and_tree_match_original": true,
+        "selector_source_sha256_matches_original": true,
+        "tracked_blob_ids_match_worktree_bytes": true,
+        "tracked_files_checked": 33,
+        "tracked_manifest_sha256_matches_original": true
+      },
+      "metadata_and_configuration_sources": [
+        {
+          "bytes": 2512,
+          "evidence": "from sys import version_info; guarded requires.append(\"ordereddict\"); literal classifiers through3.14; imported VERSION is outside the interpreted environment fields.",
+          "path": "setup.py",
+          "sha256": "07e71329115b2aa1f712348953a0ab41d217f3df8d8fbb68c4a3ef34a3062f5a"
+        },
+        {
+          "bytes": 96,
+          "evidence": "Wheel/description/license metadata, with no alternate dependency authority.",
+          "path": "setup.cfg",
+          "sha256": "771dca106b885e2b1c60f9fe9698aec5f62aa7e0cf392a5f93db02e30f6e36a0"
+        },
+        {
+          "bytes": 2317,
+          "evidence": "Explicit Python3.12; vanilla/tz/path/numpy/pandas/all dependency and test lanes.",
+          "path": ".github/workflows/tests.yml",
+          "sha256": "09a50033dfeb9f77c98e82a91fc043dd5555b03a4ed1264fa112f0f406bd1ee3"
+        },
+        {
+          "bytes": 1900,
+          "evidence": "Documents full tests with optional dependency families and collection-error behavior.",
+          "path": "tests/run_locally.md",
+          "sha256": "d22c3c3ec6550082b9fea237f6b9c05b268cfede2b18009cf058bf8ebf95316e"
+        }
+      ],
+      "minimum_justified_general_behavior": [
+        "Either interpret a precisely bounded version_info comparison plus literal list-append grammar per candidate profile, or retain UNKNOWN_DYNAMIC_METADATA with exact branch/mutation provenance.",
+        "Track binding identity, statement order, aliasing, branches, and mutations; do not ignore all method calls or union away interpreter-conditional dependency semantics.",
+        "For the two frozen Python3 profiles, a correctly interpreted version_info<(2,7,0) guard would be false; this fact alone supplies no complete native-suite warrant.",
+        "Native authority must bind an intended source-declared dependency/test lane and preserve all its tests; it cannot silently pick a smaller lane to avoid numpy/pandas or other imports."
+      ],
+      "original": {
+        "candidates": [
+          {
+            "id": "cpython-3.6.5-pytest-5.4.3-linux-x86_64",
+            "reason": "UNKNOWN_DYNAMIC_METADATA",
+            "reasons": [
+              {
+                "detail": "method call through referenced setup metadata",
+                "reason": "UNKNOWN_DYNAMIC_METADATA"
+              }
+            ],
+            "status": "UNKNOWN"
+          },
+          {
+            "id": "cpython-3.12.14-pytest-8.4.1-linux-x86_64",
+            "reason": "UNKNOWN_DYNAMIC_METADATA",
+            "reasons": [
+              {
+                "detail": "method call through referenced setup metadata",
+                "reason": "UNKNOWN_DYNAMIC_METADATA"
+              }
+            ],
+            "status": "UNKNOWN"
+          }
+        ],
+        "controller_attempts": {
+          "collection_calls": 0,
+          "native_calls": 0,
+          "subprocess_attempts": 0
+        },
+        "eligible": false,
+        "envelope_status": "UNKNOWN_ADMISSION_SCREENING",
+        "native_receipts_present": false,
+        "native_suite_authority": null,
+        "reason": "UNKNOWN_DYNAMIC_METADATA",
+        "reason_details": [
+          {
+            "detail": "method call through referenced setup metadata",
+            "reason": "UNKNOWN_DYNAMIC_METADATA"
+          }
+        ],
+        "selected_profile": null,
+        "status": "UNKNOWN_ENVIRONMENT_SELECTION"
+      },
+      "original_metadata_sha256": {},
+      "original_selector_source_sha256": "39f0e33ba700c3b22c38d3244d7c20c1d5b17d7beb227a69b138dbd45e28c50b",
+      "raw_records": [
+        {
+          "bytes": 3846,
+          "path": "/workspace/qualification/native-frontier-v3-independent-screening/case-004/SCREENING_CASE.json",
+          "sha256": "dc820d9afd6f1a1cc9b840fbde6815b7fc96921b46fef1ad54acb935e95c5b13"
+        },
+        {
+          "bytes": 570,
+          "path": "/workspace/qualification/native-frontier-v3-independent-screening/case-004/SCREENING_ENVELOPE.json",
+          "sha256": "b121055847c54fedadf4da9d8e321bf236b88ba48b6eb3142b0a760bc496dd56"
+        },
+        {
+          "bytes": 3264,
+          "path": "/workspace/qualification/native-frontier-v3-independent-screening/case-004/source-environment/admission-v3.json",
+          "sha256": "bc2ece13864733cd6d5700d22e5f0c861ba13060972e2ab6dac12e0e814f10f6"
+        },
+        {
+          "bytes": 1187,
+          "path": "/workspace/qualification/native-frontier-v3-independent-screening/case-004/source-environment/selection.json",
+          "sha256": "3234fa2a02b66866fcc9086ded5fa8c5f439e51379ed139d596dad7aacede2b3"
+        }
+      ],
+      "remaining_unknowns": [
+        {
+          "detail": "No generic interpreter-conditional mutation support is implemented or exercised here.",
+          "reason": "UNKNOWN_DYNAMIC_METADATA"
+        },
+        {
+          "detail": "CI has several legitimate dependency/test matrices. A full original-suite claim needs the declared dependencies/import behavior and cannot be inferred from vanilla setup dependencies.",
+          "reason": "UNKNOWN_NATIVE_TEST_LANE"
+        },
+        {
+          "detail": "No collection or execution evidence exists.",
+          "reason": "UNKNOWN_NATIVE_AUTHORITY"
+        }
+      ],
+      "repository": "mverleg/pyjson_tricks",
+      "source_commits": {
+        "augmented_commit": null,
+        "base_commit": "45b96aeebc9b389f556e4af9e456d16b1d871f9d",
+        "declared_author_test_content_fetched": false,
+        "declared_author_test_head_commit": "47caad0baf1f555f8e2cc35739f1d3e1796233c9",
+        "head_production_fetched": false
+      },
+      "source_identity": {
+        "file_count": 33,
+        "git_tree": "9ba5b1f7df35427663cf5914aace67f67f4cf22a",
+        "tracked_tree_sha256": "6b934e88d389c38211696c21228a18e65b1bc70bc40c974c508d578a3be60cfa"
+      },
+      "summary": "setup.py binds requires=[], conditionally appends ordereddict for Python<2.7, then passes install_requires=requires. V3 rejects the referenced list method call."
+    },
+    {
+      "archives": [
+        {
+          "bytes": 60675,
+          "extracted": false,
+          "path": "/workspace/qualification/native-frontier-v3-independent-screening/case-005/source-environment/metadata-source.tar.gz",
+          "sha256": "00092b1b1d76b3d8ba7a2beebc275ab106b5867122d27d164e547bf266b02e88",
+          "tracked_members": 86,
+          "worktree_bytes_match": true
+        }
+      ],
+      "case_id": "case-005",
+      "development_disposition": "EXPOSED_DIAGNOSTIC_ONLY; NOT_PROSPECTIVE; NO_RERUN; NO_ELIGIBILITY_PROMOTION",
+      "diagnostic_category": "FINITE_TOX_VERSION_RANGE_MISCLASSIFIED_UNBOUNDED",
+      "independent_byte_checks": {
+        "all_archives_match_expected_source_bytes": true,
+        "git_HEAD_and_tree_match_original": true,
+        "selector_source_sha256_matches_original": true,
+        "tracked_blob_ids_match_worktree_bytes": true,
+        "tracked_files_checked": 86,
+        "tracked_manifest_sha256_matches_original": true
+      },
+      "metadata_and_configuration_sources": [
+        {
+          "bytes": 671,
+          "evidence": "env_list docs/lint/mypy/py{py3}/py{310-315}/py{314-315}t; tests extra; coverage command; legacy [pytest] doctest addopts.",
+          "path": "tox.ini",
+          "sha256": "cf436852a6895c857465f8e8883622803cbf7b5382fe3f9f9213405953b3c553"
+        },
+        {
+          "bytes": 3546,
+          "evidence": "Python>=3.10; hatch-vcs and hatchling>=1.27; tests extra includes pytest>=9, freezegun, pytest-benchmark/codspeed/cov; [tool.pytest] minversion9.0.",
+          "path": "pyproject.toml",
+          "sha256": "65e95e9627c0bff62e6469703fbe0d1041c3a788ffe911728e13a0b6a466a536"
+        },
+        {
+          "bytes": 2003,
+          "evidence": "Explicit Python3.12, separate free-threaded variants, gettext installation and translation binary generation before tox -e py.",
+          "path": ".github/workflows/test.yml",
+          "sha256": "46df610669e6a89109a1612688f504d7b1593c235b60d8c3a5635c111448ecc9"
+        },
+        {
+          "bytes": 204,
+          "evidence": "Builds .mo translation artifacts with msgfmt before testing.",
+          "path": "scripts/generate-translation-binaries.sh",
+          "sha256": "ca44ef5e2068eb6bac31187ff236f66eb49a4204b886d788856d7548256e7167"
+        }
+      ],
+      "minimum_justified_general_behavior": [
+        "Bound expansion by finite cardinality and supported factor syntax, with resource limits; finite310\u2013315 endpoints are not intrinsically unbounded.",
+        "Interpret CPython version factors, PyPy factors, generic py selection, and free-threaded t variants without collapsing distinct interpreter/ABI requirements.",
+        "Preserve tests extras, modern pytest configuration precedence/version semantics, effective doctest and coverage behavior, plugin identities, generated translations, and build inputs."
+      ],
+      "original": {
+        "candidates": [
+          {
+            "id": "cpython-3.6.5-pytest-5.4.3-linux-x86_64",
+            "reason": "UNKNOWN_METADATA_GRAMMAR",
+            "reasons": [
+              {
+                "detail": "unbounded tox expansion",
+                "reason": "UNKNOWN_METADATA_GRAMMAR"
+              }
+            ],
+            "status": "UNKNOWN"
+          },
+          {
+            "id": "cpython-3.12.14-pytest-8.4.1-linux-x86_64",
+            "reason": "UNKNOWN_METADATA_GRAMMAR",
+            "reasons": [
+              {
+                "detail": "unbounded tox expansion",
+                "reason": "UNKNOWN_METADATA_GRAMMAR"
+              }
+            ],
+            "status": "UNKNOWN"
+          }
+        ],
+        "controller_attempts": {
+          "collection_calls": 0,
+          "native_calls": 0,
+          "subprocess_attempts": 0
+        },
+        "eligible": false,
+        "envelope_status": "UNKNOWN_ADMISSION_SCREENING",
+        "native_receipts_present": false,
+        "native_suite_authority": null,
+        "reason": "UNKNOWN_METADATA_GRAMMAR",
+        "reason_details": [
+          {
+            "detail": "unbounded tox expansion",
+            "reason": "UNKNOWN_METADATA_GRAMMAR"
+          }
+        ],
+        "selected_profile": null,
+        "status": "UNKNOWN_ENVIRONMENT_SELECTION"
+      },
+      "original_metadata_sha256": {
+        "pyproject.toml": "65e95e9627c0bff62e6469703fbe0d1041c3a788ffe911728e13a0b6a466a536"
+      },
+      "original_selector_source_sha256": "9eaf9e01efc163e6bf28d41eace1281ec56b13fe12aeb92412edd7634dcb60c9",
+      "raw_records": [
+        {
+          "bytes": 5678,
+          "path": "/workspace/qualification/native-frontier-v3-independent-screening/case-005/SCREENING_CASE.json",
+          "sha256": "cc59e0da0e712503d4ef8de8b1a6fc8430d978314450dc32af809b37e9dc3986"
+        },
+        {
+          "bytes": 573,
+          "path": "/workspace/qualification/native-frontier-v3-independent-screening/case-005/SCREENING_ENVELOPE.json",
+          "sha256": "896446423ccb05d84442250c0ac33b8fa556a9ef3e629058869d03c6683ae049"
+        },
+        {
+          "bytes": 5093,
+          "path": "/workspace/qualification/native-frontier-v3-independent-screening/case-005/source-environment/admission-v3.json",
+          "sha256": "ae56bc0821c360b25a408120569ab826fa8ebff11c9b1ff433a6420b97168840"
+        },
+        {
+          "bytes": 3015,
+          "path": "/workspace/qualification/native-frontier-v3-independent-screening/case-005/source-environment/selection.json",
+          "sha256": "4c78470dfab6a18b3bf595e33719316194b08245871ac18614c5eedbb94bdc14"
+        }
+      ],
+      "remaining_unknowns": [
+        {
+          "detail": "Bounded version-factor/free-threaded interpretation has not been implemented or qualified.",
+          "reason": "UNKNOWN_METADATA_GRAMMAR"
+        },
+        {
+          "detail": "After recognizing grammar, neither frozen profile satisfies pytest>=9 (pins5.4.3/8.4.1). Frozen inventories also lack freezegun, pytest-codspeed, and pytest-cov.",
+          "reason": "UNKNOWN_NO_COMPATIBLE_PROFILE"
+        },
+        {
+          "detail": "gettext/msgfmt translation artifacts and their source/generated provenance remain unqualified.",
+          "reason": "UNKNOWN_GENERATED_BUILD_INPUT"
+        },
+        {
+          "detail": "No native collection/execution occurred; honoring one legacy or modern config table while discarding another is not justified.",
+          "reason": "UNKNOWN_NATIVE_AUTHORITY"
+        }
+      ],
+      "repository": "python-humanize/humanize",
+      "source_commits": {
+        "augmented_commit": null,
+        "base_commit": "4c85c352664f6ed33b00b98e52c2232081ca943d",
+        "declared_author_test_content_fetched": false,
+        "declared_author_test_head_commit": "eda405bd598b7d5e17eca1c11b76cfbe011aa5da",
+        "head_production_fetched": false
+      },
+      "source_identity": {
+        "file_count": 86,
+        "git_tree": "f457adceb2cc27becb090b4a6607ec8b6df54f10",
+        "tracked_tree_sha256": "8408a5bb7e6d583f6a30d08a475ac3d0f2fa2501210a79e0ac4a6f14d94ab0ab"
+      },
+      "summary": "tox.ini declares py{310-315} and py{314-315}t. V3 bounds numeric factor endpoints to99, so these finite Python minor-version encodings are reported as unbounded expansion."
+    },
+    {
+      "archives": [
+        {
+          "bytes": 45568,
+          "extracted": false,
+          "path": "/workspace/qualification/native-frontier-v3-independent-screening/case-006/source-environment/metadata-source.tar.gz",
+          "sha256": "2efaa5137fd3bdbd0c6f361d1852218cdd16005bc5cf365c68ed1700361278ba",
+          "tracked_members": 43,
+          "worktree_bytes_match": true
+        }
+      ],
+      "case_id": "case-006",
+      "development_disposition": "EXPOSED_DIAGNOSTIC_ONLY; NOT_PROSPECTIVE; NO_RERUN; NO_ELIGIBILITY_PROMOTION",
+      "diagnostic_category": "BARE_TOX_PY_ENVIRONMENT_UNSUPPORTED",
+      "independent_byte_checks": {
+        "all_archives_match_expected_source_bytes": true,
+        "git_HEAD_and_tree_match_original": true,
+        "selector_source_sha256_matches_original": true,
+        "tracked_blob_ids_match_worktree_bytes": true,
+        "tracked_files_checked": 43,
+        "tracked_manifest_sha256_matches_original": true
+      },
+      "metadata_and_configuration_sources": [
+        {
+          "bytes": 676,
+          "evidence": "Bare py plus auxiliary envs; pytest and pytest-cov; --basetemp/--cov/--cov-report arguments.",
+          "path": "tox.ini",
+          "sha256": "ca2be656d1b20d7731eb8bcd303df16893878ee2bdd95ef93e77a3c595411a52"
+        },
+        {
+          "bytes": 1665,
+          "evidence": "Python>=3.10, setuptools>=80/setuptools-scm>=8.2, src package layout, dynamic version attr.",
+          "path": "pyproject.toml",
+          "sha256": "bb02a66397173399a9bcab7de0b1f0a34f7d6df83e357f94b52bd45b08f22cea"
+        },
+        {
+          "bytes": 843,
+          "evidence": "Explicit Python3.12 CI test lane among CPython/PyPy/free-threaded variants.",
+          "path": ".github/workflows/ci.yml",
+          "sha256": "9babb3bd55bee66bc5cbd7db585ceeea09ddc8fa5b6466f4dfa80432bcc668a6"
+        },
+        {
+          "bytes": 15324,
+          "evidence": "Shared unittest test mixins; inherited methods affect native item inventory.",
+          "path": "tests/__init__.py",
+          "sha256": "72d99005a5d409aa14990b42b54646b726a4f3ca7a091a6f4831ff7701293eb8"
+        }
+      ],
+      "minimum_justified_general_behavior": [
+        "Recognize bare tox py as imposing no independent version restriction; combine it with actual project/CI interpreter evidence rather than fabricating a version.",
+        "Separate explicitly identified auxiliary environment names from interpreter factors; ambiguous interpreter declarations remain precise UNKNOWN.",
+        "Reject Python3.6 under requires-python>=3.10; Python3.12 has positive project/CI compatibility evidence subject to actual pinned dependency closure.",
+        "Install the src-layout project through the declared build system and retain pytest-cov/effective command flags.",
+        "Use native collection for inherited unittest/mixin item identities instead of top-level static function counts."
+      ],
+      "original": {
+        "candidates": [
+          {
+            "id": "cpython-3.6.5-pytest-5.4.3-linux-x86_64",
+            "reason": "UNKNOWN_METADATA_GRAMMAR",
+            "reasons": [
+              {
+                "detail": "unversioned or unsupported tox Python environment",
+                "reason": "UNKNOWN_METADATA_GRAMMAR"
+              }
+            ],
+            "status": "UNKNOWN"
+          },
+          {
+            "id": "cpython-3.12.14-pytest-8.4.1-linux-x86_64",
+            "reason": "UNKNOWN_METADATA_GRAMMAR",
+            "reasons": [
+              {
+                "detail": "unversioned or unsupported tox Python environment",
+                "reason": "UNKNOWN_METADATA_GRAMMAR"
+              }
+            ],
+            "status": "UNKNOWN"
+          }
+        ],
+        "controller_attempts": {
+          "collection_calls": 0,
+          "native_calls": 0,
+          "subprocess_attempts": 0
+        },
+        "eligible": false,
+        "envelope_status": "UNKNOWN_ADMISSION_SCREENING",
+        "native_receipts_present": false,
+        "native_suite_authority": null,
+        "reason": "UNKNOWN_METADATA_GRAMMAR",
+        "reason_details": [
+          {
+            "detail": "unversioned or unsupported tox Python environment",
+            "reason": "UNKNOWN_METADATA_GRAMMAR"
+          }
+        ],
+        "selected_profile": null,
+        "status": "UNKNOWN_ENVIRONMENT_SELECTION"
+      },
+      "original_metadata_sha256": {
+        "pyproject.toml": "bb02a66397173399a9bcab7de0b1f0a34f7d6df83e357f94b52bd45b08f22cea"
+      },
+      "original_selector_source_sha256": "179316b66b6f6b45a09cd13e5d34de2e2b16a1bd209324ee4a673e421f0ddf37",
+      "raw_records": [
+        {
+          "bytes": 4894,
+          "path": "/workspace/qualification/native-frontier-v3-independent-screening/case-006/SCREENING_CASE.json",
+          "sha256": "4cd8dc79810f63b2750fb151a29b5a93ddbe083cdf0bee47b42e3fa780669d40"
+        },
+        {
+          "bytes": 565,
+          "path": "/workspace/qualification/native-frontier-v3-independent-screening/case-006/SCREENING_ENVELOPE.json",
+          "sha256": "c52c98c8c3ec37398964e80d820103a2799290a2db0205f9aaf6534c9356995e"
+        },
+        {
+          "bytes": 4317,
+          "path": "/workspace/qualification/native-frontier-v3-independent-screening/case-006/source-environment/admission-v3.json",
+          "sha256": "f7b34d7065f02e147822e4ba6afdf87bb095a38d6829671129b28c9c9c6121c5"
+        },
+        {
+          "bytes": 2246,
+          "path": "/workspace/qualification/native-frontier-v3-independent-screening/case-006/source-environment/selection.json",
+          "sha256": "0de814fa239dd43f3d4172eb5504bbfcad5a3b6d56a55504d69bac4121374ff9"
+        }
+      ],
+      "remaining_unknowns": [
+        {
+          "detail": "The frozen modern profile has setuptools/setuptools-scm but no pytest-cov pin. Its compatible interpreter alone is insufficient.",
+          "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED"
+        },
+        {
+          "detail": "Build/install, source roots, inherited collection identities, coverage plugin, and native execution have not been verified.",
+          "reason": "UNKNOWN_NATIVE_AUTHORITY"
+        }
+      ],
+      "repository": "tkem/cachetools",
+      "source_commits": {
+        "augmented_commit": null,
+        "base_commit": "f4f288579dc3c8f82f62d0eaca7774303d9d3768",
+        "declared_author_test_content_fetched": false,
+        "declared_author_test_head_commit": "2417c0d63b286772169c0eab4ccf141213e1ca45",
+        "head_production_fetched": false
+      },
+      "source_identity": {
+        "file_count": 43,
+        "git_tree": "5cdf6f106387e0fcf3e7585213ef1d5ac61ad9ac",
+        "tracked_tree_sha256": "fb0151b91605318d3f27c44b6f19e65515e96fd2bf79840ea2b66e8803038eea"
+      },
+      "summary": "tox.ini has envlist=py,docs,doctest,pyright,ruff,ruff-format; bare py is an unversioned selected-interpreter test environment, which V3 rejects."
+    }
+  ],
+  "created_at_utc": "2026-10-16",
+  "evidence_inputs": [
+    {
+      "bytes": 3090,
+      "path": "/workspace/qualification/native-frontier-v3-independent-screening/SCREENING_METER.json",
+      "sha256": "f1984c506fdb8322938a486db03efd1470e11247cf42bcd39b8f3a6fa8365141"
+    },
+    {
+      "bytes": 3395835,
+      "path": "/workspace/qualification/native-frontier-v3-independent-screening-audit/SEALED_AUDIT.json",
+      "sha256": "d6513792b79ceab494a0a822b6c778e6917cad83b28ebdd0549f50f42ca96f1b"
+    },
+    {
+      "bytes": 552965,
+      "path": "/workspace/qualification/native-frontier-v3-independent-screening-audit/SEALED_HASH_INVENTORY.json",
+      "sha256": "38b3463187c88e1f069ca2ccf81ff8b62004c9128ffe7ccae733e266a984d3ec"
+    },
+    {
+      "bytes": 2680,
+      "path": "/workspace/qualification/native-frontier-v3-independent-screening-audit/PUBLIC_AUDIT.json",
+      "sha256": "183acffaf5bb21e7fd4787502e5c0189bdfcd6f1ebead3d459b8459de766e11d"
+    },
+    {
+      "bytes": 3516,
+      "path": "/workspace/qualification/native-frontier-v3-independent-screening-audit/SEALED_INDEX_CACHE_SCOPE.json",
+      "sha256": "fb72b674ddea2672c4cffd06d3d907f6b9818d2d600dfce29f77cb353877032a"
+    },
+    {
+      "bytes": 1538,
+      "path": "/workspace/qualification/native-frontier-v3-independent-screening-audit/SEALED_TOOL_OUTPUT_INCIDENT.json",
+      "sha256": "6c1afa61015efe851316be2dd704f0756b415d8dec29271e2e88b33ab29059af"
+    },
+    {
+      "bytes": 34674,
+      "path": "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-environment-v3/FROZEN_POOL.json",
+      "sha256": "e99dbf7ed11554561f3584cbe7216cf7f847b78364ef1cac70841bec97c08bb3"
+    },
+    {
+      "bytes": 61267,
+      "path": "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-environment-v3/ENVIRONMENT_CATALOG.json",
+      "sha256": "ba793416ffcc19426d2990aea6799d4e450d09b4e900253d76e517e19701f9e5"
+    },
+    {
+      "bytes": 906,
+      "path": "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-environment-v3/PUBLIC_APPROVED_TERMINAL_DIAGNOSIS.json",
+      "sha256": "f08406f516276b42f3766db927b32c82e099d800c230d10d57153628ac62efa1"
+    }
+  ],
+  "framework_base_commit": "95029db0d0b2122836bee7268299461bfbdb5a66",
+  "implementation_constraints": [
+    "These diagnoses are development inputs, permanently exposed and unavailable as prospective held-out tasks.",
+    "All categories and each distinct failure cause require generic support with meaningful positive/negative controls, or exact UNKNOWN with the unresolved cause retained.",
+    "No blanket fixture parse suppression, arbitrary setup execution, dropped doctests, rewritten source configs, dependency waiver, or silent smaller suite is justified.",
+    "Hash inventory, environment inference, and native execution authority remain separate artifacts and claims.",
+    "No historical V3 status or eligibility changes in response to this analysis."
+  ],
+  "limitations": [
+    "This is static retained-source analysis, not a native replay, extension qualification, or full code review.",
+    "Original per-case zero counters exclude historical metadata/build/install/tool/model/engineering costs; full lifecycle cost remains UNKNOWN.",
+    "Only case001 retained fetched author-test contents and an augmented tree; other author-head commits are metadata-only declarations here, and no head production contents were fetched.",
+    "The original audit reported 12915 substantive checks; this recovery did not rerun those helpers. It independently checked the retained raw inventory, source objects/worktree bytes, hashes and archives described above.",
+    "Index snapshots establish preservation during this recovery from its own start; they cannot restore unknown bytes from before the historical V3 audit.",
+    "The supplementary Git reads in this report are recorded; earlier rev-parse-only reads also set GIT_OPTIONAL_LOCKS=0 after the same initial snapshot."
+  ],
+  "original_v3_result_preserved": {
+    "G6": "UNKNOWN; cooperative same-UID context separation, not OS isolation",
+    "audit_status": "UNKNOWN_AUDIT_OBSTRUCTION",
+    "audit_substantive_check_count_reported_by_original_audit": 12915,
+    "collection_calls": 0,
+    "eligible_count": 0,
+    "historical_audit_index_mutations": 8,
+    "historical_raw_directory_identity": "UNKNOWN_AUDIT_SIDE_GIT_INDEX_REFRESH",
+    "native_calls": 0,
+    "original_result": "UNKNOWN_ADMISSION_SCREENING_SHORTFALL",
+    "pre_historical_audit_index_bytes": "UNKNOWN_NOT_CAPTURED",
+    "qualification_boundary": "V3 qualified admission-only environment selection; these seven refusals supplied no authentic native-learning obligation.",
+    "screened_cases": 7,
+    "stage_counts": {
+      "UNKNOWN_CONTRACT": 1,
+      "UNKNOWN_ENVIRONMENT_SELECTION": 6
+    }
+  },
+  "schema": "UDM_EXPOSED_V3_DIAGNOSTIC_ANALYSIS_V4",
+  "scope": "All seven original V3 fixed-pool cases, now authorized exposed development diagnostics; retained sources only.",
+  "separate_authorities": {
+    "environment_inference": "Source metadata, interpreter/ABI declarations, build/runtime/test requirements, markers and installed dependency closure constrain a finite catalog. A candidate profile is not native authority.",
+    "inventory": "Exact bytes, modes, blob identities and test/data provenance, including malformed data. Inventory is not successful compilation or native collection.",
+    "native_authority": "Preserved executable tests, doctests, conftests, imports, plugins, command/config semantics, native collection identities and genuine executions are required. Data-file syntax alone must not veto unrelated tests; malformed executable imports must fail."
+  },
+  "source_and_raw_integrity": {
+    "all_match_original_post_audit_inventory": true,
+    "archive_count_checked": 9,
+    "git_optional_locks_disabled_for_all_Git_reads": true,
+    "independent_index_snapshot": {
+      "after": "/tmp/v4-diagnostic-index-snapshots/after.json",
+      "all_generated_V3_screening_indexes": [
+        {
+          "after_sha256": "eb7c9a8d0075f757e16f329519aac3f62f293dcb9123a5f3f56eeb994126879f",
+          "after_snapshot": "/tmp/v4-diagnostic-index-snapshots/4510258c859bd8d4b902c16a689116e134a85acb6870bb1a516765f2d75675f8.after.index",
+          "before_sha256": "eb7c9a8d0075f757e16f329519aac3f62f293dcb9123a5f3f56eeb994126879f",
+          "before_snapshot": "/tmp/v4-diagnostic-index-snapshots/4510258c859bd8d4b902c16a689116e134a85acb6870bb1a516765f2d75675f8.index",
+          "path": "/workspace/qualification/native-frontier-v3-independent-screening/case-006/source-environment/metadata-source/.git/index",
+          "unchanged": true
+        },
+        {
+          "after_sha256": "ca5a6d79bd4399527d947deb93fcf373d346d68f2bf64b5deeda465e67d8b0df",
+          "after_snapshot": "/tmp/v4-diagnostic-index-snapshots/fffa9d08b2a4a707dfea96cc2d6e1e2c2d3e62de34933e4ff09ad165876e0a6e.after.index",
+          "before_sha256": "ca5a6d79bd4399527d947deb93fcf373d346d68f2bf64b5deeda465e67d8b0df",
+          "before_snapshot": "/tmp/v4-diagnostic-index-snapshots/fffa9d08b2a4a707dfea96cc2d6e1e2c2d3e62de34933e4ff09ad165876e0a6e.index",
+          "path": "/workspace/qualification/native-frontier-v3-independent-screening/case-004/source-environment/metadata-source/.git/index",
+          "unchanged": true
+        },
+        {
+          "after_sha256": "1cdf627c70001a4e3723a51d11ffc29f09df67992807179b918a164bd7c6ecc1",
+          "after_snapshot": "/tmp/v4-diagnostic-index-snapshots/2410da1bc83e1cbff73d12bea5fcef0e433ab93593f61b8c9bfd1570255fbda9.after.index",
+          "before_sha256": "1cdf627c70001a4e3723a51d11ffc29f09df67992807179b918a164bd7c6ecc1",
+          "before_snapshot": "/tmp/v4-diagnostic-index-snapshots/2410da1bc83e1cbff73d12bea5fcef0e433ab93593f61b8c9bfd1570255fbda9.index",
+          "path": "/workspace/qualification/native-frontier-v3-independent-screening/case-000/source-environment/metadata-source/.git/index",
+          "unchanged": true
+        },
+        {
+          "after_sha256": "f7a5dcf4217b7e591a896fb79b3693d6a22a545696b9f3dcaa228e68bf471d35",
+          "after_snapshot": "/tmp/v4-diagnostic-index-snapshots/57240d4891f33dc73d1d4ee09630dfb53963576fc3f218819a9052c2a7fc5c2b.after.index",
+          "before_sha256": "f7a5dcf4217b7e591a896fb79b3693d6a22a545696b9f3dcaa228e68bf471d35",
+          "before_snapshot": "/tmp/v4-diagnostic-index-snapshots/57240d4891f33dc73d1d4ee09630dfb53963576fc3f218819a9052c2a7fc5c2b.index",
+          "path": "/workspace/qualification/native-frontier-v3-independent-screening/case-003/source-environment/metadata-source/.git/index",
+          "unchanged": true
+        },
+        {
+          "after_sha256": "4c833e4b833d5b81e5ef37035b095e36658b5c55a293a98a0660ddf0e61d77a2",
+          "after_snapshot": "/tmp/v4-diagnostic-index-snapshots/148bb56f92129474fb2a810ae3078e474e0fa6e783dcc0298ebf87af17a039d0.after.index",
+          "before_sha256": "4c833e4b833d5b81e5ef37035b095e36658b5c55a293a98a0660ddf0e61d77a2",
+          "before_snapshot": "/tmp/v4-diagnostic-index-snapshots/148bb56f92129474fb2a810ae3078e474e0fa6e783dcc0298ebf87af17a039d0.index",
+          "path": "/workspace/qualification/native-frontier-v3-independent-screening/case-002/source-environment/metadata-source/.git/index",
+          "unchanged": true
+        },
+        {
+          "after_sha256": "e8cb2b679512e9efb0be103bc862e0a56288e86dea840fd4357704fe6707f48b",
+          "after_snapshot": "/tmp/v4-diagnostic-index-snapshots/d010a9962a20de857458758f9ee83e934a823b2350f11697f4b6f10cb30561c6.after.index",
+          "before_sha256": "e8cb2b679512e9efb0be103bc862e0a56288e86dea840fd4357704fe6707f48b",
+          "before_snapshot": "/tmp/v4-diagnostic-index-snapshots/d010a9962a20de857458758f9ee83e934a823b2350f11697f4b6f10cb30561c6.index",
+          "path": "/workspace/qualification/native-frontier-v3-independent-screening/case-001/source-environment/metadata-source/.git/index",
+          "unchanged": true
+        },
+        {
+          "after_sha256": "7e74a80190d0679d52fcd316e8bdc60f5b22a2e5d9c3a44a7803352c2f4d7d03",
+          "after_snapshot": "/tmp/v4-diagnostic-index-snapshots/dc7d8ae8a2c6ed10f1304892441d1f80a2d7caf88e08aecf06ca4b0ac5d725a3.after.index",
+          "before_sha256": "7e74a80190d0679d52fcd316e8bdc60f5b22a2e5d9c3a44a7803352c2f4d7d03",
+          "before_snapshot": "/tmp/v4-diagnostic-index-snapshots/dc7d8ae8a2c6ed10f1304892441d1f80a2d7caf88e08aecf06ca4b0ac5d725a3.index",
+          "path": "/workspace/qualification/native-frontier-v3-independent-screening/case-001/source-environment/native/source/.git/index",
+          "unchanged": true
+        },
+        {
+          "after_sha256": "df3f34e8497bb8ede87cd69a7b144a06b541d610818e50ea146960788b58d886",
+          "after_snapshot": "/tmp/v4-diagnostic-index-snapshots/7e05533b4d270cfdd30626d6768a8da02759235ff899c93c8e1ff419d1047970.after.index",
+          "before_sha256": "df3f34e8497bb8ede87cd69a7b144a06b541d610818e50ea146960788b58d886",
+          "before_snapshot": "/tmp/v4-diagnostic-index-snapshots/7e05533b4d270cfdd30626d6768a8da02759235ff899c93c8e1ff419d1047970.index",
+          "path": "/workspace/qualification/native-frontier-v3-independent-screening/case-005/source-environment/metadata-source/.git/index",
+          "unchanged": true
+        }
+      ],
+      "before": "/tmp/v4-diagnostic-index-snapshots/before.json",
+      "indexes_compared": 63,
+      "initial_indexes_snapshotted": 63,
+      "observed_changes": [],
+      "scope": "Every observed /workspace .git/index and linked-worktree gitdir index, captured independently before first Git read."
+    },
+    "independent_raw_inventory_entries_checked": 1351,
+    "no_archive_extraction": true,
+    "raw_inventory_scope": "Exact historical retained regular-file inventory; post-audit indexes are checked against the retained post-audit hashes, not invented pre-audit bytes.",
+    "tracked_source_files_checked": 687
+  },
+  "work_performed": {
+    "extension_implemented": false,
+    "frozen_V3_files_modified": false,
+    "frozen_auditor_or_selector_rerun": false,
+    "native_collection_calls": 0,
+    "native_execution_calls": 0,
+    "new_source_network_discovery": false,
+    "new_task_or_solution_search": false,
+    "task_code_imported_or_executed": false
+  }
+}

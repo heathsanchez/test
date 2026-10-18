@@ -1,0 +1,79 @@
+test_comparison_detects_same_size_change_creation_removal_and_new_worktree (research.unified_consequence_runtime.test_audit_index_v4.AuditIndexV4Tests.test_comparison_detects_same_size_change_creation_removal_and_new_worktree) ... FAIL
+test_failed_git_read_retains_before_after_and_reports_change_without_restoring (research.unified_consequence_runtime.test_audit_index_v4.AuditIndexV4Tests.test_failed_git_read_retains_before_after_and_reports_change_without_restoring) ... FAIL
+test_git_directory_overrides_are_refused_instead_of_auditing_wrong_repository (research.unified_consequence_runtime.test_audit_index_v4.AuditIndexV4Tests.test_git_directory_overrides_are_refused_instead_of_auditing_wrong_repository) ... FAIL
+test_missing_git_still_retains_interval_evidence (research.unified_consequence_runtime.test_audit_index_v4.AuditIndexV4Tests.test_missing_git_still_retains_interval_evidence) ... FAIL
+test_mutating_commands_and_output_or_external_tool_flags_are_refused (research.unified_consequence_runtime.test_audit_index_v4.AuditIndexV4Tests.test_mutating_commands_and_output_or_external_tool_flags_are_refused) ... FAIL
+test_real_git_status_preserves_index_bytes (research.unified_consequence_runtime.test_audit_index_v4.AuditIndexV4Tests.test_real_git_status_preserves_index_bytes) ... FAIL
+test_snapshot_hashes_all_linked_indexes_and_explicit_absence_without_git (research.unified_consequence_runtime.test_audit_index_v4.AuditIndexV4Tests.test_snapshot_hashes_all_linked_indexes_and_explicit_absence_without_git) ... FAIL
+test_snapshot_includes_inherited_alternate_index (research.unified_consequence_runtime.test_audit_index_v4.AuditIndexV4Tests.test_snapshot_includes_inherited_alternate_index) ... FAIL
+
+======================================================================
+FAIL: test_comparison_detects_same_size_change_creation_removal_and_new_worktree (research.unified_consequence_runtime.test_audit_index_v4.AuditIndexV4Tests.test_comparison_detects_same_size_change_creation_removal_and_new_worktree)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_audit_index_v4.py", line 21, in setUp
+    self.assertIsNotNone(importlib.util.find_spec(MODULE),
+AssertionError: unexpectedly None : new index audit helper must exist
+
+======================================================================
+FAIL: test_failed_git_read_retains_before_after_and_reports_change_without_restoring (research.unified_consequence_runtime.test_audit_index_v4.AuditIndexV4Tests.test_failed_git_read_retains_before_after_and_reports_change_without_restoring)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_audit_index_v4.py", line 21, in setUp
+    self.assertIsNotNone(importlib.util.find_spec(MODULE),
+AssertionError: unexpectedly None : new index audit helper must exist
+
+======================================================================
+FAIL: test_git_directory_overrides_are_refused_instead_of_auditing_wrong_repository (research.unified_consequence_runtime.test_audit_index_v4.AuditIndexV4Tests.test_git_directory_overrides_are_refused_instead_of_auditing_wrong_repository)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_audit_index_v4.py", line 21, in setUp
+    self.assertIsNotNone(importlib.util.find_spec(MODULE),
+AssertionError: unexpectedly None : new index audit helper must exist
+
+======================================================================
+FAIL: test_missing_git_still_retains_interval_evidence (research.unified_consequence_runtime.test_audit_index_v4.AuditIndexV4Tests.test_missing_git_still_retains_interval_evidence)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_audit_index_v4.py", line 21, in setUp
+    self.assertIsNotNone(importlib.util.find_spec(MODULE),
+AssertionError: unexpectedly None : new index audit helper must exist
+
+======================================================================
+FAIL: test_mutating_commands_and_output_or_external_tool_flags_are_refused (research.unified_consequence_runtime.test_audit_index_v4.AuditIndexV4Tests.test_mutating_commands_and_output_or_external_tool_flags_are_refused)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_audit_index_v4.py", line 21, in setUp
+    self.assertIsNotNone(importlib.util.find_spec(MODULE),
+AssertionError: unexpectedly None : new index audit helper must exist
+
+======================================================================
+FAIL: test_real_git_status_preserves_index_bytes (research.unified_consequence_runtime.test_audit_index_v4.AuditIndexV4Tests.test_real_git_status_preserves_index_bytes)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_audit_index_v4.py", line 21, in setUp
+    self.assertIsNotNone(importlib.util.find_spec(MODULE),
+AssertionError: unexpectedly None : new index audit helper must exist
+
+======================================================================
+FAIL: test_snapshot_hashes_all_linked_indexes_and_explicit_absence_without_git (research.unified_consequence_runtime.test_audit_index_v4.AuditIndexV4Tests.test_snapshot_hashes_all_linked_indexes_and_explicit_absence_without_git)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_audit_index_v4.py", line 21, in setUp
+    self.assertIsNotNone(importlib.util.find_spec(MODULE),
+AssertionError: unexpectedly None : new index audit helper must exist
+
+======================================================================
+FAIL: test_snapshot_includes_inherited_alternate_index (research.unified_consequence_runtime.test_audit_index_v4.AuditIndexV4Tests.test_snapshot_includes_inherited_alternate_index)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_audit_index_v4.py", line 21, in setUp
+    self.assertIsNotNone(importlib.util.find_spec(MODULE),
+AssertionError: unexpectedly None : new index audit helper must exist
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.001s
+
+FAILED (failures=8)
+
+exit_code=1

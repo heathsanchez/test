@@ -1,0 +1,151 @@
+name: UDM prospective G2 pair V2 training
+
+on:
+  push:
+    branches:
+      - research/udm-g2-prospective-pair-v1-20261018
+    paths:
+      - research/unified_consequence_runtime/G2_PROSPECTIVE_PAIR_PREQUERY_V2.json
+      - research/unified_consequence_runtime/G2_PROSPECTIVE_PAIR_ROLE_MANIFEST_V2.json
+      - research/unified_consequence_runtime/g2_prospective_pair_training_v2.py
+      - research/unified_consequence_runtime/qualify_g2_prospective_pair_training_v2.py
+      - research/unified_consequence_runtime/G2_PROSPECTIVE_PAIR_ENVIRONMENT_REPAIR_V21.json
+      - .github/workflows/udm-g2-prospective-pair-v2-training.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  training:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+      GIT_NO_REPLACE_OBJECTS: "1"
+      GIT_OPTIONAL_LOCKS: "0"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Bind frozen prequery roles and qualified method before source
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/g2-prospective-v2
+          cmp research/unified_consequence_runtime/G2_PROSPECTIVE_PAIR_PREQUERY_V2.json             <(git show bfa8b0ffa0874231d3fe0b3bfa5d21fdb950488f:research/unified_consequence_runtime/G2_PROSPECTIVE_PAIR_PREQUERY_V2.json)
+          cmp research/unified_consequence_runtime/G2_PROSPECTIVE_PAIR_ROLE_MANIFEST_V2.json             <(git show a96afabe52abb60a899e17465a3c152fd2c7da92:research/unified_consequence_runtime/G2_PROSPECTIVE_PAIR_ROLE_MANIFEST_V2.json)
+          for f in             research/unified_consequence_runtime/G2_MUTABLE_CLOSURE_EQUIVALENCE_FIX_PROTOCOL_V2.json             research/unified_consequence_runtime/g2_mutable_closure_trace_plugin_v2.py             research/unified_consequence_runtime/g2_anyio_mutable_closure_equivalence_fix_v2.py             research/unified_consequence_runtime/qualify_g2_anyio_mutable_closure_equivalence_fix_v2.py
+          do
+            cmp "$f" <(git show 094e2ddc3ba601a00eaf368151172a361e5542da:"$f")
+          done
+          python -B -m py_compile             research/unified_consequence_runtime/g2_prospective_pair_training_v2.py             research/unified_consequence_runtime/qualify_g2_prospective_pair_training_v2.py
+          echo PASS_FROZEN_PROSPECTIVE_METHOD_AND_ROLES
+
+      - name: Open TRAINING base and exact author-test blob only
+        run: |
+          set -euo pipefail
+          TRAIN=/tmp/g2-prospective-train
+          git init -q "$TRAIN"
+          git -C "$TRAIN" remote add upstream https://github.com/python-attrs/attrs.git
+          git -C "$TRAIN" fetch -q --depth=1 --filter=blob:none --no-tags upstream 6851ab593cd25f3c14393e9355d57d22bec2a074
+          git -C "$TRAIN" checkout -q --detach 6851ab593cd25f3c14393e9355d57d22bec2a074
+          git -C "$TRAIN" fetch -q --depth=1 --filter=blob:none --no-tags upstream 2e082f1c1efb019885fbdb601b32f8464dbe5d47
+          test "$(git -C "$TRAIN" rev-parse HEAD)" = 6851ab593cd25f3c14393e9355d57d22bec2a074
+          git -C "$TRAIN" show 6851ab593cd25f3c14393e9355d57d22bec2a074:tests/test_annotations.py > /tmp/g2-base-test.py
+          git -C "$TRAIN" show 2e082f1c1efb019885fbdb601b32f8464dbe5d47:tests/test_annotations.py > /tmp/g2-head-test.py
+          cp /tmp/g2-head-test.py "$TRAIN/tests/test_annotations.py"
+          test "$(git -C "$TRAIN" diff --name-only)" = tests/test_annotations.py
+          sha256sum "$TRAIN/src/attr/_make.py" /tmp/g2-base-test.py /tmp/g2-head-test.py             > evidence/g2-prospective-v2/TRAINING_SOURCE_HASHES.txt
+          echo 'SEALED_UNOPENED tox-dev/tox#4168' > evidence/g2-prospective-v2/FUTURE_SEAL.txt
+          echo PASS_TRAINING_ONLY_SOURCE_OPEN
+
+      - name: Install fixed prospective environment policy
+        run: |
+          set -euo pipefail
+          TRAIN=/tmp/g2-prospective-train
+          python -m pip install --disable-pip-version-check --no-input 'pip==25.3'
+          python -m pip install --disable-pip-version-check --no-input -e "$TRAIN"
+          supplement="$(python - <<'PY'
+          import pathlib,tomllib
+          p=pathlib.Path('/tmp/g2-prospective-train/pyproject.toml')
+          d=tomllib.loads(p.read_text()) if p.is_file() else {}
+          groups=d.get('dependency-groups',{})
+          extras=d.get('project',{}).get('optional-dependencies',{})
+          if 'test' in groups: print('GROUP:test')
+          elif 'tests' in groups: print('GROUP:tests')
+          elif 'test' in extras: print('EXTRA:test')
+          elif 'tests' in extras: print('EXTRA:tests')
+          elif 'dev' in extras: print('EXTRA:dev')
+          else: print('NONE')
+          PY
+          )"
+          echo "$supplement" | tee evidence/g2-prospective-v2/TEST_SUPPLEMENT.txt
+          case "$supplement" in
+            GROUP:test)
+              python -m pip install --disable-pip-version-check --no-input --group "$TRAIN/pyproject.toml:test"
+              ;;
+            GROUP:tests)
+              python -m pip install --disable-pip-version-check --no-input --group "$TRAIN/pyproject.toml:tests"
+              ;;
+            EXTRA:test)
+              python -m pip install --disable-pip-version-check --no-input -e "$TRAIN[test]"
+              ;;
+            EXTRA:tests)
+              python -m pip install --disable-pip-version-check --no-input -e "$TRAIN[tests]"
+              ;;
+            EXTRA:dev)
+              python -m pip install --disable-pip-version-check --no-input -e "$TRAIN[dev]"
+              ;;
+            NONE)
+              ;;
+            *)
+              exit 23
+              ;;
+          esac
+          python -m pip install --disable-pip-version-check --no-input 'pytest==9.1.1' 'pytest-cov==7.0.0'
+          python -m pip check
+          python -m pip freeze > evidence/g2-prospective-v2/PIP_FREEZE.txt
+
+      - name: Fetch exact V104 and MSI authorities
+        run: |
+          set -euo pipefail
+          git init -q /tmp/g2-prospective-v104
+          git -C /tmp/g2-prospective-v104 fetch -q --depth=1 https://github.com/heathsanchez/triskelion.git 426c54f7c774560e0fabe7213c5ef333b1327c71
+          git -C /tmp/g2-prospective-v104 checkout -q --detach 426c54f7c774560e0fabe7213c5ef333b1327c71
+          git init -q /tmp/g2-prospective-msi
+          git -C /tmp/g2-prospective-msi fetch -q --depth=1 https://github.com/heathsanchez/Minimal-Sufficient-Interface.git 56cfd7b523e3592cae4eafa5468f437ccb94dbe9
+          git -C /tmp/g2-prospective-msi checkout -q --detach 56cfd7b523e3592cae4eafa5468f437ccb94dbe9
+          echo PASS_PINNED_V104_MSI
+
+      - name: Run unchanged method on prospective TRAINING role
+        run: |
+          set -euo pipefail
+          rm -rf "$RUNNER_TEMP/g2-prospective-training"
+          set +e
+          PYTHONPATH="$GITHUB_WORKSPACE" python -B             research/unified_consequence_runtime/g2_prospective_pair_training_v2.py             /tmp/g2-prospective-train             /tmp/g2-prospective-v104             /tmp/g2-prospective-msi             /tmp/g2-base-test.py             /tmp/g2-head-test.py             "$RUNNER_TEMP/g2-prospective-training"             | tee evidence/g2-prospective-v2/STDOUT.json
+          rc=${PIPESTATUS[0]}
+          set -e
+          if [ -d "$RUNNER_TEMP/g2-prospective-training" ]; then
+            cp -a "$RUNNER_TEMP/g2-prospective-training" evidence/g2-prospective-v2/training
+          fi
+          exit "$rc"
+
+      - name: Independently check training boundary
+        if: success()
+        run: |
+          python -B research/unified_consequence_runtime/qualify_g2_prospective_pair_training_v2.py             evidence/g2-prospective-v2/training/RESULT.json             /tmp/g2-prospective-train             evidence/g2-prospective-v2/INDEPENDENT_TRAINING_CHECK.json
+
+      - name: Preserve complete evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: udm-g2-prospective-pair-v2-training
+          retention-days: 90
+          if-no-files-found: error
+          path: evidence/g2-prospective-v2/

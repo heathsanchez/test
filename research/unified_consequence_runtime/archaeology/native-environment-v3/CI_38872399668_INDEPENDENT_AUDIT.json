@@ -1,0 +1,159 @@
+{
+  "artifact": {
+    "bytes": 159233899,
+    "kind": "zip",
+    "path": "/workspace/qualification/env-selection-v3-runtime/CI_38872399668_GREEN.zip",
+    "sha256": "ebbde08e3e31c86951cf9e812cf20919661d2e11e20e39afe5f5ba2c6e2b9996"
+  },
+  "audit_script_sha256": "653c8f2ed1f92faeafbde6418851e4d6dad4cb13a34d0d07ce7888afc69e9d68",
+  "baseline_commit": "fa6bb190eff9b374ab7a95aaf9c618ad2db31419",
+  "evidence_limits": [
+    "Structural/hash/XML audit only; no artifact code or original suite executed by auditor.",
+    "Actual host executable, stdlib and installed package bytes are not all archived; retained manifests/child claims are linked under exact reviewed frozen controller source.",
+    "Pinned package pre-build baseline exists in controller memory; final file inventory and successful source-enforced comparison are retained.",
+    "Original_FLASH_agrees is the frozen controller result; raw prior ledger/CAS bytes are independently equal.",
+    "Admission-only exposed diagnostics do not establish prospective G2, executed coding-agent comparison, G3-G6 or nonbypassability."
+  ],
+  "execution_boundary": {
+    "artifact_code_executed": false,
+    "native_reexecutions": 0,
+    "network_queries": 0,
+    "repository_edits": false,
+    "target_queries": 0
+  },
+  "raw_result": {
+    "archive_member": "environment-v3/RESULT.json",
+    "bytes": 6115707,
+    "exact_raw_bytes": true,
+    "path": "/workspace/qualification/env-selection-v3-security/ci3-audit/CI_38872399668_RESULT_RAW.json",
+    "sha256": "fdc79a45c42113b5d4bb7508a29ba9722af96343ad5c37d4c57e99242aae0dce"
+  },
+  "run_id": "38872399668",
+  "schema": "UDM_CI3_INDEPENDENT_ARTIFACT_AUDIT_V1",
+  "sections": {
+    "admission_and_runtime": {
+      "G2_G6": "UNKNOWN",
+      "diagnostic_attempts": {
+        "collection_calls": 6,
+        "native_calls": 4,
+        "subprocess_attempts": 10
+      },
+      "original_stdlib_cache_receipts": [
+        "runtime-bootstrap/cpython-3.12.14-pytest-8.4.1-linux-x86_64-stdlib-cache.json",
+        "runtime-bootstrap/cpython-3.6.5-pytest-5.4.3-linux-x86_64-stdlib-cache.json"
+      ],
+      "postfixture_exact_runtime_bytes": true,
+      "status": "PASS"
+    },
+    "github_provenance": {
+      "artifact_id": 12034946936,
+      "artifact_provenance_sha256": "ed792e6b31513dc5f8f040cd088594754305428e52aacec43f421fa5f58816e6",
+      "github_artifact_digest": "sha256:ebbde08e3e31c86951cf9e812cf20919661d2e11e20e39afe5f5ba2c6e2b9996",
+      "run_conclusion": "success",
+      "run_provenance_sha256": "6f47debd2867ed9664ca809e485bfd40b361ec0388808fef25dac9be020d589d",
+      "run_url": "https://github.com/heathsanchez/test/actions/runs/38872399668",
+      "status": "PASS",
+      "transport_boundary": "Provenance JSON and ZIP independently obtained by root; auditor made no network query."
+    },
+    "manifest": {
+      "all_bytes_sha256": true,
+      "evidence_tar_sha256": "203730331506a72914fe462789193e47941c2e3e05d7f7287dd66b7efb631628",
+      "manifest_sha256": "4f4c258bf6ea22d059119a3a847ddd382c4464af191b33c4fad30c85e64cfe12",
+      "members": 744,
+      "status": "PASS"
+    },
+    "retention_and_regressions": {
+      "CAS_objects": 76,
+      "inventory_rows": 70,
+      "logs": {
+        "contracts.log": {
+          "seconds": 680.212,
+          "sha256": "a7e4ef06ce75c5ef6eda10f3a227c2a1acc63c79d2c66d8ae052d16438c54911",
+          "tests": 178
+        },
+        "legacy-contracts.log": {
+          "seconds": 47.61,
+          "sha256": "814302fe1b08a0fc7600d5afeb5dd0bd376b230a90148abdae394dea0b753d94",
+          "tests": 18
+        }
+      },
+      "original_raw_state_equal": true,
+      "original_workflow_conclusion": "failure",
+      "records": 246,
+      "reuse_promotes_no_red_or_unknown": true,
+      "reused_original_core_contracts": 193,
+      "reused_source_pins": 323,
+      "status": "PASS"
+    },
+    "sources": {
+      "frozen_files": 842,
+      "preserved_original_git_files": 1311,
+      "protocol_binding": "06cb0b51984be5096dad7d80e9b4eb16d16f77bae298b60081228e6f48a8c310",
+      "source_members": 515,
+      "status": "PASS"
+    },
+    "task-0": {
+      "collection_runs": 3,
+      "junit": {
+        "errors": 0,
+        "failures": 1,
+        "passed": 337,
+        "skipped": 0,
+        "tests": 338
+      },
+      "native_runs": 2,
+      "original_production_preserved": true,
+      "packet_and_replay_equal": true,
+      "pinned_distributions": 22,
+      "profile": "cpython-3.6.5-pytest-5.4.3-linux-x86_64",
+      "protected_failed_nodes": [
+        [
+          "tests/test_monkey_patching.py::TestMonkeyPatching::test_wrap_class_method_inherited"
+        ],
+        [
+          "tests/test_monkey_patching.py::TestMonkeyPatching::test_wrap_class_method_inherited"
+        ]
+      ],
+      "repository": "grahamdumpleton/wrapt",
+      "source_metadata_base_equal": true,
+      "status": "PASS",
+      "suite_tests": 338
+    },
+    "task-1": {
+      "collection_runs": 3,
+      "junit": {
+        "errors": 0,
+        "failures": 1,
+        "passed": 767,
+        "skipped": 0,
+        "tests": 768
+      },
+      "native_runs": 2,
+      "original_production_preserved": true,
+      "packet_and_replay_equal": true,
+      "pinned_distributions": 39,
+      "profile": "cpython-3.12.14-pytest-8.4.1-linux-x86_64",
+      "protected_failed_nodes": [
+        [
+          "tests/test_more.py::BucketTests::test_falsey_validator_is_honoured"
+        ],
+        [
+          "tests/test_more.py::BucketTests::test_falsey_validator_is_honoured"
+        ]
+      ],
+      "repository": "more-itertools/more-itertools",
+      "source_metadata_base_equal": true,
+      "status": "PASS",
+      "suite_tests": 768
+    }
+  },
+  "source_commit": "9b05faab72fa36f4304965b65b2564c626314b89",
+  "status": "PASS_ADMISSION_ONLY_CI3_ARTIFACT_AUDIT",
+  "verdicts": {
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN"
+  }
+}

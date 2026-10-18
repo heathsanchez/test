@@ -1,0 +1,33 @@
+{
+  "child_system_seconds": 0.004102,
+  "child_user_seconds": 0.09351999999999999,
+  "command": [
+    "/tmp/udm-v4-acceptance-venv/bin/python",
+    "-B",
+    "-m",
+    "unittest",
+    "-v",
+    "research.unified_consequence_runtime.test_native_environment_v41.NativeEnvironmentBindingsV41.test_public_requirement_types_used_by_original_provisioner_remain_exported",
+    "research.unified_consequence_runtime.test_native_environment_v41.NativeEnvironmentBindingsV41.test_original_hashlock_renderer_executes_through_versioned_binding",
+    "research.unified_consequence_runtime.test_native_environment_v41.NativeEnvironmentBindingsV41.test_private_bindings_preserve_original_source_and_native_code"
+  ],
+  "cwd": "/workspace/qualification",
+  "exit_code": 0,
+  "expected_tests": 3,
+  "finished_at_utc": "2026-10-16T19:25:28.201906+00:00",
+  "freeze_path": "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-authority-v41/PUBLIC_BINDING_FREEZE.json",
+  "freeze_sha256": "2435c8abf70edab1200da72c13589e45b5b2a2e0e874e0ca38bf0d4d30925596",
+  "log": "/workspace/qualification/native-authority-v41-core-review/alias-recheck/tests.log",
+  "log_sha256": "dd07df117b6024a12ee7ac557cd9f69d93346ff37e6282139d0e68a340d76fb0",
+  "native_calls": 0,
+  "schema": "UDM_V41_PUBLIC_BINDING_RECHECK_V1",
+  "source_sha256_before_fix_frozen": "056b3edc90cf1c6a568360cf9ba08f054ed5a50d6ad8cd3d90c8d38bd3dd182d",
+  "source_sha256_current": "951776b61bcb90df29e106e7555d1bcd972f218744b00faa9a17cc9a4827317a",
+  "started_at_utc": "2026-10-16T19:25:28.103781+00:00",
+  "status": "PASS",
+  "tests_match_freeze": true,
+  "tests_sha256_after": "c8aaaf81e31fdd54ea51b818aea50d740ed121945f4dfd008fda48bb9c2cd0be",
+  "tests_sha256_before": "c8aaaf81e31fdd54ea51b818aea50d740ed121945f4dfd008fda48bb9c2cd0be",
+  "tests_sha256_frozen": "c8aaaf81e31fdd54ea51b818aea50d740ed121945f4dfd008fda48bb9c2cd0be",
+  "wall_seconds": 0.09792174399990472
+}

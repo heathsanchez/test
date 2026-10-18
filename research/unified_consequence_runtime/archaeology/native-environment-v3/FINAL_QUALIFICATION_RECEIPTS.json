@@ -1,0 +1,73 @@
+{
+  "schema": "UDM_NATIVE_SELECTION_V3_FINAL_RECEIPTS",
+  "report_only": true,
+  "scientific_source": "07bfccda862ed4853c4eb9932c9d1f86b5165555",
+  "environment_source": "9b05faab72fa36f4304965b65b2564c626314b89",
+  "scientific_status": "UNKNOWN_NO_ADMITTED_NATIVE_OBLIGATION",
+  "qualification_artifacts": [
+    {
+      "run_id": 38872399668,
+      "artifact_id": 12034946936,
+      "conclusion": "success",
+      "zip_bytes": 159233899,
+      "zip_sha256": "ebbde08e3e31c86951cf9e812cf20919661d2e11e20e39afe5f5ba2c6e2b9996"
+    },
+    {
+      "run_id": 38877891483,
+      "artifact_id": 12035773900,
+      "conclusion": "failure",
+      "zip_bytes": 111764008,
+      "zip_sha256": "d788ee6fe5f11d54f9439fb0fbb466b16d6d0d99f3b9c482dd78e81dcc6c5463"
+    }
+  ],
+  "files": {
+    "CI_38877891483_RUN.json": {
+      "bytes": 208,
+      "sha256": "3e50d72d245576624c48b7cb683788ea309926d544ec987bddf595567209d4c2"
+    },
+    "CI_38877891483_ARTIFACTS.json": {
+      "bytes": 461,
+      "sha256": "f9a42af22902bb6204dbe5ed3611f61c4a2a831f42ee1c398367c0b3cb1a2925"
+    },
+    "CI_38877891483_INDEPENDENT_AUDIT.json": {
+      "bytes": 3398,
+      "sha256": "15e0ece8fdfe592ebb6db4fbdad631a2857ac96378c47b212be6234fb375c8c4"
+    },
+    "INDEPENDENT_PACKAGE_READBACK.json": {
+      "bytes": 4360,
+      "sha256": "53a683db3b334017c02fe28a890df15d4f4429633411a6e7e5c292b1b0204398"
+    },
+    "CI_38877891483_CI_BOUNDARY.json": {
+      "bytes": 1023,
+      "sha256": "3c64b2ba8554d8fb0c44f3e4e00834144f087d844efa24e461c708bb782b15ba"
+    },
+    "CI_38877891483_CI_ASSESSMENT.json": {
+      "bytes": 343,
+      "sha256": "d65a4a1e8ec539c43ed1421cf7df0e256e9b9a42dd91d235c6d5026febb6564e"
+    },
+    "CI_38877891483_READINESS.json": {
+      "bytes": 288,
+      "sha256": "03cb69e9b7b336ec51aa02359c4f6bc3eb8609df3c993fe03423f540fde548c0"
+    },
+    "CI_38877891483_MANIFEST.json": {
+      "bytes": 2025,
+      "sha256": "c1a234ae947355014f96320114b1806d67c53ebec5f29ed71d499a1b25af8f19"
+    },
+    "CI_38877891483_ORIGINAL_METHOD_OBJECTS.json": {
+      "bytes": 448,
+      "sha256": "7b04a9a932c7b05c57ec9a1d9c38ea8fcb82c0a525dfd68f364f0d1af51b0ae1"
+    },
+    "ROS_SYNC.json": {
+      "bytes": 2481,
+      "sha256": "848b00454a30866441f64153d2e0429eda5215350ccb11505b3f0bcf693c2e75"
+    },
+    "ROS_CHECKPOINT.md": {
+      "bytes": 5531,
+      "sha256": "ef495e1779c9baaa23fd6b5a01c23e80eadf160e73696e777a37c7ab318c926f"
+    },
+    "ROS_CANONICAL_PREPEND.md": {
+      "bytes": 1869,
+      "sha256": "aeaf0449470830b0fd64bac7cbb91e163e18ae1fe56afa30fc005d8b92637362"
+    }
+  }
+}

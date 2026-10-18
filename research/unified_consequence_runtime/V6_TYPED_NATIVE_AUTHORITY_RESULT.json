@@ -1,0 +1,96 @@
+{
+  "schema": "UDM_TYPED_NATIVE_AUTHORITY_V6_FINAL",
+  "observed_date": "2026-10-17",
+  "branch": "research/udm-typed-native-authority-v6-20261017",
+  "base_commit": "0231fc7d77378009271250788875bdf53a7a3d07",
+  "frozen_contract_commit": "a61af02f4edb2ab5a08e7e3ff5e98e4684e826a4",
+  "frozen_contract_blob": "0489cd0eebdd9880eb8065c2fbe8a554ea248a0d",
+  "first_expected_red_run": 38972973606,
+  "qualified_source_commit": "74b1bd4b9357a32e6ec3d68fc26ea12d23c7780f",
+  "qualified_run": 38973418887,
+  "qualified_artifact_id": 12077887309,
+  "qualified_artifact_zip_sha256": "41a620f8afc05b72278de136ffabb31ca9cc36199d9c27c011f7c822accb1cee",
+  "zip_independently_downloaded_and_sha256_verified": true,
+  "qualified_contracts": {
+    "total": 39,
+    "passing": 39,
+    "scope": "15 new V6 frozen tests, 9 V5 Git tree tests, 15 inherited original native source/collection authority tests"
+  },
+  "original_verifier_preserved": true,
+  "typed_source_scoped_native": {
+    "repository": "jquast/wcwidth",
+    "commit": "784d08c6cf6b67e19f34ae5ddb9bb8b4aa4f17fe",
+    "git_tree": "016bdbe4de8e62621426020b679054f3a092882f",
+    "typed_manifest_sha256": "70d9b00b968dde7cd0594dcf74943825e702c3a9d49a22edce0b42de5e7eba51",
+    "original_entries": {
+      "regular": 108,
+      "symlink": 1,
+      "gitlink": 1
+    },
+    "tested_scope": [
+      "tests/test_width.py"
+    ],
+    "protected_prefixes": [
+      "tests/test_width.py::test_width_basic"
+    ],
+    "first": {
+      "status": "PASS_SCOPED_NATIVE",
+      "native_exit": 0,
+      "passed": 202,
+      "failed": 0,
+      "skipped": 0,
+      "errors": 0,
+      "imported_project_files": 31
+    },
+    "second": {
+      "status": "PASS_SCOPED_NATIVE",
+      "native_exit": 0,
+      "passed": 202,
+      "failed": 0,
+      "skipped": 0,
+      "errors": 0,
+      "imported_project_files": 31
+    },
+    "matching_nodeids": true,
+    "matching_imported_project_file_names": true,
+    "all_stage_checks_passed": true,
+    "scope_note": "Original source is previously exposed. Authoritative for bounded pinned test file, not for original full project test suite or arbitrary source language."
+  },
+  "counterexamples_covered": [
+    "absolute/relative escape symlink",
+    "dangling symlink",
+    "symlink cycle",
+    "directory symlink",
+    "symlink into gitlink",
+    "symlink target mutation",
+    "regular-content/mode mutation",
+    "unexpected staged file or materialized gitlink",
+    "protected assertion failure",
+    "skipped test",
+    "deselected test",
+    "malformed original test collection",
+    "source modification during trusted native execution",
+    "unmet protected prefix"
+  ],
+  "no_third_party_write": true,
+  "old_v41_scientific_red_preserved": {
+    "run": 38957756405,
+    "screened": 7,
+    "native_protected_tests": 0
+  },
+  "verdicts": {
+    "typed_transport": "WARRANTED_BOUNDED",
+    "scoped_native": "WARRANTED_BOUNDED",
+    "independently_sound_for_arbitrary_untrusted_python": "NOT_ESTABLISHED",
+    "full_external_suite": "NOT_RUN",
+    "original_full_lifecycle_comparator": "NOT_RUN",
+    "G0_G1": "PRESERVED_PREVIOUS_BOUNDED",
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN"
+  },
+  "unresolved": "Versioned adapter from V6 typed scoped native source evidence to the existing MSI/V104 UDM controller and independently frozen previously uninspected A/B tasks; V4.1 2 conditional-tox and 1 dynamic-metadata UNKNOWNs remain. Full native suite parity, external agent economic advantage, formal correspondence and non-bypassable containment not qualified.",
+  "economic_cost": "UNKNOWN_COMPLETE_LIFECYCLE; original test CI wall and individual subprocess times measured only."
+}

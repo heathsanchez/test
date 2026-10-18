@@ -1,0 +1,55 @@
+{
+  "activated_extension_extras": [
+    {
+      "distribution": "coverage",
+      "extra": "toml"
+    },
+    {
+      "distribution": "pytest-xdist",
+      "extra": "psutil"
+    }
+  ],
+  "added_pins": [
+    "ast-serialize==0.13.0",
+    "librt==0.16.0",
+    "mypy-extensions==1.1.0",
+    "mypy==2.4.0",
+    "pytest-cov==6.3.0",
+    "setuptools-git-versioning==3.2.0"
+  ],
+  "catalog_fingerprint": "c71b043cd4da5d87ed7295095081c7aa9059ab2ab177a1798b8b362acf9f381d",
+  "catalog_sha256": "2050def754f8b0b7d39f3ea256a6c4a5997876fd21ebd6a1afb134b06cb8dfc6",
+  "immutable_modern_pins": 39,
+  "legacy_row_unchanged": true,
+  "modern_pin_count": 45,
+  "native_tests_executed": false,
+  "new_plugin_license": {
+    "distribution": "pytest-cov",
+    "module": "pytest_cov.plugin",
+    "version": "6.3.0"
+  },
+  "old_package_records_preserved": 61,
+  "package_metadata_sha256": "79b82db4d56056cb268b99e9cc9da2f54768c6ee2696f13fd4264864b20bff89",
+  "profiles": [
+    {
+      "id": "cpython-3.6.5-pytest-5.4.3-linux-x86_64",
+      "pytest_version": "5.4.3",
+      "python_version": "3.6.5",
+      "reason": null,
+      "reasons": [],
+      "status": "COMPATIBLE"
+    },
+    {
+      "id": "cpython-3.12.14-pytest-8.4.1-linux-x86_64",
+      "pytest_version": "8.4.1",
+      "python_version": "3.12.14",
+      "reason": null,
+      "reasons": [],
+      "status": "COMPATIBLE"
+    }
+  ],
+  "protocol_sha256": "5c5abc8e6f210306287f7714249ab98e6fc3b0a96c3070097d571eb81c0500f3",
+  "schema": "UDM_NATIVE_PROFILE_METADATA_RECEIPT_V41",
+  "status": "PASS_EXACT_METADATA_AND_EXTRA_CLOSURE",
+  "target_source_accessed": false
+}

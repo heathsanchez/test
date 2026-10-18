@@ -1,0 +1,904 @@
+{
+  "schema": "UDM_V41_RETAINED_SCREENING_AUDIT",
+  "status": "PASS_RETAINED_SCREENING_BINDINGS",
+  "checks": [
+    {
+      "check": "bound:/workspace/qualification/native-authority-v41-profile-preparation/RUNTIMES.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "runner_prelaunch_code_binding",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "runner_ledger_identity",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "exact_request_inventory",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "authority_binding",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "complete_ordered_meter",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "controller_summary_complete",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "bound:/workspace/qualification/native-authority-v41-screening-requests/request-000.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-000:request_exact",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-000:identities",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "bound:/workspace/qualification/native-authority-v41-screening-sealed/case-000/SCREENING_CASE.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-000:sealed_bytes",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-000:public_envelope_exact",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-000:case_complete",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-000:refusal_before_native",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-000:runtime_inventory_binding",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-000:setup_phase_order",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-000:phase_seconds:0",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-000:nonnative_phase:0",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-000:phase_seconds:1",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-000:phase_log:1",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-000:phase_seconds:2",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-000:phase_log:2",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-000:phase_seconds:3",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-000:phase_log:3",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-000:exact_source_transport:metadata-init",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-000:exact_source_transport:metadata-fetch",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-000:exact_source_transport:metadata-checkout",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-000:cost_nesting",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "bound:/workspace/qualification/native-authority-v41-screening-requests/request-001.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-001:request_exact",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-001:identities",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "bound:/workspace/qualification/native-authority-v41-screening-sealed/case-001/SCREENING_CASE.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-001:sealed_bytes",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-001:public_envelope_exact",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-001:case_complete",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-001:refusal_before_native",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-001:runtime_inventory_binding",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-001:setup_phase_order",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-001:phase_seconds:0",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-001:nonnative_phase:0",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-001:phase_seconds:1",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-001:phase_log:1",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-001:phase_seconds:2",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-001:phase_log:2",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-001:phase_seconds:3",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-001:phase_log:3",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-001:exact_source_transport:metadata-init",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-001:exact_source_transport:metadata-fetch",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-001:exact_source_transport:metadata-checkout",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-001:cost_nesting",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "bound:/workspace/qualification/native-authority-v41-screening-requests/request-002.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-002:request_exact",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-002:identities",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "bound:/workspace/qualification/native-authority-v41-screening-sealed/case-002/SCREENING_CASE.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-002:sealed_bytes",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-002:public_envelope_exact",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-002:case_complete",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-002:refusal_before_native",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-002:runtime_inventory_binding",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-002:setup_phase_order",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-002:phase_seconds:0",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-002:nonnative_phase:0",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-002:phase_seconds:1",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-002:phase_log:1",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-002:phase_seconds:2",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-002:phase_log:2",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-002:phase_seconds:3",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-002:phase_log:3",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-002:exact_source_transport:metadata-init",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-002:exact_source_transport:metadata-fetch",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-002:exact_source_transport:metadata-checkout",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-002:cost_nesting",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "bound:/workspace/qualification/native-authority-v41-screening-requests/request-003.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-003:request_exact",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-003:identities",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "bound:/workspace/qualification/native-authority-v41-screening-sealed/case-003/SCREENING_CASE.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-003:sealed_bytes",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-003:public_envelope_exact",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-003:case_complete",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-003:refusal_before_native",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-003:runtime_inventory_binding",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-003:setup_phase_order",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-003:phase_seconds:0",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-003:nonnative_phase:0",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-003:phase_seconds:1",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-003:phase_log:1",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-003:phase_seconds:2",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-003:phase_log:2",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-003:phase_seconds:3",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-003:phase_log:3",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-003:phase_seconds:4",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-003:nonnative_phase:4",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-003:exact_source_transport:metadata-init",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-003:exact_source_transport:metadata-fetch",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-003:exact_source_transport:metadata-checkout",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-003:cost_nesting",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "bound:/workspace/qualification/native-authority-v41-screening-requests/request-004.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-004:request_exact",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-004:identities",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "bound:/workspace/qualification/native-authority-v41-screening-sealed/case-004/SCREENING_CASE.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-004:sealed_bytes",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-004:public_envelope_exact",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-004:case_complete",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-004:refusal_before_native",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-004:runtime_inventory_binding",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-004:setup_phase_order",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-004:phase_seconds:0",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-004:nonnative_phase:0",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-004:phase_seconds:1",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-004:phase_log:1",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-004:phase_seconds:2",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-004:phase_log:2",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-004:phase_seconds:3",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-004:phase_log:3",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-004:phase_seconds:4",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-004:nonnative_phase:4",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-004:exact_source_transport:metadata-init",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-004:exact_source_transport:metadata-fetch",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-004:exact_source_transport:metadata-checkout",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-004:cost_nesting",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "bound:/workspace/qualification/native-authority-v41-screening-requests/request-005.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-005:request_exact",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-005:identities",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "bound:/workspace/qualification/native-authority-v41-screening-sealed/case-005/SCREENING_CASE.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-005:sealed_bytes",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-005:public_envelope_exact",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-005:case_complete",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-005:refusal_before_native",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-005:runtime_inventory_binding",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-005:setup_phase_order",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-005:phase_seconds:0",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-005:nonnative_phase:0",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-005:phase_seconds:1",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-005:phase_log:1",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-005:phase_seconds:2",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-005:phase_log:2",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-005:phase_seconds:3",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-005:phase_log:3",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-005:exact_source_transport:metadata-init",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-005:exact_source_transport:metadata-fetch",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-005:exact_source_transport:metadata-checkout",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-005:cost_nesting",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "bound:/workspace/qualification/native-authority-v41-screening-requests/request-006.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-006:request_exact",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-006:identities",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "bound:/workspace/qualification/native-authority-v41-screening-sealed/case-006/SCREENING_CASE.json",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-006:sealed_bytes",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-006:public_envelope_exact",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-006:case_complete",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-006:refusal_before_native",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-006:runtime_inventory_binding",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-006:setup_phase_order",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-006:phase_seconds:0",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-006:nonnative_phase:0",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-006:phase_seconds:1",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-006:phase_log:1",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-006:phase_seconds:2",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-006:phase_log:2",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-006:phase_seconds:3",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-006:phase_log:3",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-006:phase_seconds:4",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-006:nonnative_phase:4",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-006:exact_source_transport:metadata-init",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-006:exact_source_transport:metadata-fetch",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-006:exact_source_transport:metadata-checkout",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "case-006:cost_nesting",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "public_envelopes_identical",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "meter_costs_sum",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "retained_cost_summary_totals",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "screening_budget",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "runner_primary_index_bytes",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "check": "auditor_all_indexes_closed",
+      "pass": true,
+      "detail": null
+    }
+  ],
+  "check_count": 173,
+  "failures": [],
+  "counts": {
+    "cases": 7,
+    "eligible": 0,
+    "native_calls_reported_and_supported_by_control_flow": 0,
+    "collection_calls_reported_and_supported_by_control_flow": 0,
+    "raw_regular_files": 2595,
+    "raw_symlinks": 5
+  },
+  "costs": {
+    "native_calls": 0,
+    "collection_calls": 0,
+    "metadata_api_calls": 137,
+    "metadata_total_curation_wall_seconds": 39.32762100800028,
+    "sum_setup_phase_seconds": 14.368250622996129,
+    "sum_setup_wall_seconds": 15.937476695997248,
+    "sum_case_wall_seconds": 15.939176056999713,
+    "sum_controller_wall_seconds": 51.76277536399721,
+    "controller_child_user_seconds": 35.619312,
+    "controller_child_system_seconds": 12.075171,
+    "whole_screening_controller_session_interval_seconds": 51.76726460456848,
+    "ordered_meter_interval_seconds_to_summary_finish": 46.388338804244995,
+    "child_maxrss_kib_lifetime_nonadditive": 191448
+  },
+  "reports_sha256": "2743c38157ccff52471e2afb6eacd3a3b0557b6586ef5fb0c300b3b3a32dc805",
+  "pool_sha256": "c1e7cbcdd77d2a15edd9652cdc5b62662c8f359b33c4424661ae40f3bf5e4d76",
+  "limitations": [
+    "Runner ledger plus once-only controller logic and all seven completed retained cases support one ordered pass in this supplied run; there is no authenticated global process launch ledger to exclude unrelated or omitted attempts.",
+    "Native/collection counters are controller-local worker counters, not all operating-system subprocesses. Git transport and runtime identity work are retained separately.",
+    "All-five-index closed interval covers this auditor reads; original runner retains only its active index before/after screening, so the audit does not upgrade that to an all-index pre-screening proof.",
+    "Exposure booleans are bounded role attestations; no global filesystem access log or hostile-process isolation proof was supplied."
+  ]
+}

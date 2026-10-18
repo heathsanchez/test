@@ -1,0 +1,11 @@
+# Packaging prospective future: parameterization accounting correction — V1c (2026-10-19)
+
+**Apparatus correction after the frozen future was opened; not a second blind task.**
+
+- The immutable acquired method is still `g2_context_fallback_operator_v1.py` at source commit `6fbfa0a633439f0eb5c8e9c55726f2b053e1bdd1`, SHA256 `71c240edeb08225f7bc6bf6e8b6402cff6e0d7364cdee016733d06fbfa470cb9`.
+- The equal-information baseline is still frozen at commit `0a67b3bee47b8fdaa420aed9b370e5ddb2f82780`; candidate ceiling 12 per arm. The lock `e967f86c8f486a6b55b9d7d20c8ace11619008e4` predates future opening.
+- First workflow `39166495374` was apparatus RED: Python Path concatenation, **zero future source accesses**, corrected at `83fca0f34620174e1dab244fcbf897a35f2454c9`.
+- Second workflow `39166586812` successfully fetched the one frozen future and executed the original author test. Native JUnit had **5 parameterizations of one mechanically changed test function**, with 4 PASS / 1 genuine protected FAIL / zero errors/skips; source SHA256 `a10d2871bb4015855a6e894790949189afff40ae7364fe0210efa91e299fa32e`. Original future artifact #12150464064, ZIP SHA256 `d38931c00a2fb6271e30149b22c28dd6ac93dca6853a1f6e4a2affe9e5ebe1ab`, locally downloaded and ZIP CRC checked. The subsequent harness checked `counts.tests == len(AST-changed-functions)`, which incorrectly treats pytest parameterizations as separate AST functions. Status UNKNOWN_PROTECTED_FUTURE_INTEGRITY; **no candidate generation / native patch testing** in V1b.
+- V1c correction at `b2375ee641c8cdc7dadb9b165234725a61745ad9` demands **all changed function names appear in actual JUnit testcases** and preserves exact native case count for candidate/retest/ablation/restoration (five here). This change is only an evidence-counting apparatus correction, not an alteration of target, observation grammar, search budget, task, outcome or comparator.
+- The future is now previously exposed at the native-failure boundary. V1c can qualify the *unchanged pre-future frozen method*, but must not be described as an additional blind future or new independent task. No third source may replace Packaging based on its outcome.
+- The method remains to be applied. Prospective G2, CLC, Lean and FLASH are UNKNOWN / NOT EXECUTED. Preserve both apparatus stops.

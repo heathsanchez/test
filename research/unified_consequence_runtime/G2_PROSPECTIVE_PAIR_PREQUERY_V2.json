@@ -1,0 +1,75 @@
+{
+  "schema": "UDM_G2_PROSPECTIVE_PAIR_PREQUERY_V2",
+  "state": "PREQUERY_SOURCE_BLIND_FROZEN",
+  "supersedes": "G2_PROSPECTIVE_PAIR_PREQUERY_V1",
+  "v1_status": "APPARATUS_INVALID_BEFORE_ROLE_FREEZE_ONE_PR_BODY_FORWARD_OVERREACH_NO_SOURCE_OR_NATIVE",
+  "date": "2026-10-18",
+  "objective": "Prospectively test the already-qualified mutable-closure observer, deterministic repair constructor, and equivalence-class selector on a new source-distinct training/future pair without tuning after source or outcomes.",
+  "method_authority": {
+    "qualified_commit": "094e2ddc3ba601a00eaf368151172a361e5542da",
+    "qualified_run": 39093934449,
+    "qualified_artifact": 12123712928,
+    "qualified_artifact_digest": "sha256:3689e93c67b23378642947eaba710a2d4eb7685025d417a11eeeb28aeef77b75",
+    "frozen_protocol_commit": "7cc32cabf2f749e13aa7813fb2dc62cfb1a1d9ff",
+    "rule": "Method implementation files must remain byte-identical to qualified_commit throughout this prospective experiment."
+  },
+  "repository_universe": [
+    "python-attrs/attrs",
+    "marshmallow-code/marshmallow",
+    "pygments/pygments",
+    "dateutil/dateutil",
+    "tox-dev/tox",
+    "Textualize/rich"
+  ],
+  "metadata_query": {
+    "per_repository": "search_prs(query='fix', state='closed', sort='updated', order='desc', topn=20)",
+    "projection": "Search transport may internally include PR body, but orchestration MUST forward only issue_number,title,url to the research model. PR body, diff, patches, comments and source bytes are not emitted or used.",
+    "inspect": "For titles beginning fix case-insensitive, call get_pr_info only inside orchestration and forward only merged/base_sha/head_sha/changed_files_count; call list_pr_changed_filenames and forward only filenames. No body/diff/patch/comments.",
+    "qualifier": [
+      "PR is merged",
+      "title begins with fix case-insensitive",
+      "changed file count is between 2 and 4 inclusive",
+      "exactly one changed .py path is production-like: not under tests/, test/, docs/, examples/, scripts/, benchmarks/, benchmark/, and basename does not start test_",
+      "at least one changed .py path is author-test-like: under tests/ or test/ or basename starts test_",
+      "no changed path is pyproject.toml, setup.py, setup.cfg, tox.ini, requirements*, poetry.lock, uv.lock, pdm.lock, Pipfile*, or .github workflow"
+    ],
+    "per_repo_rule": "At most the first metadata-qualified PR in provider order from each repository may enter the candidate list.",
+    "role_rule": "First two qualified repositories in declared repository order become TRAINING and SEALED_FUTURE.",
+    "no_replacement": "After ROLE_MANIFEST_V2 is committed, later source/environment/native failure does not select a replacement."
+  },
+  "environment_policy": {
+    "python": "3.12",
+    "install_base": "python -m pip install -e <repo>",
+    "supplement_order": [
+      "PEP 735 dependency group named test if declared",
+      "project extra named test if declared",
+      "project extra named tests if declared",
+      "project extra named dev if declared"
+    ],
+    "fixed_tools": [
+      "pip==25.3",
+      "pytest==9.1.1",
+      "pytest-cov==7.0.0"
+    ],
+    "fixed_test_command": "python -m pytest -q <derived changed test nodes or files>",
+    "refusal": "If base editable install plus first applicable declared test supplement cannot run the exact changed author tests, environment admission is UNKNOWN and role is not replaced."
+  },
+  "test_derivation": {
+    "after_role_freeze": "Read TRAINING base and exact head author-test blob(s) only. Never read repaired head production.",
+    "changed_tests": "AST-parse base and head author test files; select top-level Test* classes/functions whose source spans differ or are new, then use their pytest node IDs. If mechanical derivation is empty or ambiguous, admission UNKNOWN.",
+    "protected_original": "Overlay exact author-test head blob(s) onto original base production and require nonempty executed failing assertions with zero collection/environment errors."
+  },
+  "prospective_science": {
+    "training": "Run immutable method authority unchanged. No new source predicate, repair form, AST coordinate heuristic, selection criterion or candidate after source reveal.",
+    "future": "Only after training warrants acquired capability with withdrawal/restoration may SEALED_FUTURE source/test bodies be opened.",
+    "promotion": "Future must show authentic original failure and a method-caused protected improvement under unchanged method; full G2 additionally requires physical removal/restoration and independent future native qualification.",
+    "baselines": "If future reaches positive gate, execute equally informed executable-ledger and available strong-agent comparison with acquisition/check/restart costs; absence keeps comparative claim UNKNOWN.",
+    "fail_closed": "No observation, no repair, environment ambiguity, zero-test green, skip/error, source mismatch or future non-improvement remains exact UNKNOWN/REJECTED boundary."
+  },
+  "prior_existing_sealed_future": "alexmojaki/executing#50 remains unopened and excluded from V2.",
+  "G2": "UNKNOWN",
+  "G3": "UNKNOWN",
+  "G4": "UNKNOWN",
+  "G5": "UNKNOWN",
+  "G6": "UNKNOWN"
+}

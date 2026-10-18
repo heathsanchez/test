@@ -1,0 +1,94 @@
+{
+  "schema": "UDM_GIT_INDEX_READ_AUDIT_V4",
+  "argv": [
+    "git",
+    "--no-pager",
+    "--no-replace-objects",
+    "-c",
+    "core.fsmonitor=false",
+    "-C",
+    "/workspace/udm-v54",
+    "show",
+    "--no-ext-diff",
+    "--no-textconv",
+    "bd46699ea9933794a1c3fee161039c24a630bf4b:research/unified_consequence_runtime/archaeology/native-authority-v41/bootstrap/metadata-evidence/mypy-extensions==1.1.0.json"
+  ],
+  "git_optional_locks": "0",
+  "before": {
+    "schema": "UDM_GIT_INDEX_SNAPSHOT_V4",
+    "git_common_dir": "/workspace/repos/test/.git",
+    "indexes": [
+      {
+        "path": "/workspace/repos/test/.git/index",
+        "exists": false,
+        "size_bytes": null,
+        "sha256": null
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/development/index",
+        "exists": true,
+        "size_bytes": 113571,
+        "sha256": "894f89eeaad5bd8d6c8242a5047d006a0b23021a5ba362d4db42c131e082fd29"
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/env-v3-native-334/index",
+        "exists": true,
+        "size_bytes": 176832,
+        "sha256": "6ea642f1a91b7239229344a2650a9af70ea2bd477b6db9518ed4153bed8cb786"
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/udm/index",
+        "exists": true,
+        "size_bytes": 111030,
+        "sha256": "3999c60a940d9c999523ff56ec37d2bc9d7c0328c1f2503690a652fbb1f01064"
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/udm-v54/index",
+        "exists": true,
+        "size_bytes": 239205,
+        "sha256": "9ed38158d9eca002bdf62ff962921fd0f6218ad952634148e77a8520a0b9d8f2"
+      }
+    ]
+  },
+  "returncode": 0,
+  "stdout_base64": "eyJpbmZvIjp7ImF1dGhvciI6bnVsbCwiYXV0aG9yX2VtYWlsIjoiVGhlIG15cHkgZGV2ZWxvcGVycyA8anVra2EubGVodG9zYWxvQGlraS5maT4iLCJidWd0cmFja191cmwiOm51bGwsImNsYXNzaWZpZXJzIjpbIkRldmVsb3BtZW50IFN0YXR1cyA6OiA1IC0gUHJvZHVjdGlvbi9TdGFibGUiLCJFbnZpcm9ubWVudCA6OiBDb25zb2xlIiwiSW50ZW5kZWQgQXVkaWVuY2UgOjogRGV2ZWxvcGVycyIsIlByb2dyYW1taW5nIExhbmd1YWdlIDo6IFB5dGhvbiA6OiAzIiwiUHJvZ3JhbW1pbmcgTGFuZ3VhZ2UgOjogUHl0aG9uIDo6IDMuMTAiLCJQcm9ncmFtbWluZyBMYW5ndWFnZSA6OiBQeXRob24gOjogMy4xMSIsIlByb2dyYW1taW5nIExhbmd1YWdlIDo6IFB5dGhvbiA6OiAzLjEyIiwiUHJvZ3JhbW1pbmcgTGFuZ3VhZ2UgOjogUHl0aG9uIDo6IDMuMTMiLCJQcm9ncmFtbWluZyBMYW5ndWFnZSA6OiBQeXRob24gOjogMy44IiwiUHJvZ3JhbW1pbmcgTGFuZ3VhZ2UgOjogUHl0aG9uIDo6IDMuOSIsIlRvcGljIDo6IFNvZnR3YXJlIERldmVsb3BtZW50Il0sImRlc2NyaXB0aW9uIjoiTXlweSBFeHRlbnNpb25zXG49PT09PT09PT09PT09PT1cblxuVGhlIGBteXB5X2V4dGVuc2lvbnNgIG1vZHVsZSBkZWZpbmVzIGV4dGVuc2lvbnMgdG8gdGhlIFB5dGhvbiBzdGFuZGFyZFxubGlicmFyeSBgdHlwaW5nYCBtb2R1bGUgdGhhdCBhcmUgc3VwcG9ydGVkIGJ5IHRoZSBteXB5IHR5cGUgY2hlY2tlciBhbmRcbnRoZSBteXB5YyBjb21waWxlci5cblxuIiwiZGVzY3JpcHRpb25fY29udGVudF90eXBlIjoidGV4dC9tYXJrZG93biIsImRvY3NfdXJsIjpudWxsLCJkb3dubG9hZF91cmwiOm51bGwsImRvd25sb2FkcyI6eyJsYXN0X2RheSI6LTEsImxhc3RfbW9udGgiOi0xLCJsYXN0X3dlZWsiOi0xfSwiZHluYW1pYyI6bnVsbCwiaG9tZV9wYWdlIjpudWxsLCJrZXl3b3JkcyI6bnVsbCwibGljZW5zZSI6bnVsbCwibGljZW5zZV9leHByZXNzaW9uIjpudWxsLCJsaWNlbnNlX2ZpbGVzIjpudWxsLCJtYWludGFpbmVyIjpudWxsLCJtYWludGFpbmVyX2VtYWlsIjpudWxsLCJuYW1lIjoibXlweS1leHRlbnNpb25zIiwicGFja2FnZV91cmwiOiJodHRwczovL3B5cGkub3JnL3Byb2plY3QvbXlweS1leHRlbnNpb25zLyIsInBsYXRmb3JtIjpudWxsLCJwcm9qZWN0X3VybCI6Imh0dHBzOi8vcHlwaS5vcmcvcHJvamVjdC9teXB5LWV4dGVuc2lvbnMvIiwicHJvamVjdF91cmxzIjp7IkhvbWVwYWdlIjoiaHR0cHM6Ly9naXRodWIuY29tL3B5dGhvbi9teXB5X2V4dGVuc2lvbnMifSwicHJvdmlkZXNfZXh0cmEiOm51bGwsInJlbGVhc2VfdXJsIjoiaHR0cHM6Ly9weXBpLm9yZy9wcm9qZWN0L215cHktZXh0ZW5zaW9ucy8xLjEuMC8iLCJyZXF1aXJlc19kaXN0IjpudWxsLCJyZXF1aXJlc19weXRob24iOiI+PTMuOCIsInN1bW1hcnkiOiJUeXBlIHN5c3RlbSBleHRlbnNpb25zIGZvciBwcm9ncmFtcyBjaGVja2VkIHdpdGggdGhlIG15cHkgdHlwZSBjaGVja2VyLiIsInZlcnNpb24iOiIxLjEuMCIsInlhbmtlZCI6ZmFsc2UsInlhbmtlZF9yZWFzb24iOm51bGx9LCJsYXN0X3NlcmlhbCI6Mzc4NzA5NzEsIm93bmVyc2hpcCI6eyJvcmdhbml6YXRpb24iOm51bGwsInJvbGVzIjpbeyJyb2xlIjoiT3duZXIiLCJ1c2VyIjoiZ3VpZG8ifSx7InJvbGUiOiJPd25lciIsInVzZXIiOiJpbGV2a2l2c2t5aSJ9LHsicm9sZSI6Ik93bmVyIiwidXNlciI6Imp1a2thbCJ9LHsicm9sZSI6Ik1haW50YWluZXIiLCJ1c2VyIjoiaGF1bnRzYW5pbmphIn0seyJyb2xlIjoiTWFpbnRhaW5lciIsInVzZXIiOiJzdmFsZW50aW4ifV19LCJ1cmxzIjpbeyJjb21tZW50X3RleHQiOiIiLCJjb3JlLW1ldGFkYXRhIjp7InNoYTI1NiI6IjJjNGE0NDkzNmQ4ODVmMzA0MzMxODFjYTQwYmJmNjI0NTczNTFmMWY2YjA4NzFiMTFmODc4OTU2NGY4NzQ3N2YifSwiZGlnZXN0cyI6eyJibGFrZTJiXzI1NiI6Ijc5N2IyYzc5NzM4NDMyZjVjOTI0YmVmNTA3MWY5MzNiY2M5ZWZkMDQ3M2JhYzNiNGFhNTg0YTZmN2MxYzhkZjgiLCJtZDUiOiI2MjVhM2RjMzcxNTE3MTdjYWJmODdiMTNhMGIxNTJiOSIsInNoYTI1NiI6IjFiZTRjY2NkYjBmMjQ4MjMzN2M0NzQzZTYwNDIxZGUzYTM1NmNkOTc1MDhhYmFkZDU3ZDQ3NDAzZTk0ZjU1MDUifSwiZG93bmxvYWRzIjotMSwiZmlsZW5hbWUiOiJteXB5X2V4dGVuc2lvbnMtMS4xLjAtcHkzLW5vbmUtYW55LndobCIsImhhc19zaWciOmZhbHNlLCJtZDVfZGlnZXN0IjoiNjI1YTNkYzM3MTUxNzE3Y2FiZjg3YjEzYTBiMTUyYjkiLCJwYWNrYWdldHlwZSI6ImJkaXN0X3doZWVsIiwicHl0aG9uX3ZlcnNpb24iOiJweTMiLCJyZXF1aXJlc19weXRob24iOiI+PTMuOCIsInNpemUiOjQ5NjMsInVwbG9hZF90aW1lIjoiMjAyNS0wNC0yMlQxNDo1NDoyMiIsInVwbG9hZF90aW1lX2lzb184NjAxIjoiMjAyNS0wNC0yMlQxNDo1NDoyMi45ODMwOTJaIiwidXJsIjoiaHR0cHM6Ly9maWxlcy5weXRob25ob3N0ZWQub3JnL3BhY2thZ2VzLzc5LzdiLzJjNzk3Mzg0MzJmNWM5MjRiZWY1MDcxZjkzM2JjYzllZmQwNDczYmFjM2I0YWE1ODRhNmY3YzFjOGRmOC9teXB5X2V4dGVuc2lvbnMtMS4xLjAtcHkzLW5vbmUtYW55LndobCIsInlhbmtlZCI6ZmFsc2UsInlhbmtlZF9yZWFzb24iOm51bGx9LHsiY29tbWVudF90ZXh0IjoiIiwiY29yZS1tZXRhZGF0YSI6ZmFsc2UsImRpZ2VzdHMiOnsiYmxha2UyYl8yNTYiOiJhMjZlMzcxODU2YTNmYjlkMzFjYThkYWMzMjFjZGE2MDY4NjBmYTQ1NDg4NThjMGNjNDVkOWQxZDRjYTI2MjhiIiwibWQ1IjoiZjU5YmZkN2Y5ZGNhNzNmMzZjOGZlZWQxMmY5ZThlYmEiLCJzaGEyNTYiOiI1MmU2OGVmYzMyODQ4NjFlNzcyYmJjZDY2ODIzZmRlNWFlMjFmZDJmZGI1MWM2MmEyMTE0MDM3MzBiOTE2NTU4In0sImRvd25sb2FkcyI6LTEsImZpbGVuYW1lIjoibXlweV9leHRlbnNpb25zLTEuMS4wLnRhci5neiIsImhhc19zaWciOmZhbHNlLCJtZDVfZGlnZXN0IjoiZjU5YmZkN2Y5ZGNhNzNmMzZjOGZlZWQxMmY5ZThlYmEiLCJwYWNrYWdldHlwZSI6InNkaXN0IiwicHl0aG9uX3ZlcnNpb24iOiJzb3VyY2UiLCJyZXF1aXJlc19weXRob24iOiI+PTMuOCIsInNpemUiOjYzNDMsInVwbG9hZF90aW1lIjoiMjAyNS0wNC0yMlQxNDo1NDoyNCIsInVwbG9hZF90aW1lX2lzb184NjAxIjoiMjAyNS0wNC0yMlQxNDo1NDoyNC4xNjQzMzhaIiwidXJsIjoiaHR0cHM6Ly9maWxlcy5weXRob25ob3N0ZWQub3JnL3BhY2thZ2VzL2EyLzZlLzM3MTg1NmEzZmI5ZDMxY2E4ZGFjMzIxY2RhNjA2ODYwZmE0NTQ4ODU4YzBjYzQ1ZDlkMWQ0Y2EyNjI4Yi9teXB5X2V4dGVuc2lvbnMtMS4xLjAudGFyLmd6IiwieWFua2VkIjpmYWxzZSwieWFua2VkX3JlYXNvbiI6bnVsbH1dLCJ2dWxuZXJhYmlsaXRpZXMiOltdfQo=",
+  "stderr_base64": "",
+  "after": {
+    "schema": "UDM_GIT_INDEX_SNAPSHOT_V4",
+    "git_common_dir": "/workspace/repos/test/.git",
+    "indexes": [
+      {
+        "path": "/workspace/repos/test/.git/index",
+        "exists": false,
+        "size_bytes": null,
+        "sha256": null
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/development/index",
+        "exists": true,
+        "size_bytes": 113571,
+        "sha256": "894f89eeaad5bd8d6c8242a5047d006a0b23021a5ba362d4db42c131e082fd29"
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/env-v3-native-334/index",
+        "exists": true,
+        "size_bytes": 176832,
+        "sha256": "6ea642f1a91b7239229344a2650a9af70ea2bd477b6db9518ed4153bed8cb786"
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/udm/index",
+        "exists": true,
+        "size_bytes": 111030,
+        "sha256": "3999c60a940d9c999523ff56ec37d2bc9d7c0328c1f2503690a652fbb1f01064"
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/udm-v54/index",
+        "exists": true,
+        "size_bytes": 239205,
+        "sha256": "9ed38158d9eca002bdf62ff962921fd0f6218ad952634148e77a8520a0b9d8f2"
+      }
+    ]
+  },
+  "index_changes": [],
+  "indexes_unchanged": true
+}

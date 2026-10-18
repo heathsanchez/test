@@ -1,0 +1,262 @@
+{
+  "schema": "udm.recursive-independent-reconciliation.v1",
+  "reviewer": "/root/native_boundary_review",
+  "reviewed_at_utc": "2026-10-15T18:23:59.289460+00:00",
+  "status": "COMPLETE_NEGATIVE_PACKET_REVIEW; MAINTENANCE_QUALIFICATION_PENDING",
+  "no_native_science_rerun": true,
+  "target_source_semantics_inspected": false,
+  "target_native_outcome_logs_inspected_after_freeze": true,
+  "native_source_archives_hash_verified_without_semantic_reading": true,
+  "local_frozen_b450": {
+    "schema": "udm.recursive.offline-independent-local-review.v1",
+    "reviewed_at_utc": "2026-10-15T18:22:10.601855+00:00",
+    "mode": "OFFLINE_ONLY_NO_NATIVE_SCIENCE_RERUN",
+    "source_commit": "b450119f81ee0026f8fb0c6d6a9c5b259ebb8e82",
+    "packet": "/workspace/qualification/recursive-native-b450",
+    "status": "FAIL_COMPLETE_RESTART_RETENTION_WITH_NATIVE_COMPONENT_PASSES",
+    "checks": [
+      {
+        "gate": "exact_frozen_source_and_chronology",
+        "status": "PASS",
+        "details": {
+          "source_commit": "b450119f81ee0026f8fb0c6d6a9c5b259ebb8e82",
+          "files": 12,
+          "freeze_sha256": "ec93b0fedb5bd81716c7b97f655ac4ba42ab8969ea858fddd70cb5da030635ca",
+          "chronology": "COMMITTED_CONTROL_FLOW_PLUS_DECLARED_PROCESS; NOT_ENFORCED_INFORMATION_FLOW"
+        }
+      },
+      {
+        "gate": "hash_only_pinned_native_source_archives",
+        "status": "PASS",
+        "details": {
+          "control": {
+            "commit": "f4f288579dc3c8f82f62d0eaca7774303d9d3768",
+            "git_tree": "5cdf6f106387e0fcf3e7585213ef1d5ac61ad9ac",
+            "tracked_tree_sha256": "fb0151b91605318d3f27c44b6f19e65515e96fd2bf79840ea2b66e8803038eea",
+            "file_count": 43
+          },
+          "target": {
+            "commit": "a37bc93b65d6bcf00d3dc43d966bab6bd130ecd8",
+            "git_tree": "ffbac09b498dc11c49cfd99da8368393219f3900",
+            "tracked_tree_sha256": "ae5ac5e2fd74035bca2f7cb0e3683ef9a28afd2e5a091dc7f72cd2bc20e3a832",
+            "file_count": 176
+          }
+        }
+      },
+      {
+        "gate": "actual_native_JUnit_logs_imports_environment_and_costs",
+        "status": "PASS",
+        "details": {
+          "receipts": 11,
+          "control_passes": 8,
+          "target_unknowns": 3,
+          "actual_junit_verified": true,
+          "native_seconds": 37.227017112000794
+        }
+      },
+      {
+        "gate": "all_ledger_hashes_premises_CAS_and_exact224prefix",
+        "status": "PASS",
+        "details": {
+          "ledger_records": 248,
+          "original_prefix_records": 224,
+          "CAS_objects": 80,
+          "live_records": 189,
+          "ledger_sha256": "899f87767c02833bb8493b5ac151b6668743666cb1344a896f839f6ac5d879fa"
+        }
+      },
+      {
+        "gate": "exact_withdrawal_fresh_restoration_unrelated_survival",
+        "status": "PASS",
+        "details": {
+          "old_capability": "0f2f6a546e6a926f68492bc3db808ec7729915901c10316300423023ce448b8c",
+          "restored_capability": "90f796e62a7404a0cc5c496a55ebee4d62385c66ffe9af0860d9ed2bb2ed3857",
+          "new_generation": 2,
+          "fresh_nonce": true
+        }
+      },
+      {
+        "gate": "real_separate_process_native_restart_execution",
+        "status": "PASS",
+        "details": {
+          "native_passed": 346,
+          "restart_process_id": 21959,
+          "coordinator_process_id": 19511,
+          "consequence": "aa659b2ba1e3c81e55bd7af50dc21d4eed5d4260325347c282eccc157b87a92b"
+        }
+      },
+      {
+        "gate": "append_only_retention_after_parent_continuation",
+        "status": "FAIL",
+        "error": "AssertionError: fresh child restart consequence absent from final canonical ledger: aa659b2ba1e3c81e55bd7af50dc21d4eed5d4260325347c282eccc157b87a92b"
+      },
+      {
+        "gate": "honest_recursive_prospective_comparator_authority_boundaries",
+        "status": "PASS",
+        "details": {
+          "recursive_growth": "UNKNOWN",
+          "prospective_growth": "UNKNOWN",
+          "comparative_developmental_advantage": "UNKNOWN",
+          "raw_comparative_label": "REJECTED_MEASURED_NATIVE_OBSERVATION_TIE_ONLY",
+          "raw_label_scope": "Native UNKNOWN-status parity only; no protected-outcome or developmental-cost advantage comparison."
+        }
+      }
+    ],
+    "retention_finding": {
+      "status": "FAILED_APPEND_ONLY_RESTART_RETENTION",
+      "consequence": "aa659b2ba1e3c81e55bd7af50dc21d4eed5d4260325347c282eccc157b87a92b",
+      "in_final_ledger": false,
+      "raw_orphan_event_retained": true,
+      "orphan_evidence_sha256": "aa659b2ba1e3c81e55bd7af50dc21d4eed5d4260325347c282eccc157b87a92b",
+      "source_cause": "Controller continues using stale parent Machine.log after child commits its consequence; later parent flush overwrites the fresh child entry.",
+      "minimal_fix": "Reload canonical Machine immediately after child returns, preserve already charged parent costs, require child entry before and after subsequent parent write."
+    },
+    "native_target_source_semantics_inspected": false,
+    "native_source_hash_verification_only": true,
+    "new_experiments_executed": false
+  },
+  "github_actions_failure": {
+    "schema": "udm.recursive-independent-ci-failure.v1",
+    "status": "FAILURE_PRESERVED_NO_NATIVE_CONTROL_OR_TARGET_STAGE_EXECUTED",
+    "run_id": 38783551691,
+    "job_id": 116589645601,
+    "source_commit": "b450119f81ee0026f8fb0c6d6a9c5b259ebb8e82",
+    "run_url": "https://github.com/heathsanchez/test/actions/runs/38783551691",
+    "artifact": {
+      "id": 11996434858,
+      "bytes": 24560593,
+      "sha256": "498ab2ba5884edde528207407553a83a9ed4b56bb2e98f8daa4459841db713fc",
+      "archive": "/workspace/qualification/recursive-actions-first.zip",
+      "extracted_packet": "/workspace/qualification/recursive-actions-first",
+      "zip_members_verified_against_extraction": 232
+    },
+    "exact_frozen_source_files_verified_from_immutable_git": 12,
+    "archived_frozen_files_present_verified": 11,
+    "archived_frozen_files_missing": [
+      ".github/workflows/udm-recursive-native-frontier.yml"
+    ],
+    "artifact_manifest": {
+      "present_entries_verified": 231,
+      "missing_entries": [
+        "source/.github/workflows/udm-recursive-native-frontier.yml",
+        "source/research/unified_consequence_runtime/.gitignore",
+        "source/research/unified_consequence_runtime/archaeology/programme-closure/.gitignore",
+        "source/research/unified_consequence_runtime/archaeology/programme-closure/ros/.gitignore",
+        "source/research/unified_consequence_runtime/archaeology/semantics/source/triskelion/v161/.github/workflows/v161-ast-role-experiential-rescue.yml",
+        "source/research/unified_consequence_runtime/archaeology/semantics/source/triskelion/v54/.github/workflows/metalogic-v54-compounding.yml",
+        "source/research/unified_consequence_runtime/v54_formal/.gitignore"
+      ],
+      "boundary": "Default upload-artifact hidden-file exclusion omitted .github workflow source. Commit/freeze bind exact workflow, but complete archived source snapshot is not established by this packet alone."
+    },
+    "contracts": {
+      "tests": 210,
+      "seconds": 168.288,
+      "failures": 78,
+      "errors": 32,
+      "skipped": 20,
+      "log_sha256": "77ab9f2293870dfd18f793ea2567d7814b95ebfd275c12ecc9329f5360b63450"
+    },
+    "causes": [
+      {
+        "kind": "EVALUATOR_BUILD_VERSION_ENVIRONMENT",
+        "observed": "webarena-verified0.0.post1.dev1; verifier requires1.2.3; reason native_evaluator_version_mismatch",
+        "evidence": "Wheel build/install logs and E/D native verdicts in contract-tests.log",
+        "source_cause": "Evaluator checkout omitted fetch-depth0 present in qualified workflow, leaving setuptools/git version history unavailable.",
+        "secondary_failures": {
+          "test": "test_developmental_verify.NativeVerifierTests.test_native_imports_compile_pinned_source_instead_of_cached_bytecode",
+          "module_subfailures": 60,
+          "reason": "Early version guard returns before installing _PinnedSourceFinder; subsequent ordinary imports lack _metalogic_pinned_source_sha256 markers. No Python-version AST/factory defect is shown."
+        }
+      },
+      {
+        "kind": "MISSING_V54_CONTRACT_WORLD_PROVISIONING",
+        "observed": "V54_WORLDS defaults to unavailable /workspace/v54-worlds; django world pin cannot be verified",
+        "evidence": "V54 runtime/source traceback paths",
+        "source_cause": "Original setup_v54_worlds.sh and V54_WORLDS/V54_PYTHON configuration omitted from new workflow."
+      }
+    ],
+    "skip_breakdown": {
+      "native_TOML_world_adversarial": 10,
+      "V54_source_world_boundaries": 3,
+      "V54_native_verifier": 7
+    },
+    "skip_boundary": "Keeping10 optional TOML cases explicitly skipped in maintenance is a scoped regression boundary: unchanged native adapter source plus authenticated original349 archive remains original native authority; do not claim all optional native tests freshly executed.",
+    "prior_qualification_authentication": {
+      "status": "PASS_OFFLINE_INDEPENDENT_BOUNDED_PACKET_REVIEW",
+      "gates": 11,
+      "report_sha256": "5130d3c1537d32cfd807b9411f2a88c9ac84af26f7fe5e6a0d67f14acc311d27"
+    },
+    "native_experiment_stage": "SKIPPED_AFTER_CONTRACT_FAILURE",
+    "formal_tests_stage": "NOT_REACHED_IN_SHARED_FAILED_STEP",
+    "new_qualified_scientific_claim": "NONE",
+    "metadata_files": [
+      {
+        "path": "/workspace/qualification/recursive-independent-provider-run-38783551691.json",
+        "sha256": "b36c3cdbde56d290b474b3ccc0d8261e632a5297223969a6068ca4ddd7725f79"
+      },
+      {
+        "path": "/workspace/qualification/recursive-independent-ci-job-116589645601.json",
+        "sha256": "7926544dbfb124582aaaab7ef40c6703b3fb0b6f2bed96c85bf223c1760be83e"
+      },
+      {
+        "path": "/workspace/qualification/recursive-independent-ci-artifacts-38783551691.json",
+        "sha256": "0e4ad48806c929c6c4bb313b64674a2f2b625a026afed5776236efedd1c81cff"
+      },
+      {
+        "path": "/workspace/qualification/recursive-independent-ci-failed-38783551691.log",
+        "sha256": "307d4cb3d620d622da42359e601c3abfd929f7b2e6d25ca5752ade37365c9d42"
+      }
+    ]
+  },
+  "maintenance_fix_source_review": {
+    "status": "SCOPED_SOURCE_REVIEW_PASS; EXECUTABLE_MAINTENANCE_QUALIFICATION_PENDING",
+    "source_commit": "b12220df5c77e5b7f5ebcbf6772c059d5f74a4cd",
+    "checks": [
+      "resume_after_restart reloads original canonical Machine state immediately after child, preserving charged prior parent costs.",
+      "Coordinator verifies child consequence is present on reload and after an additional parent continuation write.",
+      "Actual Metatron/FLASH and separate-process regression asserts both child and later parent nodes/prefix/liveness; root preserves missing-helper and actual stale-parent assertion failures.",
+      "Maintenance freeze explicitly declares known prior target error; source rejects renewed blind/prospective target execution.",
+      "Workflow restores exact evaluator full history and pinned V54 setup/env without acquisition/search reruns; native worker and adapter remain unchanged.",
+      "Restart raw receipts/JUnit/log directory is selected for archive manifest and upload."
+    ],
+    "source_files": [
+      {
+        "path": "research/unified_consequence_runtime/generic_native_verify.py",
+        "sha256": "741d5c6a8b33faf4198d860aee2343a2a44bec55e8a161561e422bb512efa7db"
+      },
+      {
+        "path": "research/unified_consequence_runtime/native_frontier.py",
+        "sha256": "c257c1c6f1199994baa4915eebde3b79358afebefc16e3ced588ee068bb9dd28"
+      },
+      {
+        "path": "research/unified_consequence_runtime/qualify_recursive_frontier.py",
+        "sha256": "878af944a78d5301ce1803bd891f48e78575a5cbf329b5e39836ae62ecc5949c"
+      },
+      {
+        "path": "research/unified_consequence_runtime/test_recursive_restart_retention.py",
+        "sha256": "24250ee0a9886dbe199d62dffb18500f67f0f17e360ce436fc7d00e6b321284a"
+      },
+      {
+        "path": ".github/workflows/udm-recursive-native-frontier.yml",
+        "sha256": "07d0336aca37d8a163b5b87106299117b43984b8eeb8f1039ac556655d833d20"
+      }
+    ],
+    "not_established": "No new protected outcome, O1/O2/O3 acquisition or comparative advantage; maintenance native/control/CI evidence awaits independent packet inspection."
+  },
+  "separate_verdicts": {
+    "native_control_execution": "WARRANTED_BOUNDED_LOCAL346_CASE_PASS_WITH_CUT_RESTORE_NATIVE_RESTART",
+    "append_only_restart_retention_in_b450": "REJECTED_EXACT_CHILD_RECORD_LOST",
+    "original224_history_and_CAS": "PRESERVED_HASH_CHECKED",
+    "prospective_unfamiliar_growth": "UNKNOWN_ZERO_NATIVE_TESTS_IMPORT_FAILURE",
+    "recursive_O1_O2_O3": "UNKNOWN_NO_NATIVE_ACQUISITION_BINDING",
+    "comparative_developmental_advantage": "UNKNOWN_STATUS_PARITY_NOT_PROTECTED_OUTCOME_COMPARISON",
+    "external_nonbypassable_enforcement": "UNKNOWN",
+    "CI_b450": "FAILURE210_CONTRACTS_SETUP_ENVIRONMENT; NO_NATIVE_STAGE",
+    "maintenance_fix": "SOURCE_REVIEW_PASS; QUALIFICATION_PENDING"
+  },
+  "reproducible_offline_audit": {
+    "path": "/workspace/qualification/audit_recursive_frozen_local.py",
+    "sha256": "5086d52daad3a46b621d53ad558a3a6fe9d86047bcfb6cfce43cb99b0d881e85",
+    "invocation": "python audit_recursive_frozen_local.py --packet recursive-native-b450 --source-repo /workspace/udm-v54 --expected-commit b450119f81ee0026f8fb0c6d6a9c5b259ebb8e82 --out recursive-independent-local-b450-review.json"
+  }
+}

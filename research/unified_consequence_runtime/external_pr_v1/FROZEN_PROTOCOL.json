@@ -1,0 +1,26 @@
+{
+  "schema": "metalogic.external-pr-native-regression.v1",
+  "goal": "Qualify a read-only PR-checking method using original Python regression tests from two external pull requests. Discover newly added tests with a generic Python AST differ, not manually authored per-PR test adapters.",
+  "upstream": "teorth/IEANTN",
+  "common_base": "2a10e721ff645865c45c344333b1934f34c45b41",
+  "common_base_blob": "458fc2bdd62b427e3e33a259c53ea9d5b928962d",
+  "cases": [
+    {
+      "pr": 158,
+      "head": "7fab327e61518fa607753cd022d87ef9d243bbf4",
+      "script_blob": "c70eb5902e6040c187ae52250604969e64fc365c",
+      "tests_blob": "3e1350659710529a7d9438dab5db8148c10003b8",
+      "expected_new_tests": 2
+    },
+    {
+      "pr": 155,
+      "head": "a70ba812e1b6e40a6ce4652fb830589030e461d0",
+      "script_blob": "aace439e63db6102e07b098b4ff567099e0b3ce9",
+      "tests_blob": "18b50b9145f61432d9fdce9c20f35e4ce7b047e5",
+      "expected_new_tests": 1
+    }
+  ],
+  "method": "Find source-added unittest test methods by AST signature difference. Run tests in original head test file against original base source (controlled substitution) and original head. Pin all original Git blob identities. Do not take expected method names as input.",
+  "protection": "No changes to external upstream. No unsourced repair claims. If base not red or head not green, qualify UNKNOWN.",
+  "scope": "Genuine external native regression and source-bound PR advice only; general autonomous generator invention remains UNKNOWN."
+}

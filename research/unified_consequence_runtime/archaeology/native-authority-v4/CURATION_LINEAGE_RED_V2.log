@@ -1,0 +1,47 @@
+test_a_fresh_output_directory_cannot_start_a_replacement_query_round (research.unified_consequence_runtime.test_frontier_v4_curation_lineage.FrontierV4CurationLineage.test_a_fresh_output_directory_cannot_start_a_replacement_query_round) ... FAIL
+test_a_new_process_cannot_replay_a_retained_query_receipt (research.unified_consequence_runtime.test_frontier_v4_curation_lineage.FrontierV4CurationLineage.test_a_new_process_cannot_replay_a_retained_query_receipt) ... FAIL
+test_a_replacement_universe_filename_is_rejected_before_its_contents (research.unified_consequence_runtime.test_frontier_v4_curation_lineage.FrontierV4CurationLineage.test_a_replacement_universe_filename_is_rejected_before_its_contents) ... FAIL
+
+======================================================================
+FAIL: test_a_fresh_output_directory_cannot_start_a_replacement_query_round (research.unified_consequence_runtime.test_frontier_v4_curation_lineage.FrontierV4CurationLineage.test_a_fresh_output_directory_cannot_start_a_replacement_query_round)
+----------------------------------------------------------------------
+ValueError: qualified v4 gate and later declared universe required before prequery
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_frontier_v4_curation_lineage.py", line 21, in test_a_fresh_output_directory_cannot_start_a_replacement_query_round
+    with self.assertRaisesRegex(ValueError, 'canonical.*(query|prequery)'):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: "canonical.*(query|prequery)" does not match "qualified v4 gate and later declared universe required before prequery"
+
+======================================================================
+FAIL: test_a_new_process_cannot_replay_a_retained_query_receipt (research.unified_consequence_runtime.test_frontier_v4_curation_lineage.FrontierV4CurationLineage.test_a_new_process_cannot_replay_a_retained_query_receipt)
+----------------------------------------------------------------------
+ValueError: qualified v4 gate and later declared universe required before prequery
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_frontier_v4_curation_lineage.py", line 31, in test_a_new_process_cannot_replay_a_retained_query_receipt
+    with self.assertRaisesRegex(ValueError, 'prior.*query|query.*retained'):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: "prior.*query|query.*retained" does not match "qualified v4 gate and later declared universe required before prequery"
+
+======================================================================
+FAIL: test_a_replacement_universe_filename_is_rejected_before_its_contents (research.unified_consequence_runtime.test_frontier_v4_curation_lineage.FrontierV4CurationLineage.test_a_replacement_universe_filename_is_rejected_before_its_contents)
+----------------------------------------------------------------------
+ValueError: declared universe must be an ordinary repository record
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_frontier_v4_curation_lineage.py", line 47, in test_a_replacement_universe_filename_is_rejected_before_its_contents
+    with self.assertRaisesRegex(ValueError, 'canonical declared universe'):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: "canonical declared universe" does not match "declared universe must be an ordinary repository record"
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.102s
+
+FAILED (failures=3)

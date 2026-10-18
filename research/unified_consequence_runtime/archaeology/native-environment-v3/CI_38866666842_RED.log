@@ -1,0 +1,66 @@
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	﻿2026-10-16T07:21:25.7340604Z ##[group]Run set -euo pipefail
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:25.7340848Z [36;1mset -euo pipefail[0m
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:25.7341046Z [36;1mpython -B -m venv "$RUNNER_TEMP/environment-v3-controller"[0m
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:25.7341330Z [36;1m"$RUNNER_TEMP/environment-v3-controller/bin/python" -B -m pip install \[0m
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:25.7341646Z [36;1m  --disable-pip-version-check --no-input pytest==8.3.5 packaging==26.3[0m
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:25.7341929Z [36;1m"$RUNNER_TEMP/environment-v3-controller/bin/python" -B \[0m
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:25.7342255Z [36;1m  research/unified_consequence_runtime/archaeology/native-environment-v3/bootstrap/prepare_runtimes.py \[0m
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:25.7342603Z [36;1m  --dest-root "$RUNNER_TEMP/environment-v3-runtimes" \[0m
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:25.7342807Z [36;1m  --out "$RUNNER_TEMP/runtime-paths.json"[0m
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:25.7558222Z shell: /usr/bin/bash -e {0}
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:25.7558409Z env:
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:25.7558538Z   PYTHONDONTWRITEBYTECODE: 1
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:25.7558680Z   PYTHONUNBUFFERED: 1
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:25.7558898Z   UDM_COMPONENTS: /home/runner/work/test/test/components
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:25.7559130Z   UDM_SOURCE_REPOS: /home/runner/work/test/test/components/selection-sources
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:25.7559371Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.14/x64
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:25.7559805Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.14/x64/lib/pkgconfig
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:25.7560027Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.14/x64
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:25.7560227Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.14/x64
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:25.7560439Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.14/x64
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:25.7560642Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.14/x64/lib
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:25.7560822Z ##[endgroup]
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:28.5106308Z Collecting pytest==8.3.5
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:28.5534837Z   Downloading pytest-8.3.5-py3-none-any.whl.metadata (7.6 kB)
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:28.5761887Z Collecting packaging==26.3
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:28.5859726Z   Downloading packaging-26.3-py3-none-any.whl.metadata (3.5 kB)
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:28.6037382Z Collecting iniconfig (from pytest==8.3.5)
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:28.6134989Z   Downloading iniconfig-2.3.1-py3-none-any.whl.metadata (2.8 kB)
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:28.6321151Z Collecting pluggy<2,>=1.5 (from pytest==8.3.5)
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:28.6420603Z   Downloading pluggy-1.7.0-py3-none-any.whl.metadata (5.0 kB)
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:28.6554746Z Downloading pytest-8.3.5-py3-none-any.whl (343 kB)
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:28.7024283Z Downloading packaging-26.3-py3-none-any.whl (129 kB)
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:28.7156753Z Downloading pluggy-1.7.0-py3-none-any.whl (27 kB)
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:28.7264251Z Downloading iniconfig-2.3.1-py3-none-any.whl (7.6 kB)
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:28.7371428Z Installing collected packages: pluggy, packaging, iniconfig, pytest
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:28.9398028Z Successfully installed iniconfig-2.3.1 packaging-26.3 pluggy-1.7.0 pytest-8.3.5
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:35.6694234Z Traceback (most recent call last):
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:35.6700982Z   File "/home/runner/work/test/test/research/unified_consequence_runtime/archaeology/native-environment-v3/bootstrap/prepare_runtimes.py", line 149, in <module>
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:35.6701459Z     main()
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:35.6701907Z   File "/home/runner/work/test/test/research/unified_consequence_runtime/archaeology/native-environment-v3/bootstrap/prepare_runtimes.py", line 145, in main
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:35.6702600Z     print(json.dumps(prepare(args.catalog, args.dest_root, args.out), sort_keys=True))
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:35.6702841Z                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:35.6703458Z   File "/home/runner/work/test/test/research/unified_consequence_runtime/archaeology/native-environment-v3/bootstrap/prepare_runtimes.py", line 105, in prepare
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:35.6703902Z     downloaded = list(pool.map(lambda a: download(a, wheels), artifacts))
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:35.6704154Z                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:35.6704679Z   File "/opt/hostedtoolcache/Python/3.12.14/x64/lib/python3.12/concurrent/futures/_base.py", line 619, in result_iterator
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:35.6705280Z     yield _result_or_cancel(fs.pop())
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:35.6705487Z           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:35.6705917Z   File "/opt/hostedtoolcache/Python/3.12.14/x64/lib/python3.12/concurrent/futures/_base.py", line 317, in _result_or_cancel
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:35.6706492Z     return fut.result(timeout)
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:35.6706625Z            ^^^^^^^^^^^^^^^^^^^
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:35.6707045Z   File "/opt/hostedtoolcache/Python/3.12.14/x64/lib/python3.12/concurrent/futures/_base.py", line 449, in result
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:35.6707459Z     return self.__get_result()
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:35.6707663Z            ^^^^^^^^^^^^^^^^^^^
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:35.6707980Z   File "/opt/hostedtoolcache/Python/3.12.14/x64/lib/python3.12/concurrent/futures/_base.py", line 401, in __get_result
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:35.6708322Z     raise self._exception
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:35.6708560Z   File "/opt/hostedtoolcache/Python/3.12.14/x64/lib/python3.12/concurrent/futures/thread.py", line 59, in run
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:35.6708829Z     result = self.fn(*self.args, **self.kwargs)
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:35.6708990Z              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:35.6709502Z   File "/home/runner/work/test/test/research/unified_consequence_runtime/archaeology/native-environment-v3/bootstrap/prepare_runtimes.py", line 105, in <lambda>
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:35.6709900Z     downloaded = list(pool.map(lambda a: download(a, wheels), artifacts))
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:35.6710103Z                                          ^^^^^^^^^^^^^^^^^^^
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:35.6710477Z   File "/home/runner/work/test/test/research/unified_consequence_runtime/archaeology/native-environment-v3/bootstrap/prepare_runtimes.py", line 50, in download
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:35.6727384Z ##[error]    raise ValueError('one wheel METADATA required')
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:35.6732185Z ValueError: one wheel METADATA required
+native-environment-selection-v3	Prepare isolated controller and catalog runtimes before target access	2026-10-16T07:21:35.6890796Z ##[error]Process completed with exit code 1.

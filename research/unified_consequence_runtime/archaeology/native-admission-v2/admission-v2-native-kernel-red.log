@@ -1,0 +1,25 @@
+test_certificate_validation_reexecutes_independent_original_collection (research.unified_consequence_runtime.test_native_execution_v2.NativeExecutionCertificateContracts.test_certificate_validation_reexecutes_independent_original_collection) ... FAIL
+test_independent_collection_and_honest_protected_failure_then_native_success (research.unified_consequence_runtime.test_native_execution_v2.NativeExecutionCertificateContracts.test_independent_collection_and_honest_protected_failure_then_native_success) ... FAIL
+
+======================================================================
+FAIL: test_certificate_validation_reexecutes_independent_original_collection (research.unified_consequence_runtime.test_native_execution_v2.NativeExecutionCertificateContracts.test_certificate_validation_reexecutes_independent_original_collection)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_execution_v2.py", line 36, in setUp
+    def setUp(self):self.assertIsNotNone(worker,'versioned independent native worker is missing')
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: unexpectedly None : versioned independent native worker is missing
+
+======================================================================
+FAIL: test_independent_collection_and_honest_protected_failure_then_native_success (research.unified_consequence_runtime.test_native_execution_v2.NativeExecutionCertificateContracts.test_independent_collection_and_honest_protected_failure_then_native_success)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_execution_v2.py", line 36, in setUp
+    def setUp(self):self.assertIsNotNone(worker,'versioned independent native worker is missing')
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: unexpectedly None : versioned independent native worker is missing
+
+----------------------------------------------------------------------
+Ran 2 tests in 0.286s
+
+FAILED (failures=2)

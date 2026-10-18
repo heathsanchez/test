@@ -1,0 +1,70 @@
+{
+  "approved_selectors": [
+    {
+      "path": "/workspace/qualification/native-authority-v4-prospective-screening",
+      "type": "directory"
+    },
+    {
+      "path": "/workspace/qualification/native-authority-v4-prospective-controller",
+      "type": "directory"
+    },
+    {
+      "path": "/workspace/qualification/native-authority-v4-prospective-requests",
+      "type": "directory"
+    },
+    {
+      "path": "/workspace/qualification/native-authority-v4-local/PROSPECTIVE_RUNTIME_PATHS.json",
+      "type": "file"
+    }
+  ],
+  "archive": {
+    "members": 727,
+    "path": "/workspace/qualification/native-authority-v4-independent-screening-audit/archive/native-authority-v4-screening-complete-evidence.tar.gz",
+    "sha256": "33257164d46fc777fcd9fc971ce4d335d2d76f3ad15c856adf1c0aeea143bff7",
+    "size_bytes": 2986413
+  },
+  "audit_directory_packaged": false,
+  "followed_symlinks": false,
+  "metadata_source_tar_gz_count": 5,
+  "metadata_source_tar_gz_preserved_and_hash_verified": true,
+  "metadata_source_tar_gz_total_bytes": 880582,
+  "missing_archive_members": 0,
+  "schema": "native-authority-v4-external-evidence-descriptor-v1",
+  "sidecars": {
+    "exclusions.json": {
+      "path": "/workspace/qualification/native-authority-v4-independent-screening-audit/archive/native-authority-v4-screening-complete-evidence.exclusions.json",
+      "sha256": "3465615e7faa662cc18e5eb6a36f92d9ecf6244be2d4ff162285be064efb0dfd",
+      "size_bytes": 216884
+    },
+    "manifest.json": {
+      "path": "/workspace/qualification/native-authority-v4-independent-screening-audit/archive/native-authority-v4-screening-complete-evidence.manifest.json",
+      "sha256": "6e2e144e17d6f0e1f4096512549f5ec109f401f29d9450b0a3264d56a0a6e68c",
+      "size_bytes": 468386
+    },
+    "symlinks.json": {
+      "path": "/workspace/qualification/native-authority-v4-independent-screening-audit/archive/native-authority-v4-screening-complete-evidence.symlinks.json",
+      "sha256": "36f7a68fd77ac4c2108f96292dbc4a1189c4b0c45fe35327ac8a26b08492ff37",
+      "size_bytes": 123
+    },
+    "verification.json": {
+      "path": "/workspace/qualification/native-authority-v4-independent-screening-audit/archive/native-authority-v4-screening-complete-evidence.verification.json",
+      "sha256": "1ce86457dc0858a348bbd09ff0f1e594f6654cf5744a6ab8d5c11991f162e9d8",
+      "size_bytes": 2081
+    }
+  },
+  "source_mutations_detected": 0,
+  "status": "verified_final_expanded_evidence_archive",
+  "summary": {
+    "excluded_directories": 153,
+    "excluded_regular_bytes": 1017557,
+    "excluded_regular_files": 160,
+    "excluded_symlinks": 0,
+    "included_directories": 110,
+    "included_regular_bytes": 18272690,
+    "included_regular_files": 617,
+    "included_symlinks": 0
+  },
+  "superseded_initial_archive_path": "/workspace/qualification/native-authority-v4-independent-screening-audit/archive/native-authority-v4-screening-evidence.tar.gz",
+  "undeclared_archive_members": 0,
+  "undeclared_exclusions": 0
+}

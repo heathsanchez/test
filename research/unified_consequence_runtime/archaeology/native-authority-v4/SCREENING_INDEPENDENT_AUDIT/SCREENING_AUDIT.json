@@ -1,0 +1,159 @@
+{
+  "all_index_bytes_and_absences_unchanged_in_closed_interval": true,
+  "all_screened_cases_and_costs_retained": true,
+  "audit_verdict_boundary": "Evidence, fixed-order screening, exact retention and bounded static refusal audit only; zero tasks admitted and no native qualification claimed.",
+  "audited_commit": "565b210dd882cb2663c094a6f1c418dcf6687d87",
+  "auditor_independent_of_screener": "/root/v4_independent_screening",
+  "auditor_role": "/root/v4_screening_audit",
+  "cost_scope": "Native and collection attempt counters cover the native worker only. Git init/fetch/checkout, static selection, runtime preflight and q4 controller subprocess costs are retained separately. Nested wall times are nonadditive. Model/tool/engineering/full lifecycle costs remain UNKNOWN.",
+  "costs": {
+    "collection_calls": 0,
+    "controller_child_system_seconds": 8.74645,
+    "controller_child_user_seconds": 25.06891,
+    "metadata_api_calls": 132,
+    "metadata_total_curation_wall_seconds": 31.959356598999875,
+    "native_calls": 0,
+    "ordered_q4_meter_interval_seconds": 61.641629457473755,
+    "sum_case_wall_seconds": 11.094844195999485,
+    "sum_controller_wall_seconds": 36.26489780300017,
+    "sum_setup_phase_seconds": 10.044199897001363,
+    "sum_setup_wall_seconds": 11.093675847000668,
+    "whole_screening_controller_session_interval_seconds": 103.23838448524475
+  },
+  "eligibility_rule": "PASS_NATIVE_OR_FAIL_NATIVE_IDENTICAL",
+  "exposure_attestation_scope": "Independent auditor inspected retained base sources and static metadata; learner/root received public envelopes/costs and authorized bounded refusal reasons only. External/out-of-band reads are not universally authenticated.",
+  "git_writes_index_restorations_native_reruns_or_artifact_code_execution_by_auditor": 0,
+  "independent_screener": true,
+  "index_interval_closed_at_utc": "2026-10-16T18:26:50.674089+00:00",
+  "learner_future_source_accessed": false,
+  "limitations": [
+    "The metadata ledger contains 132 request rows and exact allowed projections; no independent proxy/network log was supplied, so unlogged/out-of-band calls are not globally excluded.",
+    "The frozen first eligible choice is reproduced from retained returned order. Three returned timestamp inversions are retained; globally latest-100 membership and GitHub response chronology are not independently authenticated.",
+    "Cases001/002/004 retain finite-catalog UNKNOWN; metadata profile refusals do not establish actual native incompatibility or impossibility of another environment.",
+    "Only complete base source was fetched and hash-verified. No head source overlay, admitted task contract, collection certificate, native receipt, assertion trace, learning ledger, candidate search, policy outcome or matched agent comparison exists.",
+    "Audit coverage is the supplied committed records, five completed cases and retained controller roots. It does not prove hostile-process nonbypassability or absence of unrelated external processes.",
+    "Root reports learner/root exposure was limited to public envelopes and costs before these bounded refusal disclosures; no global access log was supplied."
+  ],
+  "native_obligations": {
+    "baseline": "NOT_EXECUTED_NATIVE_OBLIGATION_NOT_ADMITTED",
+    "collection_calls": 0,
+    "comparative_win": "UNKNOWN_NOT_ESTABLISHED",
+    "ledger_execution": "NOT_EXECUTED_NATIVE_OBLIGATION_NOT_ADMITTED",
+    "matched_agent_execution": "NOT_EXECUTED_NATIVE_OBLIGATION_NOT_ADMITTED",
+    "native_calls": 0
+  },
+  "pool_sha256": "0c7c215e6a773e4987e896e72b3508df62628ab80dfd4c384811b981813a220f",
+  "portable_summary": {
+    "path": "AUDIT_SUMMARY.json",
+    "sha256": "6d8eed6a675fc1f79c09bd7c4efca3fc31c0b2efb41398d71b8f0177d8de75b3",
+    "size_bytes": 21342
+  },
+  "reports_sha256": "dcf82b228ee0f2e32bcd33a8a636cb29b924d6388ff2f511438b1c815015ea89",
+  "schema": "UDM_NATIVE_AUTHORITY_V4_INDEPENDENT_COMPLETE_SCREENING_AUDIT_V1",
+  "search_or_policy_outcomes_accessed": false,
+  "signature": {
+    "algorithm": "Ed25519",
+    "public_key": {
+      "path": "AUDITOR_PUBLIC_KEY.pem",
+      "sha256": "c6c28295f29d477c087f33856eb35ff3178a95dadd296947bc92dd264f944a58",
+      "size_bytes": 113
+    },
+    "signature_file": "SCREENING_AUDIT.ed25519.sig",
+    "trust_boundary": "Locally generated audit integrity key; no external identity, signing authority or timestamp service is asserted."
+  },
+  "source_byte_boundary": "Base commit raw Git blobs only: 433 files exactly preserved in original worktrees and metadata-source.tar.gz with exact modes. Head commit objects absent; native source overlay/materialization not executed.",
+  "status": "PASS_ADMISSION_ONLY_SCREENING_AUDIT",
+  "subreports": {
+    "archive/native-authority-v4-screening-complete-evidence.descriptor.json": {
+      "path": "archive/native-authority-v4-screening-complete-evidence.descriptor.json",
+      "sha256": "a114c1e6e8f5456dff8f0c735498386dd89b3061725eb9f7460d8275ea601bb1",
+      "size_bytes": 2990
+    },
+    "metadata-preaudit/LINEAGE_PREAUDIT.json": {
+      "path": "metadata-preaudit/LINEAGE_PREAUDIT.json",
+      "sha256": "10b213f4550a9bfcd5453c35da2dc987f6d3895d38c93b0befe47d8327cbb385",
+      "size_bytes": 6864
+    },
+    "metadata-preaudit/PREDICATE_SUBAUDIT.json": {
+      "path": "metadata-preaudit/PREDICATE_SUBAUDIT.json",
+      "sha256": "e95d55fe2a24bc8b807e077a14dea84806a03cea4c7a17275937713d8c7fd090",
+      "size_bytes": 259688
+    },
+    "raw-audit/ARCHIVE_REVERIFICATION.json": {
+      "path": "raw-audit/ARCHIVE_REVERIFICATION.json",
+      "sha256": "d22df7fc50fc9e1b495d9ceac415f21e62e4cb0b78ac9a8de988fe76cf830f7d",
+      "size_bytes": 882
+    },
+    "raw-audit/CATALOG_SOURCE_BOUNDARY.json": {
+      "path": "raw-audit/CATALOG_SOURCE_BOUNDARY.json",
+      "sha256": "a90f4010d1022eb41103087e52723233d63bfceb0db3f3b3d618e1b2fe53ea0e",
+      "size_bytes": 1016
+    },
+    "raw-audit/COSTS_BY_CASE.json": {
+      "path": "raw-audit/COSTS_BY_CASE.json",
+      "sha256": "9bb6b3fb8f7e76e55f29716277fde663844436c4f78f9f4f4ae6c192b0ff3395",
+      "size_bytes": 17155
+    },
+    "raw-audit/INDEX_END.json": {
+      "path": "raw-audit/INDEX_END.json",
+      "sha256": "288d8bdffafcbeffc1ff4f70deb61e6ae5d5ad221c21183172492b0d98675592",
+      "size_bytes": 7409
+    },
+    "raw-audit/INDEX_START.json": {
+      "path": "raw-audit/INDEX_START.json",
+      "sha256": "64648aa0d174082bc0414220051a27b1e766e4bb1ee4d0284db39f31eb0021d2",
+      "size_bytes": 10225
+    },
+    "raw-audit/RAW_CHECKS.json": {
+      "path": "raw-audit/RAW_CHECKS.json",
+      "sha256": "f668a252e7170f18f28b16141b7790266ea73875c5164db3c7b05635a4cb3534",
+      "size_bytes": 7737
+    },
+    "raw-audit/REFUSALS_EXACT.json": {
+      "path": "raw-audit/REFUSALS_EXACT.json",
+      "sha256": "7b85955f73d8395ba7fa4554b5dc94e82dabac2a2649ce6844be04c6b643a235",
+      "size_bytes": 11419
+    },
+    "raw-audit/REFUSAL_STATIC_SUBAUDIT.json": {
+      "path": "raw-audit/REFUSAL_STATIC_SUBAUDIT.json",
+      "sha256": "d4c183d3a6e4d65cdfbd98103944c7424e8c2f94fc63a841d91f361db74dd9c6",
+      "size_bytes": 415383
+    },
+    "raw-audit/SCREENING_ENVELOPES_EXACT.json": {
+      "path": "raw-audit/SCREENING_ENVELOPES_EXACT.json",
+      "sha256": "011161a17595c214aa031a2e3a69f91b5b8bac0baedb57d0ede9bb48623cc4ef",
+      "size_bytes": 3350
+    },
+    "raw-audit/SOURCE_FILE_MANIFESTS.json": {
+      "path": "raw-audit/SOURCE_FILE_MANIFESTS.json",
+      "sha256": "83f7e0cd7d54fb2a4862f523792664e62bc9587f7cb21edcc45692800578ab6f",
+      "size_bytes": 101774
+    },
+    "raw-audit/SOURCE_IDENTITY_AUDIT.json": {
+      "path": "raw-audit/SOURCE_IDENTITY_AUDIT.json",
+      "sha256": "6bfc0abf72659802c128ea7184c2fa35735224b60396409aa521fcc7f55c5728",
+      "size_bytes": 4391
+    }
+  },
+  "terminal_shortfall": {
+    "admitted": 0,
+    "refused": 5,
+    "requested_roles": 2,
+    "retargeting_or_expanded_universe": false,
+    "selected_roles": [],
+    "unchanged_selection_obstruction": "screening shortfall; no outcome-selected replacement permitted"
+  },
+  "utc": "2026-10-16T18:27:46.742292+00:00",
+  "verified_counts": {
+    "archive_reverification_checks": 7,
+    "base_source_bytes": 10583011,
+    "base_source_files": 433,
+    "catalog_source_boundary_checks": 9,
+    "index_entries": 21,
+    "metadata_lineage_checks": 46,
+    "profile_reason_entries": 39,
+    "required_metadata_predicate_checks": 5975,
+    "retained_raw_checks": 130,
+    "static_refusal_checks": 71
+  }
+}

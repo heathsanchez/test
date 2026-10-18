@@ -1,0 +1,418 @@
+{
+  "api_allowlist": {
+    "changed_file_pages": "[.[] | {filename,status,additions,deletions,changes,sha}]",
+    "closed_pr_list": "[.[] | {number,title,merged_at,closed_at,updated_at,labels:[.labels[].name],base:{sha:.base.sha},head:{sha:.head.sha},merge_commit_sha,url:.html_url}]",
+    "git_commit_metadata": "{sha,tree_sha:.tree.sha,parents:[.parents[].sha]}",
+    "git_tree_metadata": "{sha,truncated,tree:[.tree[] | {path,mode,type,sha,size}]}"
+  },
+  "created_at_utc": "2026-10-16T04:45:14.272632+00:00",
+  "curation_code_sha256": "b2885099eb904395cb297ba17a0c3f1270975061b24d46ac5742a07804b8e251",
+  "exposure_boundary": {
+    "ci_results_read": false,
+    "filter": "gh api --jq projects allowed metadata before stdout capture or disk. No contents/blob endpoints, PR body, patch, raw URLs, CI fields, or commit messages are requested for output.",
+    "git_fetch_or_clone": false,
+    "native_execution": false,
+    "outcomes_read": false,
+    "pr_bodies_read": false,
+    "production_patches_read": false,
+    "raw_patch_or_body_persisted": false,
+    "repository_edits": false,
+    "target_source_read": false,
+    "test_contents_read": false
+  },
+  "freeze_status": "PROSPECTIVE_METADATA_ONLY_NOT_FROZEN; admission gate and root authorization required before freeze.",
+  "historical_metadata_inputs": [
+    {
+      "path": "/workspace/udm-v54/research/unified_consequence_runtime/capability_index.json",
+      "repositories": [
+        "ServiceNow/webarena-verified",
+        "heathsanchez/Minimal-Sufficient-Interface",
+        "heathsanchez/lean-kernel-arena",
+        "heathsanchez/realitygraph",
+        "heathsanchez/test",
+        "heathsanchez/triskelion",
+        "metalogiclabs/mathgraph",
+        "metalogiclabs/mathgraph-lean-kernel",
+        "metalogiclabs/metatron",
+        "nasa-jpl/L4YAML"
+      ],
+      "sha256": "c290a1b313868406cd79362b52ddb2b90b67f5cdf941569f753617dbd526ab75"
+    },
+    {
+      "path": "/workspace/udm-v54/research/unified_consequence_runtime/sources.json",
+      "repositories": [],
+      "sha256": "9500c9e0a017a715a8c39a03e3c150d7082eaf5e8ef6613eac2925b55c4ba07b"
+    },
+    {
+      "path": "/workspace/udm-v54/research/unified_consequence_runtime/developmental_sources.json",
+      "repositories": [
+        "heathsanchez/realitygraph",
+        "heathsanchez/test",
+        "metalogiclabs/metatron"
+      ],
+      "sha256": "fb3ea01b7579c3bd4a9118ff3034ece36a5eea96e570d85704cdbcd451aaa32a"
+    },
+    {
+      "path": "/workspace/udm-v54/research/unified_consequence_runtime/native_policy.json",
+      "repositories": [
+        "leanprover/cslib"
+      ],
+      "sha256": "fafdb75d97bef7f00f0a7ffd7f956b7df301b8ac5554f5e8290480fcee2e1406"
+    },
+    {
+      "path": "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/decisive-native/FRESH_TASK_METADATA.json",
+      "repositories": [
+        "more-itertools/more-itertools",
+        "pallets/blinker",
+        "pallets/itsdangerous",
+        "python-attrs/attrs",
+        "python-attrs/cattrs",
+        "python-hyper/h11"
+      ],
+      "sha256": "8809d19fbff05fdf38d2d71e0f52e7a0e501bf7906dded5cfe8cce0dad19f8a5"
+    },
+    {
+      "path": "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/decisive-native/CODING_AGENT_FREEZE.json",
+      "repositories": [],
+      "sha256": "a80bfc32abe78d7c5930ab4ba9448aba25ca76a7e049f40b00a647253a3f57f4"
+    },
+    {
+      "path": "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/decisive-native/QUALIFICATION_FREEZE.json",
+      "repositories": [],
+      "sha256": "cee4c3da786f2b7426aff350faab8e6e9b25b6f7409fd5ae254c357f85b00b49"
+    },
+    {
+      "path": "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/decisive-native/PROTOCOL.json",
+      "repositories": [],
+      "sha256": "4af55a3e6f370d9e190f1ca367aa275871f4b3b7019a14cf94a5001b6e5ef839"
+    },
+    {
+      "path": "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/decisive-native/AUTHOR_TEST_BLOBS.json",
+      "repositories": [],
+      "sha256": "a756a645350a5df8e663d1f827cee87627a8a82f39bcdfe07fb445f9483279bd"
+    },
+    {
+      "path": "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/v54-continuation/PROSPECTIVE_FRONTIER_FROZEN.json",
+      "repositories": [
+        "psf/requests",
+        "urllib3/urllib3"
+      ],
+      "sha256": "aec93ebcaed7f4d4c0eff6c0d921acd297dffa3172827503dc1bb5a2c5c7d5a7"
+    },
+    {
+      "path": "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/v54-continuation/SOURCE_MANIFEST.json",
+      "repositories": [
+        "heathsanchez/Minimal-Sufficient-Interface",
+        "heathsanchez/realitygraph",
+        "heathsanchez/test",
+        "heathsanchez/triskelion",
+        "metalogiclabs/mathgraph"
+      ],
+      "sha256": "1ffaa9d1f97d05d2883fc69c1ba52c3109b778acac16c9e0d8b46dc33a72220a"
+    },
+    {
+      "path": "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/recursive-frontier/GREEN_MAINTENANCE_FREEZE.json",
+      "repositories": [],
+      "sha256": "a5aad0a7ba83952871c36c3c93bc728c624bc32124c5a83f96268d98dca96076"
+    },
+    {
+      "path": "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/programme-closure/REPOSITORIES.json",
+      "repositories": [
+        "heathsanchez/FormalBook",
+        "heathsanchez/Minimal-Sufficient-Interface",
+        "heathsanchez/OpenGauss",
+        "heathsanchez/QuantumOptics.jl",
+        "heathsanchez/equational-theories-lean-stage2",
+        "heathsanchez/equational_theories",
+        "heathsanchez/latent-coordinate-law-engine",
+        "heathsanchez/lean-kernel-arena",
+        "heathsanchez/lean4lean",
+        "heathsanchez/lima",
+        "heathsanchez/mathgraph",
+        "heathsanchez/mathgraph-fork",
+        "heathsanchez/mathgraph-igp24-continuation-engine",
+        "heathsanchez/parameter-golf",
+        "heathsanchez/realitygraph",
+        "heathsanchez/specimen",
+        "heathsanchez/test",
+        "heathsanchez/triskelion",
+        "heathsanchez/vericoding-benchmark",
+        "licenses/apache-2.0",
+        "licenses/gpl-3.0",
+        "licenses/lgpl-3.0",
+        "licenses/mit",
+        "metalogiclabs/L4YAML",
+        "metalogiclabs/PropertyKindCalculus",
+        "metalogiclabs/Stockfish",
+        "metalogiclabs/go-ethereum",
+        "metalogiclabs/mathgraph",
+        "metalogiclabs/mathgraph-lean-kernel",
+        "metalogiclabs/metatron",
+        "repos/heathsanchez",
+        "repos/metalogiclabs",
+        "users/heathsanchez",
+        "users/metalogiclabs"
+      ],
+      "sha256": "0d48c74467e8c493c1579104588d3745a4126cc4eff36464b84ce15a29bb3fb6"
+    },
+    {
+      "path": "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/programme-closure/FROZEN_UNIVERSE.json",
+      "repositories": [],
+      "sha256": "6d910fbe4207255deed7f19ca16f094d68d40e1b4398a5198ebda3aeb79967b4"
+    },
+    {
+      "path": "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/programme-closure/DISCOVERED_CANDIDATES.json",
+      "repositories": [
+        "heathsanchez/test"
+      ],
+      "sha256": "8d56ce65068426469c5cf40a59c4d1eb38ec924cb343472a368ed087b0b4346b"
+    },
+    {
+      "path": "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/programme-closure/CROSS_FRONTIER_SOURCE_INDEX.json",
+      "repositories": [
+        "heathsanchez/Minimal-Sufficient-Interface",
+        "heathsanchez/realitygraph",
+        "metalogiclabs/metatron"
+      ],
+      "sha256": "31645d68a8e8c79272ef95c8ccec715cead7c4840685791697bf50cac2523925"
+    },
+    {
+      "path": "/workspace/udm-v54/research/unified_consequence_runtime/external_pr_v1/FROZEN_PROTOCOL.json",
+      "repositories": [],
+      "sha256": "412a6b43bcf156bd99e083d3621141a14fd4fca3b0fc7d04b59e8d7285aaa34d"
+    },
+    {
+      "path": "/workspace/udm-v54/research/unified_consequence_runtime/external_pr_v1/admission_policy.json",
+      "repositories": [
+        "teorth/IEANTN"
+      ],
+      "sha256": "1f7286ae15af7cc84d44d8defaaa3aed74dd46dbdc82d9ae817d0a8f82ef5b30"
+    },
+    {
+      "path": "/workspace/udm-v54/research/unified_consequence_runtime/native_semantic_genesis_v1/FROZEN_PROTOCOL.json",
+      "repositories": [
+        "leanprover/cslib"
+      ],
+      "sha256": "7b4414ae9afc92048591c7690dcaff5da43426585a326f60bdf723b0a7820856"
+    },
+    {
+      "path": "/workspace/udm-v54/research/unified_consequence_runtime/native_unbounded_v1/FROZEN_PROTOCOL.json",
+      "repositories": [
+        "heathsanchez/test",
+        "leanprover/cslib"
+      ],
+      "sha256": "726ad175cbb6fa7510031bdc54f61bf81a602c4c610288cc508276fc47d45f43"
+    },
+    {
+      "path": "/workspace/udm-v54/research/unified_consequence_runtime/typed_semantic_method_v1/FROZEN_PROTOCOL.json",
+      "repositories": [
+        "heathsanchez/test",
+        "leanprover/cslib"
+      ],
+      "sha256": "b953fbc2d4346340604a0d553a8582332fcd650508b91676576028434e75e535"
+    }
+  ],
+  "historically_touched_repository_exclusions": {
+    "go-chi/chi": [
+      "/workspace/udm-v54/research/unified_consequence_runtime/capability_index.json#jpl-observation-quotient-native-chi-servemux"
+    ],
+    "heathsanchez/equational-theories-lean-stage2": [
+      "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/programme-closure/REPOSITORIES.json"
+    ],
+    "heathsanchez/equational_theories": [
+      "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/programme-closure/REPOSITORIES.json"
+    ],
+    "heathsanchez/formalbook": [
+      "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/programme-closure/REPOSITORIES.json"
+    ],
+    "heathsanchez/latent-coordinate-law-engine": [
+      "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/programme-closure/REPOSITORIES.json"
+    ],
+    "heathsanchez/lean-kernel-arena": [
+      "/workspace/udm-v54/research/unified_consequence_runtime/capability_index.json",
+      "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/programme-closure/REPOSITORIES.json"
+    ],
+    "heathsanchez/lean4lean": [
+      "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/programme-closure/REPOSITORIES.json"
+    ],
+    "heathsanchez/lima": [
+      "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/programme-closure/REPOSITORIES.json"
+    ],
+    "heathsanchez/mathgraph": [
+      "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/programme-closure/REPOSITORIES.json"
+    ],
+    "heathsanchez/mathgraph-fork": [
+      "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/programme-closure/REPOSITORIES.json"
+    ],
+    "heathsanchez/mathgraph-igp24-continuation-engine": [
+      "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/programme-closure/REPOSITORIES.json"
+    ],
+    "heathsanchez/minimal-sufficient-interface": [
+      "/workspace/udm-v54/research/unified_consequence_runtime/capability_index.json",
+      "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/v54-continuation/SOURCE_MANIFEST.json",
+      "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/programme-closure/REPOSITORIES.json",
+      "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/programme-closure/CROSS_FRONTIER_SOURCE_INDEX.json"
+    ],
+    "heathsanchez/opengauss": [
+      "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/programme-closure/REPOSITORIES.json"
+    ],
+    "heathsanchez/parameter-golf": [
+      "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/programme-closure/REPOSITORIES.json"
+    ],
+    "heathsanchez/quantumoptics.jl": [
+      "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/programme-closure/REPOSITORIES.json"
+    ],
+    "heathsanchez/realitygraph": [
+      "/workspace/udm-v54/research/unified_consequence_runtime/capability_index.json",
+      "/workspace/udm-v54/research/unified_consequence_runtime/developmental_sources.json",
+      "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/v54-continuation/SOURCE_MANIFEST.json",
+      "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/programme-closure/REPOSITORIES.json",
+      "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/programme-closure/CROSS_FRONTIER_SOURCE_INDEX.json"
+    ],
+    "heathsanchez/specimen": [
+      "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/programme-closure/REPOSITORIES.json"
+    ],
+    "heathsanchez/test": [
+      "/workspace/udm-v54/research/unified_consequence_runtime/capability_index.json",
+      "/workspace/udm-v54/research/unified_consequence_runtime/developmental_sources.json",
+      "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/v54-continuation/SOURCE_MANIFEST.json",
+      "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/programme-closure/REPOSITORIES.json",
+      "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/programme-closure/DISCOVERED_CANDIDATES.json",
+      "/workspace/udm-v54/research/unified_consequence_runtime/native_unbounded_v1/FROZEN_PROTOCOL.json",
+      "/workspace/udm-v54/research/unified_consequence_runtime/typed_semantic_method_v1/FROZEN_PROTOCOL.json"
+    ],
+    "heathsanchez/triskelion": [
+      "/workspace/udm-v54/research/unified_consequence_runtime/capability_index.json",
+      "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/v54-continuation/SOURCE_MANIFEST.json",
+      "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/programme-closure/REPOSITORIES.json"
+    ],
+    "heathsanchez/vericoding-benchmark": [
+      "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/programme-closure/REPOSITORIES.json"
+    ],
+    "leanprover/cslib": [
+      "/workspace/udm-v54/research/unified_consequence_runtime/native_policy.json",
+      "/workspace/udm-v54/research/unified_consequence_runtime/native_semantic_genesis_v1/FROZEN_PROTOCOL.json",
+      "/workspace/udm-v54/research/unified_consequence_runtime/native_unbounded_v1/FROZEN_PROTOCOL.json",
+      "/workspace/udm-v54/research/unified_consequence_runtime/typed_semantic_method_v1/FROZEN_PROTOCOL.json"
+    ],
+    "licenses/apache-2.0": [
+      "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/programme-closure/REPOSITORIES.json"
+    ],
+    "licenses/gpl-3.0": [
+      "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/programme-closure/REPOSITORIES.json"
+    ],
+    "licenses/lgpl-3.0": [
+      "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/programme-closure/REPOSITORIES.json"
+    ],
+    "licenses/mit": [
+      "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/programme-closure/REPOSITORIES.json"
+    ],
+    "metalogiclabs/go-ethereum": [
+      "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/programme-closure/REPOSITORIES.json"
+    ],
+    "metalogiclabs/l4yaml": [
+      "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/programme-closure/REPOSITORIES.json"
+    ],
+    "metalogiclabs/mathgraph": [
+      "/workspace/udm-v54/research/unified_consequence_runtime/capability_index.json",
+      "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/v54-continuation/SOURCE_MANIFEST.json",
+      "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/programme-closure/REPOSITORIES.json"
+    ],
+    "metalogiclabs/mathgraph-lean-kernel": [
+      "/workspace/udm-v54/research/unified_consequence_runtime/capability_index.json",
+      "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/programme-closure/REPOSITORIES.json"
+    ],
+    "metalogiclabs/metatron": [
+      "/workspace/udm-v54/research/unified_consequence_runtime/capability_index.json",
+      "/workspace/udm-v54/research/unified_consequence_runtime/developmental_sources.json",
+      "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/programme-closure/REPOSITORIES.json",
+      "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/programme-closure/CROSS_FRONTIER_SOURCE_INDEX.json"
+    ],
+    "metalogiclabs/propertykindcalculus": [
+      "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/programme-closure/REPOSITORIES.json"
+    ],
+    "metalogiclabs/stockfish": [
+      "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/programme-closure/REPOSITORIES.json"
+    ],
+    "more-itertools/more-itertools": [
+      "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/decisive-native/FRESH_TASK_METADATA.json"
+    ],
+    "nasa-jpl/l4yaml": [
+      "/workspace/udm-v54/research/unified_consequence_runtime/capability_index.json"
+    ],
+    "pallets/blinker": [
+      "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/decisive-native/FRESH_TASK_METADATA.json"
+    ],
+    "pallets/itsdangerous": [
+      "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/decisive-native/FRESH_TASK_METADATA.json"
+    ],
+    "psf/requests": [
+      "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/v54-continuation/PROSPECTIVE_FRONTIER_FROZEN.json"
+    ],
+    "python-attrs/attrs": [
+      "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/decisive-native/FRESH_TASK_METADATA.json"
+    ],
+    "python-attrs/cattrs": [
+      "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/decisive-native/FRESH_TASK_METADATA.json"
+    ],
+    "python-hyper/h11": [
+      "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/decisive-native/FRESH_TASK_METADATA.json"
+    ],
+    "repos/heathsanchez": [
+      "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/programme-closure/REPOSITORIES.json"
+    ],
+    "repos/metalogiclabs": [
+      "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/programme-closure/REPOSITORIES.json"
+    ],
+    "servicenow/webarena-verified": [
+      "/workspace/udm-v54/research/unified_consequence_runtime/capability_index.json"
+    ],
+    "teorth/ieantn": [
+      "/workspace/udm-v54/research/unified_consequence_runtime/external_pr_v1/admission_policy.json"
+    ],
+    "urllib3/urllib3": [
+      "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/v54-continuation/PROSPECTIVE_FRONTIER_FROZEN.json"
+    ],
+    "users/heathsanchez": [
+      "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/programme-closure/REPOSITORIES.json"
+    ],
+    "users/metalogiclabs": [
+      "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/programme-closure/REPOSITORIES.json"
+    ]
+  },
+  "metadata_predicates": {
+    "file_metadata_pagination": "Page from 1 with per_page=100 until a page has fewer than 100 entries; reject if API pagination cannot be closed.",
+    "merged": true,
+    "no_changed_file_renamed_or_removed": true,
+    "production_py_files_min": 1,
+    "production_total_additions_max": 6,
+    "production_total_deletions_inclusive": [
+      1,
+      4
+    ],
+    "test_py_files_min": 1,
+    "tests_classifier": "A .py file with a test/tests/testing path component, a test_ basename, an _test.py basename, or conftest.py. Production means other .py files.",
+    "title_or_label": "Case-insensitive title starts fix OR a label contains bug."
+  },
+  "repository_universe_fixed_before_github_queries": [
+    "dateutil/dateutil",
+    "grahamdumpleton/wrapt",
+    "jab/bidict",
+    "pallets/click",
+    "pallets/markupsafe",
+    "pypa/packaging"
+  ],
+  "requested_tasks": 3,
+  "role_assignment": [
+    "TRAINING",
+    "PROTECTED_FUTURE",
+    "PROTECTED_FUTURE"
+  ],
+  "schema": "UDM_NATIVE_ADMISSION_V2_METADATA_PREQUERY_V1",
+  "selection_algorithm": "For each eligible repository, examine the latest 100 closed PRs from page 1, per_page=100, sort=updated, direction=desc. Evaluate every listed PR under the fixed metadata predicates and retain every candidate with a reason. Choose the first eligible PR in returned order per repository, then the first three qualifying repositories in fixed sorted order. No alternative is selected using source, tests, outcomes, or viability.",
+  "universe_order": "Ascending lexicographic repository full name; fixed six repositories, no expansion on shortfall.",
+  "untouched_assessment": {
+    "basis": "Absence from the explicitly listed accessible historical metadata, prior repository universes, frozen metadata, and known native-domain identifiers. The previous itsdangerous and blinker queries are exclusions even without a selected task.",
+    "boundary": "This establishes a bounded accessible-record check, not absolute unfamiliarity or absence of all prior human/model knowledge. Absence from the 70-entry index alone is not treated as proof."
+  }
+}

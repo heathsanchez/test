@@ -1,0 +1,94 @@
+{
+  "schema": "UDM_GIT_INDEX_READ_AUDIT_V4",
+  "argv": [
+    "git",
+    "--no-pager",
+    "--no-replace-objects",
+    "-c",
+    "core.fsmonitor=false",
+    "-C",
+    "/workspace/udm-v54",
+    "show",
+    "--no-ext-diff",
+    "--no-textconv",
+    "bd46699e:research/unified_consequence_runtime/archaeology/native-authority-v41/metadata-query-evidence/INDEX_AUDIT.json"
+  ],
+  "git_optional_locks": "0",
+  "before": {
+    "schema": "UDM_GIT_INDEX_SNAPSHOT_V4",
+    "git_common_dir": "/workspace/repos/test/.git",
+    "indexes": [
+      {
+        "path": "/workspace/repos/test/.git/index",
+        "exists": false,
+        "size_bytes": null,
+        "sha256": null
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/development/index",
+        "exists": true,
+        "size_bytes": 113571,
+        "sha256": "894f89eeaad5bd8d6c8242a5047d006a0b23021a5ba362d4db42c131e082fd29"
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/env-v3-native-334/index",
+        "exists": true,
+        "size_bytes": 176832,
+        "sha256": "6ea642f1a91b7239229344a2650a9af70ea2bd477b6db9518ed4153bed8cb786"
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/udm/index",
+        "exists": true,
+        "size_bytes": 111030,
+        "sha256": "3999c60a940d9c999523ff56ec37d2bc9d7c0328c1f2503690a652fbb1f01064"
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/udm-v54/index",
+        "exists": true,
+        "size_bytes": 239205,
+        "sha256": "9ed38158d9eca002bdf62ff962921fd0f6218ad952634148e77a8520a0b9d8f2"
+      }
+    ]
+  },
+  "returncode": 0,
+  "stdout_base64": "ewogICJhZnRlciI6IHsKICAgICJnaXRfY29tbW9uX2RpciI6ICIvd29ya3NwYWNlL3JlcG9zL3Rlc3QvLmdpdCIsCiAgICAiaW5kZXhlcyI6IFsKICAgICAgewogICAgICAgICJleGlzdHMiOiBmYWxzZSwKICAgICAgICAicGF0aCI6ICIvd29ya3NwYWNlL3JlcG9zL3Rlc3QvLmdpdC9pbmRleCIsCiAgICAgICAgInNoYTI1NiI6IG51bGwsCiAgICAgICAgInNpemVfYnl0ZXMiOiBudWxsCiAgICAgIH0sCiAgICAgIHsKICAgICAgICAiZXhpc3RzIjogdHJ1ZSwKICAgICAgICAicGF0aCI6ICIvd29ya3NwYWNlL3JlcG9zL3Rlc3QvLmdpdC93b3JrdHJlZXMvZGV2ZWxvcG1lbnQvaW5kZXgiLAogICAgICAgICJzaGEyNTYiOiAiODk0Zjg5ZWVhYWQ1YmQ4ZDZjODI0MmE1MDQ3ZDAwNmEwYjIzMDIxYTViYTM2MmQ0ZGI0MmMxMzFlMDgyZmQyOSIsCiAgICAgICAgInNpemVfYnl0ZXMiOiAxMTM1NzEKICAgICAgfSwKICAgICAgewogICAgICAgICJleGlzdHMiOiB0cnVlLAogICAgICAgICJwYXRoIjogIi93b3Jrc3BhY2UvcmVwb3MvdGVzdC8uZ2l0L3dvcmt0cmVlcy9lbnYtdjMtbmF0aXZlLTMzNC9pbmRleCIsCiAgICAgICAgInNoYTI1NiI6ICI2ZWE2NDJmMWE5MWI3MjM5MjI5MzQ0YTI2NTBhOWFmNzBlYTJiZDQ3N2I2ZGI5NTE4ZWQ0MTUzYmVkOGNiNzg2IiwKICAgICAgICAic2l6ZV9ieXRlcyI6IDE3NjgzMgogICAgICB9LAogICAgICB7CiAgICAgICAgImV4aXN0cyI6IHRydWUsCiAgICAgICAgInBhdGgiOiAiL3dvcmtzcGFjZS9yZXBvcy90ZXN0Ly5naXQvd29ya3RyZWVzL3VkbS9pbmRleCIsCiAgICAgICAgInNoYTI1NiI6ICIzOTk5YzYwYTk0MGQ5Yzk5OTUyM2ZmNTZlYzM3ZDJiYzlkN2MwMzI4YzFmMjUwMzY5MGE2NTJmYmIxZjAxMDY0IiwKICAgICAgICAic2l6ZV9ieXRlcyI6IDExMTAzMAogICAgICB9LAogICAgICB7CiAgICAgICAgImV4aXN0cyI6IHRydWUsCiAgICAgICAgInBhdGgiOiAiL3dvcmtzcGFjZS9yZXBvcy90ZXN0Ly5naXQvd29ya3RyZWVzL3VkbS12NTQvaW5kZXgiLAogICAgICAgICJzaGEyNTYiOiAiMWU0ZWU0MDFhYjFiZTE0MDUwNTc3YWE1ODNiM2FiOTBmNTFmZDBlMGE2YmZhNDBlNjczNTBkOGI3MGNmZTBkMyIsCiAgICAgICAgInNpemVfYnl0ZXMiOiAyMzY0NDQKICAgICAgfQogICAgXSwKICAgICJzY2hlbWEiOiAiVURNX0dJVF9JTkRFWF9TTkFQU0hPVF9WNCIKICB9LAogICJiZWZvcmUiOiB7CiAgICAiZ2l0X2NvbW1vbl9kaXIiOiAiL3dvcmtzcGFjZS9yZXBvcy90ZXN0Ly5naXQiLAogICAgImluZGV4ZXMiOiBbCiAgICAgIHsKICAgICAgICAiZXhpc3RzIjogZmFsc2UsCiAgICAgICAgInBhdGgiOiAiL3dvcmtzcGFjZS9yZXBvcy90ZXN0Ly5naXQvaW5kZXgiLAogICAgICAgICJzaGEyNTYiOiBudWxsLAogICAgICAgICJzaXplX2J5dGVzIjogbnVsbAogICAgICB9LAogICAgICB7CiAgICAgICAgImV4aXN0cyI6IHRydWUsCiAgICAgICAgInBhdGgiOiAiL3dvcmtzcGFjZS9yZXBvcy90ZXN0Ly5naXQvd29ya3RyZWVzL2RldmVsb3BtZW50L2luZGV4IiwKICAgICAgICAic2hhMjU2IjogIjg5NGY4OWVlYWFkNWJkOGQ2YzgyNDJhNTA0N2QwMDZhMGIyMzAyMWE1YmEzNjJkNGRiNDJjMTMxZTA4MmZkMjkiLAogICAgICAgICJzaXplX2J5dGVzIjogMTEzNTcxCiAgICAgIH0sCiAgICAgIHsKICAgICAgICAiZXhpc3RzIjogdHJ1ZSwKICAgICAgICAicGF0aCI6ICIvd29ya3NwYWNlL3JlcG9zL3Rlc3QvLmdpdC93b3JrdHJlZXMvZW52LXYzLW5hdGl2ZS0zMzQvaW5kZXgiLAogICAgICAgICJzaGEyNTYiOiAiNmVhNjQyZjFhOTFiNzIzOTIyOTM0NGEyNjUwYTlhZjcwZWEyYmQ0NzdiNmRiOTUxOGVkNDE1M2JlZDhjYjc4NiIsCiAgICAgICAgInNpemVfYnl0ZXMiOiAxNzY4MzIKICAgICAgfSwKICAgICAgewogICAgICAgICJleGlzdHMiOiB0cnVlLAogICAgICAgICJwYXRoIjogIi93b3Jrc3BhY2UvcmVwb3MvdGVzdC8uZ2l0L3dvcmt0cmVlcy91ZG0vaW5kZXgiLAogICAgICAgICJzaGEyNTYiOiAiMzk5OWM2MGE5NDBkOWM5OTk1MjNmZjU2ZWMzN2QyYmM5ZDdjMDMyOGMxZjI1MDM2OTBhNjUyZmJiMWYwMTA2NCIsCiAgICAgICAgInNpemVfYnl0ZXMiOiAxMTEwMzAKICAgICAgfSwKICAgICAgewogICAgICAgICJleGlzdHMiOiB0cnVlLAogICAgICAgICJwYXRoIjogIi93b3Jrc3BhY2UvcmVwb3MvdGVzdC8uZ2l0L3dvcmt0cmVlcy91ZG0tdjU0L2luZGV4IiwKICAgICAgICAic2hhMjU2IjogIjFlNGVlNDAxYWIxYmUxNDA1MDU3N2FhNTgzYjNhYjkwZjUxZmQwZTBhNmJmYTQwZTY3MzUwZDhiNzBjZmUwZDMiLAogICAgICAgICJzaXplX2J5dGVzIjogMjM2NDQ0CiAgICAgIH0KICAgIF0sCiAgICAic2NoZW1hIjogIlVETV9HSVRfSU5ERVhfU05BUFNIT1RfVjQiCiAgfSwKICAiY2hhbmdlcyI6IFtdCn0K",
+  "stderr_base64": "",
+  "after": {
+    "schema": "UDM_GIT_INDEX_SNAPSHOT_V4",
+    "git_common_dir": "/workspace/repos/test/.git",
+    "indexes": [
+      {
+        "path": "/workspace/repos/test/.git/index",
+        "exists": false,
+        "size_bytes": null,
+        "sha256": null
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/development/index",
+        "exists": true,
+        "size_bytes": 113571,
+        "sha256": "894f89eeaad5bd8d6c8242a5047d006a0b23021a5ba362d4db42c131e082fd29"
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/env-v3-native-334/index",
+        "exists": true,
+        "size_bytes": 176832,
+        "sha256": "6ea642f1a91b7239229344a2650a9af70ea2bd477b6db9518ed4153bed8cb786"
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/udm/index",
+        "exists": true,
+        "size_bytes": 111030,
+        "sha256": "3999c60a940d9c999523ff56ec37d2bc9d7c0328c1f2503690a652fbb1f01064"
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/udm-v54/index",
+        "exists": true,
+        "size_bytes": 239205,
+        "sha256": "9ed38158d9eca002bdf62ff962921fd0f6218ad952634148e77a8520a0b9d8f2"
+      }
+    ]
+  },
+  "index_changes": [],
+  "indexes_unchanged": true
+}

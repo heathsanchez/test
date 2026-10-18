@@ -1,0 +1,3738 @@
+{
+  "repository": "metalogiclabs/mathgraph",
+  "run": {
+    "id": 35302348593,
+    "head_sha": "c7e5613193898e78561e1b1dfa8c26358714ed8c",
+    "conclusion": "failure",
+    "status": "completed",
+    "path": ".github/workflows/abgp-confirmatory-v1.yml"
+  },
+  "jobs": [
+    {
+      "id": 105467425871,
+      "run_id": 35302348593,
+      "workflow_name": "abgp-confirmatory-v1",
+      "head_branch": "main",
+      "run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/runs/35302348593",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOSn0fEM8AAAAYjlk0Tw",
+      "head_sha": "c7e5613193898e78561e1b1dfa8c26358714ed8c",
+      "url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/jobs/105467425871",
+      "html_url": "https://github.com/metalogiclabs/mathgraph/actions/runs/35302348593/job/105467425871",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-09-18T03:12:47Z",
+      "started_at": "2026-09-18T03:12:48Z",
+      "completed_at": "2026-09-18T03:12:56Z",
+      "name": "guard",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-09-18T03:12:49Z",
+          "completed_at": "2026-09-18T03:12:50Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-09-18T03:12:50Z",
+          "completed_at": "2026-09-18T03:12:51Z"
+        },
+        {
+          "name": "Validate arm record",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-09-18T03:12:51Z",
+          "completed_at": "2026-09-18T03:12:51Z"
+        },
+        {
+          "name": "Refuse any second start and atomically mark STARTED",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-09-18T03:12:51Z",
+          "completed_at": "2026-09-18T03:12:54Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 8,
+          "started_at": "2026-09-18T03:12:54Z",
+          "completed_at": "2026-09-18T03:12:54Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9,
+          "started_at": "2026-09-18T03:12:54Z",
+          "completed_at": "2026-09-18T03:12:54Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/check-runs/105467425871",
+      "labels": [
+        "ubuntu-24.04"
+      ],
+      "runner_id": 1000004496,
+      "runner_name": "GitHub Actions 1000004496",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 105467456373,
+      "run_id": 35302348593,
+      "workflow_name": "abgp-confirmatory-v1",
+      "head_branch": "main",
+      "run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/runs/35302348593",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOSn0fEM8AAAAYjlmrdQ",
+      "head_sha": "c7e5613193898e78561e1b1dfa8c26358714ed8c",
+      "url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/jobs/105467456373",
+      "html_url": "https://github.com/metalogiclabs/mathgraph/actions/runs/35302348593/job/105467456373",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-09-18T03:12:56Z",
+      "started_at": "2026-09-18T03:12:58Z",
+      "completed_at": "2026-09-18T03:13:19Z",
+      "name": "arm_g",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-09-18T03:12:59Z",
+          "completed_at": "2026-09-18T03:12:59Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-09-18T03:12:59Z",
+          "completed_at": "2026-09-18T03:13:01Z"
+        },
+        {
+          "name": "Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-09-18T03:13:01Z",
+          "completed_at": "2026-09-18T03:13:02Z"
+        },
+        {
+          "name": "Run python -m pip install -e '.[sair]'",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-09-18T03:13:02Z",
+          "completed_at": "2026-09-18T03:13:12Z"
+        },
+        {
+          "name": "Verify exact frozen tree and execute G once",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-09-18T03:13:12Z",
+          "completed_at": "2026-09-18T03:13:15Z"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-09-18T03:13:15Z",
+          "completed_at": "2026-09-18T03:13:16Z"
+        },
+        {
+          "name": "Post Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11,
+          "started_at": "2026-09-18T03:13:16Z",
+          "completed_at": "2026-09-18T03:13:16Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12,
+          "started_at": "2026-09-18T03:13:16Z",
+          "completed_at": "2026-09-18T03:13:17Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13,
+          "started_at": "2026-09-18T03:13:17Z",
+          "completed_at": "2026-09-18T03:13:17Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/check-runs/105467456373",
+      "labels": [
+        "ubuntu-24.04"
+      ],
+      "runner_id": 1000004497,
+      "runner_name": "GitHub Actions 1000004497",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 105467456410,
+      "run_id": 35302348593,
+      "workflow_name": "abgp-confirmatory-v1",
+      "head_branch": "main",
+      "run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/runs/35302348593",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOSn0fEM8AAAAYjlmrmg",
+      "head_sha": "c7e5613193898e78561e1b1dfa8c26358714ed8c",
+      "url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/jobs/105467456410",
+      "html_url": "https://github.com/metalogiclabs/mathgraph/actions/runs/35302348593/job/105467456410",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-09-18T03:12:56Z",
+      "started_at": "2026-09-18T03:12:58Z",
+      "completed_at": "2026-09-18T03:13:15Z",
+      "name": "arm_a",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-09-18T03:12:59Z",
+          "completed_at": "2026-09-18T03:12:59Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-09-18T03:12:59Z",
+          "completed_at": "2026-09-18T03:13:00Z"
+        },
+        {
+          "name": "Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-09-18T03:13:00Z",
+          "completed_at": "2026-09-18T03:13:01Z"
+        },
+        {
+          "name": "Run python -m pip install -e '.[sair]'",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-09-18T03:13:01Z",
+          "completed_at": "2026-09-18T03:13:11Z"
+        },
+        {
+          "name": "Verify exact frozen tree and execute A once",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-09-18T03:13:11Z",
+          "completed_at": "2026-09-18T03:13:13Z"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-09-18T03:13:13Z",
+          "completed_at": "2026-09-18T03:13:14Z"
+        },
+        {
+          "name": "Post Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11,
+          "started_at": "2026-09-18T03:13:14Z",
+          "completed_at": "2026-09-18T03:13:14Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12,
+          "started_at": "2026-09-18T03:13:14Z",
+          "completed_at": "2026-09-18T03:13:14Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13,
+          "started_at": "2026-09-18T03:13:14Z",
+          "completed_at": "2026-09-18T03:13:14Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/check-runs/105467456410",
+      "labels": [
+        "ubuntu-24.04"
+      ],
+      "runner_id": 1000004498,
+      "runner_name": "GitHub Actions 1000004498",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 105467456431,
+      "run_id": 35302348593,
+      "workflow_name": "abgp-confirmatory-v1",
+      "head_branch": "main",
+      "run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/runs/35302348593",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOSn0fEM8AAAAYjlmrrw",
+      "head_sha": "c7e5613193898e78561e1b1dfa8c26358714ed8c",
+      "url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/jobs/105467456431",
+      "html_url": "https://github.com/metalogiclabs/mathgraph/actions/runs/35302348593/job/105467456431",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-09-18T03:12:56Z",
+      "started_at": "2026-09-18T03:12:58Z",
+      "completed_at": "2026-09-18T03:13:38Z",
+      "name": "arm_b",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-09-18T03:13:00Z",
+          "completed_at": "2026-09-18T03:13:01Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-09-18T03:13:01Z",
+          "completed_at": "2026-09-18T03:13:02Z"
+        },
+        {
+          "name": "Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-09-18T03:13:02Z",
+          "completed_at": "2026-09-18T03:13:03Z"
+        },
+        {
+          "name": "Run python -m pip install -e '.[sair]'",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-09-18T03:13:03Z",
+          "completed_at": "2026-09-18T03:13:14Z"
+        },
+        {
+          "name": "Verify exact frozen tree and execute B once",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-09-18T03:13:14Z",
+          "completed_at": "2026-09-18T03:13:33Z"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-09-18T03:13:33Z",
+          "completed_at": "2026-09-18T03:13:35Z"
+        },
+        {
+          "name": "Post Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11,
+          "started_at": "2026-09-18T03:13:35Z",
+          "completed_at": "2026-09-18T03:13:35Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12,
+          "started_at": "2026-09-18T03:13:35Z",
+          "completed_at": "2026-09-18T03:13:35Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13,
+          "started_at": "2026-09-18T03:13:35Z",
+          "completed_at": "2026-09-18T03:13:35Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/check-runs/105467456431",
+      "labels": [
+        "ubuntu-24.04"
+      ],
+      "runner_id": 1000004499,
+      "runner_name": "GitHub Actions 1000004499",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 105467456736,
+      "run_id": 35302348593,
+      "workflow_name": "abgp-confirmatory-v1",
+      "head_branch": "main",
+      "run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/runs/35302348593",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOSn0fEM8AAAAYjlms4A",
+      "head_sha": "c7e5613193898e78561e1b1dfa8c26358714ed8c",
+      "url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/jobs/105467456736",
+      "html_url": "https://github.com/metalogiclabs/mathgraph/actions/runs/35302348593/job/105467456736",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-09-18T03:12:56Z",
+      "started_at": "2026-09-18T03:12:58Z",
+      "completed_at": "2026-09-18T03:15:42Z",
+      "name": "arm_p (0)",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-09-18T03:12:59Z",
+          "completed_at": "2026-09-18T03:13:00Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-09-18T03:13:00Z",
+          "completed_at": "2026-09-18T03:13:01Z"
+        },
+        {
+          "name": "Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-09-18T03:13:01Z",
+          "completed_at": "2026-09-18T03:13:01Z"
+        },
+        {
+          "name": "Run python -m pip install -e '.[sair]'",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-09-18T03:13:01Z",
+          "completed_at": "2026-09-18T03:13:10Z"
+        },
+        {
+          "name": "Verify exact frozen tree and execute disjoint P shard once",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-09-18T03:13:10Z",
+          "completed_at": "2026-09-18T03:15:38Z"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-09-18T03:15:38Z",
+          "completed_at": "2026-09-18T03:15:40Z"
+        },
+        {
+          "name": "Post Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11,
+          "started_at": "2026-09-18T03:15:40Z",
+          "completed_at": "2026-09-18T03:15:40Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12,
+          "started_at": "2026-09-18T03:15:40Z",
+          "completed_at": "2026-09-18T03:15:40Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13,
+          "started_at": "2026-09-18T03:15:40Z",
+          "completed_at": "2026-09-18T03:15:40Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/check-runs/105467456736",
+      "labels": [
+        "ubuntu-24.04"
+      ],
+      "runner_id": 1000004500,
+      "runner_name": "GitHub Actions 1000004500",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 105467456766,
+      "run_id": 35302348593,
+      "workflow_name": "abgp-confirmatory-v1",
+      "head_branch": "main",
+      "run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/runs/35302348593",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOSn0fEM8AAAAYjlms_g",
+      "head_sha": "c7e5613193898e78561e1b1dfa8c26358714ed8c",
+      "url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/jobs/105467456766",
+      "html_url": "https://github.com/metalogiclabs/mathgraph/actions/runs/35302348593/job/105467456766",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-09-18T03:12:56Z",
+      "started_at": "2026-09-18T03:12:58Z",
+      "completed_at": "2026-09-18T03:16:11Z",
+      "name": "arm_p (6)",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-09-18T03:12:59Z",
+          "completed_at": "2026-09-18T03:13:00Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-09-18T03:13:00Z",
+          "completed_at": "2026-09-18T03:13:01Z"
+        },
+        {
+          "name": "Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-09-18T03:13:01Z",
+          "completed_at": "2026-09-18T03:13:01Z"
+        },
+        {
+          "name": "Run python -m pip install -e '.[sair]'",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-09-18T03:13:01Z",
+          "completed_at": "2026-09-18T03:13:12Z"
+        },
+        {
+          "name": "Verify exact frozen tree and execute disjoint P shard once",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-09-18T03:13:12Z",
+          "completed_at": "2026-09-18T03:16:08Z"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-09-18T03:16:08Z",
+          "completed_at": "2026-09-18T03:16:09Z"
+        },
+        {
+          "name": "Post Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11,
+          "started_at": "2026-09-18T03:16:09Z",
+          "completed_at": "2026-09-18T03:16:09Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12,
+          "started_at": "2026-09-18T03:16:09Z",
+          "completed_at": "2026-09-18T03:16:10Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13,
+          "started_at": "2026-09-18T03:16:10Z",
+          "completed_at": "2026-09-18T03:16:10Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/check-runs/105467456766",
+      "labels": [
+        "ubuntu-24.04"
+      ],
+      "runner_id": 1000004502,
+      "runner_name": "GitHub Actions 1000004502",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 105467456774,
+      "run_id": 35302348593,
+      "workflow_name": "abgp-confirmatory-v1",
+      "head_branch": "main",
+      "run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/runs/35302348593",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOSn0fEM8AAAAYjlmtBg",
+      "head_sha": "c7e5613193898e78561e1b1dfa8c26358714ed8c",
+      "url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/jobs/105467456774",
+      "html_url": "https://github.com/metalogiclabs/mathgraph/actions/runs/35302348593/job/105467456774",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-09-18T03:12:56Z",
+      "started_at": "2026-09-18T03:12:58Z",
+      "completed_at": "2026-09-18T03:16:17Z",
+      "name": "arm_p (3)",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-09-18T03:12:59Z",
+          "completed_at": "2026-09-18T03:13:00Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-09-18T03:13:00Z",
+          "completed_at": "2026-09-18T03:13:01Z"
+        },
+        {
+          "name": "Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-09-18T03:13:01Z",
+          "completed_at": "2026-09-18T03:13:01Z"
+        },
+        {
+          "name": "Run python -m pip install -e '.[sair]'",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-09-18T03:13:01Z",
+          "completed_at": "2026-09-18T03:13:11Z"
+        },
+        {
+          "name": "Verify exact frozen tree and execute disjoint P shard once",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-09-18T03:13:11Z",
+          "completed_at": "2026-09-18T03:16:15Z"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-09-18T03:16:15Z",
+          "completed_at": "2026-09-18T03:16:16Z"
+        },
+        {
+          "name": "Post Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11,
+          "started_at": "2026-09-18T03:16:16Z",
+          "completed_at": "2026-09-18T03:16:16Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12,
+          "started_at": "2026-09-18T03:16:16Z",
+          "completed_at": "2026-09-18T03:16:16Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13,
+          "started_at": "2026-09-18T03:16:16Z",
+          "completed_at": "2026-09-18T03:16:16Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/check-runs/105467456774",
+      "labels": [
+        "ubuntu-24.04"
+      ],
+      "runner_id": 1000004506,
+      "runner_name": "GitHub Actions 1000004506",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 105467456777,
+      "run_id": 35302348593,
+      "workflow_name": "abgp-confirmatory-v1",
+      "head_branch": "main",
+      "run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/runs/35302348593",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOSn0fEM8AAAAYjlmtCQ",
+      "head_sha": "c7e5613193898e78561e1b1dfa8c26358714ed8c",
+      "url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/jobs/105467456777",
+      "html_url": "https://github.com/metalogiclabs/mathgraph/actions/runs/35302348593/job/105467456777",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-09-18T03:12:56Z",
+      "started_at": "2026-09-18T03:15:44Z",
+      "completed_at": "2026-09-18T03:19:10Z",
+      "name": "arm_p (17)",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-09-18T03:15:44Z",
+          "completed_at": "2026-09-18T03:15:45Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-09-18T03:15:45Z",
+          "completed_at": "2026-09-18T03:15:46Z"
+        },
+        {
+          "name": "Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-09-18T03:15:46Z",
+          "completed_at": "2026-09-18T03:15:46Z"
+        },
+        {
+          "name": "Run python -m pip install -e '.[sair]'",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-09-18T03:15:46Z",
+          "completed_at": "2026-09-18T03:15:57Z"
+        },
+        {
+          "name": "Verify exact frozen tree and execute disjoint P shard once",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-09-18T03:15:57Z",
+          "completed_at": "2026-09-18T03:19:08Z"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-09-18T03:19:08Z",
+          "completed_at": "2026-09-18T03:19:09Z"
+        },
+        {
+          "name": "Post Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11,
+          "started_at": "2026-09-18T03:19:09Z",
+          "completed_at": "2026-09-18T03:19:09Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12,
+          "started_at": "2026-09-18T03:19:09Z",
+          "completed_at": "2026-09-18T03:19:09Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13,
+          "started_at": "2026-09-18T03:19:09Z",
+          "completed_at": "2026-09-18T03:19:09Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/check-runs/105467456777",
+      "labels": [
+        "ubuntu-24.04"
+      ],
+      "runner_id": 1000004517,
+      "runner_name": "GitHub Actions 1000004517",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 105467456781,
+      "run_id": 35302348593,
+      "workflow_name": "abgp-confirmatory-v1",
+      "head_branch": "main",
+      "run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/runs/35302348593",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOSn0fEM8AAAAYjlmtDQ",
+      "head_sha": "c7e5613193898e78561e1b1dfa8c26358714ed8c",
+      "url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/jobs/105467456781",
+      "html_url": "https://github.com/metalogiclabs/mathgraph/actions/runs/35302348593/job/105467456781",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-09-18T03:12:56Z",
+      "started_at": "2026-09-18T03:12:58Z",
+      "completed_at": "2026-09-18T03:16:32Z",
+      "name": "arm_p (7)",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-09-18T03:12:59Z",
+          "completed_at": "2026-09-18T03:12:59Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-09-18T03:12:59Z",
+          "completed_at": "2026-09-18T03:13:01Z"
+        },
+        {
+          "name": "Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-09-18T03:13:01Z",
+          "completed_at": "2026-09-18T03:13:01Z"
+        },
+        {
+          "name": "Run python -m pip install -e '.[sair]'",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-09-18T03:13:01Z",
+          "completed_at": "2026-09-18T03:13:16Z"
+        },
+        {
+          "name": "Verify exact frozen tree and execute disjoint P shard once",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-09-18T03:13:16Z",
+          "completed_at": "2026-09-18T03:16:28Z"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-09-18T03:16:28Z",
+          "completed_at": "2026-09-18T03:16:30Z"
+        },
+        {
+          "name": "Post Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11,
+          "started_at": "2026-09-18T03:16:30Z",
+          "completed_at": "2026-09-18T03:16:30Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12,
+          "started_at": "2026-09-18T03:16:30Z",
+          "completed_at": "2026-09-18T03:16:30Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13,
+          "started_at": "2026-09-18T03:16:30Z",
+          "completed_at": "2026-09-18T03:16:30Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/check-runs/105467456781",
+      "labels": [
+        "ubuntu-24.04"
+      ],
+      "runner_id": 1000004501,
+      "runner_name": "GitHub Actions 1000004501",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 105467456784,
+      "run_id": 35302348593,
+      "workflow_name": "abgp-confirmatory-v1",
+      "head_branch": "main",
+      "run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/runs/35302348593",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOSn0fEM8AAAAYjlmtEA",
+      "head_sha": "c7e5613193898e78561e1b1dfa8c26358714ed8c",
+      "url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/jobs/105467456784",
+      "html_url": "https://github.com/metalogiclabs/mathgraph/actions/runs/35302348593/job/105467456784",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-09-18T03:12:56Z",
+      "started_at": "2026-09-18T03:12:58Z",
+      "completed_at": "2026-09-18T03:16:24Z",
+      "name": "arm_p (5)",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-09-18T03:12:59Z",
+          "completed_at": "2026-09-18T03:13:00Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-09-18T03:13:00Z",
+          "completed_at": "2026-09-18T03:13:01Z"
+        },
+        {
+          "name": "Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-09-18T03:13:01Z",
+          "completed_at": "2026-09-18T03:13:01Z"
+        },
+        {
+          "name": "Run python -m pip install -e '.[sair]'",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-09-18T03:13:01Z",
+          "completed_at": "2026-09-18T03:13:12Z"
+        },
+        {
+          "name": "Verify exact frozen tree and execute disjoint P shard once",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-09-18T03:13:12Z",
+          "completed_at": "2026-09-18T03:16:20Z"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-09-18T03:16:20Z",
+          "completed_at": "2026-09-18T03:16:21Z"
+        },
+        {
+          "name": "Post Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11,
+          "started_at": "2026-09-18T03:16:21Z",
+          "completed_at": "2026-09-18T03:16:21Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12,
+          "started_at": "2026-09-18T03:16:21Z",
+          "completed_at": "2026-09-18T03:16:21Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13,
+          "started_at": "2026-09-18T03:16:21Z",
+          "completed_at": "2026-09-18T03:16:21Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/check-runs/105467456784",
+      "labels": [
+        "ubuntu-24.04"
+      ],
+      "runner_id": 1000004503,
+      "runner_name": "GitHub Actions 1000004503",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 105467456785,
+      "run_id": 35302348593,
+      "workflow_name": "abgp-confirmatory-v1",
+      "head_branch": "main",
+      "run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/runs/35302348593",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOSn0fEM8AAAAYjlmtEQ",
+      "head_sha": "c7e5613193898e78561e1b1dfa8c26358714ed8c",
+      "url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/jobs/105467456785",
+      "html_url": "https://github.com/metalogiclabs/mathgraph/actions/runs/35302348593/job/105467456785",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-09-18T03:12:56Z",
+      "started_at": "2026-09-18T03:12:58Z",
+      "completed_at": "2026-09-18T03:16:22Z",
+      "name": "arm_p (8)",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-09-18T03:12:59Z",
+          "completed_at": "2026-09-18T03:12:59Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-09-18T03:12:59Z",
+          "completed_at": "2026-09-18T03:13:01Z"
+        },
+        {
+          "name": "Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-09-18T03:13:01Z",
+          "completed_at": "2026-09-18T03:13:01Z"
+        },
+        {
+          "name": "Run python -m pip install -e '.[sair]'",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-09-18T03:13:01Z",
+          "completed_at": "2026-09-18T03:13:13Z"
+        },
+        {
+          "name": "Verify exact frozen tree and execute disjoint P shard once",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-09-18T03:13:13Z",
+          "completed_at": "2026-09-18T03:16:20Z"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-09-18T03:16:20Z",
+          "completed_at": "2026-09-18T03:16:20Z"
+        },
+        {
+          "name": "Post Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11,
+          "started_at": "2026-09-18T03:16:20Z",
+          "completed_at": "2026-09-18T03:16:20Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12,
+          "started_at": "2026-09-18T03:16:20Z",
+          "completed_at": "2026-09-18T03:16:21Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13,
+          "started_at": "2026-09-18T03:16:21Z",
+          "completed_at": "2026-09-18T03:16:21Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/check-runs/105467456785",
+      "labels": [
+        "ubuntu-24.04"
+      ],
+      "runner_id": 1000004508,
+      "runner_name": "GitHub Actions 1000004508",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 105467456788,
+      "run_id": 35302348593,
+      "workflow_name": "abgp-confirmatory-v1",
+      "head_branch": "main",
+      "run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/runs/35302348593",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOSn0fEM8AAAAYjlmtFA",
+      "head_sha": "c7e5613193898e78561e1b1dfa8c26358714ed8c",
+      "url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/jobs/105467456788",
+      "html_url": "https://github.com/metalogiclabs/mathgraph/actions/runs/35302348593/job/105467456788",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-09-18T03:12:56Z",
+      "started_at": "2026-09-18T03:12:58Z",
+      "completed_at": "2026-09-18T03:16:09Z",
+      "name": "arm_p (2)",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-09-18T03:12:59Z",
+          "completed_at": "2026-09-18T03:13:02Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-09-18T03:13:02Z",
+          "completed_at": "2026-09-18T03:13:04Z"
+        },
+        {
+          "name": "Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-09-18T03:13:04Z",
+          "completed_at": "2026-09-18T03:13:04Z"
+        },
+        {
+          "name": "Run python -m pip install -e '.[sair]'",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-09-18T03:13:04Z",
+          "completed_at": "2026-09-18T03:13:15Z"
+        },
+        {
+          "name": "Verify exact frozen tree and execute disjoint P shard once",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-09-18T03:13:15Z",
+          "completed_at": "2026-09-18T03:16:05Z"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-09-18T03:16:05Z",
+          "completed_at": "2026-09-18T03:16:07Z"
+        },
+        {
+          "name": "Post Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11,
+          "started_at": "2026-09-18T03:16:07Z",
+          "completed_at": "2026-09-18T03:16:07Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12,
+          "started_at": "2026-09-18T03:16:07Z",
+          "completed_at": "2026-09-18T03:16:07Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13,
+          "started_at": "2026-09-18T03:16:07Z",
+          "completed_at": "2026-09-18T03:16:07Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/check-runs/105467456788",
+      "labels": [
+        "ubuntu-24.04"
+      ],
+      "runner_id": 1000004504,
+      "runner_name": "GitHub Actions 1000004504",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 105467456789,
+      "run_id": 35302348593,
+      "workflow_name": "abgp-confirmatory-v1",
+      "head_branch": "main",
+      "run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/runs/35302348593",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOSn0fEM8AAAAYjlmtFQ",
+      "head_sha": "c7e5613193898e78561e1b1dfa8c26358714ed8c",
+      "url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/jobs/105467456789",
+      "html_url": "https://github.com/metalogiclabs/mathgraph/actions/runs/35302348593/job/105467456789",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-09-18T03:12:56Z",
+      "started_at": "2026-09-18T03:12:58Z",
+      "completed_at": "2026-09-18T03:16:31Z",
+      "name": "arm_p (1)",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-09-18T03:13:00Z",
+          "completed_at": "2026-09-18T03:13:01Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-09-18T03:13:01Z",
+          "completed_at": "2026-09-18T03:13:03Z"
+        },
+        {
+          "name": "Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-09-18T03:13:03Z",
+          "completed_at": "2026-09-18T03:13:03Z"
+        },
+        {
+          "name": "Run python -m pip install -e '.[sair]'",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-09-18T03:13:03Z",
+          "completed_at": "2026-09-18T03:13:14Z"
+        },
+        {
+          "name": "Verify exact frozen tree and execute disjoint P shard once",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-09-18T03:13:14Z",
+          "completed_at": "2026-09-18T03:16:27Z"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-09-18T03:16:27Z",
+          "completed_at": "2026-09-18T03:16:29Z"
+        },
+        {
+          "name": "Post Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11,
+          "started_at": "2026-09-18T03:16:29Z",
+          "completed_at": "2026-09-18T03:16:29Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12,
+          "started_at": "2026-09-18T03:16:29Z",
+          "completed_at": "2026-09-18T03:16:29Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13,
+          "started_at": "2026-09-18T03:16:29Z",
+          "completed_at": "2026-09-18T03:16:29Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/check-runs/105467456789",
+      "labels": [
+        "ubuntu-24.04"
+      ],
+      "runner_id": 1000004512,
+      "runner_name": "GitHub Actions 1000004512",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 105467456818,
+      "run_id": 35302348593,
+      "workflow_name": "abgp-confirmatory-v1",
+      "head_branch": "main",
+      "run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/runs/35302348593",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOSn0fEM8AAAAYjlmtMg",
+      "head_sha": "c7e5613193898e78561e1b1dfa8c26358714ed8c",
+      "url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/jobs/105467456818",
+      "html_url": "https://github.com/metalogiclabs/mathgraph/actions/runs/35302348593/job/105467456818",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-09-18T03:12:56Z",
+      "started_at": "2026-09-18T03:12:58Z",
+      "completed_at": "2026-09-18T03:15:06Z",
+      "name": "arm_p (11)",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-09-18T03:12:58Z",
+          "completed_at": "2026-09-18T03:12:59Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-09-18T03:12:59Z",
+          "completed_at": "2026-09-18T03:13:00Z"
+        },
+        {
+          "name": "Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-09-18T03:13:00Z",
+          "completed_at": "2026-09-18T03:13:00Z"
+        },
+        {
+          "name": "Run python -m pip install -e '.[sair]'",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-09-18T03:13:00Z",
+          "completed_at": "2026-09-18T03:13:07Z"
+        },
+        {
+          "name": "Verify exact frozen tree and execute disjoint P shard once",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-09-18T03:13:07Z",
+          "completed_at": "2026-09-18T03:15:03Z"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-09-18T03:15:03Z",
+          "completed_at": "2026-09-18T03:15:04Z"
+        },
+        {
+          "name": "Post Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11,
+          "started_at": "2026-09-18T03:15:04Z",
+          "completed_at": "2026-09-18T03:15:04Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12,
+          "started_at": "2026-09-18T03:15:04Z",
+          "completed_at": "2026-09-18T03:15:04Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13,
+          "started_at": "2026-09-18T03:15:04Z",
+          "completed_at": "2026-09-18T03:15:04Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/check-runs/105467456818",
+      "labels": [
+        "ubuntu-24.04"
+      ],
+      "runner_id": 1000004511,
+      "runner_name": "GitHub Actions 1000004511",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 105467456821,
+      "run_id": 35302348593,
+      "workflow_name": "abgp-confirmatory-v1",
+      "head_branch": "main",
+      "run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/runs/35302348593",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOSn0fEM8AAAAYjlmtNQ",
+      "head_sha": "c7e5613193898e78561e1b1dfa8c26358714ed8c",
+      "url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/jobs/105467456821",
+      "html_url": "https://github.com/metalogiclabs/mathgraph/actions/runs/35302348593/job/105467456821",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-09-18T03:12:56Z",
+      "started_at": "2026-09-18T03:12:58Z",
+      "completed_at": "2026-09-18T03:16:31Z",
+      "name": "arm_p (10)",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-09-18T03:12:58Z",
+          "completed_at": "2026-09-18T03:12:59Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-09-18T03:12:59Z",
+          "completed_at": "2026-09-18T03:13:00Z"
+        },
+        {
+          "name": "Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-09-18T03:13:00Z",
+          "completed_at": "2026-09-18T03:13:01Z"
+        },
+        {
+          "name": "Run python -m pip install -e '.[sair]'",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-09-18T03:13:01Z",
+          "completed_at": "2026-09-18T03:13:11Z"
+        },
+        {
+          "name": "Verify exact frozen tree and execute disjoint P shard once",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-09-18T03:13:11Z",
+          "completed_at": "2026-09-18T03:16:28Z"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-09-18T03:16:28Z",
+          "completed_at": "2026-09-18T03:16:29Z"
+        },
+        {
+          "name": "Post Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11,
+          "started_at": "2026-09-18T03:16:29Z",
+          "completed_at": "2026-09-18T03:16:29Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12,
+          "started_at": "2026-09-18T03:16:29Z",
+          "completed_at": "2026-09-18T03:16:29Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13,
+          "started_at": "2026-09-18T03:16:30Z",
+          "completed_at": "2026-09-18T03:16:30Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/check-runs/105467456821",
+      "labels": [
+        "ubuntu-24.04"
+      ],
+      "runner_id": 1000004505,
+      "runner_name": "GitHub Actions 1000004505",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 105467456822,
+      "run_id": 35302348593,
+      "workflow_name": "abgp-confirmatory-v1",
+      "head_branch": "main",
+      "run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/runs/35302348593",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOSn0fEM8AAAAYjlmtNg",
+      "head_sha": "c7e5613193898e78561e1b1dfa8c26358714ed8c",
+      "url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/jobs/105467456822",
+      "html_url": "https://github.com/metalogiclabs/mathgraph/actions/runs/35302348593/job/105467456822",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-09-18T03:12:56Z",
+      "started_at": "2026-09-18T03:13:00Z",
+      "completed_at": "2026-09-18T03:16:38Z",
+      "name": "arm_p (4)",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-09-18T03:13:00Z",
+          "completed_at": "2026-09-18T03:13:01Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-09-18T03:13:01Z",
+          "completed_at": "2026-09-18T03:13:03Z"
+        },
+        {
+          "name": "Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-09-18T03:13:03Z",
+          "completed_at": "2026-09-18T03:13:03Z"
+        },
+        {
+          "name": "Run python -m pip install -e '.[sair]'",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-09-18T03:13:03Z",
+          "completed_at": "2026-09-18T03:13:14Z"
+        },
+        {
+          "name": "Verify exact frozen tree and execute disjoint P shard once",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-09-18T03:13:14Z",
+          "completed_at": "2026-09-18T03:16:34Z"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-09-18T03:16:34Z",
+          "completed_at": "2026-09-18T03:16:35Z"
+        },
+        {
+          "name": "Post Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11,
+          "started_at": "2026-09-18T03:16:35Z",
+          "completed_at": "2026-09-18T03:16:35Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12,
+          "started_at": "2026-09-18T03:16:35Z",
+          "completed_at": "2026-09-18T03:16:35Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13,
+          "started_at": "2026-09-18T03:16:35Z",
+          "completed_at": "2026-09-18T03:16:36Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/check-runs/105467456822",
+      "labels": [
+        "ubuntu-24.04"
+      ],
+      "runner_id": 1000004510,
+      "runner_name": "GitHub Actions 1000004510",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 105467456832,
+      "run_id": 35302348593,
+      "workflow_name": "abgp-confirmatory-v1",
+      "head_branch": "main",
+      "run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/runs/35302348593",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOSn0fEM8AAAAYjlmtQA",
+      "head_sha": "c7e5613193898e78561e1b1dfa8c26358714ed8c",
+      "url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/jobs/105467456832",
+      "html_url": "https://github.com/metalogiclabs/mathgraph/actions/runs/35302348593/job/105467456832",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-09-18T03:12:56Z",
+      "started_at": "2026-09-18T03:12:58Z",
+      "completed_at": "2026-09-18T03:15:44Z",
+      "name": "arm_p (12)",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-09-18T03:12:58Z",
+          "completed_at": "2026-09-18T03:12:59Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-09-18T03:12:59Z",
+          "completed_at": "2026-09-18T03:13:00Z"
+        },
+        {
+          "name": "Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-09-18T03:13:00Z",
+          "completed_at": "2026-09-18T03:13:01Z"
+        },
+        {
+          "name": "Run python -m pip install -e '.[sair]'",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-09-18T03:13:01Z",
+          "completed_at": "2026-09-18T03:13:10Z"
+        },
+        {
+          "name": "Verify exact frozen tree and execute disjoint P shard once",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-09-18T03:13:10Z",
+          "completed_at": "2026-09-18T03:15:41Z"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-09-18T03:15:41Z",
+          "completed_at": "2026-09-18T03:15:42Z"
+        },
+        {
+          "name": "Post Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11,
+          "started_at": "2026-09-18T03:15:42Z",
+          "completed_at": "2026-09-18T03:15:42Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12,
+          "started_at": "2026-09-18T03:15:42Z",
+          "completed_at": "2026-09-18T03:15:42Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13,
+          "started_at": "2026-09-18T03:15:42Z",
+          "completed_at": "2026-09-18T03:15:42Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/check-runs/105467456832",
+      "labels": [
+        "ubuntu-24.04"
+      ],
+      "runner_id": 1000004507,
+      "runner_name": "GitHub Actions 1000004507",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 105467456833,
+      "run_id": 35302348593,
+      "workflow_name": "abgp-confirmatory-v1",
+      "head_branch": "main",
+      "run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/runs/35302348593",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOSn0fEM8AAAAYjlmtQQ",
+      "head_sha": "c7e5613193898e78561e1b1dfa8c26358714ed8c",
+      "url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/jobs/105467456833",
+      "html_url": "https://github.com/metalogiclabs/mathgraph/actions/runs/35302348593/job/105467456833",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-09-18T03:12:56Z",
+      "started_at": "2026-09-18T03:12:58Z",
+      "completed_at": "2026-09-18T03:15:51Z",
+      "name": "arm_p (9)",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-09-18T03:12:58Z",
+          "completed_at": "2026-09-18T03:13:00Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-09-18T03:13:00Z",
+          "completed_at": "2026-09-18T03:13:01Z"
+        },
+        {
+          "name": "Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-09-18T03:13:01Z",
+          "completed_at": "2026-09-18T03:13:01Z"
+        },
+        {
+          "name": "Run python -m pip install -e '.[sair]'",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-09-18T03:13:01Z",
+          "completed_at": "2026-09-18T03:13:10Z"
+        },
+        {
+          "name": "Verify exact frozen tree and execute disjoint P shard once",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-09-18T03:13:10Z",
+          "completed_at": "2026-09-18T03:15:49Z"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-09-18T03:15:49Z",
+          "completed_at": "2026-09-18T03:15:50Z"
+        },
+        {
+          "name": "Post Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11,
+          "started_at": "2026-09-18T03:15:50Z",
+          "completed_at": "2026-09-18T03:15:50Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12,
+          "started_at": "2026-09-18T03:15:50Z",
+          "completed_at": "2026-09-18T03:15:50Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13,
+          "started_at": "2026-09-18T03:15:50Z",
+          "completed_at": "2026-09-18T03:15:50Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/check-runs/105467456833",
+      "labels": [
+        "ubuntu-24.04"
+      ],
+      "runner_id": 1000004509,
+      "runner_name": "GitHub Actions 1000004509",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 105467456851,
+      "run_id": 35302348593,
+      "workflow_name": "abgp-confirmatory-v1",
+      "head_branch": "main",
+      "run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/runs/35302348593",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOSn0fEM8AAAAYjlmtUw",
+      "head_sha": "c7e5613193898e78561e1b1dfa8c26358714ed8c",
+      "url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/jobs/105467456851",
+      "html_url": "https://github.com/metalogiclabs/mathgraph/actions/runs/35302348593/job/105467456851",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-09-18T03:12:56Z",
+      "started_at": "2026-09-18T03:12:58Z",
+      "completed_at": "2026-09-18T03:16:43Z",
+      "name": "arm_p (14)",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-09-18T03:12:59Z",
+          "completed_at": "2026-09-18T03:13:00Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-09-18T03:13:00Z",
+          "completed_at": "2026-09-18T03:13:01Z"
+        },
+        {
+          "name": "Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-09-18T03:13:01Z",
+          "completed_at": "2026-09-18T03:13:01Z"
+        },
+        {
+          "name": "Run python -m pip install -e '.[sair]'",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-09-18T03:13:01Z",
+          "completed_at": "2026-09-18T03:13:13Z"
+        },
+        {
+          "name": "Verify exact frozen tree and execute disjoint P shard once",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-09-18T03:13:13Z",
+          "completed_at": "2026-09-18T03:16:39Z"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-09-18T03:16:39Z",
+          "completed_at": "2026-09-18T03:16:41Z"
+        },
+        {
+          "name": "Post Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11,
+          "started_at": "2026-09-18T03:16:41Z",
+          "completed_at": "2026-09-18T03:16:41Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12,
+          "started_at": "2026-09-18T03:16:41Z",
+          "completed_at": "2026-09-18T03:16:41Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13,
+          "started_at": "2026-09-18T03:16:41Z",
+          "completed_at": "2026-09-18T03:16:41Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/check-runs/105467456851",
+      "labels": [
+        "ubuntu-24.04"
+      ],
+      "runner_id": 1000004513,
+      "runner_name": "GitHub Actions 1000004513",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 105467456864,
+      "run_id": 35302348593,
+      "workflow_name": "abgp-confirmatory-v1",
+      "head_branch": "main",
+      "run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/runs/35302348593",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOSn0fEM8AAAAYjlmtYA",
+      "head_sha": "c7e5613193898e78561e1b1dfa8c26358714ed8c",
+      "url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/jobs/105467456864",
+      "html_url": "https://github.com/metalogiclabs/mathgraph/actions/runs/35302348593/job/105467456864",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-09-18T03:12:56Z",
+      "started_at": "2026-09-18T03:12:58Z",
+      "completed_at": "2026-09-18T03:16:51Z",
+      "name": "arm_p (15)",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-09-18T03:12:58Z",
+          "completed_at": "2026-09-18T03:12:59Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-09-18T03:12:59Z",
+          "completed_at": "2026-09-18T03:13:00Z"
+        },
+        {
+          "name": "Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-09-18T03:13:00Z",
+          "completed_at": "2026-09-18T03:13:01Z"
+        },
+        {
+          "name": "Run python -m pip install -e '.[sair]'",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-09-18T03:13:01Z",
+          "completed_at": "2026-09-18T03:13:13Z"
+        },
+        {
+          "name": "Verify exact frozen tree and execute disjoint P shard once",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-09-18T03:13:13Z",
+          "completed_at": "2026-09-18T03:16:48Z"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-09-18T03:16:48Z",
+          "completed_at": "2026-09-18T03:16:49Z"
+        },
+        {
+          "name": "Post Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11,
+          "started_at": "2026-09-18T03:16:49Z",
+          "completed_at": "2026-09-18T03:16:49Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12,
+          "started_at": "2026-09-18T03:16:49Z",
+          "completed_at": "2026-09-18T03:16:50Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13,
+          "started_at": "2026-09-18T03:16:50Z",
+          "completed_at": "2026-09-18T03:16:50Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/check-runs/105467456864",
+      "labels": [
+        "ubuntu-24.04"
+      ],
+      "runner_id": 1000004514,
+      "runner_name": "GitHub Actions 1000004514",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 105467456871,
+      "run_id": 35302348593,
+      "workflow_name": "abgp-confirmatory-v1",
+      "head_branch": "main",
+      "run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/runs/35302348593",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOSn0fEM8AAAAYjlmtZw",
+      "head_sha": "c7e5613193898e78561e1b1dfa8c26358714ed8c",
+      "url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/jobs/105467456871",
+      "html_url": "https://github.com/metalogiclabs/mathgraph/actions/runs/35302348593/job/105467456871",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-09-18T03:12:56Z",
+      "started_at": "2026-09-18T03:15:08Z",
+      "completed_at": "2026-09-18T03:18:39Z",
+      "name": "arm_p (16)",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-09-18T03:15:09Z",
+          "completed_at": "2026-09-18T03:15:10Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-09-18T03:15:10Z",
+          "completed_at": "2026-09-18T03:15:11Z"
+        },
+        {
+          "name": "Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-09-18T03:15:11Z",
+          "completed_at": "2026-09-18T03:15:12Z"
+        },
+        {
+          "name": "Run python -m pip install -e '.[sair]'",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-09-18T03:15:12Z",
+          "completed_at": "2026-09-18T03:15:23Z"
+        },
+        {
+          "name": "Verify exact frozen tree and execute disjoint P shard once",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-09-18T03:15:23Z",
+          "completed_at": "2026-09-18T03:18:36Z"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-09-18T03:18:36Z",
+          "completed_at": "2026-09-18T03:18:37Z"
+        },
+        {
+          "name": "Post Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11,
+          "started_at": "2026-09-18T03:18:37Z",
+          "completed_at": "2026-09-18T03:18:37Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12,
+          "started_at": "2026-09-18T03:18:37Z",
+          "completed_at": "2026-09-18T03:18:38Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13,
+          "started_at": "2026-09-18T03:18:38Z",
+          "completed_at": "2026-09-18T03:18:38Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/check-runs/105467456871",
+      "labels": [
+        "ubuntu-24.04"
+      ],
+      "runner_id": 1000004516,
+      "runner_name": "GitHub Actions 1000004516",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 105467456874,
+      "run_id": 35302348593,
+      "workflow_name": "abgp-confirmatory-v1",
+      "head_branch": "main",
+      "run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/runs/35302348593",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOSn0fEM8AAAAYjlmtag",
+      "head_sha": "c7e5613193898e78561e1b1dfa8c26358714ed8c",
+      "url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/jobs/105467456874",
+      "html_url": "https://github.com/metalogiclabs/mathgraph/actions/runs/35302348593/job/105467456874",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-09-18T03:12:56Z",
+      "started_at": "2026-09-18T03:12:58Z",
+      "completed_at": "2026-09-18T03:16:41Z",
+      "name": "arm_p (13)",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-09-18T03:12:58Z",
+          "completed_at": "2026-09-18T03:12:59Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-09-18T03:12:59Z",
+          "completed_at": "2026-09-18T03:13:00Z"
+        },
+        {
+          "name": "Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-09-18T03:13:00Z",
+          "completed_at": "2026-09-18T03:13:00Z"
+        },
+        {
+          "name": "Run python -m pip install -e '.[sair]'",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-09-18T03:13:00Z",
+          "completed_at": "2026-09-18T03:13:11Z"
+        },
+        {
+          "name": "Verify exact frozen tree and execute disjoint P shard once",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-09-18T03:13:11Z",
+          "completed_at": "2026-09-18T03:16:39Z"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-09-18T03:16:39Z",
+          "completed_at": "2026-09-18T03:16:40Z"
+        },
+        {
+          "name": "Post Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11,
+          "started_at": "2026-09-18T03:16:40Z",
+          "completed_at": "2026-09-18T03:16:40Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12,
+          "started_at": "2026-09-18T03:16:40Z",
+          "completed_at": "2026-09-18T03:16:40Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13,
+          "started_at": "2026-09-18T03:16:40Z",
+          "completed_at": "2026-09-18T03:16:40Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/check-runs/105467456874",
+      "labels": [
+        "ubuntu-24.04"
+      ],
+      "runner_id": 1000004515,
+      "runner_name": "GitHub Actions 1000004515",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 105467456887,
+      "run_id": 35302348593,
+      "workflow_name": "abgp-confirmatory-v1",
+      "head_branch": "main",
+      "run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/runs/35302348593",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOSn0fEM8AAAAYjlmtdw",
+      "head_sha": "c7e5613193898e78561e1b1dfa8c26358714ed8c",
+      "url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/jobs/105467456887",
+      "html_url": "https://github.com/metalogiclabs/mathgraph/actions/runs/35302348593/job/105467456887",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-09-18T03:12:56Z",
+      "started_at": "2026-09-18T03:16:24Z",
+      "completed_at": "2026-09-18T03:20:21Z",
+      "name": "arm_p (23)",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-09-18T03:17:01Z",
+          "completed_at": "2026-09-18T03:17:02Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-09-18T03:17:02Z",
+          "completed_at": "2026-09-18T03:17:03Z"
+        },
+        {
+          "name": "Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-09-18T03:17:03Z",
+          "completed_at": "2026-09-18T03:17:03Z"
+        },
+        {
+          "name": "Run python -m pip install -e '.[sair]'",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-09-18T03:17:03Z",
+          "completed_at": "2026-09-18T03:17:13Z"
+        },
+        {
+          "name": "Verify exact frozen tree and execute disjoint P shard once",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-09-18T03:17:13Z",
+          "completed_at": "2026-09-18T03:20:18Z"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-09-18T03:20:18Z",
+          "completed_at": "2026-09-18T03:20:19Z"
+        },
+        {
+          "name": "Post Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11,
+          "started_at": "2026-09-18T03:20:19Z",
+          "completed_at": "2026-09-18T03:20:19Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12,
+          "started_at": "2026-09-18T03:20:19Z",
+          "completed_at": "2026-09-18T03:20:20Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13,
+          "started_at": "2026-09-18T03:20:20Z",
+          "completed_at": "2026-09-18T03:20:20Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/check-runs/105467456887",
+      "labels": [
+        "ubuntu-24.04"
+      ],
+      "runner_id": 1000004523,
+      "runner_name": "GitHub Actions 1000004523",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 105467456890,
+      "run_id": 35302348593,
+      "workflow_name": "abgp-confirmatory-v1",
+      "head_branch": "main",
+      "run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/runs/35302348593",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOSn0fEM8AAAAYjlmteg",
+      "head_sha": "c7e5613193898e78561e1b1dfa8c26358714ed8c",
+      "url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/jobs/105467456890",
+      "html_url": "https://github.com/metalogiclabs/mathgraph/actions/runs/35302348593/job/105467456890",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-09-18T03:12:56Z",
+      "started_at": "2026-09-18T03:15:53Z",
+      "completed_at": "2026-09-18T03:18:16Z",
+      "name": "arm_p (19)",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-09-18T03:15:53Z",
+          "completed_at": "2026-09-18T03:15:54Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-09-18T03:15:54Z",
+          "completed_at": "2026-09-18T03:15:56Z"
+        },
+        {
+          "name": "Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-09-18T03:15:56Z",
+          "completed_at": "2026-09-18T03:15:56Z"
+        },
+        {
+          "name": "Run python -m pip install -e '.[sair]'",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-09-18T03:15:56Z",
+          "completed_at": "2026-09-18T03:16:07Z"
+        },
+        {
+          "name": "Verify exact frozen tree and execute disjoint P shard once",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-09-18T03:16:07Z",
+          "completed_at": "2026-09-18T03:18:13Z"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-09-18T03:18:13Z",
+          "completed_at": "2026-09-18T03:18:14Z"
+        },
+        {
+          "name": "Post Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11,
+          "started_at": "2026-09-18T03:18:14Z",
+          "completed_at": "2026-09-18T03:18:14Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12,
+          "started_at": "2026-09-18T03:18:14Z",
+          "completed_at": "2026-09-18T03:18:14Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13,
+          "started_at": "2026-09-18T03:18:14Z",
+          "completed_at": "2026-09-18T03:18:14Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/check-runs/105467456890",
+      "labels": [
+        "ubuntu-24.04"
+      ],
+      "runner_id": 1000004519,
+      "runner_name": "GitHub Actions 1000004519",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 105467456903,
+      "run_id": 35302348593,
+      "workflow_name": "abgp-confirmatory-v1",
+      "head_branch": "main",
+      "run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/runs/35302348593",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOSn0fEM8AAAAYjlmthw",
+      "head_sha": "c7e5613193898e78561e1b1dfa8c26358714ed8c",
+      "url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/jobs/105467456903",
+      "html_url": "https://github.com/metalogiclabs/mathgraph/actions/runs/35302348593/job/105467456903",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-09-18T03:12:56Z",
+      "started_at": "2026-09-18T03:16:32Z",
+      "completed_at": "2026-09-18T03:19:57Z",
+      "name": "arm_p (25)",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-09-18T03:16:33Z",
+          "completed_at": "2026-09-18T03:16:34Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-09-18T03:16:34Z",
+          "completed_at": "2026-09-18T03:16:35Z"
+        },
+        {
+          "name": "Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-09-18T03:16:35Z",
+          "completed_at": "2026-09-18T03:16:35Z"
+        },
+        {
+          "name": "Run python -m pip install -e '.[sair]'",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-09-18T03:16:35Z",
+          "completed_at": "2026-09-18T03:16:46Z"
+        },
+        {
+          "name": "Verify exact frozen tree and execute disjoint P shard once",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-09-18T03:16:46Z",
+          "completed_at": "2026-09-18T03:19:54Z"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-09-18T03:19:54Z",
+          "completed_at": "2026-09-18T03:19:55Z"
+        },
+        {
+          "name": "Post Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11,
+          "started_at": "2026-09-18T03:19:55Z",
+          "completed_at": "2026-09-18T03:19:55Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12,
+          "started_at": "2026-09-18T03:19:55Z",
+          "completed_at": "2026-09-18T03:19:56Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13,
+          "started_at": "2026-09-18T03:19:56Z",
+          "completed_at": "2026-09-18T03:19:56Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/check-runs/105467456903",
+      "labels": [
+        "ubuntu-24.04"
+      ],
+      "runner_id": 1000004525,
+      "runner_name": "GitHub Actions 1000004525",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 105467456904,
+      "run_id": 35302348593,
+      "workflow_name": "abgp-confirmatory-v1",
+      "head_branch": "main",
+      "run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/runs/35302348593",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOSn0fEM8AAAAYjlmtiA",
+      "head_sha": "c7e5613193898e78561e1b1dfa8c26358714ed8c",
+      "url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/jobs/105467456904",
+      "html_url": "https://github.com/metalogiclabs/mathgraph/actions/runs/35302348593/job/105467456904",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-09-18T03:12:56Z",
+      "started_at": "2026-09-18T03:16:13Z",
+      "completed_at": "2026-09-18T03:19:44Z",
+      "name": "arm_p (21)",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-09-18T03:16:14Z",
+          "completed_at": "2026-09-18T03:16:14Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-09-18T03:16:14Z",
+          "completed_at": "2026-09-18T03:16:15Z"
+        },
+        {
+          "name": "Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-09-18T03:16:15Z",
+          "completed_at": "2026-09-18T03:16:16Z"
+        },
+        {
+          "name": "Run python -m pip install -e '.[sair]'",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-09-18T03:16:16Z",
+          "completed_at": "2026-09-18T03:16:26Z"
+        },
+        {
+          "name": "Verify exact frozen tree and execute disjoint P shard once",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-09-18T03:16:26Z",
+          "completed_at": "2026-09-18T03:19:42Z"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-09-18T03:19:42Z",
+          "completed_at": "2026-09-18T03:19:43Z"
+        },
+        {
+          "name": "Post Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11,
+          "started_at": "2026-09-18T03:19:43Z",
+          "completed_at": "2026-09-18T03:19:43Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12,
+          "started_at": "2026-09-18T03:19:43Z",
+          "completed_at": "2026-09-18T03:19:43Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13,
+          "started_at": "2026-09-18T03:19:43Z",
+          "completed_at": "2026-09-18T03:19:43Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/check-runs/105467456904",
+      "labels": [
+        "ubuntu-24.04"
+      ],
+      "runner_id": 1000004521,
+      "runner_name": "GitHub Actions 1000004521",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 105467456922,
+      "run_id": 35302348593,
+      "workflow_name": "abgp-confirmatory-v1",
+      "head_branch": "main",
+      "run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/runs/35302348593",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOSn0fEM8AAAAYjlmtmg",
+      "head_sha": "c7e5613193898e78561e1b1dfa8c26358714ed8c",
+      "url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/jobs/105467456922",
+      "html_url": "https://github.com/metalogiclabs/mathgraph/actions/runs/35302348593/job/105467456922",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-09-18T03:12:56Z",
+      "started_at": "2026-09-18T03:16:19Z",
+      "completed_at": "2026-09-18T03:19:53Z",
+      "name": "arm_p (22)",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-09-18T03:16:20Z",
+          "completed_at": "2026-09-18T03:16:20Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-09-18T03:16:20Z",
+          "completed_at": "2026-09-18T03:16:21Z"
+        },
+        {
+          "name": "Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-09-18T03:16:21Z",
+          "completed_at": "2026-09-18T03:16:22Z"
+        },
+        {
+          "name": "Run python -m pip install -e '.[sair]'",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-09-18T03:16:22Z",
+          "completed_at": "2026-09-18T03:16:33Z"
+        },
+        {
+          "name": "Verify exact frozen tree and execute disjoint P shard once",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-09-18T03:16:33Z",
+          "completed_at": "2026-09-18T03:19:51Z"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-09-18T03:19:51Z",
+          "completed_at": "2026-09-18T03:19:52Z"
+        },
+        {
+          "name": "Post Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11,
+          "started_at": "2026-09-18T03:19:52Z",
+          "completed_at": "2026-09-18T03:19:52Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12,
+          "started_at": "2026-09-18T03:19:52Z",
+          "completed_at": "2026-09-18T03:19:52Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13,
+          "started_at": "2026-09-18T03:19:52Z",
+          "completed_at": "2026-09-18T03:19:52Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/check-runs/105467456922",
+      "labels": [
+        "ubuntu-24.04"
+      ],
+      "runner_id": 1000004522,
+      "runner_name": "GitHub Actions 1000004522",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 105467456961,
+      "run_id": 35302348593,
+      "workflow_name": "abgp-confirmatory-v1",
+      "head_branch": "main",
+      "run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/runs/35302348593",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOSn0fEM8AAAAYjlmtwQ",
+      "head_sha": "c7e5613193898e78561e1b1dfa8c26358714ed8c",
+      "url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/jobs/105467456961",
+      "html_url": "https://github.com/metalogiclabs/mathgraph/actions/runs/35302348593/job/105467456961",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-09-18T03:12:56Z",
+      "started_at": "2026-09-18T03:16:11Z",
+      "completed_at": "2026-09-18T03:20:12Z",
+      "name": "arm_p (20)",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-09-18T03:16:12Z",
+          "completed_at": "2026-09-18T03:16:13Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-09-18T03:16:13Z",
+          "completed_at": "2026-09-18T03:16:14Z"
+        },
+        {
+          "name": "Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-09-18T03:16:14Z",
+          "completed_at": "2026-09-18T03:16:14Z"
+        },
+        {
+          "name": "Run python -m pip install -e '.[sair]'",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-09-18T03:16:14Z",
+          "completed_at": "2026-09-18T03:16:27Z"
+        },
+        {
+          "name": "Verify exact frozen tree and execute disjoint P shard once",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-09-18T03:16:27Z",
+          "completed_at": "2026-09-18T03:20:08Z"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-09-18T03:20:08Z",
+          "completed_at": "2026-09-18T03:20:10Z"
+        },
+        {
+          "name": "Post Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11,
+          "started_at": "2026-09-18T03:20:10Z",
+          "completed_at": "2026-09-18T03:20:10Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12,
+          "started_at": "2026-09-18T03:20:10Z",
+          "completed_at": "2026-09-18T03:20:10Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13,
+          "started_at": "2026-09-18T03:20:10Z",
+          "completed_at": "2026-09-18T03:20:10Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/check-runs/105467456961",
+      "labels": [
+        "ubuntu-24.04"
+      ],
+      "runner_id": 1000004520,
+      "runner_name": "GitHub Actions 1000004520",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 105467456966,
+      "run_id": 35302348593,
+      "workflow_name": "abgp-confirmatory-v1",
+      "head_branch": "main",
+      "run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/runs/35302348593",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOSn0fEM8AAAAYjlmtxg",
+      "head_sha": "c7e5613193898e78561e1b1dfa8c26358714ed8c",
+      "url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/jobs/105467456966",
+      "html_url": "https://github.com/metalogiclabs/mathgraph/actions/runs/35302348593/job/105467456966",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-09-18T03:12:56Z",
+      "started_at": "2026-09-18T03:16:25Z",
+      "completed_at": "2026-09-18T03:20:05Z",
+      "name": "arm_p (24)",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-09-18T03:16:26Z",
+          "completed_at": "2026-09-18T03:16:27Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-09-18T03:16:27Z",
+          "completed_at": "2026-09-18T03:16:28Z"
+        },
+        {
+          "name": "Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-09-18T03:16:28Z",
+          "completed_at": "2026-09-18T03:16:28Z"
+        },
+        {
+          "name": "Run python -m pip install -e '.[sair]'",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-09-18T03:16:28Z",
+          "completed_at": "2026-09-18T03:16:38Z"
+        },
+        {
+          "name": "Verify exact frozen tree and execute disjoint P shard once",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-09-18T03:16:38Z",
+          "completed_at": "2026-09-18T03:20:02Z"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-09-18T03:20:02Z",
+          "completed_at": "2026-09-18T03:20:03Z"
+        },
+        {
+          "name": "Post Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11,
+          "started_at": "2026-09-18T03:20:03Z",
+          "completed_at": "2026-09-18T03:20:03Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12,
+          "started_at": "2026-09-18T03:20:03Z",
+          "completed_at": "2026-09-18T03:20:04Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13,
+          "started_at": "2026-09-18T03:20:04Z",
+          "completed_at": "2026-09-18T03:20:04Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/check-runs/105467456966",
+      "labels": [
+        "ubuntu-24.04"
+      ],
+      "runner_id": 1000004524,
+      "runner_name": "GitHub Actions 1000004524",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 105467456975,
+      "run_id": 35302348593,
+      "workflow_name": "abgp-confirmatory-v1",
+      "head_branch": "main",
+      "run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/runs/35302348593",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOSn0fEM8AAAAYjlmtzw",
+      "head_sha": "c7e5613193898e78561e1b1dfa8c26358714ed8c",
+      "url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/jobs/105467456975",
+      "html_url": "https://github.com/metalogiclabs/mathgraph/actions/runs/35302348593/job/105467456975",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-09-18T03:12:56Z",
+      "started_at": "2026-09-18T03:15:45Z",
+      "completed_at": "2026-09-18T03:19:33Z",
+      "name": "arm_p (18)",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-09-18T03:15:46Z",
+          "completed_at": "2026-09-18T03:15:47Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-09-18T03:15:47Z",
+          "completed_at": "2026-09-18T03:15:48Z"
+        },
+        {
+          "name": "Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-09-18T03:15:48Z",
+          "completed_at": "2026-09-18T03:15:48Z"
+        },
+        {
+          "name": "Run python -m pip install -e '.[sair]'",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-09-18T03:15:48Z",
+          "completed_at": "2026-09-18T03:15:58Z"
+        },
+        {
+          "name": "Verify exact frozen tree and execute disjoint P shard once",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-09-18T03:15:58Z",
+          "completed_at": "2026-09-18T03:19:30Z"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-09-18T03:19:30Z",
+          "completed_at": "2026-09-18T03:19:31Z"
+        },
+        {
+          "name": "Post Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11,
+          "started_at": "2026-09-18T03:19:31Z",
+          "completed_at": "2026-09-18T03:19:31Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12,
+          "started_at": "2026-09-18T03:19:31Z",
+          "completed_at": "2026-09-18T03:19:31Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13,
+          "started_at": "2026-09-18T03:19:31Z",
+          "completed_at": "2026-09-18T03:19:31Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/check-runs/105467456975",
+      "labels": [
+        "ubuntu-24.04"
+      ],
+      "runner_id": 1000004518,
+      "runner_name": "GitHub Actions 1000004518",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 105467457521,
+      "run_id": 35302348593,
+      "workflow_name": "abgp-confirmatory-v1",
+      "head_branch": "main",
+      "run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/runs/35302348593",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOSn0fEM8AAAAYjlmv8Q",
+      "head_sha": "c7e5613193898e78561e1b1dfa8c26358714ed8c",
+      "url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/jobs/105467457521",
+      "html_url": "https://github.com/metalogiclabs/mathgraph/actions/runs/35302348593/job/105467457521",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-09-18T03:12:56Z",
+      "started_at": "2026-09-18T03:16:33Z",
+      "completed_at": "2026-09-18T03:20:19Z",
+      "name": "arm_p (26)",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-09-18T03:16:33Z",
+          "completed_at": "2026-09-18T03:16:34Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-09-18T03:16:34Z",
+          "completed_at": "2026-09-18T03:16:36Z"
+        },
+        {
+          "name": "Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-09-18T03:16:36Z",
+          "completed_at": "2026-09-18T03:16:36Z"
+        },
+        {
+          "name": "Run python -m pip install -e '.[sair]'",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-09-18T03:16:36Z",
+          "completed_at": "2026-09-18T03:16:47Z"
+        },
+        {
+          "name": "Verify exact frozen tree and execute disjoint P shard once",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-09-18T03:16:47Z",
+          "completed_at": "2026-09-18T03:20:15Z"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-09-18T03:20:15Z",
+          "completed_at": "2026-09-18T03:20:16Z"
+        },
+        {
+          "name": "Post Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11,
+          "started_at": "2026-09-18T03:20:16Z",
+          "completed_at": "2026-09-18T03:20:17Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12,
+          "started_at": "2026-09-18T03:20:17Z",
+          "completed_at": "2026-09-18T03:20:17Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13,
+          "started_at": "2026-09-18T03:20:17Z",
+          "completed_at": "2026-09-18T03:20:17Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/check-runs/105467457521",
+      "labels": [
+        "ubuntu-24.04"
+      ],
+      "runner_id": 1000004526,
+      "runner_name": "GitHub Actions 1000004526",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 105467457675,
+      "run_id": 35302348593,
+      "workflow_name": "abgp-confirmatory-v1",
+      "head_branch": "main",
+      "run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/runs/35302348593",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOSn0fEM8AAAAYjlmwiw",
+      "head_sha": "c7e5613193898e78561e1b1dfa8c26358714ed8c",
+      "url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/jobs/105467457675",
+      "html_url": "https://github.com/metalogiclabs/mathgraph/actions/runs/35302348593/job/105467457675",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-09-18T03:12:56Z",
+      "started_at": "2026-09-18T03:16:34Z",
+      "completed_at": "2026-09-18T03:19:33Z",
+      "name": "arm_p (27)",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-09-18T03:16:35Z",
+          "completed_at": "2026-09-18T03:16:36Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-09-18T03:16:36Z",
+          "completed_at": "2026-09-18T03:16:38Z"
+        },
+        {
+          "name": "Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-09-18T03:16:38Z",
+          "completed_at": "2026-09-18T03:16:38Z"
+        },
+        {
+          "name": "Run python -m pip install -e '.[sair]'",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-09-18T03:16:38Z",
+          "completed_at": "2026-09-18T03:16:48Z"
+        },
+        {
+          "name": "Verify exact frozen tree and execute disjoint P shard once",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-09-18T03:16:48Z",
+          "completed_at": "2026-09-18T03:19:29Z"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-09-18T03:19:29Z",
+          "completed_at": "2026-09-18T03:19:31Z"
+        },
+        {
+          "name": "Post Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11,
+          "started_at": "2026-09-18T03:19:31Z",
+          "completed_at": "2026-09-18T03:19:31Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12,
+          "started_at": "2026-09-18T03:19:31Z",
+          "completed_at": "2026-09-18T03:19:31Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13,
+          "started_at": "2026-09-18T03:19:31Z",
+          "completed_at": "2026-09-18T03:19:31Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/check-runs/105467457675",
+      "labels": [
+        "ubuntu-24.04"
+      ],
+      "runner_id": 1000004527,
+      "runner_name": "GitHub Actions 1000004527",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 105467457734,
+      "run_id": 35302348593,
+      "workflow_name": "abgp-confirmatory-v1",
+      "head_branch": "main",
+      "run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/runs/35302348593",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOSn0fEM8AAAAYjlmwxg",
+      "head_sha": "c7e5613193898e78561e1b1dfa8c26358714ed8c",
+      "url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/jobs/105467457734",
+      "html_url": "https://github.com/metalogiclabs/mathgraph/actions/runs/35302348593/job/105467457734",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-09-18T03:12:56Z",
+      "started_at": "2026-09-18T03:16:40Z",
+      "completed_at": "2026-09-18T03:20:11Z",
+      "name": "arm_p (28)",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-09-18T03:16:41Z",
+          "completed_at": "2026-09-18T03:16:42Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-09-18T03:16:42Z",
+          "completed_at": "2026-09-18T03:16:43Z"
+        },
+        {
+          "name": "Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-09-18T03:16:43Z",
+          "completed_at": "2026-09-18T03:16:43Z"
+        },
+        {
+          "name": "Run python -m pip install -e '.[sair]'",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-09-18T03:16:43Z",
+          "completed_at": "2026-09-18T03:16:54Z"
+        },
+        {
+          "name": "Verify exact frozen tree and execute disjoint P shard once",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-09-18T03:16:54Z",
+          "completed_at": "2026-09-18T03:20:06Z"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-09-18T03:20:06Z",
+          "completed_at": "2026-09-18T03:20:08Z"
+        },
+        {
+          "name": "Post Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11,
+          "started_at": "2026-09-18T03:20:08Z",
+          "completed_at": "2026-09-18T03:20:08Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12,
+          "started_at": "2026-09-18T03:20:08Z",
+          "completed_at": "2026-09-18T03:20:08Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13,
+          "started_at": "2026-09-18T03:20:08Z",
+          "completed_at": "2026-09-18T03:20:08Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/check-runs/105467457734",
+      "labels": [
+        "ubuntu-24.04"
+      ],
+      "runner_id": 1000004528,
+      "runner_name": "GitHub Actions 1000004528",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 105467457753,
+      "run_id": 35302348593,
+      "workflow_name": "abgp-confirmatory-v1",
+      "head_branch": "main",
+      "run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/runs/35302348593",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOSn0fEM8AAAAYjlmw2Q",
+      "head_sha": "c7e5613193898e78561e1b1dfa8c26358714ed8c",
+      "url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/jobs/105467457753",
+      "html_url": "https://github.com/metalogiclabs/mathgraph/actions/runs/35302348593/job/105467457753",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-09-18T03:12:56Z",
+      "started_at": "2026-09-18T03:16:43Z",
+      "completed_at": "2026-09-18T03:20:11Z",
+      "name": "arm_p (29)",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-09-18T03:16:44Z",
+          "completed_at": "2026-09-18T03:16:45Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-09-18T03:16:45Z",
+          "completed_at": "2026-09-18T03:16:47Z"
+        },
+        {
+          "name": "Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-09-18T03:16:47Z",
+          "completed_at": "2026-09-18T03:16:47Z"
+        },
+        {
+          "name": "Run python -m pip install -e '.[sair]'",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-09-18T03:16:47Z",
+          "completed_at": "2026-09-18T03:16:59Z"
+        },
+        {
+          "name": "Verify exact frozen tree and execute disjoint P shard once",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-09-18T03:16:59Z",
+          "completed_at": "2026-09-18T03:20:07Z"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-09-18T03:20:07Z",
+          "completed_at": "2026-09-18T03:20:08Z"
+        },
+        {
+          "name": "Post Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11,
+          "started_at": "2026-09-18T03:20:08Z",
+          "completed_at": "2026-09-18T03:20:08Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12,
+          "started_at": "2026-09-18T03:20:08Z",
+          "completed_at": "2026-09-18T03:20:09Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13,
+          "started_at": "2026-09-18T03:20:09Z",
+          "completed_at": "2026-09-18T03:20:09Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/check-runs/105467457753",
+      "labels": [
+        "ubuntu-24.04"
+      ],
+      "runner_id": 1000004529,
+      "runner_name": "GitHub Actions 1000004529",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 105467457838,
+      "run_id": 35302348593,
+      "workflow_name": "abgp-confirmatory-v1",
+      "head_branch": "main",
+      "run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/runs/35302348593",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOSn0fEM8AAAAYjlmxLg",
+      "head_sha": "c7e5613193898e78561e1b1dfa8c26358714ed8c",
+      "url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/jobs/105467457838",
+      "html_url": "https://github.com/metalogiclabs/mathgraph/actions/runs/35302348593/job/105467457838",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-09-18T03:12:56Z",
+      "started_at": "2026-09-18T03:16:45Z",
+      "completed_at": "2026-09-18T03:20:21Z",
+      "name": "arm_p (30)",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-09-18T03:16:45Z",
+          "completed_at": "2026-09-18T03:16:46Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-09-18T03:16:46Z",
+          "completed_at": "2026-09-18T03:16:47Z"
+        },
+        {
+          "name": "Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-09-18T03:16:47Z",
+          "completed_at": "2026-09-18T03:16:48Z"
+        },
+        {
+          "name": "Run python -m pip install -e '.[sair]'",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-09-18T03:16:48Z",
+          "completed_at": "2026-09-18T03:16:59Z"
+        },
+        {
+          "name": "Verify exact frozen tree and execute disjoint P shard once",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-09-18T03:16:59Z",
+          "completed_at": "2026-09-18T03:20:19Z"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-09-18T03:20:19Z",
+          "completed_at": "2026-09-18T03:20:20Z"
+        },
+        {
+          "name": "Post Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11,
+          "started_at": "2026-09-18T03:20:20Z",
+          "completed_at": "2026-09-18T03:20:20Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12,
+          "started_at": "2026-09-18T03:20:20Z",
+          "completed_at": "2026-09-18T03:20:20Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13,
+          "started_at": "2026-09-18T03:20:20Z",
+          "completed_at": "2026-09-18T03:20:20Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/check-runs/105467457838",
+      "labels": [
+        "ubuntu-24.04"
+      ],
+      "runner_id": 1000004530,
+      "runner_name": "GitHub Actions 1000004530",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 105467457845,
+      "run_id": 35302348593,
+      "workflow_name": "abgp-confirmatory-v1",
+      "head_branch": "main",
+      "run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/runs/35302348593",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOSn0fEM8AAAAYjlmxNQ",
+      "head_sha": "c7e5613193898e78561e1b1dfa8c26358714ed8c",
+      "url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/jobs/105467457845",
+      "html_url": "https://github.com/metalogiclabs/mathgraph/actions/runs/35302348593/job/105467457845",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-09-18T03:12:56Z",
+      "started_at": "2026-09-18T03:17:28Z",
+      "completed_at": "2026-09-18T03:21:25Z",
+      "name": "arm_p (31)",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-09-18T03:17:29Z",
+          "completed_at": "2026-09-18T03:17:30Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-09-18T03:17:30Z",
+          "completed_at": "2026-09-18T03:17:31Z"
+        },
+        {
+          "name": "Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-09-18T03:17:31Z",
+          "completed_at": "2026-09-18T03:17:31Z"
+        },
+        {
+          "name": "Run python -m pip install -e '.[sair]'",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-09-18T03:17:31Z",
+          "completed_at": "2026-09-18T03:17:44Z"
+        },
+        {
+          "name": "Verify exact frozen tree and execute disjoint P shard once",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-09-18T03:17:44Z",
+          "completed_at": "2026-09-18T03:21:22Z"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-09-18T03:21:22Z",
+          "completed_at": "2026-09-18T03:21:23Z"
+        },
+        {
+          "name": "Post Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11,
+          "started_at": "2026-09-18T03:21:23Z",
+          "completed_at": "2026-09-18T03:21:23Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12,
+          "started_at": "2026-09-18T03:21:23Z",
+          "completed_at": "2026-09-18T03:21:23Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13,
+          "started_at": "2026-09-18T03:21:23Z",
+          "completed_at": "2026-09-18T03:21:23Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/check-runs/105467457845",
+      "labels": [
+        "ubuntu-24.04"
+      ],
+      "runner_id": 1000004531,
+      "runner_name": "GitHub Actions 1000004531",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 105469052332,
+      "run_id": 35302348593,
+      "workflow_name": "abgp-confirmatory-v1",
+      "head_branch": "main",
+      "run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/runs/35302348593",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOSn0fEM8AAAAYjnIFrA",
+      "head_sha": "c7e5613193898e78561e1b1dfa8c26358714ed8c",
+      "url": "https://api.github.com/repos/metalogiclabs/mathgraph/actions/jobs/105469052332",
+      "html_url": "https://github.com/metalogiclabs/mathgraph/actions/runs/35302348593/job/105469052332",
+      "status": "completed",
+      "conclusion": "failure",
+      "created_at": "2026-09-18T03:21:25Z",
+      "started_at": "2026-09-18T03:21:27Z",
+      "completed_at": "2026-09-18T03:21:54Z",
+      "name": "aggregate",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-09-18T03:21:28Z",
+          "completed_at": "2026-09-18T03:21:29Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-09-18T03:21:29Z",
+          "completed_at": "2026-09-18T03:21:30Z"
+        },
+        {
+          "name": "Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-09-18T03:21:30Z",
+          "completed_at": "2026-09-18T03:21:30Z"
+        },
+        {
+          "name": "Run python -m pip install -e '.[sair]'",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-09-18T03:21:30Z",
+          "completed_at": "2026-09-18T03:21:40Z"
+        },
+        {
+          "name": "Run actions/download-artifact@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-09-18T03:21:40Z",
+          "completed_at": "2026-09-18T03:21:41Z"
+        },
+        {
+          "name": "Run actions/download-artifact@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-09-18T03:21:41Z",
+          "completed_at": "2026-09-18T03:21:41Z"
+        },
+        {
+          "name": "Run actions/download-artifact@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7,
+          "started_at": "2026-09-18T03:21:41Z",
+          "completed_at": "2026-09-18T03:21:42Z"
+        },
+        {
+          "name": "Run actions/download-artifact@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 8,
+          "started_at": "2026-09-18T03:21:42Z",
+          "completed_at": "2026-09-18T03:21:42Z"
+        },
+        {
+          "name": "Reassemble exact frozen inferential units and analyze once",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9,
+          "started_at": "2026-09-18T03:21:42Z",
+          "completed_at": "2026-09-18T03:21:49Z"
+        },
+        {
+          "name": "Build public result summary",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10,
+          "started_at": "2026-09-18T03:21:49Z",
+          "completed_at": "2026-09-18T03:21:49Z"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11,
+          "started_at": "2026-09-18T03:21:49Z",
+          "completed_at": "2026-09-18T03:21:50Z"
+        },
+        {
+          "name": "Publish result and mark COMPLETED",
+          "status": "completed",
+          "conclusion": "failure",
+          "number": 12,
+          "started_at": "2026-09-18T03:21:50Z",
+          "completed_at": "2026-09-18T03:21:52Z"
+        },
+        {
+          "name": "Post Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 23,
+          "started_at": "2026-09-18T03:21:52Z",
+          "completed_at": "2026-09-18T03:21:52Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 24,
+          "started_at": "2026-09-18T03:21:52Z",
+          "completed_at": "2026-09-18T03:21:52Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 25,
+          "started_at": "2026-09-18T03:21:52Z",
+          "completed_at": "2026-09-18T03:21:53Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/metalogiclabs/mathgraph/check-runs/105469052332",
+      "labels": [
+        "ubuntu-24.04"
+      ],
+      "runner_id": 1000004532,
+      "runner_name": "GitHub Actions 1000004532",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    }
+  ],
+  "pages": 1,
+  "job_count": 37
+}

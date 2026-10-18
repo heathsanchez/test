@@ -1,0 +1,320 @@
+{
+  "catalog_sha256": "ba793416ffcc19426d2990aea6799d4e450d09b4e900253d76e517e19701f9e5",
+  "native_tests_executed": false,
+  "package_metadata_sha256": "e5d3e9928983dda66747b3bbca5e49aea9ef26371a387ccd81b0cf5f7f3c69ab",
+  "packaging_version": "26.3",
+  "profiles": [
+    {
+      "active_dependencies": [
+        {
+          "parent": "importlib-metadata==4.8.3",
+          "requirement": "zipp (>=0.5)",
+          "selected_version": "3.6.0"
+        },
+        {
+          "parent": "importlib-metadata==4.8.3",
+          "requirement": "typing-extensions (>=3.6.4) ; python_version < \"3.8\"",
+          "selected_version": "4.1.1"
+        },
+        {
+          "parent": "importlib-resources==5.4.0",
+          "requirement": "zipp (>=3.1.0) ; python_version < \"3.10\"",
+          "selected_version": "3.6.0"
+        },
+        {
+          "parent": "packaging==21.3",
+          "requirement": "pyparsing (!=3.0.5,>=2.0.2)",
+          "selected_version": "2.4.7"
+        },
+        {
+          "parent": "pluggy==0.13.1",
+          "requirement": "importlib-metadata (>=0.12) ; python_version < \"3.8\"",
+          "selected_version": "4.8.3"
+        },
+        {
+          "parent": "pytest==5.4.3",
+          "requirement": "py (>=1.5.0)",
+          "selected_version": "1.11.0"
+        },
+        {
+          "parent": "pytest==5.4.3",
+          "requirement": "packaging",
+          "selected_version": "21.3"
+        },
+        {
+          "parent": "pytest==5.4.3",
+          "requirement": "attrs (>=17.4.0)",
+          "selected_version": "22.2.0"
+        },
+        {
+          "parent": "pytest==5.4.3",
+          "requirement": "more-itertools (>=4.0.0)",
+          "selected_version": "8.14.0"
+        },
+        {
+          "parent": "pytest==5.4.3",
+          "requirement": "pluggy (<1.0,>=0.12)",
+          "selected_version": "0.13.1"
+        },
+        {
+          "parent": "pytest==5.4.3",
+          "requirement": "wcwidth",
+          "selected_version": "0.2.13"
+        },
+        {
+          "parent": "pytest==5.4.3",
+          "requirement": "importlib-metadata (>=0.12) ; python_version < \"3.8\"",
+          "selected_version": "4.8.3"
+        },
+        {
+          "parent": "tox==3.28.0",
+          "requirement": "filelock (>=3.0.0)",
+          "selected_version": "3.4.1"
+        },
+        {
+          "parent": "tox==3.28.0",
+          "requirement": "packaging (>=14)",
+          "selected_version": "21.3"
+        },
+        {
+          "parent": "tox==3.28.0",
+          "requirement": "pluggy (>=0.12.0)",
+          "selected_version": "0.13.1"
+        },
+        {
+          "parent": "tox==3.28.0",
+          "requirement": "py (>=1.4.17)",
+          "selected_version": "1.11.0"
+        },
+        {
+          "parent": "tox==3.28.0",
+          "requirement": "six (>=1.14.0)",
+          "selected_version": "1.16.0"
+        },
+        {
+          "parent": "tox==3.28.0",
+          "requirement": "virtualenv (!=20.0.0,!=20.0.1,!=20.0.2,!=20.0.3,!=20.0.4,!=20.0.5,!=20.0.6,!=20.0.7,>=16.0.0)",
+          "selected_version": "20.17.1"
+        },
+        {
+          "parent": "tox==3.28.0",
+          "requirement": "importlib-metadata (>=0.12) ; python_version < \"3.8\"",
+          "selected_version": "4.8.3"
+        },
+        {
+          "parent": "tox==3.28.0",
+          "requirement": "toml (>=0.10.2) ; python_version <= \"3.6\"",
+          "selected_version": "0.10.2"
+        },
+        {
+          "parent": "virtualenv==20.17.1",
+          "requirement": "distlib (<1,>=0.3.6)",
+          "selected_version": "0.3.9"
+        },
+        {
+          "parent": "virtualenv==20.17.1",
+          "requirement": "filelock (<4,>=3.4.1)",
+          "selected_version": "3.4.1"
+        },
+        {
+          "parent": "virtualenv==20.17.1",
+          "requirement": "platformdirs (<3,>=2.4)",
+          "selected_version": "2.4.0"
+        },
+        {
+          "parent": "virtualenv==20.17.1",
+          "requirement": "importlib-resources (>=5.4) ; python_version < \"3.7\"",
+          "selected_version": "5.4.0"
+        },
+        {
+          "parent": "virtualenv==20.17.1",
+          "requirement": "importlib-metadata (>=4.8.3) ; python_version < \"3.8\"",
+          "selected_version": "4.8.3"
+        }
+      ],
+      "id": "cpython-3.6.5-pytest-5.4.3-linux-x86_64",
+      "pins": [
+        "attrs==22.2.0",
+        "distlib==0.3.9",
+        "filelock==3.4.1",
+        "importlib-metadata==4.8.3",
+        "importlib-resources==5.4.0",
+        "more-itertools==8.14.0",
+        "packaging==21.3",
+        "pip==21.3.1",
+        "platformdirs==2.4.0",
+        "pluggy==0.13.1",
+        "py==1.11.0",
+        "pyparsing==2.4.7",
+        "pytest==5.4.3",
+        "setuptools==59.6.0",
+        "six==1.16.0",
+        "toml==0.10.2",
+        "tox==3.28.0",
+        "typing-extensions==4.1.1",
+        "virtualenv==20.17.1",
+        "wcwidth==0.2.13",
+        "wheel==0.37.1",
+        "zipp==3.6.0"
+      ],
+      "python_version": "3.6.5",
+      "status": "PASS_METADATA_CLOSURE"
+    },
+    {
+      "active_dependencies": [
+        {
+          "parent": "hatch-fancy-pypi-readme==25.1.0",
+          "requirement": "hatchling",
+          "selected_version": "1.27.0"
+        },
+        {
+          "parent": "hatch-vcs==0.5.0",
+          "requirement": "hatchling>=1.1.0",
+          "selected_version": "1.27.0"
+        },
+        {
+          "parent": "hatch-vcs==0.5.0",
+          "requirement": "setuptools-scm>=8.2.0",
+          "selected_version": "10.3.4"
+        },
+        {
+          "parent": "hatchling==1.27.0",
+          "requirement": "packaging>=24.2",
+          "selected_version": "26.3"
+        },
+        {
+          "parent": "hatchling==1.27.0",
+          "requirement": "pathspec>=0.10.1",
+          "selected_version": "1.1.1"
+        },
+        {
+          "parent": "hatchling==1.27.0",
+          "requirement": "pluggy>=1.0.0",
+          "selected_version": "1.7.0"
+        },
+        {
+          "parent": "hatchling==1.27.0",
+          "requirement": "trove-classifiers",
+          "selected_version": "2026.9.21.13"
+        },
+        {
+          "parent": "hypothesis==6.151.9",
+          "requirement": "sortedcontainers<3.0.0,>=2.1.0",
+          "selected_version": "2.4.0"
+        },
+        {
+          "parent": "pymongo==4.13.2",
+          "requirement": "dnspython<3.0.0,>=1.16.0",
+          "selected_version": "2.9.0"
+        },
+        {
+          "parent": "pytest==8.4.1",
+          "requirement": "iniconfig>=1",
+          "selected_version": "2.3.1"
+        },
+        {
+          "parent": "pytest==8.4.1",
+          "requirement": "packaging>=20",
+          "selected_version": "26.3"
+        },
+        {
+          "parent": "pytest==8.4.1",
+          "requirement": "pluggy<2,>=1.5",
+          "selected_version": "1.7.0"
+        },
+        {
+          "parent": "pytest==8.4.1",
+          "requirement": "pygments>=2.7.2",
+          "selected_version": "2.21.0"
+        },
+        {
+          "parent": "pytest-benchmark==5.1.0",
+          "requirement": "pytest>=8.1",
+          "selected_version": "8.4.1"
+        },
+        {
+          "parent": "pytest-benchmark==5.1.0",
+          "requirement": "py-cpuinfo",
+          "selected_version": "9.0.0"
+        },
+        {
+          "parent": "pytest-xdist==3.8.0",
+          "requirement": "execnet>=2.1",
+          "selected_version": "2.1.2"
+        },
+        {
+          "parent": "pytest-xdist==3.8.0",
+          "requirement": "pytest>=7.0.0",
+          "selected_version": "8.4.1"
+        },
+        {
+          "parent": "setuptools-scm==10.3.4",
+          "requirement": "vcs-versioning<3,>=2.5.0.dev0",
+          "selected_version": "2.6.0"
+        },
+        {
+          "parent": "setuptools-scm==10.3.4",
+          "requirement": "packaging>=20",
+          "selected_version": "26.3"
+        },
+        {
+          "parent": "setuptools-scm==10.3.4",
+          "requirement": "setuptools",
+          "selected_version": "84.0.0"
+        },
+        {
+          "parent": "vcs-versioning==2.6.0",
+          "requirement": "packaging>=26.2",
+          "selected_version": "26.3"
+        }
+      ],
+      "id": "cpython-3.12.14-pytest-8.4.1-linux-x86_64",
+      "pins": [
+        "attrs==25.4.0",
+        "cbor2==5.6.5",
+        "cloudpickle==3.1.2",
+        "coverage==7.10.0",
+        "dnspython==2.9.0",
+        "execnet==2.1.2",
+        "flit_core==4.0.1",
+        "hatch-fancy-pypi-readme==25.1.0",
+        "hatch-vcs==0.5.0",
+        "hatchling==1.27.0",
+        "hypothesis==6.151.9",
+        "immutables==0.21",
+        "iniconfig==2.3.1",
+        "msgpack==1.1.1",
+        "msgspec==0.19.0",
+        "orjson==3.11.3",
+        "packaging==26.3",
+        "pathspec==1.1.1",
+        "pip==25.0.1",
+        "pluggy==1.7.0",
+        "psutil==7.2.2",
+        "py-cpuinfo==9.0.0",
+        "Pygments==2.21.0",
+        "pymongo==4.13.2",
+        "Pympler==1.1",
+        "pytest==8.4.1",
+        "pytest-benchmark==5.1.0",
+        "pytest-xdist==3.8.0",
+        "PyYAML==6.0.2",
+        "ruff==0.11.0",
+        "setuptools==84.0.0",
+        "setuptools-scm==10.3.4",
+        "sortedcontainers==2.4.0",
+        "tomli_w==1.2.0",
+        "tomlkit==0.13.3",
+        "trove-classifiers==2026.9.21.13",
+        "typing_extensions==4.14.1",
+        "ujson==5.10.0",
+        "vcs-versioning==2.6.0"
+      ],
+      "python_version": "3.12.14",
+      "status": "PASS_METADATA_CLOSURE"
+    }
+  ],
+  "schema": "UDM_BOOTSTRAP_METADATA_RECEIPT_V3",
+  "status": "PASS_METADATA_CLOSURE",
+  "target_source_accessed": false
+}

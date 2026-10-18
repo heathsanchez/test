@@ -1,0 +1,108 @@
+{
+  "schema": "metalogic.typed-method-grammar-extension-native.v1",
+  "frozen_on": "2026-10-14",
+  "upstream": {
+    "repository": "leanprover/cslib",
+    "commit": "4b88bcac4c0dec65b3f45b59e85f5397045efd8d",
+    "toolchain": "leanprover/lean4:v4.35.0-rc4"
+  },
+  "old_method": {
+    "repository": "heathsanchez/test",
+    "head_sha": "f3adc4d72748e61884a30e05ee4627f534080a58",
+    "path": "research/unified_consequence_runtime/native_unbounded_v1/method_genesis.py",
+    "known_grammar": "Nat successor/predecessor parametric repeated transition; no product, Set or FLTS conversion"
+  },
+  "exact_source_modules": [
+    {
+      "path": "Cslib/Foundations/Semantics/FLTS/Basic.lean",
+      "git_blob": "2a20e25e4f91f67183bb2adb4b4afd5c33aa13bd",
+      "namespace": "Cslib.FLTS",
+      "import": "Cslib.Foundations.Semantics.FLTS.Basic"
+    },
+    {
+      "path": "Cslib/Foundations/Semantics/FLTS/Prod.lean",
+      "git_blob": "e49c6d6db75bf78d6cb317ee91f27aec03b9612c",
+      "namespace": "Cslib.FLTS",
+      "import": "Cslib.Foundations.Semantics.FLTS.Prod"
+    },
+    {
+      "path": "Cslib/Foundations/Semantics/FLTS/FLTSToLTS.lean",
+      "git_blob": "c1aa6468259caa8bb8dc8713ec741483728fd95c",
+      "namespace": "Cslib.FLTS",
+      "import": "Cslib.Foundations.Semantics.FLTS.FLTSToLTS"
+    },
+    {
+      "path": "Cslib/Foundations/Semantics/FLTS/LTSToFLTS.lean",
+      "git_blob": "34ff856e7a7b0b06075df0a0027170a30b954dab",
+      "namespace": "Cslib.LTS",
+      "import": "Cslib.Foundations.Semantics.FLTS.LTSToFLTS"
+    }
+  ],
+  "target_goals": [
+    {
+      "stage": "ACQUISITION",
+      "goal_id": "product_relational_trace",
+      "statement": "{S T L : Type} (f : Cslib.FLTS S L) (g : Cslib.FLTS T L) (s t : S × T) (w : List L) : Cslib.LTS.MTr (Cslib.FLTS.toLTS (Cslib.FLTS.prod f g)) s w t ↔ Cslib.FLTS.mtr f s.fst w = t.fst ∧ Cslib.FLTS.mtr g s.snd w = t.snd",
+      "semantic_objective": "derive transport along product+toLTS without prescribing source theorem names"
+    },
+    {
+      "stage": "HELDOUT",
+      "goal_id": "product_relational_trace_append",
+      "statement": "{S T L : Type} (f : Cslib.FLTS S L) (g : Cslib.FLTS T L) (s t : S × T) (u v : List L) : Cslib.LTS.MTr (Cslib.FLTS.toLTS (Cslib.FLTS.prod f g)) s (u ++ v) t ↔ Cslib.FLTS.mtr f (Cslib.FLTS.mtr f s.fst u) v = t.fst ∧ Cslib.FLTS.mtr g (Cslib.FLTS.mtr g s.snd u) v = t.snd",
+      "semantic_objective": "existing acquired method plus new source-derived append observation; names not seeded to learner"
+    },
+    {
+      "stage": "GRAMMAR_REVISION",
+      "goal_id": "product_powerset_trace",
+      "statement": "{S T L : Type} (f : Cslib.FLTS S L) (g : Cslib.FLTS T L) (s t : S × T) (w : List L) : t ∈ Cslib.FLTS.mtr (Cslib.LTS.toFLTS (Cslib.FLTS.toLTS (Cslib.FLTS.prod f g))) ({s} : Set (S × T)) w ↔ Cslib.FLTS.mtr f s.fst w = t.fst ∧ Cslib.FLTS.mtr g s.snd w = t.snd",
+      "semantic_objective": "construct from previously unavailable Set-state structural rule and learned transport"
+    }
+  ],
+  "constructor": {
+    "source_theorems": "learn candidate rewrite primitives automatically by inspecting original theorem names and statements within the four pinned source modules",
+    "user_supplied_winning_lemma_list": false,
+    "general_method_template": "source-mined proof rewriting with increasing source theorem compositions, optionally decomposing a product target",
+    "generic_core_atoms": [
+      "rfl",
+      "simp",
+      "simp_all",
+      "grind",
+      "aesop",
+      "simp [SOURCE_LEMMAS]",
+      "simp only [SOURCE_LEMMAS]",
+      "cases t; simp [SOURCE_LEMMAS]"
+    ],
+    "basic_structural_lemmas": [
+      "Prod.mk.injEq",
+      "Prod.ext_iff",
+      "Set.mem_singleton_iff",
+      "exists_eq_left"
+    ],
+    "max_candidate_source_lemmas": 11,
+    "max_new_source_lemmas_per_stage": 4,
+    "max_independent_native_invocations_total": 260,
+    "timeout_seconds_per_trial": 15,
+    "promotion": "only exact native Lean success with source-verified original files and immutable original goal statement",
+    "hard_restart": "run existing portable source-derived plan on next goal without altering it; if insufficient construct smallest additional original source-theorem lemma set",
+    "second_generation": "previous admitted syntax search policy must gain new source primitive(s) on heldout grammar-specific failure; strong fully informed stateless baseline controls reported"
+  },
+  "negative_controls": [
+    "old Nat-only proof generator cannot express arbitrary Type S×T and Set state carriers",
+    "source-agnostic generic existing tactics evaluated in exact native checker, if they solve then no unique method gain",
+    "source-theorem omission negative requires chosen lemma(s) to be causally necessary for that generated proof plan",
+    "source module Git blob corruption rejected",
+    "all proof artifacts reject sorry, admit and new axiom",
+    "native Set/state relation target must remain UNKNOWN if no source-derived proof found within budget",
+    "no promotion of upstream theorem reuses to new discovery of mathematical fact",
+    "do not claim unrestricted L7, general source-grammar genesis or strict cost advantage over fully informed stateless source-theorem rewriting"
+  ],
+  "limits": {
+    "no_new_open_theorem": true,
+    "human_frozen_goal_statements": true,
+    "human_defined_meta_language": true,
+    "source_grammar_construction_from_source_text_only": true,
+    "scientific_e2e_system": "UNKNOWN",
+    "automated_general_method_language_invention": "UNKNOWN",
+    "action_authorization": "NONE"
+  }
+}

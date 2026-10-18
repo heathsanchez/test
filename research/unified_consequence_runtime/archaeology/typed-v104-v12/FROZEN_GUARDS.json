@@ -1,0 +1,76 @@
+{
+  "schema": "UDM_V12_EXPOSED_TENACITY_CAUSAL_GUARD_INTERVENTION",
+  "purpose": "Native causal positive/negative intervention on already exposed original Tenacity protection, not autonomous or prospective G2",
+  "baseline": "jd/tenacity PR741 original base 4a74682e0186b5f2d25906aa190cd639c705a958",
+  "original_head_test_blob": "577720ec7cf0a48b9b2909e45ddde29235f460ac",
+  "original_repaired_HEAD_production": "PROHIBITED",
+  "original_source_method_commit": "e3ac262c379fc90687e25eba9ba4a2249db02f4c",
+  "original_G0G1": "PRESERVE",
+  "prior_V10_native_green": 38985872094,
+  "prior_V11_red": 38986306451,
+  "original_AST_guard": {
+    "path": "tenacity/__init__.py",
+    "line": 425,
+    "exact_text": "if not self.wait:  # type: ignore[truthy-bool]"
+  },
+  "candidate_order": [
+    {
+      "id": "BASE",
+      "replacement": null,
+      "source": "unchanged exact original base production"
+    },
+    {
+      "id": "NONE_ONLY",
+      "replacement": "if self.wait is None:",
+      "source": "manual source-grounded comparison against None; may fail no-wait 0 tests"
+    },
+    {
+      "id": "NONE_OR_ZERO",
+      "replacement": "if self.wait is None or self.wait == 0:",
+      "source": "manual source-grounded two-case predicate; true cause candidate"
+    },
+    {
+      "id": "CALLABILITY",
+      "replacement": "if not self.wait and not callable(self.wait):",
+      "source": "manual source-grounded test-meaning predicate; competing nonunique candidate"
+    },
+    {
+      "id": "SHAM",
+      "replacement": null,
+      "secondary_change": {
+        "before": "return tornado is not None",
+        "after": "return tornado is None"
+      },
+      "source": "irrelevant early return source perturbation"
+    },
+    {
+      "id": "REMOVAL",
+      "replacement": null,
+      "source": "physical restoration of original source baseline; must fail same protected test"
+    }
+  ],
+  "protected_author_test_scope": "tests/test_tenacity.py",
+  "protected_method": "tests/test_tenacity.py::TestWaitConditions::test_wait_falsy_callable_is_called",
+  "native_expected": "actual original pytest8.3.5, exactly two independent separate-process replay calls per candidate, full protected test module, unchanged independent tracked source and imported project identity; no UNKNOWN promoted",
+  "budgets": {
+    "candidate_count": 6,
+    "native_calls_ceiling": 12,
+    "per_call_seconds": 90
+  },
+  "context": {
+    "Original_V104_builders": "15 source-pinned original AST builders; no direct Compare builder",
+    "Old_V11_first_eight_candidates": "15 distinct in 37 MSI original prefix orders, 10 AST at __init__:97, 5 at asyncio:72; none line425",
+    "G2": "UNKNOWN (post hoc human-chosen candidates)"
+  },
+  "claims": {
+    "native_guard_experiment": "WARRANTED_BOUNDED only with true native PASS/FAIL and source/authority checks",
+    "autonomous_method_acquisition": "NOT_RUN",
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN"
+  },
+  "external_authority": "none; disposable local git source + candidate stages; no GitHub token injected into pytest child; no upstream writes",
+  "freezing": "Protocol frozen before ANY V12 candidate native outcomes; Tenacity source/test already exposed in V9/V10/V11; no new task."
+}

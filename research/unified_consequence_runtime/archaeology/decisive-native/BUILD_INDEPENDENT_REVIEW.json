@@ -1,0 +1,80 @@
+{
+  "schema": "metalogic.independent-build-boundary-review.v1",
+  "status": "PASS_BOUNDED_CONTRACTS_NO_BLOCKING_FINDING_REMAINING",
+  "read_only_review": true,
+  "target_source_or_outcomes_accessed": false,
+  "historical_science_rerun": false,
+  "scope": "Five source reuse/build-seam files and new fixture contracts; not final prospective science qualification",
+  "source_sha256": {
+    "generic_build_materialization.py": "cd6f90a57504b4bc257afca28501fa7798a381fba0f320373acd477a83d27ee1",
+    "generated_overlay_gate.py": "55635e1b0af1a9f159922f7378acf8a7ee8d82fdfce6f0bdbf4c9ae3ed9e1548",
+    "generated_wheel_evidence.py": "50fea468da119fe2be14656ad7660db21f9b463e0f817c7cba0f3f5d60ff2b85",
+    "generic_native_verify.py": "7e6d6c90e25db9b354cd7926c620ea8ae5630e9be2cd173116f78afee1a2db4e",
+    "native_frontier.py": "b2e2ad803cd5b99c7d2175ca0a8658bee3a38c8d3f70460a459896a7c79574a0",
+    "test_generated_build_materialization.py": "6d5db09508644c38f4018f12587c58c6f333cbc50be9879138a8edeb2b0d8ea0",
+    "test_generic_native_verify.py": "bc89eec9df9dc1d013b72ac9feed49bdb4a6d1a017c11cb03cd231a450effc87",
+    "test_native_frontier.py": "7b9c10a7cf2c8ab44ba1951e2893ac2e5a28454ba94407e483d0e22002844399"
+  },
+  "source_unchanged_during_final_fixture_run": true,
+  "source_lineage": "Derived from qualified fixture source35d79943376409941bb8f34c2020ca865de23c7b; strengthened to fresh immutable-source rebuild and CAS transport",
+  "verification": {
+    "new_build_fixture_contracts": {
+      "command": "/workspace/generic-verifier-test-venv/bin/python -B -m unittest research.unified_consequence_runtime.test_generated_build_materialization -v",
+      "log": "/workspace/qualification/decisive-build-fixture-review-final.log",
+      "passed": 10,
+      "errors": 0,
+      "skips": 0,
+      "log_sha256": "1cc667959db17da5778984c23057eb3c38b3eee17183efd38481ce43d5bc43a3"
+    },
+    "old_verifier_and_runtime_fixture_contracts": {
+      "log": "/workspace/qualification/decisive-build-fixture-review-pinned.log",
+      "old_verifier_passed": 29,
+      "old_runtime_passed": 14,
+      "combined_run": "53tests;2newbuild errors from concurrentbuildercodechange, not hidden. Final stable10buildrerunPASS."
+    },
+    "initial_review_harness_failure": {
+      "log": "/workspace/qualification/decisive-build-fixture-review.log",
+      "reason": "Reviewer used systemPython withoutpytest; stopped invocation and reran using pinned8.3.5 environment; no code defect promoted."
+    }
+  },
+  "finding_resolved": {
+    "id": "FAILED_INDEPENDENT_BUILD_COST_LOSS",
+    "original_obstruction": "Forged plausible wheel correctly rejected afteractualbuild but ValueError lost receiptandchargedcosts",
+    "implemented_fix": [
+      "build-attempt.json beforeactualpip and finallytiming",
+      "UNKNOWN_BUILD_AUTHENTICATION receipt retained beforeValueError rethrow",
+      "NativeFrontierRuntime._verify charges retainedfailedreceipt"
+    ],
+    "reviewed_result": "Newforgedwheelcontract asserts retainedonebuildcall and nativecalls0; sourcechecked; independent10/10PASS"
+  },
+  "checked_boundaries": [
+    {
+      "boundary": "AUTHENTICITY",
+      "result": "PASS_BOUNDED",
+      "evidence": "Supplied wheelhashes cannot authorize alone: exactschema/source/environment/recipe/builder binding then actualnoindexnobuildisolationPEP517rebuild from _snapshot Gitbytes; allwheelmemberbytehashescompare; corrupt generatedbytewithplausibleupdateddigests rejected."
+    },
+    {
+      "boundary": "SOURCE_MAPPING",
+      "result": "PASS_BOUNDED",
+      "evidence": "Flat/src mapping only underunambiguous tracked__init__.py package; exacttrackedsourceunchanged; foreignpackage, ambiguouslayout, traversal,duplicate,symlink,bytecode,extension and.data schemes refused."
+    },
+    {
+      "boundary": "INDEPENDENT_NATIVE_AUTHORITY",
+      "result": "PASS_BOUNDED",
+      "evidence": "Rawgenerated_modules API removed; originalpytestimport andoriginaltestconfigs preserved; generatedtest/conftest/pytest/setup/custompython_files/testpaths members forbidden; nativePASS still requiresnonemptytests,noerrors,noskips,byteintegrity."
+    },
+    {
+      "boundary": "CAS_RESTART",
+      "result": "PASS_BOUNDED_FIXTURE",
+      "evidence": "Wheelbytes storedexistingCAS withSHAcheck, canrecoverwhenoriginalpathmissing; exactevidencedigestexcludestransportpath; builder/verifier/overlay/provenancehashes pinned; fixturewithdraw+freshrestore+reloadexercised."
+    }
+  ],
+  "remaining_obligations": [
+    "ActualproductionMachine+FLASH+separate-process newwheelcapability execution mustbequalified inwholeexperiment; newbuildfixturesuseMemoryMachineinprocess anddo notproveproductionrestart.",
+    "No non-bypassable sandbox or all-effectsmonitor; backend execsource-controlledcodeunderexternalauthorityceiling.",
+    "Onlydeclaredboundedpackage/layout/buildrecipe; namespacepackages,Git-history-dependent metadata,non-Pythonwheelmembers,nondeterministicbackendoutput remainunsupportedUNKNOWN.",
+    "Builderenvironmentfingerprint is installeddistributions/interpreteridentity,notindependentproofthatallhostenvironment,network,compiler,systeminputsarecontained.",
+    "Originalb122source-pinnednativecapability descriptorsarenotautomaticallyrequalifiedbychangedverifierbytes; no promotionofoldexactsourcewarrantsto newcode.",
+    "ProspectiveG2/G3/G4outcomesnotreviewed orclaimedhere."
+  ]
+}

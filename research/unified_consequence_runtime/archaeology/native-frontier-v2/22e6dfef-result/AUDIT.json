@@ -1,0 +1,394 @@
+{
+  "actual_collection_calls": 1,
+  "actual_native_calls": 0,
+  "actual_native_packets": [],
+  "actual_native_subprocesses": [
+    {
+      "costs": {
+        "collection_calls": 1,
+        "horizon_seconds": 60,
+        "native_calls": 0,
+        "seconds": 1.3752719069999984
+      },
+      "mode": "collect",
+      "path": "native-frontier-v2/task-0/collection/checked-report.json"
+    }
+  ],
+  "admission_gate": {
+    "artifact_id": 12027916982,
+    "artifact_sha256": "de8534883c760c2129b592a665c3cb735a4af360794409debe23660366853510",
+    "qualification_result_sha256": "ff76a020d59c1d9f2c90fb944e3124a0f2465aec38fe00fbde7751d55679ffe5",
+    "result_path": "research/unified_consequence_runtime/archaeology/native-admission-v2/f8c0b06d-qualified/RESULT.json",
+    "run_id": 38856738333,
+    "source_commit": "f8c0b06da1bbaddfd67229ca87cb53a0dab67ae0",
+    "status": "ADMISSION_ONLY_QUALIFIED"
+  },
+  "agent_comparator_status": "NOT_EXECUTED_BY_CONTROLLER; USE_RETAINED_AGENT_ARM",
+  "artifact_bytes": 45394695,
+  "artifact_id": 12028255817,
+  "artifact_sha256": "4e685c2baec884732e2a4255424a608bf39bd0034fdb771014e6a40f980b811d",
+  "audit_seconds": 1.2124150710005779,
+  "claimed_verdicts": {
+    "G0_G1": "PRESERVED_EXACT_PRIOR_SOURCE_AUTHORITY",
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN"
+  },
+  "comparison_classification": "UNKNOWN_SHARED_ADMISSION_OR_RESIDUAL_OBSTRUCTION; NOT_AN_EXECUTED_COMPARATIVE_TIE",
+  "conditions": {
+    "fully_informed_executable_ledger": {
+      "native_calls": 0,
+      "status": "UNKNOWN_SHARED_ADMISSION_REFUSAL"
+    },
+    "original_system": {
+      "native_calls": 0,
+      "status": "UNKNOWN_ADMISSION_INTERFACE"
+    }
+  },
+  "contracts": {
+    "all_individual_entries_ok": true,
+    "count": 16,
+    "seconds": 0.015
+  },
+  "controller_wall_seconds": 16.515841517999995,
+  "cost_boundary": "All setup, build, collection, verification, acquisition, integration, reclosure, restart and maintenance retained. Nested wall times are not additive. Engineering/model-dollar/token total remains UNKNOWN.",
+  "exact_collection_obstruction": "ImportError while loading conftest '/tmp/udm-native-v2-pkeuf4_p/world/tests/conftest.py'.\ntests/conftest.py:7: in <module>\n    class DummyCollector(pytest.collect.File):\n                         ^^^^^^^^^^^^^^\nE   AttributeError: module 'pytest' has no attribute 'collect'. Did you mean: 'Collector'?\n",
+  "frozen_source_files_checked": 442,
+  "manifest_files_checked": 621,
+  "original_authority": {
+    "CAS_objects": 76,
+    "byte_preserved": true,
+    "inventory_rows": 70,
+    "ledger_prefix_records": 246
+  },
+  "prospective_boundary": "Pre-outcome code/source identities are frozen; prior nonexposure is an explicit research declaration, not a cryptographic absence proof. Unopened future source has no artifact.",
+  "remaining_residual": "UNKNOWN_COLLECTION_ERROR",
+  "result_status": "UNKNOWN_NO_NATIVE_ACQUISITION_RESIDUAL",
+  "retained_CAS_objects": 76,
+  "retained_records": 246,
+  "run_conclusion": "success",
+  "run_id": "38858369216",
+  "schema": "UDM_NATIVE_FRONTIER_V2_INDEPENDENT_ARCHIVE_AUDIT",
+  "scope": "Read-only archive/source/provenance/native-evidence parsing. No native rerun, source fetch, task repository access, repair, or prospective retargeting.",
+  "smallest_obstruction": "UNKNOWN_COLLECTION_ERROR",
+  "source_commit": "22e6dfef6601e8f6c6a804ec05baab9f06b028b3",
+  "status": "PASS_ARCHIVE_INTEGRITY_AUDIT",
+  "tasks": [
+    {
+      "collection_result": {
+        "collected": 0,
+        "collection_errors": [],
+        "costs": {
+          "collection_calls": 1,
+          "horizon_seconds": 60,
+          "native_calls": 0,
+          "seconds": 1.3752719069999984
+        },
+        "negative_violations": {
+          "external_project_imports": 0,
+          "plugin_violations": 0,
+          "source_mutations": 0,
+          "unexpected_imports": 0
+        },
+        "process_exit_code": 4,
+        "pytest_exit_code": 4,
+        "selected": 0,
+        "stderr": "ImportError while loading conftest '/tmp/udm-native-v2-pkeuf4_p/world/tests/conftest.py'.\ntests/conftest.py:7: in <module>\n    class DummyCollector(pytest.collect.File):\n                         ^^^^^^^^^^^^^^\nE   AttributeError: module 'pytest' has no attribute 'collect'. Did you mean: 'Collector'?\n",
+        "timeout": false
+      },
+      "environment_sha256": "538ef3f7dc5ebe3b51ee69cadf8424437e78d3f98fc9892b74911d21c067db98",
+      "pr": 99,
+      "pytest_version": "8.4.1",
+      "python_version": "3.12.15 (main, Oct  1 2026, 02:35:59) [GCC 13.3.0]",
+      "reason": "UNKNOWN_COLLECTION_ERROR",
+      "repository": "grahamdumpleton/wrapt",
+      "role": "TRAINING",
+      "setup_costs": [
+        {
+          "argv": [
+            "git",
+            "init",
+            "-q",
+            "/home/runner/work/test/test/qualification/native-frontier-v2/task-0/source"
+          ],
+          "exit_code": 0,
+          "log": "/home/runner/work/test/test/qualification/native-frontier-v2/task-0/git-init.log",
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "phase": "git-init",
+          "seconds": 0.003666058999996835,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/home/runner/work/test/test/qualification/native-frontier-v2/task-0/source",
+            "fetch",
+            "--depth=1",
+            "--no-tags",
+            "https://github.com/grahamdumpleton/wrapt.git",
+            "b2e4759d31b3e4815077f03aeefea9ceadc67530"
+          ],
+          "exit_code": 0,
+          "log": "/home/runner/work/test/test/qualification/native-frontier-v2/task-0/base-fetch.log",
+          "log_sha256": "d3b08533d2dbaed6ef54f764575dd89129e18f17f1598a9d0b1645f20911b8ab",
+          "phase": "base-fetch",
+          "seconds": 0.364292558999999,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/home/runner/work/test/test/qualification/native-frontier-v2/task-0/source",
+            "-c",
+            "core.autocrlf=false",
+            "checkout",
+            "-q",
+            "--detach",
+            "b2e4759d31b3e4815077f03aeefea9ceadc67530"
+          ],
+          "exit_code": 0,
+          "log": "/home/runner/work/test/test/qualification/native-frontier-v2/task-0/base-checkout.log",
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "phase": "base-checkout",
+          "seconds": 0.007654614999999865,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "gh",
+            "api",
+            "repos/grahamdumpleton/wrapt/contents/tests/test_monkey_patching.py?ref=33148ea028b7a915bb0294c6c49773d4168e96d8"
+          ],
+          "exit_code": 0,
+          "log": "/home/runner/work/test/test/qualification/native-frontier-v2/task-0/author-test-0.log",
+          "log_sha256": "a81a8cea9eaf916b3b1d877e8aabee3606c2a47a72889cc34b4a9728eb24bf23",
+          "phase": "author-test-0",
+          "seconds": 0.514723250000003,
+          "status": "PASS"
+        },
+        {
+          "phase": "native-suite-authority",
+          "seconds": 0.1834279800000047,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "/home/runner/work/test/test/.venv-frontier-v2/bin/python",
+            "-m",
+            "venv",
+            "/home/runner/work/test/test/qualification/native-frontier-v2/task-0/venv"
+          ],
+          "exit_code": 0,
+          "log": "/home/runner/work/test/test/qualification/native-frontier-v2/task-0/venv.log",
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "phase": "venv",
+          "seconds": 1.5165042900000003,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "/home/runner/work/test/test/qualification/native-frontier-v2/task-0/venv/bin/python",
+            "-m",
+            "pip",
+            "install",
+            "--disable-pip-version-check",
+            "--no-input",
+            "--no-deps",
+            "attrs==25.4.0",
+            "cbor2==5.6.5",
+            "cloudpickle==3.1.2",
+            "coverage==7.10.0",
+            "dnspython==2.9.0",
+            "execnet==2.1.2",
+            "flit_core==4.0.1",
+            "hatch-fancy-pypi-readme==25.1.0",
+            "hatch-vcs==0.5.0",
+            "hatchling==1.27.0",
+            "hypothesis==6.151.9",
+            "immutables==0.21",
+            "iniconfig==2.3.1",
+            "msgpack==1.1.1",
+            "msgspec==0.19.0",
+            "orjson==3.11.3",
+            "packaging==26.3",
+            "pathspec==1.1.1",
+            "pip==25.0.1",
+            "pluggy==1.7.0",
+            "psutil==7.2.2",
+            "py-cpuinfo==9.0.0",
+            "Pygments==2.21.0",
+            "pymongo==4.13.2",
+            "Pympler==1.1",
+            "pytest==8.4.1",
+            "pytest-benchmark==5.1.0",
+            "pytest-xdist==3.8.0",
+            "PyYAML==6.0.2",
+            "setuptools==84.0.0",
+            "setuptools-scm==10.3.4",
+            "sortedcontainers==2.4.0",
+            "tomli_w==1.2.0",
+            "tomlkit==0.13.3",
+            "trove-classifiers==2026.9.21.13",
+            "typing_extensions==4.14.1",
+            "ujson==5.10.0",
+            "vcs-versioning==2.6.0"
+          ],
+          "exit_code": 0,
+          "log": "/home/runner/work/test/test/qualification/native-frontier-v2/task-0/fixed-packages.log",
+          "log_sha256": "c3b6e0c638c0e79d2da51340789a1e22320b4e96e652e09d39d1029fc2a2aca2",
+          "phase": "fixed-packages",
+          "seconds": 5.774760153999999,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "clone",
+            "--local",
+            "--no-hardlinks",
+            "--no-checkout",
+            "/home/runner/work/test/test/qualification/native-frontier-v2/task-0/source",
+            "/home/runner/work/test/test/qualification/native-frontier-v2/task-0/base-build"
+          ],
+          "exit_code": 0,
+          "log": "/home/runner/work/test/test/qualification/native-frontier-v2/task-0/base-build-clone.log",
+          "log_sha256": "ab40639b73f2520d6697670dc672e03f020944a8b069804801e285cb8bce9392",
+          "phase": "base-build-clone",
+          "seconds": 0.06409877899999827,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/home/runner/work/test/test/qualification/native-frontier-v2/task-0/base-build",
+            "-c",
+            "core.autocrlf=false",
+            "checkout",
+            "-q",
+            "--detach",
+            "b2e4759d31b3e4815077f03aeefea9ceadc67530"
+          ],
+          "exit_code": 0,
+          "log": "/home/runner/work/test/test/qualification/native-frontier-v2/task-0/base-build-checkout.log",
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "phase": "base-build-checkout",
+          "seconds": 0.007575755000004847,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "/home/runner/work/test/test/qualification/native-frontier-v2/task-0/venv/bin/python",
+            "-m",
+            "pip",
+            "wheel",
+            "--disable-pip-version-check",
+            "--no-input",
+            "--no-deps",
+            "--no-build-isolation",
+            "--wheel-dir",
+            "/home/runner/work/test/test/qualification/native-frontier-v2/task-0/wheels",
+            "/home/runner/work/test/test/qualification/native-frontier-v2/task-0/base-build"
+          ],
+          "exit_code": 0,
+          "log": "/home/runner/work/test/test/qualification/native-frontier-v2/task-0/base-native-wheel.log",
+          "log_sha256": "6d69782b88441adb4ca00131be854caa5c48e6cc52e7158f1e538e112ec3e258",
+          "phase": "base-native-wheel",
+          "seconds": 1.416239662999999,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "/home/runner/work/test/test/qualification/native-frontier-v2/task-0/venv/bin/python",
+            "-m",
+            "pip",
+            "install",
+            "--disable-pip-version-check",
+            "--no-input",
+            "--no-deps",
+            "/home/runner/work/test/test/qualification/native-frontier-v2/task-0/wheels/wrapt-1.10.10-cp312-cp312-linux_x86_64.whl[test,tests]"
+          ],
+          "exit_code": 0,
+          "log": "/home/runner/work/test/test/qualification/native-frontier-v2/task-0/project.log",
+          "log_sha256": "f47bd2b7a2d97c0e5a13c5318f5b347c6c0fb26540c8f4b02b6c5bd724ab88a7",
+          "phase": "project",
+          "seconds": 0.3142302749999999,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "/home/runner/work/test/test/qualification/native-frontier-v2/task-0/venv/bin/python",
+            "-m",
+            "pip",
+            "check"
+          ],
+          "exit_code": 0,
+          "log": "/home/runner/work/test/test/qualification/native-frontier-v2/task-0/pip-check.log",
+          "log_sha256": "9261363b733079a641c2e4cc9bc46ffa1d8336945a87f807b6cf68847dbc9b09",
+          "phase": "pip-check",
+          "seconds": 0.21410789299999777,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "/home/runner/work/test/test/qualification/native-frontier-v2/task-0/venv/bin/python",
+            "-m",
+            "pip",
+            "freeze",
+            "--all"
+          ],
+          "exit_code": 0,
+          "log": "/home/runner/work/test/test/qualification/native-frontier-v2/task-0/pip-freeze.log",
+          "log_sha256": "eb0da95ba4716119ece9d7b28bb8c65d14bbf7e0f89e0e6ec869899f5b44a21e",
+          "phase": "pip-freeze",
+          "seconds": 0.21412355400000394,
+          "status": "PASS"
+        },
+        {
+          "phase": "environment-identity",
+          "seconds": 0.33557641200000177,
+          "status": "PASS"
+        },
+        {
+          "phase": "external-policy-validation",
+          "seconds": 0.8787214249999948,
+          "status": "PASS"
+        }
+      ],
+      "setup_seconds": 12.220687571,
+      "setup_status": "PREPARED",
+      "source_boundary_present": true,
+      "source_bytes_preserved": true,
+      "source_opened": true,
+      "status": "UNKNOWN_ADMISSION_INTERFACE"
+    },
+    {
+      "pr": 377,
+      "reason": null,
+      "repository": "jab/bidict",
+      "role": "PROTECTED_FUTURE_1",
+      "setup_costs": [],
+      "setup_seconds": null,
+      "setup_status": null,
+      "source_boundary_present": false,
+      "source_opened": false,
+      "status": null
+    },
+    {
+      "pr": 418,
+      "reason": null,
+      "repository": "pallets/markupsafe",
+      "role": "PROTECTED_FUTURE_2",
+      "setup_costs": [],
+      "setup_seconds": null,
+      "setup_status": null,
+      "source_boundary_present": false,
+      "source_opened": false,
+      "status": null
+    }
+  ]
+}

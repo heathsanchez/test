@@ -1,0 +1,919 @@
+{
+  "metadata_curation_sha256": "8da692cc958a6db81f9b9bdd1e25a10af56587be81cb65332a862177eb698837",
+  "pool": [
+    {
+      "base_commit": "1e4076f9d9ac57052151193af5cb2d72f8b1113b",
+      "files": [
+        {
+          "additions": 1,
+          "changes": 1,
+          "deletions": 0,
+          "filename": "AUTHORS.txt",
+          "sha": "4ca3d0b4eefa83264317439dde985a74b0280fcb",
+          "status": "modified"
+        },
+        {
+          "additions": 4,
+          "changes": 4,
+          "deletions": 0,
+          "filename": "conftest.py",
+          "sha": "65364bff1af57fea0937d37f60a01a5d03985ee3",
+          "status": "modified"
+        },
+        {
+          "additions": 1,
+          "changes": 2,
+          "deletions": 1,
+          "filename": "parso/python/tokenize.py",
+          "sha": "fdcd8e04d4063eef616b93638209e65b79e64961",
+          "status": "modified"
+        },
+        {
+          "additions": 33,
+          "changes": 33,
+          "deletions": 0,
+          "filename": "test/test_pgen2.py",
+          "sha": "158ec29d9d4eb159c7f3c694b9439fff87d8715a",
+          "status": "modified"
+        }
+      ],
+      "git_metadata_binding": {
+        "base": {
+          "changed_paths": {
+            "AUTHORS.txt": {
+              "mode": "100644",
+              "path": "AUTHORS.txt",
+              "sha": "682b0fc139998d3288c6304d9911276603127851",
+              "size": 1926,
+              "type": "blob"
+            },
+            "conftest.py": {
+              "mode": "100644",
+              "path": "conftest.py",
+              "sha": "654d8c1fdb38cb9e0dd5af84b4cb8694511abaaf",
+              "size": 5113,
+              "type": "blob"
+            },
+            "parso/python/tokenize.py": {
+              "mode": "100644",
+              "path": "parso/python/tokenize.py",
+              "sha": "f8ce09a13350e8c012a87b2667d4dccb1d6bff9e",
+              "size": 27656,
+              "type": "blob"
+            },
+            "test/test_pgen2.py": {
+              "mode": "100644",
+              "path": "test/test_pgen2.py",
+              "sha": "4a809223d6fa793713d91bdceb039d56138e96b5",
+              "size": 9377,
+              "type": "blob"
+            }
+          },
+          "commit_sha": "1e4076f9d9ac57052151193af5cb2d72f8b1113b",
+          "parents": [
+            "7e0586b0b9162bd15af56886d4569582956d35d6",
+            "73796f309df954f0f0cd7539eb7fe44fd881f898"
+          ],
+          "tree_entry_count": 146,
+          "tree_sha": "398e1921df2ed4406c78bbeb9591797fd094fc9d",
+          "tree_truncated": false
+        },
+        "head": {
+          "changed_paths": {
+            "AUTHORS.txt": {
+              "mode": "100644",
+              "path": "AUTHORS.txt",
+              "sha": "4ca3d0b4eefa83264317439dde985a74b0280fcb",
+              "size": 1974,
+              "type": "blob"
+            },
+            "conftest.py": {
+              "mode": "100644",
+              "path": "conftest.py",
+              "sha": "65364bff1af57fea0937d37f60a01a5d03985ee3",
+              "size": 5273,
+              "type": "blob"
+            },
+            "parso/python/tokenize.py": {
+              "mode": "100644",
+              "path": "parso/python/tokenize.py",
+              "sha": "fdcd8e04d4063eef616b93638209e65b79e64961",
+              "size": 27649,
+              "type": "blob"
+            },
+            "test/test_pgen2.py": {
+              "mode": "100644",
+              "path": "test/test_pgen2.py",
+              "sha": "158ec29d9d4eb159c7f3c694b9439fff87d8715a",
+              "size": 9843,
+              "type": "blob"
+            }
+          },
+          "commit_sha": "88874a5a9fb6114cb1a8236a4f30fa2e103f91e5",
+          "parents": [
+            "7e0586b0b9162bd15af56886d4569582956d35d6"
+          ],
+          "tree_entry_count": 146,
+          "tree_sha": "4bfc31b04f257e57ec38bb1b18b0326678ace21b",
+          "tree_truncated": false
+        }
+      },
+      "head_commit": "88874a5a9fb6114cb1a8236a4f30fa2e103f91e5",
+      "merge_commit_sha": "c88a2675b0d609f2a63785933f4a940ce82aaabe",
+      "metadata_binding_status": "EXACT_COMMIT_TREE_AND_CHANGED_BLOB_IDS_BOUND_WITHOUT_SOURCE_CONTENTS",
+      "metadata_stats": {
+        "production_additions": 1,
+        "production_deletions": 1,
+        "production_py_files": 1,
+        "test_py_files": 2
+      },
+      "metadata_url": "https://github.com/davidhalter/parso/pull/140",
+      "pr": 140,
+      "repo": "davidhalter/parso",
+      "selection_status": "FROZEN_ORDERED_POOL_CANDIDATE_NOT_AN_ADMITTED_TASK",
+      "tree_query_coverage": [
+        {
+          "endpoint": "repos/davidhalter/parso/git/commits/1e4076f9d9ac57052151193af5cb2d72f8b1113b",
+          "projection": "{sha,tree_sha:.tree.sha,parents:[.parents[].sha]}",
+          "requested_at_utc": "2026-10-16T08:37:19.700034+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.3684847999975318
+        },
+        {
+          "endpoint": "repos/davidhalter/parso/git/trees/398e1921df2ed4406c78bbeb9591797fd094fc9d?recursive=1",
+          "projection": "{sha,truncated,tree:[.tree[] | {path,mode,type,sha,size}]}",
+          "requested_at_utc": "2026-10-16T08:37:20.068581+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.33707088700612076
+        },
+        {
+          "endpoint": "repos/davidhalter/parso/git/commits/88874a5a9fb6114cb1a8236a4f30fa2e103f91e5",
+          "projection": "{sha,tree_sha:.tree.sha,parents:[.parents[].sha]}",
+          "requested_at_utc": "2026-10-16T08:37:20.405852+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.3303182289964752
+        },
+        {
+          "endpoint": "repos/davidhalter/parso/git/trees/4bfc31b04f257e57ec38bb1b18b0326678ace21b?recursive=1",
+          "projection": "{sha,truncated,tree:[.tree[] | {path,mode,type,sha,size}]}",
+          "requested_at_utc": "2026-10-16T08:37:20.736235+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.3645458550017793
+        }
+      ]
+    },
+    {
+      "base_commit": "13d30bc654eb9e6be092282ca502967fcb7f0113",
+      "files": [
+        {
+          "additions": 4,
+          "changes": 6,
+          "deletions": 2,
+          "filename": "sortedcontainers/sortedlist.py",
+          "sha": "e3b58eb92d4f3429c4ccad7f906171652f68a410",
+          "status": "modified"
+        },
+        {
+          "additions": 40,
+          "changes": 40,
+          "deletions": 0,
+          "filename": "tests/test_coverage_sortedkeylist_modulo.py",
+          "sha": "5d2cf7402f6e2de6ed5a317973a3a78fb1465ae7",
+          "status": "modified"
+        },
+        {
+          "additions": 40,
+          "changes": 41,
+          "deletions": 1,
+          "filename": "tests/test_coverage_sortedkeylist_negate.py",
+          "sha": "dea380db20a2c23567722249fac888d787887130",
+          "status": "modified"
+        }
+      ],
+      "git_metadata_binding": {
+        "base": {
+          "changed_paths": {
+            "sortedcontainers/sortedlist.py": {
+              "mode": "100644",
+              "path": "sortedcontainers/sortedlist.py",
+              "sha": "3b3cd07b244de47bee11dfd95accfca7a8b38acd",
+              "size": 76273,
+              "type": "blob"
+            },
+            "tests/test_coverage_sortedkeylist_modulo.py": {
+              "mode": "100644",
+              "path": "tests/test_coverage_sortedkeylist_modulo.py",
+              "sha": "1916054f6022f7036caccb91a887f28c8f3430e2",
+              "size": 20111,
+              "type": "blob"
+            },
+            "tests/test_coverage_sortedkeylist_negate.py": {
+              "mode": "100644",
+              "path": "tests/test_coverage_sortedkeylist_negate.py",
+              "sha": "6c0287f8cdeb876bf9e14aeec63167cb3ea1bb9c",
+              "size": 15690,
+              "type": "blob"
+            }
+          },
+          "commit_sha": "13d30bc654eb9e6be092282ca502967fcb7f0113",
+          "parents": [
+            "4997d0e849f2275d1931772a5432163ecc20e0b0"
+          ],
+          "tree_entry_count": 265,
+          "tree_sha": "fe92b5886f47c90270ce565a77b68e1809e4bd3c",
+          "tree_truncated": false
+        },
+        "head": {
+          "changed_paths": {
+            "sortedcontainers/sortedlist.py": {
+              "mode": "100644",
+              "path": "sortedcontainers/sortedlist.py",
+              "sha": "e3b58eb92d4f3429c4ccad7f906171652f68a410",
+              "size": 76331,
+              "type": "blob"
+            },
+            "tests/test_coverage_sortedkeylist_modulo.py": {
+              "mode": "100644",
+              "path": "tests/test_coverage_sortedkeylist_modulo.py",
+              "sha": "5d2cf7402f6e2de6ed5a317973a3a78fb1465ae7",
+              "size": 21288,
+              "type": "blob"
+            },
+            "tests/test_coverage_sortedkeylist_negate.py": {
+              "mode": "100644",
+              "path": "tests/test_coverage_sortedkeylist_negate.py",
+              "sha": "dea380db20a2c23567722249fac888d787887130",
+              "size": 16835,
+              "type": "blob"
+            }
+          },
+          "commit_sha": "80a1ce9f8b353918974a0ca7ffdfb32c43821026",
+          "parents": [
+            "0aaede2f27e8dbc4fca61276ddc06595010e50f6"
+          ],
+          "tree_entry_count": 265,
+          "tree_sha": "a054089aa48fac5368b413b686b8c95607336908",
+          "tree_truncated": false
+        }
+      },
+      "head_commit": "80a1ce9f8b353918974a0ca7ffdfb32c43821026",
+      "merge_commit_sha": "7dc426c95a0c329d5514e6198d92080f1ffc1e5e",
+      "metadata_binding_status": "EXACT_COMMIT_TREE_AND_CHANGED_BLOB_IDS_BOUND_WITHOUT_SOURCE_CONTENTS",
+      "metadata_stats": {
+        "production_additions": 4,
+        "production_deletions": 2,
+        "production_py_files": 1,
+        "test_py_files": 2
+      },
+      "metadata_url": "https://github.com/grantjenks/python-sortedcontainers/pull/159",
+      "pr": 159,
+      "repo": "grantjenks/python-sortedcontainers",
+      "selection_status": "FROZEN_ORDERED_POOL_CANDIDATE_NOT_AN_ADMITTED_TASK",
+      "tree_query_coverage": [
+        {
+          "endpoint": "repos/grantjenks/python-sortedcontainers/git/commits/13d30bc654eb9e6be092282ca502967fcb7f0113",
+          "projection": "{sha,tree_sha:.tree.sha,parents:[.parents[].sha]}",
+          "requested_at_utc": "2026-10-16T08:37:21.101098+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.3024936450019595
+        },
+        {
+          "endpoint": "repos/grantjenks/python-sortedcontainers/git/trees/fe92b5886f47c90270ce565a77b68e1809e4bd3c?recursive=1",
+          "projection": "{sha,truncated,tree:[.tree[] | {path,mode,type,sha,size}]}",
+          "requested_at_utc": "2026-10-16T08:37:21.403654+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.4506999240038567
+        },
+        {
+          "endpoint": "repos/grantjenks/python-sortedcontainers/git/commits/80a1ce9f8b353918974a0ca7ffdfb32c43821026",
+          "projection": "{sha,tree_sha:.tree.sha,parents:[.parents[].sha]}",
+          "requested_at_utc": "2026-10-16T08:37:21.854624+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.34204690100159496
+        },
+        {
+          "endpoint": "repos/grantjenks/python-sortedcontainers/git/trees/a054089aa48fac5368b413b686b8c95607336908?recursive=1",
+          "projection": "{sha,truncated,tree:[.tree[] | {path,mode,type,sha,size}]}",
+          "requested_at_utc": "2026-10-16T08:37:22.196736+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.4665817189961672
+        }
+      ]
+    },
+    {
+      "base_commit": "340d3f0596b985db9e7c81a1233f784648d7c101",
+      "files": [
+        {
+          "additions": 1,
+          "changes": 2,
+          "deletions": 1,
+          "filename": "schema/__init__.py",
+          "sha": "287d95813648eda9084c29d69bef0419875d947b",
+          "status": "modified"
+        },
+        {
+          "additions": 10,
+          "changes": 10,
+          "deletions": 0,
+          "filename": "test_schema.py",
+          "sha": "e45d51f931ab1178869894577c53de04166f9fc1",
+          "status": "modified"
+        }
+      ],
+      "git_metadata_binding": {
+        "base": {
+          "changed_paths": {
+            "schema/__init__.py": {
+              "mode": "100644",
+              "path": "schema/__init__.py",
+              "sha": "3a918d00f9e8e1c9f64d0d473693c550112442cc",
+              "size": 36752,
+              "type": "blob"
+            },
+            "test_schema.py": {
+              "mode": "100644",
+              "path": "test_schema.py",
+              "sha": "8936e53d62629e6df0b3d8fda3e03c50dca9a569",
+              "size": 63804,
+              "type": "blob"
+            }
+          },
+          "commit_sha": "340d3f0596b985db9e7c81a1233f784648d7c101",
+          "parents": [
+            "e443d24fd30a9c02c577d72792bdbb78d4e0fa08",
+            "a2d40e1f0d91fd91513b78d51b4ee6d550326afa"
+          ],
+          "tree_entry_count": 23,
+          "tree_sha": "fedb9efbcfedb243c8ca5ce0df95d4dd53ea98af",
+          "tree_truncated": false
+        },
+        "head": {
+          "changed_paths": {
+            "schema/__init__.py": {
+              "mode": "100644",
+              "path": "schema/__init__.py",
+              "sha": "287d95813648eda9084c29d69bef0419875d947b",
+              "size": 36755,
+              "type": "blob"
+            },
+            "test_schema.py": {
+              "mode": "100644",
+              "path": "test_schema.py",
+              "sha": "e45d51f931ab1178869894577c53de04166f9fc1",
+              "size": 64295,
+              "type": "blob"
+            }
+          },
+          "commit_sha": "d81871b8644e3b5dcc36b63904f7e3463c92a947",
+          "parents": [
+            "340d3f0596b985db9e7c81a1233f784648d7c101"
+          ],
+          "tree_entry_count": 23,
+          "tree_sha": "a2f252cb2e8513ef1cd702c305cc7a1d6c439834",
+          "tree_truncated": false
+        }
+      },
+      "head_commit": "d81871b8644e3b5dcc36b63904f7e3463c92a947",
+      "merge_commit_sha": "27e268d4fc36a169b9a3296fe03d3b897fc0bf2f",
+      "metadata_binding_status": "EXACT_COMMIT_TREE_AND_CHANGED_BLOB_IDS_BOUND_WITHOUT_SOURCE_CONTENTS",
+      "metadata_stats": {
+        "production_additions": 1,
+        "production_deletions": 1,
+        "production_py_files": 1,
+        "test_py_files": 1
+      },
+      "metadata_url": "https://github.com/keleshev/schema/pull/347",
+      "pr": 347,
+      "repo": "keleshev/schema",
+      "selection_status": "FROZEN_ORDERED_POOL_CANDIDATE_NOT_AN_ADMITTED_TASK",
+      "tree_query_coverage": [
+        {
+          "endpoint": "repos/keleshev/schema/git/commits/340d3f0596b985db9e7c81a1233f784648d7c101",
+          "projection": "{sha,tree_sha:.tree.sha,parents:[.parents[].sha]}",
+          "requested_at_utc": "2026-10-16T08:37:22.663618+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.31622678299754625
+        },
+        {
+          "endpoint": "repos/keleshev/schema/git/trees/fedb9efbcfedb243c8ca5ce0df95d4dd53ea98af?recursive=1",
+          "projection": "{sha,truncated,tree:[.tree[] | {path,mode,type,sha,size}]}",
+          "requested_at_utc": "2026-10-16T08:37:22.979907+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.3600158199988073
+        },
+        {
+          "endpoint": "repos/keleshev/schema/git/commits/d81871b8644e3b5dcc36b63904f7e3463c92a947",
+          "projection": "{sha,tree_sha:.tree.sha,parents:[.parents[].sha]}",
+          "requested_at_utc": "2026-10-16T08:37:23.340028+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.37105203999817604
+        },
+        {
+          "endpoint": "repos/keleshev/schema/git/trees/a2f252cb2e8513ef1cd702c305cc7a1d6c439834?recursive=1",
+          "projection": "{sha,truncated,tree:[.tree[] | {path,mode,type,sha,size}]}",
+          "requested_at_utc": "2026-10-16T08:37:23.711144+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.33294950499839615
+        }
+      ]
+    },
+    {
+      "base_commit": "967864f89791509f9eb36b22b4579d36b72a6df2",
+      "files": [
+        {
+          "additions": 1,
+          "changes": 1,
+          "deletions": 0,
+          "filename": "CHANGELOG.md",
+          "sha": "041e5824ee73b833216a1391a9039d38a474d8b1",
+          "status": "modified"
+        },
+        {
+          "additions": 1,
+          "changes": 2,
+          "deletions": 1,
+          "filename": "boltons/strutils.py",
+          "sha": "526e81cb0325d722721b6f2d5e24ef929f2c9256",
+          "status": "modified"
+        },
+        {
+          "additions": 20,
+          "changes": 20,
+          "deletions": 0,
+          "filename": "tests/test_strutils.py",
+          "sha": "090d7dd27c48a9804c334577a550e3ea7dc8882c",
+          "status": "modified"
+        }
+      ],
+      "git_metadata_binding": {
+        "base": {
+          "changed_paths": {
+            "CHANGELOG.md": {
+              "mode": "100644",
+              "path": "CHANGELOG.md",
+              "sha": "385268e9cffb66623ce63a0af9ca1d2b37a8a6f5",
+              "size": 65009,
+              "type": "blob"
+            },
+            "boltons/strutils.py": {
+              "mode": "100644",
+              "path": "boltons/strutils.py",
+              "sha": "95f8e12983c13a444baff233dc6802a213063b0a",
+              "size": 47214,
+              "type": "blob"
+            },
+            "tests/test_strutils.py": {
+              "mode": "100644",
+              "path": "tests/test_strutils.py",
+              "sha": "1da050a2bdcdfe2ef17434d66b1525b433cac31d",
+              "size": 15552,
+              "type": "blob"
+            }
+          },
+          "commit_sha": "967864f89791509f9eb36b22b4579d36b72a6df2",
+          "parents": [
+            "5df26592c29b9561d122640868ba0522cbc1e20d"
+          ],
+          "tree_entry_count": 122,
+          "tree_sha": "5f96239ad4d6613b175f4d57732963a99ecb125a",
+          "tree_truncated": false
+        }
+      },
+      "head_commit": "f268ec349d4a4f13e3e8f2dd86db059959514222",
+      "merge_commit_sha": "45a251181fba4c5a4ecc05e838da1c394e1ed0e4",
+      "metadata_binding_error": "GITHUB_METADATA_API_ERROR",
+      "metadata_binding_status": "BINDING_ERROR_SELECTION_NOT_RETARGETED",
+      "metadata_stats": {
+        "production_additions": 1,
+        "production_deletions": 1,
+        "production_py_files": 1,
+        "test_py_files": 1
+      },
+      "metadata_url": "https://github.com/mahmoud/boltons/pull/475",
+      "pr": 475,
+      "repo": "mahmoud/boltons",
+      "selection_status": "FROZEN_ORDERED_POOL_CANDIDATE_NOT_AN_ADMITTED_TASK",
+      "tree_query_coverage": [
+        {
+          "endpoint": "repos/mahmoud/boltons/git/commits/967864f89791509f9eb36b22b4579d36b72a6df2",
+          "projection": "{sha,tree_sha:.tree.sha,parents:[.parents[].sha]}",
+          "requested_at_utc": "2026-10-16T08:37:24.044216+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.5320911859962507
+        },
+        {
+          "endpoint": "repos/mahmoud/boltons/git/trees/5f96239ad4d6613b175f4d57732963a99ecb125a?recursive=1",
+          "projection": "{sha,truncated,tree:[.tree[] | {path,mode,type,sha,size}]}",
+          "requested_at_utc": "2026-10-16T08:37:24.576370+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.5766751179980929
+        },
+        {
+          "endpoint": "repos/mahmoud/boltons/git/commits/f268ec349d4a4f13e3e8f2dd86db059959514222",
+          "projection": "{sha,tree_sha:.tree.sha,parents:[.parents[].sha]}",
+          "requested_at_utc": "2026-10-16T08:37:25.153247+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.35867344200232765
+        },
+        {
+          "endpoint": "repos/mahmoud/boltons/git/trees/ac7afe314e6f20f610d5d5da1ef4d622121cecf7?recursive=1",
+          "projection": "{sha,truncated,tree:[.tree[] | {path,mode,type,sha,size}]}",
+          "requested_at_utc": "2026-10-16T08:37:25.511988+00:00",
+          "returncode": 1,
+          "status": "API_ERROR",
+          "wall_seconds": 0.13629963499988662
+        }
+      ]
+    },
+    {
+      "base_commit": "45b96aeebc9b389f556e4af9e456d16b1d871f9d",
+      "files": [
+        {
+          "additions": 3,
+          "changes": 5,
+          "deletions": 2,
+          "filename": "json_tricks/encoders.py",
+          "sha": "de813a06f2effe4a2154b850c085f300f954f2df",
+          "status": "modified"
+        },
+        {
+          "additions": 23,
+          "changes": 24,
+          "deletions": 1,
+          "filename": "tests/test_np.py",
+          "sha": "1d2da112f06eb175f404dead90363f7b762689b2",
+          "status": "modified"
+        }
+      ],
+      "git_metadata_binding": {
+        "base": {
+          "changed_paths": {
+            "json_tricks/encoders.py": {
+              "mode": "100644",
+              "path": "json_tricks/encoders.py",
+              "sha": "05e66ed2bd333072e4cd2bf4630526d96f929d0f",
+              "size": 17321,
+              "type": "blob"
+            },
+            "tests/test_np.py": {
+              "mode": "100644",
+              "path": "tests/test_np.py",
+              "sha": "66419d8da56305f2850bc36a5a0ec201075053e2",
+              "size": 14583,
+              "type": "blob"
+            }
+          },
+          "commit_sha": "45b96aeebc9b389f556e4af9e456d16b1d871f9d",
+          "parents": [
+            "78e32b06e9d9a5a1eb1460a6c5ee848fc65a039e",
+            "490d557aadb459b931eb334298834b051cb592de"
+          ],
+          "tree_entry_count": 38,
+          "tree_sha": "9ba5b1f7df35427663cf5914aace67f67f4cf22a",
+          "tree_truncated": false
+        },
+        "head": {
+          "changed_paths": {
+            "json_tricks/encoders.py": {
+              "mode": "100644",
+              "path": "json_tricks/encoders.py",
+              "sha": "de813a06f2effe4a2154b850c085f300f954f2df",
+              "size": 17386,
+              "type": "blob"
+            },
+            "tests/test_np.py": {
+              "mode": "100644",
+              "path": "tests/test_np.py",
+              "sha": "1d2da112f06eb175f404dead90363f7b762689b2",
+              "size": 15584,
+              "type": "blob"
+            }
+          },
+          "commit_sha": "47caad0baf1f555f8e2cc35739f1d3e1796233c9",
+          "parents": [
+            "6b75e53eb58cd29ced38812242176f14736bc64a"
+          ],
+          "tree_entry_count": 38,
+          "tree_sha": "fa451912f6dc454c8d8b14fccc729730c6d63daf",
+          "tree_truncated": false
+        }
+      },
+      "head_commit": "47caad0baf1f555f8e2cc35739f1d3e1796233c9",
+      "merge_commit_sha": "12c6f27a6a7b2b507b9b9253bb42b87fdaf70a8a",
+      "metadata_binding_status": "EXACT_COMMIT_TREE_AND_CHANGED_BLOB_IDS_BOUND_WITHOUT_SOURCE_CONTENTS",
+      "metadata_stats": {
+        "production_additions": 3,
+        "production_deletions": 2,
+        "production_py_files": 1,
+        "test_py_files": 1
+      },
+      "metadata_url": "https://github.com/mverleg/pyjson_tricks/pull/115",
+      "pr": 115,
+      "repo": "mverleg/pyjson_tricks",
+      "selection_status": "FROZEN_ORDERED_POOL_CANDIDATE_NOT_AN_ADMITTED_TASK",
+      "tree_query_coverage": [
+        {
+          "endpoint": "repos/mverleg/pyjson_tricks/git/commits/45b96aeebc9b389f556e4af9e456d16b1d871f9d",
+          "projection": "{sha,tree_sha:.tree.sha,parents:[.parents[].sha]}",
+          "requested_at_utc": "2026-10-16T08:37:25.648493+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.3825550330002443
+        },
+        {
+          "endpoint": "repos/mverleg/pyjson_tricks/git/trees/9ba5b1f7df35427663cf5914aace67f67f4cf22a?recursive=1",
+          "projection": "{sha,truncated,tree:[.tree[] | {path,mode,type,sha,size}]}",
+          "requested_at_utc": "2026-10-16T08:37:26.031115+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.5521139880002011
+        },
+        {
+          "endpoint": "repos/mverleg/pyjson_tricks/git/commits/47caad0baf1f555f8e2cc35739f1d3e1796233c9",
+          "projection": "{sha,tree_sha:.tree.sha,parents:[.parents[].sha]}",
+          "requested_at_utc": "2026-10-16T08:37:26.583333+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.32501885600504465
+        },
+        {
+          "endpoint": "repos/mverleg/pyjson_tricks/git/trees/fa451912f6dc454c8d8b14fccc729730c6d63daf?recursive=1",
+          "projection": "{sha,truncated,tree:[.tree[] | {path,mode,type,sha,size}]}",
+          "requested_at_utc": "2026-10-16T08:37:26.908418+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.5507249290021718
+        }
+      ]
+    },
+    {
+      "base_commit": "4c85c352664f6ed33b00b98e52c2232081ca943d",
+      "files": [
+        {
+          "additions": 6,
+          "changes": 8,
+          "deletions": 2,
+          "filename": "src/humanize/number.py",
+          "sha": "90885dcdb899afb184a010c780515ddb95a59b6c",
+          "status": "modified"
+        },
+        {
+          "additions": 41,
+          "changes": 41,
+          "deletions": 0,
+          "filename": "tests/test_number.py",
+          "sha": "5ed63f32345c8455061c8868df57b5f3e7ad0c25",
+          "status": "modified"
+        }
+      ],
+      "git_metadata_binding": {
+        "base": {
+          "changed_paths": {
+            "src/humanize/number.py": {
+              "mode": "100644",
+              "path": "src/humanize/number.py",
+              "sha": "2fb22c602448f5eadaf542d8560a44684ae52174",
+              "size": 15915,
+              "type": "blob"
+            },
+            "tests/test_number.py": {
+              "mode": "100644",
+              "path": "tests/test_number.py",
+              "sha": "78639c327643d0c2ae35f0a560b5aed040d8eaa9",
+              "size": 9575,
+              "type": "blob"
+            }
+          },
+          "commit_sha": "4c85c352664f6ed33b00b98e52c2232081ca943d",
+          "parents": [
+            "ea0b23172b0a7a3813e4a40a7547ee384a5f8320"
+          ],
+          "tree_entry_count": 165,
+          "tree_sha": "f457adceb2cc27becb090b4a6607ec8b6df54f10",
+          "tree_truncated": false
+        },
+        "head": {
+          "changed_paths": {
+            "src/humanize/number.py": {
+              "mode": "100644",
+              "path": "src/humanize/number.py",
+              "sha": "90885dcdb899afb184a010c780515ddb95a59b6c",
+              "size": 16260,
+              "type": "blob"
+            },
+            "tests/test_number.py": {
+              "mode": "100644",
+              "path": "tests/test_number.py",
+              "sha": "5ed63f32345c8455061c8868df57b5f3e7ad0c25",
+              "size": 11176,
+              "type": "blob"
+            }
+          },
+          "commit_sha": "eda405bd598b7d5e17eca1c11b76cfbe011aa5da",
+          "parents": [
+            "4c85c352664f6ed33b00b98e52c2232081ca943d"
+          ],
+          "tree_entry_count": 165,
+          "tree_sha": "d5aa17dd0362b0b0bbd75e9021da3a73ed98adf0",
+          "tree_truncated": false
+        }
+      },
+      "head_commit": "eda405bd598b7d5e17eca1c11b76cfbe011aa5da",
+      "merge_commit_sha": "ca892b368a535a79cc5e2181d052245b94fd6652",
+      "metadata_binding_status": "EXACT_COMMIT_TREE_AND_CHANGED_BLOB_IDS_BOUND_WITHOUT_SOURCE_CONTENTS",
+      "metadata_stats": {
+        "production_additions": 6,
+        "production_deletions": 2,
+        "production_py_files": 1,
+        "test_py_files": 1
+      },
+      "metadata_url": "https://github.com/python-humanize/humanize/pull/346",
+      "pr": 346,
+      "repo": "python-humanize/humanize",
+      "selection_status": "FROZEN_ORDERED_POOL_CANDIDATE_NOT_AN_ADMITTED_TASK",
+      "tree_query_coverage": [
+        {
+          "endpoint": "repos/python-humanize/humanize/git/commits/4c85c352664f6ed33b00b98e52c2232081ca943d",
+          "projection": "{sha,tree_sha:.tree.sha,parents:[.parents[].sha]}",
+          "requested_at_utc": "2026-10-16T08:37:27.459278+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.3911422050005058
+        },
+        {
+          "endpoint": "repos/python-humanize/humanize/git/trees/f457adceb2cc27becb090b4a6607ec8b6df54f10?recursive=1",
+          "projection": "{sha,truncated,tree:[.tree[] | {path,mode,type,sha,size}]}",
+          "requested_at_utc": "2026-10-16T08:37:27.850488+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.5792972030030796
+        },
+        {
+          "endpoint": "repos/python-humanize/humanize/git/commits/eda405bd598b7d5e17eca1c11b76cfbe011aa5da",
+          "projection": "{sha,tree_sha:.tree.sha,parents:[.parents[].sha]}",
+          "requested_at_utc": "2026-10-16T08:37:28.430000+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.5922729660014738
+        },
+        {
+          "endpoint": "repos/python-humanize/humanize/git/trees/d5aa17dd0362b0b0bbd75e9021da3a73ed98adf0?recursive=1",
+          "projection": "{sha,truncated,tree:[.tree[] | {path,mode,type,sha,size}]}",
+          "requested_at_utc": "2026-10-16T08:37:29.022351+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.37403823700151406
+        }
+      ]
+    },
+    {
+      "base_commit": "f4f288579dc3c8f82f62d0eaca7774303d9d3768",
+      "files": [
+        {
+          "additions": 2,
+          "changes": 3,
+          "deletions": 1,
+          "filename": "src/cachetools/__init__.py",
+          "sha": "3b6d857c2e27ec14c88850e47ffe0da5535616c1",
+          "status": "modified"
+        },
+        {
+          "additions": 15,
+          "changes": 15,
+          "deletions": 0,
+          "filename": "tests/test_ttl.py",
+          "sha": "ce969617d4331c14ee5a049c1cb06bc2589b3b70",
+          "status": "modified"
+        }
+      ],
+      "git_metadata_binding": {
+        "base": {
+          "changed_paths": {
+            "src/cachetools/__init__.py": {
+              "mode": "100644",
+              "path": "src/cachetools/__init__.py",
+              "sha": "ac02074e0bc91720ca62ab8cf997e72dc4be1f1a",
+              "size": 23791,
+              "type": "blob"
+            },
+            "tests/test_ttl.py": {
+              "mode": "100644",
+              "path": "tests/test_ttl.py",
+              "sha": "e023173918178b70e3f35ca423f35f5bb0df73d5",
+              "size": 7372,
+              "type": "blob"
+            }
+          },
+          "commit_sha": "f4f288579dc3c8f82f62d0eaca7774303d9d3768",
+          "parents": [
+            "c59bf8dc9c3ce8b9a246b189a3dc8e325f97f974"
+          ],
+          "tree_entry_count": 50,
+          "tree_sha": "5cdf6f106387e0fcf3e7585213ef1d5ac61ad9ac",
+          "tree_truncated": false
+        },
+        "head": {
+          "changed_paths": {
+            "src/cachetools/__init__.py": {
+              "mode": "100644",
+              "path": "src/cachetools/__init__.py",
+              "sha": "3b6d857c2e27ec14c88850e47ffe0da5535616c1",
+              "size": 23821,
+              "type": "blob"
+            },
+            "tests/test_ttl.py": {
+              "mode": "100644",
+              "path": "tests/test_ttl.py",
+              "sha": "ce969617d4331c14ee5a049c1cb06bc2589b3b70",
+              "size": 7885,
+              "type": "blob"
+            }
+          },
+          "commit_sha": "2417c0d63b286772169c0eab4ccf141213e1ca45",
+          "parents": [
+            "9976f1a8076631560f49c5b0dfda7e4d00ee0a4a"
+          ],
+          "tree_entry_count": 50,
+          "tree_sha": "7c6f2329aab6c1618914d2dbd4b24cd8667fb698",
+          "tree_truncated": false
+        }
+      },
+      "head_commit": "2417c0d63b286772169c0eab4ccf141213e1ca45",
+      "merge_commit_sha": "39f9dd234aabc0859c703e7d9747fbefe7133f4c",
+      "metadata_binding_status": "EXACT_COMMIT_TREE_AND_CHANGED_BLOB_IDS_BOUND_WITHOUT_SOURCE_CONTENTS",
+      "metadata_stats": {
+        "production_additions": 2,
+        "production_deletions": 1,
+        "production_py_files": 1,
+        "test_py_files": 1
+      },
+      "metadata_url": "https://github.com/tkem/cachetools/pull/441",
+      "pr": 441,
+      "repo": "tkem/cachetools",
+      "selection_status": "FROZEN_ORDERED_POOL_CANDIDATE_NOT_AN_ADMITTED_TASK",
+      "tree_query_coverage": [
+        {
+          "endpoint": "repos/tkem/cachetools/git/commits/f4f288579dc3c8f82f62d0eaca7774303d9d3768",
+          "projection": "{sha,tree_sha:.tree.sha,parents:[.parents[].sha]}",
+          "requested_at_utc": "2026-10-16T08:37:29.396717+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.35357710999960545
+        },
+        {
+          "endpoint": "repos/tkem/cachetools/git/trees/5cdf6f106387e0fcf3e7585213ef1d5ac61ad9ac?recursive=1",
+          "projection": "{sha,truncated,tree:[.tree[] | {path,mode,type,sha,size}]}",
+          "requested_at_utc": "2026-10-16T08:37:29.750506+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.3332032479956979
+        },
+        {
+          "endpoint": "repos/tkem/cachetools/git/commits/2417c0d63b286772169c0eab4ccf141213e1ca45",
+          "projection": "{sha,tree_sha:.tree.sha,parents:[.parents[].sha]}",
+          "requested_at_utc": "2026-10-16T08:37:30.084091+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.29343582699948456
+        },
+        {
+          "endpoint": "repos/tkem/cachetools/git/trees/7c6f2329aab6c1618914d2dbd4b24cd8667fb698?recursive=1",
+          "projection": "{sha,truncated,tree:[.tree[] | {path,mode,type,sha,size}]}",
+          "requested_at_utc": "2026-10-16T08:37:30.377644+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.3231701289987541
+        }
+      ]
+    }
+  ],
+  "prequery_execution_sha256": "dd9851f7d81a0ccba31fc715af050f5a372a7d80bab86703ec6e2f78682c21e8",
+  "requested_roles": 2,
+  "schema": "UDM_ORDERED_NATIVE_ADMISSION_SCREENING_POOL_V3",
+  "screening_budget": {
+    "all_refusals_and_partial_costs_retained": true,
+    "collection_seconds_per_call": 60,
+    "execution_seconds_per_call": 600,
+    "maximum_cases": 9,
+    "maximum_native_executions_per_case": 2,
+    "native_and_independent_verification_costs_charged": true,
+    "total_screening_wall_seconds": 7200
+  },
+  "selection_rule": "First two source-distinct independent native admissions; PASS and FAIL identical; do not replace a passing training task.",
+  "state": "MUST_COMMIT_BEFORE_ADMISSION_SCREENING"
+}

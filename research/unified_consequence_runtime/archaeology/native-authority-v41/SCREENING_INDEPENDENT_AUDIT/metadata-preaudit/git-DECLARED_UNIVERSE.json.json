@@ -1,0 +1,94 @@
+{
+  "schema": "UDM_GIT_INDEX_READ_AUDIT_V4",
+  "argv": [
+    "git",
+    "--no-pager",
+    "--no-replace-objects",
+    "-c",
+    "core.fsmonitor=false",
+    "-C",
+    "/workspace/udm-v54",
+    "show",
+    "--no-ext-diff",
+    "--no-textconv",
+    "bd46699e:research/unified_consequence_runtime/archaeology/native-authority-v41/DECLARED_UNIVERSE.json"
+  ],
+  "git_optional_locks": "0",
+  "before": {
+    "schema": "UDM_GIT_INDEX_SNAPSHOT_V4",
+    "git_common_dir": "/workspace/repos/test/.git",
+    "indexes": [
+      {
+        "path": "/workspace/repos/test/.git/index",
+        "exists": false,
+        "size_bytes": null,
+        "sha256": null
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/development/index",
+        "exists": true,
+        "size_bytes": 113571,
+        "sha256": "894f89eeaad5bd8d6c8242a5047d006a0b23021a5ba362d4db42c131e082fd29"
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/env-v3-native-334/index",
+        "exists": true,
+        "size_bytes": 176832,
+        "sha256": "6ea642f1a91b7239229344a2650a9af70ea2bd477b6db9518ed4153bed8cb786"
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/udm/index",
+        "exists": true,
+        "size_bytes": 111030,
+        "sha256": "3999c60a940d9c999523ff56ec37d2bc9d7c0328c1f2503690a652fbb1f01064"
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/udm-v54/index",
+        "exists": true,
+        "size_bytes": 239205,
+        "sha256": "9ed38158d9eca002bdf62ff962921fd0f6218ad952634148e77a8520a0b9d8f2"
+      }
+    ]
+  },
+  "returncode": 0,
+  "stdout_base64": "ewogICJlbnZpcm9ubWVudF9nYXRlIjogewogICAgImFydGlmYWN0X2lkIjogMTIwNjk0NDg1OTYsCiAgICAiYXJ0aWZhY3Rfc2hhMjU2IjogIjkwZGNhYmE1ZWNjNDc3NjE4OTBhZDE3YTM3NjE5MjQ4NjNlYjRiMzNhZTRhY2YzOGY2YWExZDg3MGFmNDU1ZTAiLAogICAgInF1YWxpZmljYXRpb25fcmVzdWx0X3NoYTI1NiI6ICIwZWEzODQzYzliOWQ4MGM1OWE5MTAyMzEyODEzY2Y1ODYyMTZjMWNlNzhkNjlkYzliNDdiNDAwYjIwMjlkZTQzIiwKICAgICJyZXN1bHRfcGF0aCI6ICJyZXNlYXJjaC91bmlmaWVkX2NvbnNlcXVlbmNlX3J1bnRpbWUvYXJjaGFlb2xvZ3kvbmF0aXZlLWF1dGhvcml0eS12NDEvQ0lfMzg5NTQ5Njk0MTFfUkVTVUxULmpzb24iLAogICAgInJ1bl9pZCI6IDM4OTU0OTY5NDExLAogICAgInNvdXJjZV9jb21taXQiOiAiNGMzZjdlMjc2NTY3YjRlYThkZjk2YzdhODc5N2E4ODkwNDBkYzBhYyIsCiAgICAic3RhdHVzIjogIkFETUlTU0lPTl9PTkxZX1FVQUxJRklFRCIKICB9LAogICJyZXBvc2l0b3JpZXMiOiBbCiAgICAiYXJyb3ctcHkvYXJyb3ciLAogICAgImpxdWFzdC93Y3dpZHRoIiwKICAgICJuZXR3b3JreC9uZXR3b3JreCIsCiAgICAicHljYS9jcnlwdG9ncmFwaHkiLAogICAgInB5cGFyc2luZy9weXBhcnNpbmciLAogICAgInB5dGVzdC1kZXYvcGx1Z2d5IiwKICAgICJweXRob24tYmFiZWwvYmFiZWwiLAogICAgInB5dGhvbi1zZW12ZXIvcHl0aG9uLXNlbXZlciIsCiAgICAieWFtbC9weXlhbWwiCiAgXSwKICAic2NoZW1hIjogIlVETV9OQVRJVkVfQVVUSE9SSVRZX1Y0MV9ERUNMQVJFRF9VTklWRVJTRV9WMSIKfQo=",
+  "stderr_base64": "",
+  "after": {
+    "schema": "UDM_GIT_INDEX_SNAPSHOT_V4",
+    "git_common_dir": "/workspace/repos/test/.git",
+    "indexes": [
+      {
+        "path": "/workspace/repos/test/.git/index",
+        "exists": false,
+        "size_bytes": null,
+        "sha256": null
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/development/index",
+        "exists": true,
+        "size_bytes": 113571,
+        "sha256": "894f89eeaad5bd8d6c8242a5047d006a0b23021a5ba362d4db42c131e082fd29"
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/env-v3-native-334/index",
+        "exists": true,
+        "size_bytes": 176832,
+        "sha256": "6ea642f1a91b7239229344a2650a9af70ea2bd477b6db9518ed4153bed8cb786"
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/udm/index",
+        "exists": true,
+        "size_bytes": 111030,
+        "sha256": "3999c60a940d9c999523ff56ec37d2bc9d7c0328c1f2503690a652fbb1f01064"
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/udm-v54/index",
+        "exists": true,
+        "size_bytes": 239205,
+        "sha256": "9ed38158d9eca002bdf62ff962921fd0f6218ad952634148e77a8520a0b9d8f2"
+      }
+    ]
+  },
+  "index_changes": [],
+  "indexes_unchanged": true
+}

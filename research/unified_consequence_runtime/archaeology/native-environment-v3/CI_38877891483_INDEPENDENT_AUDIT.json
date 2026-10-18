@@ -1,0 +1,81 @@
+{
+  "artifact": {
+    "artifact_id": 12035773900,
+    "artifact_provenance_sha256": "f9a42af22902bb6204dbe5ed3611f61c4a2a831f42ee1c398367c0b3cb1a2925",
+    "bytes": 111764008,
+    "github_conclusion": "failure",
+    "path": "/workspace/qualification/CI_38877891483_SCIENTIFIC_UNKNOWN.zip",
+    "run_provenance_sha256": "3e50d72d245576624c48b7cb683788ea309926d544ec987bddf595567209d4c2",
+    "run_url": "https://github.com/heathsanchez/test/actions/runs/38877891483",
+    "sha256": "d788ee6fe5f11d54f9439fb0fbb466b16d6d0d99f3b9c482dd78e81dcc6c5463"
+  },
+  "baseline_commit": "fa6bb190eff9b374ab7a95aaf9c618ad2db31419",
+  "execution_boundary": {
+    "artifact_or_target_code_executed": false,
+    "native_reruns": 0,
+    "network_queries": 0,
+    "public_status_records_only_decoded": true,
+    "repository_edits": false,
+    "sealed_case_contents_decoded": false,
+    "target_source_queries": 0
+  },
+  "limits": [
+    "Opaque sealed packet was hashed as one file; no nested future case packet was opened or decoded.",
+    "Public status consistency and committed bytes verified; 12915 primary checks were not rerun by this opaque audit.",
+    "This is a faithful negative reproduction artifact, not protocol readiness, complete native evidence or scientific success."
+  ],
+  "manifest": {
+    "all_member_bytes_sha256_exact": true,
+    "archive_errors_honestly_retained": 3,
+    "members": 5,
+    "packet_sha256": "50a8d5e58c82b58d5888f99ff637bfcdfc4c7454008304b0ef6f0ba605ff4f39",
+    "sha256": "c1a234ae947355014f96320114b1806d67c53ebec5f29ed71d499a1b25af8f19"
+  },
+  "negative_boundary": {
+    "CI_assessment": "UNKNOWN_NO_COMPLETE_NATIVE_RESULT",
+    "candidate_or_agent_execution_in_CI": false,
+    "native_execution_in_CI": false,
+    "new_CI_target_source_access": false,
+    "original_method_objects_absent_and_disclosed": true,
+    "protocol_state": "PREPARED_NOT_FROZEN",
+    "readiness": "UNKNOWN_PROTOCOL_NOT_READY"
+  },
+  "public_local_evidence": {
+    "audit_side_cache_mutations_disclosed": 8,
+    "collection_calls": 0,
+    "eligible_cases": 0,
+    "frontier_freeze_created": false,
+    "native_calls": 0,
+    "overall_independent_audit": "UNKNOWN_AUDIT_OBSTRUCTION",
+    "raw_stderr_redirection_failure_disclosed": true,
+    "reported_substantive_checks": 12915,
+    "reported_substantive_status": "PASS",
+    "screened_cases": 7,
+    "sealed_substantive_checks_recomputed_by_this_auditor": false
+  },
+  "run_id": "38877891483",
+  "schema": "UDM_NEGATIVE_SCIENTIFIC_CI_ARTIFACT_AUDIT_V1",
+  "scientific_status": "UNKNOWN",
+  "source": {
+    "all_original_mode_blob_identities_preserved": true,
+    "all_source_pack_files_exact_to_git": true,
+    "opaque_sealed_packet": {
+      "bytes": 54910716,
+      "nested_contents_opened": false,
+      "path": "research/unified_consequence_runtime/archaeology/native-environment-v3/SEALED_SCREENING_EVIDENCE.tar.gz",
+      "sha256": "70c705018ffcc782c4dadd52b3b2f403e50b3ad93a4c18b2dbf530e703f3cfec"
+    },
+    "original_git_files_preserved": 1311,
+    "source_pack_members": 882,
+    "source_pack_sha256": "a1513ab65aa9950f9e2db175ef5e76c06878403d7bf59ee1ae5001fc238a5811"
+  },
+  "source_commit": "07bfccda862ed4853c4eb9932c9d1f86b5165555",
+  "status": "PASS_NEGATIVE_ARTIFACT_INTEGRITY_SCIENTIFIC_STATUS_UNKNOWN",
+  "verdicts": {
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "schema": "UDM_G2_PROSPECTIVE_PAIR_ENVIRONMENT_REPAIR_V21",
+  "state": "FROZEN_AFTER_COLLECTION_APPARATUS_RED_BEFORE_ANY_PROTECTED_TEST_EXECUTION_OR_METHOD_OUTCOME",
+  "parent_run": 39095846938,
+  "parent_artifact": 12124129656,
+  "parent_artifact_digest": "sha256:700acddfabd3b72273dbfc086893089daf8e96dfda48fb1d435c25b807bebc37",
+  "exact_red": {
+    "pytest_returncode": 4,
+    "tests": 0,
+    "failures": 0,
+    "errors": 1,
+    "stderr": "ModuleNotFoundError: No module named 'hypothesis'",
+    "cause": "Base pyproject.toml declares PEP 735 [dependency-groups].tests, while V2 installer recognized only singular group 'test'."
+  },
+  "repair": "Environment admission recognizes the first present PEP 735 group in fixed order ['test','tests']; all later extra fallbacks remain unchanged.",
+  "scientific_invariance": [
+    "TRAINING remains python-attrs/attrs#1593",
+    "SEALED_FUTURE remains tox-dev/tox#4168 and unopened",
+    "qualified method remains exact 094e2ddc3ba601a00eaf368151172a361e5542da bytes",
+    "derived changed test nodes remain mechanically computed",
+    "no observer, candidate, protected-test outcome, repaired production, or future source was observed before this environment repair"
+  ],
+  "no_replacement": true,
+  "G2": "UNKNOWN"
+}

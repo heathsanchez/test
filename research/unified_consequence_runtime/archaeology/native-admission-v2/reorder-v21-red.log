@@ -1,0 +1,41 @@
+test_original_fixture_reorder_binds_collection_and_final_execution_orders (research.unified_consequence_runtime.test_native_admission_v2_adversarial.NativeAdmissionV2AdversarialTests.test_original_fixture_reorder_binds_collection_and_final_execution_orders) ... ERROR
+test_candidate_cannot_change_original_fixture_order_or_discard_collected_nodes (research.unified_consequence_runtime.test_native_admission_v2_adversarial.NativeAdmissionV2AdversarialTests.test_candidate_cannot_change_original_fixture_order_or_discard_collected_nodes) ... ERROR
+
+======================================================================
+ERROR: test_original_fixture_reorder_binds_collection_and_final_execution_orders (research.unified_consequence_runtime.test_native_admission_v2_adversarial.NativeAdmissionV2AdversarialTests.test_original_fixture_reorder_binds_collection_and_final_execution_orders)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_admission_v2_adversarial.py", line 126, in test_original_fixture_reorder_binds_collection_and_final_execution_orders
+    certificate = self.collect()
+                  ^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_admission_v2_adversarial.py", line 92, in collect
+    return execution.collect(self.contract, self.authority, self.output('collection'),
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_execution_v2.py", line 247, in collect
+    'collection':_collection(data,authority,files),'packet':packet,
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_execution_v2.py", line 227, in _collection
+    raise ValueError('UNKNOWN_EXACT_COLLECTION_OR_DESELECTION')
+ValueError: UNKNOWN_EXACT_COLLECTION_OR_DESELECTION
+
+======================================================================
+ERROR: test_candidate_cannot_change_original_fixture_order_or_discard_collected_nodes (research.unified_consequence_runtime.test_native_admission_v2_adversarial.NativeAdmissionV2AdversarialTests.test_candidate_cannot_change_original_fixture_order_or_discard_collected_nodes)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_admission_v2_adversarial.py", line 156, in test_candidate_cannot_change_original_fixture_order_or_discard_collected_nodes
+    certificate = self.collect()
+                  ^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_admission_v2_adversarial.py", line 92, in collect
+    return execution.collect(self.contract, self.authority, self.output('collection'),
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_execution_v2.py", line 247, in collect
+    'collection':_collection(data,authority,files),'packet':packet,
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_execution_v2.py", line 227, in _collection
+    raise ValueError('UNKNOWN_EXACT_COLLECTION_OR_DESELECTION')
+ValueError: UNKNOWN_EXACT_COLLECTION_OR_DESELECTION
+
+----------------------------------------------------------------------
+Ran 2 tests in 1.578s
+
+FAILED (errors=2)

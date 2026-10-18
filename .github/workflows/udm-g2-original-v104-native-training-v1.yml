@@ -1,0 +1,129 @@
+name: UDM original V104/MSI frozen native training trial (G2 UNKNOWN)
+
+on:
+  push:
+    branches:
+      - research/udm-g2-frozen-source-distinct-admission-20261018
+    paths:
+      - .github/workflows/udm-g2-original-v104-native-training-v1.yml
+      - research/unified_consequence_runtime/g2_original_v104_training_native_v1.py
+      - research/unified_consequence_runtime/G2_TRAINING_NATIVE_CATALOG_LOCK_V1.json
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-training-frozen-methods:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTEST_DISABLE_PLUGIN_AUTOLOAD: "1"
+      GIT_NO_REPLACE_OBJECTS: "1"
+      GIT_OPTIONAL_LOCKS: "0"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Compile and pin pre-native controller and input lock before source reading
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/g2-v104-native
+          python -B -m py_compile research/unified_consequence_runtime/g2_original_v104_training_native_v1.py
+          python - <<'PY'
+          import pathlib, subprocess, json
+          root=pathlib.Path.cwd()
+          name="research/unified_consequence_runtime/G2_TRAINING_NATIVE_CATALOG_LOCK_V1.json"
+          raw=(root/name).read_bytes()
+          frozen=subprocess.check_output(["git","show","fc5cbaf37fe55ab36b06de35e53bc08844791182:"+name])
+          assert raw==frozen,"NATIVE_CATALOG_LOCK_DIFFERS_FROM_PRECOMMIT"
+          lock=json.loads(frozen)
+          assert lock["unique_scheduled_candidate_count"]==15
+          assert lock["catalog_canonical_sha256"]=="7199e478dc9c5dd247571559475bcdbfaa8e737ac21c39bf179cbbe977f4d9c6"
+          pathlib.Path("evidence/g2-v104-native/LOCK_PRE_SOURCE.json").write_text(
+              json.dumps({"status":"FROZEN_BEFORE_ANY_NATIVE_CANDIDATE",
+                          "lock_sha":"fc5cbaf37fe55ab36b06de35e53bc08844791182",
+                          "candidate_count":64,"scheduled":15,
+                          "heldout":"UNOPENED","G2":"UNKNOWN"},indent=2,sort_keys=True)+"\n")
+          PY
+
+      - name: Fetch only original training base and exact author test commit objects
+        run: |
+          set -euo pipefail
+          git init -q /tmp/g2-train-original
+          git -C /tmp/g2-train-original remote add upstream https://github.com/agronholm/anyio.git
+          git -C /tmp/g2-train-original fetch -q --depth=1 --filter=blob:none --no-tags upstream 1805944a9f6a062527c10aa044ded959782bfc3e
+          git -C /tmp/g2-train-original checkout -q --detach 1805944a9f6a062527c10aa044ded959782bfc3e
+          test "$(git -C /tmp/g2-train-original rev-parse HEAD^{tree})" = c6465ce4b900e2f21aa73ebbe16c779f5c6ae9bf
+          git -C /tmp/g2-train-original fetch -q --depth=1 --filter=blob:none --no-tags upstream 90876855b731fb057d45e7e1cbdf1df013be6091
+          test "$(git -C /tmp/g2-train-original rev-parse HEAD)" = 1805944a9f6a062527c10aa044ded959782bfc3e
+          test "$(git -C /tmp/g2-train-original rev-parse 90876855b731fb057d45e7e1cbdf1df013be6091:tests/test_pytest_plugin.py)" = b15d4da74a17b7f80fa07b0d172c03eb752be7f4
+          git init -q /tmp/g2-v104
+          git -C /tmp/g2-v104 fetch -q --depth=1 https://github.com/heathsanchez/triskelion.git 426c54f7c774560e0fabe7213c5ef333b1327c71
+          git -C /tmp/g2-v104 checkout -q --detach 426c54f7c774560e0fabe7213c5ef333b1327c71
+          git init -q /tmp/g2-msi
+          git -C /tmp/g2-msi fetch -q --depth=1 https://github.com/heathsanchez/Minimal-Sufficient-Interface.git 56cfd7b523e3592cae4eafa5468f437ccb94dbe9
+          git -C /tmp/g2-msi checkout -q --detach 56cfd7b523e3592cae4eafa5468f437ccb94dbe9
+          git -C /tmp/g2-train-original status --porcelain > evidence/g2-v104-native/ORIGINAL_STATUS.txt
+
+      - name: Install original author-declared test dependencies and independent native verifier
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check --no-input 'pip==25.3'
+          python -m pip install --disable-pip-version-check --no-input \
+            -e '/tmp/g2-train-original[trio]' \
+            --group '/tmp/g2-train-original/pyproject.toml:test' \
+            'pytest==9.1.1' 'pytest-cov==7.0.0'
+          python -m pip check
+          python -m pip freeze > evidence/g2-v104-native/PIP_FREEZE.txt
+          python - <<'PY'
+          import json,pathlib,importlib.metadata as md
+          names=("pytest","pytest-cov","hypothesis","trio","anyio","pytest-timeout","pytest-mock")
+          pathlib.Path("evidence/g2-v104-native/NATIVE_RUNTIME_VERSIONS.json").write_text(
+              json.dumps({name:md.version(name) for name in names},indent=2,sort_keys=True)+"\n")
+          PY
+
+      - name: Replay authentic failing baseline and evaluate all 15 precommitted original V104 candidates twice
+        run: |
+          set -euo pipefail
+          PYTHONPATH="$GITHUB_WORKSPACE" python -B \
+            research/unified_consequence_runtime/g2_original_v104_training_native_v1.py \
+            /tmp/g2-train-original /tmp/g2-v104 /tmp/g2-msi \
+            "$GITHUB_WORKSPACE/evidence/g2-v104-native/science"
+
+      - name: Record conservative verdict regardless of native outcome
+        if: always()
+        run: |
+          python - <<'PY'
+          import json,pathlib,os
+          root=pathlib.Path("evidence/g2-v104-native")
+          root.mkdir(parents=True,exist_ok=True)
+          path=root/"science/RESULT.json"
+          r=json.loads(path.read_text()) if path.is_file() else {}
+          s={"schema":"UDM_ORIGINAL_V104_NATIVE_TRAINING_BOUNDARY_V1",
+             "source_commit":os.environ["GITHUB_SHA"],
+             "status":r.get("status","UNKNOWN_APPARATUS_NO_NATIVE_RESULT"),
+             "native_calls_conservatively_charged":r.get("native_calls_conservatively_charged",0),
+             "evaluations_completed":r.get("evaluations_completed",0),
+             "source_only_schedule":"FROZEN_PRE_NATIVE_15_IDS",
+             "heldout_source":"UNOPENED",
+             "G2":"UNKNOWN","G3":"UNKNOWN","G4":"UNKNOWN","G5":"UNKNOWN","G6":"UNKNOWN",
+             "equal_information_baselines":"NOT_RUN",
+             "external_action_authority":"NONE"}
+          (root/"SCIENTIFIC_BOUNDARY.json").write_text(json.dumps(s,indent=2,sort_keys=True)+"\n")
+          PY
+
+      - name: Archive complete original candidate, native and refusal evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: udm-original-v104-msi-frozen-native-training-v1
+          path: evidence/g2-v104-native/
+          if-no-files-found: error

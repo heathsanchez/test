@@ -1,0 +1,118 @@
+{
+  "acquisitions": 0,
+  "base_commit": "fa6bb190eff9b374ab7a95aaf9c618ad2db31419",
+  "branch": "research/udm-native-environment-selection-20261016",
+  "candidates": 0,
+  "catalog": {
+    "path": "research/unified_consequence_runtime/archaeology/native-environment-v3/ENVIRONMENT_CATALOG.json",
+    "sha256": "ba793416ffcc19426d2990aea6799d4e450d09b4e900253d76e517e19701f9e5"
+  },
+  "costs": "Retain all metadata/source/build/package/collection/native/revalidation wall times, commands, output sizes, source archives and full raw packets. Controller wall time includes nested phases. Model-token, dollar and engineering costs remain UNKNOWN.",
+  "diagnostics": [
+    {
+      "base_commit": "b2e4759d31b3e4815077f03aeefea9ceadc67530",
+      "files": [
+        {
+          "additions": 2,
+          "changes": 4,
+          "deletions": 2,
+          "filename": "src/wrapt/wrappers.py",
+          "sha": "3b1e207fc94b7ee2d789d8b2cc606e93c9e70f24",
+          "status": "modified"
+        },
+        {
+          "additions": 33,
+          "changes": 35,
+          "deletions": 2,
+          "filename": "tests/test_monkey_patching.py",
+          "sha": "5e290f5d5bab8a288aacf45c35263b5457fb36dd",
+          "status": "modified"
+        }
+      ],
+      "head_commit": "33148ea028b7a915bb0294c6c49773d4168e96d8",
+      "metadata_url": "https://github.com/GrahamDumpleton/wrapt/pull/99",
+      "origin": "legacy",
+      "origin_index": 0,
+      "original_role": "TRAINING",
+      "pr": 99,
+      "repo": "grahamdumpleton/wrapt",
+      "role": "DEVELOPMENT_DIAGNOSTICS_ONLY"
+    },
+    {
+      "base_commit": "1ea82a711c69f590054987b5cb194157f8ce8ac4",
+      "files": [
+        {
+          "additions": 1,
+          "changes": 1,
+          "deletions": 0,
+          "filename": "docs/versions.rst",
+          "status": "modified"
+        },
+        {
+          "additions": 4,
+          "changes": 5,
+          "deletions": 1,
+          "filename": "more_itertools/more.py",
+          "status": "modified"
+        },
+        {
+          "additions": 14,
+          "changes": 14,
+          "deletions": 0,
+          "filename": "tests/test_more.py",
+          "status": "modified"
+        }
+      ],
+      "head_commit": "67fcf640477c78605580f5ee703a54c73c1e7a8a",
+      "metadata_url": "https://github.com/more-itertools/more-itertools/pull/1309",
+      "origin": "modern",
+      "origin_index": 0,
+      "original_role": "EXPOSED_DEVELOPMENT_DIAGNOSTIC_0",
+      "pr": 1309,
+      "repo": "more-itertools/more-itertools",
+      "role": "DEVELOPMENT_DIAGNOSTICS_ONLY"
+    }
+  ],
+  "exposure": "Both exact source contracts and earlier environment/admission refusals were exposed before this version. These are development diagnostics only; no untouched source, fresh frontier, acquisition, candidate, or scientific G2-G6 success is licensed.",
+  "first_gate": "Both diagnostics must collect and select every original test node, execute every setup/call/teardown without skip/xfail/deselection/source/import/plugin/code mutation, match complete JUnit counts, fail a protected actual call, and pass independent validate_receipt with a second complete native execution.",
+  "mode": "DEVELOPMENT_DIAGNOSTICS_ONLY",
+  "origin": {
+    "legacy": {
+      "path": "research/unified_consequence_runtime/archaeology/native-frontier-v2/FRESH_TASK_METADATA.json",
+      "sha256": "38f7670e93a620f95ad75b042ce7390302a8547490095e3caecdf8ba88abb731"
+    },
+    "modern": {
+      "path": "research/unified_consequence_runtime/archaeology/native-admission-v2/PROTOCOL_V2_1.json",
+      "sha256": "cd01a2508572373238fe4aa07b113407316a9408dc15e386b39deb895b4d3f68"
+    }
+  },
+  "package_metadata": {
+    "path": "research/unified_consequence_runtime/archaeology/native-environment-v3/PACKAGE_METADATA.json",
+    "sha256": "e5d3e9928983dda66747b3bbca5e49aea9ef26371a387ccd81b0cf5f7f3c69ab"
+  },
+  "preserved_authority": {
+    "CAS_objects": 76,
+    "files": {
+      "research/unified_consequence_runtime/RECURSIVE_QUALIFICATION_RECEIPT.json": "5c1aee597ab8c94cf637998cad00b0850a958349b5f815cb95865d856692f5c4",
+      "research/unified_consequence_runtime/capability_index.json": "c290a1b313868406cd79362b52ddb2b90b67f5cdf941569f753617dbd526ab75",
+      "research/unified_consequence_runtime/decisive_native_frontier.py": "9b0e6ecd90b3b52a2d7d673844faf5618a614a5857460349d71852a1423843f6",
+      "research/unified_consequence_runtime/decisive_native_verify.py": "12269c8ca2dd586ccec4b162736375bcaac5717aaf07f441b67e5511b0ed4670",
+      "research/unified_consequence_runtime/generic_native_verify.py": "741d5c6a8b33faf4198d860aee2343a2a44bec55e8a161561e422bb512efa7db",
+      "research/unified_consequence_runtime/native_frontier.py": "c257c1c6f1199994baa4915eebde3b79358afebefc16e3ced588ee068bb9dd28"
+    },
+    "inventory_rows": 70,
+    "ledger_sha256": "b3696b388d2f3d1df95d819d1026eb9f87f042e93e4300f0cd987073949de9ac",
+    "records": 246
+  },
+  "runtime_inventory": "Exact two catalog profiles and actual executable/stdlib identities frozen before source fetch. Runtime bootstraps are generic external dependencies, not target operations.",
+  "schema": "UDM_NATIVE_ENVIRONMENT_QUALIFICATION_PROTOCOL_V3",
+  "source_freeze": "Clean exact Git commit; every baseline Git file remains unchanged; all runtime/controller/workflow/protocol/source bytes and both runtime identities are frozen before any diagnostic source fetch.",
+  "verdicts": {
+    "G0_G1": "PRESERVED_EXACT_PRIOR_SOURCE_AUTHORITY",
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN"
+  }
+}

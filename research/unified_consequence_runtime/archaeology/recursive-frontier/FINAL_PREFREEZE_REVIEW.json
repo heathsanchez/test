@@ -1,0 +1,74 @@
+{
+  "schema": "udm.recursive-native.final-prefreeze-source-review.v1",
+  "reviewer": "/root/native_boundary_review",
+  "reviewed_at_utc": "2026-10-15T18:07:38.141151+00:00",
+  "mode": "SCOPED_READ_ONLY_RECHECK; NO_NEW_EXPERIMENTS_OR_TESTS",
+  "target_access": {
+    "source": false,
+    "tests": false,
+    "outcomes": false,
+    "caches": false,
+    "execution": false
+  },
+  "verdict": "PASS_BOUNDED_FINAL_PREFREEZE_SOURCE_REVIEW",
+  "git_head_before_implementation_commit": "c03dc55669a7a0e141a5661f53d0230ff7066547",
+  "checks": [
+    {
+      "id": "SOURCE_ARCHIVE",
+      "status": "IMPLEMENTED_INCLUDING_LATER_SETUP_FAILURE",
+      "evidence": "provision writes immutable exact-commit git archive and records digest/size immediately after successful checkout; later venv/pip/project failures return the retained archive identity. Workflow uploads control and target pinned-source.tar.gz with always archival.",
+      "closed_caveat": "Earlier after-provision-only archival gap was fixed before implementation freeze and before any target exposure."
+    },
+    {
+      "id": "EARLY_COST_AND_RETENTION",
+      "status": "IMPLEMENTED",
+      "evidence": "save() records total wall seconds and, once Machine exists, current machine_costs, original/final record counts, ledger digest and persisted bytes before early UNKNOWN returns and caught failures."
+    },
+    {
+      "id": "FREEZE_CHECKOUT_BINDING",
+      "status": "IMPLEMENTED",
+      "evidence": "check_freeze requires source_commit equal actual HEAD, exact freeze file set/content hashes, frozen protocol hash, original frontier freeze hash. freeze() separately compares every listed file against HEAD Git blob bytes before writing freeze."
+    },
+    {
+      "id": "VERIFIER_FIXES_RETAINED",
+      "status": "UNCHANGED_SINCE_INDEPENDENT_29_TEST_PASS",
+      "evidence": "Worker SHA741d5c6a8b33faf4198d860aee2343a2a44bec55e8a161561e422bb512efa7db; independent 29/29 PASS26.219s recorded in recursive-verifier-source-review.json."
+    },
+    {
+      "id": "RUNTIME_AUTHORITY_AND_CLAIMS",
+      "status": "NO_NEW_SOURCE_FINDING",
+      "evidence": "Source-bound adapter and shared route contract remain narrow. Generic admission, real native execution, revocation/restoration and restart remain separate from O1/O2/O3 acquisition and external enforcement UNKNOWN."
+    }
+  ],
+  "pending_qualification": "Root is running complete inherited/new contract suite; reviewer has not inspected its unfinished output or run native control/target. This note is not whole-stack or scientific qualification.",
+  "claim_boundary": [
+    "No target-specific code or outcome was inspected by reviewer.",
+    "No non-bypassable monitor or hostile-agent sandbox is established.",
+    "Current controller cannot acquire O1/O3; a green admission probe must preserve recursive-growth UNKNOWN.",
+    "Observation ties do not establish strong developmental advantage or full lifecycle cost savings."
+  ],
+  "source_files": [
+    {
+      "path": "research/unified_consequence_runtime/generic_native_verify.py",
+      "sha256": "741d5c6a8b33faf4198d860aee2343a2a44bec55e8a161561e422bb512efa7db"
+    },
+    {
+      "path": "research/unified_consequence_runtime/native_frontier.py",
+      "sha256": "c257c1c6f1199994baa4915eebde3b79358afebefc16e3ced588ee068bb9dd28"
+    },
+    {
+      "path": "research/unified_consequence_runtime/qualify_recursive_frontier.py",
+      "sha256": "1c98774b358195a5dc81afc52df592fed46aa0dda249004f2cc7d89e8342c868"
+    },
+    {
+      "path": ".github/workflows/udm-recursive-native-frontier.yml",
+      "sha256": "6031145e3466fbc8659339078a49b1f6b9e13c614f5100946f128d2c642e9f73"
+    }
+  ],
+  "previous_review": {
+    "path": "/workspace/qualification/recursive-verifier-source-review.json",
+    "sha256": "82e57768ab5f88220897f19342a042de46fcaefa5f4c3e2e762d2b771e17a157"
+  },
+  "previous_review_sha256": "b6d4b63c9b8f484f88c5cd9f26382fb91cf03cd50ca04e7e237503ddb071dfbe",
+  "scope_recheck": "Read only of archive timing/failed-setup return and updated source hashes; no tests/native experiment repeated; no target source/tests/outcomes/caches accessed."
+}

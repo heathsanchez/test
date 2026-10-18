@@ -1,0 +1,628 @@
+{
+  "aggregate_pytest_calls_in_this_bundle": {
+    "collection_calls": 10,
+    "direct_diagnostic_calls": {
+      "aggregate_command_wall_seconds": 935.1128476820086,
+      "collection_calls": 6,
+      "native_calls": 12
+    },
+    "includes_failed_and_synthetic_control_attempts": true,
+    "native_calls": 14,
+    "strict_worker_probes": {
+      "collection_calls": 4,
+      "failed_context_probe_native_calls": 0,
+      "native_calls": 2
+    }
+  },
+  "diagnostic_only": true,
+  "direct_packages_file": "generic-direct-pins-v2.txt",
+  "initial_extension_gate": {
+    "0": "PROTECTED_NATIVE_FAIL_NO_SKIP_XFAIL",
+    "1": "GATED_UNKNOWN_SKIP_XFAIL",
+    "2": "GATED_UNKNOWN_SKIP_XFAIL"
+  },
+  "negative_controls": "CONTROL_CLASSIFICATION.json",
+  "packages_file": "pinned-dependencies.json",
+  "policy_recommendation": {
+    "collection_seconds": 60,
+    "execution_seconds": 600,
+    "plugins": [
+      {
+        "distribution": "hypothesis",
+        "module": "hypothesis.extra.pytestplugin",
+        "version": "6.151.9"
+      },
+      {
+        "distribution": "pytest-benchmark",
+        "module": "pytest_benchmark.session",
+        "version": "5.1.0"
+      },
+      {
+        "distribution": "pytest-benchmark",
+        "module": "pytest_benchmark.plugin",
+        "version": "5.1.0"
+      },
+      {
+        "distribution": "pytest",
+        "module": "pytester",
+        "version": "8.4.1"
+      },
+      {
+        "distribution": "pytest",
+        "module": "pytester_assertions",
+        "version": "8.4.1"
+      }
+    ],
+    "pytest_version": "8.4.1",
+    "schema": "UDM_NATIVE_EXECUTION_POLICY_V2"
+  },
+  "policy_revisions": [
+    {
+      "path": "final-policy-v1-four-modules.json",
+      "probe": "final-policy-probe.json",
+      "reason": "builtin alias resolution pending; independently found benchmark BenchmarkSession object requires explicit session module license",
+      "status": "REJECTED_PLUGIN_CLOSURE"
+    },
+    {
+      "additional_module": "pytest_benchmark.session",
+      "path": "final-policy.json",
+      "probe": "final-policy-probe-v3.json",
+      "status": "VERIFIED_EXPLICIT_FIVE_MODULE_CLOSURE"
+    }
+  ],
+  "prospective_acquisition_evidence": false,
+  "reproducibility_limits": [
+    "Recipe pins complete38-distribution dependency closure and records installed-file identity; dependency wheels are not vendored, so rebuilding requires index availability.",
+    "Environment identity intentionally binds absolute interpreter/prefix and installed bytes; distinct roots produce distinct identities.",
+    "Source-native wheel artifacts and raw tracked source archives are retained with hashes."
+  ],
+  "scm_object_closure": {
+    "raw_log": "scm-object-closure.log",
+    "receipt": "scm-object-closure.json",
+    "recorded_tag_identity_mismatches": [],
+    "status": "PASS",
+    "unexpected_commit_objects": []
+  },
+  "scope": "Three previously exposed development diagnostic repositories only; no fresh prospective acquisition warrant.",
+  "source_status": {
+    "0": {
+      "git_status": "",
+      "original_tracked_files_changed": []
+    },
+    "1": {
+      "git_status": "",
+      "original_tracked_files_changed": []
+    },
+    "2": {
+      "git_status": "",
+      "original_tracked_files_changed": []
+    }
+  },
+  "strict_worker_probes": [
+    {
+      "native_execution_calls": 0,
+      "path": "final-policy-probe.json",
+      "seconds": 1.3508005539988517,
+      "status": "UNKNOWN_PLUGIN_INTERFACE"
+    },
+    {
+      "native_execution_calls": 0,
+      "path": "final-policy-probe-v2.json",
+      "reason": "four baseless unittest mixin declaration prefixes require mapping to concrete subclass collection nodes; all768 actual nodes collected",
+      "seconds": 2.4255016859970056,
+      "status": "UNKNOWN_MISSING_PROTECTED_ASSERTION"
+    },
+    {
+      "calls": {
+        "collection_calls": 3,
+        "native_calls": 2
+      },
+      "diagnostic_only": true,
+      "path": "final-policy-probe-v3.json",
+      "policy_sha256": "0edd0f3f8d7266de5fada0f20a37caca296b5a76db858930cb028dfdebe8e6c3",
+      "seconds": 53.37681735500519,
+      "stages": {
+        "collection": {
+          "costs": {
+            "collection_calls": 1,
+            "horizon_seconds": 60,
+            "native_calls": 0,
+            "seconds": 0.8804714779980714,
+            "total_seconds": 2.7069287659978727
+          },
+          "nodes": 768,
+          "required_prefixes": 620,
+          "status": "ADMITTED_NATIVE_COLLECTION"
+        },
+        "independent_validation": {
+          "costs": {
+            "collection_calls": 1,
+            "native_calls": 1,
+            "native_seconds": 19.796939656996983,
+            "total_seconds": 24.018584807003208
+          },
+          "status": "FAIL_NATIVE"
+        },
+        "verification": {
+          "costs": {
+            "collection_calls": 1,
+            "native_calls": 1,
+            "native_seconds": 19.411900448998495,
+            "total_seconds": 24.708079962998454
+          },
+          "failed_nodes": [
+            "tests/test_more.py::BucketTests::test_falsey_validator_is_honoured"
+          ],
+          "junit": {
+            "errors": 0,
+            "failures": 1,
+            "passed": 767,
+            "skipped": 0,
+            "tests": 768
+          },
+          "status": "FAIL_NATIVE"
+        }
+      },
+      "status": "FAIL_NATIVE",
+      "worker_sha256": "2738737b79a7ce1d4323832b6161f0510e87c48136c3c6cb8b39c667ae698b46"
+    }
+  ],
+  "synthetic_scm_control_qualified": false,
+  "tasks": {
+    "0": {
+      "augmented": {
+        "collected": 768,
+        "collection_errors": [],
+        "deselected": [],
+        "exit_code": 1,
+        "failures": [
+          "tests/test_more.py::BucketTests::test_falsey_validator_is_honoured"
+        ],
+        "hypothesis": {
+          "deadline": "0:00:00.200000",
+          "max_examples": 100,
+          "profile": "default"
+        },
+        "monitor_receipt": "/workspace/qualification/admission-v2-environment/task-0/augmented-execute.monitor.json",
+        "native_optional_outcomes": [],
+        "outcomes": {
+          "failed": 1,
+          "passed": 767
+        },
+        "phase_receipt": "/workspace/qualification/admission-v2-environment/task-0/augmented-execute.json",
+        "protected_module": "tests/test_more.py",
+        "protected_module_count": 620,
+        "seconds": 20.03171597000619
+      },
+      "base": {
+        "collected": 767,
+        "collection_errors": [],
+        "deselected": [],
+        "exit_code": 0,
+        "failures": [],
+        "hypothesis": {
+          "deadline": "0:00:00.200000",
+          "max_examples": 100,
+          "profile": "default"
+        },
+        "monitor_receipt": "/workspace/qualification/admission-v2-environment/task-0/base-execute.monitor.json",
+        "native_optional_outcomes": [],
+        "outcomes": {
+          "passed": 767
+        },
+        "phase_receipt": "/workspace/qualification/admission-v2-environment/task-0/base-execute.json",
+        "protected_module": "tests/test_more.py",
+        "protected_module_count": 619,
+        "seconds": 19.272590019994823
+      }
+    },
+    "1": {
+      "augmented": {
+        "collected": 1383,
+        "collection_errors": [],
+        "deselected": [],
+        "exit_code": 1,
+        "failures": [
+          "tests/test_validators.py::TestDisableValidators::test_disabled_ctx_nested"
+        ],
+        "hypothesis": {
+          "deadline": "0:00:00.400000",
+          "max_examples": 100,
+          "profile": "patience"
+        },
+        "monitor_receipt": "/workspace/qualification/admission-v2-environment/task-1/augmented-execute-scm-native.monitor.json",
+        "native_optional_outcomes": [
+          {
+            "longrepr": "('/workspace/qualification/admission-v2-environment/task-1/augmented/tests/test_functional.py', 786, 'Skipped: requires Python 3.13+')",
+            "nodeid": "tests/test_functional.py::TestReplace::test_replaces",
+            "wasxfail": null,
+            "when": "setup"
+          },
+          {
+            "longrepr": "('/workspace/qualification/admission-v2-environment/task-1/augmented/tests/test_functional.py', 795, 'Skipped: requires Python 3.13+')",
+            "nodeid": "tests/test_functional.py::TestReplace::test_already_has_one",
+            "wasxfail": null,
+            "when": "setup"
+          },
+          {
+            "longrepr": "('/workspace/qualification/admission-v2-environment/task-1/augmented/tests/test_functional.py', 809, 'Skipped: requires Python 3.13+')",
+            "nodeid": "tests/test_functional.py::TestReplace::test_invalid_field_name",
+            "wasxfail": null,
+            "when": "setup"
+          },
+          {
+            "longrepr": "('/workspace/qualification/admission-v2-environment/task-1/augmented/tests/test_make.py', 3022, 'Skipped: Pre-3.10 only.')",
+            "nodeid": "tests/test_make.py::TestAutoDetect::test_match_args_pre_310",
+            "wasxfail": null,
+            "when": "setup"
+          },
+          {
+            "longrepr": "('/workspace/qualification/admission-v2-environment/task-1/augmented/tests/test_pyright.py', 35, 'Skipped: Requires pyright.')",
+            "nodeid": "tests/test_pyright.py::test_pyright_baseline",
+            "wasxfail": null,
+            "when": "setup"
+          },
+          {
+            "longrepr": "('/workspace/qualification/admission-v2-environment/task-1/augmented/tests/test_pyright.py', 83, 'Skipped: Requires pyright.')",
+            "nodeid": "tests/test_pyright.py::test_pyright_attrsinstance_compat",
+            "wasxfail": null,
+            "when": "setup"
+          },
+          {
+            "longrepr": "('/workspace/qualification/admission-v2-environment/task-1/augmented/tests/test_pyright.py', 111, 'Skipped: Requires pyright.')",
+            "nodeid": "tests/test_pyright.py::test_pyright_field_converters_tuple",
+            "wasxfail": null,
+            "when": "setup"
+          },
+          {
+            "longrepr": "self = <tests.test_setattr.TestSetAttr object at 0x7f70ebc8eab0>\n\n    @pytest.mark.xfail(raises=attr.exceptions.FrozenAttributeError)\n    def test_slotted_confused(self):\n        \"\"\"\n        If we have a in-between non-attrs class, setattr reset detection\n        should still work, but currently doesn't.\n    \n        It works with dict classes because we can look the finished class and\n        patch it.  With slotted classes we have to deduce it ourselves.\n        \"\"\"\n    \n        @attr.s(slots=True)\n        class A:\n            x = attr.ib(on_setattr=setters.frozen)\n    \n        class B(A):\n            pass\n    \n        @attr.s(slots=True)\n        class C(B):\n            x = attr.ib()\n    \n>       C(1).x = 2\n        ^^^^\n\ntests/test_setattr.py:330: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n<attrs generated methods tests.test_setattr.TestSetAttr.test_slotted_confused.<locals>.C>:23: in __init__\n    self.x = x\n    ^^^^^^\nsrc/attr/_make.py:1188: in __setattr__\n    nval = hook(self, a, val)\n           ^^^^^^^^^^^^^^^^^^\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\n_ = <[AttributeError(\"'C' object has no attribute 'x'\") raised in repr()] C object at 0x7f70eb065890>\n__ = Attribute(name='x', default=NOTHING, validator=None, repr=True, eq=True, eq_key=None, order=True, order_key=None, hash..., type=None, converter=None, kw_only=False, inherited=False, on_setattr=<function frozen at 0x7f70ec050860>, alias='x')\n___ = 1\n\n    def frozen(_, __, ___):\n        \"\"\"\n        Prevent an attribute to be modified.\n    \n        .. versionadded:: 20.1.0\n        \"\"\"\n>       raise FrozenAttributeError\nE       attr.exceptions.FrozenAttributeError: can't set attribute\n\nsrc/attr/setters.py:35: FrozenAttributeError",
+            "nodeid": "tests/test_setattr.py::TestSetAttr::test_slotted_confused",
+            "wasxfail": "",
+            "when": "call"
+          },
+          {
+            "longrepr": "('/workspace/qualification/admission-v2-environment/task-1/augmented/tests/test_slots.py', 517, 'Skipped: slots without weakref_slot should only work on PyPy')",
+            "nodeid": "tests/test_slots.py::test_implicitly_weakrefable",
+            "wasxfail": null,
+            "when": "setup"
+          }
+        ],
+        "outcomes": {
+          "failed": 1,
+          "passed": 1373,
+          "skipped": 1
+        },
+        "phase_receipt": "/workspace/qualification/admission-v2-environment/task-1/augmented-execute-scm-native.json",
+        "protected_module": "tests/test_validators.py",
+        "protected_module_count": 163,
+        "seconds": 9.438892698002746
+      },
+      "base": {
+        "collected": 1382,
+        "collection_errors": [],
+        "deselected": [],
+        "exit_code": 0,
+        "failures": [],
+        "hypothesis": {
+          "deadline": "0:00:00.400000",
+          "max_examples": 100,
+          "profile": "patience"
+        },
+        "monitor_receipt": "/workspace/qualification/admission-v2-environment/task-1/base-execute-scm-native.monitor.json",
+        "native_optional_outcomes": [
+          {
+            "longrepr": "('/workspace/qualification/admission-v2-environment/task-1/base-with-scm/tests/test_functional.py', 786, 'Skipped: requires Python 3.13+')",
+            "nodeid": "tests/test_functional.py::TestReplace::test_replaces",
+            "wasxfail": null,
+            "when": "setup"
+          },
+          {
+            "longrepr": "('/workspace/qualification/admission-v2-environment/task-1/base-with-scm/tests/test_functional.py', 795, 'Skipped: requires Python 3.13+')",
+            "nodeid": "tests/test_functional.py::TestReplace::test_already_has_one",
+            "wasxfail": null,
+            "when": "setup"
+          },
+          {
+            "longrepr": "('/workspace/qualification/admission-v2-environment/task-1/base-with-scm/tests/test_functional.py', 809, 'Skipped: requires Python 3.13+')",
+            "nodeid": "tests/test_functional.py::TestReplace::test_invalid_field_name",
+            "wasxfail": null,
+            "when": "setup"
+          },
+          {
+            "longrepr": "('/workspace/qualification/admission-v2-environment/task-1/base-with-scm/tests/test_make.py', 3022, 'Skipped: Pre-3.10 only.')",
+            "nodeid": "tests/test_make.py::TestAutoDetect::test_match_args_pre_310",
+            "wasxfail": null,
+            "when": "setup"
+          },
+          {
+            "longrepr": "('/workspace/qualification/admission-v2-environment/task-1/base-with-scm/tests/test_pyright.py', 35, 'Skipped: Requires pyright.')",
+            "nodeid": "tests/test_pyright.py::test_pyright_baseline",
+            "wasxfail": null,
+            "when": "setup"
+          },
+          {
+            "longrepr": "('/workspace/qualification/admission-v2-environment/task-1/base-with-scm/tests/test_pyright.py', 83, 'Skipped: Requires pyright.')",
+            "nodeid": "tests/test_pyright.py::test_pyright_attrsinstance_compat",
+            "wasxfail": null,
+            "when": "setup"
+          },
+          {
+            "longrepr": "('/workspace/qualification/admission-v2-environment/task-1/base-with-scm/tests/test_pyright.py', 111, 'Skipped: Requires pyright.')",
+            "nodeid": "tests/test_pyright.py::test_pyright_field_converters_tuple",
+            "wasxfail": null,
+            "when": "setup"
+          },
+          {
+            "longrepr": "self = <tests.test_setattr.TestSetAttr object at 0x7f950366b740>\n\n    @pytest.mark.xfail(raises=attr.exceptions.FrozenAttributeError)\n    def test_slotted_confused(self):\n        \"\"\"\n        If we have a in-between non-attrs class, setattr reset detection\n        should still work, but currently doesn't.\n    \n        It works with dict classes because we can look the finished class and\n        patch it.  With slotted classes we have to deduce it ourselves.\n        \"\"\"\n    \n        @attr.s(slots=True)\n        class A:\n            x = attr.ib(on_setattr=setters.frozen)\n    \n        class B(A):\n            pass\n    \n        @attr.s(slots=True)\n        class C(B):\n            x = attr.ib()\n    \n>       C(1).x = 2\n        ^^^^\n\ntests/test_setattr.py:330: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n<attrs generated methods tests.test_setattr.TestSetAttr.test_slotted_confused.<locals>.C>:23: in __init__\n    self.x = x\n    ^^^^^^\nsrc/attr/_make.py:1188: in __setattr__\n    nval = hook(self, a, val)\n           ^^^^^^^^^^^^^^^^^^\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\n_ = <[AttributeError(\"'C' object has no attribute 'x'\") raised in repr()] C object at 0x7f94f8bcfa50>\n__ = Attribute(name='x', default=NOTHING, validator=None, repr=True, eq=True, eq_key=None, order=True, order_key=None, hash..., type=None, converter=None, kw_only=False, inherited=False, on_setattr=<function frozen at 0x7f9503a00860>, alias='x')\n___ = 1\n\n    def frozen(_, __, ___):\n        \"\"\"\n        Prevent an attribute to be modified.\n    \n        .. versionadded:: 20.1.0\n        \"\"\"\n>       raise FrozenAttributeError\nE       attr.exceptions.FrozenAttributeError: can't set attribute\n\nsrc/attr/setters.py:35: FrozenAttributeError",
+            "nodeid": "tests/test_setattr.py::TestSetAttr::test_slotted_confused",
+            "wasxfail": "",
+            "when": "call"
+          },
+          {
+            "longrepr": "('/workspace/qualification/admission-v2-environment/task-1/base-with-scm/tests/test_slots.py', 517, 'Skipped: slots without weakref_slot should only work on PyPy')",
+            "nodeid": "tests/test_slots.py::test_implicitly_weakrefable",
+            "wasxfail": null,
+            "when": "setup"
+          }
+        ],
+        "outcomes": {
+          "passed": 1373,
+          "skipped": 1
+        },
+        "phase_receipt": "/workspace/qualification/admission-v2-environment/task-1/base-execute-scm-native.json",
+        "protected_module": "tests/test_validators.py",
+        "protected_module_count": 162,
+        "seconds": 9.939233120996505
+      },
+      "native_wheel": {
+        "base_commit": "ab7f8b2f4c0f747d5b1575247ce35e5adaad182e",
+        "bytes": 68119,
+        "diagnostic_only": true,
+        "path": "/workspace/qualification/admission-v2-environment/task-1/native-wheels/attrs-25.4.1.dev49-py3-none-any.whl",
+        "sha256": "68e99f53c3acb72f5ecca03d6ebfff70f2a3669aa1bc7506612a79631c399d55",
+        "source_tree_preserved": true,
+        "synthetic_version": false
+      }
+    },
+    "2": {
+      "augmented": {
+        "collected": 1027,
+        "collection_errors": [],
+        "deselected": [],
+        "exit_code": 1,
+        "failures": [
+          "tests/test_tuples.py::test_dict_namedtuples_detailed_validation"
+        ],
+        "hypothesis": {
+          "deadline": "None",
+          "max_examples": 100,
+          "profile": "tests"
+        },
+        "monitor_receipt": "/workspace/qualification/admission-v2-environment/task-2/augmented-execute-scm-native.monitor.json",
+        "native_optional_outcomes": [
+          {
+            "longrepr": "conv_w_subclasses = (<cattrs.converters.Converter object at 0x7f4a1b2ced40>, 'wo-subclasses')\nstruct_unstruct = (Child1(p=1, c1=2), {'c1': 2, 'p': 1, 'type_name': 'Child1'})\n\n    @pytest.mark.parametrize(\n        \"struct_unstruct\", IDS_TO_STRUCT_UNSTRUCT.values(), ids=IDS_TO_STRUCT_UNSTRUCT\n    )\n    def test_structuring_with_inheritance(\n        conv_w_subclasses: tuple[Converter, bool], struct_unstruct\n    ) -> None:\n        structured, unstructured = struct_unstruct\n    \n        converter, included_subclasses_param = conv_w_subclasses\n        if included_subclasses_param != \"with-subclasses-and-tagged-union\":\n            unstructured = _remove_type_name(deepcopy(unstructured))\n    \n        if \"wo-subclasses\" in included_subclasses_param and isinstance(\n            structured, (NonUnionContainer, NonUnionCompose)\n        ):\n            pytest.xfail(\n                \"Cannot structure subclasses if include_subclasses strategy is not used\"\n            )\n        assert converter.structure(unstructured, structured.__class__) == structured\n    \n        if structured.__class__ in {Child1, Child2, GrandChild}:\n            if \"wo-subclasses\" in included_subclasses_param:\n>               pytest.xfail(\n                    \"Cannot structure subclasses if include_subclasses strategy is not used\"\n                )\nE               _pytest.outcomes.XFailed: Cannot structure subclasses if include_subclasses strategy is not used\n\nconv_w_subclasses = (<cattrs.converters.Converter object at 0x7f4a1b2ced40>, 'wo-subclasses')\nconverter  = <cattrs.converters.Converter object at 0x7f4a1b2ced40>\nincluded_subclasses_param = 'wo-subclasses'\nstruct_unstruct = (Child1(p=1, c1=2), {'c1': 2, 'p': 1, 'type_name': 'Child1'})\nstructured = Child1(p=1, c1=2)\nunstructured = {'c1': 2, 'p': 1}\n\ntests/strategies/test_include_subclasses.py:176: XFailed",
+            "nodeid": "tests/strategies/test_include_subclasses.py::test_structuring_with_inheritance[wo-subclasses-child1-only]",
+            "wasxfail": "Cannot structure subclasses if include_subclasses strategy is not used",
+            "when": "call"
+          },
+          {
+            "longrepr": "conv_w_subclasses = (<cattrs.converters.Converter object at 0x7f4a261c36a0>, 'wo-subclasses')\nstruct_unstruct = (Child2(p=1, c2=2), {'c2': 2, 'p': 1, 'type_name': 'Child2'})\n\n    @pytest.mark.parametrize(\n        \"struct_unstruct\", IDS_TO_STRUCT_UNSTRUCT.values(), ids=IDS_TO_STRUCT_UNSTRUCT\n    )\n    def test_structuring_with_inheritance(\n        conv_w_subclasses: tuple[Converter, bool], struct_unstruct\n    ) -> None:\n        structured, unstructured = struct_unstruct\n    \n        converter, included_subclasses_param = conv_w_subclasses\n        if included_subclasses_param != \"with-subclasses-and-tagged-union\":\n            unstructured = _remove_type_name(deepcopy(unstructured))\n    \n        if \"wo-subclasses\" in included_subclasses_param and isinstance(\n            structured, (NonUnionContainer, NonUnionCompose)\n        ):\n            pytest.xfail(\n                \"Cannot structure subclasses if include_subclasses strategy is not used\"\n            )\n        assert converter.structure(unstructured, structured.__class__) == structured\n    \n        if structured.__class__ in {Child1, Child2, GrandChild}:\n            if \"wo-subclasses\" in included_subclasses_param:\n>               pytest.xfail(\n                    \"Cannot structure subclasses if include_subclasses strategy is not used\"\n                )\nE               _pytest.outcomes.XFailed: Cannot structure subclasses if include_subclasses strategy is not used\n\nconv_w_subclasses = (<cattrs.converters.Converter object at 0x7f4a261c36a0>, 'wo-subclasses')\nconverter  = <cattrs.converters.Converter object at 0x7f4a261c36a0>\nincluded_subclasses_param = 'wo-subclasses'\nstruct_unstruct = (Child2(p=1, c2=2), {'c2': 2, 'p': 1, 'type_name': 'Child2'})\nstructured = Child2(p=1, c2=2)\nunstructured = {'c2': 2, 'p': 1}\n\ntests/strategies/test_include_subclasses.py:176: XFailed",
+            "nodeid": "tests/strategies/test_include_subclasses.py::test_structuring_with_inheritance[wo-subclasses-child2-only]",
+            "wasxfail": "Cannot structure subclasses if include_subclasses strategy is not used",
+            "when": "call"
+          },
+          {
+            "longrepr": "conv_w_subclasses = (<cattrs.converters.Converter object at 0x7f4a14a7efc0>, 'wo-subclasses')\nstruct_unstruct = (GrandChild(p=1, c1=2, g=3), {'c1': 2, 'g': 3, 'p': 1, 'type_name': 'GrandChild'})\n\n    @pytest.mark.parametrize(\n        \"struct_unstruct\", IDS_TO_STRUCT_UNSTRUCT.values(), ids=IDS_TO_STRUCT_UNSTRUCT\n    )\n    def test_structuring_with_inheritance(\n        conv_w_subclasses: tuple[Converter, bool], struct_unstruct\n    ) -> None:\n        structured, unstructured = struct_unstruct\n    \n        converter, included_subclasses_param = conv_w_subclasses\n        if included_subclasses_param != \"with-subclasses-and-tagged-union\":\n            unstructured = _remove_type_name(deepcopy(unstructured))\n    \n        if \"wo-subclasses\" in included_subclasses_param and isinstance(\n            structured, (NonUnionContainer, NonUnionCompose)\n        ):\n            pytest.xfail(\n                \"Cannot structure subclasses if include_subclasses strategy is not used\"\n            )\n        assert converter.structure(unstructured, structured.__class__) == structured\n    \n        if structured.__class__ in {Child1, Child2, GrandChild}:\n            if \"wo-subclasses\" in included_subclasses_param:\n>               pytest.xfail(\n                    \"Cannot structure subclasses if include_subclasses strategy is not used\"\n                )\nE               _pytest.outcomes.XFailed: Cannot structure subclasses if include_subclasses strategy is not used\n\nconv_w_subclasses = (<cattrs.converters.Converter object at 0x7f4a14a7efc0>, 'wo-subclasses')\nconverter  = <cattrs.converters.Converter object at 0x7f4a14a7efc0>\nincluded_subclasses_param = 'wo-subclasses'\nstruct_unstruct = (GrandChild(p=1, c1=2, g=3), {'c1': 2, 'g': 3, 'p': 1, 'type_name': 'GrandChild'})\nstructured = GrandChild(p=1, c1=2, g=3)\nunstructured = {'c1': 2, 'g': 3, 'p': 1}\n\ntests/strategies/test_include_subclasses.py:176: XFailed",
+            "nodeid": "tests/strategies/test_include_subclasses.py::test_structuring_with_inheritance[wo-subclasses-grandchild-only]",
+            "wasxfail": "Cannot structure subclasses if include_subclasses strategy is not used",
+            "when": "call"
+          },
+          {
+            "longrepr": "conv_w_subclasses = (<cattrs.converters.Converter object at 0x7f4a110ffb00>, 'wo-subclasses')\nstruct_unstruct = (NonUnionCompose(a=Parent(p=1)), {'a': {'p': 1, 'type_name': 'Parent'}})\n\n    @pytest.mark.parametrize(\n        \"struct_unstruct\", IDS_TO_STRUCT_UNSTRUCT.values(), ids=IDS_TO_STRUCT_UNSTRUCT\n    )\n    def test_structuring_with_inheritance(\n        conv_w_subclasses: tuple[Converter, bool], struct_unstruct\n    ) -> None:\n        structured, unstructured = struct_unstruct\n    \n        converter, included_subclasses_param = conv_w_subclasses\n        if included_subclasses_param != \"with-subclasses-and-tagged-union\":\n            unstructured = _remove_type_name(deepcopy(unstructured))\n    \n        if \"wo-subclasses\" in included_subclasses_param and isinstance(\n            structured, (NonUnionContainer, NonUnionCompose)\n        ):\n>           pytest.xfail(\n                \"Cannot structure subclasses if include_subclasses strategy is not used\"\n            )\nE           _pytest.outcomes.XFailed: Cannot structure subclasses if include_subclasses strategy is not used\n\nconv_w_subclasses = (<cattrs.converters.Converter object at 0x7f4a110ffb00>, 'wo-subclasses')\nconverter  = <cattrs.converters.Converter object at 0x7f4a110ffb00>\nincluded_subclasses_param = 'wo-subclasses'\nstruct_unstruct = (NonUnionCompose(a=Parent(p=1)), {'a': {'p': 1, 'type_name': 'Parent'}})\nstructured = NonUnionCompose(a=Parent(p=1))\nunstructured = {'a': {'p': 1}}\n\ntests/strategies/test_include_subclasses.py:169: XFailed",
+            "nodeid": "tests/strategies/test_include_subclasses.py::test_structuring_with_inheritance[wo-subclasses-non-union-compose-parent]",
+            "wasxfail": "Cannot structure subclasses if include_subclasses strategy is not used",
+            "when": "call"
+          },
+          {
+            "longrepr": "conv_w_subclasses = (<cattrs.converters.Converter object at 0x7f4a1b0d45e0>, 'wo-subclasses')\nstruct_unstruct = (NonUnionCompose(a=Child1(p=1, c1=2)), {'a': {'c1': 2, 'p': 1, 'type_name': 'Child1'}})\n\n    @pytest.mark.parametrize(\n        \"struct_unstruct\", IDS_TO_STRUCT_UNSTRUCT.values(), ids=IDS_TO_STRUCT_UNSTRUCT\n    )\n    def test_structuring_with_inheritance(\n        conv_w_subclasses: tuple[Converter, bool], struct_unstruct\n    ) -> None:\n        structured, unstructured = struct_unstruct\n    \n        converter, included_subclasses_param = conv_w_subclasses\n        if included_subclasses_param != \"with-subclasses-and-tagged-union\":\n            unstructured = _remove_type_name(deepcopy(unstructured))\n    \n        if \"wo-subclasses\" in included_subclasses_param and isinstance(\n            structured, (NonUnionContainer, NonUnionCompose)\n        ):\n>           pytest.xfail(\n                \"Cannot structure subclasses if include_subclasses strategy is not used\"\n            )\nE           _pytest.outcomes.XFailed: Cannot structure subclasses if include_subclasses strategy is not used\n\nconv_w_subclasses = (<cattrs.converters.Converter object at 0x7f4a1b0d45e0>, 'wo-subclasses')\nconverter  = <cattrs.converters.Converter object at 0x7f4a1b0d45e0>\nincluded_subclasses_param = 'wo-subclasses'\nstruct_unstruct = (NonUnionCompose(a=Child1(p=1, c1=2)), {'a': {'c1': 2, 'p': 1, 'type_name': 'Child1'}})\nstructured = NonUnionCompose(a=Child1(p=1, c1=2))\nunstructured = {'a': {'c1': 2, 'p': 1}}\n\ntests/strategies/test_include_subclasses.py:169: XFailed",
+            "nodeid": "tests/strategies/test_include_subclasses.py::test_structuring_with_inheritance[wo-subclasses-non-union-compose-child]",
+            "wasxfail": "Cannot structure subclasses if include_subclasses strategy is not used",
+            "when": "call"
+          },
+          {
+            "longrepr": "conv_w_subclasses = (<cattrs.converters.Converter object at 0x7f4a29dceac0>, 'wo-subclasses')\nstruct_unstruct = (NonUnionCompose(a=GrandChild(p=1, c1=2, g=3)), {'a': {'c1': 2, 'g': 3, 'p': 1, 'type_name': 'GrandChild'}})\n\n    @pytest.mark.parametrize(\n        \"struct_unstruct\", IDS_TO_STRUCT_UNSTRUCT.values(), ids=IDS_TO_STRUCT_UNSTRUCT\n    )\n    def test_structuring_with_inheritance(\n        conv_w_subclasses: tuple[Converter, bool], struct_unstruct\n    ) -> None:\n        structured, unstructured = struct_unstruct\n    \n        converter, included_subclasses_param = conv_w_subclasses\n        if included_subclasses_param != \"with-subclasses-and-tagged-union\":\n            unstructured = _remove_type_name(deepcopy(unstructured))\n    \n        if \"wo-subclasses\" in included_subclasses_param and isinstance(\n            structured, (NonUnionContainer, NonUnionCompose)\n        ):\n>           pytest.xfail(\n                \"Cannot structure subclasses if include_subclasses strategy is not used\"\n            )\nE           _pytest.outcomes.XFailed: Cannot structure subclasses if include_subclasses strategy is not used\n\nconv_w_subclasses = (<cattrs.converters.Converter object at 0x7f4a29dceac0>, 'wo-subclasses')\nconverter  = <cattrs.converters.Converter object at 0x7f4a29dceac0>\nincluded_subclasses_param = 'wo-subclasses'\nstruct_unstruct = (NonUnionCompose(a=GrandChild(p=1, c1=2, g=3)), {'a': {'c1': 2, 'g': 3, 'p': 1, 'type_name': 'GrandChild'}})\nstructured = NonUnionCompose(a=GrandChild(p=1, c1=2, g=3))\nunstructured = {'a': {'c1': 2, 'g': 3, 'p': 1}}\n\ntests/strategies/test_include_subclasses.py:169: XFailed",
+            "nodeid": "tests/strategies/test_include_subclasses.py::test_structuring_with_inheritance[wo-subclasses-non-union-compose-grandchild]",
+            "wasxfail": "Cannot structure subclasses if include_subclasses strategy is not used",
+            "when": "call"
+          },
+          {
+            "longrepr": "conv_w_subclasses = (<cattrs.converters.Converter object at 0x7f4a2284da80>, 'wo-subclasses')\nstruct_unstruct = (NonUnionContainer(a=[Parent(p=1), GrandChild(p=1, c1=2, g=3)]), {'a': [{'p': 1, 'type_name': 'Parent'}, {'c1': 2, 'g': 3, 'p': 1, 'type_name': 'GrandChild'}]})\n\n    @pytest.mark.parametrize(\n        \"struct_unstruct\", IDS_TO_STRUCT_UNSTRUCT.values(), ids=IDS_TO_STRUCT_UNSTRUCT\n    )\n    def test_structuring_with_inheritance(\n        conv_w_subclasses: tuple[Converter, bool], struct_unstruct\n    ) -> None:\n        structured, unstructured = struct_unstruct\n    \n        converter, included_subclasses_param = conv_w_subclasses\n        if included_subclasses_param != \"with-subclasses-and-tagged-union\":\n            unstructured = _remove_type_name(deepcopy(unstructured))\n    \n        if \"wo-subclasses\" in included_subclasses_param and isinstance(\n            structured, (NonUnionContainer, NonUnionCompose)\n        ):\n>           pytest.xfail(\n                \"Cannot structure subclasses if include_subclasses strategy is not used\"\n            )\nE           _pytest.outcomes.XFailed: Cannot structure subclasses if include_subclasses strategy is not used\n\nconv_w_subclasses = (<cattrs.converters.Converter object at 0x7f4a2284da80>, 'wo-subclasses')\nconverter  = <cattrs.converters.Converter object at 0x7f4a2284da80>\nincluded_subclasses_param = 'wo-subclasses'\nstruct_unstruct = (NonUnionContainer(a=[Parent(p=1), GrandChild(p=1, c1=2, g=3)]), {'a': [{'p': 1, 'type_name': 'Parent'}, {'c1': 2, 'g': 3, 'p': 1, 'type_name': 'GrandChild'}]})\nstructured = NonUnionContainer(a=[Parent(p=1), GrandChild(p=1, c1=2, g=3)])\nunstructured = {'a': [{'p': 1}, {'c1': 2, 'g': 3, 'p': 1}]}\n\ntests/strategies/test_include_subclasses.py:169: XFailed",
+            "nodeid": "tests/strategies/test_include_subclasses.py::test_structuring_with_inheritance[wo-subclasses-non-union-container]",
+            "wasxfail": "Cannot structure subclasses if include_subclasses strategy is not used",
+            "when": "call"
+          },
+          {
+            "longrepr": "conv_w_subclasses = (<cattrs.converters.Converter object at 0x7f4a110fc720>, 'wo-subclasses')\n\n    def test_circular_reference(conv_w_subclasses):\n        c, included_subclasses_param = conv_w_subclasses\n    \n        struct = CircularB(a=1, other=[CircularB(a=2, other=[], b=3)], b=4)\n        unstruct = {\n            \"a\": 1,\n            \"other\": [{\"a\": 2, \"other\": [], \"b\": 3, \"type_name\": \"CircularB\"}],\n            \"b\": 4,\n            \"type_name\": \"CircularB\",\n        }\n    \n        if included_subclasses_param != \"with-subclasses-and-tagged-union\":\n            unstruct = _remove_type_name(unstruct)\n    \n        if \"wo-subclasses\" in included_subclasses_param:\n>           pytest.xfail(\"Cannot succeed if include_subclasses strategy is not used\")\nE           _pytest.outcomes.XFailed: Cannot succeed if include_subclasses strategy is not used\n\nc          = <cattrs.converters.Converter object at 0x7f4a110fc720>\nconv_w_subclasses = (<cattrs.converters.Converter object at 0x7f4a110fc720>, 'wo-subclasses')\nincluded_subclasses_param = 'wo-subclasses'\nstruct     = CircularB(a=1, other=[CircularB(a=2, other=[], b=3)], b=4)\nunstruct   = {'a': 1, 'b': 4, 'other': [{'a': 2, 'b': 3, 'other': []}]}\n\ntests/strategies/test_include_subclasses.py:212: XFailed",
+            "nodeid": "tests/strategies/test_include_subclasses.py::test_circular_reference[wo-subclasses]",
+            "wasxfail": "Cannot succeed if include_subclasses strategy is not used",
+            "when": "call"
+          },
+          {
+            "longrepr": "conv_w_subclasses = (<cattrs.converters.Converter object at 0x7f4a14a7d260>, 'wo-subclasses')\nstruct_unstruct = (Child1(p=1, c1=2), {'c1': 2, 'p': 1, 'type_name': 'Child1'})\n\n    @pytest.mark.parametrize(\n        \"struct_unstruct\", IDS_TO_STRUCT_UNSTRUCT.values(), ids=IDS_TO_STRUCT_UNSTRUCT\n    )\n    def test_unstructuring_with_inheritance(\n        conv_w_subclasses: tuple[Converter, bool], struct_unstruct\n    ):\n        structured, unstructured = struct_unstruct\n        converter, included_subclasses_param = conv_w_subclasses\n    \n        if \"wo-subclasses\" in included_subclasses_param and isinstance(\n            structured, (NonUnionContainer, NonUnionCompose)\n        ):\n            pytest.xfail(\"Cannot succeed if include_subclasses strategy is not used\")\n    \n        if included_subclasses_param != \"with-subclasses-and-tagged-union\":\n            unstructured = _remove_type_name(deepcopy(unstructured))\n    \n        assert converter.unstructure(structured) == unstructured\n    \n        if structured.__class__ in {Child1, Child2, GrandChild}:\n            if \"wo-subclasses\" in included_subclasses_param:\n>               pytest.xfail(\"Cannot succeed if include_subclasses strategy is not used\")\nE               _pytest.outcomes.XFailed: Cannot succeed if include_subclasses strategy is not used\n\nconv_w_subclasses = (<cattrs.converters.Converter object at 0x7f4a14a7d260>, 'wo-subclasses')\nconverter  = <cattrs.converters.Converter object at 0x7f4a14a7d260>\nincluded_subclasses_param = 'wo-subclasses'\nstruct_unstruct = (Child1(p=1, c1=2), {'c1': 2, 'p': 1, 'type_name': 'Child1'})\nstructured = Child1(p=1, c1=2)\nunstructured = {'c1': 2, 'p': 1}\n\ntests/strategies/test_include_subclasses.py:246: XFailed",
+            "nodeid": "tests/strategies/test_include_subclasses.py::test_unstructuring_with_inheritance[wo-subclasses-child1-only]",
+            "wasxfail": "Cannot succeed if include_subclasses strategy is not used",
+            "when": "call"
+          },
+          {
+            "longrepr": "conv_w_subclasses = (<cattrs.converters.Converter object at 0x7f4a261c3560>, 'wo-subclasses')\nstruct_unstruct = (Child2(p=1, c2=2), {'c2': 2, 'p': 1, 'type_name': 'Child2'})\n\n    @pytest.mark.parametrize(\n        \"struct_unstruct\", IDS_TO_STRUCT_UNSTRUCT.values(), ids=IDS_TO_STRUCT_UNSTRUCT\n    )\n    def test_unstructuring_with_inheritance(\n        conv_w_subclasses: tuple[Converter, bool], struct_unstruct\n    ):\n        structured, unstructured = struct_unstruct\n        converter, included_subclasses_param = conv_w_subclasses\n    \n        if \"wo-subclasses\" in included_subclasses_param and isinstance(\n            structured, (NonUnionContainer, NonUnionCompose)\n        ):\n            pytest.xfail(\"Cannot succeed if include_subclasses strategy is not used\")\n    \n        if included_subclasses_param != \"with-subclasses-and-tagged-union\":\n            unstructured = _remove_type_name(deepcopy(unstructured))\n    \n        assert converter.unstructure(structured) == unstructured\n    \n        if structured.__class__ in {Child1, Child2, GrandChild}:\n            if \"wo-subclasses\" in included_subclasses_param:\n>               pytest.xfail(\"Cannot succeed if include_subclasses strategy is not used\")\nE               _pytest.outcomes.XFailed: Cannot succeed if include_subclasses strategy is not used\n\nconv_w_subclasses = (<cattrs.converters.Converter object at 0x7f4a261c3560>, 'wo-subclasses')\nconverter  = <cattrs.converters.Converter object at 0x7f4a261c3560>\nincluded_subclasses_param = 'wo-subclasses'\nstruct_unstruct = (Child2(p=1, c2=2), {'c2': 2, 'p': 1, 'type_name': 'Child2'})\nstructured = Child2(p=1, c2=2)\nunstructured = {'c2': 2, 'p': 1}\n\ntests/strategies/test_include_subclasses.py:246: XFailed",
+            "nodeid": "tests/strategies/test_include_subclasses.py::test_unstructuring_with_inheritance[wo-subclasses-child2-only]",
+            "wasxfail": "Cannot succeed if include_subclasses strategy is not used",
+            "when": "call"
+          },
+          {
+            "longrepr": "conv_w_subclasses = (<cattrs.converters.Converter object at 0x7f4a14a7eca0>, 'wo-subclasses')\nstruct_unstruct = (GrandChild(p=1, c1=2, g=3), {'c1': 2, 'g': 3, 'p': 1, 'type_name': 'GrandChild'})\n\n    @pytest.mark.parametrize(\n        \"struct_unstruct\", IDS_TO_STRUCT_UNSTRUCT.values(), ids=IDS_TO_STRUCT_UNSTRUCT\n    )\n    def test_unstructuring_with_inheritance(\n        conv_w_subclasses: tuple[Converter, bool], struct_unstruct\n    ):\n        structured, unstructured = struct_unstruct\n        converter, included_subclasses_param = conv_w_subclasses\n    \n        if \"wo-subclasses\" in included_subclasses_param and isinstance(\n            structured, (NonUnionContainer, NonUnionCompose)\n        ):\n            pytest.xfail(\"Cannot succeed if include_subclasses strategy is not used\")\n    \n        if included_subclasses_param != \"with-subclasses-and-tagged-union\":\n            unstructured = _remove_type_name(deepcopy(unstructured))\n    \n        assert converter.unstructure(structured) == unstructured\n    \n        if structured.__class__ in {Child1, Child2, GrandChild}:\n            if \"wo-subclasses\" in included_subclasses_param:\n>               pytest.xfail(\"Cannot succeed if include_subclasses strategy is not used\")\nE               _pytest.outcomes.XFailed: Cannot succeed if include_subclasses strategy is not used\n\nconv_w_subclasses = (<cattrs.converters.Converter object at 0x7f4a14a7eca0>, 'wo-subclasses')\nconverter  = <cattrs.converters.Converter object at 0x7f4a14a7eca0>\nincluded_subclasses_param = 'wo-subclasses'\nstruct_unstruct = (GrandChild(p=1, c1=2, g=3), {'c1': 2, 'g': 3, 'p': 1, 'type_name': 'GrandChild'})\nstructured = GrandChild(p=1, c1=2, g=3)\nunstructured = {'c1': 2, 'g': 3, 'p': 1}\n\ntests/strategies/test_include_subclasses.py:246: XFailed",
+            "nodeid": "tests/strategies/test_include_subclasses.py::test_unstructuring_with_inheritance[wo-subclasses-grandchild-only]",
+            "wasxfail": "Cannot succeed if include_subclasses strategy is not used",
+            "when": "call"
+          },
+          {
+            "longrepr": "conv_w_subclasses = (<cattrs.converters.Converter object at 0x7f4a1b4b4d60>, 'wo-subclasses')\nstruct_unstruct = (NonUnionCompose(a=Parent(p=1)), {'a': {'p': 1, 'type_name': 'Parent'}})\n\n    @pytest.mark.parametrize(\n        \"struct_unstruct\", IDS_TO_STRUCT_UNSTRUCT.values(), ids=IDS_TO_STRUCT_UNSTRUCT\n    )\n    def test_unstructuring_with_inheritance(\n        conv_w_subclasses: tuple[Converter, bool], struct_unstruct\n    ):\n        structured, unstructured = struct_unstruct\n        converter, included_subclasses_param = conv_w_subclasses\n    \n        if \"wo-subclasses\" in included_subclasses_param and isinstance(\n            structured, (NonUnionContainer, NonUnionCompose)\n        ):\n>           pytest.xfail(\"Cannot succeed if include_subclasses strategy is not used\")\nE           _pytest.outcomes.XFailed: Cannot succeed if include_subclasses strategy is not used\n\nconv_w_subclasses = (<cattrs.converters.Converter object at 0x7f4a1b4b4d60>, 'wo-subclasses')\nconverter  = <cattrs.converters.Converter object at 0x7f4a1b4b4d60>\nincluded_subclasses_param = 'wo-subclasses'\nstruct_unstruct = (NonUnionCompose(a=Parent(p=1)), {'a': {'p': 1, 'type_name': 'Parent'}})\nstructured = NonUnionCompose(a=Parent(p=1))\nunstructured = {'a': {'p': 1, 'type_name': 'Parent'}}\n\ntests/strategies/test_include_subclasses.py:237: XFailed",
+            "nodeid": "tests/strategies/test_include_subclasses.py::test_unstructuring_with_inheritance[wo-subclasses-non-union-compose-parent]",
+            "wasxfail": "Cannot succeed if include_subclasses strategy is not used",
+            "when": "call"
+          },
+          {
+            "longrepr": "conv_w_subclasses = (<cattrs.converters.Converter object at 0x7f4a1b33eca0>, 'wo-subclasses')\nstruct_unstruct = (NonUnionCompose(a=Child1(p=1, c1=2)), {'a': {'c1': 2, 'p': 1, 'type_name': 'Child1'}})\n\n    @pytest.mark.parametrize(\n        \"struct_unstruct\", IDS_TO_STRUCT_UNSTRUCT.values(), ids=IDS_TO_STRUCT_UNSTRUCT\n    )\n    def test_unstructuring_with_inheritance(\n        conv_w_subclasses: tuple[Converter, bool], struct_unstruct\n    ):\n        structured, unstructured = struct_unstruct\n        converter, included_subclasses_param = conv_w_subclasses\n    \n        if \"wo-subclasses\" in included_subclasses_param and isinstance(\n            structured, (NonUnionContainer, NonUnionCompose)\n        ):\n>           pytest.xfail(\"Cannot succeed if include_subclasses strategy is not used\")\nE           _pytest.outcomes.XFailed: Cannot succeed if include_subclasses strategy is not used\n\nconv_w_subclasses = (<cattrs.converters.Converter object at 0x7f4a1b33eca0>, 'wo-subclasses')\nconverter  = <cattrs.converters.Converter object at 0x7f4a1b33eca0>\nincluded_subclasses_param = 'wo-subclasses'\nstruct_unstruct = (NonUnionCompose(a=Child1(p=1, c1=2)), {'a': {'c1': 2, 'p': 1, 'type_name': 'Child1'}})\nstructured = NonUnionCompose(a=Child1(p=1, c1=2))\nunstructured = {'a': {'c1': 2, 'p': 1, 'type_name': 'Child1'}}\n\ntests/strategies/test_include_subclasses.py:237: XFailed",
+            "nodeid": "tests/strategies/test_include_subclasses.py::test_unstructuring_with_inheritance[wo-subclasses-non-union-compose-child]",
+            "wasxfail": "Cannot succeed if include_subclasses strategy is not used",
+            "when": "call"
+          },
+          {
+            "longrepr": "conv_w_subclasses = (<cattrs.converters.Converter object at 0x7f4a1b2cc360>, 'wo-subclasses')\nstruct_unstruct = (NonUnionCompose(a=GrandChild(p=1, c1=2, g=3)), {'a': {'c1': 2, 'g': 3, 'p': 1, 'type_name': 'GrandChild'}})\n\n    @pytest.mark.parametrize(\n        \"struct_unstruct\", IDS_TO_STRUCT_UNSTRUCT.values(), ids=IDS_TO_STRUCT_UNSTRUCT\n    )\n    def test_unstructuring_with_inheritance(\n        conv_w_subclasses: tuple[Converter, bool], struct_unstruct\n    ):\n        structured, unstructured = struct_unstruct\n        converter, included_subclasses_param = conv_w_subclasses\n    \n        if \"wo-subclasses\" in included_subclasses_param and isinstance(\n            structured, (NonUnionContainer, NonUnionCompose)\n        ):\n>           pytest.xfail(\"Cannot succeed if include_subclasses strategy is not used\")\nE           _pytest.outcomes.XFailed: Cannot succeed if include_subclasses strategy is not used\n\nconv_w_subclasses = (<cattrs.converters.Converter object at 0x7f4a1b2cc360>, 'wo-subclasses')\nconverter  = <cattrs.converters.Converter object at 0x7f4a1b2cc360>\nincluded_subclasses_param = 'wo-subclasses'\nstruct_unstruct = (NonUnionCompose(a=GrandChild(p=1, c1=2, g=3)), {'a': {'c1': 2, 'g': 3, 'p': 1, 'type_name': 'GrandChild'}})\nstructured = NonUnionCompose(a=GrandChild(p=1, c1=2, g=3))\nunstructured = {'a': {'c1': 2, 'g': 3, 'p': 1, 'type_name': 'GrandChild'}}\n\ntests/strategies/test_include_subclasses.py:237: XFailed",
+            "nodeid": "tests/strategies/test_include_subclasses.py::test_unstructuring_with_inheritance[wo-subclasses-non-union-compose-grandchild]",
+            "wasxfail": "Cannot succeed if include_subclasses strategy is not used",
+            "when": "call"
+          },
+          {
+            "longrepr": "conv_w_subclasses = (<cattrs.converters.Converter object at 0x7f4a1b5e8ae0>, 'wo-subclasses')\nstruct_unstruct = (NonUnionContainer(a=[Parent(p=1), GrandChild(p=1, c1=2, g=3)]), {'a': [{'p': 1, 'type_name': 'Parent'}, {'c1': 2, 'g': 3, 'p': 1, 'type_name': 'GrandChild'}]})\n\n    @pytest.mark.parametrize(\n        \"struct_unstruct\", IDS_TO_STRUCT_UNSTRUCT.values(), ids=IDS_TO_STRUCT_UNSTRUCT\n    )\n    def test_unstructuring_with_inheritance(\n        conv_w_subclasses: tuple[Converter, bool], struct_unstruct\n    ):\n        structured, unstructured = struct_unstruct\n        converter, included_subclasses_param = conv_w_subclasses\n    \n        if \"wo-subclasses\" in included_subclasses_param and isinstance(\n            structured, (NonUnionContainer, NonUnionCompose)\n        ):\n>           pytest.xfail(\"Cannot succeed if include_subclasses strategy is not used\")\nE           _pytest.outcomes.XFailed: Cannot succeed if include_subclasses strategy is not used\n\nconv_w_subclasses = (<cattrs.converters.Converter object at 0x7f4a1b5e8ae0>, 'wo-subclasses')\nconverter  = <cattrs.converters.Converter object at 0x7f4a1b5e8ae0>\nincluded_subclasses_param = 'wo-subclasses'\nstruct_unstruct = (NonUnionContainer(a=[Parent(p=1), GrandChild(p=1, c1=2, g=3)]), {'a': [{'p': 1, 'type_name': 'Parent'}, {'c1': 2, 'g': 3, 'p': 1, 'type_name': 'GrandChild'}]})\nstructured = NonUnionContainer(a=[Parent(p=1), GrandChild(p=1, c1=2, g=3)])\nunstructured = {'a': [{'p': 1, 'type_name': 'Parent'}, {'c1': 2, 'g': 3, 'p': 1, 'type_name': 'GrandChild'}]}\n\ntests/strategies/test_include_subclasses.py:237: XFailed",
+            "nodeid": "tests/strategies/test_include_subclasses.py::test_unstructuring_with_inheritance[wo-subclasses-non-union-container]",
+            "wasxfail": "Cannot succeed if include_subclasses strategy is not used",
+            "when": "call"
+          }
+        ],
+        "outcomes": {
+          "failed": 1,
+          "passed": 1011,
+          "skipped": 15
+        },
+        "phase_receipt": "/workspace/qualification/admission-v2-environment/task-2/augmented-execute-scm-native.json",
+        "protected_module": "tests/test_tuples.py",
+        "protected_module_count": 12,
+        "seconds": 206.43192458100384
+      },
+      "base": {
+        "collected": 1026,
+        "collection_errors": [],
+        "deselected": [],
+        "exit_code": 0,
+        "failures": [],
+        "hypothesis": {
+          "deadline": "None",
+          "max_examples": 100,
+          "profile": "tests"
+        },
+        "monitor_receipt": "/workspace/qualification/admission-v2-environment/task-2/base-execute-scm-native.monitor.json",
+        "native_optional_outcomes": [
+          {
+            "longrepr": "conv_w_subclasses = (<cattrs.converters.Converter object at 0x7fb1970a6700>, 'wo-subclasses')\nstruct_unstruct = (Child1(p=1, c1=2), {'c1': 2, 'p': 1, 'type_name': 'Child1'})\n\n    @pytest.mark.parametrize(\n        \"struct_unstruct\", IDS_TO_STRUCT_UNSTRUCT.values(), ids=IDS_TO_STRUCT_UNSTRUCT\n    )\n    def test_structuring_with_inheritance(\n        conv_w_subclasses: tuple[Converter, bool], struct_unstruct\n    ) -> None:\n        structured, unstructured = struct_unstruct\n    \n        converter, included_subclasses_param = conv_w_subclasses\n        if included_subclasses_param != \"with-subclasses-and-tagged-union\":\n            unstructured = _remove_type_name(deepcopy(unstructured))\n    \n        if \"wo-subclasses\" in included_subclasses_param and isinstance(\n            structured, (NonUnionContainer, NonUnionCompose)\n        ):\n            pytest.xfail(\n                \"Cannot structure subclasses if include_subclasses strategy is not used\"\n            )\n        assert converter.structure(unstructured, structured.__class__) == structured\n    \n        if structured.__class__ in {Child1, Child2, GrandChild}:\n            if \"wo-subclasses\" in included_subclasses_param:\n>               pytest.xfail(\n                    \"Cannot structure subclasses if include_subclasses strategy is not used\"\n                )\nE               _pytest.outcomes.XFailed: Cannot structure subclasses if include_subclasses strategy is not used\n\nconv_w_subclasses = (<cattrs.converters.Converter object at 0x7fb1970a6700>, 'wo-subclasses')\nconverter  = <cattrs.converters.Converter object at 0x7fb1970a6700>\nincluded_subclasses_param = 'wo-subclasses'\nstruct_unstruct = (Child1(p=1, c1=2), {'c1': 2, 'p': 1, 'type_name': 'Child1'})\nstructured = Child1(p=1, c1=2)\nunstructured = {'c1': 2, 'p': 1}\n\ntests/strategies/test_include_subclasses.py:176: XFailed",
+            "nodeid": "tests/strategies/test_include_subclasses.py::test_structuring_with_inheritance[wo-subclasses-child1-only]",
+            "wasxfail": "Cannot structure subclasses if include_subclasses strategy is not used",
+            "when": "call"
+          },
+          {
+            "longrepr": "conv_w_subclasses = (<cattrs.converters.Converter object at 0x7fb196ef5260>, 'wo-subclasses')\nstruct_unstruct = (Child2(p=1, c2=2), {'c2': 2, 'p': 1, 'type_name': 'Child2'})\n\n    @pytest.mark.parametrize(\n        \"struct_unstruct\", IDS_TO_STRUCT_UNSTRUCT.values(), ids=IDS_TO_STRUCT_UNSTRUCT\n    )\n    def test_structuring_with_inheritance(\n        conv_w_subclasses: tuple[Converter, bool], struct_unstruct\n    ) -> None:\n        structured, unstructured = struct_unstruct\n    \n        converter, included_subclasses_param = conv_w_subclasses\n        if included_subclasses_param != \"with-subclasses-and-tagged-union\":\n            unstructured = _remove_type_name(deepcopy(unstructured))\n    \n        if \"wo-subclasses\" in included_subclasses_param and isinstance(\n            structured, (NonUnionContainer, NonUnionCompose)\n        ):\n            pytest.xfail(\n                \"Cannot structure subclasses if include_subclasses strategy is not used\"\n            )\n        assert converter.structure(unstructured, structured.__class__) == structured\n    \n        if structured.__class__ in {Child1, Child2, GrandChild}:\n            if \"wo-subclasses\" in included_subclasses_param:\n>               pytest.xfail(\n                    \"Cannot structure subclasses if include_subclasses strategy is not used\"\n                )\nE               _pytest.outcomes.XFailed: Cannot structure subclasses if include_subclasses strategy is not used\n\nconv_w_subclasses = (<cattrs.converters.Converter object at 0x7fb196ef5260>, 'wo-subclasses')\nconverter  = <cattrs.converters.Converter object at 0x7fb196ef5260>\nincluded_subclasses_param = 'wo-subclasses'\nstruct_unstruct = (Child2(p=1, c2=2), {'c2': 2, 'p': 1, 'type_name': 'Child2'})\nstructured = Child2(p=1, c2=2)\nunstructured = {'c2': 2, 'p': 1}\n\ntests/strategies/test_include_subclasses.py:176: XFailed",
+            "nodeid": "tests/strategies/test_include_subclasses.py::test_structuring_with_inheritance[wo-subclasses-child2-only]",
+            "wasxfail": "Cannot structure subclasses if include_subclasses strategy is not used",
+            "when": "call"
+          },
+          {
+            "longrepr": "conv_w_subclasses = (<cattrs.converters.Converter object at 0x7fb196ef5800>, 'wo-subclasses')\nstruct_unstruct = (GrandChild(p=1, c1=2, g=3), {'c1': 2, 'g': 3, 'p': 1, 'type_name': 'GrandChild'})\n\n    @pytest.mark.parametrize(\n        \"struct_unstruct\", IDS_TO_STRUCT_UNSTRUCT.values(), ids=IDS_TO_STRUCT_UNSTRUCT\n    )\n    def test_structuring_with_inheritance(\n        conv_w_subclasses: tuple[Converter, bool], struct_unstruct\n    ) -> None:\n        structured, unstructured = struct_unstruct\n    \n        converter, included_subclasses_param = conv_w_subclasses\n        if included_subclasses_param != \"with-subclasses-and-tagged-union\":\n            unstructured = _remove_type_name(deepcopy(unstructured))\n    \n        if \"wo-subclasses\" in included_subclasses_param and isinstance(\n            structured, (NonUnionContainer, NonUnionCompose)\n        ):\n            pytest.xfail(\n                \"Cannot structure subclasses if include_subclasses strategy is not used\"\n            )\n        assert converter.structure(unstructured, structured.__class__) == structured\n    \n        if structured.__class__ in {Child1, Child2, GrandChild}:\n            if \"wo-subclasses\" in included_subclasses_param:\n>               pytest.xfail(\n                    \"Cannot structure subclasses if include_subclasses strategy is not used\"\n                )\nE               _pytest.outcomes.XFailed: Cannot structure subclasses if include_subclasses strategy is not used\n\nconv_w_subclasses = (<cattrs.converters.Converter object at 0x7fb196ef5800>, 'wo-subclasses')\nconverter  = <cattrs.converters.Converter object at 0x7fb196ef5800>\nincluded_subclasses_param = 'wo-subclasses'\nstruct_unstruct = (GrandChild(p=1, c1=2, g=3), {'c1': 2, 'g': 3, 'p': 1, 'type_name': 'GrandChild'})\nstructured = GrandChild(p=1, c1=2, g=3)\nunstructured = {'c1': 2, 'g': 3, 'p': 1}\n\ntests/strategies/test_include_subclasses.py:176: XFailed",
+            "nodeid": "tests/strategies/test_include_subclasses.py::test_structuring_with_inheritance[wo-subclasses-grandchild-only]",
+            "wasxfail": "Cannot structure subclasses if include_subclasses strategy is not used",
+            "when": "call"
+          },
+          {
+            "longrepr": "conv_w_subclasses = (<cattrs.converters.Converter object at 0x7fb1976b1f80>, 'wo-subclasses')\nstruct_unstruct = (NonUnionCompose(a=Parent(p=1)), {'a': {'p': 1, 'type_name': 'Parent'}})\n\n    @pytest.mark.parametrize(\n        \"struct_unstruct\", IDS_TO_STRUCT_UNSTRUCT.values(), ids=IDS_TO_STRUCT_UNSTRUCT\n    )\n    def test_structuring_with_inheritance(\n        conv_w_subclasses: tuple[Converter, bool], struct_unstruct\n    ) -> None:\n        structured, unstructured = struct_unstruct\n    \n        converter, included_subclasses_param = conv_w_subclasses\n        if included_subclasses_param != \"with-subclasses-and-tagged-union\":\n            unstructured = _remove_type_name(deepcopy(unstructured))\n    \n        if \"wo-subclasses\" in included_subclasses_param and isinstance(\n            structured, (NonUnionContainer, NonUnionCompose)\n        ):\n>           pytest.xfail(\n                \"Cannot structure subclasses if include_subclasses strategy is not used\"\n            )\nE           _pytest.outcomes.XFailed: Cannot structure subclasses if include_subclasses strategy is not used\n\nconv_w_subclasses = (<cattrs.converters.Converter object at 0x7fb1976b1f80>, 'wo-subclasses')\nconverter  = <cattrs.converters.Converter object at 0x7fb1976b1f80>\nincluded_subclasses_param = 'wo-subclasses'\nstruct_unstruct = (NonUnionCompose(a=Parent(p=1)), {'a': {'p': 1, 'type_name': 'Parent'}})\nstructured = NonUnionCompose(a=Parent(p=1))\nunstructured = {'a': {'p': 1}}\n\ntests/strategies/test_include_subclasses.py:169: XFailed",
+            "nodeid": "tests/strategies/test_include_subclasses.py::test_structuring_with_inheritance[wo-subclasses-non-union-compose-parent]",
+            "wasxfail": "Cannot structure subclasses if include_subclasses strategy is not used",
+            "when": "call"
+          },
+          {
+            "longrepr": "conv_w_subclasses = (<cattrs.converters.Converter object at 0x7fb19703d800>, 'wo-subclasses')\nstruct_unstruct = (NonUnionCompose(a=Child1(p=1, c1=2)), {'a': {'c1': 2, 'p': 1, 'type_name': 'Child1'}})\n\n    @pytest.mark.parametrize(\n        \"struct_unstruct\", IDS_TO_STRUCT_UNSTRUCT.values(), ids=IDS_TO_STRUCT_UNSTRUCT\n    )\n    def test_structuring_with_inheritance(\n        conv_w_subclasses: tuple[Converter, bool], struct_unstruct\n    ) -> None:\n        structured, unstructured = struct_unstruct\n    \n        converter, included_subclasses_param = conv_w_subclasses\n        if included_subclasses_param != \"with-subclasses-and-tagged-union\":\n            unstructured = _remove_type_name(deepcopy(unstructured))\n    \n        if \"wo-subclasses\" in included_subclasses_param and isinstance(\n            structured, (NonUnionContainer, NonUnionCompose)\n        ):\n>           pytest.xfail(\n                \"Cannot structure subclasses if include_subclasses strategy is not used\"\n            )\nE           _pytest.outcomes.XFailed: Cannot structure subclasses if include_subclasses strategy is not used\n\nconv_w_subclasses = (<cattrs.converters.Converter object at 0x7fb19703d800>, 'wo-subclasses')\nconverter  = <cattrs.converters.Converter object at 0x7fb19703d800>\nincluded_subclasses_param = 'wo-subclasses'\nstruct_unstruct = (NonUnionCompose(a=Child1(p=1, c1=2)), {'a': {'c1': 2, 'p': 1, 'type_name': 'Child1'}})\nstructured = NonUnionCompose(a=Child1(p=1, c1=2))\nunstructured = {'a': {'c1': 2, 'p': 1}}\n\ntests/strategies/test_include_subclasses.py:169: XFailed",
+            "nodeid": "tests/strategies/test_include_subclasses.py::test_structuring_with_inheritance[wo-subclasses-non-union-compose-child]",
+            "wasxfail": "Cannot structure subclasses if include_subclasses strategy is not used",
+            "when": "call"
+          },
+          {
+            "longrepr": "conv_w_subclasses = (<cattrs.converters.Converter object at 0x7fb18cf34c20>, 'wo-subclasses')\nstruct_unstruct = (NonUnionCompose(a=GrandChild(p=1, c1=2, g=3)), {'a': {'c1': 2, 'g': 3, 'p': 1, 'type_name': 'GrandChild'}})\n\n    @pytest.mark.parametrize(\n        \"struct_unstruct\", IDS_TO_STRUCT_UNSTRUCT.values(), ids=IDS_TO_STRUCT_UNSTRUCT\n    )\n    def test_structuring_with_inheritance(\n        conv_w_subclasses: tuple[Converter, bool], struct_unstruct\n    ) -> None:\n        structured, unstructured = struct_unstruct\n    \n        converter, included_subclasses_param = conv_w_subclasses\n        if included_subclasses_param != \"with-subclasses-and-tagged-union\":\n            unstructured = _remove_type_name(deepcopy(unstructured))\n    \n        if \"wo-subclasses\" in included_subclasses_param and isinstance(\n            structured, (NonUnionContainer, NonUnionCompose)\n        ):\n>           pytest.xfail(\n                \"Cannot structure subclasses if include_subclasses strategy is not used\"\n            )\nE           _pytest.outcomes.XFailed: Cannot structure subclasses if include_subclasses strategy is not used\n\nconv_w_subclasses = (<cattrs.converters.Converter object at 0x7fb18cf34c20>, 'wo-subclasses')\nconverter  = <cattrs.converters.Converter object at 0x7fb18cf34c20>\nincluded_subclasses_param = 'wo-subclasses'\nstruct_unstruct = (NonUnionCompose(a=GrandChild(p=1, c1=2, g=3)), {'a': {'c1': 2, 'g': 3, 'p': 1, 'type_name': 'GrandChild'}})\nstructured = NonUnionCompose(a=GrandChild(p=1, c1=2, g=3))\nunstructured = {'a': {'c1': 2, 'g': 3, 'p': 1}}\n\ntests/strategies/test_include_subclasses.py:169: XFailed",
+            "nodeid": "tests/strategies/test_include_subclasses.py::test_structuring_with_inheritance[wo-subclasses-non-union-compose-grandchild]",
+            "wasxfail": "Cannot structure subclasses if include_subclasses strategy is not used",
+            "when": "call"
+          },
+          {
+            "longrepr": "conv_w_subclasses = (<cattrs.converters.Converter object at 0x7fb18eacd440>, 'wo-subclasses')\nstruct_unstruct = (NonUnionContainer(a=[Parent(p=1), GrandChild(p=1, c1=2, g=3)]), {'a': [{'p': 1, 'type_name': 'Parent'}, {'c1': 2, 'g': 3, 'p': 1, 'type_name': 'GrandChild'}]})\n\n    @pytest.mark.parametrize(\n        \"struct_unstruct\", IDS_TO_STRUCT_UNSTRUCT.values(), ids=IDS_TO_STRUCT_UNSTRUCT\n    )\n    def test_structuring_with_inheritance(\n        conv_w_subclasses: tuple[Converter, bool], struct_unstruct\n    ) -> None:\n        structured, unstructured = struct_unstruct\n    \n        converter, included_subclasses_param = conv_w_subclasses\n        if included_subclasses_param != \"with-subclasses-and-tagged-union\":\n            unstructured = _remove_type_name(deepcopy(unstructured))\n    \n        if \"wo-subclasses\" in included_subclasses_param and isinstance(\n            structured, (NonUnionContainer, NonUnionCompose)\n        ):\n>           pytest.xfail(\n                \"Cannot structure subclasses if include_subclasses strategy is not used\"\n            )\nE           _pytest.outcomes.XFailed: Cannot structure subclasses if include_subclasses strategy is not used\n\nconv_w_subclasses = (<cattrs.converters.Converter object at 0x7fb18eacd440>, 'wo-subclasses')\nconverter  = <cattrs.converters.Converter object at 0x7fb18eacd440>\nincluded_subclasses_param = 'wo-subclasses'\nstruct_unstruct = (NonUnionContainer(a=[Parent(p=1), GrandChild(p=1, c1=2, g=3)]), {'a': [{'p': 1, 'type_name': 'Parent'}, {'c1': 2, 'g': 3, 'p': 1, 'type_name': 'GrandChild'}]})\nstructured = NonUnionContainer(a=[Parent(p=1), GrandChild(p=1, c1=2, g=3)])\nunstructured = {'a': [{'p': 1}, {'c1': 2, 'g': 3, 'p': 1}]}\n\ntests/strategies/test_include_subclasses.py:169: XFailed",
+            "nodeid": "tests/strategies/test_include_subclasses.py::test_structuring_with_inheritance[wo-subclasses-non-union-container]",
+            "wasxfail": "Cannot structure subclasses if include_subclasses strategy is not used",
+            "when": "call"
+          },
+          {
+            "longrepr": "conv_w_subclasses = (<cattrs.converters.Converter object at 0x7fb1a45d4720>, 'wo-subclasses')\n\n    def test_circular_reference(conv_w_subclasses):\n        c, included_subclasses_param = conv_w_subclasses\n    \n        struct = CircularB(a=1, other=[CircularB(a=2, other=[], b=3)], b=4)\n        unstruct = {\n            \"a\": 1,\n            \"other\": [{\"a\": 2, \"other\": [], \"b\": 3, \"type_name\": \"CircularB\"}],\n            \"b\": 4,\n            \"type_name\": \"CircularB\",\n        }\n    \n        if included_subclasses_param != \"with-subclasses-and-tagged-union\":\n            unstruct = _remove_type_name(unstruct)\n    \n        if \"wo-subclasses\" in included_subclasses_param:\n>           pytest.xfail(\"Cannot succeed if include_subclasses strategy is not used\")\nE           _pytest.outcomes.XFailed: Cannot succeed if include_subclasses strategy is not used\n\nc          = <cattrs.converters.Converter object at 0x7fb1a45d4720>\nconv_w_subclasses = (<cattrs.converters.Converter object at 0x7fb1a45d4720>, 'wo-subclasses')\nincluded_subclasses_param = 'wo-subclasses'\nstruct     = CircularB(a=1, other=[CircularB(a=2, other=[], b=3)], b=4)\nunstruct   = {'a': 1, 'b': 4, 'other': [{'a': 2, 'b': 3, 'other': []}]}\n\ntests/strategies/test_include_subclasses.py:212: XFailed",
+            "nodeid": "tests/strategies/test_include_subclasses.py::test_circular_reference[wo-subclasses]",
+            "wasxfail": "Cannot succeed if include_subclasses strategy is not used",
+            "when": "call"
+          },
+          {
+            "longrepr": "conv_w_subclasses = (<cattrs.converters.Converter object at 0x7fb196ef6700>, 'wo-subclasses')\nstruct_unstruct = (Child1(p=1, c1=2), {'c1': 2, 'p': 1, 'type_name': 'Child1'})\n\n    @pytest.mark.parametrize(\n        \"struct_unstruct\", IDS_TO_STRUCT_UNSTRUCT.values(), ids=IDS_TO_STRUCT_UNSTRUCT\n    )\n    def test_unstructuring_with_inheritance(\n        conv_w_subclasses: tuple[Converter, bool], struct_unstruct\n    ):\n        structured, unstructured = struct_unstruct\n        converter, included_subclasses_param = conv_w_subclasses\n    \n        if \"wo-subclasses\" in included_subclasses_param and isinstance(\n            structured, (NonUnionContainer, NonUnionCompose)\n        ):\n            pytest.xfail(\"Cannot succeed if include_subclasses strategy is not used\")\n    \n        if included_subclasses_param != \"with-subclasses-and-tagged-union\":\n            unstructured = _remove_type_name(deepcopy(unstructured))\n    \n        assert converter.unstructure(structured) == unstructured\n    \n        if structured.__class__ in {Child1, Child2, GrandChild}:\n            if \"wo-subclasses\" in included_subclasses_param:\n>               pytest.xfail(\"Cannot succeed if include_subclasses strategy is not used\")\nE               _pytest.outcomes.XFailed: Cannot succeed if include_subclasses strategy is not used\n\nconv_w_subclasses = (<cattrs.converters.Converter object at 0x7fb196ef6700>, 'wo-subclasses')\nconverter  = <cattrs.converters.Converter object at 0x7fb196ef6700>\nincluded_subclasses_param = 'wo-subclasses'\nstruct_unstruct = (Child1(p=1, c1=2), {'c1': 2, 'p': 1, 'type_name': 'Child1'})\nstructured = Child1(p=1, c1=2)\nunstructured = {'c1': 2, 'p': 1}\n\ntests/strategies/test_include_subclasses.py:246: XFailed",
+            "nodeid": "tests/strategies/test_include_subclasses.py::test_unstructuring_with_inheritance[wo-subclasses-child1-only]",
+            "wasxfail": "Cannot succeed if include_subclasses strategy is not used",
+            "when": "call"
+          },
+          {
+            "longrepr": "conv_w_subclasses = (<cattrs.converters.Converter object at 0x7fb196ef65c0>, 'wo-subclasses')\nstruct_unstruct = (Child2(p=1, c2=2), {'c2': 2, 'p': 1, 'type_name': 'Child2'})\n\n    @pytest.mark.parametrize(\n        \"struct_unstruct\", IDS_TO_STRUCT_UNSTRUCT.values(), ids=IDS_TO_STRUCT_UNSTRUCT\n    )\n    def test_unstructuring_with_inheritance(\n        conv_w_subclasses: tuple[Converter, bool], struct_unstruct\n    ):\n        structured, unstructured = struct_unstruct\n        converter, included_subclasses_param = conv_w_subclasses\n    \n        if \"wo-subclasses\" in included_subclasses_param and isinstance(\n            structured, (NonUnionContainer, NonUnionCompose)\n        ):\n            pytest.xfail(\"Cannot succeed if include_subclasses strategy is not used\")\n    \n        if included_subclasses_param != \"with-subclasses-and-tagged-union\":\n            unstructured = _remove_type_name(deepcopy(unstructured))\n    \n        assert converter.unstructure(structured) == unstructured\n    \n        if structured.__class__ in {Child1, Child2, GrandChild}:\n            if \"wo-subclasses\" in included_subclasses_param:\n>               pytest.xfail(\"Cannot succeed if include_subclasses strategy is not used\")\nE               _pytest.outcomes.XFailed: Cannot succeed if include_subclasses strategy is not used\n\nconv_w_subclasses = (<cattrs.converters.Converter object at 0x7fb196ef65c0>, 'wo-subclasses')\nconverter  = <cattrs.converters.Converter object at 0x7fb196ef65c0>\nincluded_subclasses_param = 'wo-subclasses'\nstruct_unstruct = (Child2(p=1, c2=2), {'c2': 2, 'p': 1, 'type_name': 'Child2'})\nstructured = Child2(p=1, c2=2)\nunstructured = {'c2': 2, 'p': 1}\n\ntests/strategies/test_include_subclasses.py:246: XFailed",
+            "nodeid": "tests/strategies/test_include_subclasses.py::test_unstructuring_with_inheritance[wo-subclasses-child2-only]",
+            "wasxfail": "Cannot succeed if include_subclasses strategy is not used",
+            "when": "call"
+          },
+          {
+            "longrepr": "conv_w_subclasses = (<cattrs.converters.Converter object at 0x7fb1a1cd5260>, 'wo-subclasses')\nstruct_unstruct = (GrandChild(p=1, c1=2, g=3), {'c1': 2, 'g': 3, 'p': 1, 'type_name': 'GrandChild'})\n\n    @pytest.mark.parametrize(\n        \"struct_unstruct\", IDS_TO_STRUCT_UNSTRUCT.values(), ids=IDS_TO_STRUCT_UNSTRUCT\n    )\n    def test_unstructuring_with_inheritance(\n        conv_w_subclasses: tuple[Converter, bool], struct_unstruct\n    ):\n        structured, unstructured = struct_unstruct\n        converter, included_subclasses_param = conv_w_subclasses\n    \n        if \"wo-subclasses\" in included_subclasses_param and isinstance(\n            structured, (NonUnionContainer, NonUnionCompose)\n        ):\n            pytest.xfail(\"Cannot succeed if include_subclasses strategy is not used\")\n    \n        if included_subclasses_param != \"with-subclasses-and-tagged-union\":\n            unstructured = _remove_type_name(deepcopy(unstructured))\n    \n        assert converter.unstructure(structured) == unstructured\n    \n        if structured.__class__ in {Child1, Child2, GrandChild}:\n            if \"wo-subclasses\" in included_subclasses_param:\n>               pytest.xfail(\"Cannot succeed if include_subclasses strategy is not used\")\nE               _pytest.outcomes.XFailed: Cannot succeed if include_subclasses strategy is not used\n\nconv_w_subclasses = (<cattrs.converters.Converter object at 0x7fb1a1cd5260>, 'wo-subclasses')\nconverter  = <cattrs.converters.Converter object at 0x7fb1a1cd5260>\nincluded_subclasses_param = 'wo-subclasses'\nstruct_unstruct = (GrandChild(p=1, c1=2, g=3), {'c1': 2, 'g': 3, 'p': 1, 'type_name': 'GrandChild'})\nstructured = GrandChild(p=1, c1=2, g=3)\nunstructured = {'c1': 2, 'g': 3, 'p': 1}\n\ntests/strategies/test_include_subclasses.py:246: XFailed",
+            "nodeid": "tests/strategies/test_include_subclasses.py::test_unstructuring_with_inheritance[wo-subclasses-grandchild-only]",
+            "wasxfail": "Cannot succeed if include_subclasses strategy is not used",
+            "when": "call"
+          },
+          {
+            "longrepr": "conv_w_subclasses = (<cattrs.converters.Converter object at 0x7fb1973c2520>, 'wo-subclasses')\nstruct_unstruct = (NonUnionCompose(a=Parent(p=1)), {'a': {'p': 1, 'type_name': 'Parent'}})\n\n    @pytest.mark.parametrize(\n        \"struct_unstruct\", IDS_TO_STRUCT_UNSTRUCT.values(), ids=IDS_TO_STRUCT_UNSTRUCT\n    )\n    def test_unstructuring_with_inheritance(\n        conv_w_subclasses: tuple[Converter, bool], struct_unstruct\n    ):\n        structured, unstructured = struct_unstruct\n        converter, included_subclasses_param = conv_w_subclasses\n    \n        if \"wo-subclasses\" in included_subclasses_param and isinstance(\n            structured, (NonUnionContainer, NonUnionCompose)\n        ):\n>           pytest.xfail(\"Cannot succeed if include_subclasses strategy is not used\")\nE           _pytest.outcomes.XFailed: Cannot succeed if include_subclasses strategy is not used\n\nconv_w_subclasses = (<cattrs.converters.Converter object at 0x7fb1973c2520>, 'wo-subclasses')\nconverter  = <cattrs.converters.Converter object at 0x7fb1973c2520>\nincluded_subclasses_param = 'wo-subclasses'\nstruct_unstruct = (NonUnionCompose(a=Parent(p=1)), {'a': {'p': 1, 'type_name': 'Parent'}})\nstructured = NonUnionCompose(a=Parent(p=1))\nunstructured = {'a': {'p': 1, 'type_name': 'Parent'}}\n\ntests/strategies/test_include_subclasses.py:237: XFailed",
+            "nodeid": "tests/strategies/test_include_subclasses.py::test_unstructuring_with_inheritance[wo-subclasses-non-union-compose-parent]",
+            "wasxfail": "Cannot succeed if include_subclasses strategy is not used",
+            "when": "call"
+          },
+          {
+            "longrepr": "conv_w_subclasses = (<cattrs.converters.Converter object at 0x7fb18ea97740>, 'wo-subclasses')\nstruct_unstruct = (NonUnionCompose(a=Child1(p=1, c1=2)), {'a': {'c1': 2, 'p': 1, 'type_name': 'Child1'}})\n\n    @pytest.mark.parametrize(\n        \"struct_unstruct\", IDS_TO_STRUCT_UNSTRUCT.values(), ids=IDS_TO_STRUCT_UNSTRUCT\n    )\n    def test_unstructuring_with_inheritance(\n        conv_w_subclasses: tuple[Converter, bool], struct_unstruct\n    ):\n        structured, unstructured = struct_unstruct\n        converter, included_subclasses_param = conv_w_subclasses\n    \n        if \"wo-subclasses\" in included_subclasses_param and isinstance(\n            structured, (NonUnionContainer, NonUnionCompose)\n        ):\n>           pytest.xfail(\"Cannot succeed if include_subclasses strategy is not used\")\nE           _pytest.outcomes.XFailed: Cannot succeed if include_subclasses strategy is not used\n\nconv_w_subclasses = (<cattrs.converters.Converter object at 0x7fb18ea97740>, 'wo-subclasses')\nconverter  = <cattrs.converters.Converter object at 0x7fb18ea97740>\nincluded_subclasses_param = 'wo-subclasses'\nstruct_unstruct = (NonUnionCompose(a=Child1(p=1, c1=2)), {'a': {'c1': 2, 'p': 1, 'type_name': 'Child1'}})\nstructured = NonUnionCompose(a=Child1(p=1, c1=2))\nunstructured = {'a': {'c1': 2, 'p': 1, 'type_name': 'Child1'}}\n\ntests/strategies/test_include_subclasses.py:237: XFailed",
+            "nodeid": "tests/strategies/test_include_subclasses.py::test_unstructuring_with_inheritance[wo-subclasses-non-union-compose-child]",
+            "wasxfail": "Cannot succeed if include_subclasses strategy is not used",
+            "when": "call"
+          },
+          {
+            "longrepr": "conv_w_subclasses = (<cattrs.converters.Converter object at 0x7fb19766c680>, 'wo-subclasses')\nstruct_unstruct = (NonUnionCompose(a=GrandChild(p=1, c1=2, g=3)), {'a': {'c1': 2, 'g': 3, 'p': 1, 'type_name': 'GrandChild'}})\n\n    @pytest.mark.parametrize(\n        \"struct_unstruct\", IDS_TO_STRUCT_UNSTRUCT.values(), ids=IDS_TO_STRUCT_UNSTRUCT\n    )\n    def test_unstructuring_with_inheritance(\n        conv_w_subclasses: tuple[Converter, bool], struct_unstruct\n    ):\n        structured, unstructured = struct_unstruct\n        converter, included_subclasses_param = conv_w_subclasses\n    \n        if \"wo-subclasses\" in included_subclasses_param and isinstance(\n            structured, (NonUnionContainer, NonUnionCompose)\n        ):\n>           pytest.xfail(\"Cannot succeed if include_subclasses strategy is not used\")\nE           _pytest.outcomes.XFailed: Cannot succeed if include_subclasses strategy is not used\n\nconv_w_subclasses = (<cattrs.converters.Converter object at 0x7fb19766c680>, 'wo-subclasses')\nconverter  = <cattrs.converters.Converter object at 0x7fb19766c680>\nincluded_subclasses_param = 'wo-subclasses'\nstruct_unstruct = (NonUnionCompose(a=GrandChild(p=1, c1=2, g=3)), {'a': {'c1': 2, 'g': 3, 'p': 1, 'type_name': 'GrandChild'}})\nstructured = NonUnionCompose(a=GrandChild(p=1, c1=2, g=3))\nunstructured = {'a': {'c1': 2, 'g': 3, 'p': 1, 'type_name': 'GrandChild'}}\n\ntests/strategies/test_include_subclasses.py:237: XFailed",
+            "nodeid": "tests/strategies/test_include_subclasses.py::test_unstructuring_with_inheritance[wo-subclasses-non-union-compose-grandchild]",
+            "wasxfail": "Cannot succeed if include_subclasses strategy is not used",
+            "when": "call"
+          },
+          {
+            "longrepr": "conv_w_subclasses = (<cattrs.converters.Converter object at 0x7fb197229440>, 'wo-subclasses')\nstruct_unstruct = (NonUnionContainer(a=[Parent(p=1), GrandChild(p=1, c1=2, g=3)]), {'a': [{'p': 1, 'type_name': 'Parent'}, {'c1': 2, 'g': 3, 'p': 1, 'type_name': 'GrandChild'}]})\n\n    @pytest.mark.parametrize(\n        \"struct_unstruct\", IDS_TO_STRUCT_UNSTRUCT.values(), ids=IDS_TO_STRUCT_UNSTRUCT\n    )\n    def test_unstructuring_with_inheritance(\n        conv_w_subclasses: tuple[Converter, bool], struct_unstruct\n    ):\n        structured, unstructured = struct_unstruct\n        converter, included_subclasses_param = conv_w_subclasses\n    \n        if \"wo-subclasses\" in included_subclasses_param and isinstance(\n            structured, (NonUnionContainer, NonUnionCompose)\n        ):\n>           pytest.xfail(\"Cannot succeed if include_subclasses strategy is not used\")\nE           _pytest.outcomes.XFailed: Cannot succeed if include_subclasses strategy is not used\n\nconv_w_subclasses = (<cattrs.converters.Converter object at 0x7fb197229440>, 'wo-subclasses')\nconverter  = <cattrs.converters.Converter object at 0x7fb197229440>\nincluded_subclasses_param = 'wo-subclasses'\nstruct_unstruct = (NonUnionContainer(a=[Parent(p=1), GrandChild(p=1, c1=2, g=3)]), {'a': [{'p': 1, 'type_name': 'Parent'}, {'c1': 2, 'g': 3, 'p': 1, 'type_name': 'GrandChild'}]})\nstructured = NonUnionContainer(a=[Parent(p=1), GrandChild(p=1, c1=2, g=3)])\nunstructured = {'a': [{'p': 1, 'type_name': 'Parent'}, {'c1': 2, 'g': 3, 'p': 1, 'type_name': 'GrandChild'}]}\n\ntests/strategies/test_include_subclasses.py:237: XFailed",
+            "nodeid": "tests/strategies/test_include_subclasses.py::test_unstructuring_with_inheritance[wo-subclasses-non-union-container]",
+            "wasxfail": "Cannot succeed if include_subclasses strategy is not used",
+            "when": "call"
+          }
+        ],
+        "outcomes": {
+          "passed": 1011,
+          "skipped": 15
+        },
+        "phase_receipt": "/workspace/qualification/admission-v2-environment/task-2/base-execute-scm-native.json",
+        "protected_module": "tests/test_tuples.py",
+        "protected_module_count": 11,
+        "seconds": 217.3661082949984
+      },
+      "native_wheel": {
+        "base_commit": "573915b6b450c23eaf818370ac2e339dd9aee262",
+        "bytes": 73156,
+        "diagnostic_only": true,
+        "path": "/workspace/qualification/admission-v2-environment/task-2/native-wheels/cattrs-26.1.1.dev2-py3-none-any.whl",
+        "sha256": "adcd439b6a1d4033e339171e312adfce2cbebabbeaeccc79e1a301c8de463fbf",
+        "source_tree_preserved": true,
+        "synthetic_version": false
+      }
+    }
+  }
+}

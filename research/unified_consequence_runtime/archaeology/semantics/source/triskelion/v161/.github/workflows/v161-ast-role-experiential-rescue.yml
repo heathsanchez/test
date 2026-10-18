@@ -1,0 +1,40 @@
+name: V161 AST-role experiential rescue
+on:
+  push:
+    branches: [v161-ast-role-experiential-rescue]
+    paths:
+      - 'experiments/V161_AST_ROLE_EXPERIENTIAL_RESCUE.py'
+      - 'protocols/V161_AST_ROLE_EXPERIENTIAL_RESCUE.md'
+      - '.github/workflows/v161-ast-role-experiential-rescue.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      RIVER_API_KEY: ${{ secrets.RIVER_API_KEY }}
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Freeze provenance before outcomes
+        run: |
+          mkdir -p artifacts/v161_ast_role_experiential_rescue
+          printf '%s\n' '${{ github.sha }}' > artifacts/v161_ast_role_experiential_rescue/GITHUB_SHA.txt
+          sha256sum protocols/V161_AST_ROLE_EXPERIENTIAL_RESCUE.md > artifacts/v161_ast_role_experiential_rescue/PROTOCOL_SHA256.txt
+      - name: Install
+        run: python -m pip install 'river-client==0.6.1' 'protobuf>=6.31.1,<7' 'transformers>=5.3,<6'
+      - name: Require River secret
+        run: test -n "$RIVER_API_KEY"
+      - name: Run frozen V161
+        run: python experiments/V161_AST_ROLE_EXPERIENTIAL_RESCUE.py
+      - name: Upload artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v161-ast-role-experiential-rescue
+          path: artifacts/v161_ast_role_experiential_rescue/

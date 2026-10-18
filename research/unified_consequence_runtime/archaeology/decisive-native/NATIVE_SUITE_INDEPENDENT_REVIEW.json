@@ -1,0 +1,81 @@
+{
+  "schema": "metalogic.independent-native-suite-review.v1",
+  "status": "PASS_BOUNDED_OPTIONAL_NATIVE_SUITE_INTERFACE",
+  "source_sha256": {
+    "generic_native_verify.py": "12269c8ca2dd586ccec4b162736375bcaac5717aaf07f441b67e5511b0ed4670",
+    "native_frontier.py": "f518fc6e313d54e82bd793bb63d363116f733833d32ac104d597ea0df75d7d02",
+    "generic_build_materialization.py": "cd6f90a57504b4bc257afca28501fa7798a381fba0f320373acd477a83d27ee1",
+    "generated_overlay_gate.py": "bf7e7b461b69cba338f1d9684d32aa4213e26918c29e721062c9ca4a447d8a66",
+    "generated_wheel_evidence.py": "446515e2257cb0c932759b4e98972a6feefe70a7a65765846e113da488632772",
+    "test_native_suite_authority.py": "9b00cd968f227fe000975c2b03d37796a4de78e055880b68541bbb6c5b1a83d5",
+    "test_generated_build_materialization.py": "6d5db09508644c38f4018f12587c58c6f333cbc50be9879138a8edeb2b0d8ea0",
+    "test_generic_native_verify.py": "bc89eec9df9dc1d013b72ac9feed49bdb4a6d1a017c11cb03cd231a450effc87",
+    "test_native_frontier.py": "7b9c10a7cf2c8ab44ba1951e2893ac2e5a28454ba94407e483d0e22002844399"
+  },
+  "source_unchanged_during_final_independent_fixture_run": true,
+  "target_source_or_outcomes_accessed": false,
+  "historical_science_reexecuted": false,
+  "scope": "Read-only source audit and adversarial local Git/pytest contract fixtures only. No G2/G3/G4 scientific promotion.",
+  "independent_runs": [
+    {
+      "log": "/workspace/qualification/decisive-native-suite-independent-tests.log",
+      "result": "67/67PASS89.856s on prior suite implementation; contains29oldverifier+14oldruntime+14suite+10buildfixturecontracts. Subsequently strengthened suite helper for conditional/dynamic registration; no hidden native fail.",
+      "sha256": "059d959eeb6885d7f7b5aa9a92e01f6665cb662a14926583ca75cf4e61f58e02"
+    },
+    {
+      "log": "/workspace/qualification/decisive-native-suite-independent-final-tests.log",
+      "result": "25/25PASS on unchanged finalsource;15optional-suite+10buildcontracts,0errors,0skips.",
+      "sha256": "65660ce1de636947ed5a6be1d5ed999fd91fbf1a3f90965fe25f3d1e892ff3e0"
+    }
+  ],
+  "resolved_findings": [
+    {
+      "id": "ADDOPTS_COLLECTION_OVERRIDE",
+      "threat": "Allowingoriginaladdopts without protecting effective alternate testconfiguration lets-o/-c alterwhichproductionfiles countasverifier assertions.",
+      "fix": "Bounded immutable addopts allowlist supportsreporting/strictness/-k/-m; rejects-o/-c/--rootdir/-p/positional andunknownflags. Configsource neverrewritten."
+    },
+    {
+      "id": "ACTUAL_ASSERTION_FAILURE_COLLAPSED_TO_UNKNOWN",
+      "threat": "Allpassgate beforeclassification erased actualnativeassertionFAIL evidence.",
+      "fix": "Worker usesexecutioncoverage require_pass=False so realassertionFAIL staysFAIL_NATIVE; admissionandruntime receipts requireallpassed."
+    },
+    {
+      "id": "WHEEL_AND_SUITE_AUTHORITY_INCOMPATIBLE",
+      "threat": "Generatedoverlay default addoptsrejection defeatedproperlyvalidatedoptional-suite+wheelpath.",
+      "fix": "Plumbboundedallow_declared_addopts onlyafterauthorityvalidation; standalone defaultrefuses; combinedrealPEP517/nativefixturePASS."
+    },
+    {
+      "id": "CONDITIONAL_DYNAMIC_TEST_OMISSION",
+      "threat": "StaticASTwalk ignoredtestdefs underif/nestedcontexts; -kold couldhide newlyauthoredconditionaltest andpromoteoldtest alone.",
+      "fix": "Unsupportedconditional/nestedtestdefinitions,dynamicregistration,testaliases=>UNKNOWN_SUITE_CONTRACT; ANYdeselectednodefrom changedauthortestmodule preventsqualification.",
+      "independent_counterexample": "/workspace/qualification/decisive-suite-conditional-counterexample.json",
+      "counterexample_final_result": "REFUSED UNKNOWN_SUITE_CONTRACT: conditional or nested test definition unsupported"
+    }
+  ],
+  "adversarial_controls_checked": [
+    "weakerrequired-test-nodeforgeryrejected by fullimmutableASTrederivation",
+    "wrongsource/baseline/protocol/repository/config/testblobidentity rejected",
+    "-k onlyoldassertion andpartialparametrizeddeselection=>UNKNOWN",
+    "requiredskiporzeroexecutions cannotpromote",
+    "candidate cannotedittest/config orsuppliesauthority",
+    "realnativefailure retainedFAIL_NATIVE",
+    "unchangedemptyassertiondelta cannotgrantauthority",
+    "classmethodparametrizations requireallstaticprefixes andnodeselectedchangedmodulecase",
+    "runtimeCASauthoritydescriptorbinds andmutationrefused",
+    "receiptmissingexecutionevidence refused",
+    "generatedwheel alone nottrusted: actualsource rebuildcompare; fullcosts retained on forgedbuild",
+    "existingdefault noauthoritynonemptyaddopts behavior unchanged"
+  ],
+  "authority_separation": {
+    "executable_source": "Independently checked immutable Gitbytes andfixednativeworker",
+    "test_verification_scope": "Externallysupplied authorassertioncontract; baseline/protocol meaningstillmustbebound by frozen admission protocol andindependent native-task checker. deriveAPI doesnot establish arbitraryexternal semanticintent.",
+    "external_effects_permission": "Existing fixedAUTHORITY localresearchceiling unchanged. Acquisition doesnotgrant externalpermission.",
+    "non_bypassable_enforcement": "UNKNOWN; backend/source canexecutecode, no hostilePython sandbox claim."
+  },
+  "remaining_obligations": [
+    "BoundedstaticPython/pytestgrammar only; no arbitrarydynamicassertioncompleteness claim.",
+    "Fresh task identities, authorheadAPIbloborigins, baselinecommit andprotocol digestmustbeindependentlyfrozenandchecked by admission/wholeexperiment.",
+    "ThesefixturesuseMemoryMachine fornewoptional-suite nativecapability lifecycle; productionMetatron/FLASH separate-process restartmustbequalified inwholeworkflow.",
+    "No implicationofcomparativeadvantage, prospectiveunfamiliardiscovery, concreteLeanrefinement or externalcontainment."
+  ]
+}

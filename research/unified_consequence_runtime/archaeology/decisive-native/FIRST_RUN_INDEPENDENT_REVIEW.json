@@ -1,0 +1,92 @@
+{
+  "schema": "UDM_DECISIVE_NATIVE_INDEPENDENT_QUALIFICATION_REVIEW_V1",
+  "reviewed_at_utc": "2026-10-16T02:42:33Z",
+  "status": "INTEGRATION_REJECTED_BEFORE_TARGET_ADMISSION",
+  "source_commit": "a02eb3fb10b7577cc232fc9180b8fe9d3ef2c125",
+  "run_id": 38841372484,
+  "run_url": "https://github.com/heathsanchez/test/actions/runs/38841372484",
+  "job_id": 116782005307,
+  "provider_conclusion": "failure",
+  "artifact": {
+    "id": 12020798523,
+    "size_in_bytes": 26691400,
+    "digest": "sha256:99dbd6bc6bf7612d1141ccc4c0ecbf39c55daa2bdc07eefd36e26a5f61769f79",
+    "url": "https://github.com/heathsanchez/test/actions/runs/38841372484/artifacts/12020798523",
+    "authenticated_zip_bytes": true,
+    "zip_members": 304
+  },
+  "offline_byte_checks": {
+    "checks": {
+      "frozen_files_all_exact": true,
+      "git_source_all_exact": true,
+      "manifest_all_exact": true,
+      "run_source_binding": true,
+      "all_original_state_bytes_preserved": true,
+      "exact_original_state_file_set": true,
+      "all_cas_content_addresses_valid": true,
+      "original70capabilities_exact": true,
+      "no_target_admission": true,
+      "no_native_scientific_receipts": true
+    },
+    "records": 246,
+    "cas_objects": 76,
+    "ledger_sha256": "b3696b388d2f3d1df95d819d1026eb9f87f042e93e4300f0cd987073949de9ac",
+    "total_wall_seconds": 3.340836268000004,
+    "freeze_file_count": 64,
+    "manifest_count": 594
+  },
+  "contracts": {
+    "count": 111,
+    "seconds": 109.386,
+    "status": "PASS",
+    "log": "artifact/contracts.log",
+    "scientific_target_native_calls": 0
+  },
+  "scientific_execution": {
+    "status": "NOT_STARTED",
+    "task_admissions": 0,
+    "native_target_receipts": 0,
+    "protected_native_outcomes": 0,
+    "method_or_constructor_admissions": 0,
+    "actual_comparison": "NOT_RUN_NO_TARGET_ADMISSION",
+    "acquisition_restoration_restart": "NOT_RUN_NO_ACQUISITION"
+  },
+  "verdicts": {
+    "G0_G1": "PRESERVED_EXACT_PREVIOUS_RECORDS_AND_CAS; no old acquisitions rerun",
+    "G2": "UNKNOWN_INTEGRATION_NOT_QUALIFIED",
+    "G3": "UNKNOWN_INTEGRATION_NOT_QUALIFIED",
+    "G4": "UNKNOWN_COMPARISON_NOT_RUN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN"
+  },
+  "failure_class": "SOURCE_PIN_INTEGRATION_ERROR; NOT_SCIENTIFIC_NATIVE_NEGATIVE",
+  "smallest_obstruction": {
+    "error": "native frontier admission validator source changed after publication",
+    "status": "INTEGRATION_ERROR_NOT_SCIENTIFIC_SUCCESS",
+    "type": "ValueError"
+  },
+  "diagnosis": "Existing persisted generic-native warrants check the previously published native_frontier admission-validator SHA. The new adapter changes this source but typed reclosure still accepts only the old static publication pin. Machine construction refuses before any task transport. Fix must explicitly distinguish retained old source authority from current typed validator publication and preserve original state; it must not add a target-specific method.",
+  "costs": {
+    "controller_before_error_seconds": 3.340836268000004,
+    "fixture_suite_seconds": 109.386,
+    "provider_job_started_at": "2026-10-16T02:37:30Z",
+    "provider_job_completed_at": "2026-10-16T02:39:49Z",
+    "future_acquisition_cost": "UNMEASURED_NOT_RUN",
+    "model_engineering_cost": "UNKNOWN"
+  },
+  "blindness_boundary": "The immutable native packet contains no task admission directories, no task source archives and no target native receipts. This run did not consume the prospective target exposure; no replacement frontier or post-outcome target repair is justified. A new integration-source freeze before first target admission can remain prospective if all other teams likewise had no target outcome access.",
+  "retention_boundary": "All 246 records and 76 CAS objects exact byte-equal to the qualified maintenance source snapshot. All 70 original capability-index rows exactly unchanged. This preserves prior authority, not a new proof that the modified adapter executes old generic capabilities.",
+  "review_method": "Authenticated GitHub provider run/job/artifact metadata; official connector download after direct GitHub redirect HTTP403; exact artifact size/digest verification; safe ZIP/TAR extraction; every manifest and frozen source byte checked against artifact and Git commit; all original state bytes/CAS addresses/index rows checked. No native science, constructor, agent or target rerun.",
+  "preserved_files": [
+    "provider-run.json",
+    "provider-job.json",
+    "provider-artifacts.json",
+    "artifact.zip",
+    "offline-audit.json",
+    "artifact/FREEZE.json",
+    "artifact/MANIFEST.json",
+    "artifact/contracts.log",
+    "native/decisive/RESULT.json",
+    "native/decisive/ERROR.json"
+  ]
+}

@@ -1,0 +1,138 @@
+name: V11 exposed Tenacity original MSI/V104 bounded native method census
+on:
+  push:
+    branches: [research/udm-v11-exposed-tenacity-census-20261017]
+    paths:
+      - .github/workflows/udm-v11-exposed-tenacity-msi.yml
+      - research/unified_consequence_runtime/qualify_v11_exposed_tenacity_msi.py
+      - research/unified_consequence_runtime/archaeology/typed-v104-v11/**
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: udm-v11-exposed-tenacity-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  original-exposed-native-policy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 43
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
+      GIT_NO_REPLACE_OBJECTS: '1'
+      GIT_OPTIONAL_LOCKS: '0'
+      GIT_CONFIG_NOSYSTEM: '1'
+      UDM_V7_TRISKELION: ${{ github.workspace }}/components/triskelion
+      UDM_V7_MSI: ${{ github.workspace }}/components/msi
+      UDM_V11_OUT: ${{ github.workspace }}/qualification/v11/native
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.14'
+      - name: Refuse mutation of V6 V9 V10 or existing ledger authority
+        run: |
+          set -euo pipefail
+          mkdir -p qualification/v11
+          git rev-parse HEAD > qualification/v11/SOURCE_COMMIT.txt
+          for path in \
+            research/unified_consequence_runtime/typed_native_authority_v6.py \
+            research/unified_consequence_runtime/typed_native_authority_v10.py \
+            research/unified_consequence_runtime/typed_v104_msi_bridge_v7.py \
+            research/unified_consequence_runtime/qualify_source_bound_g2_v9.py \
+            research/unified_consequence_runtime/test_typed_native_authority_v10.py \
+            research/unified_consequence_runtime/archaeology/typed-v104-v9/FROZEN_PROTOCOL.json \
+            research/unified_consequence_runtime/capability_index.json; do
+            test "$(git rev-parse HEAD:"$path")" = \
+                 "$(git rev-parse 4e6540d5cbd21ea73e4fdf032f8a46f4ad205794:"$path")"
+          done
+          test "$(git hash-object research/unified_consequence_runtime/archaeology/typed-v104-v11/FROZEN_DIAGNOSTIC.json)" = \
+             "4cf29e6e9020c986a725401d5e9f34076aa6fab2"
+      - name: Obtain exact original V104 MSI Pareto source objects
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --depth=1 origin 6031466188046f56b4660d772d13ad731ed4c0f2
+          mkdir -p components
+          git init -q components/triskelion
+          git -C components/triskelion fetch -q --depth=1 https://github.com/heathsanchez/triskelion.git 426c54f7c774560e0fabe7213c5ef333b1327c71
+          git -C components/triskelion checkout -q --detach 426c54f7c774560e0fabe7213c5ef333b1327c71
+          git init -q components/msi
+          git -C components/msi fetch -q --depth=1 https://github.com/heathsanchez/Minimal-Sufficient-Interface.git 56cfd7b523e3592cae4eafa5468f437ccb94dbe9
+          git -C components/msi checkout -q --detach 56cfd7b523e3592cae4eafa5468f437ccb94dbe9
+      - name: Pin original native pytest and dependency set
+        run: |
+          set -euo pipefail
+          python -B -m pip install --disable-pip-version-check --no-input \
+            pytest==8.3.5 pytest-cov==6.2.1 pluggy==1.6.0 coverage==7.10.6 \
+            packaging==26.3 attrs==24.3.0 hypothesis==6.122.3 \
+            typing_extensions==4.12.2 colorama==0.4.6 rich==13.9.4 \
+            click==8.2.0 tenacity==9.1.2 markupsafe==3.0.2
+      - name: Check frozen V10 verifier and V9 original policy functions
+        run: |
+          set -euo pipefail
+          python -B -m unittest \
+            research.unified_consequence_runtime.test_typed_native_authority_v10 \
+            research.unified_consequence_runtime.test_source_bound_g2_v9 \
+            research.unified_consequence_runtime.test_typed_v104_msi_bridge_v7 \
+            -v 2>&1 | tee qualification/v11/CONTRACTS.log
+      - name: Execute all source-exposed original V104/MSI training native candidates
+        timeout-minutes: 34
+        run: |
+          set +e
+          env -u GH_TOKEN -u GITHUB_TOKEN UDM_V11_EXPOSED_ONLY=ACK_EXPOSED_TENACITY_ONLY \
+            python -B -m research.unified_consequence_runtime.qualify_v11_exposed_tenacity_msi \
+            > qualification/v11/SCIENCE.log 2>&1
+          code=$?
+          echo "$code" > qualification/v11/SCIENCE_EXIT.txt
+          tail -n 34 qualification/v11/SCIENCE.log
+          exit "$code"
+      - name: No retrospective G2 and no forbidden Packaging exposure
+        if: always()
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          p=Path('qualification/v11/native/RESULT.json')
+          if not p.exists():
+              print('UNKNOWN_NO_BOUND_ORIGINAL_METHOD_CENSUS')
+          else:
+              r=json.loads(p.read_text())
+              assert r['state']=='SOURCE_EXPOSED_DIAGNOSTIC_ONLY'
+              assert r['schema']=='UDM_V11_EXPOSED_TENACITY_ORIGINAL_V104_MSI_RESULTS'
+              assert r['packaging_source_opened'] is False
+              assert all(r[k]=='UNKNOWN' for k in ('G2','G3','G4','G5','G6'))
+              assert r['native_calls']<=130
+              print('V11_REAL_EXPOSED_TENACITY',r['status'],
+                    'native_calls',r['native_calls'],
+                    'counts',r.get('source_native_candidate_classification'))
+          PY
+      - name: Seal bounded result and maintain all older RED/UNKNOWN authorities
+        if: always()
+        run: |
+          set -euo pipefail
+          mkdir -p qualification/v11
+          python - <<'PY'
+          import json,hashlib,subprocess
+          from pathlib import Path
+          folder=Path('qualification/v11')
+          code=Path('research/unified_consequence_runtime/qualify_v11_exposed_tenacity_msi.py')
+          r={'schema':'UDM_V11_EXPOSED_DIAGNOSTIC_BOUNDARY',
+             'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+             'code_sha256':hashlib.sha256(code.read_bytes()).hexdigest(),
+             'source_status':'EXPOSED_TENACITY_ONLY',
+             'packaging_source_unopened':True,
+             'V9_original_prospective_RED':38985251065,
+             'V10_original_protected_native_GREEN':38985872094,
+             'G2':'UNKNOWN','G3':'UNKNOWN','G4':'UNKNOWN','G5':'UNKNOWN','G6':'UNKNOWN'}
+          (folder/'BOUNDARY.json').write_text(json.dumps(r,sort_keys=True,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: udm-v11-exposed-msi-${{ github.sha }}-${{ github.run_attempt }}
+          path: qualification/v11/
+          retention-days: 90

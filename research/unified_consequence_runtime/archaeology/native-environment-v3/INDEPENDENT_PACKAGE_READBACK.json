@@ -1,0 +1,100 @@
+{
+  "aggregates": {
+    "audit_disclosure_count": 2,
+    "duplicate_member_count": 0,
+    "embedded_manifest_aggregate_totals_present": false,
+    "embedded_manifest_member_bytes": 87172351,
+    "embedded_manifest_member_count": 1558,
+    "excluded_regular_file_bytes": 709027591,
+    "excluded_regular_file_bytes_by_category": {
+      "generated_environment": 219163459,
+      "generated_environment_with_wheel_artifacts": 411561063,
+      "git_metadata": 19834571,
+      "installer_artifacts": 58468498
+    },
+    "excluded_regular_file_count": 23924,
+    "excluded_regular_file_counts_by_category": {
+      "generated_environment": 7217,
+      "generated_environment_with_wheel_artifacts": 16393,
+      "git_metadata": 313,
+      "installer_artifacts": 1
+    },
+    "excluded_symlink_count": 6169,
+    "excluded_symlink_counts_by_category": {
+      "generated_environment": 1051,
+      "generated_environment_with_wheel_artifacts": 5118,
+      "git_metadata": 0,
+      "installer_artifacts": 0
+    },
+    "exclusion_group_count": 13,
+    "exclusion_group_counts_by_category": {
+      "generated_environment": 2,
+      "generated_environment_with_wheel_artifacts": 2,
+      "git_metadata": 8,
+      "installer_artifacts": 1
+    },
+    "explicit_post_audit_index_member_count": 9,
+    "member_size_or_hash_mismatch_count": 0,
+    "nonregular_member_count": 0,
+    "outer_added_package_annotation_count": 5,
+    "source_bound_omission_disclosure_count": 5,
+    "tar_member_count": 1559,
+    "uncompressed_member_bytes": 94975791,
+    "unsafe_member_path_count": 0
+  },
+  "archive": {
+    "bytes": 54910716,
+    "path": "/workspace/qualification/native-frontier-v3-SEALED_SCREENING_EVIDENCE.tar.gz",
+    "sha256": "70c705018ffcc782c4dadd52b3b2f403e50b3ad93a4c18b2dbf530e703f3cfec"
+  },
+  "archive_expected": {
+    "bytes": 54910716,
+    "path": "/workspace/qualification/native-frontier-v3-SEALED_SCREENING_EVIDENCE.tar.gz",
+    "sha256": "70c705018ffcc782c4dadd52b3b2f403e50b3ad93a4c18b2dbf530e703f3cfec"
+  },
+  "checks": {
+    "archive_exact_expected_descriptor": true,
+    "archive_unchanged_after_readback": true,
+    "archive_under_100_mb": true,
+    "audit_current_index_is_disclosed_as_post_only": true,
+    "audit_old_index_bytes_disclosed_as_not_captured": true,
+    "current_indices_have_explicit_post_audit_member_kind": true,
+    "current_indices_metadata_explicitly_disclaims_pre_audit_bytes": true,
+    "current_indices_metadata_limits_capture_to_post_audit_state": true,
+    "embedded_manifest_has_no_circular_self_hash": true,
+    "embedded_manifest_outer_additions_are_package_annotations": true,
+    "embedded_manifest_relationship_matches": true,
+    "every_member_size_and_sha256_matches": true,
+    "exclusion_aggregate_counts_and_bytes_consistent": true,
+    "exclusion_opaque_descriptors_valid": true,
+    "exclusions_categorized": true,
+    "external_manifest_exact_expected_descriptor": true,
+    "external_manifest_unchanged_after_readback": true,
+    "manifest_archive_descriptor_matches": true,
+    "manifest_declared_member_count_matches": true,
+    "manifest_member_descriptors_valid": true,
+    "manifest_paths_safe_relative": true,
+    "single_embedded_payload_manifest": true,
+    "tar_member_paths_safe_relative": true,
+    "tar_member_paths_unique": true,
+    "tar_members_all_regular": true,
+    "tar_membership_equals_external_manifest": true,
+    "uncompressed_member_bytes_match": true
+  },
+  "external_manifest": {
+    "bytes": 7804272,
+    "path": "/workspace/qualification/native-frontier-v3-SEALED_SCREENING_EVIDENCE.manifest.json",
+    "sha256": "478a64e2ab4fae102655fa4dc01ab13ab3b3eefecd0afeb451824621c5965893"
+  },
+  "external_manifest_expected": {
+    "bytes": 7804272,
+    "path": "/workspace/qualification/native-frontier-v3-SEALED_SCREENING_EVIDENCE.manifest.json",
+    "sha256": "478a64e2ab4fae102655fa4dc01ab13ab3b3eefecd0afeb451824621c5965893"
+  },
+  "issues": [],
+  "limitations": [
+    "Exclusion and omission disclosures were checked as opaque packaging metadata; no source semantics were assessed."
+  ],
+  "status": "PASS",
+  "verification_scope": "Independent opaque package readback; source member contents and case JSON semantics were not inspected. Only package manifests and generic audit disclosure metadata were parsed. No members were written to disk and no task code or tests were executed."
+}

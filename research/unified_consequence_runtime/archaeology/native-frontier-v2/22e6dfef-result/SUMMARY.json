@@ -1,0 +1,116 @@
+{
+  "actual_collection_calls": 1,
+  "actual_native_calls": 0,
+  "admission_gate": {
+    "artifact_id": 12027916982,
+    "artifact_sha256": "de8534883c760c2129b592a665c3cb735a4af360794409debe23660366853510",
+    "qualification_result_sha256": "ff76a020d59c1d9f2c90fb944e3124a0f2465aec38fe00fbde7751d55679ffe5",
+    "result_path": "research/unified_consequence_runtime/archaeology/native-admission-v2/f8c0b06d-qualified/RESULT.json",
+    "run_id": 38856738333,
+    "source_commit": "f8c0b06da1bbaddfd67229ca87cb53a0dab67ae0",
+    "status": "ADMISSION_ONLY_QUALIFIED"
+  },
+  "agent_comparator_status": "NOT_EXECUTED_BY_CONTROLLER; USE_RETAINED_AGENT_ARM",
+  "artifact_bytes": 45394695,
+  "artifact_id": 12028255817,
+  "artifact_sha256": "4e685c2baec884732e2a4255424a608bf39bd0034fdb771014e6a40f980b811d",
+  "audit_seconds": 1.2124150710005779,
+  "claimed_verdicts": {
+    "G0_G1": "PRESERVED_EXACT_PRIOR_SOURCE_AUTHORITY",
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN"
+  },
+  "comparison_classification": "UNKNOWN_SHARED_ADMISSION_OR_RESIDUAL_OBSTRUCTION; NOT_AN_EXECUTED_COMPARATIVE_TIE",
+  "contracts": {
+    "all_individual_entries_ok": true,
+    "count": 16,
+    "seconds": 0.015
+  },
+  "controller_wall_seconds": 16.515841517999995,
+  "cost_boundary": "All setup, build, collection, verification, acquisition, integration, reclosure, restart and maintenance retained. Nested wall times are not additive. Engineering/model-dollar/token total remains UNKNOWN.",
+  "exact_collection_obstruction": "ImportError while loading conftest '/tmp/udm-native-v2-pkeuf4_p/world/tests/conftest.py'.\ntests/conftest.py:7: in <module>\n    class DummyCollector(pytest.collect.File):\n                         ^^^^^^^^^^^^^^\nE   AttributeError: module 'pytest' has no attribute 'collect'. Did you mean: 'Collector'?\n",
+  "frozen_source_files_checked": 442,
+  "manifest_files_checked": 621,
+  "native_packets": [],
+  "original_authority": {
+    "CAS_objects": 76,
+    "byte_preserved": true,
+    "inventory_rows": 70,
+    "ledger_prefix_records": 246
+  },
+  "prospective_boundary": "Pre-outcome code/source identities are frozen; prior nonexposure is an explicit research declaration, not a cryptographic absence proof. Unopened future source has no artifact.",
+  "remaining_residual": "UNKNOWN_COLLECTION_ERROR",
+  "result_status": "UNKNOWN_NO_NATIVE_ACQUISITION_RESIDUAL",
+  "retained_CAS_objects": 76,
+  "retained_records": 246,
+  "run_conclusion": "success",
+  "run_id": "38858369216",
+  "schema": "UDM_NATIVE_FRONTIER_V2_INDEPENDENT_ARCHIVE_AUDIT",
+  "scope": "Read-only archive/source/provenance/native-evidence parsing. No native rerun, source fetch, task repository access, repair, or prospective retargeting.",
+  "smallest_obstruction": "UNKNOWN_COLLECTION_ERROR",
+  "source_commit": "22e6dfef6601e8f6c6a804ec05baab9f06b028b3",
+  "status": "PASS_ARCHIVE_INTEGRITY_AUDIT",
+  "tasks": [
+    {
+      "collection_result": {
+        "collected": 0,
+        "collection_errors": [],
+        "costs": {
+          "collection_calls": 1,
+          "horizon_seconds": 60,
+          "native_calls": 0,
+          "seconds": 1.3752719069999984
+        },
+        "negative_violations": {
+          "external_project_imports": 0,
+          "plugin_violations": 0,
+          "source_mutations": 0,
+          "unexpected_imports": 0
+        },
+        "process_exit_code": 4,
+        "pytest_exit_code": 4,
+        "selected": 0,
+        "stderr": "ImportError while loading conftest '/tmp/udm-native-v2-pkeuf4_p/world/tests/conftest.py'.\ntests/conftest.py:7: in <module>\n    class DummyCollector(pytest.collect.File):\n                         ^^^^^^^^^^^^^^\nE   AttributeError: module 'pytest' has no attribute 'collect'. Did you mean: 'Collector'?\n",
+        "timeout": false
+      },
+      "environment_sha256": "538ef3f7dc5ebe3b51ee69cadf8424437e78d3f98fc9892b74911d21c067db98",
+      "pr": 99,
+      "pytest_version": "8.4.1",
+      "python_version": "3.12.15 (main, Oct  1 2026, 02:35:59) [GCC 13.3.0]",
+      "reason": "UNKNOWN_COLLECTION_ERROR",
+      "repository": "grahamdumpleton/wrapt",
+      "role": "TRAINING",
+      "setup_seconds": 12.220687571,
+      "setup_status": "PREPARED",
+      "source_boundary_present": true,
+      "source_bytes_preserved": true,
+      "source_opened": true,
+      "status": "UNKNOWN_ADMISSION_INTERFACE"
+    },
+    {
+      "pr": 377,
+      "reason": null,
+      "repository": "jab/bidict",
+      "role": "PROTECTED_FUTURE_1",
+      "setup_seconds": null,
+      "setup_status": null,
+      "source_boundary_present": false,
+      "source_opened": false,
+      "status": null
+    },
+    {
+      "pr": 418,
+      "reason": null,
+      "repository": "pallets/markupsafe",
+      "role": "PROTECTED_FUTURE_2",
+      "setup_seconds": null,
+      "setup_status": null,
+      "source_boundary_present": false,
+      "source_opened": false,
+      "status": null
+    }
+  ]
+}

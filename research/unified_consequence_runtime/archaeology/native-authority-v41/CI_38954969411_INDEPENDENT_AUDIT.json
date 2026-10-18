@@ -1,0 +1,2518 @@
+{
+  "auditor_source_sha256": {
+    "EXPECTATIONS.json": "1223d83f6ea24807393c324b1d7d58de1ceada133efb5eb4239be159cfb11cee",
+    "audit_v41.py": "182bd28c29b2af5f753170a013d998f8d995a9f11ecbe882b750f029d6025f11",
+    "profile_checks.py": "2b3f457c853220076a6bbbfdc42f46e3e1283f573940bcd78a271e2d18d1a3d8",
+    "raw_checks.py": "c4455dce3ba85f3bb27fe99f34fbc362ac397d988b8550769a2a7473b1acfecc"
+  },
+  "collection_calls": 0,
+  "completed_sections": [
+    "envelope",
+    "source",
+    "controls",
+    "profiles",
+    "indexes",
+    "raw"
+  ],
+  "controls": {
+    "binding": {
+      "final_ok": true,
+      "ids": [
+        "research.unified_consequence_runtime.test_native_environment_v4.EnvironmentBindingV4.test_original_modules_and_all_bound_function_globals_remain_unmodified",
+        "research.unified_consequence_runtime.test_native_environment_v4.EnvironmentBindingV4.test_versioned_selector_preserves_original_derivation_bytecode_in_private_globals",
+        "research.unified_consequence_runtime.test_native_environment_v41.NativeEnvironmentBindingsV41.test_original_hashlock_renderer_executes_through_versioned_binding",
+        "research.unified_consequence_runtime.test_native_environment_v41.NativeEnvironmentBindingsV41.test_private_bindings_preserve_original_source_and_native_code",
+        "research.unified_consequence_runtime.test_native_environment_v41.NativeEnvironmentBindingsV41.test_public_requirement_types_used_by_original_provisioner_remain_exported",
+        "research.unified_consequence_runtime.test_audit_index_v4.AuditIndexV4Tests.test_comparison_detects_same_size_change_creation_removal_and_new_worktree",
+        "research.unified_consequence_runtime.test_audit_index_v4.AuditIndexV4Tests.test_failed_git_read_retains_before_after_and_reports_change_without_restoring",
+        "research.unified_consequence_runtime.test_audit_index_v4.AuditIndexV4Tests.test_git_directory_overrides_are_refused_instead_of_auditing_wrong_repository",
+        "research.unified_consequence_runtime.test_audit_index_v4.AuditIndexV4Tests.test_missing_git_still_retains_interval_evidence",
+        "research.unified_consequence_runtime.test_audit_index_v4.AuditIndexV4Tests.test_mutating_commands_and_output_or_external_tool_flags_are_refused",
+        "research.unified_consequence_runtime.test_audit_index_v4.AuditIndexV4Tests.test_real_git_status_preserves_index_bytes",
+        "research.unified_consequence_runtime.test_audit_index_v4.AuditIndexV4Tests.test_snapshot_hashes_all_linked_indexes_and_explicit_absence_without_git",
+        "research.unified_consequence_runtime.test_audit_index_v4.AuditIndexV4Tests.test_snapshot_includes_inherited_alternate_index",
+        "research.unified_consequence_runtime.test_qualify_environment_v4_retention.DefaultEvidenceRetentionV4.test_original_setting_is_restored_on_failed_control",
+        "research.unified_consequence_runtime.test_qualify_environment_v4_retention.DefaultEvidenceRetentionV4.test_persistent_default_directory_is_retained_and_temp_setting_restored",
+        "research.unified_consequence_runtime.test_qualify_native_frontier_v41.NativeFrontierV41BindingContracts.test_canonical_module_entrypoint_keeps_checker_identity",
+        "research.unified_consequence_runtime.test_qualify_native_frontier_v41.NativeFrontierV41BindingContracts.test_checker_is_a_real_importable_v41_function",
+        "research.unified_consequence_runtime.test_qualify_native_frontier_v41.NativeFrontierV41BindingContracts.test_default_frontier_is_versioned_and_stays_unprepared",
+        "research.unified_consequence_runtime.test_qualify_native_frontier_v41.NativeFrontierV41BindingContracts.test_gate_pins_new_selector_qualifier_catalog_and_workflow",
+        "research.unified_consequence_runtime.test_qualify_native_frontier_v41.NativeFrontierV41BindingContracts.test_new_environment_is_bound_without_changing_native_worker",
+        "research.unified_consequence_runtime.test_qualify_native_frontier_v41.NativeFrontierV41BindingContracts.test_new_paths_and_baseline_preserve_all_previous_v4_bytes",
+        "research.unified_consequence_runtime.test_qualify_native_frontier_v41.NativeFrontierV41BindingContracts.test_no_source_reading_cli_can_self_authorize",
+        "research.unified_consequence_runtime.test_qualify_native_frontier_v41.NativeFrontierV41BindingContracts.test_old_catalog_path_is_not_an_authority_for_v41",
+        "research.unified_consequence_runtime.test_qualify_native_frontier_v41.NativeFrontierV41BindingContracts.test_original_policy_search_uses_private_v41_dispatch",
+        "research.unified_consequence_runtime.test_qualify_native_frontier_v41.NativeFrontierV41BindingContracts.test_screening_and_original_matched_budgets_do_not_change",
+        "research.unified_consequence_runtime.test_qualify_native_frontier_v41.NativeFrontierV41BindingContracts.test_v41_result_and_exact_new_catalog_can_satisfy_the_gate",
+        "research.unified_consequence_runtime.test_qualify_native_frontier_v41.NativeFrontierV41BindingContracts.test_v4_result_cannot_qualify_the_new_dependency_metadata_policy",
+        "research.unified_consequence_runtime.test_qualify_native_frontier_v41.NativeFrontierV41PreparationContracts.test_curator_cannot_retarget_an_existing_query_lineage",
+        "research.unified_consequence_runtime.test_qualify_native_frontier_v41.NativeFrontierV41PreparationContracts.test_curator_import_has_no_universe_and_uses_v41_authority",
+        "research.unified_consequence_runtime.test_qualify_native_frontier_v41.NativeFrontierV41PreparationContracts.test_every_prior_v4_universe_member_is_excluded",
+        "research.unified_consequence_runtime.test_qualify_native_frontier_v41.NativeFrontierV41PreparationContracts.test_local_record_assembler_is_bound_to_new_records",
+        "research.unified_consequence_runtime.test_qualify_native_frontier_v41.NativeFrontierV41PreparationContracts.test_v41_gate_precedes_any_universe_file_read",
+        "research.unified_consequence_runtime.test_qualify_native_frontier_v41.NativeFrontierV41PreparationContracts.test_workflow_is_new_source_pinned_and_does_not_claim_an_actual_agent"
+      ],
+      "outcomes": {
+        "ok": 33
+      },
+      "run": 33,
+      "seconds": 0.273
+    },
+    "legacy": {
+      "final_ok": true,
+      "ids": [
+        "research.unified_consequence_runtime.test_native_dependency_includes_v41.IncludedDependenciesNativeV41.test_real_git_symlink_include_cannot_enter_regular_file_snapshot",
+        "research.unified_consequence_runtime.test_native_dependency_includes_v41.IncludedDependenciesNativeV41.test_selected_actual_runtime_include_allows_real_native_pass_and_independent_reexecution"
+      ],
+      "outcomes": {
+        "ok": 2
+      },
+      "run": 2,
+      "seconds": 12.589
+    },
+    "modern": {
+      "final_ok": true,
+      "ids": [
+        "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_duplicate_include_is_not_a_cycle_and_deduplicates_equal_leaf_rows",
+        "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_dynamic_tox_substitution_and_factor_deps_are_not_evaluated",
+        "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_every_included_and_unparsed_byte_remains_in_complete_inventory",
+        "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_existing_requirement_roots_retain_all_three_include_forms",
+        "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_existing_root_unsatisfied_dependency_control_remains_unknown",
+        "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_forged_requirements_evidence_hash_scope_and_profile_are_rejected",
+        "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_global_tox_compact_include_is_supported",
+        "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_global_tox_long_spaced_include_is_supported",
+        "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_global_tox_spaced_include_constrains_real_catalog_pins",
+        "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_invalid_source_paths_and_nonbyte_values_remain_source_unknown",
+        "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_long_equals_and_malformed_include_spellings_remain_precise_unknown",
+        "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_malformed_and_dynamic_setup_controls_keep_exact_refusals",
+        "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_markers_use_external_profile_environment_and_retain_provenance",
+        "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_missing_self_and_mutual_cyclic_includes_are_precise_unknown",
+        "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused",
+        "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_python_specific_nested_includes_keep_markers_and_scope",
+        "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_recursive_relative_includes_preserve_leaf_provenance_and_raw_hashes",
+        "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_scoped_only_leaf_is_not_promoted_to_a_global_requirement",
+        "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_selection_replay_after_included_or_unparsed_byte_change_is_rejected",
+        "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_shared_leaf_retains_global_and_each_python_applicability_context",
+        "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_static_setup_and_unparsed_python_are_not_executed_during_inference",
+        "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_unchanged_input_order_has_identical_constraints_and_selection",
+        "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_unreferenced_requirement_like_files_do_not_become_metadata",
+        "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_unsatisfied_included_dependency_remains_unknown",
+        "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_unsupported_pip_directives_and_hash_suffix_are_not_package_authority",
+        "research.unified_consequence_runtime.test_native_dependency_includes_v41.IncludedDependenciesNativeV41.test_real_git_symlink_include_cannot_enter_regular_file_snapshot",
+        "research.unified_consequence_runtime.test_native_dependency_includes_v41.IncludedDependenciesNativeV41.test_selected_actual_runtime_include_allows_real_native_pass_and_independent_reexecution",
+        "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_actual_assertion_failure_remains_native_failure",
+        "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_cannot_change_original_fixture_order_or_discard_collected_nodes",
+        "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_cannot_register_new_plugin_from_tracked_production_source",
+        "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_cannot_shrink_or_expand_cases_behind_same_static_prefix",
+        "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_module_skip_cannot_hide_original_assertions",
+        "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_certificate_cannot_replay_to_changed_execution_or_plugin_policy",
+        "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_certificate_cannot_replay_to_other_protocol_environment_source_or_horizon",
+        "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_independent_collection_then_full_original_parameter_cases_pass",
+        "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_preloaded_installed_project_name_cannot_replace_frozen_source",
+        "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_resealed_collection_manifest_is_checked_against_original_recollection",
+        "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_resealed_wrong_import_source_is_not_authenticated_by_equal_pass_counts",
+        "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_selection_exclusion_and_invalid_expression_fail_for_distinct_reasons",
+        "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_self_declared_extra_authority_and_missing_certificate_fields_are_rejected",
+        "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_weaker_required_assertions_are_not_certificate_authority",
+        "research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_collection_time_import_of_same_malformed_fixture_is_refused",
+        "research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_dynamic_import_of_same_malformed_fixture_is_native_failure",
+        "research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_missing_protected_assertion_is_refused",
+        "research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_same_malformed_fixture_required_by_static_runtime_import_is_native_failure",
+        "research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_unimported_malformed_fixture_allows_real_native_pass",
+        "research.unified_consequence_runtime.test_native_authority_v4.LicensedPluginReplacementAuthorityV4.test_candidate_cannot_replace_licensed_plugin_under_the_same_name"
+      ],
+      "outcomes": {
+        "ok": 47
+      },
+      "run": 47,
+      "seconds": 211.026
+    }
+  },
+  "envelope": {
+    "artifact_sha256": "90dcaba5ecc47761890ad17a3761924863eb4b33ae4acf38f6aa1d870af455e0",
+    "artifact_size": 190257365,
+    "manifest_zip_path": "test/test/qualification/MANIFEST.json",
+    "nested_files": 628,
+    "outer_copy_scope": "Every ZIP member is hashed; every authority file copied both outside and inside the evidence tar is compared. Extra outer upload copies are not additional native attempts.",
+    "outer_files": 918,
+    "source_files": 1666
+  },
+  "failures": [],
+  "git_calls": 0,
+  "indexes": {
+    "checks": 63,
+    "failed_checks": 0,
+    "intervals": {
+      "archive": {
+        "after": {
+          "indexes": [
+            {
+              "path": "/home/runner/work/test/test/.git/index",
+              "sha256": "db5fc95cdfdd514344a903813421573ace501ba717be2ce9704ada9d484b9e71",
+              "size_bytes": 234436
+            }
+          ],
+          "inventory_paths": [
+            "/home/runner/work/test/test/.git/index"
+          ],
+          "snapshot_fingerprint": "41b5c44c53adff097a96f5dbb2e943be801a1520059e3f9cc792ad09fdf3c2dc"
+        },
+        "before": {
+          "indexes": [
+            {
+              "path": "/home/runner/work/test/test/.git/index",
+              "sha256": "db5fc95cdfdd514344a903813421573ace501ba717be2ce9704ada9d484b9e71",
+              "size_bytes": 234436
+            }
+          ],
+          "inventory_paths": [
+            "/home/runner/work/test/test/.git/index"
+          ],
+          "snapshot_fingerprint": "41b5c44c53adff097a96f5dbb2e943be801a1520059e3f9cc792ad09fdf3c2dc"
+        }
+      },
+      "freeze": {
+        "after": {
+          "indexes": [
+            {
+              "path": "/home/runner/work/test/test/.git/index",
+              "sha256": "db5fc95cdfdd514344a903813421573ace501ba717be2ce9704ada9d484b9e71",
+              "size_bytes": 234436
+            }
+          ],
+          "inventory_paths": [
+            "/home/runner/work/test/test/.git/index"
+          ],
+          "snapshot_fingerprint": "41b5c44c53adff097a96f5dbb2e943be801a1520059e3f9cc792ad09fdf3c2dc"
+        },
+        "before": {
+          "indexes": [
+            {
+              "path": "/home/runner/work/test/test/.git/index",
+              "sha256": "db5fc95cdfdd514344a903813421573ace501ba717be2ce9704ada9d484b9e71",
+              "size_bytes": 234436
+            }
+          ],
+          "inventory_paths": [
+            "/home/runner/work/test/test/.git/index"
+          ],
+          "snapshot_fingerprint": "41b5c44c53adff097a96f5dbb2e943be801a1520059e3f9cc792ad09fdf3c2dc"
+        }
+      },
+      "legacy": {
+        "after": {
+          "indexes": [
+            {
+              "path": "/home/runner/work/test/test/.git/index",
+              "sha256": "db5fc95cdfdd514344a903813421573ace501ba717be2ce9704ada9d484b9e71",
+              "size_bytes": 234436
+            }
+          ],
+          "inventory_paths": [
+            "/home/runner/work/test/test/.git/index"
+          ],
+          "snapshot_fingerprint": "41b5c44c53adff097a96f5dbb2e943be801a1520059e3f9cc792ad09fdf3c2dc"
+        },
+        "before": {
+          "indexes": [
+            {
+              "path": "/home/runner/work/test/test/.git/index",
+              "sha256": "db5fc95cdfdd514344a903813421573ace501ba717be2ce9704ada9d484b9e71",
+              "size_bytes": 234436
+            }
+          ],
+          "inventory_paths": [
+            "/home/runner/work/test/test/.git/index"
+          ],
+          "snapshot_fingerprint": "41b5c44c53adff097a96f5dbb2e943be801a1520059e3f9cc792ad09fdf3c2dc"
+        }
+      },
+      "modern": {
+        "after": {
+          "indexes": [
+            {
+              "path": "/home/runner/work/test/test/.git/index",
+              "sha256": "db5fc95cdfdd514344a903813421573ace501ba717be2ce9704ada9d484b9e71",
+              "size_bytes": 234436
+            }
+          ],
+          "inventory_paths": [
+            "/home/runner/work/test/test/.git/index"
+          ],
+          "snapshot_fingerprint": "41b5c44c53adff097a96f5dbb2e943be801a1520059e3f9cc792ad09fdf3c2dc"
+        },
+        "before": {
+          "indexes": [
+            {
+              "path": "/home/runner/work/test/test/.git/index",
+              "sha256": "db5fc95cdfdd514344a903813421573ace501ba717be2ce9704ada9d484b9e71",
+              "size_bytes": 234436
+            }
+          ],
+          "inventory_paths": [
+            "/home/runner/work/test/test/.git/index"
+          ],
+          "snapshot_fingerprint": "41b5c44c53adff097a96f5dbb2e943be801a1520059e3f9cc792ad09fdf3c2dc"
+        }
+      }
+    },
+    "limits": [
+      "Retained discovery records and bytes establish equality for recorded indexes at these boundaries; they do not prove absence of transient changes or independently rediscover unrecorded Git administration paths."
+    ],
+    "status": "PASS"
+  },
+  "limits": [
+    "Successful frozen assertions support refusals involving forged in-memory objects; those mutated objects and caught exceptions are not separately serialized.",
+    "Three earlier selection-expression source variants retain manifests/raw reports but only the final fixture head archive; their raw source bytes cannot be reauthenticated from that final archive.",
+    "Installed venv/wheel trees are excluded from the evidence tar. This audits retained original-controller identities, inventories, artifact hashes and raw metadata, without rereading remote installed files.",
+    "This admission gate does not establish prospective task success, comparative benefit, native G2-G6, or hostile-process nonbypassability."
+  ],
+  "native_calls": 0,
+  "network_calls": 0,
+  "profiles": {
+    "catalog_fingerprint": "c71b043cd4da5d87ed7295095081c7aa9059ab2ab177a1798b8b362acf9f381d",
+    "checks": 706,
+    "failed_checks": 0,
+    "legacy_download_receipts": 22,
+    "legacy_pin_count": 22,
+    "limits": [
+      "Wheel and venv trees are excluded by the workflow. Download receipts, installed-file hashes, and their frozen fingerprints are checked; excluded package bytes are not independently rehashed.",
+      "The legacy profile has no retained full installed-file list: its package-files fingerprint cannot be reconstructed offline from the 22-name installed inventory.",
+      "This stdlib audit compares exact raw dependency metadata and frozen closure receipts; it does not execute an independent PEP 440/508 resolver or replay release ranking.",
+      "Project JSON request bodies are not versioned in the source archive; request ledger hashes are bound but their excluded response bodies cannot be rehashed here."
+    ],
+    "modern_download_receipts": 45,
+    "modern_pin_count": 45,
+    "modern_plugins": 6,
+    "raw_selected_rejected_metadata_files": 22,
+    "runtimes": {
+      "cpython-3.12.14-pytest-8.4.1-linux-x86_64": {
+        "identity": {
+          "base_prefix": "/opt/hostedtoolcache/Python/3.12.14/x64",
+          "executable_sha256": "bef88f140b625959f8af25c7b75cce2cd5d4b29cc2f2b079befd7f68eda4dba0",
+          "implementation": "cpython",
+          "stdlib_manifest_sha256": "b2760fef98dd57b837ba53fe19b7d614fd9ee7c86c3ed071df3de5daeecbe11d",
+          "version_info": [
+            3,
+            12,
+            14,
+            "final",
+            0
+          ]
+        },
+        "interpreter": "/home/runner/work/_temp/v41-modern-profile/venv/bin/python",
+        "stdlib_files": 7239
+      },
+      "cpython-3.6.5-pytest-5.4.3-linux-x86_64": {
+        "identity": {
+          "base_prefix": "/home/runner/work/_temp/v41-original-runtimes/miniconda-base",
+          "executable_sha256": "84e1b1879cf9c0bf4c155b277f3111c0617a57debacfa1440441e4ca6249e5c7",
+          "implementation": "cpython",
+          "stdlib_manifest_sha256": "79fb905c5cbb5a20c986e0239fdf2791d2e0d625acdf2f711a1a999c86901691",
+          "version_info": [
+            3,
+            6,
+            5,
+            "final",
+            0
+          ]
+        },
+        "interpreter": "/home/runner/work/_temp/v41-original-runtimes/cpython-3.6.5-pytest-5.4.3-linux-x86_64/venv/bin/python",
+        "stdlib_files": 3318
+      }
+    },
+    "status": "PASS"
+  },
+  "raw_evidence": {
+    "attempts": {
+      "legacy": {
+        "collection_calls": 3,
+        "native_calls": 2,
+        "subprocess_attempts": 5,
+        "worker_seconds": 1.3368884790000948
+      },
+      "modern": {
+        "collection_calls": 42,
+        "native_calls": 16,
+        "subprocess_attempts": 58,
+        "worker_seconds": 16.22313890299972
+      }
+    },
+    "case_runtime_groups": {
+      "('3.12.14', '8.3.5')": 15,
+      "('3.12.14', '8.4.1')": 7,
+      "('3.6.5', '5.4.3')": 2
+    },
+    "cases": [
+      {
+        "attempts": {
+          "checked_reports": 3,
+          "collection_calls": 2,
+          "native_calls": 1
+        },
+        "earlier_variant_source_limit": [],
+        "environment_sha256": "61715a51c74b0634c7afe5b1b8b7e413e1040c2e553e5f9c161fbae9211cfae9",
+        "group": "modern",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.LicensedPluginReplacementAuthorityV4.test_candidate_cannot_replace_licensed_plugin_under_the_same_name",
+        "receipts": {
+          "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.LicensedPluginReplacementAuthorityV4.test_candidate_cannot_replace_licensed_plugin_under_the_same_name/execution-2/receipt.json": "UNKNOWN_EXACT_COLLECTION"
+        },
+        "source_identity": {
+          "file_count": 4,
+          "git_tree": "2843b6bf89dd59323b8b6a19ebe973eebc3b7f10",
+          "tracked_tree_sha256": "de979d449fd0376656260529ddf2621b4f10db18497186f8061958ca40d4877a"
+        },
+        "test_id": "research.unified_consequence_runtime.test_native_authority_v4.LicensedPluginReplacementAuthorityV4.test_candidate_cannot_replace_licensed_plugin_under_the_same_name"
+      },
+      {
+        "attempts": {
+          "checked_reports": 1,
+          "collection_calls": 1,
+          "native_calls": 0
+        },
+        "earlier_variant_source_limit": [],
+        "environment_sha256": "ae487f34aee5eb401a5a848ae8a5210f812de60c652a343290becf608f6d4ced",
+        "group": "modern",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_collection_time_import_of_same_malformed_fixture_is_refused",
+        "receipts": {},
+        "source_identity": {
+          "file_count": 4,
+          "git_tree": "46a07093acd1a1db205976f30f1aee354a2f2036",
+          "tracked_tree_sha256": "ac17c3be1b31d9a9808f2db37f5897f83bf936b6629421813c0e9c28508c61be"
+        },
+        "test_id": "research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_collection_time_import_of_same_malformed_fixture_is_refused"
+      },
+      {
+        "attempts": {
+          "checked_reports": 3,
+          "collection_calls": 2,
+          "native_calls": 1
+        },
+        "earlier_variant_source_limit": [],
+        "environment_sha256": "ae487f34aee5eb401a5a848ae8a5210f812de60c652a343290becf608f6d4ced",
+        "group": "modern",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_dynamic_import_of_same_malformed_fixture_is_native_failure",
+        "receipts": {
+          "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_dynamic_import_of_same_malformed_fixture_is_native_failure/evidence-2/receipt.json": "FAIL_NATIVE"
+        },
+        "source_identity": {
+          "file_count": 5,
+          "git_tree": "5864d3f6524427c126ec48214e7bfb391337c238",
+          "tracked_tree_sha256": "74164e3ed7ecd26f1ceb3908058e5c77f1ce3097cec1d197af6aee7194c01e0a"
+        },
+        "test_id": "research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_dynamic_import_of_same_malformed_fixture_is_native_failure"
+      },
+      {
+        "attempts": {
+          "checked_reports": 1,
+          "collection_calls": 1,
+          "native_calls": 0
+        },
+        "earlier_variant_source_limit": [],
+        "environment_sha256": "ae487f34aee5eb401a5a848ae8a5210f812de60c652a343290becf608f6d4ced",
+        "group": "modern",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_missing_protected_assertion_is_refused",
+        "receipts": {},
+        "source_identity": {
+          "file_count": 3,
+          "git_tree": "392bcdbcb8963c5d0a0015d97e8e41d10686278a",
+          "tracked_tree_sha256": "04af76bece6a4b65aa90880c1e49452e2ed4282d6c4cf6ce7800e33884ac7fd8"
+        },
+        "test_id": "research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_missing_protected_assertion_is_refused"
+      },
+      {
+        "attempts": {
+          "checked_reports": 3,
+          "collection_calls": 2,
+          "native_calls": 1
+        },
+        "earlier_variant_source_limit": [],
+        "environment_sha256": "ae487f34aee5eb401a5a848ae8a5210f812de60c652a343290becf608f6d4ced",
+        "group": "modern",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_same_malformed_fixture_required_by_static_runtime_import_is_native_failure",
+        "receipts": {
+          "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_same_malformed_fixture_required_by_static_runtime_import_is_native_failure/evidence-2/receipt.json": "FAIL_NATIVE"
+        },
+        "source_identity": {
+          "file_count": 5,
+          "git_tree": "7b6833f91f4be857cb6c5b2da198145fb8472c01",
+          "tracked_tree_sha256": "680e45feec237e626b10275cbe04091887215954478ba57b3ad3907a99024430"
+        },
+        "test_id": "research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_same_malformed_fixture_required_by_static_runtime_import_is_native_failure"
+      },
+      {
+        "attempts": {
+          "checked_reports": 5,
+          "collection_calls": 3,
+          "native_calls": 2
+        },
+        "earlier_variant_source_limit": [],
+        "environment_sha256": "ae487f34aee5eb401a5a848ae8a5210f812de60c652a343290becf608f6d4ced",
+        "group": "modern",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_unimported_malformed_fixture_allows_real_native_pass",
+        "receipts": {
+          "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_unimported_malformed_fixture_allows_real_native_pass/evidence-2/receipt.json": "PASS_NATIVE",
+          "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_unimported_malformed_fixture_allows_real_native_pass/evidence-3/receipt.json": "PASS_NATIVE"
+        },
+        "source_identity": {
+          "file_count": 5,
+          "git_tree": "100ff188c9bd1d616e1a54d23a2f8fa51dd0e3eb",
+          "tracked_tree_sha256": "c7fe08b2644c5cccf78f00b95bcf30f89dcdc2f21e2a54b7694dea29b90e52e2"
+        },
+        "test_id": "research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_unimported_malformed_fixture_allows_real_native_pass"
+      },
+      {
+        "attempts": {
+          "checked_reports": 3,
+          "collection_calls": 2,
+          "native_calls": 1
+        },
+        "earlier_variant_source_limit": [],
+        "environment_sha256": "61715a51c74b0634c7afe5b1b8b7e413e1040c2e553e5f9c161fbae9211cfae9",
+        "group": "modern",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_actual_assertion_failure_remains_native_failure",
+        "receipts": {
+          "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_actual_assertion_failure_remains_native_failure/execution-2/receipt.json": "FAIL_NATIVE"
+        },
+        "source_identity": {
+          "file_count": 3,
+          "git_tree": "a7b30a9cbeaa07dcdfda40f89875602b3f7d2906",
+          "tracked_tree_sha256": "0e188acbfc50da9bbd109dccb7a54ef76eb71e0e89727fa0b3593d8dca421d21"
+        },
+        "test_id": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_actual_assertion_failure_remains_native_failure"
+      },
+      {
+        "attempts": {
+          "checked_reports": 5,
+          "collection_calls": 3,
+          "native_calls": 2
+        },
+        "earlier_variant_source_limit": [],
+        "environment_sha256": "61715a51c74b0634c7afe5b1b8b7e413e1040c2e553e5f9c161fbae9211cfae9",
+        "group": "modern",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_cannot_change_original_fixture_order_or_discard_collected_nodes",
+        "receipts": {
+          "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_cannot_change_original_fixture_order_or_discard_collected_nodes/execution-2/receipt.json": "UNKNOWN_EXACT_COLLECTION",
+          "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_cannot_change_original_fixture_order_or_discard_collected_nodes/execution-3/receipt.json": "UNKNOWN_EXACT_COLLECTION"
+        },
+        "source_identity": {
+          "file_count": 4,
+          "git_tree": "0f5ffdc1f78931f39603be24902c93767643c93c",
+          "tracked_tree_sha256": "4bdeb4238342f20dbe056898e110832175e220c098295f92e82bc8a67d5a0d12"
+        },
+        "test_id": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_cannot_change_original_fixture_order_or_discard_collected_nodes"
+      },
+      {
+        "attempts": {
+          "checked_reports": 3,
+          "collection_calls": 2,
+          "native_calls": 1
+        },
+        "earlier_variant_source_limit": [],
+        "environment_sha256": "61715a51c74b0634c7afe5b1b8b7e413e1040c2e553e5f9c161fbae9211cfae9",
+        "group": "modern",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_cannot_register_new_plugin_from_tracked_production_source",
+        "receipts": {
+          "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_cannot_register_new_plugin_from_tracked_production_source/execution-2/receipt.json": "UNKNOWN_EXACT_COLLECTION"
+        },
+        "source_identity": {
+          "file_count": 4,
+          "git_tree": "abc8bf507e1cbeafef6da57ffb836439d513f889",
+          "tracked_tree_sha256": "6beabacc17dc68ba72bec09aed9443ccf8a0c13852a9adf4cfd451b57ffd3e0e"
+        },
+        "test_id": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_cannot_register_new_plugin_from_tracked_production_source"
+      },
+      {
+        "attempts": {
+          "checked_reports": 5,
+          "collection_calls": 3,
+          "native_calls": 2
+        },
+        "earlier_variant_source_limit": [],
+        "environment_sha256": "61715a51c74b0634c7afe5b1b8b7e413e1040c2e553e5f9c161fbae9211cfae9",
+        "group": "modern",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_cannot_shrink_or_expand_cases_behind_same_static_prefix",
+        "receipts": {
+          "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_cannot_shrink_or_expand_cases_behind_same_static_prefix/execution-2/receipt.json": "UNKNOWN_EXACT_COLLECTION",
+          "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_cannot_shrink_or_expand_cases_behind_same_static_prefix/execution-3/receipt.json": "UNKNOWN_EXACT_COLLECTION"
+        },
+        "source_identity": {
+          "file_count": 3,
+          "git_tree": "a7b30a9cbeaa07dcdfda40f89875602b3f7d2906",
+          "tracked_tree_sha256": "0e188acbfc50da9bbd109dccb7a54ef76eb71e0e89727fa0b3593d8dca421d21"
+        },
+        "test_id": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_cannot_shrink_or_expand_cases_behind_same_static_prefix"
+      },
+      {
+        "attempts": {
+          "checked_reports": 3,
+          "collection_calls": 2,
+          "native_calls": 1
+        },
+        "earlier_variant_source_limit": [],
+        "environment_sha256": "61715a51c74b0634c7afe5b1b8b7e413e1040c2e553e5f9c161fbae9211cfae9",
+        "group": "modern",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_module_skip_cannot_hide_original_assertions",
+        "receipts": {
+          "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_module_skip_cannot_hide_original_assertions/execution-2/receipt.json": "UNKNOWN_EXACT_COLLECTION"
+        },
+        "source_identity": {
+          "file_count": 3,
+          "git_tree": "a7b30a9cbeaa07dcdfda40f89875602b3f7d2906",
+          "tracked_tree_sha256": "0e188acbfc50da9bbd109dccb7a54ef76eb71e0e89727fa0b3593d8dca421d21"
+        },
+        "test_id": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_module_skip_cannot_hide_original_assertions"
+      },
+      {
+        "attempts": {
+          "checked_reports": 1,
+          "collection_calls": 1,
+          "native_calls": 0
+        },
+        "earlier_variant_source_limit": [],
+        "environment_sha256": "61715a51c74b0634c7afe5b1b8b7e413e1040c2e553e5f9c161fbae9211cfae9",
+        "group": "modern",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_certificate_cannot_replay_to_changed_execution_or_plugin_policy",
+        "receipts": {},
+        "source_identity": {
+          "file_count": 3,
+          "git_tree": "a7b30a9cbeaa07dcdfda40f89875602b3f7d2906",
+          "tracked_tree_sha256": "0e188acbfc50da9bbd109dccb7a54ef76eb71e0e89727fa0b3593d8dca421d21"
+        },
+        "test_id": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_certificate_cannot_replay_to_changed_execution_or_plugin_policy"
+      },
+      {
+        "attempts": {
+          "checked_reports": 1,
+          "collection_calls": 1,
+          "native_calls": 0
+        },
+        "earlier_variant_source_limit": [],
+        "environment_sha256": "61715a51c74b0634c7afe5b1b8b7e413e1040c2e553e5f9c161fbae9211cfae9",
+        "group": "modern",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_certificate_cannot_replay_to_other_protocol_environment_source_or_horizon",
+        "receipts": {},
+        "source_identity": {
+          "file_count": 3,
+          "git_tree": "a7b30a9cbeaa07dcdfda40f89875602b3f7d2906",
+          "tracked_tree_sha256": "0e188acbfc50da9bbd109dccb7a54ef76eb71e0e89727fa0b3593d8dca421d21"
+        },
+        "test_id": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_certificate_cannot_replay_to_other_protocol_environment_source_or_horizon"
+      },
+      {
+        "attempts": {
+          "checked_reports": 3,
+          "collection_calls": 2,
+          "native_calls": 1
+        },
+        "earlier_variant_source_limit": [],
+        "environment_sha256": "61715a51c74b0634c7afe5b1b8b7e413e1040c2e553e5f9c161fbae9211cfae9",
+        "group": "modern",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_independent_collection_then_full_original_parameter_cases_pass",
+        "receipts": {
+          "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_independent_collection_then_full_original_parameter_cases_pass/execution-2/receipt.json": "PASS_NATIVE"
+        },
+        "source_identity": {
+          "file_count": 3,
+          "git_tree": "a7b30a9cbeaa07dcdfda40f89875602b3f7d2906",
+          "tracked_tree_sha256": "0e188acbfc50da9bbd109dccb7a54ef76eb71e0e89727fa0b3593d8dca421d21"
+        },
+        "test_id": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_independent_collection_then_full_original_parameter_cases_pass"
+      },
+      {
+        "attempts": {
+          "checked_reports": 1,
+          "collection_calls": 1,
+          "native_calls": 0
+        },
+        "earlier_variant_source_limit": [],
+        "environment_sha256": "61715a51c74b0634c7afe5b1b8b7e413e1040c2e553e5f9c161fbae9211cfae9",
+        "group": "modern",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_preloaded_installed_project_name_cannot_replace_frozen_source",
+        "receipts": {},
+        "source_identity": {
+          "file_count": 3,
+          "git_tree": "4064d61964a84a4c3c779c1cbc4b559480c67ede",
+          "tracked_tree_sha256": "ef38f7ccc2bbc3d317a99a84f8d169b9863e95ab5ab7e93074ec6b3c4b8ed715"
+        },
+        "test_id": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_preloaded_installed_project_name_cannot_replace_frozen_source"
+      },
+      {
+        "attempts": {
+          "checked_reports": 1,
+          "collection_calls": 1,
+          "native_calls": 0
+        },
+        "earlier_variant_source_limit": [],
+        "environment_sha256": "61715a51c74b0634c7afe5b1b8b7e413e1040c2e553e5f9c161fbae9211cfae9",
+        "group": "modern",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_resealed_collection_manifest_is_checked_against_original_recollection",
+        "receipts": {},
+        "source_identity": {
+          "file_count": 3,
+          "git_tree": "a7b30a9cbeaa07dcdfda40f89875602b3f7d2906",
+          "tracked_tree_sha256": "0e188acbfc50da9bbd109dccb7a54ef76eb71e0e89727fa0b3593d8dca421d21"
+        },
+        "test_id": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_resealed_collection_manifest_is_checked_against_original_recollection"
+      },
+      {
+        "attempts": {
+          "checked_reports": 3,
+          "collection_calls": 2,
+          "native_calls": 1
+        },
+        "earlier_variant_source_limit": [],
+        "environment_sha256": "61715a51c74b0634c7afe5b1b8b7e413e1040c2e553e5f9c161fbae9211cfae9",
+        "group": "modern",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_resealed_wrong_import_source_is_not_authenticated_by_equal_pass_counts",
+        "receipts": {
+          "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_resealed_wrong_import_source_is_not_authenticated_by_equal_pass_counts/execution-2/receipt.json": "PASS_NATIVE"
+        },
+        "source_identity": {
+          "file_count": 3,
+          "git_tree": "a7b30a9cbeaa07dcdfda40f89875602b3f7d2906",
+          "tracked_tree_sha256": "0e188acbfc50da9bbd109dccb7a54ef76eb71e0e89727fa0b3593d8dca421d21"
+        },
+        "test_id": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_resealed_wrong_import_source_is_not_authenticated_by_equal_pass_counts"
+      },
+      {
+        "attempts": {
+          "checked_reports": 4,
+          "collection_calls": 4,
+          "native_calls": 0
+        },
+        "earlier_variant_source_limit": [
+          "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_selection_exclusion_and_invalid_expression_fail_for_distinct_reasons/collection-1/checked-report.json",
+          "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_selection_exclusion_and_invalid_expression_fail_for_distinct_reasons/collection-2/checked-report.json",
+          "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_selection_exclusion_and_invalid_expression_fail_for_distinct_reasons/collection-3/checked-report.json"
+        ],
+        "environment_sha256": "61715a51c74b0634c7afe5b1b8b7e413e1040c2e553e5f9c161fbae9211cfae9",
+        "group": "modern",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_selection_exclusion_and_invalid_expression_fail_for_distinct_reasons",
+        "receipts": {},
+        "source_identity": {
+          "file_count": 3,
+          "git_tree": "5bddd573af272c14a367efe04451ed93711f8cae",
+          "tracked_tree_sha256": "6e57683551dcece65ea8b94014f712b240ab0ebdcfa0c8e29f5c653bc72b427f"
+        },
+        "test_id": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_selection_exclusion_and_invalid_expression_fail_for_distinct_reasons"
+      },
+      {
+        "attempts": {
+          "checked_reports": 1,
+          "collection_calls": 1,
+          "native_calls": 0
+        },
+        "earlier_variant_source_limit": [],
+        "environment_sha256": "61715a51c74b0634c7afe5b1b8b7e413e1040c2e553e5f9c161fbae9211cfae9",
+        "group": "modern",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_self_declared_extra_authority_and_missing_certificate_fields_are_rejected",
+        "receipts": {},
+        "source_identity": {
+          "file_count": 3,
+          "git_tree": "a7b30a9cbeaa07dcdfda40f89875602b3f7d2906",
+          "tracked_tree_sha256": "0e188acbfc50da9bbd109dccb7a54ef76eb71e0e89727fa0b3593d8dca421d21"
+        },
+        "test_id": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_self_declared_extra_authority_and_missing_certificate_fields_are_rejected"
+      },
+      {
+        "attempts": {
+          "checked_reports": 1,
+          "collection_calls": 1,
+          "native_calls": 0
+        },
+        "earlier_variant_source_limit": [],
+        "environment_sha256": "61715a51c74b0634c7afe5b1b8b7e413e1040c2e553e5f9c161fbae9211cfae9",
+        "group": "modern",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_weaker_required_assertions_are_not_certificate_authority",
+        "receipts": {},
+        "source_identity": {
+          "file_count": 3,
+          "git_tree": "a7b30a9cbeaa07dcdfda40f89875602b3f7d2906",
+          "tracked_tree_sha256": "0e188acbfc50da9bbd109dccb7a54ef76eb71e0e89727fa0b3593d8dca421d21"
+        },
+        "test_id": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_weaker_required_assertions_are_not_certificate_authority"
+      },
+      {
+        "attempts": {
+          "checked_reports": 0,
+          "collection_calls": 0,
+          "native_calls": 0
+        },
+        "earlier_variant_source_limit": [],
+        "environment_sha256": "ae487f34aee5eb401a5a848ae8a5210f812de60c652a343290becf608f6d4ced",
+        "group": "modern",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_dependency_includes_v41.IncludedDependenciesNativeV41.test_real_git_symlink_include_cannot_enter_regular_file_snapshot",
+        "receipts": {},
+        "source_identity": {
+          "file_count": 6,
+          "git_tree": "2a04e6c6c97ffd7b3c2af0fc1818aaf014750b5f",
+          "tracked_tree_sha256": "611dc8dd2064caef4ff90114d0aa2cc0b0bac5c73200b30dd2801cfdba0ed6d8"
+        },
+        "test_id": "research.unified_consequence_runtime.test_native_dependency_includes_v41.IncludedDependenciesNativeV41.test_real_git_symlink_include_cannot_enter_regular_file_snapshot"
+      },
+      {
+        "attempts": {
+          "checked_reports": 5,
+          "collection_calls": 3,
+          "native_calls": 2
+        },
+        "earlier_variant_source_limit": [],
+        "environment_sha256": "ae487f34aee5eb401a5a848ae8a5210f812de60c652a343290becf608f6d4ced",
+        "group": "modern",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_dependency_includes_v41.IncludedDependenciesNativeV41.test_selected_actual_runtime_include_allows_real_native_pass_and_independent_reexecution",
+        "receipts": {
+          "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_dependency_includes_v41.IncludedDependenciesNativeV41.test_selected_actual_runtime_include_allows_real_native_pass_and_independent_reexecution/evidence-2/receipt.json": "PASS_NATIVE",
+          "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_dependency_includes_v41.IncludedDependenciesNativeV41.test_selected_actual_runtime_include_allows_real_native_pass_and_independent_reexecution/evidence-3/receipt.json": "PASS_NATIVE"
+        },
+        "source_identity": {
+          "file_count": 7,
+          "git_tree": "a53a6d9b1e0893c357f0487e82796bc453fc9315",
+          "tracked_tree_sha256": "7bef7f3e16744b01f80a22e4dbbc9a3b14a36fc60a21a6391d1fb0bef5a8cf43"
+        },
+        "test_id": "research.unified_consequence_runtime.test_native_dependency_includes_v41.IncludedDependenciesNativeV41.test_selected_actual_runtime_include_allows_real_native_pass_and_independent_reexecution"
+      },
+      {
+        "attempts": {
+          "checked_reports": 0,
+          "collection_calls": 0,
+          "native_calls": 0
+        },
+        "earlier_variant_source_limit": [],
+        "environment_sha256": "14b9ce2cf4a71c4b93ed9de4ad7cad1573ec35b5697b7757d0c31650ff8c55be",
+        "group": "legacy",
+        "path": "legacy-v41/native-evidence/research.unified_consequence_runtime.test_native_dependency_includes_v41.IncludedDependenciesNativeV41.test_real_git_symlink_include_cannot_enter_regular_file_snapshot",
+        "receipts": {},
+        "source_identity": {
+          "file_count": 6,
+          "git_tree": "2a04e6c6c97ffd7b3c2af0fc1818aaf014750b5f",
+          "tracked_tree_sha256": "611dc8dd2064caef4ff90114d0aa2cc0b0bac5c73200b30dd2801cfdba0ed6d8"
+        },
+        "test_id": "research.unified_consequence_runtime.test_native_dependency_includes_v41.IncludedDependenciesNativeV41.test_real_git_symlink_include_cannot_enter_regular_file_snapshot"
+      },
+      {
+        "attempts": {
+          "checked_reports": 5,
+          "collection_calls": 3,
+          "native_calls": 2
+        },
+        "earlier_variant_source_limit": [],
+        "environment_sha256": "14b9ce2cf4a71c4b93ed9de4ad7cad1573ec35b5697b7757d0c31650ff8c55be",
+        "group": "legacy",
+        "path": "legacy-v41/native-evidence/research.unified_consequence_runtime.test_native_dependency_includes_v41.IncludedDependenciesNativeV41.test_selected_actual_runtime_include_allows_real_native_pass_and_independent_reexecution",
+        "receipts": {
+          "legacy-v41/native-evidence/research.unified_consequence_runtime.test_native_dependency_includes_v41.IncludedDependenciesNativeV41.test_selected_actual_runtime_include_allows_real_native_pass_and_independent_reexecution/evidence-2/receipt.json": "PASS_NATIVE",
+          "legacy-v41/native-evidence/research.unified_consequence_runtime.test_native_dependency_includes_v41.IncludedDependenciesNativeV41.test_selected_actual_runtime_include_allows_real_native_pass_and_independent_reexecution/evidence-3/receipt.json": "PASS_NATIVE"
+        },
+        "source_identity": {
+          "file_count": 7,
+          "git_tree": "b41a876467d8cd10d45cfa1640714bd3cb286f3b",
+          "tracked_tree_sha256": "75c8881239fb00ac7eb9b1e2a0b2c3d37cbded96734c30ca8009f61d9815ff1a"
+        },
+        "test_id": "research.unified_consequence_runtime.test_native_dependency_includes_v41.IncludedDependenciesNativeV41.test_selected_actual_runtime_include_allows_real_native_pass_and_independent_reexecution"
+      }
+    ],
+    "checked_report_count": 63,
+    "default_recollections": [
+      {
+        "mapped_test_id": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_independent_collection_then_full_original_parameter_cases_pass",
+        "nodes": [
+          "tests/test_native.py::test_old",
+          "tests/test_native.py::test_new[1]",
+          "tests/test_native.py::test_new[2]"
+        ],
+        "path": "admission-v41/default-collection-evidence/udm-v2-independent-0s30uilc/recollection",
+        "source_manifest_fingerprint": "0e188acbfc50da9bbd109dccb7a54ef76eb71e0e89727fa0b3593d8dca421d21",
+        "timestamp_window": [
+          "2026-10-16T19:30:51.908385+00:00",
+          "2026-10-16T19:30:54.314655+00:00",
+          "2026-10-16T19:30:56.710505+00:00"
+        ],
+        "worker_seconds": 0.26639936900005523
+      },
+      {
+        "forgery_comparison": {
+          "exact_static_forged_nodes": [
+            "tests/test_native.py::test_old",
+            "tests/test_native.py::test_new[1]"
+          ],
+          "forged_object_retained": false,
+          "fresh_original_nodes": [
+            "tests/test_native.py::test_old",
+            "tests/test_native.py::test_new[1]",
+            "tests/test_native.py::test_new[2]"
+          ]
+        },
+        "mapped_test_id": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_resealed_collection_manifest_is_checked_against_original_recollection",
+        "nodes": [
+          "tests/test_native.py::test_old",
+          "tests/test_native.py::test_new[1]",
+          "tests/test_native.py::test_new[2]"
+        ],
+        "path": "admission-v41/default-collection-evidence/udm-v2-independent-b35tu54z/recollection",
+        "source_manifest_fingerprint": "0e188acbfc50da9bbd109dccb7a54ef76eb71e0e89727fa0b3593d8dca421d21",
+        "timestamp_window": [
+          "2026-10-16T19:31:04.098729+00:00",
+          "2026-10-16T19:31:06.506208+00:00",
+          "2026-10-16T19:31:08.972240+00:00"
+        ],
+        "worker_seconds": 0.26641570300000694
+      }
+    ],
+    "native_case_directories": 24,
+    "negative_controls": [
+      {
+        "case": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.LicensedPluginReplacementAuthorityV4.test_candidate_cannot_replace_licensed_plugin_under_the_same_name",
+        "kind": "UNKNOWN_NATIVE_IDENTITY_OR_ASSERTION_EXECUTION",
+        "receipts": {
+          "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.LicensedPluginReplacementAuthorityV4.test_candidate_cannot_replace_licensed_plugin_under_the_same_name/execution-2/receipt.json": "UNKNOWN_EXACT_COLLECTION"
+        }
+      },
+      {
+        "case": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_collection_time_import_of_same_malformed_fixture_is_refused",
+        "kind": "REAL_COLLECTION_SYNTAX_ERROR",
+        "report": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_collection_time_import_of_same_malformed_fixture_is_refused/evidence-1/checked-report.json"
+      },
+      {
+        "case": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_dynamic_import_of_same_malformed_fixture_is_native_failure",
+        "kind": "REAL_FAIL_NATIVE",
+        "receipt": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_dynamic_import_of_same_malformed_fixture_is_native_failure/evidence-2/receipt.json"
+      },
+      {
+        "case": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_missing_protected_assertion_is_refused",
+        "kind": "MISSING_PROTECTED_ASSERTION_NO_CERTIFICATE"
+      },
+      {
+        "case": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_same_malformed_fixture_required_by_static_runtime_import_is_native_failure",
+        "kind": "REAL_FAIL_NATIVE",
+        "receipt": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_same_malformed_fixture_required_by_static_runtime_import_is_native_failure/evidence-2/receipt.json"
+      },
+      {
+        "case": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_actual_assertion_failure_remains_native_failure",
+        "kind": "REAL_FAIL_NATIVE"
+      },
+      {
+        "case": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_cannot_change_original_fixture_order_or_discard_collected_nodes",
+        "kind": "UNKNOWN_NATIVE_IDENTITY_OR_ASSERTION_EXECUTION",
+        "receipts": {
+          "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_cannot_change_original_fixture_order_or_discard_collected_nodes/execution-2/receipt.json": "UNKNOWN_EXACT_COLLECTION",
+          "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_cannot_change_original_fixture_order_or_discard_collected_nodes/execution-3/receipt.json": "UNKNOWN_EXACT_COLLECTION"
+        }
+      },
+      {
+        "case": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_cannot_register_new_plugin_from_tracked_production_source",
+        "kind": "UNKNOWN_NATIVE_IDENTITY_OR_ASSERTION_EXECUTION",
+        "receipts": {
+          "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_cannot_register_new_plugin_from_tracked_production_source/execution-2/receipt.json": "UNKNOWN_EXACT_COLLECTION"
+        }
+      },
+      {
+        "case": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_cannot_shrink_or_expand_cases_behind_same_static_prefix",
+        "kind": "UNKNOWN_NATIVE_IDENTITY_OR_ASSERTION_EXECUTION",
+        "receipts": {
+          "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_cannot_shrink_or_expand_cases_behind_same_static_prefix/execution-2/receipt.json": "UNKNOWN_EXACT_COLLECTION",
+          "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_cannot_shrink_or_expand_cases_behind_same_static_prefix/execution-3/receipt.json": "UNKNOWN_EXACT_COLLECTION"
+        }
+      },
+      {
+        "case": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_module_skip_cannot_hide_original_assertions",
+        "kind": "UNKNOWN_NATIVE_IDENTITY_OR_ASSERTION_EXECUTION",
+        "receipts": {
+          "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_module_skip_cannot_hide_original_assertions/execution-2/receipt.json": "UNKNOWN_EXACT_COLLECTION"
+        }
+      },
+      {
+        "case": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_certificate_cannot_replay_to_changed_execution_or_plugin_policy",
+        "kind": "FROZEN_ASSERTIONS_CHECK_REJECTION_OF_IN_MEMORY_FORGERY_OR_SELECTION",
+        "mutated_object_separately_retained": false
+      },
+      {
+        "case": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_certificate_cannot_replay_to_other_protocol_environment_source_or_horizon",
+        "kind": "FROZEN_ASSERTIONS_CHECK_REJECTION_OF_IN_MEMORY_FORGERY_OR_SELECTION",
+        "mutated_object_separately_retained": false
+      },
+      {
+        "case": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_preloaded_installed_project_name_cannot_replace_frozen_source",
+        "kind": "EXTERNAL_PROJECT_IMPORT_NO_CERTIFICATE"
+      },
+      {
+        "case": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_resealed_collection_manifest_is_checked_against_original_recollection",
+        "kind": "FROZEN_ASSERTIONS_CHECK_REJECTION_OF_IN_MEMORY_FORGERY_OR_SELECTION",
+        "mutated_object_separately_retained": false
+      },
+      {
+        "case": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_resealed_wrong_import_source_is_not_authenticated_by_equal_pass_counts",
+        "kind": "FROZEN_ASSERTIONS_CHECK_REJECTION_OF_IN_MEMORY_FORGERY_OR_SELECTION",
+        "mutated_object_separately_retained": false
+      },
+      {
+        "case": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_selection_exclusion_and_invalid_expression_fail_for_distinct_reasons",
+        "kind": "FROZEN_ASSERTIONS_CHECK_REJECTION_OF_IN_MEMORY_FORGERY_OR_SELECTION",
+        "mutated_object_separately_retained": false
+      },
+      {
+        "case": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_self_declared_extra_authority_and_missing_certificate_fields_are_rejected",
+        "kind": "FROZEN_ASSERTIONS_CHECK_REJECTION_OF_IN_MEMORY_FORGERY_OR_SELECTION",
+        "mutated_object_separately_retained": false
+      },
+      {
+        "case": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_weaker_required_assertions_are_not_certificate_authority",
+        "kind": "FROZEN_ASSERTIONS_CHECK_REJECTION_OF_IN_MEMORY_FORGERY_OR_SELECTION",
+        "mutated_object_separately_retained": false
+      },
+      {
+        "case": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_dependency_includes_v41.IncludedDependenciesNativeV41.test_real_git_symlink_include_cannot_enter_regular_file_snapshot",
+        "kind": "TRACKED_SYMLINK_PREWORKER_REFUSAL"
+      },
+      {
+        "case": "legacy-v41/native-evidence/research.unified_consequence_runtime.test_native_dependency_includes_v41.IncludedDependenciesNativeV41.test_real_git_symlink_include_cannot_enter_regular_file_snapshot",
+        "kind": "TRACKED_SYMLINK_PREWORKER_REFUSAL"
+      }
+    ],
+    "packet_objects": 37,
+    "packets": [
+      {
+        "kind": "certificate",
+        "packet_sha256": {
+          "checked-report.json": "a6d7aa63550408abd5394d6bb3e17c045607058f980855cdf2c1b0eb2a78fc7b",
+          "native.xml": "9b4deb489414975423a4d0f350b3a5637a077e03474491ab48d82d2a684c1ab2",
+          "report.json": "2d90e848f9b818fe2708590b7685eff7c8b0db20c1d902ad88cbd467e8263a14",
+          "stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout.log": "4f418bcbba177a1e977e6a8ddd62371eb76f519b9eb08ffa4bd7073524acecb5",
+          "tracked-source-manifest.json": "bdee73849934eb3937fa96b099c2e9dcf8fb290cb7d4a9ace81b8e7bb983b31c"
+        },
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.LicensedPluginReplacementAuthorityV4.test_candidate_cannot_replace_licensed_plugin_under_the_same_name/collection-1/admission-certificate.json",
+        "status": "ADMITTED_NATIVE_COLLECTION"
+      },
+      {
+        "kind": "receipt",
+        "packet_sha256": {
+          "checked-report.json": "0fef411415a30e9ef64cec7bc9a8be9be335e14c3bd42094625289400d6cbd53",
+          "native.xml": "a39b8b437bcce7203e8cd0d6991deb2d40a9bd80278dafa64da3c12cd27963bc",
+          "report.json": "14fab81667ab407e3a513c12c884d505a0e5d6fc637d67d20fe1f99140f8d31d",
+          "stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout.log": "5bbb2684ebe08c1c7d9b4a10317a2ac6fc01f315d6733c6cd3eaa64a6384e56f",
+          "tracked-source-manifest.json": "bdee73849934eb3937fa96b099c2e9dcf8fb290cb7d4a9ace81b8e7bb983b31c"
+        },
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.LicensedPluginReplacementAuthorityV4.test_candidate_cannot_replace_licensed_plugin_under_the_same_name/execution-2/receipt.json",
+        "status": "UNKNOWN_EXACT_COLLECTION"
+      },
+      {
+        "kind": "certificate",
+        "packet_sha256": {
+          "checked-report.json": "736016571d524b9e6e6f72d8a7954cbb4ab5a34e35a4067e92d425ee394ae432",
+          "native.xml": "3beaffd8374a798c974137cbb8d663e997280e010248a369f65b0dbe5cc68fc3",
+          "report.json": "6475181b03e752238856b4451ed83b75a30fb3349b0bf723b120d5d2dbc33680",
+          "stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout.log": "48c3840fd996720f539481d983ca510197373aaf137e25add1991732041f88bf",
+          "tracked-source-manifest.json": "72e81acabcf6aa003bfb9aad0df3a9a6b10cbf563debc23e54a1fef6366d1b1d"
+        },
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_dynamic_import_of_same_malformed_fixture_is_native_failure/evidence-1/admission-certificate.json",
+        "status": "ADMITTED_NATIVE_COLLECTION"
+      },
+      {
+        "kind": "receipt",
+        "packet_sha256": {
+          "checked-report.json": "023c1177ffc8fd20b5f913ea67f42cfe7408b90c0a1b422806bbadb9421ba752",
+          "native.xml": "7882d4d2fa7d66737a2b7fd676bdf68954a14b392d9677f22299c787064edb4d",
+          "report.json": "9b8bc62985a5679c54141a046b6dd5aea36826d814efb82abaf458440bd1fc4f",
+          "stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout.log": "52a72c575249a40027d31df777e38cf5dcc3f8fcfea735d6dd9a346034dec4f2",
+          "tracked-source-manifest.json": "72e81acabcf6aa003bfb9aad0df3a9a6b10cbf563debc23e54a1fef6366d1b1d"
+        },
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_dynamic_import_of_same_malformed_fixture_is_native_failure/evidence-2/receipt.json",
+        "status": "FAIL_NATIVE"
+      },
+      {
+        "kind": "certificate",
+        "packet_sha256": {
+          "checked-report.json": "c154cc530eda369e55d798cb7408973598a63481d0ae413c635e780d399b2bea",
+          "native.xml": "8c43f264a7c178ce6125e8e0734b345455d2e05e4e193b75bec1fb8cb6cf6a81",
+          "report.json": "6a5402e7ee4fdf7f961a4d6c59c6d003524967efb08fab530bc66b4d84f5ad44",
+          "stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout.log": "ece92d2a06a6e35f98730bc3a2f859aaa907351e01084ea07ed568cb4e87b6ea",
+          "tracked-source-manifest.json": "c1dcad7fef6f554c0512a30da47627c039ad3c4227daf499cc9d4201ea9cc54c"
+        },
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_same_malformed_fixture_required_by_static_runtime_import_is_native_failure/evidence-1/admission-certificate.json",
+        "status": "ADMITTED_NATIVE_COLLECTION"
+      },
+      {
+        "kind": "receipt",
+        "packet_sha256": {
+          "checked-report.json": "075e62f9fd4479ab06306b072092ed0aa82d54916967534b9dc8d28304db2512",
+          "native.xml": "ffe64a1df1eb5a1e85dddd014a8643c2219e44b806ae3aa972e56ee98b1bdd41",
+          "report.json": "b67e02113082d2cd40341f1241b513698e971a2de811478c412dc4c9a2e6fe50",
+          "stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout.log": "87afffa289184a3b103722a63eab9286f2ea522dd7c0a9e95bcc34f494a474e1",
+          "tracked-source-manifest.json": "c1dcad7fef6f554c0512a30da47627c039ad3c4227daf499cc9d4201ea9cc54c"
+        },
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_same_malformed_fixture_required_by_static_runtime_import_is_native_failure/evidence-2/receipt.json",
+        "status": "FAIL_NATIVE"
+      },
+      {
+        "kind": "certificate",
+        "packet_sha256": {
+          "checked-report.json": "7b58d02e4aea4f9db900f11e27afa653a55d7c3025ae3064190bba3be8e176fc",
+          "native.xml": "ca4ffca409d43bb4acf34181f5b17b286fdba54ffbbc8d1965e41504d7ea606e",
+          "report.json": "a1d97f08a3cb27140886c45b76c170073b06d7958be750ad59e6c8df539d6c85",
+          "stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout.log": "eb78b37529915116a0c9cb6b3422ce6b43a7fb166894f7b61fc7da899ad767de",
+          "tracked-source-manifest.json": "f62a653472f3a582a1ef8b29af5bcf7bce674360f13c9559df242fc3c8b418ae"
+        },
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_unimported_malformed_fixture_allows_real_native_pass/evidence-1/admission-certificate.json",
+        "status": "ADMITTED_NATIVE_COLLECTION"
+      },
+      {
+        "kind": "receipt",
+        "packet_sha256": {
+          "checked-report.json": "668a2b5a32291d7312e4d1c9ff472add0bfa215237bdc8db16fa886528d544e2",
+          "native.xml": "522198250d83603cfa7f3038fb6a861cbd7f8866a521668746d280d777379a91",
+          "report.json": "615b1eea43757d13e179410956f47958965d05aef35cfb6032fa4e625a9a3838",
+          "stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout.log": "7b14a7babb1e2ed2d6e4facec5ae65d4ec33a5b7625b031f59fd3aea31c68a5d",
+          "tracked-source-manifest.json": "f62a653472f3a582a1ef8b29af5bcf7bce674360f13c9559df242fc3c8b418ae"
+        },
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_unimported_malformed_fixture_allows_real_native_pass/evidence-2/receipt.json",
+        "status": "PASS_NATIVE"
+      },
+      {
+        "kind": "receipt",
+        "packet_sha256": {
+          "checked-report.json": "df96974da71f2738ce131e42b38a085be41a9b43ff4b224d3e1a348aa252542c",
+          "native.xml": "80b391d81f20d92a00d416de99c0955c17db799ec2f929a47c8ae54e8b79c77b",
+          "report.json": "615b1eea43757d13e179410956f47958965d05aef35cfb6032fa4e625a9a3838",
+          "stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout.log": "56d316a2f53239fd1c207b420aae1fbaa620158022d4a324a9cb464fad165ed6",
+          "tracked-source-manifest.json": "f62a653472f3a582a1ef8b29af5bcf7bce674360f13c9559df242fc3c8b418ae"
+        },
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_unimported_malformed_fixture_allows_real_native_pass/evidence-3/receipt.json",
+        "status": "PASS_NATIVE"
+      },
+      {
+        "kind": "receipt",
+        "packet_sha256": {
+          "checked-report.json": "668a2b5a32291d7312e4d1c9ff472add0bfa215237bdc8db16fa886528d544e2",
+          "native.xml": "522198250d83603cfa7f3038fb6a861cbd7f8866a521668746d280d777379a91",
+          "report.json": "615b1eea43757d13e179410956f47958965d05aef35cfb6032fa4e625a9a3838",
+          "stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout.log": "7b14a7babb1e2ed2d6e4facec5ae65d4ec33a5b7625b031f59fd3aea31c68a5d",
+          "tracked-source-manifest.json": "f62a653472f3a582a1ef8b29af5bcf7bce674360f13c9559df242fc3c8b418ae"
+        },
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_unimported_malformed_fixture_allows_real_native_pass/checked-independent-receipt.json",
+        "status": "PASS_NATIVE"
+      },
+      {
+        "kind": "certificate",
+        "packet_sha256": {
+          "checked-report.json": "93d46e07948c8cae4d83248708e2f9cb0bc5ca4fc2b4ad4f59ed4f7ef4c05e75",
+          "native.xml": "92e6bbc90e09d3fda4b0e4262855b7c23fdb38d44f18d882afa2f42730b4f412",
+          "report.json": "d5af6ac726de8f0320ee647372cdf8b6e0805b9a40b8973f5e08cdea3e0d40a4",
+          "stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout.log": "cf65d3bf7e612983b7ac41d66b36c390cbd2a3f3882150ed5607af7fc44e2657",
+          "tracked-source-manifest.json": "88b91bdfeeee5e680705871ff2d8387fcf77e23bb477786ab62e3a5abf41638d"
+        },
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_actual_assertion_failure_remains_native_failure/collection-1/admission-certificate.json",
+        "status": "ADMITTED_NATIVE_COLLECTION"
+      },
+      {
+        "kind": "receipt",
+        "packet_sha256": {
+          "checked-report.json": "7ac19cd9baa1d760157d383f4305793572c6f40934547423891ddd7c93e05ca6",
+          "native.xml": "6b5afe10f17fa8b5e0b31d966386a4f1d9dbb37ac17db236877c5cdc10ae7280",
+          "report.json": "b6260a23120f19f8d95bca94991bf1caf73958bc3ab193639d2bda131750cb47",
+          "stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout.log": "26dd61b97b22d6f94577c70226011e5d04cf92da9c5b7d862b6a0cef46a06c39",
+          "tracked-source-manifest.json": "88b91bdfeeee5e680705871ff2d8387fcf77e23bb477786ab62e3a5abf41638d"
+        },
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_actual_assertion_failure_remains_native_failure/execution-2/receipt.json",
+        "status": "FAIL_NATIVE"
+      },
+      {
+        "kind": "certificate",
+        "packet_sha256": {
+          "checked-report.json": "be9f3fc74b8f6cb290d2c085db8bb0623ab3083e57f003e1894e305e798075aa",
+          "native.xml": "feb1657d1f157b93df9e3bcc4dff458c5606246cdb98cdfd559d08659a405349",
+          "report.json": "5a6a74076ac6454119b72f5b881a4adeb98b5c2d58430786c0edfe3840c8df8f",
+          "stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout.log": "0152ef4fa0a82f2e9c4fa3afce337b105659b345117624fb4bada0b9964b7514",
+          "tracked-source-manifest.json": "f05053de946158147623ae3d9860ebcba9d89df134f2d289642155e9dad2f06a"
+        },
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_cannot_change_original_fixture_order_or_discard_collected_nodes/collection-1/admission-certificate.json",
+        "status": "ADMITTED_NATIVE_COLLECTION"
+      },
+      {
+        "kind": "receipt",
+        "packet_sha256": {
+          "checked-report.json": "b5a76527adeaa954d326686b2a3bd17166ea8efc0c4baf7d575825b73bd560bd",
+          "native.xml": "90cdf6bd31342c00412f526d120b65460eca8b102bb47d3d0ed214c453da299f",
+          "report.json": "67fe2f758f29a97e5b7a405b4fbc0e5e8ecdb76c49fcf05f088e1a40e4b6b720",
+          "stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout.log": "2daa736a20c46bdc3a84ecbf17fa7d3e825e7ab746e6264fee72370fea73f73d",
+          "tracked-source-manifest.json": "f05053de946158147623ae3d9860ebcba9d89df134f2d289642155e9dad2f06a"
+        },
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_cannot_change_original_fixture_order_or_discard_collected_nodes/execution-2/receipt.json",
+        "status": "UNKNOWN_EXACT_COLLECTION"
+      },
+      {
+        "kind": "receipt",
+        "packet_sha256": {
+          "checked-report.json": "cb8c9a0a91440fdc535f6ddb01b5d98c682d852b26480975086163f40a1e897b",
+          "native.xml": "6287b7f3f314a0fc94b19b8f99f05eb8bf825f7863b286a233bb9d29ee68a4f8",
+          "report.json": "caa857c73a3d6e92d1f3a224143e5eb4d4cb8d1512cc62fbe43f5ca898f15236",
+          "stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout.log": "ab4a7a44f4807243deb62e11970de444c363be045ee856968bf56122aed46f45",
+          "tracked-source-manifest.json": "f05053de946158147623ae3d9860ebcba9d89df134f2d289642155e9dad2f06a"
+        },
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_cannot_change_original_fixture_order_or_discard_collected_nodes/execution-3/receipt.json",
+        "status": "UNKNOWN_EXACT_COLLECTION"
+      },
+      {
+        "kind": "certificate",
+        "packet_sha256": {
+          "checked-report.json": "73fc78aa9f9a91f3a73f6421145df923f1097b3d03aa082d5cd1983dd023389a",
+          "native.xml": "c157a163de7ccb7c33d27c8a361bc9de93d9886b26d135567f4d6c54e52e86a6",
+          "report.json": "23928b089fe8e2c10b147248ad8c479ff2582382b7c9a9a084d992614417f65f",
+          "stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout.log": "b45ea6c41f594dae99ebca96adbf4f63e1667388e5cb4ef8cf0c1e3677a07c2c",
+          "tracked-source-manifest.json": "87729433909845781757f224d5d602df4f815f77666c8277cc29cd2cd4bcfb9a"
+        },
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_cannot_register_new_plugin_from_tracked_production_source/collection-1/admission-certificate.json",
+        "status": "ADMITTED_NATIVE_COLLECTION"
+      },
+      {
+        "kind": "receipt",
+        "packet_sha256": {
+          "checked-report.json": "17bd60cca9b6a9d6a93f8bd1ae4882d3ad50c56023a4fff0df4e96ac8779f445",
+          "native.xml": "d3a659bc146286cb53a17780aa4499966d136b04268e26be9f6a2941c0f2a20a",
+          "report.json": "d74b7a894af45a4470df60722c01f5f2dd18217227b0378a65965985e14c30fb",
+          "stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout.log": "3b78e310665b2f13ea63a33f4e562e9db398959038833085c58670573be7f572",
+          "tracked-source-manifest.json": "87729433909845781757f224d5d602df4f815f77666c8277cc29cd2cd4bcfb9a"
+        },
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_cannot_register_new_plugin_from_tracked_production_source/execution-2/receipt.json",
+        "status": "UNKNOWN_EXACT_COLLECTION"
+      },
+      {
+        "kind": "certificate",
+        "packet_sha256": {
+          "checked-report.json": "9ab15a1a6c685f73f2d2a6d618afa436b604d0c4d71b9a173f34a838ca9e9d86",
+          "native.xml": "eace31ff06ee889ecd77da76c39adab1822a62429d346db1cde1cff4f109fa76",
+          "report.json": "d5af6ac726de8f0320ee647372cdf8b6e0805b9a40b8973f5e08cdea3e0d40a4",
+          "stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout.log": "8219a319540287059c99103e47b54d85ba8803472717b62a2789ecaf70139e57",
+          "tracked-source-manifest.json": "88b91bdfeeee5e680705871ff2d8387fcf77e23bb477786ab62e3a5abf41638d"
+        },
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_cannot_shrink_or_expand_cases_behind_same_static_prefix/collection-1/admission-certificate.json",
+        "status": "ADMITTED_NATIVE_COLLECTION"
+      },
+      {
+        "kind": "receipt",
+        "packet_sha256": {
+          "checked-report.json": "617f04032817247faa14788d209c63ed4a3c1e47c3408ecb5b761e169321a2e1",
+          "native.xml": "b1d720513fc467c087a438b11236fd2c6fc0f63c50df1ebd95a37eb5bcb220af",
+          "report.json": "72631f5f8faa841f1051c58fe18d7c388474cb6c36b27e394a1bfda41d3a1822",
+          "stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout.log": "ae85358a29b1a1e7f1385081fd7ee88d18c247a6fa96e4d95ce9c4e6ac2df007",
+          "tracked-source-manifest.json": "88b91bdfeeee5e680705871ff2d8387fcf77e23bb477786ab62e3a5abf41638d"
+        },
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_cannot_shrink_or_expand_cases_behind_same_static_prefix/execution-2/receipt.json",
+        "status": "UNKNOWN_EXACT_COLLECTION"
+      },
+      {
+        "kind": "receipt",
+        "packet_sha256": {
+          "checked-report.json": "e9ef5758e9b1986bc0eeee989f2a4b608558b27b59f54598753bdd8e2c17b074",
+          "native.xml": "877d30d6cc7d59ce38ce50b91ec1f8ff4219415f90655914fe97d718d994edc4",
+          "report.json": "e2802579afaf1a51daaf18413474b98db069340145659a83491bd99208e466e7",
+          "stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout.log": "882f4ed1a446481613b92e76aa455b2100d6ac89f7925f9525deb7025705a401",
+          "tracked-source-manifest.json": "88b91bdfeeee5e680705871ff2d8387fcf77e23bb477786ab62e3a5abf41638d"
+        },
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_cannot_shrink_or_expand_cases_behind_same_static_prefix/execution-3/receipt.json",
+        "status": "UNKNOWN_EXACT_COLLECTION"
+      },
+      {
+        "kind": "certificate",
+        "packet_sha256": {
+          "checked-report.json": "c234828b2069339db1240c334e078220d65e9d851e2119d950b4989c583512ff",
+          "native.xml": "26b370ed7d3be53d69a2fc32520d7d7943669a430a45a53dd5bb2f37c08219ef",
+          "report.json": "d5af6ac726de8f0320ee647372cdf8b6e0805b9a40b8973f5e08cdea3e0d40a4",
+          "stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout.log": "33f2a1f4a9e48043d287c6576f6c2a7ad0a51791534a566a74fe24e683a6face",
+          "tracked-source-manifest.json": "88b91bdfeeee5e680705871ff2d8387fcf77e23bb477786ab62e3a5abf41638d"
+        },
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_module_skip_cannot_hide_original_assertions/collection-1/admission-certificate.json",
+        "status": "ADMITTED_NATIVE_COLLECTION"
+      },
+      {
+        "kind": "receipt",
+        "packet_sha256": {
+          "checked-report.json": "e838eec15e96566b3bfbbcdb89a90c719d01188586f2fd8a70a7b8fdaa2c24cb",
+          "native.xml": "9a74da27410d436c2cccf72ff1fadb5125d25da1bafa6d52fd6d8480a30d0dae",
+          "report.json": "f490089de5fea1dfc8e35106b956a922e6b767c1880bbd6e9b4487d594066b44",
+          "stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout.log": "fd8a0aef841144f16210faa642f5246bd02fe2685c12b90938fa0fd9bed4de48",
+          "tracked-source-manifest.json": "88b91bdfeeee5e680705871ff2d8387fcf77e23bb477786ab62e3a5abf41638d"
+        },
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_module_skip_cannot_hide_original_assertions/execution-2/receipt.json",
+        "status": "UNKNOWN_EXACT_COLLECTION"
+      },
+      {
+        "kind": "certificate",
+        "packet_sha256": {
+          "checked-report.json": "e7ddfd6a808faf44ff7ab52c96c4a037334dbdb7d856fb2c4283f558dd7ba443",
+          "native.xml": "c94b79bfb8d90012b71f92214cf5af3c4489a62259cad986ecf93db7239ec7d7",
+          "report.json": "d5af6ac726de8f0320ee647372cdf8b6e0805b9a40b8973f5e08cdea3e0d40a4",
+          "stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout.log": "fc67dcdbc0a6b13aa924a3d813564690cc7b9260b7e162475eeccdbdd4c4be77",
+          "tracked-source-manifest.json": "88b91bdfeeee5e680705871ff2d8387fcf77e23bb477786ab62e3a5abf41638d"
+        },
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_certificate_cannot_replay_to_changed_execution_or_plugin_policy/collection-1/admission-certificate.json",
+        "status": "ADMITTED_NATIVE_COLLECTION"
+      },
+      {
+        "kind": "certificate",
+        "packet_sha256": {
+          "checked-report.json": "65241e384a4e931b2e9837e960d2bd3ff21a3947c9d990477f629a9256cc921a",
+          "native.xml": "d3065c71736f63c2301bfe60ef400e7a04c9e9abf806429294aa3284a59b9fa6",
+          "report.json": "d5af6ac726de8f0320ee647372cdf8b6e0805b9a40b8973f5e08cdea3e0d40a4",
+          "stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout.log": "62d0512a07302fbf71bfaa58aac534a5fdfa727754e7386a634fa88cf32256fc",
+          "tracked-source-manifest.json": "88b91bdfeeee5e680705871ff2d8387fcf77e23bb477786ab62e3a5abf41638d"
+        },
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_certificate_cannot_replay_to_other_protocol_environment_source_or_horizon/collection-1/admission-certificate.json",
+        "status": "ADMITTED_NATIVE_COLLECTION"
+      },
+      {
+        "kind": "certificate",
+        "packet_sha256": {
+          "checked-report.json": "a1d22b265899bdc4fcb4ce7b808bffd7f80d0ea53de18ca48e345df9e820d62d",
+          "native.xml": "338576403620ca6a825cb7b89c58968fb0899a6275a378a53db3bd63ed62342a",
+          "report.json": "d5af6ac726de8f0320ee647372cdf8b6e0805b9a40b8973f5e08cdea3e0d40a4",
+          "stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout.log": "71667dcb2923670340007fb553659ebead5e834b80eb584bf64cd2478fd21fb7",
+          "tracked-source-manifest.json": "88b91bdfeeee5e680705871ff2d8387fcf77e23bb477786ab62e3a5abf41638d"
+        },
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_independent_collection_then_full_original_parameter_cases_pass/collection-1/admission-certificate.json",
+        "status": "ADMITTED_NATIVE_COLLECTION"
+      },
+      {
+        "kind": "receipt",
+        "packet_sha256": {
+          "checked-report.json": "6f69d66794425e8d278cd04e4c68e80ba858209f966d213ace68eb84c6914961",
+          "native.xml": "8a224b986d7c428fcf97def1def61ae6e6e134a5f23b00c5b20ff775935b19b8",
+          "report.json": "a65419d392102d3a0c937ea4ec40c27523282a527254d4cc4e8d3d90a23d85a6",
+          "stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout.log": "4cc4a571dd5405b13751c2e1ff63f1f393e9714b9460923edd29db93fb8590a2",
+          "tracked-source-manifest.json": "88b91bdfeeee5e680705871ff2d8387fcf77e23bb477786ab62e3a5abf41638d"
+        },
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_independent_collection_then_full_original_parameter_cases_pass/execution-2/receipt.json",
+        "status": "PASS_NATIVE"
+      },
+      {
+        "kind": "certificate",
+        "packet_sha256": {
+          "checked-report.json": "31272cefd3af444646b7fb32ebb5ad859c8c766724a9d41e70171f3146cbec4c",
+          "native.xml": "1df51a01f82f353430df5683d345e5ad33ca64d721a466bd824ee53a1fbceed4",
+          "report.json": "d5af6ac726de8f0320ee647372cdf8b6e0805b9a40b8973f5e08cdea3e0d40a4",
+          "stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout.log": "ef6e11f57e4345de41dc035062162053082e2e19fcbeb69fe61446f97b6b6240",
+          "tracked-source-manifest.json": "88b91bdfeeee5e680705871ff2d8387fcf77e23bb477786ab62e3a5abf41638d"
+        },
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_resealed_collection_manifest_is_checked_against_original_recollection/collection-1/admission-certificate.json",
+        "status": "ADMITTED_NATIVE_COLLECTION"
+      },
+      {
+        "kind": "certificate",
+        "packet_sha256": {
+          "checked-report.json": "c4a48a821ddb5514fd2bb601eb40cb660672d03f0556b63556580eec4f69c952",
+          "native.xml": "bdc006176e17c2d1e48f2eeafe733ef3870bad44e9e6d1a1f2896f146cc75275",
+          "report.json": "d5af6ac726de8f0320ee647372cdf8b6e0805b9a40b8973f5e08cdea3e0d40a4",
+          "stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout.log": "e8d9c98764718791a8c8e951869aefc273230272b9639df4f5f287f4e3dd55d6",
+          "tracked-source-manifest.json": "88b91bdfeeee5e680705871ff2d8387fcf77e23bb477786ab62e3a5abf41638d"
+        },
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_resealed_wrong_import_source_is_not_authenticated_by_equal_pass_counts/collection-1/admission-certificate.json",
+        "status": "ADMITTED_NATIVE_COLLECTION"
+      },
+      {
+        "kind": "receipt",
+        "packet_sha256": {
+          "checked-report.json": "8c867a925dfe5cb7b9a26b98753befd6a4d9b7b7993112d49c6c7500a07c7a28",
+          "native.xml": "9054e73f5967db1433d7a95c06f1edcdd8d13f3358a24ecac0bbf7ab74787bd7",
+          "report.json": "a65419d392102d3a0c937ea4ec40c27523282a527254d4cc4e8d3d90a23d85a6",
+          "stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout.log": "dbbe93b9d6efa864812134288df5d6df5e216d0034a4dcc672f2674afae5ce79",
+          "tracked-source-manifest.json": "88b91bdfeeee5e680705871ff2d8387fcf77e23bb477786ab62e3a5abf41638d"
+        },
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_resealed_wrong_import_source_is_not_authenticated_by_equal_pass_counts/execution-2/receipt.json",
+        "status": "PASS_NATIVE"
+      },
+      {
+        "kind": "certificate",
+        "packet_sha256": {
+          "checked-report.json": "d780b8ccd473d8024e737875b188d781b6a8f24e26d5b3a79a72bfb44d790ab0",
+          "native.xml": "03babaaa7c3e3c0709a4731e88fa0f0dbcac0b708b0889519ec6e9bcf4ccfd4c",
+          "report.json": "d5af6ac726de8f0320ee647372cdf8b6e0805b9a40b8973f5e08cdea3e0d40a4",
+          "stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout.log": "63c8e6fd8d1217a59ae40a9c9765de9ca7a19eeae5d622214b390e4f728b601d",
+          "tracked-source-manifest.json": "88b91bdfeeee5e680705871ff2d8387fcf77e23bb477786ab62e3a5abf41638d"
+        },
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_self_declared_extra_authority_and_missing_certificate_fields_are_rejected/collection-1/admission-certificate.json",
+        "status": "ADMITTED_NATIVE_COLLECTION"
+      },
+      {
+        "kind": "certificate",
+        "packet_sha256": {
+          "checked-report.json": "d08904efab35ea7f11c92d4cefe8321c5cce1ad90328fdfe585443c36a343e0b",
+          "native.xml": "7d0f608598550772ce9544b717c4393f12c041a41841d0837e78b0af12777789",
+          "report.json": "d5af6ac726de8f0320ee647372cdf8b6e0805b9a40b8973f5e08cdea3e0d40a4",
+          "stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout.log": "8399027172576bf042a6cf6de64e8b5b78fd99274430dfcf095a632503d8390b",
+          "tracked-source-manifest.json": "88b91bdfeeee5e680705871ff2d8387fcf77e23bb477786ab62e3a5abf41638d"
+        },
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_weaker_required_assertions_are_not_certificate_authority/collection-1/admission-certificate.json",
+        "status": "ADMITTED_NATIVE_COLLECTION"
+      },
+      {
+        "kind": "certificate",
+        "packet_sha256": {
+          "checked-report.json": "b233ca4495ce90e23725b5767793d288c8e265996d96cfa5dfb5de5e50cf2bf3",
+          "native.xml": "46b31925b3393ab1bafcda69c48b1250a30ef5cb83d9f2e0c5bdd6d4457775c0",
+          "report.json": "46223b41b109dcab0aa11e2cde2fc45f7200f0206ef61e6731d6d9d685c04b67",
+          "stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout.log": "7b6babee13e86e7877b74befee93c5f8d4f3e9c5003932a9d9ed47ce4fbad465",
+          "tracked-source-manifest.json": "a560510fa063501fcf2652fa25bfb1b1014ffff2a63413ecdc937024578437d3"
+        },
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_dependency_includes_v41.IncludedDependenciesNativeV41.test_selected_actual_runtime_include_allows_real_native_pass_and_independent_reexecution/evidence-1/admission-certificate.json",
+        "status": "ADMITTED_NATIVE_COLLECTION"
+      },
+      {
+        "kind": "receipt",
+        "packet_sha256": {
+          "checked-report.json": "4225a63b781e0b80e0e3d526412ed8519762e043c17cd9e415e090c8193d4f0c",
+          "native.xml": "f0b752596937b2196915ea095a30ae59c54b97bac1a556dddad9983e516c86f0",
+          "report.json": "20018ca78cbc84d0328ea0c3cf345b59ebff69c18396bf07510702806ee1bd57",
+          "stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout.log": "c26dea4c157197aaefc25586c1c6b362ec781bef46dac7b3e040c6c27ad3f48b",
+          "tracked-source-manifest.json": "a560510fa063501fcf2652fa25bfb1b1014ffff2a63413ecdc937024578437d3"
+        },
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_dependency_includes_v41.IncludedDependenciesNativeV41.test_selected_actual_runtime_include_allows_real_native_pass_and_independent_reexecution/evidence-2/receipt.json",
+        "status": "PASS_NATIVE"
+      },
+      {
+        "kind": "receipt",
+        "packet_sha256": {
+          "checked-report.json": "5862ae84a80afdfecde72c65a01731c7a2a1769b23871714df5b3dfae47c5858",
+          "native.xml": "b9e8fbf44f2badbcd3d8b12e65be1b5c5cec1319ad0d09ae679efb3b24cd83ba",
+          "report.json": "20018ca78cbc84d0328ea0c3cf345b59ebff69c18396bf07510702806ee1bd57",
+          "stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout.log": "035a05a8bc3a19899d3fa005becad00f0c22edbc34b8dfd237025f81e0e0c805",
+          "tracked-source-manifest.json": "a560510fa063501fcf2652fa25bfb1b1014ffff2a63413ecdc937024578437d3"
+        },
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_dependency_includes_v41.IncludedDependenciesNativeV41.test_selected_actual_runtime_include_allows_real_native_pass_and_independent_reexecution/evidence-3/receipt.json",
+        "status": "PASS_NATIVE"
+      },
+      {
+        "kind": "certificate",
+        "packet_sha256": {
+          "checked-report.json": "367bdd8a7c3965869fdeb3363e986dcbd326f3176b47bbeb186fa1b30da2b0cf",
+          "native.xml": "1bd59c18046979c8217f738b6e8ba3f07e37805a6723a934f839aef95a1991d9",
+          "report.json": "c690776d64443ff2436486278abd2c6e29609199070632bc34dad2d7df933357",
+          "stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout.log": "2081b56335c857641e7054f0ebc6215175076f2f729b58a6ff20f8d7c0b5a563",
+          "tracked-source-manifest.json": "609cc64760c5d9f247c53a2af63ddfe4f4c3c87e125398b493f770c8b2739d5a"
+        },
+        "path": "legacy-v41/native-evidence/research.unified_consequence_runtime.test_native_dependency_includes_v41.IncludedDependenciesNativeV41.test_selected_actual_runtime_include_allows_real_native_pass_and_independent_reexecution/evidence-1/admission-certificate.json",
+        "status": "ADMITTED_NATIVE_COLLECTION"
+      },
+      {
+        "kind": "receipt",
+        "packet_sha256": {
+          "checked-report.json": "a2f9bf739f3a42f8cf28236d66351fcc9916a6ecc7db71c8d0ecc9f42afc6b20",
+          "native.xml": "0cf01eec15cbf372fe54e4ae2932827fb9ce139b0fa915bcab23223938a26263",
+          "report.json": "45282921df8b19c584d89c12086568ee20d059590179d352d31e187252fef361",
+          "stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout.log": "f18f1b45fe9429e7fa6335e338b31f930ff08a08c8ebda92cb6611d841c074af",
+          "tracked-source-manifest.json": "609cc64760c5d9f247c53a2af63ddfe4f4c3c87e125398b493f770c8b2739d5a"
+        },
+        "path": "legacy-v41/native-evidence/research.unified_consequence_runtime.test_native_dependency_includes_v41.IncludedDependenciesNativeV41.test_selected_actual_runtime_include_allows_real_native_pass_and_independent_reexecution/evidence-2/receipt.json",
+        "status": "PASS_NATIVE"
+      },
+      {
+        "kind": "receipt",
+        "packet_sha256": {
+          "checked-report.json": "808e68acb950cab2c862f7750a6c046bff5acf78e63d01cc228e454d7b3ccce6",
+          "native.xml": "e07c8ed920a49b039727ba1d8ad3d4ccf8ab7a9661dbd23c4ad3a0e918ec6501",
+          "report.json": "45282921df8b19c584d89c12086568ee20d059590179d352d31e187252fef361",
+          "stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout.log": "9a26be6fca6d1c71c75234025d541785ed0545d0be5a00ebaad9fbaf4f85e2c0",
+          "tracked-source-manifest.json": "609cc64760c5d9f247c53a2af63ddfe4f4c3c87e125398b493f770c8b2739d5a"
+        },
+        "path": "legacy-v41/native-evidence/research.unified_consequence_runtime.test_native_dependency_includes_v41.IncludedDependenciesNativeV41.test_selected_actual_runtime_include_allows_real_native_pass_and_independent_reexecution/evidence-3/receipt.json",
+        "status": "PASS_NATIVE"
+      }
+    ],
+    "positive_independent_pairs": [
+      {
+        "case": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_unimported_malformed_fixture_allows_real_native_pass",
+        "group": "modern",
+        "independent_replay_receipt": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_unimported_malformed_fixture_allows_real_native_pass/evidence-3/receipt.json",
+        "junit": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 2,
+          "skipped": 0,
+          "tests": 2
+        },
+        "kind": "preserved",
+        "original_nodes": [
+          "test_subject.py::test_old",
+          "test_subject.py::test_new"
+        ],
+        "original_receipt": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_unimported_malformed_fixture_allows_real_native_pass/evidence-2/receipt.json",
+        "raw_packets_distinct": true,
+        "source_inventory_sha256": "e606cb61091e66134714327396698c35d31ebafa07a6acae4aa6bef69b1d915e"
+      },
+      {
+        "case": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_dependency_includes_v41.IncludedDependenciesNativeV41.test_selected_actual_runtime_include_allows_real_native_pass_and_independent_reexecution",
+        "group": "modern",
+        "independent_replay_receipt": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_dependency_includes_v41.IncludedDependenciesNativeV41.test_selected_actual_runtime_include_allows_real_native_pass_and_independent_reexecution/evidence-3/receipt.json",
+        "junit": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 2,
+          "skipped": 0,
+          "tests": 2
+        },
+        "kind": "included",
+        "original_nodes": [
+          "test_subject.py::test_old",
+          "test_subject.py::test_new"
+        ],
+        "original_receipt": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_dependency_includes_v41.IncludedDependenciesNativeV41.test_selected_actual_runtime_include_allows_real_native_pass_and_independent_reexecution/evidence-2/receipt.json",
+        "raw_packets_distinct": true,
+        "source_inventory_sha256": "1d3c4fbc6b61bf62bc2de4d43dfa84d629abd1b2df600355db83e7324167f0d0"
+      },
+      {
+        "case": "legacy-v41/native-evidence/research.unified_consequence_runtime.test_native_dependency_includes_v41.IncludedDependenciesNativeV41.test_selected_actual_runtime_include_allows_real_native_pass_and_independent_reexecution",
+        "group": "legacy",
+        "independent_replay_receipt": "legacy-v41/native-evidence/research.unified_consequence_runtime.test_native_dependency_includes_v41.IncludedDependenciesNativeV41.test_selected_actual_runtime_include_allows_real_native_pass_and_independent_reexecution/evidence-3/receipt.json",
+        "junit": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 2,
+          "skipped": 0,
+          "tests": 2
+        },
+        "kind": "included",
+        "original_nodes": [
+          "test_subject.py::test_old",
+          "test_subject.py::test_new"
+        ],
+        "original_receipt": "legacy-v41/native-evidence/research.unified_consequence_runtime.test_native_dependency_includes_v41.IncludedDependenciesNativeV41.test_selected_actual_runtime_include_allows_real_native_pass_and_independent_reexecution/evidence-2/receipt.json",
+        "raw_packets_distinct": true,
+        "source_inventory_sha256": "f0bdf2ecc37def635c393d65e24ba244329ab45ec6c5ec4a5aa1ed1850f81a16"
+      }
+    ],
+    "raw_reports": [
+      {
+        "case": "research.unified_consequence_runtime.test_native_authority_v4.LicensedPluginReplacementAuthorityV4.test_candidate_cannot_replace_licensed_plugin_under_the_same_name",
+        "final_source_archive_match": true,
+        "group": "modern",
+        "junit": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 0,
+          "skipped": 0,
+          "tests": 0
+        },
+        "mode": "collect",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.LicensedPluginReplacementAuthorityV4.test_candidate_cannot_replace_licensed_plugin_under_the_same_name/collection-1/checked-report.json",
+        "process_exit_code": 0,
+        "source_manifest_fingerprint": "de979d449fd0376656260529ddf2621b4f10db18497186f8061958ca40d4877a"
+      },
+      {
+        "case": "research.unified_consequence_runtime.test_native_authority_v4.LicensedPluginReplacementAuthorityV4.test_candidate_cannot_replace_licensed_plugin_under_the_same_name",
+        "final_source_archive_match": true,
+        "group": "modern",
+        "junit": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 3,
+          "skipped": 0,
+          "tests": 3
+        },
+        "mode": "run",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.LicensedPluginReplacementAuthorityV4.test_candidate_cannot_replace_licensed_plugin_under_the_same_name/execution-2/execution/checked-report.json",
+        "process_exit_code": 0,
+        "source_manifest_fingerprint": "de979d449fd0376656260529ddf2621b4f10db18497186f8061958ca40d4877a"
+      },
+      {
+        "case": "research.unified_consequence_runtime.test_native_authority_v4.LicensedPluginReplacementAuthorityV4.test_candidate_cannot_replace_licensed_plugin_under_the_same_name",
+        "final_source_archive_match": true,
+        "group": "modern",
+        "junit": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 0,
+          "skipped": 0,
+          "tests": 0
+        },
+        "mode": "collect",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.LicensedPluginReplacementAuthorityV4.test_candidate_cannot_replace_licensed_plugin_under_the_same_name/execution-2/independent-collection/checked-report.json",
+        "process_exit_code": 0,
+        "source_manifest_fingerprint": "de979d449fd0376656260529ddf2621b4f10db18497186f8061958ca40d4877a"
+      },
+      {
+        "case": "research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_collection_time_import_of_same_malformed_fixture_is_refused",
+        "final_source_archive_match": true,
+        "group": "modern",
+        "junit": {
+          "errors": 1,
+          "failures": 0,
+          "passed": 0,
+          "skipped": 0,
+          "tests": 1
+        },
+        "mode": "collect",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_collection_time_import_of_same_malformed_fixture_is_refused/evidence-1/checked-report.json",
+        "process_exit_code": 2,
+        "source_manifest_fingerprint": "ac17c3be1b31d9a9808f2db37f5897f83bf936b6629421813c0e9c28508c61be"
+      },
+      {
+        "case": "research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_dynamic_import_of_same_malformed_fixture_is_native_failure",
+        "final_source_archive_match": true,
+        "group": "modern",
+        "junit": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 0,
+          "skipped": 0,
+          "tests": 0
+        },
+        "mode": "collect",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_dynamic_import_of_same_malformed_fixture_is_native_failure/evidence-1/checked-report.json",
+        "process_exit_code": 0,
+        "source_manifest_fingerprint": "74164e3ed7ecd26f1ceb3908058e5c77f1ce3097cec1d197af6aee7194c01e0a"
+      },
+      {
+        "case": "research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_dynamic_import_of_same_malformed_fixture_is_native_failure",
+        "final_source_archive_match": true,
+        "group": "modern",
+        "junit": {
+          "errors": 0,
+          "failures": 1,
+          "passed": 1,
+          "skipped": 0,
+          "tests": 2
+        },
+        "mode": "run",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_dynamic_import_of_same_malformed_fixture_is_native_failure/evidence-2/execution/checked-report.json",
+        "process_exit_code": 1,
+        "source_manifest_fingerprint": "74164e3ed7ecd26f1ceb3908058e5c77f1ce3097cec1d197af6aee7194c01e0a"
+      },
+      {
+        "case": "research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_dynamic_import_of_same_malformed_fixture_is_native_failure",
+        "final_source_archive_match": true,
+        "group": "modern",
+        "junit": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 0,
+          "skipped": 0,
+          "tests": 0
+        },
+        "mode": "collect",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_dynamic_import_of_same_malformed_fixture_is_native_failure/evidence-2/independent-collection/checked-report.json",
+        "process_exit_code": 0,
+        "source_manifest_fingerprint": "74164e3ed7ecd26f1ceb3908058e5c77f1ce3097cec1d197af6aee7194c01e0a"
+      },
+      {
+        "case": "research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_missing_protected_assertion_is_refused",
+        "final_source_archive_match": true,
+        "group": "modern",
+        "junit": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 0,
+          "skipped": 0,
+          "tests": 0
+        },
+        "mode": "collect",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_missing_protected_assertion_is_refused/evidence-1/checked-report.json",
+        "process_exit_code": 0,
+        "source_manifest_fingerprint": "04af76bece6a4b65aa90880c1e49452e2ed4282d6c4cf6ce7800e33884ac7fd8"
+      },
+      {
+        "case": "research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_same_malformed_fixture_required_by_static_runtime_import_is_native_failure",
+        "final_source_archive_match": true,
+        "group": "modern",
+        "junit": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 0,
+          "skipped": 0,
+          "tests": 0
+        },
+        "mode": "collect",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_same_malformed_fixture_required_by_static_runtime_import_is_native_failure/evidence-1/checked-report.json",
+        "process_exit_code": 0,
+        "source_manifest_fingerprint": "680e45feec237e626b10275cbe04091887215954478ba57b3ad3907a99024430"
+      },
+      {
+        "case": "research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_same_malformed_fixture_required_by_static_runtime_import_is_native_failure",
+        "final_source_archive_match": true,
+        "group": "modern",
+        "junit": {
+          "errors": 0,
+          "failures": 1,
+          "passed": 1,
+          "skipped": 0,
+          "tests": 2
+        },
+        "mode": "run",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_same_malformed_fixture_required_by_static_runtime_import_is_native_failure/evidence-2/execution/checked-report.json",
+        "process_exit_code": 1,
+        "source_manifest_fingerprint": "680e45feec237e626b10275cbe04091887215954478ba57b3ad3907a99024430"
+      },
+      {
+        "case": "research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_same_malformed_fixture_required_by_static_runtime_import_is_native_failure",
+        "final_source_archive_match": true,
+        "group": "modern",
+        "junit": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 0,
+          "skipped": 0,
+          "tests": 0
+        },
+        "mode": "collect",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_same_malformed_fixture_required_by_static_runtime_import_is_native_failure/evidence-2/independent-collection/checked-report.json",
+        "process_exit_code": 0,
+        "source_manifest_fingerprint": "680e45feec237e626b10275cbe04091887215954478ba57b3ad3907a99024430"
+      },
+      {
+        "case": "research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_unimported_malformed_fixture_allows_real_native_pass",
+        "final_source_archive_match": true,
+        "group": "modern",
+        "junit": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 0,
+          "skipped": 0,
+          "tests": 0
+        },
+        "mode": "collect",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_unimported_malformed_fixture_allows_real_native_pass/evidence-1/checked-report.json",
+        "process_exit_code": 0,
+        "source_manifest_fingerprint": "c7fe08b2644c5cccf78f00b95bcf30f89dcdc2f21e2a54b7694dea29b90e52e2"
+      },
+      {
+        "case": "research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_unimported_malformed_fixture_allows_real_native_pass",
+        "final_source_archive_match": true,
+        "group": "modern",
+        "junit": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 2,
+          "skipped": 0,
+          "tests": 2
+        },
+        "mode": "run",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_unimported_malformed_fixture_allows_real_native_pass/evidence-2/execution/checked-report.json",
+        "process_exit_code": 0,
+        "source_manifest_fingerprint": "c7fe08b2644c5cccf78f00b95bcf30f89dcdc2f21e2a54b7694dea29b90e52e2"
+      },
+      {
+        "case": "research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_unimported_malformed_fixture_allows_real_native_pass",
+        "final_source_archive_match": true,
+        "group": "modern",
+        "junit": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 0,
+          "skipped": 0,
+          "tests": 0
+        },
+        "mode": "collect",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_unimported_malformed_fixture_allows_real_native_pass/evidence-2/independent-collection/checked-report.json",
+        "process_exit_code": 0,
+        "source_manifest_fingerprint": "c7fe08b2644c5cccf78f00b95bcf30f89dcdc2f21e2a54b7694dea29b90e52e2"
+      },
+      {
+        "case": "research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_unimported_malformed_fixture_allows_real_native_pass",
+        "final_source_archive_match": true,
+        "group": "modern",
+        "junit": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 2,
+          "skipped": 0,
+          "tests": 2
+        },
+        "mode": "run",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_unimported_malformed_fixture_allows_real_native_pass/evidence-3/execution/checked-report.json",
+        "process_exit_code": 0,
+        "source_manifest_fingerprint": "c7fe08b2644c5cccf78f00b95bcf30f89dcdc2f21e2a54b7694dea29b90e52e2"
+      },
+      {
+        "case": "research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_unimported_malformed_fixture_allows_real_native_pass",
+        "final_source_archive_match": true,
+        "group": "modern",
+        "junit": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 0,
+          "skipped": 0,
+          "tests": 0
+        },
+        "mode": "collect",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_unimported_malformed_fixture_allows_real_native_pass/evidence-3/independent-collection/checked-report.json",
+        "process_exit_code": 0,
+        "source_manifest_fingerprint": "c7fe08b2644c5cccf78f00b95bcf30f89dcdc2f21e2a54b7694dea29b90e52e2"
+      },
+      {
+        "case": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_actual_assertion_failure_remains_native_failure",
+        "final_source_archive_match": true,
+        "group": "modern",
+        "junit": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 0,
+          "skipped": 0,
+          "tests": 0
+        },
+        "mode": "collect",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_actual_assertion_failure_remains_native_failure/collection-1/checked-report.json",
+        "process_exit_code": 0,
+        "source_manifest_fingerprint": "0e188acbfc50da9bbd109dccb7a54ef76eb71e0e89727fa0b3593d8dca421d21"
+      },
+      {
+        "case": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_actual_assertion_failure_remains_native_failure",
+        "final_source_archive_match": true,
+        "group": "modern",
+        "junit": {
+          "errors": 0,
+          "failures": 2,
+          "passed": 1,
+          "skipped": 0,
+          "tests": 3
+        },
+        "mode": "run",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_actual_assertion_failure_remains_native_failure/execution-2/execution/checked-report.json",
+        "process_exit_code": 1,
+        "source_manifest_fingerprint": "0e188acbfc50da9bbd109dccb7a54ef76eb71e0e89727fa0b3593d8dca421d21"
+      },
+      {
+        "case": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_actual_assertion_failure_remains_native_failure",
+        "final_source_archive_match": true,
+        "group": "modern",
+        "junit": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 0,
+          "skipped": 0,
+          "tests": 0
+        },
+        "mode": "collect",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_actual_assertion_failure_remains_native_failure/execution-2/independent-collection/checked-report.json",
+        "process_exit_code": 0,
+        "source_manifest_fingerprint": "0e188acbfc50da9bbd109dccb7a54ef76eb71e0e89727fa0b3593d8dca421d21"
+      },
+      {
+        "case": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_cannot_change_original_fixture_order_or_discard_collected_nodes",
+        "final_source_archive_match": true,
+        "group": "modern",
+        "junit": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 0,
+          "skipped": 0,
+          "tests": 0
+        },
+        "mode": "collect",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_cannot_change_original_fixture_order_or_discard_collected_nodes/collection-1/checked-report.json",
+        "process_exit_code": 0,
+        "source_manifest_fingerprint": "4bdeb4238342f20dbe056898e110832175e220c098295f92e82bc8a67d5a0d12"
+      },
+      {
+        "case": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_cannot_change_original_fixture_order_or_discard_collected_nodes",
+        "final_source_archive_match": true,
+        "group": "modern",
+        "junit": {
+          "errors": 0,
+          "failures": 2,
+          "passed": 1,
+          "skipped": 0,
+          "tests": 3
+        },
+        "mode": "run",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_cannot_change_original_fixture_order_or_discard_collected_nodes/execution-2/execution/checked-report.json",
+        "process_exit_code": 1,
+        "source_manifest_fingerprint": "4bdeb4238342f20dbe056898e110832175e220c098295f92e82bc8a67d5a0d12"
+      },
+      {
+        "case": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_cannot_change_original_fixture_order_or_discard_collected_nodes",
+        "final_source_archive_match": true,
+        "group": "modern",
+        "junit": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 0,
+          "skipped": 0,
+          "tests": 0
+        },
+        "mode": "collect",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_cannot_change_original_fixture_order_or_discard_collected_nodes/execution-2/independent-collection/checked-report.json",
+        "process_exit_code": 0,
+        "source_manifest_fingerprint": "4bdeb4238342f20dbe056898e110832175e220c098295f92e82bc8a67d5a0d12"
+      },
+      {
+        "case": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_cannot_change_original_fixture_order_or_discard_collected_nodes",
+        "final_source_archive_match": true,
+        "group": "modern",
+        "junit": {
+          "errors": 0,
+          "failures": 1,
+          "passed": 1,
+          "skipped": 0,
+          "tests": 2
+        },
+        "mode": "run",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_cannot_change_original_fixture_order_or_discard_collected_nodes/execution-3/execution/checked-report.json",
+        "process_exit_code": 1,
+        "source_manifest_fingerprint": "4bdeb4238342f20dbe056898e110832175e220c098295f92e82bc8a67d5a0d12"
+      },
+      {
+        "case": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_cannot_change_original_fixture_order_or_discard_collected_nodes",
+        "final_source_archive_match": true,
+        "group": "modern",
+        "junit": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 0,
+          "skipped": 0,
+          "tests": 0
+        },
+        "mode": "collect",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_cannot_change_original_fixture_order_or_discard_collected_nodes/execution-3/independent-collection/checked-report.json",
+        "process_exit_code": 0,
+        "source_manifest_fingerprint": "4bdeb4238342f20dbe056898e110832175e220c098295f92e82bc8a67d5a0d12"
+      },
+      {
+        "case": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_cannot_register_new_plugin_from_tracked_production_source",
+        "final_source_archive_match": true,
+        "group": "modern",
+        "junit": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 0,
+          "skipped": 0,
+          "tests": 0
+        },
+        "mode": "collect",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_cannot_register_new_plugin_from_tracked_production_source/collection-1/checked-report.json",
+        "process_exit_code": 0,
+        "source_manifest_fingerprint": "6beabacc17dc68ba72bec09aed9443ccf8a0c13852a9adf4cfd451b57ffd3e0e"
+      },
+      {
+        "case": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_cannot_register_new_plugin_from_tracked_production_source",
+        "final_source_archive_match": true,
+        "group": "modern",
+        "junit": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 3,
+          "skipped": 0,
+          "tests": 3
+        },
+        "mode": "run",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_cannot_register_new_plugin_from_tracked_production_source/execution-2/execution/checked-report.json",
+        "process_exit_code": 0,
+        "source_manifest_fingerprint": "6beabacc17dc68ba72bec09aed9443ccf8a0c13852a9adf4cfd451b57ffd3e0e"
+      },
+      {
+        "case": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_cannot_register_new_plugin_from_tracked_production_source",
+        "final_source_archive_match": true,
+        "group": "modern",
+        "junit": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 0,
+          "skipped": 0,
+          "tests": 0
+        },
+        "mode": "collect",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_cannot_register_new_plugin_from_tracked_production_source/execution-2/independent-collection/checked-report.json",
+        "process_exit_code": 0,
+        "source_manifest_fingerprint": "6beabacc17dc68ba72bec09aed9443ccf8a0c13852a9adf4cfd451b57ffd3e0e"
+      },
+      {
+        "case": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_cannot_shrink_or_expand_cases_behind_same_static_prefix",
+        "final_source_archive_match": true,
+        "group": "modern",
+        "junit": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 0,
+          "skipped": 0,
+          "tests": 0
+        },
+        "mode": "collect",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_cannot_shrink_or_expand_cases_behind_same_static_prefix/collection-1/checked-report.json",
+        "process_exit_code": 0,
+        "source_manifest_fingerprint": "0e188acbfc50da9bbd109dccb7a54ef76eb71e0e89727fa0b3593d8dca421d21"
+      },
+      {
+        "case": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_cannot_shrink_or_expand_cases_behind_same_static_prefix",
+        "final_source_archive_match": true,
+        "group": "modern",
+        "junit": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 2,
+          "skipped": 0,
+          "tests": 2
+        },
+        "mode": "run",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_cannot_shrink_or_expand_cases_behind_same_static_prefix/execution-2/execution/checked-report.json",
+        "process_exit_code": 0,
+        "source_manifest_fingerprint": "0e188acbfc50da9bbd109dccb7a54ef76eb71e0e89727fa0b3593d8dca421d21"
+      },
+      {
+        "case": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_cannot_shrink_or_expand_cases_behind_same_static_prefix",
+        "final_source_archive_match": true,
+        "group": "modern",
+        "junit": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 0,
+          "skipped": 0,
+          "tests": 0
+        },
+        "mode": "collect",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_cannot_shrink_or_expand_cases_behind_same_static_prefix/execution-2/independent-collection/checked-report.json",
+        "process_exit_code": 0,
+        "source_manifest_fingerprint": "0e188acbfc50da9bbd109dccb7a54ef76eb71e0e89727fa0b3593d8dca421d21"
+      },
+      {
+        "case": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_cannot_shrink_or_expand_cases_behind_same_static_prefix",
+        "final_source_archive_match": true,
+        "group": "modern",
+        "junit": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 4,
+          "skipped": 0,
+          "tests": 4
+        },
+        "mode": "run",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_cannot_shrink_or_expand_cases_behind_same_static_prefix/execution-3/execution/checked-report.json",
+        "process_exit_code": 0,
+        "source_manifest_fingerprint": "0e188acbfc50da9bbd109dccb7a54ef76eb71e0e89727fa0b3593d8dca421d21"
+      },
+      {
+        "case": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_cannot_shrink_or_expand_cases_behind_same_static_prefix",
+        "final_source_archive_match": true,
+        "group": "modern",
+        "junit": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 0,
+          "skipped": 0,
+          "tests": 0
+        },
+        "mode": "collect",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_cannot_shrink_or_expand_cases_behind_same_static_prefix/execution-3/independent-collection/checked-report.json",
+        "process_exit_code": 0,
+        "source_manifest_fingerprint": "0e188acbfc50da9bbd109dccb7a54ef76eb71e0e89727fa0b3593d8dca421d21"
+      },
+      {
+        "case": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_module_skip_cannot_hide_original_assertions",
+        "final_source_archive_match": true,
+        "group": "modern",
+        "junit": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 0,
+          "skipped": 0,
+          "tests": 0
+        },
+        "mode": "collect",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_module_skip_cannot_hide_original_assertions/collection-1/checked-report.json",
+        "process_exit_code": 0,
+        "source_manifest_fingerprint": "0e188acbfc50da9bbd109dccb7a54ef76eb71e0e89727fa0b3593d8dca421d21"
+      },
+      {
+        "case": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_module_skip_cannot_hide_original_assertions",
+        "final_source_archive_match": true,
+        "group": "modern",
+        "junit": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 0,
+          "skipped": 1,
+          "tests": 1
+        },
+        "mode": "run",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_module_skip_cannot_hide_original_assertions/execution-2/execution/checked-report.json",
+        "process_exit_code": 5,
+        "source_manifest_fingerprint": "0e188acbfc50da9bbd109dccb7a54ef76eb71e0e89727fa0b3593d8dca421d21"
+      },
+      {
+        "case": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_module_skip_cannot_hide_original_assertions",
+        "final_source_archive_match": true,
+        "group": "modern",
+        "junit": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 0,
+          "skipped": 0,
+          "tests": 0
+        },
+        "mode": "collect",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_candidate_module_skip_cannot_hide_original_assertions/execution-2/independent-collection/checked-report.json",
+        "process_exit_code": 0,
+        "source_manifest_fingerprint": "0e188acbfc50da9bbd109dccb7a54ef76eb71e0e89727fa0b3593d8dca421d21"
+      },
+      {
+        "case": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_certificate_cannot_replay_to_changed_execution_or_plugin_policy",
+        "final_source_archive_match": true,
+        "group": "modern",
+        "junit": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 0,
+          "skipped": 0,
+          "tests": 0
+        },
+        "mode": "collect",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_certificate_cannot_replay_to_changed_execution_or_plugin_policy/collection-1/checked-report.json",
+        "process_exit_code": 0,
+        "source_manifest_fingerprint": "0e188acbfc50da9bbd109dccb7a54ef76eb71e0e89727fa0b3593d8dca421d21"
+      },
+      {
+        "case": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_certificate_cannot_replay_to_other_protocol_environment_source_or_horizon",
+        "final_source_archive_match": true,
+        "group": "modern",
+        "junit": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 0,
+          "skipped": 0,
+          "tests": 0
+        },
+        "mode": "collect",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_certificate_cannot_replay_to_other_protocol_environment_source_or_horizon/collection-1/checked-report.json",
+        "process_exit_code": 0,
+        "source_manifest_fingerprint": "0e188acbfc50da9bbd109dccb7a54ef76eb71e0e89727fa0b3593d8dca421d21"
+      },
+      {
+        "case": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_independent_collection_then_full_original_parameter_cases_pass",
+        "final_source_archive_match": true,
+        "group": "modern",
+        "junit": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 0,
+          "skipped": 0,
+          "tests": 0
+        },
+        "mode": "collect",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_independent_collection_then_full_original_parameter_cases_pass/collection-1/checked-report.json",
+        "process_exit_code": 0,
+        "source_manifest_fingerprint": "0e188acbfc50da9bbd109dccb7a54ef76eb71e0e89727fa0b3593d8dca421d21"
+      },
+      {
+        "case": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_independent_collection_then_full_original_parameter_cases_pass",
+        "final_source_archive_match": true,
+        "group": "modern",
+        "junit": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 3,
+          "skipped": 0,
+          "tests": 3
+        },
+        "mode": "run",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_independent_collection_then_full_original_parameter_cases_pass/execution-2/execution/checked-report.json",
+        "process_exit_code": 0,
+        "source_manifest_fingerprint": "0e188acbfc50da9bbd109dccb7a54ef76eb71e0e89727fa0b3593d8dca421d21"
+      },
+      {
+        "case": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_independent_collection_then_full_original_parameter_cases_pass",
+        "final_source_archive_match": true,
+        "group": "modern",
+        "junit": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 0,
+          "skipped": 0,
+          "tests": 0
+        },
+        "mode": "collect",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_independent_collection_then_full_original_parameter_cases_pass/execution-2/independent-collection/checked-report.json",
+        "process_exit_code": 0,
+        "source_manifest_fingerprint": "0e188acbfc50da9bbd109dccb7a54ef76eb71e0e89727fa0b3593d8dca421d21"
+      },
+      {
+        "case": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_preloaded_installed_project_name_cannot_replace_frozen_source",
+        "final_source_archive_match": true,
+        "group": "modern",
+        "junit": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 0,
+          "skipped": 0,
+          "tests": 0
+        },
+        "mode": "collect",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_preloaded_installed_project_name_cannot_replace_frozen_source/collection-1/checked-report.json",
+        "process_exit_code": 0,
+        "source_manifest_fingerprint": "ef38f7ccc2bbc3d317a99a84f8d169b9863e95ab5ab7e93074ec6b3c4b8ed715"
+      },
+      {
+        "case": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_resealed_collection_manifest_is_checked_against_original_recollection",
+        "final_source_archive_match": true,
+        "group": "modern",
+        "junit": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 0,
+          "skipped": 0,
+          "tests": 0
+        },
+        "mode": "collect",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_resealed_collection_manifest_is_checked_against_original_recollection/collection-1/checked-report.json",
+        "process_exit_code": 0,
+        "source_manifest_fingerprint": "0e188acbfc50da9bbd109dccb7a54ef76eb71e0e89727fa0b3593d8dca421d21"
+      },
+      {
+        "case": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_resealed_wrong_import_source_is_not_authenticated_by_equal_pass_counts",
+        "final_source_archive_match": true,
+        "group": "modern",
+        "junit": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 0,
+          "skipped": 0,
+          "tests": 0
+        },
+        "mode": "collect",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_resealed_wrong_import_source_is_not_authenticated_by_equal_pass_counts/collection-1/checked-report.json",
+        "process_exit_code": 0,
+        "source_manifest_fingerprint": "0e188acbfc50da9bbd109dccb7a54ef76eb71e0e89727fa0b3593d8dca421d21"
+      },
+      {
+        "case": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_resealed_wrong_import_source_is_not_authenticated_by_equal_pass_counts",
+        "final_source_archive_match": true,
+        "group": "modern",
+        "junit": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 3,
+          "skipped": 0,
+          "tests": 3
+        },
+        "mode": "run",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_resealed_wrong_import_source_is_not_authenticated_by_equal_pass_counts/execution-2/execution/checked-report.json",
+        "process_exit_code": 0,
+        "source_manifest_fingerprint": "0e188acbfc50da9bbd109dccb7a54ef76eb71e0e89727fa0b3593d8dca421d21"
+      },
+      {
+        "case": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_resealed_wrong_import_source_is_not_authenticated_by_equal_pass_counts",
+        "final_source_archive_match": true,
+        "group": "modern",
+        "junit": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 0,
+          "skipped": 0,
+          "tests": 0
+        },
+        "mode": "collect",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_resealed_wrong_import_source_is_not_authenticated_by_equal_pass_counts/execution-2/independent-collection/checked-report.json",
+        "process_exit_code": 0,
+        "source_manifest_fingerprint": "0e188acbfc50da9bbd109dccb7a54ef76eb71e0e89727fa0b3593d8dca421d21"
+      },
+      {
+        "case": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_selection_exclusion_and_invalid_expression_fail_for_distinct_reasons",
+        "final_source_archive_match": false,
+        "group": "modern",
+        "junit": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 0,
+          "skipped": 0,
+          "tests": 0
+        },
+        "mode": "collect",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_selection_exclusion_and_invalid_expression_fail_for_distinct_reasons/collection-1/checked-report.json",
+        "process_exit_code": 0,
+        "source_manifest_fingerprint": "92649041ca983cea0277f4849539bf1b9d05a565dfccf769c91bfb9aa79735d7"
+      },
+      {
+        "case": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_selection_exclusion_and_invalid_expression_fail_for_distinct_reasons",
+        "final_source_archive_match": false,
+        "group": "modern",
+        "junit": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 0,
+          "skipped": 0,
+          "tests": 0
+        },
+        "mode": "collect",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_selection_exclusion_and_invalid_expression_fail_for_distinct_reasons/collection-2/checked-report.json",
+        "process_exit_code": 0,
+        "source_manifest_fingerprint": "a40ba9d8aa88cd6e2a16b6f2cfc466baf974e2f7e6f729ea131aeeae85ea0a57"
+      },
+      {
+        "case": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_selection_exclusion_and_invalid_expression_fail_for_distinct_reasons",
+        "final_source_archive_match": false,
+        "group": "modern",
+        "junit": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 0,
+          "skipped": 0,
+          "tests": 0
+        },
+        "mode": "collect",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_selection_exclusion_and_invalid_expression_fail_for_distinct_reasons/collection-3/checked-report.json",
+        "process_exit_code": 4,
+        "source_manifest_fingerprint": "bf0047240ddd4cd6c5a44eddc8d41e357d1202a2975dbeb6217a73f528c1b923"
+      },
+      {
+        "case": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_selection_exclusion_and_invalid_expression_fail_for_distinct_reasons",
+        "final_source_archive_match": true,
+        "group": "modern",
+        "junit": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 0,
+          "skipped": 0,
+          "tests": 0
+        },
+        "mode": "collect",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_selection_exclusion_and_invalid_expression_fail_for_distinct_reasons/collection-4/checked-report.json",
+        "process_exit_code": 4,
+        "source_manifest_fingerprint": "6e57683551dcece65ea8b94014f712b240ab0ebdcfa0c8e29f5c653bc72b427f"
+      },
+      {
+        "case": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_self_declared_extra_authority_and_missing_certificate_fields_are_rejected",
+        "final_source_archive_match": true,
+        "group": "modern",
+        "junit": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 0,
+          "skipped": 0,
+          "tests": 0
+        },
+        "mode": "collect",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_self_declared_extra_authority_and_missing_certificate_fields_are_rejected/collection-1/checked-report.json",
+        "process_exit_code": 0,
+        "source_manifest_fingerprint": "0e188acbfc50da9bbd109dccb7a54ef76eb71e0e89727fa0b3593d8dca421d21"
+      },
+      {
+        "case": "research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_weaker_required_assertions_are_not_certificate_authority",
+        "final_source_archive_match": true,
+        "group": "modern",
+        "junit": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 0,
+          "skipped": 0,
+          "tests": 0
+        },
+        "mode": "collect",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.NativeAuthorityPreservationV4.test_weaker_required_assertions_are_not_certificate_authority/collection-1/checked-report.json",
+        "process_exit_code": 0,
+        "source_manifest_fingerprint": "0e188acbfc50da9bbd109dccb7a54ef76eb71e0e89727fa0b3593d8dca421d21"
+      },
+      {
+        "case": "research.unified_consequence_runtime.test_native_dependency_includes_v41.IncludedDependenciesNativeV41.test_selected_actual_runtime_include_allows_real_native_pass_and_independent_reexecution",
+        "final_source_archive_match": true,
+        "group": "modern",
+        "junit": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 0,
+          "skipped": 0,
+          "tests": 0
+        },
+        "mode": "collect",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_dependency_includes_v41.IncludedDependenciesNativeV41.test_selected_actual_runtime_include_allows_real_native_pass_and_independent_reexecution/evidence-1/checked-report.json",
+        "process_exit_code": 0,
+        "source_manifest_fingerprint": "7bef7f3e16744b01f80a22e4dbbc9a3b14a36fc60a21a6391d1fb0bef5a8cf43"
+      },
+      {
+        "case": "research.unified_consequence_runtime.test_native_dependency_includes_v41.IncludedDependenciesNativeV41.test_selected_actual_runtime_include_allows_real_native_pass_and_independent_reexecution",
+        "final_source_archive_match": true,
+        "group": "modern",
+        "junit": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 2,
+          "skipped": 0,
+          "tests": 2
+        },
+        "mode": "run",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_dependency_includes_v41.IncludedDependenciesNativeV41.test_selected_actual_runtime_include_allows_real_native_pass_and_independent_reexecution/evidence-2/execution/checked-report.json",
+        "process_exit_code": 0,
+        "source_manifest_fingerprint": "7bef7f3e16744b01f80a22e4dbbc9a3b14a36fc60a21a6391d1fb0bef5a8cf43"
+      },
+      {
+        "case": "research.unified_consequence_runtime.test_native_dependency_includes_v41.IncludedDependenciesNativeV41.test_selected_actual_runtime_include_allows_real_native_pass_and_independent_reexecution",
+        "final_source_archive_match": true,
+        "group": "modern",
+        "junit": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 0,
+          "skipped": 0,
+          "tests": 0
+        },
+        "mode": "collect",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_dependency_includes_v41.IncludedDependenciesNativeV41.test_selected_actual_runtime_include_allows_real_native_pass_and_independent_reexecution/evidence-2/independent-collection/checked-report.json",
+        "process_exit_code": 0,
+        "source_manifest_fingerprint": "7bef7f3e16744b01f80a22e4dbbc9a3b14a36fc60a21a6391d1fb0bef5a8cf43"
+      },
+      {
+        "case": "research.unified_consequence_runtime.test_native_dependency_includes_v41.IncludedDependenciesNativeV41.test_selected_actual_runtime_include_allows_real_native_pass_and_independent_reexecution",
+        "final_source_archive_match": true,
+        "group": "modern",
+        "junit": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 2,
+          "skipped": 0,
+          "tests": 2
+        },
+        "mode": "run",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_dependency_includes_v41.IncludedDependenciesNativeV41.test_selected_actual_runtime_include_allows_real_native_pass_and_independent_reexecution/evidence-3/execution/checked-report.json",
+        "process_exit_code": 0,
+        "source_manifest_fingerprint": "7bef7f3e16744b01f80a22e4dbbc9a3b14a36fc60a21a6391d1fb0bef5a8cf43"
+      },
+      {
+        "case": "research.unified_consequence_runtime.test_native_dependency_includes_v41.IncludedDependenciesNativeV41.test_selected_actual_runtime_include_allows_real_native_pass_and_independent_reexecution",
+        "final_source_archive_match": true,
+        "group": "modern",
+        "junit": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 0,
+          "skipped": 0,
+          "tests": 0
+        },
+        "mode": "collect",
+        "path": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_dependency_includes_v41.IncludedDependenciesNativeV41.test_selected_actual_runtime_include_allows_real_native_pass_and_independent_reexecution/evidence-3/independent-collection/checked-report.json",
+        "process_exit_code": 0,
+        "source_manifest_fingerprint": "7bef7f3e16744b01f80a22e4dbbc9a3b14a36fc60a21a6391d1fb0bef5a8cf43"
+      },
+      {
+        "case": "research.unified_consequence_runtime.test_native_dependency_includes_v41.IncludedDependenciesNativeV41.test_selected_actual_runtime_include_allows_real_native_pass_and_independent_reexecution",
+        "final_source_archive_match": true,
+        "group": "legacy",
+        "junit": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 0,
+          "skipped": 0,
+          "tests": 0
+        },
+        "mode": "collect",
+        "path": "legacy-v41/native-evidence/research.unified_consequence_runtime.test_native_dependency_includes_v41.IncludedDependenciesNativeV41.test_selected_actual_runtime_include_allows_real_native_pass_and_independent_reexecution/evidence-1/checked-report.json",
+        "process_exit_code": 0,
+        "source_manifest_fingerprint": "75c8881239fb00ac7eb9b1e2a0b2c3d37cbded96734c30ca8009f61d9815ff1a"
+      },
+      {
+        "case": "research.unified_consequence_runtime.test_native_dependency_includes_v41.IncludedDependenciesNativeV41.test_selected_actual_runtime_include_allows_real_native_pass_and_independent_reexecution",
+        "final_source_archive_match": true,
+        "group": "legacy",
+        "junit": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 2,
+          "skipped": 0,
+          "tests": 2
+        },
+        "mode": "run",
+        "path": "legacy-v41/native-evidence/research.unified_consequence_runtime.test_native_dependency_includes_v41.IncludedDependenciesNativeV41.test_selected_actual_runtime_include_allows_real_native_pass_and_independent_reexecution/evidence-2/execution/checked-report.json",
+        "process_exit_code": 0,
+        "source_manifest_fingerprint": "75c8881239fb00ac7eb9b1e2a0b2c3d37cbded96734c30ca8009f61d9815ff1a"
+      },
+      {
+        "case": "research.unified_consequence_runtime.test_native_dependency_includes_v41.IncludedDependenciesNativeV41.test_selected_actual_runtime_include_allows_real_native_pass_and_independent_reexecution",
+        "final_source_archive_match": true,
+        "group": "legacy",
+        "junit": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 0,
+          "skipped": 0,
+          "tests": 0
+        },
+        "mode": "collect",
+        "path": "legacy-v41/native-evidence/research.unified_consequence_runtime.test_native_dependency_includes_v41.IncludedDependenciesNativeV41.test_selected_actual_runtime_include_allows_real_native_pass_and_independent_reexecution/evidence-2/independent-collection/checked-report.json",
+        "process_exit_code": 0,
+        "source_manifest_fingerprint": "75c8881239fb00ac7eb9b1e2a0b2c3d37cbded96734c30ca8009f61d9815ff1a"
+      },
+      {
+        "case": "research.unified_consequence_runtime.test_native_dependency_includes_v41.IncludedDependenciesNativeV41.test_selected_actual_runtime_include_allows_real_native_pass_and_independent_reexecution",
+        "final_source_archive_match": true,
+        "group": "legacy",
+        "junit": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 2,
+          "skipped": 0,
+          "tests": 2
+        },
+        "mode": "run",
+        "path": "legacy-v41/native-evidence/research.unified_consequence_runtime.test_native_dependency_includes_v41.IncludedDependenciesNativeV41.test_selected_actual_runtime_include_allows_real_native_pass_and_independent_reexecution/evidence-3/execution/checked-report.json",
+        "process_exit_code": 0,
+        "source_manifest_fingerprint": "75c8881239fb00ac7eb9b1e2a0b2c3d37cbded96734c30ca8009f61d9815ff1a"
+      },
+      {
+        "case": "research.unified_consequence_runtime.test_native_dependency_includes_v41.IncludedDependenciesNativeV41.test_selected_actual_runtime_include_allows_real_native_pass_and_independent_reexecution",
+        "final_source_archive_match": true,
+        "group": "legacy",
+        "junit": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 0,
+          "skipped": 0,
+          "tests": 0
+        },
+        "mode": "collect",
+        "path": "legacy-v41/native-evidence/research.unified_consequence_runtime.test_native_dependency_includes_v41.IncludedDependenciesNativeV41.test_selected_actual_runtime_include_allows_real_native_pass_and_independent_reexecution/evidence-3/independent-collection/checked-report.json",
+        "process_exit_code": 0,
+        "source_manifest_fingerprint": "75c8881239fb00ac7eb9b1e2a0b2c3d37cbded96734c30ca8009f61d9815ff1a"
+      }
+    ]
+  },
+  "run_id": "38954969411",
+  "schema": "UDM_NATIVE_AUTHORITY_V41_OFFLINE_AUDIT_V1",
+  "scope": "Offline parsing and hashing only; no artifact code execution, Git, network, native, or collection experiments.",
+  "source": {
+    "base_files": 1594,
+    "baseline_commit": "7edf1018342b50f73ca226de3e0d0b7acdb31647",
+    "changed_prior_files": [],
+    "changed_v3_files": [],
+    "inventory_sha256": {
+      "base": "1b9fa4f54337be4856c404b72b1974a905e1ab318094220c78c74f5fb4c83199",
+      "source": "8c511af3048e6948dadc14d6bae3a3158c0deeab589b20a555a423e00da0bab0",
+      "v3": "e74338882d6f2b1887eb9f6974adfa0661e0cd14bd91a3ecd47ffb9a8b34ddb9"
+    },
+    "source_commit": "4c3f7e276567b4ea8df96c7a8797a889040dc0ac",
+    "source_files": 1666,
+    "v3_files": 1406
+  },
+  "source_commit": "4c3f7e276567b4ea8df96c7a8797a889040dc0ac",
+  "status": "PASS_STRICT_ADMISSION_ONLY_AUDIT",
+  "total_seconds": 1.8376928540001245,
+  "utc": "2026-10-16T19:35:39.282918+00:00"
+}

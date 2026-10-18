@@ -1,0 +1,23 @@
+test_original_setting_is_restored_on_failed_control (research.unified_consequence_runtime.test_qualify_environment_v4_retention.DefaultEvidenceRetentionV4.test_original_setting_is_restored_on_failed_control) ... FAIL
+test_persistent_default_directory_is_retained_and_temp_setting_restored (research.unified_consequence_runtime.test_qualify_environment_v4_retention.DefaultEvidenceRetentionV4.test_persistent_default_directory_is_retained_and_temp_setting_restored) ... FAIL
+
+======================================================================
+FAIL: test_original_setting_is_restored_on_failed_control (research.unified_consequence_runtime.test_qualify_environment_v4_retention.DefaultEvidenceRetentionV4.test_original_setting_is_restored_on_failed_control)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_qualify_environment_v4_retention.py", line 22, in test_original_setting_is_restored_on_failed_control
+    self.assertTrue(hasattr(q,'retained_temporary_outputs'),'versioned evidence-retention context required')
+AssertionError: False is not true : versioned evidence-retention context required
+
+======================================================================
+FAIL: test_persistent_default_directory_is_retained_and_temp_setting_restored (research.unified_consequence_runtime.test_qualify_environment_v4_retention.DefaultEvidenceRetentionV4.test_persistent_default_directory_is_retained_and_temp_setting_restored)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_qualify_environment_v4_retention.py", line 10, in test_persistent_default_directory_is_retained_and_temp_setting_restored
+    self.assertTrue(hasattr(q,'retained_temporary_outputs'),'versioned evidence-retention context required')
+AssertionError: False is not true : versioned evidence-retention context required
+
+----------------------------------------------------------------------
+Ran 2 tests in 0.000s
+
+FAILED (failures=2)

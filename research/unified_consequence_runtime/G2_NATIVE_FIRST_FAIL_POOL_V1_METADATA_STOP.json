@@ -1,0 +1,94 @@
+{
+  "status": "V1_METADATA_POOL_INCOMPLETE_UNKNOWN_BEFORE_NATIVE",
+  "prequery_commit": "073098244dd213b09607146832a1803ca68c918e",
+  "required_total": 7,
+  "found": 6,
+  "training_slots": 5,
+  "future_slots_required": 2,
+  "metadata_selected_in_frozen_repository_order": [
+    {
+      "repo": "pallets/werkzeug",
+      "pr": 3215,
+      "title": "fix boolean logic for external url",
+      "base": "1b00618e787f40dfb21eba29caf8f8be7c8e1d93",
+      "head": "884437aef93e543ebaff3b9cdbe857ee47e7e00c",
+      "production": "src/werkzeug/routing/map.py",
+      "author_test": "tests/test_routing.py",
+      "files": [
+        "src/werkzeug/routing/map.py",
+        "tests/test_routing.py"
+      ]
+    },
+    {
+      "repo": "pallets/click",
+      "pr": 3884,
+      "title": "Fix `show_envvar` output for a sequence or an empty `envvar`",
+      "base": "bb695aaecdef95832d167fc1d508921745aa824e",
+      "head": "c53d3732b98c764932e146c007146ad402acb229",
+      "production": "src/click/core.py",
+      "author_test": "tests/test_options.py",
+      "files": [
+        "CHANGES.md",
+        "src/click/core.py",
+        "tests/test_options.py"
+      ]
+    },
+    {
+      "repo": "psf/requests",
+      "pr": 6963,
+      "title": "fix CVE 2024 47081: manual url parsing leads to netloc credentials leak",
+      "base": "7bc45877a86192af77645e156eb3744f95b47dae",
+      "head": "92bab7d1142db0c807060577233568e5f7734c9b",
+      "production": "src/requests/utils.py",
+      "author_test": "tests/test_utils.py",
+      "files": [
+        "src/requests/utils.py",
+        "tests/test_utils.py"
+      ]
+    },
+    {
+      "repo": "urllib3/urllib3",
+      "pr": 5254,
+      "title": "Fix HTTP/2 probe cache lock leak",
+      "base": "bcf84e6815f623521e1ffe3e6ab0224d778929c0",
+      "head": "4aa45cd210ebb19559d505d73c8d05a541314e2f",
+      "production": "src/urllib3/http2/probe.py",
+      "author_test": "test/test_http2_probe.py",
+      "files": [
+        "changelog/5206.bugfix.rst",
+        "src/urllib3/http2/probe.py",
+        "test/test_http2_probe.py"
+      ]
+    },
+    {
+      "repo": "pydantic/pydantic",
+      "pr": 13980,
+      "title": "Fix JSON Schema cache key mismatch with nested `json_schema_mode_override`",
+      "base": "d0d67ea05a9c0af3db47b112a0a24eceeccb77da",
+      "head": "ad9c1bbd1501b6b7cf4ed74d634cbda8137d92de",
+      "production": "pydantic/json_schema.py",
+      "author_test": "tests/test_json_schema.py",
+      "files": [
+        "pydantic/json_schema.py",
+        "tests/test_json_schema.py"
+      ]
+    },
+    {
+      "repo": "pypa/packaging",
+      "pr": 1446,
+      "title": "fix: require the complete pylock filename to match",
+      "base": "332d716676eb934b67ede4054a3e3e0d4022b2d3",
+      "head": "a4f5d377a62e96759a4d9237256ec5dc3b19444e",
+      "production": "src/packaging/pylock.py",
+      "author_test": "tests/test_pylock.py",
+      "files": [
+        "src/packaging/pylock.py",
+        "tests/test_pylock.py"
+      ]
+    }
+  ],
+  "metadata_refusals": "Other ten repos yielded no eligible first-twelve title-prefixed fix PR with merged, 2-8 paths, 1 Python production and 1 changed Python author test, and no environment/config changes; no replacement after screen",
+  "source_bodies_read": false,
+  "native_outcomes_read": false,
+  "scientific_implication": "No seven-task V1 admission; G2 UNKNOWN"
+}

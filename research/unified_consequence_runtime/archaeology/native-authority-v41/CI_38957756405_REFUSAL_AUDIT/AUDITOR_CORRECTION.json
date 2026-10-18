@@ -1,0 +1,17 @@
+{
+  "artifact_or_expected_records_changed": false,
+  "classification": "AUDITOR_TEXT_PREDICATE_BUG",
+  "collection_calls": 0,
+  "corrected_module_sha256": "1e49a32345f324798325fc3bc13a8b46039ed7e6931c586e6b994ef5dae15694",
+  "exact_change": "'controller-local' in audit['cost_scope'] -> 'worker counters' in audit['cost_scope']",
+  "failed_check": "screening.truthful_report_limitations_retained",
+  "git_calls": 0,
+  "initial_artifact_run": "RUN_38957756405_INITIAL",
+  "initial_failed_receipt_preserved": true,
+  "initial_module_sha256": "d7ff59d187ce84e523a5a708e05fbd75e250f0f9449d22451c1412dd14136eae",
+  "initial_source_reconstructed_and_hash_verified": true,
+  "native_calls": 0,
+  "network_calls": 0,
+  "rationale": "Initial auditor required literal controller-local in cost_scope. The immutable report says Native/collection worker counters and explicitly retains the controller-local boundary elsewhere in limitations. Requiring worker counters and UNKNOWN verifies its actual cost-scope wording without changing source, artifact, refusal expectations, counts, or costs.",
+  "schema": "UDM_V41_REFUSAL_AUDITOR_CORRECTION_V1"
+}

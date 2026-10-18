@@ -1,0 +1,31 @@
+{
+  "frozen_acceptance_sha256": "652c2f5117be0e61d6953c509228580a7441e2a8bc23fa1b67c2b5fc240b8671",
+  "frozen_source_hash_matches": {
+    "decisive_native_verify.py": true,
+    "native_admission_v2.py": true,
+    "native_environment_selection_v3.py": true,
+    "native_environment_v3.py": true,
+    "native_execution_v2.py": true,
+    "native_execution_v3.py": true,
+    "test_native_admission_v2_adversarial.py": true,
+    "test_native_authority_v4.py": true,
+    "test_native_environment_selection_v3.py": true,
+    "test_native_execution_v3.py": true
+  },
+  "frozen_test_count": 29,
+  "qualifier_sha256": "e1516f57bf9ba564d747a8944d3d636f17836e56fb71a0ea52909bae842f11b4",
+  "retention_static_review": "../RETENTION_ONLY_REVIEW.json",
+  "selector_sha256": "bfb3c57d61bb8bcbb44e8a10c95dbe3162bc3adef58174c9c75eb27e728f0efb",
+  "wrapper_static": {
+    "qualify": {
+      "first_statement": "before = snapshot_indexes(repo)",
+      "forces_optional_locks_0": true,
+      "snapshot_before_implementation_call": true
+    },
+    "write_freeze": {
+      "first_statement": "before = snapshot_indexes(repo)",
+      "forces_optional_locks_0": true,
+      "snapshot_before_implementation_call": true
+    }
+  }
+}

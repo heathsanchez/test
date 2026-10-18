@@ -1,0 +1,57 @@
+test_a_fresh_output_directory_cannot_start_a_replacement_query_round (research.unified_consequence_runtime.test_frontier_v4_curation_lineage.FrontierV4CurationLineage.test_a_fresh_output_directory_cannot_start_a_replacement_query_round) ... fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+ERROR
+test_a_new_process_cannot_replay_a_retained_query_receipt (research.unified_consequence_runtime.test_frontier_v4_curation_lineage.FrontierV4CurationLineage.test_a_new_process_cannot_replay_a_retained_query_receipt) ... fatal: not a git repository (or any parent up to mount point /)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+ERROR
+test_a_replacement_universe_filename_is_rejected_before_its_contents (research.unified_consequence_runtime.test_frontier_v4_curation_lineage.FrontierV4CurationLineage.test_a_replacement_universe_filename_is_rejected_before_its_contents) ... FAIL
+
+======================================================================
+ERROR: test_a_fresh_output_directory_cannot_start_a_replacement_query_round (research.unified_consequence_runtime.test_frontier_v4_curation_lineage.FrontierV4CurationLineage.test_a_fresh_output_directory_cannot_start_a_replacement_query_round)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_frontier_v4_curation_lineage.py", line 20, in test_a_fresh_output_directory_cannot_start_a_replacement_query_round
+    self.curator.query(root/'research/runtime', canonical/'PREQUERY.json',
+  File "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-environment-v3/curate_frontier.py", line 240, in query
+    if subprocess.check_output(['git', '-C', str(root), 'status', '--porcelain']).strip():
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/subprocess.py", line 466, in check_output
+    return run(*popenargs, stdout=PIPE, timeout=timeout, check=True,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['git', '-C', '/tmp/tmpwnyplimo', 'status', '--porcelain']' returned non-zero exit status 128.
+
+======================================================================
+ERROR: test_a_new_process_cannot_replay_a_retained_query_receipt (research.unified_consequence_runtime.test_frontier_v4_curation_lineage.FrontierV4CurationLineage.test_a_new_process_cannot_replay_a_retained_query_receipt)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_frontier_v4_curation_lineage.py", line 28, in test_a_new_process_cannot_replay_a_retained_query_receipt
+    self.curator.query(records/'research/runtime', records/'PREQUERY.json',
+  File "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-environment-v3/curate_frontier.py", line 240, in query
+    if subprocess.check_output(['git', '-C', str(root), 'status', '--porcelain']).strip():
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/subprocess.py", line 466, in check_output
+    return run(*popenargs, stdout=PIPE, timeout=timeout, check=True,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['git', '-C', '/tmp/tmpsn_nap5h', 'status', '--porcelain']' returned non-zero exit status 128.
+
+======================================================================
+FAIL: test_a_replacement_universe_filename_is_rejected_before_its_contents (research.unified_consequence_runtime.test_frontier_v4_curation_lineage.FrontierV4CurationLineage.test_a_replacement_universe_filename_is_rejected_before_its_contents)
+----------------------------------------------------------------------
+ValueError: declared universe must be an ordinary repository record
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_frontier_v4_curation_lineage.py", line 43, in test_a_replacement_universe_filename_is_rejected_before_its_contents
+    with self.assertRaisesRegex(ValueError, 'canonical declared universe'):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: "canonical declared universe" does not match "declared universe must be an ordinary repository record"
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.083s
+
+FAILED (failures=1, errors=2)

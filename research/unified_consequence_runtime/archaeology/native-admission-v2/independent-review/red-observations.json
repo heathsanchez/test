@@ -1,0 +1,73 @@
+{
+  "evidence_kind": "OBSERVED_TOOL_EXECUTION_METADATA_NOT_RECREATED_RAW_LOGS",
+  "excluded_fixture_errors": [
+    "Initial packaging preload assumption was invalid in the minimal pytest environment; replaced by actually preloaded pluggy.",
+    "A transitional run raced worker edits and was excluded from verification claims."
+  ],
+  "observations": [
+    {
+      "duration_seconds": 7.205,
+      "failed_subcases": 9,
+      "findings": [
+        "stdout/stderr/JUnit packet tampering accepted",
+        "collection cost forgery accepted",
+        "unexpected packet file accepted"
+      ],
+      "observed_assertion": "AssertionError: ValueError not raised",
+      "output_chunk": "5c9dcd",
+      "session_id": 49968,
+      "test_count": 4
+    },
+    {
+      "duration_seconds": 3.322,
+      "failed_subcases": 2,
+      "findings": [
+        "namespace project imported installed dependency",
+        "original pytester declaration loaded without external license"
+      ],
+      "observed_assertion": "AssertionError: False is not true : PASS_NATIVE",
+      "output_chunk": "33438d",
+      "session_id": 9843,
+      "test_count": 2
+    },
+    {
+      "duration_seconds": 8.054,
+      "failed_subcases": 3,
+      "findings": [
+        "call failure inconsistent with passing JUnit accepted",
+        "invalid call outcome accepted",
+        "equal failure counts with swapped failed native nodes accepted"
+      ],
+      "observed_assertion": "AssertionError: ValueError not raised",
+      "output_chunk": "1afa2d",
+      "session_id": 52066,
+      "test_count": 2
+    },
+    {
+      "duration_seconds": 3.242,
+      "failed_subcases": 1,
+      "findings": [
+        "resealed false imported-source hash accepted despite independent=True"
+      ],
+      "observed_assertion": "AssertionError: ValueError not raised",
+      "output_chunk": "ff761e",
+      "session_id": 14991,
+      "test_count": 1
+    },
+    {
+      "finding": "Nested changed test declaration omitted from protected class routes",
+      "green_recheck": {
+        "output_chunk": "f7331d",
+        "reason": "UNKNOWN_SUITE_CONTRACT: nested class test mapping unsupported",
+        "status": "REFUSED"
+      },
+      "observed_result": [
+        "tests/test_nested.py::test_old"
+      ],
+      "output_chunk": "f4314d",
+      "source": "class TestOuter:\n class TestInner:\n  def test_new(self): assert False\ndef test_old(): assert True\n",
+      "test_kind": "read-only AST probe"
+    }
+  ],
+  "schema": "UDM_NATIVE_ADMISSION_SECURITY_RED_OBSERVATIONS_V2"
+}

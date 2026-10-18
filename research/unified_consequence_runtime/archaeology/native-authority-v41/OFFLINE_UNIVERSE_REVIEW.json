@@ -1,0 +1,132 @@
+{
+  "authority_boundary": {
+    "canonical_declaration_authorized": false,
+    "scientific_verdict": "NONE; G2_G6 remain outside this offline review",
+    "strict_actions_gate": "NOT_ASSESSED_BY_THIS_REVIEW; ROOT_MUST_OBTAIN_PASS_BEFORE_CANONICAL_DECLARATION_OR_QUERY",
+    "target_metadata_query_authorized": false
+  },
+  "checks": {
+    "exclusion_reconstruction": {
+      "computed_names": 71,
+      "extra_names": [],
+      "method": "Lowercase exclusion-map keys, entire prior universe lists, declared repositories and embedded historical_metadata_inputs[*].repositories; compare complete name and provenance sets.",
+      "missing_names": [],
+      "provenance_set_mismatches": [],
+      "status": "PASS"
+    },
+    "freeze_and_gate_order": "PASS_OFFLINE_NONCANONICAL; independent proposal review then root strict Actions admission PASS then canonical committed universe/prequery before first target query",
+    "history_hashes": "PASS_ALL_FOUR_EXACT",
+    "metadata_budget": {
+      "closed_prs_per_repository_maximum": 100,
+      "query": {
+        "direction": "desc",
+        "page": 1,
+        "per_page": 100,
+        "sort": "updated",
+        "state": "closed"
+      },
+      "repositories_maximum": 9,
+      "seconds": 900,
+      "status": "PASS"
+    },
+    "order": "PASS_FIXED_LEXICOGRAPHIC_REPOSITORIES_AND_API_RETURNED_PR_ORDER; first qualifying PR per repository, no reranking or replacement",
+    "owner_names": {
+      "distinct_owner_identifiers": 9,
+      "legal_or_operational_independence_verified": false,
+      "status": "PASS_TEXTUAL_DISTINCTION_ONLY"
+    },
+    "predicates": "PASS_EXACT_V4_METADATA_PREDICATE_DICTIONARY",
+    "role_and_stop_rules": "PASS_COMMIT_COMPLETE_POOL; SCREEN_ALL_ONCE; FIRST_TWO_SOURCE_DISTINCT_ADMISSIONS; PASS_NATIVE_AND_FAIL_NATIVE_IDENTICAL; FUTURE_RESULTS_SEALED; SHORTFALL_OR_NO_TRAINING_RESIDUAL_STOP_WITHOUT_REPLACEMENT",
+    "screening_budget": {
+      "status": "PASS_EXACT_V4",
+      "value": {
+        "all_refusals_and_partial_costs_retained": true,
+        "collection_seconds_per_call": 60,
+        "execution_seconds_per_call": 600,
+        "maximum_cases": 9,
+        "maximum_native_executions_per_case": 2,
+        "native_and_independent_verification_costs_charged": true,
+        "total_screening_wall_seconds": 7200
+      }
+    },
+    "selection_basis": "PASS_AS_DECLARED: general repository-name/broad-purpose familiarity only; proposal contains no candidate PR, target bug, source/patch/configuration evidence, native outcome or chosen winning operator as selection input",
+    "source_distinct_universe": {
+      "all_prior_v4_nine_excluded": true,
+      "count": 9,
+      "historical_overlap": [],
+      "repositories": [
+        "arrow-py/arrow",
+        "jquast/wcwidth",
+        "networkx/networkx",
+        "pyca/cryptography",
+        "pyparsing/pyparsing",
+        "pytest-dev/pluggy",
+        "python-babel/babel",
+        "python-semver/python-semver",
+        "yaml/pyyaml"
+      ],
+      "sorted_unique": true,
+      "status": "PASS_BOUNDED_ACCESSIBLE_HISTORY"
+    }
+  },
+  "limitations": [
+    "The exclusion result is bounded to the four permitted accessible records; no additional historical records or references were opened.",
+    "Repository existence, current ownership, configuration, maintenance, source, tests, PRs and admission likelihood were not checked.",
+    "Proposer exposure and internal-memory attestations cannot be independently proven from these records; no contradictory outcome-based selection evidence appears in the permitted material.",
+    "The purposive nine-name proposal is not a random or population-representative sample.",
+    "Neither absolute unfamiliarity nor legal/operational owner independence is established."
+  ],
+  "material_findings": [],
+  "permitted_history_inputs": [
+    {
+      "bytes": 20869,
+      "hash_matches_proposal": true,
+      "path": "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-frontier-v2/PREQUERY.json",
+      "sha256": "24c3e562c5fb638a162930d9aa71d2b8b50d67dc5741ab2ae9c6e5e30ceafba9"
+    },
+    {
+      "bytes": 26962,
+      "hash_matches_proposal": true,
+      "path": "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-environment-v3/PREQUERY.json",
+      "sha256": "5c7e141f6b8915b48bf0f64d662ac443f41c9791190441c3ffc5b8ade8d5a718"
+    },
+    {
+      "bytes": 39524,
+      "hash_matches_proposal": true,
+      "path": "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-authority-v4/PREQUERY.json",
+      "sha256": "a2678a75189b0890f51e02bbde62ec9d2b41063464a2894eb779ab7a306876e1"
+    },
+    {
+      "bytes": 821,
+      "hash_matches_proposal": true,
+      "path": "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-authority-v4/DECLARED_UNIVERSE.json",
+      "sha256": "34473c7872d1180d84fbc6af21dc50a8656ed7a3cdf2df5a87409b02cbe8c46d"
+    }
+  ],
+  "proposal": {
+    "bytes": 79648,
+    "path": "/workspace/qualification/native-authority-v41-universe-design/PROPOSAL.json",
+    "sha256": "26794db6ade4c615ec93cf27515f4bbbc4e56be250c81d3cd3e840ca0d90220e"
+  },
+  "review_conduct": {
+    "canonical_records_written": false,
+    "git_commands": 0,
+    "input_paths_read": [
+      "/workspace/qualification/native-authority-v41-universe-design/PROPOSAL.json",
+      "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-frontier-v2/PREQUERY.json",
+      "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-environment-v3/PREQUERY.json",
+      "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-authority-v4/PREQUERY.json",
+      "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-authority-v4/DECLARED_UNIVERSE.json"
+    ],
+    "native_or_test_runs": 0,
+    "network_queries": 0,
+    "referenced_pointer_targets_opened": 0,
+    "repository_files_written": 0,
+    "target_metadata_queries": 0,
+    "target_source_reads": 0
+  },
+  "review_scope": "Only PROPOSAL.json and its four declared history records were read. No referenced history pointer target was opened.",
+  "reviewer_task": "/root/v4_frontier_preparation",
+  "schema": "UDM_NATIVE_AUTHORITY_V41_INDEPENDENT_OFFLINE_PROPOSAL_REVIEW_V1",
+  "status": "PASS_OFFLINE_PROPOSAL_REVIEW"
+}

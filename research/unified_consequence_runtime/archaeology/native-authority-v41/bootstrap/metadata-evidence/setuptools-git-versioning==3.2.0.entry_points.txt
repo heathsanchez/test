@@ -1,0 +1,11 @@
+[console_scripts]
+setuptools-git-versioning = setuptools_git_versioning.cli:main
+
+[distutils.setup_keywords]
+setuptools_git_versioning = setuptools_git_versioning:parse_config
+
+[dynamic_metadata.provider]
+setuptools_git_versioning.dynamic_metadata = setuptools_git_versioning.dynamic_metadata
+
+[setuptools.finalize_distribution_options]
+setuptools_git_versioning = setuptools_git_versioning:infer_version

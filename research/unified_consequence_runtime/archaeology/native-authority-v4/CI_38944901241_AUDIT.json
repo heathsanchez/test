@@ -1,0 +1,125 @@
+{
+  "acquisitions": 0,
+  "all_owned_job_steps_successful": true,
+  "api_provenance_matches": true,
+  "artifact_code_executed": false,
+  "artifact_id": 12065396366,
+  "artifact_sha256": "5437ada6b403643d0b9e76358633ecc436a84377ac36ba18da103c1530b8c9fa",
+  "artifact_size_bytes": 174407105,
+  "candidates": 0,
+  "cost_scope": "53attempts are the modern qualification controller ledger. Legacy13raw reports independently show9collection4native calls, outside thatledger. Binding/bootstrap/tool/model/engineering/full lifecycle costs are not measured by this result and remainUNKNOWN.",
+  "failures": [],
+  "fresh_target_source_or_outcomes_accessed": false,
+  "index_restoration_or_reset": false,
+  "modern_attempt_costs": {
+    "collection_calls": 39,
+    "native_calls": 14,
+    "subprocess_attempts": 53
+  },
+  "native_or_collection_experiments_by_auditors": 0,
+  "observed_qualification_status": "ADMISSION_ONLY_QUALIFIED",
+  "prior_artifacts_preserved": {
+    "bounded_green": "../GREEN_38942832565/AUDIT.json",
+    "red": "../RED_38941859931/AUDIT.json",
+    "retention_static_review": "../RETENTION_ONLY_REVIEW.json"
+  },
+  "qualification_first_task_gate": {
+    "boundary": "Frozen metadata/native adversarial controls only",
+    "status": "PASS"
+  },
+  "qualification_wall_seconds": 152.43682614899998,
+  "raw_review_limits": [
+    "Refusals may occur before a certificate/receipt is written. Their checked raw report, exact retained source/test code, and frozen acceptance success are the evidence; this audit does not rerun refusal logic.",
+    "Forged intermediate certificate and receipt objects are intentionally mutated in memory by frozen tests and are not retained as separate serialized files. Original packets are retained; passing frozen assertions substantiate expected rejection.",
+    "Three earlier selection-expression variants retain raw report/source-manifest packets but only the final fixture head archive is retained; their variant manifests must not be described as matching the final head archive.",
+    "The 15 modern controller-native cases use Python3.12.14/pytest8.3.5; only five modern malformed controls use selected Python3.12.14/pytest8.4.1. Five legacy malformed controls use Python3.6.5/pytest5.4.3.",
+    "This subaudit does not decide the complete admission gate. Native G2-G6 and hostile-process nonbypassability remain UNKNOWN."
+  ],
+  "retained_worker_report_costs": {
+    "legacy": {
+      "collection_calls": 9,
+      "native_calls": 4,
+      "observed_worker_seconds": 2.854664673000059,
+      "subprocess_reports": 13
+    },
+    "modern_default_collections_subset": {
+      "collection_calls": 2,
+      "native_calls": 0,
+      "observed_worker_seconds": 0.43132849799997075,
+      "subprocess_reports": 2
+    },
+    "modern_total": {
+      "collection_calls": 39,
+      "native_calls": 14,
+      "observed_worker_seconds": 11.89751122899986,
+      "subprocess_reports": 53
+    },
+    "subset_note": "The two default collections are included in modern_total; do not add them twice."
+  },
+  "retention_gap_resolved": {
+    "mapping_limit": "The two frozen fixture originals share identical source/import/test-item identity. Retained JUnit timestamps and neighboring certificate/recollection timestamps establish the qualified invocation chronology; no unique mapping is claimed from random directory names alone.",
+    "modern_attempts": {
+      "collection_calls": 39,
+      "native_calls": 14,
+      "subprocess_attempts": 53
+    },
+    "modern_retained_reports": 53,
+    "negative_comparison": "Recovered fresh original3-node collection contains test_new[2]; the exact frozen in-memory resealed forgery removes that node and its test_item, leaving2nodes. The collections differ under unchanged verifier comparison.",
+    "new_default_collection_reports": 2,
+    "new_default_raw_files": 12,
+    "prior_missing_collection_reports": 2,
+    "prior_run": 38942832565,
+    "remaining_raw_collection_gap": false
+  },
+  "run_id": 38944901241,
+  "runtime_scope": "15 controller-native cases use CPython3.12.14/pytest8.3.5;5 selected-modern native cases use CPython3.12.14/pytest8.4.1;5 selected-legacy native cases use CPython3.6.5/pytest5.4.3. Nine metadata-only tests complete29frozencontrols.",
+  "schema": "UDM_NATIVE_AUTHORITY_V4_CI3_STRICT_INDEPENDENT_ARTIFACT_AUDIT_V1",
+  "source_commit": "a6521e27dcabdf69cf8e6ecd283432730d6aa846",
+  "status": "PASS_NATIVE_ADMISSION_EVIDENCE_ONLY",
+  "strict_first_admission_evidence_gate": {
+    "boundary": "Frozen metadata/native adversarial controls and complete retained native/collection evidence for this qualification only; no prospective task or nativeG2-G6 promotion.",
+    "status": "PASS"
+  },
+  "subreport_sha256": {
+    "AUDITOR_INDEX_AUDIT.json": "672ed4e3a767b1733d5dde819a3ccbb71d92a47322725abeeade3b8f8c7b9c02",
+    "COSTS_BY_CASE.json": "174180a99d03d6921b395d0fc75898996b5ef2c8be4b7bd0fb66849e30a47a92",
+    "ENVELOPE_AUDIT.json": "47b0a808def7b38ef0a52ffea25da4bc4ed136386800bb1a6643d809bf84cb55",
+    "FROZEN_AUTHORITY_STATIC.json": "bfc76dd85de9fbbcbc1450d289ea8776439be32db9827ba3a66741880155b849",
+    "RAW_RECEIPT_REVIEW/RAW_RECEIPT_REVIEW.json": "e2a25ced7f9e47808dba7264471719b1cf34b29eb28faddf0addd9bdba86dfbd",
+    "SEMANTIC_AUDIT.json": "3c812e79900867ff59fd923e2dad193d61d1f5a3d59a59ca9cdcc33b6ffbf7fb",
+    "SOURCE_PREAUDIT.json": "5ca8021b6253dcf8254102cf5f09770c3fef7e2cf21d21f22fef94b99a80806a"
+  },
+  "utc": "2026-10-16T18:15:26.674449+00:00",
+  "verdicts": {
+    "G0_G1": "PRESERVED_EXACT_PRIOR_SOURCE_AUTHORITY",
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN"
+  },
+  "verified": {
+    "CI_freeze_and_qualification_index_hashes_unchanged": true,
+    "all_manifest_entries": 618,
+    "auditor_local_index_hashes_and_absence_unchanged": true,
+    "baseline_files_preserved": 1406,
+    "baseline_inventory_sha256": "ad29cb8de092adf22cd41d39a45b859bae883d67e823550b83708db30a24e631",
+    "binding_controls": 31,
+    "complete_primary_positive_native_replay_pairs": 2,
+    "complete_tracked_source_files": 1479,
+    "exposed_metadata_only_cases": 7,
+    "frozen_modern_controls": 29,
+    "frozen_protocol_and_source_and_catalog_pins": true,
+    "immutable_fixture_source_copies": 75,
+    "legacy_catalog_installed_packages": 22,
+    "legacy_controls": 5,
+    "legacy_native_case_directories": 5,
+    "modern_catalog_installed_packages": 39,
+    "modern_native_case_directories": 20,
+    "nested_files": 616,
+    "packet_objects": 39,
+    "post_control_runtime_bytes_unchanged": true,
+    "retained_raw_reports": 66,
+    "source_archive_files": 969
+  }
+}

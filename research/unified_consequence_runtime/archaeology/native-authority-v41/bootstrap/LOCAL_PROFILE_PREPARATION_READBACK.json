@@ -1,0 +1,103 @@
+{
+  "actual_pytest_plugin_manifest": "NOT_EXECUTED_ROOT_REVIEW_REQUIRED_BEFORE_NATIVE_USE",
+  "catalog_sha256": "2050def754f8b0b7d39f3ea256a6c4a5997876fd21ebd6a1afb134b06cb8dfc6",
+  "costs": {
+    "collection_calls": 0,
+    "downloaded_bytes": 23309987,
+    "initial_profile_preparation_retained_seconds": 9.577444095999454,
+    "metadata_extension_seconds": 2.8680552939995323,
+    "model_engineering_lifecycle_cost": "UNKNOWN",
+    "native_calls": 0,
+    "profile_install_and_readback_seconds": 9.332744435999302,
+    "project_json_requests": 6,
+    "request_rows": 22,
+    "reused_old_verified_wheels_without_network": 39,
+    "sum_profile_preparation_seconds": 18.910188531998756,
+    "sum_request_wall_seconds": 2.7301323229994523,
+    "version_json_requests": 8,
+    "wheel_requests": 8
+  },
+  "environment_sha256": "4344d11d515454b42e4677620cfd5f6e428a7e7ee088702769912eaf6a89238d",
+  "legacy_pin_count": 22,
+  "limits": [
+    "Generic tooling qualification only; no fresh task or comparative win.",
+    "Old admission option grammar still rejects --cov; package/plugin license alone does not broaden native source authority.",
+    "Self extras and new SCM transport remain unresolved; do not pin a published target package.",
+    "Initial audit Git-read snapshot limitation is retained in frozen extension protocol."
+  ],
+  "metadata_sha256": "79b82db4d56056cb268b99e9cc9da2f54768c6ee2696f13fd4264864b20bff89",
+  "modern_pin_count": 45,
+  "native_tests_executed": false,
+  "negative_controls": [
+    {
+      "case": "old-pin-change",
+      "reason": "UNKNOWN_CATALOG_AUTHORITY: metadata for an unpinned distribution",
+      "status": "REJECTED_AS_REQUIRED"
+    },
+    {
+      "case": "plugin-license-change",
+      "reason": "UNKNOWN_PLUGIN_LICENSE_CHANGED",
+      "status": "REJECTED_AS_REQUIRED"
+    },
+    {
+      "case": "legacy-row-change",
+      "reason": "UNKNOWN_LEGACY_PROFILE_CHANGED",
+      "status": "REJECTED_AS_REQUIRED"
+    },
+    {
+      "case": "metadata-digest-change",
+      "reason": "UNKNOWN_PACKAGE_METADATA_DIGEST",
+      "status": "REJECTED_AS_REQUIRED"
+    },
+    {
+      "after_fix": "REJECTED_GREEN",
+      "before_fix": "ACCEPTED_RED",
+      "case": "derived-pytest-entrypoint-forgery-with-unchanged-raw-bytes",
+      "green_log_sha256": "8f1d229e2027b2ce2241788d38b89d3198b4be0d53c12812540e685916cba044",
+      "reason": "UNKNOWN_RAW_ENTRYPOINT_BINDING: pytest-cov==6.3.0",
+      "red_log_sha256": "8cde502ea62c4bb3820e83f3b758a7d695f9338b1307d24467e06eb63b7622c0"
+    }
+  ],
+  "new_plugin_license": {
+    "distribution": "pytest-cov",
+    "module": "pytest_cov.plugin",
+    "version": "6.3.0"
+  },
+  "new_record_count": 6,
+  "old_record_count": 61,
+  "package_inventory_exact": true,
+  "pinned_package_files_sha256": "679ea6940dd8f706754a13819abbe47e99484d773039ce5a7692318d611e2d71",
+  "pip_check_passed": true,
+  "plugin_identities_checked_by_original_execution_v3_helper": true,
+  "plugin_identity_sha256": "444caf17a49352a0010a39041f2d0903028493d69c423a1cc749d8e5592fccc3",
+  "preparation_receipt": {
+    "path": "/workspace/qualification/native-authority-v41-profile-preparation/PREPARATION.json",
+    "sha256": "a5d53742c869babc34179360bf0fe1cfe031b80651b35b93ca090527ceff23f9"
+  },
+  "preparation_source_matches_final_file": true,
+  "prepare_profile_sha256": "f2a5f88a1c15ae22cc8d7741111a121b77fcbacb6a8a28678523a43a1e880896",
+  "prior_preparation_retained": {
+    "path": "/workspace/qualification/native-authority-v41-profile-preparation/PREPARATION_INITIAL.json",
+    "reason": "Final source validation strengthened after independent review; rerun exact final prepare_profile source in separate new venv; no outcomes used.",
+    "sha256": "42dc35d18ec3c12eff27f4d87e4a01882c13a51d3013a7ca1bae23bd2cca5c85"
+  },
+  "protocol_sha256": "5c5abc8e6f210306287f7714249ab98e6fc3b0a96c3070097d571eb81c0500f3",
+  "pytest_version": "8.4.1",
+  "runtime_map": {
+    "cpython-3.12.14-pytest-8.4.1-linux-x86_64": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/venv/bin/python",
+    "cpython-3.6.5-pytest-5.4.3-linux-x86_64": "/workspace/qualification/native-frontier-v3-runtime-preparation/catalog-runtimes/cpython-3.6.5-pytest-5.4.3-linux-x86_64/venv/bin/python"
+  },
+  "runtime_validation_passed": true,
+  "schema": "UDM_NATIVE_PROFILE_LOCAL_PREPARATION_READBACK_V41",
+  "scientific_verdicts": {
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN"
+  },
+  "status": "PASS_PROFILE_PREPARATION_ONLY_ROOT_NATIVE_REVIEW_PENDING",
+  "target_repository_queries": 0,
+  "target_source_reads": 0,
+  "total_record_count": 67
+}

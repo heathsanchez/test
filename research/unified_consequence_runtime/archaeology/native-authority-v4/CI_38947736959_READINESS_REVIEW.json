@@ -1,0 +1,287 @@
+{
+  "agent_placeholder_interpretation": {
+    "emitted_agent_status": "PENDING_ACTUAL_EXECUTION",
+    "meaning": "Generic assessment initialization placeholder; no agent ARM was created, no comparator was executable or pending execution in this run. Terminal scientific status is NOT_EXECUTED_NATIVE_OBLIGATION_NOT_ADMITTED."
+  },
+  "assessment_exact": {
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN",
+    "actual_coding_agent_in_CI": false,
+    "agent_status": "PENDING_ACTUAL_EXECUTION",
+    "mode": "REPRODUCTION_OF_COMMITTED_PREOUTCOME_PROTOCOL",
+    "schema": "UDM_NATIVE_SELECTION_CI_ASSESSMENT_V4",
+    "status": "UNKNOWN_NO_COMPLETE_NATIVE_RESULT"
+  },
+  "attempt_accounting": {
+    "attempt_ledger_emitted": false,
+    "ci_original_method_git_object_read_attempts": 3,
+    "ci_original_method_git_object_read_errors": 3,
+    "expected_fresh_target_source_learning_calls_supported_by_workflow_and_saved_skips": 0,
+    "expected_native_calls_supported_by_workflow_and_saved_skips": 0,
+    "expected_target_collection_calls_supported_by_workflow_and_saved_skips": 0,
+    "measured_native_call_count": null,
+    "measured_source_learning_call_count": null,
+    "measured_target_collection_call_count": null,
+    "note": "Zero expected fresh target source-learning/collection/native calls are control-flow conclusions, not fabricated measured ledger totals. Canonical research checkout/controller setup executed; the always-run archiver attempted three original-method Git object reads and recorded errors. No universal zero-source-read or zero machine/engineering-cost claim.",
+    "universal_zero_source_reads_claimed": false
+  },
+  "boundary_exact": {
+    "G4": "UNKNOWN",
+    "actual_coding_agent_in_CI": false,
+    "agent_boundary": "Published arm may remain PENDING_ACTUAL_EXECUTION; separately retained local agent evidence is not a CI execution.",
+    "canonical_repo": "/workspace/udm-v54",
+    "external_containment": "UNKNOWN; no independent non-bypassable reference monitor claim",
+    "interruption_boundary": "A resource interruption is UNKNOWN; preserve partial native attempts and costs without promotion.",
+    "job_timeout_minutes": 60,
+    "mode": "REPRODUCTION_OF_COMMITTED_PREOUTCOME_PROTOCOL",
+    "native_process_outer_timeout_seconds": 2700,
+    "new_metadata_selection": false,
+    "prospective_boundary": "Only the original pre-outcome commitments and first learner execution establish prospectivity; reproduction never restores untouchedness.",
+    "raw_independent_screening_future_reports_required": false,
+    "run_attempt": "1",
+    "run_id": "38947736959",
+    "schema": "UDM_NATIVE_SELECTION_CI_BOUNDARY_V4",
+    "source_commit": "6f1ae2001a89380c622efdd2883ae0971e305d87"
+  },
+  "checks": [
+    {
+      "check": "exact saved API run source attempt completed failure",
+      "passed": true
+    },
+    {
+      "check": "exact saved job run source attempt and failure",
+      "passed": true
+    },
+    {
+      "check": "exact artifact run and source",
+      "passed": true
+    },
+    {
+      "check": "readiness early fail closed protocol unready",
+      "passed": true
+    },
+    {
+      "check": "readiness step failure precedes all scientific steps",
+      "passed": true
+    },
+    {
+      "check": "assessment fails without complete native result",
+      "passed": true
+    },
+    {
+      "check": "no scientific gate promotion",
+      "passed": true
+    },
+    {
+      "check": "reproduction and no coding agent boundaries",
+      "passed": true
+    },
+    {
+      "check": "boundary exact source run attempt",
+      "passed": true
+    },
+    {
+      "check": "original methods partial expected unavailable components",
+      "passed": true
+    },
+    {
+      "check": "failure evidence archived and uploaded",
+      "passed": true
+    },
+    {
+      "check": "no native result or attempt ledger emitted",
+      "passed": true
+    },
+    {
+      "check": "static workflow protocol status precedes authority screening runtime native",
+      "passed": true
+    },
+    {
+      "check": "static workflow writes readiness in finally",
+      "passed": true
+    }
+  ],
+  "evidence_file_names_only": [
+    "CI_ASSESSMENT.json",
+    "CI_BOUNDARY.json",
+    "ORIGINAL_METHOD_OBJECTS.json",
+    "READINESS.json",
+    "source-packs/UDM_SOURCE.tar.gz"
+  ],
+  "integrity_review_status": "PASS_EXPECTED_EARLY_FAILURE",
+  "original_method_archive": {
+    "errors": [
+      {
+        "error": "ValueError: original source object not available or hash differs",
+        "source": "consequence_selection.py"
+      },
+      {
+        "error": "ValueError: original source object not available or hash differs",
+        "source": "developmental_choice.py"
+      },
+      {
+        "error": "ValueError: original source object not available or hash differs",
+        "source": "decisive_native.py"
+      }
+    ],
+    "note": "Three original-method source objects were unavailable because all component/source checkout and install steps were skipped. This partial archive is not scientific proof.",
+    "objects": [],
+    "status": "PARTIAL_EXPECTED_COMPONENTS_NOT_CHECKED_OUT"
+  },
+  "promotion": "NONE",
+  "readiness": {
+    "new_admission_screening_performed": false,
+    "schema": "UDM_COMMITTED_FRONTIER_CI_READINESS_V4",
+    "smallest_obstruction": "ValueError: committed FRONTIER_PROTOCOL.json is not ready for native execution",
+    "status": "UNKNOWN_PROTOCOL_NOT_READY",
+    "target_source_accessed": false
+  },
+  "review_input_sha256": {
+    "API": "e269086aee1310b0f8403cc66d21cc3e5c32ee1c06265149a6ff2c19dd8dfdb2",
+    "ARTIFACTS": "6588a4b1759319d8a14241b6fbf6ce1fe9a62a6f4f916c78abf138de372aad79",
+    "CI_ASSESSMENT.json": "30e3a4ea1ee5a81f8958e2fa9a125d4216bc73b49b99c4ebe97555f61396eb2d",
+    "CI_BOUNDARY.json": "77234b12bd0b6fb341a14255a320e50308bc1a4ba5dcb91402f8d8de4595c141",
+    "JOBS": "88396e7333b7c89041004bd12109bbbf6174afd42c14ffd8e3dde0220b7f6eb2",
+    "ORIGINAL_METHOD_OBJECTS.json": "7b04a9a932c7b05c57ec9a1d9c38ea8fcb82c0a525dfd68f364f0d1af51b0ae1",
+    "READINESS.json": "41b8fa346bf1cbce2599adbaa4446639f61af0c7a36bd7da1a781dd1d90b6f8a"
+  },
+  "run_attempt": 1,
+  "run_id": 38947736959,
+  "saved_api": {
+    "conclusion": "failure",
+    "created_at": "2026-10-16T18:29:28Z",
+    "event": "push",
+    "head_sha": "6f1ae2001a89380c622efdd2883ae0971e305d87",
+    "html_url": "https://github.com/heathsanchez/test/actions/runs/38947736959",
+    "id": 38947736959,
+    "path": ".github/workflows/udm-prospective-native-selection-v4.yml",
+    "status": "completed",
+    "updated_at": "2026-10-16T18:30:22Z"
+  },
+  "saved_job": {
+    "assessment_step": {
+      "completed_at": "2026-10-16T18:30:07Z",
+      "conclusion": "failure",
+      "name": "Assess actual scientific result without promoting UNKNOWN or pending agent arms",
+      "number": 17,
+      "started_at": "2026-10-16T18:30:07Z",
+      "status": "completed"
+    },
+    "conclusion": "failure",
+    "failed_readiness_step": {
+      "completed_at": "2026-10-16T18:30:07Z",
+      "conclusion": "failure",
+      "name": "Require committed ready frontier and sealed public admission evidence",
+      "number": 6,
+      "started_at": "2026-10-16T18:30:06Z",
+      "status": "completed"
+    },
+    "id": 117131041272,
+    "skipped_scientific_steps": [
+      {
+        "completed_at": "2026-10-16T18:30:07Z",
+        "conclusion": "skipped",
+        "name": "Prepare both fresh runtimes using the unchanged qualified bootstrap",
+        "number": 7,
+        "started_at": "2026-10-16T18:30:07Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-10-16T18:30:07Z",
+        "conclusion": "skipped",
+        "name": "Run actions/checkout@v4",
+        "number": 8,
+        "started_at": "2026-10-16T18:30:07Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-10-16T18:30:07Z",
+        "conclusion": "skipped",
+        "name": "Run actions/checkout@v4",
+        "number": 9,
+        "started_at": "2026-10-16T18:30:07Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-10-16T18:30:07Z",
+        "conclusion": "skipped",
+        "name": "Run actions/checkout@v4",
+        "number": 10,
+        "started_at": "2026-10-16T18:30:07Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-10-16T18:30:07Z",
+        "conclusion": "skipped",
+        "name": "Run actions/checkout@v4",
+        "number": 11,
+        "started_at": "2026-10-16T18:30:07Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-10-16T18:30:07Z",
+        "conclusion": "skipped",
+        "name": "Run actions/checkout@v4",
+        "number": 12,
+        "started_at": "2026-10-16T18:30:07Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-10-16T18:30:07Z",
+        "conclusion": "skipped",
+        "name": "Run actions/checkout@v4",
+        "number": 13,
+        "started_at": "2026-10-16T18:30:07Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-10-16T18:30:07Z",
+        "conclusion": "skipped",
+        "name": "Install real pinned component checkouts and original method objects",
+        "number": 14,
+        "started_at": "2026-10-16T18:30:07Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-10-16T18:30:07Z",
+        "conclusion": "skipped",
+        "name": "Freeze fresh runner-local identities and exact committed source",
+        "number": 15,
+        "started_at": "2026-10-16T18:30:07Z",
+        "status": "completed"
+      },
+      {
+        "completed_at": "2026-10-16T18:30:07Z",
+        "conclusion": "skipped",
+        "name": "Execute native MSI V104 developmental selection and actual counterfactuals",
+        "number": 16,
+        "started_at": "2026-10-16T18:30:07Z",
+        "status": "completed"
+      }
+    ]
+  },
+  "schema": "UDM_SCIENTIFIC_RED_READINESS_REVIEW_V1",
+  "scientific_execution_status": "NOT_EXECUTED_NATIVE_OBLIGATION_NOT_ADMITTED",
+  "smallest_obstruction": "ValueError: committed FRONTIER_PROTOCOL.json is not ready for native execution",
+  "source_access_boundary": {
+    "artifact_code_executed": false,
+    "fresh_target_raw_source_or_outcomes_read": false,
+    "git_reads": false,
+    "native_or_collection_experiments": 0,
+    "network_queries": false,
+    "screening_source_tar_content_inspected": false,
+    "source_pack_content_inspected": false
+  },
+  "source_commit": "6f1ae2001a89380c622efdd2883ae0971e305d87",
+  "static_workflow_sha256": "240da7060730f5a91e76b9cbcaac955e10771390a0856a1ca6755a90cc1361fc",
+  "verdicts": {
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN"
+  }
+}

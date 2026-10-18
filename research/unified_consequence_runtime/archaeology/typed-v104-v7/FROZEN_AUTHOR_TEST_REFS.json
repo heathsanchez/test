@@ -1,0 +1,27 @@
+{
+  "schema": "UDM_V7_FIXED_AUTHOR_TEST_BLOB_POINTERS",
+  "note": "Head test paths only, no PR body, head production, patch or native outcomes. Correct OID resolution is independently checked at transport. This source metadata is frozen before any target test body read.",
+  "refs": [
+    {
+      "repository": "pallets/click",
+      "head_commit": "c53d3732b98c764932e146c007146ad402acb229",
+      "path": "tests/test_options.py",
+      "git_oid": "b35277fcbb74b7bfed6f615ede9039a97f737c74",
+      "mode": "100644"
+    },
+    {
+      "repository": "jd/tenacity",
+      "head_commit": "a391c24599f04f4e0e90851b546ec1b405e962b4",
+      "path": "tests/test_tenacity.py",
+      "git_oid": "577720ec7cf0a48b9b2909e45ddde29235f460ac",
+      "mode": "100644"
+    },
+    {
+      "repository": "pypa/packaging",
+      "head_commit": "a4f5d377a62e96759a4d9237256ec5dc3b19444e",
+      "path": "tests/test_pylock.py",
+      "git_oid": "e8d51790856a17c4c722692f760ff7b3d30c4762",
+      "mode": "100644"
+    }
+  ]
+}

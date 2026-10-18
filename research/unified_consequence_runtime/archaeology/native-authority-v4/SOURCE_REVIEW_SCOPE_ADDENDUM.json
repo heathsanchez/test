@@ -1,0 +1,143 @@
+{
+  "schema": "UDM_NATIVE_AUTHORITY_V4_INDEPENDENT_SOURCE_REVIEW_ADDENDUM_V1",
+  "review_date_utc": "2026-10-16",
+  "status": "NO_MATERIAL_BLOCKER_FOUND_IN_REQUESTED_SCOPE_FIX",
+  "prior_receipt": {
+    "path": "SOURCE_REVIEW.json",
+    "sha256": "34dd0281ba69af20f6448ee49ac4571013bb87c3a7e48cedf8ac7c33e6b56383",
+    "preserved_unchanged": true
+  },
+  "reviewed_qualifier_sha256": "941a4d408597fe56f429b43971a4983ee5ca3446618d688c8a2ce83e435fdce4",
+  "resolved_finding": {
+    "prior_id": "V4-REVIEW-003",
+    "status": "ADDRESSED_IN_REVIEWED_SOURCE",
+    "finding": "Both source-freeze creation and recheck now obtain paths from unrestricted git ls-tree -r --name-only HEAD. freeze_source hashes all those committed files and requires matching working bytes; check_freeze requires the complete identical path set and rehashes every working file before runtime validation. Existing tracked README/docs/other files outside the former UDM/workflow subtrees are included.",
+    "targeted_verification": {
+      "schema": "UDM_V4_INDEPENDENT_ALL_TRACKED_SCOPE_REVIEW",
+      "method": "Real disposable Git repository; exact reviewed check_freeze bytecode in private globals with BASE set only to disposable fixture commit. No runtime validator reached and no original files changed.",
+      "tracked_paths": [
+        "README.md",
+        "research/sentinel.txt"
+      ],
+      "outside_subtree_working_byte_change_refusal": "frozen qualification file changed: README.md",
+      "omitted_outside_subtree_frozen_path_refusal": "qualification source/authority differs from freeze",
+      "index_changes": [],
+      "native_or_collection_calls": 0
+    },
+    "evidence": "SOURCE_REVIEW_SCOPE_TARGETED_CHECK.json"
+  },
+  "early_refusal": {
+    "status": "VERIFIED",
+    "evidence": "SOURCE_REVIEW_MISSING_FREEZE_REFUSAL.json",
+    "actual_return_status": "UNKNOWN_ADMISSION",
+    "actual_first_gate": {
+      "status": "UNKNOWN"
+    },
+    "persisted_result_matches_returned": true,
+    "before_matches_independent_observation": true,
+    "attempt_delta": {
+      "native_calls": 0,
+      "collection_calls": 0,
+      "subprocess_attempts": 0
+    },
+    "explanation": "The public qualify wrapper takes its snapshot before _qualify/check_freeze. A genuinely absent freeze refuses before Git access and still persists the original before/after index evidence."
+  },
+  "frozen_modern_runtime": {
+    "status": "VERIFIED_BY_SOURCE_FLOW",
+    "qualifier": "After check_freeze validates the complete runtime inventory, _qualify selects max runtime identity version_info[:3] and assigns its interpreter to UDM_NATIVE_V3_INTERPRETER before runner.run(suite).",
+    "positive_fixture": "MalformedPythonNativeAuthorityV4 uses SelectedInterpreterNativeContracts.setUpClass, which reads UDM_NATIVE_V3_INTERPRETER when the test class starts and computes execution.environment_identity for that path. The positive selection is then constructed from that actual runtime/pytest environment.",
+    "limitations": "No additional positive native execution was run in this follow-up. Existing retained positive replay was independently verified in SOURCE_REVIEW.json."
+  },
+  "verification_scope": {
+    "full_test_rerun": false,
+    "new_native_calls": 0,
+    "new_collection_calls": 0,
+    "fresh_frontier_or_task_outcomes_accessed": false,
+    "original_source_edits": false,
+    "new_review_artifacts_only": true
+  },
+  "index_interval": {
+    "before": {
+      "schema": "UDM_GIT_INDEX_SNAPSHOT_V4",
+      "git_common_dir": "/workspace/repos/test/.git",
+      "indexes": [
+        {
+          "path": "/workspace/repos/test/.git/index",
+          "exists": false,
+          "size_bytes": null,
+          "sha256": null
+        },
+        {
+          "path": "/workspace/repos/test/.git/worktrees/development/index",
+          "exists": true,
+          "size_bytes": 113571,
+          "sha256": "894f89eeaad5bd8d6c8242a5047d006a0b23021a5ba362d4db42c131e082fd29"
+        },
+        {
+          "path": "/workspace/repos/test/.git/worktrees/env-v3-native-334/index",
+          "exists": true,
+          "size_bytes": 176832,
+          "sha256": "6ea642f1a91b7239229344a2650a9af70ea2bd477b6db9518ed4153bed8cb786"
+        },
+        {
+          "path": "/workspace/repos/test/.git/worktrees/udm/index",
+          "exists": true,
+          "size_bytes": 111030,
+          "sha256": "3999c60a940d9c999523ff56ec37d2bc9d7c0328c1f2503690a652fbb1f01064"
+        },
+        {
+          "path": "/workspace/repos/test/.git/worktrees/udm-v54/index",
+          "exists": true,
+          "size_bytes": 190205,
+          "sha256": "5b1c45bbe4bc27335c706e9cbb140563a2c5208cf1c447695dc473f06bcd85bd"
+        }
+      ]
+    },
+    "after": {
+      "schema": "UDM_GIT_INDEX_SNAPSHOT_V4",
+      "git_common_dir": "/workspace/repos/test/.git",
+      "indexes": [
+        {
+          "path": "/workspace/repos/test/.git/index",
+          "exists": false,
+          "size_bytes": null,
+          "sha256": null
+        },
+        {
+          "path": "/workspace/repos/test/.git/worktrees/development/index",
+          "exists": true,
+          "size_bytes": 113571,
+          "sha256": "894f89eeaad5bd8d6c8242a5047d006a0b23021a5ba362d4db42c131e082fd29"
+        },
+        {
+          "path": "/workspace/repos/test/.git/worktrees/env-v3-native-334/index",
+          "exists": true,
+          "size_bytes": 176832,
+          "sha256": "6ea642f1a91b7239229344a2650a9af70ea2bd477b6db9518ed4153bed8cb786"
+        },
+        {
+          "path": "/workspace/repos/test/.git/worktrees/udm/index",
+          "exists": true,
+          "size_bytes": 111030,
+          "sha256": "3999c60a940d9c999523ff56ec37d2bc9d7c0328c1f2503690a652fbb1f01064"
+        },
+        {
+          "path": "/workspace/repos/test/.git/worktrees/udm-v54/index",
+          "exists": true,
+          "size_bytes": 190205,
+          "sha256": "5b1c45bbe4bc27335c706e9cbb140563a2c5208cf1c447695dc473f06bcd85bd"
+        }
+      ]
+    },
+    "changes": [],
+    "git_optional_locks": "0 for targeted read operations",
+    "concurrent_root_staging_commits_reported": true,
+    "exclusive_whole_task_unchanged_claim": false,
+    "index_restore_or_reset": false
+  },
+  "remaining_limits": [
+    "V4-REVIEW-004 remains an evidence boundary: standalone local39 controls are not themselves a complete frozen qualification result.",
+    "All-source freeze covers tracked files; source identity does not imply external containment or complete OS/process attestation.",
+    "Native G6 remains UNKNOWN."
+  ]
+}

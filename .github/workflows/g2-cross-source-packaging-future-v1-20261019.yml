@@ -1,0 +1,85 @@
+name: G2 cross-source law V1 - prospectively sealed Packaging future
+on:
+  push:
+    branches:
+      - research/g2-cross-source-consequence-law-20261018
+    paths:
+      - .github/workflows/g2-cross-source-packaging-future-v1-20261019.yml
+
+permissions:
+  contents: read
+
+jobs:
+  immutable-method-source-native-future:
+    if: github.ref == 'refs/heads/research/g2-cross-source-consequence-law-20261018'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      GIT_NO_REPLACE_OBJECTS: '1'
+      GIT_OPTIONAL_LOCKS: '0'
+    steps:
+      - name: Checkout read-only research commit
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify learned method was frozen before future native source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git merge-base --is-ancestor 0db4870126c610f2dd23591ba9968037ba52ce0a HEAD
+          F=research/unified_consequence_runtime/
+          cmp "$F"G2_WERKZEUG_TRAINED_METHOD_V1_RECEIPT.json <(git show 0db4870126c610f2dd23591ba9968037ba52ce0a:"$F"G2_WERKZEUG_TRAINED_METHOD_V1_RECEIPT.json)
+          cmp "$F"g2_cross_source_train_v1.py <(git show ee4c2fe746775da27608b5b525ce59a825ed01fe:"$F"g2_cross_source_train_v1.py)
+          echo 'c94bf5750b09e1c00f8e1406309c01946f92b48b5e283fd0fc341a21916680dc  research/unified_consequence_runtime/g2_cross_source_train_v1.py' | sha256sum -c
+          python -B -m py_compile "$F"g2_cross_source_future_v1.py "$F"g2_cross_source_train_v1.py
+          mkdir -p evidence/g2-cross-source-future-v1
+          git rev-parse HEAD > evidence/g2-cross-source-future-v1/COMMIT.txt
+          echo 'LEARNED_METHOD_FROZEN; FUTURE_NOT_RESELECTED' > evidence/g2-cross-source-future-v1/METHOD_SEAL.txt
+      - name: One previously-sealed future source-native admission and unchanged method
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH="$GITHUB_WORKSPACE" python -B research/unified_consequence_runtime/g2_cross_source_future_v1.py "$GITHUB_WORKSPACE/evidence/g2-cross-source-future-v1/future"
+      - name: Independent outer stop gate (no unsupported G2 promotion)
+        if: always()
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          out=Path('evidence/g2-cross-source-future-v1')
+          p=out/'future/RESULT.json'
+          r=json.loads(p.read_text()) if p.is_file() else {}
+          assert (out/'METHOD_SEAL.txt').is_file()
+          assert r.get('G2','UNKNOWN')=='UNKNOWN'
+          assert r.get('equal_information_comparator','NOT_RUN')=='NOT_RUN'
+          assert r.get('lean_clc_flash_certificate','NOT_RUN')=='NOT_RUN'
+          assert r.get('status','UNKNOWN_NO_RESULT') not in ('WARRANTED_G2','WARRANTED_BOUNDED_G2_CROSS_SOURCE')
+          summary={'status':r.get('status','UNKNOWN_NO_RESULT'),
+                   'native_future_admission':r.get('admission',{}).get('status'),
+                   'unchanged_method_candidate_count':r.get('candidate_count',0),
+                   'G2':'UNKNOWN','formal_transport':'NOT_RUN',
+                   'equal_information_comparator':'NOT_RUN'}
+          (out/'BOUNDARY.json').write_text(json.dumps(summary,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(summary,sort_keys=True))
+          if r.get('status') in ('UNKNOWN_FUTURE_APPARATUS','UNKNOWN_NO_RESULT'):
+              raise SystemExit('FAIL_CLOSED_APPARATUS')
+          PY
+      - name: Archive all source-native future results, including negative and unknown
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g2-cross-source-packaging-future-v1-evidence
+          if-no-files-found: warn
+          retention-days: 90
+          path: |
+            evidence/g2-cross-source-future-v1/
+            research/unified_consequence_runtime/G2_CROSS_SOURCE_CONSEQUENCE_LAW_V1_FROZEN_PROTOCOL.md
+            research/unified_consequence_runtime/G2_WERKZEUG_TRAINED_METHOD_V1_RECEIPT.json
+            research/unified_consequence_runtime/g2_cross_source_train_v1.py
+            research/unified_consequence_runtime/g2_cross_source_future_v1.py

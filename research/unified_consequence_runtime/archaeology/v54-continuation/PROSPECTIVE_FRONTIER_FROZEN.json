@@ -1,0 +1,37 @@
+{
+  "schema": "udm.prospective-frontier.freeze.v1",
+  "frozen_at": "2026-10-15T04:37:26.542652+00:00",
+  "after_native_V54_qualification_sha256": "1dde1bb4d7616a0547aa33833f6c6b05a33455d0daa1d1893ff0a0b03d98d382",
+  "mechanism_commit": "7b8f87ef236c38cae21252d5e47291af68083049",
+  "source_frontier": {
+    "repository": "urllib3/urllib3",
+    "commit": "a37bc93b65d6bcf00d3dc43d966bab6bd130ecd8",
+    "selection": "Actual Requests dependency; HEAD metadata only; source and tests not inspected at freeze",
+    "lineage": {
+      "repository": "psf/requests",
+      "commit": "8068356288978c4f54661ae6f95afe0e0831885e",
+      "path": "pyproject.toml",
+      "dependency": "urllib3>=1.26,<3"
+    }
+  },
+  "question": "Does the verified acquisition provide an admitted developmental route for this unfamiliar source frontier without target-specific additions?",
+  "unfamiliarity": "No frontier source, tests or outcomes inspected in this mission before freeze; global prior exposure UNKNOWN",
+  "interface": {
+    "input_type": "NativeRepositoryFrontier",
+    "native_test_entrypoint": "Original upstream test suite, not selected individual targets",
+    "protected_outcomes": "UNOBSERVED"
+  },
+  "unchanged_budget": {
+    "new_rewrite_horizon": 1,
+    "maximum_candidate_tests": 541,
+    "native_test_horizon_seconds": 7
+  },
+  "protocol": [
+    "Use only installed warranted executable operations before proposing a new one.",
+    "Try the same typed input against the canonical state and post-V54 state.",
+    "Do not invent a source/test adapter or silently widen scopes after freeze.",
+    "If the existing typed continuation/verifier interface cannot represent the frontier, preserve UNKNOWN; this is not a grammar obstruction certificate.",
+    "A blocked applicability preflight is not a prospective discovery success."
+  ],
+  "external_effects": "NONE_FROM_ACQUIRED_CAPABILITIES"
+}

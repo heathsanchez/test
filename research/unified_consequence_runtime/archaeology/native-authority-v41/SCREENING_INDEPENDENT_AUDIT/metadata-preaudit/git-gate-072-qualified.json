@@ -1,0 +1,94 @@
+{
+  "schema": "UDM_GIT_INDEX_READ_AUDIT_V4",
+  "argv": [
+    "git",
+    "--no-pager",
+    "--no-replace-objects",
+    "-c",
+    "core.fsmonitor=false",
+    "-C",
+    "/workspace/udm-v54",
+    "show",
+    "--no-ext-diff",
+    "--no-textconv",
+    "4c3f7e276567b4ea8df96c7a8797a889040dc0ac:research/unified_consequence_runtime/archaeology/native-environment-v3/PROTOCOL.json"
+  ],
+  "git_optional_locks": "0",
+  "before": {
+    "schema": "UDM_GIT_INDEX_SNAPSHOT_V4",
+    "git_common_dir": "/workspace/repos/test/.git",
+    "indexes": [
+      {
+        "path": "/workspace/repos/test/.git/index",
+        "exists": false,
+        "size_bytes": null,
+        "sha256": null
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/development/index",
+        "exists": true,
+        "size_bytes": 113571,
+        "sha256": "894f89eeaad5bd8d6c8242a5047d006a0b23021a5ba362d4db42c131e082fd29"
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/env-v3-native-334/index",
+        "exists": true,
+        "size_bytes": 176832,
+        "sha256": "6ea642f1a91b7239229344a2650a9af70ea2bd477b6db9518ed4153bed8cb786"
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/udm/index",
+        "exists": true,
+        "size_bytes": 111030,
+        "sha256": "3999c60a940d9c999523ff56ec37d2bc9d7c0328c1f2503690a652fbb1f01064"
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/udm-v54/index",
+        "exists": true,
+        "size_bytes": 239205,
+        "sha256": "9ed38158d9eca002bdf62ff962921fd0f6218ad952634148e77a8520a0b9d8f2"
+      }
+    ]
+  },
+  "returncode": 0,
+  "stdout_base64": "ewogICJhY3F1aXNpdGlvbnMiOiAwLAogICJiYXNlX2NvbW1pdCI6ICJmYTZiYjE5MGVmZjliMzc0YWI3YTk1YWFmOWM2MThhZDJkYjMxNDE5IiwKICAiYnJhbmNoIjogInJlc2VhcmNoL3VkbS1uYXRpdmUtZW52aXJvbm1lbnQtc2VsZWN0aW9uLTIwMjYxMDE2IiwKICAiY2FuZGlkYXRlcyI6IDAsCiAgImNhdGFsb2ciOiB7CiAgICAicGF0aCI6ICJyZXNlYXJjaC91bmlmaWVkX2NvbnNlcXVlbmNlX3J1bnRpbWUvYXJjaGFlb2xvZ3kvbmF0aXZlLWVudmlyb25tZW50LXYzL0VOVklST05NRU5UX0NBVEFMT0cuanNvbiIsCiAgICAic2hhMjU2IjogImJhNzkzNDE2ZmZjYzE5NDI2ZDI5OTBhZWE2Nzk5ZDRlNDUwZDA5YjRlOTAwMjUzZDc2ZTUxN2UxOTcwMWY5ZTUiCiAgfSwKICAiY29zdHMiOiAiUmV0YWluIGFsbCBtZXRhZGF0YS9zb3VyY2UvYnVpbGQvcGFja2FnZS9jb2xsZWN0aW9uL25hdGl2ZS9yZXZhbGlkYXRpb24gd2FsbCB0aW1lcywgY29tbWFuZHMsIG91dHB1dCBzaXplcywgc291cmNlIGFyY2hpdmVzIGFuZCBmdWxsIHJhdyBwYWNrZXRzLiBDb250cm9sbGVyIHdhbGwgdGltZSBpbmNsdWRlcyBuZXN0ZWQgcGhhc2VzLiBNb2RlbC10b2tlbiwgZG9sbGFyIGFuZCBlbmdpbmVlcmluZyBjb3N0cyByZW1haW4gVU5LTk9XTi4iLAogICJkaWFnbm9zdGljcyI6IFsKICAgIHsKICAgICAgImJhc2VfY29tbWl0IjogImIyZTQ3NTlkMzFiM2U0ODE1MDc3ZjAzYWVlZmVhOWNlYWRjNjc1MzAiLAogICAgICAiZmlsZXMiOiBbCiAgICAgICAgewogICAgICAgICAgImFkZGl0aW9ucyI6IDIsCiAgICAgICAgICAiY2hhbmdlcyI6IDQsCiAgICAgICAgICAiZGVsZXRpb25zIjogMiwKICAgICAgICAgICJmaWxlbmFtZSI6ICJzcmMvd3JhcHQvd3JhcHBlcnMucHkiLAogICAgICAgICAgInNoYSI6ICIzYjFlMjA3ZmM5NGI3ZWUyZDc4OWQ4YjJjYzYwNmU5M2M5ZTcwZjI0IiwKICAgICAgICAgICJzdGF0dXMiOiAibW9kaWZpZWQiCiAgICAgICAgfSwKICAgICAgICB7CiAgICAgICAgICAiYWRkaXRpb25zIjogMzMsCiAgICAgICAgICAiY2hhbmdlcyI6IDM1LAogICAgICAgICAgImRlbGV0aW9ucyI6IDIsCiAgICAgICAgICAiZmlsZW5hbWUiOiAidGVzdHMvdGVzdF9tb25rZXlfcGF0Y2hpbmcucHkiLAogICAgICAgICAgInNoYSI6ICI1ZTI5MGY1ZDViYWI4YTI4OGFhY2Y0NWMzNTI2M2I1NDU3ZmIzNmRkIiwKICAgICAgICAgICJzdGF0dXMiOiAibW9kaWZpZWQiCiAgICAgICAgfQogICAgICBdLAogICAgICAiaGVhZF9jb21taXQiOiAiMzMxNDhlYTAyOGI3YTkxNWJiMDI5NGM2YzQ5NzczZDQxNjhlOTZkOCIsCiAgICAgICJtZXRhZGF0YV91cmwiOiAiaHR0cHM6Ly9naXRodWIuY29tL0dyYWhhbUR1bXBsZXRvbi93cmFwdC9wdWxsLzk5IiwKICAgICAgIm9yaWdpbiI6ICJsZWdhY3kiLAogICAgICAib3JpZ2luX2luZGV4IjogMCwKICAgICAgIm9yaWdpbmFsX3JvbGUiOiAiVFJBSU5JTkciLAogICAgICAicHIiOiA5OSwKICAgICAgInJlcG8iOiAiZ3JhaGFtZHVtcGxldG9uL3dyYXB0IiwKICAgICAgInJvbGUiOiAiREVWRUxPUE1FTlRfRElBR05PU1RJQ1NfT05MWSIKICAgIH0sCiAgICB7CiAgICAgICJiYXNlX2NvbW1pdCI6ICIxZWE4MmE3MTFjNjlmNTkwMDU0OTg3YjVjYjE5NDE1N2Y4Y2U4YWM0IiwKICAgICAgImZpbGVzIjogWwogICAgICAgIHsKICAgICAgICAgICJhZGRpdGlvbnMiOiAxLAogICAgICAgICAgImNoYW5nZXMiOiAxLAogICAgICAgICAgImRlbGV0aW9ucyI6IDAsCiAgICAgICAgICAiZmlsZW5hbWUiOiAiZG9jcy92ZXJzaW9ucy5yc3QiLAogICAgICAgICAgInN0YXR1cyI6ICJtb2RpZmllZCIKICAgICAgICB9LAogICAgICAgIHsKICAgICAgICAgICJhZGRpdGlvbnMiOiA0LAogICAgICAgICAgImNoYW5nZXMiOiA1LAogICAgICAgICAgImRlbGV0aW9ucyI6IDEsCiAgICAgICAgICAiZmlsZW5hbWUiOiAibW9yZV9pdGVydG9vbHMvbW9yZS5weSIsCiAgICAgICAgICAic3RhdHVzIjogIm1vZGlmaWVkIgogICAgICAgIH0sCiAgICAgICAgewogICAgICAgICAgImFkZGl0aW9ucyI6IDE0LAogICAgICAgICAgImNoYW5nZXMiOiAxNCwKICAgICAgICAgICJkZWxldGlvbnMiOiAwLAogICAgICAgICAgImZpbGVuYW1lIjogInRlc3RzL3Rlc3RfbW9yZS5weSIsCiAgICAgICAgICAic3RhdHVzIjogIm1vZGlmaWVkIgogICAgICAgIH0KICAgICAgXSwKICAgICAgImhlYWRfY29tbWl0IjogIjY3ZmNmNjQwNDc3Yzc4NjA1NTgwZjVlZTcwM2E1NGM3M2MxZTdhOGEiLAogICAgICAibWV0YWRhdGFfdXJsIjogImh0dHBzOi8vZ2l0aHViLmNvbS9tb3JlLWl0ZXJ0b29scy9tb3JlLWl0ZXJ0b29scy9wdWxsLzEzMDkiLAogICAgICAib3JpZ2luIjogIm1vZGVybiIsCiAgICAgICJvcmlnaW5faW5kZXgiOiAwLAogICAgICAib3JpZ2luYWxfcm9sZSI6ICJFWFBPU0VEX0RFVkVMT1BNRU5UX0RJQUdOT1NUSUNfMCIsCiAgICAgICJwciI6IDEzMDksCiAgICAgICJyZXBvIjogIm1vcmUtaXRlcnRvb2xzL21vcmUtaXRlcnRvb2xzIiwKICAgICAgInJvbGUiOiAiREVWRUxPUE1FTlRfRElBR05PU1RJQ1NfT05MWSIKICAgIH0KICBdLAogICJleHBvc3VyZSI6ICJCb3RoIGV4YWN0IHNvdXJjZSBjb250cmFjdHMgYW5kIGVhcmxpZXIgZW52aXJvbm1lbnQvYWRtaXNzaW9uIHJlZnVzYWxzIHdlcmUgZXhwb3NlZCBiZWZvcmUgdGhpcyB2ZXJzaW9uLiBUaGVzZSBhcmUgZGV2ZWxvcG1lbnQgZGlhZ25vc3RpY3Mgb25seTsgbm8gdW50b3VjaGVkIHNvdXJjZSwgZnJlc2ggZnJvbnRpZXIsIGFjcXVpc2l0aW9uLCBjYW5kaWRhdGUsIG9yIHNjaWVudGlmaWMgRzItRzYgc3VjY2VzcyBpcyBsaWNlbnNlZC4iLAogICJmaXJzdF9nYXRlIjogIkJvdGggZGlhZ25vc3RpY3MgbXVzdCBjb2xsZWN0IGFuZCBzZWxlY3QgZXZlcnkgb3JpZ2luYWwgdGVzdCBub2RlLCBleGVjdXRlIGV2ZXJ5IHNldHVwL2NhbGwvdGVhcmRvd24gd2l0aG91dCBza2lwL3hmYWlsL2Rlc2VsZWN0aW9uL3NvdXJjZS9pbXBvcnQvcGx1Z2luL2NvZGUgbXV0YXRpb24sIG1hdGNoIGNvbXBsZXRlIEpVbml0IGNvdW50cywgZmFpbCBhIHByb3RlY3RlZCBhY3R1YWwgY2FsbCwgYW5kIHBhc3MgaW5kZXBlbmRlbnQgdmFsaWRhdGVfcmVjZWlwdCB3aXRoIGEgc2Vjb25kIGNvbXBsZXRlIG5hdGl2ZSBleGVjdXRpb24uIiwKICAibW9kZSI6ICJERVZFTE9QTUVOVF9ESUFHTk9TVElDU19PTkxZIiwKICAib3JpZ2luIjogewogICAgImxlZ2FjeSI6IHsKICAgICAgInBhdGgiOiAicmVzZWFyY2gvdW5pZmllZF9jb25zZXF1ZW5jZV9ydW50aW1lL2FyY2hhZW9sb2d5L25hdGl2ZS1mcm9udGllci12Mi9GUkVTSF9UQVNLX01FVEFEQVRBLmpzb24iLAogICAgICAic2hhMjU2IjogIjM4Zjc2NzBlOTNhNjIwZjk1YWQ3NWIwNDJjZTczOTAzMDJhODU0NzQ5MDA5NWUzY2FlY2RmOGJhODhhYmI3MzEiCiAgICB9LAogICAgIm1vZGVybiI6IHsKICAgICAgInBhdGgiOiAicmVzZWFyY2gvdW5pZmllZF9jb25zZXF1ZW5jZV9ydW50aW1lL2FyY2hhZW9sb2d5L25hdGl2ZS1hZG1pc3Npb24tdjIvUFJPVE9DT0xfVjJfMS5qc29uIiwKICAgICAgInNoYTI1NiI6ICJjZDAxYTI1MDg1NzIzNzMyMzhmZTRhYTA3YjExMzQwNzMxNmE5NDA4ZGMxNWUzODZiMzlkZWI4OTViNGQzZjY4IgogICAgfQogIH0sCiAgInBhY2thZ2VfbWV0YWRhdGEiOiB7CiAgICAicGF0aCI6ICJyZXNlYXJjaC91bmlmaWVkX2NvbnNlcXVlbmNlX3J1bnRpbWUvYXJjaGFlb2xvZ3kvbmF0aXZlLWVudmlyb25tZW50LXYzL1BBQ0tBR0VfTUVUQURBVEEuanNvbiIsCiAgICAic2hhMjU2IjogImU1ZDNlOTkyODk4M2RkYTY2NzQ3YjNiYmNhNWU0OWFlYTllZjI2MzcxYTM4N2NjZDgxYjBjZjVmN2YzYzY5YWIiCiAgfSwKICAicHJlc2VydmVkX2F1dGhvcml0eSI6IHsKICAgICJDQVNfb2JqZWN0cyI6IDc2LAogICAgImZpbGVzIjogewogICAgICAicmVzZWFyY2gvdW5pZmllZF9jb25zZXF1ZW5jZV9ydW50aW1lL1JFQ1VSU0lWRV9RVUFMSUZJQ0FUSU9OX1JFQ0VJUFQuanNvbiI6ICI1YzFhZWU1OTdhYjhjOTRjZjYzNzk5OGNhZDAwYjA4NTBhOTU4MzQ5YjVmODE1Y2I5NTg2NWQ4NTY2OTJmNWM0IiwKICAgICAgInJlc2VhcmNoL3VuaWZpZWRfY29uc2VxdWVuY2VfcnVudGltZS9jYXBhYmlsaXR5X2luZGV4Lmpzb24iOiAiYzI5MGExYjMxMzg2ODQwNmNkNzkzNjJiNTJkZGIyYjkwYjY3ZjVjZGY5NDE1NjlmNzUzNjE3ZGJkNTI2YWI3NSIsCiAgICAgICJyZXNlYXJjaC91bmlmaWVkX2NvbnNlcXVlbmNlX3J1bnRpbWUvZGVjaXNpdmVfbmF0aXZlX2Zyb250aWVyLnB5IjogIjliMGU2ZWNkOTBiM2I1MmEyZDdkNjczODQ0ZmFmNTYxOGE2MTRhNTg1NzQ2MDM0OWQ3MTg1MmExNDIzODQzZjYiLAogICAgICAicmVzZWFyY2gvdW5pZmllZF9jb25zZXF1ZW5jZV9ydW50aW1lL2RlY2lzaXZlX25hdGl2ZV92ZXJpZnkucHkiOiAiMTIyNjljOGNhMmRkNTg2Y2NlYzRiMTYyNzM2Mzc1YmNhYWM1NzE3YWFmMDdmNDQxYjY3ZTU1MTFiMGVkNDY3MCIsCiAgICAgICJyZXNlYXJjaC91bmlmaWVkX2NvbnNlcXVlbmNlX3J1bnRpbWUvZ2VuZXJpY19uYXRpdmVfdmVyaWZ5LnB5IjogIjc0MWQ1YzZhOGIzM2ZhZjQxOThkODYwYWVlMjM0M2EyYTQ0YmVjNTVlOGExNjE1NjFlNDIyYmI1MTJlZmE3ZGIiLAogICAgICAicmVzZWFyY2gvdW5pZmllZF9jb25zZXF1ZW5jZV9ydW50aW1lL25hdGl2ZV9mcm9udGllci5weSI6ICJjMjU3YzFjNmYxMTk5OTk0YmFhNDkxNWVlYmRlM2I3OTM1OGFmZWJlZmMxNmUzY2VkNTg4ZWUwNjhiYjlkZDI4IgogICAgfSwKICAgICJpbnZlbnRvcnlfcm93cyI6IDcwLAogICAgImxlZGdlcl9zaGEyNTYiOiAiYjM2OTZiMzg4ZDJmM2QxZGY5NWQ4MTlkMTAyNmViOWY4N2YwNDJlOTNlNDMwMGYwY2Q5ODcwNzM5NDlkZTlhYyIsCiAgICAicmVjb3JkcyI6IDI0NgogIH0sCiAgInJ1bnRpbWVfaW52ZW50b3J5IjogIkV4YWN0IHR3byBjYXRhbG9nIHByb2ZpbGVzIGFuZCBhY3R1YWwgZXhlY3V0YWJsZS9zdGRsaWIgaWRlbnRpdGllcyBmcm96ZW4gYmVmb3JlIHNvdXJjZSBmZXRjaC4gUnVudGltZSBib290c3RyYXBzIGFyZSBnZW5lcmljIGV4dGVybmFsIGRlcGVuZGVuY2llcywgbm90IHRhcmdldCBvcGVyYXRpb25zLiIsCiAgInNjaGVtYSI6ICJVRE1fTkFUSVZFX0VOVklST05NRU5UX1FVQUxJRklDQVRJT05fUFJPVE9DT0xfVjMiLAogICJzb3VyY2VfZnJlZXplIjogIkNsZWFuIGV4YWN0IEdpdCBjb21taXQ7IGV2ZXJ5IGJhc2VsaW5lIEdpdCBmaWxlIHJlbWFpbnMgdW5jaGFuZ2VkOyBhbGwgcnVudGltZS9jb250cm9sbGVyL3dvcmtmbG93L3Byb3RvY29sL3NvdXJjZSBieXRlcyBhbmQgYm90aCBydW50aW1lIGlkZW50aXRpZXMgYXJlIGZyb3plbiBiZWZvcmUgYW55IGRpYWdub3N0aWMgc291cmNlIGZldGNoLiIsCiAgInZlcmRpY3RzIjogewogICAgIkcwX0cxIjogIlBSRVNFUlZFRF9FWEFDVF9QUklPUl9TT1VSQ0VfQVVUSE9SSVRZIiwKICAgICJHMiI6ICJVTktOT1dOIiwKICAgICJHMyI6ICJVTktOT1dOIiwKICAgICJHNCI6ICJVTktOT1dOIiwKICAgICJHNSI6ICJVTktOT1dOIiwKICAgICJHNiI6ICJVTktOT1dOIgogIH0KfQo=",
+  "stderr_base64": "",
+  "after": {
+    "schema": "UDM_GIT_INDEX_SNAPSHOT_V4",
+    "git_common_dir": "/workspace/repos/test/.git",
+    "indexes": [
+      {
+        "path": "/workspace/repos/test/.git/index",
+        "exists": false,
+        "size_bytes": null,
+        "sha256": null
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/development/index",
+        "exists": true,
+        "size_bytes": 113571,
+        "sha256": "894f89eeaad5bd8d6c8242a5047d006a0b23021a5ba362d4db42c131e082fd29"
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/env-v3-native-334/index",
+        "exists": true,
+        "size_bytes": 176832,
+        "sha256": "6ea642f1a91b7239229344a2650a9af70ea2bd477b6db9518ed4153bed8cb786"
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/udm/index",
+        "exists": true,
+        "size_bytes": 111030,
+        "sha256": "3999c60a940d9c999523ff56ec37d2bc9d7c0328c1f2503690a652fbb1f01064"
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/udm-v54/index",
+        "exists": true,
+        "size_bytes": 239205,
+        "sha256": "9ed38158d9eca002bdf62ff962921fd0f6218ad952634148e77a8520a0b9d8f2"
+      }
+    ]
+  },
+  "index_changes": [],
+  "indexes_unchanged": true
+}

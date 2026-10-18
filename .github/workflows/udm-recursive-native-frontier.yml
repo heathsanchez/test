@@ -1,0 +1,194 @@
+name: Frozen generic native frontier and recursive-development probe
+on:
+  push:
+    branches: [research/udm-generic-native-frontier-20261016]
+    paths:
+      - .github/workflows/udm-recursive-native-frontier.yml
+      - research/unified_consequence_runtime/generic_native_verify.py
+      - research/unified_consequence_runtime/native_frontier.py
+      - research/unified_consequence_runtime/qualify_recursive_frontier.py
+      - research/unified_consequence_runtime/cross_frontier.py
+      - research/unified_consequence_runtime/developmental_machine.py
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: udm-recursive-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  qualify-frozen-native-frontier:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      PYTHONUNBUFFERED: '1'
+      UDM_COMPONENTS: ${{ github.workspace }}/components
+      UDM_EVALUATOR: ${{ github.workspace }}/components/evaluator
+      UDM_SOURCE_REPOS: ${{ github.workspace }}/components/selection-sources
+      UDM_NATIVE_SOURCE_REPO: ${{ github.workspace }}
+      UDM_CONSTRUCTOR_SOURCE: ${{ github.workspace }}/components/triskelion
+      V54_SOURCE: ${{ github.workspace }}/components/triskelion
+      V54_WORLDS: ${{ github.workspace }}/native-v54-worlds
+      V54_PYTHON: ${{ github.workspace }}/.venv-v54/bin/python
+      UDM_ASSETS: ${{ github.workspace }}/prior-green/originals/qualified-v54/originals/base-udm/qualification/original-depth5
+      UDM_BASE_STATE: ${{ github.workspace }}/prior-green/originals/qualified-v54/originals/base-udm/qualified-state
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/test
+          ref: c9092fa57c8943e638f95689cd36e6a63310f41e
+          path: components/development
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/metatron
+          ref: b9d1b5cc10477188be6e55617699be60e70f6dad
+          path: components/metatron
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/realitygraph
+          ref: 50c43b14e7272469bc51ff7204dec07682a996d7
+          path: components/flash
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: ServiceNow/webarena-verified
+          ref: 6473f72db5dcefc97b5725b59e734504edc28a21
+          fetch-depth: 0
+          path: components/evaluator
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/triskelion
+          ref: 426c54f7c774560e0fabe7213c5ef333b1327c71
+          fetch-depth: 0
+          path: components/triskelion
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/Minimal-Sufficient-Interface
+          ref: 5d448c0ecc82ff3945d009963064ebbb67d2f308
+          path: components/selection-sources/msi
+          persist-credentials: false
+      - name: Freeze exact bridge before any target source checkout
+        run: |
+          mkdir -p qualification
+          python -B -m research.unified_consequence_runtime.qualify_recursive_frontier \
+            --write-freeze --maintenance-only --repo "$GITHUB_WORKSPACE" --out qualification/FREEZE.json
+          git rev-parse HEAD > qualification/source-commit.txt
+          cp research/unified_consequence_runtime/archaeology/recursive-frontier/EXPERIMENT.json qualification/
+      - name: Authenticate original qualification without repeating acquisition
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api repos/heathsanchez/test/actions/runs/38709973459 > qualification/prior-run.json
+          gh api repos/heathsanchez/test/actions/artifacts/11960084934 > qualification/prior-artifact.json
+          gh api repos/heathsanchez/test/actions/artifacts/11960084934/zip > qualification/prior-green.zip
+          python - <<'PY'
+          import hashlib,json,pathlib,zipfile
+          archive=pathlib.Path('qualification/prior-green.zip')
+          assert hashlib.sha256(archive.read_bytes()).hexdigest()=='fe899af52e4453bec23102f68d4dd32476b74b5b8e1bf25669226c5e12828e59'
+          run=json.loads(pathlib.Path('qualification/prior-run.json').read_text())
+          assert run['head_sha']=='34943a589787142e52657d05b0c3021dab5860e3' and run['conclusion']=='success'
+          with zipfile.ZipFile(archive) as packet:
+              for info in packet.infolist():
+                  name=pathlib.PurePosixPath(info.filename)
+                  assert not name.is_absolute() and '..' not in name.parts
+                  assert (info.external_attr>>16)&0o170000!=0o120000
+              packet.extractall('prior-green')
+          PY
+          python research/unified_consequence_runtime/archaeology/programme-closure/inspect_qualification_packet.py prior-green \
+            --expected-commit 34943a589787142e52657d05b0c3021dab5860e3 --expected-run-id 38709973459 \
+            --expected-workflow-sha256 9b7558bddc075fc6cb4b6d94a79f956d3b9aa92697c4057b7779b7fb357d9bf4 \
+            --run-metadata qualification/prior-run.json --artifact-metadata qualification/prior-artifact.json \
+            --archive qualification/prior-green.zip --output qualification/prior-independent-review.json
+      - name: Install research evaluator and run inherited and new contracts
+        run: |
+          python -m venv .venv-udm
+          .venv-udm/bin/python -m pip install ./components/evaluator playwright jinja2 pytest==8.3.5
+          ln -s "$GITHUB_WORKSPACE" "$UDM_SOURCE_REPOS/test"
+          bash research/unified_consequence_runtime/setup_v54_worlds.sh \
+            "$V54_WORLDS" "$GITHUB_WORKSPACE/.venv-v54" "$GITHUB_WORKSPACE/qualification/v54-native-setup"
+          .venv-udm/bin/python -B -m unittest discover -s research/unified_consequence_runtime -p 'test_*.py' -v \
+            > qualification/contract-tests.log 2>&1
+          .venv-udm/bin/python -B -m unittest discover -s research/unified_consequence_runtime/v54_formal -p 'test_*.py' -v \
+            > qualification/formal-evidence-tests.log 2>&1
+      - name: Qualify native maintenance without reexecuting the closed unfamiliar frontier
+        run: |
+          .venv-udm/bin/python -B -m research.unified_consequence_runtime.qualify_recursive_frontier \
+            --repo "$GITHUB_WORKSPACE" --freeze qualification/FREEZE.json \
+            --components "$UDM_COMPONENTS" --constructor-source "$UDM_CONSTRUCTOR_SOURCE" \
+            --maintenance-only \
+            --out "$GITHUB_WORKSPACE/qualification/recursive" | tee qualification/recursive.log
+      - name: Assert bounded qualification and preserve separate recursive verdict
+        run: |
+          python - <<'PY'
+          import json,pathlib
+          r=json.loads(pathlib.Path('qualification/recursive/RESULT.json').read_text())
+          assert r['verdicts']['GENERIC_ADMISSION']=='WARRANTED_BOUNDED_NATIVE_CONTROL',r
+          assert r['cold_restart']['status']=='PASS'
+          assert r['restart_retention']['status']=='PASS'
+          assert r['target_reexecuted'] is False
+          assert r['verdicts']['O1_O2_O3_RECURSIVE_CAUSALITY']=='UNKNOWN'
+          assert r['verdicts']['EXTERNAL_ENFORCEMENT']=='UNKNOWN'
+          print(json.dumps(r['verdicts'],indent=2))
+          PY
+      - name: Archive exact sources, failures and costs
+        if: always()
+        run: |
+          mkdir -p qualification/source
+          git archive HEAD research/unified_consequence_runtime .github/workflows/udm-recursive-native-frontier.yml \
+            | tar -x -C qualification/source
+          python - <<'PY'
+          import hashlib,json,os,pathlib
+          p=pathlib.Path('qualification')
+          def archived(f):
+              parts=f.relative_to(p).parts
+              if len(parts)==1:return f.suffix in ('.json','.txt','.log')
+              if parts[0]=='source':return True
+              if parts[0]=='v54-native-setup':return True
+              if parts[0]!='recursive':return False
+              if len(parts)==2:return f.suffix in ('.json','.log')
+              if parts[1] in ('state','restart-native') or parts[1].endswith(('-evidence','-search')):return True
+              return parts[1] in ('control','target') and len(parts)==3 and (f.suffix in ('.json','.log') or f.name=='pinned-source.tar.gz')
+          files={str(f.relative_to(p)):hashlib.sha256(f.read_bytes()).hexdigest()
+                 for f in p.rglob('*') if f.is_file() and archived(f)}
+          (p/'MANIFEST.json').write_text(json.dumps({'source_commit':os.environ['GITHUB_SHA'],
+             'run_id':os.environ['GITHUB_RUN_ID'],'files':files},sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frozen-native-recursive-probe-${{ github.sha }}-${{ github.run_attempt }}
+          path: |
+            qualification/FREEZE.json
+            qualification/EXPERIMENT.json
+            qualification/*.json
+            qualification/*.txt
+            qualification/*.log
+            qualification/source/
+            qualification/v54-native-setup/
+            qualification/recursive/RESULT.json
+            qualification/recursive/state/
+            qualification/recursive/*-evidence/
+            qualification/recursive/*-search/
+            qualification/recursive/restart-native/
+            qualification/recursive/*.json
+            qualification/recursive/*.log
+            qualification/recursive/control/*.json
+            qualification/recursive/control/*.log
+            qualification/recursive/control/pinned-source.tar.gz
+            qualification/recursive/target/*.json
+            qualification/recursive/target/*.log
+            qualification/recursive/target/pinned-source.tar.gz
+          retention-days: 30
+          include-hidden-files: true

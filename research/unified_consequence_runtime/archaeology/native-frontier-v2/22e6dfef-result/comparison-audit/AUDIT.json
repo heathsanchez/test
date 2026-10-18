@@ -1,0 +1,169 @@
+{
+  "budgets_and_transport_retry": {
+    "ledger_measured_wrapper_intervals_sum_seconds": 16.438047329000256,
+    "ledger_span_original_preparation_to_final_retry_subprocess_launch_seconds": 206.90853517499636,
+    "ledger_total_actual_collection_calls": 1,
+    "ledger_total_actual_native_calls": 0,
+    "native_ceiling": 128,
+    "no_new_untouchedness_claim": true,
+    "proposals_per_declared_search": 8,
+    "protocol_change_observed": false,
+    "retry_boundary": "Separate retained retry in existing authorized root session; wrapper has no credential/env/endpoint/policy mutation and calls frozen provision/collect APIs directly. Token values were neither read nor compared, so credential equivalence across agent sessions is not asserted. Original401 remains a real incurred failure and is not erased or recast as a source/native result.",
+    "wall_boundary": "206.908535175s through final retry maintenance git launch, below1200; measured wrapper snapshots exclude later maintenance/reporting. All later engineering and model costs remain UNKNOWN.",
+    "wall_ceiling_seconds": 1200
+  },
+  "coding_agent": {
+    "broader_charged_wall_snapshot_seconds": 209.310028767,
+    "collection_calls": 1,
+    "collection_process_seconds": 0.37143984399881447,
+    "counting_limit": "Original runner counts every report phase for nonzero tests; finalizer zeros are constants. AUDIT.md discloses both; retained empty reports independently support zero here.",
+    "initial_attempt_acquisition_seconds": 15.105840964,
+    "native_calls": 0,
+    "policy_choice": "NOT_LICENSED",
+    "proposals": 0,
+    "provision_status": "PREPARED",
+    "provision_wall_seconds": 13.71218325299851,
+    "searches": 0,
+    "snapshot_boundary": "Finalization snapshot; later storage scan, writes and audit completion excluded. Earlier controller work and full engineering lifecycle UNKNOWN.",
+    "status": "EXECUTED_NATIVE_COLLECTION_REFUSAL",
+    "subagent_cross_check": "No blocking misstatement in permitted coding-agent top-level records; no tests/replays/source access by cross-reviewer."
+  },
+  "created_utc": "2026-10-16T06:06:44.172590+00:00",
+  "evidence_sha256": {
+    "native-frontier-v2-coding-agent/AUDIT.md": "460275aa557522212c6c9ec518ef097de62f4ecb13d1faa93feec8a2a7f01e60",
+    "native-frontier-v2-coding-agent/COSTS.json": "dec5e13ce890d0480c79ea1b67616687acd53723aece9da08ff70d23d9f1e0ad",
+    "native-frontier-v2-coding-agent/FINAL_FREEZE_CHECK.json": "adb744342ea7d270bcd2e3ac70c9555f58d5964e41c3bc99c5963ab0812f8906",
+    "native-frontier-v2-coding-agent/FREEZE_CHECK.json": "73fe0a38144aeb845d4f58339d85243210f552f4ee3c996ea0a209be84a411bb",
+    "native-frontier-v2-coding-agent/REPORT.md": "122ceead54216ac1d8f94726624aab8be4bff7e63409adc6e300fd8ebbddd907",
+    "native-frontier-v2-coding-agent/RESULT.json": "a7fc6e31aee78893d79f7b1e6401e08940a003afbbed3efe5651d3b52d67155c",
+    "native-frontier-v2-coding-agent/TOOL_ACTION_LOG.md": "c7ae7ffadbf71494a7ed11b2ebb32294084aeac9f16a02500f3f212083518a11",
+    "native-frontier-v2-coding-agent/actions.jsonl": "18fcfba82628733dfdba1bb51638ba410b73733794dfbd3b0f74e268bedb70b8",
+    "native-frontier-v2-coding-agent/training/collection/checked-report.json": "75326aa736918303ce69d106c0352ac66d233893017bfde77597538af07811e1",
+    "native-frontier-v2-ledger-authorized/ERROR.json": "68f61f7915076e6ccf60c098ffa8d50154dea78a83d9acba89ed046a441964dc",
+    "native-frontier-v2-ledger-authorized/FREEZE_CHECK.json": "c42c50cd28bcec97ce88f973bbd6ec9e003df58a8e560152fd67a6266dc06906",
+    "native-frontier-v2-ledger-authorized/INPUTS.json": "00a4a7d8191c40fd179f34308620712f43268a6b69b9196a28f53b4247d39afc",
+    "native-frontier-v2-ledger-authorized/RESULT.json": "c6baa5eadc20d4483dda4d29ffb5d507ca0b124dd09f15c0f62d69abd06d4002",
+    "native-frontier-v2-ledger-authorized/SUBPROCESS_INVOCATIONS.jsonl": "bd1ff616994494bfdbbd98537e792b91f0372b12ac43cea03691bd80ebc51d56",
+    "native-frontier-v2-ledger-authorized/collection/checked-report.json": "69c8d88826365b26f12485535d451f20bc5894018571ec8cadbf5152460e42f7",
+    "native-frontier-v2-ledger-authorized/collection/report.json": "817c006813deafa1f8b8f45a08d884f59efbe34209f4323d88db155b5e04914d",
+    "native-frontier-v2-ledger-authorized/collection/stderr.log": "39525cd7ad7ab3f9374e346abd5c02819b00fa84aff627be7e29f5ae0338f402",
+    "native-frontier-v2-ledger-authorized/execute_ledger.py": "6416170d8d29c3aee4c77b62897a1ad7bf85fd57af90446559111cbdb0df803b",
+    "native-frontier-v2-ledger-authorized/task-0/admission.json": "87d0a1dffac7780661f79d9d7b12bd89259ba3db7c58d2506c57237d4f335165",
+    "native-frontier-v2-ledger-execution/CLOCK.json": "97fdfecc9f4ee5ea90fa0b8548890d9a9800e5132a31d32e9b96ba0b03b27ca1",
+    "native-frontier-v2-ledger-execution/COSTS.json": "135d19779d42b57345e9b82c65c9c77a5cdf4883e24fa76d1bb32fe2ad0e5a4e",
+    "native-frontier-v2-ledger-execution/CREDENTIAL_CONFIGURATION_CHECK.json": "79dd17a3ae55d068df5c85848d20f6d0f0708778164e93a95a864713db7430f3",
+    "native-frontier-v2-ledger-execution/FREEZE_CHECK.json": "73d71ddf7d203d89cf400060b2a719bcd30b64352eb85e5b8375b748d2ce1035",
+    "native-frontier-v2-ledger-execution/INDEPENDENT_ADMISSION_AUDIT.json": "f146a180b8779c49a9bca68d3e6bb1f218bb8a71afdc9e9dc41d879c0cb7dc7d",
+    "native-frontier-v2-ledger-execution/INPUTS.json": "a2751ab1d5d22557ae4e123c76f83d5a2792c915be7e1367d9d96f83e898b113",
+    "native-frontier-v2-ledger-execution/REPORT.md": "bb536477e8258eb86e281d972d0677bfbeefc54cf1d146189fb6c905b4f566a6",
+    "native-frontier-v2-ledger-execution/RESULT.json": "3d8011a728a20138596b1e3c1ab2d66a22ffdcf37529f4e5df4ba1635a521e23",
+    "native-frontier-v2-ledger-execution/SUBPROCESS_INVOCATIONS.jsonl": "a44b2f736ebc56d193e26e8e320aa3c90827e429fd99b186d4827891ada7cdd0",
+    "native-frontier-v2-ledger-execution/execute_admission.py": "d99152fdf9124f76f80031eb9bc23014a96068cea9d5f502b80a07fea44d3a96",
+    "native-frontier-v2-ledger-execution/task-0/admission.json": "6ae9fa3b0e22be0a98207bcbc43538c19a60723a17f95305c19b798d96ee16c4",
+    "native-frontier-v2-ledger-execution/task-0/author-test-0.log": "94251ef72cb3836e0b37102317bfdfba388585bcc75e0642ff0a5a1684b0a583"
+  },
+  "findings": [
+    {
+      "artifact": "native-frontier-v2-ledger-authorized/RESULT.json:subprocess_invocations",
+      "finding": "911 is snapshot before final check_freeze; log contains912. Final added git rev-parse HEAD is maintenance, not a native/collection call. Treat count and wall as pre-final-maintenance snapshots.",
+      "severity": "NONBLOCKING_SNAPSHOT_LABEL"
+    },
+    {
+      "artifact": "native-frontier-v2-coding-agent/AUDIT.md",
+      "finding": "Nonzero test phase counter and complete engineering/storage lifetime are not general complete accounting. Zero native execution in this attempt is directly supported; UNKNOWN comparison retained.",
+      "severity": "DISCLOSED_LIMITATION"
+    }
+  ],
+  "frozen_source": {
+    "current_head": "22e6dfef6601e8f6c6a804ec05baab9f06b028b3",
+    "freeze_sha256": "a74d3c0811dd919dcdf59427aa49b710c46a7ab2af58ed441a3a25bd22f3ebac",
+    "frozen_files_checked": 442,
+    "missing_or_changed": [],
+    "protocol_sha256": "4eec48b7cef91b41e15cfd54df2b3415b60b64f6c4117d1b67f505f398b370db",
+    "source_commit": "22e6dfef6601e8f6c6a804ec05baab9f06b028b3"
+  },
+  "futures_and_claims": {
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN",
+    "comparison": "UNKNOWN",
+    "record_basis": "Each wrapper supplies only metadata.selected[0]; ledger subprocess transport endpoints only frozen training base and nominated author-test blob. Coding action history stops after training collection refusal. No selected future record or attempt is present.",
+    "recorded_future_source_access": false,
+    "superiority": "NOT_ESTABLISHED",
+    "tie": "NOT_ESTABLISHED",
+    "workflow_color": "Integrity-only green; no scientific promotion."
+  },
+  "inputs_and_authority": {
+    "coding_retry_contract_except_local_paths_and_environment_identity_equal": true,
+    "coding_retry_native_suite_authority_equal": true,
+    "coding_retry_suite_authority_equal": true,
+    "head_production_fetched": false,
+    "original_and_retry_task_equal_frozen_training": true,
+    "package_objects_equal_frozen": true,
+    "package_pin_count": 38,
+    "policy_objects_equal_frozen": true,
+    "production_preserved": true,
+    "protocol_digest_equal_frozen": true,
+    "source_identity_boundary": "Compared retained source identity/manifests and raw transport endpoint scope; selected production/test bytes were not reread."
+  },
+  "original_ledger": {
+    "collection_calls": 0,
+    "executable_counts": {
+      "gh": 1,
+      "git": 78
+    },
+    "native_calls": 0,
+    "proposals": 0,
+    "provision_wall_seconds": 1.511059825999837,
+    "reason": "UNKNOWN_SETUP:author-test-0",
+    "retry_performed_within_original_arm": false,
+    "status": "UNKNOWN_ADMISSION_REFUSAL",
+    "subprocess_invocations": 79,
+    "transport": "Original author-test endpoint HTTP401 Bad credentials; original receipt and raw log preserved.",
+    "wrapper_wall_snapshot_seconds": 1.6101876429966069
+  },
+  "phase_log_sha256_checks": {
+    "native-frontier-v2-ledger-authorized": {
+      "all_match": true,
+      "checked": 12
+    },
+    "native-frontier-v2-ledger-execution": {
+      "all_match": true,
+      "checked": 4
+    }
+  },
+  "root_ledger_retry": {
+    "actual_subprocess_log_rows": 912,
+    "candidate_proposals": 0,
+    "collected_nodes": 0,
+    "collection_calls": 1,
+    "collection_exit_code": 4,
+    "collection_process_seconds": 0.32085702199401567,
+    "final_additional_invocation": [
+      "git",
+      "-C",
+      "/workspace/udm-v54",
+      "rev-parse",
+      "HEAD"
+    ],
+    "native_calls": 0,
+    "no_native_receipt_or_admission_certificate": true,
+    "obstruction": "Original conftest uses pytest.collect.File; frozen pytest8.4.1 lacks pytest.collect. Raw stderr confirms AttributeError. No shim/dependency/configuration fallback.",
+    "producer_report_fields_unchanged_in_checked_report": true,
+    "provision_wall_seconds": 13.348083885997767,
+    "reason": "UNKNOWN_COLLECTION_ERROR",
+    "report_phases": 0,
+    "result_pre_final_maintenance_snapshot_subprocesses": 911,
+    "selected_nodes": 0,
+    "setup_phase_count": 15,
+    "setup_phase_seconds_nonadditive": 12.736878221010556,
+    "setup_status": "PREPARED",
+    "status": "UNKNOWN_NATIVE_ADMISSION",
+    "wrapper_wall_snapshot_seconds": 14.827859686003649
+  },
+  "schema": "UDM_NATIVE_FRONTIER_V2_COMPARISON_ARTIFACT_AUDIT",
+  "scope": "Read-only retained-record audit. No source fetch, native calls, collection, receipt replay, source preparation or selected target source/test content inspection by this reviewer. Coding-agent top-level cost cross-check independently delegated to admission_prospective_driver.",
+  "status": "PASS_RETAINED_EXECUTION_PROVENANCE_COMPARISON_UNKNOWN"
+}

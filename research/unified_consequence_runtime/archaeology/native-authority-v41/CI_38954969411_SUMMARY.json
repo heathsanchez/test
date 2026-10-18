@@ -1,0 +1,175 @@
+{
+  "all_raw_worker_attempts": 63,
+  "artifact_id": 12069448596,
+  "artifact_sha256": "90dcaba5ecc47761890ad17a3761924863eb4b33ae4acf38f6aa1d870af455e0",
+  "artifact_size_bytes": 190257365,
+  "audit_report_sha256": "9c4e12c8b861bd9e6b1df42906baf2fc08c565bda8c1a627242d940711f60308",
+  "audited_gate": {
+    "artifact_id": 12069448596,
+    "artifact_sha256": "90dcaba5ecc47761890ad17a3761924863eb4b33ae4acf38f6aa1d870af455e0",
+    "qualification_result_sha256": "0ea3843c9b9d80c59a9102312813cf586216c1ce78d69dc9b47b400b2029de43",
+    "result_path": "research/unified_consequence_runtime/archaeology/native-authority-v41/CI_38954969411_RESULT.json",
+    "run_id": 38954969411,
+    "source_commit": "4c3f7e276567b4ea8df96c7a8797a889040dc0ac",
+    "status": "ADMISSION_ONLY_QUALIFIED"
+  },
+  "base_commit": "7edf1018342b50f73ca226de3e0d0b7acdb31647",
+  "controls": {
+    "binding": 33,
+    "legacy": 2,
+    "modern": 47
+  },
+  "copy_sha256": {
+    "AUDITED_FREEZE.json": "76ffbd10bad1ba00ea622a27a0fd9065411ce8863c64c058618017283cdf3ca6",
+    "AUDITED_LEGACY_RESULT.json": "1109d2c5bb6f9fd9207504911bfbeb39e3d3df58e4e0b865c8bbb655112d7d42",
+    "AUDITED_MANIFEST.json": "35443ea041b6d08a575ad46e8671152798adf5fe2761be7404e95889b8f3022d",
+    "AUDITED_RESULT.json": "0ea3843c9b9d80c59a9102312813cf586216c1ce78d69dc9b47b400b2029de43"
+  },
+  "costs": {
+    "auditor_collection_calls": 0,
+    "auditor_git_calls": 0,
+    "auditor_native_calls": 0,
+    "auditor_network_calls": 0,
+    "ci_attempts": {
+      "legacy": {
+        "collection_calls": 3,
+        "native_calls": 2,
+        "subprocess_attempts": 5
+      },
+      "modern": {
+        "collection_calls": 42,
+        "native_calls": 16,
+        "subprocess_attempts": 58
+      }
+    },
+    "ci_qualification_wall_seconds": {
+      "legacy": 41.90938847299992,
+      "modern": 240.358403319
+    },
+    "full_lifecycle_model_tool_engineering_cost": "UNKNOWN",
+    "offline_audit_seconds": 1.8376928540001245,
+    "preparation_seconds": 21.51958029000002,
+    "retained_raw_worker_seconds": {
+      "legacy": 1.3368884790000948,
+      "modern": 16.22313890299972
+    },
+    "schema": "UDM_V41_OFFLINE_AUDIT_COSTS_V1",
+    "supplement_seconds": 0.030830410998532898
+  },
+  "gate_result_copy_note": "AUDITED_RESULT.json is byte-identical to the artifact RESULT. Before using AUDITED_GATE.json, copy those exact bytes to its canonical result_path; this audit made no repository writes.",
+  "independent_positive_pairs": [
+    {
+      "case": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_unimported_malformed_fixture_allows_real_native_pass",
+      "group": "modern",
+      "independent_replay_receipt": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_unimported_malformed_fixture_allows_real_native_pass/evidence-3/receipt.json",
+      "junit": {
+        "errors": 0,
+        "failures": 0,
+        "passed": 2,
+        "skipped": 0,
+        "tests": 2
+      },
+      "kind": "preserved",
+      "original_nodes": [
+        "test_subject.py::test_old",
+        "test_subject.py::test_new"
+      ],
+      "original_receipt": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_authority_v4.MalformedPythonNativeAuthorityV4.test_unimported_malformed_fixture_allows_real_native_pass/evidence-2/receipt.json",
+      "raw_packets_distinct": true,
+      "source_inventory_sha256": "e606cb61091e66134714327396698c35d31ebafa07a6acae4aa6bef69b1d915e"
+    },
+    {
+      "case": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_dependency_includes_v41.IncludedDependenciesNativeV41.test_selected_actual_runtime_include_allows_real_native_pass_and_independent_reexecution",
+      "group": "modern",
+      "independent_replay_receipt": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_dependency_includes_v41.IncludedDependenciesNativeV41.test_selected_actual_runtime_include_allows_real_native_pass_and_independent_reexecution/evidence-3/receipt.json",
+      "junit": {
+        "errors": 0,
+        "failures": 0,
+        "passed": 2,
+        "skipped": 0,
+        "tests": 2
+      },
+      "kind": "included",
+      "original_nodes": [
+        "test_subject.py::test_old",
+        "test_subject.py::test_new"
+      ],
+      "original_receipt": "admission-v41/native-evidence/research.unified_consequence_runtime.test_native_dependency_includes_v41.IncludedDependenciesNativeV41.test_selected_actual_runtime_include_allows_real_native_pass_and_independent_reexecution/evidence-2/receipt.json",
+      "raw_packets_distinct": true,
+      "source_inventory_sha256": "1d3c4fbc6b61bf62bc2de4d43dfa84d629abd1b2df600355db83e7324167f0d0"
+    },
+    {
+      "case": "legacy-v41/native-evidence/research.unified_consequence_runtime.test_native_dependency_includes_v41.IncludedDependenciesNativeV41.test_selected_actual_runtime_include_allows_real_native_pass_and_independent_reexecution",
+      "group": "legacy",
+      "independent_replay_receipt": "legacy-v41/native-evidence/research.unified_consequence_runtime.test_native_dependency_includes_v41.IncludedDependenciesNativeV41.test_selected_actual_runtime_include_allows_real_native_pass_and_independent_reexecution/evidence-3/receipt.json",
+      "junit": {
+        "errors": 0,
+        "failures": 0,
+        "passed": 2,
+        "skipped": 0,
+        "tests": 2
+      },
+      "kind": "included",
+      "original_nodes": [
+        "test_subject.py::test_old",
+        "test_subject.py::test_new"
+      ],
+      "original_receipt": "legacy-v41/native-evidence/research.unified_consequence_runtime.test_native_dependency_includes_v41.IncludedDependenciesNativeV41.test_selected_actual_runtime_include_allows_real_native_pass_and_independent_reexecution/evidence-2/receipt.json",
+      "raw_packets_distinct": true,
+      "source_inventory_sha256": "f0bdf2ecc37def635c393d65e24ba244329ab45ec6c5ec4a5aa1ed1850f81a16"
+    }
+  ],
+  "indexes_status": "PASS",
+  "limits": [
+    "Successful frozen assertions support refusals involving forged in-memory objects; those mutated objects and caught exceptions are not separately serialized.",
+    "Three earlier selection-expression source variants retain manifests/raw reports but only the final fixture head archive; their raw source bytes cannot be reauthenticated from that final archive.",
+    "Installed venv/wheel trees are excluded from the evidence tar. This audits retained original-controller identities, inventories, artifact hashes and raw metadata, without rereading remote installed files.",
+    "This admission gate does not establish prospective task success, comparative benefit, native G2-G6, or hostile-process nonbypassability.",
+    "Wheel and venv trees are excluded by the workflow. Download receipts, installed-file hashes, and their frozen fingerprints are checked; excluded package bytes are not independently rehashed.",
+    "The legacy profile has no retained full installed-file list: its package-files fingerprint cannot be reconstructed offline from the 22-name installed inventory.",
+    "This stdlib audit compares exact raw dependency metadata and frozen closure receipts; it does not execute an independent PEP 440/508 resolver or replay release ranking.",
+    "Project JSON request bodies are not versioned in the source archive; request ledger hashes are bound but their excluded response bodies cannot be rehashed here.",
+    "Retained discovery records and bytes establish equality for recorded indexes at these boundaries; they do not prove absence of transient changes or independently rediscover unrecorded Git administration paths."
+  ],
+  "profiles_status": "PASS",
+  "root_frontier_review": "This is the separate synthetic admission gate. No fresh task metadata/source/network query or prospective freeze was performed.",
+  "run_id": 38954969411,
+  "schema": "UDM_V41_AUDITED_ADMISSION_SUMMARY_V1",
+  "source_commit": "4c3f7e276567b4ea8df96c7a8797a889040dc0ac",
+  "source_preservation": {
+    "base_files": 1594,
+    "baseline_commit": "7edf1018342b50f73ca226de3e0d0b7acdb31647",
+    "changed_prior_files": [],
+    "changed_v3_files": [],
+    "inventory_sha256": {
+      "base": "1b9fa4f54337be4856c404b72b1974a905e1ab318094220c78c74f5fb4c83199",
+      "source": "8c511af3048e6948dadc14d6bae3a3158c0deeab589b20a555a423e00da0bab0",
+      "v3": "e74338882d6f2b1887eb9f6974adfa0661e0cd14bd91a3ecd47ffb9a8b34ddb9"
+    },
+    "source_commit": "4c3f7e276567b4ea8df96c7a8797a889040dc0ac",
+    "source_files": 1666,
+    "v3_files": 1406
+  },
+  "status": "PASS_STRICT_ADMISSION_ONLY_AUDIT",
+  "supplement_sha256": "4108a4b1ced8ea8b74e1fd49a8af090bc1acc33d87039d28ff8c2a753bde8c67",
+  "verdicts": {
+    "G0_G1": "PRESERVED_EXACT_PRIOR_SOURCE_AUTHORITY",
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN"
+  },
+  "worker_attempts": {
+    "legacy": {
+      "collection_calls": 3,
+      "native_calls": 2,
+      "subprocess_attempts": 5
+    },
+    "modern": {
+      "collection_calls": 42,
+      "native_calls": 16,
+      "subprocess_attempts": 58
+    }
+  }
+}

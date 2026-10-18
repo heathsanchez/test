@@ -1,0 +1,57 @@
+{
+  "schema": "metalogic.native-source-induced-bisimulation-protocol.v1",
+  "frozen_at": "2026-10-14",
+  "claim": "source-extracted finite-support bisimulation and Lean checked proof methods on independent original CSLib source types; no new theorem claim unless native proof passes",
+  "upstream": {
+    "repository": "leanprover/cslib",
+    "commit": "4b88bcac4c0dec65b3f45b59e85f5397045efd8d",
+    "lean_toolchain": "leanprover/lean4:v4.35.0-rc4"
+  },
+  "sources": [
+    {
+      "label": "native-nat-label",
+      "file": "CslibTests/LTS.lean",
+      "blob_sha": "34f3c3db9378e11906bba456f0178497531c6a26",
+      "transition": "NatTr",
+      "system": "CslibTests.natLTS",
+      "import": "CslibTests.LTS",
+      "source_state": "Nat",
+      "source_label": "Nat"
+    },
+    {
+      "label": "native-char-label",
+      "file": "CslibTests/Bisimulation.lean",
+      "blob_sha": "edaa81af04bb06bf12ac66368a2badd8b4a33edf",
+      "transition": "tr1",
+      "system": "CslibTests.lts1",
+      "import": "CslibTests.Bisimulation",
+      "source_state": "Nat",
+      "source_label": "Char"
+    }
+  ],
+  "unsupported": [
+    {
+      "label": "infinite-countdown",
+      "file": "Cslib/Foundations/Semantics/LTS/ExampleTermination.lean",
+      "definition": "countdownLTS",
+      "expected": "UNKNOWN_INFINITE_SUPPORT"
+    }
+  ],
+  "verification": {
+    "source_pins": "git object hashes for original upstream Lean files",
+    "method": "parse source-native transition constructors; independently derive greatest finite-active bisimulation; synthesize Lean proof script generically; check against upstream library; exact source recheck",
+    "no_named_case_patches": true,
+    "old_backend": "existing V10 finite Fin-state proof backend does not accept source Nat/Char semantics without adaptation",
+    "independent_baseline": "separately implemented alternating partition simulation/bisimulation",
+    "positive": "native Lean proves full synthesized relation plus a source-selected nontrivial witness",
+    "negative": "source-derived deliberately mismatched relation must fail native Lean; source tampering must fail before proof",
+    "evidence": "all source-transitions accounted for and both sources' relation are checked; at least one nontrivial relation each"
+  },
+  "scientific_limits": [
+    "The known definitions come from upstream CSLib, not previously open mathematics.",
+    "The generic extractor and Lean backend are human authored and tested on visible sources, not autonomous meta-grammar invention.",
+    "Finite active support inside an infinite Nat carrier is not general infinite-state closure.",
+    "Source-defined bisimulation is not an independent user-adopted technique.",
+    "No E2E-SYSTEM or L7 promotion without separately scoped native independent task and second method-generation improvement."
+  ]
+}

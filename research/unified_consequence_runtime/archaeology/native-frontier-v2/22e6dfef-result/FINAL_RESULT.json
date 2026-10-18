@@ -1,0 +1,82 @@
+{
+  "admission_artifact": 12027916982,
+  "admission_diagnostics": {
+    "collection_calls": 7,
+    "contract_tests": 193,
+    "controller_seconds": 398.645547712,
+    "exposure": "EXPOSED_DEVELOPMENT_DIAGNOSTICS_ONLY",
+    "native_calls": 4,
+    "native_seconds": 309.3636281259999
+  },
+  "admission_run": 38856738333,
+  "admission_source_commit": "f8c0b06da1bbaddfd67229ca87cb53a0dab67ae0",
+  "branch": "research/udm-native-admission-v2-20261016",
+  "comparator_archive_sha256": "27a3d8d79a97d56e491e286d6b37bf466e6cce67a0da8f058a78a236a4d08ae5",
+  "comparison_review": "comparison-audit/AUDIT.json",
+  "comparisons": {
+    "coding_agent": {
+      "charged_finalization_wall_snapshot_seconds": 209.31002876700222,
+      "collection_calls": 1,
+      "comparison": "UNKNOWN_NO_PROTECTED_OUTCOME_EXECUTION",
+      "initial_attempt_wall_seconds": 15.10584096400271,
+      "native_calls": 0,
+      "proposals": 0,
+      "status": "EXECUTED_NATIVE_COLLECTION_REFUSAL"
+    },
+    "informed_executable_ledger": {
+      "authorized_attempt_wall_seconds": 14.827859686003649,
+      "collection_calls": 1,
+      "comparison": "UNKNOWN_NO_PROTECTED_OUTCOME_EXECUTION",
+      "initial_credential_attempt_wall_seconds": 1.6101876429966069,
+      "initial_credential_failure": "HTTP401 Bad credentials; unchanged evidence retained; no credential/route/protocol/source change",
+      "native_calls": 0,
+      "proposals": 0,
+      "status": "UNKNOWN_NATIVE_ADMISSION"
+    },
+    "udm": {
+      "collection_calls": 1,
+      "controller_wall_seconds": 16.515841517999995,
+      "native_calls": 0,
+      "proposals": 0,
+      "setup_wall_seconds": 12.220687571,
+      "status": "UNKNOWN_NO_NATIVE_ACQUISITION_RESIDUAL"
+    }
+  },
+  "controls": {
+    "existing_runtime_causal_restore_separate_process_restart_fixtures": "PASS_IN_193_CONTRACT_SUITE; NOT_PROSPECTIVE_DEVELOPMENT",
+    "future1_source_opened": false,
+    "future2_source_opened": false,
+    "new_acquisition_withdrawal_restoration_restart": "NOT_RUN_NO_NATIVE_ACQUISITION",
+    "new_native_cold_warm_sham_ancestor_unrelated_restoration_restart": "NOT_RUN_NO_NATIVE_ACQUISITION",
+    "wrong_scope_missing_skipped_deselected_altered_forged_incorrectly_imported_tests": "PASS_BOUNDED_CONTRACT_CONTROLS_IN_193_TEST_SUITE"
+  },
+  "cost_boundary": "All available setup/build/source/collection/verification/execution/accounting/retention/audit costs retained in linked raw receipts. Nested wall values are not additive. Agent finalization and UDM controller intervals differ; no timing superiority. Complete model-token/dollar/engineering/future-maintenance and overall mission lifecycle cost UNKNOWN. Initial credential failure is charged, not discarded.",
+  "freeze_sha256": "a74d3c0811dd919dcdf59427aa49b710c46a7ab2af58ed441a3a25bd22f3ebac",
+  "original_base_commit": "64ce25cdaffcbee281ec24c2c2f8b2363aaff218",
+  "prior_results": "Original RED/UNKNOWN/cancelled runs, strict refusal boundaries, prior E/D/V54 and all70 inventory rows unchanged. No historical developmental acquisition rerun.",
+  "prospective_artifact": 12028255817,
+  "prospective_protocol_commit": "dad399c8e36abe23b87244995b7a5878ccb4ae38",
+  "prospective_run": 38858369216,
+  "prospective_source_commit": "22e6dfef6601e8f6c6a804ec05baab9f06b028b3",
+  "schema": "UDM_NATIVE_ADMISSION_V2_FINAL_REPORT",
+  "smallest_obstruction": {
+    "actual_failure": "AttributeError: module 'pytest' has no attribute 'collect'; collection exit4 before any protected test executes",
+    "author_test_head": "33148ea028b7a915bb0294c6c49773d4168e96d8",
+    "base_commit": "b2e4759d31b3e4815077f03aeefea9ceadc67530",
+    "classification": "UNKNOWN_NATIVE_ENVIRONMENT_CONTRACT; NOT_SELECTION_SEARCH_OR_EXPRESSIVITY_FAILURE",
+    "frozen_environment": "Python3.12 / pytest8.4.1",
+    "next_residual": "Independently qualify generic source-preserving native test-collector/environment compatibility under a new versioned protocol, without relaxing collection/import/assertion authority or relabeling the exposed wrapt result as prospective.",
+    "original_source": "tests/conftest.py:7 DummyCollector(pytest.collect.File)",
+    "repository": "grahamdumpleton/wrapt"
+  },
+  "status": "ADMISSION_QUALIFIED_PROSPECTIVE_NATIVE_COLLECTION_BLOCKED",
+  "verdicts": {
+    "G0_G1": "PRESERVED_EXACT_ORIGINAL_AUTHORITY",
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN",
+    "admission": "WARRANTED_BOUNDED"
+  }
+}

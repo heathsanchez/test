@@ -1,0 +1,57 @@
+{
+  "admitted": 0,
+  "artifact_code_executed": false,
+  "audited_source_files": 1694,
+  "checks": 4482,
+  "collection_calls": 0,
+  "costs": {
+    "child_maxrss_kib_lifetime_nonadditive": 191448,
+    "collection_calls": 0,
+    "controller_child_system_seconds": 12.075171,
+    "controller_child_user_seconds": 35.619312,
+    "metadata_api_calls": 137,
+    "metadata_total_curation_wall_seconds": 39.32762100800028,
+    "native_calls": 0,
+    "ordered_meter_interval_seconds_to_summary_finish": 46.388338804244995,
+    "sum_case_wall_seconds": 15.939176056999713,
+    "sum_controller_wall_seconds": 51.76277536399721,
+    "sum_setup_phase_seconds": 14.368250622996129,
+    "sum_setup_wall_seconds": 15.937476695997248,
+    "whole_screening_controller_session_interval_seconds": 51.76726460456848
+  },
+  "environment_gate_files": 83,
+  "expectations_sha256": "164aef8c67a7059bcf7606d1cf502ca5cd8b11310e9b1eb8f938d8ee7dd13ae2",
+  "failed_checks": 0,
+  "first_obstruction": {
+    "case": 0,
+    "first_path": "README.rst",
+    "mode": "120000",
+    "reason": "ValueError: only regular tracked files supported; no symlinks or submodules",
+    "repository": "jquast/wcwidth",
+    "scope": "Preserved V3 source snapshot grammar refusal; native incompatibility was not established.",
+    "stage": "decisive_native_verify._snapshot"
+  },
+  "git_calls": 0,
+  "limits": [
+    "Raw retained rows/receipts establish local consistency, not remote API authenticity, a global access log, first network access timing, or global absence of omitted attempts.",
+    "Zero native/collection counts are controller-local and supported by the observed early refusals; they do not count Git transport, interpreter identity checks, or all operating-system subprocesses.",
+    "This audit hashes raw base files and parses retained indexes but does not rerun a selector, target interpreter, native collection, learner, comparator, resolver, or original auditor code.",
+    "All-index pre-screening immutability, runtime import behavior, untouchedness, comparative win, and G2-G6 remain unestablished. The enclosing auditor separately verifies archive links and source delivery."
+  ],
+  "metadata": {
+    "candidate_rows": 900,
+    "changed_file_rows": 299,
+    "file_scans": 100,
+    "receipts": 137,
+    "repositories": 9
+  },
+  "module_sha256": "1e49a32345f324798325fc3bc13a8b46039ed7e6931c586e6b994ef5dae15694",
+  "native_calls": 0,
+  "native_calls_by_auditor": 0,
+  "network_calls": 0,
+  "qualification_gate_files": 70,
+  "refused": 7,
+  "scope": "Selfvalidation against existing local retained data, no prospective CI artifact inspected.",
+  "screened": 7,
+  "status": "PASS"
+}

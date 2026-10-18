@@ -1,0 +1,41 @@
+{
+  "schema": "UDM_V11_EXPOSED_TENACITY_MSI_V104_RESULT",
+  "classification": "UNKNOWN_INCOMPLETE_ORIGINAL_SOURCE_NATIVE_MSI_PROFILES",
+  "scientific_promotion": "NONE",
+  "source_commit": "c62a3771ec3e849f8b10df427a42d7f140668c77",
+  "run_id": 38986306451,
+  "actions_url": "https://github.com/heathsanchez/test/actions/runs/38986306451",
+  "artifact_id": 12083352185,
+  "artifact_sha256": "ebeb15e77a42072a8ab1432227298a0ec212f2890506e97e8c399d4df2532b29",
+  "artifact_independently_downloaded_sha256_verified": true,
+  "original_training": "jd/tenacity PR741, source previously opened by V9/V10",
+  "original_v104": "426c54f7c774560e0fabe7213c5ef333b1327c71",
+  "original_msi": "56cfd7b523e3592cae4eafa5468f437ccb94dbe9",
+  "baseline": "VERIFIED_REPEATED_FAIL_NATIVE_PROTECTED",
+  "original_emitted_candidates": 128,
+  "policy_count": 37,
+  "eight_candidate_policy_prefix_distinct_candidates": 15,
+  "charged_native_calls": 32,
+  "evaluated_candidate_statuses": {
+    "VERIFIED_REPEATED_FAIL_NATIVE_PROTECTED": 5,
+    "UNKNOWN_NATIVE_EVIDENCE": 10
+  },
+  "verified_candidate_successes": 0,
+  "complete_policy_count": 0,
+  "incomplete_policy_count": 37,
+  "packaging_source_opened": false,
+  "v9_frozen_prospective_RED_preserved": 38985251065,
+  "v10_native_class_method_qualification_preserved": 38985872094,
+  "state_and_source_notes": "Original V9 training controller got a private exposed-only V10 bound native verifier and a parenthesization correction to a PosixPath expression; original v9, V6/V10 authority, V104/MSI grammar and original false failures unchanged. Ten unknowns are not counted as failures. No novel method acquisition, method credit assigned or G2.",
+  "observation_concern": "Original v9 _original_catalog passes observation={} into typed_v104_msi_bridge_v7.catalog_v104_typed. Thus source-failure trace distance K defaults to 1000000 for every candidate. Existing source-pinned decisive_native.trace_lines is not activated by this path. Candidate order has no native-derived trace localization.",
+  "verdicts": {
+    "G0_G1": "PRESERVED_PREVIOUS",
+    "V11_EXPOSED": "UNKNOWN_INCOMPLETE",
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN"
+  },
+  "next_gate": "Bounded exposed-only test whether authentic baseline native failure traces can be independently extracted/source-matched and passed to original MSI/V104 selection while preserving original constructor, original native verifier, cold ablation and source pins; no G2 retrospective promotion. Genuine G2 requires new untouched source-distinct training and future."
+}

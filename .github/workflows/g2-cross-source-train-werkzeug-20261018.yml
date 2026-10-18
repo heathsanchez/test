@@ -1,0 +1,90 @@
+name: G2 cross-source law V1 exposed Werkzeug training, future sealed
+on:
+  push:
+    branches:
+      - research/g2-cross-source-consequence-law-20261018
+    paths:
+      - .github/workflows/g2-cross-source-train-werkzeug-20261018.yml
+permissions:
+  contents: read
+concurrency:
+  group: g2-cross-source-train-werkzeug-20261018
+  cancel-in-progress: false
+jobs:
+  source-bound-training:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+      GIT_NO_REPLACE_OBJECTS: "1"
+      GIT_OPTIONAL_LOCKS: "0"
+    steps:
+      - name: Checkout read-only, no credentials retained for untrusted tests
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Assert frozen roles and pre-source protocol, syntax only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git merge-base --is-ancestor de234c7e180467bbb0b957cac2016263bf80920b HEAD
+          git merge-base --is-ancestor 57c400ea49881e440f7895acaeebeee5854363e3 HEAD
+          python -m py_compile research/unified_consequence_runtime/g2_werkzeug_guard_genesis_v1.py
+          python -m py_compile research/unified_consequence_runtime/g2_werkzeug_train_receipt_auditor_v1.py
+          python -m py_compile research/unified_consequence_runtime/g2_pool_first_native_failure_v1.py
+          python -m py_compile research/unified_consequence_runtime/g2_cross_source_admission_gate.py
+          echo 'TRAIN=pallets/werkzeug#3215; FUTURE=pypa/packaging#1446 SEALED_UNOPENED'
+      - name: Independent synthetic grammar sensitivity and negative control
+        shell: bash
+        run: |
+          python - <<'PY'
+          from research.unified_consequence_runtime.g2_werkzeug_guard_genesis_v1 import enumerate_candidates
+          src = ("def decide(a, b, c, d):\n"
+                 "    if a and (b or c) and d:\n"
+                 "        return 1\n"
+                 "    return 0\n")
+          cs = enumerate_candidates(src)
+          assert len(cs) == 1, len(cs)
+          original, mutated = {}, {}
+          exec(src, original)
+          exec(cs[0]["_edited"], mutated)
+          assert original["decide"](True,False,False,True) == 0
+          assert mutated["decide"](True,False,False,True) == 1
+          assert original["decide"](True,True,False,False) == mutated["decide"](True,True,False,False) == 0
+          assert original["decide"](False,False,False,True) == mutated["decide"](False,False,False,True) == 0
+          print("SYNTHETIC_CONTEXT_FALLBACK_MUTATION: PASS (NOT a real source qualification)")
+          PY
+      - name: Original-source native protected failure then bounded generated candidates
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH="$GITHUB_WORKSPACE" python -B research/unified_consequence_runtime/g2_werkzeug_guard_genesis_v1.py "$GITHUB_WORKSPACE/evidence/g2-cross-source-werkzeug-train-v1"
+      - name: Independent receipt replay and bounded scientific status
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          E="$GITHUB_WORKSPACE/evidence/g2-cross-source-werkzeug-train-v1"
+          if [ -f "$E/RESULT.json" ]; then
+            PYTHONPATH="$GITHUB_WORKSPACE" python -B research/unified_consequence_runtime/g2_werkzeug_train_receipt_auditor_v1.py "$E"
+          else
+            echo "UNKNOWN_NATIVE_APPARATUS_NO_RESULT; FUTURE REMAINS SEALED"
+          fi
+      - name: Archive evidence with source/code identities and negatives
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g2-cross-source-werkzeug-training-v1
+          retention-days: 90
+          if-no-files-found: warn
+          path: |
+            evidence/g2-cross-source-werkzeug-train-v1/
+            research/unified_consequence_runtime/G2_CROSS_SOURCE_CONSEQUENCE_LAW_V1_FROZEN_PROTOCOL.md
+            research/unified_consequence_runtime/G2_NATIVE_FIRST_FAIL_POOL_V2_ROLE_FREEZE.json
+            research/unified_consequence_runtime/g2_werkzeug_guard_genesis_v1.py
+            research/unified_consequence_runtime/g2_werkzeug_train_receipt_auditor_v1.py
+            research/unified_consequence_runtime/g2_cross_source_admission_gate.py

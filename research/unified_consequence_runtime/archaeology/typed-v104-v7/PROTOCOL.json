@@ -1,0 +1,75 @@
+{
+  "schema": "UDM_TYPED_V104_G2_PROSPECTIVE_FREEZE_V7",
+  "objective": "Use qualified typed native V6 receipts to select existing source-pinned V104 operations with original MSI V10 policy; test native G2 prospectively without target-aware winners",
+  "prior_science": "WARRANTED_BOUNDED V6 typed native source execution, G2 UNKNOWN",
+  "source_commit_parent": "50cc3e1d35a6bb94c3ee84c57237ed6487663a5a",
+  "prequery_meta_only": true,
+  "candidates": [
+    {
+      "repository": "pallets/click",
+      "pr": 3884,
+      "base": "bb695aaecdef95832d167fc1d508921745aa824e",
+      "head": "c53d3732b98c764932e146c007146ad402acb229",
+      "production": [
+        "src/click/core.py"
+      ],
+      "author_tests": [
+        "tests/test_options.py"
+      ],
+      "role": "TRAINING"
+    },
+    {
+      "repository": "jd/tenacity",
+      "pr": 741,
+      "base": "4a74682e0186b5f2d25906aa190cd639c705a958",
+      "head": "a391c24599f04f4e0e90851b546ec1b405e962b4",
+      "production": [
+        "tenacity/__init__.py",
+        "tenacity/asyncio/__init__.py"
+      ],
+      "author_tests": [
+        "tests/test_tenacity.py"
+      ],
+      "role": "FUTURE_A"
+    },
+    {
+      "repository": "pypa/packaging",
+      "pr": 1446,
+      "base": "332d716676eb934b67ede4054a3e3e0d4022b2d3",
+      "head": "a4f5d377a62e96759a4d9237256ec5dc3b19444e",
+      "production": [
+        "src/packaging/pylock.py"
+      ],
+      "author_tests": [
+        "tests/test_pylock.py"
+      ],
+      "role": "FUTURE_B"
+    }
+  ],
+  "selection_rule": "All 3 tasks fixed in listed order. Training Click, future A Tenacity and B Packaging, no outcome-driven replacement. If admission fails/unknown, preserve and stop for necessary causal step; source-distinct futures remain unopened until justified.",
+  "supplied_information": "Original base production + exact head-authored tests only; no fixed head production/PR bodies/patches or target-specific winners. PR title known only to external prequery curator; not provided to learner.",
+  "source_pins": {
+    "v5_parent": "0231fc7d77378009271250788875bdf53a7a3d07",
+    "v6_qualified": "74b1bd4b9357a32e6ec3d68fc26ea12d23c7780f",
+    "v6_run": 38973418887,
+    "v6_artifact": 12077887309,
+    "v104_constructor": "426c54f7c774560e0fabe7213c5ef333b1327c71",
+    "msi_v10": "56cfd7b523e3592cae4eafa5468f437ccb94dbe9",
+    "original_pareto": "6031466188046f56b4660d772d13ad731ed4c0f2"
+  },
+  "budgets": {
+    "candidate_cap_per_production_file": 64,
+    "candidate_evaluations_per_method_per_task": 8,
+    "original_msi_policies": 36,
+    "old_v104_cold_order": true,
+    "independent_native_replays_per_candidate": 2,
+    "native_timeout_seconds_per_call": 90,
+    "total_per_task_native_calls": 128,
+    "total_experiment_native_calls": 320,
+    "total_experiment_wall_seconds": 2700
+  },
+  "authoritative_rules": "All source identities and independent author tests pinned before outcome. Protected tests derived from changed authored test AST. Native pytest original config retained. Same inputs, source and initial budgets for cold, MSI-selected and informed ledger; agent comparator actually execute if credentials available, else NOT_RUN (G4 UNKNOWN). Every native test and candidate cost charged.",
+  "verdicts": "G2 only for autonomously uniquely selected original MSI policy (not manual), with independently native checked positive protected-future outcome where complete declared cold prefix fails, physically removing policy restores cold failure, on genuinely unopened source-distinct future. G3 needs additional cross-generation new operator, withheld. G4 needs full actually measured matched comparators. UNKNOWN is not proof of grammar inadequacy.",
+  "permissions": "Owned isolated research branch and disposable CI local copies only. No upstream PRs/deployment/outreach/production.",
+  "after_prior_red": "Original V4.1 0/7, V5 and V6 previously exposed wcwidth never relabelled prospective."
+}

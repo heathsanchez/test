@@ -1,0 +1,193 @@
+{
+  "authorization": "Existing explicitly approved bounded design; no further user questions or approval required for this freeze.",
+  "base_commit": "7edf1018342b50f73ca226de3e0d0b7acdb31647",
+  "base_tree": "a2976840e586cf094e960ea2aa7408b0fa9ff629",
+  "baseline_red": {
+    "alias": "UDM_INCLUDES_BASELINE=v4",
+    "assertion_failures_including_subtests": 24,
+    "cause": "Behavioral include activation/compact syntax assertions against actual V4. Missing future module import is never accepted as RED.",
+    "command": "UDM_INCLUDES_BASELINE=v4 /tmp/udm-v4-acceptance-venv/bin/python -B -m unittest research.unified_consequence_runtime.test_native_dependency_includes_v41 -v",
+    "completed_at_utc": "2026-10-16T19:11:28.654916+00:00",
+    "errors": 0,
+    "execution_state": "COMPLETE_BEFORE_IMPLEMENTATION",
+    "exit_code": 1,
+    "feature_failed_test_ids": [
+      "research.unified_consequence_runtime.test_native_dependency_includes_v41.IncludedDependenciesNativeV41.test_selected_actual_runtime_include_allows_real_native_pass_and_independent_reexecution",
+      "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_duplicate_include_is_not_a_cycle_and_deduplicates_equal_leaf_rows",
+      "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_every_included_and_unparsed_byte_remains_in_complete_inventory",
+      "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_existing_requirement_roots_retain_all_three_include_forms",
+      "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_forged_requirements_evidence_hash_scope_and_profile_are_rejected",
+      "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_global_tox_compact_include_is_supported",
+      "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_global_tox_long_spaced_include_is_supported",
+      "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_global_tox_spaced_include_constrains_real_catalog_pins",
+      "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_markers_use_external_profile_environment_and_retain_provenance",
+      "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_python_specific_nested_includes_keep_markers_and_scope",
+      "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_recursive_relative_includes_preserve_leaf_provenance_and_raw_hashes",
+      "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_scoped_only_leaf_is_not_promoted_to_a_global_requirement",
+      "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_selection_replay_after_included_or_unparsed_byte_change_is_rejected",
+      "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_shared_leaf_retains_global_and_each_python_applicability_context",
+      "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_static_setup_and_unparsed_python_are_not_executed_during_inference",
+      "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_unchanged_input_order_has_identical_constraints_and_selection",
+      "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_unsatisfied_included_dependency_remains_unknown"
+    ],
+    "feature_failing_test_methods": 17,
+    "log_outside_repo": "/workspace/qualification/native-authority-v41-acceptance/RED.log",
+    "log_sha256": "2a371b3a842996d00c6feb45bd9b0d42854def85c8ccf9f15b0c0426b92509ad",
+    "negative_control_reporting": "Already supported refusal and authority controls must pass and be reported separately from new feature failures.",
+    "observed_cause": "Actual V4 returns UNKNOWN_REQUIREMENT_GRAMMAR when tox deps -r tokens are sent directly to its existing requirement parser, and rejects compact -rFILE in known roots. Existing spaced-root subcases and refusal/source/symlink controls pass.",
+    "passing_control_test_ids": [
+      "research.unified_consequence_runtime.test_native_dependency_includes_v41.IncludedDependenciesNativeV41.test_real_git_symlink_include_cannot_enter_regular_file_snapshot",
+      "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_dynamic_tox_substitution_and_factor_deps_are_not_evaluated",
+      "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_existing_root_unsatisfied_dependency_control_remains_unknown",
+      "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_invalid_source_paths_and_nonbyte_values_remain_source_unknown",
+      "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_long_equals_and_malformed_include_spellings_remain_precise_unknown",
+      "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_malformed_and_dynamic_setup_controls_keep_exact_refusals",
+      "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_missing_self_and_mutual_cyclic_includes_are_precise_unknown",
+      "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused",
+      "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_unreferenced_requirement_like_files_do_not_become_metadata",
+      "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_unsupported_pip_directives_and_hash_suffix_are_not_package_authority"
+    ],
+    "passing_control_test_methods": 10,
+    "tests_run": 27
+  },
+  "exact_refusals": {
+    "UNKNOWN_DYNAMIC_METADATA": [
+      "dynamic setup metadata"
+    ],
+    "UNKNOWN_MARKER_ENVIRONMENT": "Candidate reason for active requirement marker variables absent from external profile; no host environment guessing.",
+    "UNKNOWN_METADATA_GRAMMAR": [
+      "unchanged decode/config parser failures"
+    ],
+    "UNKNOWN_NO_COMPATIBLE_PROFILE": "Syntactically valid included dependency absent from finite catalog; candidate reason UNKNOWN_DEPENDENCY_UNSATISFIED.",
+    "UNKNOWN_REQUIREMENT_GRAMMAR": [
+      "missing include",
+      "active-chain self/mutual cycle",
+      "unsafe/noncanonical include target",
+      "unsupported include spelling/directive",
+      "dynamic tox include/substitution/factor deps",
+      "invalid/direct URL/arbitrary equality requirement"
+    ],
+    "UNKNOWN_SOURCE_INPUT": [
+      "invalid source-map path",
+      "non-bytes source-map value"
+    ],
+    "UNKNOWN_SOURCE_PARSER": [
+      "malformed authoritative setup.py"
+    ],
+    "regular_file_snapshot": "Real Git symlink includes are refused by unchanged original snapshot guard before metadata inference; a byte map does not represent filesystem file type."
+  },
+  "freeze_amendment_policy": "Do not fit tests or judgments to implementation. Any acceptance correction requires separately documented rationale and a new freeze before dependent implementation.",
+  "freeze_state": "BEFORE_V41_IMPLEMENTATION",
+  "frontier_source_access": "No fresh task source, metadata, or network queries. Disposable synthetic byte maps and local Git fixtures only.",
+  "frozen_at_utc": "2026-10-16T19:11:04.843199+00:00",
+  "future_selector_absent_at_freeze": true,
+  "grammar": {
+    "accepted_include_spellings": [
+      "-r FILE",
+      "-rFILE",
+      "--requirement FILE"
+    ],
+    "comments": "Preserve existing blank/full-line comments and whitespace-before-# inline comment stripping in requirement files.",
+    "cycles_and_duplicates": "Refuse a file already on the active include chain; permit repeated acyclic references; deduplicate only identical requirement rows, preserving distinct Python applicability contexts.",
+    "entrypoints": [
+      "existing eight recognized test-requirements roots",
+      "tox.ini [testenv].deps",
+      "existing supported Python-specific tox.ini [testenv:pyNN...].deps"
+    ],
+    "explicitly_unsupported_long_equals": "--requirement=FILE -> UNKNOWN_REQUIREMENT_GRAMMAR",
+    "non_entrypoints": "Do not discover arbitrary requirement-like filenames or activate unrelated files. No new setup.cfg, setup.py, pyproject, or plugin grammars.",
+    "recognized_roots": [
+      "requirements-test.txt",
+      "requirements-tests.txt",
+      "test-requirements.txt",
+      "tests-requirements.txt",
+      "requirements/test.txt",
+      "requirements/tests.txt",
+      "requirements/testing.txt",
+      "tests/requirements.txt"
+    ],
+    "requirements": "Unchanged existing PEP 508 requirement parser; markers and extra context retain original semantics; no direct URL or arbitrary === authority.",
+    "targets": "Literal nonempty canonical relative POSIX paths using existing path checks, resolved relative to the declaring file; only paths in the supplied frozen regular-file byte map may be read. No parent traversal, absolute path, URL, noncanonical dot/double-slash, backslash, interpolation, factor conditional, or filesystem/network fallback.",
+    "unsupported_directives": [
+      "-e/--editable",
+      "-c/--constraint",
+      "--index-url",
+      "--extra-index-url",
+      "--find-links",
+      "--hash",
+      "--require-hashes",
+      "hash suffixes",
+      "other pip options"
+    ]
+  },
+  "native_preservation_suite": {
+    "new_native_positive": "Existing SelectedInterpreterNativeContracts helper, actual supplied interpreter/pytest identity, literal compact tox include, unparsed malformed .pydata, real PASS_NATIVE with 2 protected assertions and independent reexecution.",
+    "new_transport_negative": "Real disposable Git symlink mode rejected by original._snapshot; no simulated symlink claim from metadata map.",
+    "unchanged_tests": "test_native_authority_v4.py and existing native V3/admission controls composed separately by qualification; do not create a new toy G2 authority."
+  },
+  "observable_contract": {
+    "inventory": "source_sha256 equals SHA256 of canonical sorted path-to-SHA256 JSON for all original raw tracked bytes, including included files, malformed unparsed Python, binary .pydata, and unrelated files.",
+    "native_authority": "Real V3 original collection, import, assertion execution and independent receipt reexecution remain final authority. Tests use actual runtime identity and exact supplied pytest pin, with no authority mocks.",
+    "provenance": "Preserve tox deps raw evidence and tox raw hash, plus test-requirements evidence containing each visited included file raw SHA256 and its metadata_sha256 entry. Assertions use public returned records, never helper names or implementation layout.",
+    "requirements": "Each included requirement retains its actual leaf path, field=test-requirements, extra context, normalized PEP 508 text, and inherited python_versions when reached through a Python-specific tox deps field. No python_versions means global.",
+    "scope": "Every transitive leaf inherits its activation context. A shared leaf reached globally, under py311, and under py312 preserves all three contexts. A scoped-only leaf never becomes global.",
+    "selection_authority": "Success is only CANDIDATE_SOURCE_ENVIRONMENT. Existing exact catalog pins, markers, dependency closure, ranking, uncertainty, and external interpreter/plugin authority remain unchanged.",
+    "selection_integrity": "Reconstruct and compare the entire decision; reject changed included or unparsed bytes, forged requirement/evidence/hash/scope/profile fields with UNKNOWN_SELECTION_IDENTITY."
+  },
+  "required_interface": {
+    "catalog_schema": "UDM_NATIVE_ENVIRONMENT_CATALOG_V3",
+    "constraint_schema": "UDM_NATIVE_ENVIRONMENT_CONSTRAINTS_V41",
+    "functions": [
+      "derive_constraints(files)",
+      "select_profile(files, catalog)",
+      "validate_selection(files, catalog, selection)"
+    ],
+    "module": "research.unified_consequence_runtime.native_environment_selection_v41",
+    "selection_schema": "UDM_NATIVE_ENVIRONMENT_SELECTION_V41"
+  },
+  "schema": "UDM_NATIVE_AUTHORITY_V41_ACCEPTANCE_PROTOCOL_V1",
+  "scope": "Bounded literal tracked dependency includes only; frozen V3/V4 authority and every pre-existing tracked file remain unchanged.",
+  "source_sha256": {
+    "decisive_native_verify.py": "12269c8ca2dd586ccec4b162736375bcaac5717aaf07f441b67e5511b0ed4670",
+    "native_admission_v2.py": "4056cb0fd40af3badbe41225919e660d560cac7bb2fda25580399e865778977e",
+    "native_environment_selection_v3.py": "5a8cbc4a8f3dfa7969516f4bf0a39d3f7720789b764d83764112234834f3af3b",
+    "native_environment_selection_v4.py": "bfb3c57d61bb8bcbb44e8a10c95dbe3162bc3adef58174c9c75eb27e728f0efb",
+    "native_environment_v3.py": "7d18bc80ab96fdfc2128e5f8211aef5a2d88750a85bad4d5c96bb4b9bbad4501",
+    "native_execution_v2.py": "57e2fb40c6ff39f0959764e8f48f05ee99170b97995f9a584aaa8409af8871f1",
+    "native_execution_v3.py": "fead622b61319dc21af1ef302a98b42203090bcc997838fc078c71ddc4ea6cd9",
+    "test_native_authority_v4.py": "dd23f7325bac1c4e0dd895a1f93f84ce122e3f58443bd8986f3cc1115070b564",
+    "test_native_dependency_includes_v41.py": "8087a1c58749e4c04fe895eaa361661bab36ae938354fff999409a0b622d24d7",
+    "test_native_environment_selection_v3.py": "973eb5cbbf4792ec019c8337a090db00018f1639a9cf6a29a1077b460133a51e",
+    "test_native_execution_v3.py": "a3e8d92e7a29f89033dac11f399df63e99e845f17655e1cdcf090cadf51457d0"
+  },
+  "test_count": 27,
+  "tests": [
+    "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_global_tox_spaced_include_constrains_real_catalog_pins",
+    "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_global_tox_compact_include_is_supported",
+    "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_global_tox_long_spaced_include_is_supported",
+    "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_existing_requirement_roots_retain_all_three_include_forms",
+    "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_recursive_relative_includes_preserve_leaf_provenance_and_raw_hashes",
+    "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_duplicate_include_is_not_a_cycle_and_deduplicates_equal_leaf_rows",
+    "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_python_specific_nested_includes_keep_markers_and_scope",
+    "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_shared_leaf_retains_global_and_each_python_applicability_context",
+    "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_scoped_only_leaf_is_not_promoted_to_a_global_requirement",
+    "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_markers_use_external_profile_environment_and_retain_provenance",
+    "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_every_included_and_unparsed_byte_remains_in_complete_inventory",
+    "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_selection_replay_after_included_or_unparsed_byte_change_is_rejected",
+    "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_forged_requirements_evidence_hash_scope_and_profile_are_rejected",
+    "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_unsatisfied_included_dependency_remains_unknown",
+    "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_existing_root_unsatisfied_dependency_control_remains_unknown",
+    "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_unreferenced_requirement_like_files_do_not_become_metadata",
+    "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_long_equals_and_malformed_include_spellings_remain_precise_unknown",
+    "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_missing_self_and_mutual_cyclic_includes_are_precise_unknown",
+    "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_noncanonical_parent_absolute_url_and_backslash_targets_are_refused",
+    "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_unsupported_pip_directives_and_hash_suffix_are_not_package_authority",
+    "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_dynamic_tox_substitution_and_factor_deps_are_not_evaluated",
+    "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_invalid_source_paths_and_nonbyte_values_remain_source_unknown",
+    "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_static_setup_and_unparsed_python_are_not_executed_during_inference",
+    "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_malformed_and_dynamic_setup_controls_keep_exact_refusals",
+    "research.unified_consequence_runtime.test_native_dependency_includes_v41.MetadataDependencyIncludesV41.test_unchanged_input_order_has_identical_constraints_and_selection",
+    "research.unified_consequence_runtime.test_native_dependency_includes_v41.IncludedDependenciesNativeV41.test_selected_actual_runtime_include_allows_real_native_pass_and_independent_reexecution",
+    "research.unified_consequence_runtime.test_native_dependency_includes_v41.IncludedDependenciesNativeV41.test_real_git_symlink_include_cannot_enter_regular_file_snapshot"
+  ]
+}

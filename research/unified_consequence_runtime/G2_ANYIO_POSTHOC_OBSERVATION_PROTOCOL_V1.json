@@ -1,0 +1,53 @@
+{
+  "schema": "UDM_ANYIO_POSTHOC_SOURCE_OBSERVATION_GATE_V1",
+  "epistemic_status": "POSTHOC_DIAGNOSTIC_PRE_IMPLEMENTATION_NOT_G2",
+  "original_native_run": 39078910793,
+  "original_native_zip_sha256": "7ec7f9922aa3925f8d0d455f79eba414f4512c6210762e7731d442e746972680",
+  "original_source": "agronholm/anyio@1805944a9f6a062527c10aa044ded959782bfc3e",
+  "original_test_head": "90876855b731fb057d45e7e1cbdf1df013be6091",
+  "original_test_blob": "b15d4da74a17b7f80fa07b0d172c03eb752be7f4",
+  "source_file": "src/anyio/pytest_plugin.py",
+  "source_sha256": "a0b5f23acb6f4595b75556ea20e0e166c3ede234b3d941a1e3861e1b69c95f1d",
+  "author_test_file": "tests/test_pytest_plugin.py",
+  "test_sha256": "c7dc03febccc7d17bc8291cd7ace6cbe7e87da8350434bbf88f1b9b26033b5fe",
+  "protected": [
+    "tests/test_pytest_plugin.py::test_hypothesis_multiple_backends",
+    "tests/test_pytest_plugin.py::test_hypothesis_multiple_backends_in_class"
+  ],
+  "original_observer": {
+    "branch": "research/udm-v13-source-branch-observation-20261017",
+    "module": "research/unified_consequence_runtime/observed_branch_v13.py",
+    "source_blob_sha": "8a65b423a839240b1f8c10939200e75e39537acf",
+    "guard": "IF_NOT_SELF_ATTRIBUTE",
+    "expected_admissible_guards": 0
+  },
+  "extended_observation": {
+    "kind": "non-mutating source-pinned Python profile tracing",
+    "scope": "Only function call events originating at the authentic original production source file, during the two actual protected pytest node calls",
+    "no_patch_or_producer": true,
+    "no_oracle_fix": true,
+    "limit_seconds": 120,
+    "max_distinct_source_functions": 50,
+    "status_requirements": "at least one executed failure of both original protected tests, zero skip/error, identity hashes unchanged"
+  },
+  "hypotheses": {
+    "H0": "Existing V13/V14 specialized branch observer is inadmissible for original AnyIO source (zero IF_NOT_SELF_ATTRIBUTE eligible guards).",
+    "H1": "A source-independent function-call observer can collect actual protected-failure-dependent production function entries beyond the one Return.value _is_auto_mode that V104 originally edited.",
+    "H2": "The observed production function locations can index AST selectors BEFORE V104 per-file emission cap; this is source-locality only and has no factor of native repair success.",
+    "H3": "Existing 36 noncold MSI names have identical first-eight candidate prefixes, hence named-unique chooser cannot admit any noncold method regardless of native outcomes."
+  },
+  "acceptance": {
+    "observer_pass": "same original 2 protected FAIL with source/test SHA integrity, no skipped or error, and >=1 eligible production function call outside _is_auto_mode",
+    "negative": "no observer event or failed native control must remain UNKNOWN, never nominal PASS",
+    "policy_quotient": "Count equal-future policy names by identical admissible prefix; do not promote the original frozen run or use a posterior chooser",
+    "no_future_source_read": "alexmojaki/executing PR#50 remains UNOPENED",
+    "no_native_new_candidate_runs": "Only observation and eligible AST slot enumeration; training repair/G2 prohibited in this posthoc step."
+  },
+  "preserve": [
+    "older no-go research/udm-anyio-g2-frozen-policy-no-go-20261018",
+    "all 15 native negatives original source",
+    "unknown statuses",
+    "not-yet-tested 49 V104 candidates"
+  ],
+  "next": "After posthoc observer and policy quotient passes, freeze a distinct NEW external training and future pair before native candidate construction; matched equally informed ledgers/coding agents."
+}

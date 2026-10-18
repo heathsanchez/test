@@ -1,0 +1,27 @@
+DEVELOPMENT DIAGNOSTICS ONLY: three previously exposed repositories.
+No fresh prospective acquisition or repaired production is claimed. Original verifier files and frozen records remain unchanged.
+
+Fixed common environment: CPython3.12.14, pytest8.4.1, Hypothesis6.151.9; all38 distribution pins in pinned-dependencies.json. Plugin autoload is disabled. Explicit five-module closure: hypothesis.extra.pytestplugin, pytest_benchmark.session, pytest_benchmark.plugin, pytester, pytester_assertions. Original configuration and source-native Hypothesis profiles are preserved. External v2 policy:60s collection/600s execution.
+
+Full root native diagnostics:
+Task0 base: exit0; 767 collected; 19.273s; call outcomes{'passed': 767}; protected module cases619.
+Task0 augmented: exit1; 768 collected; 20.032s; call outcomes{'failed': 1, 'passed': 767}; protected module cases620.
+Protected failure: tests/test_more.py::BucketTests::test_falsey_validator_is_honoured
+Task1 base: exit0; 1382 collected; 9.939s; call outcomes{'passed': 1373, 'skipped': 1}; protected module cases162.
+Task1 augmented: exit1; 1383 collected; 9.439s; call outcomes{'failed': 1, 'passed': 1373, 'skipped': 1}; protected module cases163.
+Protected failure: tests/test_validators.py::TestDisableValidators::test_disabled_ctx_nested
+Task2 base: exit0; 1026 collected; 217.366s; call outcomes{'passed': 1011, 'skipped': 15}; protected module cases11.
+Task2 augmented: exit1; 1027 collected; 206.432s; call outcomes{'failed': 1, 'passed': 1011, 'skipped': 15}; protected module cases12.
+Protected failure: tests/test_tuples.py::test_dict_namedtuples_detailed_validation
+
+Task0 more-itertools has no skips/xfails. Task1 attrs retains8 source-native skips on this platform (Python/platform5; absent optional pyright3) plus1 expected xfail and the pre3.14 ignored forward-reference module. Pympler size assertions and cloudpickle tests were enabled by installed working dependencies. Task2 cattrs retains15 original include_subclasses-negative expected xfails, no skips; all54 benchmark cases and source-native timing options executed. No protected author assertion was skipped or deselected. attrs/cattrs remain GATED_UNKNOWN_SKIP_XFAIL until an independent original-exclusion license exists.
+
+Strict task0 v2 worker: exact768-node collection admitted with620 required source-derived prefixes; verification and default independent validate_receipt each return FAIL_NATIVE,767passed/1protectedfailure/0errors/0skips. Total3 collection calls and2 native calls in53.376817s; native execution19.411900s+19.796940s. Policy SHA256:0edd0f3f8d7266de5fada0f20a37caca296b5a76db858930cb028dfdebe8e6c3. Worker SHA256:2738737b79a7ce1d4323832b6161f0510e87c48136c3c6cb8b39c667ae698b46.
+
+Source-preserving setup: attrs native wheel25.4.1.dev49 derives from25.4.0+49 base-ancestry commits; cattrs26.1.1.dev2 derives from26.1.0+2. Project wheels, source manifests, Git metadata and digests are retained. Commit-object audit proves attrs1762=1761base ancestors+test-only overlay and cattrs937=936base ancestors+overlay; no unexpected production commit objects or tag identity mismatches exist. New provisioner fetches exact proven ancestral tag-object OIDs, validates direct/peeled identity, builds only original base production, and emits raw tracked-byte tar archives without export-subst. Local Flit and HatchSCM fixtures prepare successfully; the SCM fixture proves a known future production commit is absent.
+
+Preserved failed attempts and excluded controls: unavailable flit_core4.0.0 dependency attempt; attrs shallow0.1.dev1 metadata baseline failures; synthetic pretend0.0.0 negative diagnostic control (explicitly excluded from qualified source version); failed four-module alias probe; failed five-module static-mixin-prefix probe. Generic source-derived unittest C3 mapping resolves the latter before the successful strict probe. All logs, exit statuses, costs and hashes remain in this bundle.
+
+Aggregate pytest invocations in this bundle, including failed/control attempts:14native and10collection calls. Source-native suite timing reached217.366s, leaving2.76x headroom in the independently frozen600s bound.
+
+Reproducibility limits: exact distribution versions and installed-file identities are recorded, but dependency wheels are not vendored, so rebuilding needs package-index availability. Environment identities intentionally bind absolute interpreter/prefix and installed bytes for each provisioning root. Original trusted Python execution remains research isolation, not a hostile-process containment proof.

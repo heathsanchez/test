@@ -1,0 +1,12 @@
+Reading additional input from stdin...
+2026-10-16T01:49:58.125624Z ERROR codex_models_manager::manager: failed to refresh available models: unexpected status 401 Unauthorized: {"detail":"Could not parse your authentication token. Please try signing in again."}, url: https://chatgpt.com/backend-api/codex/models?client_version=0.159.2, cf-ray: a4b368f5cbe3af4b-LAX, request id: req_2e3a276505714a1f81ffe3fea6b489cf
+2026-10-16T01:49:58.223848Z ERROR codex_models_manager::manager: failed to refresh available models: unexpected status 401 Unauthorized: {"detail":"Could not parse your authentication token. Please try signing in again."}, url: https://chatgpt.com/backend-api/codex/models?client_version=0.159.2, cf-ray: a4b368f5fcf1f7d1-LAX, request id: req_d955ae8724f748cb87b84a22a4e1d4e2
+2026-10-16T01:49:58.233398Z ERROR codex_models_manager::manager: failed to refresh available models: unexpected status 401 Unauthorized: {"detail":"Could not parse your authentication token. Please try signing in again."}, url: https://chatgpt.com/backend-api/codex/models?client_version=0.159.2, cf-ray: a4b368f68ed2f7d1-LAX, request id: req_b00510d1b0134ed181153b6fe328156b
+{"type":"thread.started","thread_id":"01a14266-d505-7d92-ba36-74f9c88276c0"}
+{"type":"turn.started"}
+2026-10-16T01:49:58.461325Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when UnexpectedServerResponse("HTTP 451: {\"message\":\"no_biscuit_no_service\"}")
+2026-10-16T01:49:58.530304Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when UnexpectedServerResponse("HTTP 451: {\"message\":\"no_biscuit_no_service\"}")
+2026-10-16T01:49:58.556828Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: HTTP error: 401 Unauthorized, url: wss://chatgpt.com/backend-api/codex/responses
+2026-10-16T01:49:59.205636Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: HTTP error: 401 Unauthorized, url: wss://chatgpt.com/backend-api/codex/responses
+{"type":"error","message":"Your access token could not be refreshed because you have since logged out or signed in to another account. Please sign in again."}
+{"type":"turn.failed","error":{"message":"Your access token could not be refreshed because you have since logged out or signed in to another account. Please sign in again."}}

@@ -1,0 +1,72 @@
+{
+  "schema": "udm.programme.offline-independent-review.v1",
+  "status": "PASS_OFFLINE_INDEPENDENT_BOUNDED_PACKET_REVIEW",
+  "expected_source_commit": "34943a589787142e52657d05b0c3021dab5860e3",
+  "expected_run_id": 38709973459,
+  "gates": [
+    "exact_committed_source_and_workflow_snapshot",
+    "three_exact_original_qualification_archives",
+    "coordinator_run_and_evidence_summary_bindings",
+    "all_metatron_ids_parents_cas_and_exact_original_history",
+    "authenticated_original_receiver_producer_and_pareto_definitions",
+    "preacquisition_native_residual_original128mask_minimum_and_fixed80_refinement",
+    "independent_B8_C4_native_classification_choice_and_informed_baseline_tie",
+    "actual_native_patch_bytes_original89_and9_suites_removal_controls_and_baseline",
+    "original_FLASH_two_frontier_delta_selective_revocation_new_lineage_and_restart",
+    "retained_native_ED_V54_without_acquisition_or_discovery_rerun",
+    "retained_native_ED_V54_no_acquisition_rerun_bounded_Lean_and_contract_gates"
+  ],
+  "component_review": false,
+  "unclosed_workflow_gates": [],
+  "scope": "Archive/source/finite-evidence inspection; no native experiment repeated",
+  "limits": {
+    "python_formal_refinement": "UNKNOWN",
+    "new_observation_primitive_or_constructor_grammar": "NOT_ACQUIRED",
+    "prospective_unfamiliar_source": "UNKNOWN",
+    "new_later_operation_discoverability_in_this_continuation": "UNKNOWN",
+    "nonbypassable_external_enforcement": "UNKNOWN",
+    "live_agent_comparator": "NOT_RUN",
+    "full_research_programme_exhaustiveness": "NOT_ESTABLISHED_BY_THIS_REVIEW"
+  },
+  "provider_binding": {
+    "status": "MATCHED_CALLER_SUPPLIED_PROVIDER_METADATA_ZIP_AND_EXTRACTED_BYTES",
+    "run_id": 38709973459,
+    "source_commit": "34943a589787142e52657d05b0c3021dab5860e3",
+    "run_conclusion": "success",
+    "artifact_id": 11960084934,
+    "artifact_sha256": "fe899af52e4453bec23102f68d4dd32476b74b5b8e1bf25669226c5e12828e59",
+    "extracted_files_compared": 3488,
+    "boundary": "Caller is responsible for authentic provider API retrieval"
+  },
+  "source_snapshot": {
+    "files": 197,
+    "manifest_sha256": "2e612ea13a94ab506b6621c790c555422eb0ffc9d93a0201e39b5dddfe6d8b36",
+    "all_exact_committed_hashes": true,
+    "unchanged_base_source_commit": "8acd1e3015f3066efaf3c11c83b21ca3fe87936d",
+    "workflow_pin_override": true
+  },
+  "programme_summary_sha256": "41acf1ab599af6471118ff145b9ab118b2e0764da87cde002d9aa18629f31343",
+  "state": {
+    "historical_records": 153,
+    "original_records": 101,
+    "final_records": 224,
+    "objects": 63,
+    "ledger_sha256": "f09d839d0ef26a6bc29b5915f4ef519a3d7717e54dc8fa547558d470baf2a783"
+  },
+  "native_future_counts": {
+    "B": {
+      "repaired": 8,
+      "detected": 8,
+      "false": 0
+    },
+    "C": {
+      "repaired": 4,
+      "detected": 4,
+      "false": 0
+    }
+  },
+  "native_experiments_rerun": false,
+  "strict_comparative_advantage": "REJECTED_MEASURED_TIE",
+  "result_sha256": "64ef0cb59f6d476ef6b239e1b270e876a00da2ce2eb3203bc979f2e07da56b7c",
+  "cold_restart_sha256": "f277d1eb34c723d2d599feea27d4f29a7e14a588ce6826b65a7a7e053a25f2c8"
+}

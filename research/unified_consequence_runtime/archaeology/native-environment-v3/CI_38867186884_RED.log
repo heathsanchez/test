@@ -1,0 +1,23 @@
+native-environment-selection-v3	Qualify frozen source-derived native environments with raw evidence and costs	﻿2026-10-16T07:40:07.3831282Z ##[group]Run set -euo pipefail
+native-environment-selection-v3	Qualify frozen source-derived native environments with raw evidence and costs	2026-10-16T07:40:07.3831632Z [36;1mset -euo pipefail[0m
+native-environment-selection-v3	Qualify frozen source-derived native environments with raw evidence and costs	2026-10-16T07:40:07.3831983Z [36;1m"$RUNNER_TEMP/environment-v3-controller/bin/python" -B \[0m
+native-environment-selection-v3	Qualify frozen source-derived native environments with raw evidence and costs	2026-10-16T07:40:07.3832524Z [36;1m  -m research.unified_consequence_runtime.qualify_environment_selection_v3 \[0m
+native-environment-selection-v3	Qualify frozen source-derived native environments with raw evidence and costs	2026-10-16T07:40:07.3833094Z [36;1m  --repo "$GITHUB_WORKSPACE" --freeze qualification/FREEZE.json \[0m
+native-environment-selection-v3	Qualify frozen source-derived native environments with raw evidence and costs	2026-10-16T07:40:07.3833631Z [36;1m  --components "$UDM_COMPONENTS" --source-repos "$UDM_SOURCE_REPOS" \[0m
+native-environment-selection-v3	Qualify frozen source-derived native environments with raw evidence and costs	2026-10-16T07:40:07.3834253Z [36;1m  --out "$GITHUB_WORKSPACE/qualification/environment-v3" 2>&1 | tee qualification/native.log[0m
+native-environment-selection-v3	Qualify frozen source-derived native environments with raw evidence and costs	2026-10-16T07:40:07.3898496Z shell: /usr/bin/bash -e {0}
+native-environment-selection-v3	Qualify frozen source-derived native environments with raw evidence and costs	2026-10-16T07:40:07.3898782Z env:
+native-environment-selection-v3	Qualify frozen source-derived native environments with raw evidence and costs	2026-10-16T07:40:07.3899009Z   PYTHONDONTWRITEBYTECODE: 1
+native-environment-selection-v3	Qualify frozen source-derived native environments with raw evidence and costs	2026-10-16T07:40:07.3899290Z   PYTHONUNBUFFERED: 1
+native-environment-selection-v3	Qualify frozen source-derived native environments with raw evidence and costs	2026-10-16T07:40:07.3899594Z   UDM_COMPONENTS: /home/runner/work/test/test/components
+native-environment-selection-v3	Qualify frozen source-derived native environments with raw evidence and costs	2026-10-16T07:40:07.3900086Z   UDM_SOURCE_REPOS: /home/runner/work/test/test/components/selection-sources
+native-environment-selection-v3	Qualify frozen source-derived native environments with raw evidence and costs	2026-10-16T07:40:07.3900678Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.14/x64
+native-environment-selection-v3	Qualify frozen source-derived native environments with raw evidence and costs	2026-10-16T07:40:07.3901148Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.14/x64/lib/pkgconfig
+native-environment-selection-v3	Qualify frozen source-derived native environments with raw evidence and costs	2026-10-16T07:40:07.3901616Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.14/x64
+native-environment-selection-v3	Qualify frozen source-derived native environments with raw evidence and costs	2026-10-16T07:40:07.3902037Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.14/x64
+native-environment-selection-v3	Qualify frozen source-derived native environments with raw evidence and costs	2026-10-16T07:40:07.3902473Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.14/x64
+native-environment-selection-v3	Qualify frozen source-derived native environments with raw evidence and costs	2026-10-16T07:40:07.3902904Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.14/x64/lib
+native-environment-selection-v3	Qualify frozen source-derived native environments with raw evidence and costs	2026-10-16T07:40:07.3906359Z   GH_TOKEN: ***
+native-environment-selection-v3	Qualify frozen source-derived native environments with raw evidence and costs	2026-10-16T07:40:07.3906591Z ##[endgroup]
+native-environment-selection-v3	Qualify frozen source-derived native environments with raw evidence and costs	2026-10-16T07:40:08.5733172Z {"acquisitions":0,"attempt_costs":{"collection_calls":0,"native_calls":0,"subprocess_attempts":0},"candidates":0,"error":"ValueError: frozen runtime identity differs from host standard-library bytes","schema":"UDM_NATIVE_ENVIRONMENT_QUALIFICATION_ERROR_V3","status":"UNKNOWN_PREFLIGHT","total_wall_seconds":0.9601149570000871}
+native-environment-selection-v3	Qualify frozen source-derived native environments with raw evidence and costs	2026-10-16T07:40:08.5975609Z ##[error]Process completed with exit code 1.

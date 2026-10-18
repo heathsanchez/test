@@ -1,0 +1,33 @@
+{
+  "collection_seconds": 60,
+  "execution_seconds": 600,
+  "plugins": [
+    {
+      "distribution": "hypothesis",
+      "module": "hypothesis.extra.pytestplugin",
+      "version": "6.151.9"
+    },
+    {
+      "distribution": "pytest-benchmark",
+      "module": "pytest_benchmark.session",
+      "version": "5.1.0"
+    },
+    {
+      "distribution": "pytest-benchmark",
+      "module": "pytest_benchmark.plugin",
+      "version": "5.1.0"
+    },
+    {
+      "distribution": "pytest",
+      "module": "pytester",
+      "version": "8.4.1"
+    },
+    {
+      "distribution": "pytest",
+      "module": "pytester_assertions",
+      "version": "8.4.1"
+    }
+  ],
+  "pytest_version": "8.4.1",
+  "schema": "UDM_NATIVE_EXECUTION_POLICY_V2"
+}

@@ -1,0 +1,20 @@
+{
+  "command": [
+    "/tmp/udm-v4-acceptance-venv/bin/python",
+    "-B",
+    "research/unified_consequence_runtime/archaeology/native-authority-v41/curate_frontier.py",
+    "--query-after-committed-prequery",
+    "research/unified_consequence_runtime/archaeology/native-authority-v41/PREQUERY.json",
+    "--universe",
+    "research/unified_consequence_runtime/archaeology/native-authority-v41/DECLARED_UNIVERSE.json",
+    "--environment-gate",
+    "research/unified_consequence_runtime/archaeology/native-authority-v41/ENVIRONMENT_GATE.json",
+    "--qualification-artifact",
+    "/workspace/qualification/native-authority-v41-38954969411.zip",
+    "--out",
+    "research/unified_consequence_runtime/archaeology/native-authority-v41/"
+  ],
+  "returncode": 0,
+  "scope": "Fixed metadata-only target query; no source or native operations licensed",
+  "seconds": 39.81186581899965
+}

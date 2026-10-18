@@ -1,0 +1,19 @@
+Additional v2.1 development diagnostics: existing exposed attrs/cattrs only.
+No new task or repaired head production was accessed. The original d925 bundle and prior diagnostic records remain unchanged.
+
+Worker source SHA256: 8ef758e4e2b870da16e85679a7219a9fe14b2666ab2c4ac2df4e47dee12ab745; exact pre-fix worker source snapshot is included. Policy SHA256: 0edd0f3f8d7266de5fada0f20a37caca296b5a76db858930cb028dfdebe8e6c3.
+
+python-attrs/attrs: ADMITTED_NATIVE_COLLECTION; 1383 collected and selected; full node sets equal; 20 reordered positions; no deselection. Both ordered sequences are preserved into execution.
+Native result: UNKNOWN_SKIPPED_OR_XFAIL; JUnit {'errors': 0, 'failures': 1, 'passed': 1373, 'skipped': 9, 'tests': 1383}; source skip kinds {'pytest.skip': 8, 'pytest.xfail': 1}; benchmark cases 0; native wall 11.719272s.
+Sole protected author failure: tests/test_validators.py::TestDisableValidators::test_disabled_ctx_nested
+
+python-attrs/cattrs: ADMITTED_NATIVE_COLLECTION; 1027 collected and selected; full node sets equal; 898 reordered positions; no deselection. Both ordered sequences are preserved into execution.
+Native result: UNKNOWN_SOURCE_OR_IMPORT_IDENTITY; JUnit {'errors': 0, 'failures': 1, 'passed': 1011, 'skipped': 15, 'tests': 1027}; source skip kinds {'pytest.xfail': 15}; benchmark cases 54; native wall 218.180852s.
+Sole protected author failure: tests/test_tuples.py::test_dict_namedtuples_detailed_validation
+Unresolved executable identity signal: tests/test_validation.py::test_deque_validation
+
+attrs reached the expected UNKNOWN_SKIPPED_OR_XFAIL gate (1373passed,1protected failure,8original skips+1expected xfail). cattrs recorded1011passed,1protected tuple failure,15original xfails and all54benchmarks, but its envelope remains UNKNOWN_SOURCE_OR_IMPORT_IDENTITY because test_validation.py::test_deque_validation had a changed runtime digest. Original source bytes, imported bytes, plugin inventory and both collection orders remained valid. Actual digest-mismatch cause is not proven by these records.
+
+The pure-Python control, with zero pytest/native calls, proves a generic marshal weakness: the same CodeType and same literal object with all19public code fields equal produce different marshal hashes after sys.intern. Exactly one encoding byte changes (250 ASCII-reference to218 interned-ASCII-reference). Structural field hashes stay equal. This does not establish the actual cattrs mismatch cause. Root subsequently fixed generic value serialization and reasonless XPASS metadata separately; new native GHA is needed for that new source.
+
+Actual invocations here:4collection calls+2native calls; no independent native repeats. Native execution sum229.900123s; per-call costs and raw packets are retained. The driver exits1 after preserving the unexpected cattrs UNKNOWN result. No failed run is overwritten or reclassified as success.

@@ -1,0 +1,68 @@
+{
+  "schema": "UDM_G2_MUTABLE_CLOSURE_EQUIVALENCE_FIX_V2",
+  "state": "FROZEN_BEFORE_IMPLEMENTATION_AND_NATIVE_OUTCOME",
+  "date": "2026-10-18",
+  "scientific_boundary": "POSTHOC_EXPOSED_ANYIO_TRAINING_ONLY; NO PROSPECTIVE G2 CLAIM",
+  "lineage": {
+    "original_training_run": 39078910793,
+    "original_training_artifact": 12118690451,
+    "original_training_zip_sha256": "7ec7f9922aa3925f8d0d455f79eba414f4512c6210762e7731d442e746972680",
+    "original_no_go_branch": "research/udm-anyio-g2-frozen-policy-no-go-20261018",
+    "original_posthoc_branch": "research/udm-anyio-posthoc-observation-gate-v1-20261018"
+  },
+  "source": {
+    "repository": "agronholm/anyio",
+    "base": "1805944a9f6a062527c10aa044ded959782bfc3e",
+    "base_tree": "c6465ce4b900e2f21aa73ebbe16c779f5c6ae9bf",
+    "production_path": "src/anyio/pytest_plugin.py",
+    "production_sha256": "a0b5f23acb6f4595b75556ea20e0e166c3ede234b3d941a1e3861e1b69c95f1d",
+    "author_test_head": "90876855b731fb057d45e7e1cbdf1df013be6091",
+    "author_test_path": "tests/test_pytest_plugin.py",
+    "author_test_blob": "b15d4da74a17b7f80fa07b0d172c03eb752be7f4",
+    "author_test_sha256": "c7dc03febccc7d17bc8291cd7ace6cbe7e87da8350434bbf88f1b9b26033b5fe",
+    "protected": [
+      "tests/test_pytest_plugin.py::test_hypothesis_multiple_backends",
+      "tests/test_pytest_plugin.py::test_hypothesis_multiple_backends_in_class"
+    ]
+  },
+  "observation": {
+    "name": "SELF_PERSISTED_NESTED_CLOSURE_STATE",
+    "source_neutral_rule": "Scan all top-level Python functions for a nested callable that closes over an outer local read from an attribute path and is later assigned back to that same attribute path, with an intervening guard comparing wrapper identity such as __qualname__. No function, line, attribute, backend, test name, or replacement is supplied to the scanner.",
+    "native_trace": "During authentic protected pytest execution, trace every statically detected source pattern. For each invocation record current external context, mutable attribute callable identity, closure free-variable names and stable primitive/callable cell summaries before and after the source hook.",
+    "pass": "At least one statically detected pattern must execute natively and exhibit the same persisted wrapper identity or closure capture across two distinct current contexts, while authentic source/test hashes remain exact and the original protected tests still fail.",
+    "fail_closed": "No pattern, no native execution, skipped/error/collection anomaly, source mutation, or absent distinct-context stale capture => UNKNOWN/REJECTED observation, never PASS."
+  },
+  "repair_seed": {
+    "name": "UNWRAP_SELF_PERSISTED_CLOSURE_BEFORE_REBIND",
+    "derivation": "Only for an observed SELF_PERSISTED_NESTED_CLOSURE_STATE pattern. Before the existing identity guard, if the currently stored callable has the nested wrapper qualname, recover the cell corresponding to the outer source callable that the nested wrapper itself captured. Then let the original guard rebuild the wrapper from current invocation context.",
+    "source_neutral": "Variable names, attribute path, wrapper name, source position and captured-source name are taken from the detected AST pattern. The algorithm contains no AnyIO identifiers or line numbers.",
+    "candidate_count_rule": "One deterministic candidate per detected pattern, source order. Do not search alternative source edits after native outcomes.",
+    "no_author_repair_read": true
+  },
+  "policy_quotient": {
+    "horizon": 8,
+    "equivalence": "Two named policies are identical iff their first eight candidate IDs are byte-identical before outcomes.",
+    "authorization_unit": "equivalence class, never policy name",
+    "representative": "canonical lexicographically smallest name is display metadata only and cannot create uniqueness",
+    "old_no_go_expectation": "37 names quotient to exactly 2 classes: cold singleton and one 36-name noncold class",
+    "generated_seed": "The single observer-derived repair seed is a separate capability class with its own source-bound native evidence."
+  },
+  "native_gate": {
+    "baseline": "Both protected author tests execute and fail on exact original production.",
+    "repair": "Generated repair must make both protected author tests pass twice in fresh pytest processes; full tests/test_pytest_plugin.py must have zero failures/errors under the repaired source.",
+    "withdrawal": "Restore exact original production bytes; both protected tests must fail again.",
+    "restoration": "Reapply byte-identical generated repair; both protected tests pass again.",
+    "source_integrity": "Author test bytes stay exact head blob; no repaired upstream production or heldout source is read.",
+    "selection": "Equivalence-class selector may select the generated repair class only after the native repair receipt; alias count is irrelevant."
+  },
+  "epistemic": {
+    "training_repair_if_green": "WARRANTED_BOUNDED_POSTHOC_TRAINING_REPAIR_AND_CLASS_SELECTOR",
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN",
+    "heldout_future": "UNOPENED"
+  },
+  "next_if_green": "Freeze a NEW source-distinct training/future pair under this already-frozen observer/repair/selection method before source bodies or native outcomes. Do not open alexmojaki/executing PR #50 in this experiment."
+}

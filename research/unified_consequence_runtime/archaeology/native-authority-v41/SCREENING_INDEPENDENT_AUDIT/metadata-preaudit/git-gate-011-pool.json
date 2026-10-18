@@ -1,0 +1,94 @@
+{
+  "schema": "UDM_GIT_INDEX_READ_AUDIT_V4",
+  "argv": [
+    "git",
+    "--no-pager",
+    "--no-replace-objects",
+    "-c",
+    "core.fsmonitor=false",
+    "-C",
+    "/workspace/udm-v54",
+    "show",
+    "--no-ext-diff",
+    "--no-textconv",
+    "bd46699ea9933794a1c3fee161039c24a630bf4b:research/unified_consequence_runtime/native_runtime_v3.py"
+  ],
+  "git_optional_locks": "0",
+  "before": {
+    "schema": "UDM_GIT_INDEX_SNAPSHOT_V4",
+    "git_common_dir": "/workspace/repos/test/.git",
+    "indexes": [
+      {
+        "path": "/workspace/repos/test/.git/index",
+        "exists": false,
+        "size_bytes": null,
+        "sha256": null
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/development/index",
+        "exists": true,
+        "size_bytes": 113571,
+        "sha256": "894f89eeaad5bd8d6c8242a5047d006a0b23021a5ba362d4db42c131e082fd29"
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/env-v3-native-334/index",
+        "exists": true,
+        "size_bytes": 176832,
+        "sha256": "6ea642f1a91b7239229344a2650a9af70ea2bd477b6db9518ed4153bed8cb786"
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/udm/index",
+        "exists": true,
+        "size_bytes": 111030,
+        "sha256": "3999c60a940d9c999523ff56ec37d2bc9d7c0328c1f2503690a652fbb1f01064"
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/udm-v54/index",
+        "exists": true,
+        "size_bytes": 239205,
+        "sha256": "9ed38158d9eca002bdf62ff962921fd0f6218ad952634148e77a8520a0b9d8f2"
+      }
+    ]
+  },
+  "returncode": 0,
+  "stdout_base64": "IiIiVmVyc2lvbmVkIHBvcnRhYmxlLXdvcmtlciBiaW5kaW5nIG92ZXIgdGhlIHVuY2hhbmdlZCB2MiBNYWNoaW5lIGFkYXB0ZXIuCgpUaGUgZXhpc3RpbmcgbmF0aXZlIGFsZ29yaXRobXMgcmV0YWluIHRoZWlyIGV2ZW50IGFuZCBldmlkZW5jZSBmb3JtYXRzLiBUaGUKcG9ydGFibGUgd29ya2VyLCBleHBsaWNpdCBzY29wZSB2ZXJzaW9uLCBhbmQgY29udHJvbGxlciBhdHRlbXB0IGNvc3QgZW52ZWxvcGUKYXJlIHZlcnNpb25lZCBoZXJlLiBUaGlzIGlzIGJvdW5kZWQgbG9jYWwgcmVzZWFyY2ggZXhlY3V0aW9uLCB3aXRob3V0IGEKY29uc3RydWN0b3Itc3VwcG9ydCBvciBHMyBjbGFpbS4KIiIiCmltcG9ydCBqc29uCmltcG9ydCBzZWNyZXRzCmltcG9ydCB0aW1lCmZyb20gdHlwZXMgaW1wb3J0IEZ1bmN0aW9uVHlwZQoKZnJvbSAuIGltcG9ydCBuYXRpdmVfZXhlY3V0aW9uX3YzIGFzIHZlcmlmaWVyCmZyb20gLiBpbXBvcnQgbmF0aXZlX3J1bnRpbWVfdjIgYXMgZnJvemVuCgpBVVRIT1JJVFkgPSBmcm96ZW4uX2NvcHkoZnJvemVuLkFVVEhPUklUWSkKX0ZST1pFTl9SVU5USU1FX1NIQTI1NiA9ICcwNzA3Zjk5MzhkNzRjMzU4ZmQ4YzIxZjk4ODFjMThhNTFjNGUyMDYyYTdmY2M3OWVlZTQ4YjNhODQ5OTU3M2JiJwpfTE9BREVEX1NPVVJDRV9TSEEyNTYgPSBmcm96ZW4uX3NoYShfX2ZpbGVfXykKCgpkZWYgX2NoZWNrX3NvdXJjZXMoKToKICAgIGlmIGZyb3plbi5fc2hhKF9fZmlsZV9fKSAhPSBfTE9BREVEX1NPVVJDRV9TSEEyNTY6CiAgICAgICAgcmFpc2UgVmFsdWVFcnJvcignVU5LTk9XTl9SVU5USU1FX1NPVVJDRV9NVVRBVElPTicpCiAgICBpZiBmcm96ZW4uX3NoYShmcm96ZW4uX19maWxlX18pICE9IF9GUk9aRU5fUlVOVElNRV9TSEEyNTY6CiAgICAgICAgcmFpc2UgVmFsdWVFcnJvcignVU5LTk9XTl9GUk9aRU5fUlVOVElNRV9TT1VSQ0VfTVVUQVRJT04nKQogICAgdmVyaWZpZXIuX3J1bm5lcl9oYXNoKCkKCgpfY2hlY2tfc291cmNlcygpCl9ydW50aW1lX2dsb2JhbHMgPSBkaWN0KHZhcnMoZnJvemVuKSwgdmVyaWZpZXI9dmVyaWZpZXIsIEFVVEhPUklUWT1BVVRIT1JJVFksIF9fZmlsZV9fPV9fZmlsZV9fKQoKCmRlZiBfYmluZChmdW5jdGlvbik6CiAgICBib3VuZCA9IEZ1bmN0aW9uVHlwZShmdW5jdGlvbi5fX2NvZGVfXywgX3J1bnRpbWVfZ2xvYmFscywgZnVuY3Rpb24uX19uYW1lX18sCiAgICAgICAgICAgICAgICAgICAgICAgICBmdW5jdGlvbi5fX2RlZmF1bHRzX18sIGZ1bmN0aW9uLl9fY2xvc3VyZV9fKQogICAgYm91bmQuX19rd2RlZmF1bHRzX18gPSBmdW5jdGlvbi5fX2t3ZGVmYXVsdHNfXwogICAgcmV0dXJuIGJvdW5kCgoKX3J1bnRpbWVfc2NvcGUgPSBfYmluZChmcm96ZW4uTmF0aXZlUnVudGltZVYyLl9zY29wZSkKX3J1bnRpbWVfZXhwZWN0ZWRfc2NvcGUgPSBfYmluZChmcm96ZW4uTmF0aXZlUnVudGltZVYyLl9leHBlY3RlZF9zY29wZSkKCgpjbGFzcyBOYXRpdmVSdW50aW1lVjMoZnJvemVuLk5hdGl2ZVJ1bnRpbWVWMik6CiAgICAiIiJLZWVwIHYyIGNhdXNhbCB2YWxpZGF0aW9uIHdoaWxlIHNlbGVjdGluZyB0aGUgcG9ydGFibGUgdjMgd29ya2VyLiIiIgoKICAgIGRlZiBfc2NvcGUoc2VsZik6CiAgICAgICAgX2NoZWNrX3NvdXJjZXMoKQogICAgICAgIF9ydW50aW1lX3Njb3BlKHNlbGYpCgogICAgZGVmIF9leHBlY3RlZF9zY29wZShzZWxmKToKICAgICAgICByZXR1cm4geyoqX3J1bnRpbWVfZXhwZWN0ZWRfc2NvcGUoc2VsZiksICduYXRpdmVfcnVudGltZV92ZXJzaW9uJzogM30KCiAgICBkZWYgX3ZlcmlmeShzZWxmLCBjYW5kaWRhdGUpOgogICAgICAgICIiIlJldGFpbiBjb250cm9sbGVyIGxhdW5jaCBjb3N0cyBldmVuIHdoZW4gcHJvZHVjZXIgZXZpZGVuY2UgaXMgYnJva2VuLiIiIgogICAgICAgIHNlbGYuX3Njb3BlKCkKICAgICAgICBydW4gPSBzZWxmLm91dHB1dC8nbmF0aXZlLXJ1bnMnL3NlY3JldHMudG9rZW5faGV4KDE2KQogICAgICAgIHN0YXJ0ZWQsIHJlY2VpcHQgPSB0aW1lLnBlcmZfY291bnRlcigpLCBOb25lCiAgICAgICAgYmVmb3JlID0gdmVyaWZpZXIuYXR0ZW1wdF9zbmFwc2hvdCgpCiAgICAgICAgdHJ5OgogICAgICAgICAgICByZWNlaXB0ID0gdmVyaWZpZXIudmVyaWZ5KHNlbGYuY29udHJhY3QsIGNhbmRpZGF0ZSwgcnVuLCBhdXRob3JpdHk9c2VsZi5zdWl0ZV9hdXRob3JpdHksCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgYWRtaXNzaW9uX2NlcnRpZmljYXRlPXNlbGYuY2VydGlmaWNhdGUsIHBvbGljeT1zZWxmLnBvbGljeSkKICAgICAgICAgICAgc2VsZi5fc2NvcGUoKQogICAgICAgICAgICByZXR1cm4gcmVjZWlwdAogICAgICAgIGZpbmFsbHk6CiAgICAgICAgICAgIGlmIHJlY2VpcHQgaXMgTm9uZSBhbmQgKHJ1bi8ncmVjZWlwdC5qc29uJykuaXNfZmlsZSgpOgogICAgICAgICAgICAgICAgdHJ5OgogICAgICAgICAgICAgICAgICAgIHJlY2VpcHQgPSBqc29uLmxvYWRzKChydW4vJ3JlY2VpcHQuanNvbicpLnJlYWRfdGV4dCgpKQogICAgICAgICAgICAgICAgZXhjZXB0IChPU0Vycm9yLCBWYWx1ZUVycm9yKToKICAgICAgICAgICAgICAgICAgICBwYXNzCiAgICAgICAgICAgIHNlY29uZHMgPSB0aW1lLnBlcmZfY291bnRlcigpLXN0YXJ0ZWQKICAgICAgICAgICAgYXR0ZW1wdHMsIGNvbXBsZXRlID0ge30sIEZhbHNlCiAgICAgICAgICAgIHRyeToKICAgICAgICAgICAgICAgIGFmdGVyID0gdmVyaWZpZXIuYXR0ZW1wdF9zbmFwc2hvdCgpCiAgICAgICAgICAgICAgICBrZXlzID0gKCduYXRpdmVfY2FsbHMnLCAnY29sbGVjdGlvbl9jYWxscycsICdzdWJwcm9jZXNzX2F0dGVtcHRzJykKICAgICAgICAgICAgICAgIGlmIGFsbCh0eXBlKHNuYXBzaG90LmdldChrZXkpKSBpcyBpbnQgYW5kIHNuYXBzaG90W2tleV0gPj0gMAogICAgICAgICAgICAgICAgICAgICAgIGZvciBzbmFwc2hvdCBpbiAoYmVmb3JlLCBhZnRlcikgZm9yIGtleSBpbiBrZXlzKToKICAgICAgICAgICAgICAgICAgICBhdHRlbXB0cyA9IHtrZXk6IGFmdGVyW2tleV0tYmVmb3JlW2tleV0gZm9yIGtleSBpbiBrZXlzfQogICAgICAgICAgICAgICAgICAgIGNvbXBsZXRlID0gKGFsbCh2YWx1ZSA+PSAwIGZvciB2YWx1ZSBpbiBhdHRlbXB0cy52YWx1ZXMoKSkKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBhbmQgYXR0ZW1wdHNbJ3N1YnByb2Nlc3NfYXR0ZW1wdHMnXSA9PQogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIGF0dGVtcHRzWyduYXRpdmVfY2FsbHMnXSthdHRlbXB0c1snY29sbGVjdGlvbl9jYWxscyddKQogICAgICAgICAgICBleGNlcHQgRXhjZXB0aW9uOgogICAgICAgICAgICAgICAgcGFzcwogICAgICAgICAgICByZXRhaW5lZF9jb3N0cyA9IHJlY2VpcHQuZ2V0KCdjb3N0cycpIGlmIGlzaW5zdGFuY2UocmVjZWlwdCwgZGljdCkgZWxzZSBOb25lCiAgICAgICAgICAgIGNvc3RzID0gZGljdChyZXRhaW5lZF9jb3N0cykgaWYgaXNpbnN0YW5jZShyZXRhaW5lZF9jb3N0cywgZGljdCkgZWxzZSB7fQogICAgICAgICAgICBpZiBjb21wbGV0ZToKICAgICAgICAgICAgICAgIGZvciBrZXkgaW4gKCduYXRpdmVfY2FsbHMnLCAnY29sbGVjdGlvbl9jYWxscycpOgogICAgICAgICAgICAgICAgICAgIHJldGFpbmVkID0gY29zdHMuZ2V0KGtleSwgMCkKICAgICAgICAgICAgICAgICAgICBjb3N0c1trZXldID0gbWF4KHJldGFpbmVkLCBhdHRlbXB0c1trZXldKSBpZiB0eXBlKHJldGFpbmVkKSBpcyBpbnQgYW5kIHJldGFpbmVkID49IDAgZWxzZSBhdHRlbXB0c1trZXldCiAgICAgICAgICAgIGlmIG5vdCBpc2luc3RhbmNlKHJldGFpbmVkX2Nvc3RzLCBkaWN0KToKICAgICAgICAgICAgICAgIGNvc3RzLnVwZGF0ZSh0b3RhbF9zZWNvbmRzPXNlY29uZHMpCiAgICAgICAgICAgICAgICBpZiBjb21wbGV0ZToKICAgICAgICAgICAgICAgICAgICBjb3N0c1snc3VicHJvY2Vzc19hdHRlbXB0cyddID0gYXR0ZW1wdHNbJ3N1YnByb2Nlc3NfYXR0ZW1wdHMnXQogICAgICAgICAgICBzdGF0dXMgPSByZWNlaXB0LmdldCgnc3RhdHVzJywgJ1VOS05PV05fVkVSSUZJRVJfRVJST1InKSBpZiBpc2luc3RhbmNlKHJlY2VpcHQsIGRpY3QpIGVsc2UgJ1VOS05PV05fVkVSSUZJRVJfRVJST1InCiAgICAgICAgICAgIGlmIG5vdCBjb21wbGV0ZToKICAgICAgICAgICAgICAgIHN0YXR1cyA9ICdVTktOT1dOX05BVElWRV9BVFRFTVBUX0FDQ09VTlRJTkcnCiAgICAgICAgICAgIHNlbGYubWFjaGluZS5jb3N0cy5hcHBlbmQoeydwaGFzZSc6ICdnZW5lcmljX25hdGl2ZV92Ml9pbmRlcGVuZGVudF92ZXJpZmljYXRpb24nLAogICAgICAgICAgICAgICAgJ3NlY29uZHMnOiBzZWNvbmRzLCAnb3V0cHV0Jzogc3RyKHJ1biksICdzdGF0dXMnOiBzdGF0dXMsICdjb3N0cyc6IGNvc3RzLAogICAgICAgICAgICAgICAgJ2NvbnRyb2xsZXJfYXR0ZW1wdHMnOiBhdHRlbXB0cywgJ2FjY291bnRpbmdfY29tcGxldGUnOiBjb21wbGV0ZX0pCiAgICAgICAgICAgIGlmIG5vdCBjb21wbGV0ZToKICAgICAgICAgICAgICAgIHJhaXNlIFZhbHVlRXJyb3IoJ1VOS05PV05fTkFUSVZFX0FUVEVNUFRfQUNDT1VOVElORycpCgoKIyBUaGUgdjIgX19jbGFzc19fIGNsb3N1cmUgaXMgcmV0YWluZWQsIHNvIGl0cyB6ZXJvLWFyZ3VtZW50IHN1cGVyKCkgc3RpbGwKIyByZWFjaGVzIHRoZSBvcmlnaW5hbCBhZGFwdGVyIHRocm91Z2ggdGhpcyBzdWJjbGFzcy4gTm8gb2xkIGdsb2JhbHMgY2hhbmdlLgpmb3IgX25hbWUsIF9mdW5jdGlvbiBpbiB2YXJzKGZyb3plbi5OYXRpdmVSdW50aW1lVjIpLml0ZW1zKCk6CiAgICBpZiBpc2luc3RhbmNlKF9mdW5jdGlvbiwgRnVuY3Rpb25UeXBlKSBhbmQgX25hbWUgbm90IGluICgnX3Njb3BlJywgJ19leHBlY3RlZF9zY29wZScsICdfdmVyaWZ5Jyk6CiAgICAgICAgc2V0YXR0cihOYXRpdmVSdW50aW1lVjMsIF9uYW1lLCBfYmluZChfZnVuY3Rpb24pKQo=",
+  "stderr_base64": "",
+  "after": {
+    "schema": "UDM_GIT_INDEX_SNAPSHOT_V4",
+    "git_common_dir": "/workspace/repos/test/.git",
+    "indexes": [
+      {
+        "path": "/workspace/repos/test/.git/index",
+        "exists": false,
+        "size_bytes": null,
+        "sha256": null
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/development/index",
+        "exists": true,
+        "size_bytes": 113571,
+        "sha256": "894f89eeaad5bd8d6c8242a5047d006a0b23021a5ba362d4db42c131e082fd29"
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/env-v3-native-334/index",
+        "exists": true,
+        "size_bytes": 176832,
+        "sha256": "6ea642f1a91b7239229344a2650a9af70ea2bd477b6db9518ed4153bed8cb786"
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/udm/index",
+        "exists": true,
+        "size_bytes": 111030,
+        "sha256": "3999c60a940d9c999523ff56ec37d2bc9d7c0328c1f2503690a652fbb1f01064"
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/udm-v54/index",
+        "exists": true,
+        "size_bytes": 239205,
+        "sha256": "9ed38158d9eca002bdf62ff962921fd0f6218ad952634148e77a8520a0b9d8f2"
+      }
+    ]
+  },
+  "index_changes": [],
+  "indexes_unchanged": true
+}

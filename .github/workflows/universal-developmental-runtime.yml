@@ -1,0 +1,319 @@
+name: Native programme closure qualification
+
+on:
+  push:
+    branches: [research/universal-developmental-runtime-20261015]
+    paths:
+      - 'research/unified_consequence_runtime/**'
+      - '.github/workflows/universal-developmental-runtime.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  native-programme-qualification:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    defaults:
+      run:
+        shell: bash
+    env:
+      PYTHONUNBUFFERED: '1'
+      UDM_NATIVE_OBSERVATION_TESTS: '1'
+      UDM_NATIVE_OBSERVATION_WORLDS: ${{ github.workspace }}/native-observation-worlds
+      UDM_NATIVE_SOURCE_REPO: ${{ github.workspace }}
+      PYTHONDONTWRITEBYTECODE: '1'
+      UDM_COMPONENTS: ${{ github.workspace }}/components
+      UDM_EVALUATOR: ${{ github.workspace }}/components/evaluator
+      UDM_ASSETS: ${{ github.workspace }}/originals/base-udm/qualification/original-depth5
+      UDM_BASE_STATE: ${{ github.workspace }}/originals/base-udm/qualified-state
+      UDM_SOURCE_REPOS: ${{ github.workspace }}/components/selection-sources
+      UDM_PYTHON: ${{ github.workspace }}/.venv-udm/bin/python
+      V54_SOURCE: ${{ github.workspace }}/components/v54-source
+      V54_WORLDS: ${{ github.workspace }}/native-worlds
+      V54_PYTHON: ${{ github.workspace }}/.venv-v54/bin/python
+      V54_LEAN: ${{ github.workspace }}/.v54-lean/lean-4.28.0-linux/bin/lean
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/test
+          ref: c9092fa57c8943e638f95689cd36e6a63310f41e
+          path: components/development
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/metatron
+          ref: b9d1b5cc10477188be6e55617699be60e70f6dad
+          path: components/metatron
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/realitygraph
+          ref: 50c43b14e7272469bc51ff7204dec07682a996d7
+          path: components/flash
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: ServiceNow/webarena-verified
+          ref: 6473f72db5dcefc97b5725b59e734504edc28a21
+          fetch-depth: 0
+          path: components/evaluator
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/triskelion
+          ref: 2dd5f41b6c7cec1004b8deaee4f976dd2a9ed21c
+          fetch-depth: 0
+          path: components/v54-source
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/Minimal-Sufficient-Interface
+          ref: 5d448c0ecc82ff3945d009963064ebbb67d2f308
+          path: components/selection-sources/msi
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Recover and authenticate canonical qualified state and original V54 result
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p originals qualification
+          gh api /repos/heathsanchez/test/actions/runs/38674836927 > originals/udm-run.json
+          gh api /repos/heathsanchez/test/actions/artifacts/11944924864 > originals/udm-artifact.json
+          gh api /repos/heathsanchez/test/actions/artifacts/11944924864/zip > originals/udm-green.zip
+          gh api /repos/heathsanchez/triskelion/actions/runs/31761530951 > originals/v54-run.json
+          gh api /repos/heathsanchez/triskelion/actions/artifacts/9205105768 > originals/v54-artifact.json
+          gh api /repos/heathsanchez/triskelion/actions/artifacts/9205105768/zip > originals/v54-original.zip
+          python - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          import zipfile
+          root = Path('originals')
+          pins = [
+              ('udm', 'udm-green.zip', 'base-udm', 38674836927, 11944924864,
+               '10269fa87dacd47b7d0036935bc8b006e5041adc',
+               'c024b3dfb8cfd18b8ae7c657d2f12b7366b6e081ce0b01549de9587839a20563'),
+              ('v54', 'v54-original.zip', 'original-v54', 31761530951, 9205105768,
+               '2dd5f41b6c7cec1004b8deaee4f976dd2a9ed21c',
+               '6cd5ae4796ce58b266506e2cfce80b31688a11f9b80d0521487267bfeeb649bf'),
+          ]
+          receipts = []
+          for name, archive, destination, run_id, artifact_id, commit, expected in pins:
+              run = json.loads((root/(name+'-run.json')).read_text())
+              artifact = json.loads((root/(name+'-artifact.json')).read_text())
+              actual = hashlib.sha256((root/archive).read_bytes()).hexdigest()
+              assert run['id'] == run_id and run['head_sha'] == commit
+              assert run['status'] == 'completed' and run['conclusion'] == 'success'
+              assert artifact['id'] == artifact_id and artifact['workflow_run']['id'] == run_id
+              assert artifact['workflow_run']['head_sha'] == commit
+              assert artifact['digest'] == 'sha256:'+expected and actual == expected
+              with zipfile.ZipFile(root/archive) as z:
+                  names = z.namelist()
+                  assert len(names) == len(set(names))
+                  assert all(not Path(n).is_absolute() and '..' not in Path(n).parts for n in names)
+                  z.extractall(root/destination)
+              receipts.append({'artifact_id': artifact_id, 'run_id': run_id,
+                               'source_commit': commit, 'sha256': actual,
+                               'archive': str(root/archive), 'extracted': str(root/destination)})
+          state = root/'base-udm/qualified-state'
+          ledger = state/'metatron-ledger.jsonl'
+          qualification = json.loads((root/'base-udm/qualification/qualification.json').read_text())
+          assert len(ledger.read_text().splitlines()) == 101
+          assert hashlib.sha256(ledger.read_bytes()).hexdigest() == qualification['final_ledger_sha256']
+          assert qualification['original_active_capabilities_retained'] == 11
+          assert all(hashlib.sha256(p.read_bytes()).hexdigest() == p.name for p in (state/'objects').iterdir())
+          Path('qualification/original-evidence-recovery.json').write_text(json.dumps(receipts, indent=2)+'\n')
+          PY
+
+      - name: Bind exact original JPL and MSI selection sources
+        run: |
+          git cat-file -e '52eb1e7995bd877a2b698efe1883ae2b80a03737^{commit}'
+          ln -s "${GITHUB_WORKSPACE}" "${UDM_SOURCE_REPOS}/test"
+          test "$(git -C "${UDM_SOURCE_REPOS}/msi" rev-parse HEAD)" = 5d448c0ecc82ff3945d009963064ebbb67d2f308
+          git show 52eb1e7995bd877a2b698efe1883ae2b80a03737:research/mathgraph_minimal_quotient/h11_quotient.py \
+            | sha256sum > qualification/jpl-selection-source-sha256.txt
+
+      - name: Install isolated UDM evaluator environment
+        run: |
+          python -m venv .venv-udm
+          "${UDM_PYTHON}" -m pip install ./components/evaluator playwright jinja2
+          "${UDM_PYTHON}" -VV > qualification/python-udm.txt
+          "${UDM_PYTHON}" -m pip freeze --all > qualification/environment-udm.txt
+
+      - name: Provision original pinned native worlds and check pristine baselines
+        run: |
+          bash research/unified_consequence_runtime/setup_v54_worlds.sh \
+            "${V54_WORLDS}" "${GITHUB_WORKSPACE}/.venv-v54" qualification/native-setup
+          echo "${GITHUB_WORKSPACE}/.venv-v54/bin" >> "${GITHUB_PATH}"
+
+      - name: Authenticate qualified acquisition and re-execute persisted native behavior
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api /repos/heathsanchez/test/actions/runs/38682218192 > qualification/reused-run.json
+          gh api /repos/heathsanchez/test/actions/runs/38682218192/artifacts > qualification/reused-artifacts.json
+          python - <<'PY'
+          import hashlib, json, subprocess, zipfile
+          from pathlib import Path
+          root = Path('qualification')
+          run = json.loads((root/'reused-run.json').read_text())
+          pin = '7b8f87ef236c38cae21252d5e47291af68083049'
+          assert run['id'] == 38682218192 and run['head_sha'] == pin
+          assert run['status'] == 'completed' and run['conclusion'] == 'success'
+          artifacts = json.loads((root/'reused-artifacts.json').read_text())['artifacts']
+          assert len(artifacts) == 1
+          artifact = artifacts[0]
+          assert artifact['workflow_run']['head_sha'] == pin
+          assert artifact['workflow_run']['id'] == run['id'] and not artifact['expired']
+          archive = Path('originals/qualified-v54.zip')
+          with archive.open('wb') as handle:
+              subprocess.run(['gh','api',f"/repos/heathsanchez/test/actions/artifacts/{artifact['id']}/zip"],
+                             stdout=handle, check=True)
+          actual = hashlib.sha256(archive.read_bytes()).hexdigest()
+          assert artifact['digest'] == 'sha256:'+actual
+          destination = Path('originals/qualified-v54')
+          with zipfile.ZipFile(archive) as z:
+              names = z.namelist()
+              assert len(names) == len(set(names))
+              assert all(not Path(n).is_absolute() and '..' not in Path(n).parts for n in names)
+              z.extractall(destination)
+          summary = json.loads((destination/'qualification/qualification-summary.json').read_text())
+          assert summary['coordinator_commit'] == pin and summary['run_id'] == run['id']
+          (root/'reused-qualification-binding.json').write_text(json.dumps({
+              'run_id':run['id'], 'source_commit':pin, 'artifact_id':artifact['id'],
+              'artifact_sha256':actual, 'qualification_summary':summary}, indent=2)+'\n')
+          PY
+          "${UDM_PYTHON}" -B -m research.unified_consequence_runtime.replay_v54_qualification \
+            --qualified-root originals/qualified-v54 --out qualification/replay-v54 \
+            --source "${V54_SOURCE}" --worlds "${V54_WORLDS}" --components "${UDM_COMPONENTS}" \
+            --evaluator "${UDM_EVALUATOR}" --config "${UDM_ASSETS}/config.json" \
+            --native-python "${V54_PYTHON}" 2>&1 | tee qualification/replay-v54.log
+          echo "V54_QUALIFIED_STATE=${GITHUB_WORKSPACE}/qualification/replay-v54/state" >> "${GITHUB_ENV}"
+
+      - name: Prepare original source-native observation environments
+        run: |
+          "${UDM_PYTHON}" -B -m research.unified_consequence_runtime.prepare_native_observation \
+            --worlds "${UDM_NATIVE_OBSERVATION_WORLDS}" \
+            2>&1 | tee qualification/native-observation-setup.log
+
+      - name: Execute native observation, choice, construction, global reclosure and restart
+        run: |
+          "${UDM_PYTHON}" -B -m research.unified_consequence_runtime.qualify_programme_closure \
+            --components "${UDM_COMPONENTS}" --evaluator "${UDM_EVALUATOR}" \
+            --config "${UDM_ASSETS}/config.json" --base-state "${V54_QUALIFIED_STATE}" \
+            --source-repo "${GITHUB_WORKSPACE}" \
+            --observation-worlds "${UDM_NATIVE_OBSERVATION_WORLDS}" \
+            --constructor-worlds "${GITHUB_WORKSPACE}/native-constructor-worlds" \
+            --native-python "${V54_PYTHON}" --out qualification/programme \
+            2>&1 | tee qualification/programme-native.log
+
+      - name: Check native authority, source adapter, routing and selection contracts after V54
+        run: |
+          "${UDM_PYTHON}" -B -m unittest discover \
+            -s research/unified_consequence_runtime -p 'test_*.py' -v \
+            2>&1 | tee qualification/contract-tests.log
+          "${UDM_PYTHON}" -B -m unittest discover \
+            -s research/unified_consequence_runtime/v54_formal -p 'test_*.py' -v \
+            2>&1 | tee qualification/formal-evidence-tests.log
+
+      - name: Install exact original Lean 4.28.0 compiler
+        run: |
+          mkdir -p .v54-lean
+          curl --fail --location --retry 3 \
+            https://github.com/leanprover/lean4/releases/download/v4.28.0/lean-4.28.0-linux.tar.zst \
+            --output .v54-lean/lean-4.28.0-linux.tar.zst
+          echo 'ceb3a3f844f7aebf63245e2b51c28d5b0ed38942c19f93cf3febd520302160bd  .v54-lean/lean-4.28.0-linux.tar.zst' \
+            | sha256sum --check | tee qualification/lean-release-sha256.txt
+          tar --zstd -xf .v54-lean/lean-4.28.0-linux.tar.zst -C .v54-lean
+          "${V54_LEAN}" --version > qualification/lean-version.txt
+
+      - name: Recheck the frozen concrete Lean certificate without repeating acquisition
+        run: |
+          "${UDM_PYTHON}" -B research/unified_consequence_runtime/v54_formal/check.py \
+            --lean "${V54_LEAN}" \
+            --certificate originals/qualified-v54/qualification/v54/formal/GeneratedV54.lean \
+            --output-dir qualification/replay-v54/formal/build \
+            --receipt qualification/replay-v54/formal/lean-verification.json \
+            2>&1 | tee qualification/formal-recheck.log
+
+      - name: Select and execute retained methods from a copy of qualified V54 state
+        run: |
+          "${UDM_PYTHON}" -B -m research.unified_consequence_runtime.consequence_selection \
+            --state "${V54_QUALIFIED_STATE}" --assets "${UDM_ASSETS}" \
+            --components "${UDM_COMPONENTS}" --evaluator "${UDM_EVALUATOR}" \
+            --out qualification/consequence-selection.json \
+            2>&1 | tee qualification/consequence-selection.log
+
+      - name: Bind maintained executable behavior to the exact workflow source
+        run: |
+          "${UDM_PYTHON}" - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          root = Path('qualification')
+          read = lambda name: json.loads((root/name).read_text())
+          native = read('replay-v54/RESULT.json')
+          formal = read('replay-v54/formal/lean-verification.json')
+          selection = read('consequence-selection.json')
+          assert native['status'] == 'REPLAY_VERIFIED_QUALIFIED_V54_STATE'
+          assert formal['status'] == 'CHECKED_BOUNDED_TABLE_CERTIFICATE'
+          assert selection['status'] == 'PASS_BOUNDED_ROUTING_INTEGRATION'
+          assert all(selection['gates'].values())
+          summary = {'schema':'udm.qualified-maintenance.v1', 'status':native['status'],
+              'coordinator_commit':os.environ['GITHUB_SHA'], 'run_id':int(os.environ['GITHUB_RUN_ID']),
+              'acquisition_rerun':False, 'original_qualification':read('reused-qualification-binding.json'),
+              'native_existing_method_activation':selection['native_successes'],
+              'formal':formal['status'], 'action_enforcement':'UNKNOWN_NONBYPASSABILITY',
+              'comparative_advantage':'REJECTED_MEASURED_EXECUTABLE_LEDGER_TIE',
+              'prospective_second_generation':'UNKNOWN',
+              'artifacts':{name:hashlib.sha256((root/name).read_bytes()).hexdigest() for name in
+                  ('replay-v54/RESULT.json','replay-v54/formal/lean-verification.json','consequence-selection.json')}}
+          (root/'qualification-summary.json').write_text(json.dumps(summary,indent=2)+'\n')
+          PY
+
+      - name: Bind programme verdicts to exact source and retained evidence
+        run: |
+          "${UDM_PYTHON}" - <<'PYREPORT'
+          import hashlib, json, os
+          from pathlib import Path
+          q=Path('qualification')
+          result=json.loads((q/'programme/RESULT.json').read_text())
+          assert result['status']=='WARRANTED_BOUNDED_NATIVE_OBSERVATION_CHOICE_CONSTRUCTION_AND_GLOBAL_RECLOSURE'
+          assert result['restart']['status']=='PASS_NATIVE_SEPARATE_PROCESS_RESTART'
+          assert result['retention']['input_state_unchanged'] is True
+          assert all(stage['status']=='PASS' for stage in result['stages'].values())
+          summary={'schema':'udm.programme-qualified.v1','source_commit':os.environ['GITHUB_SHA'],
+            'run_id':int(os.environ['GITHUB_RUN_ID']),'result':result['status'],
+            'v54_acquisition_rerun':False,'v54_persisted_native_replay':'PASS',
+            'prospective_unfamiliar_source':'UNKNOWN','strict_comparative_advantage':'REJECTED_MEASURED_TIE',
+            'nonbypassable_external_enforcement':'UNKNOWN','python_formal_refinement':'UNKNOWN',
+            'digests':{str(p.relative_to(q)):hashlib.sha256(p.read_bytes()).hexdigest()
+              for p in (q/'programme/RESULT.json',q/'programme/cold-restart.json',
+                        q/'replay-v54/RESULT.json',q/'replay-v54/formal/lean-verification.json')}}
+          (q/'programme-qualification-summary.json').write_text(json.dumps(summary,indent=2)+'\n')
+          PYREPORT
+
+      - name: Upload native programme evidence including failed qualification
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-programme-closure-${{ github.sha }}-${{ github.run_attempt }}
+          if-no-files-found: warn
+          include-hidden-files: true
+          path: |
+            qualification
+            originals
+            .github/workflows/universal-developmental-runtime.yml
+            research/unified_consequence_runtime

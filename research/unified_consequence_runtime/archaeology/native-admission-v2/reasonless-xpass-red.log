@@ -1,0 +1,17 @@
+test_reasonless_non_strict_xpass_is_not_a_native_pass (research.unified_consequence_runtime.test_native_admission_v2_adversarial.NativeAdmissionV2AdversarialTests.test_reasonless_non_strict_xpass_is_not_a_native_pass) ... FAIL
+
+======================================================================
+FAIL: test_reasonless_non_strict_xpass_is_not_a_native_pass (research.unified_consequence_runtime.test_native_admission_v2_adversarial.NativeAdmissionV2AdversarialTests.test_reasonless_non_strict_xpass_is_not_a_native_pass)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_admission_v2_adversarial.py", line 200, in test_reasonless_non_strict_xpass_is_not_a_native_pass
+    self.assertEqual(receipt['status'], 'UNKNOWN_SKIPPED_OR_XFAIL')
+AssertionError: 'PASS_NATIVE' != 'UNKNOWN_SKIPPED_OR_XFAIL'
+- PASS_NATIVE
++ UNKNOWN_SKIPPED_OR_XFAIL
+
+
+----------------------------------------------------------------------
+Ran 1 test in 2.158s
+
+FAILED (failures=1)

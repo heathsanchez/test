@@ -1,0 +1,113 @@
+name: UDM attrs residual observation genesis V1
+
+on:
+  push:
+    branches:
+      - research/udm-attrs-residual-observation-genesis-v1-20261018
+    paths:
+      - research/unified_consequence_runtime/ATTRS_RESIDUAL_OBSERVATION_GENESIS_V1_PROTOCOL.json
+      - research/unified_consequence_runtime/attrs_residual_observation_genesis_v1.py
+      - .github/workflows/udm-attrs-residual-observation-genesis-v1.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+      GIT_NO_REPLACE_OBJECTS: "1"
+      GIT_OPTIONAL_LOCKS: "0"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Bind frozen protocol before native observation selection
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/attrs-observation-genesis
+          p=research/unified_consequence_runtime/ATTRS_RESIDUAL_OBSERVATION_GENESIS_V1_PROTOCOL.json
+          cmp "$p" <(git show 91d5bfb55f288dd712b625bc35abcaccd798f6ab:"$p")
+          python -B -m py_compile research/unified_consequence_runtime/attrs_residual_observation_genesis_v1.py
+          echo PASS_FROZEN_OBSERVATION_LANGUAGE
+
+      - name: Materialize frozen attrs base plus exact author test only
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/attrs-observation-genesis
+          git init -q /tmp/attrs-observation-genesis
+          git -C /tmp/attrs-observation-genesis remote add upstream https://github.com/python-attrs/attrs.git
+          git -C /tmp/attrs-observation-genesis fetch -q --depth=1 --filter=blob:none --no-tags upstream 6851ab593cd25f3c14393e9355d57d22bec2a074
+          git -C /tmp/attrs-observation-genesis checkout -q --detach 6851ab593cd25f3c14393e9355d57d22bec2a074
+          git -C /tmp/attrs-observation-genesis fetch -q --depth=1 --filter=blob:none --no-tags upstream 2e082f1c1efb019885fbdb601b32f8464dbe5d47
+          git -C /tmp/attrs-observation-genesis show 2e082f1c1efb019885fbdb601b32f8464dbe5d47:tests/test_annotations.py > /tmp/attrs-observation-genesis/tests/test_annotations.py
+          test "$(git -C /tmp/attrs-observation-genesis rev-parse HEAD)" = 6851ab593cd25f3c14393e9355d57d22bec2a074
+          test "$(git -C /tmp/attrs-observation-genesis diff --name-only)" = tests/test_annotations.py
+          echo 'SEALED_UNOPENED tox-dev/tox#4168' > evidence/attrs-observation-genesis/FUTURE_SEAL.txt
+          echo PASS_ATTRS_SOURCE_SCOPE_TOX_UNOPENED
+
+      - name: Install frozen attrs test environment
+        run: |
+          set -euo pipefail
+          W=/tmp/attrs-observation-genesis
+          python -m pip install --disable-pip-version-check --no-input 'pip==25.3'
+          python -m pip install --disable-pip-version-check --no-input -e "$W"
+          supplement="$(python - <<'PY'
+          import pathlib,tomllib
+          p=pathlib.Path('/tmp/attrs-observation-genesis/pyproject.toml')
+          d=tomllib.loads(p.read_text())
+          groups=d.get('dependency-groups',{})
+          extras=d.get('project',{}).get('optional-dependencies',{})
+          if 'test' in groups: print('GROUP:test')
+          elif 'tests' in groups: print('GROUP:tests')
+          elif 'test' in extras: print('EXTRA:test')
+          elif 'tests' in extras: print('EXTRA:tests')
+          elif 'dev' in extras: print('EXTRA:dev')
+          else: print('NONE')
+          PY
+          )"
+          echo "$supplement" | tee evidence/attrs-observation-genesis/TEST_SUPPLEMENT.txt
+          case "$supplement" in
+            GROUP:test) python -m pip install --disable-pip-version-check --no-input --group "$W/pyproject.toml:test" ;;
+            GROUP:tests) python -m pip install --disable-pip-version-check --no-input --group "$W/pyproject.toml:tests" ;;
+            EXTRA:test) python -m pip install --disable-pip-version-check --no-input -e "$W[test]" ;;
+            EXTRA:tests) python -m pip install --disable-pip-version-check --no-input -e "$W[tests]" ;;
+            EXTRA:dev) python -m pip install --disable-pip-version-check --no-input -e "$W[dev]" ;;
+            NONE) ;;
+            *) exit 23 ;;
+          esac
+          python -m pip install --disable-pip-version-check --no-input 'pytest==9.1.1' 'pytest-cov==7.0.0'
+          python -m pip check
+          python -m pip freeze > evidence/attrs-observation-genesis/PIP_FREEZE.txt
+
+      - name: Run residual to observation to repair gate
+        run: |
+          set -euo pipefail
+          out="$RUNNER_TEMP/attrs-observation-genesis"
+          rm -rf "$out"
+          set +e
+          PYTHONPATH="$GITHUB_WORKSPACE" python -B             research/unified_consequence_runtime/attrs_residual_observation_genesis_v1.py             /tmp/attrs-observation-genesis "$out"             | tee evidence/attrs-observation-genesis/STDOUT.json
+          rc=${PIPESTATUS[0]}
+          set -e
+          if [ -d "$out" ]; then
+            cp -a "$out" evidence/attrs-observation-genesis/result
+          fi
+          exit "$rc"
+
+      - name: Preserve evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: udm-attrs-residual-observation-genesis-v1
+          path: evidence/attrs-observation-genesis/
+          retention-days: 90
+          if-no-files-found: error

@@ -1,0 +1,94 @@
+{
+  "schema": "UDM_GIT_INDEX_READ_AUDIT_V4",
+  "argv": [
+    "git",
+    "--no-pager",
+    "--no-replace-objects",
+    "-c",
+    "core.fsmonitor=false",
+    "-C",
+    "/workspace/udm-v54",
+    "show",
+    "--no-ext-diff",
+    "--no-textconv",
+    "bd46699e:research/unified_consequence_runtime/archaeology/native-authority-v41/FRONTIER_PROTOCOL.json"
+  ],
+  "git_optional_locks": "0",
+  "before": {
+    "schema": "UDM_GIT_INDEX_SNAPSHOT_V4",
+    "git_common_dir": "/workspace/repos/test/.git",
+    "indexes": [
+      {
+        "path": "/workspace/repos/test/.git/index",
+        "exists": false,
+        "size_bytes": null,
+        "sha256": null
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/development/index",
+        "exists": true,
+        "size_bytes": 113571,
+        "sha256": "894f89eeaad5bd8d6c8242a5047d006a0b23021a5ba362d4db42c131e082fd29"
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/env-v3-native-334/index",
+        "exists": true,
+        "size_bytes": 176832,
+        "sha256": "6ea642f1a91b7239229344a2650a9af70ea2bd477b6db9518ed4153bed8cb786"
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/udm/index",
+        "exists": true,
+        "size_bytes": 111030,
+        "sha256": "3999c60a940d9c999523ff56ec37d2bc9d7c0328c1f2503690a652fbb1f01064"
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/udm-v54/index",
+        "exists": true,
+        "size_bytes": 239205,
+        "sha256": "9ed38158d9eca002bdf62ff962921fd0f6218ad952634148e77a8520a0b9d8f2"
+      }
+    ]
+  },
+  "returncode": 0,
+  "stdout_base64": "eyJHMyI6IlVOS05PV05fVU5RVUFMSUZJRURfU0VDT05EX0dFTkVSQVRJT05fQU5EX0NBVVNBTF9DT05UUk9MUyIsImFjcXVpc2l0aW9uX25hdGl2ZV9jYWxscyI6NTEyLCJjYW5kaWRhdGVfY2FwX3Blcl9maWxlIjo2NCwiY2F0YWxvZyI6eyJwYXRoIjoicmVzZWFyY2gvdW5pZmllZF9jb25zZXF1ZW5jZV9ydW50aW1lL2FyY2hhZW9sb2d5L25hdGl2ZS1hdXRob3JpdHktdjQxL0VOVklST05NRU5UX0NBVEFMT0cuanNvbiIsInNoYTI1NiI6IjIwNTBkZWY3NTRmOGIwYjdkMzlmM2VhMjU2YTZjNGE1OTk3ODc2ZmQyMWViZDZhMWFmYjEzNGIwNmNiOGRmYzYifSwiY2F0YWxvZ19zZWNvbmRzIjo0NSwiY29sbGVjdGlvbl9zZWNvbmRzIjo2MCwiZW52aXJvbm1lbnRfZ2F0ZSI6eyJhcnRpZmFjdF9pZCI6MTIwNjk0NDg1OTYsImFydGlmYWN0X3NoYTI1NiI6IjkwZGNhYmE1ZWNjNDc3NjE4OTBhZDE3YTM3NjE5MjQ4NjNlYjRiMzNhZTRhY2YzOGY2YWExZDg3MGFmNDU1ZTAiLCJxdWFsaWZpY2F0aW9uX3Jlc3VsdF9zaGEyNTYiOiIwZWEzODQzYzliOWQ4MGM1OWE5MTAyMzEyODEzY2Y1ODYyMTZjMWNlNzhkNjlkYzliNDdiNDAwYjIwMjlkZTQzIiwicmVzdWx0X3BhdGgiOiJyZXNlYXJjaC91bmlmaWVkX2NvbnNlcXVlbmNlX3J1bnRpbWUvYXJjaGFlb2xvZ3kvbmF0aXZlLWF1dGhvcml0eS12NDEvQ0lfMzg5NTQ5Njk0MTFfUkVTVUxULmpzb24iLCJydW5faWQiOjM4OTU0OTY5NDExLCJzb3VyY2VfY29tbWl0IjoiNGMzZjdlMjc2NTY3YjRlYThkZjk2YzdhODc5N2E4ODkwNDBkYzBhYyIsInN0YXR1cyI6IkFETUlTU0lPTl9PTkxZX1FVQUxJRklFRCJ9LCJleGVjdXRpb25fc2Vjb25kcyI6NjAwLCJmdXR1cmVfbmF0aXZlX3Jlc2VydmUiOjY0LCJtZXRhZGF0YV9zaGEyNTYiOm51bGwsInBlcl9zZWFyY2hfc2Vjb25kcyI6MzYwMCwicG9vbCI6eyJwYXRoIjoicmVzZWFyY2gvdW5pZmllZF9jb25zZXF1ZW5jZV9ydW50aW1lL2FyY2hhZW9sb2d5L25hdGl2ZS1hdXRob3JpdHktdjQxL0ZST1pFTl9QT09MLmpzb24iLCJzaGEyNTYiOiJjMWU3Y2JjZGQ3N2QyYTE1ZWRkOTY1MmNkYzViNjI2NjJjOGYzNTliMzNjNDQyNDY2MWFlNDBmM2JmNWU0ZDc2In0sInByZXF1ZXJ5Ijp7InBhdGgiOiJyZXNlYXJjaC91bmlmaWVkX2NvbnNlcXVlbmNlX3J1bnRpbWUvYXJjaGFlb2xvZ3kvbmF0aXZlLWF1dGhvcml0eS12NDEvUFJFUVVFUllfRVhFQ1VUSU9OLmpzb24iLCJzaGEyNTYiOiI1MWQ4Zjg5N2NkYjQ1MWFmNjY0N2FlYTcxZmFkZGVkNWQ2MWUxYzIyMGIyMGJmODljOGQ2YjMwNDMzZGJiYWUwIn0sInJlcXVlc3RlZF9yb2xlcyI6Miwic2NoZW1hIjoiVURNX05BVElWRV9GUk9OVElFUl9QUk9UT0NPTF9WNDEiLCJzY3JlZW5pbmciOm51bGwsInNlYXJjaF9idWRnZXQiOjgsInNlbGVjdGlvbl90aWVzIjoiVU5LTk9XTjsgb3JpZ2luYWwgMzYtcG9saWN5IHBsdXMgY29sZCBjYXJyaWVyIHVuY2hhbmdlZCIsInN0YXRlIjoiUFJFUEFSRURfTk9UX0ZST1pFTiIsInRyYWluaW5nX3NlY29uZHMiOjM2MDAsInRyYWluaW5nX3VuaXF1ZV9jYWxscyI6MTI4fQo=",
+  "stderr_base64": "",
+  "after": {
+    "schema": "UDM_GIT_INDEX_SNAPSHOT_V4",
+    "git_common_dir": "/workspace/repos/test/.git",
+    "indexes": [
+      {
+        "path": "/workspace/repos/test/.git/index",
+        "exists": false,
+        "size_bytes": null,
+        "sha256": null
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/development/index",
+        "exists": true,
+        "size_bytes": 113571,
+        "sha256": "894f89eeaad5bd8d6c8242a5047d006a0b23021a5ba362d4db42c131e082fd29"
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/env-v3-native-334/index",
+        "exists": true,
+        "size_bytes": 176832,
+        "sha256": "6ea642f1a91b7239229344a2650a9af70ea2bd477b6db9518ed4153bed8cb786"
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/udm/index",
+        "exists": true,
+        "size_bytes": 111030,
+        "sha256": "3999c60a940d9c999523ff56ec37d2bc9d7c0328c1f2503690a652fbb1f01064"
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/udm-v54/index",
+        "exists": true,
+        "size_bytes": 239205,
+        "sha256": "9ed38158d9eca002bdf62ff962921fd0f6218ad952634148e77a8520a0b9d8f2"
+      }
+    ]
+  },
+  "index_changes": [],
+  "indexes_unchanged": true
+}

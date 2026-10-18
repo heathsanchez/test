@@ -1,0 +1,58 @@
+{
+  "schema": "UDM_NATIVE_AUTHORITY_V41_ROS_SYNCHRONIZATION_RECEIPT_V1",
+  "checkpoint_url": "https://app.notion.com/p/3fb3e523d7ab81519b4af17e73ba6d89",
+  "report_commit": "976b428eff6a7c96fd3ccc135954b1c6926d9b93",
+  "admission_source": "4c3f7e276567b4ea8df96c7a8797a889040dc0ac",
+  "scientific_source": "c55350361a443875a23751a3ffec312497819484",
+  "admission_run": 38954969411,
+  "scientific_run": 38957756405,
+  "verdicts": {
+    "admission": "WARRANTED_BOUNDED",
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN"
+  },
+  "readbacks": [
+    {
+      "id": "3e43e523d7ab81acb430d6d18ad258e9",
+      "readback_chars": 2202110,
+      "body_chars": 2201595,
+      "has_new_checkpoint": true,
+      "has_green_run": true,
+      "has_red_run": true,
+      "has_unknown": true,
+      "old_body_chars": 2200409,
+      "entire_previous_body_preserved": true
+    },
+    {
+      "id": "3e43e523d7ab81a5bbc9e405e81aba6c",
+      "readback_chars": 927788,
+      "body_chars": 927277,
+      "has_new_checkpoint": true,
+      "has_green_run": false,
+      "has_red_run": false,
+      "has_unknown": true,
+      "old_body_chars": 926462,
+      "entire_previous_body_preserved": true
+    },
+    {
+      "id": "3fb3e523d7ab81519b4af17e73ba6d89",
+      "readback_chars": 6285,
+      "body_chars": 5638,
+      "has_new_checkpoint": true,
+      "has_green_run": true,
+      "has_red_run": true,
+      "has_unknown": true,
+      "has_exact_scientific_commit": true
+    }
+  ],
+  "index_entry": "Native page mention links to complete checkpoint; no requirement to duplicate run URLs in index.",
+  "mutations": [
+    "Created a new child under Research Checkpoints",
+    "Prepended bounded outcome and checkpoint mention to Canonical Research State",
+    "Prepended bounded outcome and checkpoint mention to Research Checkpoints"
+  ],
+  "previous_checkpoint_untouched": "3fb3e523d7ab81ba9da6c33f598239a2"
+}

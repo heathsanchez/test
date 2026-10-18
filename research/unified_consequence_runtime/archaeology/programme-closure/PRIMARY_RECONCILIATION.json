@@ -1,0 +1,347 @@
+{
+  "schema": "metalogic.primary-recovery-reconciliation.v1",
+  "boundary": "Additional reconciliation phase after initial source scanner. Earlier scanner payload-not-inspected snapshot is retained; this phase reopens11original archives and checks all declared entry hashes. It does not independently repeat historical native/scientific experiments or upgrade fixed fixtures to autonomous discovery.",
+  "archives": [
+    {
+      "artifact_id": 10293399981,
+      "zip_sha256": "acfad65c309876fa6d2c50da21b4457ed4d3fee2c4d6b77d1810437e4522b1b2",
+      "zip_bytes": 3428,
+      "all_manifest_entries_hash_checked": true,
+      "run_commits": [
+        "b1c56bc2ec4c1defed7060f8dfff81fdc6ae12f3"
+      ],
+      "reports": [
+        {
+          "file": "evidence.json",
+          "reported_verdict": "VERIFIED_EXPERIMENT_META_SUBSTRATE_GENESIS",
+          "failed_named_gates": []
+        },
+        {
+          "file": "snapshot.json",
+          "reported_verdict": null,
+          "failed_named_gates": []
+        },
+        {
+          "file": "workflow-evidence.json",
+          "reported_verdict": "VERIFIED_EXPERIMENT_META_SUBSTRATE_GENESIS",
+          "failed_named_gates": []
+        }
+      ],
+      "evidence_level": "ORIGINAL_ARCHIVE_REOPENED_AND_HASHED_IN_CANONICAL_RECONCILIATION; NO_SCIENTIFIC_RERUN"
+    },
+    {
+      "artifact_id": 10293778953,
+      "zip_sha256": "573879832c18e92763832aaf3b8489907115c337d358a110dce2d826b83cad3a",
+      "zip_bytes": 3084,
+      "all_manifest_entries_hash_checked": true,
+      "run_commits": [
+        "6031466188046f56b4660d772d13ad731ed4c0f2"
+      ],
+      "reports": [
+        {
+          "file": "evidence.json",
+          "reported_verdict": "AUTHORIZED_REPAIR",
+          "failed_named_gates": []
+        },
+        {
+          "file": "snapshot.json",
+          "reported_verdict": null,
+          "failed_named_gates": []
+        },
+        {
+          "file": "workflow-evidence.json",
+          "reported_verdict": "AUTHORIZED_REPAIR",
+          "failed_named_gates": []
+        }
+      ],
+      "evidence_level": "ORIGINAL_ARCHIVE_REOPENED_AND_HASHED_IN_CANONICAL_RECONCILIATION; NO_SCIENTIFIC_RERUN"
+    },
+    {
+      "artifact_id": 10290558060,
+      "zip_sha256": "211aad00fd89e724184358b1ae8942fb63936cce79102a0f1c6db4239ea682f0",
+      "zip_bytes": 3441,
+      "all_manifest_entries_hash_checked": true,
+      "run_commits": [
+        "795756a752a2d4857ef7f5ff5884920dc3c1432b"
+      ],
+      "reports": [
+        {
+          "file": "evidence.json",
+          "reported_verdict": "VERIFIED_EXPERIMENT_LANGUAGE_GENESIS",
+          "failed_named_gates": []
+        },
+        {
+          "file": "snapshot.json",
+          "reported_verdict": null,
+          "failed_named_gates": []
+        },
+        {
+          "file": "workflow-evidence.json",
+          "reported_verdict": "VERIFIED_EXPERIMENT_LANGUAGE_GENESIS",
+          "failed_named_gates": []
+        }
+      ],
+      "evidence_level": "ORIGINAL_ARCHIVE_REOPENED_AND_HASHED_IN_CANONICAL_RECONCILIATION; NO_SCIENTIFIC_RERUN"
+    },
+    {
+      "artifact_id": 10289800538,
+      "zip_sha256": "a86b6729ed0ef758cc5f5ad1ef99677c373a0467574921bfd96d62a0370b03c6",
+      "zip_bytes": 2337,
+      "all_manifest_entries_hash_checked": true,
+      "run_commits": [
+        "74a44981a766da23df87780496191014fcd41215"
+      ],
+      "reports": [
+        {
+          "file": "evidence.json",
+          "reported_verdict": "VERIFIED_VALUE_EVIDENCE_SEPARATOR_GENESIS",
+          "failed_named_gates": []
+        },
+        {
+          "file": "snapshot.json",
+          "reported_verdict": null,
+          "failed_named_gates": []
+        }
+      ],
+      "evidence_level": "ORIGINAL_ARCHIVE_REOPENED_AND_HASHED_IN_CANONICAL_RECONCILIATION; NO_SCIENTIFIC_RERUN"
+    },
+    {
+      "artifact_id": 10280354195,
+      "zip_sha256": "c13c675a7329505c46711844d72ff56af43193f595c3028fb0614cb7ca9e1c8e",
+      "zip_bytes": 3003,
+      "all_manifest_entries_hash_checked": true,
+      "run_commits": [
+        "f55bb38f9a7d5dd06883cc4ae937cf6f43c56b76"
+      ],
+      "reports": [
+        {
+          "file": "evidence.json",
+          "reported_verdict": "VERIFIED_PROSPECTIVE_RETENTION_VALUE",
+          "failed_named_gates": []
+        },
+        {
+          "file": "retention.json",
+          "reported_verdict": "VERIFIED_PROSPECTIVE_RETENTION_VALUE",
+          "failed_named_gates": []
+        },
+        {
+          "file": "snapshot.json",
+          "reported_verdict": null,
+          "failed_named_gates": []
+        }
+      ],
+      "evidence_level": "ORIGINAL_ARCHIVE_REOPENED_AND_HASHED_IN_CANONICAL_RECONCILIATION; NO_SCIENTIFIC_RERUN"
+    },
+    {
+      "artifact_id": 10289138333,
+      "zip_sha256": "1a7d5935af95beb74045daf686f39148e96d5e2f4499b90273998b813a548a1a",
+      "zip_bytes": 3861,
+      "all_manifest_entries_hash_checked": true,
+      "run_commits": [
+        "04861538a2be9762b892eb8d23c588e485f63601"
+      ],
+      "reports": [
+        {
+          "file": "boundary.json",
+          "reported_verdict": "REPRESENTABLE_BUT_UNSELECTED",
+          "failed_named_gates": []
+        },
+        {
+          "file": "evidence.json",
+          "reported_verdict": "REPRESENTABLE_BUT_UNSELECTED",
+          "failed_named_gates": []
+        },
+        {
+          "file": "snapshot.json",
+          "reported_verdict": null,
+          "failed_named_gates": []
+        }
+      ],
+      "evidence_level": "ORIGINAL_ARCHIVE_REOPENED_AND_HASHED_IN_CANONICAL_RECONCILIATION; NO_SCIENTIFIC_RERUN"
+    },
+    {
+      "artifact_id": 10266557272,
+      "zip_sha256": "44ab8fd19febafce64e7ff43c1804b7a9c03bacb7fa507c7b2d5512a770b21d9",
+      "zip_bytes": 2100,
+      "all_manifest_entries_hash_checked": true,
+      "run_commits": [
+        "2b8fd76354235c32b47a19b6bcac030a8cdbe1d7"
+      ],
+      "reports": [
+        {
+          "file": "evidence.json",
+          "reported_verdict": "VERIFIED_SEMANTIC_CERTIFICATE_CAUSALITY",
+          "failed_named_gates": []
+        },
+        {
+          "file": "snapshot.json",
+          "reported_verdict": null,
+          "failed_named_gates": []
+        }
+      ],
+      "evidence_level": "ORIGINAL_ARCHIVE_REOPENED_AND_HASHED_IN_CANONICAL_RECONCILIATION; NO_SCIENTIFIC_RERUN"
+    },
+    {
+      "artifact_id": 10280930082,
+      "zip_sha256": "d0de66aeecaeb5bc666a636c2bf6f0e82a9aa4d710782ebf6d53e0beebe0511b",
+      "zip_bytes": 2654,
+      "all_manifest_entries_hash_checked": true,
+      "run_commits": [
+        "5ca51363d6559b8f9aef397579eb22695c5f58ed"
+      ],
+      "reports": [
+        {
+          "file": "evidence.json",
+          "reported_verdict": "VERIFIED_EMERGENT_PERSISTENCE_GEOMETRY",
+          "failed_named_gates": []
+        },
+        {
+          "file": "geometry.json",
+          "reported_verdict": "VERIFIED_EMERGENT_PERSISTENCE_GEOMETRY",
+          "failed_named_gates": []
+        },
+        {
+          "file": "snapshot.json",
+          "reported_verdict": null,
+          "failed_named_gates": []
+        }
+      ],
+      "evidence_level": "ORIGINAL_ARCHIVE_REOPENED_AND_HASHED_IN_CANONICAL_RECONCILIATION; NO_SCIENTIFIC_RERUN"
+    },
+    {
+      "artifact_id": 10530189449,
+      "zip_sha256": "e155915cdb04a3557c120222260c3f51c24024dc455a218f3717651c16f11bd0",
+      "zip_bytes": 5664,
+      "all_manifest_entries_hash_checked": true,
+      "run_commits": [],
+      "reports": [
+        {
+          "file": "abgp-confirmatory-result.json",
+          "reported_verdict": null,
+          "failed_named_gates": []
+        }
+      ],
+      "evidence_level": "ORIGINAL_ARCHIVE_REOPENED_AND_HASHED_IN_CANONICAL_RECONCILIATION; NO_SCIENTIFIC_RERUN"
+    },
+    {
+      "artifact_id": 10282562232,
+      "zip_sha256": "a636cd20092cabb19ff106490f578a7b9b891e0697b6d2d2e9101b33180e8fad",
+      "zip_bytes": 3353,
+      "all_manifest_entries_hash_checked": true,
+      "run_commits": [
+        "f00bccabee25319bc0cc41ac9918c1d3a08108ad"
+      ],
+      "reports": [
+        {
+          "file": "evidence.json",
+          "reported_verdict": "NEGATIVE_OR_PARTIAL",
+          "failed_named_gates": [
+            "prospective_beats_hand_geometry"
+          ]
+        },
+        {
+          "file": "policy.json",
+          "reported_verdict": "NEGATIVE_OR_PARTIAL",
+          "failed_named_gates": [
+            "prospective_beats_hand_geometry"
+          ]
+        },
+        {
+          "file": "snapshot.json",
+          "reported_verdict": null,
+          "failed_named_gates": []
+        }
+      ],
+      "evidence_level": "ORIGINAL_ARCHIVE_REOPENED_AND_HASHED_IN_CANONICAL_RECONCILIATION; NO_SCIENTIFIC_RERUN"
+    },
+    {
+      "artifact_id": 10277547998,
+      "zip_sha256": "649cb5f649efdf4952fd73b4260eafe59ac00632d5a679168b3ef9a49c7140c7",
+      "zip_bytes": 2842,
+      "all_manifest_entries_hash_checked": true,
+      "run_commits": [
+        "5941cb3a00bc6d39b429c19885219c3b0e89048b"
+      ],
+      "reports": [
+        {
+          "file": "evidence.json",
+          "reported_verdict": "VERIFIED_EMERGENT_PERSISTENCE_HIERARCHY",
+          "failed_named_gates": []
+        },
+        {
+          "file": "snapshot.json",
+          "reported_verdict": null,
+          "failed_named_gates": []
+        }
+      ],
+      "evidence_level": "ORIGINAL_ARCHIVE_REOPENED_AND_HASHED_IN_CANONICAL_RECONCILIATION; NO_SCIENTIFIC_RERUN"
+    }
+  ],
+  "observation_archives": [
+    {
+      "artifact_id": 10290558060,
+      "zip_sha256": "211aad00fd89e724184358b1ae8942fb63936cce79102a0f1c6db4239ea682f0",
+      "zip_bytes": 3441,
+      "all_manifest_entries_hash_checked": true,
+      "reported_verdict": "VERIFIED_EXPERIMENT_LANGUAGE_GENESIS",
+      "evidence_level": "ORIGINAL_OBSERVATION_ARCHIVE_REOPENED_AND_HASHED_IN_CANONICAL_RECONCILIATION; NO_SCIENTIFIC_RERUN"
+    },
+    {
+      "artifact_id": 11721891110,
+      "zip_sha256": "0a7a6dddc856640d19af3f63c14db5496a0672d282502d59338bed8d5c46bfb6",
+      "zip_bytes": 617,
+      "all_manifest_entries_hash_checked": true,
+      "reported_verdict": "PASS_EXACT_BOUNDED",
+      "evidence_level": "ORIGINAL_OBSERVATION_ARCHIVE_REOPENED_AND_HASHED_IN_CANONICAL_RECONCILIATION; NO_SCIENTIFIC_RERUN"
+    },
+    {
+      "artifact_id": 10293399981,
+      "zip_sha256": "acfad65c309876fa6d2c50da21b4457ed4d3fee2c4d6b77d1810437e4522b1b2",
+      "zip_bytes": 3428,
+      "all_manifest_entries_hash_checked": true,
+      "reported_verdict": "VERIFIED_EXPERIMENT_META_SUBSTRATE_GENESIS",
+      "evidence_level": "ORIGINAL_OBSERVATION_ARCHIVE_REOPENED_AND_HASHED_IN_CANONICAL_RECONCILIATION; NO_SCIENTIFIC_RERUN"
+    },
+    {
+      "artifact_id": 10293778953,
+      "zip_sha256": "573879832c18e92763832aaf3b8489907115c337d358a110dce2d826b83cad3a",
+      "zip_bytes": 3084,
+      "all_manifest_entries_hash_checked": true,
+      "reported_verdict": "AUTHORIZED_REPAIR",
+      "evidence_level": "ORIGINAL_OBSERVATION_ARCHIVE_REOPENED_AND_HASHED_IN_CANONICAL_RECONCILIATION; NO_SCIENTIFIC_RERUN"
+    },
+    {
+      "artifact_id": 10289800538,
+      "zip_sha256": "a86b6729ed0ef758cc5f5ad1ef99677c373a0467574921bfd96d62a0370b03c6",
+      "zip_bytes": 2337,
+      "all_manifest_entries_hash_checked": true,
+      "reported_verdict": "VERIFIED_VALUE_EVIDENCE_SEPARATOR_GENESIS",
+      "evidence_level": "ORIGINAL_OBSERVATION_ARCHIVE_REOPENED_AND_HASHED_IN_CANONICAL_RECONCILIATION; NO_SCIENTIFIC_RERUN"
+    },
+    {
+      "artifact_id": 11930265105,
+      "zip_sha256": "aa1032471cb171d165fe2cc7238a8c4b25ac2d717c5157b4bad71347f6027752",
+      "zip_bytes": 1442,
+      "all_manifest_entries_hash_checked": true,
+      "reported_verdict": "INDEPENDENT_AUDIT_PASS_EXACT_FINITE",
+      "evidence_level": "ORIGINAL_OBSERVATION_ARCHIVE_REOPENED_AND_HASHED_IN_CANONICAL_RECONCILIATION; NO_SCIENTIFIC_RERUN"
+    },
+    {
+      "artifact_id": 10290854580,
+      "zip_sha256": "2b7b3507c6893a981326eaf990b5375eed01088f490b17a416fa7dbee8ad492e",
+      "zip_bytes": 2850,
+      "all_manifest_entries_hash_checked": true,
+      "reported_verdict": "MULTIPLE_MINIMAL_REPAIRS",
+      "evidence_level": "ORIGINAL_OBSERVATION_ARCHIVE_REOPENED_AND_HASHED_IN_CANONICAL_RECONCILIATION; NO_SCIENTIFIC_RERUN"
+    },
+    {
+      "artifact_id": 11929272911,
+      "zip_sha256": "2ab47701fa213e417b528ccd2e46a9233143c9b5191bd2c5aea112a24412d057",
+      "zip_bytes": 8768,
+      "all_manifest_entries_hash_checked": true,
+      "reported_verdict": "PASS_BOUNDED_NATIVE_SOURCE_A_TO_TWO_FUTURE_OPERATIONS",
+      "evidence_level": "ORIGINAL_OBSERVATION_ARCHIVE_REOPENED_AND_HASHED_IN_CANONICAL_RECONCILIATION; NO_SCIENTIFIC_RERUN"
+    }
+  ],
+  "unique_artifact_ids_reopened": 15
+}

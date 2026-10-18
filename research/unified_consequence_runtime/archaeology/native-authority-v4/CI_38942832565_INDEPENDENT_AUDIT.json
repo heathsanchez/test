@@ -1,0 +1,135 @@
+{
+  "acquisitions": 0,
+  "api_provenance_matches": true,
+  "artifact_code_executed": false,
+  "artifact_id": 12063688794,
+  "artifact_sha256": "d53bc555a621dd8ff9b425aade087719689a70f2b4d15a463c96cb61c9f3b957",
+  "auditor_index_scope": "Own Git reads usedGIT_OPTIONAL_LOCKS0; no restoration/reset/source/index writes. Shared local endpoint delta retained explicitly; CI interval snapshots separately unchanged.",
+  "auditor_shared_workspace_index_endpoint_changes": [
+    {
+      "after": {
+        "exists": true,
+        "path": "/workspace/repos/test/.git/worktrees/udm-v54/index",
+        "sha256": "39af8f2c7b151a73485f0589713a8710a287dfe0ac67af44ada8f6f5f36a5a82",
+        "size_bytes": 197997
+      },
+      "before": {
+        "exists": true,
+        "path": "/workspace/repos/test/.git/worktrees/udm-v54/index",
+        "sha256": "412a584a6f27c1d058d6b61c2d434a764081bbff5d2ca9ce341981725cd3ccac",
+        "size_bytes": 197685
+      }
+    }
+  ],
+  "blockers": [],
+  "candidates": 0,
+  "complete_raw_artifact_audit": "INCOMPLETE_TWO_CHARGED_COLLECTION_PACKETS_ABSENT",
+  "complete_raw_gate_recommendation": "Retain the two default-temp recollections in a new qualification artifact before using a complete-raw-evidence gate to authorize fresh frontier work. Preserve this run and its limitation.",
+  "evidence_limits": [
+    {
+      "attempt_ledger": {
+        "collection_calls": 39,
+        "native_calls": 14,
+        "subprocess_attempts": 53
+      },
+      "cases": [
+        "test_independent_collection_then_full_original_parameter_cases_pass",
+        "test_resealed_collection_manifest_is_checked_against_original_recollection"
+      ],
+      "explanation": "Two pinned helper tests call validate_certificate without output_dir; native_execution_v2 writes independent recollection in tempfile.mkdtemp outside case.root. Frozen case cleanup retains only case.root. Attempts remain charged by the V3 counter, but these two collection raw packets are absent.",
+      "id": "RAW_COLLECTION_RETENTION_GAP",
+      "implication": "Main malformed positive original and independent native replay are retained; do not claim every collection packet or independently inspect the resealed-collection negative recollection from this artifact.",
+      "retained_modern_raw": {
+        "collection_calls": 37,
+        "native_calls": 14,
+        "observed_worker_seconds": 13.736818102000058,
+        "subprocess_reports": 51
+      },
+      "severity": "evidence_limit",
+      "unretained_collection_calls": 2
+    },
+    {
+      "explanation": "Legacy five controls retain13rawcheckedreports (9collection4native), but run outside qualification attempt_snapshot, so no separate legacy private launch-attempt ledger is emitted. Full lifecycle/model/tool/engineering costs remain UNKNOWN.",
+      "id": "LEGACY_COST_SCOPE",
+      "severity": "scope_limit"
+    }
+  ],
+  "first_gate_machine_conditions_supported": true,
+  "fresh_task_source_or_outcomes_accessed": false,
+  "modern_attempt_costs": {
+    "collection_calls": 39,
+    "native_calls": 14,
+    "subprocess_attempts": 53
+  },
+  "native_authority_or_false_promotion_defect_found": false,
+  "native_or_collection_experiments_by_auditors": 0,
+  "observed_qualification_status": "ADMISSION_ONLY_QUALIFIED",
+  "prior_red_audit": "../RED_38941859931/AUDIT.json",
+  "qualification_wall_seconds": 186.94906863299997,
+  "raw_review_limits": [
+    "Refusals may occur before a certificate/receipt is written. Their checked raw report, exact retained source/test code, and frozen acceptance success are the evidence; this audit does not rerun refusal logic.",
+    "Forged intermediate certificate and receipt objects are intentionally mutated in memory by frozen tests and are not retained as separate serialized files. Original packets are retained; passing frozen assertions substantiate expected rejection.",
+    "Three earlier selection-expression variants retain raw report/source-manifest packets but only the final fixture head archive is retained; their variant manifests must not be described as matching the final head archive.",
+    "The 15 modern controller-native cases use Python3.12.14/pytest8.3.5; only five modern malformed controls use selected Python3.12.14/pytest8.4.1. Five legacy malformed controls use Python3.6.5/pytest5.4.3.",
+    "This subaudit does not decide the complete admission gate. Native G2-G6 and hostile-process nonbypassability remain UNKNOWN."
+  ],
+  "retained_raw_costs": {
+    "legacy": {
+      "collection_calls": 9,
+      "native_calls": 4,
+      "observed_worker_seconds": 3.5639577560000504,
+      "subprocess_reports": 13
+    },
+    "modern": {
+      "collection_calls": 37,
+      "native_calls": 14,
+      "observed_worker_seconds": 13.736818102000058,
+      "subprocess_reports": 51
+    }
+  },
+  "run_id": 38942832565,
+  "runtime_scope": "15 controller native cases use CPython3.12.14/pytest8.3.5;5 selected-modern native cases use CPython3.12.14/pytest8.4.1;5 selected-legacy native cases use CPython3.6.5/pytest5.4.3. Nine metadata-only tests complete the29 frozen control methods.",
+  "schema": "UDM_NATIVE_AUTHORITY_V4_GREEN_INDEPENDENT_ARTIFACT_AUDIT_V1",
+  "source_commit": "824116ea20c31defa7ca0df20341a920f8466132",
+  "status": "BOUNDED_ADMISSION_CONTROLS_SUPPORTED_RAW_RETENTION_INCOMPLETE",
+  "subreport_sha256": {
+    "AUDITOR_INDEX_AUDIT.json": "7477fb5783048cb2192eda0242b1509b01140856ee34f930a7b52ffd38bba9e0",
+    "COSTS_BY_CASE.json": "42e134f17ea42086c6906af134c33039a0adcfe4ae71c6e8e59083d80d350137",
+    "ENVELOPE_AUDIT.json": "473a25acf0b7d3e639f8426e180f7264a7c6cdbf35693d63470dbb10a76854ca",
+    "FROZEN_AUTHORITY_STATIC.json": "35f2828619685144c0a003bb016780b4f024d8be9bdcf76bcb4a8f37ad2d8424",
+    "RAW_RECEIPT_REVIEW/RAW_RECEIPT_REVIEW.json": "c580f2e8163f517493c83a6f5a381a68c447acefce65d1e1087205f5b814dcbd",
+    "SEMANTIC_AUDIT.json": "fd6ad94a0a2cc8bae97951751e55db4ba8f9c25d58890d268643b639ee715d77",
+    "SOURCE_PREAUDIT.json": "3f097997171779ec78af281b1d45ca78c836b2153fe382bd9f4d14239ad10bcb"
+  },
+  "utc": "2026-10-16T18:05:39.387217+00:00",
+  "verdicts": {
+    "G0_G1": "PRESERVED_EXACT_PRIOR_SOURCE_AUTHORITY",
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN"
+  },
+  "verified": {
+    "CI_freeze_and_qualification_index_hashes_unchanged": true,
+    "all_manifest_entries": 606,
+    "baseline_files_preserved": 1406,
+    "binding_controls": 29,
+    "complete_primary_positive_native_replay_pairs": 2,
+    "complete_tracked_source_files": 1470,
+    "exposed_metadata_only_cases": 7,
+    "frozen_modern_controls": 29,
+    "frozen_source_and_catalog_pins": true,
+    "immutable_fixture_source_copies": 75,
+    "legacy_catalog_installed_packages": 22,
+    "legacy_controls": 5,
+    "modern_catalog_installed_packages": 39,
+    "native_case_directories_legacy": 5,
+    "native_case_directories_modern": 20,
+    "nested_files": 604,
+    "packet_objects": 39,
+    "post_control_runtime_bytes_unchanged": true,
+    "retained_raw_reports": 64,
+    "source_archive_files": 960
+  }
+}

@@ -1,0 +1,94 @@
+{
+  "schema": "UDM_GIT_INDEX_READ_AUDIT_V4",
+  "argv": [
+    "git",
+    "--no-pager",
+    "--no-replace-objects",
+    "-c",
+    "core.fsmonitor=false",
+    "-C",
+    "/workspace/udm-v54",
+    "show",
+    "--no-ext-diff",
+    "--no-textconv",
+    "4c3f7e276567b4ea8df96c7a8797a889040dc0ac:research/unified_consequence_runtime/archaeology/native-authority-v41/bootstrap/metadata-evidence/mypy==2.4.0.METADATA"
+  ],
+  "git_optional_locks": "0",
+  "before": {
+    "schema": "UDM_GIT_INDEX_SNAPSHOT_V4",
+    "git_common_dir": "/workspace/repos/test/.git",
+    "indexes": [
+      {
+        "path": "/workspace/repos/test/.git/index",
+        "exists": false,
+        "size_bytes": null,
+        "sha256": null
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/development/index",
+        "exists": true,
+        "size_bytes": 113571,
+        "sha256": "894f89eeaad5bd8d6c8242a5047d006a0b23021a5ba362d4db42c131e082fd29"
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/env-v3-native-334/index",
+        "exists": true,
+        "size_bytes": 176832,
+        "sha256": "6ea642f1a91b7239229344a2650a9af70ea2bd477b6db9518ed4153bed8cb786"
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/udm/index",
+        "exists": true,
+        "size_bytes": 111030,
+        "sha256": "3999c60a940d9c999523ff56ec37d2bc9d7c0328c1f2503690a652fbb1f01064"
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/udm-v54/index",
+        "exists": true,
+        "size_bytes": 239205,
+        "sha256": "9ed38158d9eca002bdf62ff962921fd0f6218ad952634148e77a8520a0b9d8f2"
+      }
+    ]
+  },
+  "returncode": 0,
+  "stdout_base64": "TWV0YWRhdGEtVmVyc2lvbjogMi40Ck5hbWU6IG15cHkKVmVyc2lvbjogMi40LjAKU3VtbWFyeTogT3B0aW9uYWwgc3RhdGljIHR5cGluZyBmb3IgUHl0aG9uCkF1dGhvci1lbWFpbDogSnVra2EgTGVodG9zYWxvIDxqdWtrYS5sZWh0b3NhbG9AaWtpLmZpPgpMaWNlbnNlLUV4cHJlc3Npb246IE1JVApQcm9qZWN0LVVSTDogSG9tZXBhZ2UsIGh0dHBzOi8vd3d3Lm15cHktbGFuZy5vcmcvClByb2plY3QtVVJMOiBEb2N1bWVudGF0aW9uLCBodHRwczovL215cHkucmVhZHRoZWRvY3MuaW8vZW4vc3RhYmxlL2luZGV4Lmh0bWwKUHJvamVjdC1VUkw6IFJlcG9zaXRvcnksIGh0dHBzOi8vZ2l0aHViLmNvbS9weXRob24vbXlweQpQcm9qZWN0LVVSTDogQ2hhbmdlbG9nLCBodHRwczovL2dpdGh1Yi5jb20vcHl0aG9uL215cHkvYmxvYi9tYXN0ZXIvQ0hBTkdFTE9HLm1kClByb2plY3QtVVJMOiBJc3N1ZXMsIGh0dHBzOi8vZ2l0aHViLmNvbS9weXRob24vbXlweS9pc3N1ZXMKQ2xhc3NpZmllcjogRGV2ZWxvcG1lbnQgU3RhdHVzIDo6IDUgLSBQcm9kdWN0aW9uL1N0YWJsZQpDbGFzc2lmaWVyOiBFbnZpcm9ubWVudCA6OiBDb25zb2xlCkNsYXNzaWZpZXI6IEludGVuZGVkIEF1ZGllbmNlIDo6IERldmVsb3BlcnMKQ2xhc3NpZmllcjogUHJvZ3JhbW1pbmcgTGFuZ3VhZ2UgOjogUHl0aG9uIDo6IDMKQ2xhc3NpZmllcjogUHJvZ3JhbW1pbmcgTGFuZ3VhZ2UgOjogUHl0aG9uIDo6IDMuMTAKQ2xhc3NpZmllcjogUHJvZ3JhbW1pbmcgTGFuZ3VhZ2UgOjogUHl0aG9uIDo6IDMuMTEKQ2xhc3NpZmllcjogUHJvZ3JhbW1pbmcgTGFuZ3VhZ2UgOjogUHl0aG9uIDo6IDMuMTIKQ2xhc3NpZmllcjogUHJvZ3JhbW1pbmcgTGFuZ3VhZ2UgOjogUHl0aG9uIDo6IDMuMTMKQ2xhc3NpZmllcjogUHJvZ3JhbW1pbmcgTGFuZ3VhZ2UgOjogUHl0aG9uIDo6IDMuMTQKQ2xhc3NpZmllcjogUHJvZ3JhbW1pbmcgTGFuZ3VhZ2UgOjogUHl0aG9uIDo6IDMuMTUKQ2xhc3NpZmllcjogVG9waWMgOjogU29mdHdhcmUgRGV2ZWxvcG1lbnQKQ2xhc3NpZmllcjogVHlwaW5nIDo6IFR5cGVkClJlcXVpcmVzLVB5dGhvbjogPj0zLjEwCkRlc2NyaXB0aW9uLUNvbnRlbnQtVHlwZTogdGV4dC94LXJzdApMaWNlbnNlLUZpbGU6IExJQ0VOU0UKTGljZW5zZS1GaWxlOiBteXB5L3R5cGVzaGVkL0xJQ0VOU0UKUmVxdWlyZXMtRGlzdDogdHlwaW5nX2V4dGVuc2lvbnM+PTQuNi4wOyBweXRob25fdmVyc2lvbiA8ICIzLjE1IgpSZXF1aXJlcy1EaXN0OiB0eXBpbmdfZXh0ZW5zaW9ucz49NC4xNC4wOyBweXRob25fdmVyc2lvbiA+PSAiMy4xNSIKUmVxdWlyZXMtRGlzdDogbXlweV9leHRlbnNpb25zPj0xLjAuMApSZXF1aXJlcy1EaXN0OiBwYXRoc3BlYz49MS4wLjAKUmVxdWlyZXMtRGlzdDogdG9tbGk+PTEuMS4wOyBweXRob25fdmVyc2lvbiA8ICIzLjExIgpSZXF1aXJlcy1EaXN0OiBsaWJydD49MC4xNi4wOyBwbGF0Zm9ybV9weXRob25faW1wbGVtZW50YXRpb24gIT0gIlB5UHkiClJlcXVpcmVzLURpc3Q6IGFzdC1zZXJpYWxpemU8MS4wLjAsPj0wLjExLjIKUHJvdmlkZXMtRXh0cmE6IGRteXB5ClJlcXVpcmVzLURpc3Q6IHBzdXRpbD49NC4wOyBleHRyYSA9PSAiZG15cHkiClByb3ZpZGVzLUV4dHJhOiBteXB5YwpSZXF1aXJlcy1EaXN0OiBzZXR1cHRvb2xzPj01MDsgZXh0cmEgPT0gIm15cHljIgpQcm92aWRlcy1FeHRyYTogcmVwb3J0cwpSZXF1aXJlcy1EaXN0OiBseG1sOyBleHRyYSA9PSAicmVwb3J0cyIKUHJvdmlkZXMtRXh0cmE6IGluc3RhbGwtdHlwZXMKUmVxdWlyZXMtRGlzdDogcGlwOyBleHRyYSA9PSAiaW5zdGFsbC10eXBlcyIKUHJvdmlkZXMtRXh0cmE6IGZhc3Rlci1jYWNoZQpSZXF1aXJlcy1EaXN0OiBvcmpzb247IGV4dHJhID09ICJmYXN0ZXItY2FjaGUiClByb3ZpZGVzLUV4dHJhOiBuYXRpdmUtcGFyc2VyCkR5bmFtaWM6IGxpY2Vuc2UtZmlsZQoKTXlweSAtLSBPcHRpb25hbCBTdGF0aWMgVHlwaW5nIGZvciBQeXRob24KPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KCkFkZCB0eXBlIGFubm90YXRpb25zIHRvIHlvdXIgUHl0aG9uIHByb2dyYW1zLCBhbmQgdXNlIG15cHkgdG8gdHlwZQpjaGVjayB0aGVtLiAgTXlweSBpcyBlc3NlbnRpYWxseSBhIFB5dGhvbiBsaW50ZXIgb24gc3Rlcm9pZHMsIGFuZCBpdApjYW4gY2F0Y2ggbWFueSBwcm9ncmFtbWluZyBlcnJvcnMgYnkgYW5hbHl6aW5nIHlvdXIgcHJvZ3JhbSwgd2l0aG91dAphY3R1YWxseSBoYXZpbmcgdG8gcnVuIGl0LiAgTXlweSBoYXMgYSBwb3dlcmZ1bCB0eXBlIHN5c3RlbSB3aXRoCmZlYXR1cmVzIHN1Y2ggYXMgdHlwZSBpbmZlcmVuY2UsIGdyYWR1YWwgdHlwaW5nLCBnZW5lcmljcyBhbmQgdW5pb24KdHlwZXMuCg==",
+  "stderr_base64": "",
+  "after": {
+    "schema": "UDM_GIT_INDEX_SNAPSHOT_V4",
+    "git_common_dir": "/workspace/repos/test/.git",
+    "indexes": [
+      {
+        "path": "/workspace/repos/test/.git/index",
+        "exists": false,
+        "size_bytes": null,
+        "sha256": null
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/development/index",
+        "exists": true,
+        "size_bytes": 113571,
+        "sha256": "894f89eeaad5bd8d6c8242a5047d006a0b23021a5ba362d4db42c131e082fd29"
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/env-v3-native-334/index",
+        "exists": true,
+        "size_bytes": 176832,
+        "sha256": "6ea642f1a91b7239229344a2650a9af70ea2bd477b6db9518ed4153bed8cb786"
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/udm/index",
+        "exists": true,
+        "size_bytes": 111030,
+        "sha256": "3999c60a940d9c999523ff56ec37d2bc9d7c0328c1f2503690a652fbb1f01064"
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/udm-v54/index",
+        "exists": true,
+        "size_bytes": 239205,
+        "sha256": "9ed38158d9eca002bdf62ff962921fd0f6218ad952634148e77a8520a0b9d8f2"
+      }
+    ]
+  },
+  "index_changes": [],
+  "indexes_unchanged": true
+}

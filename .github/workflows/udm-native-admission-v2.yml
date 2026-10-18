@@ -1,0 +1,174 @@
+name: Frozen native admission v2 qualification
+on:
+  push:
+    branches: [research/udm-native-admission-v2-20261016]
+    paths:
+      - .github/workflows/udm-native-admission-v2.yml
+      - research/unified_consequence_runtime/**
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: udm-native-admission-v2-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  native-admission-v2:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      PYTHONUNBUFFERED: '1'
+      UDM_COMPONENTS: ${{ github.workspace }}/components
+      UDM_SOURCE_REPOS: ${{ github.workspace }}/components/selection-sources
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Freeze all source and contracts before any target access
+        run: |
+          python -B -m research.unified_consequence_runtime.qualify_native_admission_v2 \
+            --write-freeze --repo "$GITHUB_WORKSPACE" --out qualification/FREEZE.json
+          git rev-parse HEAD > qualification/source-commit.txt
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/test
+          ref: c9092fa57c8943e638f95689cd36e6a63310f41e
+          path: components/development
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/metatron
+          ref: b9d1b5cc10477188be6e55617699be60e70f6dad
+          path: components/metatron
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/realitygraph
+          ref: 50c43b14e7272469bc51ff7204dec07682a996d7
+          path: components/flash
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: ServiceNow/webarena-verified
+          ref: 6473f72db5dcefc97b5725b59e734504edc28a21
+          fetch-depth: 0
+          path: components/evaluator
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/triskelion
+          ref: 426c54f7c774560e0fabe7213c5ef333b1327c71
+          path: components/selection-sources/triskelion
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/Minimal-Sufficient-Interface
+          ref: 56cfd7b523e3592cae4eafa5468f437ccb94dbe9
+          path: components/selection-sources/msi
+          persist-credentials: false
+      - name: Fetch exact original method objects without executing historical experiments
+        run: |
+          git fetch --no-tags --depth=1 origin \
+            13325089c471996b8b68f46540fd4ad449df752c \
+            52eb1e7995bd877a2b698efe1883ae2b80a03737 \
+            6031466188046f56b4660d772d13ad731ed4c0f2
+          git -C "$UDM_SOURCE_REPOS/msi" fetch --no-tags --depth=1 origin \
+            5d448c0ecc82ff3945d009963064ebbb67d2f308
+          ln -s "$GITHUB_WORKSPACE" "$UDM_SOURCE_REPOS/test"
+      - name: Run original regressions and admission v2 fixture contracts
+        run: |
+          set -o pipefail
+          python -m venv .venv-admission-v2
+          .venv-admission-v2/bin/python -m pip install pytest==8.3.5
+          .venv-admission-v2/bin/python -B -m unittest \
+            research.unified_consequence_runtime.test_generated_build_materialization \
+            research.unified_consequence_runtime.test_native_suite_authority \
+            research.unified_consequence_runtime.test_generic_native_verify \
+            research.unified_consequence_runtime.test_native_frontier \
+            research.unified_consequence_runtime.test_native_meta_decision \
+            research.unified_consequence_runtime.test_decisive_constructor \
+            research.unified_consequence_runtime.test_decisive_native \
+            research.unified_consequence_runtime.test_qualify_decisive_native \
+            research.unified_consequence_runtime.test_decisive_task_admission \
+            research.unified_consequence_runtime.test_recursive_restart_retention \
+            research.unified_consequence_runtime.test_native_admission_v2 \
+            research.unified_consequence_runtime.test_native_execution_v2 \
+            research.unified_consequence_runtime.test_native_admission_v2_adversarial \
+            research.unified_consequence_runtime.test_native_environment_v2 \
+            research.unified_consequence_runtime.test_native_runtime_v2 \
+            research.unified_consequence_runtime.test_qualify_native_admission_v2 \
+            -v 2>&1 | tee qualification/contracts.log
+      - name: Qualify frozen admission v2 with raw native evidence and costs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -o pipefail
+          .venv-admission-v2/bin/python -B -m research.unified_consequence_runtime.qualify_native_admission_v2 \
+            --repo "$GITHUB_WORKSPACE" --freeze qualification/FREEZE.json \
+            --components "$UDM_COMPONENTS" --source-repos "$UDM_SOURCE_REPOS" \
+            --out "$GITHUB_WORKSPACE/qualification/admission-v2" 2>&1 | tee qualification/native.log
+      - name: Check first admission gate and preserved authority
+        run: |
+          python - <<'PY'
+          import json,pathlib
+          p=pathlib.Path('qualification/admission-v2')
+          r=json.loads((p/'RESULT.json').read_text())
+          assert r['first_task_gate']['status']=='PASS'
+          assert r['status']=='ADMISSION_ONLY_QUALIFIED'
+          assert r['verdicts']['G0_G1']=='PRESERVED_EXACT_PRIOR_SOURCE_AUTHORITY'
+          assert all(r['verdicts'][gate]=='UNKNOWN' for gate in ('G2','G3','G4'))
+          retention=r['retention']
+          assert retention['records']==246
+          assert retention['CAS_objects']==76
+          assert retention['inventory_rows']==70
+          assert all(retention[key] is True for key in (
+              'ledger_exact','CAS_exact','inventory_exact','source_pins_exact','original_FLASH_agrees'))
+          assert not (p/'ERROR.json').exists()
+          print(json.dumps({'status':r['status'],'first_task_gate':r['first_task_gate'],
+              'verdicts':r['verdicts'],'retention':retention},indent=2))
+          PY
+      - name: Archive exact source and qualification evidence
+        if: always()
+        run: |
+          mkdir -p qualification
+          git archive --format=tar.gz --output=qualification/SOURCE.tar.gz HEAD \
+            research/unified_consequence_runtime .github/workflows/udm-native-admission-v2.yml \
+            .github/workflows/udm-decisive-native.yml
+          python - <<'PY'
+          import hashlib,json,os,pathlib,tarfile
+          p=pathlib.Path('qualification');d=p/'admission-v2';files={}
+          if d.exists():
+              for root,directories,names in os.walk(d,followlinks=False):
+                  directories[:]=sorted(name for name in directories
+                      if name not in {'venv','.git','source','base-build'}
+                      and not name.startswith('.venv')
+                      and not (pathlib.Path(root)/name).is_symlink())
+                  for name in sorted(names):
+                      f=pathlib.Path(root)/name
+                      if f.is_file() and not f.is_symlink():
+                          files[str(f.relative_to(p))]=hashlib.sha256(f.read_bytes()).hexdigest()
+          with tarfile.open(p/'ADMISSION_V2_EVIDENCE.tar.gz','w:gz') as packet:
+              for name in sorted(files):packet.add(p/name,arcname=name,recursive=False)
+          for f in p.iterdir():
+              if f.is_file() and f.name!='MANIFEST.json':
+                  files[f.name]=hashlib.sha256(f.read_bytes()).hexdigest()
+          (p/'MANIFEST.json').write_text(json.dumps({'source_commit':os.environ['GITHUB_SHA'],
+              'run_id':os.environ['GITHUB_RUN_ID'],'files':files},sort_keys=True)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-admission-v2-${{ github.sha }}-${{ github.run_attempt }}
+          path: |
+            qualification/*.json
+            qualification/*.txt
+            qualification/*.log
+            qualification/SOURCE.tar.gz
+            qualification/ADMISSION_V2_EVIDENCE.tar.gz
+          include-hidden-files: true
+          retention-days: 30

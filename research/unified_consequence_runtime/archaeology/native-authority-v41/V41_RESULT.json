@@ -1,0 +1,105 @@
+{
+  "G0_G1": "PRESERVED_EXACT_PREVIOUS_SOURCE_AND_WARRANTS",
+  "G2": "UNKNOWN_NATIVE_OBLIGATION_NOT_ADMITTED",
+  "G3": "UNKNOWN",
+  "G4": "UNKNOWN_NO_MATCHED_COMPARISON_EXECUTED",
+  "G5": "UNKNOWN_NO_NEW_CONCRETE_REFINEMENT_PROOF",
+  "G6": "UNKNOWN_NO_NONBYPASSABLE_EXTERNAL_REFERENCE_MONITOR_QUALIFIED",
+  "admission": {
+    "artifact_bytes": 190257365,
+    "artifact_id": 12069448596,
+    "artifact_sha256": "90dcaba5ecc47761890ad17a3761924863eb4b33ae4acf38f6aa1d870af455e0",
+    "attempts": 63,
+    "binding_controls": 33,
+    "collection_calls": 45,
+    "conclusion": "success",
+    "independent_audit": "PASS_STRICT_ADMISSION_ONLY_AUDIT",
+    "legacy_controls": 2,
+    "modern_controls": 47,
+    "native_calls": 18,
+    "qualification_scope": "Frozen metadata/native controls; not a prospective developmental result",
+    "run_id": 38954969411,
+    "source_commit": "4c3f7e276567b4ea8df96c7a8797a889040dc0ac"
+  },
+  "branch": "research/udm-native-authority-v4-includes-20261016",
+  "first_supported_obstruction": {
+    "case": 0,
+    "first_path": "README.rst",
+    "mode": "120000",
+    "reason": "ValueError: only regular tracked files supported; no symlinks or submodules",
+    "repository": "jquast/wcwidth",
+    "scope": "Preserved V3 source snapshot grammar refusal; native incompatibility was not established.",
+    "stage": "decisive_native_verify._snapshot"
+  },
+  "full_lifecycle_model_tool_engineering_cost": "UNKNOWN",
+  "historical_results_and_all_original_verifier_bytes": "UNCHANGED",
+  "native_admission": "WARRANTED_BOUNDED",
+  "prospective_frontier": {
+    "admitted": 0,
+    "artifact_audit": "PASS_EXPECTED_SCIENTIFIC_REFUSAL_EVIDENCE_AUDIT",
+    "artifact_bytes": 161119112,
+    "artifact_id": 12070859125,
+    "artifact_sha256": "6091bc11fc3e8f64121bba69d3052a7028689d5d53b604d10dcf90470a2c7b12",
+    "collection_calls": 0,
+    "comparators": {
+      "ACTUAL_CODING_AGENT": "NOT_EXECUTED_NATIVE_OBLIGATION_NOT_ADMITTED",
+      "INFORMED_EXECUTABLE_LEDGER": "NOT_EXECUTED_NATIVE_OBLIGATION_NOT_ADMITTED",
+      "MSI_V104": "NOT_EXECUTED_NATIVE_OBLIGATION_NOT_ADMITTED",
+      "UNCHANGED_METHOD": "NOT_EXECUTED_NATIVE_OBLIGATION_NOT_ADMITTED"
+    },
+    "conclusion": "failure",
+    "costs": {
+      "child_maxrss_kib_lifetime_nonadditive": 191448,
+      "collection_calls": 0,
+      "controller_child_system_seconds": 12.075171,
+      "controller_child_user_seconds": 35.619312,
+      "metadata_api_calls": 137,
+      "metadata_total_curation_wall_seconds": 39.32762100800028,
+      "native_calls": 0,
+      "ordered_meter_interval_seconds_to_summary_finish": 46.388338804244995,
+      "sum_case_wall_seconds": 15.939176056999713,
+      "sum_controller_wall_seconds": 51.76277536399721,
+      "sum_setup_phase_seconds": 14.368250622996129,
+      "sum_setup_wall_seconds": 15.937476695997248,
+      "whole_screening_controller_session_interval_seconds": 51.76726460456848
+    },
+    "native_calls": 0,
+    "pool": 7,
+    "pool_commit": "bd46699ea9933794a1c3fee161039c24a630bf4b",
+    "prequery_commit": "a7d03cf43227fcdd40779e8a8aef8a2bb163f95d",
+    "reruns": 0,
+    "retargeting": false,
+    "run_id": 38957756405,
+    "scientific_source": "c55350361a443875a23751a3ffec312497819484",
+    "universe": 9
+  },
+  "schema": "UDM_NATIVE_AUTHORITY_V41_FINAL_VERDICTS_V1",
+  "scientific_original_method_artifact": "PARTIAL_ZERO_OBJECTS_THREE_EXPLICIT_SOURCE_OBJECT_ERRORS",
+  "scientific_source_closure": {
+    "combined_full_closure": true,
+    "combined_full_files": 2156,
+    "earlier_admission_full_files": 1666,
+    "prior_source_preservation": {
+      "admission": {
+        "changed_or_missing": [],
+        "commit": "4c3f7e276567b4ea8df96c7a8797a889040dc0ac",
+        "files": 1666,
+        "inventory_sha256": "8c511af3048e6948dadc14d6bae3a3158c0deeab589b20a555a423e00da0bab0"
+      },
+      "base": {
+        "changed_or_missing": [],
+        "commit": "7edf1018342b50f73ca226de3e0d0b7acdb31647",
+        "files": 1594,
+        "inventory_sha256": "1b9fa4f54337be4856c404b72b1974a905e1ab318094220c78c74f5fb4c83199"
+      },
+      "v3": {
+        "changed_or_missing": [],
+        "commit": "95029db0d0b2122836bee7268299461bfbdb5a66",
+        "files": 1406,
+        "inventory_sha256": "e74338882d6f2b1887eb9f6974adfa0661e0cd14bd91a3ecd47ffb9a8b34ddb9"
+      }
+    },
+    "scientific_filtered_files": 1647,
+    "scientific_standalone_omitted_prior_files": 509
+  }
+}

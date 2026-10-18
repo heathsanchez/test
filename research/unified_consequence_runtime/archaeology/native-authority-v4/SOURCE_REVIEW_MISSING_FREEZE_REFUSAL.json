@@ -1,0 +1,172 @@
+{
+  "schema": "UDM_V4_INDEPENDENT_EARLY_REFUSAL_REVIEW",
+  "result": {
+    "error": "FileNotFoundError: [Errno 2] No such file or directory: '/tmp/udm-v4-review-missing-freeze-u6sh8tps/missing-freeze.json'",
+    "first_task_gate": {
+      "status": "UNKNOWN"
+    },
+    "index_audit": {
+      "after": {
+        "git_common_dir": "/workspace/repos/test/.git",
+        "indexes": [
+          {
+            "exists": false,
+            "path": "/workspace/repos/test/.git/index",
+            "sha256": null,
+            "size_bytes": null
+          },
+          {
+            "exists": true,
+            "path": "/workspace/repos/test/.git/worktrees/development/index",
+            "sha256": "894f89eeaad5bd8d6c8242a5047d006a0b23021a5ba362d4db42c131e082fd29",
+            "size_bytes": 113571
+          },
+          {
+            "exists": true,
+            "path": "/workspace/repos/test/.git/worktrees/env-v3-native-334/index",
+            "sha256": "6ea642f1a91b7239229344a2650a9af70ea2bd477b6db9518ed4153bed8cb786",
+            "size_bytes": 176832
+          },
+          {
+            "exists": true,
+            "path": "/workspace/repos/test/.git/worktrees/udm/index",
+            "sha256": "3999c60a940d9c999523ff56ec37d2bc9d7c0328c1f2503690a652fbb1f01064",
+            "size_bytes": 111030
+          },
+          {
+            "exists": true,
+            "path": "/workspace/repos/test/.git/worktrees/udm-v54/index",
+            "sha256": "5b1c45bbe4bc27335c706e9cbb140563a2c5208cf1c447695dc473f06bcd85bd",
+            "size_bytes": 190205
+          }
+        ],
+        "schema": "UDM_GIT_INDEX_SNAPSHOT_V4"
+      },
+      "before": {
+        "git_common_dir": "/workspace/repos/test/.git",
+        "indexes": [
+          {
+            "exists": false,
+            "path": "/workspace/repos/test/.git/index",
+            "sha256": null,
+            "size_bytes": null
+          },
+          {
+            "exists": true,
+            "path": "/workspace/repos/test/.git/worktrees/development/index",
+            "sha256": "894f89eeaad5bd8d6c8242a5047d006a0b23021a5ba362d4db42c131e082fd29",
+            "size_bytes": 113571
+          },
+          {
+            "exists": true,
+            "path": "/workspace/repos/test/.git/worktrees/env-v3-native-334/index",
+            "sha256": "6ea642f1a91b7239229344a2650a9af70ea2bd477b6db9518ed4153bed8cb786",
+            "size_bytes": 176832
+          },
+          {
+            "exists": true,
+            "path": "/workspace/repos/test/.git/worktrees/udm/index",
+            "sha256": "3999c60a940d9c999523ff56ec37d2bc9d7c0328c1f2503690a652fbb1f01064",
+            "size_bytes": 111030
+          },
+          {
+            "exists": true,
+            "path": "/workspace/repos/test/.git/worktrees/udm-v54/index",
+            "sha256": "5b1c45bbe4bc27335c706e9cbb140563a2c5208cf1c447695dc473f06bcd85bd",
+            "size_bytes": 190205
+          }
+        ],
+        "schema": "UDM_GIT_INDEX_SNAPSHOT_V4"
+      },
+      "changes": []
+    },
+    "schema": "UDM_NATIVE_ENVIRONMENT_QUALIFICATION_RESULT_V4",
+    "status": "UNKNOWN_ADMISSION",
+    "verdicts": {
+      "G2": "UNKNOWN",
+      "G3": "UNKNOWN",
+      "G4": "UNKNOWN",
+      "G5": "UNKNOWN",
+      "G6": "UNKNOWN"
+    }
+  },
+  "independent_before": {
+    "schema": "UDM_GIT_INDEX_SNAPSHOT_V4",
+    "git_common_dir": "/workspace/repos/test/.git",
+    "indexes": [
+      {
+        "path": "/workspace/repos/test/.git/index",
+        "exists": false,
+        "size_bytes": null,
+        "sha256": null
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/development/index",
+        "exists": true,
+        "size_bytes": 113571,
+        "sha256": "894f89eeaad5bd8d6c8242a5047d006a0b23021a5ba362d4db42c131e082fd29"
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/env-v3-native-334/index",
+        "exists": true,
+        "size_bytes": 176832,
+        "sha256": "6ea642f1a91b7239229344a2650a9af70ea2bd477b6db9518ed4153bed8cb786"
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/udm/index",
+        "exists": true,
+        "size_bytes": 111030,
+        "sha256": "3999c60a940d9c999523ff56ec37d2bc9d7c0328c1f2503690a652fbb1f01064"
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/udm-v54/index",
+        "exists": true,
+        "size_bytes": 190205,
+        "sha256": "5b1c45bbe4bc27335c706e9cbb140563a2c5208cf1c447695dc473f06bcd85bd"
+      }
+    ]
+  },
+  "independent_after": {
+    "schema": "UDM_GIT_INDEX_SNAPSHOT_V4",
+    "git_common_dir": "/workspace/repos/test/.git",
+    "indexes": [
+      {
+        "path": "/workspace/repos/test/.git/index",
+        "exists": false,
+        "size_bytes": null,
+        "sha256": null
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/development/index",
+        "exists": true,
+        "size_bytes": 113571,
+        "sha256": "894f89eeaad5bd8d6c8242a5047d006a0b23021a5ba362d4db42c131e082fd29"
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/env-v3-native-334/index",
+        "exists": true,
+        "size_bytes": 176832,
+        "sha256": "6ea642f1a91b7239229344a2650a9af70ea2bd477b6db9518ed4153bed8cb786"
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/udm/index",
+        "exists": true,
+        "size_bytes": 111030,
+        "sha256": "3999c60a940d9c999523ff56ec37d2bc9d7c0328c1f2503690a652fbb1f01064"
+      },
+      {
+        "path": "/workspace/repos/test/.git/worktrees/udm-v54/index",
+        "exists": true,
+        "size_bytes": 190205,
+        "sha256": "5b1c45bbe4bc27335c706e9cbb140563a2c5208cf1c447695dc473f06bcd85bd"
+      }
+    ]
+  },
+  "attempt_delta": {
+    "native_calls": 0,
+    "collection_calls": 0,
+    "subprocess_attempts": 0
+  },
+  "result_before_equals_pregit_observation": true,
+  "persisted_result_matches_returned": true
+}

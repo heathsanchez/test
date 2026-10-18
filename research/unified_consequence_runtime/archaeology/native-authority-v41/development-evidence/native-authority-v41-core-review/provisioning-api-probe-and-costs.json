@@ -1,0 +1,35 @@
+{
+  "synthetic_metadata_only": true,
+  "before_sha256": {
+    "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py": "056b3edc90cf1c6a568360cf9ba08f054ed5a50d6ad8cd3d90c8d38bd3dd182d",
+    "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_v41.py": "bca51c05104ab11e1aba3b822911f170be82b691f8afd8b1d3a24b2cbfe5d88e"
+  },
+  "after_sha256": {
+    "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v41.py": "056b3edc90cf1c6a568360cf9ba08f054ed5a50d6ad8cd3d90c8d38bd3dd182d",
+    "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_v41.py": "bca51c05104ab11e1aba3b822911f170be82b691f8afd8b1d3a24b2cbfe5d88e"
+  },
+  "source_unchanged": true,
+  "cases": [
+    {
+      "module": "research.unified_consequence_runtime.native_environment_v4",
+      "native_calls": 0,
+      "network_calls": 0,
+      "git_calls": 0,
+      "requirements": "pytest==8.4.1 --hash=sha256:0000000000000000000000000000000000000000000000000000000000000000\n",
+      "seconds": 0.00014822400044067763
+    },
+    {
+      "module": "research.unified_consequence_runtime.native_environment_v41",
+      "native_calls": 0,
+      "network_calls": 0,
+      "git_calls": 0,
+      "escaped_exception": "AttributeError",
+      "detail": "module 'research.unified_consequence_runtime.native_environment_selection_v41' has no attribute 'canonicalize_name'",
+      "seconds": 8.863999937602784e-06
+    }
+  ],
+  "native_calls": 0,
+  "network_calls": 0,
+  "git_calls": 0,
+  "total_seconds": 0.0001570880003782804
+}

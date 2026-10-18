@@ -1,0 +1,805 @@
+#!/usr/bin/env python3
+"""Offline independent inspection of the exact 8acd1e3 native Actions packet.
+
+No native acquisition, discovery search, candidate execution or Lean compilation
+is run. Hash-authenticated original receiver and choice definitions inspect the
+archived finite tables. Provider API metadata and the ZIP are optional inputs;
+without all three, independent provider binding is explicitly UNKNOWN.
+"""
+from __future__ import annotations
+
+import argparse
+import ast
+import base64
+import hashlib
+import json
+from pathlib import Path
+import re
+import sys
+import zipfile
+
+EXPECTED_COMMIT = '8acd1e3015f3066efaf3c11c83b21ca3fe87936d'
+EXPECTED_RUN_ID = 38708639909
+PROGRAMME_STATUS = 'WARRANTED_BOUNDED_NATIVE_OBSERVATION_CHOICE_CONSTRUCTION_AND_GLOBAL_RECLOSURE'
+RUNTIME = 'research/unified_consequence_runtime/'
+# Exact committed hashes and original source pins are baked below by the reviewer.
+SOURCE_MANIFEST = {'.github/workflows/universal-developmental-runtime.yml': '7556a9eae6beaea557b4afddd80c40e1ccce4061c674d1bb5c9385e4ea041ecd',
+ 'research/unified_consequence_runtime/.gitignore': '32dae3052f331ee34d628ef535709b301259a45df7c7522c4d35dcf49873f00b',
+ 'research/unified_consequence_runtime/CONSEQUENCE_SELECTION.md': '25b741ecc3aaac6af633bad83f8883d5b69c1e8bd3253fe36b3e10f0b202fb47',
+ 'research/unified_consequence_runtime/DEVELOPMENTAL_PROTOCOL.md': '054b2cf52840a7c3ab536cb83d16c25c4678327baecb4818eca106963c4de5f3',
+ 'research/unified_consequence_runtime/FORMAL_CORRESPONDENCE.md': 'c0b6c2e3835c19dcfc3b318fc81cf53083743e1d7137343ced241d70c4086f16',
+ 'research/unified_consequence_runtime/FORMAL_V54.md': '9d8450f4e82cb2d56c2ac7d8ffaa532ac458b12c97b3cdde87d16b13f62a314a',
+ 'research/unified_consequence_runtime/PROGRAMME_CLOSURE_PLAN.md': 'f4e14441e4198d746eea1dfd8743e1411f375da75ce6bd8ffa6b2470b5613220',
+ 'research/unified_consequence_runtime/PROGRAMME_CLOSURE_PROTOCOL.md': 'e290f1d6b7071e87b75c212af4622c4cb71714473bbc7ae4e7fc985c578f16d7',
+ 'research/unified_consequence_runtime/PROGRAMME_CLOSURE_REPORT.md': 'd738460698e3261d86e925e104ef090e7f45d5662c31a3c26099559c219af66a',
+ 'research/unified_consequence_runtime/QUALIFICATION_RECEIPT.json': 'cba3e4d78d3c12735bbe53a054c7f832fd4c42c01c4d39b304a12b5e0505361f',
+ 'research/unified_consequence_runtime/README.md': 'a2e566e64f7ab0e9938b925b4f6387611efd08ae04bd00aeb94a6b635eb1b4e4',
+ 'research/unified_consequence_runtime/RESEARCH_REPORT.md': '3405c3a7fa07f63256dd01fd9fc57ed6dd6555e0da26e3ae6f50a26fa16271ae',
+ 'research/unified_consequence_runtime/V54_PROTOCOL.md': '237d2471e636ba70c9a9059e42d1c534cbce2dc1fa6ed4f5da3ceee0f7a237a4',
+ 'research/unified_consequence_runtime/archaeology/branches/lean-kernel-arena.txt': 'cf8fc2cbb8cb69fe13a11b9b99f5241e7f6e4a623994dc2405b06ce32e211db1',
+ 'research/unified_consequence_runtime/archaeology/branches/manifest.json': '07e8ad2ddc8e9176b7fd300ae5ea8afee9b14550d5e464fe4871535ff0a07ce7',
+ 'research/unified_consequence_runtime/archaeology/branches/mathgraph-lean-kernel.txt': 'ec28258b1a6d00f6aa611613cd9aec99ad32573a5feef78897ab88ff7629d74f',
+ 'research/unified_consequence_runtime/archaeology/branches/mathgraph.txt': '0ddb5856ae0196da61eec4718b8fc3204c258a0f7202f356b8e9fc9286f751f3',
+ 'research/unified_consequence_runtime/archaeology/branches/metatron.txt': '77e7b9ef620c040391ecb9619084142213f2c5733c70da87784c455a60829728',
+ 'research/unified_consequence_runtime/archaeology/branches/msi.txt': '1d51ff1d6f597ff5416c53078bd9786465eb3e727dedebb2d6716f644831c470',
+ 'research/unified_consequence_runtime/archaeology/branches/realitygraph.txt': 'c1bef03eb71253d1532e5607115322853ad16dc4e69adea1c8f8906c35c94573',
+ 'research/unified_consequence_runtime/archaeology/branches/test.txt': '25abd7beb1ae247b384946c4f40553871fdd9ea2f4e10cf47848848f5605287c',
+ 'research/unified_consequence_runtime/archaeology/branches/triskelion.txt': '86377e9ac2bf9ff508e1bf7d2c9cde533614e971747073db9ba646928466e4aa',
+ 'research/unified_consequence_runtime/archaeology/development/REPORT.md': '8bf3398932e9c8bbeba4d3618f5f30668038a0589963554cb8a8145e38effb47',
+ 'research/unified_consequence_runtime/archaeology/development/source-index-receipt.json': '45b559028a944db46b8fd16c46ee6c8f551ecb5e76567a87de4ff434030196b5',
+ 'research/unified_consequence_runtime/archaeology/formal/REPORT.md': '06b44e5558a2d8a43c72b595eb54e7ec3685d7c8fe529d505cfe64ba17b8ef58',
+ 'research/unified_consequence_runtime/archaeology/formal/mathgraph-source/DevelopmentCertificate.lean': 'fc266183da8d7de2e5bc82b9eea093b64719fd9ef8f90f7c14e5bb3fe9b98a0a',
+ 'research/unified_consequence_runtime/archaeology/formal/mathgraph-source/Routing.lean': 'cb3bb5cf6a4cdc013da787d98bc50d35aa4d74d2087632fb73283efcaa24da6c',
+ 'research/unified_consequence_runtime/archaeology/formal/mathgraph-source/VerifiedDevelopmentalNavigation.lean': '3e59e939fdef904d5b5d0b367a7c916b5b422990e06630f86d8bd3c2c5d5ac1b',
+ 'research/unified_consequence_runtime/archaeology/formal/source-index-receipt.json': '3391447997dd5923872be4b3064c6cc67fdba9edd6576f2b3bc4d862fc132851',
+ 'research/unified_consequence_runtime/archaeology/programme-closure/.gitignore': 'd808255eeaa35dc07e5bda05aeff3c2852e3eee97f2e4c9245a89b040bca9d36',
+ 'research/unified_consequence_runtime/archaeology/programme-closure/CAPABILITY_GRAPH.json': 'f37b33efb9550b6d4366e84874a708c069438149110f8e10544573d549f45e12',
+ 'research/unified_consequence_runtime/archaeology/programme-closure/CAPABILITY_RELATION_GRAPH.json': '004ab29c549db42b35630b262bd8e0f72f0b101369b5cf75f8547fae18f44259',
+ 'research/unified_consequence_runtime/archaeology/programme-closure/CHECKPOINT.json': '9d3a22dfec67a9e60a84eceab0b46154fb56aec8c04faf1a173f594d298cdb1b',
+ 'research/unified_consequence_runtime/archaeology/programme-closure/CLOSURE_GAPS.md': 'd18ce57c92686a9e49cefad12b2558101c506e5299ffdc069c07febbc1f7ebfc',
+ 'research/unified_consequence_runtime/archaeology/programme-closure/CROSS_FRONTIER.md': 'a1c90e3deda087aae858e881e470db4dd3321b159612f4c73b5225185ae2f94c',
+ 'research/unified_consequence_runtime/archaeology/programme-closure/CROSS_FRONTIER_SOURCE_INDEX.json': '31645d68a8e8c79272ef95c8ccec715cead7c4840685791697bf50cac2523925',
+ 'research/unified_consequence_runtime/archaeology/programme-closure/DEVELOPMENT_EVIDENCE.json': 'e42e8421ee6eab173919c591348a95657e6ba45c7b70fd085f0b55de1d7d316f',
+ 'research/unified_consequence_runtime/archaeology/programme-closure/DISCOVERED_CANDIDATES.json': '8d56ce65068426469c5cf40a59c4d1eb38ec924cb343472a368ed087b0b4346b',
+ 'research/unified_consequence_runtime/archaeology/programme-closure/FROZEN_UNIVERSE.json': '6d910fbe4207255deed7f19ca16f094d68d40e1b4398a5198ebda3aeb79967b4',
+ 'research/unified_consequence_runtime/archaeology/programme-closure/INDEX_ADDITIONS.json': 'cea20a1c3312e5e63459ea10d2a9bf289d4cb84745e0fbc4326fe111175e081e',
+ 'research/unified_consequence_runtime/archaeology/programme-closure/INDEX_RECONCILIATION.json': 'c8f2900cc70e514b98a277df773d6add722da3993171745931a3b74155cea8f7',
+ 'research/unified_consequence_runtime/archaeology/programme-closure/PRIMARY_RECONCILIATION.json': '905901acf87f2177b614c454275d9ae1b36e0b6d38bfe8d1c880efe54558e6d6',
+ 'research/unified_consequence_runtime/archaeology/programme-closure/RAW_EVIDENCE_MANIFEST.json': 'aee135f5e1091adb534cd63805da8ffaa1728c163e80b0b567efe6e902e951c7',
+ 'research/unified_consequence_runtime/archaeology/programme-closure/RAW_FILE_MANIFEST.json.gz': '4bc158ad44caf43ca6363210486a43b164056feb480cf2bbdda7fb76e7af4b3e',
+ 'research/unified_consequence_runtime/archaeology/programme-closure/REF_COVERAGE_RECONCILIATION.json': '47e8b8298982797cfd1d6057d6e89013d215dc3b7296815b703a4c997c9a539a',
+ 'research/unified_consequence_runtime/archaeology/programme-closure/SCIENTIFIC_SOURCE_RECONCILIATION.json': '0600148e7a1af32b01a0896758f006d26d32dc70fdd381aab718c18e7210f8a8',
+ 'research/unified_consequence_runtime/archaeology/programme-closure/SOURCE_COVERAGE.json': '3961b818525ef58b6eac1a642ded067d6f249af4fa0e07547b47b8f9b3854c9d',
+ 'research/unified_consequence_runtime/archaeology/programme-closure/SOURCE_COVERAGE.md': 'e9c4e80f771eefba53c6fc06e270148a647e3d1db58d9343f8bdbabb5722a5c5',
+ 'research/unified_consequence_runtime/archaeology/programme-closure/SOURCE_SCAN.json': '475e293c7f6777f290262bdb0586d92cf6c503765be143168378af9b13221f81',
+ 'research/unified_consequence_runtime/archaeology/programme-closure/accessible-sources-20261015.tar.gz': 'f8b078faea24c9dae03000826432a10361ec4754b9add65f89845622e9722536',
+ 'research/unified_consequence_runtime/archaeology/programme-closure/constructors/REPORT.md': '118f7547a27c57233a7c1781de7bb25b53bcb96117a315feffa4ca6e0f0e8b6d',
+ 'research/unified_consequence_runtime/archaeology/programme-closure/constructors/SOURCE_INDEX.json': '7e188dfcbc231a78dec7850f020b733155211d84eec2855de9aef1c549fb0e26',
+ 'research/unified_consequence_runtime/archaeology/programme-closure/development-evidence.tar.gz': 'c019d75c8c7a045c15d366fc3d214e9fc13672f657ddc672bfd12d6bd89652c3',
+ 'research/unified_consequence_runtime/archaeology/programme-closure/enumerate_sources.py': '79f0c10797df3ee720eb84e740df183fa942cb768aa95fe8599254f32d31dbb1',
+ 'research/unified_consequence_runtime/archaeology/programme-closure/observations/REPORT.md': 'bd4009d0593f0be53234f803aa9e6f5942aca63dcdd6a98c12bf955a3c23a134',
+ 'research/unified_consequence_runtime/archaeology/programme-closure/observations/REVIEW_ignored-import-before.txt': 'e86a790a4b1b049142a53bf12b2cd167833a74ecf129f201b281effa93f35922',
+ 'research/unified_consequence_runtime/archaeology/programme-closure/observations/REVIEW_pyc-before.txt': 'ce03f705ce84720db2de71b68a86ff5d12a1994a3daeb325dd5438206317abc7',
+ 'research/unified_consequence_runtime/archaeology/programme-closure/observations/REVIEW_reuse-after.txt': 'f8d78c0fc1d3d9b7c20b918552f0dfd42ef1c5ea8418d194b278789a5628f615',
+ 'research/unified_consequence_runtime/archaeology/programme-closure/observations/REVIEW_reuse-before.txt': 'a3151f07c792384d0a249497ba55c9e5556134d5e9b3f21fa3b4767461ba5b5e',
+ 'research/unified_consequence_runtime/archaeology/programme-closure/observations/REVIEW_review-corrected.txt': 'fed30b5e4618273fe0b7b24ef38f08f353e6895943024a07463340496808a93f',
+ 'research/unified_consequence_runtime/archaeology/programme-closure/observations/SOURCE_INDEX.json': '8d2a2863b4da3cf2a631d2efc7b5a706a83dfd0f979ff6a9987d1e224818525b',
+ 'research/unified_consequence_runtime/archaeology/programme-closure/ros/.gitignore': 'dbfc641bf478de2776d05b82375202c41491ff33c790cf24a416f0d1945f6507',
+ 'research/unified_consequence_runtime/archaeology/programme-closure/ros/ABGP_ARTIFACT_METADATA.json': '2f496369f1dfba24c9f1cdea461495d4967e02660deb6af05d69299c2cbece6f',
+ 'research/unified_consequence_runtime/archaeology/programme-closure/ros/ABGP_FROZEN_SOURCE_MANIFEST.json': '5325e468a11bf05b6dfbed8653870befa064a35f0f96b756b3c95269c6842ba9',
+ 'research/unified_consequence_runtime/archaeology/programme-closure/ros/ABGP_PUBLIC_SOURCE_MANIFEST.json': 'b29de63302e88a6974e15e672294f75034fef7590ff91f12baea026dcfb7ca84',
+ 'research/unified_consequence_runtime/archaeology/programme-closure/ros/ABGP_RUN_METADATA.json': '0244d870d0272e7706f31a32e81fb4e67e7dafb4f6905e34c696e9488b7dc58d',
+ 'research/unified_consequence_runtime/archaeology/programme-closure/ros/ARCHIVE_MANIFEST.json': '788b2b23d7c5a4d94628c56c96a44bfbe1dd973101d694ea43974ee7d3611ad4',
+ 'research/unified_consequence_runtime/archaeology/programme-closure/ros/CLC_SOURCE_MANIFEST.json': 'bc2b11dbc41c2904c460fbd365985a78ee74aa264138850b4f33483589b288b0',
+ 'research/unified_consequence_runtime/archaeology/programme-closure/ros/COVERAGE.json': '8803059f129df358c0051b6797cc027feae7141b774f3447b135cc25f427fb18',
+ 'research/unified_consequence_runtime/archaeology/programme-closure/ros/MECHANISM_SEARCH_RESULTS.json': '6666873b79672fa10195e22da08b966f3a53af898df6d7f4b4480b36741dc593',
+ 'research/unified_consequence_runtime/archaeology/programme-closure/ros/PAPERS_ACCESS.json': 'a507f0e641299a8dd161385c0c9f734049b716b8565ed87e0ef00e686b20682f',
+ 'research/unified_consequence_runtime/archaeology/programme-closure/ros/R7_SOURCE_MANIFEST.json': 'f56f299fe2544bf68d87b1d2f8a81d523c575ae8eb31a9d0341f6f8620560c8d',
+ 'research/unified_consequence_runtime/archaeology/programme-closure/ros/RECOVERED_CAPABILITIES.json': 'a649e94c7a4cd358826a62c296037ca69644db4b77d39336ca9d9832c3de3333',
+ 'research/unified_consequence_runtime/archaeology/programme-closure/ros/REPORT.md': '4c69feb7a3b5d630d97ed9a616d2379c5b24ccd3b001a226f50f8fb7b8be3d4d',
+ 'research/unified_consequence_runtime/archaeology/programme-closure/ros/RUN_METADATA.json': 'cf5ced362583d52fd8d56fe1a42baba28f57f41277b83c9e1948ab41c2185f68',
+ 'research/unified_consequence_runtime/archaeology/programme-closure/ros/SEARCH_RESULTS.json': 'ac823edaf54bd0739effcf8b7570d38038019133b011e1a0d249a4106799b415',
+ 'research/unified_consequence_runtime/archaeology/programme-closure/ros/SOURCE_RECOVERY.json': 'b097ab820d6d338b0e0db14617db0acc8727756487e948fc89325c7ddb0e0a4e',
+ 'research/unified_consequence_runtime/archaeology/ros/FETCH_MANIFEST.json': 'c490bccf34177612269d8e83a67a98247853a8723416cdfd38f0a52d9eaa2f85',
+ 'research/unified_consequence_runtime/archaeology/ros/INDEX.md': 'c7a6a53404f5890666c6b1f4b28ab972959966738950463002f39f7372c46f4a',
+ 'research/unified_consequence_runtime/archaeology/semantics/BOOLEAN_CLOSURE_CERTIFICATE.json': 'df66f20b43418ff4e1971b14353130d622dc3978bc167b28855e68c5637e3f2e',
+ 'research/unified_consequence_runtime/archaeology/semantics/REPORT.md': '60b821c9b52592a17f4533b15aaa9ce52c1c7a1e07ecebfd2e1cc50432cec926',
+ 'research/unified_consequence_runtime/archaeology/semantics/source-index-receipt.json': '4dba75d841543b44889c4db67e409a964d87d6b4ef4b24d8ecf73b1c5b3b9526',
+ 'research/unified_consequence_runtime/archaeology/semantics/source/msi/BLIND_RECURSIVE_CROSS_GRAMMAR_GENESIS.md': '7f682a6c240fdfb81cd526ae262bac7917c93f56fe4e36830eb781221bf79765',
+ 'research/unified_consequence_runtime/archaeology/semantics/source/msi/CLOSURE_RELATIVE_CAPABILITY.md': 'c12855a33112af16f83a7e47130e329100075249792015fff457f9684da324ba',
+ 'research/unified_consequence_runtime/archaeology/semantics/source/msi/CONSEQUENTIAL_CORE_CONTRACTS.md': '4d77d9dbea94f4787eba46355c46097aeaa08d2c37d025d472458fcce8cd42da',
+ 'research/unified_consequence_runtime/archaeology/semantics/source/msi/DEVELOPMENTAL_CATEGORY.md': 'e49abf17fc6018f2c82a3f20e8b1f07bff9472cd9436c7853637777904131043',
+ 'research/unified_consequence_runtime/archaeology/semantics/source/msi/SPEC.md': '258667a43267757b6823fe36eb547da306aa1bcb363080fc65b7f11c8279734f',
+ 'research/unified_consequence_runtime/archaeology/semantics/source/msi/consequential_core.py': '2c8be1f9fde571bfcdba6d1daf8a0e680a9636f697687fd4c128a8b214975ad8',
+ 'research/unified_consequence_runtime/archaeology/semantics/source/msi/lean/BehaviouralCongruence.lean': '0388d9b7f38661aaa725c1e1e70d3a924cfa98fe3d4179c04e9d4c5b65516f33',
+ 'research/unified_consequence_runtime/archaeology/semantics/source/msi/lean/BlindRecursiveCrossGrammarGenesis.lean': 'e75c88048245315527274877cde571cc436c99d2369f70e1cf85a36171e4bea6',
+ 'research/unified_consequence_runtime/archaeology/semantics/source/msi/lean/DevelopmentalCategory.lean': '9e55bee79fb52c6d47b77897ad17f03a5a8254073e8bba58045e977055e97d3d',
+ 'research/unified_consequence_runtime/archaeology/semantics/source/msi/lean/Kernel.lean': 'aed8446ede935735103dd443b89e1f1c869f2cf6fc01c7957dcae4f588006b54',
+ 'research/unified_consequence_runtime/archaeology/semantics/source/msi/lean/MinimalRepair.lean': '68af4e7cdf9d63ea25b44c466e8b090e0d20f03cbe8e1fcec8c80d32bf512560',
+ 'research/unified_consequence_runtime/archaeology/semantics/source/msi/lean/ResidualRegimeBridge.lean': '9c2eef9ef1a78845b31e650f869e33f9556552d03aa48caed5b95437ea5159ca',
+ 'research/unified_consequence_runtime/archaeology/semantics/source/msi/lean/TypedBehaviouralCongruence.lean': 'caf66c64735cff1a9eecdd0237180badbb17ccf3e3c515182e8138c03df8237b',
+ 'research/unified_consequence_runtime/archaeology/semantics/source/triskelion/experiments/V104_ADVERSARIAL_QUOTIENT_IDENTITY.py': 'f3c9525711f7a666ae47eb01f8a4465b60f26801f1aca28d5440ae47bc9f9131',
+ 'research/unified_consequence_runtime/archaeology/semantics/source/triskelion/main/results/ATTESTATION_LEDGER.md': '01925228d57b25cf59ea95ca1b1c7ffb92be2e00ba9a87cb44d0497a94daadaa',
+ 'research/unified_consequence_runtime/archaeology/semantics/source/triskelion/main/results/PROGRESS_V49_V56_2026-08-14.md': 'c28679a68617c853e595359cf13f20965d61d1effb961fd6dd5317f5947d0f5e',
+ 'research/unified_consequence_runtime/archaeology/semantics/source/triskelion/main/results/V103_OPERATOR_QUOTIENT_COMPRESSION_RESULT_20260815.md': '655831e05e20473a2949d987b54af35a2b5e9707903619973b99aa0de4be5291',
+ 'research/unified_consequence_runtime/archaeology/semantics/source/triskelion/main/results/V104_ADVERSARIAL_QUOTIENT_IDENTITY_RESULT_20260815.md': '4b058d6259fec2075f62f389c19288df0e85c6df5d9f8a0dcde20935d00bc61f',
+ 'research/unified_consequence_runtime/archaeology/semantics/source/triskelion/v161/.github/workflows/v161-ast-role-experiential-rescue.yml': '037739bda50e7c015169883fe53921d2b453a51c76985266b55ba0ad3709780c',
+ 'research/unified_consequence_runtime/archaeology/semantics/source/triskelion/v161/experiments/V161_AST_ROLE_EXPERIENTIAL_RESCUE.py': 'a73fd951400435bfc6e20f650f93bba80dfa8fbbd3283f7734a6a391df682ae4',
+ 'research/unified_consequence_runtime/archaeology/semantics/source/triskelion/v161/protocols/V161_AST_ROLE_EXPERIENTIAL_RESCUE.md': 'b15332671b802f83e76685351bcaf34921075db173cea6eece06e80bf7f08bd6',
+ 'research/unified_consequence_runtime/archaeology/semantics/source/triskelion/v161_report/results/V161_AST_ROLE_EXPERIENTIAL_RESCUE_20260818.md': '05f4a4d899d4864e1bee246530b0b1fda71487f319a545defe952b2e4ce9e717',
+ 'research/unified_consequence_runtime/archaeology/semantics/source/triskelion/v54/.github/workflows/metalogic-v54-compounding.yml': '0dd9d8e6a3f00e7631a3f24e0c002befe670a06145f770e0f9945e2160bda58f',
+ 'research/unified_consequence_runtime/archaeology/semantics/source/triskelion/v54/experiments/METALOGIC_TWO_GENERATION_COMPOUNDING_V54.py': '13c05aea8d6c1ce2db6d3d4b85c566ee3dbd2f3fcc1c3c8c14c1c2dece7f05ba',
+ 'research/unified_consequence_runtime/archaeology/state/REPORT.md': '86cb1ff7bf80041285c7eebeb1de9e9111bffb5267dd12f68ab86fef780e1ca4',
+ 'research/unified_consequence_runtime/archaeology/state/source-index-receipt.json': 'c131291cd282e0cfb5120e801138863372f539f5bd28948a34fc01da3bcff87e',
+ 'research/unified_consequence_runtime/archaeology/state/verification.json': '1f5aa911887e99ffc0c20fa5b46bda8bec1f71e0cd8ddeb088580bfa72a48e38',
+ 'research/unified_consequence_runtime/archaeology/v54-continuation/ANCHORS_CORE.md': '984c8565659124fc5be6c2f2ede6ba8f68564cb25f841a7c0232279cf655669c',
+ 'research/unified_consequence_runtime/archaeology/v54-continuation/ANCHORS_CORE_INDEX.json': '37ad80c280dfc399bac0973f720778d53d90ffcbac9309a2fac9b59dd88ecfdc',
+ 'research/unified_consequence_runtime/archaeology/v54-continuation/ANCHORS_CORE_RUN_METADATA.json': '34281a5ad64febadc9da22ac4f650b10a2e8c712494cc6a2fcb9550e29593713',
+ 'research/unified_consequence_runtime/archaeology/v54-continuation/ANCHORS_FLASH.md': 'fb63ec81a9c6082476e31f8988b7284b0191282803ccce8ce935a001ca1a0065',
+ 'research/unified_consequence_runtime/archaeology/v54-continuation/ANCHORS_FLASH_INDEX.json': '1c9b79282fc203b7a066481a86469522307fc128945d57227a52623a793f5573',
+ 'research/unified_consequence_runtime/archaeology/v54-continuation/AUTHORITY_ASSESSMENT.md': '0b138e6b11bfeb6ebf748d2abf804dd566395644a1ae2e9005a86b5d8dfc168e',
+ 'research/unified_consequence_runtime/archaeology/v54-continuation/BASE_QUALIFICATION_RECEIPT.json': '74ecc47cb93f1dcec15deca541fcf558ca5d860fcbb1aa4b0cd1cd2d5f427bfc',
+ 'research/unified_consequence_runtime/archaeology/v54-continuation/BASE_RESEARCH_REPORT.md': 'c3afc8a020e726d55ae2d699efcb9962f75548844b13082f09ecb378bf5bc058',
+ 'research/unified_consequence_runtime/archaeology/v54-continuation/INDEPENDENT_REVIEW.md': '2d5d5a4fbc6ae520a3524ab2958dba4e4cdcc5ca1592a6cd4070082024c16bb4',
+ 'research/unified_consequence_runtime/archaeology/v54-continuation/INDEX.json': 'a56691bf4b6c143d60263e55d5c4d6f2770ade7f6b07139afd1fbc7efd66d6ba',
+ 'research/unified_consequence_runtime/archaeology/v54-continuation/MATHGRAPH_REFS.json': '7d902e4bd9b82a898138e6fb282c17eb51d3794787d7a6c0ed144e46b305bff0',
+ 'research/unified_consequence_runtime/archaeology/v54-continuation/MATHGRAPH_REFS.txt': '437a42381a9bfb7581cb85bf59707ff720c3d6edc71294a2006044d613a7fbe4',
+ 'research/unified_consequence_runtime/archaeology/v54-continuation/MSI.md': 'f6a605f0b9f3c9074fa5f8c84449e6309138b823212668772fd328e8393eb94a',
+ 'research/unified_consequence_runtime/archaeology/v54-continuation/MSI_INDEX.json': 'f1e84a5344be61194be54da097f96b77bca044d96d57a9d928a9e2c9b1877cd0',
+ 'research/unified_consequence_runtime/archaeology/v54-continuation/PROSPECTIVE_FRONTIER_FROZEN.json': 'aec93ebcaed7f4d4c0eff6c0d921acd297dffa3172827503dc1bb5a2c5c7d5a7',
+ 'research/unified_consequence_runtime/archaeology/v54-continuation/PROSPECTIVE_FRONTIER_PREFLIGHT.json': '8f815a287808d637e1327403bceae0e97c6793ce232d9b1d0ab5497139203f29',
+ 'research/unified_consequence_runtime/archaeology/v54-continuation/PROSPECTIVE_PROTOCOL.md': '61b15ae2e32470971a5510fad5058afc95d3e418f92884e09c3851c109337f9b',
+ 'research/unified_consequence_runtime/archaeology/v54-continuation/REPORT.md': '5021aa16fc6585e8c34a09c1424cca2900a19e37254ab3a138e6616e9f398253',
+ 'research/unified_consequence_runtime/archaeology/v54-continuation/SOURCE_MANIFEST.json': '1ffaa9d1f97d05d2883fc69c1ba52c3109b778acac16c9e0d8b46dc33a72220a',
+ 'research/unified_consequence_runtime/archaeology/v54-continuation/TRISKELION.md': '100a9087b5995232495f835ee33611b96864df0b0f492c60ca838b4b56259083',
+ 'research/unified_consequence_runtime/archaeology/v54-continuation/TRISKELION_INDEX.json': 'c4e299cf59eca8ce23c0af73fea3e607e655282e0630bd6fc361847a7ed9ae37',
+ 'research/unified_consequence_runtime/archaeology/v54-continuation/VDN_INDEX.json': 'cc8ba4f5346bfe1dc480ecedaad2b8c5a6b98920571f96977a6d56ad4916f726',
+ 'research/unified_consequence_runtime/archaeology/v54-continuation/VDN_RUN_METADATA.json': '5739903525b658d4f549a5fd9cc97660d7c48dca6cb039ec6fb29eb20918d6b0',
+ 'research/unified_consequence_runtime/capability_index.json': '3db75206b6479f691bfe1a52e18229cbe95809ee553af2abed4a88a4aafb0387',
+ 'research/unified_consequence_runtime/compose_original_evidence.py': 'd9185167c8de2e855237982435adb19bdf8b04a84f5604f73f4940d61eb57a53',
+ 'research/unified_consequence_runtime/consequence_selection.py': 'e39f10c5671df25761c4e2bc18c46eccbb14dfd6180834f1befc560e13a4bcaa',
+ 'research/unified_consequence_runtime/consequential_state.py': 'f775c2df3b79b09404bfc969b41251e5b401a74921539b71a8c3a6a8ac97caf1',
+ 'research/unified_consequence_runtime/cross_frontier.py': 'bb5a87018045096a56751be63f0cccc6852f180248471eb2bb0e0b967fe31d64',
+ 'research/unified_consequence_runtime/cslib_native_method.py': '5d16c1b42c2249957fb6cf88feb6962db2270ee013924d2d2ff71ebfe9944980',
+ 'research/unified_consequence_runtime/developmental_choice.py': '47e356c5742fc7ccfdb4a0c7488faa1c314e531e2793da847ba7f27d7b20ca48',
+ 'research/unified_consequence_runtime/developmental_machine.py': 'cae3b7a4a6dd13c72dad8adb6678a726f39ed36ea542888f683cd2a6a5abd95a',
+ 'research/unified_consequence_runtime/developmental_sources.json': 'fb3ea01b7579c3bd4a9118ff3034ece36a5eea96e570d85704cdbcd451aaa32a',
+ 'research/unified_consequence_runtime/developmental_verify.py': '20b235041a74ca1703fe9052454dca05922985beda3a4a9b96313fe3a2a8f54b',
+ 'research/unified_consequence_runtime/external_pr_v1/ADMISSION_POLICY.json': 'cbe038251fe9f02cb2b77ac0133da378a9915ecfeb8a4bc14e7c39f1d4e68140',
+ 'research/unified_consequence_runtime/external_pr_v1/FROZEN_PROTOCOL.json': '412a6b43bcf156bd99e083d3621141a14fd4fca3b0fc7d04b59e8d7285aaa34d',
+ 'research/unified_consequence_runtime/external_pr_v1/admission_policy.json': '1f7286ae15af7cc84d44d8defaaa3aed74dd46dbdc82d9ae817d0a8f82ef5b30',
+ 'research/unified_consequence_runtime/external_pr_v1/check_preview.mjs': '6f4d75e6ed46d03f9cd31bd3351b773bf9fc1782f1e9f4ecc90ac15423743339',
+ 'research/unified_consequence_runtime/external_pr_v1/emit.py': 'a4d52a7d11b551a4738c2b9852488c13c8beb619202c8094db660936ab6011bd',
+ 'research/unified_consequence_runtime/external_pr_v1/qualify.py': 'fc8c96759bb415c9a20dc83cf848177f413876f36f445ca05c50b0bb580e7b44',
+ 'research/unified_consequence_runtime/integrate.py': '0c9c71eaf66e58eaabac19dd1af29266ba2c8f0ab2fb7375e861eba3ac532c67',
+ 'research/unified_consequence_runtime/native_constructor.py': '74cd7e642da616825f5d0bf72c5162d7b9c6a79de2fe125eee2195c46441eaf4',
+ 'research/unified_consequence_runtime/native_observation.py': '4c5f9617a43370a9359929897c2080c3ce9a11dbf940cab58a9531a0bfe01925',
+ 'research/unified_consequence_runtime/native_policy.json': 'fafdb75d97bef7f00f0a7ffd7f956b7df301b8ac5554f5e8290480fcee2e1406',
+ 'research/unified_consequence_runtime/native_proof_event.py': '16fe9eb7a633f97ba03fccef271de799accc963f27dce97aabd38a036f3cbf2d',
+ 'research/unified_consequence_runtime/native_semantic_genesis_v1/FROZEN_PROTOCOL.json': '7b4414ae9afc92048591c7690dcaff5da43426585a326f60bdf723b0a7820856',
+ 'research/unified_consequence_runtime/native_semantic_genesis_v1/admission_policy.json': '8aaf654f221636bdec46da48b622946c4c0046dce03147851ce35353b033f866',
+ 'research/unified_consequence_runtime/native_semantic_genesis_v1/source_bisim.py': '1f29707d6b7e6a90c08f90fdf3c15a7d719cfac98defe7bdede9a0df7776ec98',
+ 'research/unified_consequence_runtime/native_semantic_genesis_v1/source_bisim_event.py': 'b262979a908406b84f41b42db60944ad4d45cf55485ad25ac7af6507b8603b5e',
+ 'research/unified_consequence_runtime/native_unbounded_v1/FROZEN_PROTOCOL.json': '726ad175cbb6fa7510031bdc54f61bf81a602c4c610288cc508276fc47d45f43',
+ 'research/unified_consequence_runtime/native_unbounded_v1/admission_policy.json': 'e7e861dc1a5864de788a4d1aea97074376c60765015824d83a7d9f2e9a662dcd',
+ 'research/unified_consequence_runtime/native_unbounded_v1/admit_methods.py': '190af39d864defeb6d5d37de1086e6d44844047a962259597c22cb01d3f225c0',
+ 'research/unified_consequence_runtime/native_unbounded_v1/method_genesis.py': '5c6ce93e6f9c71931a595d9503f0923a6a18d2f48a7bbdb19ea0772e52551480',
+ 'research/unified_consequence_runtime/prepare_native_observation.py': '8cf5f0c85907fe35f47a591fc4d98c687a9b93ff12f2208684ee50258072810f',
+ 'research/unified_consequence_runtime/qualify_developmental_machine.py': 'a834de51645b737ff833d52a9203670c5ad8ec97cda4448aa7087f7606f5c15a',
+ 'research/unified_consequence_runtime/qualify_programme_closure.py': 'e6c03491ede582aff08e27f70b55af7ca959ac664965f932d4e0af853cd665c4',
+ 'research/unified_consequence_runtime/qualify_v54_machine.py': '9c1c27be5940d7c279f84087d83616ed05e363f1e1e0b8c24e1b298e004103a5',
+ 'research/unified_consequence_runtime/replay_v54_qualification.py': '2b65464462d1feb03eebdee03770a196f0723c782620269e9207a992688add7c',
+ 'research/unified_consequence_runtime/setup_v54_worlds.sh': '98b5d51ec7bf18abd508602975e8fc32f07fa8a5458b994e324e03e7b94ef59a',
+ 'research/unified_consequence_runtime/sources.json': '9500c9e0a017a715a8c39a03e3c150d7082eaf5e8ef6613eac2925b55c4ba07b',
+ 'research/unified_consequence_runtime/test_consequence_selection.py': '9a46cdf65311963e6e56fdcf7ea633de4ac6d50c5e6cca3bb5f01611c438daf8',
+ 'research/unified_consequence_runtime/test_consequential_state.py': '1749147ba2137bd79a098234217dc22249297ad1cee477f88fb88b1ce181b39a',
+ 'research/unified_consequence_runtime/test_cross_frontier.py': 'd60041fe55b631cb7afbd83691d8aa97f60f447af0e04fe736bbedd1e3fa26ec',
+ 'research/unified_consequence_runtime/test_developmental_choice.py': '7bce1ee9756120f7b07ee340fabf68fc51f825cf0596a3a6e70e2392c58e6a0b',
+ 'research/unified_consequence_runtime/test_developmental_machine.py': 'ede7a4421a06d96b5eef84885f435c7d6330a94d0dfd2dd0642afd8c1d8af8a7',
+ 'research/unified_consequence_runtime/test_developmental_verify.py': '840919664a754d0fcdd7a88ede8a91e19eabf01f69fb246de1eea0e8a0571dfb',
+ 'research/unified_consequence_runtime/test_integrate.py': 'bee3e919e4583a70edc9ba5bb48627e2864f01f86b6579087b917bacd0caaeb7',
+ 'research/unified_consequence_runtime/test_native_constructor.py': '8ab2ede62f7c9d6e14d66de90cd35f90290a44d9b3f207477586ca6862857c1a',
+ 'research/unified_consequence_runtime/test_native_frontier_activation.py': 'd9ac1474df4c5347fb1878aabbfa1b391629846ebb5db2bf23cd94036e21342b',
+ 'research/unified_consequence_runtime/test_native_observation.py': '003b7dfd1f004fe8fce080837afa704b69c906d9d22ecda0cb9d6f28563c0e50',
+ 'research/unified_consequence_runtime/test_qualify_v54_machine.py': '91122bbabf1c7455548c195bb9a94d8dc51764ab5637baaba752d25d10557dd3',
+ 'research/unified_consequence_runtime/test_replay_v54_qualification.py': '0e813093cecfd0d1b56523c6a5f20886f528d6b5f1d8233ec792e374f233d8ff',
+ 'research/unified_consequence_runtime/test_v54_runtime.py': 'a65f82cfc931d72cbf5b93d81112265d69ac834368a40c5c1787269a36d709d1',
+ 'research/unified_consequence_runtime/test_v54_runtime_adversarial.py': '9be6be8d4fd9a97ab1967fc2724d259ae5dd143c5081452ae045f9e002c951cb',
+ 'research/unified_consequence_runtime/test_v54_source.py': 'd458546ba56ea23659dfbb56d2ce31922da93685e17b4fa745474b6da5fddc82',
+ 'research/unified_consequence_runtime/test_v54_verify.py': '4ef44798a0656849c082df4c05d02ff824be46c1619e971c7c5e383a0bea4347',
+ 'research/unified_consequence_runtime/typed_semantic_method_v1/FROZEN_PROTOCOL.json': 'b953fbc2d4346340604a0d553a8582332fcd650508b91676576028434e75e535',
+ 'research/unified_consequence_runtime/typed_semantic_method_v1/admission_policy.json': '39756e0b488161dd1c4800bf469458a917f2b71f02ca94955dd18ef9312ae2c3',
+ 'research/unified_consequence_runtime/typed_semantic_method_v1/admit_native_method.py': '6e33e6cccfc233ef45e3ccecae19c3a7ade434226364e3b04c6139b05400162c',
+ 'research/unified_consequence_runtime/typed_semantic_method_v1/mine_native_methods.py': '43a373827dbfb23ed84666aebacc36aa681326093351eeb93a1f7b87a5c3bcea',
+ 'research/unified_consequence_runtime/v54_formal/.gitignore': '03824949a66ab6db1429bd078d10d1bc2d75706aa1b756c547f9a7ff541c77cb',
+ 'research/unified_consequence_runtime/v54_formal/BoundedV54.lean': 'cdca4bf4abf3f6f12f09b4dee4f602d013c66281603147e777abeecccf15c7e8',
+ 'research/unified_consequence_runtime/v54_formal/check.py': '34d042e466d38937663267951a5f14eb84ce06b133fca2c4e6fe46c43365faf5',
+ 'research/unified_consequence_runtime/v54_formal/generate.py': 'f621af4f4abbaaaaf88ae32c5d8744ff41df1e74a86854b64c6e780a583dac10',
+ 'research/unified_consequence_runtime/v54_formal/lean-toolchain': 'db7bb24b756d745bbde83fe92718b51bd3625dae3701ba0f598d0eedcd3f3028',
+ 'research/unified_consequence_runtime/v54_formal/test_formal.py': '765bb7fbedc365313b3d94b1c21da2c1fd8f455b7ed610e4cce108afe2e4b215',
+ 'research/unified_consequence_runtime/v54_runtime.py': 'f247361caf1090aa14340071b8f05efff4b3f5af54b3eac0999cd2aac0cde93e',
+ 'research/unified_consequence_runtime/v54_source.py': 'adda0919fe17eff04646bd217620a6adfc66ef0dd9418e1663e850ed09857892',
+ 'research/unified_consequence_runtime/v54_verify.py': 'c40a4e1f227ea83b82ceb8fd4a404cf85fd04ced3b87657934c0c92fb72f0456'}
+OBS_SOURCES = {'producer': {'commit': 'bda00d75ac186b02b44eac93d0e64f67d19c5b9a',
+              'path': 'research/real_native_observation_basis_20261015/native_basis.py',
+              'sha256': '188fa09e7cbb9fa347bb1b3b7b2d283d518c294267c6aa0ba6a8575ebd371e1e'},
+ 'solver': {'commit': 'bda00d75ac186b02b44eac93d0e64f67d19c5b9a',
+            'path': 'research/flash_genesis_v11/learned_repair.py',
+            'sha256': '1200898dfafa0c431c49f4eeab23f500e8dca92d0fdebfa72d6aca2ec9861506'},
+ 'verifier': {'commit': '32a31e261fdef54fce3cdef902077100cf7c7094',
+              'path': 'research/real_native_observation_basis_20261015/audit_independent.py',
+              'sha256': 'c3fbfffe3598763d76efb983668faa6ba7881a1d6069ba1ecd6635820d7dc344'}}
+NATIVE_PINS = {'A': {'head': 'dcdfda3f825189c7f31048b6598142a944151073',
+       'old': '7ab7469addd60e03ca3bfbb1287642e8d771e1c0'},
+ 'B': {'head': '5d0b1825134a05da4e49654baa4717094a9f0896',
+       'old': '858186a3edb4cad6d66281ee7ad5fb07fe820406'},
+ 'C': {'head': 'd17910d46bcc0f3d5b9c1de607a41836e1c85ce2',
+       'old': '4b38becd75405e0f38ef3e47e9839eb407591c8a'}}
+OBS_CONTRACT = {'authority_snapshot': 'udm-native-observation-v1',
+ 'input_type': 'NativeTomlProgramFamily',
+ 'output_type': 'NativeCoherenceClassification',
+ 'verifier_id': 'original-independent-tomllib-audit-v1'}
+CONSTRUCTOR_SOURCE = {'commit': '8befdf9d9d9565bc2640d380f98c6547b3660a63',
+ 'files': {'FROZEN_PROTOCOL.md': '82eb4b152ee4df53f0e94d19fcd5409056a805f55775abb84672eaa6e7e7d4cd',
+           'FROZEN_REPAIR_PROTOCOL.md': 'f3d21357cc1dacd7ca0a5b17c3d01c0e737086063c063891d9fa29b2b4c6cb1e',
+           'observer_genesis.py': '600f74215e420ddf0ded533bc923b12095b1a2f3972b46a9b01ee32eeb4d0091',
+           'repair_compiler.py': 'aae8e63ab945e063cb85d0a0a4ed8e1a24a885dec9b487d2a687f0ffce7ab338'},
+ 'path': 'research/mathgraph_obligation_compiler_20261015',
+ 'repository': 'heathsanchez/test'}
+TARGETS = {'boltons': {'base': '967864f89791509f9eb36b22b4579d36b72a6df2',
+             'head': 'adce5659b0b4a23ad5839d5aa2c88063b5b6f76b',
+             'pr': 474,
+             'repo': 'mahmoud/boltons',
+             'role': 'transfer'},
+ 'cachetools': {'base': 'f4f288579dc3c8f82f62d0eaca7774303d9d3768',
+                'head': '2417c0d63b286772169c0eab4ccf141213e1ca45',
+                'pr': 441,
+                'repo': 'tkem/cachetools',
+                'role': 'development'}}
+CONSTRUCTOR_CONTRACT = {'authority_snapshot': 'udm-native-constructor-8befdf9d',
+ 'input_type': 'NativeConstructorProfile',
+ 'output_type': 'NativeBooleanPass',
+ 'verifier_id': 'original-native-obligation-compiler-independent-v1'}
+CHOICE_SOURCE = {'branch': 'verified-prospective-repair-selection-v1',
+ 'commit': '6031466188046f56b4660d772d13ad731ed4c0f2',
+ 'path': 'experiments/verified_prospective_repair_selection_v1/run.py',
+ 'repository': 'heathsanchez/test',
+ 'sha256': 'ef46969e2182a5ced64e3c80f5266c03f864d72dcd8133539e6b1a71c42a4b94'}
+CHOICE_SOURCE_B64 = 'IyEvdXNyL2Jpbi9lbnYgcHl0aG9uMwoiIiJWZXJpZmllZCBQcm9zcGVjdGl2ZSBSZXBhaXIgU2VsZWN0aW9uIFYxLCBmaW5pdGUgY2F1c2FsIHF1YWxpZmljYXRpb24uIiIiCmltcG9ydCBoYXNobGliLCBpdGVydG9vbHMsIGpzb24sIHBhdGhsaWIsIHJhbmRvbQoKUk9PVD1wYXRobGliLlBhdGgoX19maWxlX18pLnBhcmVudApDT05UUkFTVD0oMSwtMSwtMSwxKQpGVVRVUkVTPXR1cGxlKHJhbmdlKDcwMSw3MjUpKQoKZGVmIGJpdHMobWFzayk6IHJldHVybiB0dXBsZSgobWFzaz4+KDMtaSkpJjEgZm9yIGkgaW4gcmFuZ2UoNCkpCmRlZiBzZXBhcmF0ZXMoZCk6IHJldHVybiBzdW0oYSpiIGZvciBhLGIgaW4gemlwKGQsQ09OVFJBU1QpKSAhPSAwCmRlZiBwYXJ0aXRpb24oZCk6CiAgICByZXR1cm4gdHVwbGUoc29ydGVkKHR1cGxlKGkgZm9yIGkseCBpbiBlbnVtZXJhdGUoZCkgaWYgeD09eikKICAgICAgICAgICAgICAgICAgICAgICAgZm9yIHogaW4gKDAsMSkgaWYgYW55KHg9PXogZm9yIHggaW4gZCkpKQpkZWYgZWRnZXMocCk6CiAgICByZXR1cm4gZnJvemVuc2V0KHR1cGxlKHNvcnRlZCgoYSxiKSkpIGZvciBjIGluIHAgZm9yIGEgaW4gYyBmb3IgYiBpbiBjIGlmIGE8YikKClJFUEFJUlM9c29ydGVkKHtwYXJ0aXRpb24oYml0cyhpKSkgZm9yIGkgaW4gcmFuZ2UoMTYpIGlmIHNlcGFyYXRlcyhiaXRzKGkpKX0pClRBUkdFVF9JTkRFWD1pbnQoaGFzaGxpYi5zaGEyNTYoYiJwcm9zcGVjdGl2ZS1yZXBhaXItc2VsZWN0aW9uLXYxIikuaGV4ZGlnZXN0KCksMTYpJWxlbihSRVBBSVJTKQpUQVJHRVQ9UkVQQUlSU1tUQVJHRVRfSU5ERVhdCgpkZWYgY29uc2VxdWVuY2UocmVwYWlyLHNlZWQpOgogICAgcm5nPXJhbmRvbS5SYW5kb20oc2VlZCkKICAgIHBlcm09bGlzdChyYW5nZSg0KSk7IHJuZy5zaHVmZmxlKHBlcm0pCiAgICBkZWYgbW92ZShwKTogcmV0dXJuIHR1cGxlKHNvcnRlZCh0dXBsZShzb3J0ZWQocGVybVt4XSBmb3IgeCBpbiBjKSkgZm9yIGMgaW4gcCkpCiAgICBycCx0cD1tb3ZlKHJlcGFpciksbW92ZShUQVJHRVQpCiAgICBtaXNtYXRjaD1sZW4oZWRnZXMocnApXmVkZ2VzKHRwKSkKICAgICMgUmljaCBleHRlcm5hbCB2ZWN0b3IsIGFsbCBtaW5pbWl6ZWQ7IGNvcnJlY3RuZXNzIGlzIGEgbWFuZGF0b3J5IGdhdGUuCiAgICByZXR1cm4gKDEwMCs3Km1pc21hdGNoLCBtaXNtYXRjaCwgaW50KG1pc21hdGNoPjApLCBpbnQobWlzbWF0Y2g+MiksIDAgaWYgbWlzbWF0Y2g9PTAgZWxzZSAxKQoKZGVmIGRvbWluYXRlcyhhLGIpOgogICAgZmxhdF9hPVt4IGZvciB2IGluIGEgZm9yIHggaW4gdl07IGZsYXRfYj1beCBmb3IgdiBpbiBiIGZvciB4IGluIHZdCiAgICByZXR1cm4gYWxsKHg8PXkgZm9yIHgseSBpbiB6aXAoZmxhdF9hLGZsYXRfYikpIGFuZCBhbnkoeDx5IGZvciB4LHkgaW4gemlwKGZsYXRfYSxmbGF0X2IpKQoKZGVmIGNob29zZShwcm9maWxlcyk6CiAgICB3aW5uZXJzPVtpIGZvciBpLGEgaW4gZW51bWVyYXRlKHByb2ZpbGVzKQogICAgICAgICAgICAgaWYgYWxsKGk9PWogb3IgZG9taW5hdGVzKGEsYikgZm9yIGosYiBpbiBlbnVtZXJhdGUocHJvZmlsZXMpKV0KICAgIHJldHVybiB3aW5uZXJzCgpkZWYgbWFpbigpOgogICAgcHJvZmlsZXM9W1tjb25zZXF1ZW5jZShyLHMpIGZvciBzIGluIEZVVFVSRVNdIGZvciByIGluIFJFUEFJUlNdCiAgICB3aW5uZXJzPWNob29zZShwcm9maWxlcykKICAgIHNoYW09W1tjb25zZXF1ZW5jZShUQVJHRVQscykgZm9yIHMgaW4gRlVUVVJFU10gZm9yIF8gaW4gUkVQQUlSU10KICAgIG5vX2V2aWRlbmNlPVtdCiAgICAjIFdyb25nIGV2aWRlbmNlIGxhY2tzIHZlcmlmaWVyIGFncmVlbWVudCBhbmQgdGhlcmVmb3JlIGNhbm5vdCBpbmhhYml0IGF1dGhvcml0eS4KICAgIHdyb25nX2NsYWltPShUQVJHRVRfSU5ERVgrMSklbGVuKFJFUEFJUlMpCiAgICB3cm9uZ19jZXJ0aWZpY2F0ZV92YWxpZD1wcm9maWxlc1t3cm9uZ19jbGFpbV09PXByb2ZpbGVzW1RBUkdFVF9JTkRFWF0KICAgIHBlcm09WzMsMCw0LDEsMl0KICAgIHBlcm11dGVkPVtwcm9maWxlc1tpXSBmb3IgaSBpbiBwZXJtXQogICAgcGVybXV0ZWRfd2lubmVyPXBlcm1bY2hvb3NlKHBlcm11dGVkKVswXV0gaWYgY2hvb3NlKHBlcm11dGVkKSBlbHNlIE5vbmUKICAgIGV2YWx1YXRpb25fY2FsbHM9bGVuKFJFUEFJUlMpKmxlbihGVVRVUkVTKQogICAgc2VsZWN0aW9uX2NhbGxzPWxlbihSRVBBSVJTKSoqMgogICAgZnVsbHlfY2hhcmdlZD1zdW0odlswXSBmb3IgdiBpbiBwcm9maWxlc1tUQVJHRVRfSU5ERVhdKStldmFsdWF0aW9uX2NhbGxzK3NlbGVjdGlvbl9jYWxscwogICAgcGFzc2l2ZT1zdW0obWluKHZbMF0gZm9yIHYgaW4gcHJvZmlsZXNbaV0pIGZvciBpIGluIHJhbmdlKGxlbihSRVBBSVJTKSkpKmxlbihGVVRVUkVTKQogICAgZ2F0ZXM9ewogICAgICAiZml2ZV9yZXBhaXJzX2VxdWFsbHlfYXZhaWxhYmxlIjpsZW4oUkVQQUlSUyk9PTUsCiAgICAgICJvcmlnaW5hbF9yZXNpZHVhbF9oYXNfemVyb19wcmVmZXJlbmNlIjpUcnVlLAogICAgICAiY29tcGxldGVfZnV0dXJlX2ZhbWlseSI6bGVuKEZVVFVSRVMpPT0yNCBhbmQgYWxsKGxlbihwKT09MjQgZm9yIHAgaW4gcHJvZmlsZXMpLAogICAgICAidW5pcXVlX3BhcmV0b19kb21pbmF0b3IiOndpbm5lcnM9PVtUQVJHRVRfSU5ERVhdLAogICAgICAibm9fZnV0dXJlX2V2aWRlbmNlX3Vua25vd24iOm5vX2V2aWRlbmNlPT1bXSwKICAgICAgInNoYW1fZnV0dXJlc191bmtub3duIjpjaG9vc2Uoc2hhbSk9PVtdLAogICAgICAid3JvbmdfZXZpZGVuY2VfcmVqZWN0ZWQiOm5vdCB3cm9uZ19jZXJ0aWZpY2F0ZV92YWxpZCwKICAgICAgInJlcGFpcl9sYWJlbF9wZXJtdXRhdGlvbl9pbnZhcmlhbnQiOnBlcm11dGVkX3dpbm5lcj09VEFSR0VUX0lOREVYLAogICAgICAiZXZpZGVuY2VfYWJsYXRpb25fcmVzdG9yZXNfdW5rbm93biI6Y2hvb3NlKFtdKT09W10sCiAgICAgICJhbGxfcmVwYWlyc19jb3JyZWN0IjphbGwodlstMV0gaW4gKDAsMSkgZm9yIHAgaW4gcHJvZmlsZXMgZm9yIHYgaW4gcCksCiAgICAgICJmdWxseV9jaGFyZ2VkX3NlbGVjdGVkX2JlYXRzX3Bhc3NpdmUiOmZ1bGx5X2NoYXJnZWQ8cGFzc2l2ZSwKICAgIH0KICAgIHNuYXA9eyJwYXJlbnRfYXV0aG9yaXR5IjoiNTNlZjc2N2M0NzI4MTY1OTc3NjAyMGVhNDU0M2U4ZWE1NjUzMzQ0MyIsCiAgICAgICJmdXR1cmVfc2VlZHMiOltGVVRVUkVTWzBdLEZVVFVSRVNbLTFdXSwiZnV0dXJlX2NvdW50IjpsZW4oRlVUVVJFUyksCiAgICAgICJzZWxlY3Rpb25fcmVsYXRpb24iOiJjb29yZGluYXRld2lzZSBQYXJldG8gbWluaW1pemF0aW9uIG92ZXIgY29tcGxldGUgZnV0dXJlIHZlY3RvcnMiLAogICAgICAidGFyZ2V0X2Rlcml2YXRpb24iOiJzaGEyNTYocHJvc3BlY3RpdmUtcmVwYWlyLXNlbGVjdGlvbi12MSkgbW9kIDUiLAogICAgICAicmVwYWlyX2NsYXNzZXMiOltsaXN0KG1hcChsaXN0LHApKSBmb3IgcCBpbiBSRVBBSVJTXX0KICAgIGV2PXsidmVyZGljdCI6IkFVVEhPUklaRURfUkVQQUlSIiBpZiBhbGwoZ2F0ZXMudmFsdWVzKCkpIGVsc2UgIk5FR0FUSVZFX09SX1BBUlRJQUwiLAogICAgICAiY2xhc3NpZmljYXRpb24iOiJGSU5JVEVfQ09NUExFVEVfUFJPU1BFQ1RJVkVfQ0FVU0FMX1JFUEFJUl9TRUxFQ1RJT04iLAogICAgICAiYXV0aG9yaXplZF9yZXBhaXJfaW5kZXgiOndpbm5lcnNbMF0gaWYgbGVuKHdpbm5lcnMpPT0xIGVsc2UgTm9uZSwKICAgICAgImF1dGhvcml6ZWRfcGFydGl0aW9uIjpsaXN0KG1hcChsaXN0LFJFUEFJUlNbd2lubmVyc1swXV0pKSBpZiBsZW4od2lubmVycyk9PTEgZWxzZSBOb25lLAogICAgICAieG9yX2luZGV4IjpSRVBBSVJTLmluZGV4KHBhcnRpdGlvbigoMCwxLDEsMCkpKSwKICAgICAgIndpbm5lcl9pc194b3IiOndpbm5lcnM9PVtSRVBBSVJTLmluZGV4KHBhcnRpdGlvbigoMCwxLDEsMCkpKV0sCiAgICAgICJwcm9maWxlcyI6cHJvZmlsZXMsImNoYXJnZXMiOnsiZnV0dXJlX2V2YWx1YXRpb25zIjpldmFsdWF0aW9uX2NhbGxzLAogICAgICAgICJkb21pbmFuY2VfY2hlY2tzIjpzZWxlY3Rpb25fY2FsbHMsInNlbGVjdGVkX2Rvd25zdHJlYW0iOnN1bSh2WzBdIGZvciB2IGluIHByb2ZpbGVzW1RBUkdFVF9JTkRFWF0pLAogICAgICAgICJmdWxseV9jaGFyZ2VkX3NlbGVjdGVkIjpmdWxseV9jaGFyZ2VkLCJwYXNzaXZlIjpwYXNzaXZlfSwKICAgICAgIm5ldF9zYXZpbmdzIjpwYXNzaXZlLWZ1bGx5X2NoYXJnZWQsImdhdGVzIjpnYXRlcywKICAgICAgInNuYXBzaG90X2RpZ2VzdCI6aGFzaGxpYi5zaGEyNTYoanNvbi5kdW1wcyhzbmFwLHNvcnRfa2V5cz1UcnVlKS5lbmNvZGUoKSkuaGV4ZGlnZXN0KCksCiAgICAgICJpbnRlcnByZXRhdGlvbiI6ImZ1dHVyZSBjb25zZXF1ZW5jZSwgbm90IHRoZSBnZW5lc2lzIHJlc2lkdWFsLCBhdXRob3JpemVzIHJldGVudGlvbiIsCiAgICAgICJub3RfZXN0YWJsaXNoZWQiOlsibmF0dXJhbC13b3JsZCByZXBhaXIgY2hvaWNlIiwidW5ib3VuZGVkIGZ1dHVyZSBjb21wbGV0ZW5lc3MiLCJjYW5vbmljYWwgcmVwYWlyIl19CiAgICBvdXQ9Uk9PVC8icmVzdWx0cyI7b3V0Lm1rZGlyKGV4aXN0X29rPVRydWUpCiAgICAob3V0LyJzbmFwc2hvdC5qc29uIikud3JpdGVfdGV4dChqc29uLmR1bXBzKHNuYXAsaW5kZW50PTIsc29ydF9rZXlzPVRydWUpKyJcbiIpCiAgICAob3V0LyJldmlkZW5jZS5qc29uIikud3JpdGVfdGV4dChqc29uLmR1bXBzKGV2LGluZGVudD0yLHNvcnRfa2V5cz1UcnVlKSsiXG4iKQogICAgcHJpbnQoanNvbi5kdW1wcyhldixpbmRlbnQ9Mixzb3J0X2tleXM9VHJ1ZSkpCmlmIF9fbmFtZV9fPT0iX19tYWluX18iOm1haW4oKQo='
+ORIGINAL_ARCHIVES = {
+    'originals/udm-green.zip': 'c024b3dfb8cfd18b8ae7c657d2f12b7366b6e081ce0b01549de9587839a20563',
+    'originals/v54-original.zip': '6cd5ae4796ce58b266506e2cfce80b31688a11f9b80d0521487267bfeeb649bf',
+    'originals/qualified-v54.zip': '883eba3206e7feb44203f340212b68d5fd639588ca3af2fc1584436b95462c16',
+}
+
+
+def sha(raw):
+    return hashlib.sha256(raw).hexdigest()
+
+
+def encoded(value, *, ascii=True):
+    return json.dumps(value, sort_keys=True, separators=(',', ':'),
+                      ensure_ascii=ascii, allow_nan=False).encode()
+
+
+def require(condition, message):
+    if not condition:
+        raise ValueError(message)
+
+
+def definitions(raw, names, namespace=None):
+    """Compile only named definitions from already hash-authenticated originals."""
+    tree = ast.parse(raw)
+    selected = [node for node in tree.body
+                if isinstance(node, (ast.Import, ast.ImportFrom, ast.FunctionDef))
+                and (not isinstance(node, ast.FunctionDef) or node.name in names)
+                or isinstance(node, ast.Assign) and any(
+                    isinstance(target, ast.Name) and target.id in names
+                    for target in node.targets)]
+    namespace = {} if namespace is None else namespace
+    exec(compile(ast.Module(body=selected, type_ignores=[]), '<authenticated-original>', 'exec'), namespace)
+    return namespace
+
+
+class Inspector:
+    def __init__(self, root, *, expected_commit=EXPECTED_COMMIT,
+                 expected_run_id=EXPECTED_RUN_ID, workflow_sha256=None,
+                 component_review=False):
+        self.root = Path(root).resolve(strict=True)
+        self.expected_commit, self.expected_run_id = expected_commit, expected_run_id
+        self.component_review = component_review
+        self.manifest = dict(SOURCE_MANIFEST)
+        if workflow_sha256 is not None:
+            require(re.fullmatch('[0-9a-f]{64}',workflow_sha256), 'Invalid explicit workflow pin')
+            self.manifest['.github/workflows/universal-developmental-runtime.yml'] = workflow_sha256
+        self.gates = []
+        self.report = {'schema': 'udm.programme.offline-independent-review.v1',
+            'status': 'RUNNING', 'expected_source_commit': expected_commit,
+            'expected_run_id': expected_run_id, 'gates': self.gates,
+            'component_review':component_review,'unclosed_workflow_gates':[],
+            'scope': 'Archive/source/finite-evidence inspection; no native experiment repeated',
+            'limits': {'python_formal_refinement': 'UNKNOWN',
+                'new_observation_primitive_or_constructor_grammar': 'NOT_ACQUIRED',
+                'prospective_unfamiliar_source': 'UNKNOWN',
+                'new_later_operation_discoverability_in_this_continuation': 'UNKNOWN',
+                'nonbypassable_external_enforcement': 'UNKNOWN',
+                'live_agent_comparator': 'NOT_RUN',
+                'full_research_programme_exhaustiveness': 'NOT_ESTABLISHED_BY_THIS_REVIEW'}}
+
+    def path(self, relative):
+        p = self.root / relative
+        require(p.is_file() and p.resolve().is_relative_to(self.root)
+                and not p.is_symlink(), 'Missing/redirected archive file: ' + relative)
+        return p
+
+    def read(self, relative):
+        return json.loads(self.path(relative).read_bytes())
+
+    def gate(self, name):
+        self.gates.append(name)
+
+    def source_and_summaries(self):
+        for name, expected in self.manifest.items():
+            require(sha(self.path(name).read_bytes()) == expected, 'Committed source mismatch: ' + name)
+        actual_python = {str(p.relative_to(self.root)) for p in (self.root / RUNTIME).rglob('*.py')}
+        require(actual_python <= set(self.manifest), 'Unexpected executable Python in source snapshot')
+        self.report['source_snapshot'] = {'files': len(self.manifest),
+            'manifest_sha256': sha(encoded(self.manifest)), 'all_exact_committed_hashes': True,
+            'unchanged_base_source_commit':EXPECTED_COMMIT,
+            'workflow_pin_override':self.manifest['.github/workflows/universal-developmental-runtime.yml'] != SOURCE_MANIFEST['.github/workflows/universal-developmental-runtime.yml']}
+        self.gate('exact_committed_source_and_workflow_snapshot')
+        for name, expected in ORIGINAL_ARCHIVES.items():
+            require(sha(self.path(name).read_bytes()) == expected, 'Original archive mismatch: ' + name)
+        self.gate('three_exact_original_qualification_archives')
+        if self.component_review and not (self.root/'qualification/programme-qualification-summary.json').is_file():
+            self.report['unclosed_workflow_gates'].append('programme_summary_not_produced_after_prior_workflow_failure')
+            return
+        summary = self.read('qualification/programme-qualification-summary.json')
+        require(summary['schema'] == 'udm.programme-qualified.v1'
+                and summary['source_commit'] == self.expected_commit
+                and summary['run_id'] == self.expected_run_id
+                and summary['result'] == PROGRAMME_STATUS
+                and summary['v54_acquisition_rerun'] is False, 'Programme coordinator binding')
+        require(summary['prospective_unfamiliar_source'] == 'UNKNOWN'
+                and summary['strict_comparative_advantage'] == 'REJECTED_MEASURED_TIE'
+                and summary['nonbypassable_external_enforcement'] == 'UNKNOWN'
+                and summary['python_formal_refinement'] == 'UNKNOWN', 'Separate verdict boundaries')
+        for name, expected in summary['digests'].items():
+            require(sha(self.path('qualification/' + name).read_bytes()) == expected,
+                    'Summary evidence digest mismatch: ' + name)
+        self.report['programme_summary_sha256'] = sha(self.path('qualification/programme-qualification-summary.json').read_bytes())
+        self.gate('coordinator_run_and_evidence_summary_bindings')
+
+    def ledger(self):
+        self.result = self.read('qualification/programme/RESULT.json')
+        r = self.result
+        require(r['schema'] == 'udm.programme.native-closure.v1' and r['status'] == PROGRAMME_STATUS,
+                'Programme result status/schema')
+        require(len(r['stages']) == 9 and all(s['status'] == 'PASS' for s in r['stages'].values()),
+                'All nine native stages must pass')
+        boundary = r['claim_boundary']
+        require(boundary['observation_constructor'] == 'SUPPLIED_ORIGINAL_SEVEN_CHANNEL_128_MASK_FLASH_SELECTION'
+                and boundary['native_repair_constructors'] == 'TWO_SUPPLIED_ORIGINAL_SOURCE_AST_GRAMMARS'
+                and boundary['new_observation_primitive_or_constructor_grammar'] == 'NOT_ACQUIRED'
+                and boundary['python_formal_refinement'] == 'UNKNOWN'
+                and boundary['reference_monitor'] == 'UNKNOWN_NONBYPASSABILITY'
+                and boundary['external_execution_authority'] == 'NONE', 'Incorrect experiment claim boundary')
+        require('search_horizon' not in boundary and 'constructor' not in boundary,
+                'Inherited V54 claim-boundary metadata was not corrected')
+        require(r['boundaries']['fresh_V54_acquisition_or_search'] is False
+                and r['boundaries']['historical_targets'] == 'EXPOSED'
+                and r['boundaries']['new_observation_vocabulary'] == 'NOT_ACQUIRED', 'Historical scope boundary')
+        raw = self.path('qualification/programme/state/metatron-ledger.jsonl').read_bytes()
+        self.nodes = [json.loads(line) for line in raw.splitlines()]
+        self.byid, seen = {}, set()
+        for node in self.nodes:
+            body = {key: node[key] for key in ('kind', 'payload', 'premises')}
+            require(sha(encoded(body, ascii=False)) == node['id'], 'Metatron node content changed')
+            require(node['id'] not in seen and len(node['premises']) == len(set(node['premises']))
+                    and set(node['premises']) <= seen, 'Duplicate or out-of-order causal node')
+            if node['kind'] == 'revoke':
+                require(node['payload']['target'] in seen, 'Revocation of absent ancestor')
+            self.byid[node['id']] = node
+            seen.add(node['id'])
+        require(len(self.nodes) == r['retention']['final_records']
+                and sha(raw) == r['retention']['ledger_sha256'] == r['restart']['ledger_sha256'], 'Final ledger binding')
+        original = self.read_ledger('originals/base-udm/qualified-state/metatron-ledger.jsonl')
+        require(len(original) == 101 and self.nodes[:101] == original, 'Exact original 101 records not retained')
+        replay = self.read_ledger('qualification/replay-v54/state/metatron-ledger.jsonl')
+        require(len(replay) == r['retention']['historical_records'] and self.nodes[:len(replay)] == replay,
+                'Qualified input history changed')
+        require(r['retention']['input_state_unchanged'] is True, 'Input state mutated')
+        dead = {n['payload']['target'] for n in self.nodes if n['kind'] == 'revoke'}
+        while True:
+            updated = dead | {n['id'] for n in self.nodes if set(n['premises']) & dead}
+            if updated == dead:
+                break
+            dead = updated
+        self.live = seen - dead
+        self.objects = {}
+        for path in (self.root/'qualification/programme/state/objects').iterdir():
+            require(path.is_file() and not path.is_symlink() and re.fullmatch('[0-9a-f]{64}', path.name), 'Invalid CAS filename')
+            raw = path.read_bytes()
+            require(sha(raw) == path.name, 'Content-addressed object changed')
+            self.objects[path.name] = json.loads(raw)
+        self.report['state'] = {'historical_records': len(replay), 'original_records': 101,
+            'final_records': len(self.nodes), 'objects': len(self.objects), 'ledger_sha256': sha(self.path('qualification/programme/state/metatron-ledger.jsonl').read_bytes())}
+        self.gate('all_metatron_ids_parents_cas_and_exact_original_history')
+
+    def read_ledger(self, name):
+        return [json.loads(line) for line in self.path(name).read_bytes().splitlines()]
+
+    def original_definitions(self):
+        root = 'qualification/programme/observation/original-source/'
+        for pin in OBS_SOURCES.values():
+            require(sha(self.path(root+pin['path']).read_bytes()) == pin['sha256'], 'Original observation source changed')
+        raw = self.path(root+OBS_SOURCES['verifier']['path']).read_bytes()
+        self.audit = definitions(raw, {'OBS','IDENTITY','COUNT','FULL_CASES','canonical','sig','checkrow','source_optimum','evaluate'})
+        producer = self.path(root+OBS_SOURCES['producer']['path']).read_bytes()
+        self.producer = definitions(producer, {'dump','hashbytes','cases','key'})
+        raw = base64.b64decode(CHOICE_SOURCE_B64)
+        require(sha(raw) == CHOICE_SOURCE['sha256'], 'Embedded original choice source changed')
+        self.choose = definitions(raw, {'dominates','choose'})['choose']
+        self.gate('authenticated_original_receiver_producer_and_pareto_definitions')
+
+    def observations(self, observed, family):
+        expected = self.producer['cases'](family)
+        for version in ('old', 'head'):
+            data = observed[version]
+            require(data['family'] == family and data['source_sha'] == NATIVE_PINS[family][version]
+                    and data['repo'] == 'python-poetry/tomlkit'
+                    and data['source_package'] == 'tomlkit/__init__.py', 'Wrong native observation source/scope')
+            require(data['native_tests'] == len(expected) == len(data['rows'])
+                    and data['case_grammar_sha256'] == self.producer['hashbytes'](self.producer['dump'](expected).encode()), 'Incomplete native case grammar')
+            for row, task in zip(data['rows'], expected):
+                require(row['id'] == task['id'] and row['task'] == task
+                        and set(row['features']) == set(self.audit['OBS'])
+                        and self.audit['checkrow'](row) == row['label'], 'Independent native row audit failed')
+
+    def choice(self, choice, candidates, futures, profiles, *, unique):
+        require(choice['candidates'] == list(candidates), 'Lawful choice frontier discarded')
+        binding = choice['evidence_binding']
+        material = {'source': CHOICE_SOURCE, 'scope': binding['scope'],
+                    'candidates': list(candidates), 'futures': list(futures), 'profiles': profiles}
+        require(binding['source'] == CHOICE_SOURCE and binding['profiles_sha256'] == sha(encoded(material)), 'Choice source/carrier/evidence binding changed')
+        winners = self.choose([[profiles[c][f] for f in futures] for c in candidates])
+        if unique:
+            require(len(winners) == 1 and choice['status'] == 'AUTHORIZED_REPAIR'
+                    and choice['selected'] == candidates[winners[0]], 'Original Pareto choice differs')
+        else:
+            require(len(winners) != 1 and choice['status'] == 'UNKNOWN_CHOICE'
+                    and choice['selected'] is None, 'Ambiguous choice was erased')
+
+    def capability(self, cap_id):
+        node = self.byid[cap_id]
+        require(node['kind'] == 'executable_capability', 'Descriptor is not executable capability')
+        return node['payload']
+
+    def observation_path(self):
+        r, objects = self.result, self.objects
+        cap_id = r['observation_acquisition']['capability']
+        cap = self.capability(cap_id)
+        require(cap['operation'] == 'flash.native_observation'
+                and cap['source'] == {'repository':'heathsanchez/test', **OBS_SOURCES['producer']}
+                and cap['scope']['contract'] == OBS_CONTRACT
+                and cap['scope']['families'] == ['B','C'], 'Wrong acquired observation executable scope')
+        policy, observed = objects[cap['program']], objects[cap['observation']]
+        self.policy = policy
+        self.observations(observed, 'A')
+        require(policy['candidate_observation_masks_exhaustively_checked'] == 128, 'Wrong finite observation grammar')
+        _, minimum, minimizers = self.audit['source_optimum'](observed['old']['rows']+observed['head']['rows'])
+        require(minimum == 1 and minimizers == [('coherence',)]
+                and policy['selected_channels'] == ['coherence'], 'Original 128-mask minimum differs')
+        expected = {self.producer['key'](row['features'],policy['selected_channels']):row['label']
+                    for version in ('old','head') for row in observed[version]['rows'] if row['label'] != 'UNKNOWN'}
+        require(expected == policy['source_compiled_lookup'], 'Compiled executable policy differs')
+        support, verification = [self.byid[cap[key][0]] for key in ('dependencies','evidence')]
+        require(verification['kind'] == 'native_observation_verification'
+                and verification['premises'] == [support['id']]
+                and self.byid[cap_id]['premises'] == [support['id'],verification['id']]
+                and support['payload']['program'] == verification['payload']['program'] == cap['program'], 'Observation causal evidence differs')
+        receipt = objects[verification['payload']['receipt']]
+        require(receipt['adapter_sha256'] == SOURCE_MANIFEST[RUNTIME+'native_observation.py']
+                and receipt['program_sha256'] == cap['program']
+                and receipt['observations_sha256'] == cap['observation']
+                and receipt['native_reexecuted'] is True
+                and receipt['independent_tomllib_reconstruction'] is True, 'Observation receipt binding')
+        residual = r['initial_native_residual']
+        initial = objects[residual['observations']]
+        self.observations(initial,'A')
+        require(self.nodes.index(self.byid[residual['event']]) < self.nodes.index(self.byid[cap_id])
+                and residual['constitutional_route'] == 'SPLIT'
+                and residual['protected_outcomes'] == ['FAIL','PASS']
+                and residual['grammar_expansion_licensed'] is False, 'Pre-acquisition typed residual absent')
+        rows = {v:{row['id']:row for row in initial[v]['rows']} for v in ('old','head')}
+        futures = tuple(rows['old'])
+        candidates = ('A:old','A:head')
+        self.choice(residual['initial_choice'],candidates,futures,{c:{f:[0] for f in futures} for c in candidates},unique=False)
+        primitive, refined = {}, {}
+        for version in ('old','head'):
+            for case,row in rows[version].items():
+                key = version+':'+case
+                primitive[key] = encoded([row['features'][f] for f in ('mut_status','native','length')])
+                refined[key] = encoded([primitive[key].decode(),self.producer['key'](row['features'],policy['selected_channels'])])
+        witness = residual['witness']
+        require(primitive[witness[0]] == primitive[witness[1]]
+                and refined[witness[0]] != refined[witness[1]], 'Residual witness does not distinguish protected outcomes')
+        require(len(refined) == 80 and len(set(refined.values())) > len(set(primitive.values())), 'Not a strict fixed-carrier refinement')
+        require(all(primitive[a] == primitive[b] for a in refined for b in refined if refined[a] == refined[b]), 'Old distinctions were lost')
+        require(r['native_representation_refinement']['strict'] is True
+                and r['native_representation_refinement']['fixed_carrier_size'] == 80, 'Refinement report mismatch')
+        self.gate('preacquisition_native_residual_original128mask_minimum_and_fixed80_refinement')
+        counts = {}
+        for family in ('B','C'):
+            result = r['native_futures'][family]
+            future = objects[result['observations']]
+            self.observations(future,family)
+            status,evaluated = self.audit['evaluate'](policy,{family:(future['old'],future['head'])})
+            outcome = evaluated[family]
+            require(status == 'QUALIFIED_BOUNDED_REPLAY' and outcome == {'repaired':{'B':8,'C':4}[family], 'detected':{'B':8,'C':4}[family], 'false':0}, 'Native B8/C4 consequence differs')
+            require(outcome == {'repaired':result['native_repaired'],'detected':result['detected_repaired'],'false':result['false_warrants']}, 'Reported native counts differ')
+            bound = receipt['scope_verifications'][family]
+            require(objects[bound['observations']] == future, 'Replayed evidence from another native task')
+            for checked_id in (bound['receipt'],result['receipt']):
+                checked = objects[checked_id]
+                require(checked['family'] == family and checked['program_sha256'] == cap['program']
+                        and checked['observations_sha256'] == result['observations']
+                        and checked['adapter_sha256'] == receipt['adapter_sha256']
+                        and checked['native_reexecuted'] is True, 'Future receipt binding differs')
+            rows = {v:{row['id']:row for row in future[v]['rows']} for v in ('old','head')}
+            futures = tuple(rows['old']); candidates = tuple(family+':'+v for v in ('old','head'))
+            require(all([rows['old'][case]['features'][field] for field in ('mut_status','native','length')]
+                        == [rows['head'][case]['features'][field] for field in ('mut_status','native','length')]
+                        for case in futures), 'Primitive native observations already distinguish the future')
+            profiles = {family+':'+v:{f:[0 if rows[v][f]['label']=='PASS' else 1] for f in futures} for v in ('old','head')}
+            predictions = {(p['version'],p['id']):p for p in result['predictions']}
+            require(len(predictions) == 2*len(futures), 'Truncated native prediction frontier')
+            for version in ('old','head'):
+                for case,row in rows[version].items():
+                    p = predictions[version,case]
+                    require(p['actual'] == p['predicted'] == row['label']
+                            and policy['source_compiled_lookup'][self.producer['key'](row['features'],policy['selected_channels'])] == p['predicted'], 'Sham or unsupported native classification')
+            choice = r['changed_choice'][family]
+            require(choice['profiles'] == profiles and choice['selected_native_reexecuted'] is True, 'Choice does not affect native execution')
+            self.choice(choice['before'],candidates,futures,{c:{f:[0] for f in futures} for c in candidates},unique=False)
+            self.choice(choice['after'],candidates,futures,profiles,unique=True)
+            require(choice['after']['selected'] == family+':head', 'Wrong selected native revision')
+            baseline = r['baseline']['results'][family]
+            require(baseline['outcome'] == outcome, 'Informed native ledger outcome differs')
+            self.choice(baseline['repair_choice'],candidates,futures,profiles,unique=True)
+            restart = r['restart']['observation'][family]
+            require(restart['native']['native_repaired'] == outcome['repaired']
+                    and restart['native']['detected_repaired'] == outcome['detected']
+                    and restart['native']['false_warrants'] == 0
+                    and restart['choice']['after']['selected'] == family+':head'
+                    and restart['choice']['selected_native_reexecuted'] is True, 'Native restart observation/choice differs')
+            counts[family] = outcome
+        require(r['baseline']['comparison'] == 'TIE_SAME_POLICY_NATIVE_OUTCOMES_AND_INFORMATION'
+                and r['baseline']['live_agent_comparator'] == 'NOT_RUN', 'Comparative claim exceeds measured tie')
+        self.report['native_future_counts'] = counts
+        self.gate('independent_B8_C4_native_classification_choice_and_informed_baseline_tie')
+
+    def constructors(self):
+        for name in ('cachetools','boltons'):
+            data = self.result['native_construction'][name]
+            cap = self.capability(data['capability'])
+            program = self.objects[cap['program']]
+            profiles = [name+':protected-observer',name+':inherited-suite']
+            require(cap['operation'] == 'native.source_patch' and cap['source'] == CONSTRUCTOR_SOURCE
+                    and cap['scope']['target'] == name and cap['scope']['target_pins'] == TARGETS[name]
+                    and cap['scope']['frontier_contract'] == CONSTRUCTOR_CONTRACT
+                    and cap['scope']['frontier_profiles'] == profiles, 'Wrong typed constructor scope')
+            require(sha(program['source'].encode()) == program['source_sha256'], 'Actual executable patch bytes changed')
+            require(len(cap['dependencies']) == 2 and len(cap['evidence']) == 1, 'False constructor parent set')
+            support,observed = [self.byid[p] for p in cap['dependencies']]
+            verified = self.byid[cap['evidence'][0]]
+            require(support['premises'][-1] == observed['id'] and observed['kind'] == 'native_observation'
+                    and verified['premises'] == [support['id']]
+                    and self.byid[data['capability']]['premises'] == [support['id'],verified['id'],observed['id']], 'Constructor causal lineage differs')
+            for receipt in (self.objects[verified['payload']['receipt']],data['native'],
+                            self.result['construction_baseline'][name]['native_receipt'],
+                            self.result['restart']['constructors'][name]['native']):
+                require(receipt['status'] == 'WARRANTED_BOUNDED_NATIVE_CONSTRUCTOR_INSTANCE'
+                        and receipt['target'] == name and receipt['source'] == CONSTRUCTOR_SOURCE
+                        and receipt['target_pins'] == TARGETS[name]
+                        and receipt['program_sha256'] == cap['program']
+                        and receipt['verifier_sha256'] == SOURCE_MANIFEST[RUNTIME+'native_constructor.py']
+                        and len(receipt['gates']) == 8 and all(v is True for v in receipt['gates'].values()), 'Constructor native evidence binding')
+                require(receipt['suite']['status'] == 'PASS' and receipt['suite']['returncode'] == 0
+                        and receipt['suite']['count_passed'] == {'cachetools':89,'boltons':9}[name]
+                        and re.search(r'\b'+str(receipt['suite']['count_passed'])+r' passed\b',receipt['suite']['stdout_tail']), 'Original native suite did not execute')
+                for key,version,expected,status in (
+                        ('native_original','base',program['original_source_sha256'],'FAIL'),
+                        ('native_author_head','head',program['subject']['source_sha256'],'PASS'),
+                        ('native_candidate','base',program['source_sha256'],'PASS'),
+                        ('native_removed','base',program['original_source_sha256'],'FAIL')):
+                    probe = receipt[key]; native = probe['native']
+                    require(native['status'] == status and native['checkout_sha'] == TARGETS[name][version]
+                            and native['source_file_sha256'] == expected
+                            and native['method'] == program['subject']['method']
+                            and native['method_kind'] == program['subject']['kind']
+                            and probe['bytecode_disabled'] is True
+                            and any(i['path'] == program['subject']['file'] and i['sha256'] == expected for i in probe['import_manifest']), 'Original/candidate/removal receipt not bound to executable source')
+                require(receipt['native'] == receipt['native_candidate']['native'], 'Reported native result differs from candidate probe')
+            require(self.result['construction_baseline'][name]['same_executable_source'] is True
+                    and self.result['construction_baseline'][name]['comparison'] == 'TIE_SAME_AVAILABLE_CONSTRUCTOR', 'Constructor informed baseline differs')
+            for filename,expected in CONSTRUCTOR_SOURCE['files'].items():
+                require(sha(self.path('qualification/programme/constructor/original-source/'+filename).read_bytes()) == expected, 'Original constructor algorithm changed')
+        self.gate('actual_native_patch_bytes_original89_and9_suites_removal_controls_and_baseline')
+
+    def closure_restart(self):
+        r = self.result
+        delta = r['observation_acquisition']['flash']
+        require(delta['changed_frontiers'] == ['tomlkit:B','tomlkit:C'] and delta['flash_radius'] == 2,
+                'One event did not affect exactly both observation frontiers')
+        require(delta['frontiers']['wrong-contract']['status'] == 'UNKNOWN_SEARCH', 'Wrong authority received a route')
+        cut = r['withdrawal']['flash_after_observation_cut']
+        for family in ('B','C'):
+            require(delta['frontiers']['tomlkit:'+family]['status'] == 'READY'
+                    and cut['frontiers']['tomlkit:'+family]['status'] == 'UNKNOWN_SEARCH', 'Ancestor cut did not reopen native frontier')
+        require(any(set(event['reopened']) == {'tomlkit:B','tomlkit:C'} for event in cut['original_flash_events']), 'No original FLASH event records the two-frontier reopen')
+        for name in ('cachetools','boltons'):
+            for profile in (name+':protected-observer',name+':inherited-suite'):
+                require(cut['frontiers'][profile]['status'] == 'READY', 'Unrelated native frontier was lost')
+                expected = 'UNKNOWN_SEARCH' if name == 'cachetools' else 'READY'
+                require(r['withdrawal']['flash_after_constructor_cut']['frontiers'][profile]['status'] == expected, 'Selective constructor withdrawal differs')
+        old = r['observation_acquisition']['capability']; old_constructor = r['withdrawal']['constructor']
+        new = r['restoration']['observation']; new_constructor = r['restoration']['cachetools']
+        require(old != new and old_constructor != new_constructor
+                and old not in self.live and old_constructor not in self.live
+                and new in self.live and new_constructor in self.live, 'Wrong restoration or revoked generation revived')
+        require(self.capability(new)['supersedes'] == old
+                and self.capability(new_constructor)['supersedes'] == old_constructor
+                and self.capability(new)['generation'] > self.capability(old)['generation']
+                and self.capability(new_constructor)['generation'] > self.capability(old_constructor)['generation'], 'No new evidence generation lineage')
+        require(set(r['withdrawal']['original_capabilities_retained']) <= self.live, 'Original E/D/V54 capability lost support')
+        restart = self.read('qualification/programme/cold-restart.json')
+        require(restart == r['restart'] and restart['status'] == 'PASS_NATIVE_SEPARATE_PROCESS_RESTART'
+                and restart['history_retained'] is True and restart['old_generations_inactive'] is True, 'Separate-process result binding')
+        final = self.read('qualification/programme/state/native-frontiers.json')
+        require(final['ledger_sha256'] == r['retention']['ledger_sha256'], 'Stale persisted frontier cache')
+        require(all(final['frontiers']['tomlkit:'+family]['capability_id'] == new for family in ('B','C')),
+                'Restart did not route the new observation generation')
+        self.gate('original_FLASH_two_frontier_delta_selective_revocation_new_lineage_and_restart')
+
+    def retained_and_contracts(self):
+        replay = self.read('qualification/replay-v54/RESULT.json')
+        require(replay['status'] == 'REPLAY_VERIFIED_QUALIFIED_V54_STATE'
+                and replay['acquisition_rerun'] is False and replay['fresh_discovery_claim'] is False
+                and replay['input_state_before'] == replay['input_state_after'], 'Retained V54 was rerun or input mutated')
+        native = replay['replay']
+        require(native['status'] == 'PASS' and native['native']['passed'] is True
+                and native['native']['source_sha256'] == 'b879cb3f671cf1c28e8ff9b2b02151bcdb8974b4820a514cfdd1f5a038443cd2'
+                and len(native['effects']) == 2 and native['withdrawn_generations_inactive'] is True
+                and set(native['protected']) == {'62','64','65','168','169','172'}
+                and all(v is True for v in native['independent_receipt']['gates'].values()), 'Retained native O1/O2 or E/D regression')
+        self.gate('retained_native_ED_V54_without_acquisition_or_discovery_rerun')
+        if self.component_review:
+            self.report['unclosed_workflow_gates'].append('overall_workflow_failed_not_a_full_green_qualification')
+            self.report['contract_logs'] = {}
+            for name in ('contract-tests.log','formal-evidence-tests.log'):
+                path = self.root/'qualification'/name
+                if not path.is_file():
+                    self.report['unclosed_workflow_gates'].append(name+':NOT_RUN_OR_NOT_ARCHIVED')
+                    continue
+                log = path.read_text()
+                counts = re.findall(r'Ran (\d+) tests? in ',log)
+                failed = re.findall(r'^FAILED \(([^\n]*)\)',log,re.M)
+                self.report['contract_logs'][name] = {'sha256':sha(path.read_bytes()),
+                    'tests_run':int(counts[-1]) if counts else None,
+                    'failed_summary':failed[-1] if failed else None}
+                if failed:
+                    self.report['unclosed_workflow_gates'].append(name+':FAILED('+failed[-1]+')')
+            if not (self.root/'qualification/replay-v54/formal/lean-verification.json').is_file():
+                self.report['unclosed_workflow_gates'].append('latest_bounded_Lean_recheck:NOT_RUN')
+            if not (self.root/'qualification/consequence-selection.json').is_file():
+                self.report['unclosed_workflow_gates'].append('standalone_retained_method_selector_gate:NOT_RUN')
+            return
+        formal = self.read('qualification/replay-v54/formal/lean-verification.json')
+        require(formal['status'] == 'CHECKED_BOUNDED_TABLE_CERTIFICATE'
+                and formal['toolchain'] == 'leanprover/lean4:v4.28.0'
+                and len(formal['commands']) == 5 and all(c['returncode'] == 0 for c in formal['commands'])
+                and formal['candidate_count'] == 541 and formal['old_cover_count'] == 542
+                and formal['cold_outcome_counts'] == {'failed':497,'timedOut':44}
+                and formal['certificate_sha256'] == '7996b2ec5c60484101eb1b5ebf0d6b497853021dc7571977320c6c8d373136ea'
+                and 'no Python refinement' in formal['scope'], 'Bounded Lean qualification boundary changed')
+        require(formal['axiom_report'].count('ActualV54.') == 4
+                and set(formal['allowed_axioms']) == {'Quot.sound','propext'}, 'Unexpected concrete theorem/axiom boundary')
+        for name,minimum in (('contract-tests.log',161),('formal-evidence-tests.log',5)):
+            log = self.path('qualification/'+name).read_text()
+            counts = re.findall(r'Ran (\d+) tests? in ',log)
+            require(counts and int(counts[-1]) >= minimum
+                    and re.search(r'\nOK(?:\s*\([^\n]*\))?\s*(?:\n|$)',log)
+                    and not re.search(r'^FAILED \(',log,re.M), 'Contract suite did not pass: '+name)
+        selection = self.read('qualification/consequence-selection.json')
+        require(selection['status'] == 'PASS_BOUNDED_ROUTING_INTEGRATION'
+                and selection['native_successes'] == 6 and all(selection['gates'].values()), 'Existing-method selection regression')
+        self.gate('retained_native_ED_V54_no_acquisition_rerun_bounded_Lean_and_contract_gates')
+
+
+def provider_binding(args, root):
+    supplied = (args.run_metadata,args.artifact_metadata,args.archive)
+    require(not any(supplied) or all(supplied), 'Supply all of --run-metadata, --artifact-metadata and --archive')
+    if not all(supplied):
+        return {'status':'UNKNOWN_CALLER_PROVIDER_AUTHENTICATION_REQUIRED',
+                'boundary':'Internal summary IDs are checked; provider authenticity not inferred from extracted JSON'}
+    run = json.loads(args.run_metadata.read_bytes())
+    artifact = json.loads(args.artifact_metadata.read_bytes())
+    if 'artifacts' in artifact:
+        require(len(artifact['artifacts']) == 1, 'Artifact listing must identify one exact artifact')
+        artifact = artifact['artifacts'][0]
+    require(run['id'] == args.expected_run_id and run['head_sha'] == args.expected_commit
+            and run['status'] == 'completed' and run['conclusion'] == args.expect_conclusion, 'Provider run source/conclusion binding differs')
+    require(artifact['workflow_run']['id'] == args.expected_run_id
+            and artifact['workflow_run']['head_sha'] == args.expected_commit
+            and artifact.get('expired') is not True, 'Provider artifact belongs to another run/source')
+    digest = sha(args.archive.read_bytes())
+    require(artifact['digest'] == 'sha256:'+digest, 'Provider ZIP digest mismatch')
+    checked = 0
+    with zipfile.ZipFile(args.archive) as archive:
+        names = archive.namelist()
+        require(len(names) == len(set(names)), 'Provider ZIP has duplicate entries')
+        for name in names:
+            parts = Path(name).parts
+            require(not Path(name).is_absolute() and '..' not in parts and '\\' not in name,
+                    'Unsafe provider archive path')
+            if name.endswith('/'):
+                continue
+            target = root/name
+            require(target.is_file() and not target.is_symlink()
+                    and target.resolve().is_relative_to(root), 'Missing/redirected extracted provider member')
+            require(sha(archive.read(name)) == sha(target.read_bytes()), 'Extracted file differs from authenticated ZIP: '+name)
+            checked += 1
+    return {'status':'MATCHED_CALLER_SUPPLIED_PROVIDER_METADATA_ZIP_AND_EXTRACTED_BYTES',
+            'run_id':args.expected_run_id,'source_commit':args.expected_commit,
+            'run_conclusion':run['conclusion'],'artifact_id':artifact['id'],'artifact_sha256':digest,
+            'extracted_files_compared':checked,
+            'boundary':'Caller is responsible for authentic provider API retrieval'}
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('artifact_root',type=Path)
+    parser.add_argument('--output',type=Path,required=True)
+    parser.add_argument('--run-metadata',type=Path)
+    parser.add_argument('--artifact-metadata',type=Path)
+    parser.add_argument('--archive',type=Path)
+    parser.add_argument('--expected-commit',default=EXPECTED_COMMIT)
+    parser.add_argument('--expected-run-id',type=int,default=EXPECTED_RUN_ID)
+    parser.add_argument('--expected-workflow-sha256')
+    parser.add_argument('--component-review',action='store_true',
+        help='Review completed native components of an overall failed workflow; never a green verdict')
+    parser.add_argument('--expect-conclusion',choices=('success','failure'),default='success')
+    args = parser.parse_args()
+    require(args.component_review == (args.expect_conclusion == 'failure'),
+            'Failed workflow review requires both --component-review and --expect-conclusion failure')
+    inspector = Inspector(args.artifact_root,expected_commit=args.expected_commit,
+        expected_run_id=args.expected_run_id,workflow_sha256=args.expected_workflow_sha256,
+        component_review=args.component_review)
+    code = 0
+    try:
+        inspector.report['provider_binding'] = provider_binding(args, inspector.root)
+        inspector.source_and_summaries()
+        inspector.ledger()
+        inspector.original_definitions()
+        inspector.observation_path()
+        inspector.constructors()
+        inspector.closure_restart()
+        inspector.retained_and_contracts()
+        inspector.report.update(status=('PASS_NATIVE_COMPONENTS_OVERALL_WORKFLOW_FAILED'
+            if args.component_review else 'PASS_OFFLINE_INDEPENDENT_BOUNDED_PACKET_REVIEW'),
+            native_experiments_rerun=False,strict_comparative_advantage='REJECTED_MEASURED_TIE',
+            result_sha256=sha(inspector.path('qualification/programme/RESULT.json').read_bytes()),
+            cold_restart_sha256=sha(inspector.path('qualification/programme/cold-restart.json').read_bytes()))
+    except Exception as error:
+        code = 1
+        inspector.report.update(status='FAILED_OR_INCOMPLETE_PACKET_REVIEW',
+            error={'type':type(error).__name__,'reason':str(error)})
+    args.output.parent.mkdir(parents=True,exist_ok=True)
+    args.output.write_text(json.dumps(inspector.report,indent=2)+'\n')
+    print(json.dumps({'status':inspector.report['status'],'gates':len(inspector.gates),'output':str(args.output)}))
+    return code
+
+
+if __name__ == '__main__':
+    sys.exit(main())

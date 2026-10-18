@@ -1,0 +1,70 @@
+name: G2 exposed Packaging regex-genesis training (future cohort sealed)
+
+on:
+  pull_request:
+    types: [synchronize]
+    branches:
+      - main
+    paths:
+      - .github/workflows/g2-packaging-regex-genesis-training-20261019.yml
+
+permissions:
+  contents: read
+
+jobs:
+  source-native-training:
+    if: github.head_ref == 'research/g2-cross-source-consequence-law-20261018' && github.event.pull_request.number == 127
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Freeze lineage and generated observation language preflight
+        shell: bash
+        run: |
+          set -euo pipefail
+          git merge-base --is-ancestor d5327f0e72750a85f1a7a9cb0de6e82f608f572d HEAD
+          git merge-base --is-ancestor c1c07b60c2bc89e2f476bf9330856c3167fd2029 HEAD
+          python -B -m py_compile research/unified_consequence_runtime/g2_packaging_regex_genesis_training_v1.py
+          python -B research/unified_consequence_runtime/g2_regex_language_boundary_v1.py
+          echo "FUTURE POOL SEALED: click, requests, urllib3, pydantic. No future source fetch."
+      - name: Original native tests plus generated candidate protected/full/causal oracle
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH="$GITHUB_WORKSPACE" python -B \
+            research/unified_consequence_runtime/g2_packaging_regex_genesis_training_v1.py \
+            "$GITHUB_WORKSPACE/evidence/g2-packaging-regex-training-v1"
+      - name: Independent no-premature-G2-promotion envelope
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,pathlib
+          d=json.loads(pathlib.Path("evidence/g2-packaging-regex-training-v1/RESULT.json").read_text())
+          assert d["G2"]=="UNKNOWN" and d["new_future_pool"]=="SEALED_UNOPENED"
+          assert d["status"] in {
+            "WARRANTED_BOUNDED_PACKAGING_TRAINING_REPAIR_FUTURE_SEALED",
+            "UNKNOWN_NATIVE_TRAINING_NOT_ADMITTED",
+            "UNKNOWN_ORIGINAL_PARAMETRIC_BASELINE",
+            "REJECTED_NO_REGEX_BOUNDARY_CANDIDATES",
+            "REJECTED_REGEX_BOUNDARY_TRAINING_NO_NATIVE_REPAIR"}
+          print("NATIVE_TRAINING_BOUNDARY",d["status"],"FUTURE",d["new_future_pool"])
+          PY
+      - name: Archive all native evidence and negative receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g2-packaging-regex-genesis-training-v1
+          path: |
+            research/unified_consequence_runtime/G2_GENESIS_V2_PACKAGING_TRAIN_FUTURE_POOL_PREQUERY.md
+            research/unified_consequence_runtime/g2_regex_language_boundary_v1.py
+            research/unified_consequence_runtime/g2_packaging_regex_genesis_training_v1.py
+            evidence/g2-packaging-regex-training-v1/
+          if-no-files-found: warn

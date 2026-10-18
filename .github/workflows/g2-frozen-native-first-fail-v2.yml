@@ -1,0 +1,101 @@
+name: G2 first authentic native failure frozen pool V2
+on:
+  push:
+    branches:
+      - research/udm-g2-frozen-native-failure-pool-20261018
+    paths:
+      - research/unified_consequence_runtime/G2_NATIVE_FIRST_FAIL_POOL_V2_ROLE_FREEZE.json
+      - research/unified_consequence_runtime/g2_pool_first_native_failure_v1.py
+      - research/unified_consequence_runtime/g2_pool_apply_fixed_methods_v1.py
+      - .github/workflows/g2-frozen-native-first-fail-v2.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  admitted-pool:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+      GIT_NO_REPLACE_OBJECTS: "1"
+      GIT_OPTIONAL_LOCKS: "0"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Freeze exact six-task roles and two original qualified method sources
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/g2-pool-v2
+          F=research/unified_consequence_runtime/
+          cmp "${F}G2_NATIVE_FIRST_FAIL_POOL_V2_ROLE_FREEZE.json" <(git show 57c400ea49881e440f7895acaeebeee5854363e3:"${F}G2_NATIVE_FIRST_FAIL_POOL_V2_ROLE_FREEZE.json")
+          for spec in '094e2ddc3ba601a00eaf368151172a361e5542da g2_anyio_mutable_closure_equivalence_fix_v2.py' 'b9d175d0b129c843bc5885aec77082f07f2b0601 attrs_residual_observation_genesis_v1.py'; do
+            read -r commit path <<< "$spec"
+            cmp "${F}$path" <(git show "$commit:${F}$path")
+          done
+          python -B -m py_compile "${F}g2_pool_first_native_failure_v1.py" "${F}g2_pool_apply_fixed_methods_v1.py"
+          echo 'FUTURE pypa/packaging PR1446 SOURCE_UNOPENED' > evidence/g2-pool-v2/FUTURE_SEAL.txt
+          sha256sum "${F}G2_NATIVE_FIRST_FAIL_POOL_V2_ROLE_FREEZE.json" > evidence/g2-pool-v2/ROLE_SHA256.txt
+      - name: Replay independent original-source native admissions in fixed repository order
+        run: |
+          set -euo pipefail
+          PYTHONPATH="$GITHUB_WORKSPACE" python -B research/unified_consequence_runtime/g2_pool_first_native_failure_v1.py "$GITHUB_WORKSPACE/evidence/g2-pool-v2/admission" | tee evidence/g2-pool-v2/ADMISSION_STDOUT.txt
+      - name: Execute only prequalified methods if genuine native training FAIL was earned
+        run: |
+          set -euo pipefail
+          E="$GITHUB_WORKSPACE/evidence/g2-pool-v2"
+          SELECTED="$(python - <<'PY'
+          import json
+          r=json.load(open('evidence/g2-pool-v2/admission/RESULT.json'))
+          x=r.get('selected')
+          print(x['interpreter'] if x is not None else '')
+          PY
+          )"
+          if [ -z "$SELECTED" ]; then
+            echo "NO_EARNED_TRAINING_FAILURE; METHOD_NOT_RUN" | tee "$E/METHOD_GATE.txt"
+            exit 0
+          fi
+          PYTHONPATH="$GITHUB_WORKSPACE" "$SELECTED" -B research/unified_consequence_runtime/g2_pool_apply_fixed_methods_v1.py "$E/admission/RESULT.json" "$E/frozen-method-application" | tee "$E/METHOD_GATE.txt"
+      - name: Independently enforce pool result, seal, and no G2 promotion
+        if: always()
+        run: |
+          python - <<'PY'
+          import json,pathlib
+          e=pathlib.Path("evidence/g2-pool-v2")
+          a=e/"admission/RESULT.json"; m=e/"frozen-method-application/RESULT.json"
+          r=json.loads(a.read_text()) if a.is_file() else {}
+          method=json.loads(m.read_text()) if m.is_file() else {}
+          assert "packaging" in (e/"FUTURE_SEAL.txt").read_text()
+          assert r.get("G2","UNKNOWN")=="UNKNOWN"
+          assert r.get("future","SEALED_UNOPENED")=="SEALED_UNOPENED"
+          assert len(r.get("admissions",[]))<=5
+          if r.get("selected"):
+              s=r["selected"]
+              assert s["status"]=="ADMITTED_FIRST_AUTHENTIC_PROTECTED_NATIVE_FAILURE"
+              assert s["native"]["counts"]["failures"]>=1 and s["native"]["counts"]["errors"]==0
+              assert method.get("heldout")=="SEALED_UNOPENED" and method.get("G2")=="UNKNOWN"
+          verdict={"schema":"G2_FROZEN_NATIVE_POOL_V2_INDEPENDENT_BOUNDARY",
+              "source_order_verified":True,"admissions":len(r.get("admissions",[])),
+              "selected":r.get("selected",{}).get("repo"),"status":r.get("status","UNKNOWN_MISSING"),
+              "fixed_method_status":method.get("status","NOT_EXECUTED_NO_QUALIFIED_FAILURE"),
+              "future":"SEALED_UNOPENED","G2":"UNKNOWN","G4":"UNKNOWN"}
+          (e/"INDEPENDENT_BOUNDARY.json").write_text(json.dumps(verdict,indent=2)+"\n")
+          print(json.dumps(verdict))
+          PY
+      - name: Archive all negative and positive native receipts with exact source
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g2-first-native-failure-pool-v2-evidence
+          retention-days: 90
+          if-no-files-found: warn
+          path: |
+            evidence/g2-pool-v2/
+            research/unified_consequence_runtime/G2_NATIVE_FIRST_FAIL_POOL_V1_METADATA_STOP.json
+            research/unified_consequence_runtime/G2_NATIVE_FIRST_FAIL_POOL_V2_ROLE_FREEZE.json
+            research/unified_consequence_runtime/g2_pool_first_native_failure_v1.py
+            research/unified_consequence_runtime/g2_pool_apply_fixed_methods_v1.py

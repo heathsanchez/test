@@ -1,0 +1,74 @@
+name: G2 cross-source law — exposed Werkzeug training only
+
+on:
+  pull_request:
+    types: [opened]
+    branches:
+      - main
+    paths:
+      - .github/workflows/g2-werkzeug-training-one-shot-20261019.yml
+
+permissions:
+  contents: read
+
+jobs:
+  native-werkzeug-training:
+    if: github.head_ref == 'research/g2-cross-source-consequence-law-20261018'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Preflight immutable roles, protocol and generic operator
+        shell: bash
+        run: |
+          set -euo pipefail
+          git merge-base --is-ancestor de234c7e180467bbb0b957cac2016263bf80920b HEAD
+          git merge-base --is-ancestor 6fbfa0a633439f0eb5c8e9c55726f2b053e1bdd1 HEAD
+          python -B -m py_compile research/unified_consequence_runtime/g2_context_fallback_operator_v1.py
+          python -B -m py_compile research/unified_consequence_runtime/g2_werkzeug_train_v1.py
+          python -B research/unified_consequence_runtime/g2_context_fallback_operator_v1.py
+          echo "FUTURE SEALED: pypa/packaging PR1446; no source or native tests"
+      - name: Exactly one original-source admission and bounded training
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH="$GITHUB_WORKSPACE" python -B \
+            research/unified_consequence_runtime/g2_werkzeug_train_v1.py \
+            "$GITHUB_WORKSPACE/evidence/g2-law-werkzeug-training-v1"
+      - name: Independent status-envelope and future-seal guard
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,pathlib
+          r=json.loads(pathlib.Path("evidence/g2-law-werkzeug-training-v1/RESULT.json").read_text())
+          assert r["future"]=="SEALED_UNOPENED"
+          assert r["future_repo_access"]=="NOT_PERFORMED"
+          assert r["G2"]=="UNKNOWN"
+          assert r["scientific_scope"]=="TRAINING_ONLY"
+          assert r["status"] in {
+             "WARRANTED_BOUNDED_TRAINING_REPAIR_FUTURE_SEALED",
+             "REJECTED_NO_LICENSED_CONTEXT_FALLBACK_CANDIDATES",
+             "REJECTED_NO_QUALIFIED_TRAINING_REPAIR",
+             "UNKNOWN_NO_REPRODUCED_NATIVE_TRAINING_FAILURE"}
+          print("TRAINING_ENVELOPE",r["status"],"G2",r["G2"],"FUTURE",r["future"])
+          PY
+      - name: Archive raw authentic native logs and stopped/negative receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g2-cross-source-werkzeug-training-v1
+          path: |
+            research/unified_consequence_runtime/G2_CROSS_SOURCE_CONSEQUENCE_LAW_V1_FROZEN_PROTOCOL.md
+            research/unified_consequence_runtime/g2_context_fallback_operator_v1.py
+            research/unified_consequence_runtime/g2_werkzeug_train_v1.py
+            research/unified_consequence_runtime/G2_NATIVE_FIRST_FAIL_POOL_V2_ROLE_FREEZE.json
+            evidence/g2-law-werkzeug-training-v1/
+          if-no-files-found: warn

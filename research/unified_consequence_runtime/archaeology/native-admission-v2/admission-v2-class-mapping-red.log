@@ -1,0 +1,161 @@
+======================================================================
+ERROR: test_unittest_method_prefix_is_independent_of_pytest_function_patterns (research.unified_consequence_runtime.test_native_admission_v2.NativeAdmissionV2.test_unittest_method_prefix_is_independent_of_pytest_function_patterns)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_admission_v2.py", line 140, in test_unittest_method_prefix_is_independent_of_pytest_function_patterns
+    authority = self.derive('from unittest.case import TestCase as Case\n'
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_admission_v2.py", line 41, in derive
+    return self.admission.derive_suite_contract(self.repo, self.base, self.commit_id,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_admission_v2.py", line 400, in derive_suite_contract
+    raise ValueError('UNKNOWN_NATIVE_SUITE_DELTA: changed test module has no static test nodes')
+ValueError: UNKNOWN_NATIVE_SUITE_DELTA: changed test module has no static test nodes
+
+======================================================================
+FAIL: test_changed_mixin_assertion_cannot_hide_behind_an_override (research.unified_consequence_runtime.test_native_admission_v2.NativeAdmissionV2.test_changed_mixin_assertion_cannot_hide_behind_an_override)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_admission_v2.py", line 99, in test_changed_mixin_assertion_cannot_hide_behind_an_override
+    with self.assertRaisesRegex(ValueError, 'uncollected|unreachable|mapping'):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_ordinary_uncollected_helper_classes_are_not_required_nodes (research.unified_consequence_runtime.test_native_admission_v2.NativeAdmissionV2.test_ordinary_uncollected_helper_classes_are_not_required_nodes)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_admission_v2.py", line 125, in test_ordinary_uncollected_helper_classes_are_not_required_nodes
+    self.assertEqual(authority['required_test_nodes'], [
+AssertionError: Lists differ: ['tes[14 chars].py::Helper::test_protocol', 'tests/test_sampl[45 chars]old'] != ['tes[14 chars].py::test_new', 'tests/test_sample.py::test_old']
+
+First differing element 0:
+'tests/test_sample.py::Helper::test_protocol'
+'tests/test_sample.py::test_new'
+
+First list contains 1 additional elements.
+First extra element 2:
+'tests/test_sample.py::test_old'
+
++ ['tests/test_sample.py::test_new', 'tests/test_sample.py::test_old']
+- ['tests/test_sample.py::Helper::test_protocol',
+-  'tests/test_sample.py::test_new',
+-  'tests/test_sample.py::test_old']
+
+======================================================================
+FAIL: test_pytest_custom_class_and_function_patterns_preserve_inherited_assertions (research.unified_consequence_runtime.test_native_admission_v2.NativeAdmissionV2.test_pytest_custom_class_and_function_patterns_preserve_inherited_assertions)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_admission_v2.py", line 133, in test_pytest_custom_class_and_function_patterns_preserve_inherited_assertions
+    self.assertEqual(authority['required_test_nodes'], [
+AssertionError: Lists differ: ['tes[35 chars]heck_new', 'tests/test_sample.py::Shared::check_inherited'] != ['tes[35 chars]heck_inherited', 'tests/test_sample.py::CheckC[15 chars]new']
+
+First differing element 0:
+'tests/test_sample.py::CheckConcrete::check_new'
+'tests/test_sample.py::CheckConcrete::check_inherited'
+
++ ['tests/test_sample.py::CheckConcrete::check_inherited',
+- ['tests/test_sample.py::CheckConcrete::check_new',
+? ^                                                ^
+
++  'tests/test_sample.py::CheckConcrete::check_new']
+? ^                                                ^
+
+-  'tests/test_sample.py::Shared::check_inherited']
+
+======================================================================
+FAIL: test_unittest_mixin_methods_map_to_every_concrete_descendant (research.unified_consequence_runtime.test_native_admission_v2.NativeAdmissionV2.test_unittest_mixin_methods_map_to_every_concrete_descendant)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_admission_v2.py", line 85, in test_unittest_mixin_methods_map_to_every_concrete_descendant
+    self.assertEqual(authority['required_test_nodes'], [
+AssertionError: Lists differ: ['tes[14 chars].py::SharedChecks::test_inherited'] != ['tes[14 chars].py::First::test_inherited', 'tests/test_sampl[25 chars]ted']
+
+First differing element 0:
+'tests/test_sample.py::SharedChecks::test_inherited'
+'tests/test_sample.py::First::test_inherited'
+
+Second list contains 1 additional elements.
+First extra element 1:
+'tests/test_sample.py::Second::test_inherited'
+
++ ['tests/test_sample.py::First::test_inherited',
+- ['tests/test_sample.py::SharedChecks::test_inherited']
+? ^                        -------  ^^
+
++  'tests/test_sample.py::Second::test_inherited']
+? ^                          ^^^
+
+
+======================================================================
+FAIL: test_unittest_module_alias_and_local_ancestry_ignore_pytest_class_patterns (research.unified_consequence_runtime.test_native_admission_v2.NativeAdmissionV2.test_unittest_module_alias_and_local_ancestry_ignore_pytest_class_patterns)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_admission_v2.py", line 93, in test_unittest_module_alias_and_local_ancestry_ignore_pytest_class_patterns
+    self.assertEqual(authority['required_test_nodes'], [
+AssertionError: Lists differ: ['tes[66 chars]rete::test_added'] != ['tes[66 chars]rete::test_added', 'tests/test_sample.py::Concrete::test_base']
+
+Second list contains 1 additional elements.
+First extra element 2:
+'tests/test_sample.py::Concrete::test_base'
+
+  ['tests/test_sample.py::Common::test_base',
+-  'tests/test_sample.py::Concrete::test_added']
+?                                              ^
+
++  'tests/test_sample.py::Concrete::test_added',
+?                                              ^
+
++  'tests/test_sample.py::Concrete::test_base']
+
+======================================================================
+FAIL: test_unknown_dynamic_bases_with_protected_methods_fail_closed (research.unified_consequence_runtime.test_native_admission_v2.NativeAdmissionV2.test_unknown_dynamic_bases_with_protected_methods_fail_closed) (base='factory()')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_admission_v2.py", line 116, in test_unknown_dynamic_bases_with_protected_methods_fail_closed
+    with self.subTest(base=base), self.assertRaisesRegex(ValueError, 'base|mapping'):
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_unknown_dynamic_bases_with_protected_methods_fail_closed (research.unified_consequence_runtime.test_native_admission_v2.NativeAdmissionV2.test_unknown_dynamic_bases_with_protected_methods_fail_closed) (base='ExternalBase')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_admission_v2.py", line 116, in test_unknown_dynamic_bases_with_protected_methods_fail_closed
+    with self.subTest(base=base), self.assertRaisesRegex(ValueError, 'base|mapping'):
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_unknown_dynamic_bases_with_protected_methods_fail_closed (research.unified_consequence_runtime.test_native_admission_v2.NativeAdmissionV2.test_unknown_dynamic_bases_with_protected_methods_fail_closed) (base='external.TestCase')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_admission_v2.py", line 116, in test_unknown_dynamic_bases_with_protected_methods_fail_closed
+    with self.subTest(base=base), self.assertRaisesRegex(ValueError, 'base|mapping'):
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_unmodified_overridden_mixin_assertions_do_not_require_impossible_nodes (research.unified_consequence_runtime.test_native_admission_v2.NativeAdmissionV2.test_unmodified_overridden_mixin_assertions_do_not_require_impossible_nodes)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_admission_v2.py", line 111, in test_unmodified_overridden_mixin_assertions_do_not_require_impossible_nodes
+    self.assertEqual(authority['required_test_nodes'], [
+AssertionError: Lists differ: ['tes[58 chars]ple.py::Shared::test_hidden', 'tests/test_sample.py::test_new'] != ['tes[58 chars]ple.py::test_new']
+
+First differing element 1:
+'tests/test_sample.py::Shared::test_hidden'
+'tests/test_sample.py::test_new'
+
+First list contains 1 additional elements.
+First extra element 2:
+'tests/test_sample.py::test_new'
+
+  ['tests/test_sample.py::Concrete::test_hidden',
+-  'tests/test_sample.py::Shared::test_hidden',
+   'tests/test_sample.py::test_new']
+
+----------------------------------------------------------------------
+Ran 28 tests in 1.979s
+
+FAILED (failures=9, errors=1)

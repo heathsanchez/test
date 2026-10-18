@@ -1,0 +1,146 @@
+{
+  "checks": {
+    "all_frozen_source_files_exact": true,
+    "all_frozen_source_files_exact_git_commit": true,
+    "every_manifest_file_exact": true,
+    "run_commit_binding": true,
+    "ledger_all_246_original_bytes_preserved": true,
+    "all_76_original_CAS_exact": true,
+    "all_CAS_addresses_valid": true,
+    "only_derived_cost_state_changed": true,
+    "original70capabilities_exact": true,
+    "zero_target_native_receipts": true,
+    "zero_target_test_or_native_runners": true,
+    "no_error_packet": true,
+    "honest_unknowns": true,
+    "no_acquisition_policy_or_constructor": true,
+    "source_identity_maintenance_exposure_declared": true,
+    "all_three_frozen_native_admissions_refused": true
+  },
+  "records": 246,
+  "CAS_objects": 76,
+  "live_ids_prior_immutable_ledger": 187,
+  "ledger_sha256": "b3696b388d2f3d1df95d819d1026eb9f87f042e93e4300f0cd987073949de9ac",
+  "frozen_source_files": 66,
+  "manifest_entries": 617,
+  "original_state_changed_files": [
+    "native-frontiers.json"
+  ],
+  "persistent_bytes": 2389834,
+  "controller_wall_seconds": 10.487775115999995,
+  "setup_total_wall_seconds": 6.95482234900004,
+  "setup_phase_seconds": 4.6622721589999685,
+  "machine_costs": [
+    {
+      "active_frontiers": 9,
+      "changed_frontiers": 9,
+      "phase": "cross_frontier_original_flash_reclosure",
+      "seconds": 0.35803239099999473
+    },
+    {
+      "phase": "persistence_and_reclosure",
+      "seconds": 2.5852823609999973
+    }
+  ],
+  "task_summaries": [
+    {
+      "repo": "more-itertools/more-itertools",
+      "base": "1ea82a711c69f590054987b5cb194157f8ce8ac4",
+      "head": "67fcf640477c78605580f5ee703a54c73c1e7a8a",
+      "augmented": "699b8c2a91f4f52c9b6acadefdfe7b008f839ef3",
+      "test_blobs": {
+        "tests/test_more.py": "b3a9351595a6fd7f1aa9c1e35978f08106e43df0"
+      },
+      "source_archive_file_sets_complete": true,
+      "production_git_manifests_preserved": true,
+      "same_agent_git_tree_and_manifest": true,
+      "status": "UNKNOWN_CONTRACT",
+      "reason": "UNKNOWN_SUITE_CONTRACT: dynamic test alias unsupported",
+      "setup_wall_seconds": 1.7967893360000176,
+      "setup_phase_seconds": 1.4905934269999648
+    },
+    {
+      "repo": "python-attrs/attrs",
+      "base": "ab7f8b2f4c0f747d5b1575247ce35e5adaad182e",
+      "head": "91f3695fe70a6d58c95660addd5ef8d46bfebd61",
+      "augmented": "f4cadc219a6de638c1c29521f265381a455bcf48",
+      "test_blobs": {
+        "tests/test_validators.py": "5ad2308eb89e6dfa8b0f6362969775b69c692fd6"
+      },
+      "source_archive_file_sets_complete": true,
+      "production_git_manifests_preserved": true,
+      "same_agent_git_tree_and_manifest": true,
+      "status": "UNKNOWN_CONTRACT",
+      "reason": "UNKNOWN_INTERFACE: unsupported native test configuration",
+      "setup_wall_seconds": 2.6026888840000026,
+      "setup_phase_seconds": 1.685522781000003
+    },
+    {
+      "repo": "python-attrs/cattrs",
+      "base": "573915b6b450c23eaf818370ac2e339dd9aee262",
+      "head": "5fd1c7f89f6c5f19b91cc5f2758a0fbf7740730b",
+      "augmented": "c51a28479aed6549ed1bb7399927b679bce1952c",
+      "test_blobs": {
+        "tests/test_tuples.py": "c1a9562c3c25ae8e1002aeca00a1ffe34cd2bd24"
+      },
+      "source_archive_file_sets_complete": true,
+      "production_git_manifests_preserved": true,
+      "same_agent_git_tree_and_manifest": true,
+      "status": "UNKNOWN_CONTRACT",
+      "reason": "UNKNOWN_INTERFACE: unsupported native test configuration",
+      "setup_wall_seconds": 2.5553441290000194,
+      "setup_phase_seconds": 1.4861559510000006
+    }
+  ],
+  "source_archive_exceptions": [
+    {
+      "task": 1,
+      "archive": "base-source.tar.gz",
+      "path": ".git_archival.txt",
+      "expected_sha256": "dbff7491d4b53ce49032e65f042530eaa36339bbbb223a7c0e6a6d1009a51a45",
+      "archive_sha256": "ec197007b394bebc55b0803352b956bcadb0bcd94018e496095eb76871dc814f"
+    },
+    {
+      "task": 1,
+      "archive": "contract-source.tar.gz",
+      "path": ".git_archival.txt",
+      "expected_sha256": "dbff7491d4b53ce49032e65f042530eaa36339bbbb223a7c0e6a6d1009a51a45",
+      "archive_sha256": "4c92a0a1d45758b911eb83e03623aa062c1d5d603b407322a8b8e97122774053"
+    }
+  ],
+  "comparisons": {
+    "O1_O2_chain": {
+      "status": "NOT_RUN_NO_VERIFIED_ACQUISITION"
+    },
+    "causal_withdrawal_restoration_restart": {
+      "status": "NOT_RUN_NO_ACQUIRED_NATIVE_METHOD; PRIOR_G0_G1_AUTHORITY_PRESERVED"
+    },
+    "developmental_machine": {
+      "status": "UNKNOWN_NO_NATIVE_ACQUISITION_RESIDUAL"
+    },
+    "fully_informed_executable_ledger": [
+      {
+        "status": "UNKNOWN_SETUP"
+      },
+      {
+        "status": "UNKNOWN_SETUP"
+      },
+      {
+        "status": "UNKNOWN_SETUP"
+      }
+    ],
+    "original_system": [
+      {
+        "status": "UNKNOWN_SETUP"
+      },
+      {
+        "status": "UNKNOWN_SETUP"
+      },
+      {
+        "status": "UNKNOWN_SETUP"
+      }
+    ]
+  },
+  "cost_boundary": "Setup is included in controller wall. FLASH is nested inside persistence_and_reclosure. Agent walls include orchestration and are not directly comparable. There were no native calls.",
+  "derived_cache_differences": "Only native-frontiers.json recomputed during startup; immutable ledger/CAS unchanged. Startup change metadata does not establish a newly acquired consequence."
+}

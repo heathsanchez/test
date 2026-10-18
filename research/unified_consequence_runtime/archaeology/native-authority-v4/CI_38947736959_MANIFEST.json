@@ -1,0 +1,60 @@
+{
+  "archive_errors": [
+    {
+      "error": "ValueError: original source object not available or hash differs",
+      "source": "consequence_selection.py"
+    },
+    {
+      "error": "ValueError: original source object not available or hash differs",
+      "source": "developmental_choice.py"
+    },
+    {
+      "error": "ValueError: original source object not available or hash differs",
+      "source": "decisive_native.py"
+    }
+  ],
+  "archive_member_readback_verification": {
+    "members": 5,
+    "status": "PASS_EXACT_MANIFEST_MEMBERS_AND_BYTES"
+  },
+  "boundary": "Raw native/source/state/evidence/cost packets retained; executable venvs, Git object stores and runtime installer trees are omitted. Exact source/runtime identities and recipes remain in evidence.",
+  "excluded_runtime_directories": [
+    ".git",
+    "miniconda-base",
+    "venv",
+    "wheels"
+  ],
+  "files": {
+    "CI_ASSESSMENT.json": {
+      "bytes": 343,
+      "sha256": "30e3a4ea1ee5a81f8958e2fa9a125d4216bc73b49b99c4ebe97555f61396eb2d"
+    },
+    "CI_BOUNDARY.json": {
+      "bytes": 1023,
+      "sha256": "77234b12bd0b6fb341a14255a320e50308bc1a4ba5dcb91402f8d8de4595c141"
+    },
+    "ORIGINAL_METHOD_OBJECTS.json": {
+      "bytes": 448,
+      "sha256": "7b04a9a932c7b05c57ec9a1d9c38ea8fcb82c0a525dfd68f364f0d1af51b0ae1"
+    },
+    "READINESS.json": {
+      "bytes": 288,
+      "sha256": "41b8fa346bf1cbce2599adbaa4446639f61af0c7a36bd7da1a781dd1d90b6f8a"
+    },
+    "source-packs/UDM_SOURCE.tar.gz": {
+      "bytes": 120035362,
+      "sha256": "babfd18ce196568944390bfea627dc6d15646238757e19696be831ef517af12d"
+    }
+  },
+  "mode": "REPRODUCTION_OF_COMMITTED_PREOUTCOME_PROTOCOL",
+  "packet": {
+    "bytes": 120060896,
+    "path": "NATIVE_SELECTION_V4_EVIDENCE.tar.gz",
+    "sha256": "7c8483fd5c94d16feb8004404b33e99761ee1df5176913e188079515ea26034e"
+  },
+  "run_attempt": "1",
+  "run_id": "38947736959",
+  "schema": "UDM_NATIVE_SELECTION_EVIDENCE_MANIFEST_V4",
+  "source_commit": "6f1ae2001a89380c622efdd2883ae0971e305d87",
+  "symlinks": {}
+}
