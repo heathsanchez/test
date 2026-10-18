@@ -1,0 +1,76 @@
+{
+  "schema": "G2_ACQUIRED_OPERATION_LOCK_V1_BEFORE_FUTURE",
+  "status": "WARRANTED_BOUNDED_TRAINING_ONLY",
+  "training": {
+    "repo": "pallets/werkzeug",
+    "pr": 3215,
+    "base": "1b00618e787f40dfb21eba29caf8f8be7c8e1d93",
+    "native_original_pass": 1,
+    "native_original_fail": 1,
+    "protected_after_pass": 2,
+    "full_author_routing_pass": 150,
+    "ablation_original_fail_reappeared": 1,
+    "restoration_protected_pass": 2,
+    "production_original_sha256": "02c0bbdf7c9254021b10ce296e8e9545cd60779b94053c4cf595790b868a47fd",
+    "production_generated_sha256": "535c5292e2c9a147c29ac0109540bf2c5e9a017fd2dc5e57a997241ade8cd1e7",
+    "chosen_ast_line": 963,
+    "chosen_dependency": "self.map.subdomain_matching or self.map.host_matching",
+    "preserved_force_guard": "not force_external"
+  },
+  "acquired_method": {
+    "name": "context-absence fallback",
+    "source": "research/unified_consequence_runtime/g2_context_fallback_operator_v1.py",
+    "freeze_commit": "6fbfa0a633439f0eb5c8e9c55726f2b053e1bdd1",
+    "sha256": "71c240edeb08225f7bc6bf6e8b6402cff6e0d7364cdee016733d06fbfa470cb9",
+    "maximum_candidates": 12,
+    "changes_after_future_open_allowed": false
+  },
+  "training_evidence": {
+    "action_run_id": 39165878373,
+    "artifact_id": 12150910992,
+    "artifact_zip_sha256": "83d9a4a427476af203d8466728368d9ad65fd11c6c0247b44483ca9f6c1b66e6",
+    "result_json_sha256": "375634455f18d94a1a2138d1c10cac8976cbd8f5489e9fedf0df8199b25d2cc8",
+    "review": "independently downloaded ZIP, checked SHA256 and CRC, parsed original/protected/full/withdrawal/restoration JUnit",
+    "artifact_sha_origin": "GitHub provider and independent local"
+  },
+  "future": {
+    "repo": "pypa/packaging",
+    "pr": 1446,
+    "base": "332d716676eb934b67ede4054a3e3e0d4022b2d3",
+    "head": "a4f5d377a62e96759a4d9237256ec5dc3b19444e",
+    "production": "src/packaging/pylock.py",
+    "author_test": "tests/test_pylock.py",
+    "role_freeze_commit": "57c400ea49881e440f7895acaeebeee5854363e3",
+    "source_unopened_at_lock": true
+  },
+  "equal_information_comparison": {
+    "pre_acquisition_method_inventory": [
+      "g2_anyio_mutable_closure_equivalence_fix_v2.py@094e2ddc",
+      "attrs_residual_observation_genesis_v1.py@b9d175d0"
+    ],
+    "deterministic_source_local_baseline": "research/unified_consequence_runtime/g2_equal_info_guard_ablation_v1.py",
+    "baseline_commit": "0a67b3bee47b8fdaa420aed9b370e5ddb2f82780",
+    "strong_agent": "NOT_RUN",
+    "candidate_ceiling_per_arm": 12,
+    "protected_test_time_limit_sec": 120,
+    "relevant_full_test_time_limit_sec": 120,
+    "cost_dimensions": [
+      "generation",
+      "native_validation",
+      "source_restore",
+      "restart",
+      "audit"
+    ],
+    "success_requires_full_test_and_causal_withdrawal": true
+  },
+  "evidence_promotion": {
+    "training": "WARRANTED_BOUNDED_TRAINING",
+    "transfer": "UNKNOWN_UNTIL_NATIVE_FUTURE",
+    "lean": "NOT_EXECUTED_CONDITIONAL",
+    "clc": "NOT_EXECUTED_CONDITIONAL",
+    "flash": "NOT_EXECUTED_CONDITIONAL",
+    "mathgraph": "CANDIDATE_EVIDENCE_ONLY",
+    "no_any_g2_promotion_from_training": true
+  },
+  "no_future_reselection": true
+}
