@@ -237,13 +237,10 @@ def main(world: Path,out: Path):
             if nodeid not in monitor.protected:
                 yield
                 return
-            old=sys.gettrace()
             monitor.current=nodeid
-            sys.settrace(monitor.trace)
             try:
                 yield
             finally:
-                sys.settrace(old)
                 monitor.current=None
 
         def pytest_collection_modifyitems(self,session,config,items):
@@ -378,12 +375,12 @@ def main(world: Path,out: Path):
             "--rootdir="+str(direct_dir),
             *[str(path) for path in sorted(child_files)],
         ]
-        old_trace=sys.gettrace()
-        sys.settrace(direct.trace)
+        old_profile=sys.getprofile()
+        sys.setprofile(direct.trace)
         try:
             direct_code=pytest.main(direct_argv,plugins=[DirectPlugin()])
         finally:
-            sys.settrace(old_trace)
+            sys.setprofile(old_profile)
 
         result["direct_author_child"]={
             "pytest_argv":direct_argv,
