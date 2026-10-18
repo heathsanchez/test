@@ -53,10 +53,13 @@ def main(world,out,runtime):
     world=world.resolve(strict=True); out=out.resolve(); out.mkdir(parents=True,exist_ok=False)
     t=roles["training"]
     if git(world,"rev-parse","HEAD")!=t["base"]: raise ValueError("WRONG_TRAINING_BASE")
-    status_lines=[line for line in git(world,"status","--porcelain").splitlines() if line]
-    changed_paths=[line[3:] for line in status_lines if len(line)>=4]
-    if changed_paths != [t["author_tests"][0]]:
-        raise ValueError("UNEXPECTED_TRAINING_WORKTREE:"+git(world,"status","--porcelain"))
+    porcelain=subprocess.check_output(
+        ["git","--no-replace-objects","-C",str(world),"status","--porcelain"],
+        text=True,
+    ).splitlines()
+    status_lines=[line for line in porcelain if line]
+    if len(status_lines)!=1 or not status_lines[0].endswith(" "+t["author_tests"][0]):
+        raise ValueError("UNEXPECTED_TRAINING_WORKTREE:"+" | ".join(status_lines))
     test=t["author_tests"][0]; prod=t["production"][0]
     expected_test=git(world,"show",t["head"]+":"+test,raw=True)
     if (world/test).read_bytes()!=expected_test: raise ValueError("AUTHOR_TEST_OVERLAY_DIFFERS")
