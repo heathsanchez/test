@@ -1,0 +1,108 @@
+name: G2 third-source original urllib3 protected native negative independent audit
+on:
+  push:
+    branches:
+      - research/g2-third-source-negative-independent-audit-v1-20261019
+    paths:
+      - .github/workflows/g2-third-source-v11-independent-audit.yml
+      - research/unified_consequence_runtime/G2_THIRD_SOURCE_V11_INDEPENDENT_AUDIT_FREEZE.json
+      - research/unified_consequence_runtime/g2_third_v11_independent_native_negative_audit.py
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  independently-recheck-original-git-test-and-method-refusal:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Require independent audit frozen before checker implementation
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmp research/unified_consequence_runtime/G2_THIRD_SOURCE_V11_INDEPENDENT_AUDIT_FREEZE.json \
+            <(git show c89482bd84b3493d96ec6e72ef2959e397e53158:research/unified_consequence_runtime/G2_THIRD_SOURCE_V11_INDEPENDENT_AUDIT_FREEZE.json)
+          python -B -m py_compile research/unified_consequence_runtime/g2_third_v11_independent_native_negative_audit.py
+      - uses: actions/download-artifact@v4
+        with:
+          name: g2-third-source-v11-original-native-added-author-evidence
+          run-id: 39173223634
+          github-token: ${{ github.token }}
+          path: evidence/third-native-original-v11
+      - name: Independently fetch original Requests and urllib3 Git BASE and HEAD author-test and reparse original JUnit
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -B research/unified_consequence_runtime/g2_third_v11_independent_native_negative_audit.py evidence/third-native-original-v11
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('evidence/third-native-original-v11/INDEPENDENT_AUDIT.json').read_text())
+          assert d['status']=='WARRANTED_BOUNDED_FIRST_REAL_NATIVE_FAIL_AND_FROZEN_METHOD_INAPPLICABILITY'
+          assert d['original_author_test_new_in_base'] is True
+          assert d['second_urllib3_author_native']['failed']==1
+          assert d['independent_eligible_strict_primitive_count']==0
+          assert d['G2']==d['G4']=='UNKNOWN'
+          PY
+      - name: Refuse five forged original source, native and method promotion packets
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import json, shutil, tempfile
+          from research.unified_consequence_runtime import g2_third_v11_independent_native_negative_audit as a
+          root=Path('evidence/third-native-original-v11').resolve()
+          original=a.original_two_source_repos(a.manifest())
+          found={}
+          for variant in ('wrong_source','false_g2','fake_operator','forged_junit','extra_source'):
+              with tempfile.TemporaryDirectory() as td:
+                  trial=Path(td)/'original'
+                  shutil.copytree(root,trial)
+                  if variant=='forged_junit':
+                      target=trial/'admission-01/native.xml'
+                      raw=target.read_bytes()
+                      if b'<failure' not in raw:raise AssertionError('fixture lacks original failure')
+                      target.write_bytes(raw.replace(b'<failure',b'<skipped',1))
+                  else:
+                      target=trial/'RESULT.json'
+                      d=json.loads(target.read_text())
+                      if variant=='wrong_source':
+                          d['source_outcomes'][1]['source_sha256']='0'*64
+                      elif variant=='false_g2':
+                          d['G2']='WARRANTED'
+                      elif variant=='fake_operator':
+                          d['primitive_count']=1
+                      else:
+                          d['scope']['files'].append('src/urllib3/not_declared.py')
+                      target.write_text(json.dumps(d,sort_keys=True)+'\n')
+                  try:a.audit(trial,original)
+                  except (ValueError,KeyError,TypeError):
+                      found[variant]='REJECTED_AS_REQUIRED'
+                  else:raise AssertionError('forged receipt accepted: '+variant)
+          (root/'ADVERSARIAL_NEGATIVES.json').write_text(json.dumps(found,sort_keys=True,indent=2)+'\n')
+          assert len(found)==5
+          PY
+      - name: Preserve completed independent original source/negative evidence
+        if: always()
+        shell: bash
+        run: |
+          set -uo pipefail
+          mkdir -p evidence/third-native-original-v11
+          git rev-parse HEAD > evidence/third-native-original-v11/INDEPENDENT_AUDIT_SOURCE_HEAD.txt
+          sha256sum research/unified_consequence_runtime/G2_THIRD_SOURCE_V11_INDEPENDENT_AUDIT_FREEZE.json \
+            research/unified_consequence_runtime/g2_third_v11_independent_native_negative_audit.py > evidence/third-native-original-v11/INDEPENDENT_SOURCE_HASHES.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: g2-third-source-urllib3-independent-negative-warrant
+          path: evidence/third-native-original-v11/
+          retention-days: 90
+          if-no-files-found: error
