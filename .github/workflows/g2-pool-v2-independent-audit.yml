@@ -1,0 +1,45 @@
+name: Independent frozen G2 first-native-failure artifact audit V2
+on:
+  push:
+    branches:
+      - research/udm-g2-frozen-native-failure-pool-20261018
+    paths:
+      - research/unified_consequence_runtime/g2_pool_v2_independent_audit.py
+      - .github/workflows/g2-pool-v2-independent-audit.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  verify-preserved-result:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Authenticate frozen original Actions archive before reading outcome
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/g2-pool-v2-independent
+          curl -fLsS --retry 3 -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json"             "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/12125763303/zip"             -o "$RUNNER_TEMP/frozen-original-pool.zip"
+          printf '%s  %s\n' 'd22dbfe163dd96f9f837ea295cfc6ff52e6d0a47284ae13993fb1e1b293b202f' "$RUNNER_TEMP/frozen-original-pool.zip" | sha256sum -c -
+      - name: Source-disjoint archive/JUnit/negative outcome audit
+        run: |
+          set -euo pipefail
+          python research/unified_consequence_runtime/g2_pool_v2_independent_audit.py "$RUNNER_TEMP/frozen-original-pool.zip" | tee evidence/g2-pool-v2-independent/RESULT.json
+      - name: Preserve independent audit source and negative controls
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g2-frozen-pool-v2-independent-evidence
+          retention-days: 90
+          if-no-files-found: warn
+          path: |
+            evidence/g2-pool-v2-independent/
+            research/unified_consequence_runtime/g2_pool_v2_independent_audit.py
