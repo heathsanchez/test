@@ -1,0 +1,144 @@
+{
+  "version": "cash-track-resource-v0.1",
+  "frozen_protocol_sha": "bb33d34a479d439cf4d38ce9601462c53b0beda1",
+  "source": "ROS+specific GitHub CI jobs (previously qualified)",
+  "limitations": [
+    "facts transcribed from evidence records, new benchmark cannot authenticate upstream source only through declared strings",
+    "no independent model evaluation; adversarial negative labels procedurally generated; no competitive superiority claim",
+    "CI job SUCCESS is not a universal theorem or broad repo correctness"
+  ],
+  "cases": [
+    {
+      "id": "reviewbench-go-pr9",
+      "subject_type": "historical-upstream-head",
+      "subject": "f98281938e63acd1d2df9b89d6af98dcf58c9fa8",
+      "repo": "k1LoW/gh-copilot-review",
+      "run_id": 38634850681,
+      "job": "independent-native-to-reviewbench",
+      "claim": "candidate_commit_id_freshness_repair_native_red_green_red",
+      "required_phases": [
+        "historical_original_red",
+        "candidate_repair_green",
+        "physical_restore_red",
+        "official_reviewbench_container_consumer"
+      ],
+      "unknown_claim": "novel_strong_reviewer_superiority",
+      "citation": "https://github.com/heathsanchez/test/actions/runs/38634850681",
+      "boundary": "Original published PR, one candidate repair, not full-suite or unique discovery"
+    },
+    {
+      "id": "ozzo-e164",
+      "subject_type": "historical-upstream-head",
+      "subject": "48423ae967b5ed417f9076caa37e83f24b29dccd",
+      "repo": "go-ozzo/ozzo-validation",
+      "run_id": 38600969324,
+      "job": "Exact original native application / first",
+      "claim": "source_derived_native_boolean_difference",
+      "required_phases": [
+        "source_old_sha_checked",
+        "source_head_sha_checked",
+        "old_go_predicate_executed",
+        "head_go_predicate_executed",
+        "source_generated_input"
+      ],
+      "unknown_claim": "new_upstream_bug_discovered",
+      "citation": "https://github.com/heathsanchez/test/actions/runs/38600969324",
+      "boundary": "Observed old/head native Go predicate difference, not normative validity"
+    },
+    {
+      "id": "govalidator-email",
+      "subject_type": "historical-upstream-head",
+      "subject": "80fc291b0bc7b293068daf5341c47704fb630d43",
+      "repo": "asaskevich/govalidator",
+      "run_id": 38600969324,
+      "job": "Exact original native application / transfer",
+      "claim": "source_derived_native_boolean_difference",
+      "required_phases": [
+        "source_old_sha_checked",
+        "source_head_sha_checked",
+        "old_go_predicate_executed",
+        "head_go_predicate_executed",
+        "source_generated_input"
+      ],
+      "unknown_claim": "upstream_merged_acceptance",
+      "citation": "https://github.com/heathsanchez/test/actions/runs/38600969324",
+      "boundary": "Observed original contributor change, closed/unmerged PR; not upstream-accepted fix"
+    },
+    {
+      "id": "clc-flash-v3",
+      "subject_type": "owned-proof-and-source-head",
+      "subject": "7d876da93a007933e3ff9c4894e01cb00e77ff9b",
+      "repo": "heathsanchez/realitygraph",
+      "run_id": 39079945123,
+      "job": "prove-and-admit",
+      "claim": "finite_typed_transport_lean_admission",
+      "required_phases": [
+        "lean_generic_compiles",
+        "lean_finite_transport_check",
+        "source_bound_flash_admission",
+        "forged_transport_refused",
+        "causal_withdrawal_checked"
+      ],
+      "unknown_claim": "durable_restart_lean_receipt_reauthenticated",
+      "citation": "https://github.com/heathsanchez/realitygraph/actions/runs/39079945123",
+      "boundary": "Finite Lean-declared oracle transport only; no durable proof store/general CLC soundness"
+    },
+    {
+      "id": "nucleus-frozen196",
+      "subject_type": "declared-corpus-and-run",
+      "subject": "frozen196:39018141144",
+      "repo": "heathsanchez/test",
+      "run_id": 39018141144,
+      "job": "Frozen196 exact inputs, mode default",
+      "claim": "frozen196_conservative_118_71_7_verdicts",
+      "required_phases": [
+        "frozen_corpus_used",
+        "118_accept",
+        "71_reject",
+        "7_unknown",
+        "zero_wrong_verdicts",
+        "protected_negative_controls"
+      ],
+      "unknown_claim": "whole_mathlib_independent_acceptance",
+      "citation": "https://github.com/heathsanchez/test/actions/runs/39018141144",
+      "boundary": "Exact 196-case test regime, not complete Mathlib"
+    },
+    {
+      "id": "anyio-protected-red",
+      "subject_type": "owned-experiment-commit",
+      "subject": "fc90fa2a",
+      "repo": "heathsanchez/test",
+      "run_id": 39077610372,
+      "job": "training-source-authority",
+      "claim": "original_author_protected_native_fail_observed",
+      "required_phases": [
+        "upstream_source_sha_authenticated",
+        "test_only_overlay",
+        "two_independent_native_runs",
+        "two_protected_fails_each",
+        "forged_test_source_refused"
+      ],
+      "unknown_claim": "g2_autonomous_method_acquisition",
+      "citation": "https://github.com/heathsanchez/test/actions/runs/39077610372",
+      "boundary": "Owned source abbreviation, not external upstream full SHA; G2–G6 not executed"
+    },
+    {
+      "id": "itsdangerous-admission",
+      "subject_type": "owned-experiment-commit",
+      "subject": "d2822874",
+      "repo": "heathsanchez/test",
+      "run_id": 39075931136,
+      "job": "independent-native-admission",
+      "claim": "original_upstream_297_297_clean_suite",
+      "required_phases": [
+        "original_source_sha_checked",
+        "original_297_297_pass",
+        "zero_skips_errors",
+        "regression_71_71_pass"
+      ],
+      "unknown_claim": "g2_new_method_discovered",
+      "citation": "https://github.com/heathsanchez/test/actions/runs/39075931136",
+      "boundary": "Original suite clean, no protected failing obligation"
+    }
+  ]
+}
