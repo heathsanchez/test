@@ -260,7 +260,9 @@ def audit(folder,originals):
         "candidate_native_repairs":0,
         "ledger":"SAME_ZERO_CANDIDATE_UNIVERSE_NO_COMPARATOR_RACE",
         "native_source_truth":"ORIGINAL_GIT_PRODUCTION_PLUS_HEAD_AUTHOR_TEST",
-        "remaining_candidate_unopened":"pydantic/pydantic#13980",
+        "remaining_candidate_not_reopened_in_v11":"pydantic/pydantic#13980",
+        "remaining_candidate_globally_unopened":False,
+        "prior_v1_attempt":"Pydantic original source/test already accessed in V1 but zero native collected; do not treat it as untouched",
         "method_transfer":"REJECTED_FROZEN_GRAMMAR_INAPPLICABLE_NOT_UNIVERSAL_FAILURE",
         "future_scope":"ONE_AUTHENTIC_ORIGINAL_SOURCE_DISTINCT_TASK_ONLY"}
 
