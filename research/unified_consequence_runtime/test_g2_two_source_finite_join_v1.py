@@ -66,5 +66,25 @@ class FrozenTwoSourceFiniteJoin(unittest.TestCase):
         self.assertNotIn("axiom",lean.lower())
 
 
+    def test_11_deer_source_nested_native_receipt_counts_are_authoritative(self):
+        import hashlib
+        import tempfile
+        from pathlib import Path
+        raw=(b'<?xml version="1.0"?><testsuite>'
+             b'<testcase classname="mod.Tests" name="case[a]"/>'
+             b'<testcase classname="mod.Tests" name="case[b]"><failure/></testcase>'
+             b'</testsuite>')
+        receipt={"junit_sha256":hashlib.sha256(raw).hexdigest(),
+                 "counts":{"tests":2,"failures":1,"errors":0,"skipped":0},
+                 "returncode":1}
+        expected={"mod.Tests::case[a]":"PASS","mod.Tests::case[b]":"FAIL"}
+        with tempfile.TemporaryDirectory() as td:
+            folder=Path(td)
+            (folder/"mask.xml").write_bytes(raw)
+            result=model.receipt_vector(folder,"mask.xml",receipt,expected,
+                                        "deer_protected",is_mistral=False)
+            self.assertEqual(result,expected)
+
+
 if __name__=="__main__":
     unittest.main()
