@@ -1,0 +1,111 @@
+{
+  "schema": "UDM_G2_V5_SOURCE_BLIND_OBSERVATION_CHOICE_PREQUERY",
+  "status": "FROZEN_PREQUERY_NOT_EXECUTED",
+  "date": "2026-10-18",
+  "ancestor": {
+    "base": "75cbe79de7b2256f2794c1adf18b3e8152b55f4e",
+    "reason": "Prior V4 prequery collided with UDM-exposed repositories. Never rewrite it; a new source-blind universe starts here."
+  },
+  "hypothesis": "Can prequalified, source-neutral observation methods be chosen by their typed applicability on genuinely unfamiliar native failing source, and does a licensed method actually repair the protected obligation?",
+  "method_authority": [
+    {
+      "name": "mutable_closure",
+      "commit": "094e2ddc3ba601a00eaf368151172a361e5542da",
+      "path": "research/unified_consequence_runtime/g2_anyio_mutable_closure_equivalence_fix_v2.py"
+    },
+    {
+      "name": "primitive_projection",
+      "commit": "d83de24d3b5bb4352cd6991a85a0fbc1e72f6deb",
+      "path": "research/unified_consequence_runtime/residual_projection_method_v1.py",
+      "blob": "9ffb5e656d7801836cdd23c74cbf5c2ce39f2105",
+      "dependency_commit": "b9d175d0b129c843bc5885aec77082f07f2b0601"
+    }
+  ],
+  "source_blind_repo_order": [
+    "pallets/flask",
+    "encode/starlette",
+    "Textualize/textual",
+    "sqlalchemy/sqlalchemy",
+    "python-poetry/poetry-core",
+    "pygments/pygments",
+    "marshmallow-code/marshmallow",
+    "pypa/virtualenv",
+    "python-poetry/tomlkit",
+    "pypa/build",
+    "aio-libs/yarl",
+    "pallets/jinja"
+  ],
+  "historical_exclusions": [
+    "jd/tenacity",
+    "agronholm/anyio",
+    "python-attrs/attrs",
+    "tox-dev/tox",
+    "python-trio/trio",
+    "pallets/werkzeug",
+    "pallets/itsdangerous",
+    "pallets/click",
+    "psf/requests",
+    "urllib3/urllib3",
+    "pydantic/pydantic",
+    "pypa/packaging",
+    "pytest-dev/pluggy",
+    "jquast/wcwidth",
+    "python-jsonschema/jsonschema",
+    "encode/httpx",
+    "Textualize/rich",
+    "pypa/hatch",
+    "alexmojaki/executing",
+    "pypa/platformdirs"
+  ],
+  "metadata_rule": {
+    "mode": "metadata_only_then_manual_immutable_role_freeze",
+    "window": "merged:2026-01-01..2026-09-30",
+    "order": "GitHub issue-search created ascending, PR number ascending for ties",
+    "repos_in_fixed_order": true,
+    "max_search_results_per_repo": 40,
+    "max_PR_file_pages": 4,
+    "first_per_repo": "First PR in fixed returned order meeting constraints; never choose by native outcome.",
+    "production": "Exactly one modified Python file under src/, not under tests/",
+    "tests": "Exactly one modified path under tests/ whose basename begins test and ends .py",
+    "decline": "Any config/build lock/CI/tox/setup dependency file changes, any other Python file changes outside the named pair, inaccessible or unpinned Git parent/head.",
+    "metadata_projection": "Only immutable repo, PR number, merge SHA, premerge first-parent SHA, author head SHA, selected file paths and timestamp are emitted. GitHub REST response may contain patches; discard them inside the metadata worker and do not log or transmit source text.",
+    "minimum_eligible": 4,
+    "roles": "First 3 eligible repos, in source-blind order, sequential training admission; fourth SEALED_FUTURE until genuine training improvement has warrant",
+    "shortfall": "UNKNOWN_POOL_INCOMPLETE; no source access, no post-hoc substitutions",
+    "original_native_failure_rule": "Under source-owned original tests and dependencies, require >=1 original author assertion node actually called and failed, zero collection errors, zero affected skips; choose first admissible training in order; fail closed if no qualified failure."
+  },
+  "frozen_choice_rule": {
+    "classes": [
+      "SELF_PERSISTED_NESTED_CLOSURE_STATE",
+      "DIRECT_PARAMETRIZED_BOOLEAN_PRIMITIVE_PROJECTION"
+    ],
+    "decision": "Inspect only immutable original source+head test+native observation after training admission. Ask each original byte-pinned method for typed applicability, without target-specific grammar changes. Exactly one applicable method -> execute it; zero -> UNKNOWN_NO_APPLICABLE_METHOD; two -> UNKNOWN_CHOICE unless a precommitted independent consequence separates them.",
+    "no_winning_candidate_oracle": true,
+    "no_task_specific_edits": true,
+    "no_science_promotion_from_prequery": true
+  },
+  "budgets": {
+    "metadata_requests_soft_cap": 950,
+    "source_read_before_role_freeze": 0,
+    "sequential_training_candidates": 3,
+    "future_tasks_sealed": 1,
+    "max_native_processes_total": 48,
+    "per_native_process_timeout_seconds": 160
+  },
+  "comparator_boundary": {
+    "baseline": "Original unchanged operations under same native time and matched source evidence",
+    "ledger": "Fully informed original executable ledger and candidate inventory (not a handicapped memory)",
+    "agent": "Actual source/test-capable coding agent with equivalent budget; if unavailable G4 remains UNKNOWN",
+    "comparative_requirement": "No exclusive advantage unless all actual matched comparators execute and full costs are charged.",
+    "warrant": "Training FAIL/PASS x2/withdrawal FAIL/restore PASS, then heldout future source-distinct native causal gain over unchanged method. Absent gate, G2 UNKNOWN."
+  },
+  "anti_contamination": [
+    "Never read source/tests/patch bodies before role freeze",
+    "Never open SEALED_FUTURE if training has no certified repair",
+    "Never rewrite old V4 prequery or earlier RED experiments",
+    "Already-exposed AnyIO/attrs/tox/Werkzeug are calibration, not fresh tasks",
+    "Metadata selection is not developmental learning",
+    "All methods are engineer supplied; selection is not autonomous creation of a new meta-language",
+    "No upstream writes; no secrets in untrusted native worker"
+  ]
+}
