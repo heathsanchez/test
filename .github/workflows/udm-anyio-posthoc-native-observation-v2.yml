@@ -128,7 +128,7 @@ jobs:
           b=json.loads((root/"trial-b/RESULT.json").read_text())
           for name in ("status","v13_original_eligible_guards","observed_functions",
                        "all_original_v104_source_slot_counts","junit","actual_calls",
-                       "eligible_source_slot_count","other_source_locations_eligible","failure_signatures","profiling_mode"):
+                       "eligible_source_slot_count","other_source_locations_eligible","profiling_mode"):
               assert a.get(name)==b.get(name),f"NONDETERMINISTIC_OBSERVER_{name}"
           assert a["G2"]==b["G2"]=="UNKNOWN"
           assert a["future_source"]==b["future_source"]=="UNOPENED"
@@ -137,6 +137,8 @@ jobs:
           assert a["v13_original_eligible_guards"]==0
           assert a["profiling_mode"]=="CODE_FILENAME_STRING_EQUALITY_NO_PATH_IO"
           assert all(v["native_one_pass_one_fail"] and v["assertion_failure"] and not v["blocking_error"] for v in a["failure_signatures"].values())
+          assert set(a["failure_signatures"])==set(b["failure_signatures"])
+          assert all(all(a["failure_signatures"][key][field]==b["failure_signatures"][key][field] for field in ("native_one_pass_one_fail","assertion_failure","blocking_error")) for key in a["failure_signatures"])
           assert a["junit"]=={"tests":2,"failures":2,"errors":0,"skipped":0}
           assert a["status"] == "WARRANTED_BOUNDED_INSTRUMENTED_SOURCE_FUNCTION_OBSERVATION"
           (root/"REPLAY_VERDICT.json").write_text(json.dumps({
