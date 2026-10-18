@@ -1,0 +1,56 @@
+{
+  "schema": "G2_FINITE_COMPOSITION_FUTURE_PREACCESS_FREEZE_V1",
+  "status": "SEALED_BEFORE_ANY_FUTURE_SOURCE_OR_TEST_ACCESS",
+  "training": {
+    "repo": "mistralai/mistral-common",
+    "pr": 380,
+    "original_run": 39114945496,
+    "independent_audit_run": 39162426039,
+    "independent_audit_artifact": 12149845225,
+    "native_vectors": "4 FAIL original; 4 PASS repaired; 17 full PASS; 16 native subset states"
+  },
+  "future": {
+    "repo": "bytedance/deer-flow",
+    "pr": 5960,
+    "base": "e2feca1e567d9bafce657de8ad8bc668bd7ad513",
+    "head": "cd9c12bb89c0c9d727a348b5fba3bd95730a9186",
+    "production": "backend/app/gateway/routers/agents.py",
+    "author_test": "backend/tests/test_custom_agent.py",
+    "source_opened_at_freeze": false,
+    "author_test_opened_at_freeze": false
+  },
+  "original_role_freeze": "c334208685d25c3f1254b77e2e88d0f7efdd7975",
+  "locked_files": [
+    {
+      "path": "research/unified_consequence_runtime/g2_finite_composition_future_v1.py",
+      "commit": "ce539d95b9ee8080b863310e8d6308c9489db2b6"
+    },
+    {
+      "path": "research/unified_consequence_runtime/g2_finite_composition_mistral_v2.py",
+      "commit": "0f3fd96a84a4a314c7d02beab0618bd402b41bae"
+    },
+    {
+      "path": "research/unified_consequence_runtime/g2_regex_terminal_genesis_v1.py",
+      "commit": "d45288833a13b1ddf6afde01c0b89a84bfc7ce32"
+    },
+    {
+      "path": "research/unified_consequence_runtime/g2_pool_first_native_failure_v1.py",
+      "commit": "0f3fd96a84a4a314c7d02beab0618bd402b41bae"
+    },
+    {
+      "path": "research/unified_consequence_runtime/g2_werkzeug_guard_genesis_v1.py",
+      "commit": "216f960c18fd8a5d1e3f78a5c811333153802e0c"
+    },
+    {
+      "path": "research/unified_consequence_runtime/G2_FINITE_REGEX_COMPOSITION_V2_FROZEN_PROTOCOL.md",
+      "commit": "90e4b817282f0d6a4c28f989d018b421aca66b68"
+    }
+  ],
+  "method": "Unchanged strict-terminal AST primitive plus V2 finite greedy nonregressing composition; <=4 parts, <=32 candidate trials, full native original author checks, 16 subset table, physical withdrawal/restoration.",
+  "comparator": "Unchanged V1 single strict-terminal edit and V1 fullmatch grammar with identical finite-composition budget; all outcomes retained, G4 agent advantage untested.",
+  "stop": "If original source-native protected failure not earned or method no-applicable, report UNKNOWN/REJECTED without target retuning or selecting a replacement; no author-head fixed production.",
+  "formal": "Lean CLC FLASH only after a source-distinct causal positive and independently audited receipts",
+  "G2": "UNKNOWN",
+  "G4": "UNKNOWN",
+  "science": "NOT_EXECUTED"
+}
