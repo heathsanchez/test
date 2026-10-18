@@ -121,5 +121,21 @@ class V5MetadataContracts(unittest.TestCase):
         self.assertFalse(any('author_test_body' in x for x in selected))
 
 
+    def test_11_unsearchable_frozen_repo_keeps_order_and_explicit_refusal(self):
+        config=m.read_spec()[0].copy()
+        config['source_blind_repo_order']=['x/one','y/two']
+        class Unsearchable(FakeAPI):
+            def matching_prs(self,repo,max_results):
+                if repo=='x/one':
+                    raise ValueError('UNKNOWN_METADATA_HTTP_422_ISSUE_SEARCH_x/one')
+                return super().matching_prs(repo,max_results)
+        api=Unsearchable({'y/two':[{'number':9,'created_at':'2026-02-01'}]})
+        selected,reasons=m.shortlist(config,api)
+        self.assertEqual([x['repo'] for x in selected],['y/two'])
+        self.assertEqual(reasons['x/one']['refusals'],
+                         {'UNSEARCHABLE_FROZEN_REPOSITORY':1})
+        self.assertTrue(all(repo!='x/one' for repo,_ in api.paths_seen))
+
+
 if __name__=='__main__':
     unittest.main()
