@@ -210,7 +210,7 @@ def main(output: Path) -> None:
                 "training_protected_nodes":protected,
                 "future":"SEALED_UNOPENED", "future_candidate_not_evaluated":True
             },indent=2,sort_keys=True)+"\n")
-            report["status"] = "WARRANTED_BOUNDED_TRAINING_OPERATOR_ONLY"
+            report["status"] = "CANDIDATE_TRAINING_NATIVE_GREEN_AWAITING_INDEPENDENT_AUDIT"
             report["training_source_changed"] = True
             break
         # Restore entire external checkout; all artifacts refer to source snapshot.
