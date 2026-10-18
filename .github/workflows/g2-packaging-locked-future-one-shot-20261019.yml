@@ -1,4 +1,4 @@
-name: G2 first locked source-distinct Packaging future test
+name: G2 frozen Packaging future — V1b preflight correction
 
 on:
   pull_request:
@@ -30,6 +30,8 @@ jobs:
           set -euo pipefail
           git merge-base --is-ancestor e967f86c8f486a6b55b9d7d20c8ace11619008e4 HEAD
           git merge-base --is-ancestor 6fbfa0a633439f0eb5c8e9c55726f2b053e1bdd1 HEAD
+          # V1 apparatus RED 39166495374: Path concatenation raised before future access.
+          # V1b changes only the runner's pre-future path syntax, not the method.
           python -B -m py_compile research/unified_consequence_runtime/g2_packaging_future_v1.py
           python -B research/unified_consequence_runtime/g2_equal_info_guard_ablation_v1.py
           python -B research/unified_consequence_runtime/g2_context_fallback_operator_v1.py
