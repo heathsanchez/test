@@ -27,7 +27,7 @@ jobs:
         with:
           name: g2-v3-original-source-residual-choice-subset-evidence
           run-id: 39167546376
-          github-token: \${{ github.token }}
+          github-token: ${{ github.token }}
           path: evidence/g2-deer-v3-exposed
       - name: Verify exact external science source and immutable independent acceptance authority
         shell: bash
