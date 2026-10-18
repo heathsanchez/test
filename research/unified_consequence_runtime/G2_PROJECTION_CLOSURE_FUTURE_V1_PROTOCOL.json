@@ -1,0 +1,51 @@
+{
+  "schema": "UDM_G2_PROJECTION_CLOSURE_FUTURE_V1",
+  "state": "FROZEN_METHOD_BEFORE_HELDOUT_SOURCE_OPEN",
+  "date": "2026-10-18",
+  "lineage": {
+    "prospective_pair_prequery": "bfa8b0ffa0874231d3fe0b3bfa5d21fdb950488f",
+    "role_freeze": "a96afabe52abb60a899e17465a3c152fd2c7da92",
+    "attrs_training_run": 39095944875,
+    "attrs_observation_protocol": "91d5bfb55f288dd712b625bc35abcaccd798f6ab",
+    "attrs_observation_run": 39096734354,
+    "attrs_observation_artifact": 12124688134,
+    "attrs_observation_digest": "sha256:b03bb1c284f91d88b77cd2644b646432d01ea0da2b212e70723dbfeca8252c2c",
+    "generalized_method_commit": "c316946a467cb5361884cbbda56a3340abc558f5"
+  },
+  "method_files": [
+    "research/unified_consequence_runtime/attrs_residual_observation_genesis_v1.py",
+    "research/unified_consequence_runtime/residual_projection_method_v1.py"
+  ],
+  "transfer_contract": {
+    "test_selection": "derive changed Test*/test* callables by AST diff between future base and exact author-head test file",
+    "admission": "original future production + exact changed author-test overlay must execute nonempty tests with >=1 failure and zero errors",
+    "applicability": "a mechanically changed test contains exactly one direct Boolean assertion f(x) or not f(x), x is parametrized in that test, f resolves to the frozen changed production file, and the frozen primitive one-step attribute projection grammar yields at least one licensed observation class",
+    "observation": "same primitive attribute projection closure frozen for attrs; no future semantic names may be added",
+    "selection": "minimum depth then lexicographic projection path; extensionally equal observations quotient before selection",
+    "repair": "same guarded recursive projection constructor; original body retained after inserted guard",
+    "native_gate": "two protected passes + full author test file green; physical withdrawal restores failure; byte-identical restoration passes",
+    "fail_closed": "no authentic failure, no direct Boolean residual, no licensed projection, source mismatch, or native non-improvement => exact prospective negative/UNKNOWN; no method mutation"
+  },
+  "heldout_future": {
+    "repository": "tox-dev/tox",
+    "pr": 4168,
+    "base": "e352fbe1f434be3fa77af15f8b65f31aac31a6a3",
+    "head": "10a9b2c54c70729167991c0b3fd6b97488f5e4b2",
+    "production": "src/tox/config/cli/parser.py",
+    "author_test": "tests/test_provision.py",
+    "source_state": "UNOPENED_AT_FREEZE"
+  },
+  "promotion": {
+    "G2": "WARRANTED_BOUNDED_PROSPECTIVE_G2 only if unchanged frozen transfer method generates and causally qualifies a future repair under this heldout source",
+    "negative": "if future authentic failure exists but method is inapplicable or cannot repair, record prospective method-family rejection; G2 remains UNKNOWN",
+    "comparator": "only if positive future repair qualifies, compare equal-information executable-ledger replay and direct test-derived baseline; no comparator advantage otherwise"
+  },
+  "boundaries": {
+    "future_was_preselected_before_attrs_source": true,
+    "arbitrary_residual_genesis": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN"
+  }
+}
