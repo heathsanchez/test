@@ -1,0 +1,74 @@
+name: UDM G2 V5 frozen native first-failure admission
+on:
+  push:
+    branches:
+      - research/udm-g2-observation-choice-v5-20261018
+    paths:
+      - research/unified_consequence_runtime/g2_v5_native_gate.py
+      - .github/workflows/udm-g2-v5-native-failure.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  original-native-gate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+      GIT_NO_REPLACE_OBJECTS: "1"
+      GIT_OPTIONAL_LOCKS: "0"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Verify original frozen intake and separate native runner compile
+        run: |
+          set -euo pipefail
+          python -B -m py_compile research/unified_consequence_runtime/g2_v5_native_gate.py
+          cmp research/unified_consequence_runtime/G2_OBSERVATION_CHOICE_V5_ROLE_FREEZE.json <(git show d96833fa8a41b4e5b67d5a9498ee1b1607c476e2:research/unified_consequence_runtime/G2_OBSERVATION_CHOICE_V5_ROLE_FREEZE.json)
+          cmp research/unified_consequence_runtime/G2_OBSERVATION_CHOICE_V5_PREQUERY.json <(git show fc3177b20e7508d511c32a9ec6c76d711cc8389d:research/unified_consequence_runtime/G2_OBSERVATION_CHOICE_V5_PREQUERY.json)
+          cmp research/unified_consequence_runtime/residual_projection_method_v1.py <(git show d83de24d3b5bb4352cd6991a85a0fbc1e72f6deb:research/unified_consequence_runtime/residual_projection_method_v1.py)
+          cmp research/unified_consequence_runtime/g2_anyio_mutable_closure_equivalence_fix_v2.py <(git show 094e2ddc3ba601a00eaf368151172a361e5542da:research/unified_consequence_runtime/g2_anyio_mutable_closure_equivalence_fix_v2.py)
+      - name: Execute first original native protected failing eligibility in immutable order
+        run: |
+          mkdir -p evidence
+          PYTHONPATH="$GITHUB_WORKSPACE" python -B research/unified_consequence_runtime/g2_v5_native_gate.py "$GITHUB_WORKSPACE/evidence/g2-v5-native"
+      - name: Independent fail-closed boundary audit
+        if: always()
+        run: |
+          python - <<'PY'
+          import json,pathlib
+          p=pathlib.Path('evidence/g2-v5-native/RESULT.json')
+          assert p.is_file(), 'MISSING_NATIVE_RESULT'
+          r=json.loads(p.read_text())
+          assert all(r.get(k)=='UNKNOWN' for k in ('G2','G3','G4','G5','G6'))
+          assert r['future']=='SEALED_UNOPENED' and r['future_native']=='NOT_EXECUTED'
+          assert len(r['admissions'])<=3
+          orig=['pallets/flask','Textualize/textual','python-poetry/poetry-core']
+          assert all(v['repo']==orig[i] and v['order']==i for i,v in enumerate(r['admissions']))
+          qualified=[x for x in r['admissions'] if x['status']=='ADMITTED_FIRST_AUTHENTIC_PROTECTED_NATIVE_FAILURE']
+          assert len(qualified)<=1
+          if qualified:
+              x=qualified[0];c=x['native']['counts']
+              assert r['selected']==x
+              assert x['native']['returncode']==1 and c['tests']>=1 and c['failures']>=1
+              assert c['errors']==0 and c['skipped']==0
+          else:
+              assert r['selected'] is None
+          print('V5_BOUNDARY_AUDIT',r['status'],'admissions',len(r['admissions']),'G2',r['G2'])
+          PY
+      - name: Preserve original native evidence and sealed-future receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: udm-g2-v5-original-native-admission
+          retention-days: 90
+          if-no-files-found: warn
+          path: |
+            evidence/g2-v5-native/
+            research/unified_consequence_runtime/g2_v5_native_gate.py
+            research/unified_consequence_runtime/G2_OBSERVATION_CHOICE_V5_ROLE_FREEZE.json
