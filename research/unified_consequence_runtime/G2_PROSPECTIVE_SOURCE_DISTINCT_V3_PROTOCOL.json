@@ -1,0 +1,74 @@
+{
+  "schema": "UDM_G2_PROSPECTIVE_SOURCE_DISTINCT_V3",
+  "state": "FROZEN_PREQUERY_PRE_SOURCE_PRE_NATIVE",
+  "frozen_date": "2026-10-18",
+  "parent_training_authority": {
+    "branch": "research/udm-anyio-mutable-closure-equivalence-fix-v2-20261018",
+    "commit": "094e2ddc3ba601a00eaf368151172a361e5542da",
+    "run": 39093934449,
+    "artifact": 12123712928,
+    "artifact_digest": "sha256:3689e93c67b23378642947eaba710a2d4eb7685025d417a11eeeb28aeef77b75",
+    "status": "WARRANTED_BOUNDED_POSTHOC_TRAINING_REPAIR_AND_CLASS_SELECTOR"
+  },
+  "method_freeze": {
+    "observer": "g2_mutable_closure_trace_plugin_v2.py exact inherited bytes",
+    "constructor": "g2_anyio_mutable_closure_equivalence_fix_v2.py repair derivation logic exact inherited semantics",
+    "selector": "equivalence class over byte-identical first-eight policy candidate IDs; names have no authority",
+    "method_change_after_target_selection": "PROHIBITED",
+    "target_specific_function_line_attribute_backend_test_identifiers": "PROHIBITED"
+  },
+  "repository_universe": [
+    "python-trio/trio",
+    "pytest-dev/pluggy",
+    "encode/httpx",
+    "aio-libs/yarl",
+    "pallets/click",
+    "python-attrs/attrs",
+    "hynek/structlog",
+    "python-jsonschema/jsonschema"
+  ],
+  "metadata_query": {
+    "per_repository": "search_prs(query='fix', state='closed', sort='updated', order='desc', topn=20)",
+    "inspect": "PR metadata plus changed filenames only; do not fetch patches, bodies into experiment logic, source blobs, author tests, CI outcomes, issue comments or repaired production before role freeze",
+    "eligibility": [
+      "merged PR",
+      "title begins with 'fix' case-insensitive",
+      "changed_files between 2 and 6 inclusive",
+      "exactly one changed .py path outside tests/, test/, docs/, examples/, benchmarks/ and not named test_*.py",
+      "at least one changed .py test path under tests/ or test/ or basename beginning test_",
+      "no pyproject.toml/setup.py/setup.cfg/tox.ini/requirements paths",
+      "base and head full SHAs present"
+    ],
+    "tie_break": "first eligible PR in returned search order for each repository; then first two eligible repositories in repository_universe order become TRAINING and HELDOUT_FUTURE",
+    "no_substitution_after_native_outcome": true
+  },
+  "source_admission": {
+    "after_role_freeze": "Fetch only exact TRAINING base plus exact changed author-test blobs from its head; repaired production head remains unread. FUTURE source/test bodies remain unopened until TRAINING method either qualifies or stops.",
+    "original_failure": "Original base + exact author-test overlay must produce nonempty native pytest execution with at least one author-protected failure and zero collection/setup apparatus errors outside the protected test result.",
+    "test_scope": "changed author-test file(s) only for admission; full upstream suite is not required at initial failure gate",
+    "source_integrity": "exact Git commit/tree/blob binding and clean worktree except declared author-test overlay"
+  },
+  "prospective_training": {
+    "observer": "unchanged source-neutral persistent nested-closure detector/observer from parent",
+    "candidate": "unchanged deterministic five-line unwrap/rebind repair constructor, one candidate per detected pattern in source order",
+    "selector": "unchanged class-level authorization",
+    "pass": "native TRAINING repair passes changed author test file twice, withdrawal restores protected failure, restoration re-passes",
+    "stop": "if no pattern, no native stale persistence, no generated repair, apparatus UNKNOWN, or repair fails -> STOP; FUTURE remains unopened"
+  },
+  "heldout_future": {
+    "open_condition": "only after TRAINING repair and class selector qualify under this frozen protocol",
+    "method_locked": true,
+    "pass": "same unchanged observer/constructor/selector generates a FUTURE repair from future source-native evidence; native author-test PASS, withdrawal failure, restoration PASS",
+    "G2_promotion": "WARRANTED_BOUNDED_PROSPECTIVE_G2 only if TRAINING and FUTURE both satisfy causal gates and FUTURE source was unopened before TRAINING qualification",
+    "comparator_requirement": "run equally informed direct source-pattern baseline and executable-ledger replay baseline on FUTURE; report acquisition, native verification and restart cost"
+  },
+  "boundaries": {
+    "source_unfamiliarity": "bounded to absence from declared prior ROS task repositories and no source body access in this experiment before freeze; model pretraining/global familiarity UNKNOWN",
+    "arbitrary_program_repair": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN",
+    "external_writes": "NONE"
+  }
+}
