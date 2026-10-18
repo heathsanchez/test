@@ -167,7 +167,7 @@ def imported_source_module_files(test_bytes, tracked_paths, production_path,max_
         candidates=[path for path,parts in raw_paths.items()
                     if len(parts)>=len(suffix) and parts[-len(suffix):]==suffix]
         if len(candidates)>1:
-            raise ValueError("UNKNOWN_AMBIGUOUS_SOURCE_MODULE_IDENTITY")
+            raise ValueError("UNKNOWN_AMBIGUOUS_SOURCE_MODULE_IDENTITY:"+module)
         if candidates:
             discovered[candidates[0]]=module
     if production_path not in discovered:
