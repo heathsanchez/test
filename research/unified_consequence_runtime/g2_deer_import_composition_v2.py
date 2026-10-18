@@ -206,8 +206,12 @@ def render_mask(originals,catalog,mask):
         raise ValueError("UNKNOWN_SOURCE_MASK")
     output=dict(originals)
     for path,source in originals.items():
-        slots=[catalog[i] for i in range(k) if catalog[i]["path"]==path]
-        local=[i for i,c in enumerate(catalog) if c["path"]==path and mask & (1<<i)]
+        positions=[i for i,c in enumerate(catalog) if c["path"]==path]
+        slots=[catalog[i] for i in positions]
+        # Global subset bits index across files; compose() indexes only the
+        # selected file's local candidate sequence. Neither is an outcome-
+        # dependent winner index, and no primitive edit has been changed.
+        local=[j for j,i in enumerate(positions) if mask & (1<<i)]
         if local:
             output[path]=learned.compose(source.decode("utf-8"),slots,local)
     if set(output)!=set(originals):
