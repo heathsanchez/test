@@ -1,0 +1,92 @@
+name: UDM V5 frozen prospective native observation-choice (G2 unknown unless future)
+on:
+  push:
+    branches:
+      - research/udm-g2-observation-choice-v5-20261018
+    paths:
+      - .github/workflows/udm-g2-observation-choice-native-v5.yml
+      - research/unified_consequence_runtime/G2_OBSERVATION_CHOICE_V5_ROLE_FREEZE.json
+      - research/unified_consequence_runtime/g2_v5_native_admission.py
+      - research/unified_consequence_runtime/g2_v5_choose_observation.py
+      - research/unified_consequence_runtime/test_g2_v5_native_method_boundary.py
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  independent-native-observation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 48
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+      GIT_TERMINAL_PROMPT: "0"
+      GIT_NO_REPLACE_OBJECTS: "1"
+      GIT_OPTIONAL_LOCKS: "0"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Check four source roles and unchanged historical source authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          git show d96833fa8a41b4e5b67d5a9498ee1b1607c476e2:research/unified_consequence_runtime/G2_OBSERVATION_CHOICE_V5_ROLE_FREEZE.json > /tmp/frozen-roles.json
+          cmp /tmp/frozen-roles.json research/unified_consequence_runtime/G2_OBSERVATION_CHOICE_V5_ROLE_FREEZE.json
+          git show fc3177b20e7508d511c32a9ec6c76d711cc8389d:research/unified_consequence_runtime/G2_OBSERVATION_CHOICE_V5_PREQUERY.json > /tmp/frozen-prequery.json
+          cmp /tmp/frozen-prequery.json research/unified_consequence_runtime/G2_OBSERVATION_CHOICE_V5_PREQUERY.json
+          python -B -m unittest -v research.unified_consequence_runtime.test_g2_v5_native_method_boundary
+      - name: Run only predeclared three training native obligations until first real failure
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -B -m research.unified_consequence_runtime.g2_v5_native_admission evidence/g2-v5-native
+      - name: Apply prequalified method families and full native causal tests only after authentic failure
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          import subprocess
+          source=Path("evidence/g2-v5-native/RESULT.json").resolve()
+          native=json.loads(source.read_text())
+          target=Path("evidence/g2-v5-method").resolve()
+          if native["status"]=="ADMITTED_FIRST_NEW_PROTECTED_FAILURE_FUTURE_SEALED":
+              py=Path(native["selected"]["interpreter"])
+              if not py.is_file() or not os.access(py,os.X_OK):
+                  raise SystemExit("UNKNOWN_NATIVE_INTERPRETER_MISSING")
+              env={k:v for k,v in os.environ.items()
+                   if k not in ("GITHUB_TOKEN","GH_TOKEN","ACTIONS_RUNTIME_TOKEN")}
+              attempt=subprocess.run([str(py),"-B","-m",
+                  "research.unified_consequence_runtime.g2_v5_choose_observation",
+                  str(source),str(target)],env=env,timeout=1050,check=False)
+              if attempt.returncode!=0 and not (target/"RESULT.json").is_file():
+                  raise SystemExit("UNKNOWN_METHOD_EXECUTION_WITHOUT_RECEIPT")
+          else:
+              target.mkdir(parents=True,exist_ok=False)
+              (target/"RESULT.json").write_text(json.dumps({
+                  "schema":"UDM_G2_V5_OBSERVATION_CHOICE_TRAINING_ONLY",
+                  "status":"UNKNOWN_NO_EARNED_NATIVE_TRAINING",
+                  "future":"SEALED_UNOPENED",
+                  "agent_comparator":"NOT_EXECUTED","ledger_comparator":"NOT_EXECUTED",
+                  "G2":"UNKNOWN","G3":"UNKNOWN","G4":"UNKNOWN",
+                  "G5":"UNKNOWN","G6":"UNKNOWN"},indent=2,sort_keys=True))
+          outcome=json.loads((target/"RESULT.json").read_text())
+          assert outcome["future"]=="SEALED_UNOPENED"
+          assert all(outcome[x]=="UNKNOWN" for x in ("G2","G3","G4","G5","G6"))
+          print("SCIENTIFIC_BOUNDARY",native["status"],outcome["status"],
+                "FUTURE",outcome["future"],"G2",outcome["G2"])
+          PY
+      - name: Archive complete source-native outcomes and all named refusals
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: udm-v5-original-native-and-frozen-method-outcomes
+          path: |
+            evidence/g2-v5-native/
+            evidence/g2-v5-method/
+          if-no-files-found: error
