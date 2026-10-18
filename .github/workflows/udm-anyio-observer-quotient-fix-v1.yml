@@ -111,7 +111,7 @@ jobs:
           python - <<'PY'
           import json
           r=json.load(open('evidence/anyio-observer-quotient/native-observer/RESULT.json'))
-          total=sum(len(v) for v in r.get('outer_snapshots',{}).values())
+          total=sum(len(v) for v in r.get('direct_outer_snapshots',{}).values())
           assert total>=2,r
           print('PASS_OUTER_INVOCATION_SNAPSHOTS_V1',total)
           PY
@@ -121,7 +121,7 @@ jobs:
           python - <<'PY'
           import json
           r=json.load(open('evidence/anyio-observer-quotient/native-observer/RESULT.json'))
-          total=sum(len(v) for v in r.get('nested_calls',{}).values())
+          total=sum(len(v) for v in r.get('direct_nested_calls',{}).values())
           assert total>=2,r
           print('PASS_NESTED_CLOSURE_EXECUTIONS_V1',total)
           PY
