@@ -1,0 +1,56 @@
+name: G2 finite composition V2 independent native evidence audit
+on:
+  push:
+    branches:
+      - research/g2-finite-operator-composition-v2-20261018
+    paths:
+      - .github/workflows/g2-finite-composition-audit-v2.yml
+permissions:
+  contents: read
+  actions: read
+jobs:
+  inspect-pinned-archive-without-native-rerun:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 17
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/download-artifact@v4
+        with:
+          name: g2-finite-mistral-composition-v2-native-receipts
+          run-id: 39114945496
+          github-token: ${{ github.token }}
+          path: .
+      - name: Source/code freeze and Python syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmp research/unified_consequence_runtime/g2_finite_composition_mistral_v2.py <(git show 0f3fd96a84a4a314c7d02beab0618bd402b41bae:research/unified_consequence_runtime/g2_finite_composition_mistral_v2.py)
+          cmp research/unified_consequence_runtime/g2_regex_terminal_genesis_v1.py <(git show d45288833a13b1ddf6afde01c0b89a84bfc7ce32:research/unified_consequence_runtime/g2_regex_terminal_genesis_v1.py)
+          python -m py_compile research/unified_consequence_runtime/g2_finite_composition_receipt_audit_v1.py
+      - name: Independently reconstruct original upstream source and all sixteen native subsets
+        run: |
+          set -euo pipefail
+          python -B research/unified_consequence_runtime/g2_finite_composition_receipt_audit_v1.py evidence/g2-finite-composition-mistral-v2
+          python - <<'PY'
+          import json
+          d=json.load(open('evidence/g2-finite-composition-mistral-v2/INDEPENDENT_AUDIT.json'))
+          assert d['status']=='WARRANTED_BOUNDED_FINITE_COMPOSITION_NATIVE_RECEIPTS'
+          assert d['G2']=='UNKNOWN'
+          assert d['native_subsets_checked']==16
+          PY
+      - name: Retain independently recomputed source and native receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g2-finite-composition-v2-independently-audited-evidence
+          retention-days: 90
+          if-no-files-found: warn
+          path: |
+            evidence/g2-finite-composition-mistral-v2/
+            research/unified_consequence_runtime/g2_finite_composition_receipt_audit_v1.py
