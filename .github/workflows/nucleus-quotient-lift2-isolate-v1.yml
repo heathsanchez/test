@@ -1,0 +1,116 @@
+name: Nucleus native Quotient.lift2 proof isolate V1
+on:
+  push:
+    branches: [research/nucleus-quotient-lift2-native-proof-20261019]
+    paths: [".github/workflows/nucleus-quotient-lift2-isolate-v1.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  isolate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 65
+    env:
+      LEAN_TOOLCHAIN: leanprover/lean4:v4.34.1
+      LEAN_GITHASH: 5045d0056413266e57c625dcd7c365b10e377c52
+      EXPORTER_SHA: 076e8e57707e813375e8f9da8bf989799ace9680
+      QUOTIENT_NAME: Quotient.lift₂._proof_2
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build independent promoted Nucleus unchanged
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/evidence
+          git rev-parse HEAD:metatron-kernel | tee /tmp/evidence/nucleus-source-tree.txt
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml > /tmp/evidence/rust-tests.log 2>&1
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          sha256sum metatron-kernel/target/release/metatron-kernel | tee /tmp/evidence/nucleus-binary.sha256
+      - name: Pin source-native Lean and export the original proof ONLY
+        run: |
+          set -euo pipefail
+          curl -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain "$LEAN_TOOLCHAIN"
+          export PATH="$HOME/.elan/bin:$PATH"
+          lean --githash | tee /tmp/evidence/lean-githash.txt
+          test "$(cat /tmp/evidence/lean-githash.txt)" = "$LEAN_GITHASH"
+          git clone -q https://github.com/leanprover/lean4export /tmp/exporter
+          git -C /tmp/exporter checkout -q "$EXPORTER_SHA"
+          echo "$LEAN_TOOLCHAIN" > /tmp/exporter/lean-toolchain
+          (cd /tmp/exporter && lake build)
+          for module in Init Init.Core; do
+            if lake env /tmp/exporter/.lake/build/bin/lean4export "$module" -- "$QUOTIENT_NAME" > /tmp/evidence/quotient-proof.ndjson 2> /tmp/evidence/export-stderr.txt; then
+              test -s /tmp/evidence/quotient-proof.ndjson
+              echo "$module" > /tmp/evidence/export-module.txt
+              break
+            fi
+          done
+          test -s /tmp/evidence/export-module.txt || { cat /tmp/evidence/export-stderr.txt; exit 2; }
+          sha256sum /tmp/evidence/quotient-proof.ndjson | tee /tmp/evidence/quotient-proof.sha256
+          cat > /tmp/evidence/NativeQuotientProof.lean <<'EOF'
+          import Lean
+          open Lean Elab Command
+          run_cmd do
+            let env ← getEnv
+            let name := Name.str (Name.str (Name.str .anonymous "Quotient") "lift₂") "_proof_2"
+            let some info := env.find? name
+              | throwError "PINNED_QUOTIENT_CONSTANT_ABSENT"
+            let .thmInfo proof := info
+              | throwError "PINNED_QUOTIENT_NOT_THEOREM"
+            let .ok _ := Lean.Kernel.check env {} proof.value
+              | throwError "ORIGINAL_QUOTIENT_VALUE_KERNEL_REJECT"
+            let .ok _ := Lean.Kernel.check env {} proof.type
+              | throwError "ORIGINAL_QUOTIENT_TYPE_NOT_FORMED"
+            logInfo "ORIGINAL_LEAN_KERNEL_PROOF_CHECK=PASS"
+          EOF
+          lean /tmp/evidence/NativeQuotientProof.lean > /tmp/evidence/native-lean-kernel.log 2>&1 || { cat /tmp/evidence/native-lean-kernel.log; exit 3; }
+          grep -F 'ORIGINAL_LEAN_KERNEL_PROOF_CHECK=PASS' /tmp/evidence/native-lean-kernel.log
+      - name: Decode exact NDJSON declaration name and first independent verdict
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os,json,hashlib,pathlib,subprocess,time
+          root=pathlib.Path('/tmp/evidence')
+          src=root/'quotient-proof.ndjson'
+          data=src.read_bytes()
+          lines=[json.loads(l) for l in data.splitlines()]
+          meta=lines[0]['meta']
+          assert meta['format']['version']=='3.1.0',meta
+          assert meta['lean']['githash']==os.environ['LEAN_GITHASH'],meta
+          names={0:''}
+          decls=[]
+          for o in lines[1:]:
+              if 'str' in o:
+                  names[o['in']] = (names[o['str']['pre']]+'.' if names[o['str']['pre']] else '')+o['str']['str']
+              elif 'num' in o:
+                  names[o['in']]=names[o['num']['pre']]+'.'+str(o['num']['i'])
+              for field in ('thm','def','axiom','opaque'):
+                  if field in o:
+                      decls.append({'kind':field,'name':names[o[field]['name']]})
+          target=os.environ['QUOTIENT_NAME']
+          hits=[x for x in decls if x['name']==target]
+          assert len(hits)==1 and hits[0]['kind']=='thm', (target,hits,decls[-10:])
+          for flag in (False,True):
+              env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+              env['NUCLEUS_TRACE_DOWNSTREAM']='1'
+              env['NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE']='1'
+              if flag:env['METATRON_KERNEL_DIAGNOSTICS']='1'
+              start=time.monotonic()
+              try:
+                  p=subprocess.run(['metatron-kernel/target/release/metatron-kernel'],input=data,env=env,stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=90)
+                  rc=p.returncode; tail=p.stderr.decode(errors='replace')
+              except subprocess.TimeoutExpired:
+                  rc=124;tail='TIMEOUT'
+              result={'diagnostics':flag,'rc':rc,'elapsed_sec':round(time.monotonic()-start,4),'terminal':[x for x in tail.splitlines() if x.startswith('NUCLEUS_DOWNSTREAM:')][-6:],'function_type_traces':[x for x in tail.splitlines() if x.startswith('NUCLEUS_APPLICATION_FUNCTION_TYPE:')][:4]}
+              (root/('nucleus-diagnostic.json' if flag else 'nucleus-original.json')).write_text(json.dumps(result,indent=2))
+              print('QUOTIENT_PINNED_NATIVE='+json.dumps(result),flush=True)
+              assert rc in (0,1,2),'independent checker execution error'
+          summary={'exact_decl':target,'format':meta,'bytes':len(data),'lines':len(lines),'sha256':hashlib.sha256(data).hexdigest(),'declarations':len(decls),'last_declarations':decls[-12:]}
+          (root/'source-summary.json').write_text(json.dumps(summary,indent=2))
+          print('QUOTIENT_ISOLATED='+json.dumps(summary),flush=True)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-quotient-isolate-${{ github.sha }}
+          path: /tmp/evidence/
+          if-no-files-found: warn
