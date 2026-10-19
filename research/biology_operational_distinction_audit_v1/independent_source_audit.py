@@ -142,7 +142,7 @@ def main():
             legacy=float(abs(np32[a,localcols[j]]-np32[b,localcols[j]]))
             exact=decimal_gap(a,b,j)
             if z == z and z >=0.16:sep+=1
-            if legacy == legacy and legacy >=0.16:seplegacy+=1
+            if legacy == legacy and np.float32(legacy) >= 0.16:seplegacy+=1
             if exact is not None and exact >=Decimal('0.16'):sepdecimal+=1
         new_oracle_count+=int(bool(sep))
         legacy_oracle_count+=int(bool(seplegacy))
@@ -218,6 +218,7 @@ def main():
         'method_hits_original_float32':dict(raw_hit),
         'method_hits_source_decimal':dict(exact_decimal_hit),
         'source_threshold_precision_discrepancies':boundary_differences,
+        'original_inconsistent_cutoff_semantics':'oracle vector float32 >= Python cutoff (float32 downcast); method scalar float >= Python cutoff (float64 comparison)',
         'distinct_query_orfs':len(query_counts),
         'duplicate_query_orfs_count':len(dup_queries),
         'duplicate_orf_sample':list(dup_queries.items())[:20],
