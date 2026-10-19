@@ -1,0 +1,35 @@
+name: Yeast ExE gene-disjoint prospective V2
+on:
+  push:
+    branches:
+      - research/biology-exe-gene-disjoint-v2-20261019
+    paths:
+      - research/biology_exe_gene_disjoint_v2/**
+      - .github/workflows/biology-exe-gene-disjoint-v2.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  frozen_gene_grouped_source_test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install frozen numerical stack
+        run: python -m pip install --disable-pip-version-check numpy==2.1.3 scikit-learn==1.6.1
+      - name: Synthetic source with target and reciprocal-data withdrawal controls
+        run: python research/biology_exe_gene_disjoint_v2/test_protocol.py
+      - name: Check protected source identity, gene-level grouping, freeze all method predictions
+        run: python research/biology_exe_gene_disjoint_v2/select.py --archive data/yeast_exe_v2/source.zip --out out/yeast_exe_v2
+      - name: Independent source-exact holdout evaluator (not imported by selector)
+        run: python research/biology_exe_gene_disjoint_v2/evaluate.py --archive data/yeast_exe_v2/source.zip --sealed out/yeast_exe_v2/sealed_predictions.json --out out/yeast_exe_v2
+      - name: Retain original evidence and failed apparatus states
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: yeast-exe-gene-disjoint-v2-receipts
+          path: out/yeast_exe_v2/
+          if-no-files-found: warn
