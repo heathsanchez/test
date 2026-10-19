@@ -1,0 +1,47 @@
+name: Independent ExE V2 artifact audit
+on:
+  push:
+    branches:
+      - research/biology-exe-receipt-audit-v1-20261019
+    paths:
+      - research/biology_exe_receipt_audit_v1/**
+      - .github/workflows/biology-exe-receipt-audit-v1.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  independent_receipt:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download pinned original protected GitHub ZIP
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          curl --fail --silent --show-error --location --retry 3 \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/heathsanchez/test/actions/artifacts/12174480784/zip" \
+            -o original-artifact.zip
+          sha256sum original-artifact.zip
+      - name: Independent invariant and per-pair decimal receipt audit
+        run: |
+          python research/biology_exe_receipt_audit_v1/artifact_audit.py \
+            original-artifact.zip out/independent-audit.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          j=json.loads(Path('out/independent-audit.json').read_text())
+          assert j['audit_status']=='PASS_SOURCE_IDENTITY_SEAL_AND_REPORT_COUNTERS'
+          assert j['n_pairs']==47 and j['oracle_pair_count']==46
+          print('EXE_V2_NATIVE_RECEIPT_REQUALIFICATION_PASS')
+          PY
+      - name: Archive independent read-only audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: yeast-exe-independent-receipt-audit-v1
+          path: out/independent-audit.json
+          if-no-files-found: warn
