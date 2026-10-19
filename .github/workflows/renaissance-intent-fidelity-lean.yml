@@ -1,0 +1,38 @@
+name: Renaissance finite Lean intent pilot
+on:
+  push:
+    branches:
+      - research/renaissance-intent-fidelity-lean-pilot-20261019
+  pull_request:
+    paths:
+      - 'research/renaissance_intent_fidelity/**'
+      - '.github/workflows/renaissance-intent-fidelity-lean.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-lean:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned Lean
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain leanprover/lean4:v4.34.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Compile and kernel check pilot
+        run: |
+          lean --version
+          lean research/renaissance_intent_fidelity/IntentPilot.lean
+          python3 research/renaissance_intent_fidelity/closure_audit.py
+          python3 research/renaissance_intent_fidelity/control_mutants_v3.py
+          python3 research/renaissance_intent_fidelity/obligation_v4.py
+          curl -fsSL --retry 3 https://raw.githubusercontent.com/leanprover-community/mathlib4/v4.34.0/Mathlib/Algebra/Order/BigOperators/Group/Finset.lean -o /tmp/renaissance-heldout.lean
+          python3 research/renaissance_intent_fidelity/source_admission_v2.py /tmp/renaissance-heldout.lean
+          mkdir -p /tmp/renaissance-mathlib
+          cd /tmp/renaissance-mathlib
+          lake init renaissance_mathlib math
+          lake update
+          lake exe cache get
+          cp "$GITHUB_WORKSPACE/research/renaissance_intent_fidelity/PrimeIntent.lean" PrimeIntent.lean
+          lake env lean PrimeIntent.lean
