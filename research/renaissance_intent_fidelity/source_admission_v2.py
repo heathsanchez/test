@@ -16,9 +16,9 @@ EXPECTED_NAMES = [
 ]
 def candidates(text):
     found=[]
-    for match in re.finditer(r"/--[\\s\\S]*?-/", text):
+    for match in re.finditer(r"/--[\s\S]*?-/", text):
         rest=text[match.end():]
-        m=re.match(r"\\s*(?:@\\[[^\\n]*\\]\\s*)*(?:theorem|lemma)\\s+([^\\s(:]+)",rest)
+        m=re.match(r"\s*(?:@\[[^\n]*\]\s*)*(?:theorem|lemma)\s+([^\s(:]+)",rest)
         if m: found.append(m.group(1))
     return found
 def audit(data):
@@ -32,7 +32,7 @@ if __name__=="__main__":
     raw=pathlib.Path(sys.argv[1]).read_bytes()
     selected=audit(raw)
     # negative control: modified source must be refused
-    try: audit(raw+b"\\n-- tamper\\n")
+    try: audit(raw+b"\n-- tamper\n")
     except ValueError as e:
         assert str(e).startswith("SOURCE_BLOB_MISMATCH")
     else: raise AssertionError("tamper was accepted")
