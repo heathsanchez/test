@@ -10,7 +10,7 @@ No NLP-to-Lean automation or equal-information reviewer advantage is claimed.
 
 -- Actual mathematical target (standard mathlib theorem):
 example : Set.Infinite {p : ℕ | Nat.Prime p} := by
-  exact Nat.infinite_setOf_prime
+  exact Nat.infinite_setOfPred_prime
 
 -- An easily proved but semantically inadequate substitute:
 theorem wrongFiniteSurrogate : ∃ p : ℕ, Nat.Prime p := by
@@ -24,7 +24,7 @@ theorem infiniteImpliesExists :
   by_contra hn
   have hempty : {p : ℕ | Nat.Prime p} = ∅ := by
     ext p
-    simp only [Set.mem_setOf_eq, Set.mem_empty_iff_false, iff_false]
+    simp only [Set.mem_ofPred_eq, Set.mem_empty_iff_false, iff_false]
     exact fun hp => hn ⟨p, hp⟩
   rw [hempty] at h
-  exact Set.not_infinite_empty h
+  simpa using h
