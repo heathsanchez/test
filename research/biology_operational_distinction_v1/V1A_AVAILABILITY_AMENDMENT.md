@@ -1,0 +1,9 @@
+# V1a availability-only amendment: pre-holdout apparatus repair
+
+**Origin:** Frozen V1 main method + protocol were committed as branch head `4c33a2445b28ba4382cb5fa16e8dcb4e6fef93b5` before source acquisition. [CI run 39218225443](https://github.com/heathsanchez/test/actions/runs/39218225443) fetched official archive SHA256 `53c69b7dc6e54aeff54afddfa84a24741b9e09c2fdc6bfd9fcbf0b73939ec30f`, authenticated exact `SGA_NxN_clustered.cdt` SHA256 `10e82acc42fe66416111cfecd7b62040c284664741df15bd2c3d95f7f410bd9c`, 3,608 mutant query rows × 3,892 deletion-array columns, 12,698,939 finite epsilon cells. V1 STOPPED with `Insufficient eligible columns 0` before pairing, fitting, any predictions, or any withheld target×candidate inspection.
+
+**Source-only diagnosis:** NxN observation availability is about 90.4% overall; V1 eligibility demanded >=95% nonmissing per array in calibration rows and admitted no backgrounds. This is not experimental failure or evidence against contextual distinguishability.
+
+**Pre-holdout correction:** Relax only calibration-row candidate-background nonmissingness gate from 0.95 to 0.85 (`MIN_TRAIN_NONMISSING`). Same URL, exact source SHA, seed 20261019, known=8, candidate=128, targets=25%, nearest neighbors=31, min pairs 20, equivalence threshold 0.08, separation threshold 0.16, 1.96 sqrt(2) RMS lower-bound penalty, baseline family, one-context budget, all outcome metrics and original promotion rule. This amendment is selected using the original failed gate and overall matrix completeness, **not any hidden target score or any method outcome**. If a new source-only gate fails, record its own protocol amendment before opening outcomes; never call amended V1 a byte-identical unchanged V1.
+
+**Status until next run:** V1 REJECTED_AS_APPARATUS_INAPPLICABLE, V1a CANDIDATE / PROTOCOL_AMENDED_PRE_OUTCOMES. No biological performance measured yet.
