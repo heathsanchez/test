@@ -1,3 +1,5 @@
+import Mathlib
+
 /-!
 Independent mathematical-source inspired controls.
 Reference: Euclid's infinitude of primes (Euclid, Elements IX.20).
@@ -5,7 +7,6 @@ The finite surrogate below is NOT that theorem and must be rejected
 as an adequate formalization despite being Lean-provable.
 No NLP-to-Lean automation or equal-information reviewer advantage is claimed.
 -/
-import Mathlib
 
 -- Actual mathematical target (standard mathlib theorem):
 example : Set.Infinite {p : ℕ | Nat.Prime p} := by
