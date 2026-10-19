@@ -1,0 +1,5 @@
+# Independent source replay: threshold and representation sensitivity
+
+The first independent standard-library TSV parser on original raw bytes (GitHub Actions 39223037728) found two discrepancies with the original pandas/float32 evaluation before passing an audit: native base-10/float64 score differences classified at least one source-decimal `0.16` boundary differently from the original float32 subtraction (one for an oracle-any pair and one for Ridge, on a separate pair).
+
+This is **a real implementation-semantics problem**, not a biological failure. The original 0/100 vs 8/100 figures must not be treated as robust to threshold precision until explicitly compared. The follow-up audit computes the same 100 pairs under three stated arithmetic interpretations, retaining the original unchanged V1a report, and counts every affected pair and selector. Audit must pass exact original float32 replay and report source-decimal disagreement honestly. Threshold `0.16` is an operational choice, not a biological-significance guarantee. Do not move threshold or rechoose panels/genes based on this finding.
