@@ -3,6 +3,10 @@ on:
   push:
     branches:
       - research/renaissance-intent-fidelity-lean-pilot-20261019
+  pull_request:
+    paths:
+      - 'research/renaissance_intent_fidelity/**'
+      - '.github/workflows/renaissance-intent-fidelity-lean.yml'
   workflow_dispatch:
 permissions:
   contents: read
