@@ -10,6 +10,7 @@ The audit is retrospective: not a new scientific prospective holdout.
 import argparse
 from collections import Counter, defaultdict
 import csv
+from decimal import Decimal, InvalidOperation
 import hashlib
 import io
 import json
@@ -90,7 +91,7 @@ def main():
     known_cols=list(seals['known_array_indices']);candidate_cols=list(seals['candidate_array_indices'])
     chosen_cols=sorted(requested_cols)
     localcols={j:i for i,j in enumerate(chosen_cols)}
-    rows=[]; ids=[]; extras=[]
+    rows=[]; ids=[]; source_rows={}
     with paths.open('r',newline='',encoding='utf-8-sig') as f:
         reader=csv.reader(f,delimiter='\t')
         hdr=next(reader)
@@ -106,13 +107,26 @@ def main():
             if not fields or not fields[orf_idx]: continue
             ids.append(fields[orf_idx]);
             rows.append([parse_float(fields[k]) for k in origcols])
+            if row_index in target_rows:
+                source_rows[row_index]=[fields[k] for k in origcols]
     assert len(rows) == 3608 and len(ids)==3608
     assert len(chosen_cols) == 136
     assert len(set(ids)) > 3400
     assert all(attempts[i]['query_a']==ids[a['target_row_a']] and attempts[i]['query_b']==ids[a['target_row_b']] for i,a in enumerate(attempts))
-    # Re-evaluate the original 100 targets *directly*, without trusting outcome JSON.
+    # Re-evaluate each target in *three* number semantics:
+    # (1) published decimal strings as exact base-10 values; (2) IEEE float64;
+    # (3) numpy float32 matching ORIGINAL V1a implementation.
+    # Decimals are the interpretation authority for literal threshold comparisons.
+    np32=np.asarray(rows,dtype=np.float32)
+    def decimal_gap(a,b,col):
+        i=localcols[col]
+        try:
+            return abs(Decimal(source_rows[a][i])-Decimal(source_rows[b][i]))
+        except (InvalidOperation,TypeError): return None
     truth_by_pair={entry['pair_index']:entry for entry in report['each_pair']}
     raw_hit=Counter(); raw_present=Counter(); disagreements=[]; new_oracle_count=0
+    legacy_oracle_count=0; exact_decimal_hit=Counter(); exact_decimal_oracle_count=0
+    boundary_differences=[]
     for attempt in attempts:
         pi=attempt['pair_index']
         a,b=attempt['target_row_a'],attempt['target_row_b']
@@ -121,25 +135,41 @@ def main():
             disagreements.append(f'Panel mismatch pair {pi}')
         if observed_max>0.08000001:
             disagreements.append(f'Panel not equivalent {pi}')
-        sep=0
+        sep=0;seplegacy=0;sepdecimal=0
         for j in candidate_cols:
             z=abs(rows[a][localcols[j]]-rows[b][localcols[j]])
-            if z == z and z >=0.16: sep+=1
-        if sep:new_oracle_count+=1
-        if bool(sep)!=truth_by_pair[pi]['potentially_distinguishable']:
-            disagreements.append(f'Oracle count mismatch pair {pi}')
+            legacy=float(abs(np32[a,localcols[j]]-np32[b,localcols[j]]))
+            exact=decimal_gap(a,b,j)
+            if z == z and z >=0.16:sep+=1
+            if legacy == legacy and legacy >=0.16:seplegacy+=1
+            if exact is not None and exact >=Decimal('0.16'):sepdecimal+=1
+        new_oracle_count+=int(bool(sep))
+        legacy_oracle_count+=int(bool(seplegacy))
+        exact_decimal_oracle_count+=int(bool(sepdecimal))
+        if bool(seplegacy)!=truth_by_pair[pi]['potentially_distinguishable']:
+            disagreements.append(f'Legacy float32 oracle count mismatch pair {pi}')
+        if bool(seplegacy)!=bool(sepdecimal):
+            boundary_differences.append({'pair':pi,'method':'oracle_any_128',
+                'legacy':bool(seplegacy),'literal_source_decimal':bool(sepdecimal)})
         for method in METHODS:
             col=attempt['choices'][method]['candidate_array_index']
             val=abs(rows[a][localcols[col]]-rows[b][localcols[col]])
             orig=truth_by_pair[pi]['observations'][method]
+            legacy=float(abs(np32[a,localcols[col]]-np32[b,localcols[col]]))
+            exact=decimal_gap(a,b,col)
             finite=(val == val and abs(val)!=float('inf'))
-            hit=bool(finite and val >=.16)
+            hit=bool(finite and legacy >=.16)
+            literal_hit=bool(exact is not None and exact >=Decimal('0.16'))
             raw_present[method]+=int(finite)
             raw_hit[method]+=int(hit)
-            if finite != orig['measured'] or hit != orig['distinction_detected'] or (finite and abs(val-orig['actual_abs_epsilon_gap']) > 1e-5):
-                disagreements.append(f'Native gap mismatch {pi}:{method}, computed={val}, receipt={orig}')
+            exact_decimal_hit[method]+=int(literal_hit)
+            if literal_hit!=hit:
+                boundary_differences.append({'pair':pi,'method':method,'original_float32_gap':legacy,
+                    'literal_decimal_gap':str(exact),'original_hit':hit,'literal_source_hit':literal_hit})
+            if finite != orig['measured'] or hit != orig['distinction_detected'] or (finite and abs(legacy-orig['actual_abs_epsilon_gap']) > 1e-6):
+                disagreements.append(f'Native FLOAT32 gap mismatch {pi}:{method}, computed={legacy}, receipt={orig}')
     assert not disagreements, f'SOURCE_OUTCOME_DISCREPANCIES: {disagreements[:10]}'
-    assert new_oracle_count == report['pairs_with_any_measured_separator_in_128_candidates']
+    assert legacy_oracle_count == report['pairs_with_any_measured_separator_in_128_candidates']
     # Metadata: infer the source column ORF row only if nearly all values match
     # canonical yeast systematic gene names; otherwise explicitly UNKNOWN.
     array_orf_summaries=[]
@@ -172,7 +202,7 @@ def main():
                 reverse_possible+=1
                 reverse_pairs.append({'pair_index':attempt['pair_index'], 'represented_target_orfs':sorted(represented)})
     diagnostics={
-        'status':'WARRANTED_SOURCE_EXACT_RECEIPT_REPLAY',
+        'status':'WARRANTED_SOURCE_EXACT_REPLAY_WITH_SOURCE_PRECISION_SENSITIVITY',
         'scope':'Independent original raw TSV extraction and 100-pair outcome replay, not new biological prospectivity',
         'original_archive_sha256':hashpath(archive),
         'cdt_sha256':h.hexdigest(),
@@ -182,7 +212,12 @@ def main():
         'pair_count':len(attempts),
         'hit_counts':dict(raw_hit),
         'observed_counts':dict(raw_present),
-        'measured_panel_equivalent_but_expanded_separator':new_oracle_count,
+        'measured_panel_equivalent_but_expanded_separator_original_float32':legacy_oracle_count,
+        'measured_panel_equivalent_but_expanded_separator_source_decimal':exact_decimal_oracle_count,
+        'measured_panel_equivalent_but_expanded_separator_float64':new_oracle_count,
+        'method_hits_original_float32':dict(raw_hit),
+        'method_hits_source_decimal':dict(exact_decimal_hit),
+        'source_threshold_precision_discrepancies':boundary_differences,
         'distinct_query_orfs':len(query_counts),
         'duplicate_query_orfs_count':len(dup_queries),
         'duplicate_orf_sample':list(dup_queries.items())[:20],
