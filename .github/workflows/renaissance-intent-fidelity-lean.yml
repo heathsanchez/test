@@ -1,0 +1,22 @@
+name: Renaissance finite Lean intent pilot
+on:
+  push:
+    branches:
+      - research/renaissance-intent-fidelity-lean-pilot-20261019
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-lean:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned Lean
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain leanprover/lean4:v4.34.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Compile and kernel check pilot
+        run: |
+          lean --version
+          lean research/renaissance_intent_fidelity/IntentPilot.lean
