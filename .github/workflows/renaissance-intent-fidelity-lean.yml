@@ -25,6 +25,7 @@ jobs:
           lean --version
           lean research/renaissance_intent_fidelity/IntentPilot.lean
           python3 research/renaissance_intent_fidelity/closure_audit.py
+          python3 research/renaissance_intent_fidelity/control_mutants_v3.py
           curl -fsSL --retry 3 https://raw.githubusercontent.com/leanprover-community/mathlib4/v4.34.0/Mathlib/Algebra/Order/BigOperators/Group/Finset.lean -o /tmp/renaissance-heldout.lean
           python3 research/renaissance_intent_fidelity/source_admission_v2.py /tmp/renaissance-heldout.lean
           mkdir -p /tmp/renaissance-mathlib
