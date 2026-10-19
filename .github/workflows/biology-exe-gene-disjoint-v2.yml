@@ -23,7 +23,7 @@ jobs:
       - name: Synthetic source with target and reciprocal-data withdrawal controls
         run: python research/biology_exe_gene_disjoint_v2/test_protocol.py
       - name: Check protected source identity, gene-level grouping, freeze all method predictions
-        run: python research/biology_exe_gene_disjoint_v2/select.py --archive data/yeast_exe_v2/source.zip --out out/yeast_exe_v2
+        run: python research/biology_exe_gene_disjoint_v2/predict.py --archive data/yeast_exe_v2/source.zip --out out/yeast_exe_v2
       - name: Independent source-exact holdout evaluator (not imported by selector)
         run: python research/biology_exe_gene_disjoint_v2/evaluate.py --archive data/yeast_exe_v2/source.zip --sealed out/yeast_exe_v2/sealed_predictions.json --out out/yeast_exe_v2
       - name: Retain original evidence and failed apparatus states

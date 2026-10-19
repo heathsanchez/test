@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Independent source-native evaluator: Python stdlib + Decimal; NEVER imports select.py.
+"""Independent source-native evaluator: Python stdlib + Decimal; NEVER imports predict.py.
 
 Called only AFTER first runner step exits with persisted SHA256 sealed predictions.
 """

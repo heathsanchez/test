@@ -11,7 +11,7 @@ def import_script(path,name):
 def run():
  import numpy as np
  p=Path(__file__).resolve().parent
- s=import_script(p/'select.py','sample_selector')
+ s=import_script(p/'predict.py','sample_selector')
  e=import_script(p/'evaluate.py','sample_evaluator')
  with tempfile.TemporaryDirectory() as dir:
   root=Path(dir);zippath=root/'sample.zip';out=root/'out'
@@ -44,7 +44,7 @@ def run():
   assert len(idx)==M and len(arr)==M
   prevargv=sys.argv
   try:
-   sys.argv=['select.py','--archive',str(zippath),'--out',str(out)]
+   sys.argv=['predict.py','--archive',str(zippath),'--out',str(out)]
    s.main()
   finally:sys.argv=prevargv
   seal=json.loads((out/'sealed_predictions.json').read_text())
@@ -75,7 +75,7 @@ def run():
   s.ARCHIVE_SHA=hashlib.sha256(altered.read_bytes()).hexdigest()
   prevargv=sys.argv
   try:
-   sys.argv=['select.py','--archive',str(altered),'--out',str(root/'ablated_out')]
+   sys.argv=['predict.py','--archive',str(altered),'--out',str(root/'ablated_out')]
    s.main()
   finally:sys.argv=prevargv
   ablate_seal=json.loads((root/'ablated_out'/'sealed_predictions.json').read_text())
