@@ -25,8 +25,10 @@ jobs:
           lean --version
           lean research/renaissance_intent_fidelity/IntentPilot.lean
           python3 research/renaissance_intent_fidelity/closure_audit.py
-          if [ -f lakefile.toml ] || [ -f lakefile.lean ]; then
-            lake env lean research/renaissance_intent_fidelity/PrimeIntent.lean
-          else
-            echo 'MATHLIB_SOURCE_PROBE_NOT_EXECUTED: repository has no Lake project'; exit 1
-          fi
+          mkdir -p /tmp/renaissance-mathlib
+          cd /tmp/renaissance-mathlib
+          lake init renaissance_mathlib math
+          lake update
+          lake exe cache get
+          cp "$GITHUB_WORKSPACE/research/renaissance_intent_fidelity/PrimeIntent.lean" PrimeIntent.lean
+          lake env lean PrimeIntent.lean
