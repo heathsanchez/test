@@ -24,3 +24,9 @@ jobs:
         run: |
           lean --version
           lean research/renaissance_intent_fidelity/IntentPilot.lean
+          python3 research/renaissance_intent_fidelity/closure_audit.py
+          if [ -f lakefile.toml ] || [ -f lakefile.lean ]; then
+            lake env lean research/renaissance_intent_fidelity/PrimeIntent.lean
+          else
+            echo 'MATHLIB_SOURCE_PROBE_NOT_EXECUTED: repository has no Lake project'; exit 1
+          fi
