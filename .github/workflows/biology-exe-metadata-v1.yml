@@ -1,0 +1,21 @@
+name: Yeast ExE metadata-only assay
+on:
+  push:
+    branches:
+      - research/yeast-exe-metadata-v1-20261019
+    paths:
+      - research/biology_exe_metadata_v1/**
+      - .github/workflows/biology-exe-metadata-v1.yml
+  workflow_dispatch:
+jobs:
+  metadata-only:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Metadata-only immutable original archive, no outcomes
+        run: python research/biology_exe_metadata_v1/metadata_only.py
