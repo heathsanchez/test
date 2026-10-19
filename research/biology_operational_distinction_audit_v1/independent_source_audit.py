@@ -14,6 +14,7 @@ from decimal import Decimal, InvalidOperation
 import hashlib
 import io
 import json
+import numpy as np
 from pathlib import Path
 import re
 import urllib.request
@@ -187,7 +188,6 @@ def main():
     dup_queries={k:v for k,v in query_counts.items() if v>1}
     # Check exact original train/target split (random generator matches stable seed;
     # only used here to audit duplication/reciprocal sources, not predictions).
-    import numpy as np
     rng=np.random.default_rng(20261019)
     perm=rng.permutation(len(ids)); cut=int(len(ids)*.75)
     cal_ids=set(ids[int(j)] for j in perm[:cut]); target_ids=set(ids[int(j)] for j in perm[cut:])
