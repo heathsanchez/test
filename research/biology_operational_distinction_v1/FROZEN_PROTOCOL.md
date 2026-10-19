@@ -1,0 +1,25 @@
+# Biological operational distinction: frozen V1
+
+**Date:** 2026-10-19 NZT. **Status before source access: CANDIDATE / preregistered method, NOT Warranted Biology.**
+
+## Question
+Can an intervention choice justified by *out-of-sample evidence* distinguish two yeast mutant profiles that are indistinguishable within a restricted measurement panel, better than equally informed conventional choices?
+
+**Source:** Costanzo et al. (2016) official Cell Map, `SGA_NxN_clustered.cdt` in official matrix download. Published matrix SHA-256 expected `10e82acc42fe66416111cfecd7b62040c284664741df15bd2c3d95f7f410bd9c`; original official source URL at `https://thecellmap.org/yeast/costanzo2016/`. Hash mismatch or download failure => UNKNOWN, NOT scientific negative. Only the nonessential×nonessential interaction-score matrix (epsilon) is in scope. Ignore biological p-values because they are not in matrix; no claims of statistical significance for a given single interaction.
+
+**Operational proposition:** measured-panel equivalence is relative to a chosen interface. Given eight initially read genetic backgrounds, rows A,B whose maximum absolute epsilon difference is <=0.08 are panel-indistinguishable. They may have measured interaction differences >=0.16 under one of 128 *new* backgrounds. These are two distinct genotypes, not identical genome/fitness/phenotype.
+
+## Before reading hidden target outcomes
+- Single unaltered seed `20261019`, deterministic row split 75% calibration / 25% target. Eligible backgrounds have >95% finite observations on calibration mutant rows only; select 8 known backgrounds and 128 novel candidates by one seeded permutation. Within calibration, 80% fit and 20% error-variance calibration.
+- Up to 100 disjoint target-mutant pairs picked greedily by only the eight known readouts, `max(abs(delta))<=0.08`, distinct ORFs. Fewer than 20 pairs means STOP unknown/no scientific comparison. No target×candidate outcome (or its missingness) is read in selection, fitting, calibration or method ranking.
+- Core KNN imputer: 31 inverse-distance neighbors, 0.05 regularizer, eight known backgrounds as features, all candidate responses available from calibration genes. One novel intervention per paired candidate.
+- **Consequential warrant selector** maximizes `LCB = |KNN_mean(A)-KNN_mean(B)| - 1.96*sqrt(2)*RMSE_calibration_context`, using independent calibration residuals. Emits a *warranted prediction* only when its maximum LCB >=0.16; abstentions still have a measured exploratory intervention to assess ranking.
+- **Matched strong baseline:** same KNN predicted gap without uncertainty penalty, equal data and allowed choices. **Additional:** ridge regularized conditional predictor (`alpha=5`), global background variance from calibration, seeded random eligible background. **Posthoc upper bound:** fraction of pairs for which at least one measured among 128 candidate backgrounds distinguishes; never used to select.
+- All selectors' ranks and chosen candidate-background identities are written and SHA256-hashed to `sealed_predictions.json` before heldout target values accessed. Scores and candidate backgrounds frozen in code; CI downloads source on runner after code commit. `holdout` means computationally withheld public historic measurements, not new prospective laboratory measurements.
+
+## Outcomes and falsifiers
+Primary: all-attempt hit rate for gap >=0.16, counting missing held-out outcome as not a successful observed separator, comparison LCB vs same KNN mean. Pair bootstrap (2000 seeded samples) for descriptive uncertainty only; shared contexts and upstream assay noise remain unmodeled. Secondary: mean absolute observed epsilon gap, emit precision, holdout observation availability, ridge/variance/random baseline. No hyperparameter adjustment after outcomes.
+
+**Promotion rule:** `WARRANTED_BOUNDED_REAL_DATA_SELECTION_ADVANTAGE` only if frozen LCB beats equal-KNN point baseline with positive paired 95% bootstrap lower bound, no cherry-picking or material missingness bias, and source verified. Any tie/negative is `REJECTED_ADVANTAGE_FOR_THIS_PROTOCOL`, not rejection of logical difference. Even success would *not* warrant a fundamental biological/ontological law, automatic grammar invention, or causal proof beyond the authentic pairwise genetic perturbations. Do not interpret two-single mutant fitnesses as equal—those fitnesses are not measured by this matrix assay.
+
+**Authority:** exact source bytes and parser, committed protocol/source revision, full observed vs missing counts, sealed choice artifact and evaluator report, CI job+artifacts. Do not retroactively rename existing known biological epistasis as discovery. The narrow theory's prediction is biological contextual distinguishability; the stronger scientific test is prospective lift over equally informed baseline.
