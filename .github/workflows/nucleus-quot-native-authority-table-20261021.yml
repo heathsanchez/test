@@ -1,0 +1,43 @@
+name: Nucleus quotient native authority table
+on:
+  push:
+    branches: [research/nucleus-quotient-scope-certificate-20261021]
+    paths: ['.github/workflows/nucleus-quot-native-authority-table-20261021.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-authority:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Decode original Native Lean export; no evaluator assumptions
+        run: |
+          set -euo pipefail
+          mkdir /tmp/source
+          gh api repos/heathsanchez/test/actions/artifacts/12150779957/zip > /tmp/source.zip
+          unzip -q /tmp/source.zip -d /tmp/source
+          echo 'da02144b2d6109c86e5067b1e987744c2122820629bc8ece04dfb276f243239b  /tmp/source/quotient-proof.ndjson' | sha256sum -c -
+          python3 - <<'PY'
+          import json,pathlib
+          records=[json.loads(l) for l in pathlib.Path('/tmp/source/quotient-proof.ndjson').read_text().splitlines()]
+          names={r['in']:r for r in records if 'in' in r}
+          def name(i):
+            if i==0:return ''
+            node=names[i]
+            part=node.get('str') or node.get('num')
+            return (name(part['pre'])+'.' if part['pre'] else '')+str(part.get('str',part.get('i','')))
+          for id in (47,48,54,65,76,77):
+            decl=[]
+            for r in records:
+              for kind in ('axiom','def','thm','opaque','quot'):
+                if kind in r and r[kind].get('name')==id:
+                  a=r[kind]
+                  decl.append({'kind':kind,'type_expr':a.get('type'),
+                               'value_expr':a.get('value'),'hints':a.get('hints'),
+                               'level_params':a.get('levelParams')})
+            print('NUCLEUS_NATIVE_QUOT_AUTHORITY='+json.dumps({'id':id,'name':name(id),'decl':decl}),flush=True)
+          PY
