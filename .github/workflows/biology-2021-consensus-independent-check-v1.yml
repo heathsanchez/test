@@ -1,0 +1,38 @@
+name: Independent 2021 yeast novelty authority validation V1
+on:
+  push:
+    branches: ['research/biology-2021-consensus-independent-check-v1-20261020']
+    paths:
+      - 'research/biology_2021_consensus_independent_check_v1/**'
+      - '.github/workflows/biology-2021-consensus-independent-check-v1.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  source-exact-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install 'openpyxl==3.1.5'
+      - name: Acquire exact original V2 result artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p original/reference
+          gh run download 39357312707 --repo heathsanchez/test --name biology-2021-consensus-reference-audit-v2 --dir original/reference
+          sha256sum original/reference/source_reference_comparison.json
+      - name: Independent native source and causal single-reference audit
+        run: |
+          python research/biology_2021_consensus_independent_check_v1/check.py \
+            --v2-report original/reference/source_reference_comparison.json \
+            --out out/check
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: biology-2021-consensus-independent-check-v1
+          path: out/check/independent_reference_audit.json
