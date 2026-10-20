@@ -1,0 +1,27 @@
+name: Consequence Directed Observation V1
+on:
+  push:
+    branches:
+      - research/consequence-directed-observation-v1-20261021
+  pull_request:
+    paths:
+      - 'research/consequence_directed_observation_v1/**'
+      - '.github/workflows/consequence-directed-observation-v1.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exposed-control:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run exposed consequence-directed observation and comparator
+        run: |
+          python3 research/consequence_directed_observation_v1/run.py
+      - name: Save bounded result
+        uses: actions/upload-artifact@v4
+        with:
+          name: consequence-directed-observation-v1-result
+          path: research/consequence_directed_observation_v1/result.json
+          if-no-files-found: error
