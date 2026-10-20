@@ -42,9 +42,20 @@ sub=r'''        let candidate = self.constructor_application(target).or_else(|| 
                 return None;
             }
             let exposed = self.expose_internal(
-                target.clone(), transparency, budget.saturating_sub(1).min(256),
+                target.clone(), Transparency::Full, budget.saturating_sub(1).min(256),
                 false, false,
             );
+            #[cfg(feature="diagnostics")]
+            if std::env::var_os("NUCLEUS_TRACE_QUOT_MAJOR").is_some() {
+                use std::sync::atomic::{AtomicUsize,Ordering};
+                static QUOT_EXPOSED:AtomicUsize=AtomicUsize::new(0);
+                if QUOT_EXPOSED.fetch_add(1,Ordering::Relaxed)<20 {
+                    eprintln!(
+                        "NUCLEUS_QUOT_MAJOR_EXPOSED:target={:?}:policy={transparency:?}:full_exposure={exposed:?}",
+                        target.expr,
+                    );
+                }
+            }
             let Value::Neutral(Neutral {
                 head: NeutralHead::Const { name, .. }, spine,
             }) = exposed.proven_value()?.value.clone() else {
