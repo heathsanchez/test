@@ -67,7 +67,7 @@ jobs:
               row={'mode':mode,'case':name,'rc':r.returncode,
                    'source_sha256':hashlib.sha256(path.read_bytes()).hexdigest(),
                    'terminal':[x for x in lines if x.startswith('NUCLEUS_DOWNSTREAM:')][-1:],
-                   'reduced_majors':[x for x in lines if x.startswith('NUCLEUS_QUOT_MAJOR:')][:12]}
+                   'reduced_majors':[x for x in lines if x.startswith(('NUCLEUS_QUOT_MAJOR:','NUCLEUS_QUOT_MAJOR_EXPOSED:'))][:24]}
               rows.append(row)
               print('NUCLEUS_QUOT_CANDIDATE='+json.dumps(row),flush=True)
           (root/'native-quotient-comparison.json').write_text(json.dumps(rows,indent=2)+'\n')
