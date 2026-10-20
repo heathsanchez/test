@@ -1,0 +1,28 @@
+name: Environmental yeast 2021 metadata-only
+on:
+  push:
+    branches:
+      - research/biology-environment-2021-metadata-20261020
+    paths:
+      - 'research/biology_environment_metadata_v1/**'
+      - '.github/workflows/biology-environment-metadata-v1.yml'
+  workflow_dispatch:
+jobs:
+  source-metadata-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install 'openpyxl==3.1.5'
+      - name: Source metadata only, hash raw workbook
+        run: python research/biology_environment_metadata_v1/metadata_only.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: environmental-2021-metadata-receipt
+          path: out/environment_metadata/source_metadata.json
