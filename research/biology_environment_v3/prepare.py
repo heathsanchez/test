@@ -59,7 +59,9 @@ def source(cache):
 
 
 def norm(s):
- return ' '.join(str(s or '').strip().split()).lower()
+ key=' '.join(str(s or '').strip().split()).lower()
+ # Official 2021 workbook spellings differ from interaction-record spellings.
+ return {'boretzeomib':'bortezomib','concanmycin a':'concanamycin a'}.get(key,key)
 
 
 def validfloat(x):

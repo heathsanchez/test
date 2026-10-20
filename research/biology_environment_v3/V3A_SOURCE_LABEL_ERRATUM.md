@@ -1,0 +1,3 @@
+# V3a source-label audit amendment (2026-10-20)
+
+The first source-steward run [#39348604744](https://github.com/heathsanchez/test/actions/runs/39348604744) failed on a published source spelling inconsistency before any protected target readout was delivered. The metadata `Conditions` tab spells `Boretzeomib`, while the interaction table uses `Bortezomib`; a similarly inconsistent `Concanmycin A`/`Concanamycin A` naming is mapped. Only these two spelling strings are canonicalized. All experimental choices and algorithm parameters were already frozen. This does not convert V3 into a successful experiment by itself.

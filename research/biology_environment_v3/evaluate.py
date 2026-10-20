@@ -79,6 +79,7 @@ def main():
  if len(headers)!=25 or headers[17]!='mean_differential_epsilon' or headers[19]!='differential_p_value':raise RuntimeError('SCHEMA_MISMATCH')
  for row in it:
   q=str(row[0] or '').strip().upper();arr=str(row[1] or '').strip().upper();c=' '.join(str(row[2] or '').strip().split()).lower()
+  c={'boretzeomib':'bortezomib','concanmycin a':'concanamycin a'}.get(c,c)
   key=q+'|'+arr
   if key not in target_ids or c not in contexts:continue
   e,pv,r1,r2=dec(row[17]),dec(row[19]),dec(row[15]),dec(row[16])
