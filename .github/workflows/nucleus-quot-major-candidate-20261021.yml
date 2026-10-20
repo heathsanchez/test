@@ -36,7 +36,6 @@ jobs:
           python3 .github/scripts/nucleus_quot_major_candidate_20261021.py metatron-kernel/src/machine.rs
           git diff --check
           git diff -- metatron-kernel/src/machine.rs > /tmp/evidence/opt-in-quotient-major-candidate.diff
-          cargo test --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml > /tmp/evidence/rust-tests.log 2>&1 || { tail -80 /tmp/evidence/rust-tests.log; exit 1; }
           cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
           cp metatron-kernel/target/release/metatron-kernel /tmp/quot/candidate
           sha256sum /tmp/quot/unchanged /tmp/quot/candidate > /tmp/evidence/binaries.sha256
@@ -86,6 +85,7 @@ jobs:
             echo "CANDIDATE_UNKNOWN: no complete source-verified proof ACCEPT; no full-corpus promotion" | tee /tmp/evidence/decision.txt
             exit 0
           fi
+          NUCLEUS_EXPERIMENTAL_RELEVANCE=1 NUCLEUS_EXPERIMENTAL_EXPECTED_LAMBDA=1 cargo test --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml > /tmp/evidence/rust-tests.log 2>&1 || { tail -80 /tmp/evidence/rust-tests.log; exit 1; }
           mkdir -p /tmp/frozen /tmp/frozen-zip
           gh api repos/leanprover/lean-kernel-arena/actions/artifacts/11272848230/zip > /tmp/frozen-artifact.zip
           unzip -q /tmp/frozen-artifact.zip -d /tmp/frozen-zip
