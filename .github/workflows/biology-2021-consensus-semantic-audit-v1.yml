@@ -1,0 +1,38 @@
+name: Yeast 2021 independent consensus-reference semantic audit V1
+on:
+  push:
+    branches: ['research/biology-2021-consensus-semantic-audit-v1-20261020']
+    paths:
+      - 'research/biology_2021_consensus_semantic_audit_v1/**'
+      - '.github/workflows/biology-2021-consensus-semantic-audit-v1.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  original-source-reference-meaning:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install 'openpyxl==3.1.5'
+      - name: Reauthenticate immutable original protected source-event receipts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p source/receipts
+          gh run download 39349577864 --repo heathsanchez/test --name biology-environment-v3-independent-result --dir source/receipts
+          sha256sum source/receipts/per_target_receipt.json
+      - name: Check independent author-controlled novelty reference interpretations
+        run: |
+          python research/biology_2021_consensus_semantic_audit_v1/compare.py \
+            --original-receipts source/receipts/per_target_receipt.json \
+            --output out/consensus
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: biology-2021-consensus-semantic-audit-v1
+          path: out/consensus/source_reference_comparison.json

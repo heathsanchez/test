@@ -1,0 +1,13 @@
+# 2021 yeast semantic authority under three reference networks: frozen post-hoc audit
+
+**Frozen:** 2026-10-20, after V3c protected outcomes were opened; pre-Data4 table outcome access. This is a source-native **retrospective interpretation/authority audit**, not a new held-out discovery attempt.
+
+Original method candidate/strong baselines are unchanged and already evaluated in [V3c run 39349577864](https://github.com/heathsanchez/test/actions/runs/39349577864). Independently source-replayed and multiplicity-qualified in [run 39355708832](https://github.com/heathsanchez/test/actions/runs/39355708832). Novel and differential interactions must not be equated.
+
+**Independent source authority:** Costanzo 2021 Zenodo Data File4 consensus reference workbook, MD5 686f8b88507826d3cb7117e80274be92, SHA256 6c0fecfa1b2443a8770b6f4764f1c751318cbd0b2406e06e2a4e9655a737bdbe. Source native [metadata-only run 39356343214](https://github.com/heathsanchez/test/actions/runs/39356343214) exposed only sheet sizes and headers; [Readme-only run 39356454871](https://github.com/heathsanchez/test/actions/runs/39356454871) provides author meaning: rows of Novels_match_v_MCMC_v_Saturated indicate novel differential positive/negative under matched, MCMC or saturated reference.
+
+**Pre-source-data selection:** all four unique biological source-cell effects with positive original V3c selected classification, from fixed original 200-target per_target_receipt.json hash 72359773328a8f09ff69d651b28d8577ac1d16312eb379065524e163aaae3b43. No extra gene-pair selection from Data4 outcomes.
+
+**Fixed join:** exact source systematic gene ORF pair + source environment (lowercase remove nonalnum, with only two already documented corrections). If Data4 has exactly one row, report three typed reference classifications, using bool/0/1/yes/no recognized values; if absent, ambiguous, or unsupported type, verdict UNKNOWN. Do **not** treat absence from the author-defined novelty table as proof of non-novelty or as evidence against differential response. No attempt to join an unrelated allele-specific profile on ORF alone. Also tabulate global source-authorized disagreements between classifications, without promoting to an AI advantage.
+
+**Consequence lineage:** source Data3 evidence supports a particular differential-interaction result; source Data4 independently supports a claim of novelty under named reference definition. Revoking Data4 authority may withdraw Data4-sourced novelty claims only, while Data3-sourced differential evidence remains. Restore Data4 and requalify; do not claim to have physically changed the published source. If selected hits are absent/ambiguous, remain UNKNOWN. No new formal CLC theorem or universal scientific law.
