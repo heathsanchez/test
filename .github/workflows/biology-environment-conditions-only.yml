@@ -1,0 +1,19 @@
+name: Environmental yeast condition labels only
+on:
+  push:
+    branches:
+      - research/biology-environment-2021-metadata-20261020
+    paths:
+      - 'research/biology_environment_metadata_v1/conditions_only.py'
+      - '.github/workflows/biology-environment-conditions-only.yml'
+  workflow_dispatch:
+jobs:
+  labels-only:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install 'openpyxl==3.1.5'
+      - run: python research/biology_environment_metadata_v1/conditions_only.py
