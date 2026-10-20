@@ -1,0 +1,38 @@
+name: Biology 2021 source-native three-reference novelty audit V2 (exposed)
+on:
+  push:
+    branches: ['research/biology-2021-consensus-semantic-audit-v2-20261020']
+    paths:
+      - 'research/biology_2021_consensus_semantic_audit_v2/**'
+      - '.github/workflows/biology-2021-consensus-semantic-audit-v2.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  source-native-reference-separation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install 'openpyxl==3.1.5'
+      - name: Reauthenticate original immutable protected source events
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p original/receipts
+          gh run download 39349577864 --repo heathsanchez/test --name biology-environment-v3-independent-result --dir original/receipts
+          sha256sum original/receipts/per_target_receipt.json
+      - name: Reparse author-consensus raw XLSX with frozen allele and novelty mapping
+        run: |
+          python research/biology_2021_consensus_semantic_audit_v2/compare.py \
+            --original-receipts original/receipts/per_target_receipt.json \
+            --output out/consensus
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: biology-2021-consensus-reference-audit-v2
+          path: out/consensus/source_reference_comparison.json
