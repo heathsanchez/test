@@ -1,0 +1,128 @@
+name: Nucleus qualified quotient-major reduction candidate
+on:
+  push:
+    branches: [research/nucleus-quotient-scope-certificate-20261021]
+    paths:
+      - '.github/workflows/nucleus-quot-major-candidate-20261021.yml'
+      - '.github/scripts/nucleus_quot_major_candidate_20261021.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  quotient-major-separator:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 80
+    env:
+      GH_TOKEN: ${{ github.token }}
+      ORIGINAL_ARTIFACT: '12150779957'
+      ORIGINAL_SOURCE_SHA: da02144b2d6109c86e5067b1e987744c2122820629bc8ece04dfb276f243239b
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Pin source and compile unchanged independent Nucleus
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/quot /tmp/evidence
+          git rev-parse HEAD > /tmp/evidence/candidate-research-commit.txt
+          git rev-parse HEAD:metatron-kernel > /tmp/evidence/unchanged-source-tree.txt
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/quot/unchanged
+          gh api "repos/heathsanchez/test/actions/artifacts/$ORIGINAL_ARTIFACT/zip" > /tmp/quot/original-artifact.zip
+          unzip -q /tmp/quot/original-artifact.zip -d /tmp/quot
+          echo "$ORIGINAL_SOURCE_SHA  /tmp/quot/quotient-proof.ndjson" | sha256sum -c -
+      - name: Compile opt-in candidate with exact source diff
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/nucleus_quot_major_candidate_20261021.py metatron-kernel/src/machine.rs
+          git diff --check
+          git diff -- metatron-kernel/src/machine.rs > /tmp/evidence/opt-in-quotient-major-candidate.diff
+          cargo test --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml > /tmp/evidence/rust-tests.log 2>&1 || { tail -80 /tmp/evidence/rust-tests.log; exit 1; }
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/quot/candidate
+          sha256sum /tmp/quot/unchanged /tmp/quot/candidate > /tmp/evidence/binaries.sha256
+      - name: Differential native proof and protected adversarial controls
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib,subprocess
+          root=pathlib.Path('/tmp/evidence')
+          src=pathlib.Path('/tmp/quot/quotient-proof.ndjson')
+          controls={
+            'original-source':src,
+            'false-index':pathlib.Path('metatron-kernel/tests/fixtures/protected-false-index.ndjson'),
+            'eta-constructor-alias':pathlib.Path('metatron-kernel/tests/fixtures/protected-eta-ctor-alias.ndjson'),
+          }
+          rows=[]
+          for mode,binary,enabled in [
+              ('untouched','/tmp/quot/unchanged',False),
+              ('candidate-off','/tmp/quot/candidate',False),
+              ('candidate-on','/tmp/quot/candidate',True)]:
+            for name,path in controls.items():
+              env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+              env['NUCLEUS_TRACE_DOWNSTREAM']='1'
+              if enabled: env['NUCLEUS_EXPERIMENTAL_QUOT_MAJOR']='1'
+              if enabled and name=='original-source':env['NUCLEUS_TRACE_QUOT_MAJOR']='1'
+              with path.open('rb') as f:
+                r=subprocess.run([binary],stdin=f,capture_output=True,timeout=120,env=env)
+              lines=r.stderr.decode(errors='replace').splitlines()
+              row={'mode':mode,'case':name,'rc':r.returncode,
+                   'source_sha256':hashlib.sha256(path.read_bytes()).hexdigest(),
+                   'terminal':[x for x in lines if x.startswith('NUCLEUS_DOWNSTREAM:')][-1:],
+                   'reduced_majors':[x for x in lines if x.startswith('NUCLEUS_QUOT_MAJOR:')][:12]}
+              rows.append(row)
+              print('NUCLEUS_QUOT_CANDIDATE='+json.dumps(row),flush=True)
+          (root/'native-quotient-comparison.json').write_text(json.dumps(rows,indent=2)+'\n')
+          assert len(rows)==9
+          assert rows[0]['rc']==rows[3]['rc']==2, 'BASELINE_VERDICT_DRIFT'
+          assert all(rows[i]['rc']==rows[i+3]['rc'] for i in range(3)), 'OPT_OUT_NOT_IDENTICAL'
+          assert all(r['rc'] in (1,2) for r in rows if r['case']!='original-source'), 'UNSAFE_PROTECTED_NEGATIVE'
+          assert rows[6]['rc'] in (0,2), 'CANDIDATE_REJECTED_VALID_LEAN_SOURCE'
+          (root/'candidate-native-accepted.txt').write_text(str(rows[6]['rc']==0)+'\n')
+          PY
+      - name: If original proof ACCEPTS, verify immutable 196 Arena vector
+        run: |
+          set -euo pipefail
+          if ! grep -qx True /tmp/evidence/candidate-native-accepted.txt; then
+            echo "CANDIDATE_UNKNOWN: no complete source-verified proof ACCEPT; no full-corpus promotion" | tee /tmp/evidence/decision.txt
+            exit 0
+          fi
+          mkdir -p /tmp/frozen /tmp/frozen-zip
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/11272848230/zip > /tmp/frozen-artifact.zip
+          unzip -q /tmp/frozen-artifact.zip -d /tmp/frozen-zip
+          tar --no-same-owner -xzf /tmp/frozen-zip/lean-arena-tests.tar.gz -C /tmp/frozen
+          python3 - <<'PY'
+          import json,hashlib,os,pathlib,subprocess
+          baseline=json.loads(pathlib.Path('metatron-kernel/evidence/performance/owned-environment-2026-10-13/nucleus-owned-environment-frozen196.json').read_text())['modes']['default']['rows']
+          pinned={r['case']:r for r in baseline}
+          binary='/tmp/quot/candidate'
+          root=pathlib.Path('/tmp/frozen')
+          env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+          env['NUCLEUS_EXPERIMENTAL_QUOT_MAJOR']='1'
+          rows=[]
+          for group in ('good','bad'):
+            for src in sorted((root/group).rglob('*.ndjson')):
+              name=str(src.relative_to(root))
+              with src.open('rb') as f:
+                try:r=subprocess.run([binary],stdin=f,stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=180,env=env)
+                except subprocess.TimeoutExpired:raise AssertionError('TIMEOUT '+name)
+              row={'case':name,'group':group,'rc':r.returncode,
+                   'sha256':hashlib.sha256(src.read_bytes()).hexdigest()}
+              rows.append(row)
+              assert row['sha256']==pinned[name]['sha256'], 'INPUT_HASH_DRIFT '+name
+              assert r.returncode in (0,1,2), 'RUNTIME_ERROR '+name
+              assert pinned[name]['rc'] not in (0,1) or r.returncode==pinned[name]['rc'], 'REGRESSION '+name
+              assert group!='bad' or r.returncode!=0, 'FALSE_ACCEPT '+name
+              assert group!='good' or r.returncode!=1, 'FALSE_REJECT '+name
+          counts={str(k):sum(r['rc']==k for r in rows) for k in (0,1,2)}
+          assert len(rows)==196 and counts['1']==71 and counts['0']>=118,counts
+          report={'source_commit':os.environ['GITHUB_SHA'],'counts':counts,'rows':rows}
+          pathlib.Path('/tmp/evidence/frozen196.json').write_text(json.dumps(report,indent=2)+'\n')
+          pathlib.Path('/tmp/evidence/decision.txt').write_text('CANDIDATE_POSITIVE_NATIVE_AND_FROZEN196; REQUIRES_HELD_OUT_INVALIDS_AND_FULL_REACHABILITY\n')
+          print('NUCLEUS_QUOT_FROZEN196='+json.dumps(counts),flush=True)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-quot-major-candidate-${{ github.sha }}
+          path: /tmp/evidence/
+          if-no-files-found: warn
