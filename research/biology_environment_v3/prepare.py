@@ -59,9 +59,12 @@ def source(cache):
 
 
 def norm(s):
- key=' '.join(str(s or '').strip().split()).lower()
- # Official 2021 workbook spellings differ from interaction-record spellings.
- return {'boretzeomib':'bortezomib','concanmycin a':'concanamycin a'}.get(key,key)
+ return ' '.join(str(s or '').strip().split()).lower()
+
+def canonical_condition(s):
+ # Source-specific spelling AND punctuation of environmental labels; never alter ORF IDs.
+ key=''.join(c for c in norm(s) if c.isalnum())
+ return {'boretzeomib':'bortezomib','concanmycina':'concanamycina'}.get(key,key)
 
 
 def validfloat(x):
@@ -89,10 +92,10 @@ def known_conditions(conditions_file):
  wb=load_workbook(conditions_file,read_only=True,data_only=True)
  ws=wb['Conditions'];ls=[]
  for row in ws.iter_rows(min_row=2,values_only=True):
-  s=norm(row[0])
+  s=canonical_condition(row[0])
   if s:ls.append(s)
  wb.close()
- ls=sorted(set(x for x in ls if x!='reference condition + solvent'))
+ ls=sorted(set(x for x in ls if x!='referenceconditionsolvent'))
  if len(ls)!=14:raise RuntimeError('SCHEMA_CONDITION_COUNT_NOT_14 '+repr(ls))
  return ls[:4],ls[4:],ls
 
@@ -112,7 +115,7 @@ def build(fixtures,output,fixture_only=False):
  if header!=HEADER:raise RuntimeError('SCHEMA_25_COLUMN_IDENTITY_MISMATCH '+repr(header))
  if not fixture_only and ws.max_row !=363202:raise RuntimeError('SCHEMA_ROW_COUNT_MISMATCH '+str(ws.max_row))
  for row in rows:
-  q,a,c=map(norm,row[:3]);q=q.upper();a=a.upper()
+  q,a=map(norm,row[:2]);c=canonical_condition(row[2]);q=q.upper();a=a.upper()
   if c not in all_conditions:
    if c:raise RuntimeError('UNRECOGNISED_CONDITION '+c)
    continue
