@@ -31,7 +31,19 @@ s=s.replace(anchor2,'''    fn try_quot_reduction(
 anchor3='''        let (constructor, constructor_arguments) = self.constructor_application(target)?;
         if constructor != primitives.mk || constructor_arguments.len() != 3 {'''
 assert s.count(anchor3)==1, 'QUOT_CONSTRUCTOR_PREMISE_DRIFT'
-sub=r'''        let candidate = self.constructor_application(target).or_else(|| {
+sub=r'''        let direct = self.constructor_application(target);
+        #[cfg(feature="diagnostics")]
+        if std::env::var_os("NUCLEUS_TRACE_QUOT_MAJOR").is_some() {
+            use std::sync::atomic::{AtomicUsize,Ordering};
+            static QUOT_DIRECT:AtomicUsize=AtomicUsize::new(0);
+            if QUOT_DIRECT.fetch_add(1,Ordering::Relaxed)<20 {
+                eprintln!(
+                    "NUCLEUS_QUOT_MAJOR_DIRECT:target={:?}:direct={direct:?}:required={:?}:arity=3",
+                    target.expr,primitives.mk,
+                );
+            }
+        }
+        let candidate = direct.filter(|(ctor,args)| *ctor == primitives.mk && args.len()==3).or_else(|| {
             // The original evaluator recognized only a syntactically direct
             // Quot.mk. Lean permits beta/zeta (and authorized delta) reductions
             // that expose the same primitive constructor. This fallback
