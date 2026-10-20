@@ -115,7 +115,8 @@ def build(fixtures,output,fixture_only=False):
  if header!=HEADER:raise RuntimeError('SCHEMA_25_COLUMN_IDENTITY_MISMATCH '+repr(header))
  if not fixture_only and ws.max_row !=363202:raise RuntimeError('SCHEMA_ROW_COUNT_MISMATCH '+str(ws.max_row))
  for row in rows:
-  q,a=map(norm,row[:2]);c=canonical_condition(row[2]);q=q.upper();a=a.upper()
+  raw_q,raw_a=map(norm,row[:2]);c=canonical_condition(row[2])
+  q=raw_q.split('_',1)[0].upper();a=raw_a.split('_',1)[0].upper()
   if c not in all_conditions:
    if c:raise RuntimeError('UNRECOGNISED_CONDITION '+c)
    continue
@@ -128,7 +129,8 @@ def build(fixtures,output,fixture_only=False):
   if qs=='target' and c not in known:
    # No numeric read, no missingness/coverage counters and no result metadata.
    continue
-  ident=q+'|'+a
+  # Keep the native allele identity for source-native evidence; group only by systematic gene.
+  ident=raw_q.upper()+'|'+raw_a.upper()
   obs_conditions.add(c)
   item=record.setdefault((qs,ident),{'q':q,'a':a,'seen':{}})
   if c in item['seen']:
@@ -167,7 +169,13 @@ def build(fixtures,output,fixture_only=False):
    target.append({'id':ident,'q':item['q'],'a':item['a'],'x':x})
  train.sort(key=lambda t:t['id'])
  target.sort(key=lambda t:hashlib.sha256((SEED+'|choice|'+t['id']).encode()).hexdigest())
- target=target[:MAX_TARGETS]
+ # Count a biological systematic gene pair only once despite possible alleles.
+ seen_gene_pairs=set();unique_targets=[]
+ for t in target:
+  k=(t['q'],t['a'])
+  if k in seen_gene_pairs:continue
+  seen_gene_pairs.add(k);unique_targets.append(t)
+ target=unique_targets[:MAX_TARGETS]
  if len(train)<1000 or len(target)<40:
   raise RuntimeError('INAPPLICABLE_TOO_FEW_INDEPENDENT_TRAIN_OR_TEST_GENES '
                      +json.dumps({'train':len(train),'target':len(target)}))

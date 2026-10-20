@@ -50,7 +50,7 @@ def gen(dest,poison=False):
      if role=='target' and not known and poison:
       if (idx+ci)%2==0:v=None;p=None
       else:v=-0.4;p=0.0000001
-     row=[q,a,c,'q','a',0,0,0,0,None,0,0,0.02,0.001,0.5,
+     row=[q+'_tsq900',a+'_dma500',c,'q','a',0,0,0,0,None,0,0,0.02,0.001,0.5,
           v,v,v,0.002 if v is not None else None,p,'','','',0.04,0.4]
      ws.append(row)
  g.save(dest/prepare.RESULTS_FILE)
