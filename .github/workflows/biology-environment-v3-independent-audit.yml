@@ -1,0 +1,44 @@
+name: Biology 2021 independent raw-source and warrant audit V2
+on:
+  push:
+    branches:
+      - research/biology-environment-v3-independent-audit-v2-20261020
+    paths:
+      - 'research/biology_environment_v3_independent_audit_v2/**'
+      - '.github/workflows/biology-environment-v3-independent-audit.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  independent-raw-source-replay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install 'numpy==2.1.3' 'openpyxl==3.1.5'
+      - name: Reacquire exact immutable held-out artifact IDs from original CI run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p source/allowed source/sealed source/result
+          gh run download 39349577864 --repo heathsanchez/test --name biology-environment-v3-allowlisted-input --dir source/allowed
+          gh run download 39349577864 --repo heathsanchez/test --name biology-environment-v3-sealed-choices --dir source/sealed
+          gh run download 39349577864 --repo heathsanchez/test --name biology-environment-v3-independent-result --dir source/result
+          sha256sum source/allowed/allowed.json source/sealed/sealed_predictions.json source/result/outcome_report.json source/result/per_target_receipt.json
+      - name: Reparse the original source and independently replay each target and claim
+        run: |
+          python research/biology_environment_v3_independent_audit_v2/audit.py \
+            --allowed source/allowed/allowed.json \
+            --sealed source/sealed/sealed_predictions.json \
+            --report source/result/outcome_report.json \
+            --receipts source/result/per_target_receipt.json \
+            --out out/audit
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: biology-2021-independent-source-audit-v2
+          path: out/audit/independent_source_audit.json
