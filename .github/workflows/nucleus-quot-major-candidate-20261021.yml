@@ -34,8 +34,9 @@ jobs:
         run: |
           set -euo pipefail
           python3 .github/scripts/nucleus_quot_major_candidate_20261021.py metatron-kernel/src/machine.rs
+          python3 .github/scripts/nucleus_paired_proof_lambda_candidate_20261021.py metatron-kernel/src/convert.rs
           git diff --check
-          git diff -- metatron-kernel/src/machine.rs > /tmp/evidence/opt-in-quotient-major-candidate.diff
+          git diff -- metatron-kernel/src/machine.rs metatron-kernel/src/convert.rs > /tmp/evidence/opt-in-quotient-major-candidate.diff
           cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
           cp metatron-kernel/target/release/metatron-kernel /tmp/quot/candidate
           sha256sum /tmp/quot/unchanged /tmp/quot/candidate > /tmp/evidence/binaries.sha256
@@ -59,12 +60,15 @@ jobs:
             for name,path in controls.items():
               env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
               env['NUCLEUS_TRACE_DOWNSTREAM']='1'
-              if enabled: env['NUCLEUS_EXPERIMENTAL_QUOT_MAJOR']='1'
+              if enabled:
+                env['NUCLEUS_EXPERIMENTAL_QUOT_MAJOR']='1'
+                env['NUCLEUS_EXPERIMENTAL_PAIRED_PROOF_LAMBDA']='1'
               if enabled and name=='original-source':
                 env['NUCLEUS_TRACE_QUOT_MAJOR']='1'
                 env['NUCLEUS_TRACE_VALUE_MISMATCH']='1'
                 env['NUCLEUS_TRACE_CONSTRUCTOR_MISMATCH']='1'
                 env['NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE']='1'
+                env['NUCLEUS_TRACE_PAIRED_PROOF_LAMBDA']='1'
               with path.open('rb') as f:
                 r=subprocess.run([binary],stdin=f,capture_output=True,timeout=120,env=env)
               lines=r.stderr.decode(errors='replace').splitlines()
@@ -72,7 +76,7 @@ jobs:
                    'source_sha256':hashlib.sha256(path.read_bytes()).hexdigest(),
                    'terminal':[x for x in lines if x.startswith('NUCLEUS_DOWNSTREAM:')][-1:],
                    'reduced_majors':[x for x in lines if x.startswith(('NUCLEUS_QUOT_MAJOR:','NUCLEUS_QUOT_MAJOR_EXPOSED:'))][:24],
-                   'value_mismatch':[x for x in lines if x.startswith(('NUCLEUS_VALUE_MISMATCH:','NUCLEUS_CONSTRUCTOR_MISMATCH:','NUCLEUS_APPLICATION_FUNCTION_TYPE:'))][:16]}
+                   'value_mismatch':[x for x in lines if x.startswith(('NUCLEUS_VALUE_MISMATCH:','NUCLEUS_CONSTRUCTOR_MISMATCH:','NUCLEUS_APPLICATION_FUNCTION_TYPE:','NUCLEUS_PAIRED_PROOF_LAMBDA:'))][:16]}
               rows.append(row)
               print('NUCLEUS_QUOT_CANDIDATE='+json.dumps(row),flush=True)
           (root/'native-quotient-comparison.json').write_text(json.dumps(rows,indent=2)+'\n')
