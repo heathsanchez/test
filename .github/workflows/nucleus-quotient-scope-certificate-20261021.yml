@@ -1,0 +1,86 @@
+name: Nucleus original Quotient scope certificate 20261021
+on:
+  push:
+    branches: [research/nucleus-quotient-scope-certificate-20261021]
+    paths:
+      - '.github/workflows/nucleus-quotient-scope-certificate-20261021.yml'
+      - '.github/scripts/nucleus_quotient_scope_certificate_20261021.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  original-source-scope:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      GH_TOKEN: ${{ github.token }}
+      ORIGINAL_ARTIFACT: '12150779957'
+      EXACT_SOURCE_SHA: da02144b2d6109c86e5067b1e987744c2122820629bc8ece04dfb276f243239b
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Freeze untouched checker and exact pinned native source
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/nucleus /tmp/original /tmp/evidence
+          git rev-parse HEAD > /tmp/evidence/research-commit.txt
+          git rev-parse HEAD:metatron-kernel > /tmp/evidence/unchanged-kernel-tree.txt
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus/unchanged
+          gh api "repos/heathsanchez/test/actions/artifacts/$ORIGINAL_ARTIFACT/zip" > /tmp/quotient-native-artifact.zip
+          unzip -q /tmp/quotient-native-artifact.zip -d /tmp/original
+          echo "$EXACT_SOURCE_SHA  /tmp/original/quotient-proof.ndjson" | sha256sum -c -
+          python3 .github/scripts/nucleus_quotient_scope_certificate_20261021.py inspect /tmp/original/quotient-proof.ndjson /tmp/evidence/source-scope.json
+      - name: Build diagnostic variant (zero semantic edits)
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/nucleus_quotient_scope_certificate_20261021.py patch metatron-kernel/src/convert.rs
+          git diff --check
+          git diff -- metatron-kernel/src/convert.rs > /tmp/evidence/diagnostic-only.diff
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus/diagnostic
+          sha256sum /tmp/nucleus/* > /tmp/evidence/binaries.sha256
+      - name: Classify original Γ12 obstruction and protect negative controls
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib,subprocess,time
+          cases={
+            'quotient-original':pathlib.Path('/tmp/original/quotient-proof.ndjson'),
+            'false-index':pathlib.Path('metatron-kernel/tests/fixtures/protected-false-index.ndjson'),
+            'eta-constructor-alias':pathlib.Path('metatron-kernel/tests/fixtures/protected-eta-ctor-alias.ndjson'),
+          }
+          rows=[]
+          for variant,binary in (
+                ('unchanged','/tmp/nucleus/unchanged'),
+                ('diagnostic','/tmp/nucleus/diagnostic')):
+              for name,path in cases.items():
+                env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+                env['NUCLEUS_TRACE_DOWNSTREAM']='1'
+                if variant=='diagnostic' and name=='quotient-original':
+                  env['NUCLEUS_TRACE_NEUTRAL_HEADS']='1'
+                  env['NUCLEUS_TRACE_QUOTIENT_SCOPE']='1'
+                before=time.monotonic()
+                with path.open('rb') as src:
+                  outcome=subprocess.run([binary],stdin=src,capture_output=True,timeout=120,env=env)
+                messages=outcome.stderr.decode(errors='replace').splitlines()
+                row={'variant':variant,'case':name,'rc':outcome.returncode,
+                     'sha256':hashlib.sha256(path.read_bytes()).hexdigest(),
+                     'seconds':round(time.monotonic()-before,4),
+                     'terminal':[x for x in messages if x.startswith('NUCLEUS_DOWNSTREAM:')][-2:],
+                     'scope':[x for x in messages if x.startswith('NUCLEUS_QUOTIENT_SCOPE:')][:4]}
+                rows.append(row)
+                print('NUCLEUS_SCOPE_EXPERIMENT='+json.dumps(row,ensure_ascii=False),flush=True)
+          pathlib.Path('/tmp/evidence/qualified-scope-rows.json').write_text(json.dumps(rows,indent=2,ensure_ascii=False)+'\n')
+          assert len(rows)==6
+          assert all(r['rc']==2 for r in rows if r['case']=='quotient-original'), 'DIAGNOSTICS_CHANGED_VALID_VERDICT'
+          assert all(r['rc'] in (1,2) for r in rows if r['case']!='quotient-original'), 'UNSAFE_NEGATIVE'
+          assert len([r for r in rows if r['case']=='quotient-original' and r['variant']=='diagnostic' and r['scope']])==1, 'NO_SCOPE_WITNESS'
+          assert all(rows[i]['rc']==rows[i+3]['rc'] and rows[i]['terminal']==rows[i+3]['terminal'] for i in range(3)), 'DIAGNOSTICS_CHANGED_OUTCOME'
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-quotient-scope-certificate-${{ github.sha }}
+          path: /tmp/evidence/
+          if-no-files-found: warn
