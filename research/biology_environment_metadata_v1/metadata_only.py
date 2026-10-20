@@ -24,6 +24,11 @@ for role,(fn,md5) in FILES.items():
   values=[str(v)[:120] if v is not None else "" for v in header] if header is not None else []
   rec["sheets"].append({"name":sheet.title,"max_row":sheet.max_row,"max_column":sheet.max_column,
                         "first_row_first_30_headers":values[:30],"nonempty_header_count":sum(bool(v) for v in values)})
+ if role=="interactions":
+  sh=wb["Diagnostic array_complete"]
+  itr=sh.iter_rows(values_only=True)
+  next(itr)
+  rec["identity_sample"]=[[str(v)[:100] for v in row[:3]] for _,row in zip(range(12),itr)]
  wb.close()
  out["files"][role]=rec
  dest.unlink()
