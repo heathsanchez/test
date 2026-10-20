@@ -1,0 +1,20 @@
+name: 2021 consensus source README only
+on:
+  push:
+    branches: ['research/biology-2021-consensus-metadata-20261020']
+    paths:
+      - 'research/biology_2021_consensus_metadata/readme_only.py'
+      - '.github/workflows/biology-2021-consensus-readme.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  readme-only:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install 'openpyxl==3.1.5'
+      - run: python research/biology_2021_consensus_metadata/readme_only.py
