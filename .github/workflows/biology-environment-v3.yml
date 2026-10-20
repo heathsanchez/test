@@ -1,0 +1,75 @@
+name: Biology environmental distinction 2021 V3 gene-disjoint
+on:
+  push:
+    branches:
+      - research/biology-environment-v3-20261020
+    paths:
+      - 'research/biology_environment_v3/**'
+      - '.github/workflows/biology-environment-v3.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-steward:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Frozen parsing dependencies
+        run: pip install 'openpyxl==3.1.5'
+      - name: Authenticate exact source and extract allowed observations only
+        run: python research/biology_environment_v3/prepare.py --output out/allowed
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: biology-environment-v3-allowlisted-input
+          path: out/allowed/allowed.json
+  predictor:
+    needs: source-steward
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install 'numpy==2.1.3' 'scikit-learn==1.6.1'
+      - uses: actions/download-artifact@v4
+        with:
+          name: biology-environment-v3-allowlisted-input
+          path: in/allowed
+      - name: Authenticate target isolation + precommit all method choices
+        run: python research/biology_environment_v3/predict.py --allowed in/allowed/allowed.json --out out/prediction
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: biology-environment-v3-sealed-choices
+          path: out/prediction/sealed_predictions.json
+  independent-evaluator:
+    needs: predictor
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install 'openpyxl==3.1.5' 'numpy==2.1.3'
+      - uses: actions/download-artifact@v4
+        with:
+          name: biology-environment-v3-allowlisted-input
+          path: in/allowed
+      - uses: actions/download-artifact@v4
+        with:
+          name: biology-environment-v3-sealed-choices
+          path: in/prediction
+      - name: First read of protected candidate outcomes by independent evaluator
+        run: python research/biology_environment_v3/evaluate.py --allowed in/allowed/allowed.json --sealed in/prediction/sealed_predictions.json --out out/evaluation
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: biology-environment-v3-independent-result
+          path: out/evaluation/
