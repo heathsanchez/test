@@ -26,9 +26,17 @@ rneedle="if entries.completed_replay_count>=8192 {"
 assert mtext.count(bneedle)==1,("beta binding source mismatch",mtext.count(bneedle))
 assert mtext.count(rneedle)==1,("completed recursor source mismatch",mtext.count(rneedle))
 if arm in ("bindings","both"):
-    mtext=mtext.replace(bneedle,"if entries.bindings.len()<32768 {entries.bindings.insert(key,frame.clone());}")
+    # Preserve the original native-test assertion by default; enable a
+    # larger SOURCE-EXACT interner only during the isolated A/B.
+    mtext=mtext.replace(
+        bneedle,
+        'if entries.bindings.len() < (if std::env::var_os("NUCLEUS_EXPERIMENTAL_BINDING_CACHE_GROWTH").is_some() {32768} else {8192}) {entries.bindings.insert(key,frame.clone());}'
+    )
 if arm in ("replays","both"):
-    mtext=mtext.replace(rneedle,"if entries.completed_replay_count>=32768 {")
+    mtext=mtext.replace(
+        rneedle,
+        'if entries.completed_replay_count >= (if std::env::var_os("NUCLEUS_EXPERIMENTAL_REPLAY_CACHE_GROWTH").is_some() {32768} else {8192}) {'
+    )
 m.write_text(mtext)
 if arm=="fuel4x":
     s=c.read_text();old="judgment_steps: 65_536,"
