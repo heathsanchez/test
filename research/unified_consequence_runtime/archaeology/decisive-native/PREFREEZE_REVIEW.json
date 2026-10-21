@@ -1,0 +1,34 @@
+{
+  "schema": "UDM_DECISIVE_PREFREEZE_REVIEW_V1",
+  "status": "IMPLEMENTATION_FIXTURE_QUALIFIED_ONLY; NATIVE_SCIENCE_PENDING",
+  "untouchedness": "No target source or author-test bytes, upstream fixes, target outcomes or native tasks were accessed by implementation/review team before this commit. Curator accessed metadata/blob identifiers only.",
+  "tests": [
+    {
+      "path": "PREFREEZE_100_CONTRACTS.log",
+      "count": 100,
+      "status": "PASS",
+      "seconds": 89.181,
+      "boundary": "Before additional retained-constructor API; original interfaces included"
+    },
+    {
+      "path": "PREFREEZE_21_CONSTRUCTOR_DRIVER_CONTRACTS.log",
+      "count": 21,
+      "status": "PASS",
+      "seconds": 6.95,
+      "boundary": "Added constructor and final native profile/causal driver contracts; fixtures, not prospective results"
+    }
+  ],
+  "preserved_failure": "PRESERVED_PREFREEZE_FIXTURE_FAILURE.log: 100 tests,1 mocked authority fixture error; fixed fixture missing test_source_sha256, productionvalidation unchanged",
+  "coverage": {
+    "test_branch_refs_enumerated": 1970,
+    "all_branch_contents_read": false,
+    "canonical_capability_rows_preserved": 70,
+    "frozen_runtime_python_files": 58,
+    "frozen_files": 64
+  },
+  "G2": "UNKNOWN_PENDING_NATIVE_RESULTS",
+  "G3": "UNKNOWN_PENDING_NATIVE_RESULTS",
+  "G4": "UNKNOWN_FULL_COSTS_AND_MATCHED_RESULTS_PENDING",
+  "G5": "UNKNOWN_NO_PYTHON_REFINEMENT",
+  "G6": "UNKNOWN_NO_NONBYPASSABLE_MONITOR"
+}

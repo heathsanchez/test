@@ -1,0 +1,32 @@
+name: UDM native admission v2 qualification
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [research/udm-native-admission-v2-20261021]
+permissions:
+  contents: read
+jobs:
+  source-policy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Native parser and source-only admission regressions
+        run: |
+          python3 -m unittest -v \
+            research.unified_consequence_runtime.test_admission_v2_candidate \
+            research.unified_consequence_runtime.test_decisive_task_admission
+      - name: Verify no changed author verifier was imported into original frozen branch
+        run: |
+          git show HEAD:research/unified_consequence_runtime/decisive_native_verify.py | sha256sum
+          sha256sum research/unified_consequence_runtime/decisive_native_verify.py
+          echo "Research candidate source is deliberately distinct; prior V1 receipts remain bound to original bytes."
+      - name: Exact historical author test blobs and AST authority
+        run: python3 -m research.udm_author_test_admission_20261021.authentic_historical
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: udm-v2-historical-authentic-admission
+          path: historical-author-tests-admission.json
+          if-no-files-found: warn

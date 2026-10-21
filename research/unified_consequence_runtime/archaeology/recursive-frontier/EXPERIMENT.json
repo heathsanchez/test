@@ -1,0 +1,84 @@
+{
+  "schema": "udm.recursive-native-frontier.protocol.v1",
+  "predecessor_commit": "c03dc55669a7a0e141a5661f53d0230ff7066547",
+  "qualified_source": "34943a589787142e52657d05b0c3021dab5860e3",
+  "target": {
+    "repository": "urllib3/urllib3",
+    "commit": "a37bc93b65d6bcf00d3dc43d966bab6bd130ecd8"
+  },
+  "control": {
+    "repository": "tkem/cachetools",
+    "commit": "f4f288579dc3c8f82f62d0eaca7774303d9d3768"
+  },
+  "authority": {
+    "effects": "PINNED_LOCAL_RESEARCH_AND_NATIVE_TESTS",
+    "acquisition_grants_external_permissions": false,
+    "nonbypassable_enforcement": "UNKNOWN"
+  },
+  "setup": {
+    "python": "3.12",
+    "pip": "24.3.1",
+    "pytest": "8.3.5",
+    "project_install": ".[test]",
+    "manual_target_specific_fixes": false
+  },
+  "verifier": {
+    "kind": "IMMUTABLE_UPSTREAM_FULL_PYTEST_SUITE",
+    "selected_tests": false,
+    "empty_or_skipped_only": "UNKNOWN",
+    "collection_or_environment_error": "UNKNOWN",
+    "timeout": "UNKNOWN",
+    "assertion_failure": "FAIL_NATIVE",
+    "pass": "NONEMPTY_EXECUTED_TESTS_NO_ERRORS_NO_FAILURES_AND_EXIT0",
+    "partially_skipped": "UNKNOWN_PARTIAL_SKIP"
+  },
+  "budget": {
+    "new_rewrite_horizon": 1,
+    "maximum_candidate_tests": 541,
+    "native_test_horizon_seconds": 7,
+    "candidate_search_seconds_per_condition": 180,
+    "original_program_cap_per_file": 320
+  },
+  "observation_language": {
+    "supplied": "SOURCE_PINNED_PYTEST_XML_COUNTS_AND_RAW_OUTPUT",
+    "new_native_diagnostic_acquisition": "REQUIRES_SEPARATE_INDEPENDENT_NATIVE_SEMANTIC_BINDING"
+  },
+  "constructor_language": {
+    "repository": "heathsanchez/triskelion",
+    "commit": "426c54f7c774560e0fabe7213c5ef333b1327c71",
+    "path": "experiments/METALOGIC_V104_GENERIC_CONSTRUCTOR_SYNTHESIS.py",
+    "sha256": "d00301852efd278be8ac22b848e0c9e56ced7c574980753b2ebc2ef0a3b7cce9",
+    "definitions": [
+      "h",
+      "nodes_for_selector",
+      "build_expr",
+      "program_candidates"
+    ],
+    "assignments": [
+      "SEED",
+      "PROGRAM_CAP",
+      "SELECTORS",
+      "BUILDERS"
+    ],
+    "order": "LEXICOGRAPHIC_PRODUCTION_PYTHON_FILES_THEN_ORIGINAL_GENERATOR_ORDER",
+    "primitive_grammar_supplied": true
+  },
+  "developmental_policy": {
+    "status": "NO_NATIVE_ACQUISITION_BINDING_CURRENTLY_WARRANTED",
+    "historical_statistic_and_ranking_kernels": "RECOVERED_NOT_INSTALLED"
+  },
+  "conditions": [
+    "cold",
+    "O1_only",
+    "O1_O2",
+    "O1_O2_O3",
+    "sham",
+    "ancestor_withdrawal",
+    "unrelated_withdrawal",
+    "fresh_restoration",
+    "separate_process_restart",
+    "equally_informed_executable_ledger"
+  ],
+  "promotion": "NO_GENERATION_OR_ACQUISITION_FROM_TIMEOUT_ENVIRONMENT_ERROR_OR_ALREADY_SATISFIED_OBLIGATION; NO_ROLE_IS_FILLED_BY_A_HISTORICAL_RECEIPT",
+  "prospective_boundary": "NO_TARGET_SOURCE_TESTS_OR_OUTCOMES_BEFORE_EXACT_IMPLEMENTATION_FREEZE; GLOBAL_PRIOR_EXPOSURE_UNKNOWN"
+}

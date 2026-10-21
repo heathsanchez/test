@@ -1,0 +1,182 @@
+{
+  "schema": "udm.recursive-verifier-independent-source-review.v1",
+  "reviewer": "/root/native_boundary_review",
+  "reviewed_at_utc": "2026-10-15T18:05:35.465647+00:00",
+  "mode": "READ_ONLY_SOURCE_REVIEW_AND_LOCAL_GIT_FIXTURE_CONTROLS; NO_TARGET_ACCESS",
+  "target_access": {
+    "source": false,
+    "tests": false,
+    "outcomes": false,
+    "caches": false,
+    "execution": false
+  },
+  "verifier_verdict": "PASS_BOUNDED_PREFREEZE_SOURCE_REVIEW_29_CONTRACTS",
+  "worker_sha256": "741d5c6a8b33faf4198d860aee2343a2a44bec55e8a161561e422bb512efa7db",
+  "test_sha256": "bc89eec9df9dc1d013b72ac9feed49bdb4a6d1a017c11cb03cd231a450effc87",
+  "independent_execution": {
+    "command": "/workspace/generic-verifier-test-venv/bin/python -B -m unittest research.unified_consequence_runtime.test_generic_native_verify -v",
+    "tests": 29,
+    "result": "PASS",
+    "seconds": 26.219,
+    "log": "/workspace/qualification/recursive-verifier-independent-contracts-final-29.log",
+    "log_sha256": "ca8f77d70ef35368ffb0e357a85ab33a532229c511474e4fc0bd9723631d61f4"
+  },
+  "decisive_findings": [
+    {
+      "id": "DEFAULT_SUFFIX_TEST_PATCH",
+      "original_source_sha256": "0cb1785549cb4bdecc1ad34513a0866dc057420264827ea5841ab91816fd2115",
+      "problem": "Tracked *_test.py was candidate-eligible despite default pytest authority.",
+      "resolution": "Default prefix/suffix and immutable original configured python_files patterns now deny candidate replacement.",
+      "verification": "Final independent 29-test suite includes actual suffix-named test candidate rejection."
+    },
+    {
+      "id": "PYTEST_SOURCE_SHADOW",
+      "original_source_sha256": "0cb1785549cb4bdecc1ad34513a0866dc057420264827ea5841ab91816fd2115",
+      "problem": "Repository pytest.py shadowed independent installed pytest and forged PASS although native assertion was False.",
+      "independently_reproduced": true,
+      "resolution": "Import distribution-bound pytest before project sys.path; bind actual pytest import path/hash to environment identity and receipt.",
+      "verification": "Independent fixed native probe produced FAIL_NATIVE with real failure; final source 29-test control confirms."
+    },
+    {
+      "id": "PARTIAL_SKIP_FALSE_PASS",
+      "original_source_sha256": "0cb1785549cb4bdecc1ad34513a0866dc057420264827ea5841ab91816fd2115",
+      "problem": "Candidate induced skip of protected module while unrelated test passed; worker wrongly returned PASS_NATIVE.",
+      "independently_reproduced": true,
+      "resolution": "Any partial skip yields UNKNOWN_PARTIAL_SKIP; skipped-only/no-test remains UNKNOWN_NO_TEST_EXECUTION.",
+      "verification": "Independent actual fixed probe and final 29-test contract."
+    },
+    {
+      "id": "CUSTOM_PATTERN_TEST_PATCH",
+      "original_source_sha256": "0cb1785549cb4bdecc1ad34513a0866dc057420264827ea5841ab91816fd2115",
+      "problem": "Authoritative check_native.py selected by immutable python_files could be patched from failing assertion to passing assertion.",
+      "independently_reproduced": true,
+      "resolution": "Parse all five standard original configuration forms as data; protect configured patterns and quoted INI forms.",
+      "verification": "Independent direct probe now raises ValueError; final 29-test suite checks all config forms."
+    },
+    {
+      "id": "POSITIONAL_ADDOPTS_TEST_PATCH",
+      "original_source_sha256": "d4438dfd8aa9f4abefaec66aba780578e75d384e51dcabb99bf1c3e702c5d9d9",
+      "problem": "addopts=authority.py explicitly collected an otherwise unprotected authoritative file; candidate replacement turned FAIL into PASS.",
+      "independently_reproduced": true,
+      "resolution": "Any nonempty original addopts is refused as UNKNOWN_INTERFACE before execution. This narrows supported native interfaces.",
+      "verification": "Final independent 29-test contract."
+    },
+    {
+      "id": "EXPLICIT_TESTPATHS_TEST_PATCH",
+      "original_source_sha256": "d4438dfd8aa9f4abefaec66aba780578e75d384e51dcabb99bf1c3e702c5d9d9",
+      "problem": "testpaths=authority.py explicitly collected a nonstandard authoritative test accepted as production.",
+      "independently_reproduced": true,
+      "resolution": "Immutable explicit testpaths and descendants are candidate-denied; unsafe paths/configurations rejected.",
+      "verification": "Final independent 29-test suite includes explicit file and descendant checks."
+    },
+    {
+      "id": "RELATIVE_OUTPUT_SCOPE",
+      "problem": "Relative repo_path previously let absolute output inside source bypass exclusion.",
+      "resolution": "Compare canonical absolute source/output paths.",
+      "verification": "Final independent 29-test contract."
+    },
+    {
+      "id": "UNCHANGED_REPLACEMENT_SHAM",
+      "problem": "Nonempty identical-byte replacement could be labeled language extension.",
+      "resolution": "Reject exact unchanged replacement before native execution; empty replacement list remains activation.",
+      "verification": "Final independent 29-test contract."
+    }
+  ],
+  "preserved_nonreplication": "Proposed -o python_files=authority.py override alone did not reproduce falsePASS; both baseline and candidate returned UNKNOWN_NO_TEST_EXECUTION. Do not cite it as a demonstrated bypass.",
+  "accepted_boundaries": [
+    "Exact immutable git object reconstruction ignores working-tree untracked/ignored import files and git replace objects; tracked symlinks/submodules unsupported.",
+    "Pinned Python executable/version, installed-distribution byte fingerprint and actual pytest distribution import are checked; this is not an exact OS/external-binary or network environment proof.",
+    "Nonzero executed tests, zero skips/errors/failures and exit0 are required for native PASS; timeout/collection/missing environment are UNKNOWN.",
+    "Candidate source-only patch path and source/output canonicality checks provide bounded scientific integrity; no hostile-process all-effects reference monitor is established.",
+    "Native PASS means the declared original suite passed; it does not prove protected improvement, observational novelty, complete grammar exhaustion, O1-dependent discovery or O3 policy acquisition."
+  ],
+  "expanded_runtime_review": {
+    "status": "SOURCE_REVIEW_WITH_ROOT_ACTION_ITEMS_SENT; NOT_END_TO_END_QUALIFICATION",
+    "positive_findings": [
+      "New FLASH evidence kind maps only to installed source-bound native_frontier validator.",
+      "Machine routed generic execution checks exact repository/commit/profile and same warrant state.",
+      "Runtime performs two fresh native verification calls on admission and fresh native execution for consequences; no caller receipt admission parameter.",
+      "Control empty candidate is explicitly ACTIVATION; cut/restoration use exact support and new generation; restart is separate process.",
+      "Controller preserves UNKNOWN for missing verifier/environment and already-satisfied obligations; O1 and O3 are not fabricated from historical kernels."
+    ],
+    "root_action_items": [
+      "Archive pinned control/target native source bytes rather than only upstream commit/hash metadata.",
+      "Snapshot available Machine costs/retention at every save, including early UNKNOWN/failure.",
+      "Validate freeze source_commit against actual HEAD and unchanged original freeze hash in check_freeze."
+    ],
+    "comparative_boundary": "Observed native-status tie alone is not a strong developmental acquisition-cost comparison. Search traces and complete costs remain separate; no O1/O2/O3 superiority is established.",
+    "mission_boundary": "No current controller path creates O1 or O3, so a green workflow can qualify generic admission plus an honest prospective negative/UNKNOWN only, not the requested recursive-development success."
+  },
+  "source_snapshots": [
+    {
+      "path": "research/unified_consequence_runtime/generic_native_verify.py",
+      "sha256": "741d5c6a8b33faf4198d860aee2343a2a44bec55e8a161561e422bb512efa7db"
+    },
+    {
+      "path": "research/unified_consequence_runtime/test_generic_native_verify.py",
+      "sha256": "bc89eec9df9dc1d013b72ac9feed49bdb4a6d1a017c11cb03cd231a450effc87"
+    },
+    {
+      "path": "research/unified_consequence_runtime/native_frontier.py",
+      "sha256": "c257c1c6f1199994baa4915eebde3b79358afebefc16e3ced588ee068bb9dd28"
+    },
+    {
+      "path": "research/unified_consequence_runtime/test_native_frontier.py",
+      "sha256": "7b9c10a7cf2c8ab44ba1951e2893ac2e5a28454ba94407e483d0e22002844399"
+    },
+    {
+      "path": "research/unified_consequence_runtime/qualify_recursive_frontier.py",
+      "sha256": "ce62cd84aa64244b217c2fd98362d66c484a1690bb9aaaf6984ecf522f2b3b36"
+    },
+    {
+      "path": "research/unified_consequence_runtime/test_qualify_recursive_frontier.py",
+      "sha256": "59c2e2e920422d0be6e3d4f4a3eb0347ceed43c224158d1ae5496cd1a7580b74"
+    },
+    {
+      "path": "research/unified_consequence_runtime/developmental_machine.py",
+      "sha256": "4609e5b881abcfb6472d4caa2d542dc9eb1d852cf1c42f00a577aba539ccc241"
+    },
+    {
+      "path": "research/unified_consequence_runtime/cross_frontier.py",
+      "sha256": "bc51d0b1e4c1cb27325baf1e8e67a0f3a4fe769bc5f8916731ded451767e583c"
+    },
+    {
+      "path": "research/unified_consequence_runtime/test_native_frontier_activation.py",
+      "sha256": "99d8fe669b3bc6509738b7c9726d146d1349540a11c62b3c38a4581547c502b0"
+    },
+    {
+      "path": ".github/workflows/udm-recursive-native-frontier.yml",
+      "sha256": "6031145e3466fbc8659339078a49b1f6b9e13c614f5100946f128d2c642e9f73"
+    },
+    {
+      "path": "research/unified_consequence_runtime/archaeology/recursive-frontier/EXPERIMENT.json",
+      "sha256": "ad9cb151b3832c454ec8c29c4587e101618d5feed3fca13f5277bcdb0d590443"
+    }
+  ],
+  "review_artifacts": [
+    {
+      "path": "/workspace/qualification/recursive-verifier-red-probes.json",
+      "sha256": "fe576192b84758a08beac1c294f28962fd4909b15e6b2d9cd124e4378fa6f215"
+    },
+    {
+      "path": "/workspace/qualification/recursive-verifier-shadow-red-probe.json",
+      "sha256": "e2dc7204bc1ab32d6106838397774c9a5434cc7782be32eb9a94a8034c427ad9"
+    },
+    {
+      "path": "/workspace/qualification/recursive-verifier-fixed-probes.json",
+      "sha256": "725cb719a64edc31e886afd797ed0a5da4c06710124247f4a73a5fb865a1d627"
+    },
+    {
+      "path": "/workspace/qualification/recursive-verifier-config-red-probes.json",
+      "sha256": "60177677f007d1d02115d72e3382f30de5aa7050f959748e8294645154deebe0"
+    },
+    {
+      "path": "/workspace/qualification/recursive-verifier-addopts-red-probe.json",
+      "sha256": "fa17f44e7bb42d24b883a076de7467e98fad2addbc9b956726bef8199e3942be"
+    },
+    {
+      "path": "/workspace/qualification/recursive-verifier-independent-contracts-final-29.log",
+      "sha256": "ca8f77d70ef35368ffb0e357a85ab33a532229c511474e4fc0bd9723631d61f4"
+    }
+  ]
+}

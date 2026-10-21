@@ -1,0 +1,27 @@
+{
+  "schema": "UDM_FROZEN_AUTHOR_TEST_BLOBS_V1",
+  "inspection": "Tree metadata only; no source/test bytes, outcomes or production patches inspected",
+  "subjects": {
+    "more-itertools/more-itertools": {
+      "head_commit": "67fcf640477c78605580f5ee703a54c73c1e7a8a",
+      "tree_sha": "67fcf640477c78605580f5ee703a54c73c1e7a8a",
+      "test_blobs": {
+        "tests/test_more.py": "b3a9351595a6fd7f1aa9c1e35978f08106e43df0"
+      }
+    },
+    "python-attrs/attrs": {
+      "head_commit": "91f3695fe70a6d58c95660addd5ef8d46bfebd61",
+      "tree_sha": "91f3695fe70a6d58c95660addd5ef8d46bfebd61",
+      "test_blobs": {
+        "tests/test_validators.py": "5ad2308eb89e6dfa8b0f6362969775b69c692fd6"
+      }
+    },
+    "python-attrs/cattrs": {
+      "head_commit": "5fd1c7f89f6c5f19b91cc5f2758a0fbf7740730b",
+      "tree_sha": "5fd1c7f89f6c5f19b91cc5f2758a0fbf7740730b",
+      "test_blobs": {
+        "tests/test_tuples.py": "c1a9562c3c25ae8e1002aeca00a1ffe34cd2bd24"
+      }
+    }
+  }
+}

@@ -1,0 +1,105 @@
+{
+  "schema": "udm.recursive-native-maintenance.qualification.v1",
+  "mission_completion": "NOT_ACHIEVED_RECURSIVE_GROWTH_UNKNOWN",
+  "source_commit": "b12220df5c77e5b7f5ebcbf6772c059d5f74a4cd",
+  "branch": "research/udm-generic-native-frontier-20261016",
+  "protocol_predecessor": "c03dc55669a7a0e141a5661f53d0230ff7066547",
+  "qualification_mode": "MAINTENANCE_ONLY_NO_TARGET_REEXECUTION",
+  "run_id": 38784959251,
+  "run_url": "https://github.com/heathsanchez/test/actions/runs/38784959251",
+  "run_conclusion": "success",
+  "artifact_id": 11997138093,
+  "artifact_sha256": "0568d30391a9bffd566609f43ef85ef9321f5a9a583e89de67f251e163ce6319",
+  "artifact_bytes": 26582834,
+  "artifact_url": "https://github.com/heathsanchez/test/actions/runs/38784959251/artifacts/11997138093",
+  "verdicts": {
+    "COMPARATIVE_ADVANTAGE": "UNKNOWN",
+    "EXTERNAL_ENFORCEMENT": "UNKNOWN",
+    "GENERIC_ADMISSION": "WARRANTED_BOUNDED_NATIVE_CONTROL",
+    "O1_O2_O3_RECURSIVE_CAUSALITY": "UNKNOWN",
+    "PROSPECTIVE_NATIVE_DISCOVERY": "UNKNOWN"
+  },
+  "control": {
+    "repository": "tkem/cachetools",
+    "commit": "f4f288579dc3c8f82f62d0eaca7774303d9d3768",
+    "native_tests_per_invocation": 346,
+    "native_invocations": 8,
+    "errors": 0,
+    "skips": 0,
+    "acquisition_class": "ACTIVATION_OF_SUPPLIED_NATIVE_TEST_OPERATION"
+  },
+  "contracts": {
+    "run": 211,
+    "failed": 0,
+    "skipped": 10,
+    "seconds": 337.14,
+    "skip_boundary": "Previously qualified optional prepared-TOML-world tests; archived authority reused without historical acquisition rerun"
+  },
+  "formal_evidence_tests": 5,
+  "new_Python_refinement": "UNKNOWN",
+  "retention": {
+    "final_records": 246,
+    "ledger_sha256": "b3696b388d2f3d1df95d819d1026eb9f87f042e93e4300f0cd987073949de9ac",
+    "original_records_retained": 224,
+    "persistent_bytes": 2389585,
+    "CAS_objects": 76,
+    "original_CAS_objects_preserved": 63,
+    "live_ids_original_FLASH_agrees": 187
+  },
+  "restart_retention": {
+    "consequence": "5a8ff95806ec63ccc001e5cf9a6837502eb302f7c4cb02c097251d7d46596b25",
+    "final_ledger_contains_both": true,
+    "parent_continuation": "4f8324d56d4c7ee6c6fbfd68cd356083efa6394ca5c571a879cd091736daa0bd",
+    "status": "PASS"
+  },
+  "total_native_control_wall_seconds": 123.01046361499994,
+  "restart_subprocess_seconds": 16.405244190000076,
+  "cost_boundary": "Full controller wall includes setup, source/environment checking, native validation, reclosure, restoration and restart; nested phase timings are not additive. CI environment setup, contracts, engineering and prior failed attempts remain separate. No cost advantage claimed.",
+  "preserved_negative": {
+    "local_frozen_source": "b450119f81ee0026f8fb0c6d6a9c5b259ebb8e82",
+    "packet": "archaeology/recursive-frontier/FROZEN_B450_NATIVE_PACKET.tar.gz",
+    "verdict": "REJECTED_COMPLETE_RESTART_RETENTION; UNKNOWN_PROSPECTIVE_NATIVE_DEVELOPMENT",
+    "target_native_cases": 0,
+    "cause": "Missing build-generated urllib3._version in immutable source copy",
+    "failed_CI_run": 38783551691,
+    "failed_CI_artifact": 11996434858
+  },
+  "state_snapshot": {
+    "path": "archaeology/recursive-frontier/QUALIFIED_MAINTENANCE_STATE.tar.gz",
+    "sha256": "221bf63764bae79523aa88b09b3487471041c60df4d46e0408e2bb8289673b0d",
+    "bytes": 382700
+  },
+  "workflow_snapshot": {
+    "qualified_source": "b12220df5c77e5b7f5ebcbf6772c059d5f74a4cd",
+    "path": ".github/workflows/udm-recursive-native-frontier.yml",
+    "sha256": "07d0336aca37d8a163b5b87106299117b43984b8eeb8f1039ac556655d833d20",
+    "exact_bytes": "archaeology/recursive-frontier/ARCHIVED_QUALIFIED_WORKFLOW.txt",
+    "boundary": "Provider upload omitted hidden workflow path; exact immutable Git object retained here as nonhidden supplemental evidence. No scientific replay."
+  },
+  "independent_CI_review": {
+    "path": "archaeology/recursive-frontier/INDEPENDENT_GREEN_REVIEW.json",
+    "sha256": "3559addf0fdf3f89e9c1af83e5c70899af2e6f7171a60af7e287e6ed27d7f08a",
+    "native_state_gates_passed": 8,
+    "native_scientific_experiments_repeated_by_reviewer": false
+  },
+  "independent_final_metadata_review": {
+    "path": "archaeology/recursive-frontier/INDEPENDENT_FINAL_METADATA_REVIEW.json",
+    "scope": "Unchanged 70 capability rows, graph/index binding, state archive byte correspondence, qualified workflow supplement and unchanged runtime source"
+  },
+  "scope_limits": [
+    "No native O1/O2/O3 acquired",
+    "No unfamiliar-source protected outcome verified",
+    "No developmental advantage comparison",
+    "No non-bypassable external-effects monitor",
+    "No concrete new Lean refinement",
+    "Sequential parent/child writes; arbitrary concurrent writers/crash atomicity not qualified"
+  ],
+  "archival_boundary": {
+    "ZIP_members_byte_checked": 912,
+    "frozen_source_files": 14,
+    "frozen_files_present_in_provider_payload": 13,
+    "hidden_workflow_omitted": true,
+    "missing_exact_bytes_retained_in_repository": "archaeology/recursive-frontier/ARCHIVED_QUALIFIED_WORKFLOW.txt",
+    "future_only_workflow_change": "include-hidden-files:true; native qualification not repeated for archive-only fix"
+  }
+}

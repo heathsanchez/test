@@ -1,0 +1,361 @@
+[
+  {
+    "repository": "/workspace/repos/msi",
+    "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+    "path": "consequential_core.py",
+    "sha256": "2c8be1f9fde571bfcdba6d1daf8a0e680a9636f697687fd4c128a8b214975ad8",
+    "local_extract": "/workspace/v54-recovery/source/msi/consequential_core.py",
+    "symbols": {
+      "25": "class EquivalenceRelation:",
+      "74": "class ClosureCertificate:",
+      "86": "class PairResidual:",
+      "106": "class ClosureResidual:",
+      "126": "class AcquisitionResidual:",
+      "154": "class DevelopmentState:",
+      "169": "class RefineRepresentation:",
+      "174": "class ReplaceVersionSpace:",
+      "179": "class ExtendLanguage:",
+      "184": "class UpdatePolicy:",
+      "189": "class CoupledRepair:",
+      "201": "class CertifiedRepair:",
+      "215": "class ProvenanceToken:",
+      "222": "def conservative(state: DevelopmentState, repair: Repair) -> bool:",
+      "254": "def residual_resolved_by_representation(residual: PairResidual, representation: EquivalenceRelation) -> bool:",
+      "258": "def residual_belongs_to_state(state: DevelopmentState, residual: Residual) -> bool:",
+      "271": "def certify_repair(",
+      "289": "def compile_repair(state: DevelopmentState, certified: CertifiedRepair) -> tuple[DevelopmentState, ProvenanceToken]:",
+      "321": "def ablate(state: DevelopmentState, token: ProvenanceToken) -> DevelopmentState:",
+      "328": "def quotient_admissible(action: Callable[[Hashable], Hashable], representation: EquivalenceRelation) -> bool:"
+    },
+    "executed": false
+  },
+  {
+    "repository": "/workspace/repos/msi",
+    "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+    "path": "consequential_version_space.py",
+    "sha256": "1494620801a524fce54ae9b87a55ae12b79094875084e883fe2183c044e181f9",
+    "local_extract": "/workspace/v54-recovery/source/msi/consequential_version_space.py",
+    "symbols": {
+      "18": "def _partitions(xs: Tuple[State, ...]):",
+      "31": "def _lawful_under(rel: EquivalenceRelation, dynamics: Dynamics) -> bool:",
+      "41": "def coarsest_representation_repairs(",
+      "70": "def discriminating_pairs(",
+      "91": "def update_version_space_from_pair_answer("
+    },
+    "executed": false
+  },
+  {
+    "repository": "/workspace/repos/msi",
+    "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+    "path": "consequential_certification.py",
+    "sha256": "8e0a5199ba9597d463674caef6d7b66e2aefb28431075be2a7d0cddf2d58c727",
+    "local_extract": "/workspace/v54-recovery/source/msi/consequential_certification.py",
+    "symbols": {
+      "28": "def kernel_fingerprint(rel: EquivalenceRelation):",
+      "40": "def certify_representation_repair(",
+      "80": "def certify_language_extension(",
+      "96": "def certify_finite_table_language_extension(",
+      "127": "def certify_kernel_policy_update(",
+      "150": "def certify_policy_update("
+    },
+    "executed": false
+  },
+  {
+    "repository": "/workspace/repos/msi",
+    "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+    "path": "tests/test_constructor_genesis.py",
+    "sha256": "d66d4142730e853a07128dee9e501f31e8c51adf13a92b30d51c820c8976b156",
+    "local_extract": "/workspace/v54-recovery/source/msi/tests/test_constructor_genesis.py",
+    "symbols": {
+      "5": "def compose(f, g):",
+      "10": "def identity(n):",
+      "14": "def closure(generators, n):",
+      "27": "def generate_terms(max_depth=3):",
+      "48": "def eval_term(term, f, g, x):",
+      "57": "def term_map(term, f, g, n):",
+      "61": "def true_map(f, g):",
+      "65": "def first_counterexample(term, algebra, n):",
+      "77": "def learn_constructor(algebra, n, max_depth=3):",
+      "102": "def op_equal_on_algebra(term, algebra, n):",
+      "106": "def identity_holds(term, algebra, n):",
+      "116": "def assoc_holds(term, algebra, n):",
+      "132": "class ConstructorGenesis(unittest.TestCase):"
+    },
+    "executed": false
+  },
+  {
+    "repository": "/workspace/repos/msi",
+    "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+    "path": "tests/test_recursive_developmental_compounding.py",
+    "sha256": "aad4e6785678a8156ca87537736916a93661f5a04d022af36369554ba9dcdac0",
+    "local_extract": "/workspace/v54-recovery/source/msi/tests/test_recursive_developmental_compounding.py",
+    "symbols": {
+      "40": "def residual(labels, queries, chosen):",
+      "52": "def sufficient(labels, queries, chosen):",
+      "56": "def query_fingerprint(column):",
+      "66": "def relation(queries, chosen, n):",
+      "75": "def quotient_admissible(action, queries, chosen):",
+      "80": "def cold_episode(labels, queries, order, budget):",
+      "98": "def compile_policy(queries, order, certified_residual_history):",
+      "118": "def policy_episode(labels, queries, order, budget, policy, literal_priority=()):",
+      "154": "class RecursiveDevelopmentalCompounding(unittest.TestCase):"
+    },
+    "executed": false
+  },
+  {
+    "repository": "/workspace/repos/msi",
+    "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+    "path": "tests/test_blind_recursive_cross_grammar_genesis.py",
+    "sha256": "68ed2bc3129d90b13ebdd47a38474d4fb0149b25f96c6db8dfaa47155a19d2d1",
+    "local_extract": "/workspace/v54-recovery/source/msi/tests/test_blind_recursive_cross_grammar_genesis.py",
+    "symbols": {
+      "15": "def truth_mask(nvars, fn):",
+      "22": "def lift_unary(table, x, width):",
+      "29": "def lift_binary(table, x, y, width):",
+      "38": "class Grammar:",
+      "53": "def synthesize_costs(nvars, grammar, macros=()):",
+      "87": "class Expr:",
+      "97": "def synthesize_programs(nvars, grammar, macros=()):",
+      "146": "def frozen_task_split():",
+      "158": "def discover_interface(grammar, training):",
+      "173": "def swap_inputs(table):",
+      "180": "def interface_orbit(seed):",
+      "198": "def full_block(a, b, carry_in):",
+      "204": "class Plan:",
+      "217": "def source_value(name, carry, cin):",
+      "227": "def eval_plan(plan, block, block_width, a, b, cin):",
+      "247": "def target_block(width, a, b, cin):",
+      "252": "def learn_doubling_interface(block, block_width):",
+      "279": "class BlindRecursiveCrossGrammarGenesis(unittest.TestCase):"
+    },
+    "executed": false
+  },
+  {
+    "repository": "/workspace/repos/msi",
+    "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+    "path": "tests/test_generated_constructor_genesis.py",
+    "sha256": "d14498dc71bc54a9b42c5e64865e03396584d1ec4f106ffa9e8c8208122049ff",
+    "local_extract": "/workspace/v54-recovery/source/msi/tests/test_generated_constructor_genesis.py",
+    "symbols": {
+      "10": "def neg(x): return 1 - x",
+      "11": "def meet(x, y): return x & y",
+      "12": "def kernel(col):",
+      "17": "def eval_expr(e, a, b):",
+      "26": "def truth(e):",
+      "30": "def partition(t):",
+      "34": "def behavioural_generate(max_depth):",
+      "70": "def combine(t, left, right):",
+      "74": "def repairs(t, hidden):",
+      "79": "def parity_tasks():",
+      "86": "def synthesize(tasks, max_depth=8):",
+      "95": "class GeneratedConstructorGenesis(unittest.TestCase):"
+    },
+    "executed": false
+  },
+  {
+    "repository": "/workspace/repos/msi",
+    "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+    "path": "tests/test_endogenous_genesis.py",
+    "sha256": "c49eeae8f6041996aa3c9408667490fb9edd30b1859dc6bf025f854d1d6e2ad3",
+    "local_extract": "/workspace/v54-recovery/source/msi/tests/test_endogenous_genesis.py",
+    "symbols": {
+      "7": "def all_map_signatures(n):",
+      "11": "def compose_sig(f, g):",
+      "15": "def action_closure(generators, n):",
+      "29": "class EndogenousGenesis(unittest.TestCase):"
+    },
+    "executed": false
+  },
+  {
+    "repository": "/workspace/repos/msi",
+    "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+    "path": "tests/test_residual_morphism_class_genesis.py",
+    "sha256": "07f2714174cfa4e29ce003d5558ddd2f8ec386eec455cfab83f6a1f39c9ac9e6",
+    "local_extract": "/workspace/v54-recovery/source/msi/tests/test_residual_morphism_class_genesis.py",
+    "symbols": {
+      "5": "def kernel(obs):",
+      "10": "def meet_kernel(*observations):",
+      "18": "def induced_observation(v, f):",
+      "22": "def has_live_residual(v, t):",
+      "27": "def licensed_candidate(v, t, f):",
+      "41": "class ResidualMorphismClassGenesis(unittest.TestCase):"
+    },
+    "executed": false
+  },
+  {
+    "repository": "/workspace/repos/msi",
+    "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+    "path": "lean/BlindRecursiveCrossGrammarGenesis.lean",
+    "sha256": "e75c88048245315527274877cde571cc436c99d2369f70e1cf85a36171e4bea6",
+    "local_extract": "/workspace/v54-recovery/source/msi/lean/BlindRecursiveCrossGrammarGenesis.lean",
+    "symbols": {
+      "10": "def u06 (a b : Bool) : Bool := a != b",
+      "11": "def u11 (a b : Bool) : Bool := a || !b",
+      "12": "def u02 (a b : Bool) : Bool := a && !b",
+      "13": "def u09 (a b : Bool) : Bool := a == b",
+      "15": "def az0 (a b : Bool) : Bool := !(a && b)",
+      "16": "def by1 (a b : Bool) : Bool := a && b",
+      "17": "def cx1 (a b : Bool) : Bool := a || b",
+      "21": "def azSum (a b c : Bool) : Bool := u06 (u06 a b) c",
+      "22": "def azCarry (a b c : Bool) : Bool := az0 (az0 (u06 a b) c) (az0 a b)",
+      "24": "def bySum (a b c : Bool) : Bool := u06 (u06 a b) c",
+      "25": "def byCarry (a b c : Bool) : Bool := u06 (by1 (u06 a b) (u06 a c)) a",
+      "27": "def cxSum (a b c : Bool) : Bool := u09 (u09 a b) c",
+      "28": "def cxCarry (a b c : Bool) : Bool := u09 (cx1 (u09 a b) (u09 a c)) a",
+      "30": "def expectedSum (a b c : Bool) : Bool := u06 (u06 a b) c",
+      "31": "def expectedCarry (a b c : Bool) : Bool :=",
+      "48": "def bitsLE (n width : Nat) : List Bool :=",
+      "51": "def ripple : List Bool \u2192 List Bool \u2192 Bool \u2192 List Bool",
+      "56": "def rippleCorrectAt (width a b carry : Nat) : Bool :=",
+      "68": "def isolatedTwoBitHalves (a b carry : Nat) : Nat :=",
+      "73": "def cutCarryAtTwo (a b carry : Nat) : List Bool :="
+    },
+    "executed": false
+  },
+  {
+    "repository": "/workspace/repos/msi",
+    "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+    "path": "lean/ResidualRegimeBridge.lean",
+    "sha256": "9c2eef9ef1a78845b31e650f869e33f9556552d03aa48caed5b95437ea5159ca",
+    "local_extract": "/workspace/v54-recovery/source/msi/lean/ResidualRegimeBridge.lean",
+    "symbols": {
+      "14": "def KernelOf (c : M) (x y : X) : Prop :=",
+      "19": "def Residual (B : List M) (c : M) : Prop :=",
+      "25": "def AdmissibleRepair (B : List M) (c : M) (R : X \u2192 X \u2192 Prop) : Prop :=",
+      "91": "def eqBySetoid (B : List M) : Setoid X where",
+      "109": "def CanDescend (B : List M) (c : M) : Prop :="
+    },
+    "executed": false
+  },
+  {
+    "repository": "/workspace/repos/msi",
+    "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+    "path": "DEVELOPMENTAL_REGIME_GENESIS_CAPSTONE.md",
+    "sha256": "a0d04fb646e919acd01182a774dda2ba42ec874597b42cf7c6187ca53bf4ed90",
+    "local_extract": "/workspace/v54-recovery/source/msi/DEVELOPMENTAL_REGIME_GENESIS_CAPSTONE.md",
+    "symbols": {},
+    "executed": false
+  },
+  {
+    "repository": "/workspace/repos/msi",
+    "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+    "path": "ENDOGENOUS_GENESIS.md",
+    "sha256": "e3f10cdc9e15f7d0321a5bc55188e22f4036b81cdfeb8d409475012421ddb784",
+    "local_extract": "/workspace/v54-recovery/source/msi/ENDOGENOUS_GENESIS.md",
+    "symbols": {},
+    "executed": false
+  },
+  {
+    "repository": "/workspace/repos/msi",
+    "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+    "path": "CONSTRUCTOR_GENESIS.md",
+    "sha256": "ae8cf4b493bcda97f74deb87b6373e87bd1d4dbac40e8693bce56e8023423d34",
+    "local_extract": "/workspace/v54-recovery/source/msi/CONSTRUCTOR_GENESIS.md",
+    "symbols": {},
+    "executed": false
+  },
+  {
+    "repository": "/workspace/repos/msi",
+    "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+    "path": "RECURSIVE_DEVELOPMENTAL_COMPOUNDING.md",
+    "sha256": "787c9fc408b70056302d04c9e35c4a5b798ed11b08f043104307165f8dddd1f7",
+    "local_extract": "/workspace/v54-recovery/source/msi/RECURSIVE_DEVELOPMENTAL_COMPOUNDING.md",
+    "symbols": {},
+    "executed": false
+  },
+  {
+    "repository": "/workspace/repos/msi",
+    "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+    "path": "BLIND_RECURSIVE_CROSS_GRAMMAR_GENESIS.md",
+    "sha256": "7f682a6c240fdfb81cd526ae262bac7917c93f56fe4e36830eb781221bf79765",
+    "local_extract": "/workspace/v54-recovery/source/msi/BLIND_RECURSIVE_CROSS_GRAMMAR_GENESIS.md",
+    "symbols": {},
+    "executed": false
+  },
+  {
+    "repository": "/workspace/repos/msi",
+    "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+    "path": "CONSEQUENTIAL_CORE_CONTRACTS.md",
+    "sha256": "4d77d9dbea94f4787eba46355c46097aeaa08d2c37d025d472458fcce8cd42da",
+    "local_extract": "/workspace/v54-recovery/source/msi/CONSEQUENTIAL_CORE_CONTRACTS.md",
+    "symbols": {},
+    "executed": false
+  },
+  {
+    "repository": "/workspace/repos/test",
+    "commit": "52eb1e7995bd877a2b698efe1883ae2b80a03737",
+    "path": "research/mathgraph_minimal_quotient/h11_quotient.py",
+    "sha256": "f9c5146748c324bc951b076b0db30d1a3e947eacc0d9095492d4a12e983d1f1a",
+    "local_extract": "/workspace/v54-recovery/source/test/research/mathgraph_minimal_quotient/h11_quotient.py",
+    "symbols": {
+      "38": "def digest(data):",
+      "44": "def build_cases():",
+      "110": "def categorise_event(h11, event):",
+      "135": "def run_wire(h11, wire, cap, schedule):",
+      "164": "def future(h11, prefix, suffix, cap):",
+      "180": "def native_worker(root):",
+      "203": "def git(root, *args):",
+      "207": "def native_from_source(root, inputs, sha, outfile):",
+      "231": "def stable(x):",
+      "235": "def minimal_basis(vectors, labels):",
+      "249": "def quotient(results, mode):",
+      "261": "def field_atoms(test):",
+      "275": "def source_guard_projection(root, before, after):",
+      "325": "def run_experiment(root, output_dir):"
+    },
+    "executed": false
+  },
+  {
+    "repository": "/workspace/repos/test",
+    "commit": "52eb1e7995bd877a2b698efe1883ae2b80a03737",
+    "path": "research/mathgraph_minimal_quotient/independent_residual.py",
+    "sha256": "671134d31bb35593e2232c24dcb404237daf823fdb836925304088f6e794a248",
+    "local_extract": "/workspace/v54-recovery/source/test/research/mathgraph_minimal_quotient/independent_residual.py",
+    "symbols": {
+      "19": "def source_worker(root):",
+      "49": "def main(root,out):"
+    },
+    "executed": false
+  },
+  {
+    "repository": "/workspace/repos/test",
+    "commit": "52eb1e7995bd877a2b698efe1883ae2b80a03737",
+    "path": "research/mathgraph_minimal_quotient/FROZEN_PROTOCOL.md",
+    "sha256": "4c58e83564a219756b04acde8888156d63258e336e9e2c5867a5944517e15f48",
+    "local_extract": "/workspace/v54-recovery/source/test/research/mathgraph_minimal_quotient/FROZEN_PROTOCOL.md",
+    "symbols": {},
+    "executed": false
+  },
+  {
+    "repository": "/workspace/repos/test",
+    "commit": "3692250d80541cc9cbbe1e13b75299b6c629e3e1",
+    "path": "research/semantic_quotient/chi1207/quotient.py",
+    "sha256": "e68bcbdae6aa863e928e4bb8d1366a30e1154cece7c7a1433ccbbccba67c698f",
+    "local_extract": "/workspace/v54-recovery/source/test/research/semantic_quotient/chi1207/quotient.py",
+    "symbols": {
+      "11": "def state(word):",
+      "19": "def observation(history, continuation):"
+    },
+    "executed": false
+  },
+  {
+    "repository": "/workspace/repos/test",
+    "commit": "3692250d80541cc9cbbe1e13b75299b6c629e3e1",
+    "path": "research/semantic_quotient/chi1207/verify.py",
+    "sha256": "91685fe27e2ef29fa55957e9122b4f83a3f1a919c38ced7a574748181e429ad4",
+    "local_extract": "/workspace/v54-recovery/source/test/research/semantic_quotient/chi1207/verify.py",
+    "symbols": {
+      "19": "def parse(path):"
+    },
+    "executed": false
+  },
+  {
+    "repository": "/workspace/repos/test",
+    "commit": "3692250d80541cc9cbbe1e13b75299b6c629e3e1",
+    "path": "research/semantic_quotient/chi1207/OBSERVATIONAL_PROTOCOL.md",
+    "sha256": "abf878768f7860c6aa6038e544d63f021ef91324417f2fa2b0b795fc689ee710",
+    "local_extract": "/workspace/v54-recovery/source/test/research/semantic_quotient/chi1207/OBSERVATIONAL_PROTOCOL.md",
+    "symbols": {},
+    "executed": false
+  }
+]

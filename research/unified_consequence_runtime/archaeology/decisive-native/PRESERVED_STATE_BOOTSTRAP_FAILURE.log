@@ -1,0 +1,27 @@
+test_original_246_record_publications_reload_without_retargeting_validator (research.unified_consequence_runtime.test_qualify_decisive_native.QualifiedStateBootstrapContracts.test_original_246_record_publications_reload_without_retargeting_validator) ... ERROR
+
+======================================================================
+ERROR: test_original_246_record_publications_reload_without_retargeting_validator (research.unified_consequence_runtime.test_qualify_decisive_native.QualifiedStateBootstrapContracts.test_original_246_record_publications_reload_without_retargeting_validator)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_qualify_decisive_native.py", line 42, in test_original_246_record_publications_reload_without_retargeting_validator
+    machine=Machine(components,root/'state',components/'evaluator',root/'unused-config.json')
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/developmental_machine.py", line 99, in __init__
+    self.flush()
+  File "/workspace/udm-v54/research/unified_consequence_runtime/developmental_machine.py", line 128, in flush
+    self.reclose()
+  File "/workspace/udm-v54/research/unified_consequence_runtime/developmental_machine.py", line 169, in reclose
+    self.frontiers = reclose_frontiers(self)
+                     ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/cross_frontier.py", line 234, in reclose_frontiers
+    _cap, contract, profiles = _publication_binding(machine, node.payload, node.premises)
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/cross_frontier.py", line 129, in _publication_binding
+    raise ValueError("native frontier admission validator source changed after publication")
+ValueError: native frontier admission validator source changed after publication
+
+----------------------------------------------------------------------
+Ran 1 test in 2.558s
+
+FAILED (errors=1)

@@ -1,0 +1,1365 @@
+{
+  "V104_pure_candidate_probe": {
+    "exact_O2_AST_candidates": 0,
+    "file": "experiments/METALOGIC_V104_GENERIC_CONSTRUCTOR_SYNTHESIS.py",
+    "function_scope_candidates": 320,
+    "input": "pinned Requests original iter_slices with boolop changed or->and; O1comparison<=retained",
+    "invoked": "original nodes_for_selector/build_expr/program_candidates/h from authenticated extracted source AST",
+    "native_tests_run": 0,
+    "qualification": "grammar coverage probe only; no verdict on native correctness of emitted other candidates",
+    "reason": "no BoolOp builder; supplied base rich mutation grammar already contains And->Or",
+    "scientific_acquisition_or_search_rerun": false,
+    "source_commit": "9ff0e6a393cef499a37f0374ca6315e7849c49b8",
+    "whole_utils_candidates": 320
+  },
+  "baseline_commit": "b8216cf025b9b0ced686f31e783f46637fd101c4",
+  "coverage": "targeted historical source inspection, not exhaustive programme coverage",
+  "native_constructor_paths": [
+    {
+      "commit": "8befdf9d9d9565bc2640d380f98c6547b3660a63",
+      "documentary_artifact": 11916539485,
+      "documentary_run": 38610148665,
+      "files": [
+        {
+          "bytes": 3965,
+          "path": "research/mathgraph_obligation_compiler_20261015/FROZEN_PROTOCOL.md",
+          "sha256": "82eb4b152ee4df53f0e94d19fcd5409056a805f55775abb84672eaa6e7e7d4cd"
+        },
+        {
+          "bytes": 3841,
+          "path": "research/mathgraph_obligation_compiler_20261015/FROZEN_REPAIR_PROTOCOL.md",
+          "sha256": "f3d21357cc1dacd7ca0a5b17c3d01c0e737086063c063891d9fa29b2b4c6cb1e"
+        },
+        {
+          "api": [
+            {
+              "line": 39,
+              "name": "call"
+            },
+            {
+              "line": 51,
+              "name": "checked"
+            },
+            {
+              "line": 60,
+              "name": "sha_file"
+            },
+            {
+              "line": 64,
+              "name": "make_worktrees"
+            },
+            {
+              "line": 84,
+              "name": "changed_python"
+            },
+            {
+              "line": 92,
+              "name": "changed_lines"
+            },
+            {
+              "line": 105,
+              "name": "discover_methods"
+            },
+            {
+              "line": 157,
+              "name": "find_import_info"
+            },
+            {
+              "line": 175,
+              "name": "captured"
+            },
+            {
+              "line": 193,
+              "name": "probe_timer_exception"
+            },
+            {
+              "line": 239,
+              "name": "probe_variadic_iterables"
+            },
+            {
+              "line": 285,
+              "name": "worker"
+            },
+            {
+              "line": 319,
+              "name": "native_worker"
+            },
+            {
+              "line": 333,
+              "name": "pytest_baseline"
+            },
+            {
+              "line": 352,
+              "name": "run_subject"
+            },
+            {
+              "line": 418,
+              "name": "main"
+            }
+          ],
+          "bytes": 20298,
+          "path": "research/mathgraph_obligation_compiler_20261015/observer_genesis.py",
+          "sha256": "600f74215e420ddf0ded533bc923b12095b1a2f3972b46a9b01ee32eeb4d0091"
+        },
+        {
+          "api": [
+            {
+              "line": 25,
+              "name": "locate_method"
+            },
+            {
+              "line": 42,
+              "name": "replace_ast_segment"
+            },
+            {
+              "line": 55,
+              "name": "candidate_hoist_exception_expr"
+            },
+            {
+              "line": 117,
+              "name": "candidate_flatten_variadic"
+            },
+            {
+              "line": 160,
+              "name": "synthesize"
+            },
+            {
+              "line": 168,
+              "name": "native_rerun"
+            },
+            {
+              "line": 172,
+              "name": "original_test_files"
+            },
+            {
+              "line": 179,
+              "name": "repair_subject"
+            },
+            {
+              "line": 294,
+              "name": "main"
+            }
+          ],
+          "bytes": 13940,
+          "path": "research/mathgraph_obligation_compiler_20261015/repair_compiler.py",
+          "sha256": "aae8e63ab945e063cb85d0a0a4ed8e1a24a885dec9b487d2a687f0ffce7ab338"
+        }
+      ],
+      "independently_replayed_here": false,
+      "original_primary_artifact_inspected_here": false,
+      "path": "research/mathgraph_obligation_compiler_20261015",
+      "repository": "heathsanchez/test",
+      "scope": "source-discovered native method and observation instances; supplied human authored constructor families; not novel constructor grammar or blinded frontier",
+      "special_negative": null
+    },
+    {
+      "commit": "078b23ced5f621c641f44ea5cc63c5be60efdc47",
+      "documentary_artifact": 11924781976,
+      "documentary_run": 38628325572,
+      "files": [
+        {
+          "bytes": 4481,
+          "path": "research/mathgraph_predictive_consistency_20261015/FROZEN_PREFLIGHT_REPAIR.md",
+          "sha256": "176d51b1b94b89ab020b1db5daefd38b4bd701eccf695df3c00104c58b4adc6e"
+        },
+        {
+          "bytes": 4497,
+          "path": "research/mathgraph_predictive_consistency_20261015/FROZEN_PROTOCOL.md",
+          "sha256": "8abd3932b6a9d6c4de5255d906eeb773263ff4fd19a520686e1c7b6b897d6ac3"
+        },
+        {
+          "bytes": 3368,
+          "path": "research/mathgraph_predictive_consistency_20261015/FROZEN_SUBCLASS_ADVERSARY.md",
+          "sha256": "47167f920866592d9f6c4652df0a948bbc28dd02ffb256fda1744aab489ae46d"
+        },
+        {
+          "api": [
+            {
+              "line": 35,
+              "name": "h"
+            },
+            {
+              "line": 38,
+              "name": "synthesize_candidates"
+            },
+            {
+              "line": 71,
+              "name": "MidstreamError"
+            },
+            {
+              "line": 74,
+              "name": "iterable_fault"
+            },
+            {
+              "line": 78,
+              "name": "candidate_values"
+            },
+            {
+              "line": 101,
+              "name": "describe_contract"
+            },
+            {
+              "line": 108,
+              "name": "materialize_state"
+            },
+            {
+              "line": 116,
+              "name": "measure_projection"
+            },
+            {
+              "line": 143,
+              "name": "derive_consequence"
+            },
+            {
+              "line": 164,
+              "name": "execute_method"
+            },
+            {
+              "line": 188,
+              "name": "native_worker"
+            },
+            {
+              "line": 230,
+              "name": "run_worker"
+            },
+            {
+              "line": 249,
+              "name": "controls"
+            },
+            {
+              "line": 264,
+              "name": "assess"
+            },
+            {
+              "line": 300,
+              "name": "run_target"
+            },
+            {
+              "line": 328,
+              "name": "main"
+            }
+          ],
+          "bytes": 16931,
+          "path": "research/mathgraph_predictive_consistency_20261015/invariant_generator.py",
+          "sha256": "c07ac64b11838f44d74084d34c43b18581e24500ac9473cf37c6e74cd9f42d9c"
+        },
+        {
+          "api": [
+            {
+              "line": 16,
+              "name": "sha"
+            },
+            {
+              "line": 19,
+              "name": "find_method"
+            },
+            {
+              "line": 31,
+              "name": "synthesize_preflight_patch"
+            },
+            {
+              "line": 70,
+              "name": "run_scoped_native_suite"
+            },
+            {
+              "line": 95,
+              "name": "detailed_native_assessment"
+            },
+            {
+              "line": 121,
+              "name": "execute"
+            },
+            {
+              "line": 203,
+              "name": "main"
+            }
+          ],
+          "bytes": 11722,
+          "path": "research/mathgraph_predictive_consistency_20261015/preflight_repair.py",
+          "sha256": "f299c42e43a3c5365b649fee0decf0e5f6404501aba69297355e619c041d6230"
+        },
+        {
+          "api": [
+            {
+              "line": 16,
+              "name": "sha"
+            },
+            {
+              "line": 18,
+              "name": "worker"
+            },
+            {
+              "line": 53,
+              "name": "run_worker"
+            },
+            {
+              "line": 65,
+              "name": "lexical_normalization"
+            },
+            {
+              "line": 82,
+              "name": "native_subject"
+            },
+            {
+              "line": 165,
+              "name": "main"
+            }
+          ],
+          "bytes": 11124,
+          "path": "research/mathgraph_predictive_consistency_20261015/subclass_adversary.py",
+          "sha256": "b13c000406936af5992fea79e01379a53aac5f48ec9854592da458288e2099e8"
+        }
+      ],
+      "independently_replayed_here": false,
+      "original_primary_artifact_inspected_here": false,
+      "path": "research/mathgraph_predictive_consistency_20261015",
+      "repository": "heathsanchez/test",
+      "scope": "source-discovered native method and observation instances; supplied human authored constructor families; not novel constructor grammar or blinded frontier",
+      "special_negative": "dynamic type(self) set preflight is REJECTED_SUBCLASS_UNSAFE; source-lexical normalization is separate candidate"
+    }
+  ],
+  "new_native_adapter_checks": {
+    "final_whole_machine_qualification": "owned by root qualification, not claimed by this recovery record",
+    "focused_contract_tests": 13,
+    "native_interpreter": "/workspace/v54-venv/bin/python",
+    "red_regressions_preserved": 3,
+    "scope": "adapter debugging with minimal bookkeeping fixture; actual original native code and pytest tests, not whole-Machine qualification",
+    "targets": {
+      "boltons": {
+        "all_eight_causal_gates": true,
+        "original_targeted_tests_passed": 9
+      },
+      "cachetools": {
+        "all_eight_causal_gates": true,
+        "original_targeted_tests_passed": 89
+      }
+    }
+  },
+  "protocol": "UDM_PROGRAMME_CONSTRUCTOR_RETENTION_RECOVERY_V1",
+  "sources": [
+    {
+      "api": [
+        {
+          "line": 17,
+          "name": "digest"
+        },
+        {
+          "line": 21,
+          "name": "old_rep"
+        },
+        {
+          "line": 25,
+          "name": "recode"
+        },
+        {
+          "line": 29,
+          "name": "old_operator_separates"
+        },
+        {
+          "line": 36,
+          "name": "execute"
+        },
+        {
+          "line": 57,
+          "name": "synthesize_program"
+        },
+        {
+          "line": 72,
+          "name": "main"
+        }
+      ],
+      "branch": "verified-developmental-constructor-genesis-v1",
+      "branch_head": "0af24a901d6a7286d54ee36734579aff4628ee31",
+      "code_executed_here": false,
+      "committed_evidence_gates": {
+        "G10_ablation_restores_developmental_obstruction": true,
+        "G11_sham_does_not_transfer": true,
+        "G12_answer_memory_does_not_transfer": true,
+        "G1_complete_old_developmental_language": true,
+        "G2_complete_negative_old_developmental_language": true,
+        "G3_unknown_expressivity_dev": true,
+        "G4_no_supplied_repair_primitive": true,
+        "G5_meta_program_structurally_constructed": true,
+        "G6_training_residuals_verified": true,
+        "G7_old_representation_preserved_exhaustively": true,
+        "G8_developmental_operator_admitted": true,
+        "G9_prospective_held_out_success": true
+      },
+      "committed_evidence_verdict": "VERIFIED_DEVELOPMENTAL_CONSTRUCTOR_GENESIS",
+      "dependencies": [],
+      "documentary_authority": {
+        "artifact": {
+          "id": 10263413098,
+          "sha256": "ca4650b72edfc3b5bd329d38a9a30828a6e1ae609aa908a70812a8e4857aaada",
+          "url": "https://github.com/heathsanchez/test/actions/runs/34599025109/artifacts/10263413098"
+        },
+        "branch": "verified-developmental-constructor-genesis-v1",
+        "developmental_operator_sha256": "81d158abe19c89159198ab0f962145ba1c49060c55cdfcdb333dc732c6f71c33",
+        "evidence_freeze_sha": null,
+        "experiment_commit_sha": "3288a448071ebe60f55976a9b67149b8c370ae44",
+        "repository": "https://github.com/heathsanchez/test",
+        "snapshot_sha256": "dfbf897cd7b8673ccc9652ff7aace6a34b79c5cffcd966097f28660c7efa8260",
+        "successful_run": {
+          "conclusion": "success",
+          "job_id": 103261533398,
+          "job_url": "https://github.com/heathsanchez/test/actions/runs/34599025109/job/103261533398",
+          "lean_error_lines": 0,
+          "lean_version": "4.30.0-rc2",
+          "python_version": "3.12",
+          "run_id": 34599025109,
+          "run_url": "https://github.com/heathsanchez/test/actions/runs/34599025109"
+        }
+      },
+      "files": [
+        {
+          "bytes": 1015,
+          "matches_scientific_commit": null,
+          "path": "experiments/verified_developmental_constructor_genesis_v1/AUTHORITY.json",
+          "sha256": "6e1cc71ecd8f0a0f709070db4d7c6a73928a9970617f3059b248566107b69213"
+        },
+        {
+          "bytes": 2447,
+          "matches_scientific_commit": true,
+          "path": "experiments/verified_developmental_constructor_genesis_v1/DevelopmentalConstructorGenesis.lean",
+          "sha256": "fa448eb6b069ee282da312735978d7326a495bbfeba0a44786928bad2f4bd782"
+        },
+        {
+          "bytes": 2432,
+          "matches_scientific_commit": true,
+          "path": "experiments/verified_developmental_constructor_genesis_v1/PROTOCOL.md",
+          "sha256": "b429d1b1eaa196c45ed0db6f0a562c5c10535a9125f1576dbcb71d2275f54374"
+        },
+        {
+          "bytes": 2980,
+          "matches_scientific_commit": null,
+          "path": "experiments/verified_developmental_constructor_genesis_v1/RESULTS.md",
+          "sha256": "031c510d25ca50d057700b140b7763253e0ee3e69dc36ed56f6ced79bb91ac8b"
+        },
+        {
+          "bytes": 2042,
+          "matches_scientific_commit": null,
+          "path": "experiments/verified_developmental_constructor_genesis_v1/results/evidence.json",
+          "sha256": "4de49371156ab12428fa5195e8d92643ccef1be11b924aa8474407dd935e16c9"
+        },
+        {
+          "bytes": 394,
+          "matches_scientific_commit": null,
+          "path": "experiments/verified_developmental_constructor_genesis_v1/results/snapshot.json",
+          "sha256": "fad2d4d4f4a08d91c1fed56fc2f6982099a113ff8f60c7a0ee3949cf1c6c48d5"
+        },
+        {
+          "bytes": 8292,
+          "matches_scientific_commit": true,
+          "path": "experiments/verified_developmental_constructor_genesis_v1/run.py",
+          "sha256": "9587f302d8b50492ddc702567de556c7d178ee6193e40bc8c48d13fd7a2d2417"
+        }
+      ],
+      "independently_replayed_here": false,
+      "inputs": "training_residuals with left/right four-bit records",
+      "integration": "REUSABLE finite constructor; not installed as native constructor",
+      "original_primary_artifact_inspected_here": false,
+      "outputs": "tuple of instructions; execute returns selected projection and executable representation closure",
+      "repository": "heathsanchez/test",
+      "scientific_commit": "3288a448071ebe60f55976a9b67149b8c370ae44",
+      "scope": "16 supplied four-bit records, field-3 old representation, generated typed four-instruction stack programs; not arbitrary native-source construction",
+      "verifier": "full finite representation preservation and residual separation; DevelopmentalConstructorGenesis.lean concrete model"
+    },
+    {
+      "api": [
+        {
+          "line": 5,
+          "name": "h"
+        },
+        {
+          "line": 6,
+          "name": "trial"
+        },
+        {
+          "line": 27,
+          "name": "main"
+        }
+      ],
+      "branch": "verified-semantic-certificate-causality-v1",
+      "branch_head": "9f7c8f773eb7595dbb9d1037dd59280b89938fc7",
+      "code_executed_here": false,
+      "committed_evidence_gates": {
+        "ablation_restores": true,
+        "all_correct": true,
+        "certificate_cheaper": true,
+        "same_macro_set": true,
+        "sham_restores": true,
+        "wrong_not_help": true
+      },
+      "committed_evidence_verdict": "VERIFIED_SEMANTIC_CERTIFICATE_CAUSALITY",
+      "dependencies": [],
+      "documentary_authority": {
+        "branch": "verified-semantic-certificate-causality-v1",
+        "evidence_freeze_commit": null,
+        "experiment_commit": "2b8fd76354235c32b47a19b6bcac030a8cdbe1d7",
+        "invalid_incomplete_upload_run": 34606511574,
+        "repository": "https://github.com/heathsanchez/test",
+        "runs": [
+          {
+            "artifact_id": 10266557272,
+            "artifact_sha256": "44ab8fd19febafce64e7ff43c1804b7a9c03bacb7fa507c7b2d5512a770b21d9",
+            "conclusion": "success",
+            "job_id": 103286139441,
+            "run_id": 34606511715
+          }
+        ],
+        "status": "VERIFIED"
+      },
+      "files": [
+        {
+          "bytes": 453,
+          "matches_scientific_commit": false,
+          "path": "experiments/verified_semantic_certificate_causality_v1/AUTHORITY.json",
+          "sha256": "d5e12dd6dd482737fd8ee2746af91a6fee3ae9accee378bbc762c5cbb65073e5"
+        },
+        {
+          "bytes": 114,
+          "matches_scientific_commit": true,
+          "path": "experiments/verified_semantic_certificate_causality_v1/MANIFEST.json",
+          "sha256": "27c1058fb50ad368b125bd24138d54ce93ad65c686f006ecfc15bdbd4616dd41"
+        },
+        {
+          "bytes": 1176,
+          "matches_scientific_commit": true,
+          "path": "experiments/verified_semantic_certificate_causality_v1/PROTOCOL.md",
+          "sha256": "d71e8df1ebc015314d60eb649852ff7fcfa0ccb8c089c49328a677d4e7a8ece8"
+        },
+        {
+          "bytes": 76,
+          "matches_scientific_commit": true,
+          "path": "experiments/verified_semantic_certificate_causality_v1/RESULTS.md",
+          "sha256": "6b1ce2db30f02f26812f2c3f9b5ba7d2e2660408c3d8dcc7bd60411721f48c39"
+        },
+        {
+          "bytes": 394,
+          "matches_scientific_commit": true,
+          "path": "experiments/verified_semantic_certificate_causality_v1/SemanticCertificate.lean",
+          "sha256": "a50e4fd62b9df358e6c9d94abd866ddbd253589666ff6729092e2236c06fb29a"
+        },
+        {
+          "bytes": 7156,
+          "matches_scientific_commit": true,
+          "path": "experiments/verified_semantic_certificate_causality_v1/results/evidence.json",
+          "sha256": "5f2c1594f0261a9fdef760b3c7395833c1a63317c263ed628a0df0a198ce98d3"
+        },
+        {
+          "bytes": 231,
+          "matches_scientific_commit": true,
+          "path": "experiments/verified_semantic_certificate_causality_v1/results/snapshot.json",
+          "sha256": "027bd7459d7c494f50e6ad903659089e4f857767967851df968dc3b1675b6d26"
+        },
+        {
+          "bytes": 3387,
+          "matches_scientific_commit": true,
+          "path": "experiments/verified_semantic_certificate_causality_v1/run.py",
+          "sha256": "dab75c93d9a21a6c38b58aa3238b0e251b8cdb00d00aad47d321d980a1199b13"
+        }
+      ],
+      "independently_replayed_here": false,
+      "inputs": "encoding and certificate condition",
+      "integration": "REUSABLE historical causal selection constraint, not runtime certificate learner",
+      "original_primary_artifact_inspected_here": false,
+      "outputs": "selected mapping plus costs",
+      "repository": "heathsanchez/test",
+      "scientific_commit": "2b8fd76354235c32b47a19b6bcac030a8cdbe1d7",
+      "scope": "supplied six-role/four-encoding permutation model, all720macros, full six-probe checks; not learned native semantic mapping",
+      "verifier": "exhaustive equality of finite correspondence; SemanticCertificate.lean"
+    },
+    {
+      "api": [
+        {
+          "line": 14,
+          "name": "future_value"
+        },
+        {
+          "line": 16,
+          "name": "score"
+        },
+        {
+          "line": 26,
+          "name": "simulate"
+        },
+        {
+          "line": 47,
+          "name": "oracle_dp"
+        },
+        {
+          "line": 66,
+          "name": "main"
+        }
+      ],
+      "branch": "prospective-retention-value-v1",
+      "branch_head": "616d6007a85ed74bd2a2479b1cf44e885a0ea5fe",
+      "code_executed_here": false,
+      "committed_evidence_gates": {
+        "beats_all_scalar_heuristics": true,
+        "better_than_sham": true,
+        "highest_value_ablation_maximal": true,
+        "non_oracle": true,
+        "revocation_executed": true,
+        "scarcity_binding": true
+      },
+      "committed_evidence_verdict": "VERIFIED_PROSPECTIVE_RETENTION_VALUE",
+      "dependencies": [],
+      "documentary_authority": {
+        "artifact_id": 10280354195,
+        "artifact_sha256": "c13c675a7329505c46711844d72ff56af43193f595c3028fb0614cb7ca9e1c8e",
+        "authority_commit": "f55bb38f9a7d5dd06883cc4ae937cf6f43c56b76",
+        "claim_boundary": "Finite scarce-state causal prospective qualification.",
+        "experiment": "Prospective Retention Value V1",
+        "scientific_job": "https://github.com/heathsanchez/test/actions/runs/34643339692/job/103408113842",
+        "scientific_run": "https://github.com/heathsanchez/test/actions/runs/34643339692",
+        "status": "VERIFIED"
+      },
+      "files": [
+        {
+          "bytes": 518,
+          "matches_scientific_commit": null,
+          "path": "experiments/prospective_retention_value_v1/AUTHORITY.json",
+          "sha256": "b7c922c24325fc35a75fc789ea4163055520bb8a50b9d22c805ad8080cb33c36"
+        },
+        {
+          "bytes": 1106,
+          "matches_scientific_commit": true,
+          "path": "experiments/prospective_retention_value_v1/PROTOCOL.md",
+          "sha256": "d7f9e35c05a545af2afc16ce8060d02c337917c7e0195f943d2097cb402caa56"
+        },
+        {
+          "bytes": 998,
+          "matches_scientific_commit": true,
+          "path": "experiments/prospective_retention_value_v1/RESULTS.md",
+          "sha256": "e9e2d46e3c74a73d8b3e8769ea0fbe5cf08e00faee8600f32564555dfb8a3ec8"
+        },
+        {
+          "bytes": 406,
+          "matches_scientific_commit": true,
+          "path": "experiments/prospective_retention_value_v1/Retention.lean",
+          "sha256": "fac9e84b0034b8f8fcdd8c4079c9535e0cdf4a956953213c1196353f08a7ab7f"
+        },
+        {
+          "bytes": 1092,
+          "matches_scientific_commit": true,
+          "path": "experiments/prospective_retention_value_v1/results/evidence.json",
+          "sha256": "2718587b77c23b0fd9a6b8bc99cf1b728346fd0e9d4bfc1ae0d8537646f15f07"
+        },
+        {
+          "bytes": 2857,
+          "matches_scientific_commit": true,
+          "path": "experiments/prospective_retention_value_v1/results/snapshot.json",
+          "sha256": "4517d7c17a596acb0f13c1f99f293cbcabbe1cdbd2b178f6b2aaf6d176780dfb"
+        },
+        {
+          "bytes": 5482,
+          "matches_scientific_commit": true,
+          "path": "experiments/prospective_retention_value_v1/run.py",
+          "sha256": "281e9d30719bd39fc24244bf79077303e25be3d024e2eb66f05556df574b0e1a"
+        }
+      ],
+      "independently_replayed_here": false,
+      "inputs": "policy name, optional blocked suffix, optional unlimited capacity",
+      "integration": "REUSABLE lifecycle accounting model; not installed runtime retention policy",
+      "original_primary_artifact_inspected_here": false,
+      "outputs": "cost, retained-set rows, history",
+      "repository": "heathsanchez/test",
+      "scientific_commit": "f55bb38f9a7d5dd06883cc4ae937cf6f43c56b76",
+      "scope": "48 supplied episodes, eight supplied structures, capacity3; hand-written geometry policy uses past metrics",
+      "verifier": "full finite simulation, hindsight dynamic-program reference, Retention.lean"
+    },
+    {
+      "api": [
+        {
+          "line": 9,
+          "name": "prof"
+        },
+        {
+          "line": 11,
+          "name": "atom"
+        },
+        {
+          "line": 12,
+          "name": "seq"
+        },
+        {
+          "line": 15,
+          "name": "run"
+        },
+        {
+          "line": 24,
+          "name": "roots_at"
+        },
+        {
+          "line": 27,
+          "name": "domains"
+        },
+        {
+          "line": 28,
+          "name": "metric"
+        },
+        {
+          "line": 38,
+          "name": "case"
+        },
+        {
+          "line": 43,
+          "name": "main"
+        },
+        {
+          "line": 14,
+          "name": "atom"
+        },
+        {
+          "line": 15,
+          "name": "seq"
+        },
+        {
+          "line": 31,
+          "name": "canon"
+        },
+        {
+          "line": 32,
+          "name": "sid"
+        },
+        {
+          "line": 33,
+          "name": "children"
+        },
+        {
+          "line": 34,
+          "name": "size"
+        },
+        {
+          "line": 35,
+          "name": "depth"
+        },
+        {
+          "line": 36,
+          "name": "cold_cost"
+        },
+        {
+          "line": 37,
+          "name": "reuse_cost"
+        },
+        {
+          "line": 38,
+          "name": "genesis_cost"
+        },
+        {
+          "line": 39,
+          "name": "subterms"
+        },
+        {
+          "line": 43,
+          "name": "Kernel"
+        },
+        {
+          "line": 87,
+          "name": "run_blocked"
+        },
+        {
+          "line": 88,
+          "name": "dg"
+        },
+        {
+          "line": 90,
+          "name": "main"
+        }
+      ],
+      "branch": "emergent-persistence-geometry-v1",
+      "branch_head": "40c4278ae51816ad26bc1a1129db6fd7bb7c5fcd",
+      "code_executed_here": false,
+      "committed_evidence_gates": {
+        "adaptive_suite_advantage": true,
+        "ancestry_selective": true,
+        "breadth_not_scope": true,
+        "breadth_selective": true,
+        "derivedness_not_generality": true,
+        "persistence_not_depth": true,
+        "persistence_selective": true,
+        "scope_not_depth": true,
+        "scope_selective": true
+      },
+      "committed_evidence_verdict": "VERIFIED_EMERGENT_PERSISTENCE_GEOMETRY",
+      "dependencies": [
+        "experiments/emergent_persistence_hierarchy_v1/run.py"
+      ],
+      "documentary_authority": {
+        "artifact_id": 10280930082,
+        "artifact_sha256": "d0de66aeecaeb5bc666a636c2bf6f0e82a9aa4d710782ebf6d53e0beebe0511b",
+        "authority_commit": "5ca51363d6559b8f9aef397579eb22695c5f58ed",
+        "branch": "emergent-persistence-geometry-v1",
+        "claim_boundary": "Finite matched causal prospective qualification; not natural-world or open-ended emergence.",
+        "experiment": "Emergent Persistence Geometry V1",
+        "scientific_job": "https://github.com/heathsanchez/test/actions/runs/34641360659/job/103401566856",
+        "scientific_run": "https://github.com/heathsanchez/test/actions/runs/34641360659",
+        "status": "VERIFIED",
+        "verdict": "All four precommitted coordinate-dissociation gates passed."
+      },
+      "files": [
+        {
+          "bytes": 690,
+          "matches_scientific_commit": null,
+          "path": "experiments/emergent_persistence_geometry_v1/AUTHORITY.json",
+          "sha256": "cc2255231ad643475544116841b1efb730ac53041f4f541779fb968e5d1e6632"
+        },
+        {
+          "bytes": 559,
+          "matches_scientific_commit": true,
+          "path": "experiments/emergent_persistence_geometry_v1/Geometry.lean",
+          "sha256": "cf667258f98bbcff278c5c42a8d75309cf9ad2ef5fa571b19eda175daca33f99"
+        },
+        {
+          "bytes": 1716,
+          "matches_scientific_commit": true,
+          "path": "experiments/emergent_persistence_geometry_v1/PROTOCOL.md",
+          "sha256": "e4f587d8b5eb600ac65f3b94c68010c3e89275688f74755305bba7c8f7b703d2"
+        },
+        {
+          "bytes": 1136,
+          "matches_scientific_commit": true,
+          "path": "experiments/emergent_persistence_geometry_v1/RESULTS.md",
+          "sha256": "9c068f43c321eacaf49c53f3c48c0f7eec36446fcb6295a588ec71796db4e1b4"
+        },
+        {
+          "bytes": 2024,
+          "matches_scientific_commit": true,
+          "path": "experiments/emergent_persistence_geometry_v1/results/evidence.json",
+          "sha256": "704732a0bc0cdc54be4ce368288ee554d0c85601a724660bbfa0cb6bc98f04b3"
+        },
+        {
+          "bytes": 388,
+          "matches_scientific_commit": true,
+          "path": "experiments/emergent_persistence_geometry_v1/results/snapshot.json",
+          "sha256": "7c5d197303b6b96e7cd32dc1b1a1092eba9b29412df86329c8daa091bb312c84"
+        },
+        {
+          "bytes": 4846,
+          "matches_scientific_commit": true,
+          "path": "experiments/emergent_persistence_geometry_v1/run.py",
+          "sha256": "f7d262ccf12f987295a618b983a418bb474a97ac2fac8b79d27adc865c3a0943"
+        },
+        {
+          "bytes": 7798,
+          "matches_scientific_commit": true,
+          "path": "experiments/emergent_persistence_hierarchy_v1/run.py",
+          "sha256": "6fa5d6f59d9b286a7c0f5f85004f8181c3d3a7f93428eb3902b8f0f76dcf3502"
+        }
+      ],
+      "independently_replayed_here": false,
+      "inputs": "expression roots, domain sequence, shift and blocked roots",
+      "integration": "REUSABLE measured-coordinate discipline, not installed native compiler",
+      "original_primary_artifact_inspected_here": false,
+      "outputs": "adaptive/cold costs and coordinate metrics",
+      "repository": "heathsanchez/test",
+      "scientific_commit": "5ca51363d6559b8f9aef397579eb22695c5f58ed",
+      "scope": "24 supplied episodes and finite opaque expression profiles; selective coordinate interventions d,tau,R,B,A; not open-ended emergence",
+      "verifier": "finite adapter roundtrip/outcome equality and four coordinate-dissociation gates; Geometry.lean"
+    },
+    {
+      "api": [
+        {
+          "line": 17,
+          "name": "digest"
+        },
+        {
+          "line": 21,
+          "name": "behavior"
+        },
+        {
+          "line": 31,
+          "name": "compile_by_equivalence"
+        },
+        {
+          "line": 51,
+          "name": "execute"
+        },
+        {
+          "line": 91,
+          "name": "search"
+        },
+        {
+          "line": 112,
+          "name": "main"
+        }
+      ],
+      "branch": "verified-cross-representation-compounding-v1",
+      "branch_head": "06a6e77cb2fe6566e2f49783d2937e545efed8af",
+      "code_executed_here": false,
+      "committed_evidence_gates": {
+        "G1_all_correct": true,
+        "G2_fully_charged_transfer_cheaper": true,
+        "G3_ablation_restores_cold": true,
+        "G4_sham_not_reproduce": true,
+        "G5_answer_memory_not_reproduce": true,
+        "G6_no_shared_surface_tokens": true,
+        "G7_unique_behavioral_compilation": true,
+        "G8_source_macro_not_direct_solution": true
+      },
+      "committed_evidence_verdict": "VERIFIED_CROSS_REPRESENTATION_COMPOUNDING",
+      "dependencies": [],
+      "documentary_authority": {
+        "branch": "verified-cross-representation-compounding-v1",
+        "evidence_freeze_commit": null,
+        "experiment_commit": "3a9a1e15be87063b52a11ae3fe234a7749062cc4",
+        "invalid_implementation_runs": [
+          {
+            "job_id": 103275347058,
+            "reason": "Lean disjointness theorem used invalid cross-type equality elimination",
+            "run_id": 34603219913
+          }
+        ],
+        "repository": "https://github.com/heathsanchez/test",
+        "runs": [
+          {
+            "artifact_id": 10265436536,
+            "artifact_sha256": "70e2f352aeb019319199e9882749d52f88ef07af9529c2ab0120b0bd35e7359f",
+            "conclusion": "success",
+            "job_id": 103276154365,
+            "job_url": "https://github.com/heathsanchez/test/actions/runs/34603467525/job/103276154365",
+            "run_id": 34603467525,
+            "run_url": "https://github.com/heathsanchez/test/actions/runs/34603467525"
+          },
+          {
+            "artifact_id": 10265656833,
+            "artifact_sha256": "86e7dc456daae4da807b2b6cac87a2659c2dfe88c526dab6607565ef17e8b7d9",
+            "conclusion": "success",
+            "job_id": 103276754498,
+            "job_url": "https://github.com/heathsanchez/test/actions/runs/34603649113/job/103276754498",
+            "run_id": 34603649113,
+            "run_url": "https://github.com/heathsanchez/test/actions/runs/34603649113"
+          }
+        ],
+        "status": "VERIFIED"
+      },
+      "files": [
+        {
+          "bytes": 1280,
+          "matches_scientific_commit": false,
+          "path": "experiments/verified_cross_representation_compounding_v1/AUTHORITY.json",
+          "sha256": "bde0e27a6739b4a13b873f4476831f796588eefacb0356c7af881ac3213e1ea3"
+        },
+        {
+          "bytes": 1236,
+          "matches_scientific_commit": true,
+          "path": "experiments/verified_cross_representation_compounding_v1/CrossRepresentation.lean",
+          "sha256": "7522efc1fde5fd9acfa3e24de33c081f9b5c2c4ec40d83762e314b54d5f3af4c"
+        },
+        {
+          "bytes": 425,
+          "matches_scientific_commit": true,
+          "path": "experiments/verified_cross_representation_compounding_v1/MANIFEST.json",
+          "sha256": "95ad4ba35bcf48f17c34b19827c9661b486a8765807d35d8cac8de6f470ff1d1"
+        },
+        {
+          "bytes": 2475,
+          "matches_scientific_commit": true,
+          "path": "experiments/verified_cross_representation_compounding_v1/PROTOCOL.md",
+          "sha256": "aee629a111e0b587644bf68db7d9df21038851133fa8a2372f98b3e550445402"
+        },
+        {
+          "bytes": 2049,
+          "matches_scientific_commit": true,
+          "path": "experiments/verified_cross_representation_compounding_v1/RESULTS.md",
+          "sha256": "fed252cde56452e28e73867518971b154f82559279f10608d0978298f980ed75"
+        },
+        {
+          "bytes": 3556,
+          "matches_scientific_commit": true,
+          "path": "experiments/verified_cross_representation_compounding_v1/results/evidence.json",
+          "sha256": "c2cd8817ecaa45369617031e22cc225205541dbfffdd5c7a10803475f4ec1d63"
+        },
+        {
+          "bytes": 629,
+          "matches_scientific_commit": true,
+          "path": "experiments/verified_cross_representation_compounding_v1/results/snapshot.json",
+          "sha256": "206dfd4c2fc32e3d1e144ec43dde0e3a2790f3be0db294a6dd651612d9408f60"
+        },
+        {
+          "bytes": 7296,
+          "matches_scientific_commit": true,
+          "path": "experiments/verified_cross_representation_compounding_v1/run.py",
+          "sha256": "3a4890c450f27aa93242b664d80e5fa9f58f2ac3bed56a9f0085be518130f55f"
+        }
+      ],
+      "independently_replayed_here": false,
+      "inputs": "source macro roles",
+      "integration": "REUSABLE finite behavioral compilation; no independent arbitrary implementation equivalence",
+      "original_primary_artifact_inspected_here": false,
+      "outputs": "compiled target tokens, per-role exhaustive certificates and charged adapter calls",
+      "repository": "heathsanchez/test",
+      "scientific_commit": "3a9a1e15be87063b52a11ae3fe234a7749062cc4",
+      "scope": "supplied six-role signatures over six probes, distinct token alphabets; not learned semantic adapter or native-domain transfer",
+      "verifier": "unique equality on all declared finite probes plus native finite interpreter; CrossRepresentation.lean"
+    },
+    {
+      "api": [
+        {
+          "line": 17,
+          "name": "closure"
+        },
+        {
+          "line": 31,
+          "name": "make_stream"
+        },
+        {
+          "line": 50,
+          "name": "raw_score"
+        },
+        {
+          "line": 55,
+          "name": "choose"
+        },
+        {
+          "line": 58,
+          "name": "scalar"
+        },
+        {
+          "line": 63,
+          "name": "synthesize"
+        },
+        {
+          "line": 73,
+          "name": "evaluate"
+        },
+        {
+          "line": 76,
+          "name": "main"
+        }
+      ],
+      "branch": "verified-retention-policy-genesis-v1",
+      "branch_head": "44557424b7b9002ed6e17e54bc645f13772edff1",
+      "code_executed_here": false,
+      "committed_evidence_gates": {
+        "dependency_closed_budgeted_outputs": true,
+        "full_construction_cost_charged": true,
+        "non_oracle": true,
+        "policy_constructed_from_frozen_grammar": true,
+        "prospective_beats_every_scalar": true,
+        "prospective_beats_hand_geometry": false,
+        "revision_ablation_restores_old_cost": true,
+        "revision_improves_untouched_suffix": true,
+        "revision_is_behaviorally_distinct": true,
+        "verified_policy_residual": true
+      },
+      "committed_evidence_verdict": "NEGATIVE_OR_PARTIAL",
+      "dependencies": [],
+      "documentary_authority": {
+        "artifact_id": 10282562232,
+        "artifact_sha256": "a636cd20092cabb19ff106490f578a7b9b891e0697b6d2d2e9101b33180e8fad",
+        "base_commit": "616d6007a85ed74bd2a2479b1cf44e885a0ea5fe",
+        "branch": "verified-retention-policy-genesis-v1",
+        "failed_gate": "prospective_beats_hand_geometry",
+        "invalid_obsolete_runs": [
+          {
+            "reason": "Lean action setup failed before experiment execution",
+            "run": 34648396877
+          },
+          {
+            "reason": "Lean certificate did not compile",
+            "run": 34648508248
+          },
+          {
+            "reason": "unordered finite-set serialization made evidence hash-seed dependent",
+            "run": 34648604462
+          },
+          {
+            "reason": "replayed the same hash-seed-dependent implementation",
+            "run": 34648686000
+          }
+        ],
+        "scientific_commit": "f00bccabee25319bc0cc41ac9918c1d3a08108ad",
+        "scientific_job": 103425973195,
+        "scientific_run": 34648832202,
+        "status": "FROZEN_NEGATIVE_PARTIAL_AUTHORITY",
+        "verdict": "NEGATIVE_OR_PARTIAL"
+      },
+      "files": [
+        {
+          "bytes": 903,
+          "matches_scientific_commit": false,
+          "path": "experiments/verified_retention_policy_genesis_v1/AUTHORITY.json",
+          "sha256": "2ebc441f0e69fe106f5931a1f2c737d04b0451d31e4c7f3a4d6452a5cf15e06c"
+        },
+        {
+          "bytes": 1520,
+          "matches_scientific_commit": true,
+          "path": "experiments/verified_retention_policy_genesis_v1/PROTOCOL.md",
+          "sha256": "e661c564e52e8367074696bb930f84e984986d90f6b8e5c8aaaaab4c55a326aa"
+        },
+        {
+          "bytes": 1186,
+          "matches_scientific_commit": true,
+          "path": "experiments/verified_retention_policy_genesis_v1/RESULTS.md",
+          "sha256": "af33166319d019158c1ca49a98857eacc3ac09d1a8e6b8bbe0691b332ca0a38e"
+        },
+        {
+          "bytes": 545,
+          "matches_scientific_commit": true,
+          "path": "experiments/verified_retention_policy_genesis_v1/RetentionPolicy.lean",
+          "sha256": "29a1740f85a5136ed408fc92dcc5b9e3b21a6030da7487ef82960727a341d33a"
+        },
+        {
+          "bytes": 1984,
+          "matches_scientific_commit": true,
+          "path": "experiments/verified_retention_policy_genesis_v1/results/evidence.json",
+          "sha256": "1cd84b8e020e8d11c6fdec2fe78449c3cc6b845a137243bb4d4467fdf6920c62"
+        },
+        {
+          "bytes": 1105,
+          "matches_scientific_commit": true,
+          "path": "experiments/verified_retention_policy_genesis_v1/results/snapshot.json",
+          "sha256": "fe0af1f05b205a0b882407199ba08126e6ad75d6c829f90471a25cb1974a9277"
+        },
+        {
+          "bytes": 7550,
+          "matches_scientific_commit": true,
+          "path": "experiments/verified_retention_policy_genesis_v1/run.py",
+          "sha256": "7a73ea610128f954a44cb53776616c5114a072625e213e14958246e274e015ed"
+        }
+      ],
+      "independently_replayed_here": false,
+      "inputs": "completed calibration streams",
+      "integration": "REJECTED superiority to frozen hand geometry; bounded synthesis and revision partly supported; not installed",
+      "original_primary_artifact_inspected_here": false,
+      "outputs": "weight vector; choose returns dependencyclosed retained subset",
+      "repository": "heathsanchez/test",
+      "scientific_commit": "f00bccabee25319bc0cc41ac9918c1d3a08108ad",
+      "scope": "6561 fixed linear-weight programs,27dependencyclosedsubsets,capacity4,eightnodes; heldout seeds supplied",
+      "verifier": "fully charged fixed-grammar stream costs, heldout comparisons, RetentionPolicy.lean"
+    },
+    {
+      "api": [
+        {
+          "line": 10,
+          "name": "stateless_denotation"
+        },
+        {
+          "line": 13,
+          "name": "stateless_eval"
+        },
+        {
+          "line": 16,
+          "name": "run_machine"
+        },
+        {
+          "line": 22,
+          "name": "synthesize_stateful_separator"
+        },
+        {
+          "line": 34,
+          "name": "main"
+        }
+      ],
+      "branch": "verified-experiment-meta-substrate-genesis-v1",
+      "branch_head": "3f8cca9c5bd09673efc7354202d54ce4722e42aa",
+      "code_executed_here": false,
+      "committed_evidence_gates": {
+        "all_hard_controls": true,
+        "complete_and_no_separator_are_distinct_certificates": true,
+        "complete_stateless_meta_substrate": true,
+        "constructed_machine_is_stateful_extensionally": true,
+        "fully_charged_path_beats_passive": true,
+        "lower_machine_substrate_is_generic": true,
+        "new_observer_separates_histories": true,
+        "no_named_history_delay_or_previous_primitive": true,
+        "repair_authority_changes": true,
+        "same_present_inputs_verified": true,
+        "unknown_expressivity_experiment_meta_inhabited": true
+      },
+      "committed_evidence_verdict": "VERIFIED_EXPERIMENT_META_SUBSTRATE_GENESIS",
+      "dependencies": [],
+      "documentary_authority": {
+        "artifact_id": 10293399981,
+        "artifact_sha256": "acfad65c309876fa6d2c50da21b4457ed4d3fee2c4d6b77d1810437e4522b1b2",
+        "experiment": "Verified Experiment-Meta-Substrate Genesis V1",
+        "no_post_run_tuning": true,
+        "parent_freeze": "af224f4108a3ed545ffad23fc4080225d1157b54",
+        "scientific_commit": "b1c56bc2ec4c1defed7060f8dfff81fdc6ae12f3",
+        "status": "VERIFIED_EXPERIMENT_META_SUBSTRATE_GENESIS",
+        "terminal_verdicts": [
+          "VERIFIED_EXPERIMENT_META_SUBSTRATE_GENESIS",
+          "NEGATIVE_OR_PARTIAL"
+        ],
+        "workflow_job": 103524385216,
+        "workflow_run": 34682784242
+      },
+      "files": [
+        {
+          "bytes": 574,
+          "matches_scientific_commit": false,
+          "path": "experiments/verified_experiment_meta_substrate_genesis_v1/AUTHORITY.json",
+          "sha256": "bda936a70452dd9408d231b33445d4a83bae742dc1e1cda527546e05299e7c7b"
+        },
+        {
+          "bytes": 1909,
+          "matches_scientific_commit": true,
+          "path": "experiments/verified_experiment_meta_substrate_genesis_v1/ExperimentMetaSubstrate.lean",
+          "sha256": "488d5120bb92c09b4b7642040b63759be24c942366e61cda599efe5175a5f280"
+        },
+        {
+          "bytes": 1510,
+          "matches_scientific_commit": true,
+          "path": "experiments/verified_experiment_meta_substrate_genesis_v1/PROTOCOL.md",
+          "sha256": "62bceac998e70ddf033558d3eb1ba7708674b354e5508e92720247a2e6acd7d6"
+        },
+        {
+          "bytes": 993,
+          "matches_scientific_commit": false,
+          "path": "experiments/verified_experiment_meta_substrate_genesis_v1/RESULTS.md",
+          "sha256": "4735b613c191521a6b36dbf75b5049f7384d777a896790dc5936ffd749c27497"
+        },
+        {
+          "bytes": 41,
+          "matches_scientific_commit": null,
+          "path": "experiments/verified_experiment_meta_substrate_genesis_v1/results/RUN_COMMIT",
+          "sha256": "85f27faecb04ad4aed4edc08412d57dfa693ce07fc2d122e0c2f374e02d29190"
+        },
+        {
+          "bytes": 499,
+          "matches_scientific_commit": null,
+          "path": "experiments/verified_experiment_meta_substrate_genesis_v1/results/SHA256SUMS",
+          "sha256": "228dbee5dbcf8f1a883468121dfecd6095ec73f430d8215abf9d5552bb37145d"
+        },
+        {
+          "bytes": 596,
+          "matches_scientific_commit": null,
+          "path": "experiments/verified_experiment_meta_substrate_genesis_v1/results/evidence-lean.log",
+          "sha256": "9b48cae85db7e3cab322419ba3dfaccc2724079354d7daaa22530cee03f565ee"
+        },
+        {
+          "bytes": 2030,
+          "matches_scientific_commit": null,
+          "path": "experiments/verified_experiment_meta_substrate_genesis_v1/results/evidence.json",
+          "sha256": "5edbd3d33a19bf30d43147171d2ccda06dc298a0e727f2dd82d001bcd9eb2eb5"
+        },
+        {
+          "bytes": 735,
+          "matches_scientific_commit": null,
+          "path": "experiments/verified_experiment_meta_substrate_genesis_v1/results/snapshot.json",
+          "sha256": "b4205e84a36d15411848b8ba5b187f676ae8ac84b273cda1a6e360f21520bbf4"
+        },
+        {
+          "bytes": 2030,
+          "matches_scientific_commit": null,
+          "path": "experiments/verified_experiment_meta_substrate_genesis_v1/results/workflow-evidence.json",
+          "sha256": "5edbd3d33a19bf30d43147171d2ccda06dc298a0e727f2dd82d001bcd9eb2eb5"
+        },
+        {
+          "bytes": 5369,
+          "matches_scientific_commit": true,
+          "path": "experiments/verified_experiment_meta_substrate_genesis_v1/run.py",
+          "sha256": "822541b0900d6b4342b37a2ca0bc87708834f5df7c0f7c5997e76b4229c962da"
+        }
+      ],
+      "independently_replayed_here": false,
+      "inputs": "see original frozen protocol",
+      "integration": "CANDIDATE source recovered; independent original archive not opened here",
+      "original_primary_artifact_inspected_here": false,
+      "outputs": "see original source",
+      "repository": "heathsanchez/test",
+      "scientific_commit": "b1c56bc2ec4c1defed7060f8dfff81fdc6ae12f3",
+      "scope": "historical fixed finite experiment-forming substrate; inspected declaration and source signatures only here; observation worker owns detailed assessment",
+      "verifier": "ExperimentMetaSubstrate.lean plus original finite source-native protocol"
+    },
+    {
+      "api": [
+        {
+          "line": 16,
+          "name": "policy_cost"
+        },
+        {
+          "line": 17,
+          "name": "acquire"
+        },
+        {
+          "line": 32,
+          "name": "main"
+        }
+      ],
+      "branch": "verified-value-evidence-separator-genesis-v1",
+      "branch_head": "29e9c7d1b64fb5080717ff644c9e4614e2309694",
+      "code_executed_here": false,
+      "committed_evidence_gates": {
+        "fixed_policy_language": true,
+        "fully_charged_guided_beats_passive": true,
+        "fully_charged_guided_beats_random": true,
+        "fully_charged_guided_beats_sham": true,
+        "guided_constructs_only_disagreements": true,
+        "guided_selects_unique_geometry_program": true,
+        "matched_evidence_budgets": true,
+        "positive_causal_savings": true,
+        "separator_ablation_restores_passive": true
+      },
+      "committed_evidence_verdict": "VERIFIED_VALUE_EVIDENCE_SEPARATOR_GENESIS",
+      "dependencies": [],
+      "documentary_authority": {
+        "artifact_id": 10289800538,
+        "artifact_sha256": "a86b6729ed0ef758cc5f5ad1ef99677c373a0467574921bfd96d62a0370b03c6",
+        "base_commit": "185476c1aa0d9fa7caa5327152b254bec45c4988",
+        "branch": "verified-value-evidence-separator-genesis-v1",
+        "diagnosis": "VALUE_EVIDENCE_INSUFFICIENCY",
+        "scientific_commit": "74a44981a766da23df87780496191014fcd41215",
+        "scientific_job": 103484544719,
+        "scientific_run": 34668270318,
+        "status": "FROZEN_VERIFIED_VALUE_EVIDENCE_SEPARATOR_GENESIS",
+        "verdict": "VERIFIED_VALUE_EVIDENCE_SEPARATOR_GENESIS"
+      },
+      "files": [
+        {
+          "bytes": 546,
+          "matches_scientific_commit": null,
+          "path": "experiments/verified_value_evidence_separator_genesis_v1/AUTHORITY.json",
+          "sha256": "7a70eab2651f44dd070564daeaab7f314b66847a413658e32f8296f57654e4bd"
+        },
+        {
+          "bytes": 661,
+          "matches_scientific_commit": true,
+          "path": "experiments/verified_value_evidence_separator_genesis_v1/EvidenceSeparator.lean",
+          "sha256": "d2b1f44f405e8d5e6f7dc2cdf67001c9abd74662469df4e99d331fdc47ee051c"
+        },
+        {
+          "bytes": 1270,
+          "matches_scientific_commit": true,
+          "path": "experiments/verified_value_evidence_separator_genesis_v1/PROTOCOL.md",
+          "sha256": "2d08c1b88a6bd07474ff5e4c13b23a85eba5391ddc83d6d341d9567ca9d57a15"
+        },
+        {
+          "bytes": 916,
+          "matches_scientific_commit": true,
+          "path": "experiments/verified_value_evidence_separator_genesis_v1/RESULTS.md",
+          "sha256": "4540e542add79f4e35e3a3ada76315ecf259fa775bd3b9af0d89eff5e4ba91f1"
+        },
+        {
+          "bytes": 3097,
+          "matches_scientific_commit": true,
+          "path": "experiments/verified_value_evidence_separator_genesis_v1/results/evidence.json",
+          "sha256": "cd2446d1a5d376b1ad370a8fb5ad03489e916540298268741f7c9381d1917eba"
+        },
+        {
+          "bytes": 494,
+          "matches_scientific_commit": true,
+          "path": "experiments/verified_value_evidence_separator_genesis_v1/results/snapshot.json",
+          "sha256": "029a1398b366a97025f49b1feaee58e8bb6c8f7194a3aebf1974489732b36e8c"
+        },
+        {
+          "bytes": 4563,
+          "matches_scientific_commit": true,
+          "path": "experiments/verified_value_evidence_separator_genesis_v1/run.py",
+          "sha256": "62aa93ab7fb5ab2b3dec55308ee2a30d958a5d8ae1a41122e676f637ee510c75"
+        }
+      ],
+      "independently_replayed_here": false,
+      "inputs": "see original frozen protocol",
+      "integration": "CANDIDATE source recovered; independent original archive not opened here",
+      "original_primary_artifact_inspected_here": false,
+      "outputs": "see original source",
+      "repository": "heathsanchez/test",
+      "scientific_commit": "74a44981a766da23df87780496191014fcd41215",
+      "scope": "historical finite independent value-evidence distinction; selection worker owns detailed assessment",
+      "verifier": "EvidenceSeparator.lean plus original finite protocol"
+    }
+  ]
+}

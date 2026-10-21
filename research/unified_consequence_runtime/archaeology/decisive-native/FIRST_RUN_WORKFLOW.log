@@ -1,0 +1,1152 @@
+native-meta-decision	Set up job	﻿2026-10-16T02:37:31.4074028Z Current runner version: '2.337.0'
+native-meta-decision	Set up job	2026-10-16T02:37:31.4099733Z ##[group]Runner Image Provisioner
+native-meta-decision	Set up job	2026-10-16T02:37:31.4100565Z Hosted Compute Agent
+native-meta-decision	Set up job	2026-10-16T02:37:31.4101192Z Version: 20261012.601
+native-meta-decision	Set up job	2026-10-16T02:37:31.4101769Z Commit: f3dc54e1fb89da6852db922499a0233137369e1d
+native-meta-decision	Set up job	2026-10-16T02:37:31.4102421Z Build Date: 2026-10-12T17:48:21Z
+native-meta-decision	Set up job	2026-10-16T02:37:31.4103090Z Worker ID: {d8d6a1e8-022f-4193-90ac-ca0494f6fcd7}
+native-meta-decision	Set up job	2026-10-16T02:37:31.4103725Z Region: westus3
+native-meta-decision	Set up job	2026-10-16T02:37:31.4104215Z Cloud: Azure
+native-meta-decision	Set up job	2026-10-16T02:37:31.4104898Z ##[endgroup]
+native-meta-decision	Set up job	2026-10-16T02:37:31.4106284Z ##[group]Operating System
+native-meta-decision	Set up job	2026-10-16T02:37:31.4106924Z Ubuntu
+native-meta-decision	Set up job	2026-10-16T02:37:31.4107412Z 24.04.5
+native-meta-decision	Set up job	2026-10-16T02:37:31.4107880Z LTS
+native-meta-decision	Set up job	2026-10-16T02:37:31.4108363Z ##[endgroup]
+native-meta-decision	Set up job	2026-10-16T02:37:31.4108859Z ##[group]Runner Image
+native-meta-decision	Set up job	2026-10-16T02:37:31.4109416Z Image: ubuntu-24.04
+native-meta-decision	Set up job	2026-10-16T02:37:31.4109939Z Version: 20261012.334.1
+native-meta-decision	Set up job	2026-10-16T02:37:31.4110901Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20261012.334/images/ubuntu/Ubuntu2404-Readme.md
+native-meta-decision	Set up job	2026-10-16T02:37:31.4112611Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20261012.334
+native-meta-decision	Set up job	2026-10-16T02:37:31.4113512Z ##[endgroup]
+native-meta-decision	Set up job	2026-10-16T02:37:31.4114751Z ##[group]GITHUB_TOKEN Permissions
+native-meta-decision	Set up job	2026-10-16T02:37:31.4116830Z Actions: read
+native-meta-decision	Set up job	2026-10-16T02:37:31.4117383Z Contents: read
+native-meta-decision	Set up job	2026-10-16T02:37:31.4117902Z Metadata: read
+native-meta-decision	Set up job	2026-10-16T02:37:31.4118427Z ##[endgroup]
+native-meta-decision	Set up job	2026-10-16T02:37:31.4120990Z Secret source: Actions
+native-meta-decision	Set up job	2026-10-16T02:37:31.4121996Z Cache mode: write
+native-meta-decision	Set up job	2026-10-16T02:37:31.4122698Z Prepare workflow directory
+native-meta-decision	Set up job	2026-10-16T02:37:31.4667981Z Prepare all required actions
+native-meta-decision	Set up job	2026-10-16T02:37:31.4722051Z Getting action download info
+native-meta-decision	Set up job	2026-10-16T02:37:31.7875934Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+native-meta-decision	Set up job	2026-10-16T02:37:31.8818226Z Download action repository 'actions/setup-python@v5' (SHA:a26af69be951a213d495a4c3e4e4022e16d87065)
+native-meta-decision	Set up job	2026-10-16T02:37:31.9505797Z Download action repository 'actions/upload-artifact@v4' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+native-meta-decision	Set up job	2026-10-16T02:37:32.1845334Z Complete job name: native-meta-decision
+native-meta-decision	Run actions/checkout@v4	﻿2026-10-16T02:37:32.2483026Z ##[group]Run actions/checkout@v4
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:32.2483829Z with:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:32.2484240Z   fetch-depth: 1
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:32.2484836Z   persist-credentials: false
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:32.2485320Z   repository: heathsanchez/test
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:32.2489110Z   token: ***
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:32.2489483Z   ssh-strict: true
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:32.2489877Z   ssh-user: git
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:32.2490256Z   clean: true
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:32.2490659Z   sparse-checkout-cone-mode: true
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:32.2491132Z   fetch-tags: false
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:32.2491530Z   show-progress: true
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:32.2491938Z   lfs: false
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:32.2492311Z   submodules: false
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:32.2492709Z   set-safe-directory: true
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:32.2493166Z   allow-unsafe-pr-checkout: false
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:32.2493925Z env:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:32.2494427Z   PYTHONDONTWRITEBYTECODE: 1
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:32.2494927Z   PYTHONUNBUFFERED: 1
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:32.2495445Z   UDM_COMPONENTS: /home/runner/work/test/test/components
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:32.2496278Z   UDM_SOURCE_REPOS: /home/runner/work/test/test/components/selection-sources
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:32.2496955Z ##[endgroup]
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:32.3545532Z Syncing repository: heathsanchez/test
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:32.3548486Z ##[group]Getting Git version info
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:32.3549712Z Working directory is '/home/runner/work/test/test'
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:32.3551324Z [command]/usr/bin/git version
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:32.3564506Z git version 2.55.0
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:32.3598429Z ##[endgroup]
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:32.3609173Z Temporarily overriding HOME='/home/runner/work/_temp/41d10059-5414-44da-9bf1-c2c5f73f78ba' before making global git config changes
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:32.3611677Z Adding repository directory to the temporary git global config as a safe directory
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:32.3615930Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/test/test
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:32.3725124Z Deleting the contents of '/home/runner/work/test/test'
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:32.3732804Z ##[group]Initializing the repository
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:32.3739473Z [command]/usr/bin/git init /home/runner/work/test/test
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:32.3848524Z hint: Using 'master' as the name for the initial branch. This default branch name
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:32.3850765Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:32.3852421Z hint: to use in all of your new repositories, which will suppress this warning,
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:32.3853701Z hint: call:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:32.3854671Z hint:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:32.3855643Z hint: 	git config --global init.defaultBranch <name>
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:32.3856801Z hint:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:32.3857859Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:32.3859410Z hint: 'development'. The just-created branch can be renamed via this command:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:32.3860697Z hint:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:32.3861555Z hint: 	git branch -m <name>
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:32.3862434Z hint:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:32.3863591Z hint: Disable this message with "git config set advice.defaultBranchName false"
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:32.3865922Z Initialized empty Git repository in /home/runner/work/test/test/.git/
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:32.3869089Z [command]/usr/bin/git remote add origin https://github.com/heathsanchez/test
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:32.3917097Z ##[endgroup]
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:32.3918901Z ##[group]Disabling automatic garbage collection
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:32.3921369Z [command]/usr/bin/git config --local gc.auto 0
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:32.3953068Z ##[endgroup]
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:32.3954570Z ##[group]Setting up auth
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:32.3960245Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:32.3993476Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:32.4384232Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:32.4426725Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:32.4676822Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:32.4709965Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:32.4943592Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:32.4990868Z ##[endgroup]
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:32.4992458Z ##[group]Fetching the repository
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:32.5002660Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +a02eb3fb10b7577cc232fc9180b8fe9d3ef2c125:refs/remotes/origin/research/udm-decisive-meta-decision-20261016
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:34.2161790Z From https://github.com/heathsanchez/test
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:34.2165843Z  * [new ref]         a02eb3fb10b7577cc232fc9180b8fe9d3ef2c125 -> origin/research/udm-decisive-meta-decision-20261016
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:34.2173292Z ##[endgroup]
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:34.2176082Z ##[group]Determining the checkout info
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:34.2179183Z ##[endgroup]
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:34.2180736Z [command]/usr/bin/git sparse-checkout disable
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:34.2219105Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:34.2250047Z ##[group]Checking out the ref
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:34.2257248Z [command]/usr/bin/git checkout --progress --force -B research/udm-decisive-meta-decision-20261016 refs/remotes/origin/research/udm-decisive-meta-decision-20261016
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:34.3325124Z Switched to a new branch 'research/udm-decisive-meta-decision-20261016'
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:34.3329315Z branch 'research/udm-decisive-meta-decision-20261016' set up to track 'origin/research/udm-decisive-meta-decision-20261016'.
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:34.3339070Z ##[endgroup]
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:34.3378816Z [command]/usr/bin/git log -1 --format=%H
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:34.3402218Z a02eb3fb10b7577cc232fc9180b8fe9d3ef2c125
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:34.3410947Z ##[group]Removing auth
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:34.3414570Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:34.3445399Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:34.3631039Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:34.3655959Z http.https://github.com/.extraheader
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:34.3662604Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:34.3695700Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:34.3882161Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:34.3910021Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:34.4096093Z ##[endgroup]
+native-meta-decision	Run actions/setup-python@v5	﻿2026-10-16T02:37:34.4434530Z ##[group]Run actions/setup-python@v5
+native-meta-decision	Run actions/setup-python@v5	2026-10-16T02:37:34.4435781Z with:
+native-meta-decision	Run actions/setup-python@v5	2026-10-16T02:37:34.4436624Z   python-version: 3.12
+native-meta-decision	Run actions/setup-python@v5	2026-10-16T02:37:34.4437600Z   check-latest: false
+native-meta-decision	Run actions/setup-python@v5	2026-10-16T02:37:34.4447367Z   token: ***
+native-meta-decision	Run actions/setup-python@v5	2026-10-16T02:37:34.4448297Z   update-environment: true
+native-meta-decision	Run actions/setup-python@v5	2026-10-16T02:37:34.4449358Z   allow-prereleases: false
+native-meta-decision	Run actions/setup-python@v5	2026-10-16T02:37:34.4450362Z   freethreaded: false
+native-meta-decision	Run actions/setup-python@v5	2026-10-16T02:37:34.4451273Z env:
+native-meta-decision	Run actions/setup-python@v5	2026-10-16T02:37:34.4452121Z   PYTHONDONTWRITEBYTECODE: 1
+native-meta-decision	Run actions/setup-python@v5	2026-10-16T02:37:34.4453210Z   PYTHONUNBUFFERED: 1
+native-meta-decision	Run actions/setup-python@v5	2026-10-16T02:37:34.4454419Z   UDM_COMPONENTS: /home/runner/work/test/test/components
+native-meta-decision	Run actions/setup-python@v5	2026-10-16T02:37:34.4456174Z   UDM_SOURCE_REPOS: /home/runner/work/test/test/components/selection-sources
+native-meta-decision	Run actions/setup-python@v5	2026-10-16T02:37:34.4457744Z ##[endgroup]
+native-meta-decision	Run actions/setup-python@v5	2026-10-16T02:37:34.5785851Z ##[group]Installed versions
+native-meta-decision	Run actions/setup-python@v5	2026-10-16T02:37:34.5888664Z (node:2308) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+native-meta-decision	Run actions/setup-python@v5	2026-10-16T02:37:34.5891695Z (Use `node --trace-deprecation ...` to show where the warning was created)
+native-meta-decision	Run actions/setup-python@v5	2026-10-16T02:37:34.5894612Z Successfully set up CPython (3.12.15)
+native-meta-decision	Run actions/setup-python@v5	2026-10-16T02:37:34.5897785Z ##[endgroup]
+native-meta-decision	Freeze all source and contracts before any target access	﻿2026-10-16T02:37:34.6164691Z ##[group]Run python -B -m research.unified_consequence_runtime.qualify_decisive_native \
+native-meta-decision	Freeze all source and contracts before any target access	2026-10-16T02:37:34.6167294Z [36;1mpython -B -m research.unified_consequence_runtime.qualify_decisive_native \[0m
+native-meta-decision	Freeze all source and contracts before any target access	2026-10-16T02:37:34.6169533Z [36;1m  --write-freeze --repo "$GITHUB_WORKSPACE" --out qualification/FREEZE.json[0m
+native-meta-decision	Freeze all source and contracts before any target access	2026-10-16T02:37:34.6171473Z [36;1mgit rev-parse HEAD > qualification/source-commit.txt[0m
+native-meta-decision	Freeze all source and contracts before any target access	2026-10-16T02:37:34.6403495Z shell: /usr/bin/bash -e {0}
+native-meta-decision	Freeze all source and contracts before any target access	2026-10-16T02:37:34.6404926Z env:
+native-meta-decision	Freeze all source and contracts before any target access	2026-10-16T02:37:34.6405815Z   PYTHONDONTWRITEBYTECODE: 1
+native-meta-decision	Freeze all source and contracts before any target access	2026-10-16T02:37:34.6406857Z   PYTHONUNBUFFERED: 1
+native-meta-decision	Freeze all source and contracts before any target access	2026-10-16T02:37:34.6407989Z   UDM_COMPONENTS: /home/runner/work/test/test/components
+native-meta-decision	Freeze all source and contracts before any target access	2026-10-16T02:37:34.6409696Z   UDM_SOURCE_REPOS: /home/runner/work/test/test/components/selection-sources
+native-meta-decision	Freeze all source and contracts before any target access	2026-10-16T02:37:34.6411486Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.15/x64
+native-meta-decision	Freeze all source and contracts before any target access	2026-10-16T02:37:34.6413159Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.15/x64/lib/pkgconfig
+native-meta-decision	Freeze all source and contracts before any target access	2026-10-16T02:37:34.6414934Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.15/x64
+native-meta-decision	Freeze all source and contracts before any target access	2026-10-16T02:37:34.6416548Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.15/x64
+native-meta-decision	Freeze all source and contracts before any target access	2026-10-16T02:37:34.6418092Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.15/x64
+native-meta-decision	Freeze all source and contracts before any target access	2026-10-16T02:37:34.6419671Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.15/x64/lib
+native-meta-decision	Freeze all source and contracts before any target access	2026-10-16T02:37:34.6421307Z ##[endgroup]
+native-meta-decision	Freeze all source and contracts before any target access	2026-10-16T02:37:35.1188665Z {"status":"FROZEN","verdicts":{}}
+native-meta-decision	Run actions/checkout@v4	﻿2026-10-16T02:37:35.1494590Z ##[group]Run actions/checkout@v4
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.1495007Z with:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.1495275Z   repository: heathsanchez/test
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.1495601Z   ref: c9092fa57c8943e638f95689cd36e6a63310f41e
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.1495951Z   path: components/development
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.1496261Z   persist-credentials: false
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.1499330Z   token: ***
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.1499602Z   ssh-strict: true
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.1499853Z   ssh-user: git
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.1500098Z   clean: true
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.1500374Z   sparse-checkout-cone-mode: true
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.1500682Z   fetch-depth: 1
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.1500931Z   fetch-tags: false
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.1501186Z   show-progress: true
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.1501456Z   lfs: false
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.1501693Z   submodules: false
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.1501964Z   set-safe-directory: true
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.1502300Z   allow-unsafe-pr-checkout: false
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.1502608Z env:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.1502872Z   PYTHONDONTWRITEBYTECODE: 1
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.1503204Z   PYTHONUNBUFFERED: 1
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.1503538Z   UDM_COMPONENTS: /home/runner/work/test/test/components
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.1504027Z   UDM_SOURCE_REPOS: /home/runner/work/test/test/components/selection-sources
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.1504755Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.15/x64
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.1505235Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.15/x64/lib/pkgconfig
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.1505713Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.15/x64
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.1506152Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.15/x64
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.1506587Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.15/x64
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.1507028Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.15/x64/lib
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.1507398Z ##[endgroup]
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.2328547Z Syncing repository: heathsanchez/test
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.2338393Z ##[group]Getting Git version info
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.2339346Z Working directory is '/home/runner/work/test/test/components/development'
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.2384947Z [command]/usr/bin/git version
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.2430131Z git version 2.55.0
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.2454928Z ##[endgroup]
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.2471361Z Temporarily overriding HOME='/home/runner/work/_temp/57ac9bc2-f8b6-4bc9-bdef-6e931892c914' before making global git config changes
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.2472280Z Adding repository directory to the temporary git global config as a safe directory
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.2478794Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/test/test/components/development
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.2513208Z ##[group]Initializing the repository
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.2520147Z [command]/usr/bin/git init /home/runner/work/test/test/components/development
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.2565807Z hint: Using 'master' as the name for the initial branch. This default branch name
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.2567247Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.2568439Z hint: to use in all of your new repositories, which will suppress this warning,
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.2571367Z hint: call:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.2572100Z hint:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.2572893Z hint: 	git config --global init.defaultBranch <name>
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.2573691Z hint:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.2575107Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.2576358Z hint: 'development'. The just-created branch can be renamed via this command:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.2577286Z hint:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.2577898Z hint: 	git branch -m <name>
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.2578548Z hint:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.2579362Z hint: Disable this message with "git config set advice.defaultBranchName false"
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.2580573Z Initialized empty Git repository in /home/runner/work/test/test/components/development/.git/
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.2583311Z [command]/usr/bin/git remote add origin https://github.com/heathsanchez/test
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.2618881Z ##[endgroup]
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.2619798Z ##[group]Disabling automatic garbage collection
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.2623616Z [command]/usr/bin/git config --local gc.auto 0
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.2656229Z ##[endgroup]
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.2656954Z ##[group]Setting up auth
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.2664949Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.2701016Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.2922779Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.2961726Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.3197987Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.3237823Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.3458117Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.3494865Z ##[endgroup]
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.3495854Z ##[group]Fetching the repository
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:35.3505765Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin c9092fa57c8943e638f95689cd36e6a63310f41e
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.2555556Z From https://github.com/heathsanchez/test
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.2556163Z  * branch            c9092fa57c8943e638f95689cd36e6a63310f41e -> FETCH_HEAD
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.2559344Z ##[endgroup]
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.2560004Z ##[group]Determining the checkout info
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.2562497Z ##[endgroup]
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.2569478Z [command]/usr/bin/git sparse-checkout disable
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.2607882Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.2635590Z ##[group]Checking out the ref
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.2640156Z [command]/usr/bin/git checkout --progress --force c9092fa57c8943e638f95689cd36e6a63310f41e
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.3089617Z Note: switching to 'c9092fa57c8943e638f95689cd36e6a63310f41e'.
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.3090245Z 
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.3090573Z You are in 'detached HEAD' state. You can look around, make experimental
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.3091052Z changes and commit them, and you can discard any commits you make in this
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.3091509Z state without impacting any branches by switching back to a branch.
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.3091770Z 
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.3091973Z If you want to create a new branch to retain commits you create, you may
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.3092405Z do so (now or later) by using -c with the switch command. Example:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.3092708Z 
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.3092857Z   git switch -c <new-branch-name>
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.3093034Z 
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.3093199Z Or undo this operation with:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.3093471Z 
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.3093617Z   git switch -
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.3093855Z 
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.3094214Z Turn off this advice by setting config variable advice.detachedHead to false
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.3094736Z 
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.3094926Z HEAD is now at c9092fa Qualify depth5 from preserved evidence artifact
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.3096051Z ##[endgroup]
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.3132261Z [command]/usr/bin/git log -1 --format=%H
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.3155766Z c9092fa57c8943e638f95689cd36e6a63310f41e
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.3164753Z ##[group]Removing auth
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.3168711Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.3196630Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.3386355Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.3407520Z http.https://github.com/.extraheader
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.3413373Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.3442783Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.3638124Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.3668236Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.3850499Z ##[endgroup]
+native-meta-decision	Run actions/checkout@v4	﻿2026-10-16T02:37:36.4027778Z ##[group]Run actions/checkout@v4
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.4028094Z with:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.4028329Z   repository: metalogiclabs/metatron
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.4028618Z   ref: b9d1b5cc10477188be6e55617699be60e70f6dad
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.4028908Z   path: components/metatron
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.4029153Z   persist-credentials: false
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.4031908Z   token: ***
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.4032114Z   ssh-strict: true
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.4032322Z   ssh-user: git
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.4032512Z   clean: true
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.4032729Z   sparse-checkout-cone-mode: true
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.4032976Z   fetch-depth: 1
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.4033174Z   fetch-tags: false
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.4033378Z   show-progress: true
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.4033583Z   lfs: false
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.4033774Z   submodules: false
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.4033977Z   set-safe-directory: true
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.4034224Z   allow-unsafe-pr-checkout: false
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.4034703Z env:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.4034908Z   PYTHONDONTWRITEBYTECODE: 1
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.4035196Z   PYTHONUNBUFFERED: 1
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.4035475Z   UDM_COMPONENTS: /home/runner/work/test/test/components
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.4035887Z   UDM_SOURCE_REPOS: /home/runner/work/test/test/components/selection-sources
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.4036314Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.15/x64
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.4036721Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.15/x64/lib/pkgconfig
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.4037120Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.15/x64
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.4037485Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.15/x64
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.4037855Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.15/x64
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.4038231Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.15/x64/lib
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.4038540Z ##[endgroup]
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.4876285Z Syncing repository: metalogiclabs/metatron
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.4881774Z ##[group]Getting Git version info
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.4882765Z Working directory is '/home/runner/work/test/test/components/metatron'
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.4923948Z [command]/usr/bin/git version
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.4962379Z git version 2.55.0
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.4989493Z ##[endgroup]
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.4996913Z Temporarily overriding HOME='/home/runner/work/_temp/db20270a-af58-4d4c-8fe4-3586b8dc323a' before making global git config changes
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.4998357Z Adding repository directory to the temporary git global config as a safe directory
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.5003697Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/test/test/components/metatron
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.5038569Z ##[group]Initializing the repository
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.5043537Z [command]/usr/bin/git init /home/runner/work/test/test/components/metatron
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.5082315Z hint: Using 'master' as the name for the initial branch. This default branch name
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.5083871Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.5085123Z hint: to use in all of your new repositories, which will suppress this warning,
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.5086455Z hint: call:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.5087155Z hint:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.5087652Z hint: 	git config --global init.defaultBranch <name>
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.5088155Z hint:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.5088603Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.5089358Z hint: 'development'. The just-created branch can be renamed via this command:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.5090040Z hint:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.5090356Z hint: 	git branch -m <name>
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.5090705Z hint:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.5091182Z hint: Disable this message with "git config set advice.defaultBranchName false"
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.5092096Z Initialized empty Git repository in /home/runner/work/test/test/components/metatron/.git/
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.5100256Z [command]/usr/bin/git remote add origin https://github.com/metalogiclabs/metatron
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.5145533Z ##[endgroup]
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.5146433Z ##[group]Disabling automatic garbage collection
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.5149847Z [command]/usr/bin/git config --local gc.auto 0
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.5181682Z ##[endgroup]
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.5182503Z ##[group]Setting up auth
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.5190144Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.5224442Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.5431707Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.5472779Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.5701474Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.5742420Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.5979017Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.6017908Z ##[endgroup]
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.6018702Z ##[group]Fetching the repository
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:36.6028413Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin b9d1b5cc10477188be6e55617699be60e70f6dad
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.2150181Z From https://github.com/metalogiclabs/metatron
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.2150816Z  * branch            b9d1b5cc10477188be6e55617699be60e70f6dad -> FETCH_HEAD
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.2154600Z ##[endgroup]
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.2155009Z ##[group]Determining the checkout info
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.2156875Z ##[endgroup]
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.2162966Z [command]/usr/bin/git sparse-checkout disable
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.2203487Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.2249010Z ##[group]Checking out the ref
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.2254112Z [command]/usr/bin/git checkout --progress --force b9d1b5cc10477188be6e55617699be60e70f6dad
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.2376391Z Note: switching to 'b9d1b5cc10477188be6e55617699be60e70f6dad'.
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.2376960Z 
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.2377311Z You are in 'detached HEAD' state. You can look around, make experimental
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.2378151Z changes and commit them, and you can discard any commits you make in this
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.2378689Z state without impacting any branches by switching back to a branch.
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.2379049Z 
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.2379323Z If you want to create a new branch to retain commits you create, you may
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.2379953Z do so (now or later) by using -c with the switch command. Example:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.2380337Z 
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.2380513Z   git switch -c <new-branch-name>
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.2380778Z 
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.2380984Z Or undo this operation with:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.2381509Z 
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.2381647Z   git switch -
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.2381822Z 
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.2382041Z Turn off this advice by setting config variable advice.detachedHead to false
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.2382340Z 
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.2382520Z HEAD is now at b9d1b5c ci: retain generated capability gate on main
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.2383352Z ##[endgroup]
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.2421810Z [command]/usr/bin/git log -1 --format=%H
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.2448711Z b9d1b5cc10477188be6e55617699be60e70f6dad
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.2462986Z ##[group]Removing auth
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.2463444Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.2492840Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.2690082Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.2713329Z http.https://github.com/.extraheader
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.2720487Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.2753729Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.2968722Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.2998943Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.3197962Z ##[endgroup]
+native-meta-decision	Run actions/checkout@v4	﻿2026-10-16T02:37:37.3344101Z ##[group]Run actions/checkout@v4
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.3344683Z with:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.3344903Z   repository: heathsanchez/realitygraph
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.3345205Z   ref: 50c43b14e7272469bc51ff7204dec07682a996d7
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.3345508Z   path: components/flash
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.3345742Z   persist-credentials: false
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.3348354Z   token: ***
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.3348556Z   ssh-strict: true
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.3348760Z   ssh-user: git
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.3348953Z   clean: true
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.3349170Z   sparse-checkout-cone-mode: true
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.3349424Z   fetch-depth: 1
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.3349629Z   fetch-tags: false
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.3349837Z   show-progress: true
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.3350040Z   lfs: false
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.3350222Z   submodules: false
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.3350427Z   set-safe-directory: true
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.3350666Z   allow-unsafe-pr-checkout: false
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.3350934Z env:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.3351130Z   PYTHONDONTWRITEBYTECODE: 1
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.3351410Z   PYTHONUNBUFFERED: 1
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.3351690Z   UDM_COMPONENTS: /home/runner/work/test/test/components
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.3352108Z   UDM_SOURCE_REPOS: /home/runner/work/test/test/components/selection-sources
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.3352538Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.15/x64
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.3352943Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.15/x64/lib/pkgconfig
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.3353347Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.15/x64
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.3353706Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.15/x64
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.3354069Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.15/x64
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.3354637Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.15/x64/lib
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.3354956Z ##[endgroup]
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.4228836Z Syncing repository: heathsanchez/realitygraph
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.4237444Z ##[group]Getting Git version info
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.4238145Z Working directory is '/home/runner/work/test/test/components/flash'
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.4281161Z [command]/usr/bin/git version
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.4322238Z git version 2.55.0
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.4340063Z ##[endgroup]
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.4364044Z Temporarily overriding HOME='/home/runner/work/_temp/ebd13bbb-36d3-4152-b012-a6275c5785a2' before making global git config changes
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.4365835Z Adding repository directory to the temporary git global config as a safe directory
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.4366749Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/test/test/components/flash
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.4401730Z ##[group]Initializing the repository
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.4408037Z [command]/usr/bin/git init /home/runner/work/test/test/components/flash
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.4444914Z hint: Using 'master' as the name for the initial branch. This default branch name
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.4445999Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.4447129Z hint: to use in all of your new repositories, which will suppress this warning,
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.4448029Z hint: call:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.4448539Z hint:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.4449121Z hint: 	git config --global init.defaultBranch <name>
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.4450239Z hint:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.4450935Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.4452021Z hint: 'development'. The just-created branch can be renamed via this command:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.4453139Z hint:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.4453641Z hint: 	git branch -m <name>
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.4454194Z hint:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.4455053Z hint: Disable this message with "git config set advice.defaultBranchName false"
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.4456320Z Initialized empty Git repository in /home/runner/work/test/test/components/flash/.git/
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.4458482Z [command]/usr/bin/git remote add origin https://github.com/heathsanchez/realitygraph
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.4487494Z ##[endgroup]
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.4488184Z ##[group]Disabling automatic garbage collection
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.4493311Z [command]/usr/bin/git config --local gc.auto 0
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.4528478Z ##[endgroup]
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.4529336Z ##[group]Setting up auth
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.4532321Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.4563779Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.4799762Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.4832403Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.5075472Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.5117762Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.5447308Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.5665837Z ##[endgroup]
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.5666516Z ##[group]Fetching the repository
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:37.5677926Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin 50c43b14e7272469bc51ff7204dec07682a996d7
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.2430476Z From https://github.com/heathsanchez/realitygraph
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.2431034Z  * branch            50c43b14e7272469bc51ff7204dec07682a996d7 -> FETCH_HEAD
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.2434997Z ##[endgroup]
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.2435365Z ##[group]Determining the checkout info
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.2437383Z ##[endgroup]
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.2443261Z [command]/usr/bin/git sparse-checkout disable
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.2483654Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.2513956Z ##[group]Checking out the ref
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.2518682Z [command]/usr/bin/git checkout --progress --force 50c43b14e7272469bc51ff7204dec07682a996d7
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.2659005Z Note: switching to '50c43b14e7272469bc51ff7204dec07682a996d7'.
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.2659336Z 
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.2659548Z You are in 'detached HEAD' state. You can look around, make experimental
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.2660044Z changes and commit them, and you can discard any commits you make in this
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.2660762Z state without impacting any branches by switching back to a branch.
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.2661167Z 
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.2661426Z If you want to create a new branch to retain commits you create, you may
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.2662134Z do so (now or later) by using -c with the switch command. Example:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.2662504Z 
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.2662672Z   git switch -c <new-branch-name>
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.2662919Z 
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.2663116Z Or undo this operation with:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.2663339Z 
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.2663464Z   git switch -
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.2663656Z 
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.2663941Z Turn off this advice by setting config variable advice.detachedHead to false
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.2664512Z 
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.2664720Z HEAD is now at 50c43b1 Freeze Flash live router cycle 1 evidence
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.2665970Z ##[endgroup]
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.2709850Z [command]/usr/bin/git log -1 --format=%H
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.2736482Z 50c43b14e7272469bc51ff7204dec07682a996d7
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.2748470Z ##[group]Removing auth
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.2754055Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.2787232Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.2983236Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.3005474Z http.https://github.com/.extraheader
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.3012301Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.3045120Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.3231159Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.3259005Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.3440351Z ##[endgroup]
+native-meta-decision	Run actions/checkout@v4	﻿2026-10-16T02:37:38.3581844Z ##[group]Run actions/checkout@v4
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.3582115Z with:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.3582333Z   repository: ServiceNow/webarena-verified
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.3582630Z   ref: 6473f72db5dcefc97b5725b59e734504edc28a21
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.3582902Z   fetch-depth: 0
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.3583114Z   path: components/evaluator
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.3583354Z   persist-credentials: false
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.3586339Z   token: ***
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.3586527Z   ssh-strict: true
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.3586748Z   ssh-user: git
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.3586934Z   clean: true
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.3587140Z   sparse-checkout-cone-mode: true
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.3587387Z   fetch-tags: false
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.3587590Z   show-progress: true
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.3587793Z   lfs: false
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.3587983Z   submodules: false
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.3588185Z   set-safe-directory: true
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.3588422Z   allow-unsafe-pr-checkout: false
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.3588653Z env:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.3588840Z   PYTHONDONTWRITEBYTECODE: 1
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.3589119Z   PYTHONUNBUFFERED: 1
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.3589377Z   UDM_COMPONENTS: /home/runner/work/test/test/components
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.3589786Z   UDM_SOURCE_REPOS: /home/runner/work/test/test/components/selection-sources
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.3590209Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.15/x64
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.3590615Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.15/x64/lib/pkgconfig
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.3591146Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.15/x64
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.3591513Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.15/x64
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.3591881Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.15/x64
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.3592248Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.15/x64/lib
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.3592558Z ##[endgroup]
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.4441413Z Syncing repository: ServiceNow/webarena-verified
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.4451182Z ##[group]Getting Git version info
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.4452369Z Working directory is '/home/runner/work/test/test/components/evaluator'
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.4493254Z [command]/usr/bin/git version
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.4534166Z git version 2.55.0
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.4554538Z ##[endgroup]
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.4569130Z Temporarily overriding HOME='/home/runner/work/_temp/2a5be9b6-1e6c-4947-a0f9-3e701637a6bb' before making global git config changes
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.4570450Z Adding repository directory to the temporary git global config as a safe directory
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.4576553Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/test/test/components/evaluator
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.4608706Z ##[group]Initializing the repository
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.4612919Z [command]/usr/bin/git init /home/runner/work/test/test/components/evaluator
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.4651117Z hint: Using 'master' as the name for the initial branch. This default branch name
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.4652191Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.4653223Z hint: to use in all of your new repositories, which will suppress this warning,
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.4654070Z hint: call:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.4654645Z hint:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.4655186Z hint: 	git config --global init.defaultBranch <name>
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.4655843Z hint:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.4656437Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.4657408Z hint: 'development'. The just-created branch can be renamed via this command:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.4658288Z hint:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.4658781Z hint: 	git branch -m <name>
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.4659332Z hint:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.4660083Z hint: Disable this message with "git config set advice.defaultBranchName false"
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.4661338Z Initialized empty Git repository in /home/runner/work/test/test/components/evaluator/.git/
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.4663534Z [command]/usr/bin/git remote add origin https://github.com/ServiceNow/webarena-verified
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.4695528Z ##[endgroup]
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.4696214Z ##[group]Disabling automatic garbage collection
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.4701113Z [command]/usr/bin/git config --local gc.auto 0
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.4728939Z ##[endgroup]
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.4729552Z ##[group]Setting up auth
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.4736989Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.4767794Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.4981953Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.5013723Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.5264583Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.5298086Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.5516291Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.5556820Z ##[endgroup]
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.5557370Z ##[group]Fetching the repository
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:38.5567658Z [command]/usr/bin/git -c protocol.version=2 fetch --prune --no-recurse-submodules origin +refs/heads/*:refs/remotes/origin/* +refs/tags/*:refs/tags/*
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:39.9703020Z From https://github.com/ServiceNow/webarena-verified
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:39.9703735Z  * [new branch]      chore/clean-unit-tests  -> origin/chore/clean-unit-tests
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:39.9704225Z  * [new branch]      feature/add-leaderboard -> origin/feature/add-leaderboard
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:39.9704868Z  * [new branch]      gh-pages                -> origin/gh-pages
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:39.9705331Z  * [new branch]      leaderboard-submissions -> origin/leaderboard-submissions
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:39.9705775Z  * [new branch]      main                    -> origin/main
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:39.9706142Z  * [new tag]         v1.0.0                  -> v1.0.0
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:39.9706448Z  * [new tag]         v1.1.0                  -> v1.1.0
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:39.9706738Z  * [new tag]         v1.1.1                  -> v1.1.1
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:39.9707023Z  * [new tag]         v1.1.2                  -> v1.1.2
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:39.9707317Z  * [new tag]         v1.2.0                  -> v1.2.0
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:39.9707602Z  * [new tag]         v1.2.1                  -> v1.2.1
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:39.9707893Z  * [new tag]         v1.2.2                  -> v1.2.2
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:39.9708176Z  * [new tag]         v1.2.3                  -> v1.2.3
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:39.9719360Z [command]/usr/bin/git rev-parse --verify --quiet 6473f72db5dcefc97b5725b59e734504edc28a21^{object}
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:39.9743090Z 6473f72db5dcefc97b5725b59e734504edc28a21
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:39.9747286Z ##[endgroup]
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:39.9748009Z ##[group]Determining the checkout info
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:39.9749041Z ##[endgroup]
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:39.9754788Z [command]/usr/bin/git sparse-checkout disable
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:39.9793108Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:39.9818870Z ##[group]Checking out the ref
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:39.9831119Z [command]/usr/bin/git checkout --progress --force 6473f72db5dcefc97b5725b59e734504edc28a21
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.0176551Z Note: switching to '6473f72db5dcefc97b5725b59e734504edc28a21'.
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.0177266Z 
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.0177722Z You are in 'detached HEAD' state. You can look around, make experimental
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.0178422Z changes and commit them, and you can discard any commits you make in this
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.0196275Z state without impacting any branches by switching back to a branch.
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.0196980Z 
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.0197770Z If you want to create a new branch to retain commits you create, you may
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.0198875Z do so (now or later) by using -c with the switch command. Example:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.0199315Z 
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.0199779Z   git switch -c <new-branch-name>
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.0200021Z 
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.0200157Z Or undo this operation with:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.0200378Z 
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.0200488Z   git switch -
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.0200657Z 
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.0200998Z Turn off this advice by setting config variable advice.detachedHead to false
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.0201480Z 
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.0201779Z HEAD is now at 6473f72 Removed publish workflow redundant prepare step (#25)
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.0203273Z ##[endgroup]
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.0240725Z [command]/usr/bin/git log -1 --format=%H
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.0263126Z 6473f72db5dcefc97b5725b59e734504edc28a21
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.0270848Z ##[group]Removing auth
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.0274497Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.0304842Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.0507817Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.0530013Z http.https://github.com/.extraheader
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.0536571Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.0569540Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.0798028Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.0853213Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.1081917Z ##[endgroup]
+native-meta-decision	Run actions/checkout@v4	﻿2026-10-16T02:37:40.1213138Z ##[group]Run actions/checkout@v4
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.1213406Z with:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.1213619Z   repository: heathsanchez/triskelion
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.1213906Z   ref: 426c54f7c774560e0fabe7213c5ef333b1327c71
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.1214222Z   path: components/selection-sources/triskelion
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.1214857Z   persist-credentials: false
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.1217608Z   token: ***
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.1217831Z   ssh-strict: true
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.1218042Z   ssh-user: git
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.1218247Z   clean: true
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.1218468Z   sparse-checkout-cone-mode: true
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.1218727Z   fetch-depth: 1
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.1218930Z   fetch-tags: false
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.1219142Z   show-progress: true
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.1219343Z   lfs: false
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.1219534Z   submodules: false
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.1219748Z   set-safe-directory: true
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.1219985Z   allow-unsafe-pr-checkout: false
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.1220218Z env:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.1220408Z   PYTHONDONTWRITEBYTECODE: 1
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.1220672Z   PYTHONUNBUFFERED: 1
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.1220929Z   UDM_COMPONENTS: /home/runner/work/test/test/components
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.1221337Z   UDM_SOURCE_REPOS: /home/runner/work/test/test/components/selection-sources
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.1221758Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.15/x64
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.1222157Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.15/x64/lib/pkgconfig
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.1222563Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.15/x64
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.1222924Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.15/x64
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.1223300Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.15/x64
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.1223668Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.15/x64/lib
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.1223973Z ##[endgroup]
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.2269471Z Syncing repository: heathsanchez/triskelion
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.2270375Z ##[group]Getting Git version info
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.2271422Z Working directory is '/home/runner/work/test/test/components/selection-sources/triskelion'
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.2315897Z [command]/usr/bin/git version
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.2347191Z git version 2.55.0
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.2366538Z ##[endgroup]
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.2380113Z Temporarily overriding HOME='/home/runner/work/_temp/da80a1b9-3c17-4580-822a-1d736465be52' before making global git config changes
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.2381623Z Adding repository directory to the temporary git global config as a safe directory
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.2386135Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/test/test/components/selection-sources/triskelion
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.2418228Z ##[group]Initializing the repository
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.2422620Z [command]/usr/bin/git init /home/runner/work/test/test/components/selection-sources/triskelion
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.2460508Z hint: Using 'master' as the name for the initial branch. This default branch name
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.2461785Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.2462978Z hint: to use in all of your new repositories, which will suppress this warning,
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.2463905Z hint: call:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.2464536Z hint:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.2465142Z hint: 	git config --global init.defaultBranch <name>
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.2465858Z hint:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.2466548Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.2467916Z hint: 'development'. The just-created branch can be renamed via this command:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.2468782Z hint:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.2469280Z hint: 	git branch -m <name>
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.2469839Z hint:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.2470586Z hint: Disable this message with "git config set advice.defaultBranchName false"
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.2472016Z Initialized empty Git repository in /home/runner/work/test/test/components/selection-sources/triskelion/.git/
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.2474497Z [command]/usr/bin/git remote add origin https://github.com/heathsanchez/triskelion
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.2502431Z ##[endgroup]
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.2503108Z ##[group]Disabling automatic garbage collection
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.2511111Z [command]/usr/bin/git config --local gc.auto 0
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.2542601Z ##[endgroup]
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.2543285Z ##[group]Setting up auth
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.2550812Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.2582512Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.2828961Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.2865268Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.3141742Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.3169729Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.3389747Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.3428230Z ##[endgroup]
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.3428805Z ##[group]Fetching the repository
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.3438121Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin 426c54f7c774560e0fabe7213c5ef333b1327c71
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.9732046Z From https://github.com/heathsanchez/triskelion
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.9732544Z  * branch            426c54f7c774560e0fabe7213c5ef333b1327c71 -> FETCH_HEAD
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.9738114Z ##[endgroup]
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.9738759Z ##[group]Determining the checkout info
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.9740394Z ##[endgroup]
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.9746818Z [command]/usr/bin/git sparse-checkout disable
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.9788885Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.9816364Z ##[group]Checking out the ref
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.9830788Z [command]/usr/bin/git checkout --progress --force 426c54f7c774560e0fabe7213c5ef333b1327c71
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.9937898Z Note: switching to '426c54f7c774560e0fabe7213c5ef333b1327c71'.
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.9938704Z 
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.9939102Z You are in 'detached HEAD' state. You can look around, make experimental
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.9939932Z changes and commit them, and you can discard any commits you make in this
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.9941106Z state without impacting any branches by switching back to a branch.
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.9941827Z 
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.9942219Z If you want to create a new branch to retain commits you create, you may
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.9942947Z do so (now or later) by using -c with the switch command. Example:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.9943336Z 
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.9943519Z   git switch -c <new-branch-name>
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.9943768Z 
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.9943917Z Or undo this operation with:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.9944132Z 
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.9944254Z   git switch -
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.9944598Z 
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.9944922Z Turn off this advice by setting config variable advice.detachedHead to false
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.9945418Z 
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.9946197Z HEAD is now at 426c54f Retrigger V104 after runner startup failure
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:40.9947587Z ##[endgroup]
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.0007787Z [command]/usr/bin/git log -1 --format=%H
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.0032942Z 426c54f7c774560e0fabe7213c5ef333b1327c71
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.0042542Z ##[group]Removing auth
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.0047039Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.0074772Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.0271153Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.0293564Z http.https://github.com/.extraheader
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.0299867Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.0333599Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.0513549Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.0543224Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.0721305Z ##[endgroup]
+native-meta-decision	Run actions/checkout@v4	﻿2026-10-16T02:37:41.0856430Z ##[group]Run actions/checkout@v4
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.0856735Z with:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.0856987Z   repository: heathsanchez/Minimal-Sufficient-Interface
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.0857326Z   ref: 56cfd7b523e3592cae4eafa5468f437ccb94dbe9
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.0857629Z   path: components/selection-sources/msi
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.0857901Z   persist-credentials: false
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.0860465Z   token: ***
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.0860666Z   ssh-strict: true
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.0860859Z   ssh-user: git
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.0861065Z   clean: true
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.0861270Z   sparse-checkout-cone-mode: true
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.0861520Z   fetch-depth: 1
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.0861717Z   fetch-tags: false
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.0861917Z   show-progress: true
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.0862121Z   lfs: false
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.0862303Z   submodules: false
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.0862504Z   set-safe-directory: true
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.0862751Z   allow-unsafe-pr-checkout: false
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.0862992Z env:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.0863179Z   PYTHONDONTWRITEBYTECODE: 1
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.0863449Z   PYTHONUNBUFFERED: 1
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.0863721Z   UDM_COMPONENTS: /home/runner/work/test/test/components
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.0864129Z   UDM_SOURCE_REPOS: /home/runner/work/test/test/components/selection-sources
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.0864750Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.15/x64
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.0865147Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.15/x64/lib/pkgconfig
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.0865543Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.15/x64
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.0865915Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.15/x64
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.0866278Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.15/x64
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.0866638Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.15/x64/lib
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.0866952Z ##[endgroup]
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.1695007Z Syncing repository: heathsanchez/Minimal-Sufficient-Interface
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.1711501Z ##[group]Getting Git version info
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.1712320Z Working directory is '/home/runner/work/test/test/components/selection-sources/msi'
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.1743685Z [command]/usr/bin/git version
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.1784987Z git version 2.55.0
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.1803346Z ##[endgroup]
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.1818179Z Temporarily overriding HOME='/home/runner/work/_temp/7f28d24a-6e8a-4988-b9b5-80afaf2ad849' before making global git config changes
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.1819679Z Adding repository directory to the temporary git global config as a safe directory
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.1824145Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/test/test/components/selection-sources/msi
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.1855966Z ##[group]Initializing the repository
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.1860382Z [command]/usr/bin/git init /home/runner/work/test/test/components/selection-sources/msi
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.1895509Z hint: Using 'master' as the name for the initial branch. This default branch name
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.1896589Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.1897639Z hint: to use in all of your new repositories, which will suppress this warning,
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.1898448Z hint: call:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.1898938Z hint:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.1899511Z hint: 	git config --global init.defaultBranch <name>
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.1900225Z hint:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.1900901Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.1901954Z hint: 'development'. The just-created branch can be renamed via this command:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.1902834Z hint:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.1903320Z hint: 	git branch -m <name>
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.1903868Z hint:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.1905711Z hint: Disable this message with "git config set advice.defaultBranchName false"
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.1907227Z Initialized empty Git repository in /home/runner/work/test/test/components/selection-sources/msi/.git/
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.1910081Z [command]/usr/bin/git remote add origin https://github.com/heathsanchez/Minimal-Sufficient-Interface
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.1937443Z ##[endgroup]
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.1938142Z ##[group]Disabling automatic garbage collection
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.1942401Z [command]/usr/bin/git config --local gc.auto 0
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.1971292Z ##[endgroup]
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.1971916Z ##[group]Setting up auth
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.1979872Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.2010498Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.2218107Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.2250087Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.2460082Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.2495292Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.2713586Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.2753995Z ##[endgroup]
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.2754845Z ##[group]Fetching the repository
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.2768088Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin 56cfd7b523e3592cae4eafa5468f437ccb94dbe9
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.8699905Z From https://github.com/heathsanchez/Minimal-Sufficient-Interface
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.8700815Z  * branch            56cfd7b523e3592cae4eafa5468f437ccb94dbe9 -> FETCH_HEAD
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.8704730Z ##[endgroup]
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.8705301Z ##[group]Determining the checkout info
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.8707027Z ##[endgroup]
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.8712883Z [command]/usr/bin/git sparse-checkout disable
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.8751860Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.8814856Z ##[group]Checking out the ref
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.8820027Z [command]/usr/bin/git checkout --progress --force 56cfd7b523e3592cae4eafa5468f437ccb94dbe9
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.8917797Z Note: switching to '56cfd7b523e3592cae4eafa5468f437ccb94dbe9'.
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.8918433Z 
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.8919281Z You are in 'detached HEAD' state. You can look around, make experimental
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.8920003Z changes and commit them, and you can discard any commits you make in this
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.8920677Z state without impacting any branches by switching back to a branch.
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.8921071Z 
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.8921364Z If you want to create a new branch to retain commits you create, you may
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.8922150Z do so (now or later) by using -c with the switch command. Example:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.8922596Z 
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.8922782Z   git switch -c <new-branch-name>
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.8923078Z 
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.8923255Z Or undo this operation with:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.8923528Z 
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.8923666Z   git switch -
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.8923881Z 
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.8924241Z Turn off this advice by setting config variable advice.detachedHead to false
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.8924880Z 
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.8925183Z HEAD is now at 56cfd7b Add workflow for V12 recursive observation genesis
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.8926034Z ##[endgroup]
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.8958479Z [command]/usr/bin/git log -1 --format=%H
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.8980874Z 56cfd7b523e3592cae4eafa5468f437ccb94dbe9
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.8990047Z ##[group]Removing auth
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.8993951Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.9022468Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.9217688Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.9241097Z http.https://github.com/.extraheader
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.9248087Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.9283352Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.9482182Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.9514737Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+native-meta-decision	Run actions/checkout@v4	2026-10-16T02:37:41.9713073Z ##[endgroup]
+native-meta-decision	Fetch exact original method objects without executing historical experiments	﻿2026-10-16T02:37:41.9810083Z ##[group]Run git fetch --no-tags --depth=1 origin \
+native-meta-decision	Fetch exact original method objects without executing historical experiments	2026-10-16T02:37:41.9810481Z [36;1mgit fetch --no-tags --depth=1 origin \[0m
+native-meta-decision	Fetch exact original method objects without executing historical experiments	2026-10-16T02:37:41.9810839Z [36;1m  13325089c471996b8b68f46540fd4ad449df752c \[0m
+native-meta-decision	Fetch exact original method objects without executing historical experiments	2026-10-16T02:37:41.9811166Z [36;1m  52eb1e7995bd877a2b698efe1883ae2b80a03737 \[0m
+native-meta-decision	Fetch exact original method objects without executing historical experiments	2026-10-16T02:37:41.9811478Z [36;1m  6031466188046f56b4660d772d13ad731ed4c0f2[0m
+native-meta-decision	Fetch exact original method objects without executing historical experiments	2026-10-16T02:37:41.9811850Z [36;1mgit -C "$UDM_SOURCE_REPOS/msi" fetch --no-tags --depth=1 origin \[0m
+native-meta-decision	Fetch exact original method objects without executing historical experiments	2026-10-16T02:37:41.9812251Z [36;1m  5d448c0ecc82ff3945d009963064ebbb67d2f308[0m
+native-meta-decision	Fetch exact original method objects without executing historical experiments	2026-10-16T02:37:41.9812606Z [36;1mln -s "$GITHUB_WORKSPACE" "$UDM_SOURCE_REPOS/test"[0m
+native-meta-decision	Fetch exact original method objects without executing historical experiments	2026-10-16T02:37:41.9852511Z shell: /usr/bin/bash -e {0}
+native-meta-decision	Fetch exact original method objects without executing historical experiments	2026-10-16T02:37:41.9852790Z env:
+native-meta-decision	Fetch exact original method objects without executing historical experiments	2026-10-16T02:37:41.9853006Z   PYTHONDONTWRITEBYTECODE: 1
+native-meta-decision	Fetch exact original method objects without executing historical experiments	2026-10-16T02:37:41.9853252Z   PYTHONUNBUFFERED: 1
+native-meta-decision	Fetch exact original method objects without executing historical experiments	2026-10-16T02:37:41.9853526Z   UDM_COMPONENTS: /home/runner/work/test/test/components
+native-meta-decision	Fetch exact original method objects without executing historical experiments	2026-10-16T02:37:41.9853941Z   UDM_SOURCE_REPOS: /home/runner/work/test/test/components/selection-sources
+native-meta-decision	Fetch exact original method objects without executing historical experiments	2026-10-16T02:37:41.9854590Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.15/x64
+native-meta-decision	Fetch exact original method objects without executing historical experiments	2026-10-16T02:37:41.9854989Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.15/x64/lib/pkgconfig
+native-meta-decision	Fetch exact original method objects without executing historical experiments	2026-10-16T02:37:41.9855396Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.15/x64
+native-meta-decision	Fetch exact original method objects without executing historical experiments	2026-10-16T02:37:41.9855759Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.15/x64
+native-meta-decision	Fetch exact original method objects without executing historical experiments	2026-10-16T02:37:41.9856119Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.15/x64
+native-meta-decision	Fetch exact original method objects without executing historical experiments	2026-10-16T02:37:41.9856505Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.15/x64/lib
+native-meta-decision	Fetch exact original method objects without executing historical experiments	2026-10-16T02:37:41.9857026Z ##[endgroup]
+native-meta-decision	Fetch exact original method objects without executing historical experiments	2026-10-16T02:37:42.7079621Z From https://github.com/heathsanchez/test
+native-meta-decision	Fetch exact original method objects without executing historical experiments	2026-10-16T02:37:42.7080464Z  * branch            13325089c471996b8b68f46540fd4ad449df752c -> FETCH_HEAD
+native-meta-decision	Fetch exact original method objects without executing historical experiments	2026-10-16T02:37:42.7081023Z  * branch            52eb1e7995bd877a2b698efe1883ae2b80a03737 -> FETCH_HEAD
+native-meta-decision	Fetch exact original method objects without executing historical experiments	2026-10-16T02:37:42.7081512Z  * branch            6031466188046f56b4660d772d13ad731ed4c0f2 -> FETCH_HEAD
+native-meta-decision	Fetch exact original method objects without executing historical experiments	2026-10-16T02:37:43.2203852Z From https://github.com/heathsanchez/Minimal-Sufficient-Interface
+native-meta-decision	Fetch exact original method objects without executing historical experiments	2026-10-16T02:37:43.2204948Z  * branch            5d448c0ecc82ff3945d009963064ebbb67d2f308 -> FETCH_HEAD
+native-meta-decision	Run original-interface regressions and new adversarial contracts	﻿2026-10-16T02:37:43.2259593Z ##[group]Run python -m venv .venv-decisive
+native-meta-decision	Run original-interface regressions and new adversarial contracts	2026-10-16T02:37:43.2260245Z [36;1mpython -m venv .venv-decisive[0m
+native-meta-decision	Run original-interface regressions and new adversarial contracts	2026-10-16T02:37:43.2260788Z [36;1m.venv-decisive/bin/python -m pip install pytest==8.3.5[0m
+native-meta-decision	Run original-interface regressions and new adversarial contracts	2026-10-16T02:37:43.2261300Z [36;1m.venv-decisive/bin/python -B -m unittest \[0m
+native-meta-decision	Run original-interface regressions and new adversarial contracts	2026-10-16T02:37:43.2261735Z [36;1m  research.unified_consequence_runtime.test_generated_build_materialization \[0m
+native-meta-decision	Run original-interface regressions and new adversarial contracts	2026-10-16T02:37:43.2262302Z [36;1m  research.unified_consequence_runtime.test_native_suite_authority \[0m
+native-meta-decision	Run original-interface regressions and new adversarial contracts	2026-10-16T02:37:43.2263154Z [36;1m  research.unified_consequence_runtime.test_generic_native_verify \[0m
+native-meta-decision	Run original-interface regressions and new adversarial contracts	2026-10-16T02:37:43.2263828Z [36;1m  research.unified_consequence_runtime.test_native_frontier \[0m
+native-meta-decision	Run original-interface regressions and new adversarial contracts	2026-10-16T02:37:43.2264416Z [36;1m  research.unified_consequence_runtime.test_native_meta_decision \[0m
+native-meta-decision	Run original-interface regressions and new adversarial contracts	2026-10-16T02:37:43.2264918Z [36;1m  research.unified_consequence_runtime.test_decisive_constructor \[0m
+native-meta-decision	Run original-interface regressions and new adversarial contracts	2026-10-16T02:37:43.2265354Z [36;1m  research.unified_consequence_runtime.test_decisive_native \[0m
+native-meta-decision	Run original-interface regressions and new adversarial contracts	2026-10-16T02:37:43.2265839Z [36;1m  research.unified_consequence_runtime.test_qualify_decisive_native \[0m
+native-meta-decision	Run original-interface regressions and new adversarial contracts	2026-10-16T02:37:43.2266545Z [36;1m  research.unified_consequence_runtime.test_decisive_task_admission \[0m
+native-meta-decision	Run original-interface regressions and new adversarial contracts	2026-10-16T02:37:43.2267233Z [36;1m  research.unified_consequence_runtime.test_recursive_restart_retention \[0m
+native-meta-decision	Run original-interface regressions and new adversarial contracts	2026-10-16T02:37:43.2268251Z [36;1m  -v > qualification/contracts.log 2>&1[0m
+native-meta-decision	Run original-interface regressions and new adversarial contracts	2026-10-16T02:37:43.2325947Z shell: /usr/bin/bash -e {0}
+native-meta-decision	Run original-interface regressions and new adversarial contracts	2026-10-16T02:37:43.2326504Z env:
+native-meta-decision	Run original-interface regressions and new adversarial contracts	2026-10-16T02:37:43.2326949Z   PYTHONDONTWRITEBYTECODE: 1
+native-meta-decision	Run original-interface regressions and new adversarial contracts	2026-10-16T02:37:43.2327503Z   PYTHONUNBUFFERED: 1
+native-meta-decision	Run original-interface regressions and new adversarial contracts	2026-10-16T02:37:43.2328107Z   UDM_COMPONENTS: /home/runner/work/test/test/components
+native-meta-decision	Run original-interface regressions and new adversarial contracts	2026-10-16T02:37:43.2328945Z   UDM_SOURCE_REPOS: /home/runner/work/test/test/components/selection-sources
+native-meta-decision	Run original-interface regressions and new adversarial contracts	2026-10-16T02:37:43.2329757Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.15/x64
+native-meta-decision	Run original-interface regressions and new adversarial contracts	2026-10-16T02:37:43.2330539Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.15/x64/lib/pkgconfig
+native-meta-decision	Run original-interface regressions and new adversarial contracts	2026-10-16T02:37:43.2331295Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.15/x64
+native-meta-decision	Run original-interface regressions and new adversarial contracts	2026-10-16T02:37:43.2331964Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.15/x64
+native-meta-decision	Run original-interface regressions and new adversarial contracts	2026-10-16T02:37:43.2332648Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.15/x64
+native-meta-decision	Run original-interface regressions and new adversarial contracts	2026-10-16T02:37:43.2333331Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.15/x64/lib
+native-meta-decision	Run original-interface regressions and new adversarial contracts	2026-10-16T02:37:43.2333972Z ##[endgroup]
+native-meta-decision	Run original-interface regressions and new adversarial contracts	2026-10-16T02:37:47.7426252Z Collecting pytest==8.3.5
+native-meta-decision	Run original-interface regressions and new adversarial contracts	2026-10-16T02:37:47.7963307Z   Downloading pytest-8.3.5-py3-none-any.whl.metadata (7.6 kB)
+native-meta-decision	Run original-interface regressions and new adversarial contracts	2026-10-16T02:37:47.8189146Z Collecting iniconfig (from pytest==8.3.5)
+native-meta-decision	Run original-interface regressions and new adversarial contracts	2026-10-16T02:37:47.8291511Z   Downloading iniconfig-2.3.1-py3-none-any.whl.metadata (2.8 kB)
+native-meta-decision	Run original-interface regressions and new adversarial contracts	2026-10-16T02:37:47.8531738Z Collecting packaging (from pytest==8.3.5)
+native-meta-decision	Run original-interface regressions and new adversarial contracts	2026-10-16T02:37:47.8635811Z   Downloading packaging-26.3-py3-none-any.whl.metadata (3.5 kB)
+native-meta-decision	Run original-interface regressions and new adversarial contracts	2026-10-16T02:37:47.8836399Z Collecting pluggy<2,>=1.5 (from pytest==8.3.5)
+native-meta-decision	Run original-interface regressions and new adversarial contracts	2026-10-16T02:37:47.8944877Z   Downloading pluggy-1.7.0-py3-none-any.whl.metadata (5.0 kB)
+native-meta-decision	Run original-interface regressions and new adversarial contracts	2026-10-16T02:37:47.9097873Z Downloading pytest-8.3.5-py3-none-any.whl (343 kB)
+native-meta-decision	Run original-interface regressions and new adversarial contracts	2026-10-16T02:37:47.9534788Z Downloading pluggy-1.7.0-py3-none-any.whl (27 kB)
+native-meta-decision	Run original-interface regressions and new adversarial contracts	2026-10-16T02:37:47.9667452Z Downloading iniconfig-2.3.1-py3-none-any.whl (7.6 kB)
+native-meta-decision	Run original-interface regressions and new adversarial contracts	2026-10-16T02:37:47.9792690Z Downloading packaging-26.3-py3-none-any.whl (129 kB)
+native-meta-decision	Run original-interface regressions and new adversarial contracts	2026-10-16T02:37:47.9949233Z Installing collected packages: pluggy, packaging, iniconfig, pytest
+native-meta-decision	Run original-interface regressions and new adversarial contracts	2026-10-16T02:37:48.3044198Z Successfully installed iniconfig-2.3.1 packaging-26.3 pluggy-1.7.0 pytest-8.3.5
+native-meta-decision	Run original-interface regressions and new adversarial contracts	2026-10-16T02:37:48.4146104Z 
+native-meta-decision	Run original-interface regressions and new adversarial contracts	2026-10-16T02:37:48.4146710Z [notice] A new release of pip is available: 25.0.1 -> 26.2.1
+native-meta-decision	Run original-interface regressions and new adversarial contracts	2026-10-16T02:37:48.4147443Z [notice] To update, run: python -m pip install --upgrade pip
+native-meta-decision	Execute frozen native problems and actual matched ledger	﻿2026-10-16T02:39:38.1893215Z ##[group]Run .venv-decisive/bin/python -B -m research.unified_consequence_runtime.qualify_decisive_native \
+native-meta-decision	Execute frozen native problems and actual matched ledger	2026-10-16T02:39:38.1893985Z [36;1m.venv-decisive/bin/python -B -m research.unified_consequence_runtime.qualify_decisive_native \[0m
+native-meta-decision	Execute frozen native problems and actual matched ledger	2026-10-16T02:39:38.1894732Z [36;1m  --repo "$GITHUB_WORKSPACE" --freeze qualification/FREEZE.json \[0m
+native-meta-decision	Execute frozen native problems and actual matched ledger	2026-10-16T02:39:38.1895203Z [36;1m  --components "$UDM_COMPONENTS" --source-repos "$UDM_SOURCE_REPOS" \[0m
+native-meta-decision	Execute frozen native problems and actual matched ledger	2026-10-16T02:39:38.1895729Z [36;1m  --out "$GITHUB_WORKSPACE/qualification/decisive" | tee qualification/native.log[0m
+native-meta-decision	Execute frozen native problems and actual matched ledger	2026-10-16T02:39:38.1934582Z shell: /usr/bin/bash -e {0}
+native-meta-decision	Execute frozen native problems and actual matched ledger	2026-10-16T02:39:38.1934866Z env:
+native-meta-decision	Execute frozen native problems and actual matched ledger	2026-10-16T02:39:38.1935080Z   PYTHONDONTWRITEBYTECODE: 1
+native-meta-decision	Execute frozen native problems and actual matched ledger	2026-10-16T02:39:38.1935341Z   PYTHONUNBUFFERED: 1
+native-meta-decision	Execute frozen native problems and actual matched ledger	2026-10-16T02:39:38.1935626Z   UDM_COMPONENTS: /home/runner/work/test/test/components
+native-meta-decision	Execute frozen native problems and actual matched ledger	2026-10-16T02:39:38.1936059Z   UDM_SOURCE_REPOS: /home/runner/work/test/test/components/selection-sources
+native-meta-decision	Execute frozen native problems and actual matched ledger	2026-10-16T02:39:38.1936487Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.15/x64
+native-meta-decision	Execute frozen native problems and actual matched ledger	2026-10-16T02:39:38.1936958Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.15/x64/lib/pkgconfig
+native-meta-decision	Execute frozen native problems and actual matched ledger	2026-10-16T02:39:38.1937371Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.15/x64
+native-meta-decision	Execute frozen native problems and actual matched ledger	2026-10-16T02:39:38.1937740Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.15/x64
+native-meta-decision	Execute frozen native problems and actual matched ledger	2026-10-16T02:39:38.1938103Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.15/x64
+native-meta-decision	Execute frozen native problems and actual matched ledger	2026-10-16T02:39:38.1938472Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.15/x64/lib
+native-meta-decision	Execute frozen native problems and actual matched ledger	2026-10-16T02:39:38.1941310Z   GH_TOKEN: ***
+native-meta-decision	Execute frozen native problems and actual matched ledger	2026-10-16T02:39:38.1941512Z ##[endgroup]
+native-meta-decision	Execute frozen native problems and actual matched ledger	2026-10-16T02:39:41.6587098Z Traceback (most recent call last):
+native-meta-decision	Execute frozen native problems and actual matched ledger	2026-10-16T02:39:41.6597175Z   File "<frozen runpy>", line 198, in _run_module_as_main
+native-meta-decision	Execute frozen native problems and actual matched ledger	2026-10-16T02:39:41.6597965Z   File "<frozen runpy>", line 88, in _run_code
+native-meta-decision	Execute frozen native problems and actual matched ledger	2026-10-16T02:39:41.6599072Z   File "/home/runner/work/test/test/research/unified_consequence_runtime/qualify_decisive_native.py", line 627, in <module>
+native-meta-decision	Execute frozen native problems and actual matched ledger	2026-10-16T02:39:41.6600105Z     if __name__=='__main__':main()
+native-meta-decision	Execute frozen native problems and actual matched ledger	2026-10-16T02:39:41.6600567Z                             ^^^^^^
+native-meta-decision	Execute frozen native problems and actual matched ledger	2026-10-16T02:39:41.6602018Z   File "/home/runner/work/test/test/research/unified_consequence_runtime/qualify_decisive_native.py", line 609, in main
+native-meta-decision	Execute frozen native problems and actual matched ledger	2026-10-16T02:39:41.6602945Z     try:result=qualify(a)
+native-meta-decision	Execute frozen native problems and actual matched ledger	2026-10-16T02:39:41.6603222Z                ^^^^^^^^^^
+native-meta-decision	Execute frozen native problems and actual matched ledger	2026-10-16T02:39:41.6603713Z   File "/home/runner/work/test/test/research/unified_consequence_runtime/qualify_decisive_native.py", line 341, in qualify
+native-meta-decision	Execute frozen native problems and actual matched ledger	2026-10-16T02:39:41.6604728Z     machine=Machine(Path(args.components),out/'state',Path(args.components)/'evaluator',out/'state/unused-native-config.json')
+native-meta-decision	Execute frozen native problems and actual matched ledger	2026-10-16T02:39:41.6605367Z             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+native-meta-decision	Execute frozen native problems and actual matched ledger	2026-10-16T02:39:41.6605982Z   File "/home/runner/work/test/test/research/unified_consequence_runtime/developmental_machine.py", line 99, in __init__
+native-meta-decision	Execute frozen native problems and actual matched ledger	2026-10-16T02:39:41.6606484Z     self.flush()
+native-meta-decision	Execute frozen native problems and actual matched ledger	2026-10-16T02:39:41.6606939Z   File "/home/runner/work/test/test/research/unified_consequence_runtime/developmental_machine.py", line 128, in flush
+native-meta-decision	Execute frozen native problems and actual matched ledger	2026-10-16T02:39:41.6607439Z     self.reclose()
+native-meta-decision	Execute frozen native problems and actual matched ledger	2026-10-16T02:39:41.6607906Z   File "/home/runner/work/test/test/research/unified_consequence_runtime/developmental_machine.py", line 169, in reclose
+native-meta-decision	Execute frozen native problems and actual matched ledger	2026-10-16T02:39:41.6608431Z     self.frontiers = reclose_frontiers(self)
+native-meta-decision	Execute frozen native problems and actual matched ledger	2026-10-16T02:39:41.6608709Z                      ^^^^^^^^^^^^^^^^^^^^^^^
+native-meta-decision	Execute frozen native problems and actual matched ledger	2026-10-16T02:39:41.6609230Z   File "/home/runner/work/test/test/research/unified_consequence_runtime/cross_frontier.py", line 234, in reclose_frontiers
+native-meta-decision	Execute frozen native problems and actual matched ledger	2026-10-16T02:39:41.6610307Z     _cap, contract, profiles = _publication_binding(machine, node.payload, node.premises)
+native-meta-decision	Execute frozen native problems and actual matched ledger	2026-10-16T02:39:41.6610750Z                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+native-meta-decision	Execute frozen native problems and actual matched ledger	2026-10-16T02:39:41.6611351Z   File "/home/runner/work/test/test/research/unified_consequence_runtime/cross_frontier.py", line 129, in _publication_binding
+native-meta-decision	Execute frozen native problems and actual matched ledger	2026-10-16T02:39:41.6612206Z     raise ValueError("native frontier admission validator source changed after publication")
+native-meta-decision	Execute frozen native problems and actual matched ledger	2026-10-16T02:39:41.6612761Z ValueError: native frontier admission validator source changed after publication
+native-meta-decision	Check evidence integrity without promoting workflow color	﻿2026-10-16T02:39:41.6782435Z ##[group]Run python - <<'PY'
+native-meta-decision	Check evidence integrity without promoting workflow color	2026-10-16T02:39:41.6782753Z [36;1mpython - <<'PY'[0m
+native-meta-decision	Check evidence integrity without promoting workflow color	2026-10-16T02:39:41.6783015Z [36;1mimport hashlib,json,pathlib,tarfile[0m
+native-meta-decision	Check evidence integrity without promoting workflow color	2026-10-16T02:39:41.6783347Z [36;1mp=pathlib.Path('qualification/decisive')[0m
+native-meta-decision	Check evidence integrity without promoting workflow color	2026-10-16T02:39:41.6783676Z [36;1mr=json.loads((p/'RESULT.json').read_text())[0m
+native-meta-decision	Check evidence integrity without promoting workflow color	2026-10-16T02:39:41.6783998Z [36;1massert r['original_records']==246[0m
+native-meta-decision	Check evidence integrity without promoting workflow color	2026-10-16T02:39:41.6784501Z [36;1massert r['retention']['original_prefix_preserved'][0m
+native-meta-decision	Check evidence integrity without promoting workflow color	2026-10-16T02:39:41.6785070Z [36;1massert r['retention']['ledger_sha256']==hashlib.sha256((p/'state/metatron-ledger.jsonl').read_bytes()).hexdigest()[0m
+native-meta-decision	Check evidence integrity without promoting workflow color	2026-10-16T02:39:41.6785642Z [36;1massert r['verdicts']['G5']==r['verdicts']['G6']=='UNKNOWN'[0m
+native-meta-decision	Check evidence integrity without promoting workflow color	2026-10-16T02:39:41.6786002Z [36;1massert not (p/'ERROR.json').exists()[0m
+native-meta-decision	Check evidence integrity without promoting workflow color	2026-10-16T02:39:41.6786450Z [36;1massert all(t.get('setup',{}).get('source_boundaries',{}).get('head_production_fetched') is False[0m
+native-meta-decision	Check evidence integrity without promoting workflow color	2026-10-16T02:39:41.6786990Z [36;1m           for t in r['tasks'] if t.get('setup',{}).get('source_boundaries'))[0m
+native-meta-decision	Check evidence integrity without promoting workflow color	2026-10-16T02:39:41.6787495Z [36;1mprint(json.dumps({'status':r['status'],'verdicts':r['verdicts']},indent=2))[0m
+native-meta-decision	Check evidence integrity without promoting workflow color	2026-10-16T02:39:41.6787869Z [36;1mPY[0m
+native-meta-decision	Check evidence integrity without promoting workflow color	2026-10-16T02:39:41.6823854Z shell: /usr/bin/bash -e {0}
+native-meta-decision	Check evidence integrity without promoting workflow color	2026-10-16T02:39:41.6824122Z env:
+native-meta-decision	Check evidence integrity without promoting workflow color	2026-10-16T02:39:41.6824492Z   PYTHONDONTWRITEBYTECODE: 1
+native-meta-decision	Check evidence integrity without promoting workflow color	2026-10-16T02:39:41.6824763Z   PYTHONUNBUFFERED: 1
+native-meta-decision	Check evidence integrity without promoting workflow color	2026-10-16T02:39:41.6825045Z   UDM_COMPONENTS: /home/runner/work/test/test/components
+native-meta-decision	Check evidence integrity without promoting workflow color	2026-10-16T02:39:41.6825485Z   UDM_SOURCE_REPOS: /home/runner/work/test/test/components/selection-sources
+native-meta-decision	Check evidence integrity without promoting workflow color	2026-10-16T02:39:41.6825919Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.15/x64
+native-meta-decision	Check evidence integrity without promoting workflow color	2026-10-16T02:39:41.6826341Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.15/x64/lib/pkgconfig
+native-meta-decision	Check evidence integrity without promoting workflow color	2026-10-16T02:39:41.6826743Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.15/x64
+native-meta-decision	Check evidence integrity without promoting workflow color	2026-10-16T02:39:41.6827105Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.15/x64
+native-meta-decision	Check evidence integrity without promoting workflow color	2026-10-16T02:39:41.6827465Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.15/x64
+native-meta-decision	Check evidence integrity without promoting workflow color	2026-10-16T02:39:41.6827839Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.15/x64/lib
+native-meta-decision	Check evidence integrity without promoting workflow color	2026-10-16T02:39:41.6828147Z ##[endgroup]
+native-meta-decision	Check evidence integrity without promoting workflow color	2026-10-16T02:39:41.7158005Z Traceback (most recent call last):
+native-meta-decision	Check evidence integrity without promoting workflow color	2026-10-16T02:39:41.7158713Z   File "<stdin>", line 4, in <module>
+native-meta-decision	Check evidence integrity without promoting workflow color	2026-10-16T02:39:41.7159180Z KeyError: 'original_records'
+native-meta-decision	Check evidence integrity without promoting workflow color	2026-10-16T02:39:41.7217512Z ##[error]Process completed with exit code 1.
+native-meta-decision	Archive exact source, native evidence, costs and negative branches	﻿2026-10-16T02:39:41.7266630Z ##[group]Run mkdir -p qualification/source
+native-meta-decision	Archive exact source, native evidence, costs and negative branches	2026-10-16T02:39:41.7267019Z [36;1mmkdir -p qualification/source[0m
+native-meta-decision	Archive exact source, native evidence, costs and negative branches	2026-10-16T02:39:41.7267513Z [36;1mgit archive HEAD research/unified_consequence_runtime .github/workflows/udm-decisive-native.yml \[0m
+native-meta-decision	Archive exact source, native evidence, costs and negative branches	2026-10-16T02:39:41.7268010Z [36;1m  | tar -x -C qualification/source[0m
+native-meta-decision	Archive exact source, native evidence, costs and negative branches	2026-10-16T02:39:41.7268295Z [36;1mpython - <<'PY'[0m
+native-meta-decision	Archive exact source, native evidence, costs and negative branches	2026-10-16T02:39:41.7268570Z [36;1mimport hashlib,json,os,pathlib,tarfile[0m
+native-meta-decision	Archive exact source, native evidence, costs and negative branches	2026-10-16T02:39:41.7268914Z [36;1mp=pathlib.Path('qualification');d=p/'decisive'[0m
+native-meta-decision	Archive exact source, native evidence, costs and negative branches	2026-10-16T02:39:41.7269231Z [36;1mfiles={}[0m
+native-meta-decision	Archive exact source, native evidence, costs and negative branches	2026-10-16T02:39:41.7269439Z [36;1mif d.exists():[0m
+native-meta-decision	Archive exact source, native evidence, costs and negative branches	2026-10-16T02:39:41.7269662Z [36;1m    for f in d.rglob('*'):[0m
+native-meta-decision	Archive exact source, native evidence, costs and negative branches	2026-10-16T02:39:41.7269958Z [36;1m        if not f.is_file() or f.is_symlink():continue[0m
+native-meta-decision	Archive exact source, native evidence, costs and negative branches	2026-10-16T02:39:41.7270285Z [36;1m        parts=f.relative_to(d).parts[0m
+native-meta-decision	Archive exact source, native evidence, costs and negative branches	2026-10-16T02:39:41.7270880Z [36;1m        if 'venv' in parts or '.git' in parts or ('source' in parts and 'state' not in parts):continue[0m
+native-meta-decision	Archive exact source, native evidence, costs and negative branches	2026-10-16T02:39:41.7271467Z [36;1m        files[str(f.relative_to(p))]=hashlib.sha256(f.read_bytes()).hexdigest()[0m
+native-meta-decision	Archive exact source, native evidence, costs and negative branches	2026-10-16T02:39:41.7271949Z [36;1m    with tarfile.open(p/'NATIVE_EVIDENCE.tar.gz','w:gz') as packet:[0m
+native-meta-decision	Archive exact source, native evidence, costs and negative branches	2026-10-16T02:39:41.7272440Z [36;1m        for name in sorted(files):packet.add(p/name,arcname=name,recursive=False)[0m
+native-meta-decision	Archive exact source, native evidence, costs and negative branches	2026-10-16T02:39:41.7272834Z [36;1mfor f in p.glob('*'):[0m
+native-meta-decision	Archive exact source, native evidence, costs and negative branches	2026-10-16T02:39:41.7273133Z [36;1m    if f.is_file() and f.suffix in ('.json','.log','.txt'):[0m
+native-meta-decision	Archive exact source, native evidence, costs and negative branches	2026-10-16T02:39:41.7273526Z [36;1m        files[f.name]=hashlib.sha256(f.read_bytes()).hexdigest()[0m
+native-meta-decision	Archive exact source, native evidence, costs and negative branches	2026-10-16T02:39:41.7274005Z [36;1m(p/'MANIFEST.json').write_text(json.dumps({'source_commit':os.environ['GITHUB_SHA'],[0m
+native-meta-decision	Archive exact source, native evidence, costs and negative branches	2026-10-16T02:39:41.7274743Z [36;1m    'run_id':os.environ['GITHUB_RUN_ID'],'files':files},sort_keys=True)+'\n')[0m
+native-meta-decision	Archive exact source, native evidence, costs and negative branches	2026-10-16T02:39:41.7275114Z [36;1mPY[0m
+native-meta-decision	Archive exact source, native evidence, costs and negative branches	2026-10-16T02:39:41.7310616Z shell: /usr/bin/bash -e {0}
+native-meta-decision	Archive exact source, native evidence, costs and negative branches	2026-10-16T02:39:41.7310872Z env:
+native-meta-decision	Archive exact source, native evidence, costs and negative branches	2026-10-16T02:39:41.7311099Z   PYTHONDONTWRITEBYTECODE: 1
+native-meta-decision	Archive exact source, native evidence, costs and negative branches	2026-10-16T02:39:41.7311342Z   PYTHONUNBUFFERED: 1
+native-meta-decision	Archive exact source, native evidence, costs and negative branches	2026-10-16T02:39:41.7311618Z   UDM_COMPONENTS: /home/runner/work/test/test/components
+native-meta-decision	Archive exact source, native evidence, costs and negative branches	2026-10-16T02:39:41.7312039Z   UDM_SOURCE_REPOS: /home/runner/work/test/test/components/selection-sources
+native-meta-decision	Archive exact source, native evidence, costs and negative branches	2026-10-16T02:39:41.7312468Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.15/x64
+native-meta-decision	Archive exact source, native evidence, costs and negative branches	2026-10-16T02:39:41.7312875Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.15/x64/lib/pkgconfig
+native-meta-decision	Archive exact source, native evidence, costs and negative branches	2026-10-16T02:39:41.7313274Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.15/x64
+native-meta-decision	Archive exact source, native evidence, costs and negative branches	2026-10-16T02:39:41.7313641Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.15/x64
+native-meta-decision	Archive exact source, native evidence, costs and negative branches	2026-10-16T02:39:41.7314002Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.15/x64
+native-meta-decision	Archive exact source, native evidence, costs and negative branches	2026-10-16T02:39:41.7314582Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.15/x64/lib
+native-meta-decision	Archive exact source, native evidence, costs and negative branches	2026-10-16T02:39:41.7314895Z ##[endgroup]
+native-meta-decision	Run actions/upload-artifact@v4	﻿2026-10-16T02:39:42.0721996Z ##[group]Run actions/upload-artifact@v4
+native-meta-decision	Run actions/upload-artifact@v4	2026-10-16T02:39:42.0722300Z with:
+native-meta-decision	Run actions/upload-artifact@v4	2026-10-16T02:39:42.0722623Z   name: decisive-native-meta-a02eb3fb10b7577cc232fc9180b8fe9d3ef2c125-1
+native-meta-decision	Run actions/upload-artifact@v4	2026-10-16T02:39:42.0723283Z   path: qualification/*.json
+native-meta-decision	Run actions/upload-artifact@v4	qualification/*.txt
+native-meta-decision	Run actions/upload-artifact@v4	qualification/*.log
+native-meta-decision	Run actions/upload-artifact@v4	qualification/NATIVE_EVIDENCE.tar.gz
+native-meta-decision	Run actions/upload-artifact@v4	qualification/source/
+native-meta-decision	Run actions/upload-artifact@v4	
+native-meta-decision	Run actions/upload-artifact@v4	2026-10-16T02:39:42.0723830Z   include-hidden-files: true
+native-meta-decision	Run actions/upload-artifact@v4	2026-10-16T02:39:42.0724061Z   retention-days: 30
+native-meta-decision	Run actions/upload-artifact@v4	2026-10-16T02:39:42.0724517Z   if-no-files-found: warn
+native-meta-decision	Run actions/upload-artifact@v4	2026-10-16T02:39:42.0724751Z   compression-level: 6
+native-meta-decision	Run actions/upload-artifact@v4	2026-10-16T02:39:42.0725003Z   overwrite: false
+native-meta-decision	Run actions/upload-artifact@v4	2026-10-16T02:39:42.0725195Z env:
+native-meta-decision	Run actions/upload-artifact@v4	2026-10-16T02:39:42.0725385Z   PYTHONDONTWRITEBYTECODE: 1
+native-meta-decision	Run actions/upload-artifact@v4	2026-10-16T02:39:42.0725618Z   PYTHONUNBUFFERED: 1
+native-meta-decision	Run actions/upload-artifact@v4	2026-10-16T02:39:42.0725878Z   UDM_COMPONENTS: /home/runner/work/test/test/components
+native-meta-decision	Run actions/upload-artifact@v4	2026-10-16T02:39:42.0726290Z   UDM_SOURCE_REPOS: /home/runner/work/test/test/components/selection-sources
+native-meta-decision	Run actions/upload-artifact@v4	2026-10-16T02:39:42.0726725Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.15/x64
+native-meta-decision	Run actions/upload-artifact@v4	2026-10-16T02:39:42.0727167Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.15/x64/lib/pkgconfig
+native-meta-decision	Run actions/upload-artifact@v4	2026-10-16T02:39:42.0727564Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.15/x64
+native-meta-decision	Run actions/upload-artifact@v4	2026-10-16T02:39:42.0727916Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.15/x64
+native-meta-decision	Run actions/upload-artifact@v4	2026-10-16T02:39:42.0728277Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.15/x64
+native-meta-decision	Run actions/upload-artifact@v4	2026-10-16T02:39:42.0728636Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.15/x64/lib
+native-meta-decision	Run actions/upload-artifact@v4	2026-10-16T02:39:42.0728953Z ##[endgroup]
+native-meta-decision	Run actions/upload-artifact@v4	2026-10-16T02:39:42.2401446Z (node:8211) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+native-meta-decision	Run actions/upload-artifact@v4	2026-10-16T02:39:42.2402148Z (Use `node --trace-deprecation ...` to show where the warning was created)
+native-meta-decision	Run actions/upload-artifact@v4	2026-10-16T02:39:42.3022747Z Uploads are case insensitive: /home/runner/work/test/test/qualification/source/research/unified_consequence_runtime/external_pr_v1/admission_policy.json was detected that it will be overwritten by another file with the same path
+native-meta-decision	Run actions/upload-artifact@v4	2026-10-16T02:39:42.3073813Z With the provided path, there will be 304 files uploaded
+native-meta-decision	Run actions/upload-artifact@v4	2026-10-16T02:39:42.3075143Z Artifact name is valid!
+native-meta-decision	Run actions/upload-artifact@v4	2026-10-16T02:39:42.3075694Z Root directory input is valid!
+native-meta-decision	Run actions/upload-artifact@v4	2026-10-16T02:39:42.6614691Z Beginning upload of artifact content to blob storage
+native-meta-decision	Run actions/upload-artifact@v4	2026-10-16T02:39:43.0113815Z (node:8211) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+native-meta-decision	Run actions/upload-artifact@v4	2026-10-16T02:39:43.8031621Z Uploaded bytes 8388608
+native-meta-decision	Run actions/upload-artifact@v4	2026-10-16T02:39:44.0406025Z Uploaded bytes 16777216
+native-meta-decision	Run actions/upload-artifact@v4	2026-10-16T02:39:44.2491895Z Uploaded bytes 25165824
+native-meta-decision	Run actions/upload-artifact@v4	2026-10-16T02:39:44.3548364Z Uploaded bytes 26691400
+native-meta-decision	Run actions/upload-artifact@v4	2026-10-16T02:39:44.4131250Z Finished uploading artifact content to blob storage!
+native-meta-decision	Run actions/upload-artifact@v4	2026-10-16T02:39:44.4132368Z SHA256 digest of uploaded artifact zip is 99dbd6bc6bf7612d1141ccc4c0ecbf39c55daa2bdc07eefd36e26a5f61769f79
+native-meta-decision	Run actions/upload-artifact@v4	2026-10-16T02:39:44.4134606Z Finalizing artifact upload
+native-meta-decision	Run actions/upload-artifact@v4	2026-10-16T02:39:44.6643715Z Artifact decisive-native-meta-a02eb3fb10b7577cc232fc9180b8fe9d3ef2c125-1.zip successfully finalized. Artifact ID 12020798523
+native-meta-decision	Run actions/upload-artifact@v4	2026-10-16T02:39:44.6645664Z Artifact decisive-native-meta-a02eb3fb10b7577cc232fc9180b8fe9d3ef2c125-1 has been successfully uploaded! Final size is 26691400 bytes. Artifact ID is 12020798523
+native-meta-decision	Run actions/upload-artifact@v4	2026-10-16T02:39:44.6651327Z Artifact download URL: https://github.com/heathsanchez/test/actions/runs/38841372484/artifacts/12020798523
+native-meta-decision	Post Run actions/checkout@v4	﻿2026-10-16T02:39:44.6855401Z Post job cleanup.
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:44.7665194Z [command]/usr/bin/git version
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:44.7705827Z git version 2.55.0
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:44.7742364Z Temporarily overriding HOME='/home/runner/work/_temp/d6a8aa16-c735-4853-ad9e-3fe292d862a0' before making global git config changes
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:44.7743850Z Adding repository directory to the temporary git global config as a safe directory
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:44.7749049Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/test/test/components/selection-sources/msi
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:44.7787296Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:44.7822965Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:44.8048410Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:44.8080269Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:44.8293099Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:44.8355869Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+native-meta-decision	Post Run actions/checkout@v4	﻿2026-10-16T02:39:44.8748420Z Post job cleanup.
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:44.9595080Z [command]/usr/bin/git version
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:44.9637593Z git version 2.55.0
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:44.9675485Z Temporarily overriding HOME='/home/runner/work/_temp/c3944f91-7bb4-4344-badb-95ba7eb03b7a' before making global git config changes
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:44.9676896Z Adding repository directory to the temporary git global config as a safe directory
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:44.9681386Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/test/test/components/selection-sources/triskelion
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:44.9727609Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:44.9775124Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:45.0145051Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:45.0188015Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:45.0429653Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:45.0461460Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+native-meta-decision	Post Run actions/checkout@v4	﻿2026-10-16T02:39:45.0789459Z Post job cleanup.
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:45.1687391Z [command]/usr/bin/git version
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:45.1728462Z git version 2.55.0
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:45.1763645Z Temporarily overriding HOME='/home/runner/work/_temp/8801aeaf-8c2a-4fc5-9e1d-4d01a3f76749' before making global git config changes
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:45.1765387Z Adding repository directory to the temporary git global config as a safe directory
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:45.1770332Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/test/test/components/evaluator
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:45.1807995Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:45.1841617Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:45.2058291Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:45.2094958Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:45.2342677Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:45.2377874Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+native-meta-decision	Post Run actions/checkout@v4	﻿2026-10-16T02:39:45.2764904Z Post job cleanup.
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:45.3672118Z [command]/usr/bin/git version
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:45.3710912Z git version 2.55.0
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:45.3749151Z Temporarily overriding HOME='/home/runner/work/_temp/67bec08b-8dc4-4c92-850a-f510299ee163' before making global git config changes
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:45.3750820Z Adding repository directory to the temporary git global config as a safe directory
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:45.3756012Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/test/test/components/flash
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:45.3800707Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:45.3837240Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:45.4063401Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:45.4095019Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:45.4328434Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:45.4355781Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+native-meta-decision	Post Run actions/checkout@v4	﻿2026-10-16T02:39:45.4739715Z Post job cleanup.
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:45.5686497Z [command]/usr/bin/git version
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:45.5729139Z git version 2.55.0
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:45.5767809Z Temporarily overriding HOME='/home/runner/work/_temp/f33dddfb-e14f-4940-a510-796c416cfe64' before making global git config changes
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:45.5769345Z Adding repository directory to the temporary git global config as a safe directory
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:45.5774841Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/test/test/components/metatron
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:45.5820076Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:45.5855280Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:45.6150511Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:45.6177791Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:45.6393187Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:45.6427135Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+native-meta-decision	Post Run actions/checkout@v4	﻿2026-10-16T02:39:45.6814665Z Post job cleanup.
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:45.7687905Z [command]/usr/bin/git version
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:45.7736626Z git version 2.55.0
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:45.7785721Z Temporarily overriding HOME='/home/runner/work/_temp/4da6da3b-8772-4fe0-abb3-59f8c05ef040' before making global git config changes
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:45.7786666Z Adding repository directory to the temporary git global config as a safe directory
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:45.7795091Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/test/test/components/development
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:45.7845068Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:45.7883416Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:45.8094208Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:45.8128747Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:45.8356198Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:45.8392955Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+native-meta-decision	Post Run actions/checkout@v4	﻿2026-10-16T02:39:45.8797637Z Post job cleanup.
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:45.9666554Z [command]/usr/bin/git version
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:45.9709671Z git version 2.55.0
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:45.9749786Z Temporarily overriding HOME='/home/runner/work/_temp/5f2de720-62a2-4430-b849-a8cfce2914b3' before making global git config changes
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:45.9751149Z Adding repository directory to the temporary git global config as a safe directory
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:45.9756933Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/test/test
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:45.9797056Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:45.9832537Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:46.0083043Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:46.0117769Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:46.0335181Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+native-meta-decision	Post Run actions/checkout@v4	2026-10-16T02:39:46.0372016Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+native-meta-decision	Complete job	﻿2026-10-16T02:39:46.0777112Z Cleaning up orphan processes
+native-meta-decision	Complete job	2026-10-16T02:39:46.1024825Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-python@v5, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

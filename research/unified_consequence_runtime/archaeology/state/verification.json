@@ -1,0 +1,62 @@
+{
+  "independent_review": "NO_FINDINGS_IN_QUALIFIED_FLOW",
+  "checked_sources": [
+    "/workspace/udm/research/unified_consequence_runtime/developmental_machine.py",
+    "/workspace/udm/research/unified_consequence_runtime/qualify_developmental_machine.py",
+    "/workspace/udm/research/unified_consequence_runtime/developmental_verify.py",
+    "/workspace/components/metatron/runtime/metatron/nucleus.py",
+    "/workspace/components/flash/qckn_flash_live_router.py",
+    "/workspace/components/flash/qckn_flash_cross_repo_ingest.py",
+    "/workspace/components/flash/realitygraph/flash.py"
+  ],
+  "independent_native_tests": [
+    {
+      "command": "/workspace/udm-venv/bin/python -B -m unittest research.unified_consequence_runtime.test_developmental_machine -v",
+      "cwd": "/workspace/udm",
+      "count": 2,
+      "seconds": 10.422,
+      "exit_code": 0
+    },
+    {
+      "command": "PYTHONPATH=/workspace/components/metatron/runtime /workspace/udm-venv/bin/python -B -m unittest tests.test_minimal_warrant_graph tests.test_nucleus_exhaustive -v",
+      "cwd": "/workspace/components/metatron",
+      "count": 9,
+      "seconds": 3.614,
+      "exit_code": 0,
+      "exhaustive_cases": {
+        "five_node_dags": 1024,
+        "single_revocations": 5120
+      }
+    },
+    {
+      "command": "/workspace/udm-venv/bin/python -B -m unittest tests.test_flash_live_router tests.test_flash_external_revocation tests.test_flash_cold_restart tests.test_flash_event_restart tests.test_flash_nonlinear -v",
+      "cwd": "/workspace/components/flash",
+      "count": 15,
+      "seconds": 0.017,
+      "exit_code": 0
+    }
+  ],
+  "independent_qualification": {
+    "path": "/workspace/archaeology/state/qualification/out/qualification.json",
+    "sha256": "386729123af5aad93f2512255964c8b2a49e7e2fbb6697dcd7832e98ce394597",
+    "coordinator_commit": "d96000d6a9c36130ddb8255fad04bb6ea321b052",
+    "status": "WARRANTED_BOUNDED_INTEGRATED_EXECUTION",
+    "original_nodes_retained": 75,
+    "final_log_records": 101,
+    "final_live_records": 82,
+    "native_protected_successes": 3,
+    "independent_domain_successes": 3,
+    "grouping_ablation_successes": 0,
+    "withdrawal": "PASS",
+    "restoration": "PASS",
+    "restart": "PASS",
+    "baseline": "TIE",
+    "total_seconds": 23.275093724999806
+  },
+  "not_rerun": [
+    "Lean formal differential qualification",
+    "all historical branch workloads",
+    "fresh browser world observation"
+  ],
+  "implementation_edits_by_reviewer": false
+}

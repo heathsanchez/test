@@ -1,0 +1,526 @@
+{
+  "schema": "metalogic.decisive-test.mechanism-recovery.v1",
+  "base_commit": "d63f416b728079e1e6056521e66721933224c983",
+  "scope": "Focused exact-source recovery and current adapter gap analysis; not exhaustive source enumeration or new scientific qualification.",
+  "no_new_target_access": {
+    "target_repositories_inspected": [],
+    "target_source_or_tests_read": false,
+    "new_target_outcomes_read": false,
+    "scientific_experiments_run": false
+  },
+  "canonical_inventory": {
+    "capabilities": 70,
+    "graph_nodes": 104,
+    "graph_edges": 51,
+    "inventory_rows_modified": false
+  },
+  "sources": [
+    {
+      "repository": "msi",
+      "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+      "path": "consequential_core.py",
+      "sha256": "2c8be1f9fde571bfcdba6d1daf8a0e680a9636f697687fd4c128a8b214975ad8",
+      "bytes": 12291,
+      "read_only_source_inspection": true,
+      "imported": false,
+      "scientific_experiment_executed": false,
+      "apis": [
+        {
+          "name": "AcquisitionResidual",
+          "line": 126,
+          "end_line": 147
+        },
+        {
+          "name": "UpdatePolicy",
+          "line": 184,
+          "end_line": 185
+        },
+        {
+          "name": "certify_repair",
+          "line": 271,
+          "end_line": 286
+        },
+        {
+          "name": "compile_repair",
+          "line": 289,
+          "end_line": 318
+        },
+        {
+          "name": "ablate",
+          "line": 321,
+          "end_line": 325
+        }
+      ]
+    },
+    {
+      "repository": "msi",
+      "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+      "path": "consequential_version_space.py",
+      "sha256": "1494620801a524fce54ae9b87a55ae12b79094875084e883fe2183c044e181f9",
+      "bytes": 3181,
+      "read_only_source_inspection": true,
+      "imported": false,
+      "scientific_experiment_executed": false,
+      "apis": [
+        {
+          "name": "coarsest_representation_repairs",
+          "line": 41,
+          "end_line": 67
+        },
+        {
+          "name": "discriminating_pairs",
+          "line": 70,
+          "end_line": 88
+        },
+        {
+          "name": "update_version_space_from_pair_answer",
+          "line": 91,
+          "end_line": 98
+        }
+      ]
+    },
+    {
+      "repository": "msi",
+      "commit": "56cfd7b523e3592cae4eafa5468f437ccb94dbe9",
+      "path": "experiments/policy_language_genesis_cross_domain_v10.py",
+      "sha256": "836b8f677f1f252fccad8bf1136f9a966a1f2b2330fa5057c616ee20ddb56608",
+      "bytes": 11773,
+      "read_only_source_inspection": true,
+      "imported": false,
+      "scientific_experiment_executed": false,
+      "apis": [
+        {
+          "name": "stat_programs",
+          "line": 83,
+          "end_line": 84
+        },
+        {
+          "name": "stat_eval",
+          "line": 93,
+          "end_line": 100
+        },
+        {
+          "name": "stat_cost",
+          "line": 102,
+          "end_line": 104
+        },
+        {
+          "name": "synthesize_statistic",
+          "line": 119,
+          "end_line": 137
+        },
+        {
+          "name": "policy_programs",
+          "line": 141,
+          "end_line": 148
+        },
+        {
+          "name": "pkey",
+          "line": 150,
+          "end_line": 150
+        },
+        {
+          "name": "synthesize_policy",
+          "line": 159,
+          "end_line": 175
+        }
+      ]
+    },
+    {
+      "repository": "msi",
+      "commit": "56cfd7b523e3592cae4eafa5468f437ccb94dbe9",
+      "path": "experiments/consequence_separated_policy_language_genesis_v11.py",
+      "sha256": "800b0ff6b4fd9fccc792ad342c4fccd1f51fb8a6f7606377832c3fd466658495",
+      "bytes": 5651,
+      "read_only_source_inspection": true,
+      "imported": false,
+      "scientific_experiment_executed": false,
+      "apis": [
+        {
+          "name": "sep_order",
+          "line": 32,
+          "end_line": 33
+        },
+        {
+          "name": "full_behavior",
+          "line": 46,
+          "end_line": 47
+        },
+        {
+          "name": "synthesize_statistic_v11",
+          "line": 49,
+          "end_line": 79
+        }
+      ]
+    },
+    {
+      "repository": "msi",
+      "commit": "56cfd7b523e3592cae4eafa5468f437ccb94dbe9",
+      "path": "experiments/recursive_consequence_generated_observation_genesis_v12.py",
+      "sha256": "e54bd8c368b0902b0c1ffd098e364b635c4fb09ea62eac015c2e2850e8210868",
+      "bytes": 6716,
+      "read_only_source_inspection": true,
+      "imported": false,
+      "scientific_experiment_executed": false,
+      "apis": [
+        {
+          "name": "stage1",
+          "line": 48,
+          "end_line": 53
+        },
+        {
+          "name": "promote_and_generate",
+          "line": 56,
+          "end_line": 76
+        },
+        {
+          "name": "stage2",
+          "line": 80,
+          "end_line": 86
+        }
+      ]
+    },
+    {
+      "repository": "test",
+      "commit": "13325089c471996b8b68f46540fd4ad449df752c",
+      "path": "open_development/runtime.py",
+      "sha256": "48bc8efdbb289697c41d633773208dcbdb53bf39dbc8679127e58d0ed3e80703",
+      "bytes": 12116,
+      "read_only_source_inspection": true,
+      "imported": false,
+      "scientific_experiment_executed": false,
+      "apis": [
+        {
+          "name": "Obligation",
+          "line": 26,
+          "end_line": 30
+        },
+        {
+          "name": "IRContract",
+          "line": 34,
+          "end_line": 50
+        },
+        {
+          "name": "Repair",
+          "line": 67,
+          "end_line": 88
+        },
+        {
+          "name": "Evidence",
+          "line": 92,
+          "end_line": 104
+        },
+        {
+          "name": "assessment_claim",
+          "line": 115,
+          "end_line": 116
+        },
+        {
+          "name": "Developer",
+          "line": 216,
+          "end_line": 298
+        }
+      ]
+    },
+    {
+      "repository": "triskelion",
+      "commit": "426c54f7c774560e0fabe7213c5ef333b1327c71",
+      "path": "experiments/METALOGIC_V104_GENERIC_CONSTRUCTOR_SYNTHESIS.py",
+      "sha256": "d00301852efd278be8ac22b848e0c9e56ced7c574980753b2ebc2ef0a3b7cce9",
+      "bytes": 9037,
+      "read_only_source_inspection": true,
+      "imported": false,
+      "scientific_experiment_executed": false,
+      "apis": [
+        {
+          "name": "nodes_for_selector",
+          "line": 41,
+          "end_line": 49
+        },
+        {
+          "name": "build_expr",
+          "line": 51,
+          "end_line": 64
+        },
+        {
+          "name": "program_candidates",
+          "line": 66,
+          "end_line": 91
+        },
+        {
+          "name": "first_success",
+          "line": 93,
+          "end_line": 98
+        }
+      ]
+    },
+    {
+      "repository": "triskelion",
+      "commit": "9ff0e6a393cef499a37f0374ca6315e7849c49b8",
+      "path": "experiments/METALOGIC_V99_CROSS_SOURCE_DYNAMIC_ORGANS.py",
+      "sha256": "972e5d09c669f5388ab08d224bb3ab7bf9a83cf664db99a854fd20b8c4625a29",
+      "bytes": 6084,
+      "read_only_source_inspection": true,
+      "imported": false,
+      "scientific_experiment_executed": false,
+      "apis": [
+        {
+          "name": "unit",
+          "line": 14,
+          "end_line": 15
+        },
+        {
+          "name": "cosine",
+          "line": 16,
+          "end_line": 16
+        },
+        {
+          "name": "cross_source_components",
+          "line": 18,
+          "end_line": 38
+        }
+      ]
+    },
+    {
+      "repository": "test",
+      "commit": "93b01adc48f47143f13e153f19ea19f401eca577",
+      "path": "research/unified_consequence_runtime/typed_semantic_method_v1/mine_native_methods.py",
+      "sha256": "43a373827dbfb23ed84666aebacc36aa681326093351eeb93a1f7b87a5c3bcea",
+      "bytes": 13894,
+      "read_only_source_inspection": true,
+      "imported": false,
+      "scientific_experiment_executed": false,
+      "apis": [
+        {
+          "name": "mine_lemmas",
+          "line": 48,
+          "end_line": 67
+        },
+        {
+          "name": "candidates",
+          "line": 79,
+          "end_line": 100
+        },
+        {
+          "name": "tactic_variants",
+          "line": 115,
+          "end_line": 129
+        },
+        {
+          "name": "method_trial",
+          "line": 142,
+          "end_line": 156
+        }
+      ]
+    },
+    {
+      "repository": "realitygraph",
+      "commit": "50c43b14e7272469bc51ff7204dec07682a996d7",
+      "path": "realitygraph/developmental_core.py",
+      "sha256": "f0dc960359a2f52aff449d8fde85b0d2d108ded9fac58fc712b431c386759169",
+      "bytes": 1551,
+      "read_only_source_inspection": true,
+      "imported": false,
+      "scientific_experiment_executed": false,
+      "apis": [
+        {
+          "name": "route_residual",
+          "line": 17,
+          "end_line": 43
+        }
+      ]
+    },
+    {
+      "repository": "realitygraph",
+      "commit": "50c43b14e7272469bc51ff7204dec07682a996d7",
+      "path": "realitygraph/residual_certificate.py",
+      "sha256": "7e07371e7ba2507e379160117d6593bcfa8cd5c4a9519f2905cb23fe49271882",
+      "bytes": 6847,
+      "read_only_source_inspection": true,
+      "imported": false,
+      "scientific_experiment_executed": false,
+      "apis": [
+        {
+          "name": "ResidualCertificate",
+          "line": 17,
+          "end_line": 111
+        },
+        {
+          "name": "make_expressivity_residual",
+          "line": 114,
+          "end_line": 149
+        }
+      ]
+    },
+    {
+      "repository": "realitygraph",
+      "commit": "50c43b14e7272469bc51ff7204dec07682a996d7",
+      "path": "realitygraph/developmental_executor.py",
+      "sha256": "6615adb2d8ce5ba55574c874de57e0393113ff63cd3d3fbe9397066f5c678c4d",
+      "bytes": 15775,
+      "read_only_source_inspection": true,
+      "imported": false,
+      "scientific_experiment_executed": false,
+      "apis": [
+        {
+          "name": "execute_generation",
+          "line": 167,
+          "end_line": 435
+        }
+      ]
+    },
+    {
+      "repository": "realitygraph",
+      "commit": "50c43b14e7272469bc51ff7204dec07682a996d7",
+      "path": "realitygraph/generation_spec.py",
+      "sha256": "09b683b70601ca95db7cc790a0ba4dbabf6c0f7e0b90301034f9a88918b3eebe",
+      "bytes": 7174,
+      "read_only_source_inspection": true,
+      "imported": false,
+      "scientific_experiment_executed": false,
+      "apis": [
+        {
+          "name": "LanguageEnumeration",
+          "line": 14,
+          "end_line": 33
+        },
+        {
+          "name": "CandidateEnumeration",
+          "line": 37,
+          "end_line": 48
+        },
+        {
+          "name": "GenerationSpec",
+          "line": 152,
+          "end_line": 216
+        }
+      ]
+    }
+  ],
+  "current_sources": [
+    {
+      "path": "/workspace/udm-v54/research/unified_consequence_runtime/consequence_selection.py",
+      "sha256": "e39f10c5671df25761c4e2bc18c46eccbb14dfd6180834f1befc560e13a4bcaa",
+      "bytes": 15881
+    },
+    {
+      "path": "/workspace/udm-v54/research/unified_consequence_runtime/developmental_choice.py",
+      "sha256": "47e356c5742fc7ccfdb4a0c7488faa1c314e531e2793da847ba7f27d7b20ca48",
+      "bytes": 7533
+    },
+    {
+      "path": "/workspace/udm-v54/research/unified_consequence_runtime/native_frontier.py",
+      "sha256": "c257c1c6f1199994baa4915eebde3b79358afebefc16e3ced588ee068bb9dd28",
+      "bytes": 17162
+    },
+    {
+      "path": "/workspace/udm-v54/research/unified_consequence_runtime/native_constructor.py",
+      "sha256": "74cd7e642da616825f5d0bf72c5162d7b9c6a79de2fe125eee2195c46441eaf4",
+      "bytes": 30556
+    },
+    {
+      "path": "/workspace/udm-v54/research/unified_consequence_runtime/qualify_recursive_frontier.py",
+      "sha256": "878af944a78d5301ce1803bd891f48e78575a5cbf329b5e39836ae62ecc5949c",
+      "bytes": 22762
+    },
+    {
+      "path": "/workspace/udm-v54/research/unified_consequence_runtime/RECURSIVE_QUALIFICATION_RECEIPT.json",
+      "sha256": "5c1aee597ab8c94cf637998cad00b0850a958349b5f815cb95865d856692f5c4",
+      "bytes": 5145
+    },
+    {
+      "path": "/workspace/udm-v54/research/unified_consequence_runtime/capability_index.json",
+      "sha256": "74a9ec013d9def8515160e4c8d9ff933d7c545e14d4b315a7e6ca96b0764cd66",
+      "bytes": 270583
+    },
+    {
+      "path": "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/programme-closure/CAPABILITY_GRAPH.json",
+      "sha256": "d7edd61a0a2b9dcc0b4c1b234fac736433f1ede7bfebe4c55841e2a3e51e9ef1",
+      "bytes": 43879
+    },
+    {
+      "path": "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/recursive-frontier/recursive-mechanism-recovery.json",
+      "sha256": "f2eace85666fc8857bc3564f6dd65838934a422ff0a79a6a86a877b6c29d1051",
+      "bytes": 23120
+    },
+    {
+      "path": "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/recursive-frontier/recursive-constructor-recovery.json",
+      "sha256": "c036888d8fee3bf51a899f471c9d0fbc5bf9183b14591cd9a9b77764bf83f3c1",
+      "bytes": 27399
+    }
+  ],
+  "recommendation": {
+    "smallest_existing_meta_decision": "Use original RealityGraph route_residual for typed route choice, original MSI AcquisitionResidual+UpdatePolicy/certify_repair/compile_repair for bounded acquisition-policy updates, and original MDA Developer through a projection over existing Machine. Do not instantiate a second EvidenceStore or architecture.",
+    "executable_selection": "Original prospective Pareto choose over complete independently produced native candidate/future profiles; original MSI/JPL minimal_basis over finite consequence profiles is explanatory compression and cannot substitute for the full applicability guard.",
+    "actual_constructor_candidate": "Original V104 program_candidates(src, allowed=None, cap=320) emits executable Python source triples; a retained verified selector/builder signature subset changes the callable source-to-candidates constructor on later tasks. MIN_SUPPORT=2 source tasks, MDL repr length, max support, fixed hash, top2 are supplied selection semantics.",
+    "actual_policy_candidate": "Original V99 cross_source_components(points) computes source-distinct >=2-support cosine>=0.82 components and medoids of verifier-improving probe deltas; can change later candidate ordering. Generic native probe-delta semantics must be frozen before target outcomes.",
+    "pure_statistical_option": "Original MSI V10 supplies12 statistic ASTs and36 ranking ASTs. Pure grammar/interpreter APIs are reusable, but full synthesize_* closes over supplied scalar/orbital tasks. Their scalar worlds are not a fresh native success.",
+    "original_native_alternative": "Native CSLib mine_lemmas/candidates/tactic_variants/method_trial has actual independent Lean promotion of mined rewrites. Vocabulary and module list are domain-specific and any foreign-source binding must be frozen independently; no fresh theorem task inspected here."
+  },
+  "immediate_missing_bindings": [
+    "Current consequence_selection._route_existing only understands E/D task_ids/template, so it records all generic native capabilities as unsupported schema. It is not already a general native meta-decision engine.",
+    "NativeFrontierRuntime is a verifier/admission/execution mechanism, not candidate generation, observation synthesis or autonomous developmental policy selection. Empty replacements are ACTIVATION.",
+    "Generic receipt statuses distinguish native failure/error, but no independently qualified procedure currently derives all causal failure classes from arbitrary native repository errors. Import/build errors must not be relabeled expressivity residuals.",
+    "MDA Developer delegates assess/propose/verify/attach to adapter; its loop does not decide domain semantics. A generic bridge must map original native receipts and actual candidate interventions to exact typed residuals before policy change.",
+    "V104 support-retention selection is monolithic main code tied to QuixBugs score semantics. A minimal exact definition extraction/native scorer binding is needed, with original heuristic unchanged and all probes charged.",
+    "V99 collect_probe/probe_trace and full_score are fixed to QuixBugs. Native JUnit/trace information needs a generic predeclared semantics and cannot be invented after target failure.",
+    "RealityGraph finite executor requires exact finite semantic carriers and trustworthy CurrentLanguageAdapter/VerifierAdapter. It must not be fed complete=True after arbitrary bounded/time-limited search.",
+    "Original immutable source materialization misses generated build files in urllib3; that exposed target is closed. Any generic build bridge and fresh unfamiliar frontier need a new precommitted protocol."
+  ],
+  "claim_discipline": {
+    "G0_G1": "Existing E/D/V54 plus generic maintenance authority preserved; previous346-case native test activation is not autonomous O1/O3.",
+    "G2": "Can be established only by fresh native evidence causing original selection machinery to choose a route without task ID/winner supplied; current generic native route binding is missing.",
+    "G3": "Requires physical/policy ablation changing later native discoverability within unchanged declared horizon, independent native success and cold restart; historical V54 alone is not fresh prospective evidence.",
+    "G4": "Fully informed executable ledger must receive identical original operators, all acquired trace/evidence information and total budget; a tie excludes superiority.",
+    "G5_G6": "No Python/Lean refinement or all-effects reference monitor follows from these source APIs.",
+    "UNKNOWN_SEARCH": "Finite budget exhaustion or timeout; no universal old-language inadequacy follows.",
+    "UNKNOWN_CHOICE": "Preserve all lawful nondominated or behaviorally distinct minimal candidates until future native evidence distinguishes them.",
+    "UNKNOWN_EXPRESSIVITY": "Only exact complete frozen language enumeration plus no-resolution certificate can license expressivity expansion."
+  },
+  "negative_lineage_preserved": [
+    {
+      "name": "MathGraph Check non-regex selector",
+      "runs": [
+        38606674871,
+        38607356915
+      ],
+      "verdict": "Frozen RED preserved; human EDGE_SPACE correction is post-hoc diagnostic, not autonomous selector success."
+    },
+    {
+      "name": "VDN V23",
+      "run": 38040554566,
+      "verdict": "Learned17/310 vs cold18/310; corrected strong baseline negative."
+    },
+    {
+      "name": "VDN V24",
+      "run": 38040720448,
+      "verdict": "All five128-budget arms1/160; no learned-policy unique protected success."
+    },
+    {
+      "name": "VDN V25/V26",
+      "verdict": "Protected0/16 then retrospective16-case diagnostic; selected feature collision does not prove full vocabulary inadequacy."
+    },
+    {
+      "name": "Retention policy genesis",
+      "verdict": "Heldout learned104887 loses handgeometry102558; source shift improvement is separately bounded. Representable-but-unselected does not license new grammar."
+    },
+    {
+      "name": "Native collection constructor",
+      "verdict": "Human supplied two repair families; author-head changed source spans are observed. Not base-only blind constructor invention."
+    },
+    {
+      "name": "Generic native urllib3",
+      "verdict": "Import error before0tests; prospective growth and comparative advantage remain UNKNOWN. No target rerun in this recovery."
+    }
+  ],
+  "highest_leverage_residual": "Freeze a target-independent native score/probe-to-AcquisitionResidual binding and original source-supported policy/constructor selection before a genuinely untouched task frontier. The transition machinery exists; native consequential evidence semantics and prospective task blindness remain unclosed.",
+  "actions_not_taken": [
+    "No source checkout modification",
+    "No branch mutation",
+    "No target inspection",
+    "No experiment execution",
+    "No historical qualification rerun",
+    "No runtime code change",
+    "No external write"
+  ]
+}

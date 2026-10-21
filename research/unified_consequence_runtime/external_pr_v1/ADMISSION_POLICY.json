@@ -1,0 +1,34 @@
+{
+  "schema": "metalogic.external-pr-source-receipt-policy.v1",
+  "producer_repository": "heathsanchez/test",
+  "producer_run": 38495636825,
+  "producer_head": "52257867ccf3f72e9f6b2bc657be9101a67e3259",
+  "producer_workflow": ".github/workflows/unified-external-pr-native.yml",
+  "archive_id": 11862929149,
+  "archive_zip_sha256": "dfa66e486f8d669115f33deef9b3fd79c784e39161791bc1dcad7f349a4a20b5",
+  "evidence_receipt_sha256": "e5f970c699588a01bf1e773c48e3882a1d91ce3dfff4db98bb9a576d9b381562",
+  "protocol_sha256": "412a6b43bcf156bd99e083d3621141a14fd4fca3b0fc7d04b59e8d7285aaa34d",
+  "external_source_repository": "teorth/IEANTN",
+  "original_base": "2a10e721ff645865c45c344333b1934f34c45b41",
+  "exact_cases": [
+    {
+      "pr": 158,
+      "head": "7fab327e61518fa607753cd022d87ef9d243bbf4",
+      "base_suite": 241,
+      "head_suite": 243,
+      "discovered_tests": 2
+    },
+    {
+      "pr": 155,
+      "head": "a70ba812e1b6e40a6ce4652fb830589030e461d0",
+      "base_suite": 241,
+      "head_suite": 242,
+      "discovered_tests": 1
+    }
+  ],
+  "verdict": "WARRANTED_BOUNDED_REAL_PR_NATIVE_REGRESSION",
+  "promise": "Exact historical source version and tests only, not current branch freshness, app install, correctness of entire repository or generated source-code repair",
+  "action_authorization": "NONE",
+  "autonomous_generator_invention": "UNKNOWN",
+  "scientific_L7": "UNKNOWN"
+}

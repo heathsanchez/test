@@ -1,0 +1,35 @@
+======================================================================
+ERROR: test_valid_forged_producer_bytecode_is_not_executed (research.unified_consequence_runtime.test_native_observation.NativeObservationContracts.test_valid_forged_producer_bytecode_is_not_executed)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_observation.py", line 75, in test_valid_forged_producer_bytecode_is_not_executed
+    loaded = load_sources(self.runtime.source_repo, self.runtime.output/'original-source')
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_observation.py", line 68, in load_sources
+    spec.loader.exec_module(producer)
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/tmp/tmpl844lioc/output/original-source/research/real_native_observation_basis_20261015/native_basis.py", line 1, in <module>
+    #!/usr/bin/env python3
+RuntimeError: forged cached source executed
+
+======================================================================
+ERROR: test_valid_forged_solver_bytecode_is_not_executed (research.unified_consequence_runtime.test_native_observation.NativeObservationContracts.test_valid_forged_solver_bytecode_is_not_executed)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_observation.py", line 80, in test_valid_forged_solver_bytecode_is_not_executed
+    solver = self.runtime.native.producer.basis_solver()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/tmpwaeas35s/output/original-source/research/real_native_observation_basis_20261015/native_basis.py", line 130, in basis_solver
+    spec.loader.exec_module(obj)
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/tmp/tmpwaeas35s/output/original-source/research/flash_genesis_v11/learned_repair.py", line 1, in <module>
+    # Source-compiled by V11 source-only structural repair search.
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: forged cached source executed
+
+----------------------------------------------------------------------
+Ran 2 tests in 0.283s
+
+FAILED (errors=2)

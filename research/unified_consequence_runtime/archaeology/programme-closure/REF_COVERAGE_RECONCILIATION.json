@@ -1,0 +1,120 @@
+{
+  "schema": "metalogic.ref-coverage-reconciliation.v1",
+  "boundary": "Local source scans compared to separately observed API branch/tag commit ids; interval is not atomic. Missing rows remain uncovered.",
+  "repositories": [
+    {
+      "repository": "heathsanchez/FormalBook",
+      "api_branches_and_tags": 34,
+      "api_ref_commits_reachable_from_scanned_local_refs": 34,
+      "api_ref_commits_not_scanned": [],
+      "commit_subject_inventory_sha256": "85ed032011995663039a43fc5c361346c014f46509f07e5ecf198d562f795dcd"
+    },
+    {
+      "repository": "heathsanchez/equational-theories-lean-stage2",
+      "api_branches_and_tags": 84,
+      "api_ref_commits_reachable_from_scanned_local_refs": 84,
+      "api_ref_commits_not_scanned": [],
+      "commit_subject_inventory_sha256": "e93c9674807192fc2322bae96b762415b4f5fb01217e8bd477698cb0a31feeaa"
+    },
+    {
+      "repository": "heathsanchez/latent-coordinate-law-engine",
+      "api_branches_and_tags": 1,
+      "api_ref_commits_reachable_from_scanned_local_refs": 1,
+      "api_ref_commits_not_scanned": [],
+      "commit_subject_inventory_sha256": "58b6152223bdb69f6839afbd16963ea6446aafb3c2f6d4aad8eb64b4c9347136"
+    },
+    {
+      "repository": "heathsanchez/lean4lean",
+      "api_branches_and_tags": 3,
+      "api_ref_commits_reachable_from_scanned_local_refs": 3,
+      "api_ref_commits_not_scanned": [],
+      "commit_subject_inventory_sha256": "2d6f912b30b453f020d4a94d193e6cb00ed0e074da0cf80679e29c87871c441c"
+    },
+    {
+      "repository": "heathsanchez/mathgraph",
+      "api_branches_and_tags": 59,
+      "api_ref_commits_reachable_from_scanned_local_refs": 59,
+      "api_ref_commits_not_scanned": [],
+      "commit_subject_inventory_sha256": "6d8e57cddee5a470dcbcd99a22c316ed8ef2d601d99d70226386c565694cb750"
+    },
+    {
+      "repository": "heathsanchez/mathgraph-fork",
+      "api_branches_and_tags": 4,
+      "api_ref_commits_reachable_from_scanned_local_refs": 4,
+      "api_ref_commits_not_scanned": [],
+      "commit_subject_inventory_sha256": "ce07270f6d3c03d98ee2a35c41df2991c2845adb30a7816a15db49da01218a59"
+    },
+    {
+      "repository": "heathsanchez/mathgraph-igp24-continuation-engine",
+      "api_branches_and_tags": 1,
+      "api_ref_commits_reachable_from_scanned_local_refs": 1,
+      "api_ref_commits_not_scanned": [],
+      "commit_subject_inventory_sha256": "5d8977b6833f62b82d88b31e1b4402975eaf6e28c8f1931653559698e14297d2"
+    },
+    {
+      "repository": "heathsanchez/vericoding-benchmark",
+      "api_branches_and_tags": 2,
+      "api_ref_commits_reachable_from_scanned_local_refs": 2,
+      "api_ref_commits_not_scanned": [],
+      "commit_subject_inventory_sha256": "b5dd7139e521d2e3bfc88aab10c33c533c73b1fe59d615b77b75fdfebef01abb"
+    },
+    {
+      "repository": "heathsanchez/lean-kernel-arena",
+      "api_branches_and_tags": 77,
+      "api_ref_commits_reachable_from_scanned_local_refs": 77,
+      "api_ref_commits_not_scanned": [],
+      "commit_subject_inventory_sha256": "9a0eeec9460c842fc1e4ae3506120a36fd3146ffe5d600649ab00d7864f389c2"
+    },
+    {
+      "repository": "metalogiclabs/mathgraph",
+      "api_branches_and_tags": 481,
+      "api_ref_commits_reachable_from_scanned_local_refs": 481,
+      "api_ref_commits_not_scanned": [],
+      "commit_subject_inventory_sha256": "d590982f703d84e02deb03452da4743ce0e9fdd6d32336bcc82374ae023b6a26"
+    },
+    {
+      "repository": "metalogiclabs/mathgraph-lean-kernel",
+      "api_branches_and_tags": 613,
+      "api_ref_commits_reachable_from_scanned_local_refs": 613,
+      "api_ref_commits_not_scanned": [],
+      "commit_subject_inventory_sha256": "d95afa8d3eecf42ceef329908b2aad7b469413d717aa34b97ae0e3bbda569ca0"
+    },
+    {
+      "repository": "metalogiclabs/metatron",
+      "api_branches_and_tags": 67,
+      "api_ref_commits_reachable_from_scanned_local_refs": 67,
+      "api_ref_commits_not_scanned": [],
+      "commit_subject_inventory_sha256": "e54f026ab201bf7029448299da887f712ca26bc17b1f1abb8b4d141d08325c7f"
+    },
+    {
+      "repository": "heathsanchez/Minimal-Sufficient-Interface",
+      "api_branches_and_tags": 341,
+      "api_ref_commits_reachable_from_scanned_local_refs": 341,
+      "api_ref_commits_not_scanned": [],
+      "commit_subject_inventory_sha256": "7ed8b74eb1517082b61f98083acf9cab5b324456225bc3b92ceb921d7ce391b5"
+    },
+    {
+      "repository": "heathsanchez/realitygraph",
+      "api_branches_and_tags": 163,
+      "api_ref_commits_reachable_from_scanned_local_refs": 163,
+      "api_ref_commits_not_scanned": [],
+      "commit_subject_inventory_sha256": "4438633edfeae77d1a3ddb002b482cb4e0fd0a5077f630c4dc28b5cad03a2585"
+    },
+    {
+      "repository": "heathsanchez/test",
+      "api_branches_and_tags": 1962,
+      "api_ref_commits_reachable_from_scanned_local_refs": 1962,
+      "api_ref_commits_not_scanned": [],
+      "commit_subject_inventory_sha256": "1c3977ff9cf5c2c985fb58e5d79c535dc1f7f3d723e8ec3ac6aebc03f56a8811"
+    },
+    {
+      "repository": "heathsanchez/triskelion",
+      "api_branches_and_tags": 239,
+      "api_ref_commits_reachable_from_scanned_local_refs": 239,
+      "api_ref_commits_not_scanned": [],
+      "commit_subject_inventory_sha256": "26ee93437dc8df58bdd426e15a5c2bf94df6db88b3417e2a94a83cd709e32692"
+    }
+  ],
+  "unique_reachable_commits_across_scanned_repositories": 29319,
+  "unique_signature_matching_source_sha256": 15023
+}

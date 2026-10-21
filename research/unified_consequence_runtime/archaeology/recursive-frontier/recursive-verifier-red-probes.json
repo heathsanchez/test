@@ -1,0 +1,62 @@
+{
+  "schema": "udm.independent-verifier-defect-probes.v1",
+  "reviewed_source_sha256": "0cb1785549cb4bdecc1ad34513a0866dc057420264827ea5841ab91816fd2115",
+  "fixtures_only": true,
+  "target_access": false,
+  "results": [
+    {
+      "probe": "mixed_skip",
+      "baseline_status": "PASS_NATIVE",
+      "baseline_junit": {
+        "tests": 2,
+        "passed": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "candidate": {
+        "status": "PASS_NATIVE",
+        "junit": {
+          "tests": 2,
+          "passed": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 1
+        },
+        "imports": [
+          {
+            "path": "tests/test_other.py",
+            "sha256": "cca7cda00b5c116309757d1b293e6526640e4c6b45c180ce320328b2ddcfc26b"
+          }
+        ]
+      }
+    },
+    {
+      "probe": "custom_test_patch",
+      "baseline_status": "FAIL_NATIVE",
+      "baseline_junit": {
+        "tests": 1,
+        "passed": 0,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0
+      },
+      "candidate": {
+        "status": "PASS_NATIVE",
+        "junit": {
+          "tests": 1,
+          "passed": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "imports": [
+          {
+            "path": "check_native.py",
+            "sha256": "80c30a331e495e60f64cce8919ea49567214ecb493344f98ddae27ff9c557d8c"
+          }
+        ]
+      }
+    }
+  ]
+}

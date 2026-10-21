@@ -1,0 +1,1060 @@
+{
+  "schema": "triskelion-readonly-recovery-v1",
+  "date_utc": "2026-10-15",
+  "no_experiments_run": true,
+  "repository_worktree_unchanged": true,
+  "source_rows": [
+    {
+      "family": "v103",
+      "repo": "heathsanchez/triskelion",
+      "ref": "origin/v103-verifier-induced-expression-constructor",
+      "commit": "009e0007142467779d182ac29751c61a34645ebf",
+      "path": "experiments/METALOGIC_V103_VERIFIER_INDUCED_EXPRESSION_CONSTRUCTOR.py",
+      "local_extract": "/workspace/v54-recovery/source/triskelion/v103/experiments/METALOGIC_V103_VERIFIER_INDUCED_EXPRESSION_CONSTRUCTOR.py",
+      "sha256": "4a0f3ef1858a4d00af15c7ffa46dce2b7923aac11cea53600d07c687be2934d2",
+      "apis": [
+        {
+          "name": "h",
+          "line": 16,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "failing_names",
+          "line": 18,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "family_candidates",
+          "line": 28,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "first_success",
+          "line": 31,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "main",
+          "line": 38,
+          "kind": "FunctionDef"
+        }
+      ],
+      "executed": false
+    },
+    {
+      "family": "v104",
+      "repo": "heathsanchez/triskelion",
+      "ref": "origin/v104-generic-constructor-synthesis",
+      "commit": "426c54f7c774560e0fabe7213c5ef333b1327c71",
+      "path": "experiments/METALOGIC_V104_GENERIC_CONSTRUCTOR_SYNTHESIS.py",
+      "local_extract": "/workspace/v54-recovery/source/triskelion/v104/experiments/METALOGIC_V104_GENERIC_CONSTRUCTOR_SYNTHESIS.py",
+      "sha256": "d00301852efd278be8ac22b848e0c9e56ced7c574980753b2ebc2ef0a3b7cce9",
+      "apis": [
+        {
+          "name": "h",
+          "line": 29,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "failing_names",
+          "line": 31,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "nodes_for_selector",
+          "line": 41,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "build_expr",
+          "line": 51,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "program_candidates",
+          "line": 66,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "first_success",
+          "line": 93,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "main",
+          "line": 100,
+          "kind": "FunctionDef"
+        }
+      ],
+      "executed": false
+    },
+    {
+      "family": "v104h",
+      "repo": "heathsanchez/triskelion",
+      "ref": "origin/v104h-bytecode-safe-generic-constructor-synthesis",
+      "commit": "9ff0e6a393cef499a37f0374ca6315e7849c49b8",
+      "path": "experiments/METALOGIC_V104H_BYTECODE_SAFE_GENERIC_CONSTRUCTOR_SYNTHESIS.py",
+      "local_extract": "/workspace/v54-recovery/source/triskelion/v104h/experiments/METALOGIC_V104H_BYTECODE_SAFE_GENERIC_CONSTRUCTOR_SYNTHESIS.py",
+      "sha256": "d6aefe801be42a75b927dffc695d8675789622fe302c70f0256fe95849f06f79",
+      "apis": [
+        {
+          "name": "parse_score",
+          "line": 11,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "purge_bytecode",
+          "line": 18,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "hardened_full_score",
+          "line": 25,
+          "kind": "FunctionDef"
+        }
+      ],
+      "executed": false
+    },
+    {
+      "family": "v158",
+      "repo": "heathsanchez/triskelion",
+      "ref": "origin/v158-unified-developmental-runtime",
+      "commit": "ecaea81279000d226562eb11abfe18178ece89bf",
+      "path": "developmental_runtime/state.py",
+      "local_extract": "/workspace/v54-recovery/source/triskelion/v158/developmental_runtime/state.py",
+      "sha256": "2d6ed9fc995a2ca058319742223018f38f16be4da982fd94553f8eb13144e362",
+      "apis": [
+        {
+          "name": "Decision",
+          "line": 13,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "ObjectKind",
+          "line": 19,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "EvidenceRef",
+          "line": 31,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "permits_admission",
+          "line": 41,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "DevelopmentalEvent",
+          "line": 46,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "compute_hash",
+          "line": 57,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "DevelopmentalState",
+          "line": 85,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "state_hash",
+          "line": 114,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "snapshot",
+          "line": 119,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_append",
+          "line": 136,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "install_capability",
+          "line": 173,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "install_law",
+          "line": 195,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "install_organ",
+          "line": 206,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "install_constructor",
+          "line": 217,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "refine_quotient",
+          "line": 230,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "refine_scope",
+          "line": 245,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "revoke",
+          "line": 262,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "set_discovery_policy",
+          "line": 277,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "record_obstruction",
+          "line": 290,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "active_capabilities",
+          "line": 303,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "closure",
+          "line": 315,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "verify_event_chain",
+          "line": 341,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "replay",
+          "line": 361,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_apply_replayed_event",
+          "line": 388,
+          "kind": "FunctionDef"
+        }
+      ],
+      "executed": false
+    },
+    {
+      "family": "v158",
+      "repo": "heathsanchez/triskelion",
+      "ref": "origin/v158-unified-developmental-runtime",
+      "commit": "ecaea81279000d226562eb11abfe18178ece89bf",
+      "path": "developmental_runtime/state_v2.py",
+      "local_extract": "/workspace/v54-recovery/source/triskelion/v158/developmental_runtime/state_v2.py",
+      "sha256": "e94881f9b511b02f16589288644e02e785439763d89c0602f3677e489af1156f",
+      "apis": [
+        {
+          "name": "_ExtendedObjectKind",
+          "line": 19,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "DevelopmentalState",
+          "line": 23,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "snapshot",
+          "line": 38,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "set_verifier_config",
+          "line": 43,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "active_capabilities",
+          "line": 59,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_apply_replayed_event",
+          "line": 71,
+          "kind": "FunctionDef"
+        }
+      ],
+      "executed": false
+    },
+    {
+      "family": "v158",
+      "repo": "heathsanchez/triskelion",
+      "ref": "origin/v158-unified-developmental-runtime",
+      "commit": "ecaea81279000d226562eb11abfe18178ece89bf",
+      "path": "developmental_runtime/longitudinal.py",
+      "local_extract": "/workspace/v54-recovery/source/triskelion/v158/developmental_runtime/longitudinal.py",
+      "sha256": "dcfb800ffbe3e720d4673d5e29b8d40dbfeb5ff6d21b3b65813879bddd2bc57a",
+      "apis": [
+        {
+          "name": "LongitudinalVerdict",
+          "line": 8,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "_bool",
+          "line": 15,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "classify_longitudinal_result",
+          "line": 19,
+          "kind": "FunctionDef"
+        }
+      ],
+      "executed": false
+    },
+    {
+      "family": "v161",
+      "repo": "heathsanchez/triskelion",
+      "ref": "5011d53966618c37ec8d28cc43c13db5e2371e7f",
+      "commit": "5011d53966618c37ec8d28cc43c13db5e2371e7f",
+      "path": "experiments/V161_AST_ROLE_EXPERIENTIAL_RESCUE.py",
+      "local_extract": "/workspace/v54-recovery/source/triskelion/v161/experiments/V161_AST_ROLE_EXPERIENTIAL_RESCUE.py",
+      "sha256": "a73fd951400435bfc6e20f650f93bba80dfa8fbbd3283f7734a6a391df682ae4",
+      "apis": [
+        {
+          "name": "spec",
+          "line": 38,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "prompt",
+          "line": 49,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "clean",
+          "line": 54,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "verify",
+          "line": 60,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "sample",
+          "line": 74,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "source_roles_A",
+          "line": 78,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "source_roles_B",
+          "line": 91,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "induce_descriptor",
+          "line": 96,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "instantiate",
+          "line": 114,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "eval_model",
+          "line": 122,
+          "kind": "FunctionDef"
+        }
+      ],
+      "executed": false
+    },
+    {
+      "family": "v161_report",
+      "repo": "heathsanchez/triskelion",
+      "ref": "origin/v161-ast-role-experiential-rescue",
+      "commit": "620e305e4024ba6a818011c7e72a8d138a831875",
+      "path": "results/V161_AST_ROLE_EXPERIENTIAL_RESCUE_20260818.md",
+      "local_extract": "/workspace/v54-recovery/source/triskelion/v161_report/results/V161_AST_ROLE_EXPERIENTIAL_RESCUE_20260818.md",
+      "sha256": "05f4a4d899d4864e1bee246530b0b1fda71487f319a545defe952b2e4ce9e717",
+      "apis": [],
+      "executed": false
+    },
+    {
+      "family": "dir_v6",
+      "repo": "heathsanchez/triskelion",
+      "ref": "origin/experiment/developmental-ir-v6-blind-grammar-expansion",
+      "commit": "644f83bb98f772f395b112ca4a6a5a81b3e98c6b",
+      "path": "experiments/developmental_ir_v6_blind_grammar_expansion.py",
+      "local_extract": "/workspace/v54-recovery/source/triskelion/dir_v6/experiments/developmental_ir_v6_blind_grammar_expansion.py",
+      "sha256": "49a9569b03e8cf82576249c45cc4e3a1ef48608dca78e8180a17713dd513dc31",
+      "apis": [
+        {
+          "name": "H",
+          "line": 16,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "hnum",
+          "line": 19,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "dmask",
+          "line": 22,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "var_sem",
+          "line": 25,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "expr_pretty",
+          "line": 32,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "expr_json",
+          "line": 36,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "expr_from_json",
+          "line": 40,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "expr_eval_abstract",
+          "line": 44,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "expr_eval_actual",
+          "line": 53,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "expr_cost",
+          "line": 60,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "subst",
+          "line": 64,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "synthesize",
+          "line": 69,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "Op",
+          "line": 97,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "key",
+          "line": 105,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "select_distinct",
+          "line": 107,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "build_a4",
+          "line": 120,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "weights",
+          "line": 139,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "choose_from_pool",
+          "line": 148,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "choose_arity",
+          "line": 161,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "apply_table",
+          "line": 171,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "Node",
+          "line": 183,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "internal",
+          "line": 191,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "leaf",
+          "line": 193,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "make_node",
+          "line": 197,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "gen_train",
+          "line": 204,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "gen_frozen",
+          "line": 212,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "rec",
+          "line": 215,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "walk",
+          "line": 233,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "recover",
+          "line": 239,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "verify",
+          "line": 243,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "Installed",
+          "line": 249,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "language_hash",
+          "line": 257,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "evaluate",
+          "line": 261,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "random24",
+          "line": 275,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "run_once",
+          "line": 283,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "main",
+          "line": 471,
+          "kind": "FunctionDef"
+        }
+      ],
+      "executed": false
+    },
+    {
+      "family": "dir_v6",
+      "repo": "heathsanchez/triskelion",
+      "ref": "origin/experiment/developmental-ir-v6-blind-grammar-expansion",
+      "commit": "644f83bb98f772f395b112ca4a6a5a81b3e98c6b",
+      "path": "results/developmental_ir_v6_blind_grammar_expansion/summary.json",
+      "local_extract": "/workspace/v54-recovery/source/triskelion/dir_v6/results/developmental_ir_v6_blind_grammar_expansion/summary.json",
+      "sha256": "9a489ff198521903936967e1da700d320e496f6f826c8b4807ab3421bc566d00",
+      "apis": [],
+      "executed": false
+    },
+    {
+      "family": "dir_v7",
+      "repo": "heathsanchez/triskelion",
+      "ref": "origin/experiment/developmental-ir-v7-native-backend-reality-check",
+      "commit": "0b0bc66f908469fdb5b13a9d6cfc4c4fcee20c3a",
+      "path": "experiments/developmental_ir_v7_native_backend_reality_check.py",
+      "local_extract": "/workspace/v54-recovery/source/triskelion/dir_v7/experiments/developmental_ir_v7_native_backend_reality_check.py",
+      "sha256": "f196127c9c0835be6da06f7b53a85ec812e4c0e2ce766ddedce547a013a2d079",
+      "apis": [
+        {
+          "name": "H",
+          "line": 21,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "hnum",
+          "line": 24,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "parse_expr",
+          "line": 27,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "rec",
+          "line": 30,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "expr_cost",
+          "line": 51,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "expr_eval",
+          "line": 55,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "var",
+          "line": 58,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "c_expr",
+          "line": 70,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "load_language",
+          "line": 77,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "choose_weighted",
+          "line": 96,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "invocation_stream",
+          "line": 106,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "generate_source",
+          "line": 116,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "text_size",
+          "line": 171,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "compile_one",
+          "line": 179,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "run_one",
+          "line": 184,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "run_experiment",
+          "line": 190,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "main",
+          "line": 251,
+          "kind": "FunctionDef"
+        }
+      ],
+      "executed": false
+    },
+    {
+      "family": "dir_v7",
+      "repo": "heathsanchez/triskelion",
+      "ref": "origin/experiment/developmental-ir-v7-native-backend-reality-check",
+      "commit": "0b0bc66f908469fdb5b13a9d6cfc4c4fcee20c3a",
+      "path": "results/developmental_ir_v7_native_backend_reality_check/summary.json",
+      "local_extract": "/workspace/v54-recovery/source/triskelion/dir_v7/results/developmental_ir_v7_native_backend_reality_check/summary.json",
+      "sha256": "dc06c4e53752e94847d2fb7fcd7a6bfacd2c77633144f204e96523f76ad07550",
+      "apis": [],
+      "executed": false
+    },
+    {
+      "family": "ikkf_v1",
+      "repo": "heathsanchez/triskelion",
+      "ref": "origin/ikkf-v1-portable-capability",
+      "commit": "e9ad29a13c408e21de53ac026cc7c354d979dd50",
+      "path": "experiments/IKKF_V1_PORTABLE_CAPABILITY.py",
+      "local_extract": "/workspace/v54-recovery/source/triskelion/ikkf_v1/experiments/IKKF_V1_PORTABLE_CAPABILITY.py",
+      "sha256": "c637fc15bffd86e91aab486e311446e642c5203e5bcd6646a1ab08374205c3f9",
+      "apis": [
+        {
+          "name": "sha",
+          "line": 21,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "Timeout",
+          "line": 30,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "alarm",
+          "line": 31,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "tests_for",
+          "line": 36,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "rename_locals",
+          "line": 39,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "R",
+          "line": 45,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "visit_arg",
+          "line": 46,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "visit_Name",
+          "line": 49,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "transform",
+          "line": 54,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "T",
+          "line": 57,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "visit_Compare",
+          "line": 58,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "visit_BinOp",
+          "line": 65,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "visit_Constant",
+          "line": 72,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "apply_plan",
+          "line": 82,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "run_source",
+          "line": 86,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "variant",
+          "line": 96,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "repair",
+          "line": 105,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "verify_family",
+          "line": 107,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "prompt",
+          "line": 118,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "pt",
+          "line": 122,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "parse_plan",
+          "line": 123,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "datum",
+          "line": 137,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "pooled_eval",
+          "line": 143,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "fresh_eval",
+          "line": 158,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "compile_capability",
+          "line": 163,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "reload_eval",
+          "line": 177,
+          "kind": "FunctionDef"
+        }
+      ],
+      "executed": false
+    },
+    {
+      "family": "ikkf_v1",
+      "repo": "heathsanchez/triskelion",
+      "ref": "origin/ikkf-v1-portable-capability",
+      "commit": "e9ad29a13c408e21de53ac026cc7c354d979dd50",
+      "path": "protocols/IKKF_V1_PORTABLE_CAPABILITY_PRECOMMIT.txt",
+      "local_extract": "/workspace/v54-recovery/source/triskelion/ikkf_v1/protocols/IKKF_V1_PORTABLE_CAPABILITY_PRECOMMIT.txt",
+      "sha256": "945eca538f3b11206ec98c3e2c51bf203f3cc1739a5aed4b6899e49361f51ed4",
+      "apis": [],
+      "executed": false
+    },
+    {
+      "family": "ikkf_v2d",
+      "repo": "heathsanchez/triskelion",
+      "ref": "origin/ikkf-v2d-verified-capability-os",
+      "commit": "773a73db5a3d4e143c2c0eed658475a2bdfcfe1d",
+      "path": "experiments/IKKF_V2D_VERIFIED_CAPABILITY_OS.py",
+      "local_extract": "/workspace/v54-recovery/source/triskelion/ikkf_v2d/experiments/IKKF_V2D_VERIFIED_CAPABILITY_OS.py",
+      "sha256": "dbe0c6f3fb3e39d8f1b1f8a4f422a9025ef99ca6d3444522f4a9f138865f7eec",
+      "apis": [
+        {
+          "name": "Timeout",
+          "line": 9,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "alarm",
+          "line": 10,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "tests",
+          "line": 14,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "rename",
+          "line": 15,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "R",
+          "line": 20,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "visit_arg",
+          "line": 21,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "visit_Name",
+          "line": 22,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "transform",
+          "line": 24,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "T",
+          "line": 26,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "visit_Compare",
+          "line": 27,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "visit_BinOp",
+          "line": 33,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "visit_Constant",
+          "line": 39,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "apply",
+          "line": 48,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "run",
+          "line": 51,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "variant",
+          "line": 60,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "repaired",
+          "line": 65,
+          "kind": "FunctionDef"
+        }
+      ],
+      "executed": false
+    },
+    {
+      "family": "ikkf_v2d",
+      "repo": "heathsanchez/triskelion",
+      "ref": "origin/ikkf-v2d-verified-capability-os",
+      "commit": "773a73db5a3d4e143c2c0eed658475a2bdfcfe1d",
+      "path": "protocols/IKKF_V2D_VERIFIED_CAPABILITY_OS_PRECOMMIT.txt",
+      "local_extract": "/workspace/v54-recovery/source/triskelion/ikkf_v2d/protocols/IKKF_V2D_VERIFIED_CAPABILITY_OS_PRECOMMIT.txt",
+      "sha256": "d5019af36dfa60cc4dbcd3ea1a1654bf96ad77f9bbfde49988494b62fabd60f1",
+      "apis": [],
+      "executed": false
+    }
+  ],
+  "v104h_dependency_closure": [
+    {
+      "commit": "9ff0e6a393cef499a37f0374ca6315e7849c49b8",
+      "path": "experiments/METALOGIC_V104H_BYTECODE_SAFE_GENERIC_CONSTRUCTOR_SYNTHESIS.py",
+      "sha256": "d6aefe801be42a75b927dffc695d8675789622fe302c70f0256fe95849f06f79",
+      "local_extract": "/workspace/v54-recovery/source/triskelion/v104h_dependency_closure/experiments/METALOGIC_V104H_BYTECODE_SAFE_GENERIC_CONSTRUCTOR_SYNTHESIS.py",
+      "dependencies": [
+        "experiments/METALOGIC_V104_GENERIC_CONSTRUCTOR_SYNTHESIS.py"
+      ]
+    },
+    {
+      "commit": "9ff0e6a393cef499a37f0374ca6315e7849c49b8",
+      "path": "experiments/METALOGIC_V104_GENERIC_CONSTRUCTOR_SYNTHESIS.py",
+      "sha256": "28b7889fb05d4e7b8b84f1e0417208b5e78916f4617f0756bc5be1547acf496b",
+      "local_extract": "/workspace/v54-recovery/source/triskelion/v104h_dependency_closure/experiments/METALOGIC_V104_GENERIC_CONSTRUCTOR_SYNTHESIS.py",
+      "dependencies": [
+        "experiments/METALOGIC_V102_FRESH_SPLIT_EXPRESSION_CONSTRUCTOR.py"
+      ]
+    },
+    {
+      "commit": "9ff0e6a393cef499a37f0374ca6315e7849c49b8",
+      "path": "experiments/METALOGIC_V102_FRESH_SPLIT_EXPRESSION_CONSTRUCTOR.py",
+      "sha256": "6c21cc9302601c49e2539caf0f4bceba7e5dd636ed36ba05b9e906e46892a079",
+      "local_extract": "/workspace/v54-recovery/source/triskelion/v104h_dependency_closure/experiments/METALOGIC_V102_FRESH_SPLIT_EXPRESSION_CONSTRUCTOR.py",
+      "dependencies": [
+        "experiments/METALOGIC_V100_BALANCED_K_CROSS_SOURCE_ORGANS.py"
+      ]
+    },
+    {
+      "commit": "9ff0e6a393cef499a37f0374ca6315e7849c49b8",
+      "path": "experiments/METALOGIC_V100_BALANCED_K_CROSS_SOURCE_ORGANS.py",
+      "sha256": "2286d7b145e7cc65d7d4a1f8e090bb173a972e78f8935c68631a033f6a4b3536",
+      "local_extract": "/workspace/v54-recovery/source/triskelion/v104h_dependency_closure/experiments/METALOGIC_V100_BALANCED_K_CROSS_SOURCE_ORGANS.py",
+      "dependencies": [
+        "experiments/METALOGIC_V99_CROSS_SOURCE_DYNAMIC_ORGANS.py"
+      ]
+    },
+    {
+      "commit": "9ff0e6a393cef499a37f0374ca6315e7849c49b8",
+      "path": "experiments/METALOGIC_V99_CROSS_SOURCE_DYNAMIC_ORGANS.py",
+      "sha256": "972e5d09c669f5388ab08d224bb3ab7bf9a83cf664db99a854fd20b8c4625a29",
+      "local_extract": "/workspace/v54-recovery/source/triskelion/v104h_dependency_closure/experiments/METALOGIC_V99_CROSS_SOURCE_DYNAMIC_ORGANS.py",
+      "dependencies": [
+        "experiments/METALOGIC_V98_RICH_K_PROTECTED_DYNAMIC_RANKING.py"
+      ]
+    },
+    {
+      "commit": "9ff0e6a393cef499a37f0374ca6315e7849c49b8",
+      "path": "experiments/METALOGIC_V98_RICH_K_PROTECTED_DYNAMIC_RANKING.py",
+      "sha256": "40565299634d93bad3c78f58effb4ec70260e1f4e9c8ed73bb84b21c6c9ee0bb",
+      "local_extract": "/workspace/v54-recovery/source/triskelion/v104h_dependency_closure/experiments/METALOGIC_V98_RICH_K_PROTECTED_DYNAMIC_RANKING.py",
+      "dependencies": [
+        "experiments/METALOGIC_V97_PROTECTED_DYNAMIC_RANKING.py"
+      ]
+    },
+    {
+      "commit": "9ff0e6a393cef499a37f0374ca6315e7849c49b8",
+      "path": "experiments/METALOGIC_V97_PROTECTED_DYNAMIC_RANKING.py",
+      "sha256": "fce8b396db3cf0363eee308e93e79258234fd1b3b0a983bca985c8e7284e9a6f",
+      "local_extract": "/workspace/v54-recovery/source/triskelion/v104h_dependency_closure/experiments/METALOGIC_V97_PROTECTED_DYNAMIC_RANKING.py",
+      "dependencies": [
+        "experiments/METALOGIC_V94_DYNAMIC_STATE_INVARIANTS.py"
+      ]
+    },
+    {
+      "commit": "9ff0e6a393cef499a37f0374ca6315e7849c49b8",
+      "path": "experiments/METALOGIC_V94_DYNAMIC_STATE_INVARIANTS.py",
+      "sha256": "793247b61e7bdd83cc09caafc3af0304a0f7f1bd6754839b4f6504e339ba6ffe",
+      "local_extract": "/workspace/v54-recovery/source/triskelion/v104h_dependency_closure/experiments/METALOGIC_V94_DYNAMIC_STATE_INVARIANTS.py",
+      "dependencies": []
+    }
+  ],
+  "qualification": {
+    "v103_v104_v104h": "SOURCE_INSPECTED_ONLY; no original result/artifact located here; do not import Boolean closure results under matching version numbers",
+    "v158": "SOURCE_INSPECTED_ONLY; event-log and explicit prerequisite closure substrate, not natural domain discovery",
+    "v161": "SOURCE_AND_COMMITTED_RUN_REPORT_VERIFIED_PRIMARY_ARTIFACT_UNKNOWN per qualified index; 16/16 compiled vs 8/16 neural/raw and 0/16 shuffled documentary",
+    "dir_v6": "COMMITTED_SUMMARY_INSPECTED_NOT_RERUN; finite staged Boolean ecology PASS; no natural source-distinct operator discovery established",
+    "dir_v7": "COMMITTED_SUMMARY_INSPECTED_NOT_RERUN; PARTIAL and native compiler practical failures preserved",
+    "ikkf": "Exact native qualification NOT RECOVERED per capability index; source alone does not establish historical outcome"
+  },
+  "prospective_candidate": {
+    "name": "new arity-5 schema verification/admission boundary",
+    "native_apis": [
+      "Op",
+      "expr_eval_abstract",
+      "expr_eval_actual",
+      "make_node",
+      "recover",
+      "verify",
+      "evaluate"
+    ],
+    "source_family": "dir_v6",
+    "scope": "Finite synthetic expression semantics only; prospective expression must be independently fixed before output; source-distinct natural discovery UNKNOWN",
+    "limitations": [
+      "run_once hardcodes 2/3/4 ecology and historical 10k tasks",
+      "recover reads expanded expression; does not establish O1-dependent O2 discovery",
+      "new arity needs data/interface setup beyond frozen run_once; do not label a historical rerun as new power",
+      "candidate cannot satisfy stronger V54-style discovery criterion without a separately specified discovery harness"
+    ]
+  }
+}

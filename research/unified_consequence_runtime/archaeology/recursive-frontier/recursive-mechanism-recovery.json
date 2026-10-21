@@ -1,0 +1,375 @@
+{
+  "schema": "metalogic.recursive-mechanism-recovery.v1",
+  "mission": "Prospective source-native O1/O2/O3 recovery; no historical experiment reruns",
+  "worktree": "/workspace/udm-v54",
+  "base_protocol_commit": "c03dc55669a7a0e141a5661f53d0230ff7066547",
+  "scope": "Targeted exact-source review; not exhaustive programme recovery",
+  "target_blindness": {
+    "target_source_read": false,
+    "target_tests_read": false,
+    "target_checkout_read": false,
+    "target_code_executed": false,
+    "target_outcomes_read": false,
+    "allowed_protocol_only": "archaeology/programme-closure/GENERIC_NATIVE_FRONTIER_PROTOCOL_20261016.md"
+  },
+  "canonical_inputs_inspected": [
+    "capability_index.json",
+    "archaeology/programme-closure/CAPABILITY_GRAPH.json",
+    "archaeology/programme-closure/observations/SOURCE_INDEX.json",
+    "archaeology/programme-closure/ros/ABGP_FROZEN_SOURCE_MANIFEST.json"
+  ],
+  "records": [
+    {
+      "id": "msi-generic-statistic-and-ranking-language",
+      "source": {
+        "repository": "heathsanchez/Minimal-Sufficient-Interface",
+        "commit": "56cfd7b523e3592cae4eafa5468f437ccb94dbe9",
+        "path": "experiments/policy_language_genesis_cross_domain_v10.py",
+        "sha256": "836b8f677f1f252fccad8bf1136f9a966a1f2b2330fa5057c616ee20ddb56608",
+        "bytes": 11773,
+        "inspection": "EXACT_ORIGINAL_SOURCE_READ",
+        "execution": "NOT_RUN_HISTORICAL_EXPERIMENT_NOT_REPEATED"
+      },
+      "reusable_api": {
+        "stat_programs": 83,
+        "stat_eval": 93,
+        "policy_programs": 141,
+        "pkey": 150
+      },
+      "inputs": "Raw numeric error vectors; original finite MAP(ID,ABS,SQUARE,SQRTABS) and REDUCE(SUM,MAX,MEAN) grammar; signed lexicographic rankings over K,c,v",
+      "outputs": "12 executable statistic ASTs;36 executable ranking ASTs; execution scores/ranking keys",
+      "verification_boundary": "The pure grammar/interpreter operations are target-independent. Full synthesize_statistic/synthesize_policy close over supplied scalar-program BTASKS/BCANDS; c_setup/c_run use a separate supplied orbital grammar. Original Lean gate verifies separate arithmetic source, not Python B/C semantics. Complete native causal bridge is not supplied. Boolean traces alone make several transforms extensionally equal.",
+      "dependencies": [
+        "math and standard library for pure functions; original main also imports orbital module and invokes external Lean workflow"
+      ],
+      "prospective_native_reuse_assessment": "Strongest small reusable epistemic/developmental kernel: reuse pure original functions with independently supplied native numeric trace semantics; cannot claim new observation or policy acquisition merely by import."
+    },
+    {
+      "id": "msi-consequence-separated-statistic-genesis",
+      "source": {
+        "repository": "heathsanchez/Minimal-Sufficient-Interface",
+        "commit": "56cfd7b523e3592cae4eafa5468f437ccb94dbe9",
+        "path": "experiments/consequence_separated_policy_language_genesis_v11.py",
+        "sha256": "800b0ff6b4fd9fccc792ad342c4fccd1f51fb8a6f7606377832c3fd466658495",
+        "bytes": 5651,
+        "inspection": "EXACT_ORIGINAL_SOURCE_READ",
+        "execution": "NOT_RUN_HISTORICAL_EXPERIMENT_NOT_REPEATED"
+      },
+      "reusable_api": {
+        "sep_order": 32,
+        "full_behavior": 46,
+        "synthesize_statistic_v11": 49
+      },
+      "inputs": "Original V10 candidate tasks plus frozen shape-separator cases and protected winners",
+      "outputs": "Behaviorally unique minimum statistic K selected by protected consequences; K promoted to ranking grammar",
+      "verification_boundary": "Finite supplied separator traces/winners. Excludes arbitrary tie among behaviorally distinct minima; equivalent syntax only if complete declared behavior agrees. No generic native source verifier or independently acquired trace language.",
+      "dependencies": [
+        "policy_language_genesis_cross_domain_v10.py"
+      ],
+      "prospective_native_reuse_assessment": "Useful selection discipline; use all surviving lawful behavior classes until actual native evidence distinguishes them, rather than porting original winners."
+    },
+    {
+      "id": "msi-rgrs-recursive-consequence-generated-structure",
+      "source": {
+        "repository": "heathsanchez/Minimal-Sufficient-Interface",
+        "commit": "56cfd7b523e3592cae4eafa5468f437ccb94dbe9",
+        "path": "experiments/recursive_consequence_generated_observation_genesis_v12.py",
+        "sha256": "e54bd8c368b0902b0c1ffd098e364b635c4fb09ea62eac015c2e2850e8210868",
+        "bytes": 6716,
+        "inspection": "EXACT_ORIGINAL_SOURCE_READ",
+        "execution": "NOT_RUN_HISTORICAL_EXPERIMENT_NOT_REPEATED"
+      },
+      "reusable_api": {
+        "stage1": 48,
+        "promote_and_generate": 56,
+        "stage2": 80,
+        "lineage": 88
+      },
+      "inputs": "Supplied anonymous scalar constructors, raw traces, prelearned K/policy; one verification query per stage",
+      "outputs": "Verified O1 scalar atom generates four executable O2 candidates; exact ancestor ablation removes O2 grammar",
+      "verification_boundary": "Source supplies square/quartic hidden targets, raw traces and unary promotion grammar. Genuinely executable finite causal lineage, not a native repository discovery mechanism; no unrestricted language invention. Original run33240361651 preserved by user and prior source index, not rerun.",
+      "dependencies": [
+        "V10/V11 stack; original external Lean gate"
+      ],
+      "prospective_native_reuse_assessment": "Preserves semantics of verified-atom promotion. No need to install original finite world as a new native success."
+    },
+    {
+      "id": "experiment-meta-substrate-genesis",
+      "source": {
+        "repository": "heathsanchez/test",
+        "commit": "b1c56bc2ec4c1defed7060f8dfff81fdc6ae12f3",
+        "path": "experiments/verified_experiment_meta_substrate_genesis_v1/run.py",
+        "sha256": "822541b0900d6b4342b37a2ca0bc87708834f5df7c0f7c5997e76b4229c962da",
+        "bytes": 5369,
+        "inspection": "EXACT_ORIGINAL_SOURCE_READ",
+        "execution": "NOT_RUN_HISTORICAL_EXPERIMENT_NOT_REPEATED"
+      },
+      "reusable_api": {
+        "run_machine": 16,
+        "synthesize_stateful_separator": 22,
+        "stateless_denotation": 10,
+        "stateless_eval": 13
+      },
+      "inputs": "Hardcoded histories H0/H1 share present;16 stateless Boolean maps; generic two-state Moore tables",
+      "outputs": "Enumerated executable separator transition/output table; finite old-language nonseparation witness",
+      "verification_boundary": "Real finite enumeration of256 transition tables\u00d74 outputs, returning first separator. Histories are module globals. Synthetic future cost50000vs28000 and charge constants supplied. Lean proves fixed constructed witness, not generated Python table. No native repository experiment acquisition.",
+      "dependencies": [
+        "standard library only; separate ExperimentMetaSubstrate.lean"
+      ],
+      "prospective_native_reuse_assessment": "Potential generic finite-state interpreter, but adaptation to native histories requires predeclared evidence semantics; not established by historical qualification."
+    },
+    {
+      "id": "experiment-language-genesis",
+      "source": {
+        "repository": "heathsanchez/test",
+        "commit": "795756a752a2d4857ef7f5ff5884920dc3c1432b",
+        "path": "experiments/verified_experiment_language_genesis_v1/run.py",
+        "sha256": "a0797a55f47d8e74ad9a359a55eca59a6db4ff5254fe830f663046614f43c4f5",
+        "bytes": 6344,
+        "inspection": "EXACT_ORIGINAL_SOURCE_READ",
+        "execution": "NOT_RUN_HISTORICAL_EXPERIMENT_NOT_REPEATED"
+      },
+      "reusable_api": {
+        "synthesize_meta": 28,
+        "authority": 9,
+        "denotation": 19
+      },
+      "inputs": "Six supplied constant/unary observations; NAND circuit grammar",
+      "outputs": "Finite generated XOR circuit/table and old-language census",
+      "verification_boundary": "Critical boundary: source explicitly target=(0,1,1,0) and independently hardcodes qstar=lambda x,y:x^y; snapshot target_not_supplied=True does not override code. Native blind observation acquisition cannot be inferred. Supplied future cost constants.",
+      "dependencies": [
+        "standard library only; separate ExperimentLanguage.lean"
+      ],
+      "prospective_native_reuse_assessment": "Do not use as autonomous native O1 evidence. Reusable finite circuit enumeration only."
+    },
+    {
+      "id": "d1-d2-d3-meta-developmental-compounding",
+      "source": {
+        "repository": "heathsanchez/test",
+        "commit": "6561e5739dcad489fb1f977b7063c783bb60fca7",
+        "path": "experiments/verified_meta_developmental_compounding_v1/run.py",
+        "sha256": "7eda127f57a62a9bc95ea1524c79c91da2fbb2560d96c26010511a9fd5ca31f9",
+        "bytes": 7478,
+        "inspection": "EXACT_ORIGINAL_SOURCE_READ",
+        "execution": "NOT_RUN_HISTORICAL_EXPERIMENT_NOT_REPEATED"
+      },
+      "reusable_api": {
+        "execute": 28,
+        "level_complete_search": 78
+      },
+      "inputs": "Six primitive tokens; supplied D1/D2 macro expansions; supplied finite D2/D3 required labels and horizons",
+      "outputs": "Exhaustive minimal-depth token programs; charged internal probe counts; macro ablations/shams",
+      "verification_boundary": "D1/D2 expansions are supplied module constants and required f2/f3/l0/l1 targets declared. All conditions solve; result is bounded macro-reuse acquisition-cost compounding, not cold-unreachable/native recursive self-development. MetaCompounding.lean is a typed list-preservation instance with several True-valued obligations; it does not prove Python search costs.",
+      "dependencies": [
+        "standard library; separate TypedResidualKernel import for Lean"
+      ],
+      "prospective_native_reuse_assessment": "Reuse only generic level search semantics if grammar already frozen; do not supply macros as O1/O2/O3 answers."
+    },
+    {
+      "id": "necessity-driven-source-induced-observation",
+      "source": {
+        "repository": "heathsanchez/test",
+        "commit": "c54cb672ea838fb1d512cee4a03b207f3d444ad8",
+        "path": "research/necessary_inquiry_v1/meta_verify.py",
+        "sha256": "82a06627f1fffe10529ac516a67c8b7afffe5e83938658ff2076819e586a7003",
+        "bytes": 4441,
+        "inspection": "EXACT_ORIGINAL_SOURCE_READ",
+        "execution": "NOT_RUN_HISTORICAL_EXPERIMENT_NOT_REPEATED"
+      },
+      "reusable_api": {
+        "induce": 12,
+        "transported_signal": 28,
+        "developed_solver": 38
+      },
+      "inputs": "Point-query Oracle over GF2; supplied XOR, affine basis and frame transport primitives",
+      "outputs": "Induced four-point parity rule from source witness; executable transported solver for quadratic sparse terms",
+      "verification_boundary": "Genuine source-induced bounded rule; source oracle is explicit quadratic GF2 world, rule language supplied. Native source repositories do not provide this Oracle/transport certificate automatically. Original native finite semantic recheck; n8 exhaustive,larger512 deterministic/random samples. Equal-information stateless baseline ties by construction.",
+      "dependencies": [
+        "research/necessary_inquiry_v1/verify.py"
+      ],
+      "prospective_native_reuse_assessment": "Domain-specific reusable algebraic rule induction, not minimum generic native-frontier bridge."
+    },
+    {
+      "id": "retention-policy-genesis-and-revision",
+      "source": {
+        "repository": "heathsanchez/test",
+        "commit": "f00bccabee25319bc0cc41ac9918c1d3a08108ad",
+        "path": "experiments/verified_retention_policy_genesis_v1/run.py",
+        "sha256": "7a73ea610128f954a44cb53776616c5114a072625e213e14958246e274e015ed",
+        "bytes": 7550,
+        "inspection": "EXACT_ORIGINAL_SOURCE_READ",
+        "execution": "NOT_RUN_HISTORICAL_EXPERIMENT_NOT_REPEATED"
+      },
+      "reusable_api": {
+        "closure": 17,
+        "choose": 55,
+        "synthesize": 63,
+        "evaluate": 73
+      },
+      "inputs": "Completed finite streams;8 supplied nodes/dependencies/features; capacity4;weights{-1,0,1}^8",
+      "outputs": "Executable set-valued weight policy;revised policy selected on changed calibration streams",
+      "verification_boundary": "Actual exhaustive6561-weight policy search, but native lifecycle costs are not measured: generated worlds define costs from true_w. Original NEGATIVE_OR_PARTIAL: heldout104887 loses handgeometry102558; revised shift117159 improves old164113. No open policy language/global economic advantage.",
+      "dependencies": [
+        "standard library; finite DEPS/SUBSETS/FEATURES module globals"
+      ],
+      "prospective_native_reuse_assessment": "Generic exhaustive policy-selection kernel only after native completed-candidate costs and independent heldout future are predeclared. Not supplied native self-policy acquisition."
+    },
+    {
+      "id": "mda-v7-requalified-developer-role",
+      "source": {
+        "repository": "heathsanchez/test",
+        "commit": "13325089c471996b8b68f46540fd4ad449df752c",
+        "path": "open_development/role_transport.py",
+        "sha256": "5f3baede0503021b7f0721d6b2cb89d44b3360b74bef4b99945fecd82aaf2929",
+        "bytes": 7741,
+        "inspection": "EXACT_ORIGINAL_SOURCE_READ",
+        "execution": "NOT_RUN_HISTORICAL_EXPERIMENT_NOT_REPEATED"
+      },
+      "reusable_api": {
+        "QualifiedRoleLiftAdapter": 33,
+        "_candidate": 136
+      },
+      "inputs": "Retained verified proof lift-x records under old verifier; source-bound bridge and exact certificate checker",
+      "outputs": "New executable composition using retained lift against different parent shapes; source and dependency liveness checked",
+      "verification_boundary": "Strong reusable source-native exact proof composition; adapter policy broadening across parent shapes is human-written in this source. Not autonomous policy synthesis. Native domain is exact rational polynomial nonnegativity; equal-information ledger ties.",
+      "dependencies": [
+        "open_development/composition.py,proof.py,runtime.py and exact rational certificate checker"
+      ],
+      "prospective_native_reuse_assessment": "Demonstrates lawful requalification/exaptation and dependency checking; cannot rename supplied role broadening as newly discovered O3."
+    },
+    {
+      "id": "abgp-confirmatory-representation-grammar-mechanisms",
+      "source": {
+        "repository": "metalogiclabs/mathgraph",
+        "commit": "8ade20b82ebf075e9ea4f28e5dc97bfe2aaf2aa8",
+        "path": "mathgraph/abgp/executed_b.py",
+        "sha256": "9eae83996b93a5fed7331699b0014a8bae2b6e5b5876a3d3c4dac2026ee5acda",
+        "bytes": 22093,
+        "inspection": "EXACT_ORIGINAL_SOURCE_READ",
+        "execution": "NOT_RUN_HISTORICAL_EXPERIMENT_NOT_REPEATED"
+      },
+      "reusable_api": {
+        "EqualityCapability": 307,
+        "learn_capability": 337
+      },
+      "inputs": "Generated representations of four equality-pattern classes and protected complete source order",
+      "outputs": "Unique executable24-candidate equality-pattern ranking;cross-grammar transport",
+      "verification_boundary": "Frozen generated equality carrier and decoder/grammar families supplied. Separate source/target syntax and lineage properties are explicit, not empirical independence proof. Exact source is useful finite semantic transfer, not native repair/constructor discovery. Original confirmatory aggregate PASS with workflow publish failure retained; no new execution.",
+      "dependencies": [
+        "mathgraph.abgp manifest/dev seed/family types"
+      ],
+      "prospective_native_reuse_assessment": "Reusable transfer/behavior-class discipline; not a native unfamiliar repository acquisition bridge."
+    },
+    {
+      "id": "abgp-confirmatory-representation-growth",
+      "source": {
+        "repository": "metalogiclabs/mathgraph",
+        "commit": "8ade20b82ebf075e9ea4f28e5dc97bfe2aaf2aa8",
+        "path": "mathgraph/abgp/executed_a.py",
+        "sha256": "902ecde4ebb140580e317aec46d18f4b7f79d9ca0969253d50ccf016d4f35d57",
+        "bytes": 5777,
+        "inspection": "EXACT_ORIGINAL_SOURCE_READ",
+        "execution": "NOT_RUN_HISTORICAL_EXPERIMENT_NOT_REPEATED"
+      },
+      "reusable_api": {
+        "run_a_episode": 29
+      },
+      "inputs": "Balanced XOR source rows;OLD_REDUCERS and supplied CONSTRUCTION_REDUCERS",
+      "outputs": "Selected XOR_REDUCE and sealed generated future consequence under old-Bayes/sham/recheck controls",
+      "verification_boundary": "Named XOR_REDUCE supplied in construction grammar and source explicitly asserts sole survivor. Valid bounded confirmatory class contrast, not primitive grammar invention or native self-development.",
+      "dependencies": [
+        "mathgraph/abgp/structural_world.py and frozen seed manifest"
+      ],
+      "prospective_native_reuse_assessment": "Retain confirmatory controls; do not present original generated future as a fresh native frontier."
+    },
+    {
+      "id": "qckn-typed-native-authority",
+      "source": {
+        "repository": "heathsanchez/realitygraph",
+        "commit": "db17e3e7ac5c9b7e9b16988a2ac7a16c2bf1a930",
+        "path": "qckn_real_multidomain_flash_v3.py",
+        "sha256": "577e00eb4712127a20cdca4b31f572ce73b9f1878fc893a0050298357748e0dd",
+        "bytes": 20496,
+        "inspection": "EXACT_ORIGINAL_SOURCE_READ",
+        "execution": "NOT_RUN_HISTORICAL_EXPERIMENT_NOT_REPEATED"
+      },
+      "reusable_api": {
+        "load_hardware_authority": 34,
+        "make_bus": 114,
+        "bus_events": 144
+      },
+      "inputs": "Pinned external source receipts, typed domain authority/bridge events",
+      "outputs": "Global consequence bus propagation;hardware authority residual closure",
+      "verification_boundary": "Supplied pinned authority events and bridge contracts, not algorithm invention and not all-effects enforcement. Existing UDM already preserves separate native scientific admission and FLASH support propagation.",
+      "dependencies": [
+        "QCKN V2/global bus and exact hardware run/source qualification"
+      ],
+      "prospective_native_reuse_assessment": "Reuse existing authority ceiling; new operation cannot mint native verifier authority or external permissions."
+    },
+    {
+      "id": "clc-support",
+      "source": {
+        "repository": "heathsanchez/Minimal-Sufficient-Interface",
+        "commit": "900a73c1d386ee0eee1205a1cf31d270f3311ef7",
+        "path": "qcklean/CLC/Support.lean",
+        "sha256": "accef51e223c081947794e26f8f5f4bc36217308ea759ec7baa7042408819ae5",
+        "bytes": 5151,
+        "inspection": "EXACT_ORIGINAL_SOURCE_READ",
+        "execution": "NOT_RUN_HISTORICAL_EXPERIMENT_NOT_REPEATED"
+      },
+      "reusable_api": {},
+      "inputs": "Finite ranked graph;checked authority snapshots;exact support/live caches;checked events and compatibility witnesses",
+      "outputs": "Conditional revocation fallback, revoked-not-reenableable,incremental=batch exactness",
+      "verification_boundary": "Formal source only in this recovery,not recompiled. No Python runtime refinement supplied. Flash requires checked event preconditions; Support requires live normalized antichains. These theorems do not imply non-bypassable external action monitor.",
+      "dependencies": [
+        "CLC import closure and concrete authority/event/refinement witnesses"
+      ],
+      "prospective_native_reuse_assessment": "Preserve conditional correspondence, not replace existing Metatron/FLASH or claim universal formal runtime correctness."
+    },
+    {
+      "id": "clc-flash",
+      "source": {
+        "repository": "heathsanchez/Minimal-Sufficient-Interface",
+        "commit": "900a73c1d386ee0eee1205a1cf31d270f3311ef7",
+        "path": "qcklean/CLC/Flash.lean",
+        "sha256": "09ff70bd50a1b2f8587d3c07d405c1ffb0631593be01906c7068a90538e8584b",
+        "bytes": 19502,
+        "inspection": "EXACT_ORIGINAL_SOURCE_READ",
+        "execution": "NOT_RUN_HISTORICAL_EXPERIMENT_NOT_REPEATED"
+      },
+      "reusable_api": {},
+      "inputs": "Finite ranked graph;checked authority snapshots;exact support/live caches;checked events and compatibility witnesses",
+      "outputs": "Conditional revocation fallback, revoked-not-reenableable,incremental=batch exactness",
+      "verification_boundary": "Formal source only in this recovery,not recompiled. No Python runtime refinement supplied. Flash requires checked event preconditions; Support requires live normalized antichains. These theorems do not imply non-bypassable external action monitor.",
+      "dependencies": [
+        "CLC import closure and concrete authority/event/refinement witnesses"
+      ],
+      "prospective_native_reuse_assessment": "Preserve conditional correspondence, not replace existing Metatron/FLASH or claim universal formal runtime correctness."
+    }
+  ],
+  "recommended_smallest_reuse": {
+    "epistemic_development": "Original MSI V10 stat_programs/stat_eval plus independent raw numeric native trace semantics, if frozen before target exposure",
+    "constructive_development": "Original V104 generic AST constructor synthesis; exact source recovery owned by parallel constructor agent",
+    "developmental_development": "Original MSI V10 policy_programs/pkey or finite retention synthesize only after target-independent completed native cost observations and a fresh independently protected future; no preselected policy supplied",
+    "authority": "Reuse existing original Metatron/FLASH/native source qualification; verifier/permission ceilings independent",
+    "smallest_current_obstruction": "Recovered genesis demonstrations do not themselves provide a generic independently supplied native task oracle with typed residual/error trace and constructor applicability. The generic native bridge must establish those semantics before claiming prospective recursive development.",
+    "warning": "Adapting a finite interpreter to native signals is an integration, not retrospective proof that native O1/O2/O3 will be discovered. Preserve UNKNOWN_SEARCH/UNKNOWN_CHOICE and no new-language impossibility without complete frozen old-language certificate."
+  },
+  "receipt_conflict_preserved": {
+    "id": "verified-retention-policy-genesis-v1",
+    "canonical_index": {
+      "run": 34648832202,
+      "job": 103408113842,
+      "artifact": 10280354195,
+      "sha256": "c13c675a7329505c46711844d72ff56af43193f595c3028fb0614cb7ca9e1c8e"
+    },
+    "original_authority_in_observation_manifest": {
+      "run": 34648832202,
+      "job": 103425973195,
+      "artifact": 10282562232,
+      "sha256": "a636cd20092cabb19ff106490f578a7b9b891e0697b6d2d2e9101b33180e8fad"
+    },
+    "status": "DOCUMENTARY_RECONCILIATION_UNKNOWN; neither original workflow/artifact fetched in this source-only review; negative source semantics unchanged"
+  },
+  "execution_verdict": "NO_NEW_SCIENTIFIC_QUALIFICATION; no native experiments or target code run; no runtime changes"
+}

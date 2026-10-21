@@ -1,0 +1,13 @@
+======================================================================
+FAIL: test_ignored_untracked_import_can_not_bypass_source_authentication (research.unified_consequence_runtime.test_native_observation.NativeObservationContracts.test_ignored_untracked_import_can_not_bypass_source_authentication)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_observation.py", line 96, in test_ignored_untracked_import_can_not_bypass_source_authentication
+    with self.assertRaises(ValueError):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+----------------------------------------------------------------------
+Ran 1 test in 0.164s
+
+FAILED (failures=1)

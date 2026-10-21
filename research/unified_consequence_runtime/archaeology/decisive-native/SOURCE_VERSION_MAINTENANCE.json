@@ -1,0 +1,159 @@
+{
+  "schema": "metalogic.decisive-source-version-maintenance.v1",
+  "status": "LOCAL92CONTRACTS_AND_ORIGINAL246STATE_STARTUP_PASS_NO_TARGET_EXECUTION",
+  "failed_operational_source": "a02eb3fb10b7577cc232fc9180b8fe9d3ef2c125",
+  "failed_run": "https://github.com/heathsanchez/test/actions/runs/38841372484",
+  "obstruction": "Original246state contains source-bound publicationvalidator SHA for native_frontier.py. In-place enhanced adapter changed immutable validator identity, so Machineinitialization correctly refused before taskadmission.",
+  "repair": "Retain original adapter/verifier byteexact; explicit versioned decisive workers preserve enhanced semantics. Publication authority, validators, records and scientific gates remain unchanged.",
+  "restored_immutable_workers": [
+    {
+      "path": "research/unified_consequence_runtime/generic_native_verify.py",
+      "restored_from_commit": "d63f416b728079e1e6056521e66721933224c983",
+      "sha256": "741d5c6a8b33faf4198d860aee2343a2a44bec55e8a161561e422bb512efa7db",
+      "byte_exact": true
+    },
+    {
+      "path": "research/unified_consequence_runtime/native_frontier.py",
+      "restored_from_commit": "d63f416b728079e1e6056521e66721933224c983",
+      "sha256": "c257c1c6f1199994baa4915eebde3b79358afebefc16e3ced588ee068bb9dd28",
+      "byte_exact": true
+    }
+  ],
+  "new_versioned_workers": [
+    {
+      "path": "research/unified_consequence_runtime/decisive_native_verify.py",
+      "enhanced_original_commit": "a02eb3fb10b7577cc232fc9180b8fe9d3ef2c125",
+      "enhanced_original_path": "research/unified_consequence_runtime/generic_native_verify.py",
+      "sha256": "12269c8ca2dd586ccec4b162736375bcaac5717aaf07f441b67e5511b0ed4670",
+      "enhanced_original_sha256": "12269c8ca2dd586ccec4b162736375bcaac5717aaf07f441b67e5511b0ed4670",
+      "semantic_change": "NONE_SOURCE_IDENTITY_ONLY",
+      "exact_difference": "NO_BYTE_DIFFERENCE_ONLY_NEW_FILENAME"
+    },
+    {
+      "path": "research/unified_consequence_runtime/decisive_native_frontier.py",
+      "enhanced_original_commit": "a02eb3fb10b7577cc232fc9180b8fe9d3ef2c125",
+      "enhanced_original_path": "research/unified_consequence_runtime/native_frontier.py",
+      "sha256": "9b0e6ecd90b3b52a2d7d673844faf5618a614a5857460349d71852a1423843f6",
+      "enhanced_original_sha256": "f518fc6e313d54e82bd793bb63d363116f733833d32ac104d597ea0df75d7d02",
+      "semantic_change": "NONE_SOURCE_IDENTITY_ONLY",
+      "exact_difference": "verifier import generic_native_verify -> decisive_native_verify"
+    }
+  ],
+  "new_module_import_redirects": [
+    {
+      "path": "research/unified_consequence_runtime/decisive_native.py",
+      "sha256": "1c4143ea4f136298cca2885a5ff63d4ad83c85eeb64f2f1d1b3d7ba701e82b04",
+      "changes": "IMPORT_REDIRECTS_ONLY"
+    },
+    {
+      "path": "research/unified_consequence_runtime/decisive_task_admission.py",
+      "sha256": "3420aa367537862bc6e3b221b263d9124cd3761cd0010f7e8eebcb40a2c72648",
+      "changes": "IMPORT_REDIRECTS_ONLY"
+    },
+    {
+      "path": "research/unified_consequence_runtime/decisive_constructor.py",
+      "sha256": "de757b2e6f7753e48c14ec690175ec507d7d59ca8cb6977d98b1a05901d084fc",
+      "changes": "IMPORT_REDIRECTS_ONLY"
+    },
+    {
+      "path": "research/unified_consequence_runtime/generic_build_materialization.py",
+      "sha256": "bf08dae2ef55a8a2aac368f5404a6e6c4777ddcc7f581f967a0e0f5c7693b980",
+      "changes": "IMPORT_REDIRECTS_ONLY"
+    },
+    {
+      "path": "research/unified_consequence_runtime/generated_overlay_gate.py",
+      "sha256": "0628d8067bc46d1e918959ba47b05c95bedfdaa93cff6659e3888cc9670d9c89",
+      "changes": "IMPORT_REDIRECTS_ONLY"
+    },
+    {
+      "path": "research/unified_consequence_runtime/test_decisive_native.py",
+      "sha256": "5b83380d6db1faac6cb57fb39413a23ae8f49a790d35ecb9897c7ecceb0b5ead",
+      "changes": "IMPORT_REDIRECTS_ONLY"
+    },
+    {
+      "path": "research/unified_consequence_runtime/test_decisive_task_admission.py",
+      "sha256": "1dde86058aa5bfde520d3aa8ec01bc75dfddc9d52d6f8055231dabc7905bce96",
+      "changes": "IMPORT_REDIRECTS_ONLY"
+    },
+    {
+      "path": "research/unified_consequence_runtime/test_decisive_constructor.py",
+      "sha256": "6f2617eaecf790545e8f4b9056278c0fbeee7b5be7cd9147df4a50d5985d257e",
+      "changes": "IMPORT_REDIRECTS_ONLY"
+    },
+    {
+      "path": "research/unified_consequence_runtime/test_generated_build_materialization.py",
+      "sha256": "2207d6b2a57cc07bbf91ab4785419dd540b56efc9fd52d17bd54e11427ab2085",
+      "changes": "IMPORT_REDIRECTS_ONLY"
+    },
+    {
+      "path": "research/unified_consequence_runtime/test_native_suite_authority.py",
+      "sha256": "1aed2b72419b6db6d800c64533f1d39262fa415886e8279f9e2086b2e90ab091",
+      "changes": "IMPORT_REDIRECTS_ONLY"
+    }
+  ],
+  "unchanged_original_authorities_and_tests": [
+    {
+      "path": "research/unified_consequence_runtime/test_generic_native_verify.py",
+      "sha256": "bc89eec9df9dc1d013b72ac9feed49bdb4a6d1a017c11cb03cd231a450effc87",
+      "unchanged_from": "d63f416b728079e1e6056521e66721933224c983"
+    },
+    {
+      "path": "research/unified_consequence_runtime/test_native_frontier.py",
+      "sha256": "7b9c10a7cf2c8ab44ba1951e2893ac2e5a28454ba94407e483d0e22002844399",
+      "unchanged_from": "d63f416b728079e1e6056521e66721933224c983"
+    },
+    {
+      "path": "research/unified_consequence_runtime/cross_frontier.py",
+      "sha256": "bc51d0b1e4c1cb27325baf1e8e67a0f3a4fe769bc5f8916731ded451767e583c",
+      "unchanged_from": "d63f416b728079e1e6056521e66721933224c983"
+    },
+    {
+      "path": "research/unified_consequence_runtime/developmental_machine.py",
+      "sha256": "4609e5b881abcfb6472d4caa2d542dc9eb1d852cf1c42f00a577aba539ccc241",
+      "unchanged_from": "d63f416b728079e1e6056521e66721933224c983"
+    }
+  ],
+  "root_owned_updates": "qualify_decisive_native.py imports versionedworkers; test_qualify_decisive_native.py has workerimportredirect plus root-added246statebootstrapregression. Workflow/protocol/formal changes belong to root.",
+  "validation": [
+    {
+      "path": "/workspace/qualification/decisive-versioned-extension-contracts.log",
+      "sha256": "e128107b897c112aa2b57870e19eceb3c5a2af74c8f84e5cc01524e41cd4155a",
+      "tests": 49,
+      "status": "PASS",
+      "seconds": 37.929
+    },
+    {
+      "path": "/workspace/qualification/decisive-versioned-original43-contracts.log",
+      "sha256": "78eba525b90473f5c6fe3ebfb40c78b0dd5e6ff08ef1c217c2923d7df3b4d9ab",
+      "tests": 43,
+      "status": "PASS",
+      "seconds": 55.206
+    }
+  ],
+  "startup": {
+    "path": "/workspace/qualification/decisive-source-version-startup.json",
+    "sha256": "72b73b0ce666e3fc282f2afdbda37d18fc05a100ad82399a4f2b7fe98c03b532",
+    "result": {
+      "schema": "udm.decisive.source-version-startup.v1",
+      "status": "PASS_IMMUTABLE_246_RECORD_STARTUP_ONLY",
+      "records": 246,
+      "flash_live": 187,
+      "native_calls": 0,
+      "target_admission_attempted": false,
+      "upstream_experiments_executed": false
+    }
+  },
+  "scientific_boundary": {
+    "new_target_admission": false,
+    "new_upstream_native_experiment": false,
+    "changed_grammar": false,
+    "changed_safety_guards": false,
+    "changed_parameters_or_targets": false,
+    "changed_budget": false,
+    "a02_G2_G3_G4": "UNKNOWN_UNPROMOTED",
+    "maintenance_only": true,
+    "commits_created_by_worker": false
+  },
+  "next_residual": "Execute the root-owned versioned maintenance workflow under its declared evidence boundary. This source/startup repair supplies no prospective developmental result.",
+  "git_diff_check": "PASS"
+}

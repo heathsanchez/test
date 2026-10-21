@@ -1,0 +1,87 @@
+{
+  "schema": "UDM_DECISIVE_HARNESS_REVIEW_V1",
+  "reviewed_at_utc": "2026-10-16T02:23:26Z",
+  "status": "PRE_FREEZE_FIXTURE_QUALIFIED_NATIVE_SCIENTIFIC_VERDICTS_UNESTABLISHED",
+  "target_access": {
+    "source": false,
+    "test_bytes": false,
+    "outcomes": false,
+    "metadata_only": true
+  },
+  "source_sha256": {
+    "decisive_native.py": "fc189f04fa6b70356fa325555e80481f1d971d2472d390b592b1f29af1c8df74",
+    "test_decisive_native.py": "78fac6f3fa3449a30ae16dc9aadc63be8914a10cf39450d2b866d32f038365d6",
+    "decisive_task_admission.py": "fea1877c0e02c34a4ffd42ac848cf324a0c30ea52508a23179c8a6716d3f30ce",
+    "qualify_decisive_native.py": "87003e3dbe2ea01646a2d53d53caa6fa61d4c54cb58ccf409b6c5d87ffbb001b",
+    "native_meta_decision.py": "d1791b40a254d0a74dea2ec336cfb6c6893fa871b2458b16718bd37c1e8ea585"
+  },
+  "contracts": {
+    "command": "python -m unittest research.unified_consequence_runtime.test_decisive_native research.unified_consequence_runtime.test_decisive_task_admission research.unified_consequence_runtime.test_native_meta_decision -v",
+    "log": "/workspace/qualification/decisive-harness-contracts-final.log",
+    "count": 31,
+    "status": "PASS",
+    "scientific_native_evidence": false
+  },
+  "resolved_findings": [
+    {
+      "id": "WRONG_TASK_OR_POLICY_RECEIPT_REPLAY",
+      "initial": "Fixture reproducer accepted unrelated task contract/policy order and absentXML as success",
+      "closure": "Exact frozen task source/test overlay, originalV104 catalogue andMSI order regenerated; receipt attempt contract/candidate bound to orderprefix"
+    },
+    {
+      "id": "FORGED_OR_MISSING_NATIVE_PACKET",
+      "closure": "CAS receipt+XML+logs+manifest required; exact worker/source/contract/candidate/env/import byte checks; FAIL_NATIVE must have genuine failing XML counts"
+    },
+    {
+      "id": "DURABLE_NESTED_EVIDENCE",
+      "closure": "Scope carrier requires context/baseline/attempt/packet CAS IDs; root meta invocation reruns checker against retained bytes"
+    },
+    {
+      "id": "EARLY_HORIZON_FAILURE",
+      "closure": "No-success prefix shorter than declared bounded candidate horizon refused UNKNOWN_SEARCH"
+    },
+    {
+      "id": "MUTABLE_PROTOCOL_AUTHORITY",
+      "closure": "Exact source universe, protocol bytes, independent author-test blob table bytes and frozen budgets bind scopes"
+    },
+    {
+      "id": "COST_OF_REJECTED_RECONSTRUCTION",
+      "closure": "Public checker charges offline catalogue reconstruction in finally, including rejection"
+    },
+    {
+      "id": "MISSING_PROTECTED_ASSERTION_AUTHORITY",
+      "closure": "Every real context independently rederives exact native_suite_authority from frozen base+author-test overlay; attempts bind exact same authority; PASS and FAIL require actual protected-node call reports with no required deselection; wrong authority replay refused. Legacy stand-alone receipt fixtures without authority remain old-schema only."
+    }
+  ],
+  "independent_second_review": {
+    "agent": "/root/fresh_frontier_protocol/meta_policy_review",
+    "target_access": false,
+    "found_additional_gap": "Incomplete unsuccessful profile horizon",
+    "fixed": true
+  },
+  "driver_obligations_root_owned": [
+    "Every unexpected exception must preserve RESULT and original-state integrity check in finally",
+    "Global unique-call/time caps checked before each real attempt; future catalogue bounded by same subprocess timeout",
+    "Future source/test preparation must remain after training selection, no target-specific postexposure changes",
+    "Scope receipt_objects contains all nested context/baseline/attempt/packet IDs; scope protocol_sha256 and author_test_blobs_sha256 supplied",
+    "Positive native controls required for withdrawal, unrelated withdrawal, fresh restoration and separate process restart; no G3 from shared policy reuse",
+    "Actual equal-information baseline full lifecycle charges; coding-agent comparator only if available",
+    "Original 246-record state prefix preserved; no G0/G1 experiment reruns"
+  ],
+  "claim_boundaries": {
+    "G2": "UNKNOWN until frozen source-native policy consequences independently succeed",
+    "G3": "UNKNOWN; shared selected policy on two futures alone does not establish recursive O1 to O2 causation",
+    "G4": "UNKNOWN; no superiority from equal-information tie or parity of UNKNOWN",
+    "G5": "UNKNOWN; generic Lean theorem does not verify Python native harness",
+    "G6": "UNKNOWN; no non-bypassable sandbox claim"
+  },
+  "review_independence": "Read-only initial adversarial review; root then explicitly delegated checker fixes in only decisive_native.py/test_decisive_native.py; independent second reviewer assessed resulting delta. Other source files read-only.",
+  "preserved_failed_checks": [
+    {
+      "log": "/workspace/qualification/decisive-prefreeze-immutable-contracts.log",
+      "status": "FAILED_ONE_FIXTURE_ERROR",
+      "cause": "Mocked native suite authority omitted test_source_sha256 subsequently required by hardened generic helper",
+      "correction": "Added missing source-hash field to fixture; no production validation weakened; no target access"
+    }
+  ]
+}
