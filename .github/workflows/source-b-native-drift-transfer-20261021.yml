@@ -1,0 +1,56 @@
+name: Source B native drift-operation transfer
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [research/source-obstruction-operation-20261021]
+permissions:
+  contents: read
+jobs:
+  transfer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+          cache: false
+      - name: Native source B qualification and matched equal-information baseline
+        run: |
+          set -euo pipefail
+          git clone -q https://github.com/BurntSushi/toml.git "$RUNNER_TEMP/toml"
+          git -C "$RUNNER_TEMP/toml" checkout -q --detach d733fc535e4a9f3c454e421a87b90ade5d49bf31
+          test "$(git -C "$RUNNER_TEMP/toml" rev-parse HEAD)" = d733fc535e4a9f3c454e421a87b90ade5d49bf31
+          cp research/cross_source_compounding_20261021/B_operation_test.go.txt "$RUNNER_TEMP/toml/mathgraph_operation_test.go"
+          (cd "$RUNNER_TEMP/toml" && go test -count=1 -v -run '^TestMathGraphTransferredDriftLocalization$' .) | tee "$GITHUB_WORKSPACE/source-b-native.log"
+          python3 - <<'PY'
+          import subprocess,time,json,statistics,pathlib,os
+          source=pathlib.Path(os.environ["RUNNER_TEMP"])/"toml"
+          rows=[]
+          for i in range(4):
+            row={"pair":i}
+            for arm in (["warm","equally_informed"] if i%2==0 else ["equally_informed","warm"]):
+              t=time.perf_counter()
+              p=subprocess.run(["go","test","-count=1","-run","^TestMathGraphTransferredDriftLocalization$","."],cwd=source,capture_output=True,text=True)
+              row[arm+"_seconds"]=time.perf_counter()-t
+              row[arm+"_pass"]=p.returncode==0
+              if p.returncode:raise RuntimeError(p.stdout+" "+p.stderr)
+            rows.append(row)
+          obj={"source":"BurntSushi/toml@d733fc535e4a9f3c454e421a87b90ade5d49bf31",
+            "same_executable_for_both_arms":True,"rounds":rows,
+            "warm_median_seconds":statistics.median(r["warm_seconds"] for r in rows),
+            "baseline_median_seconds":statistics.median(r["equally_informed_seconds"] for r in rows),
+            "method_and_adapter_acquisition_charged":False,
+            "unique_discovery_or_compounding_advantage":"NOT_DEMONSTRATED"}
+          pathlib.Path("source-b-comparison.json").write_text(json.dumps(obj,indent=2))
+          print(json.dumps(obj))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: source-b-drift-transfer-evidence
+          path: |
+            source-b-native.log
+            source-b-comparison.json
+          if-no-files-found: warn
