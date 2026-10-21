@@ -89,8 +89,8 @@ def main():
     # Independent source topicality check; not an extractor input.
     text=re.sub(r"\s+"," ",html.unescape(re.sub(r"<[^>]+>"," ",raw.decode("utf-8")))).lower()
     relevant=("ignore" in text and "constraint" in text)
-    if verdict=="PROSPECTIVE_NATIVE_SUCCESS" and candidate and "ignore" not in
-      (candidate["condition"]+" "+candidate["required_effect"]).lower():
+    if (verdict=="PROSPECTIVE_NATIVE_SUCCESS" and candidate and "ignore" not in
+        (candidate["condition"]+" "+candidate["required_effect"]).lower()):
         verdict="FALSE_TOPIC_WRONG_SEMANTIC_FAMILY"
     report={
        "scope":"fourth official SQLite semantics; frozen V1 structure and exposed-family programs",
