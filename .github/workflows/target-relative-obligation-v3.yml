@@ -1,0 +1,31 @@
+name: Target Relative Obligation V3
+on:
+  push:
+    branches:
+      - research/target-relative-obligation-v3-20261021
+  pull_request:
+    paths:
+      - 'research/target_relative_obligation_v3/**'
+      - '.github/workflows/target-relative-obligation-v3.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-target:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - name: Frozen fifth-source target relevance test
+        run: |
+          python3 -m py_compile research/target_relative_obligation_v3/experiment.py
+          python3 research/target_relative_obligation_v3/experiment.py
+          python3 research/target_relative_obligation_v3/exposed_generated_native.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: target-relative-obligation-v3-evidence
+          path: |
+            research/target_relative_obligation_v3/result.json
+            research/target_relative_obligation_v3/exposed_native_result.json
+          if-no-files-found: warn
