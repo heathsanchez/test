@@ -1,0 +1,68 @@
+test_actual_link_import_failure_success_and_independent_reexecution (research.unified_consequence_runtime.test_native_legacy_source_v42.LegacyNativeSourceV42Contracts.test_actual_link_import_failure_success_and_independent_reexecution) ... ERROR
+test_alias_candidate_is_refused_before_native_warrant (research.unified_consequence_runtime.test_native_legacy_source_v42.LegacyNativeSourceV42Contracts.test_alias_candidate_is_refused_before_native_warrant) ... ERROR
+test_original_importlib_configuration_remains_native_collection_unknown (research.unified_consequence_runtime.test_native_legacy_source_v42.LegacyUnsupportedOriginalConfigurationV42.test_original_importlib_configuration_remains_native_collection_unknown) ... ok
+
+======================================================================
+ERROR: test_actual_link_import_failure_success_and_independent_reexecution (research.unified_consequence_runtime.test_native_legacy_source_v42.LegacyNativeSourceV42Contracts.test_actual_link_import_failure_success_and_independent_reexecution)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_admission_v2.py", line 144, in configuration
+    args, plugins = _options(values.get('addopts', []))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_admission_v2.py", line 63, in _options
+    raise ValueError('unsupported addopts collection/authority option: ' + arg)
+ValueError: unsupported addopts collection/authority option: --import-mode=append
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_execution_v42.py", line 95, in test_actual_link_import_failure_success_and_independent_reexecution
+    contract, authority = self.contract('from alias import value\ndef test_old(): assert True\ndef test_new(): assert value()==1\n')
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/qualify_native_authority_v42.py", line 285, in contract
+    result = original_contract(case,*args,**kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_execution_v42.py", line 74, in contract
+    authority = self.worker.admission.derive_suite_contract(
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_admission_v42.py", line 57, in derive_suite_contract
+    configuration = _namespace['configuration'](files)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_admission_v2.py", line 152, in configuration
+    raise ValueError('UNKNOWN_INTERFACE: unsupported native test configuration: ' + str(error)) from error
+ValueError: UNKNOWN_INTERFACE: unsupported native test configuration: unsupported addopts collection/authority option: --import-mode=append
+
+======================================================================
+ERROR: test_alias_candidate_is_refused_before_native_warrant (research.unified_consequence_runtime.test_native_legacy_source_v42.LegacyNativeSourceV42Contracts.test_alias_candidate_is_refused_before_native_warrant)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_admission_v2.py", line 144, in configuration
+    args, plugins = _options(values.get('addopts', []))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_admission_v2.py", line 63, in _options
+    raise ValueError('unsupported addopts collection/authority option: ' + arg)
+ValueError: unsupported addopts collection/authority option: --import-mode=append
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_execution_v42.py", line 116, in test_alias_candidate_is_refused_before_native_warrant
+    contract, authority = self.contract('from alias import value\ndef test_old(): assert True\ndef test_new(): assert value()==1\n')
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/qualify_native_authority_v42.py", line 285, in contract
+    result = original_contract(case,*args,**kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_execution_v42.py", line 74, in contract
+    authority = self.worker.admission.derive_suite_contract(
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_admission_v42.py", line 57, in derive_suite_contract
+    configuration = _namespace['configuration'](files)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_admission_v2.py", line 152, in configuration
+    raise ValueError('UNKNOWN_INTERFACE: unsupported native test configuration: ' + str(error)) from error
+ValueError: UNKNOWN_INTERFACE: unsupported native test configuration: unsupported addopts collection/authority option: --import-mode=append
+
+----------------------------------------------------------------------
+Ran 3 tests in 2.705s
+
+FAILED (errors=2)

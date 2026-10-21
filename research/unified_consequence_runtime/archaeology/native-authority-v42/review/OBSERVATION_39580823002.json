@@ -1,0 +1,102 @@
+{
+  "artifact": [
+    {
+      "digest": "sha256:849cf4a1434bfac801c7c679862f25d4c6d8d0a18d5c48ea3ab64d1bd237d32d",
+      "expired": false,
+      "id": 12336860402,
+      "name": "native-authority-v42-f9dce396db01ab0f5b4c7e56072f1d724d0992ad-1",
+      "size_in_bytes": 224732529
+    }
+  ],
+  "artifact_download_audit": "ARTIFACT_12336860402_AUDIT.json",
+  "branch": "research/udm-native-authority-v42-20261021",
+  "conclusion": "failure",
+  "external_mutations": [],
+  "failed_steps": [
+    {
+      "completed_at": "2026-10-21T09:58:20Z",
+      "conclusion": "failure",
+      "name": "Execute legacy link admission and exact independent native replay",
+      "number": 7,
+      "started_at": "2026-10-21T09:58:09Z",
+      "status": "completed"
+    }
+  ],
+  "files": {
+    "ARTIFACTS_39580823002.json": {
+      "bytes": 798,
+      "sha256": "da578962a8da4f0c537523be6b5eb7c2a3e5eb9e87a97eb01065cf46d6ac47eb"
+    },
+    "ARTIFACT_12336860402_AUDIT.json": {
+      "bytes": 1244,
+      "sha256": "bcd2ffa7403cacbeecef29e7e9ce372e00986ae2345fb4335f1b9812665b4d19"
+    },
+    "ARTIFACT_12336860402_SELECTED_RAW.json": {
+      "bytes": 2321,
+      "sha256": "a3d24816f861819d5c7503cca9402ca493859889804ac9f014854b9616066101"
+    },
+    "CORRECTED_INITIAL_RUNS.json": {
+      "bytes": 24428,
+      "sha256": "77335c378e1e7ce5e4fde8b1ff5376f76976f78f22e6ae937ece6fbf4c16715c"
+    },
+    "CORRECTED_JOBS_001.json": {
+      "bytes": 3122,
+      "sha256": "0d955a5558e0e6b6f37ad8b5110103fb2b535ffffbcc2f73a0e622cc983740f4"
+    },
+    "CORRECTED_JOBS_002.json": {
+      "bytes": 3165,
+      "sha256": "6b77af915eb5d9f0b3208836a74769096a2b19367f4913e0a5a7d2aabaac219f"
+    },
+    "CORRECTED_JOBS_003.json": {
+      "bytes": 3748,
+      "sha256": "f8f17200b2b4faf905a598e579885e1b5201d80a0bd89f9d0e38d1d2476ec0de"
+    },
+    "JOB_119157758937_CONNECTOR.log": {
+      "bytes": 334791,
+      "sha256": "06e5201d1b53e7015e7bb20686dae6ba0208c2527c9c31c43da0d17a6842f595"
+    },
+    "RUN_39580823002.json": {
+      "bytes": 12179,
+      "sha256": "39b76b7722e39e4fba695b23dbd7361291f2650403a87edfd8ca9269bf79ccbc"
+    }
+  },
+  "frontier_queries": 0,
+  "legacy_controls": {
+    "attempt_costs": {
+      "collection_calls": 2,
+      "native_calls": 0,
+      "subprocess_attempts": 2
+    },
+    "contracts": {
+      "errors": 2,
+      "expected_ids": [
+        "research.unified_consequence_runtime.test_native_execution_v42.NativeExecutionV42Contracts.test_actual_link_import_failure_success_and_independent_reexecution",
+        "research.unified_consequence_runtime.test_native_execution_v42.NativeExecutionV42Contracts.test_alias_candidate_is_refused_before_native_warrant"
+      ],
+      "failures": 0,
+      "ids": [
+        "research.unified_consequence_runtime.test_native_execution_v42.NativeExecutionV42Contracts.test_actual_link_import_failure_success_and_independent_reexecution",
+        "research.unified_consequence_runtime.test_native_execution_v42.NativeExecutionV42Contracts.test_alias_candidate_is_refused_before_native_warrant"
+      ],
+      "run": 2,
+      "skipped": 0,
+      "successful": false
+    },
+    "retained_controller_error": "FileNotFoundError: [Errno 2] No such file or directory: '/home/runner/work/test/test/qualification/legacy-v42/native-evidence/research.unified_consequence_runtime.test_native_execution_v42.NativeExecutionV42Contracts.test_actual_link_import_failure_success_and_independent_reexecution/separate-process-result.json'",
+    "status": "UNKNOWN_ADMISSION"
+  },
+  "modern_controls": "NOT_RUN_BECAUSE_LEGACY_GATE_RED",
+  "observed_at_utc": "2026-10-21T10:03:53.165654+00:00",
+  "private_wiring_contracts": {
+    "run": 10,
+    "status": "PASS"
+  },
+  "run_id": 39580823002,
+  "run_url": "https://github.com/heathsanchez/test/actions/runs/39580823002",
+  "schema": "UDM_V42_CI_OBSERVATION_V1",
+  "selected_raw_diagnostics": "ARTIFACT_12336860402_SELECTED_RAW.json",
+  "smallest_obstruction": "Frozen diagnostic fixture requests --import-mode=importlib, which original pytest 5.4.3 rejects; legacy authority correctly refused collection before native execution",
+  "source_commit": "f9dce396db01ab0f5b4c7e56072f1d724d0992ad",
+  "source_freeze": "PASS",
+  "status": "completed"
+}

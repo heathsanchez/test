@@ -44,7 +44,7 @@ jobs:
         run: |
           set -euo pipefail
           "$RUNNER_TEMP/v42-controller/bin/python" -B -m unittest research.unified_consequence_runtime.test_qualify_native_frontier_v42 -v 2>&1 | tee qualification/binding-contracts.log
-      - name: Execute legacy link admission and exact independent native replay
+      - name: Execute versioned legacy fixture, original-config refusal and native replay
         run: |
           set -euo pipefail
           "$RUNNER_TEMP/v42-controller/bin/python" -B -m research.unified_consequence_runtime.qualify_native_authority_v42 --legacy-native-controls --repo "$GITHUB_WORKSPACE" --freeze qualification/FREEZE.json --out "$GITHUB_WORKSPACE/qualification/legacy-v42"
@@ -57,7 +57,7 @@ jobs:
           python -B - <<'PY'
           import json
           from pathlib import Path
-          for label,count,status in [('legacy-v42',2,'LEGACY_NATIVE_CONTROLS_VERIFIED'),('admission-v42',62,'ADMISSION_ONLY_QUALIFIED')]:
+          for label,count,status in [('legacy-v42',3,'LEGACY_NATIVE_CONTROLS_VERIFIED'),('admission-v42',62,'ADMISSION_ONLY_QUALIFIED')]:
               result=json.loads((Path('qualification')/label/'RESULT.json').read_text())
               assert result['status']==status
               assert result['contracts']['run']==count and result['contracts']['successful']
@@ -69,7 +69,7 @@ jobs:
               assert child['attempt_costs']['native_calls']>0 and child['attempt_costs']['collection_calls']>0
               assert all(result['verdicts'][f'G{i}']=='UNKNOWN' for i in range(2,7))
               assert result['acquisitions']==0 and result['candidates']==0
-          print('62 modern + 2 legacy admission controls; G2-G6 UNKNOWN')
+          print('62 modern + 3 versioned legacy admission controls; G2-G6 UNKNOWN')
           PY
       - name: Retain original-runtime byte audit
         if: ${{ always() && hashFiles('qualification/FREEZE.json') != '' }}

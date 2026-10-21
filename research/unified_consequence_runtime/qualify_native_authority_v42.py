@@ -33,6 +33,8 @@ BASE = 'dc59c8fcee6efede520c531eba5e42e7b84a1a9f'
 ACCEPTANCE_COMMIT = 'c547612c80307c7ad218e3f7986df918525e5e86'
 SUPPLEMENTARY_COMMIT = '7dc52f864d885509b53c1712206c68d4264aa2ee'
 ENVIRONMENT_INTERFACE_COMMIT = '57dcb513d20c00d6558fbfb101e3c97f37ae2d33'
+LEGACY_APPEND_FIXTURE_COMMIT = '661f16eb209e2b410c1e7c02ce42aefc20f2c01c'
+LEGACY_FIXTURE_COMMIT = '87b36624ea3a3746686d52d25f2ed0349d53232f'
 FREEZE_SCHEMA = 'UDM_NATIVE_ENVIRONMENT_QUALIFICATION_FREEZE_V42'
 RESULT_SCHEMA = 'UDM_NATIVE_ENVIRONMENT_QUALIFICATION_RESULT_V42'
 source_authority = previous.source_authority
@@ -50,6 +52,12 @@ _SUPPLEMENTARY_TEST_PATHS = tuple('research/unified_consequence_runtime/'+name f
 _INTERFACE_TEST_PATHS = tuple('research/unified_consequence_runtime/'+name for name in (
     'test_native_environment_v42.py',
     'archaeology/native-authority-v42/ENVIRONMENT_INTERFACE_FREEZE.json'))
+_LEGACY_APPEND_FIXTURE_PATHS = tuple('research/unified_consequence_runtime/'+name for name in (
+    'test_native_legacy_source_v42.py',
+    'archaeology/native-authority-v42/LEGACY_FIXTURE_PROTOCOL.json'))
+_LEGACY_FIXTURE_PATHS = tuple('research/unified_consequence_runtime/'+name for name in (
+    'test_native_legacy_source_v421.py',
+    'archaeology/native-authority-v42/LEGACY_FIXTURE_PROTOCOL_V421.json'))
 SOURCE_GATE_FILES = tuple(dict.fromkeys((*previous.SOURCE_GATE_FILES,
     *(('research/unified_consequence_runtime/'+name) for name in (
         'native_source_v42.py', 'native_admission_v42.py', 'native_execution_v42.py',
@@ -59,8 +67,12 @@ SOURCE_GATE_FILES = tuple(dict.fromkeys((*previous.SOURCE_GATE_FILES,
         'test_native_source_v42_regressions.py',
         'test_native_execution_v42_regressions.py',
         'test_native_environment_v42.py',
+        'test_native_legacy_source_v42.py',
+        'test_native_legacy_source_v421.py',
         'archaeology/native-authority-v42/SUPPLEMENTARY_REVIEW_FREEZE.json',
         'archaeology/native-authority-v42/ENVIRONMENT_INTERFACE_FREEZE.json',
+        'archaeology/native-authority-v42/LEGACY_FIXTURE_PROTOCOL.json',
+        'archaeology/native-authority-v42/LEGACY_FIXTURE_PROTOCOL_V421.json',
         'archaeology/native-authority-v42/curate_frontier.py',
         'archaeology/native-authority-v42/prepare_records.py')),
     *_FROZEN_TEST_PATHS, '.github/workflows/udm-native-authority-v42.yml',
@@ -92,6 +104,12 @@ def inputs():
     interface = json.loads((RECORDS/'ENVIRONMENT_INTERFACE_FREEZE.json').read_text())
     if sha256((HERE/'test_native_environment_v42.py').read_bytes()) != interface['test_sha256']:
         raise ValueError('frozen real environment-interface regression changed')
+    legacy = json.loads((RECORDS/'LEGACY_FIXTURE_PROTOCOL_V421.json').read_text())
+    if (legacy.get('schema') != 'UDM_NATIVE_LEGACY_FIXTURE_PROTOCOL_V421'
+            or sha256((HERE/'test_native_legacy_source_v421.py').read_bytes()) != legacy['test_sha256']
+            or sha256((HERE/'test_native_execution_v42.py').read_bytes()) != legacy['original_test_sha256']
+            or legacy.get('legacy_controls') != 3 or legacy.get('modern_controls') != 62):
+        raise ValueError('versioned legacy fixture authority changed')
     catalog = json.loads(CATALOG.read_text())
     environment.selection._catalog(catalog)
     return catalog
@@ -117,9 +135,13 @@ def _write_freeze(repo, out, runtime_paths):
     source_authority._git(repo, 'merge-base', '--is-ancestor', ACCEPTANCE_COMMIT, head)
     source_authority._git(repo, 'merge-base', '--is-ancestor', SUPPLEMENTARY_COMMIT, head)
     source_authority._git(repo, 'merge-base', '--is-ancestor', ENVIRONMENT_INTERFACE_COMMIT, head)
+    source_authority._git(repo, 'merge-base', '--is-ancestor', LEGACY_FIXTURE_COMMIT, head)
+    source_authority._git(repo, 'merge-base', '--is-ancestor', LEGACY_APPEND_FIXTURE_COMMIT, head)
     for commit, names in ((ACCEPTANCE_COMMIT,_FROZEN_TEST_PATHS),
                           (SUPPLEMENTARY_COMMIT,_SUPPLEMENTARY_TEST_PATHS),
-                          (ENVIRONMENT_INTERFACE_COMMIT,_INTERFACE_TEST_PATHS)):
+                          (ENVIRONMENT_INTERFACE_COMMIT,_INTERFACE_TEST_PATHS),
+                          (LEGACY_APPEND_FIXTURE_COMMIT,_LEGACY_APPEND_FIXTURE_PATHS),
+                          (LEGACY_FIXTURE_COMMIT,_LEGACY_FIXTURE_PATHS)):
         for name in names:
             if source_authority._git(repo, 'show', commit+':'+name) != (Path(repo)/name).read_bytes():
                 raise ValueError('frozen adversarial acceptance bytes changed: '+name)
@@ -138,6 +160,8 @@ def _write_freeze(repo, out, runtime_paths):
         acceptance_commit=ACCEPTANCE_COMMIT,
         supplementary_commit=SUPPLEMENTARY_COMMIT,
         environment_interface_commit=ENVIRONMENT_INTERFACE_COMMIT,
+        legacy_fixture_commit=LEGACY_FIXTURE_COMMIT,
+        legacy_append_fixture_commit=LEGACY_APPEND_FIXTURE_COMMIT,
         acceptance_sha256=sha256((RECORDS/'ACCEPTANCE_PROTOCOL.json').read_bytes()),
         test_sha256={name:sha256((HERE/name).read_bytes()) for name in
                      ('test_native_source_v42.py','test_native_execution_v42.py')},
@@ -179,6 +203,8 @@ def check_freeze(repo, path):
             or frozen.get('acceptance_commit') != ACCEPTANCE_COMMIT
             or frozen.get('supplementary_commit') != SUPPLEMENTARY_COMMIT
             or frozen.get('environment_interface_commit') != ENVIRONMENT_INTERFACE_COMMIT
+            or frozen.get('legacy_fixture_commit') != LEGACY_FIXTURE_COMMIT
+            or frozen.get('legacy_append_fixture_commit') != LEGACY_APPEND_FIXTURE_COMMIT
             or frozen.get('acceptance_sha256') != sha256((RECORDS/'ACCEPTANCE_PROTOCOL.json').read_bytes())
             or frozen.get('test_sha256') != {name:sha256((HERE/name).read_bytes()) for name in
                                           ('test_native_source_v42.py','test_native_execution_v42.py')}
@@ -377,9 +403,13 @@ def _suite(legacy_only=False):
     loader = unittest.defaultTestLoader
     selected = _retained(native_tests.NativeExecutionV42Contracts)
     if legacy_only:
-        return unittest.TestSuite(selected(name) for name in (
-            'test_actual_link_import_failure_success_and_independent_reexecution',
-            'test_alias_candidate_is_refused_before_native_warrant'))
+        from . import test_native_legacy_source_v421 as legacy_tests
+        selected = _retained(legacy_tests.LegacyNativeSourceV42Contracts)
+        refused = _retained(legacy_tests.LegacyUnsupportedOriginalConfigurationV42)
+        return unittest.TestSuite((selected(
+            'test_actual_link_import_failure_success_and_independent_reexecution'),
+            selected('test_alias_candidate_is_refused_before_native_warrant'),
+            refused('test_original_importlib_configuration_remains_native_collection_unknown')))
     return unittest.TestSuite((loader.loadTestsFromTestCase(_retained(source_tests.NativeSourceV42Contracts)),
         loader.loadTestsFromTestCase(selected),
         loader.loadTestsFromTestCase(_retained(native_tests.inherited_suite())),
@@ -418,17 +448,19 @@ def qualify(repo, freeze, out, *, legacy_only=False):
             UDM_NATIVE_V42_INTERPRETER=selected['interpreter'],UDM_NATIVE_V3_INTERPRETER=selected['interpreter'])
         os.environ.pop('UDM_V4_NATIVE_EVIDENCE_ROOT',None)
         suite=_suite(legacy_only);expected=_ids(suite)
-        if len(expected)!=(2 if legacy_only else 62) or len(set(expected))!=len(expected):
-            raise ValueError('exact 55 initial + 5 supplementary + 2 interface modern / 2 legacy controls required')
+        if len(expected)!=(3 if legacy_only else 62) or len(set(expected))!=len(expected):
+            raise ValueError('exact 62 modern / 3 versioned legacy controls required')
         with (out/'contracts.log').open('w') as stream,retained_temporary_outputs(out/'default-collection-evidence'):
             RecordedResult.ids=[]
             verdict=unittest.TextTestRunner(stream=stream,verbosity=2,resultclass=RecordedResult).run(suite)
         result['contracts']={'run':verdict.testsRun,'ids':sorted(verdict.ids),'expected_ids':sorted(expected),
             'failures':len(verdict.failures),'errors':len(verdict.errors),'skipped':len(verdict.skipped),'successful':verdict.wasSuccessful()}
-        result['control_scope']={'initial_frozen_controls':2 if legacy_only else 55,
+        result['control_scope']={'initial_frozen_controls':0 if legacy_only else 55,
                                  'supplementary_review_controls':0 if legacy_only else 5,
-                                 'environment_interface_controls':0 if legacy_only else 2}
-        positive=out/'native-evidence'/(native_test_id()+'.test_actual_link_import_failure_success_and_independent_reexecution')
+                                 'environment_interface_controls':0 if legacy_only else 2,
+                                 'versioned_legacy_reused_native_controls':2 if legacy_only else 0,
+                                 'unsupported_original_legacy_configuration_refusals':1 if legacy_only else 0}
+        positive=out/'native-evidence'/(native_test_id(legacy_only)+'.test_actual_link_import_failure_success_and_independent_reexecution')
         child=json.loads((positive/'separate-process-result.json').read_text())
         result['positive_independent_native']=child
         result['selected_profile_interpreter']=selected['interpreter']
@@ -459,7 +491,9 @@ def qualify(repo, freeze, out, *, legacy_only=False):
     return result
 
 
-def native_test_id():
+def native_test_id(legacy_only=False):
+    if legacy_only:
+        return __package__+'.test_native_legacy_source_v421.LegacyNativeSourceV42Contracts'
     return __package__+'.test_native_execution_v42.NativeExecutionV42Contracts'
 
 
