@@ -1,0 +1,99 @@
+{
+  "argv": [
+    "/workspace/qualification/native-authority-v42-controller/bin/python",
+    "-B",
+    "-m",
+    "pytest",
+    "-q",
+    "--import-mode=importlib",
+    "-p",
+    "no:cacheprovider",
+    "research/unified_consequence_runtime/test_native_materialization_lineage_v43.py",
+    "--basetemp=/tmp/udm-v43-reviewer-invocation-lineage-red-003",
+    "--tb=short",
+    "--junitxml=/workspace/qualification/experiment-interface-v43-invocation-lineage-preimplementation/attempt-003/junit.xml"
+  ],
+  "artifacts_sha256": {
+    "junit.xml": "0f5dcb77a105ed33c2e7310c7815cb578d631b69331ae67a60cd2898a8d662d1",
+    "stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout": "a21f3d9027f29a259d9f9b69205cb7401fbeddf59c315167504c3dbaf3502a28"
+  },
+  "claim": "PRE_FIX_FAILURE_TEST_FOR_EXACT_INVOCATION_CAUSAL_LINEAGE",
+  "cwd": "/workspace/udm-v54",
+  "files_after": {
+    "research/unified_consequence_runtime/cross_frontier.py": "bc51d0b1e4c1cb27325baf1e8e67a0f3a4fe769bc5f8916731ded451767e583c",
+    "research/unified_consequence_runtime/cross_frontier_v43.py": "47c29e508f69ed0887537102266dc89f39cabf27f7765c4dbd72d0201eac8f6d",
+    "research/unified_consequence_runtime/developmental_machine.py": "4609e5b881abcfb6472d4caa2d542dc9eb1d852cf1c42f00a577aba539ccc241",
+    "research/unified_consequence_runtime/developmental_machine_v43.py": "bf066afe823f71ac97ec55fb759378aada8201aeedc1a52d3cbf8a211797af4a",
+    "research/unified_consequence_runtime/native_build_v43.py": "20f88ce36baa7e01c7e601c7840f72b9423a6ab04d093d35e36217d3049b8460",
+    "research/unified_consequence_runtime/native_execution_v43.py": "7d449419909c94ce6186d984545ce218c15ee97dc407104bd4e903180c564827",
+    "research/unified_consequence_runtime/native_materialization_v43.py": "d0bc0ab1a939106e4ec7ca143771dda34b4f3cc7c4cf865fefe4b14a67ab8101",
+    "research/unified_consequence_runtime/native_runtime_v2.py": "0707f9938d74c358fd8c21f9881c18a51c4e2062a7fcc79eee48b3a8499573bb",
+    "research/unified_consequence_runtime/native_runtime_v3.py": "0d5c01f702fed063e11a0e4e9e011972947bf67b1c5c7c306cd7a79782e1b553",
+    "research/unified_consequence_runtime/native_runtime_v42.py": "bc680199a8c718f51067f021d1cf0bf137dc4e1d2073964e9b4f100eb070de65",
+    "research/unified_consequence_runtime/native_runtime_v43.py": "ca0e352445258f1893ee5090beb0784038274e0a25f129bd59326cbe59ea440e",
+    "research/unified_consequence_runtime/native_v43_test_support.py": "991736fb3b2896f75a2d32d923b8725b0b11e97844cb79d06382d06dde4f705a",
+    "research/unified_consequence_runtime/test_native_materialization_lineage_v43.py": "4efa295421048d4ee25e11f1b265be5fcb3471faef689672e9e73d9c52ee1826",
+    "research/unified_consequence_runtime/test_native_materialization_v43.py": "05953e5d264380bccd6f4b9de0bb467613e7170c53ae29785fbb130caea3925a"
+  },
+  "files_before": {
+    "research/unified_consequence_runtime/cross_frontier.py": "bc51d0b1e4c1cb27325baf1e8e67a0f3a4fe769bc5f8916731ded451767e583c",
+    "research/unified_consequence_runtime/cross_frontier_v43.py": "47c29e508f69ed0887537102266dc89f39cabf27f7765c4dbd72d0201eac8f6d",
+    "research/unified_consequence_runtime/developmental_machine.py": "4609e5b881abcfb6472d4caa2d542dc9eb1d852cf1c42f00a577aba539ccc241",
+    "research/unified_consequence_runtime/developmental_machine_v43.py": "bf066afe823f71ac97ec55fb759378aada8201aeedc1a52d3cbf8a211797af4a",
+    "research/unified_consequence_runtime/native_build_v43.py": "20f88ce36baa7e01c7e601c7840f72b9423a6ab04d093d35e36217d3049b8460",
+    "research/unified_consequence_runtime/native_execution_v43.py": "7d449419909c94ce6186d984545ce218c15ee97dc407104bd4e903180c564827",
+    "research/unified_consequence_runtime/native_materialization_v43.py": "d0bc0ab1a939106e4ec7ca143771dda34b4f3cc7c4cf865fefe4b14a67ab8101",
+    "research/unified_consequence_runtime/native_runtime_v2.py": "0707f9938d74c358fd8c21f9881c18a51c4e2062a7fcc79eee48b3a8499573bb",
+    "research/unified_consequence_runtime/native_runtime_v3.py": "0d5c01f702fed063e11a0e4e9e011972947bf67b1c5c7c306cd7a79782e1b553",
+    "research/unified_consequence_runtime/native_runtime_v42.py": "bc680199a8c718f51067f021d1cf0bf137dc4e1d2073964e9b4f100eb070de65",
+    "research/unified_consequence_runtime/native_runtime_v43.py": "ca0e352445258f1893ee5090beb0784038274e0a25f129bd59326cbe59ea440e",
+    "research/unified_consequence_runtime/native_v43_test_support.py": "991736fb3b2896f75a2d32d923b8725b0b11e97844cb79d06382d06dde4f705a",
+    "research/unified_consequence_runtime/test_native_materialization_lineage_v43.py": "4efa295421048d4ee25e11f1b265be5fcb3471faef689672e9e73d9c52ee1826",
+    "research/unified_consequence_runtime/test_native_materialization_v43.py": "05953e5d264380bccd6f4b9de0bb467613e7170c53ae29785fbb130caea3925a"
+  },
+  "native_lineage_records": [
+    {
+      "path": "/tmp/udm-v43-reviewer-invocation-lineage-red-003/test_exact_source_invocation_w0/INVOCATION_LINEAGE.json",
+      "record": {
+        "graph_after": {
+          "affected_are_withdrawn": false,
+          "exact_witness_withdrawn": true,
+          "unrelated_and_other_source_survive": true
+        },
+        "graph_before": {
+          "native_descriptor_has_exact_witness": false,
+          "native_node_has_exact_witness": false,
+          "native_observation_has_exact_witness": false
+        },
+        "instrument": "015d8c336711da82a0a363a1f6975a6a1d9b0d6e1f296bbaf754bbe760bd9191",
+        "native_assertions": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 2,
+          "skipped": 0,
+          "tests": 2
+        },
+        "native_capability": "79970c42f34aa934e32f188ce084f8e2d270ce6c225864d1daaac180f4ca8a29",
+        "native_observation": "d1bf2e58992ca6cce533746e922ffb1d640d06d0dba00fc5c75e75ba9203921c",
+        "native_outcome": "a451e536aa799a8bcce09d97659658567416abee24038b90c7c68dd6623191f6",
+        "native_source": "1c465091d9d9e332230b0fe01da42ad41f33c747dcd1a35b37aaf1b0f9a81d1a",
+        "native_status": "PASS_NATIVE",
+        "other_source_binding_rejected_before_launch": true,
+        "rejected_execution_started_no_effects": true,
+        "schema": "UDM_EXACT_MATERIALIZATION_INVOCATION_LINEAGE_CONTROL_V43",
+        "source_alpha_witness": "0b05c82c2ffd08e115ec49460f618bc77925126faa7d374f937cda7839104560",
+        "source_beta_witness": "ab60316846f4e801feb8f9963ea1ed8b64361aeded8741d39d3b089f447f41e1",
+        "unrelated_capability": "66653969f9d130568a47fca670b2ffcda7aa1d948cf7e8e10b2214ed229ef298"
+      },
+      "sha256": "236120ad9332ebbf349e037813754c84d252bb40a4d9cc13a9532a93c12fabeb"
+    }
+  ],
+  "retained_native_directory": "/tmp/udm-v43-reviewer-invocation-lineage-red-003",
+  "returncode": 1,
+  "schema": "UDM_V43_REVIEWER_EXACT_INVOCATION_PREFX_VALIDATION_V1",
+  "seconds": 228.76276636123657,
+  "source_unchanged_during_run": true,
+  "stage": "EXACT_INVOCATION_CONTROL_REACHED",
+  "started_unix": 1792617941.5324225
+}

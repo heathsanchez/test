@@ -1,0 +1,18 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_ test_exact_source_invocation_witness_recloses_native_capability_and_outcome __
+research/unified_consequence_runtime/test_native_materialization_lineage_v43.py:22: in test_exact_source_invocation_witness_recloses_native_capability_and_outcome
+    module, machine, materializer = stack(tmp_path)
+research/unified_consequence_runtime/test_native_materialization_v43.py:37: in stack
+    machine = machine_type(components, root / 'state', root / 'evaluator', root / 'unused-config.json')
+research/unified_consequence_runtime/developmental_machine_v43.py:65: in __init__
+    closure, runtime, _ordered = self.router._build_runtime([])
+../components/flash/qckn_flash_cross_repo_ingest.py:91: in _build_runtime
+    closure = FlashClosure(obligations, kernel="qckn-flash-cross-repo-ingestion-v1")
+../components/flash/realitygraph/flash.py:869: in __init__
+    raise ValueError("flash closure requires unique live obligations")
+E   ValueError: flash closure requires unique live obligations
+- generated xml file: /workspace/qualification/experiment-interface-v43-invocation-lineage-preimplementation/attempt-002/junit.xml -
+=========================== short test summary info ============================
+FAILED research/unified_consequence_runtime/test_native_materialization_lineage_v43.py::test_exact_source_invocation_witness_recloses_native_capability_and_outcome
+1 failed in 1.21s

@@ -1,0 +1,14 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_ test_exact_source_invocation_witness_recloses_native_capability_and_outcome __
+research/unified_consequence_runtime/test_native_materialization_lineage_v43.py:103: in test_exact_source_invocation_witness_recloses_native_capability_and_outcome
+    assert all(graph_before.values()), graph_before
+E   AssertionError: {'native_descriptor_has_exact_witness': False, 'native_node_has_exact_witness': False, 'native_observation_has_exact_witness': False}
+E   assert False
+E    +  where False = all(dict_values([False, False, False]))
+E    +    where dict_values([False, False, False]) = <built-in method values of dict object at 0x7f8145208280>()
+E    +      where <built-in method values of dict object at 0x7f8145208280> = {'native_descriptor_has_exact_witness': False, 'native_node_has_exact_witness': False, 'native_observation_has_exact_witness': False}.values
+- generated xml file: /workspace/qualification/experiment-interface-v43-invocation-lineage-preimplementation/attempt-003/junit.xml -
+=========================== short test summary info ============================
+FAILED research/unified_consequence_runtime/test_native_materialization_lineage_v43.py::test_exact_source_invocation_witness_recloses_native_capability_and_outcome
+1 failed in 228.59s (0:03:48)

@@ -1,0 +1,63 @@
+{
+  "argv": [
+    "/workspace/qualification/native-authority-v42-controller/bin/python",
+    "-B",
+    "-m",
+    "pytest",
+    "-q",
+    "--import-mode=importlib",
+    "-p",
+    "no:cacheprovider",
+    "research/unified_consequence_runtime/test_native_materialization_lineage_v43.py",
+    "--basetemp=/tmp/udm-v43-reviewer-invocation-lineage-red-002",
+    "--tb=short",
+    "--junitxml=/workspace/qualification/experiment-interface-v43-invocation-lineage-preimplementation/attempt-002/junit.xml"
+  ],
+  "artifacts_sha256": {
+    "junit.xml": "be501986d8474444039bc71599d3dddc5df2ce2a6ff79d076ef8ca11849b6595",
+    "stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout": "7662e063d6c7bce8400aa47e9303136c7221f41147b14967cd3881f6ac750356"
+  },
+  "claim": "PRE_FIX_FAILURE_TEST_FOR_EXACT_INVOCATION_CAUSAL_LINEAGE",
+  "cwd": "/workspace/udm-v54",
+  "files_after": {
+    "research/unified_consequence_runtime/cross_frontier.py": "bc51d0b1e4c1cb27325baf1e8e67a0f3a4fe769bc5f8916731ded451767e583c",
+    "research/unified_consequence_runtime/cross_frontier_v43.py": "47c29e508f69ed0887537102266dc89f39cabf27f7765c4dbd72d0201eac8f6d",
+    "research/unified_consequence_runtime/developmental_machine.py": "4609e5b881abcfb6472d4caa2d542dc9eb1d852cf1c42f00a577aba539ccc241",
+    "research/unified_consequence_runtime/developmental_machine_v43.py": "24341f7bca1b096ddec28ff8b0cd9835b8c7fa50ae460d04d97dbd32a7e1fba9",
+    "research/unified_consequence_runtime/native_build_v43.py": "20f88ce36baa7e01c7e601c7840f72b9423a6ab04d093d35e36217d3049b8460",
+    "research/unified_consequence_runtime/native_execution_v43.py": "7d449419909c94ce6186d984545ce218c15ee97dc407104bd4e903180c564827",
+    "research/unified_consequence_runtime/native_materialization_v43.py": "d0bc0ab1a939106e4ec7ca143771dda34b4f3cc7c4cf865fefe4b14a67ab8101",
+    "research/unified_consequence_runtime/native_runtime_v2.py": "0707f9938d74c358fd8c21f9881c18a51c4e2062a7fcc79eee48b3a8499573bb",
+    "research/unified_consequence_runtime/native_runtime_v3.py": "0d5c01f702fed063e11a0e4e9e011972947bf67b1c5c7c306cd7a79782e1b553",
+    "research/unified_consequence_runtime/native_runtime_v42.py": "bc680199a8c718f51067f021d1cf0bf137dc4e1d2073964e9b4f100eb070de65",
+    "research/unified_consequence_runtime/native_runtime_v43.py": "ca0e352445258f1893ee5090beb0784038274e0a25f129bd59326cbe59ea440e",
+    "research/unified_consequence_runtime/native_v43_test_support.py": "991736fb3b2896f75a2d32d923b8725b0b11e97844cb79d06382d06dde4f705a",
+    "research/unified_consequence_runtime/test_native_materialization_lineage_v43.py": "4efa295421048d4ee25e11f1b265be5fcb3471faef689672e9e73d9c52ee1826",
+    "research/unified_consequence_runtime/test_native_materialization_v43.py": "05953e5d264380bccd6f4b9de0bb467613e7170c53ae29785fbb130caea3925a"
+  },
+  "files_before": {
+    "research/unified_consequence_runtime/cross_frontier.py": "bc51d0b1e4c1cb27325baf1e8e67a0f3a4fe769bc5f8916731ded451767e583c",
+    "research/unified_consequence_runtime/cross_frontier_v43.py": "47c29e508f69ed0887537102266dc89f39cabf27f7765c4dbd72d0201eac8f6d",
+    "research/unified_consequence_runtime/developmental_machine.py": "4609e5b881abcfb6472d4caa2d542dc9eb1d852cf1c42f00a577aba539ccc241",
+    "research/unified_consequence_runtime/developmental_machine_v43.py": "24341f7bca1b096ddec28ff8b0cd9835b8c7fa50ae460d04d97dbd32a7e1fba9",
+    "research/unified_consequence_runtime/native_build_v43.py": "20f88ce36baa7e01c7e601c7840f72b9423a6ab04d093d35e36217d3049b8460",
+    "research/unified_consequence_runtime/native_execution_v43.py": "7d449419909c94ce6186d984545ce218c15ee97dc407104bd4e903180c564827",
+    "research/unified_consequence_runtime/native_materialization_v43.py": "d0bc0ab1a939106e4ec7ca143771dda34b4f3cc7c4cf865fefe4b14a67ab8101",
+    "research/unified_consequence_runtime/native_runtime_v2.py": "0707f9938d74c358fd8c21f9881c18a51c4e2062a7fcc79eee48b3a8499573bb",
+    "research/unified_consequence_runtime/native_runtime_v3.py": "0d5c01f702fed063e11a0e4e9e011972947bf67b1c5c7c306cd7a79782e1b553",
+    "research/unified_consequence_runtime/native_runtime_v42.py": "bc680199a8c718f51067f021d1cf0bf137dc4e1d2073964e9b4f100eb070de65",
+    "research/unified_consequence_runtime/native_runtime_v43.py": "ca0e352445258f1893ee5090beb0784038274e0a25f129bd59326cbe59ea440e",
+    "research/unified_consequence_runtime/native_v43_test_support.py": "991736fb3b2896f75a2d32d923b8725b0b11e97844cb79d06382d06dde4f705a",
+    "research/unified_consequence_runtime/test_native_materialization_lineage_v43.py": "4efa295421048d4ee25e11f1b265be5fcb3471faef689672e9e73d9c52ee1826",
+    "research/unified_consequence_runtime/test_native_materialization_v43.py": "05953e5d264380bccd6f4b9de0bb467613e7170c53ae29785fbb130caea3925a"
+  },
+  "native_lineage_records": [],
+  "retained_native_directory": "/tmp/udm-v43-reviewer-invocation-lineage-red-002",
+  "returncode": 1,
+  "schema": "UDM_V43_REVIEWER_EXACT_INVOCATION_PREFX_VALIDATION_V1",
+  "seconds": 1.3727810382843018,
+  "source_unchanged_during_run": true,
+  "stage": "EARLY_BLOCKER_EXACT_INVOCATION_NOT_REACHED",
+  "started_unix": 1792617781.2979677
+}

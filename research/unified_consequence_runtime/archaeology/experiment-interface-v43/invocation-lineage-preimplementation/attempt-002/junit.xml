@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="1.211" timestamp="2026-10-21T21:23:01.430710+00:00" hostname="8ac9339af51c"><testcase classname="research.unified_consequence_runtime.test_native_materialization_lineage_v43" name="test_exact_source_invocation_witness_recloses_native_capability_and_outcome" time="1.093"><failure message="ValueError: flash closure requires unique live obligations">research/unified_consequence_runtime/test_native_materialization_lineage_v43.py:22: in test_exact_source_invocation_witness_recloses_native_capability_and_outcome
+    module, machine, materializer = stack(tmp_path)
+research/unified_consequence_runtime/test_native_materialization_v43.py:37: in stack
+    machine = machine_type(components, root / 'state', root / 'evaluator', root / 'unused-config.json')
+research/unified_consequence_runtime/developmental_machine_v43.py:65: in __init__
+    closure, runtime, _ordered = self.router._build_runtime([])
+../components/flash/qckn_flash_cross_repo_ingest.py:91: in _build_runtime
+    closure = FlashClosure(obligations, kernel="qckn-flash-cross-repo-ingestion-v1")
+../components/flash/realitygraph/flash.py:869: in __init__
+    raise ValueError("flash closure requires unique live obligations")
+E   ValueError: flash closure requires unique live obligations</failure></testcase></testsuite></testsuites>
