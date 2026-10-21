@@ -24,14 +24,14 @@ jobs:
           python -m pip install -q pytest==8.3.5
           for rev in base head; do
             if [ "$rev" = base ]; then sha=1ea82a711c69f590054987b5cb194157f8ce8ac4; else sha=67fcf640477c78605580f5ee703a54c73c1e7a8a; fi
-            git checkout -q --detach "$sha"
+            git checkout -q -f --detach "$sha"
             test "$(git rev-parse HEAD)" = "$sha"
             if [ "$rev" = base ]; then
               git show 67fcf640477c78605580f5ee703a54c73c1e7a8a:tests/test_more.py > tests/test_more.py
               test "$(git hash-object tests/test_more.py)" = b3a9351595a6fd7f1aa9c1e35978f08106e43df0
             fi
             set +e
-            PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest -q --maxfail=1 --tb=short tests/test_more.py::TestBucket::test_falsey_validator_is_honoured > "$GITHUB_WORKSPACE/evidence/$rev.log" 2>&1
+            PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest -q --maxfail=1 --tb=short tests/test_more.py -k test_falsey_validator_is_honoured > "$GITHUB_WORKSPACE/evidence/$rev.log" 2>&1
             status=$?
             set -e
             cat "$GITHUB_WORKSPACE/evidence/$rev.log"
