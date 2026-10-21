@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="3" time="0.156" timestamp="2026-10-21T22:54:43.092968+00:00" hostname="8ac9339af51c"><testcase classname="qualification.experiment-interface-v43-metadata-transport-preimplementation.test_metadata_curator_transport_v43" name="test_binding_an_aliased_function_executes_the_new_definition" time="0.089"><failure message="AssertionError: assert ('original', 7) == ('versioned', 7)&#10;  &#10;  At index 0 diff: 'original' != 'versioned'&#10;  Use -v to get more diff">qualification/experiment-interface-v43-metadata-transport-preimplementation/test_metadata_curator_transport_v43.py:30: in test_binding_an_aliased_function_executes_the_new_definition
+    assert changed(7)==('versioned',7)
+E   AssertionError: assert ('original', 7) == ('versioned', 7)
+E     
+E     At index 0 diff: 'original' != 'versioned'
+E     Use -v to get more diff</failure></testcase><testcase classname="qualification.experiment-interface-v43-metadata-transport-preimplementation.test_metadata_curator_transport_v43" name="test_four_field_gate_reaches_versioned_validation_before_any_api" time="0.007"><failure message="ValueError: qualified gate descriptor must contain environment_gate and catalog">qualification/experiment-interface-v43-metadata-transport-preimplementation/test_metadata_curator_transport_v43.py:65: in test_four_field_gate_reaches_versioned_validation_before_any_api
+    module.query(research,plan_path,gate_path,archive,records)
+udm-v54/research/unified_consequence_runtime/archaeology/native-authority-v4/curate_frontier.py:139: in query
+    return _base_query(research, plan_path, gate_path, artifact_path, out)
+udm-v54/research/unified_consequence_runtime/archaeology/native-environment-v3/curate_frontier.py:252: in query
+    raise ValueError('qualified gate descriptor must contain environment_gate and catalog')
+E   ValueError: qualified gate descriptor must contain environment_gate and catalog</failure></testcase><testcase classname="qualification.experiment-interface-v43-metadata-transport-preimplementation.test_metadata_curator_transport_v43" name="test_original_first_receipt_guard_still_prevents_replacement" time="0.006" /></testsuite></testsuites>

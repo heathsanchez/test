@@ -1,0 +1,43 @@
+{
+  "actual_query_boundary": {
+    "curation_exists": false,
+    "execution_receipt_exists": false,
+    "first_failure_before_receipt_and_api": true,
+    "original_stderr_retained": true,
+    "pool_exists": false
+  },
+  "command": [
+    "/workspace/qualification/native-authority-v42-controller/bin/python",
+    "-B",
+    "-m",
+    "pytest",
+    "-q",
+    "-p",
+    "no:cacheprovider",
+    "/workspace/qualification/experiment-interface-v43-metadata-transport-preimplementation/test_metadata_curator_transport_v43.py",
+    "--tb=short",
+    "--junitxml=/workspace/qualification/experiment-interface-v43-metadata-transport-preimplementation/red.junit.xml"
+  ],
+  "files_sha256": {
+    "METADATA_QUERY_EXIT.txt": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865",
+    "metadata-query.stderr": "7231f2314f5e8b555bd7cc3cbd67a865ba194cd9d17c27e712f68bb54e89d9f9",
+    "metadata-query.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "original-DECLARED_UNIVERSE.json": "53f452475be2a52fa7170ca2a4fe208e7de453148b68a7c51120b99cefb2737a",
+    "original-GATE_WRAPPER.json": "8b188067dd06104eaca2bf002cd4dd215f2eaead3193a41cfe70bdf7f29c7554",
+    "original-PREQUERY.json": "475618e7fcda288d9ee8555db1b98a0e91fc1ee4b1c5efb819201601b92d56a3",
+    "original-curate_frontier.py": "79bb1f4ed653efe34d4b625277378a1dfb0aef1ac5b0a797920358776ffb8d4f",
+    "red.junit.xml": "da2c4b21aaa1fadd81fcf4c39051dd890da980045c9bcced65eef883d950666c",
+    "red.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "red.stdout": "f9f80896d8a8a81f502887a592f61092526166b6573efee3e298e317c4435e06",
+    "test_metadata_curator_transport_v43.py": "2c0eb5e72ec7a5718190734d24b81a7423526b8f2acc12058e13e760bb394838"
+  },
+  "returncode": 1,
+  "schema": "UDM_V43_METADATA_TRANSPORT_PREIMPLEMENTATION_V1",
+  "status": "EXPECTED_RED_ALIASED_COMPILE_RESULT_UNUSED",
+  "test_operations": {
+    "api_queries": 0,
+    "git_commands": 0,
+    "native_or_model_calls": 0,
+    "repository_edits": 0
+  }
+}

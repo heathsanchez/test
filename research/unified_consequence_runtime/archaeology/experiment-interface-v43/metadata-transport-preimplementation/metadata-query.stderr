@@ -1,0 +1,12 @@
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/experiment-interface-v43/prospective/curate_frontier.py", line 143, in <module>
+    main()
+  File "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/experiment-interface-v43/prospective/curate_frontier.py", line 137, in main
+    result = query(q.HERE, args.query_after_committed_prequery.resolve(), args.environment_gate.resolve(),
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-authority-v4/curate_frontier.py", line 139, in query
+    return _base_query(research, plan_path, gate_path, artifact_path, out)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-environment-v3/curate_frontier.py", line 252, in query
+    raise ValueError('qualified gate descriptor must contain environment_gate and catalog')
+ValueError: qualified gate descriptor must contain environment_gate and catalog
