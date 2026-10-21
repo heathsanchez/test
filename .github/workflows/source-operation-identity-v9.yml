@@ -1,0 +1,31 @@
+name: Source Operation Identity V9
+on:
+  push:
+    branches:
+      - research/source-operation-identity-v9-20261021
+  pull_request:
+    paths:
+      - 'research/source_operation_identity_v9/**'
+      - '.github/workflows/source-operation-identity-v9.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-identity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Execute frozen independent API owner test
+        run: |
+          python3 -m py_compile research/source_operation_identity_v9/test.py
+          python3 research/source_operation_identity_v9/test.py
+          python3 research/source_operation_identity_v9/fair_baseline_audit.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: source-operation-identity-v9
+          path: |
+            research/source_operation_identity_v9/result.json
+            research/source_operation_identity_v9/baseline_audit_result.json
+          if-no-files-found: warn
