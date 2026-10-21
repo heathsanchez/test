@@ -1,0 +1,56 @@
+name: Nucleus real application Pi first-obligation census
+on:
+  push:
+    branches: [research/nucleus-app-first-pi-20261021]
+    paths:
+      - '.github/scripts/nucleus_first_actual_app_pi_20261021.py'
+      - '.github/workflows/nucleus-first-actual-app-pi-20261021.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  real-source-pi-diagnostic:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 65
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Prove source tree identical to already qualified independent kernel
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/nucleus-first-app-evidence /tmp/nucleus-first-app-zip /tmp/nucleus-first-app-inputs
+          test "$(git rev-parse HEAD:metatron-kernel)" = 5e7d65b1b6abc3f6380bc7a37ffb153284d7faf1
+          git rev-parse HEAD > /tmp/nucleus-first-app-evidence/experiment-commit.txt
+          rustc -vV > /tmp/nucleus-first-app-evidence/compiler.txt
+      - name: Compile unchanged qualified checker and require native regression suite
+        run: |
+          set -euo pipefail
+          NUCLEUS_EXPERIMENTAL_RELEVANCE=1 NUCLEUS_EXPERIMENTAL_EXPECTED_LAMBDA=1 \
+            cargo test --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml \
+            > /tmp/nucleus-first-app-evidence/native-tests.log 2>&1 || {
+              tail -100 /tmp/nucleus-first-app-evidence/native-tests.log; exit 1;
+            }
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          sha256sum metatron-kernel/target/release/metatron-kernel > /tmp/nucleus-first-app-evidence/binary.sha256
+      - name: Recover byte-pinned genuine Arena exports
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/11272848230/zip > /tmp/nucleus-first-app-tests.zip
+          unzip -q /tmp/nucleus-first-app-tests.zip -d /tmp/nucleus-first-app-zip
+          tar --no-same-owner -xzf /tmp/nucleus-first-app-zip/lean-arena-tests.tar.gz -C /tmp/nucleus-first-app-inputs
+          test -s /tmp/nucleus-first-app-inputs/good/perf/magma-list-pair-n7.ndjson
+      - name: Trace actual infer-in application Pi failures without verdict changes
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/nucleus_first_actual_app_pi_20261021.py \
+            /tmp/nucleus-first-app-inputs \
+            metatron-kernel/target/release/metatron-kernel \
+            /tmp/nucleus-first-app-evidence
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-real-app-pi-diagnostic-${{ github.sha }}
+          path: /tmp/nucleus-first-app-evidence/
+          if-no-files-found: warn
