@@ -1,0 +1,59 @@
+name: UDM PR1309 source-pinned RED GREEN evidence
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [research/udm-pr1309-red-green-native-20261022]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Original author test RED on pinned base GREEN on pinned head
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          git clone -q https://github.com/more-itertools/more-itertools.git "$RUNNER_TEMP/source"
+          cd "$RUNNER_TEMP/source"
+          python -m pip install -q pytest==8.3.5
+          for rev in base head; do
+            if [ "$rev" = base ]; then sha=1ea82a711c69f590054987b5cb194157f8ce8ac4; else sha=67fcf640477c78605580f5ee703a54c73c1e7a8a; fi
+            git checkout -q -f --detach "$sha"
+            test "$(git rev-parse HEAD)" = "$sha"
+            if [ "$rev" = base ]; then
+              git show 67fcf640477c78605580f5ee703a54c73c1e7a8a:tests/test_more.py > tests/test_more.py
+              test "$(git hash-object tests/test_more.py)" = b3a9351595a6fd7f1aa9c1e35978f08106e43df0
+            fi
+            set +e
+            PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest -q --maxfail=1 --tb=short tests/test_more.py -k test_falsey_validator_is_honoured > "$GITHUB_WORKSPACE/evidence/$rev.log" 2>&1
+            status=$?
+            set -e
+            cat "$GITHUB_WORKSPACE/evidence/$rev.log"
+            printf '%s\n' "$status" > "$GITHUB_WORKSPACE/evidence/$rev.exit"
+          done
+          python - <<'PY'
+          import pathlib,json
+          import os
+          p=pathlib.Path(os.environ["GITHUB_WORKSPACE"])/"evidence"
+          a=int((p/"base.exit").read_text());b=int((p/"head.exit").read_text())
+          result={"base_exit":a,"head_exit":b,"expected_red_green":a!=0 and b==0,
+          "base":"1ea82a711c69f590054987b5cb194157f8ce8ac4",
+          "head":"67fcf640477c78605580f5ee703a54c73c1e7a8a",
+          "author_test_blob":"b3a9351595a6fd7f1aa9c1e35978f08106e43df0",
+          "scope":"one author test only; not full UDM qualification"}
+          (p/"result.json").write_text(json.dumps(result,indent=2))
+          print(json.dumps(result))
+          assert result["expected_red_green"]
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr1309-red-green-native
+          path: evidence/
+          if-no-files-found: warn
