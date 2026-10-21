@@ -2255,7 +2255,7 @@ impl<'a> Machine<'a> {
                     use std::sync::atomic::{AtomicUsize,Ordering};
                     static OBS:AtomicUsize=AtomicUsize::new(0);
                     if OBS.fetch_add(1,Ordering::Relaxed)<32 {
-                        eprintln!("NUCLEUS_MAJOR_REBUDGET:registered={name:?}:owner_remaining={remaining_major_work}:local_cap={local_major_cap}:goal={goal:?}");
+                        eprintln!("NUCLEUS_MAJOR_REBUDGET:registered={name:?}:owner_remaining={remaining_major_work}:local_cap={local_major_cap}");
                     }
                 }
                 let major_result=self.expose(neutral.spine[required-1].clone(),
