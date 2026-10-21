@@ -2273,7 +2273,28 @@ impl<'a> Machine<'a> {
                         (nat.succ,vec![],vec![field])
                     }
                 }
-                _=>return Judgment::unknown("nested-recursor-iota-no-constructor"),
+                major_without_constructor=>{
+                    // Diagnostic only: retain the entire actual major shape
+                    // and original source witness. No guessed constructor or
+                    // alternative reduction is admitted by this observation.
+                    #[cfg(feature="diagnostics")]
+                    if std::env::var_os("NUCLEUS_TRACE_MAJOR_NO_CONSTRUCTOR").is_some() {
+                        use std::sync::atomic::{AtomicUsize,Ordering};
+                        static OBS:AtomicUsize=AtomicUsize::new(0);
+                        if OBS.fetch_add(1,Ordering::Relaxed)<64 {
+                            eprintln!(
+                                "NUCLEUS_MAJOR_NO_CONSTRUCTOR:recursor={name:?}:major_source={:?}:source_env={}:source_levels={:?}:root_depth={}:owner_work={:?}:actual_value={}",
+                                neutral.spine[required-1].expr,
+                                neutral.spine[required-1].env.id(),
+                                neutral.spine[required-1].levels,
+                                parents.len(),
+                                self.exposure_fuel.get(),
+                                format!("{major_without_constructor:?}").chars().take(2800).collect::<String>(),
+                            );
+                        }
+                    }
+                    return Judgment::unknown("nested-recursor-iota-no-constructor");
+                },
             };
             let Some(rule) = reduction.rules.iter().find(|rule| {
                 rule.constructor == constructor
