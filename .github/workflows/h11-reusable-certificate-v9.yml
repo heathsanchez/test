@@ -34,9 +34,12 @@ jobs:
         run: |
           python -m py_compile research/h11_reusable_certificate_v9/experiment.py research/h11_reusable_certificate_v9/tracer.py
           python research/h11_reusable_certificate_v9/experiment.py
+          python research/h11_reusable_certificate_v9/predecision_audit.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: h11-reusable-certificate-v9
-          path: research/h11_reusable_certificate_v9/result.json
+          path: |
+            research/h11_reusable_certificate_v9/result.json
+            research/h11_reusable_certificate_v9/predecision_audit.json
           if-no-files-found: warn
