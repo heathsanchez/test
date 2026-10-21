@@ -1,0 +1,28 @@
+name: Independent Source Obligation Acquisition V1
+on:
+  push:
+    branches:
+      - research/independent-obligation-acquisition-v1-20261021
+  pull_request:
+    paths:
+      - 'research/independent_obligation_acquisition_v1/**'
+      - '.github/workflows/independent-obligation-acquisition-v1.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  prospective-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - name: Acquire independent official requirement and execute native witness
+        run: |
+          python3 --version
+          python3 research/independent_obligation_acquisition_v1/experiment.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: independent-obligation-acquisition-v1
+          path: research/independent_obligation_acquisition_v1/result.json
+          if-no-files-found: warn
