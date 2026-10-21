@@ -1,0 +1,697 @@
+{
+  "auditor_freeze": {
+    "path": "/workspace/qualification/experiment-interface-v43-screening-audit-preparation/AUDITOR_FREEZE_V3.json",
+    "sha256": "28bed37916d6a2030c1f871c5f87d0255de5743564d23942db4293b78b543a09"
+  },
+  "costs": {
+    "scope": "Original fixed-pool screening inclusive measurements and raw setup/machine phases retained. Native counters count original worker calls; V43 build counters do not include the original environment base-wheel operation, which is reported separately. Nested setup/case/controller and phase wall intervals are nonadditive. Original independent recollection/reexecution are planned verification, not extra case retries. Profile/gate preparation costs remain in original retained receipts; unmeasured engineering/model/tool/storage/host checking cost remains UNKNOWN. No G4 claim.",
+    "totals": {
+      "collection_calls": 4,
+      "controller_inclusive_wall_seconds": 109.94108154200057,
+      "metadata_costs": {
+        "collection_calls": 0,
+        "metadata_api_calls": 131,
+        "metadata_budget_seconds": 900,
+        "metadata_wall_seconds": 33.43744278599934,
+        "native_calls": 0,
+        "total_curation_wall_seconds": 33.83624924600008
+      },
+      "native_calls": 2,
+      "offline_audit_attempts": [
+        {
+          "attempt": 1,
+          "cpu_system_seconds": 0.9110769999999999,
+          "cpu_user_seconds": 1.444219,
+          "native_or_network_runs": 0,
+          "wall_seconds": 2.355003253000177
+        },
+        {
+          "attempt": 2,
+          "cpu_system_seconds": 0.7720629999999999,
+          "cpu_user_seconds": 1.8840059999999998,
+          "native_or_network_runs": 0,
+          "wall_seconds": 2.6516681059983966
+        },
+        {
+          "attempt": 3,
+          "cpu_system_seconds": 0.864763,
+          "cpu_user_seconds": 2.73042,
+          "native_or_network_runs": 0,
+          "wall_seconds": 3.5974169180008175
+        }
+      ],
+      "offline_audit_wall_seconds_total": 8.604088276999391,
+      "original_base_wheel_attempts": 1,
+      "original_base_wheel_seconds": 0.6654490790006093,
+      "screened_cases": 6,
+      "sum_case_inclusive_wall_seconds": 63.509275813001295,
+      "sum_setup_inclusive_wall_seconds": 36.038246327001616,
+      "sum_setup_phase_seconds": 30.710794028002056,
+      "v43_build_calls": 0,
+      "v43_verification_attempts": 0
+    }
+  },
+  "counts": {
+    "collection_calls": 4,
+    "eligible_cases": 0,
+    "native_calls": 2,
+    "original_base_wheel_attempts": 1,
+    "screened_cases": 6,
+    "v43_build_calls": 0,
+    "v43_verification_attempts": 0
+  },
+  "diagnostics": {
+    "COSTS_BY_CASE.json": {
+      "path": "/workspace/qualification/native-frontier-v43-operator/independent-audit/COSTS_BY_CASE.json",
+      "schema": "UDM_V43_INDEPENDENT_SCREENING_COST_SUMMARY_V1",
+      "sha256": "c370cc63864d20dab338e5f84a014a032f36264a09d1a0681a1babcdc4877ac3"
+    },
+    "NATIVE_REFUSAL_CONTEXT.json": {
+      "path": "/workspace/qualification/native-frontier-v43-operator/independent-audit/NATIVE_REFUSAL_CONTEXT.json",
+      "schema": "UDM_V43_RETAINED_NATIVE_REFUSAL_CONTEXT_V1",
+      "sha256": "1b05737c2b3e83949e06d1bc81db38a035033e78a3417d7665d554e0cb413dda"
+    },
+    "REFUSALS_BY_CASE.json": {
+      "path": "/workspace/qualification/native-frontier-v43-operator/independent-audit/REFUSALS_BY_CASE.json",
+      "schema": "UDM_V43_INDEPENDENT_SCREENING_REFUSALS_V1",
+      "sha256": "f2148aa67d1d896e8cad82ca6536646fd93a91e203043efb2b61bb2241d499e9"
+    }
+  },
+  "engineering_audit_attempts": {
+    "attempt_001": "Lawful ASCII whitespace in GitHub base64 transport was initially refused. Only ASCII base64 whitespace normalization was authorized, frozen and data-only RED/GREEN tested; exact Gitblob, SHA and complete source/test checks remain strict.",
+    "attempt_002": "Tracked-only generated_build=None was initially subjected to Hatch-only SCM metadata checks. Only include_scm=(generated_build is not None) was authorized, frozen and data-only RED/GREEN tested; generated-build SCM checks remain strict.",
+    "attempt_003": "All six supplied-run cases closed offline; no native rerun, original packet mutation, source/index change or outcome promotion.",
+    "retained_attempts": [
+      "/workspace/qualification/native-frontier-v43-operator/independent-audit/attempt-001-launch",
+      "/workspace/qualification/native-frontier-v43-operator/independent-audit/attempt-002-launch",
+      "/workspace/qualification/native-frontier-v43-operator/independent-audit/attempt-003-launch"
+    ]
+  },
+  "handoff": {
+    "additional_native_or_target_execution_required": false,
+    "auditor_hold_released_for_immutable_packaging": true,
+    "auditor_source_edits_complete": true,
+    "diagnostics_final": true
+  },
+  "interpretation": {
+    "audit_pass_scope": "Completeness, retained identity/provenance, disposition parity and measured costs of the supplied six admission-only requests; all six original refusals remain unchanged.",
+    "eligibility_rule": "PASS_NATIVE_OR_FAIL_NATIVE_IDENTICAL",
+    "exposure_boundary": "The six screened cases are already exposed to the independent diagnostic role and cannot be silently repaired, replaced, resampled or reused as an untouched future cohort.",
+    "learner_candidate_or_comparator_executed": false,
+    "limitations": [
+      "Bounded supplied-run/actor attestation; no global absence-of-unrelated-processes or hostile-host isolation proof.",
+      "No target interpreter, backend, pytest or native verifier executed by this audit. Runtime implementation/version claims retain offline evidence limits.",
+      "Inclusive parent and nested phase wall intervals are nonadditive. All successful/refused launches retained; unmeasured tool/model/engineering/lifecycle cost remains UNKNOWN."
+    ],
+    "prospective_materialization": "No V43 generated-build instrument was exercised in these six requests. The only native-executed request used generated_build=None; the original environment base-wheel operation is counted separately.",
+    "role_selection": "SHORTFALL_NO_TRAINING_OR_PROTECTED_FUTURE_ASSIGNED",
+    "scientific_verdicts": {
+      "G2": "UNKNOWN",
+      "G3": "UNKNOWN",
+      "G4": "UNKNOWN",
+      "G5": "UNKNOWN",
+      "G6": "UNKNOWN"
+    },
+    "unmeasured_costs": "Engineering, model, tool, storage, complete profile/gate preparation and lifecycle fees remain UNKNOWN; parent, case, setup and phase wall intervals are nested and nonadditive."
+  },
+  "native_refusal_context": {
+    "conclusion": "Both independently retained native executions remain UNKNOWN_SKIPPED_OR_XFAIL under the unchanged no-skips/no-xfails full-suite contract. Collection admission is not assertion execution admission. No test editing, deselection, skip suppression, retry, task substitution or native promotion is permitted.",
+    "executions": [
+      {
+        "execution": "baseline",
+        "identity_violation_fields": {
+          "changed_test_code": [],
+          "external_project_imports": [],
+          "plugin_violations": [],
+          "source_mutations": [],
+          "unexpected_imports": []
+        },
+        "junit": {
+          "errors": 0,
+          "failures": 26,
+          "passed": 487,
+          "skipped": 16,
+          "tests": 529
+        },
+        "process_exit_code": 1,
+        "protected_node_counts": {
+          "protected_skip_nodes": 5,
+          "protected_skip_or_xfail_nodes": 5,
+          "protected_xfail_nodes": 3,
+          "required_prefix_count": 162,
+          "selected_protected_nodes": 236
+        },
+        "receipt": {
+          "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/baseline/receipt.json",
+          "sha256": "3745867717c57c9c4542e9f30621b2723429cf7832399ab8d8b20c10290b6c21"
+        },
+        "selected_nodes": 529,
+        "skip_xfail": {
+          "skipped_phase_rows": 16,
+          "unique_skipped_or_xfail_nodes": 16,
+          "wasxfail_phase_rows": 9,
+          "xml_skip_reasons": [
+            {
+              "count": 4,
+              "message": "Deferred annotations are only supported in Python 3.14+",
+              "type": "pytest.skip"
+            },
+            {
+              "count": 1,
+              "message": "Requires Python < 3.10",
+              "type": "pytest.skip"
+            },
+            {
+              "count": 2,
+              "message": "typing provider <module 'typing' from '/workspace/qualification/native-frontier-v3-runtime-preparation/modern-base/lib/python3.12/typing.py'> does not support extra_items in TypedDict",
+              "type": "pytest.skip"
+            },
+            {
+              "count": 6,
+              "message": "No workaround for this has been implemented yet",
+              "type": "pytest.xfail"
+            },
+            {
+              "count": 3,
+              "message": "false negative due to missing support for nested protocol checks",
+              "type": "pytest.xfail"
+            }
+          ]
+        },
+        "status": "UNKNOWN_SKIPPED_OR_XFAIL"
+      },
+      {
+        "execution": "independent-baseline",
+        "identity_violation_fields": {
+          "changed_test_code": [],
+          "external_project_imports": [],
+          "plugin_violations": [],
+          "source_mutations": [],
+          "unexpected_imports": []
+        },
+        "junit": {
+          "errors": 0,
+          "failures": 26,
+          "passed": 487,
+          "skipped": 16,
+          "tests": 529
+        },
+        "process_exit_code": 1,
+        "protected_node_counts": {
+          "protected_skip_nodes": 5,
+          "protected_skip_or_xfail_nodes": 5,
+          "protected_xfail_nodes": 3,
+          "required_prefix_count": 162,
+          "selected_protected_nodes": 236
+        },
+        "receipt": {
+          "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/independent-baseline/receipt.json",
+          "sha256": "f799ad4b0f170941f3ecd0e1d8d4dba55ca329bfdfeaba5e2791581d8cf5d1cd"
+        },
+        "selected_nodes": 529,
+        "skip_xfail": {
+          "skipped_phase_rows": 16,
+          "unique_skipped_or_xfail_nodes": 16,
+          "wasxfail_phase_rows": 9,
+          "xml_skip_reasons": [
+            {
+              "count": 4,
+              "message": "Deferred annotations are only supported in Python 3.14+",
+              "type": "pytest.skip"
+            },
+            {
+              "count": 1,
+              "message": "Requires Python < 3.10",
+              "type": "pytest.skip"
+            },
+            {
+              "count": 2,
+              "message": "typing provider <module 'typing' from '/workspace/qualification/native-frontier-v3-runtime-preparation/modern-base/lib/python3.12/typing.py'> does not support extra_items in TypedDict",
+              "type": "pytest.skip"
+            },
+            {
+              "count": 6,
+              "message": "No workaround for this has been implemented yet",
+              "type": "pytest.xfail"
+            },
+            {
+              "count": 3,
+              "message": "false negative due to missing support for nested protocol checks",
+              "type": "pytest.xfail"
+            }
+          ]
+        },
+        "status": "UNKNOWN_SKIPPED_OR_XFAIL"
+      }
+    ],
+    "generated_build": null,
+    "materialization_status": "TRACKED_ONLY_OR_UNKNOWN_UNSUPPORTED_DECLARATION",
+    "repository": "agronholm/typeguard"
+  },
+  "residual_category_counts": {
+    "UNKNOWN_DYNAMIC_METADATA": 3,
+    "UNKNOWN_NO_COMPATIBLE_PROFILE": 2,
+    "UNKNOWN_SKIPPED_OR_XFAIL": 1
+  },
+  "residuals_by_case": [
+    {
+      "eligible": false,
+      "index": 0,
+      "profile_candidates": [
+        {
+          "id": "cpython-3.6.5-pytest-5.4.3-linux-x86_64",
+          "pytest_version": "5.4.3",
+          "python_version": "3.6.5",
+          "reason": "INCOMPATIBLE_PYTHON_RANGE",
+          "reasons": [
+            {
+              "detail": "3.6.5",
+              "reason": "INCOMPATIBLE_PYTHON_RANGE"
+            },
+            {
+              "detail": "flit_scm",
+              "installed_pin": null,
+              "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED"
+            },
+            {
+              "detail": "typing-extensions>=4.6.0; python_version < \"3.13\"",
+              "installed_pin": "4.1.1",
+              "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED"
+            },
+            {
+              "detail": "pytest>=6",
+              "installed_pin": "5.4.3",
+              "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED"
+            }
+          ],
+          "status": "REJECTED"
+        },
+        {
+          "id": "cpython-3.12.14-pytest-8.4.1-linux-x86_64",
+          "pytest_version": "8.4.1",
+          "python_version": "3.12.14",
+          "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED",
+          "reasons": [
+            {
+              "detail": "flit_scm",
+              "installed_pin": null,
+              "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED"
+            }
+          ],
+          "status": "UNKNOWN"
+        }
+      ],
+      "provenance": {
+        "admission-v3.json": {
+          "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-000/source-environment/admission-v3.json",
+          "sha256": "a14c3af5494415bb932db3ae5ea2d640d041b6fb293a9bfc6e68ad4b2f2bfc62"
+        },
+        "admission-v42.json": {
+          "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-000/source-environment/admission-v42.json",
+          "sha256": "9fb8f2eac001fe12868c977ce2ce70b656e9e5300d8f7f58d20440bbb14b4fbd"
+        },
+        "admission-v43.json": {
+          "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-000/source-environment/admission-v43.json",
+          "sha256": "cc57d057ae542df16327a04f6f93afa53e51677aaa3ea1a768386c31b89adfdf"
+        },
+        "screening_case": {
+          "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-000/SCREENING_CASE.json",
+          "sha256": "adf41f1de6b002a38b202272766764dbcb9d890721bf6999873685e6d08c67f0"
+        },
+        "selection.json": {
+          "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-000/source-environment/selection.json",
+          "sha256": "f37154b27891c112df4a2eaf0cc3745ef9e1f544f689f089cf6d93118c8d011e"
+        }
+      },
+      "repository": "agronholm/exceptiongroup",
+      "selection_reason": "UNKNOWN_NO_COMPATIBLE_PROFILE",
+      "selection_status": "UNKNOWN",
+      "smallest_obstruction": "UNKNOWN_NO_COMPATIBLE_PROFILE",
+      "status": "UNKNOWN_ENVIRONMENT_SELECTION"
+    },
+    {
+      "eligible": false,
+      "index": 1,
+      "profile_candidates": [
+        {
+          "id": "cpython-3.6.5-pytest-5.4.3-linux-x86_64",
+          "pytest_version": "5.4.3",
+          "python_version": "3.6.5",
+          "reason": "INCOMPATIBLE_DECLARED_PYTHON",
+          "reasons": [
+            {
+              "detail": "3.6",
+              "reason": "INCOMPATIBLE_DECLARED_PYTHON"
+            },
+            {
+              "detail": "3.6.5",
+              "reason": "INCOMPATIBLE_PYTHON_RANGE"
+            },
+            {
+              "detail": "setuptools>=77",
+              "installed_pin": "59.6.0",
+              "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED"
+            },
+            {
+              "detail": "setuptools_scm[toml]>=6.4",
+              "installed_pin": null,
+              "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED"
+            },
+            {
+              "detail": "setuptools_scm[toml]>=6.4",
+              "reason": "UNKNOWN_EXTRA_DEPENDENCY_METADATA"
+            },
+            {
+              "detail": "coverage[toml]>=7",
+              "installed_pin": null,
+              "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED"
+            },
+            {
+              "detail": "coverage[toml]>=7",
+              "reason": "UNKNOWN_EXTRA_DEPENDENCY_METADATA"
+            },
+            {
+              "detail": "mypy>=1.2.0; platform_python_implementation != \"PyPy\"",
+              "installed_pin": null,
+              "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED"
+            },
+            {
+              "detail": "pytest>=7",
+              "installed_pin": "5.4.3",
+              "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED"
+            },
+            {
+              "detail": "typing_extensions>=4.14.0",
+              "installed_pin": "4.1.1",
+              "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED"
+            }
+          ],
+          "status": "REJECTED"
+        },
+        {
+          "id": "cpython-3.12.14-pytest-8.4.1-linux-x86_64",
+          "pytest_version": "8.4.1",
+          "python_version": "3.12.14",
+          "reason": null,
+          "reasons": [],
+          "status": "COMPATIBLE"
+        }
+      ],
+      "provenance": {
+        "admission-v3.json": {
+          "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/admission-v3.json",
+          "sha256": "aaa231a19a2c9770256503b5fd73413dca54ece95259d19b8978357abb511468"
+        },
+        "admission-v42.json": {
+          "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/admission-v42.json",
+          "sha256": "3b8a4f52265a11f9cf6b121b073f106d47abd0a12ffc33dbf48a990b271afb75"
+        },
+        "admission-v43.json": {
+          "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/admission-v43.json",
+          "sha256": "b814e3890a7c78e7b16755600600afc2976905fff78c77e0e25d4b3fdf9a69d3"
+        },
+        "screening_case": {
+          "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/SCREENING_CASE.json",
+          "sha256": "b776e7dba0bba4ed3ef1475174103c8dbfdd835cb4c3e7c2bd82346929f486bd"
+        },
+        "selection.json": {
+          "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/selection.json",
+          "sha256": "a264f133e2b38cc0db9c558bd4d0c5776d955d912008d53c3bfb5e4c76dbc630"
+        }
+      },
+      "repository": "agronholm/typeguard",
+      "selection_reason": null,
+      "selection_status": "CANDIDATE_SOURCE_ENVIRONMENT",
+      "smallest_obstruction": "UNKNOWN_SKIPPED_OR_XFAIL",
+      "status": "UNKNOWN_SKIPPED_OR_XFAIL"
+    },
+    {
+      "eligible": false,
+      "index": 2,
+      "profile_candidates": [
+        {
+          "id": "cpython-3.6.5-pytest-5.4.3-linux-x86_64",
+          "pytest_version": "5.4.3",
+          "python_version": "3.6.5",
+          "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED",
+          "reasons": [
+            {
+              "detail": "Mako",
+              "installed_pin": null,
+              "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED"
+            },
+            {
+              "detail": "jinja2",
+              "installed_pin": null,
+              "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED"
+            }
+          ],
+          "status": "UNKNOWN"
+        },
+        {
+          "id": "cpython-3.12.14-pytest-8.4.1-linux-x86_64",
+          "pytest_version": "8.4.1",
+          "python_version": "3.12.14",
+          "reason": "INCOMPATIBLE_DECLARED_PYTHON",
+          "reasons": [
+            {
+              "detail": "3.12",
+              "reason": "INCOMPATIBLE_DECLARED_PYTHON"
+            },
+            {
+              "detail": "Mako",
+              "installed_pin": null,
+              "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED"
+            },
+            {
+              "detail": "jinja2",
+              "installed_pin": null,
+              "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED"
+            }
+          ],
+          "status": "REJECTED"
+        }
+      ],
+      "provenance": {
+        "admission-v3.json": {
+          "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-002/source-environment/admission-v3.json",
+          "sha256": "44dd6e3a0a97e2f160d7e1462c6630fe12a42bc1e73d148edca80b23188a761a"
+        },
+        "admission-v42.json": {
+          "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-002/source-environment/admission-v42.json",
+          "sha256": "02e79561c0febc2e2c22f18ec62767e60fba631c18f9c91c7faf70c2c5a8f164"
+        },
+        "admission-v43.json": {
+          "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-002/source-environment/admission-v43.json",
+          "sha256": "4d0a9bf2250bacb98f0f67eea8cdc8cabe47e79812940ca6748a5624a9d9c040"
+        },
+        "screening_case": {
+          "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-002/SCREENING_CASE.json",
+          "sha256": "777b89b0ea7f97e8ca28b0d4c54a09f42d6eef86d9d9863a4950f723df64d592"
+        },
+        "selection.json": {
+          "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-002/source-environment/selection.json",
+          "sha256": "e18d2a66f93e12ca3bced6f1606bf13bbe5b4e55a9a14a15bafa9875f271d34d"
+        }
+      },
+      "repository": "bottlepy/bottle",
+      "selection_reason": "UNKNOWN_NO_COMPATIBLE_PROFILE",
+      "selection_status": "UNKNOWN",
+      "smallest_obstruction": "UNKNOWN_NO_COMPATIBLE_PROFILE",
+      "status": "UNKNOWN_ENVIRONMENT_SELECTION"
+    },
+    {
+      "eligible": false,
+      "index": 3,
+      "profile_candidates": [
+        {
+          "id": "cpython-3.6.5-pytest-5.4.3-linux-x86_64",
+          "reason": "UNKNOWN_DYNAMIC_METADATA",
+          "reasons": [
+            {
+              "detail": "reimported setup authority binding",
+              "reason": "UNKNOWN_DYNAMIC_METADATA"
+            }
+          ],
+          "status": "UNKNOWN"
+        },
+        {
+          "id": "cpython-3.12.14-pytest-8.4.1-linux-x86_64",
+          "reason": "UNKNOWN_DYNAMIC_METADATA",
+          "reasons": [
+            {
+              "detail": "reimported setup authority binding",
+              "reason": "UNKNOWN_DYNAMIC_METADATA"
+            }
+          ],
+          "status": "UNKNOWN"
+        }
+      ],
+      "provenance": {
+        "admission-v3.json": {
+          "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-003/source-environment/admission-v3.json",
+          "sha256": "f8b6d8a8425696f95103d58b462361638733b12afb8e5c8969e80a63fce09cb9"
+        },
+        "admission-v42.json": {
+          "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-003/source-environment/admission-v42.json",
+          "sha256": "6cce29c100377f96503e43f3dad3cc2b29ad8ec3fd305493d4ad7f0eeff0bc90"
+        },
+        "admission-v43.json": {
+          "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-003/source-environment/admission-v43.json",
+          "sha256": "3d1eb3e38688ae8727ca0361af0331320ba725604cfe602dae0669d571444ac9"
+        },
+        "screening_case": {
+          "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-003/SCREENING_CASE.json",
+          "sha256": "7ce651eca0a4362705e141ad2a0ca30c38b6dd54251c12097a58f743fee8cc26"
+        },
+        "selection.json": {
+          "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-003/source-environment/selection.json",
+          "sha256": "cc9486eae3e6abc2d766f97d0bc9c1fb18ae30e7589e05c1d9fced32b477c8fe"
+        }
+      },
+      "repository": "dabeaz/ply",
+      "selection_reason": "UNKNOWN_DYNAMIC_METADATA",
+      "selection_status": "UNKNOWN",
+      "smallest_obstruction": "UNKNOWN_DYNAMIC_METADATA",
+      "status": "UNKNOWN_ENVIRONMENT_SELECTION"
+    },
+    {
+      "eligible": false,
+      "index": 4,
+      "profile_candidates": [
+        {
+          "id": "cpython-3.6.5-pytest-5.4.3-linux-x86_64",
+          "reason": "UNKNOWN_DYNAMIC_METADATA",
+          "reasons": [
+            {
+              "detail": "dynamic environment metadata",
+              "reason": "UNKNOWN_DYNAMIC_METADATA"
+            }
+          ],
+          "status": "UNKNOWN"
+        },
+        {
+          "id": "cpython-3.12.14-pytest-8.4.1-linux-x86_64",
+          "reason": "UNKNOWN_DYNAMIC_METADATA",
+          "reasons": [
+            {
+              "detail": "dynamic environment metadata",
+              "reason": "UNKNOWN_DYNAMIC_METADATA"
+            }
+          ],
+          "status": "UNKNOWN"
+        }
+      ],
+      "provenance": {
+        "admission-v3.json": {
+          "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-004/source-environment/admission-v3.json",
+          "sha256": "c0ff9c559dc528fa25dcf5f6c295f3a4fdd8d17616211d61426950edd4e83f00"
+        },
+        "admission-v42.json": {
+          "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-004/source-environment/admission-v42.json",
+          "sha256": "16bcebf204f4f7dcc7a0f9eaccbe239192cf7eba2329e723ed5775ebde6ec04b"
+        },
+        "admission-v43.json": {
+          "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-004/source-environment/admission-v43.json",
+          "sha256": "aefcb7bcc6f05198804327af3da6a03fec2bed8191bb156572ecb3b510b9b260"
+        },
+        "screening_case": {
+          "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-004/SCREENING_CASE.json",
+          "sha256": "40e45c0c522ef1cb2a8f339057e1f011d47ed87d5169bcc830c1e4c4a8d28064"
+        },
+        "selection.json": {
+          "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-004/source-environment/selection.json",
+          "sha256": "edc7e7a0234dd8c870f1f1ca598bd0b2a961b07d6ee48de787e2675ae41e803a"
+        }
+      },
+      "repository": "facelessuser/wcmatch",
+      "selection_reason": "UNKNOWN_DYNAMIC_METADATA",
+      "selection_status": "UNKNOWN",
+      "smallest_obstruction": "UNKNOWN_DYNAMIC_METADATA",
+      "status": "UNKNOWN_ENVIRONMENT_SELECTION"
+    },
+    {
+      "eligible": false,
+      "index": 5,
+      "profile_candidates": [
+        {
+          "id": "cpython-3.6.5-pytest-5.4.3-linux-x86_64",
+          "reason": "UNKNOWN_DYNAMIC_METADATA",
+          "reasons": [
+            {
+              "detail": "reimported setup authority binding",
+              "reason": "UNKNOWN_DYNAMIC_METADATA"
+            }
+          ],
+          "status": "UNKNOWN"
+        },
+        {
+          "id": "cpython-3.12.14-pytest-8.4.1-linux-x86_64",
+          "reason": "UNKNOWN_DYNAMIC_METADATA",
+          "reasons": [
+            {
+              "detail": "reimported setup authority binding",
+              "reason": "UNKNOWN_DYNAMIC_METADATA"
+            }
+          ],
+          "status": "UNKNOWN"
+        }
+      ],
+      "provenance": {
+        "admission-v3.json": {
+          "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-005/source-environment/admission-v3.json",
+          "sha256": "b8fb5a04fd3491310b11293ae7b1c9b64804fd38948ec511d699b11aa68e4a26"
+        },
+        "admission-v42.json": {
+          "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-005/source-environment/admission-v42.json",
+          "sha256": "0732cca29d452e62f08a57856e20499f54d8e5500590074dd2e42652154a5701"
+        },
+        "admission-v43.json": {
+          "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-005/source-environment/admission-v43.json",
+          "sha256": "bb89707ca9c9cc599dac879d08ced263f0d24d2ac6b6e6f2cfbf22940fd2ecfa"
+        },
+        "screening_case": {
+          "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-005/SCREENING_CASE.json",
+          "sha256": "291045aa3c424f180f98df80f2807de6fddfb4f25918d4affd1c4367ac98da10"
+        },
+        "selection.json": {
+          "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-005/source-environment/selection.json",
+          "sha256": "43e7523ca2b47be951b2cf19f9e7d3a6778fd45768528cb1ba0fbee03194bb0e"
+        }
+      },
+      "repository": "uiri/toml",
+      "selection_reason": "UNKNOWN_DYNAMIC_METADATA",
+      "selection_status": "UNKNOWN",
+      "smallest_obstruction": "UNKNOWN_DYNAMIC_METADATA",
+      "status": "UNKNOWN_ENVIRONMENT_SELECTION"
+    }
+  ],
+  "schema": "UDM_V43_FINAL_INDEPENDENT_SCREENING_DIAGNOSTIC_SUMMARY_V1",
+  "screening_audit": {
+    "path": "/workspace/qualification/native-frontier-v43-operator/independent-audit/SCREENING_AUDIT.json",
+    "sha256": "96639066acc2f5f0d38296c136451fbcd1b04f5c6ffe9b405302c957452ea3df",
+    "status": "PASS_ADMISSION_ONLY_SCREENING_AUDIT"
+  },
+  "source_index_closure": {
+    "boundary": "From raw pre-native snapshots through all actual native source admissions and the supplied-run offline audit; deliberate later owned-branch commits are outside this immutable interval.",
+    "file_counts_exact": {
+      "development": 976,
+      "flash": 262,
+      "metatron": 130,
+      "root": 2594
+    },
+    "index_changes": {
+      "development": [],
+      "flash": [],
+      "metatron": [],
+      "root": []
+    },
+    "index_restoration": false,
+    "native_reruns": 0,
+    "path": "/workspace/qualification/native-frontier-v43-operator/SOURCE_INDEX_AFTER_SCREENING_AND_AUDIT.json",
+    "sha256": "e74f7996fe011fbee91c20484786393602b3032d817016294ea82b8d3521040a",
+    "source_commit": "b0d389cf72f802c2b3ad99899644b802d4b41ea5",
+    "status": "PASS_UNCHANGED_SOURCE_AND_INDEXES"
+  },
+  "status": "AUDITED_SCREENING_SHORTFALL_ZERO_ELIGIBLE"
+}

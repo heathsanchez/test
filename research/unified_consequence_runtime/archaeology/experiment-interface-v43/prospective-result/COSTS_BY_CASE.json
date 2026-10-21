@@ -1,0 +1,3407 @@
+{
+  "schema": "UDM_V43_INDEPENDENT_SCREENING_COST_SUMMARY_V1",
+  "cases": [
+    {
+      "index": 0,
+      "repository": "agronholm/exceptiongroup",
+      "native_controller_attempts": {
+        "collection_calls": 0,
+        "native_calls": 0,
+        "subprocess_attempts": 0
+      },
+      "case_inclusive_wall_seconds": 1.9536486510005489,
+      "setup_inclusive_wall_seconds": 1.9399290370001836,
+      "setup_phase_seconds_sum": 1.8760190669981966,
+      "setup_phases": [
+        {
+          "native_calls": 0,
+          "phase": "external-runtime-preflight",
+          "seconds": 1.237126003999947,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "init",
+            "-q",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-000/source-environment/metadata-source"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-000/source-environment/metadata-init.log",
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "phase": "metadata-init",
+          "seconds": 0.0078107829995133216,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-000/source-environment/metadata-source",
+            "fetch",
+            "--depth=1",
+            "--no-tags",
+            "https://github.com/agronholm/exceptiongroup.git",
+            "2cba84352c3f01e8af2f37bf102d0dd515e15dc0"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-000/source-environment/metadata-fetch.log",
+          "log_sha256": "e32ef3a62f2750858febd21415e1c05f8e2e9430064e905b0e2d9a3f3fcdccf5",
+          "phase": "metadata-fetch",
+          "seconds": 0.5652294819992676,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-000/source-environment/metadata-source",
+            "checkout",
+            "-q",
+            "--detach",
+            "2cba84352c3f01e8af2f37bf102d0dd515e15dc0"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-000/source-environment/metadata-checkout.log",
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "phase": "metadata-checkout",
+          "seconds": 0.007771234999381704,
+          "status": "PASS"
+        },
+        {
+          "native_calls": 0,
+          "phase": "independent-metadata-selection",
+          "seconds": 0.058081563000087044,
+          "status": "UNKNOWN"
+        }
+      ],
+      "original_base_wheel_attempts": 0,
+      "original_base_wheel_seconds": 0,
+      "original_base_wheel_statuses": [],
+      "v43_build_costs": {
+        "build_calls": 0,
+        "build_seconds": 0.0,
+        "coverage": "V43 builder launches and generated-build verification attempts in this screening interval; parent wall time includes provisioning, host checks and independent oracle work. Original native counters and ceilings are unchanged; build seconds are included in parent wall time.",
+        "inclusive_parent_wall_seconds": 1.9536486510005489,
+        "verification_attempts": 0
+      },
+      "machine_costs": [
+        {
+          "phase": "persistence_and_reclosure",
+          "seconds": 0.00013172400031180587
+        },
+        {
+          "phase": "persistence_and_reclosure",
+          "seconds": 0.0011795540012826677
+        },
+        {
+          "authority_record": "303ba62f5c671df78421aa6051f27ca33cfe593171595e87f20a47c0627a4540",
+          "closure_agrees": true,
+          "phase": "original_research_authority_initialization",
+          "seconds": 0.001277650000702124
+        },
+        {
+          "phase": "persistence_and_reclosure",
+          "seconds": 0.0013389400010055397
+        },
+        {
+          "builder_attempts_after": {
+            "build_calls": 0,
+            "build_seconds": 0.0,
+            "records": []
+          },
+          "builder_attempts_before": {
+            "build_calls": 0,
+            "build_seconds": 0.0,
+            "records": []
+          },
+          "inclusive_not_additive": true,
+          "output": "/workspace/qualification/native-frontier-v43-operator/screening/case-000/environment-v43-attempts/a2936e2ab6cfd0c58046fd9727ed1cfd",
+          "phase": "native_environment_v43_handoff",
+          "seconds": 1.949515437001537,
+          "status": "UNKNOWN_ENVIRONMENT_SELECTION"
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "repository": "agronholm/typeguard",
+      "native_controller_attempts": {
+        "collection_calls": 4,
+        "native_calls": 2,
+        "subprocess_attempts": 6
+      },
+      "case_inclusive_wall_seconds": 52.917096770999706,
+      "setup_inclusive_wall_seconds": 25.515210227000352,
+      "setup_phase_seconds_sum": 21.241161334004573,
+      "setup_phases": [
+        {
+          "native_calls": 0,
+          "phase": "external-runtime-preflight",
+          "seconds": 1.2707687940001051,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "init",
+            "-q",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/metadata-source"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/metadata-init.log",
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "phase": "metadata-init",
+          "seconds": 0.007847419999961858,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/metadata-source",
+            "fetch",
+            "--depth=1",
+            "--no-tags",
+            "https://github.com/agronholm/typeguard.git",
+            "ff2b88b1c65f8828a178b4b2fffacd529cc76b26"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/metadata-fetch.log",
+          "log_sha256": "3c934377b53e2c84b05ee44dc02c2bc71f6a49d9c88d34e1bee133deb64958f9",
+          "phase": "metadata-fetch",
+          "seconds": 0.6655678590013849,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/metadata-source",
+            "checkout",
+            "-q",
+            "--detach",
+            "ff2b88b1c65f8828a178b4b2fffacd529cc76b26"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/metadata-checkout.log",
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "phase": "metadata-checkout",
+          "seconds": 0.007739668999420246,
+          "status": "PASS"
+        },
+        {
+          "native_calls": 0,
+          "phase": "independent-metadata-selection",
+          "seconds": 0.057523359999322565,
+          "status": "CANDIDATE_SOURCE_ENVIRONMENT"
+        },
+        {
+          "native_calls": 0,
+          "phase": "independent-runtime-identity",
+          "seconds": 0.560756669001421,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "init",
+            "-q",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/git-init.log",
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "phase": "git-init",
+          "seconds": 0.007741032999547315,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "fetch",
+            "--depth=1",
+            "--no-tags",
+            "https://github.com/agronholm/typeguard.git",
+            "ff2b88b1c65f8828a178b4b2fffacd529cc76b26"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/base-fetch.log",
+          "log_sha256": "3c934377b53e2c84b05ee44dc02c2bc71f6a49d9c88d34e1bee133deb64958f9",
+          "phase": "base-fetch",
+          "seconds": 0.6153728389999742,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "-c",
+            "core.autocrlf=false",
+            "checkout",
+            "-q",
+            "--detach",
+            "ff2b88b1c65f8828a178b4b2fffacd529cc76b26"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/base-checkout.log",
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "phase": "base-checkout",
+          "seconds": 0.007763744999465416,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "fetch",
+            "--unshallow",
+            "--no-tags",
+            "https://github.com/agronholm/typeguard.git",
+            "ff2b88b1c65f8828a178b4b2fffacd529cc76b26"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/base-ancestry-fetch.log",
+          "log_sha256": "3c934377b53e2c84b05ee44dc02c2bc71f6a49d9c88d34e1bee133deb64958f9",
+          "phase": "base-ancestry-fetch",
+          "seconds": 0.7155832250009553,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-list",
+            "ff2b88b1c65f8828a178b4b2fffacd529cc76b26"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/base-ancestor-commits.log",
+          "log_sha256": "dc81bbe3ca5090bab407d34cc768496cb4c741d7db642752b5ece576e2ce8e0d",
+          "phase": "base-ancestor-commits",
+          "seconds": 0.007704821000515949,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "ls-remote",
+            "--tags",
+            "https://github.com/agronholm/typeguard.git"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/remote-tag-metadata.log",
+          "log_sha256": "b4f285b18866033ae0208e04159ce0c146b2917668986b027ec8ee94b595d778",
+          "phase": "remote-tag-metadata",
+          "seconds": 0.4651929170013318,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "fetch",
+            "--no-tags",
+            "https://github.com/agronholm/typeguard.git",
+            "a570ce32e50977fd974a4caf8b1e01c1e86f954a:refs/tags/1.0.0",
+            "baacef9030c430532fbfdac26b1d3ee374f32fda:refs/tags/1.0.1",
+            "9394c1ef0a985df4de9cddcf64cfcaa28dc8d6ac:refs/tags/1.0.2",
+            "294022750c7e955ddbe9f6c51eeccc41ca97be08:refs/tags/1.1.0",
+            "b6056c00e07b9bf7f697fd31884dfe0696f2f9f8:refs/tags/1.1.1",
+            "680e77be5581efdabb4a50fc8808fe2fb20295e2:refs/tags/1.1.2",
+            "e98db7a881a533c4b70c4455b8ebf3826dabb7cb:refs/tags/1.1.3",
+            "849a664362bcbad4230f879a7bbcc2f82477bea0:refs/tags/1.2.0",
+            "8a07cd6e9fd1119c5775ede1a5de1633628344de:refs/tags/1.2.1",
+            "a400753ef2602f2b593adb961f6489d1d4e42321:refs/tags/1.2.2",
+            "7406e8985c506d7d62e3beda39be9d8dc652b351:refs/tags/1.2.3",
+            "ef04adb5e98e728d82c0c0f9b5a01f0736f1bc66:refs/tags/2.0.0",
+            "23d63ed8a58c5a8e2c9c9c03eadf00fd382aea62:refs/tags/2.0.1",
+            "797528c13e8b7a13cdcbf55226d63f4470ffc06d:refs/tags/2.0.2",
+            "2063acc78a68e4447e58b277458fe2cfffcc26c2:refs/tags/2.1.0",
+            "2dbb5923f8c6807362e08ed67aca192def2f50b7:refs/tags/2.1.1",
+            "f8f0c7c0f87bc895a250151d0137f40b6e9a4a38:refs/tags/2.1.2",
+            "8fa988ae8fca32d8f64b196573670ba13b5dc571:refs/tags/2.1.3",
+            "389c3b9f618af7b5ff45957d39637bd470b221a0:refs/tags/2.1.4",
+            "419992f49f6f0481686d28214eda5b6ff5473387:refs/tags/2.10.0",
+            "b3cec2f966b4d8af188aa1a34fd01aed287e32ff:refs/tags/2.11.0",
+            "56e44c3558e51d564db1b34e8ff606cfb0eeb3f5:refs/tags/2.11.1",
+            "abcaa5d6f34eaddd4f5cd1ab1c16c853554eaf6c:refs/tags/2.12.0",
+            "f1e1a916b2cee0b71e14eac03542c258356a9029:refs/tags/2.12.1",
+            "98fefd0c62867c0a80dfd8e5fa9b4727b9ae29fa:refs/tags/2.13.0",
+            "2516f186473a4f1b70f8f438fac2fd7729a55741:refs/tags/2.13.1",
+            "4615f19cbdd5059673c763d412707dda40388974:refs/tags/2.13.2",
+            "de6ab051309ba74a0a27840f8172697c8778ae4f:refs/tags/2.13.3",
+            "6c999ba543ef6e4aab9b76c1d4f758b9fb22176b:refs/tags/2.2.0",
+            "e54bbebdf7991a64057feede840d02236ed46424:refs/tags/2.2.1",
+            "4f5a591a112c06645f28d0e9ebf9244b5e773cae:refs/tags/2.2.2",
+            "c51ff83f4b744ab5d799b40cb0d098288f879f66:refs/tags/2.3.0",
+            "e1b17dd4f2a44da9ccbfc3c69476fdb58c48d69c:refs/tags/2.3.1",
+            "c86ccc23d70f58a7f74d3aaf22f6cb3aa22a4315:refs/tags/2.4.0",
+            "9d113b08bc06a76f00a7636b55b3a5879e8b098b:refs/tags/2.4.1",
+            "40d78cb7c09bcd2ab08989053816619db713d8c2:refs/tags/2.5.0",
+            "0c3f1aed651c5c6d46b6d6d7a134bc4d5d5083a7:refs/tags/2.5.1",
+            "d1f2412a8b5d94c813b2a05abd14c4d1186f5dbd:refs/tags/2.6.0",
+            "01e0004c81c4bbc8d2779cc99592d9c3f4e1b95a:refs/tags/2.6.1",
+            "1faec9d930c2b0f9bde841525703a35e8de834c1:refs/tags/2.7.0",
+            "7507ca9601280b294a2678c62d8feb06d783ea78:refs/tags/2.7.1",
+            "cfb06d8d05b401737bfe7e656f1f501418ca91a2:refs/tags/2.8.0",
+            "0cdef35c5d6314dd807479bdb521386774902494:refs/tags/2.9.0",
+            "0c7d1e7df87e3cf8de6e407e2ee04df21691280d:refs/tags/2.9.1",
+            "f54e1db919c66c45398425c0d6b25cb19383d441:refs/tags/3.0.0",
+            "3df408d0fd8f6c8ea6313172d193cde0e7810937:refs/tags/3.0.0b1",
+            "8968e45deb10df8e5e3c56aad7d14d86513310a0:refs/tags/3.0.0b2",
+            "94939318fe53575fd0f17d38f2254ac8dc27f8d5:refs/tags/3.0.0rc1",
+            "c520405a64eeb4c8c363526050af4da98202f073:refs/tags/3.0.0rc2",
+            "55dec696278f8780de4a26cee7f3631ebe750ac6:refs/tags/3.0.1",
+            "db7771024eb2f6eba03c3954f8abe0f03bded3c2:refs/tags/3.0.2",
+            "d75b521467bc62716f7b20f0ae95875f5feeb4e8:refs/tags/4.0.0rc1",
+            "a1e574dbbe935ab8510c0d1b3078b85756080eac:refs/tags/4.0.0rc2",
+            "1bbe094a493b75ea57ce178380bb8ba3d3b7a60d:refs/tags/4.0.0rc3",
+            "5f2583b84f24e6883fd08e982f1cedbeaa6d7d9b:refs/tags/4.0.0rc4",
+            "a6a9b715a753decf120a1bb571815165daa7ebf4:refs/tags/4.0.0rc5",
+            "668d2a02bfea49bbf4f0849c6d050ce731843a71:refs/tags/4.0.0rc6",
+            "cc5cc54e733d472fda6f805525908e43465a6d05:refs/tags/4.0.1",
+            "fe7cf07f2a941127d5689f1b6efe1ff64cae580c:refs/tags/4.1.0",
+            "ee3e1f3c64202a252b91f969ffc0551f74d29d2d:refs/tags/4.1.1",
+            "d7a705e329529456898265d94adbdafed0c4c22c:refs/tags/4.1.2",
+            "3110420f2706fc1871d6cd2f1d0cefc0a529491d:refs/tags/4.1.3",
+            "b10b9b2b048752c89d5274df4479e8ac4e596ca1:refs/tags/4.1.4",
+            "fa5f6755f303e9c36494d8e7a293b22dff7c4f58:refs/tags/4.1.5",
+            "5eae2642c8859bc8706d80c55cb99c3740921332:refs/tags/4.2.0",
+            "b707a58b3b83e1fb1d2ce38457b6abc157201295:refs/tags/4.2.1",
+            "016f8139f5a0a63147d68df9558cc5584cd2c49a:refs/tags/4.3.0",
+            "efa1166c85be9a1280090fea9c287b5e4e9f3830:refs/tags/4.4.0",
+            "cb42103a35abdfce2737d4eb58ed3d0e7f067b4a:refs/tags/4.4.1",
+            "7f63619e75a2500fb150c12a75d7da1003acbf0e:refs/tags/4.4.2",
+            "d80f56645c04aff7a78d0672d1b7955fe1f7a41a:refs/tags/4.4.3",
+            "f16f4ae59d5140ad0eccf578a0332060749cddaa:refs/tags/4.4.4",
+            "85bf35bf6ba5612b9a978e5906be06370b65e3db:refs/tags/4.5.0",
+            "67cae3dc3b3984a1a0e87389937fe118ed6b4328:refs/tags/4.5.1"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/ancestor-tags-fetch.log",
+          "log_sha256": "279705176bb35fe36cb9a0e3164ab574a7db274c8c95be2fb950e7e98bffc214",
+          "phase": "ancestor-tags-fetch",
+          "seconds": 0.015863801998420968,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/1.0.0"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-0.log",
+          "log_sha256": "3304f0efc5d56b052b2c76638a45f5e2950f2e02299d861ee60b6f643be4cfd6",
+          "phase": "tag-object-0",
+          "seconds": 0.003487370000584633,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/1.0.0^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-0.log",
+          "log_sha256": "3304f0efc5d56b052b2c76638a45f5e2950f2e02299d861ee60b6f643be4cfd6",
+          "phase": "tag-target-0",
+          "seconds": 0.003579131000151392,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/1.0.1"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-1.log",
+          "log_sha256": "f56770f1ba9cf98379201c8c1965ccdb04cfd6254b3bb8e17e2dd7167d929acb",
+          "phase": "tag-object-1",
+          "seconds": 0.0036954530005459674,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/1.0.1^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-1.log",
+          "log_sha256": "f56770f1ba9cf98379201c8c1965ccdb04cfd6254b3bb8e17e2dd7167d929acb",
+          "phase": "tag-target-1",
+          "seconds": 0.0035256970004411414,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/1.0.2"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-2.log",
+          "log_sha256": "67a8a64f087b4f54469ce6eb3a418c4613ce66696153d91df52f55e7c0b972b7",
+          "phase": "tag-object-2",
+          "seconds": 0.0034543510009825695,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/1.0.2^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-2.log",
+          "log_sha256": "67a8a64f087b4f54469ce6eb3a418c4613ce66696153d91df52f55e7c0b972b7",
+          "phase": "tag-target-2",
+          "seconds": 0.0034151029994973214,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/1.1.0"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-3.log",
+          "log_sha256": "18fdb41f468e522f368fcae8a9b2adf4c087b3d196e47577193661cca60bab1f",
+          "phase": "tag-object-3",
+          "seconds": 0.0036304710010881536,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/1.1.0^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-3.log",
+          "log_sha256": "18fdb41f468e522f368fcae8a9b2adf4c087b3d196e47577193661cca60bab1f",
+          "phase": "tag-target-3",
+          "seconds": 0.003450485000939807,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/1.1.1"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-4.log",
+          "log_sha256": "113379ef98b52f38c3a5438acac762d5c308845124205da53039a7c92a668490",
+          "phase": "tag-object-4",
+          "seconds": 0.0034317429999646265,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/1.1.1^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-4.log",
+          "log_sha256": "113379ef98b52f38c3a5438acac762d5c308845124205da53039a7c92a668490",
+          "phase": "tag-target-4",
+          "seconds": 0.0034716959999059327,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/1.1.2"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-5.log",
+          "log_sha256": "258416a7aa2fb4d90577cc12f09cf5929aa52949a590b28a3f7e1ea9f6b3afb1",
+          "phase": "tag-object-5",
+          "seconds": 0.003414292001252761,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/1.1.2^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-5.log",
+          "log_sha256": "258416a7aa2fb4d90577cc12f09cf5929aa52949a590b28a3f7e1ea9f6b3afb1",
+          "phase": "tag-target-5",
+          "seconds": 0.0034248870015289867,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/1.1.3"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-6.log",
+          "log_sha256": "029fefcb9505f81bef51bb6ca1ff5909923e33a9c28e95f2f36bfedb1856f428",
+          "phase": "tag-object-6",
+          "seconds": 0.003444808000494959,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/1.1.3^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-6.log",
+          "log_sha256": "029fefcb9505f81bef51bb6ca1ff5909923e33a9c28e95f2f36bfedb1856f428",
+          "phase": "tag-target-6",
+          "seconds": 0.003482527999949525,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/1.2.0"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-7.log",
+          "log_sha256": "ff90f42a7e49520fea36142e9b33aca16d62146c6eb90ba84a4881dca3fd2bba",
+          "phase": "tag-object-7",
+          "seconds": 0.003633581000030972,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/1.2.0^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-7.log",
+          "log_sha256": "ff90f42a7e49520fea36142e9b33aca16d62146c6eb90ba84a4881dca3fd2bba",
+          "phase": "tag-target-7",
+          "seconds": 0.0034377560004941188,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/1.2.1"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-8.log",
+          "log_sha256": "34f62f574a9753f028da36b7afd489f849e41324451471f10ed9abf8e74fa789",
+          "phase": "tag-object-8",
+          "seconds": 0.0035258019997854717,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/1.2.1^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-8.log",
+          "log_sha256": "34f62f574a9753f028da36b7afd489f849e41324451471f10ed9abf8e74fa789",
+          "phase": "tag-target-8",
+          "seconds": 0.003459069001110038,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/1.2.2"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-9.log",
+          "log_sha256": "bc1aca5b15623fb98f031da194b3f25ab0f373ad2472f070194095f3cbf9df65",
+          "phase": "tag-object-9",
+          "seconds": 0.003446158998485771,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/1.2.2^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-9.log",
+          "log_sha256": "bc1aca5b15623fb98f031da194b3f25ab0f373ad2472f070194095f3cbf9df65",
+          "phase": "tag-target-9",
+          "seconds": 0.0034518820011726348,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/1.2.3"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-10.log",
+          "log_sha256": "a67627986360e01bfb0b070da728695c4d649653a69f2d7e8f5cefe4100e7f80",
+          "phase": "tag-object-10",
+          "seconds": 0.003433990999837988,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/1.2.3^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-10.log",
+          "log_sha256": "a67627986360e01bfb0b070da728695c4d649653a69f2d7e8f5cefe4100e7f80",
+          "phase": "tag-target-10",
+          "seconds": 0.0034715659985522507,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.0.0"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-11.log",
+          "log_sha256": "afbb55c4ebd571711f82202ed671a905140200c6462810b687859d092623550e",
+          "phase": "tag-object-11",
+          "seconds": 0.003451376998782507,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.0.0^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-11.log",
+          "log_sha256": "afbb55c4ebd571711f82202ed671a905140200c6462810b687859d092623550e",
+          "phase": "tag-target-11",
+          "seconds": 0.003493189000437269,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.0.1"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-12.log",
+          "log_sha256": "3d38dfa2a5bec0a48b10ea9f11b09a7b0994c215e938a0284670f7daa0765011",
+          "phase": "tag-object-12",
+          "seconds": 0.003449072999501368,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.0.1^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-12.log",
+          "log_sha256": "3d38dfa2a5bec0a48b10ea9f11b09a7b0994c215e938a0284670f7daa0765011",
+          "phase": "tag-target-12",
+          "seconds": 0.0034660479996091453,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.0.2"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-13.log",
+          "log_sha256": "2658b4cae8882f93190d61d299bfeaaa0c4b6d560c56f0a74b7b1b026a81ea97",
+          "phase": "tag-object-13",
+          "seconds": 0.0035258970001450507,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.0.2^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-13.log",
+          "log_sha256": "2658b4cae8882f93190d61d299bfeaaa0c4b6d560c56f0a74b7b1b026a81ea97",
+          "phase": "tag-target-13",
+          "seconds": 0.003583002000596025,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.1.0"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-14.log",
+          "log_sha256": "84f8f9f80573beaf28e24e83c8733ef01bc13b38f8d2569c39207700b5738bf1",
+          "phase": "tag-object-14",
+          "seconds": 0.0034598990005179076,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.1.0^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-14.log",
+          "log_sha256": "84f8f9f80573beaf28e24e83c8733ef01bc13b38f8d2569c39207700b5738bf1",
+          "phase": "tag-target-14",
+          "seconds": 0.0034171860006608767,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.1.1"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-15.log",
+          "log_sha256": "ee341d39970797103d19e440dd0e9d79067364bcc99ff7944fb7ab8c86b4055d",
+          "phase": "tag-object-15",
+          "seconds": 0.00345282899979793,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.1.1^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-15.log",
+          "log_sha256": "ee341d39970797103d19e440dd0e9d79067364bcc99ff7944fb7ab8c86b4055d",
+          "phase": "tag-target-15",
+          "seconds": 0.0034491440001147566,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.1.2"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-16.log",
+          "log_sha256": "650f3799d4eb4901f83d655e0508efdd433a19f80dcb068bf9ae7265a7d2e3ab",
+          "phase": "tag-object-16",
+          "seconds": 0.003444967000177712,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.1.2^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-16.log",
+          "log_sha256": "650f3799d4eb4901f83d655e0508efdd433a19f80dcb068bf9ae7265a7d2e3ab",
+          "phase": "tag-target-16",
+          "seconds": 0.0034621619997778907,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.1.3"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-17.log",
+          "log_sha256": "02ea79a6cdd6f4c690a9be699d5589ad2c2d3ed1204b8fc9c750be62156421ae",
+          "phase": "tag-object-17",
+          "seconds": 0.003432899000472389,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.1.3^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-17.log",
+          "log_sha256": "02ea79a6cdd6f4c690a9be699d5589ad2c2d3ed1204b8fc9c750be62156421ae",
+          "phase": "tag-target-17",
+          "seconds": 0.0034387980012979824,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.1.4"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-18.log",
+          "log_sha256": "5a7fc035fdd7f4333b394b37a446d86236d35bf072d8127f1993cd316fa564d5",
+          "phase": "tag-object-18",
+          "seconds": 0.0034586369984026533,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.1.4^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-18.log",
+          "log_sha256": "5a7fc035fdd7f4333b394b37a446d86236d35bf072d8127f1993cd316fa564d5",
+          "phase": "tag-target-18",
+          "seconds": 0.00345140699937474,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.10.0"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-19.log",
+          "log_sha256": "2ada7c75874af61b4d121b177929edee748aac1f952d207e5ac947740e5ce2ed",
+          "phase": "tag-object-19",
+          "seconds": 0.0034127590006391983,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.10.0^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-19.log",
+          "log_sha256": "2ada7c75874af61b4d121b177929edee748aac1f952d207e5ac947740e5ce2ed",
+          "phase": "tag-target-19",
+          "seconds": 0.0034612409999681404,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.11.0"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-20.log",
+          "log_sha256": "467d9c0399f2a10e2665cfcffb967c426c9654242f935a0866d89a53da711512",
+          "phase": "tag-object-20",
+          "seconds": 0.0034389980010018917,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.11.0^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-20.log",
+          "log_sha256": "467d9c0399f2a10e2665cfcffb967c426c9654242f935a0866d89a53da711512",
+          "phase": "tag-target-20",
+          "seconds": 0.0034483620001992676,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.11.1"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-21.log",
+          "log_sha256": "919f63dcd293ebb7c004a95e8c0115bdb062536e999299c03cb17d216a605723",
+          "phase": "tag-object-21",
+          "seconds": 0.0034358030006842455,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.11.1^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-21.log",
+          "log_sha256": "919f63dcd293ebb7c004a95e8c0115bdb062536e999299c03cb17d216a605723",
+          "phase": "tag-target-21",
+          "seconds": 0.003441642998950556,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.12.0"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-22.log",
+          "log_sha256": "7eaca2295710a75faeedfe520bc3dd331194270cd35a35d17af1f820bd992ddf",
+          "phase": "tag-object-22",
+          "seconds": 0.0035159420003765263,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.12.0^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-22.log",
+          "log_sha256": "7eaca2295710a75faeedfe520bc3dd331194270cd35a35d17af1f820bd992ddf",
+          "phase": "tag-target-22",
+          "seconds": 0.0034866189998865593,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.12.1"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-23.log",
+          "log_sha256": "85d6ee86973e5f1f62226c2da2b2c824607ddf7a41c383616af687dff0db3a5b",
+          "phase": "tag-object-23",
+          "seconds": 0.003435975000684266,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.12.1^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-23.log",
+          "log_sha256": "85d6ee86973e5f1f62226c2da2b2c824607ddf7a41c383616af687dff0db3a5b",
+          "phase": "tag-target-23",
+          "seconds": 0.003490043998681358,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.13.0"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-24.log",
+          "log_sha256": "1c340d2b7c65f32011336fd74f414489f49aaf70caaf554664c1a2a0feb2b585",
+          "phase": "tag-object-24",
+          "seconds": 0.0034193889987363946,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.13.0^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-24.log",
+          "log_sha256": "1c340d2b7c65f32011336fd74f414489f49aaf70caaf554664c1a2a0feb2b585",
+          "phase": "tag-target-24",
+          "seconds": 0.0034341709997534053,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.13.1"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-25.log",
+          "log_sha256": "e087080384e418c6da36a3c8d7e3e5a3cf91415cdb5a9db510641b49d59564f4",
+          "phase": "tag-object-25",
+          "seconds": 0.0034547609993751394,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.13.1^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-25.log",
+          "log_sha256": "e087080384e418c6da36a3c8d7e3e5a3cf91415cdb5a9db510641b49d59564f4",
+          "phase": "tag-target-25",
+          "seconds": 0.0034323790005146293,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.13.2"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-26.log",
+          "log_sha256": "2627b6dc6242f23568e1cfe908a33a660e0cdc1ae11c728737c9c0455d91a93e",
+          "phase": "tag-object-26",
+          "seconds": 0.0034398600000713486,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.13.2^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-26.log",
+          "log_sha256": "2627b6dc6242f23568e1cfe908a33a660e0cdc1ae11c728737c9c0455d91a93e",
+          "phase": "tag-target-26",
+          "seconds": 0.0034211719994345913,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.13.3"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-27.log",
+          "log_sha256": "0fbe18d4cc0bc0987c25c81cf2701eac8b711d563b32e0218625978d2e5091e6",
+          "phase": "tag-object-27",
+          "seconds": 0.003403705999517115,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.13.3^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-27.log",
+          "log_sha256": "0fbe18d4cc0bc0987c25c81cf2701eac8b711d563b32e0218625978d2e5091e6",
+          "phase": "tag-target-27",
+          "seconds": 0.0034320380000281148,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.2.0"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-28.log",
+          "log_sha256": "dad143f5ee3833c72debb32f7c0ccc6bb8f600ff9d9b6430765eaaf24398f209",
+          "phase": "tag-object-28",
+          "seconds": 0.0034397599993098993,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.2.0^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-28.log",
+          "log_sha256": "dad143f5ee3833c72debb32f7c0ccc6bb8f600ff9d9b6430765eaaf24398f209",
+          "phase": "tag-target-28",
+          "seconds": 0.0035257359995739534,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.2.1"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-29.log",
+          "log_sha256": "cd2e3635dac2cc130d78b74883b73ea16e1957f60c6c7feefb00ce0dd868abaf",
+          "phase": "tag-object-29",
+          "seconds": 0.0034068509994540364,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.2.1^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-29.log",
+          "log_sha256": "cd2e3635dac2cc130d78b74883b73ea16e1957f60c6c7feefb00ce0dd868abaf",
+          "phase": "tag-target-29",
+          "seconds": 0.003416845000174362,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.2.2"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-30.log",
+          "log_sha256": "81727d18f6c94ffe0a23a89717177bd12a34663d0213976bcfb0465f4d2594d5",
+          "phase": "tag-object-30",
+          "seconds": 0.003430446000493248,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.2.2^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-30.log",
+          "log_sha256": "81727d18f6c94ffe0a23a89717177bd12a34663d0213976bcfb0465f4d2594d5",
+          "phase": "tag-target-30",
+          "seconds": 0.0033922399998118635,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.3.0"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-31.log",
+          "log_sha256": "1f53834374dc31cd6b1c94fd1df5415b5e15bcb55c3ad6ceee4b7909d3cff5b5",
+          "phase": "tag-object-31",
+          "seconds": 0.0034366849995421944,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.3.0^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-31.log",
+          "log_sha256": "1f53834374dc31cd6b1c94fd1df5415b5e15bcb55c3ad6ceee4b7909d3cff5b5",
+          "phase": "tag-target-31",
+          "seconds": 0.0034883009993791347,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.3.1"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-32.log",
+          "log_sha256": "812f9c950f1c2e8e3bb30262c86a38aa813c14dd8e67b0981d6dbac5cccc1449",
+          "phase": "tag-object-32",
+          "seconds": 0.003438948000621167,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.3.1^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-32.log",
+          "log_sha256": "812f9c950f1c2e8e3bb30262c86a38aa813c14dd8e67b0981d6dbac5cccc1449",
+          "phase": "tag-target-32",
+          "seconds": 0.003389884999705828,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.4.0"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-33.log",
+          "log_sha256": "1c8eaf96e42b55cd8364c0a1717e7b97e2d5f847d2757929657693a55e193df4",
+          "phase": "tag-object-33",
+          "seconds": 0.0034405210008117137,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.4.0^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-33.log",
+          "log_sha256": "1c8eaf96e42b55cd8364c0a1717e7b97e2d5f847d2757929657693a55e193df4",
+          "phase": "tag-target-33",
+          "seconds": 0.003442052999162115,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.4.1"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-34.log",
+          "log_sha256": "945d43a519f77b2e2f9e7d7b1f47aa9248925be9b5bda227cdc288bacd3b1f34",
+          "phase": "tag-object-34",
+          "seconds": 0.003399540000827983,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.4.1^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-34.log",
+          "log_sha256": "945d43a519f77b2e2f9e7d7b1f47aa9248925be9b5bda227cdc288bacd3b1f34",
+          "phase": "tag-target-34",
+          "seconds": 0.0034271399999852292,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.5.0"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-35.log",
+          "log_sha256": "e27094b090c5caeeef1c54b99aaa1b7089180b60a8ccf2f47b3fc9a108fa7bcd",
+          "phase": "tag-object-35",
+          "seconds": 0.0036057550005352823,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.5.0^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-35.log",
+          "log_sha256": "e27094b090c5caeeef1c54b99aaa1b7089180b60a8ccf2f47b3fc9a108fa7bcd",
+          "phase": "tag-target-35",
+          "seconds": 0.0034378580003249226,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.5.1"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-36.log",
+          "log_sha256": "9bf744650f5f05062aa0100d2889b8e208deecafafedb2d33c7fdbbf7ee41d07",
+          "phase": "tag-object-36",
+          "seconds": 0.0034562339988042368,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.5.1^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-36.log",
+          "log_sha256": "9bf744650f5f05062aa0100d2889b8e208deecafafedb2d33c7fdbbf7ee41d07",
+          "phase": "tag-target-36",
+          "seconds": 0.003415522998693632,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.6.0"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-37.log",
+          "log_sha256": "82c2d7765f08c9f7a4653a99e887361f305017a20348577a33ceac9810d33f21",
+          "phase": "tag-object-37",
+          "seconds": 0.003453689998423215,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.6.0^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-37.log",
+          "log_sha256": "82c2d7765f08c9f7a4653a99e887361f305017a20348577a33ceac9810d33f21",
+          "phase": "tag-target-37",
+          "seconds": 0.0034622940002009273,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.6.1"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-38.log",
+          "log_sha256": "66d86ce135a02da027ee08b9c645d9ed5a32145b7d76c43afd882d27ef39c6b2",
+          "phase": "tag-object-38",
+          "seconds": 0.0034312370007683057,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.6.1^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-38.log",
+          "log_sha256": "66d86ce135a02da027ee08b9c645d9ed5a32145b7d76c43afd882d27ef39c6b2",
+          "phase": "tag-target-38",
+          "seconds": 0.0034606600002007326,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.7.0"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-39.log",
+          "log_sha256": "2bb6720427790375898f206d4d7de093599eeb6b383fb22b021fac372cc75e05",
+          "phase": "tag-object-39",
+          "seconds": 0.003438327999901958,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.7.0^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-39.log",
+          "log_sha256": "2bb6720427790375898f206d4d7de093599eeb6b383fb22b021fac372cc75e05",
+          "phase": "tag-target-39",
+          "seconds": 0.003390335999938543,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.7.1"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-40.log",
+          "log_sha256": "4adeaaa036b25de25599b1083c7c55c5e138e0f0b3d45468a3f2e69e5d32f452",
+          "phase": "tag-object-40",
+          "seconds": 0.003469354000117164,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.7.1^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-40.log",
+          "log_sha256": "4adeaaa036b25de25599b1083c7c55c5e138e0f0b3d45468a3f2e69e5d32f452",
+          "phase": "tag-target-40",
+          "seconds": 0.0034949910004797857,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.8.0"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-41.log",
+          "log_sha256": "a3d94895e1f1932293b78cf7a4bfb4445549f8cad8b9505d209309fe3c15ddda",
+          "phase": "tag-object-41",
+          "seconds": 0.0034724580000329297,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.8.0^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-41.log",
+          "log_sha256": "a3d94895e1f1932293b78cf7a4bfb4445549f8cad8b9505d209309fe3c15ddda",
+          "phase": "tag-target-41",
+          "seconds": 0.0034062489994539646,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.9.0"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-42.log",
+          "log_sha256": "dd4714c7024dd412c3522d8e33427b2c6941db1e158a1792b101b817a4758572",
+          "phase": "tag-object-42",
+          "seconds": 0.0034478520010452485,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.9.0^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-42.log",
+          "log_sha256": "dd4714c7024dd412c3522d8e33427b2c6941db1e158a1792b101b817a4758572",
+          "phase": "tag-target-42",
+          "seconds": 0.0034031159993901383,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.9.1"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-43.log",
+          "log_sha256": "589cea48e2d6f006065d4c35d75d84e10f865256b737fada849dfd49b5ddcf5f",
+          "phase": "tag-object-43",
+          "seconds": 0.003462053000475862,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/2.9.1^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-43.log",
+          "log_sha256": "589cea48e2d6f006065d4c35d75d84e10f865256b737fada849dfd49b5ddcf5f",
+          "phase": "tag-target-43",
+          "seconds": 0.0034903839987237006,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/3.0.0"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-44.log",
+          "log_sha256": "8b376a46b8ea114cd366778e685c5afaebe88121ef6060b7fcb11bca543c0b4b",
+          "phase": "tag-object-44",
+          "seconds": 0.0034432049997121794,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/3.0.0^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-44.log",
+          "log_sha256": "8b376a46b8ea114cd366778e685c5afaebe88121ef6060b7fcb11bca543c0b4b",
+          "phase": "tag-target-44",
+          "seconds": 0.003417896999962977,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/3.0.0b1"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-45.log",
+          "log_sha256": "976011f694b627644870037128dda6bed427d9343616fe68ee6642f861a0a50e",
+          "phase": "tag-object-45",
+          "seconds": 0.0034392890011076815,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/3.0.0b1^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-45.log",
+          "log_sha256": "976011f694b627644870037128dda6bed427d9343616fe68ee6642f861a0a50e",
+          "phase": "tag-target-45",
+          "seconds": 0.0034601600000314647,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/3.0.0b2"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-46.log",
+          "log_sha256": "4f54c88899bc0963c8f10bd1bfedeb15075f801a453c988fc8d6a4742d70a95b",
+          "phase": "tag-object-46",
+          "seconds": 0.003412559000935289,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/3.0.0b2^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-46.log",
+          "log_sha256": "4f54c88899bc0963c8f10bd1bfedeb15075f801a453c988fc8d6a4742d70a95b",
+          "phase": "tag-target-46",
+          "seconds": 0.003521500000715605,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/3.0.0rc1"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-47.log",
+          "log_sha256": "746a34f2541acf064d55af17d2a798aa535d65df0d90b59dfe9b9237cee4d36b",
+          "phase": "tag-object-47",
+          "seconds": 0.003439730000536656,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/3.0.0rc1^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-47.log",
+          "log_sha256": "746a34f2541acf064d55af17d2a798aa535d65df0d90b59dfe9b9237cee4d36b",
+          "phase": "tag-target-47",
+          "seconds": 0.003412979998756782,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/3.0.0rc2"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-48.log",
+          "log_sha256": "a58b8653899484979b21dc20bb9707d7c44e6e4e49f96453a5eb719c4bd20174",
+          "phase": "tag-object-48",
+          "seconds": 0.0034681510005611926,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/3.0.0rc2^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-48.log",
+          "log_sha256": "a58b8653899484979b21dc20bb9707d7c44e6e4e49f96453a5eb719c4bd20174",
+          "phase": "tag-target-48",
+          "seconds": 0.0034204099993075943,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/3.0.1"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-49.log",
+          "log_sha256": "a64616196a2349b7a133cbbbc410a5c415466a9d40e1db519a9351325edd2bef",
+          "phase": "tag-object-49",
+          "seconds": 0.0034425839985487983,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/3.0.1^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-49.log",
+          "log_sha256": "a64616196a2349b7a133cbbbc410a5c415466a9d40e1db519a9351325edd2bef",
+          "phase": "tag-target-49",
+          "seconds": 0.003453310000622878,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/3.0.2"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-50.log",
+          "log_sha256": "c5fda81dfea70de36a3291ab83f557c67a5d5626acb0c3407f603a4d6b158c44",
+          "phase": "tag-object-50",
+          "seconds": 0.0034379879998596152,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/3.0.2^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-50.log",
+          "log_sha256": "c5fda81dfea70de36a3291ab83f557c67a5d5626acb0c3407f603a4d6b158c44",
+          "phase": "tag-target-50",
+          "seconds": 0.0034092340010829503,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/4.0.0rc1"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-51.log",
+          "log_sha256": "1cc7601d9e967c5a036ffc3c1ae160b0e869c4af04551312a02c0dfca07d40d8",
+          "phase": "tag-object-51",
+          "seconds": 0.0034015729997918243,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/4.0.0rc1^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-51.log",
+          "log_sha256": "1cc7601d9e967c5a036ffc3c1ae160b0e869c4af04551312a02c0dfca07d40d8",
+          "phase": "tag-target-51",
+          "seconds": 0.0034460890001355438,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/4.0.0rc2"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-52.log",
+          "log_sha256": "cd0039fef3d022d8146300adaf537c57d090f26a813d09b58bf5c53c8266e950",
+          "phase": "tag-object-52",
+          "seconds": 0.0034287430007680086,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/4.0.0rc2^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-52.log",
+          "log_sha256": "cd0039fef3d022d8146300adaf537c57d090f26a813d09b58bf5c53c8266e950",
+          "phase": "tag-target-52",
+          "seconds": 0.003400231998966774,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/4.0.0rc3"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-53.log",
+          "log_sha256": "60792e76121b886db56f74e0de7629baba26bb223c823996209107c7b370c303",
+          "phase": "tag-object-53",
+          "seconds": 0.003440270000282908,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/4.0.0rc3^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-53.log",
+          "log_sha256": "60792e76121b886db56f74e0de7629baba26bb223c823996209107c7b370c303",
+          "phase": "tag-target-53",
+          "seconds": 0.00343989900102315,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/4.0.0rc4"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-54.log",
+          "log_sha256": "1d587ab18b68cb72b3bdaf6ac11630cea2ddd6d65ab0d993ff92f7ef07cb51a6",
+          "phase": "tag-object-54",
+          "seconds": 0.0034022029994957848,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/4.0.0rc4^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-54.log",
+          "log_sha256": "1d587ab18b68cb72b3bdaf6ac11630cea2ddd6d65ab0d993ff92f7ef07cb51a6",
+          "phase": "tag-target-54",
+          "seconds": 0.003442843999437173,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/4.0.0rc5"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-55.log",
+          "log_sha256": "39e779ee06111652d30faee1b365285a2c1b5fe9e3496d1a94df3dd7ceb29c90",
+          "phase": "tag-object-55",
+          "seconds": 0.0034116580009140307,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/4.0.0rc5^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-55.log",
+          "log_sha256": "39e779ee06111652d30faee1b365285a2c1b5fe9e3496d1a94df3dd7ceb29c90",
+          "phase": "tag-target-55",
+          "seconds": 0.003389614999832702,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/4.0.0rc6"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-56.log",
+          "log_sha256": "0b35a6a8899a96523c1959fd0b0526507684a05e0ccc59b4a5a8fb146799d1e5",
+          "phase": "tag-object-56",
+          "seconds": 0.0033921790000022156,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/4.0.0rc6^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-56.log",
+          "log_sha256": "0b35a6a8899a96523c1959fd0b0526507684a05e0ccc59b4a5a8fb146799d1e5",
+          "phase": "tag-target-56",
+          "seconds": 0.0034403600002406165,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/4.0.1"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-57.log",
+          "log_sha256": "b3f38098783b97a0df9c4dc8a927de034e63ed556c6734bd07211fae246b86ce",
+          "phase": "tag-object-57",
+          "seconds": 0.0034293240005354164,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/4.0.1^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-57.log",
+          "log_sha256": "b3f38098783b97a0df9c4dc8a927de034e63ed556c6734bd07211fae246b86ce",
+          "phase": "tag-target-57",
+          "seconds": 0.003379110999958357,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/4.1.0"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-58.log",
+          "log_sha256": "74b7f24865e58cf1f49f942aab9009f047515d074022f3fa35b484b2613dda5a",
+          "phase": "tag-object-58",
+          "seconds": 0.0034428540002409136,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/4.1.0^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-58.log",
+          "log_sha256": "74b7f24865e58cf1f49f942aab9009f047515d074022f3fa35b484b2613dda5a",
+          "phase": "tag-target-58",
+          "seconds": 0.003408904000025359,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/4.1.1"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-59.log",
+          "log_sha256": "e44eb7f29bebe1dad43ecfb867afd62c4c1842ff94eee01db6e4cbcd40879480",
+          "phase": "tag-object-59",
+          "seconds": 0.0034496440002840245,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/4.1.1^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-59.log",
+          "log_sha256": "e44eb7f29bebe1dad43ecfb867afd62c4c1842ff94eee01db6e4cbcd40879480",
+          "phase": "tag-target-59",
+          "seconds": 0.0033970069998758845,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/4.1.2"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-60.log",
+          "log_sha256": "7ce6b1800b480bbc9fb6b5f4f48416fcbe5ff7b537f5cace4c8cd94d112f1f5b",
+          "phase": "tag-object-60",
+          "seconds": 0.0033879740003612824,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/4.1.2^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-60.log",
+          "log_sha256": "7ce6b1800b480bbc9fb6b5f4f48416fcbe5ff7b537f5cace4c8cd94d112f1f5b",
+          "phase": "tag-target-60",
+          "seconds": 0.0034389689990348415,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/4.1.3"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-61.log",
+          "log_sha256": "b46b7845877d0a76ceb11835269cc935e563eb5a88a784b7030ee3438a04bcc4",
+          "phase": "tag-object-61",
+          "seconds": 0.003440339998633135,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/4.1.3^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-61.log",
+          "log_sha256": "b46b7845877d0a76ceb11835269cc935e563eb5a88a784b7030ee3438a04bcc4",
+          "phase": "tag-target-61",
+          "seconds": 0.003380801999810501,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/4.1.4"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-62.log",
+          "log_sha256": "e778d6d6d5cb13eed65ff28ada94d0fb0d637d376a0784293511092fcd3fde23",
+          "phase": "tag-object-62",
+          "seconds": 0.0034348619992670137,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/4.1.4^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-62.log",
+          "log_sha256": "e778d6d6d5cb13eed65ff28ada94d0fb0d637d376a0784293511092fcd3fde23",
+          "phase": "tag-target-62",
+          "seconds": 0.0034004520002781646,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/4.1.5"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-63.log",
+          "log_sha256": "fdf8799ffeb070b364be81ee8e5e3405a3cc043b1811dfb8da946b5cf57e7199",
+          "phase": "tag-object-63",
+          "seconds": 0.003400592000616598,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/4.1.5^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-63.log",
+          "log_sha256": "fdf8799ffeb070b364be81ee8e5e3405a3cc043b1811dfb8da946b5cf57e7199",
+          "phase": "tag-target-63",
+          "seconds": 0.003450255000643665,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/4.2.0"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-64.log",
+          "log_sha256": "fe4bde2745913d76cae6864fd9ab02c79fb370ad1f3202edd6d72cc04408d1fa",
+          "phase": "tag-object-64",
+          "seconds": 0.00346244299907994,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/4.2.0^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-64.log",
+          "log_sha256": "fe4bde2745913d76cae6864fd9ab02c79fb370ad1f3202edd6d72cc04408d1fa",
+          "phase": "tag-target-64",
+          "seconds": 0.003410286000871565,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/4.2.1"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-65.log",
+          "log_sha256": "e9025d291afb4d2ab2d4106aad66d6e43781a7b79f9caaa7711805435695b83f",
+          "phase": "tag-object-65",
+          "seconds": 0.0034994889992958633,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/4.2.1^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-65.log",
+          "log_sha256": "e9025d291afb4d2ab2d4106aad66d6e43781a7b79f9caaa7711805435695b83f",
+          "phase": "tag-target-65",
+          "seconds": 0.0033691349999571685,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/4.3.0"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-66.log",
+          "log_sha256": "b45439d315f487dfe71086f1f52185a89dfb401d94303379e69069976565e146",
+          "phase": "tag-object-66",
+          "seconds": 0.0033922689999599243,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/4.3.0^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-66.log",
+          "log_sha256": "b45439d315f487dfe71086f1f52185a89dfb401d94303379e69069976565e146",
+          "phase": "tag-target-66",
+          "seconds": 0.0034522470014053397,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/4.4.0"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-67.log",
+          "log_sha256": "e0926562eeecdc86aeb030f40f1c0d634c8bb1cdabfcd8191d70f9f3d58a9895",
+          "phase": "tag-object-67",
+          "seconds": 0.0035898720016120933,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/4.4.0^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-67.log",
+          "log_sha256": "e0926562eeecdc86aeb030f40f1c0d634c8bb1cdabfcd8191d70f9f3d58a9895",
+          "phase": "tag-target-67",
+          "seconds": 0.003406960999200237,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/4.4.1"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-68.log",
+          "log_sha256": "f5f440a2c5bc8e0d4308b79adc27e21133ddd66b3dc71f2ede013f7a8084f29f",
+          "phase": "tag-object-68",
+          "seconds": 0.003445096999712405,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/4.4.1^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-68.log",
+          "log_sha256": "f5f440a2c5bc8e0d4308b79adc27e21133ddd66b3dc71f2ede013f7a8084f29f",
+          "phase": "tag-target-68",
+          "seconds": 0.0033949429998756386,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/4.4.2"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-69.log",
+          "log_sha256": "a54410a62f32d606624e85036befa0b0f5b4b228e0506ae8177ed91d6491d0c5",
+          "phase": "tag-object-69",
+          "seconds": 0.0033742319992597913,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/4.4.2^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-69.log",
+          "log_sha256": "a54410a62f32d606624e85036befa0b0f5b4b228e0506ae8177ed91d6491d0c5",
+          "phase": "tag-target-69",
+          "seconds": 0.003507519999402575,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/4.4.3"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-70.log",
+          "log_sha256": "98ca09bff688d6a5aa1d3e078527ffb6f0904389ab4c7df9f5e3d6d14bfca1e5",
+          "phase": "tag-object-70",
+          "seconds": 0.0034205310003017075,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/4.4.3^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-70.log",
+          "log_sha256": "98ca09bff688d6a5aa1d3e078527ffb6f0904389ab4c7df9f5e3d6d14bfca1e5",
+          "phase": "tag-target-70",
+          "seconds": 0.00340486800087092,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/4.4.4"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-71.log",
+          "log_sha256": "6b6cd990b10ff9c0be341239ad0cd4d76ca8c31cb26b21a7c30364a175236ce3",
+          "phase": "tag-object-71",
+          "seconds": 0.0034622530001797713,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/4.4.4^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-71.log",
+          "log_sha256": "6b6cd990b10ff9c0be341239ad0cd4d76ca8c31cb26b21a7c30364a175236ce3",
+          "phase": "tag-target-71",
+          "seconds": 0.00340171399875544,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/4.5.0"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-72.log",
+          "log_sha256": "e26637fc16ae695b5d3ab50719060ec549e29abede1f4d82e4afb3cfc42c765e",
+          "phase": "tag-object-72",
+          "seconds": 0.0034472009992896346,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/4.5.0^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-72.log",
+          "log_sha256": "e26637fc16ae695b5d3ab50719060ec549e29abede1f4d82e4afb3cfc42c765e",
+          "phase": "tag-target-72",
+          "seconds": 0.003421202000026824,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/4.5.1"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-object-73.log",
+          "log_sha256": "afcbecae77ab2517c5242b40b175dff2e45e7d9b747540403309b0cbea95cd4a",
+          "phase": "tag-object-73",
+          "seconds": 0.00340770199909457,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "rev-parse",
+            "refs/tags/4.5.1^{}"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/tag-target-73.log",
+          "log_sha256": "afcbecae77ab2517c5242b40b175dff2e45e7d9b747540403309b0cbea95cd4a",
+          "phase": "tag-target-73",
+          "seconds": 0.003435483000430395,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "gh",
+            "api",
+            "repos/agronholm/typeguard/contents/tests/test_checkers.py?ref=f516eb63a078474748eec0b07f80948e2bf9e7ab"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/author-test-0.log",
+          "log_sha256": "7b95318eb551f54675865ab8b11b9249d1e624354e85a35ededb150a5c2b6afb",
+          "phase": "author-test-0",
+          "seconds": 0.5149016240011406,
+          "status": "PASS"
+        },
+        {
+          "phase": "native-suite-authority",
+          "seconds": 0.39015045700034534,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/venv/bin/python",
+            "-m",
+            "venv",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/venv"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/venv.log",
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "phase": "venv",
+          "seconds": 1.5677147480000713,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/venv/bin/python",
+            "-m",
+            "pip",
+            "install",
+            "--disable-pip-version-check",
+            "--no-input",
+            "--no-deps",
+            "ast-serialize==0.13.0",
+            "attrs==25.4.0",
+            "cbor2==5.6.5",
+            "cloudpickle==3.1.2",
+            "coverage==7.10.0",
+            "dnspython==2.9.0",
+            "execnet==2.1.2",
+            "flit_core==4.0.1",
+            "hatch-fancy-pypi-readme==25.1.0",
+            "hatch-vcs==0.5.0",
+            "hatchling==1.27.0",
+            "hypothesis==6.151.9",
+            "immutables==0.21",
+            "iniconfig==2.3.1",
+            "librt==0.16.0",
+            "msgpack==1.1.1",
+            "msgspec==0.19.0",
+            "mypy==2.4.0",
+            "mypy-extensions==1.1.0",
+            "orjson==3.11.3",
+            "packaging==26.3",
+            "pathspec==1.1.1",
+            "pip==25.0.1",
+            "pluggy==1.7.0",
+            "psutil==7.2.2",
+            "py-cpuinfo==9.0.0",
+            "Pygments==2.21.0",
+            "pymongo==4.13.2",
+            "Pympler==1.1",
+            "pytest==8.4.1",
+            "pytest-benchmark==5.1.0",
+            "pytest-cov==6.3.0",
+            "pytest-xdist==3.8.0",
+            "PyYAML==6.0.2",
+            "ruff==0.11.0",
+            "setuptools==84.0.0",
+            "setuptools-git-versioning==3.2.0",
+            "setuptools-scm==10.3.4",
+            "sortedcontainers==2.4.0",
+            "tomli_w==1.2.0",
+            "tomlkit==0.13.3",
+            "trove-classifiers==2026.9.21.13",
+            "typing_extensions==4.14.1",
+            "ujson==5.10.0",
+            "vcs-versioning==2.6.0"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/fixed-packages.log",
+          "log_sha256": "1264e6518ca129b38ea1a00d02469a3e0ee160c76a2b7456db137a7d2d31b2a8",
+          "phase": "fixed-packages",
+          "seconds": 9.38704561600025,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "clone",
+            "--local",
+            "--no-hardlinks",
+            "--no-checkout",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/source",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/base-build"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/base-build-clone.log",
+          "log_sha256": "8270619afceda9c3ce98c2ce2c978023f9aef5b2833539419575f0bc560deea7",
+          "phase": "base-build-clone",
+          "seconds": 0.01614232300016738,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/base-build",
+            "-c",
+            "core.autocrlf=false",
+            "checkout",
+            "-q",
+            "--detach",
+            "ff2b88b1c65f8828a178b4b2fffacd529cc76b26"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/base-build-checkout.log",
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "phase": "base-build-checkout",
+          "seconds": 0.007667352998396382,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/venv/bin/python",
+            "-m",
+            "pip",
+            "wheel",
+            "--disable-pip-version-check",
+            "--no-input",
+            "--no-deps",
+            "--no-build-isolation",
+            "--wheel-dir",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/wheels",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/base-build"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/base-native-wheel.log",
+          "log_sha256": "d31c342cbd11755ba612a37f6f2751384fb2a81e5f3ba7586adbb878c2407c7f",
+          "phase": "base-native-wheel",
+          "seconds": 0.6654490790006093,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/venv/bin/python",
+            "-m",
+            "pip",
+            "install",
+            "--disable-pip-version-check",
+            "--no-input",
+            "--no-deps",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/wheels/typeguard-4.5.1.post1-py3-none-any.whl[test,tests]"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/project.log",
+          "log_sha256": "2438431f1400d91e48f8a1ca542034b2af01d0d172c2151d645ad0d033e95fe3",
+          "phase": "project",
+          "seconds": 0.31471600500117347,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/venv/bin/python",
+            "-m",
+            "pip",
+            "check"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/pip-check.log",
+          "log_sha256": "35bb3d1e4d1d0091788acae77c6d707f1dfb81d2384e34fd54a205f9497ce313",
+          "phase": "pip-check",
+          "seconds": 0.21457249900049646,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/venv/bin/python",
+            "-m",
+            "pip",
+            "freeze",
+            "--all"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/native/pip-freeze.log",
+          "log_sha256": "1d4fab0e8915c72cd860caf4c367db8bfa6b9ff20bd9fefefb5decd50cc437c5",
+          "phase": "pip-freeze",
+          "seconds": 0.21450845599974855,
+          "status": "PASS"
+        },
+        {
+          "phase": "environment-identity",
+          "seconds": 1.477714771999672,
+          "status": "PASS"
+        },
+        {
+          "phase": "external-policy-validation",
+          "seconds": 1.554908528998567,
+          "status": "PASS"
+        }
+      ],
+      "original_base_wheel_attempts": 1,
+      "original_base_wheel_seconds": 0.6654490790006093,
+      "original_base_wheel_statuses": [
+        "PASS"
+      ],
+      "v43_build_costs": {
+        "build_calls": 0,
+        "build_seconds": 0.0,
+        "coverage": "V43 builder launches and generated-build verification attempts in this screening interval; parent wall time includes provisioning, host checks and independent oracle work. Original native counters and ceilings are unchanged; build seconds are included in parent wall time.",
+        "inclusive_parent_wall_seconds": 52.917096770999706,
+        "verification_attempts": 0
+      },
+      "machine_costs": [
+        {
+          "phase": "persistence_and_reclosure",
+          "seconds": 0.00010521500007598661
+        },
+        {
+          "phase": "persistence_and_reclosure",
+          "seconds": 0.0011133480002172291
+        },
+        {
+          "authority_record": "303ba62f5c671df78421aa6051f27ca33cfe593171595e87f20a47c0627a4540",
+          "closure_agrees": true,
+          "phase": "original_research_authority_initialization",
+          "seconds": 0.0012378709998301929
+        },
+        {
+          "phase": "persistence_and_reclosure",
+          "seconds": 0.00139568499980669
+        },
+        {
+          "builder_attempts_after": {
+            "build_calls": 0,
+            "build_seconds": 0.0,
+            "records": []
+          },
+          "builder_attempts_before": {
+            "build_calls": 0,
+            "build_seconds": 0.0,
+            "records": []
+          },
+          "inclusive_not_additive": true,
+          "output": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/environment-v43-attempts/af0aa756c63ff4eb761bdfc7d9b600f6",
+          "phase": "native_environment_v43_handoff",
+          "seconds": 27.188221885999155,
+          "status": "PREPARED"
+        }
+      ]
+    },
+    {
+      "index": 2,
+      "repository": "bottlepy/bottle",
+      "native_controller_attempts": {
+        "collection_calls": 0,
+        "native_calls": 0,
+        "subprocess_attempts": 0
+      },
+      "case_inclusive_wall_seconds": 2.5193415449994063,
+      "setup_inclusive_wall_seconds": 2.505618881999908,
+      "setup_phase_seconds_sum": 1.9931083469982696,
+      "setup_phases": [
+        {
+          "native_calls": 0,
+          "phase": "external-runtime-preflight",
+          "seconds": 1.243674490999183,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "init",
+            "-q",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-002/source-environment/metadata-source"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-002/source-environment/metadata-init.log",
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "phase": "metadata-init",
+          "seconds": 0.007813460000761552,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-002/source-environment/metadata-source",
+            "fetch",
+            "--depth=1",
+            "--no-tags",
+            "https://github.com/bottlepy/bottle.git",
+            "71bb933649ba009cd537c2e973519d6e024c02a2"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-002/source-environment/metadata-fetch.log",
+          "log_sha256": "9463d6697f553caebb1d7eef7bec865af1e72ce947aafc74103da8c9fb4039a0",
+          "phase": "metadata-fetch",
+          "seconds": 0.6655722689993127,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-002/source-environment/metadata-source",
+            "checkout",
+            "-q",
+            "--detach",
+            "71bb933649ba009cd537c2e973519d6e024c02a2"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-002/source-environment/metadata-checkout.log",
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "phase": "metadata-checkout",
+          "seconds": 0.0158496699987154,
+          "status": "PASS"
+        },
+        {
+          "native_calls": 0,
+          "phase": "independent-metadata-selection",
+          "seconds": 0.06019845700029691,
+          "status": "UNKNOWN"
+        }
+      ],
+      "original_base_wheel_attempts": 0,
+      "original_base_wheel_seconds": 0,
+      "original_base_wheel_statuses": [],
+      "v43_build_costs": {
+        "build_calls": 0,
+        "build_seconds": 0.0,
+        "coverage": "V43 builder launches and generated-build verification attempts in this screening interval; parent wall time includes provisioning, host checks and independent oracle work. Original native counters and ceilings are unchanged; build seconds are included in parent wall time.",
+        "inclusive_parent_wall_seconds": 2.5193415449994063,
+        "verification_attempts": 0
+      },
+      "machine_costs": [
+        {
+          "phase": "persistence_and_reclosure",
+          "seconds": 0.0001066170007106848
+        },
+        {
+          "phase": "persistence_and_reclosure",
+          "seconds": 0.0009980970007745782
+        },
+        {
+          "authority_record": "303ba62f5c671df78421aa6051f27ca33cfe593171595e87f20a47c0627a4540",
+          "closure_agrees": true,
+          "phase": "original_research_authority_initialization",
+          "seconds": 0.0010935179998341482
+        },
+        {
+          "phase": "persistence_and_reclosure",
+          "seconds": 0.0013397820002865046
+        },
+        {
+          "builder_attempts_after": {
+            "build_calls": 0,
+            "build_seconds": 0.0,
+            "records": []
+          },
+          "builder_attempts_before": {
+            "build_calls": 0,
+            "build_seconds": 0.0,
+            "records": []
+          },
+          "inclusive_not_additive": true,
+          "output": "/workspace/qualification/native-frontier-v43-operator/screening/case-002/environment-v43-attempts/335fcfe3a91676f8a8516551bac7db67",
+          "phase": "native_environment_v43_handoff",
+          "seconds": 2.5150871009991533,
+          "status": "UNKNOWN_ENVIRONMENT_SELECTION"
+        }
+      ]
+    },
+    {
+      "index": 3,
+      "repository": "dabeaz/ply",
+      "native_controller_attempts": {
+        "collection_calls": 0,
+        "native_calls": 0,
+        "subprocess_attempts": 0
+      },
+      "case_inclusive_wall_seconds": 2.2314537210004346,
+      "setup_inclusive_wall_seconds": 2.2179101740002807,
+      "setup_phase_seconds_sum": 1.9214072649992886,
+      "setup_phases": [
+        {
+          "native_calls": 0,
+          "phase": "external-runtime-preflight",
+          "seconds": 1.2426880889997847,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "init",
+            "-q",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-003/source-environment/metadata-source"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-003/source-environment/metadata-init.log",
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "phase": "metadata-init",
+          "seconds": 0.00784997399932763,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-003/source-environment/metadata-source",
+            "fetch",
+            "--depth=1",
+            "--no-tags",
+            "https://github.com/dabeaz/ply.git",
+            "6860652be4069eaac8be88af1400f69a5197284f"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-003/source-environment/metadata-fetch.log",
+          "log_sha256": "75dbe7dd3900f9c9c34dc79a88e31ea848c6e79bf70bbb0de750c5119471878c",
+          "phase": "metadata-fetch",
+          "seconds": 0.6155143519990816,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-003/source-environment/metadata-source",
+            "checkout",
+            "-q",
+            "--detach",
+            "6860652be4069eaac8be88af1400f69a5197284f"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-003/source-environment/metadata-checkout.log",
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "phase": "metadata-checkout",
+          "seconds": 0.015816922001249623,
+          "status": "PASS"
+        },
+        {
+          "native_calls": 0,
+          "phase": "independent-metadata-selection",
+          "seconds": 0.039537927999845124,
+          "status": "UNKNOWN"
+        }
+      ],
+      "original_base_wheel_attempts": 0,
+      "original_base_wheel_seconds": 0,
+      "original_base_wheel_statuses": [],
+      "v43_build_costs": {
+        "build_calls": 0,
+        "build_seconds": 0.0,
+        "coverage": "V43 builder launches and generated-build verification attempts in this screening interval; parent wall time includes provisioning, host checks and independent oracle work. Original native counters and ceilings are unchanged; build seconds are included in parent wall time.",
+        "inclusive_parent_wall_seconds": 2.2314537210004346,
+        "verification_attempts": 0
+      },
+      "machine_costs": [
+        {
+          "phase": "persistence_and_reclosure",
+          "seconds": 0.00010966300033032894
+        },
+        {
+          "phase": "persistence_and_reclosure",
+          "seconds": 0.0010275700005877297
+        },
+        {
+          "authority_record": "303ba62f5c671df78421aa6051f27ca33cfe593171595e87f20a47c0627a4540",
+          "closure_agrees": true,
+          "phase": "original_research_authority_initialization",
+          "seconds": 0.0011266869987593964
+        },
+        {
+          "phase": "persistence_and_reclosure",
+          "seconds": 0.0012862429994129343
+        },
+        {
+          "builder_attempts_after": {
+            "build_calls": 0,
+            "build_seconds": 0.0,
+            "records": []
+          },
+          "builder_attempts_before": {
+            "build_calls": 0,
+            "build_seconds": 0.0,
+            "records": []
+          },
+          "inclusive_not_additive": true,
+          "output": "/workspace/qualification/native-frontier-v43-operator/screening/case-003/environment-v43-attempts/4a099f7abec31b225b04e3d6853f5e88",
+          "phase": "native_environment_v43_handoff",
+          "seconds": 2.227359704000264,
+          "status": "UNKNOWN_ENVIRONMENT_SELECTION"
+        }
+      ]
+    },
+    {
+      "index": 4,
+      "repository": "facelessuser/wcmatch",
+      "native_controller_attempts": {
+        "collection_calls": 0,
+        "native_calls": 0,
+        "subprocess_attempts": 0
+      },
+      "case_inclusive_wall_seconds": 2.025677716001155,
+      "setup_inclusive_wall_seconds": 2.012306984001043,
+      "setup_phase_seconds_sum": 1.8869709270002204,
+      "setup_phases": [
+        {
+          "native_calls": 0,
+          "phase": "external-runtime-preflight",
+          "seconds": 1.2321329100013827,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "init",
+            "-q",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-004/source-environment/metadata-source"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-004/source-environment/metadata-init.log",
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "phase": "metadata-init",
+          "seconds": 0.00782427600097435,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-004/source-environment/metadata-source",
+            "fetch",
+            "--depth=1",
+            "--no-tags",
+            "https://github.com/facelessuser/wcmatch.git",
+            "faf8e9d4c6215c8d6ca6b0c584ce68b8821f5f4d"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-004/source-environment/metadata-fetch.log",
+          "log_sha256": "eab56d3c5da1605fa87981bb55c7fc2e87b49584beebbd5c01395f2f5b8d078a",
+          "phase": "metadata-fetch",
+          "seconds": 0.6154772029985907,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-004/source-environment/metadata-source",
+            "checkout",
+            "-q",
+            "--detach",
+            "faf8e9d4c6215c8d6ca6b0c584ce68b8821f5f4d"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-004/source-environment/metadata-checkout.log",
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "phase": "metadata-checkout",
+          "seconds": 0.007722004998868215,
+          "status": "PASS"
+        },
+        {
+          "native_calls": 0,
+          "phase": "independent-metadata-selection",
+          "seconds": 0.02381453300040448,
+          "status": "UNKNOWN"
+        }
+      ],
+      "original_base_wheel_attempts": 0,
+      "original_base_wheel_seconds": 0,
+      "original_base_wheel_statuses": [],
+      "v43_build_costs": {
+        "build_calls": 0,
+        "build_seconds": 0.0,
+        "coverage": "V43 builder launches and generated-build verification attempts in this screening interval; parent wall time includes provisioning, host checks and independent oracle work. Original native counters and ceilings are unchanged; build seconds are included in parent wall time.",
+        "inclusive_parent_wall_seconds": 2.025677716001155,
+        "verification_attempts": 0
+      },
+      "machine_costs": [
+        {
+          "phase": "persistence_and_reclosure",
+          "seconds": 0.0001014299996313639
+        },
+        {
+          "phase": "persistence_and_reclosure",
+          "seconds": 0.0009634859998186585
+        },
+        {
+          "authority_record": "303ba62f5c671df78421aa6051f27ca33cfe593171595e87f20a47c0627a4540",
+          "closure_agrees": true,
+          "phase": "original_research_authority_initialization",
+          "seconds": 0.0010579059999145102
+        },
+        {
+          "phase": "persistence_and_reclosure",
+          "seconds": 0.0013069140004517976
+        },
+        {
+          "builder_attempts_after": {
+            "build_calls": 0,
+            "build_seconds": 0.0,
+            "records": []
+          },
+          "builder_attempts_before": {
+            "build_calls": 0,
+            "build_seconds": 0.0,
+            "records": []
+          },
+          "inclusive_not_additive": true,
+          "output": "/workspace/qualification/native-frontier-v43-operator/screening/case-004/environment-v43-attempts/bd8e6b27b84ae2b64ba85f92011762b6",
+          "phase": "native_environment_v43_handoff",
+          "seconds": 2.0216554060007184,
+          "status": "UNKNOWN_ENVIRONMENT_SELECTION"
+        }
+      ]
+    },
+    {
+      "index": 5,
+      "repository": "uiri/toml",
+      "native_controller_attempts": {
+        "collection_calls": 0,
+        "native_calls": 0,
+        "subprocess_attempts": 0
+      },
+      "case_inclusive_wall_seconds": 1.8620574090000446,
+      "setup_inclusive_wall_seconds": 1.8472710229998484,
+      "setup_phase_seconds_sum": 1.7921270880015072,
+      "setup_phases": [
+        {
+          "native_calls": 0,
+          "phase": "external-runtime-preflight",
+          "seconds": 1.236048283000855,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "init",
+            "-q",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-005/source-environment/metadata-source"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-005/source-environment/metadata-init.log",
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "phase": "metadata-init",
+          "seconds": 0.00786695899842016,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-005/source-environment/metadata-source",
+            "fetch",
+            "--depth=1",
+            "--no-tags",
+            "https://github.com/uiri/toml.git",
+            "7ffcfa3a08ffdbead6c814bcbb7c3fcd1f3a499d"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-005/source-environment/metadata-fetch.log",
+          "log_sha256": "cbef25e2226d99762ffb019b7bb55bd97ac4f376f6651840cdb30b6c633bc0f6",
+          "phase": "metadata-fetch",
+          "seconds": 0.5155221420009184,
+          "status": "PASS"
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/qualification/native-frontier-v43-operator/screening/case-005/source-environment/metadata-source",
+            "checkout",
+            "-q",
+            "--detach",
+            "7ffcfa3a08ffdbead6c814bcbb7c3fcd1f3a499d"
+          ],
+          "exit_code": 0,
+          "log": "/workspace/qualification/native-frontier-v43-operator/screening/case-005/source-environment/metadata-checkout.log",
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "phase": "metadata-checkout",
+          "seconds": 0.007894860000305925,
+          "status": "PASS"
+        },
+        {
+          "native_calls": 0,
+          "phase": "independent-metadata-selection",
+          "seconds": 0.024794844001007732,
+          "status": "UNKNOWN"
+        }
+      ],
+      "original_base_wheel_attempts": 0,
+      "original_base_wheel_seconds": 0,
+      "original_base_wheel_statuses": [],
+      "v43_build_costs": {
+        "build_calls": 0,
+        "build_seconds": 0.0,
+        "coverage": "V43 builder launches and generated-build verification attempts in this screening interval; parent wall time includes provisioning, host checks and independent oracle work. Original native counters and ceilings are unchanged; build seconds are included in parent wall time.",
+        "inclusive_parent_wall_seconds": 1.8620574090000446,
+        "verification_attempts": 0
+      },
+      "machine_costs": [
+        {
+          "phase": "persistence_and_reclosure",
+          "seconds": 0.0001085599997168174
+        },
+        {
+          "phase": "persistence_and_reclosure",
+          "seconds": 0.001048611000442179
+        },
+        {
+          "authority_record": "303ba62f5c671df78421aa6051f27ca33cfe593171595e87f20a47c0627a4540",
+          "closure_agrees": true,
+          "phase": "original_research_authority_initialization",
+          "seconds": 0.0011461359990789788
+        },
+        {
+          "phase": "persistence_and_reclosure",
+          "seconds": 0.0014845960013190052
+        },
+        {
+          "builder_attempts_after": {
+            "build_calls": 0,
+            "build_seconds": 0.0,
+            "records": []
+          },
+          "builder_attempts_before": {
+            "build_calls": 0,
+            "build_seconds": 0.0,
+            "records": []
+          },
+          "inclusive_not_additive": true,
+          "output": "/workspace/qualification/native-frontier-v43-operator/screening/case-005/environment-v43-attempts/a4ff808bed0db1ab20734c892ae6a4ff",
+          "phase": "native_environment_v43_handoff",
+          "seconds": 1.8578844349995052,
+          "status": "UNKNOWN_ENVIRONMENT_SELECTION"
+        }
+      ]
+    }
+  ],
+  "totals": {
+    "screened_cases": 6,
+    "native_calls": 2,
+    "collection_calls": 4,
+    "v43_build_calls": 0,
+    "v43_verification_attempts": 0,
+    "original_base_wheel_attempts": 1,
+    "original_base_wheel_seconds": 0.6654490790006093,
+    "controller_inclusive_wall_seconds": 109.94108154200057,
+    "sum_case_inclusive_wall_seconds": 63.509275813001295,
+    "sum_setup_inclusive_wall_seconds": 36.038246327001616,
+    "sum_setup_phase_seconds": 30.710794028002056,
+    "metadata_costs": {
+      "collection_calls": 0,
+      "metadata_api_calls": 131,
+      "metadata_budget_seconds": 900,
+      "metadata_wall_seconds": 33.43744278599934,
+      "native_calls": 0,
+      "total_curation_wall_seconds": 33.83624924600008
+    },
+    "offline_audit_attempts": [
+      {
+        "attempt": 1,
+        "wall_seconds": 2.355003253000177,
+        "cpu_user_seconds": 1.444219,
+        "cpu_system_seconds": 0.9110769999999999,
+        "native_or_network_runs": 0
+      },
+      {
+        "attempt": 2,
+        "wall_seconds": 2.6516681059983966,
+        "cpu_user_seconds": 1.8840059999999998,
+        "cpu_system_seconds": 0.7720629999999999,
+        "native_or_network_runs": 0
+      },
+      {
+        "attempt": 3,
+        "wall_seconds": 3.5974169180008175,
+        "cpu_user_seconds": 2.73042,
+        "cpu_system_seconds": 0.864763,
+        "native_or_network_runs": 0
+      }
+    ],
+    "offline_audit_wall_seconds_total": 8.604088276999391
+  },
+  "scope": "Original fixed-pool screening inclusive measurements and raw setup/machine phases retained. Native counters count original worker calls; V43 build counters do not include the original environment base-wheel operation, which is reported separately. Nested setup/case/controller and phase wall intervals are nonadditive. Original independent recollection/reexecution are planned verification, not extra case retries. Profile/gate preparation costs remain in original retained receipts; unmeasured engineering/model/tool/storage/host checking cost remains UNKNOWN. No G4 claim."
+}

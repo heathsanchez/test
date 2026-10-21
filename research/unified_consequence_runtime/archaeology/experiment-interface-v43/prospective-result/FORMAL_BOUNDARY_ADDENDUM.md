@@ -1,0 +1,7 @@
+The source-pinned runtime correspondence remains the map in ../FORMAL_CORRESPONDENCE.md and the original canonical FORMAL_CORRESPONDENCE.md. No new theorem or proof system is introduced.
+
+V43 extends the typed executable experiment interface while retaining the original collection, source/import identity and assertion algorithms. Its checked native controls establish bounded implementation behavior: independent original builds, exact invocation premises, Metatron/FLASH dependency cuts, fresh-evidence restoration and same-filesystem separate-process execution. Existing MSI/VDN/Metatron results remain conditional on their original hypotheses. No general Lean theorem proves this Python bridge or an unfamiliar native task correct.
+
+The frozen nine-source frontier has no admitted task pair. No MSI/V104 learning transition, prospective phase-change instance, constructor-growth instance or new protected-future proof object was produced. G2 through G5 remain UNKNOWN. A finite search was not run; neither old-language impossibility nor a search-budget failure follows.
+
+Executable ability, independent warrant and external permission remain distinct. A materialization instrument does not enlarge its externally supplied authority ceiling. Governed route preflight and selective withdrawal were qualified within the exposed entrypoints. No independently non-bypassable monitor for every external action was established; G6 remains UNKNOWN.

@@ -1,0 +1,955 @@
+{
+  "archive_bytes": 358368,
+  "archive_sha256": "ed96a6dc62729a4e162a6d1c6b4837c8aed38ed75a220b1134c520e38b337bd8",
+  "boundary": "Data-only history of auditor preparation and narrow format/scope revisions; no archived-code execution, native rerun or additional scientific qualification.",
+  "entries": {
+    "AUDITOR_FREEZE.json": {
+      "bytes": 8921,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "28bed37916d6a2030c1f871c5f87d0255de5743564d23942db4293b78b543a09"
+    },
+    "AUDITOR_FREEZE_V1.json": {
+      "bytes": 6926,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "7408fa62c3f759e1f4afa3d49535fdf4da75ac77d08693dd98fedf2b26510fc8"
+    },
+    "AUDITOR_FREEZE_V2.json": {
+      "bytes": 8125,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "9a837e5ea2ddb2c1c014da547c722f75a005e8ec7d72276620dfafba5f18dc35"
+    },
+    "AUDITOR_FREEZE_V3.json": {
+      "bytes": 8921,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "28bed37916d6a2030c1f871c5f87d0255de5743564d23942db4293b78b543a09"
+    },
+    "AUDITOR_INPUT_PROTOCOL.md": {
+      "bytes": 5350,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "6e18196403bbe2b749ae118e99bab9cb48c7cac0806df51941d61c7391c11f78"
+    },
+    "AUDIT_COMMAND_PENDING.json": {
+      "bytes": 1997,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "892cadd12db23a9cb893b3a845878112df8d84416c86d30433ec3b669a5814c6"
+    },
+    "IDENTITY_HELPER_FREEZE.json": {
+      "bytes": 1898,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "81cdff5b1987b985f8efcf99cec8d5a525c5dcf3cd44e85877206d2fc3a53729"
+    },
+    "REPORT.md": {
+      "bytes": 2393,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "e39845142d1b6a51f0026d416359446c087f184a3478147c42d4ae9a0f03f915"
+    },
+    "TRUSTED_SOURCE_PINS.json": {
+      "bytes": 1782,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "1e5b6bdbe0e66331561f04963614389fd9c79059c8e828ddf4cfdb07423e3e4a"
+    },
+    "audit_retained.py": {
+      "bytes": 50958,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "8f5035de44bef5385040ace76773c2f7c62d1ee9c12ec2134239acded0cdbd4d"
+    },
+    "base64-whitespace-revision": {
+      "kind": "directory",
+      "mode": 448
+    },
+    "base64-whitespace-revision/REVISION.json": {
+      "bytes": 2684,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "ac52e6acdf9df7859be2fdff32c8ea0fc5453f31d6ca85a65b9cec5eed787ca7"
+    },
+    "base64-whitespace-revision/before": {
+      "kind": "directory",
+      "mode": 448
+    },
+    "base64-whitespace-revision/before/IDENTITY_HELPER_FREEZE.json": {
+      "bytes": 1898,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "81cdff5b1987b985f8efcf99cec8d5a525c5dcf3cd44e85877206d2fc3a53729"
+    },
+    "base64-whitespace-revision/before/raw_identity.py": {
+      "bytes": 19374,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "cb76823ecd1a57221a45f14004e1f1111bf99a9d81bf8d90843a7ace139938df"
+    },
+    "base64-whitespace-revision/before/test_raw_identity.py": {
+      "bytes": 8513,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "44da89fe0ca842d2b1af1b234e80124908906670c66887f6beda1647ddcb7182"
+    },
+    "base64-whitespace-revision/combined": {
+      "kind": "directory",
+      "mode": 448
+    },
+    "base64-whitespace-revision/combined/RESULT.json": {
+      "bytes": 727,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "604bea7c7773f02e47a6dae0f5440fde8de5679d7a466d6e372787088ced3b10"
+    },
+    "base64-whitespace-revision/combined/junit.xml": {
+      "bytes": 12773,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "3a580a74d4fae9832f97a5fa49800a79dcba2dcc6746ea7d163c9ee0a89c45e3"
+    },
+    "base64-whitespace-revision/combined/stderr": {
+      "bytes": 0,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "base64-whitespace-revision/combined/stdout": {
+      "bytes": 247,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "8d396f9eff21f1410a91d423fca98360b8ddda8b5734cbc955c221b78f07b265"
+    },
+    "base64-whitespace-revision/green": {
+      "kind": "directory",
+      "mode": 448
+    },
+    "base64-whitespace-revision/green.stderr": {
+      "bytes": 0,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "base64-whitespace-revision/green.stdout": {
+      "bytes": 244,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "a2618cdfad69ec87ba974c45ff9b83ed2cecf106159a1e4808a9b875bfd91395"
+    },
+    "base64-whitespace-revision/green/junit.xml": {
+      "bytes": 4723,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "632bf3d8365ecaee7c60ad6fbf9c80e1ad58fc4d0bb77c6e0e62b50a1f6e89ff"
+    },
+    "base64-whitespace-revision/green/raw_identity.py": {
+      "bytes": 19421,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "97d72d4063168df49019dd61a3433a1d4d0e335b856a0684577c6b2cbc5faf25"
+    },
+    "base64-whitespace-revision/green/test_raw_identity.py": {
+      "bytes": 11467,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "1c4cfd483f0521a82ed3961e80bfd82def77572ee09e9be8959bebfe47474a7f"
+    },
+    "base64-whitespace-revision/raw_identity.diff": {
+      "bytes": 1269,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "2cb195803da1a4e0665b93442126f8b9eb254549c8b7630af82a72fe35d39d50"
+    },
+    "base64-whitespace-revision/red": {
+      "kind": "directory",
+      "mode": 448
+    },
+    "base64-whitespace-revision/red.stderr": {
+      "bytes": 0,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "base64-whitespace-revision/red.stdout": {
+      "bytes": 1441,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "1461d925940dc7ad2e5c6945800cfdeb53bec29a2d08b6dad30dbbd73804265a"
+    },
+    "base64-whitespace-revision/red/junit.xml": {
+      "bytes": 5588,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "6c358f32197b8463b1ad95177aae552d15fdcf88e5364ea93e76b61e355409a8"
+    },
+    "base64-whitespace-revision/red/raw_identity.py": {
+      "bytes": 19374,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "cb76823ecd1a57221a45f14004e1f1111bf99a9d81bf8d90843a7ace139938df"
+    },
+    "base64-whitespace-revision/red/test_raw_identity.py": {
+      "bytes": 11467,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "1c4cfd483f0521a82ed3961e80bfd82def77572ee09e9be8959bebfe47474a7f"
+    },
+    "bounded-review-green": {
+      "kind": "directory",
+      "mode": 448
+    },
+    "bounded-review-green/RESULT.json": {
+      "bytes": 673,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "41fd8ffb584aab8d4ef5a1fb872884ce38897ffa97bcd55fcfbb48a17540a8aa"
+    },
+    "bounded-review-green/audit_retained.py": {
+      "bytes": 48937,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "5ce7300583cfa5a98714bc9b7598d191a1b48251e66b045d56abe3eda9266b68"
+    },
+    "bounded-review-green/finalize_audit.py": {
+      "bytes": 3829,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "3b139a1ed9d918e1034334a67f36adb4eb457804f479c0d393b1c1016eeb77e4"
+    },
+    "bounded-review-green/junit.xml": {
+      "bytes": 9314,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "6376064dc1e245526cb421bc0679157a73bd806f272f23adb782496eeb85ff93"
+    },
+    "bounded-review-green/raw_identity.py": {
+      "bytes": 19374,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "cb76823ecd1a57221a45f14004e1f1111bf99a9d81bf8d90843a7ace139938df"
+    },
+    "bounded-review-green/stderr": {
+      "bytes": 0,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "bounded-review-green/stdout": {
+      "bytes": 232,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "1fa008972a46e475c5e3740d30fbdfe658c88cc18baec8c23a53a21bccfc8487"
+    },
+    "bounded-review-green/test_audit_retained.py": {
+      "bytes": 9884,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "167fa335062d6991710401f201e9ad7814d951c8ac1e51445a9762c52874391f"
+    },
+    "bounded-review-green/test_raw_identity.py": {
+      "bytes": 8513,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "44da89fe0ca842d2b1af1b234e80124908906670c66887f6beda1647ddcb7182"
+    },
+    "bounded-review-pre-fix": {
+      "kind": "directory",
+      "mode": 448
+    },
+    "bounded-review-pre-fix/RED.json": {
+      "bytes": 508,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "a3ad5e44ee8f594a04f686cf830d7ab9d22fa8d7286f5eba9dbf4f835d36271b"
+    },
+    "bounded-review-pre-fix/audit_retained.py": {
+      "bytes": 44706,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "809f2d7f5da13d9bdc7846abfade886b9f75425e630ae0476bd858691f84a910"
+    },
+    "bounded-review-pre-fix/finalize_audit.py": {
+      "bytes": 3829,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "3b139a1ed9d918e1034334a67f36adb4eb457804f479c0d393b1c1016eeb77e4"
+    },
+    "bounded-review-pre-fix/junit.xml": {
+      "bytes": 12988,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "f676bc92e1c2ee793552fdb82e3c9608760e50eb9dd2364a50e500f9dcdd173c"
+    },
+    "bounded-review-pre-fix/raw_identity.py": {
+      "bytes": 19374,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "cb76823ecd1a57221a45f14004e1f1111bf99a9d81bf8d90843a7ace139938df"
+    },
+    "bounded-review-pre-fix/stderr": {
+      "bytes": 0,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "bounded-review-pre-fix/stdout": {
+      "bytes": 7683,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "28bb5584bd6d1bbad46f31021e1b2ea0b5a762e2d709916059f11cf576f26150"
+    },
+    "bounded-review-pre-fix/test_audit_retained.py": {
+      "bytes": 6736,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "608071c533adf5866d397b8a21ed156b458350e038ce57fa578e2cb1c7fd3674"
+    },
+    "bounded-review-pre-fix/test_audit_retained_augmented.py": {
+      "bytes": 9884,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "167fa335062d6991710401f201e9ad7814d951c8ac1e51445a9762c52874391f"
+    },
+    "core-green-001": {
+      "kind": "directory",
+      "mode": 448
+    },
+    "core-green-001/RESULT.json": {
+      "bytes": 617,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "bb40d68e5675474112e99791d254104f358297bd6243b63bf352b8bc131d55cc"
+    },
+    "core-green-001/audit_retained.py": {
+      "bytes": 27158,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "d446534b2b162e263f7b67d21666adc9d611260ae6d39c54b5014c40a8921807"
+    },
+    "core-green-001/junit.xml": {
+      "bytes": 4749,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "522ccc659a99971280a1b79202f79fc1d806e8d70de5480b492e95aee5b35628"
+    },
+    "core-green-001/stderr": {
+      "bytes": 0,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "core-green-001/stdout": {
+      "bytes": 226,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "ccb445be1bd0ba3def1bebfa9774a4b808801a435e2c903561842f7ab6593f7a"
+    },
+    "core-green-001/test_audit_retained.py": {
+      "bytes": 6736,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "608071c533adf5866d397b8a21ed156b458350e038ce57fa578e2cb1c7fd3674"
+    },
+    "core-red": {
+      "kind": "directory",
+      "mode": 448
+    },
+    "core-red/RED.json": {
+      "bytes": 648,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "fa15516a002a5e2bc25fbb65ccf6199e685bfd59ad8a6c1a6129ff8ddadddea5"
+    },
+    "core-red/junit.xml": {
+      "bytes": 26394,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "c3de136ab7d8e09de0eb29072a63dd295507ab63f0f724b93b95ebd5de5721b7"
+    },
+    "core-red/stderr": {
+      "bytes": 0,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "core-red/stdout": {
+      "bytes": 20994,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "fc79b6dc3e1146fedc93057c7af23a84ac756d41a55335da691ea02dc413c660"
+    },
+    "final-sourcefree-controls": {
+      "kind": "directory",
+      "mode": 448
+    },
+    "final-sourcefree-controls/RESULT.json": {
+      "bytes": 980,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "742a3c9bf74a96b1c5e2650ed7d6f36ecd1fe76a329d75cbe7e5b1c307ef20c0"
+    },
+    "final-sourcefree-controls/audit_retained.py": {
+      "bytes": 39961,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "bb7c58da993ee479720a0a44d5f153e812b7475e67e142f5efa61ada8fd69677"
+    },
+    "final-sourcefree-controls/finalize_audit.py": {
+      "bytes": 3613,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "3800380ff1787b905a3f3c183b6997326aa8a3e49b48add7bc25af1bcf238574"
+    },
+    "final-sourcefree-controls/junit.xml": {
+      "bytes": 6858,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "c6d9236922a66a13bbb17c8dd67654e352219914574f61616465bc4412ae97b5"
+    },
+    "final-sourcefree-controls/raw_identity.py": {
+      "bytes": 19374,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "cb76823ecd1a57221a45f14004e1f1111bf99a9d81bf8d90843a7ace139938df"
+    },
+    "final-sourcefree-controls/stderr": {
+      "bytes": 0,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "final-sourcefree-controls/stdout": {
+      "bytes": 237,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "57721125e4012f0a3b9aa4986c5010af3f5795a3984c82d7bd74dd85c5bd6057"
+    },
+    "final-sourcefree-controls/test_audit_retained.py": {
+      "bytes": 6736,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "608071c533adf5866d397b8a21ed156b458350e038ce57fa578e2cb1c7fd3674"
+    },
+    "final-sourcefree-controls/test_raw_identity.py": {
+      "bytes": 8513,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "44da89fe0ca842d2b1af1b234e80124908906670c66887f6beda1647ddcb7182"
+    },
+    "finalize_audit.py": {
+      "bytes": 3829,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "3b139a1ed9d918e1034334a67f36adb4eb457804f479c0d393b1c1016eeb77e4"
+    },
+    "frozen-controls": {
+      "kind": "directory",
+      "mode": 448
+    },
+    "frozen-controls/RESULT.json": {
+      "bytes": 970,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "5432f3eee408be0a7f434f3510294a1bc4319f76b2ceb63d5b5333568b197d62"
+    },
+    "frozen-controls/audit_retained.py": {
+      "bytes": 50912,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "c403f21604f4c1cc0b8cd4e2ea5ddf3f67d10f1ade22511b1ff91f68d5151ad7"
+    },
+    "frozen-controls/finalize_audit.py": {
+      "bytes": 3829,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "3b139a1ed9d918e1034334a67f36adb4eb457804f479c0d393b1c1016eeb77e4"
+    },
+    "frozen-controls/junit.xml": {
+      "bytes": 10388,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "11368c8d726df7a94285b4a34ddfe792ad6ff0adb6bb446c73a87cc650f04db4"
+    },
+    "frozen-controls/raw_identity.py": {
+      "bytes": 19374,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "cb76823ecd1a57221a45f14004e1f1111bf99a9d81bf8d90843a7ace139938df"
+    },
+    "frozen-controls/stderr": {
+      "bytes": 0,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "frozen-controls/stdout": {
+      "bytes": 227,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "5a4cee2c51ee41eb8103042fca7c89df1fa9f326b48fef363aebbebfa8b073bd"
+    },
+    "frozen-controls/test_audit_retained.py": {
+      "bytes": 11007,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "962b646b0d0f953d46d8c33878b497d37ffb78292664fee9ef88016b0cc2c458"
+    },
+    "frozen-controls/test_raw_identity.py": {
+      "bytes": 8513,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "44da89fe0ca842d2b1af1b234e80124908906670c66887f6beda1647ddcb7182"
+    },
+    "identity-controls-final": {
+      "kind": "directory",
+      "mode": 448
+    },
+    "identity-controls-final.stderr": {
+      "bytes": 0,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "identity-controls-final.stdout": {
+      "bytes": 235,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "9b7a790751238da7d966f589a2e192523c80b3eaaf9eb9c4b9c6105cf259ae44"
+    },
+    "identity-controls-final/junit.xml": {
+      "bytes": 2338,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "ec5d37aa86213fa6bcc1fc6acfc16ead8ff4db0edc2c872ee26d6b4d9ce80e82"
+    },
+    "identity-controls-freeze": {
+      "kind": "directory",
+      "mode": 448
+    },
+    "identity-controls-freeze.stderr": {
+      "bytes": 0,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "identity-controls-freeze.stdout": {
+      "bytes": 236,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "24456e4419380fb11f9e944e08da1adf4cd5d277b2069c251ba6e891f0ceffe2"
+    },
+    "identity-controls-freeze/junit.xml": {
+      "bytes": 2338,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "2be2908782a7fa1030d1da3d9874813f74577b56b320471787060449a7384fba"
+    },
+    "identity-controls-green": {
+      "kind": "directory",
+      "mode": 448
+    },
+    "identity-controls-green.stderr": {
+      "bytes": 0,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "identity-controls-green.stdout": {
+      "bytes": 234,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "62316655b60d662e80b248263c720ec26a27908bc7406830e03a6943a69ad794"
+    },
+    "identity-controls-green/junit.xml": {
+      "bytes": 1799,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "3f497dad3996df2fbfe45bd43ddd9e1954acaedf52146b1acd470b29103c2c8b"
+    },
+    "identity-controls-red": {
+      "kind": "directory",
+      "mode": 448
+    },
+    "identity-controls-red.stderr": {
+      "bytes": 0,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "identity-controls-red.stdout": {
+      "bytes": 7979,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "aa98a58d5cc7842e678445f12d0a840fd024f2a6debb1ab680a8fea1bc864238"
+    },
+    "identity-controls-red/junit.xml": {
+      "bytes": 9919,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "c7885d237c76452ec90cf07c2e52bf3a7561af02af3d8d7e691c48f35a85a8b4"
+    },
+    "identity-mode-guard-red": {
+      "kind": "directory",
+      "mode": 448
+    },
+    "identity-mode-guard-red.stderr": {
+      "bytes": 0,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "identity-mode-guard-red.stdout": {
+      "bytes": 869,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "09c7a48de5cfc4b8b7cdd74d282305ab44cef87674c358f9455624759e178bf9"
+    },
+    "identity-mode-guard-red/junit.xml": {
+      "bytes": 2307,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "2d303be229d3a5cb574efcc1d774723bbde2b771fb25d2d11bc8abb931fba4a0"
+    },
+    "linkage-review-green": {
+      "kind": "directory",
+      "mode": 448
+    },
+    "linkage-review-green-002": {
+      "kind": "directory",
+      "mode": 448
+    },
+    "linkage-review-green-002/RESULT.json": {
+      "bytes": 624,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "7296053a9367d8b31ea86f28018813a5aacf3c0cedab6a4c63380af3e29b067d"
+    },
+    "linkage-review-green-002/audit_retained.py": {
+      "bytes": 50684,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "ccdd917713b580882757e8aed6220540ed377f5d3e6954687bfa19d2b81e7b9a"
+    },
+    "linkage-review-green-002/finalize_audit.py": {
+      "bytes": 3829,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "3b139a1ed9d918e1034334a67f36adb4eb457804f479c0d393b1c1016eeb77e4"
+    },
+    "linkage-review-green-002/junit.xml": {
+      "bytes": 10388,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "d574ab0727f4656e1ea8aa49ee07d293165024cd0768a676a098f9107068da4a"
+    },
+    "linkage-review-green-002/raw_identity.py": {
+      "bytes": 19374,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "cb76823ecd1a57221a45f14004e1f1111bf99a9d81bf8d90843a7ace139938df"
+    },
+    "linkage-review-green-002/stderr": {
+      "bytes": 0,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "linkage-review-green-002/stdout": {
+      "bytes": 236,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "45146dafd31da3e4ea73a28c2aa29986d34bc6265317d8fe272851faa02e1539"
+    },
+    "linkage-review-green-002/test_audit_retained.py": {
+      "bytes": 11007,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "962b646b0d0f953d46d8c33878b497d37ffb78292664fee9ef88016b0cc2c458"
+    },
+    "linkage-review-green-002/test_raw_identity.py": {
+      "bytes": 8513,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "44da89fe0ca842d2b1af1b234e80124908906670c66887f6beda1647ddcb7182"
+    },
+    "linkage-review-green/RESULT.json": {
+      "bytes": 620,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "decc16002e2cfd272c9473bc21ebf5ac6b68f020bf9bda4f852001319fbfed2f"
+    },
+    "linkage-review-green/audit_retained.py": {
+      "bytes": 50605,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "b2fd711ef0d9dc31bd040e3a24990055a798d8c9a25fb6b05c1344175419b73e"
+    },
+    "linkage-review-green/finalize_audit.py": {
+      "bytes": 3829,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "3b139a1ed9d918e1034334a67f36adb4eb457804f479c0d393b1c1016eeb77e4"
+    },
+    "linkage-review-green/junit.xml": {
+      "bytes": 13043,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "490cb70697d696605d11e1387ccfb551e48506413e7cd33fe213db89d9151448"
+    },
+    "linkage-review-green/raw_identity.py": {
+      "bytes": 19374,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "cb76823ecd1a57221a45f14004e1f1111bf99a9d81bf8d90843a7ace139938df"
+    },
+    "linkage-review-green/stderr": {
+      "bytes": 0,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "linkage-review-green/stdout": {
+      "bytes": 3631,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "b59b19aa53d9de93edf4c487c20577e08c1175556993bbf5355528db630c91d1"
+    },
+    "linkage-review-green/test_audit_retained.py": {
+      "bytes": 11007,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "962b646b0d0f953d46d8c33878b497d37ffb78292664fee9ef88016b0cc2c458"
+    },
+    "linkage-review-green/test_raw_identity.py": {
+      "bytes": 8513,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "44da89fe0ca842d2b1af1b234e80124908906670c66887f6beda1647ddcb7182"
+    },
+    "linkage-review-pre-fix": {
+      "kind": "directory",
+      "mode": 448
+    },
+    "linkage-review-pre-fix/RED.json": {
+      "bytes": 472,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "5dc8a5ff6f81ad9bd14862a5aa7a0e917369a3223ded85f08c7e951a17699699"
+    },
+    "linkage-review-pre-fix/audit_retained.py": {
+      "bytes": 48937,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "5ce7300583cfa5a98714bc9b7598d191a1b48251e66b045d56abe3eda9266b68"
+    },
+    "linkage-review-pre-fix/finalize_audit.py": {
+      "bytes": 3829,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "3b139a1ed9d918e1034334a67f36adb4eb457804f479c0d393b1c1016eeb77e4"
+    },
+    "linkage-review-pre-fix/junit.xml": {
+      "bytes": 10745,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "09a72908835be3f9fb10d8c00bcc5448b0718eb1315099e12f83c3bcfc66d811"
+    },
+    "linkage-review-pre-fix/stderr": {
+      "bytes": 0,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "linkage-review-pre-fix/stdout": {
+      "bytes": 3549,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "8329cfb56b62767b86a9b85c3fa655560fe6554e16b1096b64ac98b62463c731"
+    },
+    "linkage-review-pre-fix/test_audit_retained.py": {
+      "bytes": 9884,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "167fa335062d6991710401f201e9ad7814d951c8ac1e51445a9762c52874391f"
+    },
+    "linkage-review-pre-fix/test_augmented.py": {
+      "bytes": 11007,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "962b646b0d0f953d46d8c33878b497d37ffb78292664fee9ef88016b0cc2c458"
+    },
+    "original": {
+      "kind": "directory",
+      "mode": 448
+    },
+    "original/archive_audit_v43.py": {
+      "bytes": 96633,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "951903b0ab1ac6981852d2cf467e4ec074b8629e7b106f04b6ec79aca7c0847b"
+    },
+    "original/v42_audit_retained.py": {
+      "bytes": 22360,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "0dd7a941ee31d0717fa956bebca3a61836ffcfd435570b6d9f62bb2f4cef1837"
+    },
+    "original/v42_finalize_audit.py": {
+      "bytes": 14108,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "6781c6cc9cc635a930dee143e002e31308e02a922d37adad127453cc550b3dd6"
+    },
+    "raw_identity.py": {
+      "bytes": 19421,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "97d72d4063168df49019dd61a3433a1d4d0e335b856a0684577c6b2cbc5faf25"
+    },
+    "test_audit_retained.py": {
+      "bytes": 11007,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "962b646b0d0f953d46d8c33878b497d37ffb78292664fee9ef88016b0cc2c458"
+    },
+    "test_raw_identity.py": {
+      "bytes": 11467,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "1c4cfd483f0521a82ed3961e80bfd82def77572ee09e9be8959bebfe47474a7f"
+    },
+    "test_tracked_none_scm_scope.py": {
+      "bytes": 2363,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "78015adc954abf0a7b2f5c18a94945fa76018e0b330b4198da231d2c9c987b84"
+    },
+    "tracked-none-scm-revision": {
+      "kind": "directory",
+      "mode": 448
+    },
+    "tracked-none-scm-revision/before-AUDITOR_FREEZE.json": {
+      "bytes": 8125,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "9a837e5ea2ddb2c1c014da547c722f75a005e8ec7d72276620dfafba5f18dc35"
+    },
+    "tracked-none-scm-revision/before-audit_retained.py": {
+      "bytes": 50912,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "c403f21604f4c1cc0b8cd4e2ea5ddf3f67d10f1ade22511b1ff91f68d5151ad7"
+    },
+    "tracked-none-scm-revision/before-finalize_audit.py": {
+      "bytes": 3829,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "3b139a1ed9d918e1034334a67f36adb4eb457804f479c0d393b1c1016eeb77e4"
+    },
+    "tracked-none-scm-revision/before-raw_identity.py": {
+      "bytes": 19421,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "97d72d4063168df49019dd61a3433a1d4d0e335b856a0684577c6b2cbc5faf25"
+    },
+    "tracked-none-scm-revision/green": {
+      "kind": "directory",
+      "mode": 448
+    },
+    "tracked-none-scm-revision/green/RESULT.json": {
+      "bytes": 839,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "909f071c5468180274899d874a60d60af602c4a678284c446e240e25ed7776c9"
+    },
+    "tracked-none-scm-revision/green/audit_retained.py": {
+      "bytes": 50958,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "8f5035de44bef5385040ace76773c2f7c62d1ee9c12ec2134239acded0cdbd4d"
+    },
+    "tracked-none-scm-revision/green/finalize_audit.py": {
+      "bytes": 3829,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "3b139a1ed9d918e1034334a67f36adb4eb457804f479c0d393b1c1016eeb77e4"
+    },
+    "tracked-none-scm-revision/green/junit.xml": {
+      "bytes": 13616,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "1c1a07bec4f3f9a9ceb76be8d347e1bd1b2f75d3440cbb4d0664f930da051d9e"
+    },
+    "tracked-none-scm-revision/green/raw_identity.py": {
+      "bytes": 19421,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "97d72d4063168df49019dd61a3433a1d4d0e335b856a0684577c6b2cbc5faf25"
+    },
+    "tracked-none-scm-revision/green/stderr": {
+      "bytes": 0,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "tracked-none-scm-revision/green/stdout": {
+      "bytes": 243,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "3a0eed0513f5996768d052ee5867cd4c32e2b5d6bc7a6ef54dc2368b58790bef"
+    },
+    "tracked-none-scm-revision/green/test_tracked_none_scm_scope.py": {
+      "bytes": 2363,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "78015adc954abf0a7b2f5c18a94945fa76018e0b330b4198da231d2c9c987b84"
+    },
+    "tracked-none-scm-revision/red": {
+      "kind": "directory",
+      "mode": 448
+    },
+    "tracked-none-scm-revision/red/RESULT.json": {
+      "bytes": 525,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "8eb7ce4c4a36e0758419f883d1c9cdc031ddd450740fe70fe3faed44edf9ee13"
+    },
+    "tracked-none-scm-revision/red/audit_retained.py": {
+      "bytes": 50912,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "c403f21604f4c1cc0b8cd4e2ea5ddf3f67d10f1ade22511b1ff91f68d5151ad7"
+    },
+    "tracked-none-scm-revision/red/junit.xml": {
+      "bytes": 2861,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "78d3acf19ef2a3172107d20afba2cb71ef55123096841d4c503bc9eb8566418f"
+    },
+    "tracked-none-scm-revision/red/stderr": {
+      "bytes": 0,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "tracked-none-scm-revision/red/stdout": {
+      "bytes": 2534,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "0a4fac7d51e92af893ed6d0ca75c7e861b7d1542a06bf4f2ce4c860ff3cab63c"
+    },
+    "tracked-none-scm-revision/red/test_tracked_none_scm_scope.py": {
+      "bytes": 2363,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "78015adc954abf0a7b2f5c18a94945fa76018e0b330b4198da231d2c9c987b84"
+    }
+  },
+  "schema": "UDM_V43_OFFLINE_AUDITOR_PREPARATION_ARCHIVE_V1",
+  "source": "/workspace/qualification/experiment-interface-v43-screening-audit-preparation",
+  "status": "PASS_EXACT_REGULAR_AND_LINK_INVENTORY",
+  "wall_seconds": 0.11594776200035994
+}

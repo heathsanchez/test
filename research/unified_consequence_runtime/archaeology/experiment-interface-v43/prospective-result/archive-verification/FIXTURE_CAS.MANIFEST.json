@@ -1,0 +1,59 @@
+{
+  "boundary": "Data-only lossless content-addressed record of screening and audit evidence. Unique regular-file bytes are stored under SHA256; original relative paths, sizes, modes, directories, and exact symlink text are in this manifest. Original symlinks were never followed. No scientific promotion, learner, agent, or G2.",
+  "files": {
+    "absolute-link": {
+      "kind": "symlink",
+      "linkname": "/no-such-archive-fixture-target",
+      "mode": 511
+    },
+    "broken-link": {
+      "kind": "symlink",
+      "linkname": "missing",
+      "mode": 511
+    },
+    "empty": {
+      "bytes": 0,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "empty-directory": {
+      "kind": "directory",
+      "mode": 448
+    },
+    "nested": {
+      "kind": "directory",
+      "mode": 448
+    },
+    "nested/duplicate.bin": {
+      "bytes": 512,
+      "kind": "file",
+      "mode": 493,
+      "sha256": "110009dcee21620b166f3abfecb5eff7a873be729d1c2d53822e7acc5f34eb9b"
+    },
+    "nested/relative-link": {
+      "kind": "symlink",
+      "linkname": "../regular.bin",
+      "mode": 511
+    },
+    "regular.bin": {
+      "bytes": 512,
+      "kind": "file",
+      "mode": 416,
+      "sha256": "110009dcee21620b166f3abfecb5eff7a873be729d1c2d53822e7acc5f34eb9b"
+    },
+    "unicode-\u00e9.txt": {
+      "bytes": 18,
+      "kind": "file",
+      "mode": 384,
+      "sha256": "3b55edc6f48ea1077ad25d148eb2e846ecfe4fc6bb6ac1cd90a0e4f08f164550"
+    }
+  },
+  "objects": 3,
+  "regular_bytes": 1042,
+  "root_mode": 448,
+  "schema": "UDM_CONTENT_ADDRESSED_RAW_SCREENING_EVIDENCE_ARCHIVE_V43",
+  "scope": "NEGATIVE_SCREENING_EVIDENCE_ONLY_NO_G2",
+  "source_root": "/workspace/qualification/experiment-interface-v43-negative-archive-prep/fixture-source",
+  "unique_object_bytes": 530
+}

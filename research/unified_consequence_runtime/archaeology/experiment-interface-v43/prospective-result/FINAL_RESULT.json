@@ -1,0 +1,501 @@
+{
+  "archive": {
+    "bytes": 63294072,
+    "entry_counts": {
+      "directory": 1218,
+      "file": 8106,
+      "symlink": 4
+    },
+    "independent_readback": {
+      "bytes": 1293,
+      "path": "RAW_SCREENING_EVIDENCE_CAS.INDEPENDENT_READBACK.json",
+      "sha256": "4cc61e11b3e582290edb4be9b31d3181247e69a3857e904da0a6bd320c065d8e"
+    },
+    "manifest": {
+      "bytes": 2386298,
+      "path": "RAW_SCREENING_EVIDENCE_CAS.MANIFEST.json",
+      "sha256": "cf5e335ce01d248ff9d573192f272f4516007c5ee24d42db2ca39f3030dfc71c"
+    },
+    "object_count": 7006,
+    "path": "RAW_SCREENING_EVIDENCE_CAS.tar.gz",
+    "regular_bytes": 224648015,
+    "scope": "Data-only raw evidence CAS, no archived source execution or native replay.",
+    "sha256": "d64b5a08044ab4f9daf6e60e21304c090a6bf3334dbe9d77be9b9694fce02664",
+    "symlink_inventory": {
+      "screening/case-001/source-environment/native/venv/bin/python": {
+        "linkname": "python3.12",
+        "mode": 511
+      },
+      "screening/case-001/source-environment/native/venv/bin/python3": {
+        "linkname": "python3.12",
+        "mode": 511
+      },
+      "screening/case-001/source-environment/native/venv/bin/python3.12": {
+        "linkname": "/workspace/qualification/native-frontier-v3-runtime-preparation/modern-base/bin/python3.12",
+        "mode": 511
+      },
+      "screening/case-001/source-environment/native/venv/lib64": {
+        "linkname": "lib",
+        "mode": 511
+      }
+    },
+    "unique_object_bytes": 205223364
+  },
+  "archive_workflow": {
+    "path": ".github/workflows/udm-native-frontier-evidence-v43.yml",
+    "scope": "ARCHIVE_INTEGRITY_ONLY_NO_NATIVE_QUALIFICATION_OR_G2"
+  },
+  "arms": {
+    "actual_coding_agent": {
+      "native_calls": 0,
+      "released": false,
+      "status": "NOT_STARTED"
+    },
+    "candidate": {
+      "native_calls": 0,
+      "released": false,
+      "status": "NOT_STARTED"
+    },
+    "executable_ledger_baseline": {
+      "native_calls": 0,
+      "released": false,
+      "status": "NOT_STARTED"
+    },
+    "fixed_machine_baseline": {
+      "native_calls": 0,
+      "released": false,
+      "status": "NOT_STARTED"
+    },
+    "learner_msi_v104": {
+      "native_calls": 0,
+      "released": false,
+      "status": "NOT_STARTED"
+    }
+  },
+  "branch": "research/udm-experiment-interface-v43-20261022",
+  "comparisons": {
+    "status": "NOT_STARTED",
+    "tie_or_advantage_claimed": false
+  },
+  "complete_lifecycle_cost": "UNKNOWN; nested intervals are nonadditive and tool/model/engineering/storage costs are not fully measured.",
+  "exposed_diagnostic": {
+    "actual_build_calls": 5,
+    "actual_collection_calls": 1,
+    "actual_native_execution_calls": 0,
+    "archive_bytes": 145062189,
+    "archive_sha256": "da0471585da2eaacc0471c3133b01d448b18b0aa7ae49491d7ac6d969890a4dd",
+    "base_commit": "ea7e547aa5197c32b9a4c0f8e2b0f97f071aef6c",
+    "collected_selected_nodes": 1758,
+    "deselected_nodes": 0,
+    "diagnostic_wall_seconds": 100.16330476700023,
+    "existing_bytes_checked_unchanged": 216,
+    "generated_bytes": 558,
+    "generated_file": "src/chardet/_version.py",
+    "generated_sha256": "65de830ef24719bc053dfe3334f40eef851fd7aa25e4a29f27b618c2ffd68a08",
+    "new_collection_errors": 1,
+    "normalized_original_wheel_content_matches": true,
+    "normalized_original_wheel_content_sha256": "999c6708322ea732c67276a7e925d447b1355817a87d2180f8f80e918dacead1",
+    "old_collection_errors": 34,
+    "pr": 368,
+    "protected_assertions_and_reexecution": "NOT_RUN_NO_VALID_ADMISSION_CERTIFICATE",
+    "protocol_binding": "dfe92c3939f81e1eb21c189145e39dcb65206fcbc585316d366bab90565cd25b",
+    "remaining_obstruction": "Original accuracy-test collection invokes an unpinned external chardet/test-data default-branch clone; command exit128. Captured clone stderr was not serialized by the original helper and remains UNKNOWN.",
+    "repository": "chardet/chardet",
+    "source_test_rewrites_or_retry": false,
+    "status": "DIAGNOSTIC_ONLY_NOT_PROSPECTIVE",
+    "test_only_augmented_commit": "c133dbdacfe5d4470289f6c46c4ad0452834c2b4"
+  },
+  "first_residual": "Independently establish complete applicability/execution authority for the unchanged frozen protected obligation, preserving 5 unique protected skipped/xfail nodes (3 xfail) among 236 selected nodes expanded from 162 prefixes and all 16 suite skips. A Python upgrade alone is not shown sufficient. Treat the queried nine-repository universe as prior exposure; only after a new gate is qualified require a fresh untouched G2 frontier with a qualified failing native obligation and source-distinct admitted pair under frozen authority.",
+  "historical_results": "Original positive/RED/UNKNOWN results, original capability inventory and failed auditing attempts preserved unchanged.",
+  "independent_diagnostics": {
+    "COSTS_BY_CASE.json": {
+      "bytes": 142169,
+      "sha256": "c370cc63864d20dab338e5f84a014a032f36264a09d1a0681a1babcdc4877ac3"
+    },
+    "FINAL_DIAGNOSTIC_SUMMARY.json": {
+      "bytes": 29403,
+      "sha256": "bfd4aea3df08b5cd8ff63050c2ed51323f0382d9a79aa614f12ad55422ac9c12"
+    },
+    "NATIVE_REFUSAL_CONTEXT.json": {
+      "bytes": 114446,
+      "sha256": "1b05737c2b3e83949e06d1bc81db38a035033e78a3417d7665d554e0cb413dda"
+    },
+    "RAW_SCREENING_EVIDENCE_CAS.INDEPENDENT_READBACK.json": {
+      "bytes": 1293,
+      "sha256": "4cc61e11b3e582290edb4be9b31d3181247e69a3857e904da0a6bd320c065d8e"
+    },
+    "REFUSALS_BY_CASE.json": {
+      "bytes": 18451,
+      "sha256": "f2148aa67d1d896e8cad82ca6536646fd93a91e203043efb2b61bb2241d499e9"
+    }
+  },
+  "interface_qualification": {
+    "causal_ledgers": 8,
+    "collection_certificates": 49,
+    "component_files": 1368,
+    "controls": 118,
+    "evidence": {
+      "artifact_bytes": 343744090,
+      "artifact_id": 12386633479,
+      "artifact_sha256": "4c9ba1bd8029efd06aa192e86d75f78d1326316a0becc2a84a4b85a9b6f0f033",
+      "artifact_url": "https://github.com/heathsanchez/test/actions/runs/39682460349/artifacts/12386633479",
+      "branch": "research/udm-experiment-interface-v43-20261022",
+      "independent_audit_report_sha256": "d6ba4346d4acf9b7d7e9997b4c453a3a2ecbcfe160e64f6f29d284cfb272f198",
+      "independent_gate_sha256": "650ad69d0c2ca929ec3e13c17828e752911b66f96772f74471e2c10405245a34",
+      "qualification_result_sha256": "61ffe7857fde05f459152a3f94f340f221c9aee814558cbfba494d8cf358d599",
+      "repository": "heathsanchez/test",
+      "run_id": 39682460349,
+      "run_url": "https://github.com/heathsanchez/test/actions/runs/39682460349",
+      "source_commit": "5a449e7d6be3a54d42e2098804904c2e1223ae51"
+    },
+    "independent_checks": 5039,
+    "independent_failures": 0,
+    "inherited_original_controls": 27,
+    "native_receipts": 70,
+    "preserved_base_files": 2361,
+    "scope": "Original build/generated-import transport, exact invocation causality, selective withdrawal, fresh restoration and same-filesystem separate-process native restart only.",
+    "source_files": 2502,
+    "status": "WARRANTED_BOUNDED_NATIVE_INTERFACE_INTEGRATION",
+    "unchanged_capability_entries": 70
+  },
+  "metadata_curation": {
+    "costs": {
+      "collection_calls": 0,
+      "metadata_api_calls": 131,
+      "metadata_budget_seconds": 900,
+      "metadata_wall_seconds": 33.43744278599934,
+      "native_calls": 0,
+      "total_curation_wall_seconds": 33.83624924600008
+    },
+    "first_target_query_after_committed_prequery": true,
+    "fixed_repository_universe": [
+      "agronholm/exceptiongroup",
+      "agronholm/typeguard",
+      "beetbox/confuse",
+      "bottlepy/bottle",
+      "dabeaz/ply",
+      "facelessuser/wcmatch",
+      "foutaise/texttable",
+      "python-trio/sniffio",
+      "uiri/toml"
+    ],
+    "initial_pre_api_wrapper_failure_retained": true,
+    "prequery_commit": "870e50003c9116f296449376847ce5793a2dfe7d",
+    "repository_count": 9,
+    "target_source_or_native_outcomes_read": false
+  },
+  "prospective_native_selection_workflow": "NOT_RUN_UNADMITTED_FRONTIER",
+  "records": {
+    "research/unified_consequence_runtime/archaeology/experiment-interface-v43/prospective/CI_39682460349_RESULT.json": {
+      "bytes": 5884122,
+      "sha256": "61ffe7857fde05f459152a3f94f340f221c9aee814558cbfba494d8cf358d599"
+    },
+    "research/unified_consequence_runtime/archaeology/experiment-interface-v43/prospective/DECLARED_UNIVERSE.json": {
+      "bytes": 1429,
+      "sha256": "53f452475be2a52fa7170ca2a4fe208e7de453148b68a7c51120b99cefb2737a"
+    },
+    "research/unified_consequence_runtime/archaeology/experiment-interface-v43/prospective/FRONTIER_PROTOCOL.json": {
+      "bytes": 2301,
+      "sha256": "3b4fc0cfb82eafeea3fcefab1b27249d9f615ad6dfef593e164f7f24ab36b43b"
+    },
+    "research/unified_consequence_runtime/archaeology/experiment-interface-v43/prospective/FROZEN_POOL.json": {
+      "bytes": 32007,
+      "sha256": "ab9b73adbf9da20adbae7ce3853b75a113ccb2eb09e597541b5c62d7ada679ee"
+    },
+    "research/unified_consequence_runtime/archaeology/experiment-interface-v43/prospective/GATE_WRAPPER.json": {
+      "bytes": 1371,
+      "sha256": "8b188067dd06104eaca2bf002cd4dd215f2eaead3193a41cfe70bdf7f29c7554"
+    },
+    "research/unified_consequence_runtime/archaeology/experiment-interface-v43/prospective/INTERFACE_ARCHIVE_AUDIT.json": {
+      "bytes": 5822,
+      "sha256": "650ad69d0c2ca929ec3e13c17828e752911b66f96772f74471e2c10405245a34"
+    },
+    "research/unified_consequence_runtime/archaeology/experiment-interface-v43/prospective/INTERFACE_INDEPENDENT_REPORT.json": {
+      "bytes": 1041612,
+      "sha256": "d6ba4346d4acf9b7d7e9997b4c453a3a2ecbcfe160e64f6f29d284cfb272f198"
+    },
+    "research/unified_consequence_runtime/archaeology/experiment-interface-v43/prospective/METADATA_CURATION.json": {
+      "bytes": 803595,
+      "sha256": "dcbac78dc8422b93a87ee951f24b8b4325e2d6ad207cc1e2f8404f51872f7f23"
+    },
+    "research/unified_consequence_runtime/archaeology/experiment-interface-v43/prospective/PREQUERY.json": {
+      "bytes": 88538,
+      "sha256": "475618e7fcda288d9ee8555db1b98a0e91fc1ee4b1c5efb819201601b92d56a3"
+    },
+    "research/unified_consequence_runtime/archaeology/experiment-interface-v43/prospective/PREQUERY_EXECUTION.json": {
+      "bytes": 4531,
+      "sha256": "b00837d69fb63993a19f6416613ac0f643b34d0068af41f1918babdb09d9e572"
+    },
+    "research/unified_consequence_runtime/archaeology/experiment-interface-v43/prospective/PREQUERY_V2.json": {
+      "bytes": 88538,
+      "sha256": "a7fdea33bbf8a6d78127df810cb9286611c67819db8d93e0a881729900da27ae"
+    },
+    "research/unified_consequence_runtime/archaeology/experiment-interface-v43/prospective/PRIOR_EXPOSURE.json": {
+      "bytes": 10905,
+      "sha256": "72ba37f1ddf33c22211020ab6311cf6414380d67ec27f9682ec560de8f7b4a3a"
+    },
+    "research/unified_consequence_runtime/archaeology/experiment-interface-v43/prospective/SCREENING_AUTHORITY.json": {
+      "bytes": 1888,
+      "sha256": "9dd263a8acfbbca19f838a308ca9b5aaf331e6b4c716727b8af6024df6931847"
+    },
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/FROZEN_POOL.json": {
+      "bytes": 30973,
+      "sha256": "7bfd4a7d882c98288c562352dbe1f89e1ee5790cd87fcdd25af5be7d54b46453"
+    }
+  },
+  "repository": "heathsanchez/test",
+  "schema": "UDM_V43_NATIVE_FRONTIER_FINAL_RESULT_V1",
+  "screening": {
+    "audit": {
+      "bytes": 10550,
+      "path": "SCREENING_AUDIT.json",
+      "sha256": "96639066acc2f5f0d38296c136451fbcd1b04f5c6ffe9b405302c957452ea3df"
+    },
+    "audit_scope": "Retained refusal/provenance integrity only; no native task admission or learner/scientific qualification.",
+    "authority_sha256": "9dd263a8acfbbca19f838a308ca9b5aaf331e6b4c716727b8af6024df6931847",
+    "cases": [
+      {
+        "base_commit": "2cba84352c3f01e8af2f37bf102d0dd515e15dc0",
+        "costs": {
+          "collection_calls": 0,
+          "native_calls": 0
+        },
+        "eligible": false,
+        "head_commit": "bb7c0f8b91dfad9192b67674123b217eb3b1cb07",
+        "inclusive_wall_seconds": 1.9536486510005489,
+        "order": 1,
+        "pr": 155,
+        "public_status": "UNKNOWN_ADMISSION_SCREENING",
+        "repository": "agronholm/exceptiongroup",
+        "retained_reason": "UNKNOWN_NO_COMPATIBLE_PROFILE",
+        "retained_status": "UNKNOWN_ENVIRONMENT_SELECTION",
+        "sealed_report_sha256": "adf41f1de6b002a38b202272766764dbcb9d890721bf6999873685e6d08c67f0"
+      },
+      {
+        "base_commit": "ff2b88b1c65f8828a178b4b2fffacd529cc76b26",
+        "costs": {
+          "collection_calls": 4,
+          "native_calls": 2
+        },
+        "eligible": false,
+        "head_commit": "f516eb63a078474748eec0b07f80948e2bf9e7ab",
+        "inclusive_wall_seconds": 52.917096770999706,
+        "order": 2,
+        "pr": 551,
+        "public_status": "UNKNOWN_ADMISSION_SCREENING",
+        "repository": "agronholm/typeguard",
+        "retained_reason": null,
+        "retained_status": "UNKNOWN_SKIPPED_OR_XFAIL",
+        "sealed_report_sha256": "b776e7dba0bba4ed3ef1475174103c8dbfdd835cb4c3e7c2bd82346929f486bd"
+      },
+      {
+        "base_commit": "71bb933649ba009cd537c2e973519d6e024c02a2",
+        "costs": {
+          "collection_calls": 0,
+          "native_calls": 0
+        },
+        "eligible": false,
+        "head_commit": "c9b3f6710eee071452866478cddf685012e39a42",
+        "inclusive_wall_seconds": 2.5193415449994063,
+        "order": 3,
+        "pr": 1354,
+        "public_status": "UNKNOWN_ADMISSION_SCREENING",
+        "repository": "bottlepy/bottle",
+        "retained_reason": "UNKNOWN_NO_COMPATIBLE_PROFILE",
+        "retained_status": "UNKNOWN_ENVIRONMENT_SELECTION",
+        "sealed_report_sha256": "777b89b0ea7f97e8ca28b0d4c54a09f42d6eef86d9d9863a4950f723df64d592"
+      },
+      {
+        "base_commit": "6860652be4069eaac8be88af1400f69a5197284f",
+        "costs": {
+          "collection_calls": 0,
+          "native_calls": 0
+        },
+        "eligible": false,
+        "head_commit": "e678d756427c72edd1b0107c55fd10640d8ffe2b",
+        "inclusive_wall_seconds": 2.2314537210004346,
+        "order": 4,
+        "pr": 153,
+        "public_status": "UNKNOWN_ADMISSION_SCREENING",
+        "repository": "dabeaz/ply",
+        "retained_reason": "UNKNOWN_DYNAMIC_METADATA",
+        "retained_status": "UNKNOWN_ENVIRONMENT_SELECTION",
+        "sealed_report_sha256": "7ce651eca0a4362705e141ad2a0ca30c38b6dd54251c12097a58f743fee8cc26"
+      },
+      {
+        "base_commit": "faf8e9d4c6215c8d6ca6b0c584ce68b8821f5f4d",
+        "costs": {
+          "collection_calls": 0,
+          "native_calls": 0
+        },
+        "eligible": false,
+        "head_commit": "a87d4d8a3d16e9da314edd6e614db906629e0812",
+        "inclusive_wall_seconds": 2.025677716001155,
+        "order": 5,
+        "pr": 249,
+        "public_status": "UNKNOWN_ADMISSION_SCREENING",
+        "repository": "facelessuser/wcmatch",
+        "retained_reason": "UNKNOWN_DYNAMIC_METADATA",
+        "retained_status": "UNKNOWN_ENVIRONMENT_SELECTION",
+        "sealed_report_sha256": "40e45c0c522ef1cb2a8f339057e1f011d47ed87d5169bcc830c1e4c4a8d28064"
+      },
+      {
+        "base_commit": "7ffcfa3a08ffdbead6c814bcbb7c3fcd1f3a499d",
+        "costs": {
+          "collection_calls": 0,
+          "native_calls": 0
+        },
+        "eligible": false,
+        "head_commit": "41aaa56b136dfa2c8f0796d8291f6f56932d856f",
+        "inclusive_wall_seconds": 1.8620574090000446,
+        "order": 6,
+        "pr": 431,
+        "public_status": "UNKNOWN_ADMISSION_SCREENING",
+        "repository": "uiri/toml",
+        "retained_reason": "UNKNOWN_DYNAMIC_METADATA",
+        "retained_status": "UNKNOWN_ENVIRONMENT_SELECTION",
+        "sealed_report_sha256": "291045aa3c424f180f98df80f2807de6fddfb4f25918d4affd1c4367ac98da10"
+      }
+    ],
+    "costs": {
+      "build_calls": 0,
+      "build_seconds": 0.0,
+      "collection_calls": 4,
+      "controller_wall_seconds": 109.94108154200057,
+      "native_calls": 2,
+      "sum_case_inclusive_wall_seconds": 63.509275813001295,
+      "verification_attempts": 0
+    },
+    "counts": {
+      "eligible_cases": 0,
+      "screened_cases": 6
+    },
+    "detailed_cost_totals": {
+      "collection_calls": 4,
+      "controller_inclusive_wall_seconds": 109.94108154200057,
+      "metadata_costs": {
+        "collection_calls": 0,
+        "metadata_api_calls": 131,
+        "metadata_budget_seconds": 900,
+        "metadata_wall_seconds": 33.43744278599934,
+        "native_calls": 0,
+        "total_curation_wall_seconds": 33.83624924600008
+      },
+      "native_calls": 2,
+      "offline_audit_attempts": [
+        {
+          "attempt": 1,
+          "cpu_system_seconds": 0.9110769999999999,
+          "cpu_user_seconds": 1.444219,
+          "native_or_network_runs": 0,
+          "wall_seconds": 2.355003253000177
+        },
+        {
+          "attempt": 2,
+          "cpu_system_seconds": 0.7720629999999999,
+          "cpu_user_seconds": 1.8840059999999998,
+          "native_or_network_runs": 0,
+          "wall_seconds": 2.6516681059983966
+        },
+        {
+          "attempt": 3,
+          "cpu_system_seconds": 0.864763,
+          "cpu_user_seconds": 2.73042,
+          "native_or_network_runs": 0,
+          "wall_seconds": 3.5974169180008175
+        }
+      ],
+      "offline_audit_wall_seconds_total": 8.604088276999391,
+      "original_base_wheel_attempts": 1,
+      "original_base_wheel_seconds": 0.6654490790006093,
+      "screened_cases": 6,
+      "sum_case_inclusive_wall_seconds": 63.509275813001295,
+      "sum_setup_inclusive_wall_seconds": 36.038246327001616,
+      "sum_setup_phase_seconds": 30.710794028002056,
+      "v43_build_calls": 0,
+      "v43_verification_attempts": 0
+    },
+    "native_failure_evidence": {
+      "basis": {
+        "bytes": 114446,
+        "path": "NATIVE_REFUSAL_CONTEXT.json",
+        "sha256": "1b05737c2b3e83949e06d1bc81db38a035033e78a3417d7665d554e0cb413dda"
+      },
+      "complete_contract_admission": "UNKNOWN_SKIPPED_OR_XFAIL",
+      "distinct_packets": 2,
+      "final_independent_summary": {
+        "bytes": 29403,
+        "path": "FINAL_DIAGNOSTIC_SUMMARY.json",
+        "sha256": "bfd4aea3df08b5cd8ff63050c2ed51323f0382d9a79aa614f12ad55422ac9c12"
+      },
+      "limitation": "Both independently retained native executions remain UNKNOWN_SKIPPED_OR_XFAIL under the unchanged no-skips/no-xfails full-suite contract. Collection admission is not assertion execution admission. No test editing, deselection, skip suppression, retry, task substitution or native promotion is permitted.",
+      "packets": [
+        {
+          "junit": {
+            "errors": 0,
+            "failures": 26,
+            "passed": 487,
+            "skipped": 16,
+            "tests": 529
+          },
+          "process_exit_code": 1,
+          "receipt": {
+            "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/baseline/receipt.json",
+            "sha256": "3745867717c57c9c4542e9f30621b2723429cf7832399ab8d8b20c10290b6c21"
+          },
+          "selected_nodes": 529,
+          "status": "UNKNOWN_SKIPPED_OR_XFAIL"
+        },
+        {
+          "junit": {
+            "errors": 0,
+            "failures": 26,
+            "passed": 487,
+            "skipped": 16,
+            "tests": 529
+          },
+          "process_exit_code": 1,
+          "receipt": {
+            "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/independent-baseline/receipt.json",
+            "sha256": "f799ad4b0f170941f3ecd0e1d8d4dba55ca329bfdfeaba5e2791581d8cf5d1cd"
+          },
+          "selected_nodes": 529,
+          "status": "UNKNOWN_SKIPPED_OR_XFAIL"
+        }
+      ],
+      "pr": 551,
+      "protected_unique_node_summary": [
+        {
+          "execution": "baseline",
+          "protected_skip_nodes": 5,
+          "protected_skip_or_xfail_nodes": 5,
+          "protected_xfail_nodes": 3,
+          "required_prefix_count": 162,
+          "selected_protected_nodes": 236
+        },
+        {
+          "execution": "independent-baseline",
+          "protected_skip_nodes": 5,
+          "protected_skip_or_xfail_nodes": 5,
+          "protected_xfail_nodes": 3,
+          "required_prefix_count": 162,
+          "selected_protected_nodes": 236
+        }
+      ],
+      "repository": "agronholm/typeguard"
+    },
+    "no_extra_retry_repair_substitution_or_policy_search": true,
+    "pool_sha256": "ab9b73adbf9da20adbae7ce3853b75a113ccb2eb09e597541b5c62d7ada679ee",
+    "status": "PASS_ADMISSION_ONLY_SCREENING_AUDIT"
+  },
+  "source_commit": "b0d389cf72f802c2b3ad99899644b802d4b41ea5",
+  "status": "NO_ADMITTED_FRONTIER_NO_LEARNER_OR_COMPARISON",
+  "verdicts": {
+    "G0_G1": "PRESERVED_EXACT_PRIOR_SOURCE_AUTHORITY",
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN"
+  }
+}

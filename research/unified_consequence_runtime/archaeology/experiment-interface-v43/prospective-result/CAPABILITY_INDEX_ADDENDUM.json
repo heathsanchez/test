@@ -1,0 +1,116 @@
+{
+  "schema": "UDM_V43_CAPABILITY_EVIDENCE_INDEX_ADDENDUM_V1",
+  "authority_role": "Documentary delta to the existing canonical index; not a new executable registry or independent research inventory.",
+  "base_index": {
+    "path": "research/unified_consequence_runtime/capability_index.json",
+    "sha256": "c290a1b313868406cd79362b52ddb2b90b67f5cdf941569f753617dbd526ab75",
+    "entries": 70,
+    "unchanged": true
+  },
+  "evidence": {
+    "repository": "heathsanchez/test",
+    "branch": "research/udm-experiment-interface-v43-20261022",
+    "source_commit": "5a449e7d6be3a54d42e2098804904c2e1223ae51",
+    "run_id": 39682460349,
+    "run_url": "https://github.com/heathsanchez/test/actions/runs/39682460349",
+    "artifact_id": 12386633479,
+    "artifact_url": "https://github.com/heathsanchez/test/actions/runs/39682460349/artifacts/12386633479",
+    "artifact_sha256": "4c9ba1bd8029efd06aa192e86d75f78d1326316a0becc2a84a4b85a9b6f0f033",
+    "artifact_bytes": 343744090,
+    "qualification_result_sha256": "61ffe7857fde05f459152a3f94f340f221c9aee814558cbfba494d8cf358d599",
+    "independent_audit_report_sha256": "d6ba4346d4acf9b7d7e9997b4c453a3a2ecbcfe160e64f6f29d284cfb272f198",
+    "independent_gate_sha256": "650ad69d0c2ca929ec3e13c17828e752911b66f96772f74471e2c10405245a34"
+  },
+  "entries": [
+    {
+      "id": "native-source-materialization-v43",
+      "classification": "WARRANTED_BOUNDED",
+      "kind": "EXECUTABLE_SOURCE_MATERIALIZATION_INSTRUMENT",
+      "installed": true,
+      "implementation_entrypoints": [
+        "native_build_v43.prepare",
+        "native_build_v43.verify",
+        "native_materialization_v43.MaterializationRuntime.admit",
+        "native_materialization_v43.MaterializationRuntime.execute"
+      ],
+      "implementation_files": [
+        "research/unified_consequence_runtime/native_build_v43.py",
+        "research/unified_consequence_runtime/native_materialization_v43.py"
+      ],
+      "source_repository": "heathsanchez/test",
+      "source_branch": "research/udm-experiment-interface-v43-20261022",
+      "source_commit": "5a449e7d6be3a54d42e2098804904c2e1223ae51",
+      "scope": "Recognized original HatchVCS backend declarations with exact BASE ancestry, declared generated path, original compatible dependencies and executable environment; independent normalized wheel rebuild and source identity. Unsupported recipes remain UNKNOWN.",
+      "reuses": {
+        "original_qualified_source": "f8c0b06da1bbaddfd67229ca87cb53a0dab67ae0",
+        "run_id": 38856738333,
+        "artifact_id": 12027916982,
+        "mechanisms": [
+          "generic_build_materialization",
+          "generated_wheel_evidence",
+          "generated_overlay_gate",
+          "native_environment_v2 original build/source semantics"
+        ]
+      },
+      "input": "Exact BASE/AUG source contract, independently supplied test authority, fixed native policy and compatible interpreter/package identity.",
+      "output": "Verified generated-file/wheel evidence and retained executable instrument/invocation witness; no native task warrant by build alone.",
+      "independent_verifier": "Original qualified normalized wheel/provenance checks plus versioned independent native collection/import/assertion replay.",
+      "dependencies": [
+        "external execution authority ceiling",
+        "exact source/environment/recipe pins",
+        "independent build evidence",
+        "source-specific verified invocation"
+      ],
+      "causal_maintenance": "Native observations, capabilities and consequences depend on both instrument generation and exact invocation; withdrawal invalidates affected routes before execution; restoration requires new evidence/generation.",
+      "future_frontier_effect": "Allows subsequent original native collection and protected execution to import original backend-generated source; qualified on source-distinct interface fixtures.",
+      "not_demonstrated": [
+        "new observation grammar invention",
+        "constructor-language growth",
+        "prospective policy learning",
+        "comparative developmental superiority",
+        "universal sandbox containment"
+      ],
+      "supersession": "Versioned extension; V42 warrants and RED results preserved, not overwritten."
+    },
+    {
+      "id": "native-generated-import-channel-v43",
+      "classification": "WARRANTED_BOUNDED",
+      "kind": "TYPED_NATIVE_EXECUTION_TRANSPORT",
+      "installed": true,
+      "implementation_entrypoints": [
+        "native_execution_v43.collect",
+        "native_execution_v43.verify",
+        "native_runtime_v43.NativeRuntimeV43"
+      ],
+      "source_repository": "heathsanchez/test",
+      "source_branch": "research/udm-experiment-interface-v43-20261022",
+      "source_commit": "5a449e7d6be3a54d42e2098804904c2e1223ae51",
+      "scope": "Exact independently authenticated generated import channel; unchanged original collection, assertions, plugins and source-identity authority; tracked-only V42 path remains independently checked.",
+      "causal_and_replay": "Original Metatron and FLASH algorithms; exact source invocation withdrawal, fresh restoration and same-filesystem separate-process native replay. Relocation remains UNKNOWN.",
+      "native_evidence_boundary": "49 retained collection certificates and 70 native receipts checked; some receipts intentionally represent FAIL/UNKNOWN adversarial controls. They are not 70 scientific successes.",
+      "formal_boundary": "Existing conditional MSI/VDN/Metatron/FLASH correspondence only; no concrete runtime refinement proof or nonbypassable enforcement theorem instantiated."
+    },
+    {
+      "id": "chardet-v43-exposed-diagnostic",
+      "classification": "UNKNOWN",
+      "kind": "DIAGNOSTIC_RESIDUAL_NEGATIVE_CONSTRAINT",
+      "installed": false,
+      "source_repository": "chardet/chardet",
+      "source_commit": "ea7e547aa5197c32b9a4c0f8e2b0f97f071aef6c",
+      "test_only_augmented_commit": "c133dbdacfe5d4470289f6c46c4ad0452834c2b4",
+      "scope": "Already exposed diagnostic; never a fresh prospective task. Generated import and original wheel content match, but complete collection fails on original unpinned external test-data clone.",
+      "result": "1758 collected/selected,0deselected,1collection error,0native execution launches; no admission certificate or protected task warrant.",
+      "next_obstruction": "External test-data identity/availability authority, not a license to rewrite tests, suppress errors or fetch an arbitrary default branch."
+    }
+  ],
+  "verdicts": {
+    "G0_G1": "PRESERVED_EXACT_PRIOR_SOURCE_AUTHORITY",
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN"
+  },
+  "coverage_boundary": "This addendum does not claim exhaustive recovery of the Metalogic research programme.",
+  "installation_boundary": "Integrated executable V43 runtime classes and independently qualified retained fixture states; no claim that every historical ledger has been migrated or that a newly unfamiliar native task is warranted."
+}

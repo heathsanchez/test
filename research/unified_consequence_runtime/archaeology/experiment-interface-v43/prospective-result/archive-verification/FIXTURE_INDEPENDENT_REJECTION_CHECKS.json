@@ -1,0 +1,59 @@
+{
+  "archive_data_extracted_or_executed": false,
+  "cases": {
+    "compressed_trailing_bytes": {
+      "archive_sha256": "360519eadf38202f38b1a7c793e8e0aef8638771f72f9b6286305be2581e994a",
+      "reason": "ValueError: gzip stream has concatenated stream or trailing bytes",
+      "rejected": true
+    },
+    "concatenated_gzip_stream": {
+      "archive_sha256": "1a43f4522c5884d1fb35fcb962791c24b51ef72e8dc7f0d963a9ff44049d6b4c",
+      "reason": "ValueError: gzip stream has concatenated stream or trailing bytes",
+      "rejected": true
+    },
+    "external_manifest_corruption": {
+      "archive_sha256": "e002b4d1f425bd239719775d324efc060c7fd2efcc955b884f460358222d5c50",
+      "reason": "ValueError: raw tar payload hash mismatch",
+      "rejected": true
+    },
+    "extra_member_before_tar_end": {
+      "archive_sha256": "bdd6b3dca83061a20548e408292e53b0c4590b4bf3172f966ff4fc6b1c83d2d7",
+      "reason": "ValueError: unexpected raw tar header",
+      "rejected": true
+    },
+    "hidden_member_after_tar_end": {
+      "archive_sha256": "15cee81b5620d5861fae7e98b60636a892f43c4ae72cb6d96c6d18170275cc86",
+      "reason": "ValueError: nonzero bytes after tar end marker",
+      "rejected": true
+    },
+    "internal_manifest_corruption": {
+      "archive_sha256": "306530866fe9f6e133c8cea61ec63b2f6a2a85d23efba2c9093f0f199e293af9",
+      "reason": "ValueError: raw tar payload hash mismatch",
+      "rejected": true
+    },
+    "nonzero_after_tar_end": {
+      "archive_sha256": "055b89e33e7ccee00565f18bb0b52e0cafeecaaa6497687e2d131fa2a5adc987",
+      "reason": "ValueError: nonzero bytes after tar end marker",
+      "rejected": true
+    },
+    "object_archive_mode_corruption": {
+      "archive_sha256": "76cc6da335444346c6fe63cc88cb8857a5cf84f7068d59f1de31f34df9caa598",
+      "reason": "ValueError: archive member mode is not normalized 0644",
+      "rejected": true
+    },
+    "object_byte_corruption": {
+      "archive_sha256": "db5c8f7ce2176a56ae7259bf41d9072e602289819a5b8beaa60455bf3d713a39",
+      "reason": "ValueError: raw tar payload hash mismatch",
+      "rejected": true
+    },
+    "source_byte_mismatch": {
+      "archive_sha256": "329856cda18d683f60b7c25a89adb532be378ef619b022f5fbfc031c40144702",
+      "reason": "ValueError: source path metadata or byte hash mismatch",
+      "rejected": true
+    }
+  },
+  "native_tests_executed": false,
+  "negative_case_count": 10,
+  "original_fixture_mutated": false,
+  "status": "PASS"
+}

@@ -1,0 +1,3416 @@
+{
+  "schema": "UDM_V43_RETAINED_NATIVE_REFUSAL_CONTEXT_V1",
+  "repository": "agronholm/typeguard",
+  "generated_build": null,
+  "materialization_status": "TRACKED_ONLY_OR_UNKNOWN_UNSUPPORTED_DECLARATION",
+  "required_prefix_count": 162,
+  "executions": [
+    {
+      "receipt": {
+        "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/baseline/receipt.json",
+        "sha256": "3745867717c57c9c4542e9f30621b2723429cf7832399ab8d8b20c10290b6c21"
+      },
+      "status": "UNKNOWN_SKIPPED_OR_XFAIL",
+      "junit": {
+        "errors": 0,
+        "failures": 26,
+        "passed": 487,
+        "skipped": 16,
+        "tests": 529
+      },
+      "process_exit_code": 1,
+      "selected_nodes": 529,
+      "protected_prefixes": [
+        {
+          "prefix": "tests/test_checkers.py::TestAbstractSet::test_bad_type",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestAbstractSet::test_custom_type",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestAbstractSet::test_first_check_fail",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestAbstractSet::test_full_check_fail",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestAnnotated::test_fail",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestAnnotated::test_valid",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestAnyStr::test_bad_type",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestAnyStr::test_valid",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestBytesLike::test_fail",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestBytesLike::test_valid",
+          "phase_rows": 9,
+          "call_outcomes": {
+            "passed": 3
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestCallable::test_any_args",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestCallable::test_bad_type",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestCallable::test_bound_method",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestCallable::test_builtin",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestCallable::test_class",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestCallable::test_concatenate",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestCallable::test_defaults",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestCallable::test_exact_arg_count",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestCallable::test_mandatory_kwonlyargs",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestCallable::test_partial_bound_method",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestCallable::test_partial_class",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestCallable::test_plain",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestCallable::test_positional_only_arg_with_default",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestCallable::test_too_few_arguments",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestCallable::test_too_many_arguments",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestComplexNumber::test_bad_type",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestComplexNumber::test_valid",
+          "phase_rows": 9,
+          "call_outcomes": {
+            "passed": 3
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestDict::test_bad_key_type",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestDict::test_bad_key_type_full_check",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestDict::test_bad_type",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestDict::test_bad_value_type",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestDict::test_bad_value_type_full_check",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestDict::test_custom_dict_generator_items",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestFloat::test_bad_type",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestFloat::test_valid",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestFrozenSet::test_bad_type",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestFrozenSet::test_first_check_empty",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestFrozenSet::test_first_check_fail",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestFrozenSet::test_full_check_fail",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestFrozenSet::test_set_against_frozenset",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestFrozenSet::test_valid",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestIO::test_binary_fail",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestIO::test_binary_real_file",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestIO::test_binary_valid",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestIO::test_text_fail",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestIO::test_text_real_file",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestIO::test_text_valid",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestIntersectingProtocol::test_raises_for_non_member",
+          "phase_rows": 12,
+          "call_outcomes": {
+            "passed": 1,
+            "skipped": 3
+          },
+          "skipped_phase_rows": 3,
+          "wasxfail_phase_rows": 3
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestIntersectingProtocol::test_valid_member_passes",
+          "phase_rows": 15,
+          "call_outcomes": {
+            "passed": 5
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestList::test_bad_type",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestList::test_first_check_empty",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestList::test_first_check_fail",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestList::test_first_check_success",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestList::test_full_check_fail",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestLiteral::test_literal_illegal_value",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestLiteral::test_literal_int_as_bool",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestLiteral::test_literal_nested",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestLiteral::test_literal_union",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestLiteralString::test_fail",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestLiteralString::test_valid",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestMapping::test_any_value_type",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestMapping::test_bad_key_type",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestMapping::test_bad_key_type_full_check",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestMapping::test_bad_type",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestMapping::test_bad_value_type",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestMapping::test_bad_value_type_full_check",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestMutableMapping::test_bad_key_type",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestMutableMapping::test_bad_type",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestMutableMapping::test_bad_value_type",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestNamedTuple::test_type_mismatch",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestNamedTuple::test_valid",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestNamedTuple::test_wrong_field_type",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestNewType::test_generic_bad_value",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestNewType::test_generic_valid",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestNewType::test_simple_bad_value",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestNewType::test_simple_valid",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestProtocol::test_builtin_signature_check",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestProtocol::test_empty_protocol",
+          "phase_rows": 18,
+          "call_outcomes": {
+            "passed": 6
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestProtocol::test_extra_kwarg",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestProtocol::test_inherited_classmethod",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestProtocol::test_inherited_staticmethod",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestProtocol::test_instance_classmethod_mismatch",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestProtocol::test_instance_staticmethod_mismatch",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestProtocol::test_member_checks",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestProtocol::test_missing_kwarg",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestProtocol::test_missing_method",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestProtocol::test_no_kwargs",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestProtocol::test_no_varargs",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestProtocol::test_subject_method_no_positional_params",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "failed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestProtocol::test_success",
+          "phase_rows": 12,
+          "call_outcomes": {
+            "passed": 4
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestProtocol::test_too_few_posargs",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestProtocol::test_too_many_posargs",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestProtocol::test_wrong_posarg_name",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestRecursiveType::test_fail",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestRecursiveType::test_valid",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestSequence::test_bad_type",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestSequence::test_first_check_empty",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestSequence::test_first_check_fail",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestSequence::test_first_check_success",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestSequence::test_full_check_fail",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestSet::test_bad_type",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestSet::test_first_check_empty",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestSet::test_first_check_fail",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestSet::test_full_check_fail",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestSet::test_valid",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestTuple::test_bad_element",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestTuple::test_bad_type",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestTuple::test_ellipsis_bad_element",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestTuple::test_ellipsis_bad_element_full_check",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestTuple::test_empty_tuple",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestTuple::test_empty_tuple_fail",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestTuple::test_first_check_empty",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestTuple::test_too_few_elements",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestTuple::test_too_many_elements",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestTuple::test_unparametrized_tuple",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestTuple::test_unparametrized_tuple_fail",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestType::test_any",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestType::test_generic_aliase",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestType::test_parametrized",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestType::test_parametrized_fail",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestType::test_parametrized_value",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestType::test_union",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestType::test_union_any",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestType::test_union_fail",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestType::test_union_typevar",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestType::test_unparametrized",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestType::test_unparametrized_fail",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestTypeGuard::test_fail",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestTypeGuard::test_valid",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestTypedDict::test_extra_items_bad_type",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "skipped": 1,
+            "passed": 1
+          },
+          "skipped_phase_rows": 1,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestTypedDict::test_extra_items_positive",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "skipped": 1,
+            "passed": 1
+          },
+          "skipped_phase_rows": 1,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestTypedDict::test_inconsistent_keys_invalid",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestTypedDict::test_is_typeddict",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestTypedDict::test_notrequired_fail",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestTypedDict::test_notrequired_pass",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestTypedDict::test_required_missing",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestTypedDict::test_required_pass",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestTypedDict::test_required_wrong_type",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestTypedDict::test_typed_dict",
+          "phase_rows": 48,
+          "call_outcomes": {
+            "passed": 16
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestTypedDict::test_typed_dict_with_forward_ref_from_external_module",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestTypevar::test_bound",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestTypevar::test_bound_fail",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestTypevar::test_collection_constraints",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestTypevar::test_collection_constraints_fail",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestTypevar::test_constraints_fail",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestUnion::test_raw_uniontype_fail",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestUnion::test_raw_uniontype_success",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestUnion::test_typing_type_fail",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestUnion::test_union_fail",
+          "phase_rows": 12,
+          "call_outcomes": {
+            "passed": 4
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestUnion::test_union_reference_leak",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestUnion::test_uniontype_reference_leak",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestUnion::test_valid",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::test_any",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::test_any_subclass",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::test_check_against_tuple_failure",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::test_check_against_tuple_success",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::test_forward_reference_policy",
+          "phase_rows": 9,
+          "call_outcomes": {
+            "passed": 3
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::test_imported_str_forward_ref",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::test_none",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::test_return_checked_value",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::test_suppressed_checking",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::test_suppressed_checking_exception",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        }
+      ],
+      "skip_xfail": {
+        "skipped_phase_rows": 16,
+        "wasxfail_phase_rows": 9,
+        "unique_skipped_or_xfail_nodes": 16,
+        "xml_skip_reasons": [
+          {
+            "type": "pytest.skip",
+            "message": "Deferred annotations are only supported in Python 3.14+",
+            "count": 4
+          },
+          {
+            "type": "pytest.skip",
+            "message": "Requires Python < 3.10",
+            "count": 1
+          },
+          {
+            "type": "pytest.skip",
+            "message": "typing provider <module 'typing' from '/workspace/qualification/native-frontier-v3-runtime-preparation/modern-base/lib/python3.12/typing.py'> does not support extra_items in TypedDict",
+            "count": 2
+          },
+          {
+            "type": "pytest.xfail",
+            "message": "No workaround for this has been implemented yet",
+            "count": 6
+          },
+          {
+            "type": "pytest.xfail",
+            "message": "false negative due to missing support for nested protocol checks",
+            "count": 3
+          }
+        ]
+      },
+      "identity_violation_fields": {
+        "source_mutations": [],
+        "unexpected_imports": [],
+        "external_project_imports": [],
+        "plugin_violations": [],
+        "changed_test_code": []
+      }
+    },
+    {
+      "receipt": {
+        "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/independent-baseline/receipt.json",
+        "sha256": "f799ad4b0f170941f3ecd0e1d8d4dba55ca329bfdfeaba5e2791581d8cf5d1cd"
+      },
+      "status": "UNKNOWN_SKIPPED_OR_XFAIL",
+      "junit": {
+        "errors": 0,
+        "failures": 26,
+        "passed": 487,
+        "skipped": 16,
+        "tests": 529
+      },
+      "process_exit_code": 1,
+      "selected_nodes": 529,
+      "protected_prefixes": [
+        {
+          "prefix": "tests/test_checkers.py::TestAbstractSet::test_bad_type",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestAbstractSet::test_custom_type",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestAbstractSet::test_first_check_fail",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestAbstractSet::test_full_check_fail",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestAnnotated::test_fail",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestAnnotated::test_valid",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestAnyStr::test_bad_type",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestAnyStr::test_valid",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestBytesLike::test_fail",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestBytesLike::test_valid",
+          "phase_rows": 9,
+          "call_outcomes": {
+            "passed": 3
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestCallable::test_any_args",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestCallable::test_bad_type",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestCallable::test_bound_method",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestCallable::test_builtin",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestCallable::test_class",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestCallable::test_concatenate",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestCallable::test_defaults",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestCallable::test_exact_arg_count",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestCallable::test_mandatory_kwonlyargs",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestCallable::test_partial_bound_method",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestCallable::test_partial_class",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestCallable::test_plain",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestCallable::test_positional_only_arg_with_default",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestCallable::test_too_few_arguments",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestCallable::test_too_many_arguments",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestComplexNumber::test_bad_type",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestComplexNumber::test_valid",
+          "phase_rows": 9,
+          "call_outcomes": {
+            "passed": 3
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestDict::test_bad_key_type",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestDict::test_bad_key_type_full_check",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestDict::test_bad_type",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestDict::test_bad_value_type",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestDict::test_bad_value_type_full_check",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestDict::test_custom_dict_generator_items",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestFloat::test_bad_type",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestFloat::test_valid",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestFrozenSet::test_bad_type",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestFrozenSet::test_first_check_empty",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestFrozenSet::test_first_check_fail",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestFrozenSet::test_full_check_fail",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestFrozenSet::test_set_against_frozenset",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestFrozenSet::test_valid",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestIO::test_binary_fail",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestIO::test_binary_real_file",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestIO::test_binary_valid",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestIO::test_text_fail",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestIO::test_text_real_file",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestIO::test_text_valid",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestIntersectingProtocol::test_raises_for_non_member",
+          "phase_rows": 12,
+          "call_outcomes": {
+            "passed": 1,
+            "skipped": 3
+          },
+          "skipped_phase_rows": 3,
+          "wasxfail_phase_rows": 3
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestIntersectingProtocol::test_valid_member_passes",
+          "phase_rows": 15,
+          "call_outcomes": {
+            "passed": 5
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestList::test_bad_type",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestList::test_first_check_empty",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestList::test_first_check_fail",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestList::test_first_check_success",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestList::test_full_check_fail",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestLiteral::test_literal_illegal_value",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestLiteral::test_literal_int_as_bool",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestLiteral::test_literal_nested",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestLiteral::test_literal_union",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestLiteralString::test_fail",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestLiteralString::test_valid",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestMapping::test_any_value_type",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestMapping::test_bad_key_type",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestMapping::test_bad_key_type_full_check",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestMapping::test_bad_type",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestMapping::test_bad_value_type",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestMapping::test_bad_value_type_full_check",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestMutableMapping::test_bad_key_type",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestMutableMapping::test_bad_type",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestMutableMapping::test_bad_value_type",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestNamedTuple::test_type_mismatch",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestNamedTuple::test_valid",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestNamedTuple::test_wrong_field_type",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestNewType::test_generic_bad_value",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestNewType::test_generic_valid",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestNewType::test_simple_bad_value",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestNewType::test_simple_valid",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestProtocol::test_builtin_signature_check",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestProtocol::test_empty_protocol",
+          "phase_rows": 18,
+          "call_outcomes": {
+            "passed": 6
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestProtocol::test_extra_kwarg",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestProtocol::test_inherited_classmethod",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestProtocol::test_inherited_staticmethod",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestProtocol::test_instance_classmethod_mismatch",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestProtocol::test_instance_staticmethod_mismatch",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestProtocol::test_member_checks",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestProtocol::test_missing_kwarg",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestProtocol::test_missing_method",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestProtocol::test_no_kwargs",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestProtocol::test_no_varargs",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestProtocol::test_subject_method_no_positional_params",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "failed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestProtocol::test_success",
+          "phase_rows": 12,
+          "call_outcomes": {
+            "passed": 4
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestProtocol::test_too_few_posargs",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestProtocol::test_too_many_posargs",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestProtocol::test_wrong_posarg_name",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestRecursiveType::test_fail",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestRecursiveType::test_valid",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestSequence::test_bad_type",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestSequence::test_first_check_empty",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestSequence::test_first_check_fail",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestSequence::test_first_check_success",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestSequence::test_full_check_fail",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestSet::test_bad_type",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestSet::test_first_check_empty",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestSet::test_first_check_fail",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestSet::test_full_check_fail",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestSet::test_valid",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestTuple::test_bad_element",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestTuple::test_bad_type",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestTuple::test_ellipsis_bad_element",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestTuple::test_ellipsis_bad_element_full_check",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestTuple::test_empty_tuple",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestTuple::test_empty_tuple_fail",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestTuple::test_first_check_empty",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestTuple::test_too_few_elements",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestTuple::test_too_many_elements",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestTuple::test_unparametrized_tuple",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestTuple::test_unparametrized_tuple_fail",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestType::test_any",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestType::test_generic_aliase",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestType::test_parametrized",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestType::test_parametrized_fail",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestType::test_parametrized_value",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestType::test_union",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestType::test_union_any",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestType::test_union_fail",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestType::test_union_typevar",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestType::test_unparametrized",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestType::test_unparametrized_fail",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestTypeGuard::test_fail",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestTypeGuard::test_valid",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestTypedDict::test_extra_items_bad_type",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "skipped": 1,
+            "passed": 1
+          },
+          "skipped_phase_rows": 1,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestTypedDict::test_extra_items_positive",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "skipped": 1,
+            "passed": 1
+          },
+          "skipped_phase_rows": 1,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestTypedDict::test_inconsistent_keys_invalid",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestTypedDict::test_is_typeddict",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestTypedDict::test_notrequired_fail",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestTypedDict::test_notrequired_pass",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestTypedDict::test_required_missing",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestTypedDict::test_required_pass",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestTypedDict::test_required_wrong_type",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestTypedDict::test_typed_dict",
+          "phase_rows": 48,
+          "call_outcomes": {
+            "passed": 16
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestTypedDict::test_typed_dict_with_forward_ref_from_external_module",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestTypevar::test_bound",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestTypevar::test_bound_fail",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestTypevar::test_collection_constraints",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestTypevar::test_collection_constraints_fail",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestTypevar::test_constraints_fail",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestUnion::test_raw_uniontype_fail",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestUnion::test_raw_uniontype_success",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestUnion::test_typing_type_fail",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestUnion::test_union_fail",
+          "phase_rows": 12,
+          "call_outcomes": {
+            "passed": 4
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestUnion::test_union_reference_leak",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestUnion::test_uniontype_reference_leak",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::TestUnion::test_valid",
+          "phase_rows": 6,
+          "call_outcomes": {
+            "passed": 2
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::test_any",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::test_any_subclass",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::test_check_against_tuple_failure",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::test_check_against_tuple_success",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::test_forward_reference_policy",
+          "phase_rows": 9,
+          "call_outcomes": {
+            "passed": 3
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::test_imported_str_forward_ref",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::test_none",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::test_return_checked_value",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::test_suppressed_checking",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        },
+        {
+          "prefix": "tests/test_checkers.py::test_suppressed_checking_exception",
+          "phase_rows": 3,
+          "call_outcomes": {
+            "passed": 1
+          },
+          "skipped_phase_rows": 0,
+          "wasxfail_phase_rows": 0
+        }
+      ],
+      "skip_xfail": {
+        "skipped_phase_rows": 16,
+        "wasxfail_phase_rows": 9,
+        "unique_skipped_or_xfail_nodes": 16,
+        "xml_skip_reasons": [
+          {
+            "type": "pytest.skip",
+            "message": "Deferred annotations are only supported in Python 3.14+",
+            "count": 4
+          },
+          {
+            "type": "pytest.skip",
+            "message": "Requires Python < 3.10",
+            "count": 1
+          },
+          {
+            "type": "pytest.skip",
+            "message": "typing provider <module 'typing' from '/workspace/qualification/native-frontier-v3-runtime-preparation/modern-base/lib/python3.12/typing.py'> does not support extra_items in TypedDict",
+            "count": 2
+          },
+          {
+            "type": "pytest.xfail",
+            "message": "No workaround for this has been implemented yet",
+            "count": 6
+          },
+          {
+            "type": "pytest.xfail",
+            "message": "false negative due to missing support for nested protocol checks",
+            "count": 3
+          }
+        ]
+      },
+      "identity_violation_fields": {
+        "source_mutations": [],
+        "unexpected_imports": [],
+        "external_project_imports": [],
+        "plugin_violations": [],
+        "changed_test_code": []
+      }
+    }
+  ],
+  "conclusion": "Both independently retained native executions remain UNKNOWN_SKIPPED_OR_XFAIL under the unchanged no-skips/no-xfails full-suite contract. Collection admission is not assertion execution admission. No test editing, deselection, skip suppression, retry, task substitution or native promotion is permitted.",
+  "protected_unique_node_summary": [
+    {
+      "execution": "baseline",
+      "required_prefix_count": 162,
+      "selected_protected_nodes": 236,
+      "protected_skip_nodes": 5,
+      "protected_xfail_nodes": 3,
+      "protected_skip_or_xfail_nodes": 5,
+      "required_prefixes": [
+        "tests/test_checkers.py::TestAbstractSet::test_bad_type",
+        "tests/test_checkers.py::TestAbstractSet::test_custom_type",
+        "tests/test_checkers.py::TestAbstractSet::test_first_check_fail",
+        "tests/test_checkers.py::TestAbstractSet::test_full_check_fail",
+        "tests/test_checkers.py::TestAnnotated::test_fail",
+        "tests/test_checkers.py::TestAnnotated::test_valid",
+        "tests/test_checkers.py::TestAnyStr::test_bad_type",
+        "tests/test_checkers.py::TestAnyStr::test_valid",
+        "tests/test_checkers.py::TestBytesLike::test_fail",
+        "tests/test_checkers.py::TestBytesLike::test_valid",
+        "tests/test_checkers.py::TestCallable::test_any_args",
+        "tests/test_checkers.py::TestCallable::test_bad_type",
+        "tests/test_checkers.py::TestCallable::test_bound_method",
+        "tests/test_checkers.py::TestCallable::test_builtin",
+        "tests/test_checkers.py::TestCallable::test_class",
+        "tests/test_checkers.py::TestCallable::test_concatenate",
+        "tests/test_checkers.py::TestCallable::test_defaults",
+        "tests/test_checkers.py::TestCallable::test_exact_arg_count",
+        "tests/test_checkers.py::TestCallable::test_mandatory_kwonlyargs",
+        "tests/test_checkers.py::TestCallable::test_partial_bound_method",
+        "tests/test_checkers.py::TestCallable::test_partial_class",
+        "tests/test_checkers.py::TestCallable::test_plain",
+        "tests/test_checkers.py::TestCallable::test_positional_only_arg_with_default",
+        "tests/test_checkers.py::TestCallable::test_too_few_arguments",
+        "tests/test_checkers.py::TestCallable::test_too_many_arguments",
+        "tests/test_checkers.py::TestComplexNumber::test_bad_type",
+        "tests/test_checkers.py::TestComplexNumber::test_valid",
+        "tests/test_checkers.py::TestDict::test_bad_key_type",
+        "tests/test_checkers.py::TestDict::test_bad_key_type_full_check",
+        "tests/test_checkers.py::TestDict::test_bad_type",
+        "tests/test_checkers.py::TestDict::test_bad_value_type",
+        "tests/test_checkers.py::TestDict::test_bad_value_type_full_check",
+        "tests/test_checkers.py::TestDict::test_custom_dict_generator_items",
+        "tests/test_checkers.py::TestFloat::test_bad_type",
+        "tests/test_checkers.py::TestFloat::test_valid",
+        "tests/test_checkers.py::TestFrozenSet::test_bad_type",
+        "tests/test_checkers.py::TestFrozenSet::test_first_check_empty",
+        "tests/test_checkers.py::TestFrozenSet::test_first_check_fail",
+        "tests/test_checkers.py::TestFrozenSet::test_full_check_fail",
+        "tests/test_checkers.py::TestFrozenSet::test_set_against_frozenset",
+        "tests/test_checkers.py::TestFrozenSet::test_valid",
+        "tests/test_checkers.py::TestIO::test_binary_fail",
+        "tests/test_checkers.py::TestIO::test_binary_real_file",
+        "tests/test_checkers.py::TestIO::test_binary_valid",
+        "tests/test_checkers.py::TestIO::test_text_fail",
+        "tests/test_checkers.py::TestIO::test_text_real_file",
+        "tests/test_checkers.py::TestIO::test_text_valid",
+        "tests/test_checkers.py::TestIntersectingProtocol::test_raises_for_non_member",
+        "tests/test_checkers.py::TestIntersectingProtocol::test_valid_member_passes",
+        "tests/test_checkers.py::TestList::test_bad_type",
+        "tests/test_checkers.py::TestList::test_first_check_empty",
+        "tests/test_checkers.py::TestList::test_first_check_fail",
+        "tests/test_checkers.py::TestList::test_first_check_success",
+        "tests/test_checkers.py::TestList::test_full_check_fail",
+        "tests/test_checkers.py::TestLiteral::test_literal_illegal_value",
+        "tests/test_checkers.py::TestLiteral::test_literal_int_as_bool",
+        "tests/test_checkers.py::TestLiteral::test_literal_nested",
+        "tests/test_checkers.py::TestLiteral::test_literal_union",
+        "tests/test_checkers.py::TestLiteralString::test_fail",
+        "tests/test_checkers.py::TestLiteralString::test_valid",
+        "tests/test_checkers.py::TestMapping::test_any_value_type",
+        "tests/test_checkers.py::TestMapping::test_bad_key_type",
+        "tests/test_checkers.py::TestMapping::test_bad_key_type_full_check",
+        "tests/test_checkers.py::TestMapping::test_bad_type",
+        "tests/test_checkers.py::TestMapping::test_bad_value_type",
+        "tests/test_checkers.py::TestMapping::test_bad_value_type_full_check",
+        "tests/test_checkers.py::TestMutableMapping::test_bad_key_type",
+        "tests/test_checkers.py::TestMutableMapping::test_bad_type",
+        "tests/test_checkers.py::TestMutableMapping::test_bad_value_type",
+        "tests/test_checkers.py::TestNamedTuple::test_type_mismatch",
+        "tests/test_checkers.py::TestNamedTuple::test_valid",
+        "tests/test_checkers.py::TestNamedTuple::test_wrong_field_type",
+        "tests/test_checkers.py::TestNewType::test_generic_bad_value",
+        "tests/test_checkers.py::TestNewType::test_generic_valid",
+        "tests/test_checkers.py::TestNewType::test_simple_bad_value",
+        "tests/test_checkers.py::TestNewType::test_simple_valid",
+        "tests/test_checkers.py::TestProtocol::test_builtin_signature_check",
+        "tests/test_checkers.py::TestProtocol::test_empty_protocol",
+        "tests/test_checkers.py::TestProtocol::test_extra_kwarg",
+        "tests/test_checkers.py::TestProtocol::test_inherited_classmethod",
+        "tests/test_checkers.py::TestProtocol::test_inherited_staticmethod",
+        "tests/test_checkers.py::TestProtocol::test_instance_classmethod_mismatch",
+        "tests/test_checkers.py::TestProtocol::test_instance_staticmethod_mismatch",
+        "tests/test_checkers.py::TestProtocol::test_member_checks",
+        "tests/test_checkers.py::TestProtocol::test_missing_kwarg",
+        "tests/test_checkers.py::TestProtocol::test_missing_method",
+        "tests/test_checkers.py::TestProtocol::test_no_kwargs",
+        "tests/test_checkers.py::TestProtocol::test_no_varargs",
+        "tests/test_checkers.py::TestProtocol::test_subject_method_no_positional_params",
+        "tests/test_checkers.py::TestProtocol::test_success",
+        "tests/test_checkers.py::TestProtocol::test_too_few_posargs",
+        "tests/test_checkers.py::TestProtocol::test_too_many_posargs",
+        "tests/test_checkers.py::TestProtocol::test_wrong_posarg_name",
+        "tests/test_checkers.py::TestRecursiveType::test_fail",
+        "tests/test_checkers.py::TestRecursiveType::test_valid",
+        "tests/test_checkers.py::TestSequence::test_bad_type",
+        "tests/test_checkers.py::TestSequence::test_first_check_empty",
+        "tests/test_checkers.py::TestSequence::test_first_check_fail",
+        "tests/test_checkers.py::TestSequence::test_first_check_success",
+        "tests/test_checkers.py::TestSequence::test_full_check_fail",
+        "tests/test_checkers.py::TestSet::test_bad_type",
+        "tests/test_checkers.py::TestSet::test_first_check_empty",
+        "tests/test_checkers.py::TestSet::test_first_check_fail",
+        "tests/test_checkers.py::TestSet::test_full_check_fail",
+        "tests/test_checkers.py::TestSet::test_valid",
+        "tests/test_checkers.py::TestTuple::test_bad_element",
+        "tests/test_checkers.py::TestTuple::test_bad_type",
+        "tests/test_checkers.py::TestTuple::test_ellipsis_bad_element",
+        "tests/test_checkers.py::TestTuple::test_ellipsis_bad_element_full_check",
+        "tests/test_checkers.py::TestTuple::test_empty_tuple",
+        "tests/test_checkers.py::TestTuple::test_empty_tuple_fail",
+        "tests/test_checkers.py::TestTuple::test_first_check_empty",
+        "tests/test_checkers.py::TestTuple::test_too_few_elements",
+        "tests/test_checkers.py::TestTuple::test_too_many_elements",
+        "tests/test_checkers.py::TestTuple::test_unparametrized_tuple",
+        "tests/test_checkers.py::TestTuple::test_unparametrized_tuple_fail",
+        "tests/test_checkers.py::TestType::test_any",
+        "tests/test_checkers.py::TestType::test_generic_aliase",
+        "tests/test_checkers.py::TestType::test_parametrized",
+        "tests/test_checkers.py::TestType::test_parametrized_fail",
+        "tests/test_checkers.py::TestType::test_parametrized_value",
+        "tests/test_checkers.py::TestType::test_union",
+        "tests/test_checkers.py::TestType::test_union_any",
+        "tests/test_checkers.py::TestType::test_union_fail",
+        "tests/test_checkers.py::TestType::test_union_typevar",
+        "tests/test_checkers.py::TestType::test_unparametrized",
+        "tests/test_checkers.py::TestType::test_unparametrized_fail",
+        "tests/test_checkers.py::TestTypeGuard::test_fail",
+        "tests/test_checkers.py::TestTypeGuard::test_valid",
+        "tests/test_checkers.py::TestTypedDict::test_extra_items_bad_type",
+        "tests/test_checkers.py::TestTypedDict::test_extra_items_positive",
+        "tests/test_checkers.py::TestTypedDict::test_inconsistent_keys_invalid",
+        "tests/test_checkers.py::TestTypedDict::test_is_typeddict",
+        "tests/test_checkers.py::TestTypedDict::test_notrequired_fail",
+        "tests/test_checkers.py::TestTypedDict::test_notrequired_pass",
+        "tests/test_checkers.py::TestTypedDict::test_required_missing",
+        "tests/test_checkers.py::TestTypedDict::test_required_pass",
+        "tests/test_checkers.py::TestTypedDict::test_required_wrong_type",
+        "tests/test_checkers.py::TestTypedDict::test_typed_dict",
+        "tests/test_checkers.py::TestTypedDict::test_typed_dict_with_forward_ref_from_external_module",
+        "tests/test_checkers.py::TestTypevar::test_bound",
+        "tests/test_checkers.py::TestTypevar::test_bound_fail",
+        "tests/test_checkers.py::TestTypevar::test_collection_constraints",
+        "tests/test_checkers.py::TestTypevar::test_collection_constraints_fail",
+        "tests/test_checkers.py::TestTypevar::test_constraints_fail",
+        "tests/test_checkers.py::TestUnion::test_raw_uniontype_fail",
+        "tests/test_checkers.py::TestUnion::test_raw_uniontype_success",
+        "tests/test_checkers.py::TestUnion::test_typing_type_fail",
+        "tests/test_checkers.py::TestUnion::test_union_fail",
+        "tests/test_checkers.py::TestUnion::test_union_reference_leak",
+        "tests/test_checkers.py::TestUnion::test_uniontype_reference_leak",
+        "tests/test_checkers.py::TestUnion::test_valid",
+        "tests/test_checkers.py::test_any",
+        "tests/test_checkers.py::test_any_subclass",
+        "tests/test_checkers.py::test_check_against_tuple_failure",
+        "tests/test_checkers.py::test_check_against_tuple_success",
+        "tests/test_checkers.py::test_forward_reference_policy",
+        "tests/test_checkers.py::test_imported_str_forward_ref",
+        "tests/test_checkers.py::test_none",
+        "tests/test_checkers.py::test_return_checked_value",
+        "tests/test_checkers.py::test_suppressed_checking",
+        "tests/test_checkers.py::test_suppressed_checking_exception"
+      ],
+      "protected_skip_node_ids": [
+        "tests/test_checkers.py::TestIntersectingProtocol::test_raises_for_non_member[int_tuple_str_specialized]",
+        "tests/test_checkers.py::TestIntersectingProtocol::test_raises_for_non_member[range_str_specialized]",
+        "tests/test_checkers.py::TestIntersectingProtocol::test_raises_for_non_member[str_tuple_int_specialized]",
+        "tests/test_checkers.py::TestTypedDict::test_extra_items_bad_type[typing]",
+        "tests/test_checkers.py::TestTypedDict::test_extra_items_positive[typing]"
+      ],
+      "protected_xfail_node_ids": [
+        "tests/test_checkers.py::TestIntersectingProtocol::test_raises_for_non_member[int_tuple_str_specialized]",
+        "tests/test_checkers.py::TestIntersectingProtocol::test_raises_for_non_member[range_str_specialized]",
+        "tests/test_checkers.py::TestIntersectingProtocol::test_raises_for_non_member[str_tuple_int_specialized]"
+      ]
+    },
+    {
+      "execution": "independent-baseline",
+      "required_prefix_count": 162,
+      "selected_protected_nodes": 236,
+      "protected_skip_nodes": 5,
+      "protected_xfail_nodes": 3,
+      "protected_skip_or_xfail_nodes": 5,
+      "required_prefixes": [
+        "tests/test_checkers.py::TestAbstractSet::test_bad_type",
+        "tests/test_checkers.py::TestAbstractSet::test_custom_type",
+        "tests/test_checkers.py::TestAbstractSet::test_first_check_fail",
+        "tests/test_checkers.py::TestAbstractSet::test_full_check_fail",
+        "tests/test_checkers.py::TestAnnotated::test_fail",
+        "tests/test_checkers.py::TestAnnotated::test_valid",
+        "tests/test_checkers.py::TestAnyStr::test_bad_type",
+        "tests/test_checkers.py::TestAnyStr::test_valid",
+        "tests/test_checkers.py::TestBytesLike::test_fail",
+        "tests/test_checkers.py::TestBytesLike::test_valid",
+        "tests/test_checkers.py::TestCallable::test_any_args",
+        "tests/test_checkers.py::TestCallable::test_bad_type",
+        "tests/test_checkers.py::TestCallable::test_bound_method",
+        "tests/test_checkers.py::TestCallable::test_builtin",
+        "tests/test_checkers.py::TestCallable::test_class",
+        "tests/test_checkers.py::TestCallable::test_concatenate",
+        "tests/test_checkers.py::TestCallable::test_defaults",
+        "tests/test_checkers.py::TestCallable::test_exact_arg_count",
+        "tests/test_checkers.py::TestCallable::test_mandatory_kwonlyargs",
+        "tests/test_checkers.py::TestCallable::test_partial_bound_method",
+        "tests/test_checkers.py::TestCallable::test_partial_class",
+        "tests/test_checkers.py::TestCallable::test_plain",
+        "tests/test_checkers.py::TestCallable::test_positional_only_arg_with_default",
+        "tests/test_checkers.py::TestCallable::test_too_few_arguments",
+        "tests/test_checkers.py::TestCallable::test_too_many_arguments",
+        "tests/test_checkers.py::TestComplexNumber::test_bad_type",
+        "tests/test_checkers.py::TestComplexNumber::test_valid",
+        "tests/test_checkers.py::TestDict::test_bad_key_type",
+        "tests/test_checkers.py::TestDict::test_bad_key_type_full_check",
+        "tests/test_checkers.py::TestDict::test_bad_type",
+        "tests/test_checkers.py::TestDict::test_bad_value_type",
+        "tests/test_checkers.py::TestDict::test_bad_value_type_full_check",
+        "tests/test_checkers.py::TestDict::test_custom_dict_generator_items",
+        "tests/test_checkers.py::TestFloat::test_bad_type",
+        "tests/test_checkers.py::TestFloat::test_valid",
+        "tests/test_checkers.py::TestFrozenSet::test_bad_type",
+        "tests/test_checkers.py::TestFrozenSet::test_first_check_empty",
+        "tests/test_checkers.py::TestFrozenSet::test_first_check_fail",
+        "tests/test_checkers.py::TestFrozenSet::test_full_check_fail",
+        "tests/test_checkers.py::TestFrozenSet::test_set_against_frozenset",
+        "tests/test_checkers.py::TestFrozenSet::test_valid",
+        "tests/test_checkers.py::TestIO::test_binary_fail",
+        "tests/test_checkers.py::TestIO::test_binary_real_file",
+        "tests/test_checkers.py::TestIO::test_binary_valid",
+        "tests/test_checkers.py::TestIO::test_text_fail",
+        "tests/test_checkers.py::TestIO::test_text_real_file",
+        "tests/test_checkers.py::TestIO::test_text_valid",
+        "tests/test_checkers.py::TestIntersectingProtocol::test_raises_for_non_member",
+        "tests/test_checkers.py::TestIntersectingProtocol::test_valid_member_passes",
+        "tests/test_checkers.py::TestList::test_bad_type",
+        "tests/test_checkers.py::TestList::test_first_check_empty",
+        "tests/test_checkers.py::TestList::test_first_check_fail",
+        "tests/test_checkers.py::TestList::test_first_check_success",
+        "tests/test_checkers.py::TestList::test_full_check_fail",
+        "tests/test_checkers.py::TestLiteral::test_literal_illegal_value",
+        "tests/test_checkers.py::TestLiteral::test_literal_int_as_bool",
+        "tests/test_checkers.py::TestLiteral::test_literal_nested",
+        "tests/test_checkers.py::TestLiteral::test_literal_union",
+        "tests/test_checkers.py::TestLiteralString::test_fail",
+        "tests/test_checkers.py::TestLiteralString::test_valid",
+        "tests/test_checkers.py::TestMapping::test_any_value_type",
+        "tests/test_checkers.py::TestMapping::test_bad_key_type",
+        "tests/test_checkers.py::TestMapping::test_bad_key_type_full_check",
+        "tests/test_checkers.py::TestMapping::test_bad_type",
+        "tests/test_checkers.py::TestMapping::test_bad_value_type",
+        "tests/test_checkers.py::TestMapping::test_bad_value_type_full_check",
+        "tests/test_checkers.py::TestMutableMapping::test_bad_key_type",
+        "tests/test_checkers.py::TestMutableMapping::test_bad_type",
+        "tests/test_checkers.py::TestMutableMapping::test_bad_value_type",
+        "tests/test_checkers.py::TestNamedTuple::test_type_mismatch",
+        "tests/test_checkers.py::TestNamedTuple::test_valid",
+        "tests/test_checkers.py::TestNamedTuple::test_wrong_field_type",
+        "tests/test_checkers.py::TestNewType::test_generic_bad_value",
+        "tests/test_checkers.py::TestNewType::test_generic_valid",
+        "tests/test_checkers.py::TestNewType::test_simple_bad_value",
+        "tests/test_checkers.py::TestNewType::test_simple_valid",
+        "tests/test_checkers.py::TestProtocol::test_builtin_signature_check",
+        "tests/test_checkers.py::TestProtocol::test_empty_protocol",
+        "tests/test_checkers.py::TestProtocol::test_extra_kwarg",
+        "tests/test_checkers.py::TestProtocol::test_inherited_classmethod",
+        "tests/test_checkers.py::TestProtocol::test_inherited_staticmethod",
+        "tests/test_checkers.py::TestProtocol::test_instance_classmethod_mismatch",
+        "tests/test_checkers.py::TestProtocol::test_instance_staticmethod_mismatch",
+        "tests/test_checkers.py::TestProtocol::test_member_checks",
+        "tests/test_checkers.py::TestProtocol::test_missing_kwarg",
+        "tests/test_checkers.py::TestProtocol::test_missing_method",
+        "tests/test_checkers.py::TestProtocol::test_no_kwargs",
+        "tests/test_checkers.py::TestProtocol::test_no_varargs",
+        "tests/test_checkers.py::TestProtocol::test_subject_method_no_positional_params",
+        "tests/test_checkers.py::TestProtocol::test_success",
+        "tests/test_checkers.py::TestProtocol::test_too_few_posargs",
+        "tests/test_checkers.py::TestProtocol::test_too_many_posargs",
+        "tests/test_checkers.py::TestProtocol::test_wrong_posarg_name",
+        "tests/test_checkers.py::TestRecursiveType::test_fail",
+        "tests/test_checkers.py::TestRecursiveType::test_valid",
+        "tests/test_checkers.py::TestSequence::test_bad_type",
+        "tests/test_checkers.py::TestSequence::test_first_check_empty",
+        "tests/test_checkers.py::TestSequence::test_first_check_fail",
+        "tests/test_checkers.py::TestSequence::test_first_check_success",
+        "tests/test_checkers.py::TestSequence::test_full_check_fail",
+        "tests/test_checkers.py::TestSet::test_bad_type",
+        "tests/test_checkers.py::TestSet::test_first_check_empty",
+        "tests/test_checkers.py::TestSet::test_first_check_fail",
+        "tests/test_checkers.py::TestSet::test_full_check_fail",
+        "tests/test_checkers.py::TestSet::test_valid",
+        "tests/test_checkers.py::TestTuple::test_bad_element",
+        "tests/test_checkers.py::TestTuple::test_bad_type",
+        "tests/test_checkers.py::TestTuple::test_ellipsis_bad_element",
+        "tests/test_checkers.py::TestTuple::test_ellipsis_bad_element_full_check",
+        "tests/test_checkers.py::TestTuple::test_empty_tuple",
+        "tests/test_checkers.py::TestTuple::test_empty_tuple_fail",
+        "tests/test_checkers.py::TestTuple::test_first_check_empty",
+        "tests/test_checkers.py::TestTuple::test_too_few_elements",
+        "tests/test_checkers.py::TestTuple::test_too_many_elements",
+        "tests/test_checkers.py::TestTuple::test_unparametrized_tuple",
+        "tests/test_checkers.py::TestTuple::test_unparametrized_tuple_fail",
+        "tests/test_checkers.py::TestType::test_any",
+        "tests/test_checkers.py::TestType::test_generic_aliase",
+        "tests/test_checkers.py::TestType::test_parametrized",
+        "tests/test_checkers.py::TestType::test_parametrized_fail",
+        "tests/test_checkers.py::TestType::test_parametrized_value",
+        "tests/test_checkers.py::TestType::test_union",
+        "tests/test_checkers.py::TestType::test_union_any",
+        "tests/test_checkers.py::TestType::test_union_fail",
+        "tests/test_checkers.py::TestType::test_union_typevar",
+        "tests/test_checkers.py::TestType::test_unparametrized",
+        "tests/test_checkers.py::TestType::test_unparametrized_fail",
+        "tests/test_checkers.py::TestTypeGuard::test_fail",
+        "tests/test_checkers.py::TestTypeGuard::test_valid",
+        "tests/test_checkers.py::TestTypedDict::test_extra_items_bad_type",
+        "tests/test_checkers.py::TestTypedDict::test_extra_items_positive",
+        "tests/test_checkers.py::TestTypedDict::test_inconsistent_keys_invalid",
+        "tests/test_checkers.py::TestTypedDict::test_is_typeddict",
+        "tests/test_checkers.py::TestTypedDict::test_notrequired_fail",
+        "tests/test_checkers.py::TestTypedDict::test_notrequired_pass",
+        "tests/test_checkers.py::TestTypedDict::test_required_missing",
+        "tests/test_checkers.py::TestTypedDict::test_required_pass",
+        "tests/test_checkers.py::TestTypedDict::test_required_wrong_type",
+        "tests/test_checkers.py::TestTypedDict::test_typed_dict",
+        "tests/test_checkers.py::TestTypedDict::test_typed_dict_with_forward_ref_from_external_module",
+        "tests/test_checkers.py::TestTypevar::test_bound",
+        "tests/test_checkers.py::TestTypevar::test_bound_fail",
+        "tests/test_checkers.py::TestTypevar::test_collection_constraints",
+        "tests/test_checkers.py::TestTypevar::test_collection_constraints_fail",
+        "tests/test_checkers.py::TestTypevar::test_constraints_fail",
+        "tests/test_checkers.py::TestUnion::test_raw_uniontype_fail",
+        "tests/test_checkers.py::TestUnion::test_raw_uniontype_success",
+        "tests/test_checkers.py::TestUnion::test_typing_type_fail",
+        "tests/test_checkers.py::TestUnion::test_union_fail",
+        "tests/test_checkers.py::TestUnion::test_union_reference_leak",
+        "tests/test_checkers.py::TestUnion::test_uniontype_reference_leak",
+        "tests/test_checkers.py::TestUnion::test_valid",
+        "tests/test_checkers.py::test_any",
+        "tests/test_checkers.py::test_any_subclass",
+        "tests/test_checkers.py::test_check_against_tuple_failure",
+        "tests/test_checkers.py::test_check_against_tuple_success",
+        "tests/test_checkers.py::test_forward_reference_policy",
+        "tests/test_checkers.py::test_imported_str_forward_ref",
+        "tests/test_checkers.py::test_none",
+        "tests/test_checkers.py::test_return_checked_value",
+        "tests/test_checkers.py::test_suppressed_checking",
+        "tests/test_checkers.py::test_suppressed_checking_exception"
+      ],
+      "protected_skip_node_ids": [
+        "tests/test_checkers.py::TestIntersectingProtocol::test_raises_for_non_member[int_tuple_str_specialized]",
+        "tests/test_checkers.py::TestIntersectingProtocol::test_raises_for_non_member[range_str_specialized]",
+        "tests/test_checkers.py::TestIntersectingProtocol::test_raises_for_non_member[str_tuple_int_specialized]",
+        "tests/test_checkers.py::TestTypedDict::test_extra_items_bad_type[typing]",
+        "tests/test_checkers.py::TestTypedDict::test_extra_items_positive[typing]"
+      ],
+      "protected_xfail_node_ids": [
+        "tests/test_checkers.py::TestIntersectingProtocol::test_raises_for_non_member[int_tuple_str_specialized]",
+        "tests/test_checkers.py::TestIntersectingProtocol::test_raises_for_non_member[range_str_specialized]",
+        "tests/test_checkers.py::TestIntersectingProtocol::test_raises_for_non_member[str_tuple_int_specialized]"
+      ]
+    }
+  ]
+}

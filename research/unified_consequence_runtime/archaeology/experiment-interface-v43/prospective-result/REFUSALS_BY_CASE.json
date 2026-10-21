@@ -1,0 +1,454 @@
+{
+  "schema": "UDM_V43_INDEPENDENT_SCREENING_REFUSALS_V1",
+  "cases": [
+    {
+      "index": 0,
+      "repository": "agronholm/exceptiongroup",
+      "status": "UNKNOWN_ENVIRONMENT_SELECTION",
+      "eligible": false,
+      "setup_status": "UNKNOWN_ENVIRONMENT_SELECTION",
+      "smallest_obstruction": "UNKNOWN_NO_COMPATIBLE_PROFILE",
+      "selection_status": "UNKNOWN",
+      "selection_reason": "UNKNOWN_NO_COMPATIBLE_PROFILE",
+      "profile_candidates": [
+        {
+          "id": "cpython-3.6.5-pytest-5.4.3-linux-x86_64",
+          "pytest_version": "5.4.3",
+          "python_version": "3.6.5",
+          "reason": "INCOMPATIBLE_PYTHON_RANGE",
+          "reasons": [
+            {
+              "detail": "3.6.5",
+              "reason": "INCOMPATIBLE_PYTHON_RANGE"
+            },
+            {
+              "detail": "flit_scm",
+              "installed_pin": null,
+              "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED"
+            },
+            {
+              "detail": "typing-extensions>=4.6.0; python_version < \"3.13\"",
+              "installed_pin": "4.1.1",
+              "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED"
+            },
+            {
+              "detail": "pytest>=6",
+              "installed_pin": "5.4.3",
+              "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED"
+            }
+          ],
+          "status": "REJECTED"
+        },
+        {
+          "id": "cpython-3.12.14-pytest-8.4.1-linux-x86_64",
+          "pytest_version": "8.4.1",
+          "python_version": "3.12.14",
+          "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED",
+          "reasons": [
+            {
+              "detail": "flit_scm",
+              "installed_pin": null,
+              "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED"
+            }
+          ],
+          "status": "UNKNOWN"
+        }
+      ],
+      "source_metadata_identity": {
+        "file_count": 30,
+        "git_tree": "0f6fee9065ceea1e550e7c34c05e24f89f2846eb",
+        "tracked_tree_sha256": "5b8a428fe18cd42ec2bf37a22c58551f9ed85adf391a9db26d843fde0d2a47ac"
+      },
+      "provenance": {
+        "screening_case": {
+          "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-000/SCREENING_CASE.json",
+          "sha256": "adf41f1de6b002a38b202272766764dbcb9d890721bf6999873685e6d08c67f0"
+        },
+        "selection.json": {
+          "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-000/source-environment/selection.json",
+          "sha256": "f37154b27891c112df4a2eaf0cc3745ef9e1f544f689f089cf6d93118c8d011e"
+        },
+        "admission-v43.json": {
+          "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-000/source-environment/admission-v43.json",
+          "sha256": "cc57d057ae542df16327a04f6f93afa53e51677aaa3ea1a768386c31b89adfdf"
+        },
+        "admission-v42.json": {
+          "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-000/source-environment/admission-v42.json",
+          "sha256": "9fb8f2eac001fe12868c977ce2ce70b656e9e5300d8f7f58d20440bbb14b4fbd"
+        },
+        "admission-v3.json": {
+          "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-000/source-environment/admission-v3.json",
+          "sha256": "a14c3af5494415bb932db3ae5ea2d640d041b6fb293a9bfc6e68ad4b2f2bfc62"
+        }
+      }
+    },
+    {
+      "index": 1,
+      "repository": "agronholm/typeguard",
+      "status": "UNKNOWN_SKIPPED_OR_XFAIL",
+      "eligible": false,
+      "setup_status": "PREPARED",
+      "smallest_obstruction": "UNKNOWN_SKIPPED_OR_XFAIL",
+      "selection_status": "CANDIDATE_SOURCE_ENVIRONMENT",
+      "selection_reason": null,
+      "profile_candidates": [
+        {
+          "id": "cpython-3.6.5-pytest-5.4.3-linux-x86_64",
+          "pytest_version": "5.4.3",
+          "python_version": "3.6.5",
+          "reason": "INCOMPATIBLE_DECLARED_PYTHON",
+          "reasons": [
+            {
+              "detail": "3.6",
+              "reason": "INCOMPATIBLE_DECLARED_PYTHON"
+            },
+            {
+              "detail": "3.6.5",
+              "reason": "INCOMPATIBLE_PYTHON_RANGE"
+            },
+            {
+              "detail": "setuptools>=77",
+              "installed_pin": "59.6.0",
+              "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED"
+            },
+            {
+              "detail": "setuptools_scm[toml]>=6.4",
+              "installed_pin": null,
+              "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED"
+            },
+            {
+              "detail": "setuptools_scm[toml]>=6.4",
+              "reason": "UNKNOWN_EXTRA_DEPENDENCY_METADATA"
+            },
+            {
+              "detail": "coverage[toml]>=7",
+              "installed_pin": null,
+              "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED"
+            },
+            {
+              "detail": "coverage[toml]>=7",
+              "reason": "UNKNOWN_EXTRA_DEPENDENCY_METADATA"
+            },
+            {
+              "detail": "mypy>=1.2.0; platform_python_implementation != \"PyPy\"",
+              "installed_pin": null,
+              "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED"
+            },
+            {
+              "detail": "pytest>=7",
+              "installed_pin": "5.4.3",
+              "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED"
+            },
+            {
+              "detail": "typing_extensions>=4.14.0",
+              "installed_pin": "4.1.1",
+              "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED"
+            }
+          ],
+          "status": "REJECTED"
+        },
+        {
+          "id": "cpython-3.12.14-pytest-8.4.1-linux-x86_64",
+          "pytest_version": "8.4.1",
+          "python_version": "3.12.14",
+          "reason": null,
+          "reasons": [],
+          "status": "COMPATIBLE"
+        }
+      ],
+      "source_metadata_identity": {
+        "file_count": 55,
+        "git_tree": "beba3dbec0f0a881d7667946e469a38506259a93",
+        "tracked_tree_sha256": "890a550bb442ad8bc444d6127f108ceff0f89e405f074aba888ae192e6610d17"
+      },
+      "provenance": {
+        "screening_case": {
+          "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/SCREENING_CASE.json",
+          "sha256": "b776e7dba0bba4ed3ef1475174103c8dbfdd835cb4c3e7c2bd82346929f486bd"
+        },
+        "selection.json": {
+          "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/selection.json",
+          "sha256": "a264f133e2b38cc0db9c558bd4d0c5776d955d912008d53c3bfb5e4c76dbc630"
+        },
+        "admission-v43.json": {
+          "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/admission-v43.json",
+          "sha256": "b814e3890a7c78e7b16755600600afc2976905fff78c77e0e25d4b3fdf9a69d3"
+        },
+        "admission-v42.json": {
+          "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/admission-v42.json",
+          "sha256": "3b8a4f52265a11f9cf6b121b073f106d47abd0a12ffc33dbf48a990b271afb75"
+        },
+        "admission-v3.json": {
+          "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/source-environment/admission-v3.json",
+          "sha256": "aaa231a19a2c9770256503b5fd73413dca54ece95259d19b8978357abb511468"
+        }
+      }
+    },
+    {
+      "index": 2,
+      "repository": "bottlepy/bottle",
+      "status": "UNKNOWN_ENVIRONMENT_SELECTION",
+      "eligible": false,
+      "setup_status": "UNKNOWN_ENVIRONMENT_SELECTION",
+      "smallest_obstruction": "UNKNOWN_NO_COMPATIBLE_PROFILE",
+      "selection_status": "UNKNOWN",
+      "selection_reason": "UNKNOWN_NO_COMPATIBLE_PROFILE",
+      "profile_candidates": [
+        {
+          "id": "cpython-3.6.5-pytest-5.4.3-linux-x86_64",
+          "pytest_version": "5.4.3",
+          "python_version": "3.6.5",
+          "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED",
+          "reasons": [
+            {
+              "detail": "Mako",
+              "installed_pin": null,
+              "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED"
+            },
+            {
+              "detail": "jinja2",
+              "installed_pin": null,
+              "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED"
+            }
+          ],
+          "status": "UNKNOWN"
+        },
+        {
+          "id": "cpython-3.12.14-pytest-8.4.1-linux-x86_64",
+          "pytest_version": "8.4.1",
+          "python_version": "3.12.14",
+          "reason": "INCOMPATIBLE_DECLARED_PYTHON",
+          "reasons": [
+            {
+              "detail": "3.12",
+              "reason": "INCOMPATIBLE_DECLARED_PYTHON"
+            },
+            {
+              "detail": "Mako",
+              "installed_pin": null,
+              "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED"
+            },
+            {
+              "detail": "jinja2",
+              "installed_pin": null,
+              "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED"
+            }
+          ],
+          "status": "REJECTED"
+        }
+      ],
+      "source_metadata_identity": {
+        "file_count": 221,
+        "git_tree": "d5a67edbcfe014e662d4ab64920377908fab5b4a",
+        "tracked_tree_sha256": "5801e16ed8b2c55402a080c4b90f4e3e236c6765730408f05415742c5f28a085"
+      },
+      "provenance": {
+        "screening_case": {
+          "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-002/SCREENING_CASE.json",
+          "sha256": "777b89b0ea7f97e8ca28b0d4c54a09f42d6eef86d9d9863a4950f723df64d592"
+        },
+        "selection.json": {
+          "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-002/source-environment/selection.json",
+          "sha256": "e18d2a66f93e12ca3bced6f1606bf13bbe5b4e55a9a14a15bafa9875f271d34d"
+        },
+        "admission-v43.json": {
+          "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-002/source-environment/admission-v43.json",
+          "sha256": "4d0a9bf2250bacb98f0f67eea8cdc8cabe47e79812940ca6748a5624a9d9c040"
+        },
+        "admission-v42.json": {
+          "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-002/source-environment/admission-v42.json",
+          "sha256": "02e79561c0febc2e2c22f18ec62767e60fba631c18f9c91c7faf70c2c5a8f164"
+        },
+        "admission-v3.json": {
+          "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-002/source-environment/admission-v3.json",
+          "sha256": "44dd6e3a0a97e2f160d7e1462c6630fe12a42bc1e73d148edca80b23188a761a"
+        }
+      }
+    },
+    {
+      "index": 3,
+      "repository": "dabeaz/ply",
+      "status": "UNKNOWN_ENVIRONMENT_SELECTION",
+      "eligible": false,
+      "setup_status": "UNKNOWN_ENVIRONMENT_SELECTION",
+      "smallest_obstruction": "UNKNOWN_DYNAMIC_METADATA",
+      "selection_status": "UNKNOWN",
+      "selection_reason": "UNKNOWN_DYNAMIC_METADATA",
+      "profile_candidates": [
+        {
+          "id": "cpython-3.6.5-pytest-5.4.3-linux-x86_64",
+          "reason": "UNKNOWN_DYNAMIC_METADATA",
+          "reasons": [
+            {
+              "detail": "reimported setup authority binding",
+              "reason": "UNKNOWN_DYNAMIC_METADATA"
+            }
+          ],
+          "status": "UNKNOWN"
+        },
+        {
+          "id": "cpython-3.12.14-pytest-8.4.1-linux-x86_64",
+          "reason": "UNKNOWN_DYNAMIC_METADATA",
+          "reasons": [
+            {
+              "detail": "reimported setup authority binding",
+              "reason": "UNKNOWN_DYNAMIC_METADATA"
+            }
+          ],
+          "status": "UNKNOWN"
+        }
+      ],
+      "source_metadata_identity": {
+        "file_count": 172,
+        "git_tree": "99b7e284823697726e3a22110571810a81b70e8f",
+        "tracked_tree_sha256": "98217f2336cf27064e0b31441dde8ef088dd88952f11e064c436e46f63add13b"
+      },
+      "provenance": {
+        "screening_case": {
+          "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-003/SCREENING_CASE.json",
+          "sha256": "7ce651eca0a4362705e141ad2a0ca30c38b6dd54251c12097a58f743fee8cc26"
+        },
+        "selection.json": {
+          "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-003/source-environment/selection.json",
+          "sha256": "cc9486eae3e6abc2d766f97d0bc9c1fb18ae30e7589e05c1d9fced32b477c8fe"
+        },
+        "admission-v43.json": {
+          "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-003/source-environment/admission-v43.json",
+          "sha256": "3d1eb3e38688ae8727ca0361af0331320ba725604cfe602dae0669d571444ac9"
+        },
+        "admission-v42.json": {
+          "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-003/source-environment/admission-v42.json",
+          "sha256": "6cce29c100377f96503e43f3dad3cc2b29ad8ec3fd305493d4ad7f0eeff0bc90"
+        },
+        "admission-v3.json": {
+          "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-003/source-environment/admission-v3.json",
+          "sha256": "f8b6d8a8425696f95103d58b462361638733b12afb8e5c8969e80a63fce09cb9"
+        }
+      }
+    },
+    {
+      "index": 4,
+      "repository": "facelessuser/wcmatch",
+      "status": "UNKNOWN_ENVIRONMENT_SELECTION",
+      "eligible": false,
+      "setup_status": "UNKNOWN_ENVIRONMENT_SELECTION",
+      "smallest_obstruction": "UNKNOWN_DYNAMIC_METADATA",
+      "selection_status": "UNKNOWN",
+      "selection_reason": "UNKNOWN_DYNAMIC_METADATA",
+      "profile_candidates": [
+        {
+          "id": "cpython-3.6.5-pytest-5.4.3-linux-x86_64",
+          "reason": "UNKNOWN_DYNAMIC_METADATA",
+          "reasons": [
+            {
+              "detail": "dynamic environment metadata",
+              "reason": "UNKNOWN_DYNAMIC_METADATA"
+            }
+          ],
+          "status": "UNKNOWN"
+        },
+        {
+          "id": "cpython-3.12.14-pytest-8.4.1-linux-x86_64",
+          "reason": "UNKNOWN_DYNAMIC_METADATA",
+          "reasons": [
+            {
+              "detail": "dynamic environment metadata",
+              "reason": "UNKNOWN_DYNAMIC_METADATA"
+            }
+          ],
+          "status": "UNKNOWN"
+        }
+      ],
+      "source_metadata_identity": {
+        "file_count": 50,
+        "git_tree": "82bb06b3b23c431a043f34f1b94cea4b3618cc26",
+        "tracked_tree_sha256": "767d459c30fc350d383d52872efc5b29e1a6dcd12df64f509c5eb39ff6398c72"
+      },
+      "provenance": {
+        "screening_case": {
+          "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-004/SCREENING_CASE.json",
+          "sha256": "40e45c0c522ef1cb2a8f339057e1f011d47ed87d5169bcc830c1e4c4a8d28064"
+        },
+        "selection.json": {
+          "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-004/source-environment/selection.json",
+          "sha256": "edc7e7a0234dd8c870f1f1ca598bd0b2a961b07d6ee48de787e2675ae41e803a"
+        },
+        "admission-v43.json": {
+          "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-004/source-environment/admission-v43.json",
+          "sha256": "aefcb7bcc6f05198804327af3da6a03fec2bed8191bb156572ecb3b510b9b260"
+        },
+        "admission-v42.json": {
+          "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-004/source-environment/admission-v42.json",
+          "sha256": "16bcebf204f4f7dcc7a0f9eaccbe239192cf7eba2329e723ed5775ebde6ec04b"
+        },
+        "admission-v3.json": {
+          "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-004/source-environment/admission-v3.json",
+          "sha256": "c0ff9c559dc528fa25dcf5f6c295f3a4fdd8d17616211d61426950edd4e83f00"
+        }
+      }
+    },
+    {
+      "index": 5,
+      "repository": "uiri/toml",
+      "status": "UNKNOWN_ENVIRONMENT_SELECTION",
+      "eligible": false,
+      "setup_status": "UNKNOWN_ENVIRONMENT_SELECTION",
+      "smallest_obstruction": "UNKNOWN_DYNAMIC_METADATA",
+      "selection_status": "UNKNOWN",
+      "selection_reason": "UNKNOWN_DYNAMIC_METADATA",
+      "profile_candidates": [
+        {
+          "id": "cpython-3.6.5-pytest-5.4.3-linux-x86_64",
+          "reason": "UNKNOWN_DYNAMIC_METADATA",
+          "reasons": [
+            {
+              "detail": "reimported setup authority binding",
+              "reason": "UNKNOWN_DYNAMIC_METADATA"
+            }
+          ],
+          "status": "UNKNOWN"
+        },
+        {
+          "id": "cpython-3.12.14-pytest-8.4.1-linux-x86_64",
+          "reason": "UNKNOWN_DYNAMIC_METADATA",
+          "reasons": [
+            {
+              "detail": "reimported setup authority binding",
+              "reason": "UNKNOWN_DYNAMIC_METADATA"
+            }
+          ],
+          "status": "UNKNOWN"
+        }
+      ],
+      "source_metadata_identity": {
+        "file_count": 31,
+        "git_tree": "8682317e40e830b1d3fbc3a25b44451dbdf716ae",
+        "tracked_tree_sha256": "c29e89c9d6b3fbbac0bcd439ebf8f8246c7fcac3c05a56e7243518e8d8050077"
+      },
+      "provenance": {
+        "screening_case": {
+          "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-005/SCREENING_CASE.json",
+          "sha256": "291045aa3c424f180f98df80f2807de6fddfb4f25918d4affd1c4367ac98da10"
+        },
+        "selection.json": {
+          "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-005/source-environment/selection.json",
+          "sha256": "43e7523ca2b47be951b2cf19f9e7d3a6778fd45768528cb1ba0fbee03194bb0e"
+        },
+        "admission-v43.json": {
+          "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-005/source-environment/admission-v43.json",
+          "sha256": "bb89707ca9c9cc599dac879d08ced263f0d24d2ac6b6e6f2cfbf22940fd2ecfa"
+        },
+        "admission-v42.json": {
+          "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-005/source-environment/admission-v42.json",
+          "sha256": "0732cca29d452e62f08a57856e20499f54d8e5500590074dd2e42652154a5701"
+        },
+        "admission-v3.json": {
+          "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-005/source-environment/admission-v3.json",
+          "sha256": "b8fb5a04fd3491310b11293ae7b1c9b64804fd38948ec511d699b11aa68e4a26"
+        }
+      }
+    }
+  ],
+  "eligible_cases": 0,
+  "role_selection": "SHORTFALL_NO_TRAINING_OR_PROTECTED_FUTURE_ASSIGNED"
+}

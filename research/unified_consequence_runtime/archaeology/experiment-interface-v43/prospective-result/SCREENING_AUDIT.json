@@ -1,0 +1,234 @@
+{
+  "all_checks_closed": true,
+  "all_screened_cases_and_costs_retained": true,
+  "attestation": {
+    "path": "/workspace/qualification/native-frontier-v43-operator/SCREENING_ACTOR_ATTESTATION.json",
+    "sha256": "bb6916bf38b1f35d95ab0a8a71cbf126cd7e49d7b24415587caa977feb851391"
+  },
+  "auditor": "/root/v43_acceptance_freeze",
+  "authority": {
+    "path": "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/experiment-interface-v43/prospective/SCREENING_AUTHORITY.json",
+    "sha256": "9dd263a8acfbbca19f838a308ca9b5aaf331e6b4c716727b8af6024df6931847"
+  },
+  "checks": [
+    {
+      "check": "case_complete:0",
+      "pass": true
+    },
+    {
+      "check": "case_complete:1",
+      "pass": true
+    },
+    {
+      "check": "case_complete:2",
+      "pass": true
+    },
+    {
+      "check": "case_complete:3",
+      "pass": true
+    },
+    {
+      "check": "case_complete:4",
+      "pass": true
+    },
+    {
+      "check": "case_complete:5",
+      "pass": true
+    },
+    {
+      "check": "all_pool_members_and_unknowns_closed",
+      "pass": true
+    }
+  ],
+  "controller": {
+    "path": "/workspace/qualification/native-frontier-v43-operator/ORDERED_PROCESS_COSTS.json",
+    "sha256": "27a907a19258911db9086ce4f962ade8bf1efb1d2124ec0048a441a36937822c"
+  },
+  "costs": {
+    "build_calls": 0,
+    "build_seconds": 0.0,
+    "collection_calls": 4,
+    "controller_wall_seconds": 109.94108154200057,
+    "native_calls": 2,
+    "sum_case_inclusive_wall_seconds": 63.509275813001295,
+    "verification_attempts": 0
+  },
+  "counts": {
+    "eligible_cases": 0,
+    "screened_cases": 6
+  },
+  "created_at": "2026-10-21T23:24:23.996248+00:00",
+  "dossier": {
+    "path": "/workspace/qualification/native-frontier-v43-operator/independent-audit/attempt-003/RETAINED_CHECKS.json",
+    "sha256": "073d1df74cf04c866f36207f6224df55abe8ddf33336dd5b45187fd80f131a0b"
+  },
+  "eligibility_rule": "PASS_NATIVE_OR_FAIL_NATIVE_IDENTICAL",
+  "exposure_scope": "Original independent screening role only, supported by exact actor attestation and controller evidence. Auditor source/native diagnostics remain sealed before learner role release.",
+  "independent_screener": true,
+  "learner_future_source_accessed": false,
+  "limitations": [
+    "Bounded supplied-run/actor attestation; no global absence-of-unrelated-processes or hostile-host isolation proof.",
+    "No target interpreter, backend, pytest or native verifier executed by this audit. Runtime implementation/version claims retain offline evidence limits.",
+    "Inclusive parent and nested phase wall intervals are nonadditive. All successful/refused launches retained; unmeasured tool/model/engineering/lifecycle cost remains UNKNOWN."
+  ],
+  "pool_sha256": "ab9b73adbf9da20adbae7ce3853b75a113ccb2eb09e597541b5c62d7ada679ee",
+  "reports": [
+    {
+      "build_costs": {
+        "build_calls": 0,
+        "build_seconds": 0.0,
+        "coverage": "V43 builder launches and generated-build verification attempts in this screening interval; parent wall time includes provisioning, host checks and independent oracle work. Original native counters and ceilings are unchanged; build seconds are included in parent wall time.",
+        "inclusive_parent_wall_seconds": 1.9536486510005489,
+        "verification_attempts": 0
+      },
+      "costs": {
+        "collection_calls": 0,
+        "native_calls": 0
+      },
+      "eligible": false,
+      "repository": "agronholm/exceptiongroup",
+      "schema": "UDM_SEALED_ADMISSION_ENVELOPE_V43",
+      "screening_mode": "ADMISSION_ONLY_NO_CATALOG_OR_CANDIDATE_SEARCH",
+      "sealed_report": {
+        "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-000/SCREENING_CASE.json",
+        "sha256": "adf41f1de6b002a38b202272766764dbcb9d890721bf6999873685e6d08c67f0"
+      },
+      "spec_sha256": "21bfb17faf1cd99ea29b478f8d652803d17c2ee26283a8e3b2d67e47f17cae02",
+      "status": "UNKNOWN_ADMISSION_SCREENING",
+      "total_wall_seconds": 1.9536486510005489
+    },
+    {
+      "build_costs": {
+        "build_calls": 0,
+        "build_seconds": 0.0,
+        "coverage": "V43 builder launches and generated-build verification attempts in this screening interval; parent wall time includes provisioning, host checks and independent oracle work. Original native counters and ceilings are unchanged; build seconds are included in parent wall time.",
+        "inclusive_parent_wall_seconds": 52.917096770999706,
+        "verification_attempts": 0
+      },
+      "costs": {
+        "collection_calls": 4,
+        "native_calls": 2
+      },
+      "eligible": false,
+      "repository": "agronholm/typeguard",
+      "schema": "UDM_SEALED_ADMISSION_ENVELOPE_V43",
+      "screening_mode": "ADMISSION_ONLY_NO_CATALOG_OR_CANDIDATE_SEARCH",
+      "sealed_report": {
+        "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-001/SCREENING_CASE.json",
+        "sha256": "b776e7dba0bba4ed3ef1475174103c8dbfdd835cb4c3e7c2bd82346929f486bd"
+      },
+      "spec_sha256": "a59676fa68a42a48fbb426890cdcd6a795b234331202a97db8ddc3326926cf80",
+      "status": "UNKNOWN_ADMISSION_SCREENING",
+      "total_wall_seconds": 52.917096770999706
+    },
+    {
+      "build_costs": {
+        "build_calls": 0,
+        "build_seconds": 0.0,
+        "coverage": "V43 builder launches and generated-build verification attempts in this screening interval; parent wall time includes provisioning, host checks and independent oracle work. Original native counters and ceilings are unchanged; build seconds are included in parent wall time.",
+        "inclusive_parent_wall_seconds": 2.5193415449994063,
+        "verification_attempts": 0
+      },
+      "costs": {
+        "collection_calls": 0,
+        "native_calls": 0
+      },
+      "eligible": false,
+      "repository": "bottlepy/bottle",
+      "schema": "UDM_SEALED_ADMISSION_ENVELOPE_V43",
+      "screening_mode": "ADMISSION_ONLY_NO_CATALOG_OR_CANDIDATE_SEARCH",
+      "sealed_report": {
+        "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-002/SCREENING_CASE.json",
+        "sha256": "777b89b0ea7f97e8ca28b0d4c54a09f42d6eef86d9d9863a4950f723df64d592"
+      },
+      "spec_sha256": "73d53e338fe1e94df2b50547d043e50d27a346c598dd46b7735fe015444fd382",
+      "status": "UNKNOWN_ADMISSION_SCREENING",
+      "total_wall_seconds": 2.5193415449994063
+    },
+    {
+      "build_costs": {
+        "build_calls": 0,
+        "build_seconds": 0.0,
+        "coverage": "V43 builder launches and generated-build verification attempts in this screening interval; parent wall time includes provisioning, host checks and independent oracle work. Original native counters and ceilings are unchanged; build seconds are included in parent wall time.",
+        "inclusive_parent_wall_seconds": 2.2314537210004346,
+        "verification_attempts": 0
+      },
+      "costs": {
+        "collection_calls": 0,
+        "native_calls": 0
+      },
+      "eligible": false,
+      "repository": "dabeaz/ply",
+      "schema": "UDM_SEALED_ADMISSION_ENVELOPE_V43",
+      "screening_mode": "ADMISSION_ONLY_NO_CATALOG_OR_CANDIDATE_SEARCH",
+      "sealed_report": {
+        "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-003/SCREENING_CASE.json",
+        "sha256": "7ce651eca0a4362705e141ad2a0ca30c38b6dd54251c12097a58f743fee8cc26"
+      },
+      "spec_sha256": "f5d726d5531c98b848747aa560fc04de733c4479e1f049f380dc672d0ed901f9",
+      "status": "UNKNOWN_ADMISSION_SCREENING",
+      "total_wall_seconds": 2.2314537210004346
+    },
+    {
+      "build_costs": {
+        "build_calls": 0,
+        "build_seconds": 0.0,
+        "coverage": "V43 builder launches and generated-build verification attempts in this screening interval; parent wall time includes provisioning, host checks and independent oracle work. Original native counters and ceilings are unchanged; build seconds are included in parent wall time.",
+        "inclusive_parent_wall_seconds": 2.025677716001155,
+        "verification_attempts": 0
+      },
+      "costs": {
+        "collection_calls": 0,
+        "native_calls": 0
+      },
+      "eligible": false,
+      "repository": "facelessuser/wcmatch",
+      "schema": "UDM_SEALED_ADMISSION_ENVELOPE_V43",
+      "screening_mode": "ADMISSION_ONLY_NO_CATALOG_OR_CANDIDATE_SEARCH",
+      "sealed_report": {
+        "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-004/SCREENING_CASE.json",
+        "sha256": "40e45c0c522ef1cb2a8f339057e1f011d47ed87d5169bcc830c1e4c4a8d28064"
+      },
+      "spec_sha256": "ecb935824e64df6d421138ec94083adf1f6b5fa7b09ebe4a3e1a7f0fe334561a",
+      "status": "UNKNOWN_ADMISSION_SCREENING",
+      "total_wall_seconds": 2.025677716001155
+    },
+    {
+      "build_costs": {
+        "build_calls": 0,
+        "build_seconds": 0.0,
+        "coverage": "V43 builder launches and generated-build verification attempts in this screening interval; parent wall time includes provisioning, host checks and independent oracle work. Original native counters and ceilings are unchanged; build seconds are included in parent wall time.",
+        "inclusive_parent_wall_seconds": 1.8620574090000446,
+        "verification_attempts": 0
+      },
+      "costs": {
+        "collection_calls": 0,
+        "native_calls": 0
+      },
+      "eligible": false,
+      "repository": "uiri/toml",
+      "schema": "UDM_SEALED_ADMISSION_ENVELOPE_V43",
+      "screening_mode": "ADMISSION_ONLY_NO_CATALOG_OR_CANDIDATE_SEARCH",
+      "sealed_report": {
+        "path": "/workspace/qualification/native-frontier-v43-operator/screening/case-005/SCREENING_CASE.json",
+        "sha256": "291045aa3c424f180f98df80f2807de6fddfb4f25918d4affd1c4367ac98da10"
+      },
+      "spec_sha256": "e3e485ff7540c0cb2dce605b57b92ce9b1793ffc728bb8a0809787edd2adaa5e",
+      "status": "UNKNOWN_ADMISSION_SCREENING",
+      "total_wall_seconds": 1.8620574090000446
+    }
+  ],
+  "reports_sha256": "40f1e53a71cbd9b1f65e5a343f90ce4cda95be3646de81cca6e7b9665a72eaf6",
+  "schema": "UDM_V43_INDEPENDENT_ADMISSION_ONLY_SCREENING_AUDIT_V1",
+  "scientific_scope": "Metadata/admission-only; all authentic PASS/FAIL admissions equally eligible; all UNKNOWN/refusals retained; no replacement, repairs, native retries, candidate or policy search.",
+  "scientific_verdicts": {
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN"
+  },
+  "search_or_policy_outcomes_accessed": false,
+  "source_commit": "b0d389cf72f802c2b3ad99899644b802d4b41ea5",
+  "status": "PASS_ADMISSION_ONLY_SCREENING_AUDIT"
+}

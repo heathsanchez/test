@@ -1,0 +1,240 @@
+name: Archive V43 frontier refusal evidence (data only)
+on:
+  push:
+    branches: [research/udm-experiment-interface-v43-20261022]
+    paths:
+      - .github/workflows/udm-native-frontier-evidence-v43.yml
+      - research/unified_consequence_runtime/archaeology/experiment-interface-v43/prospective-result/**
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  archive-integrity-only:
+    if: github.ref == 'refs/heads/research/udm-experiment-interface-v43-20261022' && (github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[archive-frontier-v43]'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check pinned evidence as data without extraction or native replay
+        run: |
+          python - <<'PY'
+          """Inline CI auditor template. It reads evidence as data and never extracts it."""
+          import gzip
+          import hashlib
+          import json
+          import pathlib
+          import re
+          import tarfile
+          import zlib
+
+
+          def sha_file(path):
+              digest = hashlib.sha256()
+              with path.open('rb') as stream:
+                  for block in iter(lambda: stream.read(1024 * 1024), b''):
+                      digest.update(block)
+              return digest.hexdigest()
+
+
+          def no_duplicate_keys(pairs):
+              result = {}
+              for key, value in pairs:
+                  assert key not in result, ('duplicate JSON key', key)
+                  result[key] = value
+              return result
+
+
+          def load_json(raw):
+              return json.loads(raw, object_pairs_hook=no_duplicate_keys,
+                                parse_constant=lambda value: (_ for _ in ()).throw(ValueError(value)))
+
+
+          def exact_int(value, minimum=0, maximum=None):
+              assert type(value) is int and value >= minimum
+              assert maximum is None or value <= maximum
+
+
+          def safe_path(name):
+              assert isinstance(name, str) and name and '\x00' not in name
+              assert not name.startswith('/') and all(part not in ('', '.', '..') for part in name.split('/'))
+              assert str(pathlib.PurePosixPath(name)) == name
+
+
+          def check(root, repository, expected):
+              for name, pin in expected['files'].items():
+                  path = root / name
+                  assert path.is_file() and not path.is_symlink(), name
+                  assert path.stat().st_size == pin['bytes'] and sha_file(path) == pin['sha256'], name
+              result = load_json((root / 'FINAL_RESULT.json').read_bytes())
+              assert result['schema'] == 'UDM_V43_NATIVE_FRONTIER_FINAL_RESULT_V1'
+              assert result['status'] == 'NO_ADMITTED_FRONTIER_NO_LEARNER_OR_COMPARISON'
+              assert result['source_commit'] == 'b0d389cf72f802c2b3ad99899644b802d4b41ea5'
+              assert all(result['verdicts'][f'G{i}'] == 'UNKNOWN' for i in range(2, 7))
+              assert result['screening']['counts'] == {'screened_cases': 6, 'eligible_cases': 0}
+              assert result['screening']['costs']['collection_calls'] == 4
+              assert result['screening']['costs']['native_calls'] == 2
+              assert result['screening']['costs']['build_calls'] == 0
+              assert result['screening']['costs']['verification_attempts'] == 0
+              assert result['prospective_native_selection_workflow'] == 'NOT_RUN_UNADMITTED_FRONTIER'
+              assert result['comparisons']['status'] == 'NOT_STARTED'
+              for arm in result['arms'].values():
+                  assert arm == {'status': 'NOT_STARTED', 'released': False, 'native_calls': 0}
+              for name, pin in result['records'].items():
+                  safe_path(name)
+                  path = repository / name
+                  assert path.is_file() and not path.is_symlink(), name
+                  assert path.stat().st_size == pin['bytes'] and sha_file(path) == pin['sha256'], name
+              audit = load_json((root / 'SCREENING_AUDIT.json').read_bytes())
+              assert audit['schema'] == 'UDM_V43_INDEPENDENT_ADMISSION_ONLY_SCREENING_AUDIT_V1'
+              assert audit['status'] == 'PASS_ADMISSION_ONLY_SCREENING_AUDIT'
+              assert audit['source_commit'] == result['source_commit']
+              assert audit['counts'] == result['screening']['counts']
+              assert audit['costs'] == result['screening']['costs']
+              assert audit['all_checks_closed'] is True and all(row['pass'] is True for row in audit['checks'])
+              assert audit['scientific_verdicts'] == {f'G{i}': 'UNKNOWN' for i in range(2, 7)}
+              assert all(row['eligible'] is False and row['status'] == 'UNKNOWN_ADMISSION_SCREENING'
+                         for row in audit['reports'])
+              diagnostic = load_json((root / 'FINAL_DIAGNOSTIC_SUMMARY.json').read_bytes())
+              assert diagnostic['schema'] == 'UDM_V43_FINAL_INDEPENDENT_SCREENING_DIAGNOSTIC_SUMMARY_V1'
+              assert diagnostic['status'] == 'AUDITED_SCREENING_SHORTFALL_ZERO_ELIGIBLE'
+              assert diagnostic['screening_audit']['sha256'] == expected['files']['SCREENING_AUDIT.json']['sha256']
+              assert diagnostic['counts'] == {'screened_cases': 6, 'eligible_cases': 0, 'native_calls': 2,
+                                               'collection_calls': 4, 'v43_build_calls': 0,
+                                               'v43_verification_attempts': 0, 'original_base_wheel_attempts': 1}
+              assert diagnostic['interpretation']['learner_candidate_or_comparator_executed'] is False
+              assert diagnostic['interpretation']['scientific_verdicts'] == audit['scientific_verdicts']
+              assert diagnostic['costs']['totals'] == result['screening']['detailed_cost_totals']
+              assert all(row['junit'] == {'tests': 529, 'passed': 487, 'failures': 26, 'skipped': 16, 'errors': 0}
+                         and row['status'] == 'UNKNOWN_SKIPPED_OR_XFAIL'
+                         for row in diagnostic['native_refusal_context']['executions'])
+
+              manifest_raw = (root / 'RAW_SCREENING_EVIDENCE_CAS.MANIFEST.json').read_bytes()
+              manifest = load_json(manifest_raw)
+              assert set(manifest) == {'boundary', 'files', 'objects', 'regular_bytes', 'root_mode',
+                                       'schema', 'scope', 'source_root', 'unique_object_bytes'}
+              assert manifest['schema'] == 'UDM_CONTENT_ADDRESSED_RAW_SCREENING_EVIDENCE_ARCHIVE_V43'
+              assert manifest['scope'] == 'NEGATIVE_SCREENING_EVIDENCE_ONLY_NO_G2'
+              assert manifest_raw == (json.dumps(manifest, sort_keys=True, ensure_ascii=True, indent=2) + '\n').encode()
+              assert manifest['source_root'] == '/workspace/qualification/native-frontier-v43-operator'
+              assert isinstance(manifest['boundary'], str) and manifest['boundary']
+              exact_int(manifest['root_mode'], maximum=0o7777)
+              assert isinstance(manifest['files'], dict)
+              objects = {}
+              counts = {'file': 0, 'directory': 0, 'symlink': 0}
+              regular_bytes = 0
+              links = {}
+              for name, row in manifest['files'].items():
+                  safe_path(name)
+                  assert isinstance(row, dict) and row['kind'] in counts, name
+                  exact_int(row['mode'], maximum=0o7777)
+                  parent = str(pathlib.PurePosixPath(name).parent)
+                  if parent != '.':
+                      assert manifest['files'][parent]['kind'] == 'directory', name
+                  counts[row['kind']] += 1
+                  if row['kind'] == 'file':
+                      assert set(row) == {'kind', 'mode', 'bytes', 'sha256'}, name
+                      exact_int(row['bytes'])
+                      assert isinstance(row['sha256'], str) and re.fullmatch('[0-9a-f]{64}', row['sha256'])
+                      if row['sha256'] in objects:
+                          assert objects[row['sha256']] == row['bytes']
+                      objects[row['sha256']] = row['bytes']
+                      regular_bytes += row['bytes']
+                  elif row['kind'] == 'directory':
+                      assert set(row) == {'kind', 'mode'}, name
+                  else:
+                      assert set(row) == {'kind', 'mode', 'linkname'}, name
+                      assert isinstance(row['linkname'], str) and row['linkname'] and '\x00' not in row['linkname']
+                      # Absolute/parent-relative link targets are original inert metadata.
+                      links[name] = {'mode': row['mode'], 'linkname': row['linkname']}
+              exact_int(manifest['objects'])
+              exact_int(manifest['regular_bytes'])
+              exact_int(manifest['unique_object_bytes'])
+              assert manifest['objects'] == len(objects)
+              assert manifest['regular_bytes'] == regular_bytes
+              assert manifest['unique_object_bytes'] == sum(objects.values())
+              assert counts == result['archive']['entry_counts']
+              assert links == result['archive']['symlink_inventory']
+              assert len(objects) == result['archive']['object_count']
+              assert regular_bytes == result['archive']['regular_bytes']
+              assert sum(objects.values()) == result['archive']['unique_object_bytes']
+              readback_name = result['archive']['independent_readback']['path']
+              readback = load_json((root / readback_name).read_bytes())
+              assert readback['schema'] == 'UDM_INDEPENDENT_CAS_READBACK_V43' and readback['status'] == 'PASS'
+              assert readback['archive_sha256'] == expected['files']['RAW_SCREENING_EVIDENCE_CAS.tar.gz']['sha256']
+              assert readback['external_manifest_sha256'] == expected['files']['RAW_SCREENING_EVIDENCE_CAS.MANIFEST.json']['sha256']
+              assert readback['source_counts'] == counts and readback['unique_objects'] == len(objects)
+              assert readback['source_lstat_and_bytes_verified'] is True
+              assert readback['source_symlinks_never_followed'] is True
+
+              # Parse the physical tar records, including padding/trailer, without extraction.
+              # Only the exact regular USTAR manifest and sorted content objects may occur.
+              wanted = [('MANIFEST.json', len(manifest_raw), hashlib.sha256(manifest_raw).hexdigest())]
+              wanted += [('objects/' + digest, size, digest) for digest, size in sorted(objects.items())]
+              archive = root / 'RAW_SCREENING_EVIDENCE_CAS.tar.gz'
+              # Require one complete deterministic gzip stream with no hidden concatenation.
+              with archive.open('rb') as compressed:
+                  header = compressed.read(10)
+                  assert len(header) == 10 and header[:4] == b'\x1f\x8b\x08\x00' and header[4:8] == bytes(4)
+                  compressed.seek(0)
+                  decoder = zlib.decompressobj(16 + zlib.MAX_WBITS)
+                  for block in iter(lambda: compressed.read(1024 * 1024), b''):
+                      decoder.decompress(block, 1024 * 1024)
+                      while decoder.unconsumed_tail:
+                          decoder.decompress(decoder.unconsumed_tail, 1024 * 1024)
+                      if decoder.eof:
+                          assert not decoder.unused_data and not compressed.read(1)
+                          break
+                  assert decoder.eof, 'truncated gzip stream'
+              raw_bytes = 0
+              with gzip.open(root / 'RAW_SCREENING_EVIDENCE_CAS.tar.gz', 'rb') as packet:
+                  for name, size, digest in wanted:
+                      header = packet.read(512)
+                      assert len(header) == 512 and header != bytes(512), ('missing tar member', name)
+                      member = tarfile.TarInfo.frombuf(header, 'utf-8', 'strict')
+                      assert header[257:265] == b'ustar\x0000', name
+                      assert member.type == tarfile.REGTYPE and member.name == name and member.size == size, name
+                      assert member.mode == 0o644 and member.uid == member.gid == member.mtime == 0, name
+                      assert member.uname == member.gname == member.linkname == '' and not member.pax_headers, name
+                      assert member.devmajor == member.devminor == 0 and member.sparse is None, name
+                      raw_bytes += 512 + size + (-size) % 512
+                      actual = hashlib.sha256()
+                      remaining = size
+                      while remaining:
+                          block = packet.read(min(1024 * 1024, remaining))
+                          assert block, ('truncated tar member', name)
+                          actual.update(block)
+                          remaining -= len(block)
+                      assert actual.hexdigest() == digest, name
+                      padding = (-size) % 512
+                      assert packet.read(padding) == bytes(padding), ('nonzero tar padding', name)
+                  trailer_bytes = 0
+                  while True:
+                      block = packet.read(1024 * 1024)
+                      if not block:
+                          break
+                      assert not any(block), 'extra tar content after exact member inventory'
+                      trailer_bytes += len(block)
+                  assert trailer_bytes >= 1024 and trailer_bytes % 512 == 0
+                  assert (raw_bytes + trailer_bytes) % 10240 == 0
+              print(json.dumps({'status': 'PASS_ARCHIVE_INTEGRITY_ONLY_NO_NATIVE_REPLAY',
+                                'entry_counts': counts, 'objects': len(objects),
+                                'screening': result['screening']['counts'],
+                                'arms': 'NOT_STARTED', 'verdicts': result['verdicts']}, sort_keys=True))
+
+          EXPECTED = {'files': {'FINAL_RESULT.json': {'sha256': '6261fa243bfa1ebae8efdbcd71f8570d40a79b6df23f270f64d2f432d4324cc1', 'bytes': 20775}, 'SCREENING_AUDIT.json': {'sha256': '96639066acc2f5f0d38296c136451fbcd1b04f5c6ffe9b405302c957452ea3df', 'bytes': 10550}, 'RESEARCH_REPORT.md': {'sha256': 'c57201c2da2fcf1a799c7af93f6c270d8ed4aa13de4c89a4d47f61151cf8b36f', 'bytes': 9855}, 'RAW_SCREENING_EVIDENCE_CAS.MANIFEST.json': {'sha256': 'cf5e335ce01d248ff9d573192f272f4516007c5ee24d42db2ca39f3030dfc71c', 'bytes': 2386298}, 'RAW_SCREENING_EVIDENCE_CAS.tar.gz': {'sha256': 'd64b5a08044ab4f9daf6e60e21304c090a6bf3334dbe9d77be9b9694fce02664', 'bytes': 63294072}, 'NATIVE_REFUSAL_CONTEXT.json': {'sha256': '1b05737c2b3e83949e06d1bc81db38a035033e78a3417d7665d554e0cb413dda', 'bytes': 114446}, 'COSTS_BY_CASE.json': {'sha256': 'c370cc63864d20dab338e5f84a014a032f36264a09d1a0681a1babcdc4877ac3', 'bytes': 142169}, 'REFUSALS_BY_CASE.json': {'sha256': 'f2148aa67d1d896e8cad82ca6536646fd93a91e203043efb2b61bb2241d499e9', 'bytes': 18451}, 'FINAL_DIAGNOSTIC_SUMMARY.json': {'sha256': 'bfd4aea3df08b5cd8ff63050c2ed51323f0382d9a79aa614f12ad55422ac9c12', 'bytes': 29403}, 'RAW_SCREENING_EVIDENCE_CAS.INDEPENDENT_READBACK.json': {'sha256': '4cc61e11b3e582290edb4be9b31d3181247e69a3857e904da0a6bd320c065d8e', 'bytes': 1293}}}
+          check(pathlib.Path('research/unified_consequence_runtime/archaeology/experiment-interface-v43/prospective-result'), pathlib.Path('.'), EXPECTED)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-frontier-v43-archive-only-${{ github.sha }}
+          path: |
+            research/unified_consequence_runtime/archaeology/experiment-interface-v43/prospective-result/
+            .github/workflows/udm-native-frontier-evidence-v43.yml
+          compression-level: 0
+          retention-days: 90
