@@ -22,3 +22,11 @@ jobs:
           git show 15e71683a19394fb00b5833c18a3e876c2645d54:research/unified_consequence_runtime/decisive_native_verify.py | sha256sum
           sha256sum research/unified_consequence_runtime/decisive_native_verify.py
           echo "Research candidate source is deliberately distinct; prior V1 receipts remain bound to original bytes."
+      - name: Exact historical author test blobs and AST authority
+        run: python3 research/udm_author_test_admission_20261021/authentic_historical.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: udm-v2-historical-authentic-admission
+          path: historical-author-tests-admission.json
+          if-no-files-found: warn
