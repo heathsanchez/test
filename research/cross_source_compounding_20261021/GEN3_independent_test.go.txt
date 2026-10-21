@@ -23,7 +23,7 @@ func TestMathGraphGen3EqualInformationAndAblation(t *testing.T){
  seeds:=[]string{"plain"," leading","trailing ","has.dot","a=b","has#hash","quote\"value","slash\\value","unicode λ"}
  mods:=[]string{"#",";","="," ","\"","\\","\r","\n"}
  makeCandidates:=func(useRetained bool)[]string{
-  if !useRetained{ return []string{"plain\\","plain"} }
+  if !useRetained{ seeds=[]string{"plain"} }
   seen:=map[string]bool{};v:=[]string{}
   for _,s:=range seeds{
    for _,q:=range append([]string{s},func()[]string{z:=[]string{};for _,m:=range mods{z=append(z,s+m,m+s)};return z}()...){
