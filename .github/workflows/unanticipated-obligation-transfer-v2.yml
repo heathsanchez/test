@@ -1,0 +1,26 @@
+name: Unanticipated Obligation Transfer V2
+on:
+  push:
+    branches:
+      - research/unanticipated-obligation-transfer-v2-20261021
+  pull_request:
+    paths:
+      - 'research/unanticipated_obligation_transfer_v2/**'
+      - '.github/workflows/unanticipated-obligation-transfer-v2.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  semantic-transfer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run unchanged extractor on independent official specification
+        run: python3 research/unanticipated_obligation_transfer_v2/test_transfer.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: unanticipated-obligation-v2-evidence
+          path: research/unanticipated_obligation_transfer_v2/result.json
+          if-no-files-found: warn
