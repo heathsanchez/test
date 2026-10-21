@@ -1,0 +1,9 @@
+........................................................                 [100%]
+=============================== warnings summary ===============================
+research/unified_consequence_runtime/test_native_build_v43.py::test_generated_wheel_duplicate_and_symlink_members_are_refused[duplicate]
+  /opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/zipfile/__init__.py:1625: UserWarning: Duplicate name: 'native_alpha_v43/_version.py'
+    return self._open_to_write(zinfo, force_zip64=force_zip64)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+- generated xml file: /workspace/qualification/experiment-interface-v43-build-implementation/final-junit.xml -
+56 passed, 1 warning in 199.53s (0:03:19)

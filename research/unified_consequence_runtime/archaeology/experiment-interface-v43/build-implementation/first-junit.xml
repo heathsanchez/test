@@ -1,0 +1,524 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="31" skipped="0" tests="56" time="131.649" timestamp="2026-10-21T21:06:01.580771+00:00" hostname="8ac9339af51c"><testcase classname="research.unified_consequence_runtime.test_native_build_v43" name="test_required_native_build_v43_module_exists" time="0.000" /><testcase classname="research.unified_consequence_runtime.test_native_build_v43" name="test_fixture_has_distinct_base_author_test_and_source_identity[alpha]" time="1.309" /><testcase classname="research.unified_consequence_runtime.test_native_build_v43" name="test_fixture_has_distinct_base_author_test_and_source_identity[beta]" time="0.083" /><testcase classname="research.unified_consequence_runtime.test_native_build_v43" name="test_two_fixture_original_sources_are_independent" time="0.123" /><testcase classname="research.unified_consequence_runtime.test_native_build_v43" name="test_actual_hatch_vcs_generates_wheel_member_and_author_commit_changes_scm_version[alpha]" time="1.338" /><testcase classname="research.unified_consequence_runtime.test_native_build_v43" name="test_actual_hatch_vcs_generates_wheel_member_and_author_commit_changes_scm_version[beta]" time="1.321" /><testcase classname="research.unified_consequence_runtime.test_native_build_v43" name="test_declared_output_is_derived_from_original_backend_declaration[alpha]" time="0.098" /><testcase classname="research.unified_consequence_runtime.test_native_build_v43" name="test_declared_output_is_derived_from_original_backend_declaration[beta]" time="0.073" /><testcase classname="research.unified_consequence_runtime.test_native_build_v43" name="test_declared_output_refuses_traversal_tests_config_roots_and_tracked_bytes[../outside.py]" time="0.069" /><testcase classname="research.unified_consequence_runtime.test_native_build_v43" name="test_declared_output_refuses_traversal_tests_config_roots_and_tracked_bytes[/tmp/outside.py]" time="0.065" /><testcase classname="research.unified_consequence_runtime.test_native_build_v43" name="test_declared_output_refuses_traversal_tests_config_roots_and_tracked_bytes[src/native_alpha_v43/../outside.py]" time="0.069" /><testcase classname="research.unified_consequence_runtime.test_native_build_v43" name="test_declared_output_refuses_traversal_tests_config_roots_and_tracked_bytes[src/native_alpha_v43//_version.py]" time="0.068" /><testcase classname="research.unified_consequence_runtime.test_native_build_v43" name="test_declared_output_refuses_traversal_tests_config_roots_and_tracked_bytes[tests/test_generated.py]" time="0.069" /><testcase classname="research.unified_consequence_runtime.test_native_build_v43" name="test_declared_output_refuses_traversal_tests_config_roots_and_tracked_bytes[src/native_alpha_v43/test_generated.py]" time="0.077" /><testcase classname="research.unified_consequence_runtime.test_native_build_v43" name="test_declared_output_refuses_traversal_tests_config_roots_and_tracked_bytes[src/native_alpha_v43/generated_test.py]" time="0.072" /><testcase classname="research.unified_consequence_runtime.test_native_build_v43" name="test_declared_output_refuses_traversal_tests_config_roots_and_tracked_bytes[src/native_alpha_v43/conftest.py]" time="0.072" /><testcase classname="research.unified_consequence_runtime.test_native_build_v43" name="test_declared_output_refuses_traversal_tests_config_roots_and_tracked_bytes[src/native_alpha_v43/pytest.py]" time="0.074" /><testcase classname="research.unified_consequence_runtime.test_native_build_v43" name="test_declared_output_refuses_traversal_tests_config_roots_and_tracked_bytes[src/native_alpha_v43/pyproject.toml]" time="0.071" /><testcase classname="research.unified_consequence_runtime.test_native_build_v43" name="test_declared_output_refuses_traversal_tests_config_roots_and_tracked_bytes[src/native_alpha_v43/__init__.py]" time="0.067" /><testcase classname="research.unified_consequence_runtime.test_native_build_v43" name="test_declared_output_refuses_traversal_tests_config_roots_and_tracked_bytes[new_root/_version.py]" time="0.066" /><testcase classname="research.unified_consequence_runtime.test_native_build_v43" name="test_declared_output_refuses_traversal_tests_config_roots_and_tracked_bytes[src/native_alpha_v43/_version.pyc]" time="0.069" /><testcase classname="research.unified_consequence_runtime.test_native_build_v43" name="test_declared_generated_module_cannot_be_originally_licensed_as_pytest_plugin" time="0.065" /><testcase classname="research.unified_consequence_runtime.test_native_build_v43" name="test_unsupported_original_backend_remains_precise_unknown" time="0.065"><failure message="AssertionError: Regex pattern did not match.&#10; Regex: 'UNKNOWN.*(BACKEND|DECLARATION|BUILD)'&#10; Input: 'unsupported declared Git SCM build backend'">research/unified_consequence_runtime/test_native_build_v43.py:96: in test_unsupported_original_backend_remains_precise_unknown
+    build.declared_outputs(files)
+research/unified_consequence_runtime/native_build_v43.py:112: in declared_outputs
+    if (original_environment._git_scm(files) != 'hatch-vcs'
+research/unified_consequence_runtime/native_environment_v2.py:155: in _git_scm
+    raise ValueError('unsupported declared Git SCM build backend')
+E   ValueError: unsupported declared Git SCM build backend
+
+During handling of the above exception, another exception occurred:
+research/unified_consequence_runtime/test_native_build_v43.py:95: in test_unsupported_original_backend_remains_precise_unknown
+    with pytest.raises(ValueError, match='UNKNOWN.*(BACKEND|DECLARATION|BUILD)'):
+E   AssertionError: Regex pattern did not match.
+E    Regex: 'UNKNOWN.*(BACKEND|DECLARATION|BUILD)'
+E    Input: 'unsupported declared Git SCM build backend'</failure></testcase><testcase classname="research.unified_consequence_runtime.test_native_build_v43" name="test_prepare_and_independent_verify_match_all_original_base_wheel_members[alpha]" time="3.944"><failure message="ValueError: UNKNOWN_INTERFACE: unsupported native test configuration">research/unified_consequence_runtime/decisive_native_verify.py:195: in _test_patterns
+    _declared_addopts(options['addopts'])
+research/unified_consequence_runtime/decisive_native_verify.py:178: in _declared_addopts
+    raise ValueError('unsupported addopts collection/authority option: '+arg)
+E   ValueError: unsupported addopts collection/authority option: --import-mode=importlib
+
+The above exception was the direct cause of the following exception:
+research/unified_consequence_runtime/test_native_build_v43.py:102: in test_prepare_and_independent_verify_match_all_original_base_wheel_members
+    evidence = build.prepare(project.contract, project.authority, project.policy, tmp_path / 'prepared')
+research/unified_consequence_runtime/native_build_v43.py:419: in prepare
+    additions = _additions(context, report['generated_wheel_evidence'])
+research/unified_consequence_runtime/native_build_v43.py:401: in _additions
+    additions = overlay.generated_overlay(wheel, context['files'],
+research/unified_consequence_runtime/generated_overlay_gate.py:51: in generated_overlay
+    patterns=_test_patterns(tracked_source,allow_declared_addopts=allow_declared_addopts)
+research/unified_consequence_runtime/decisive_native_verify.py:207: in _test_patterns
+    raise ValueError('UNKNOWN_INTERFACE: unsupported native test configuration') from error
+E   ValueError: UNKNOWN_INTERFACE: unsupported native test configuration</failure></testcase><testcase classname="research.unified_consequence_runtime.test_native_build_v43" name="test_prepare_and_independent_verify_match_all_original_base_wheel_members[beta]" time="3.975"><failure message="ValueError: UNKNOWN_INTERFACE: unsupported native test configuration">research/unified_consequence_runtime/decisive_native_verify.py:195: in _test_patterns
+    _declared_addopts(options['addopts'])
+research/unified_consequence_runtime/decisive_native_verify.py:178: in _declared_addopts
+    raise ValueError('unsupported addopts collection/authority option: '+arg)
+E   ValueError: unsupported addopts collection/authority option: --import-mode=importlib
+
+The above exception was the direct cause of the following exception:
+research/unified_consequence_runtime/test_native_build_v43.py:102: in test_prepare_and_independent_verify_match_all_original_base_wheel_members
+    evidence = build.prepare(project.contract, project.authority, project.policy, tmp_path / 'prepared')
+research/unified_consequence_runtime/native_build_v43.py:419: in prepare
+    additions = _additions(context, report['generated_wheel_evidence'])
+research/unified_consequence_runtime/native_build_v43.py:401: in _additions
+    additions = overlay.generated_overlay(wheel, context['files'],
+research/unified_consequence_runtime/generated_overlay_gate.py:51: in generated_overlay
+    patterns=_test_patterns(tracked_source,allow_declared_addopts=allow_declared_addopts)
+research/unified_consequence_runtime/decisive_native_verify.py:207: in _test_patterns
+    raise ValueError('UNKNOWN_INTERFACE: unsupported native test configuration') from error
+E   ValueError: UNKNOWN_INTERFACE: unsupported native test configuration</failure></testcase><testcase classname="research.unified_consequence_runtime.test_native_build_v43" name="test_build_reads_immutable_source_without_overwriting_dirty_source_or_author_tests" time="3.983"><failure message="ValueError: UNKNOWN_INTERFACE: unsupported native test configuration">research/unified_consequence_runtime/decisive_native_verify.py:195: in _test_patterns
+    _declared_addopts(options['addopts'])
+research/unified_consequence_runtime/decisive_native_verify.py:178: in _declared_addopts
+    raise ValueError('unsupported addopts collection/authority option: '+arg)
+E   ValueError: unsupported addopts collection/authority option: --import-mode=importlib
+
+The above exception was the direct cause of the following exception:
+research/unified_consequence_runtime/test_native_build_v43.py:130: in test_build_reads_immutable_source_without_overwriting_dirty_source_or_author_tests
+    evidence = build.prepare(case.contract, case.authority, case.policy, tmp_path / 'prepared')
+research/unified_consequence_runtime/native_build_v43.py:419: in prepare
+    additions = _additions(context, report['generated_wheel_evidence'])
+research/unified_consequence_runtime/native_build_v43.py:401: in _additions
+    additions = overlay.generated_overlay(wheel, context['files'],
+research/unified_consequence_runtime/generated_overlay_gate.py:51: in generated_overlay
+    patterns=_test_patterns(tracked_source,allow_declared_addopts=allow_declared_addopts)
+research/unified_consequence_runtime/decisive_native_verify.py:207: in _test_patterns
+    raise ValueError('UNKNOWN_INTERFACE: unsupported native test configuration') from error
+E   ValueError: UNKNOWN_INTERFACE: unsupported native test configuration</failure></testcase><testcase classname="research.unified_consequence_runtime.test_native_build_v43" name="test_build_evidence_cannot_replay_under_wrong_source_or_environment[commit]" time="3.994"><failure message="ValueError: UNKNOWN_INTERFACE: unsupported native test configuration">research/unified_consequence_runtime/decisive_native_verify.py:195: in _test_patterns
+    _declared_addopts(options['addopts'])
+research/unified_consequence_runtime/decisive_native_verify.py:178: in _declared_addopts
+    raise ValueError('unsupported addopts collection/authority option: '+arg)
+E   ValueError: unsupported addopts collection/authority option: --import-mode=importlib
+
+The above exception was the direct cause of the following exception:
+research/unified_consequence_runtime/test_native_build_v43.py:142: in test_build_evidence_cannot_replay_under_wrong_source_or_environment
+    evidence = build.prepare(case.contract, case.authority, case.policy, tmp_path / 'prepared')
+research/unified_consequence_runtime/native_build_v43.py:419: in prepare
+    additions = _additions(context, report['generated_wheel_evidence'])
+research/unified_consequence_runtime/native_build_v43.py:401: in _additions
+    additions = overlay.generated_overlay(wheel, context['files'],
+research/unified_consequence_runtime/generated_overlay_gate.py:51: in generated_overlay
+    patterns=_test_patterns(tracked_source,allow_declared_addopts=allow_declared_addopts)
+research/unified_consequence_runtime/decisive_native_verify.py:207: in _test_patterns
+    raise ValueError('UNKNOWN_INTERFACE: unsupported native test configuration') from error
+E   ValueError: UNKNOWN_INTERFACE: unsupported native test configuration</failure></testcase><testcase classname="research.unified_consequence_runtime.test_native_build_v43" name="test_build_evidence_cannot_replay_under_wrong_source_or_environment[tracked_tree_sha256]" time="3.928"><failure message="ValueError: UNKNOWN_INTERFACE: unsupported native test configuration">research/unified_consequence_runtime/decisive_native_verify.py:195: in _test_patterns
+    _declared_addopts(options['addopts'])
+research/unified_consequence_runtime/decisive_native_verify.py:178: in _declared_addopts
+    raise ValueError('unsupported addopts collection/authority option: '+arg)
+E   ValueError: unsupported addopts collection/authority option: --import-mode=importlib
+
+The above exception was the direct cause of the following exception:
+research/unified_consequence_runtime/test_native_build_v43.py:142: in test_build_evidence_cannot_replay_under_wrong_source_or_environment
+    evidence = build.prepare(case.contract, case.authority, case.policy, tmp_path / 'prepared')
+research/unified_consequence_runtime/native_build_v43.py:419: in prepare
+    additions = _additions(context, report['generated_wheel_evidence'])
+research/unified_consequence_runtime/native_build_v43.py:401: in _additions
+    additions = overlay.generated_overlay(wheel, context['files'],
+research/unified_consequence_runtime/generated_overlay_gate.py:51: in generated_overlay
+    patterns=_test_patterns(tracked_source,allow_declared_addopts=allow_declared_addopts)
+research/unified_consequence_runtime/decisive_native_verify.py:207: in _test_patterns
+    raise ValueError('UNKNOWN_INTERFACE: unsupported native test configuration') from error
+E   ValueError: UNKNOWN_INTERFACE: unsupported native test configuration</failure></testcase><testcase classname="research.unified_consequence_runtime.test_native_build_v43" name="test_build_evidence_cannot_replay_under_wrong_source_or_environment[environment_sha256]" time="4.171"><failure message="ValueError: UNKNOWN_INTERFACE: unsupported native test configuration">research/unified_consequence_runtime/decisive_native_verify.py:195: in _test_patterns
+    _declared_addopts(options['addopts'])
+research/unified_consequence_runtime/decisive_native_verify.py:178: in _declared_addopts
+    raise ValueError('unsupported addopts collection/authority option: '+arg)
+E   ValueError: unsupported addopts collection/authority option: --import-mode=importlib
+
+The above exception was the direct cause of the following exception:
+research/unified_consequence_runtime/test_native_build_v43.py:142: in test_build_evidence_cannot_replay_under_wrong_source_or_environment
+    evidence = build.prepare(case.contract, case.authority, case.policy, tmp_path / 'prepared')
+research/unified_consequence_runtime/native_build_v43.py:419: in prepare
+    additions = _additions(context, report['generated_wheel_evidence'])
+research/unified_consequence_runtime/native_build_v43.py:401: in _additions
+    additions = overlay.generated_overlay(wheel, context['files'],
+research/unified_consequence_runtime/generated_overlay_gate.py:51: in generated_overlay
+    patterns=_test_patterns(tracked_source,allow_declared_addopts=allow_declared_addopts)
+research/unified_consequence_runtime/decisive_native_verify.py:207: in _test_patterns
+    raise ValueError('UNKNOWN_INTERFACE: unsupported native test configuration') from error
+E   ValueError: UNKNOWN_INTERFACE: unsupported native test configuration</failure></testcase><testcase classname="research.unified_consequence_runtime.test_native_build_v43" name="test_build_evidence_cannot_replay_under_wrong_base_author_test_or_protocol[baseline_commit]" time="3.971"><failure message="ValueError: UNKNOWN_INTERFACE: unsupported native test configuration">research/unified_consequence_runtime/decisive_native_verify.py:195: in _test_patterns
+    _declared_addopts(options['addopts'])
+research/unified_consequence_runtime/decisive_native_verify.py:178: in _declared_addopts
+    raise ValueError('unsupported addopts collection/authority option: '+arg)
+E   ValueError: unsupported addopts collection/authority option: --import-mode=importlib
+
+The above exception was the direct cause of the following exception:
+research/unified_consequence_runtime/test_native_build_v43.py:152: in test_build_evidence_cannot_replay_under_wrong_base_author_test_or_protocol
+    evidence = build.prepare(case.contract, case.authority, case.policy, tmp_path / 'prepared')
+research/unified_consequence_runtime/native_build_v43.py:419: in prepare
+    additions = _additions(context, report['generated_wheel_evidence'])
+research/unified_consequence_runtime/native_build_v43.py:401: in _additions
+    additions = overlay.generated_overlay(wheel, context['files'],
+research/unified_consequence_runtime/generated_overlay_gate.py:51: in generated_overlay
+    patterns=_test_patterns(tracked_source,allow_declared_addopts=allow_declared_addopts)
+research/unified_consequence_runtime/decisive_native_verify.py:207: in _test_patterns
+    raise ValueError('UNKNOWN_INTERFACE: unsupported native test configuration') from error
+E   ValueError: UNKNOWN_INTERFACE: unsupported native test configuration</failure></testcase><testcase classname="research.unified_consequence_runtime.test_native_build_v43" name="test_build_evidence_cannot_replay_under_wrong_base_author_test_or_protocol[source_commit]" time="3.964"><failure message="ValueError: UNKNOWN_INTERFACE: unsupported native test configuration">research/unified_consequence_runtime/decisive_native_verify.py:195: in _test_patterns
+    _declared_addopts(options['addopts'])
+research/unified_consequence_runtime/decisive_native_verify.py:178: in _declared_addopts
+    raise ValueError('unsupported addopts collection/authority option: '+arg)
+E   ValueError: unsupported addopts collection/authority option: --import-mode=importlib
+
+The above exception was the direct cause of the following exception:
+research/unified_consequence_runtime/test_native_build_v43.py:152: in test_build_evidence_cannot_replay_under_wrong_base_author_test_or_protocol
+    evidence = build.prepare(case.contract, case.authority, case.policy, tmp_path / 'prepared')
+research/unified_consequence_runtime/native_build_v43.py:419: in prepare
+    additions = _additions(context, report['generated_wheel_evidence'])
+research/unified_consequence_runtime/native_build_v43.py:401: in _additions
+    additions = overlay.generated_overlay(wheel, context['files'],
+research/unified_consequence_runtime/generated_overlay_gate.py:51: in generated_overlay
+    patterns=_test_patterns(tracked_source,allow_declared_addopts=allow_declared_addopts)
+research/unified_consequence_runtime/decisive_native_verify.py:207: in _test_patterns
+    raise ValueError('UNKNOWN_INTERFACE: unsupported native test configuration') from error
+E   ValueError: UNKNOWN_INTERFACE: unsupported native test configuration</failure></testcase><testcase classname="research.unified_consequence_runtime.test_native_build_v43" name="test_build_evidence_cannot_replay_under_wrong_base_author_test_or_protocol[protocol_binding]" time="3.978"><failure message="ValueError: UNKNOWN_INTERFACE: unsupported native test configuration">research/unified_consequence_runtime/decisive_native_verify.py:195: in _test_patterns
+    _declared_addopts(options['addopts'])
+research/unified_consequence_runtime/decisive_native_verify.py:178: in _declared_addopts
+    raise ValueError('unsupported addopts collection/authority option: '+arg)
+E   ValueError: unsupported addopts collection/authority option: --import-mode=importlib
+
+The above exception was the direct cause of the following exception:
+research/unified_consequence_runtime/test_native_build_v43.py:152: in test_build_evidence_cannot_replay_under_wrong_base_author_test_or_protocol
+    evidence = build.prepare(case.contract, case.authority, case.policy, tmp_path / 'prepared')
+research/unified_consequence_runtime/native_build_v43.py:419: in prepare
+    additions = _additions(context, report['generated_wheel_evidence'])
+research/unified_consequence_runtime/native_build_v43.py:401: in _additions
+    additions = overlay.generated_overlay(wheel, context['files'],
+research/unified_consequence_runtime/generated_overlay_gate.py:51: in generated_overlay
+    patterns=_test_patterns(tracked_source,allow_declared_addopts=allow_declared_addopts)
+research/unified_consequence_runtime/decisive_native_verify.py:207: in _test_patterns
+    raise ValueError('UNKNOWN_INTERFACE: unsupported native test configuration') from error
+E   ValueError: UNKNOWN_INTERFACE: unsupported native test configuration</failure></testcase><testcase classname="research.unified_consequence_runtime.test_native_build_v43" name="test_build_evidence_cannot_replay_for_other_independent_fixture" time="4.116"><failure message="ValueError: UNKNOWN_INTERFACE: unsupported native test configuration">research/unified_consequence_runtime/decisive_native_verify.py:195: in _test_patterns
+    _declared_addopts(options['addopts'])
+research/unified_consequence_runtime/decisive_native_verify.py:178: in _declared_addopts
+    raise ValueError('unsupported addopts collection/authority option: '+arg)
+E   ValueError: unsupported addopts collection/authority option: --import-mode=importlib
+
+The above exception was the direct cause of the following exception:
+research/unified_consequence_runtime/test_native_build_v43.py:162: in test_build_evidence_cannot_replay_for_other_independent_fixture
+    evidence = build.prepare(alpha.contract, alpha.authority, alpha.policy, tmp_path / 'prepared')
+research/unified_consequence_runtime/native_build_v43.py:419: in prepare
+    additions = _additions(context, report['generated_wheel_evidence'])
+research/unified_consequence_runtime/native_build_v43.py:401: in _additions
+    additions = overlay.generated_overlay(wheel, context['files'],
+research/unified_consequence_runtime/generated_overlay_gate.py:51: in generated_overlay
+    patterns=_test_patterns(tracked_source,allow_declared_addopts=allow_declared_addopts)
+research/unified_consequence_runtime/decisive_native_verify.py:207: in _test_patterns
+    raise ValueError('UNKNOWN_INTERFACE: unsupported native test configuration') from error
+E   ValueError: UNKNOWN_INTERFACE: unsupported native test configuration</failure></testcase><testcase classname="research.unified_consequence_runtime.test_native_build_v43" name="test_changed_build_recipe_binding_is_refused" time="4.011"><failure message="ValueError: UNKNOWN_INTERFACE: unsupported native test configuration">research/unified_consequence_runtime/decisive_native_verify.py:195: in _test_patterns
+    _declared_addopts(options['addopts'])
+research/unified_consequence_runtime/decisive_native_verify.py:178: in _declared_addopts
+    raise ValueError('unsupported addopts collection/authority option: '+arg)
+E   ValueError: unsupported addopts collection/authority option: --import-mode=importlib
+
+The above exception was the direct cause of the following exception:
+research/unified_consequence_runtime/test_native_build_v43.py:170: in test_changed_build_recipe_binding_is_refused
+    evidence = build.prepare(case.contract, case.authority, case.policy, tmp_path / 'prepared')
+research/unified_consequence_runtime/native_build_v43.py:419: in prepare
+    additions = _additions(context, report['generated_wheel_evidence'])
+research/unified_consequence_runtime/native_build_v43.py:401: in _additions
+    additions = overlay.generated_overlay(wheel, context['files'],
+research/unified_consequence_runtime/generated_overlay_gate.py:51: in generated_overlay
+    patterns=_test_patterns(tracked_source,allow_declared_addopts=allow_declared_addopts)
+research/unified_consequence_runtime/decisive_native_verify.py:207: in _test_patterns
+    raise ValueError('UNKNOWN_INTERFACE: unsupported native test configuration') from error
+E   ValueError: UNKNOWN_INTERFACE: unsupported native test configuration</failure></testcase><testcase classname="research.unified_consequence_runtime.test_native_build_v43" name="test_original_scm_tag_snapshot_binds_evidence_and_changed_tags_refuse_replay[retarget]" time="3.992"><failure message="ValueError: UNKNOWN_INTERFACE: unsupported native test configuration">research/unified_consequence_runtime/decisive_native_verify.py:195: in _test_patterns
+    _declared_addopts(options['addopts'])
+research/unified_consequence_runtime/decisive_native_verify.py:178: in _declared_addopts
+    raise ValueError('unsupported addopts collection/authority option: '+arg)
+E   ValueError: unsupported addopts collection/authority option: --import-mode=importlib
+
+The above exception was the direct cause of the following exception:
+research/unified_consequence_runtime/test_native_build_v43.py:190: in test_original_scm_tag_snapshot_binds_evidence_and_changed_tags_refuse_replay
+    evidence = build.prepare(case.contract, case.authority, case.policy, tmp_path / 'prepared')
+research/unified_consequence_runtime/native_build_v43.py:419: in prepare
+    additions = _additions(context, report['generated_wheel_evidence'])
+research/unified_consequence_runtime/native_build_v43.py:401: in _additions
+    additions = overlay.generated_overlay(wheel, context['files'],
+research/unified_consequence_runtime/generated_overlay_gate.py:51: in generated_overlay
+    patterns=_test_patterns(tracked_source,allow_declared_addopts=allow_declared_addopts)
+research/unified_consequence_runtime/decisive_native_verify.py:207: in _test_patterns
+    raise ValueError('UNKNOWN_INTERFACE: unsupported native test configuration') from error
+E   ValueError: UNKNOWN_INTERFACE: unsupported native test configuration</failure></testcase><testcase classname="research.unified_consequence_runtime.test_native_build_v43" name="test_original_scm_tag_snapshot_binds_evidence_and_changed_tags_refuse_replay[delete]" time="4.129"><failure message="ValueError: UNKNOWN_INTERFACE: unsupported native test configuration">research/unified_consequence_runtime/decisive_native_verify.py:195: in _test_patterns
+    _declared_addopts(options['addopts'])
+research/unified_consequence_runtime/decisive_native_verify.py:178: in _declared_addopts
+    raise ValueError('unsupported addopts collection/authority option: '+arg)
+E   ValueError: unsupported addopts collection/authority option: --import-mode=importlib
+
+The above exception was the direct cause of the following exception:
+research/unified_consequence_runtime/test_native_build_v43.py:190: in test_original_scm_tag_snapshot_binds_evidence_and_changed_tags_refuse_replay
+    evidence = build.prepare(case.contract, case.authority, case.policy, tmp_path / 'prepared')
+research/unified_consequence_runtime/native_build_v43.py:419: in prepare
+    additions = _additions(context, report['generated_wheel_evidence'])
+research/unified_consequence_runtime/native_build_v43.py:401: in _additions
+    additions = overlay.generated_overlay(wheel, context['files'],
+research/unified_consequence_runtime/generated_overlay_gate.py:51: in generated_overlay
+    patterns=_test_patterns(tracked_source,allow_declared_addopts=allow_declared_addopts)
+research/unified_consequence_runtime/decisive_native_verify.py:207: in _test_patterns
+    raise ValueError('UNKNOWN_INTERFACE: unsupported native test configuration') from error
+E   ValueError: UNKNOWN_INTERFACE: unsupported native test configuration</failure></testcase><testcase classname="research.unified_consequence_runtime.test_native_build_v43" name="test_original_scm_tag_snapshot_binds_evidence_and_changed_tags_refuse_replay[add]" time="3.990"><failure message="ValueError: UNKNOWN_INTERFACE: unsupported native test configuration">research/unified_consequence_runtime/decisive_native_verify.py:195: in _test_patterns
+    _declared_addopts(options['addopts'])
+research/unified_consequence_runtime/decisive_native_verify.py:178: in _declared_addopts
+    raise ValueError('unsupported addopts collection/authority option: '+arg)
+E   ValueError: unsupported addopts collection/authority option: --import-mode=importlib
+
+The above exception was the direct cause of the following exception:
+research/unified_consequence_runtime/test_native_build_v43.py:190: in test_original_scm_tag_snapshot_binds_evidence_and_changed_tags_refuse_replay
+    evidence = build.prepare(case.contract, case.authority, case.policy, tmp_path / 'prepared')
+research/unified_consequence_runtime/native_build_v43.py:419: in prepare
+    additions = _additions(context, report['generated_wheel_evidence'])
+research/unified_consequence_runtime/native_build_v43.py:401: in _additions
+    additions = overlay.generated_overlay(wheel, context['files'],
+research/unified_consequence_runtime/generated_overlay_gate.py:51: in generated_overlay
+    patterns=_test_patterns(tracked_source,allow_declared_addopts=allow_declared_addopts)
+research/unified_consequence_runtime/decisive_native_verify.py:207: in _test_patterns
+    raise ValueError('UNKNOWN_INTERFACE: unsupported native test configuration') from error
+E   ValueError: UNKNOWN_INTERFACE: unsupported native test configuration</failure></testcase><testcase classname="research.unified_consequence_runtime.test_native_build_v43" name="test_author_test_descendant_tag_cannot_change_base_build_version" time="3.947"><failure message="ValueError: UNKNOWN_INTERFACE: unsupported native test configuration">research/unified_consequence_runtime/decisive_native_verify.py:195: in _test_patterns
+    _declared_addopts(options['addopts'])
+research/unified_consequence_runtime/decisive_native_verify.py:178: in _declared_addopts
+    raise ValueError('unsupported addopts collection/authority option: '+arg)
+E   ValueError: unsupported addopts collection/authority option: --import-mode=importlib
+
+The above exception was the direct cause of the following exception:
+research/unified_consequence_runtime/test_native_build_v43.py:207: in test_author_test_descendant_tag_cannot_change_base_build_version
+    evidence = build.prepare(case.contract, case.authority, case.policy, tmp_path / 'prepared')
+research/unified_consequence_runtime/native_build_v43.py:419: in prepare
+    additions = _additions(context, report['generated_wheel_evidence'])
+research/unified_consequence_runtime/native_build_v43.py:401: in _additions
+    additions = overlay.generated_overlay(wheel, context['files'],
+research/unified_consequence_runtime/generated_overlay_gate.py:51: in generated_overlay
+    patterns=_test_patterns(tracked_source,allow_declared_addopts=allow_declared_addopts)
+research/unified_consequence_runtime/decisive_native_verify.py:207: in _test_patterns
+    raise ValueError('UNKNOWN_INTERFACE: unsupported native test configuration') from error
+E   ValueError: UNKNOWN_INTERFACE: unsupported native test configuration</failure></testcase><testcase classname="research.unified_consequence_runtime.test_native_build_v43" name="test_forged_generated_wheel_with_consistent_hashes_requires_independent_rebuild" time="3.971"><failure message="ValueError: UNKNOWN_INTERFACE: unsupported native test configuration">research/unified_consequence_runtime/decisive_native_verify.py:195: in _test_patterns
+    _declared_addopts(options['addopts'])
+research/unified_consequence_runtime/decisive_native_verify.py:178: in _declared_addopts
+    raise ValueError('unsupported addopts collection/authority option: '+arg)
+E   ValueError: unsupported addopts collection/authority option: --import-mode=importlib
+
+The above exception was the direct cause of the following exception:
+research/unified_consequence_runtime/test_native_build_v43.py:217: in test_forged_generated_wheel_with_consistent_hashes_requires_independent_rebuild
+    evidence = build.prepare(case.contract, case.authority, case.policy, tmp_path / 'prepared')
+research/unified_consequence_runtime/native_build_v43.py:419: in prepare
+    additions = _additions(context, report['generated_wheel_evidence'])
+research/unified_consequence_runtime/native_build_v43.py:401: in _additions
+    additions = overlay.generated_overlay(wheel, context['files'],
+research/unified_consequence_runtime/generated_overlay_gate.py:51: in generated_overlay
+    patterns=_test_patterns(tracked_source,allow_declared_addopts=allow_declared_addopts)
+research/unified_consequence_runtime/decisive_native_verify.py:207: in _test_patterns
+    raise ValueError('UNKNOWN_INTERFACE: unsupported native test configuration') from error
+E   ValueError: UNKNOWN_INTERFACE: unsupported native test configuration</failure></testcase><testcase classname="research.unified_consequence_runtime.test_native_build_v43" name="test_forged_wheel_cannot_change_original_tracked_source" time="3.978"><failure message="ValueError: UNKNOWN_INTERFACE: unsupported native test configuration">research/unified_consequence_runtime/decisive_native_verify.py:195: in _test_patterns
+    _declared_addopts(options['addopts'])
+research/unified_consequence_runtime/decisive_native_verify.py:178: in _declared_addopts
+    raise ValueError('unsupported addopts collection/authority option: '+arg)
+E   ValueError: unsupported addopts collection/authority option: --import-mode=importlib
+
+The above exception was the direct cause of the following exception:
+research/unified_consequence_runtime/test_native_build_v43.py:228: in test_forged_wheel_cannot_change_original_tracked_source
+    evidence = build.prepare(case.contract, case.authority, case.policy, tmp_path / 'prepared')
+research/unified_consequence_runtime/native_build_v43.py:419: in prepare
+    additions = _additions(context, report['generated_wheel_evidence'])
+research/unified_consequence_runtime/native_build_v43.py:401: in _additions
+    additions = overlay.generated_overlay(wheel, context['files'],
+research/unified_consequence_runtime/generated_overlay_gate.py:51: in generated_overlay
+    patterns=_test_patterns(tracked_source,allow_declared_addopts=allow_declared_addopts)
+research/unified_consequence_runtime/decisive_native_verify.py:207: in _test_patterns
+    raise ValueError('UNKNOWN_INTERFACE: unsupported native test configuration') from error
+E   ValueError: UNKNOWN_INTERFACE: unsupported native test configuration</failure></testcase><testcase classname="research.unified_consequence_runtime.test_native_build_v43" name="test_extra_undeclared_test_config_plugin_root_or_traversal_wheel_member_is_refused[test_extra.py]" time="3.976"><failure message="ValueError: UNKNOWN_INTERFACE: unsupported native test configuration">research/unified_consequence_runtime/decisive_native_verify.py:195: in _test_patterns
+    _declared_addopts(options['addopts'])
+research/unified_consequence_runtime/decisive_native_verify.py:178: in _declared_addopts
+    raise ValueError('unsupported addopts collection/authority option: '+arg)
+E   ValueError: unsupported addopts collection/authority option: --import-mode=importlib
+
+The above exception was the direct cause of the following exception:
+research/unified_consequence_runtime/test_native_build_v43.py:241: in test_extra_undeclared_test_config_plugin_root_or_traversal_wheel_member_is_refused
+    evidence = build.prepare(case.contract, case.authority, case.policy, tmp_path / 'prepared')
+research/unified_consequence_runtime/native_build_v43.py:419: in prepare
+    additions = _additions(context, report['generated_wheel_evidence'])
+research/unified_consequence_runtime/native_build_v43.py:401: in _additions
+    additions = overlay.generated_overlay(wheel, context['files'],
+research/unified_consequence_runtime/generated_overlay_gate.py:51: in generated_overlay
+    patterns=_test_patterns(tracked_source,allow_declared_addopts=allow_declared_addopts)
+research/unified_consequence_runtime/decisive_native_verify.py:207: in _test_patterns
+    raise ValueError('UNKNOWN_INTERFACE: unsupported native test configuration') from error
+E   ValueError: UNKNOWN_INTERFACE: unsupported native test configuration</failure></testcase><testcase classname="research.unified_consequence_runtime.test_native_build_v43" name="test_extra_undeclared_test_config_plugin_root_or_traversal_wheel_member_is_refused[conftest.py]" time="4.008"><failure message="ValueError: UNKNOWN_INTERFACE: unsupported native test configuration">research/unified_consequence_runtime/decisive_native_verify.py:195: in _test_patterns
+    _declared_addopts(options['addopts'])
+research/unified_consequence_runtime/decisive_native_verify.py:178: in _declared_addopts
+    raise ValueError('unsupported addopts collection/authority option: '+arg)
+E   ValueError: unsupported addopts collection/authority option: --import-mode=importlib
+
+The above exception was the direct cause of the following exception:
+research/unified_consequence_runtime/test_native_build_v43.py:241: in test_extra_undeclared_test_config_plugin_root_or_traversal_wheel_member_is_refused
+    evidence = build.prepare(case.contract, case.authority, case.policy, tmp_path / 'prepared')
+research/unified_consequence_runtime/native_build_v43.py:419: in prepare
+    additions = _additions(context, report['generated_wheel_evidence'])
+research/unified_consequence_runtime/native_build_v43.py:401: in _additions
+    additions = overlay.generated_overlay(wheel, context['files'],
+research/unified_consequence_runtime/generated_overlay_gate.py:51: in generated_overlay
+    patterns=_test_patterns(tracked_source,allow_declared_addopts=allow_declared_addopts)
+research/unified_consequence_runtime/decisive_native_verify.py:207: in _test_patterns
+    raise ValueError('UNKNOWN_INTERFACE: unsupported native test configuration') from error
+E   ValueError: UNKNOWN_INTERFACE: unsupported native test configuration</failure></testcase><testcase classname="research.unified_consequence_runtime.test_native_build_v43" name="test_extra_undeclared_test_config_plugin_root_or_traversal_wheel_member_is_refused[pytest.py]" time="3.962"><failure message="ValueError: UNKNOWN_INTERFACE: unsupported native test configuration">research/unified_consequence_runtime/decisive_native_verify.py:195: in _test_patterns
+    _declared_addopts(options['addopts'])
+research/unified_consequence_runtime/decisive_native_verify.py:178: in _declared_addopts
+    raise ValueError('unsupported addopts collection/authority option: '+arg)
+E   ValueError: unsupported addopts collection/authority option: --import-mode=importlib
+
+The above exception was the direct cause of the following exception:
+research/unified_consequence_runtime/test_native_build_v43.py:241: in test_extra_undeclared_test_config_plugin_root_or_traversal_wheel_member_is_refused
+    evidence = build.prepare(case.contract, case.authority, case.policy, tmp_path / 'prepared')
+research/unified_consequence_runtime/native_build_v43.py:419: in prepare
+    additions = _additions(context, report['generated_wheel_evidence'])
+research/unified_consequence_runtime/native_build_v43.py:401: in _additions
+    additions = overlay.generated_overlay(wheel, context['files'],
+research/unified_consequence_runtime/generated_overlay_gate.py:51: in generated_overlay
+    patterns=_test_patterns(tracked_source,allow_declared_addopts=allow_declared_addopts)
+research/unified_consequence_runtime/decisive_native_verify.py:207: in _test_patterns
+    raise ValueError('UNKNOWN_INTERFACE: unsupported native test configuration') from error
+E   ValueError: UNKNOWN_INTERFACE: unsupported native test configuration</failure></testcase><testcase classname="research.unified_consequence_runtime.test_native_build_v43" name="test_extra_undeclared_test_config_plugin_root_or_traversal_wheel_member_is_refused[pyproject.toml]" time="4.061"><failure message="ValueError: UNKNOWN_INTERFACE: unsupported native test configuration">research/unified_consequence_runtime/decisive_native_verify.py:195: in _test_patterns
+    _declared_addopts(options['addopts'])
+research/unified_consequence_runtime/decisive_native_verify.py:178: in _declared_addopts
+    raise ValueError('unsupported addopts collection/authority option: '+arg)
+E   ValueError: unsupported addopts collection/authority option: --import-mode=importlib
+
+The above exception was the direct cause of the following exception:
+research/unified_consequence_runtime/test_native_build_v43.py:241: in test_extra_undeclared_test_config_plugin_root_or_traversal_wheel_member_is_refused
+    evidence = build.prepare(case.contract, case.authority, case.policy, tmp_path / 'prepared')
+research/unified_consequence_runtime/native_build_v43.py:419: in prepare
+    additions = _additions(context, report['generated_wheel_evidence'])
+research/unified_consequence_runtime/native_build_v43.py:401: in _additions
+    additions = overlay.generated_overlay(wheel, context['files'],
+research/unified_consequence_runtime/generated_overlay_gate.py:51: in generated_overlay
+    patterns=_test_patterns(tracked_source,allow_declared_addopts=allow_declared_addopts)
+research/unified_consequence_runtime/decisive_native_verify.py:207: in _test_patterns
+    raise ValueError('UNKNOWN_INTERFACE: unsupported native test configuration') from error
+E   ValueError: UNKNOWN_INTERFACE: unsupported native test configuration</failure></testcase><testcase classname="research.unified_consequence_runtime.test_native_build_v43" name="test_extra_undeclared_test_config_plugin_root_or_traversal_wheel_member_is_refused[new_root/_version.py]" time="4.071"><failure message="ValueError: UNKNOWN_INTERFACE: unsupported native test configuration">research/unified_consequence_runtime/decisive_native_verify.py:195: in _test_patterns
+    _declared_addopts(options['addopts'])
+research/unified_consequence_runtime/decisive_native_verify.py:178: in _declared_addopts
+    raise ValueError('unsupported addopts collection/authority option: '+arg)
+E   ValueError: unsupported addopts collection/authority option: --import-mode=importlib
+
+The above exception was the direct cause of the following exception:
+research/unified_consequence_runtime/test_native_build_v43.py:241: in test_extra_undeclared_test_config_plugin_root_or_traversal_wheel_member_is_refused
+    evidence = build.prepare(case.contract, case.authority, case.policy, tmp_path / 'prepared')
+research/unified_consequence_runtime/native_build_v43.py:419: in prepare
+    additions = _additions(context, report['generated_wheel_evidence'])
+research/unified_consequence_runtime/native_build_v43.py:401: in _additions
+    additions = overlay.generated_overlay(wheel, context['files'],
+research/unified_consequence_runtime/generated_overlay_gate.py:51: in generated_overlay
+    patterns=_test_patterns(tracked_source,allow_declared_addopts=allow_declared_addopts)
+research/unified_consequence_runtime/decisive_native_verify.py:207: in _test_patterns
+    raise ValueError('UNKNOWN_INTERFACE: unsupported native test configuration') from error
+E   ValueError: UNKNOWN_INTERFACE: unsupported native test configuration</failure></testcase><testcase classname="research.unified_consequence_runtime.test_native_build_v43" name="test_extra_undeclared_test_config_plugin_root_or_traversal_wheel_member_is_refused[../escape.py]" time="4.034"><failure message="ValueError: UNKNOWN_INTERFACE: unsupported native test configuration">research/unified_consequence_runtime/decisive_native_verify.py:195: in _test_patterns
+    _declared_addopts(options['addopts'])
+research/unified_consequence_runtime/decisive_native_verify.py:178: in _declared_addopts
+    raise ValueError('unsupported addopts collection/authority option: '+arg)
+E   ValueError: unsupported addopts collection/authority option: --import-mode=importlib
+
+The above exception was the direct cause of the following exception:
+research/unified_consequence_runtime/test_native_build_v43.py:241: in test_extra_undeclared_test_config_plugin_root_or_traversal_wheel_member_is_refused
+    evidence = build.prepare(case.contract, case.authority, case.policy, tmp_path / 'prepared')
+research/unified_consequence_runtime/native_build_v43.py:419: in prepare
+    additions = _additions(context, report['generated_wheel_evidence'])
+research/unified_consequence_runtime/native_build_v43.py:401: in _additions
+    additions = overlay.generated_overlay(wheel, context['files'],
+research/unified_consequence_runtime/generated_overlay_gate.py:51: in generated_overlay
+    patterns=_test_patterns(tracked_source,allow_declared_addopts=allow_declared_addopts)
+research/unified_consequence_runtime/decisive_native_verify.py:207: in _test_patterns
+    raise ValueError('UNKNOWN_INTERFACE: unsupported native test configuration') from error
+E   ValueError: UNKNOWN_INTERFACE: unsupported native test configuration</failure></testcase><testcase classname="research.unified_consequence_runtime.test_native_build_v43" name="test_declared_generated_module_may_not_introduce_pytest_plugin_authority[pytest_plugins = []\n]" time="3.953"><failure message="ValueError: UNKNOWN_INTERFACE: unsupported native test configuration">research/unified_consequence_runtime/decisive_native_verify.py:195: in _test_patterns
+    _declared_addopts(options['addopts'])
+research/unified_consequence_runtime/decisive_native_verify.py:178: in _declared_addopts
+    raise ValueError('unsupported addopts collection/authority option: '+arg)
+E   ValueError: unsupported addopts collection/authority option: --import-mode=importlib
+
+The above exception was the direct cause of the following exception:
+research/unified_consequence_runtime/test_native_build_v43.py:253: in test_declared_generated_module_may_not_introduce_pytest_plugin_authority
+    evidence = build.prepare(case.contract, case.authority, case.policy, tmp_path / 'prepared')
+research/unified_consequence_runtime/native_build_v43.py:419: in prepare
+    additions = _additions(context, report['generated_wheel_evidence'])
+research/unified_consequence_runtime/native_build_v43.py:401: in _additions
+    additions = overlay.generated_overlay(wheel, context['files'],
+research/unified_consequence_runtime/generated_overlay_gate.py:51: in generated_overlay
+    patterns=_test_patterns(tracked_source,allow_declared_addopts=allow_declared_addopts)
+research/unified_consequence_runtime/decisive_native_verify.py:207: in _test_patterns
+    raise ValueError('UNKNOWN_INTERFACE: unsupported native test configuration') from error
+E   ValueError: UNKNOWN_INTERFACE: unsupported native test configuration</failure></testcase><testcase classname="research.unified_consequence_runtime.test_native_build_v43" name="test_declared_generated_module_may_not_introduce_pytest_plugin_authority[def pytest_configure(config):\n    pass\n]" time="3.959"><failure message="ValueError: UNKNOWN_INTERFACE: unsupported native test configuration">research/unified_consequence_runtime/decisive_native_verify.py:195: in _test_patterns
+    _declared_addopts(options['addopts'])
+research/unified_consequence_runtime/decisive_native_verify.py:178: in _declared_addopts
+    raise ValueError('unsupported addopts collection/authority option: '+arg)
+E   ValueError: unsupported addopts collection/authority option: --import-mode=importlib
+
+The above exception was the direct cause of the following exception:
+research/unified_consequence_runtime/test_native_build_v43.py:253: in test_declared_generated_module_may_not_introduce_pytest_plugin_authority
+    evidence = build.prepare(case.contract, case.authority, case.policy, tmp_path / 'prepared')
+research/unified_consequence_runtime/native_build_v43.py:419: in prepare
+    additions = _additions(context, report['generated_wheel_evidence'])
+research/unified_consequence_runtime/native_build_v43.py:401: in _additions
+    additions = overlay.generated_overlay(wheel, context['files'],
+research/unified_consequence_runtime/generated_overlay_gate.py:51: in generated_overlay
+    patterns=_test_patterns(tracked_source,allow_declared_addopts=allow_declared_addopts)
+research/unified_consequence_runtime/decisive_native_verify.py:207: in _test_patterns
+    raise ValueError('UNKNOWN_INTERFACE: unsupported native test configuration') from error
+E   ValueError: UNKNOWN_INTERFACE: unsupported native test configuration</failure></testcase><testcase classname="research.unified_consequence_runtime.test_native_build_v43" name="test_generated_wheel_duplicate_and_symlink_members_are_refused[duplicate]" time="3.948"><failure message="ValueError: UNKNOWN_INTERFACE: unsupported native test configuration">research/unified_consequence_runtime/decisive_native_verify.py:195: in _test_patterns
+    _declared_addopts(options['addopts'])
+research/unified_consequence_runtime/decisive_native_verify.py:178: in _declared_addopts
+    raise ValueError('unsupported addopts collection/authority option: '+arg)
+E   ValueError: unsupported addopts collection/authority option: --import-mode=importlib
+
+The above exception was the direct cause of the following exception:
+research/unified_consequence_runtime/test_native_build_v43.py:264: in test_generated_wheel_duplicate_and_symlink_members_are_refused
+    evidence = build.prepare(case.contract, case.authority, case.policy, tmp_path / 'prepared')
+research/unified_consequence_runtime/native_build_v43.py:419: in prepare
+    additions = _additions(context, report['generated_wheel_evidence'])
+research/unified_consequence_runtime/native_build_v43.py:401: in _additions
+    additions = overlay.generated_overlay(wheel, context['files'],
+research/unified_consequence_runtime/generated_overlay_gate.py:51: in generated_overlay
+    patterns=_test_patterns(tracked_source,allow_declared_addopts=allow_declared_addopts)
+research/unified_consequence_runtime/decisive_native_verify.py:207: in _test_patterns
+    raise ValueError('UNKNOWN_INTERFACE: unsupported native test configuration') from error
+E   ValueError: UNKNOWN_INTERFACE: unsupported native test configuration</failure></testcase><testcase classname="research.unified_consequence_runtime.test_native_build_v43" name="test_generated_wheel_duplicate_and_symlink_members_are_refused[symlink]" time="3.935"><failure message="ValueError: UNKNOWN_INTERFACE: unsupported native test configuration">research/unified_consequence_runtime/decisive_native_verify.py:195: in _test_patterns
+    _declared_addopts(options['addopts'])
+research/unified_consequence_runtime/decisive_native_verify.py:178: in _declared_addopts
+    raise ValueError('unsupported addopts collection/authority option: '+arg)
+E   ValueError: unsupported addopts collection/authority option: --import-mode=importlib
+
+The above exception was the direct cause of the following exception:
+research/unified_consequence_runtime/test_native_build_v43.py:264: in test_generated_wheel_duplicate_and_symlink_members_are_refused
+    evidence = build.prepare(case.contract, case.authority, case.policy, tmp_path / 'prepared')
+research/unified_consequence_runtime/native_build_v43.py:419: in prepare
+    additions = _additions(context, report['generated_wheel_evidence'])
+research/unified_consequence_runtime/native_build_v43.py:401: in _additions
+    additions = overlay.generated_overlay(wheel, context['files'],
+research/unified_consequence_runtime/generated_overlay_gate.py:51: in generated_overlay
+    patterns=_test_patterns(tracked_source,allow_declared_addopts=allow_declared_addopts)
+research/unified_consequence_runtime/decisive_native_verify.py:207: in _test_patterns
+    raise ValueError('UNKNOWN_INTERFACE: unsupported native test configuration') from error
+E   ValueError: UNKNOWN_INTERFACE: unsupported native test configuration</failure></testcase><testcase classname="research.unified_consequence_runtime.test_native_build_v43" name="test_ambiguous_flat_and_src_package_roots_are_refused" time="1.797" /><testcase classname="research.unified_consequence_runtime.test_native_build_v43" name="test_declared_generated_path_cannot_replace_source_alias_or_follow_source_parent_alias[generated-leaf-alias]" time="1.824" /><testcase classname="research.unified_consequence_runtime.test_native_build_v43" name="test_declared_generated_path_cannot_replace_source_alias_or_follow_source_parent_alias[package-root-alias]" time="1.860" /><testcase classname="research.unified_consequence_runtime.test_native_build_v43" name="test_missing_build_artifact_is_refused[read_generated]" time="3.987"><failure message="ValueError: UNKNOWN_INTERFACE: unsupported native test configuration">research/unified_consequence_runtime/decisive_native_verify.py:195: in _test_patterns
+    _declared_addopts(options['addopts'])
+research/unified_consequence_runtime/decisive_native_verify.py:178: in _declared_addopts
+    raise ValueError('unsupported addopts collection/authority option: '+arg)
+E   ValueError: unsupported addopts collection/authority option: --import-mode=importlib
+
+The above exception was the direct cause of the following exception:
+research/unified_consequence_runtime/test_native_build_v43.py:298: in test_missing_build_artifact_is_refused
+    evidence = build.prepare(case.contract, case.authority, case.policy, tmp_path / 'prepared')
+research/unified_consequence_runtime/native_build_v43.py:419: in prepare
+    additions = _additions(context, report['generated_wheel_evidence'])
+research/unified_consequence_runtime/native_build_v43.py:401: in _additions
+    additions = overlay.generated_overlay(wheel, context['files'],
+research/unified_consequence_runtime/generated_overlay_gate.py:51: in generated_overlay
+    patterns=_test_patterns(tracked_source,allow_declared_addopts=allow_declared_addopts)
+research/unified_consequence_runtime/decisive_native_verify.py:207: in _test_patterns
+    raise ValueError('UNKNOWN_INTERFACE: unsupported native test configuration') from error
+E   ValueError: UNKNOWN_INTERFACE: unsupported native test configuration</failure></testcase><testcase classname="research.unified_consequence_runtime.test_native_build_v43" name="test_missing_build_artifact_is_refused[verify]" time="3.975"><failure message="ValueError: UNKNOWN_INTERFACE: unsupported native test configuration">research/unified_consequence_runtime/decisive_native_verify.py:195: in _test_patterns
+    _declared_addopts(options['addopts'])
+research/unified_consequence_runtime/decisive_native_verify.py:178: in _declared_addopts
+    raise ValueError('unsupported addopts collection/authority option: '+arg)
+E   ValueError: unsupported addopts collection/authority option: --import-mode=importlib
+
+The above exception was the direct cause of the following exception:
+research/unified_consequence_runtime/test_native_build_v43.py:298: in test_missing_build_artifact_is_refused
+    evidence = build.prepare(case.contract, case.authority, case.policy, tmp_path / 'prepared')
+research/unified_consequence_runtime/native_build_v43.py:419: in prepare
+    additions = _additions(context, report['generated_wheel_evidence'])
+research/unified_consequence_runtime/native_build_v43.py:401: in _additions
+    additions = overlay.generated_overlay(wheel, context['files'],
+research/unified_consequence_runtime/generated_overlay_gate.py:51: in generated_overlay
+    patterns=_test_patterns(tracked_source,allow_declared_addopts=allow_declared_addopts)
+research/unified_consequence_runtime/decisive_native_verify.py:207: in _test_patterns
+    raise ValueError('UNKNOWN_INTERFACE: unsupported native test configuration') from error
+E   ValueError: UNKNOWN_INTERFACE: unsupported native test configuration</failure></testcase><testcase classname="research.unified_consequence_runtime.test_native_build_v43" name="test_redirected_wheel_artifact_is_refused_even_with_identical_bytes" time="3.955"><failure message="ValueError: UNKNOWN_INTERFACE: unsupported native test configuration">research/unified_consequence_runtime/decisive_native_verify.py:195: in _test_patterns
+    _declared_addopts(options['addopts'])
+research/unified_consequence_runtime/decisive_native_verify.py:178: in _declared_addopts
+    raise ValueError('unsupported addopts collection/authority option: '+arg)
+E   ValueError: unsupported addopts collection/authority option: --import-mode=importlib
+
+The above exception was the direct cause of the following exception:
+research/unified_consequence_runtime/test_native_build_v43.py:310: in test_redirected_wheel_artifact_is_refused_even_with_identical_bytes
+    evidence = build.prepare(case.contract, case.authority, case.policy, tmp_path / 'prepared')
+research/unified_consequence_runtime/native_build_v43.py:419: in prepare
+    additions = _additions(context, report['generated_wheel_evidence'])
+research/unified_consequence_runtime/native_build_v43.py:401: in _additions
+    additions = overlay.generated_overlay(wheel, context['files'],
+research/unified_consequence_runtime/generated_overlay_gate.py:51: in generated_overlay
+    patterns=_test_patterns(tracked_source,allow_declared_addopts=allow_declared_addopts)
+research/unified_consequence_runtime/decisive_native_verify.py:207: in _test_patterns
+    raise ValueError('UNKNOWN_INTERFACE: unsupported native test configuration') from error
+E   ValueError: UNKNOWN_INTERFACE: unsupported native test configuration</failure></testcase></testsuite></testsuites>

@@ -1,0 +1,21 @@
+setUpClass (__main__.NativeV43InheritedAdversarialTests) ... ERROR
+
+======================================================================
+ERROR: setUpClass (__main__.NativeV43InheritedAdversarialTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<stdin>", line 16, in setup
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_execution_v3.py", line 140, in environment_identity
+    identity = _portable_environment_identity(interpreter)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/decisive_native_verify.py", line 124, in environment_identity
+    raise RuntimeError('native environment identity unavailable: '+result.stderr[-1000:])
+RuntimeError: native environment identity unavailable: Traceback (most recent call last):
+  File "<string>", line 40, in <module>
+ModuleNotFoundError: No module named 'pytest'
+
+
+----------------------------------------------------------------------
+Ran 0 tests in 5.806s
+
+FAILED (errors=1)

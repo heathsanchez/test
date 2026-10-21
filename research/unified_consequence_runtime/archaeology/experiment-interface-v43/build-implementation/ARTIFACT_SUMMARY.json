@@ -1,0 +1,112 @@
+{
+  "schema": "UDM_V43_BUILD_IMPLEMENTATION_EVIDENCE_SUMMARY",
+  "final_source_sha256": "20f88ce36baa7e01c7e601c7840f72b9423a6ab04d093d35e36217d3049b8460",
+  "final_source_bytes": 31426,
+  "scope": "Infrastructure and engineering only; no prospective source tasks or native-success claim.",
+  "stages": {
+    "first": {
+      "basetemp": "/tmp/udm-v43-build-implementation-first",
+      "tests": 56,
+      "failures": 31,
+      "errors": 0,
+      "build_receipts": 30,
+      "v43_build_calls": 30,
+      "v43_build_seconds": 12.547762042000045,
+      "v43_command_calls": 150,
+      "summed_build_operation_seconds": 65.92270225899927,
+      "builder_sha256": [
+        "d66fd1ac1ac9bc58cbed9ed0559ca39be9c191f27a1b8f5f5b0fa7e7249a919f"
+      ]
+    },
+    "focused": {
+      "basetemp": "/tmp/udm-v43-build-implementation-focused",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "build_receipts": 6,
+      "v43_build_calls": 6,
+      "v43_build_seconds": 2.540424069000096,
+      "v43_command_calls": 30,
+      "summed_build_operation_seconds": 13.516892189999794,
+      "builder_sha256": [
+        "45980fe9468b62665870038cc6e6744d17916d037741a7e76631130517c270fc"
+      ]
+    },
+    "pre-requirements-full": {
+      "basetemp": "/tmp/udm-v43-build-implementation-final",
+      "tests": 56,
+      "failures": 0,
+      "errors": 0,
+      "build_receipts": 34,
+      "v43_build_calls": 34,
+      "v43_build_seconds": 14.750570926999899,
+      "v43_command_calls": 170,
+      "summed_build_operation_seconds": 77.13907490899987,
+      "builder_sha256": [
+        "45980fe9468b62665870038cc6e6744d17916d037741a7e76631130517c270fc"
+      ]
+    },
+    "requirements": {
+      "basetemp": "/tmp/udm-v43-build-requirements-fixed",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "build_receipts": 0,
+      "v43_build_calls": 0,
+      "v43_build_seconds": 0,
+      "v43_command_calls": 0,
+      "summed_build_operation_seconds": 0,
+      "builder_sha256": []
+    },
+    "exact-final": {
+      "basetemp": "/tmp/udm-v43-build-final-requirements-compatibility",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "build_receipts": 4,
+      "v43_build_calls": 4,
+      "v43_build_seconds": 1.6596726909997415,
+      "v43_command_calls": 20,
+      "summed_build_operation_seconds": 8.702160718999949,
+      "builder_sha256": [
+        "20f88ce36baa7e01c7e601c7840f72b9423a6ab04d093d35e36217d3049b8460"
+      ]
+    },
+    "initial-single-test-diagnosis": {
+      "basetemp": "/tmp/udm-v43-build-implementation-diagnosis",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "result_source": "Captured tool output: 1 failed,54deselected in5.08s; no JUnit requested",
+      "build_receipts": 1,
+      "v43_build_calls": 1,
+      "v43_build_seconds": 0.41483959899994716,
+      "v43_command_calls": 5,
+      "summed_build_operation_seconds": 2.224521854999921,
+      "builder_sha256": [
+        "d66fd1ac1ac9bc58cbed9ed0559ca39be9c191f27a1b8f5f5b0fa7e7249a919f"
+      ]
+    }
+  },
+  "artifacts_sha256": {
+    "focused.stdout": "5aa496b65d66c3c75f476a4e54819b94f706a371e526c094827613d7ad0e56f9",
+    "final-junit.xml": "e2db3e3a7e80a18fded8f01dbb983e5b7887ca4bca9be62427292c154abc9195",
+    "pre-requirements-stages.json": "d6bb1bb9a6cac2580d003a912d2545feae18facd6a2efcdc20161cf3631fc2a7",
+    "requirements.stdout": "ec359bc2cf06e284778525a75a5c4abe4940a725723197c2a4e238be992ee95e",
+    "initial-native_build_v43.py": "d66fd1ac1ac9bc58cbed9ed0559ca39be9c191f27a1b8f5f5b0fa7e7249a919f",
+    "final.stdout": "23451463494256c292918f6e7f0caab47509e00ebc32d17b0e9db3668069505b",
+    "first-failures-derived-from-junit.json": "565ae898f31b75b4825cf49e89806c4189ea7b264f165d93aa4a4d42571145c0",
+    "focused.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "exact-final-junit.xml": "79b51ab200d8daade6b1107d02982eab5b1cdd128a32131af1c32d4429ab183f",
+    "first-junit.xml": "d0a7855e0df6ac9aba1e420afa915d6943046c5b6c0c3dc0cfbe2caf4e3ec453",
+    "final.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "exact-final.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "requirements-junit.xml": "434b4d9d2c181011ef9fba3d18d8a18d95b1f8863bf127ed70da076842dcd1d5",
+    "requirements.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "pre-requirements-native_build_v43.py": "45980fe9468b62665870038cc6e6744d17916d037741a7e76631130517c270fc",
+    "final-native_build_v43.py": "20f88ce36baa7e01c7e601c7840f72b9423a6ab04d093d35e36217d3049b8460",
+    "exact-final.stdout": "cef6c7ad93e3779cdf3c926815df10ef54927dbe46eff60312dad39cbd831d3b",
+    "focused-junit.xml": "bf3ce78607783868f8a202325b7380ac569f0dc5951d109cf3806588cfcd7804"
+  },
+  "cost_boundary": "Counts and sums cover V43 build receipts only. Oracle builds, fixture setup and environment preflight outside _build are separate. Build-operation seconds include nested phases and are not added to test wall time."
+}
