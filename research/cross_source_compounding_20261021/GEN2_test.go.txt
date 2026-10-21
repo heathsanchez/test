@@ -1,0 +1,21 @@
+package ini
+
+import ("bytes";"testing")
+
+func TestMathGraphGen2Retention(t *testing.T) {
+ values:=[]string{"plain"," leading","trailing ","has.dot","a=b","has#hash","quote\"value","slash\\value","unicode λ"}
+ for _,v:=range values{
+  original:=Empty()
+  if _,err:=original.Section("main").NewKey("Value",v);err!=nil{t.Fatalf("new key: %v",err)}
+  var first bytes.Buffer
+  if _,err:=original.WriteTo(&first);err!=nil{t.Fatalf("first encode: %v",err)}
+  once,err:=Load(first.Bytes());if err!=nil{t.Fatalf("first decode: %v",err)}
+  var second bytes.Buffer
+  if _,err:=once.WriteTo(&second);err!=nil{t.Fatalf("second encode: %v",err)}
+  twice,err:=Load(second.Bytes());if err!=nil{t.Fatalf("second decode: %v",err)}
+  if got:=twice.Section("main").Key("Value").String();got!=v{t.Fatalf("lost %q got %q",v,got)}
+  // Negative: independent mutation of encoded value must not retain warrant.
+  tampered:=bytes.Replace(second.Bytes(),[]byte("Value"),[]byte("Other"),1)
+  bad,err:=Load(tampered);if err==nil && bad.Section("main").HasKey("Value"){t.Fatalf("tamper did not remove original key for %q",v)}
+ }
+}

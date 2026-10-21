@@ -1,0 +1,65 @@
+name: MathGraph Gen2 isolated native 20261021
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [research/cross-source-gen2-native-qualification-20261021]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+          cache: false
+      - name: Fixed-source generational native test
+        run: |
+          set -euo pipefail
+          git clone -q https://github.com/go-ini/ini.git "$RUNNER_TEMP/ini"
+          git -C "$RUNNER_TEMP/ini" checkout -q --detach e2db55b0e088fa4ee0c128aa4ade263cdc1d7f08
+          test "$(git -C "$RUNNER_TEMP/ini" rev-parse HEAD)" = e2db55b0e088fa4ee0c128aa4ade263cdc1d7f08
+          cp research/cross_source_compounding_20261021/GEN2_test.go.txt "$RUNNER_TEMP/ini/mathgraph_gen2_test.go"
+          cd "$RUNNER_TEMP/ini"
+          go test -count=1 -run '^TestMathGraphGen2Retention
+ -v .
+      - name: Matched executable warm costs and ablation accounting
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/ini"
+          python3 - <<'PY'
+          import json,os,subprocess,statistics,time,pathlib
+          rows=[]
+          for i in range(6):
+              row={"pair":i}
+              for arm in (("retained","conventional") if i%2==0 else ("conventional","retained")):
+                  t=time.perf_counter()
+                  p=subprocess.run(["go","test","-count=1","-run","^TestMathGraphGen2Retention$","."],capture_output=True,text=True)
+                  row[arm+"_seconds"]=time.perf_counter()-t
+                  row[arm+"_pass"]=p.returncode==0
+                  if p.returncode:raise RuntimeError(p.stdout+p.stderr)
+              rows.append(row)
+          a=statistics.median(r["retained_seconds"] for r in rows)
+          b=statistics.median(r["conventional_seconds"] for r in rows)
+          result={"schema":"metalogic.gen2.matched-cost-v1","source":"go-ini/ini@e2db55b0e088fa4ee0c128aa4ade263cdc1d7f08",
+           "same_executable_both_arms":True,"retained_median_seconds":a,"conventional_median_seconds":b,
+           "pairs":rows,"method_acquisition":"HUMAN_AUTHORED_UNCHARGED","adapter_acquisition":"HUMAN_AUTHORED_UNCHARGED",
+           "method_ablation":"NOT_EXECUTED_AS_NEW_DISCOVERY",
+           "net_lifetime_compounding":"NOT_DEMONSTRATED",
+           "conclusion":"COMPETENT_EQUAL_INFORMATION_BASELINE_TIE_AT_METHOD_LEVEL"}
+          pathlib.Path(os.environ["GITHUB_WORKSPACE"],"gen2-matched-cost.json").write_text(json.dumps(result,indent=2))
+          print(json.dumps({k:v for k,v in result.items() if k not in ("pairs",)}))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mathgraph-gen2-matched-cost
+          path: gen2-matched-cost.json
+          if-no-files-found: warn
+
