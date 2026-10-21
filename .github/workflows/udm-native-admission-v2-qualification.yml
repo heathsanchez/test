@@ -1,0 +1,17 @@
+name: UDM native admission v2 qualification
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [research/udm-native-admission-v2-20261021]
+permissions:
+  contents: read
+jobs:
+  source-policy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Existing source admission, verifier and candidate V2 protected regressions
+        run: |
+          python3 -m unittest -v             research.unified_consequence_runtime.test_admission_v2_candidate             research.unified_consequence_runtime.test_decisive_task_admission             research.unified_consequence_runtime.test_native_suite_authority             research.unified_consequence_runtime.test_decisive_native             research.unified_consequence_runtime.test_qualify_decisive_native
