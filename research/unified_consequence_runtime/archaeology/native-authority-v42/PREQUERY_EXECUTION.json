@@ -1,0 +1,52 @@
+{
+  "archive_sha256": "25edc3c805bf7cf8a050b9c3c5c4e640a8ea8dbc2b5a7920157b5201c4ca6460",
+  "code": {
+    "path": "research/unified_consequence_runtime/archaeology/native-authority-v42/curate_frontier.py",
+    "sha256": "0ebd3bd5f51f40f7db547aafd986e99a255bc017bb71a5e4923fc5c97d6c659e",
+    "source_commit": "f05a708023e609df17ad53934f32893dd4235e46"
+  },
+  "committed_bytes_verified_at_utc": "2026-10-21T10:28:45.041527+00:00",
+  "environment_gate": {
+    "artifact_id": 12338856551,
+    "artifact_sha256": "25edc3c805bf7cf8a050b9c3c5c4e640a8ea8dbc2b5a7920157b5201c4ca6460",
+    "qualification_result_sha256": "10d6d2255be781ea18b795b00e849a3075cd385f4bd5993d94bc72c6c039af7a",
+    "result_path": "research/unified_consequence_runtime/archaeology/native-authority-v42/CI_39582982718_RESULT.json",
+    "run_id": 39582982718,
+    "source_commit": "f1779c7443ae6035dee502a201d95d778056c05d",
+    "status": "ADMISSION_ONLY_QUALIFIED"
+  },
+  "gate_descriptor": {
+    "path": "research/unified_consequence_runtime/archaeology/native-authority-v42/QUALIFIED_GATE.json",
+    "sha256": "21eb7692e9e547fd262c17e8372f130cafea966e0c65681f478ea40591431d1e",
+    "source_commit": "f05a708023e609df17ad53934f32893dd4235e46"
+  },
+  "plan": {
+    "path": "research/unified_consequence_runtime/archaeology/native-authority-v42/PREQUERY.json",
+    "sha256": "f06303a71128f3dc7d32d778c084987230bafd4d2a810d37801d8b7bd78d71a8",
+    "source_commit": "f05a708023e609df17ad53934f32893dd4235e46"
+  },
+  "repository_universe_fixed_before_github_queries": [
+    "benjaminp/six",
+    "chardet/chardet",
+    "cloudpipe/cloudpickle",
+    "coady/multimethod",
+    "erikrose/parsimonious",
+    "jaraco/path",
+    "jmespath/jmespath.py",
+    "python-trio/outcome"
+  ],
+  "requested_roles": 2,
+  "schema": "UDM_COMMITTED_METADATA_PREQUERY_EXECUTION_V42",
+  "screening_budget": {
+    "all_refusals_and_partial_costs_retained": true,
+    "collection_seconds_per_call": 60,
+    "execution_seconds_per_call": 600,
+    "maximum_cases": 9,
+    "maximum_native_executions_per_case": 2,
+    "native_and_independent_verification_costs_charged": true,
+    "total_screening_wall_seconds": 7200
+  },
+  "source_commit": "f05a708023e609df17ad53934f32893dd4235e46",
+  "state": "PREQUERY_COMMITTED_BEFORE_QUERIES",
+  "target_query_count_before_receipt": 0
+}

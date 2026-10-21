@@ -1,0 +1,829 @@
+{
+  "metadata_curation_sha256": "752e14856cea1d189ea49432ea384df407e4e724877062719b5dc1ed202e506e",
+  "pool": [
+    {
+      "base_commit": "ea7e547aa5197c32b9a4c0f8e2b0f97f071aef6c",
+      "files": [
+        {
+          "additions": 2,
+          "changes": 3,
+          "deletions": 1,
+          "filename": "src/chardet/pipeline/orchestrator.py",
+          "sha": "d8ec53a44782c7961478c85e3201c6cd8351003a",
+          "status": "modified"
+        },
+        {
+          "additions": 33,
+          "changes": 33,
+          "deletions": 0,
+          "filename": "tests/test_github_issues.py",
+          "sha": "5e0d9e896386bf967403fdee98da89014128b9ef",
+          "status": "modified"
+        },
+        {
+          "additions": 16,
+          "changes": 16,
+          "deletions": 0,
+          "filename": "tests/test_orchestrator.py",
+          "sha": "4c4ceb3dadb3fe4f4ba034c7447610ab04f41b4a",
+          "status": "modified"
+        }
+      ],
+      "git_metadata_binding": {
+        "base": {
+          "changed_paths": {
+            "src/chardet/pipeline/orchestrator.py": {
+              "mode": "100644",
+              "path": "src/chardet/pipeline/orchestrator.py",
+              "sha": "0e321b2bfac11a55d18af8fc27ab7e245d93cbcf",
+              "size": 30188,
+              "type": "blob"
+            },
+            "tests/test_github_issues.py": {
+              "mode": "100644",
+              "path": "tests/test_github_issues.py",
+              "sha": "e3caa740dfdb9c94a4e3291bbff6ecb7ca78cf67",
+              "size": 19257,
+              "type": "blob"
+            },
+            "tests/test_orchestrator.py": {
+              "mode": "100644",
+              "path": "tests/test_orchestrator.py",
+              "sha": "21a40dab55cd6c290957e22adac87b4c9823b8cb",
+              "size": 13484,
+              "type": "blob"
+            }
+          },
+          "commit_sha": "ea7e547aa5197c32b9a4c0f8e2b0f97f071aef6c",
+          "parents": [
+            "d9ae78dc3ac6059b6a1e05bd6c72a00478a58f82"
+          ],
+          "tree_entry_count": 129,
+          "tree_sha": "782dd21b6479db51d51004c7acc86794235ccc9c",
+          "tree_truncated": false
+        },
+        "head": {
+          "changed_paths": {
+            "src/chardet/pipeline/orchestrator.py": {
+              "mode": "100644",
+              "path": "src/chardet/pipeline/orchestrator.py",
+              "sha": "d8ec53a44782c7961478c85e3201c6cd8351003a",
+              "size": 30216,
+              "type": "blob"
+            },
+            "tests/test_github_issues.py": {
+              "mode": "100644",
+              "path": "tests/test_github_issues.py",
+              "sha": "5e0d9e896386bf967403fdee98da89014128b9ef",
+              "size": 20743,
+              "type": "blob"
+            },
+            "tests/test_orchestrator.py": {
+              "mode": "100644",
+              "path": "tests/test_orchestrator.py",
+              "sha": "4c4ceb3dadb3fe4f4ba034c7447610ab04f41b4a",
+              "size": 14172,
+              "type": "blob"
+            }
+          },
+          "commit_sha": "eec624d0452fd12543affe3d9c15db267c4b7206",
+          "parents": [
+            "e8be0d2643fa40d4135bdaad68a766dc902e3bed"
+          ],
+          "tree_entry_count": 129,
+          "tree_sha": "72d2ecf7bedf624c3b1dc9a1e5c79c5bcc1c3ee4",
+          "tree_truncated": false
+        }
+      },
+      "head_commit": "eec624d0452fd12543affe3d9c15db267c4b7206",
+      "merge_commit_sha": "9079efce6a692bcb8b4392fcd0be747f8b1909be",
+      "metadata_binding_status": "EXACT_COMMIT_TREE_AND_CHANGED_BLOB_IDS_BOUND_WITHOUT_SOURCE_CONTENTS",
+      "metadata_stats": {
+        "production_additions": 2,
+        "production_deletions": 1,
+        "production_py_files": 1,
+        "test_py_files": 2
+      },
+      "metadata_url": "https://github.com/chardet/chardet/pull/368",
+      "pr": 368,
+      "repo": "chardet/chardet",
+      "selection_status": "FROZEN_ORDERED_POOL_CANDIDATE_NOT_AN_ADMITTED_TASK",
+      "tree_query_coverage": [
+        {
+          "endpoint": "repos/chardet/chardet/git/commits/ea7e547aa5197c32b9a4c0f8e2b0f97f071aef6c",
+          "projection": "{sha,tree_sha:.tree.sha,parents:[.parents[].sha]}",
+          "requested_at_utc": "2026-10-21T10:29:03.904993+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.3441353730004266
+        },
+        {
+          "endpoint": "repos/chardet/chardet/git/trees/782dd21b6479db51d51004c7acc86794235ccc9c?recursive=1",
+          "projection": "{sha,truncated,tree:[.tree[] | {path,mode,type,sha,size}]}",
+          "requested_at_utc": "2026-10-21T10:29:04.249218+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.3338393219992213
+        },
+        {
+          "endpoint": "repos/chardet/chardet/git/commits/eec624d0452fd12543affe3d9c15db267c4b7206",
+          "projection": "{sha,tree_sha:.tree.sha,parents:[.parents[].sha]}",
+          "requested_at_utc": "2026-10-21T10:29:04.583251+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.29743345599945314
+        },
+        {
+          "endpoint": "repos/chardet/chardet/git/trees/72d2ecf7bedf624c3b1dc9a1e5c79c5bcc1c3ee4?recursive=1",
+          "projection": "{sha,truncated,tree:[.tree[] | {path,mode,type,sha,size}]}",
+          "requested_at_utc": "2026-10-21T10:29:04.880753+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.2975882740001907
+        }
+      ]
+    },
+    {
+      "base_commit": "68a4230ee11e4ecae945a56f7257fde5dd49f853",
+      "files": [
+        {
+          "additions": 4,
+          "changes": 7,
+          "deletions": 3,
+          "filename": "CHANGES.md",
+          "sha": "3d418a327bcbaafd04efa63923fff16d6b381218",
+          "status": "modified"
+        },
+        {
+          "additions": 2,
+          "changes": 4,
+          "deletions": 2,
+          "filename": "cloudpickle/cloudpickle_fast.py",
+          "sha": "63aaffa096b2c53cb892e30278041a6e575a0b4a",
+          "status": "modified"
+        },
+        {
+          "additions": 20,
+          "changes": 20,
+          "deletions": 0,
+          "filename": "tests/cloudpickle_test.py",
+          "sha": "22a1b3a27085f9a536aa34108095ff1a365827f5",
+          "status": "modified"
+        }
+      ],
+      "git_metadata_binding": {
+        "base": {
+          "changed_paths": {
+            "CHANGES.md": {
+              "mode": "100644",
+              "path": "CHANGES.md",
+              "sha": "279905e2b228c57136ea3f787bf89020a8712dc7",
+              "size": 13559,
+              "type": "blob"
+            },
+            "cloudpickle/cloudpickle_fast.py": {
+              "mode": "100644",
+              "path": "cloudpickle/cloudpickle_fast.py",
+              "sha": "8741dcbdaaa41dda43196e43f219d78442fa189f",
+              "size": 34114,
+              "type": "blob"
+            },
+            "tests/cloudpickle_test.py": {
+              "mode": "100644",
+              "path": "tests/cloudpickle_test.py",
+              "sha": "78ec4955dd4426702e2a333df4ca8ddcf57cb255",
+              "size": 105906,
+              "type": "blob"
+            }
+          },
+          "commit_sha": "68a4230ee11e4ecae945a56f7257fde5dd49f853",
+          "parents": [
+            "cc6a199c5bd8ab6099a8b3a2d7a25c540da92b71"
+          ],
+          "tree_entry_count": 74,
+          "tree_sha": "edb75a0c691027b4b7d4a319dbe0cb086082fedf",
+          "tree_truncated": false
+        },
+        "head": {
+          "changed_paths": {
+            "CHANGES.md": {
+              "mode": "100644",
+              "path": "CHANGES.md",
+              "sha": "3d418a327bcbaafd04efa63923fff16d6b381218",
+              "size": 13633,
+              "type": "blob"
+            },
+            "cloudpickle/cloudpickle_fast.py": {
+              "mode": "100644",
+              "path": "cloudpickle/cloudpickle_fast.py",
+              "sha": "63aaffa096b2c53cb892e30278041a6e575a0b4a",
+              "size": 34117,
+              "type": "blob"
+            },
+            "tests/cloudpickle_test.py": {
+              "mode": "100644",
+              "path": "tests/cloudpickle_test.py",
+              "sha": "22a1b3a27085f9a536aa34108095ff1a365827f5",
+              "size": 106501,
+              "type": "blob"
+            }
+          },
+          "commit_sha": "4bf0a76c178c9960d74a46427fb2e065015a40cd",
+          "parents": [
+            "a9a97aecabb13584519192338111ed40613d35a8"
+          ],
+          "tree_entry_count": 74,
+          "tree_sha": "529c64fcc53e6cd90c570bb66bf4ceca8bcde38c",
+          "tree_truncated": false
+        }
+      },
+      "head_commit": "4bf0a76c178c9960d74a46427fb2e065015a40cd",
+      "merge_commit_sha": "0a640856dc2fc11a3c2bd1a9020a254147a31866",
+      "metadata_binding_status": "EXACT_COMMIT_TREE_AND_CHANGED_BLOB_IDS_BOUND_WITHOUT_SOURCE_CONTENTS",
+      "metadata_stats": {
+        "production_additions": 2,
+        "production_deletions": 2,
+        "production_py_files": 1,
+        "test_py_files": 1
+      },
+      "metadata_url": "https://github.com/cloudpipe/cloudpickle/pull/495",
+      "pr": 495,
+      "repo": "cloudpipe/cloudpickle",
+      "selection_status": "FROZEN_ORDERED_POOL_CANDIDATE_NOT_AN_ADMITTED_TASK",
+      "tree_query_coverage": [
+        {
+          "endpoint": "repos/cloudpipe/cloudpickle/git/commits/68a4230ee11e4ecae945a56f7257fde5dd49f853",
+          "projection": "{sha,tree_sha:.tree.sha,parents:[.parents[].sha]}",
+          "requested_at_utc": "2026-10-21T10:29:05.178563+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.35017169200000353
+        },
+        {
+          "endpoint": "repos/cloudpipe/cloudpickle/git/trees/edb75a0c691027b4b7d4a319dbe0cb086082fedf?recursive=1",
+          "projection": "{sha,truncated,tree:[.tree[] | {path,mode,type,sha,size}]}",
+          "requested_at_utc": "2026-10-21T10:29:05.528804+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.30645655799980887
+        },
+        {
+          "endpoint": "repos/cloudpipe/cloudpickle/git/commits/4bf0a76c178c9960d74a46427fb2e065015a40cd",
+          "projection": "{sha,tree_sha:.tree.sha,parents:[.parents[].sha]}",
+          "requested_at_utc": "2026-10-21T10:29:05.835408+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.3793827319996126
+        },
+        {
+          "endpoint": "repos/cloudpipe/cloudpickle/git/trees/529c64fcc53e6cd90c570bb66bf4ceca8bcde38c?recursive=1",
+          "projection": "{sha,truncated,tree:[.tree[] | {path,mode,type,sha,size}]}",
+          "requested_at_utc": "2026-10-21T10:29:06.214858+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.3124387879997812
+        }
+      ]
+    },
+    {
+      "base_commit": "4ef8516bdf9e2dfe86297bdb676104e6b534041c",
+      "files": [
+        {
+          "additions": 1,
+          "changes": 1,
+          "deletions": 0,
+          "filename": "README.md",
+          "sha": "461c589701ec0f3f0061b4266054181538ddee65",
+          "status": "modified"
+        },
+        {
+          "additions": 1,
+          "changes": 2,
+          "deletions": 1,
+          "filename": "multimethod/__init__.py",
+          "sha": "63cb6a1a0483d0b58dd67d5e400b755f1d5e3796",
+          "status": "modified"
+        },
+        {
+          "additions": 33,
+          "changes": 33,
+          "deletions": 0,
+          "filename": "tests/test_methods.py",
+          "sha": "040943154f5821b6c89452148f179c60f94bdef9",
+          "status": "modified"
+        }
+      ],
+      "git_metadata_binding": {
+        "base": {
+          "changed_paths": {
+            "README.md": {
+              "mode": "100644",
+              "path": "README.md",
+              "sha": "4da3048bb4fbf3ab63e22a67b09503ca232b9269",
+              "size": 5671,
+              "type": "blob"
+            },
+            "multimethod/__init__.py": {
+              "mode": "100644",
+              "path": "multimethod/__init__.py",
+              "sha": "22ffff355e8adaad9dde68841e9f03c2bfee3020",
+              "size": 10868,
+              "type": "blob"
+            },
+            "tests/test_methods.py": {
+              "mode": "100644",
+              "path": "tests/test_methods.py",
+              "sha": "8c572f8f034e058d54f44a80b6277ca3a03e2f5e",
+              "size": 5843,
+              "type": "blob"
+            }
+          },
+          "commit_sha": "4ef8516bdf9e2dfe86297bdb676104e6b534041c",
+          "parents": [
+            "5e6bbae89033f07f4f380d14c9f6e42e93c7683f"
+          ],
+          "tree_entry_count": 28,
+          "tree_sha": "7d405cdef80f8f5511fe903ab4c4274de826ea70",
+          "tree_truncated": false
+        },
+        "head": {
+          "changed_paths": {
+            "README.md": {
+              "mode": "100644",
+              "path": "README.md",
+              "sha": "461c589701ec0f3f0061b4266054181538ddee65",
+              "size": 5756,
+              "type": "blob"
+            },
+            "multimethod/__init__.py": {
+              "mode": "100644",
+              "path": "multimethod/__init__.py",
+              "sha": "63cb6a1a0483d0b58dd67d5e400b755f1d5e3796",
+              "size": 10872,
+              "type": "blob"
+            },
+            "tests/test_methods.py": {
+              "mode": "100644",
+              "path": "tests/test_methods.py",
+              "sha": "040943154f5821b6c89452148f179c60f94bdef9",
+              "size": 6683,
+              "type": "blob"
+            }
+          },
+          "commit_sha": "be91f91e41ec6705bd64cf8f41dc23be8c429832",
+          "parents": [
+            "496581b3576e830aa3c5722304a39813877a769a",
+            "4ef8516bdf9e2dfe86297bdb676104e6b534041c"
+          ],
+          "tree_entry_count": 28,
+          "tree_sha": "dccac36bf38c49bdfc7d3dd1e727cf3d6962beab",
+          "tree_truncated": false
+        }
+      },
+      "head_commit": "be91f91e41ec6705bd64cf8f41dc23be8c429832",
+      "merge_commit_sha": "dd13a4c84f6345b9be1f96c8cf56dc16feb6cfcf",
+      "metadata_binding_status": "EXACT_COMMIT_TREE_AND_CHANGED_BLOB_IDS_BOUND_WITHOUT_SOURCE_CONTENTS",
+      "metadata_stats": {
+        "production_additions": 1,
+        "production_deletions": 1,
+        "production_py_files": 1,
+        "test_py_files": 1
+      },
+      "metadata_url": "https://github.com/coady/multimethod/pull/26",
+      "pr": 26,
+      "repo": "coady/multimethod",
+      "selection_status": "FROZEN_ORDERED_POOL_CANDIDATE_NOT_AN_ADMITTED_TASK",
+      "tree_query_coverage": [
+        {
+          "endpoint": "repos/coady/multimethod/git/commits/4ef8516bdf9e2dfe86297bdb676104e6b534041c",
+          "projection": "{sha,tree_sha:.tree.sha,parents:[.parents[].sha]}",
+          "requested_at_utc": "2026-10-21T10:29:06.527475+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.35821118200055935
+        },
+        {
+          "endpoint": "repos/coady/multimethod/git/trees/7d405cdef80f8f5511fe903ab4c4274de826ea70?recursive=1",
+          "projection": "{sha,truncated,tree:[.tree[] | {path,mode,type,sha,size}]}",
+          "requested_at_utc": "2026-10-21T10:29:06.885752+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.3348236049996558
+        },
+        {
+          "endpoint": "repos/coady/multimethod/git/commits/be91f91e41ec6705bd64cf8f41dc23be8c429832",
+          "projection": "{sha,tree_sha:.tree.sha,parents:[.parents[].sha]}",
+          "requested_at_utc": "2026-10-21T10:29:07.220680+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.3290257319995362
+        },
+        {
+          "endpoint": "repos/coady/multimethod/git/trees/dccac36bf38c49bdfc7d3dd1e727cf3d6962beab?recursive=1",
+          "projection": "{sha,truncated,tree:[.tree[] | {path,mode,type,sha,size}]}",
+          "requested_at_utc": "2026-10-21T10:29:07.549774+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.3020422500003406
+        }
+      ]
+    },
+    {
+      "base_commit": "efa71fcb34e5a9d34b34474326af67d082ad9b4a",
+      "files": [
+        {
+          "additions": 1,
+          "changes": 2,
+          "deletions": 1,
+          "filename": "path/__init__.py",
+          "sha": "4c7cf48b52c8daf07eacbbdec2c59ffad848668a",
+          "status": "modified"
+        },
+        {
+          "additions": 23,
+          "changes": 23,
+          "deletions": 0,
+          "filename": "tests/test_path.py",
+          "sha": "b424bb6b27e681012fea6debafaf0d9a72fa6383",
+          "status": "modified"
+        }
+      ],
+      "git_metadata_binding": {
+        "base": {
+          "changed_paths": {
+            "path/__init__.py": {
+              "mode": "100644",
+              "path": "path/__init__.py",
+              "sha": "d05891cae7db8cb480846b7a3a2bc1396f116aba",
+              "size": 63460,
+              "type": "blob"
+            },
+            "tests/test_path.py": {
+              "mode": "100644",
+              "path": "tests/test_path.py",
+              "sha": "724dbeb8a2eb5eeb05fb26187e3b7f966a8deaae",
+              "size": 44680,
+              "type": "blob"
+            }
+          },
+          "commit_sha": "efa71fcb34e5a9d34b34474326af67d082ad9b4a",
+          "parents": [
+            "229d04f07dde66204c28ea59127d7c376206fc31"
+          ],
+          "tree_entry_count": 39,
+          "tree_sha": "bd967302cca48c49f80208852d20b82f1ae9af52",
+          "tree_truncated": false
+        },
+        "head": {
+          "changed_paths": {
+            "path/__init__.py": {
+              "mode": "100644",
+              "path": "path/__init__.py",
+              "sha": "4c7cf48b52c8daf07eacbbdec2c59ffad848668a",
+              "size": 63477,
+              "type": "blob"
+            },
+            "tests/test_path.py": {
+              "mode": "100644",
+              "path": "tests/test_path.py",
+              "sha": "b424bb6b27e681012fea6debafaf0d9a72fa6383",
+              "size": 45458,
+              "type": "blob"
+            }
+          },
+          "commit_sha": "797fa31a138e7cdc9ae34b30dbfe524de51871ce",
+          "parents": [
+            "1d695354c9cbb7cc702fe9ccd88facc2466f55ec"
+          ],
+          "tree_entry_count": 39,
+          "tree_sha": "cf0a997f3ccaeee4279641a60eb030b3457816fd",
+          "tree_truncated": false
+        }
+      },
+      "head_commit": "797fa31a138e7cdc9ae34b30dbfe524de51871ce",
+      "merge_commit_sha": "59f596665ef8d99e416c61f66aaf70b9e295ddb2",
+      "metadata_binding_status": "EXACT_COMMIT_TREE_AND_CHANGED_BLOB_IDS_BOUND_WITHOUT_SOURCE_CONTENTS",
+      "metadata_stats": {
+        "production_additions": 1,
+        "production_deletions": 1,
+        "production_py_files": 1,
+        "test_py_files": 1
+      },
+      "metadata_url": "https://github.com/jaraco/path/pull/237",
+      "pr": 237,
+      "repo": "jaraco/path",
+      "selection_status": "FROZEN_ORDERED_POOL_CANDIDATE_NOT_AN_ADMITTED_TASK",
+      "tree_query_coverage": [
+        {
+          "endpoint": "repos/jaraco/path/git/commits/efa71fcb34e5a9d34b34474326af67d082ad9b4a",
+          "projection": "{sha,tree_sha:.tree.sha,parents:[.parents[].sha]}",
+          "requested_at_utc": "2026-10-21T10:29:07.851943+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.3249646429994755
+        },
+        {
+          "endpoint": "repos/jaraco/path/git/trees/bd967302cca48c49f80208852d20b82f1ae9af52?recursive=1",
+          "projection": "{sha,truncated,tree:[.tree[] | {path,mode,type,sha,size}]}",
+          "requested_at_utc": "2026-10-21T10:29:08.176974+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.28020879499945295
+        },
+        {
+          "endpoint": "repos/jaraco/path/git/commits/797fa31a138e7cdc9ae34b30dbfe524de51871ce",
+          "projection": "{sha,tree_sha:.tree.sha,parents:[.parents[].sha]}",
+          "requested_at_utc": "2026-10-21T10:29:08.457299+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.3268839919992388
+        },
+        {
+          "endpoint": "repos/jaraco/path/git/trees/cf0a997f3ccaeee4279641a60eb030b3457816fd?recursive=1",
+          "projection": "{sha,truncated,tree:[.tree[] | {path,mode,type,sha,size}]}",
+          "requested_at_utc": "2026-10-21T10:29:08.784251+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.27928291099942726
+        }
+      ]
+    },
+    {
+      "base_commit": "1c0f538a82fbdea49a9df6b0710367dd7f401533",
+      "files": [
+        {
+          "additions": 2,
+          "changes": 2,
+          "deletions": 0,
+          "filename": "CHANGELOG.rst",
+          "sha": "bdaad34cefbf90681a3894684fc617ec6c87ef60",
+          "status": "modified"
+        },
+        {
+          "additions": 1,
+          "changes": 2,
+          "deletions": 1,
+          "filename": "jmespath/parser.py",
+          "sha": "eeac38fa897fc5c623c74a30b2fd2bdc7b9491ba",
+          "status": "modified"
+        },
+        {
+          "additions": 27,
+          "changes": 28,
+          "deletions": 1,
+          "filename": "tests/test_parser.py",
+          "sha": "5af5ce7fc614f0bc534a719ffad31403ebbf5887",
+          "status": "modified"
+        }
+      ],
+      "git_metadata_binding": {
+        "base": {
+          "changed_paths": {
+            "CHANGELOG.rst": {
+              "mode": "100644",
+              "path": "CHANGELOG.rst",
+              "sha": "932eb75b70b23ea6889b3384a797104199a78444",
+              "size": 3390,
+              "type": "blob"
+            },
+            "jmespath/parser.py": {
+              "mode": "100644",
+              "path": "jmespath/parser.py",
+              "sha": "4d5ba38a8cb3e6639d309df14dcb71efdc9784e9",
+              "size": 19076,
+              "type": "blob"
+            },
+            "tests/test_parser.py": {
+              "mode": "100644",
+              "path": "tests/test_parser.py",
+              "sha": "9d6f43fb0cd2f7185e9978c2d04a1b344beafaed",
+              "size": 13858,
+              "type": "blob"
+            }
+          },
+          "commit_sha": "1c0f538a82fbdea49a9df6b0710367dd7f401533",
+          "parents": [
+            "21118906c6ae4879c60f414619d9f2b4c0763175"
+          ],
+          "tree_entry_count": 87,
+          "tree_sha": "74d4101882bf7e13448f66ac19e97e18e109ebfb",
+          "tree_truncated": false
+        },
+        "head": {
+          "changed_paths": {
+            "CHANGELOG.rst": {
+              "mode": "100644",
+              "path": "CHANGELOG.rst",
+              "sha": "bdaad34cefbf90681a3894684fc617ec6c87ef60",
+              "size": 3521,
+              "type": "blob"
+            },
+            "jmespath/parser.py": {
+              "mode": "100644",
+              "path": "jmespath/parser.py",
+              "sha": "eeac38fa897fc5c623c74a30b2fd2bdc7b9491ba",
+              "size": 19082,
+              "type": "blob"
+            },
+            "tests/test_parser.py": {
+              "mode": "100644",
+              "path": "tests/test_parser.py",
+              "sha": "5af5ce7fc614f0bc534a719ffad31403ebbf5887",
+              "size": 14605,
+              "type": "blob"
+            }
+          },
+          "commit_sha": "79698136a0f232548690478f3ba286ac73672d25",
+          "parents": [
+            "09f76b35f7f0ed5ae2a20481ae51dab22dc14160"
+          ],
+          "tree_entry_count": 87,
+          "tree_sha": "8dad8c55b88b910e4087d6ad609f64bf5040479c",
+          "tree_truncated": false
+        }
+      },
+      "head_commit": "79698136a0f232548690478f3ba286ac73672d25",
+      "merge_commit_sha": "b530ae5b56cf26965ef8a569a47badbcfc089bd3",
+      "metadata_binding_status": "EXACT_COMMIT_TREE_AND_CHANGED_BLOB_IDS_BOUND_WITHOUT_SOURCE_CONTENTS",
+      "metadata_stats": {
+        "production_additions": 1,
+        "production_deletions": 1,
+        "production_py_files": 1,
+        "test_py_files": 1
+      },
+      "metadata_url": "https://github.com/jmespath/jmespath.py/pull/197",
+      "pr": 197,
+      "repo": "jmespath/jmespath.py",
+      "selection_status": "FROZEN_ORDERED_POOL_CANDIDATE_NOT_AN_ADMITTED_TASK",
+      "tree_query_coverage": [
+        {
+          "endpoint": "repos/jmespath/jmespath.py/git/commits/1c0f538a82fbdea49a9df6b0710367dd7f401533",
+          "projection": "{sha,tree_sha:.tree.sha,parents:[.parents[].sha]}",
+          "requested_at_utc": "2026-10-21T10:29:09.063682+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.4515661529994759
+        },
+        {
+          "endpoint": "repos/jmespath/jmespath.py/git/trees/74d4101882bf7e13448f66ac19e97e18e109ebfb?recursive=1",
+          "projection": "{sha,truncated,tree:[.tree[] | {path,mode,type,sha,size}]}",
+          "requested_at_utc": "2026-10-21T10:29:09.515315+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.32642722000036883
+        },
+        {
+          "endpoint": "repos/jmespath/jmespath.py/git/commits/79698136a0f232548690478f3ba286ac73672d25",
+          "projection": "{sha,tree_sha:.tree.sha,parents:[.parents[].sha]}",
+          "requested_at_utc": "2026-10-21T10:29:09.841918+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.32537295700058166
+        },
+        {
+          "endpoint": "repos/jmespath/jmespath.py/git/trees/8dad8c55b88b910e4087d6ad609f64bf5040479c?recursive=1",
+          "projection": "{sha,truncated,tree:[.tree[] | {path,mode,type,sha,size}]}",
+          "requested_at_utc": "2026-10-21T10:29:10.167375+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.32564781499968376
+        }
+      ]
+    },
+    {
+      "base_commit": "4ec1933665061a13aec147f0baeff3d180b2cb27",
+      "files": [
+        {
+          "additions": 2,
+          "changes": 4,
+          "deletions": 2,
+          "filename": "src/outcome/_async.py",
+          "sha": "4fd64af684acdebe9246f2341b7f70132b522bf7",
+          "status": "modified"
+        },
+        {
+          "additions": 5,
+          "changes": 5,
+          "deletions": 0,
+          "filename": "tests/test_sync.py",
+          "sha": "10d1ee8162a4c5b470a55b1b89c686e2c4e05672",
+          "status": "modified"
+        }
+      ],
+      "git_metadata_binding": {
+        "base": {
+          "changed_paths": {
+            "src/outcome/_async.py": {
+              "mode": "100644",
+              "path": "src/outcome/_async.py",
+              "sha": "a9ec1ba1bc03728fef706484ca9be48a5de67224",
+              "size": 1668,
+              "type": "blob"
+            },
+            "tests/test_sync.py": {
+              "mode": "100644",
+              "path": "tests/test_sync.py",
+              "sha": "192ac21577f448cfbc296a7504724bd92bc6c610",
+              "size": 2351,
+              "type": "blob"
+            }
+          },
+          "commit_sha": "4ec1933665061a13aec147f0baeff3d180b2cb27",
+          "parents": [
+            "e48d80f523d68a0b48d7f6e0c55c8ff06e2e64a5",
+            "97e8ba3f304d5b86c0d290b69c83dfe79d603444"
+          ],
+          "tree_entry_count": 49,
+          "tree_sha": "e41beb6738826709ce7da05df6289bd50e82fe5d",
+          "tree_truncated": false
+        },
+        "head": {
+          "changed_paths": {
+            "src/outcome/_async.py": {
+              "mode": "100644",
+              "path": "src/outcome/_async.py",
+              "sha": "4fd64af684acdebe9246f2341b7f70132b522bf7",
+              "size": 1686,
+              "type": "blob"
+            },
+            "tests/test_sync.py": {
+              "mode": "100644",
+              "path": "tests/test_sync.py",
+              "sha": "10d1ee8162a4c5b470a55b1b89c686e2c4e05672",
+              "size": 2469,
+              "type": "blob"
+            }
+          },
+          "commit_sha": "733667df694f2d8ac65090ed8ad1f2191447d7c0",
+          "parents": [
+            "4ec1933665061a13aec147f0baeff3d180b2cb27"
+          ],
+          "tree_entry_count": 49,
+          "tree_sha": "98216a1ac2252efb77583b3f7a54689dd768cc5d",
+          "tree_truncated": false
+        }
+      },
+      "head_commit": "733667df694f2d8ac65090ed8ad1f2191447d7c0",
+      "merge_commit_sha": "fd13d87d5363f7fea6d1d975966b93e02fe871a3",
+      "metadata_binding_status": "EXACT_COMMIT_TREE_AND_CHANGED_BLOB_IDS_BOUND_WITHOUT_SOURCE_CONTENTS",
+      "metadata_stats": {
+        "production_additions": 2,
+        "production_deletions": 2,
+        "production_py_files": 1,
+        "test_py_files": 1
+      },
+      "metadata_url": "https://github.com/python-trio/outcome/pull/18",
+      "pr": 18,
+      "repo": "python-trio/outcome",
+      "selection_status": "FROZEN_ORDERED_POOL_CANDIDATE_NOT_AN_ADMITTED_TASK",
+      "tree_query_coverage": [
+        {
+          "endpoint": "repos/python-trio/outcome/git/commits/4ec1933665061a13aec147f0baeff3d180b2cb27",
+          "projection": "{sha,tree_sha:.tree.sha,parents:[.parents[].sha]}",
+          "requested_at_utc": "2026-10-21T10:29:10.493258+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.5478794149994428
+        },
+        {
+          "endpoint": "repos/python-trio/outcome/git/trees/e41beb6738826709ce7da05df6289bd50e82fe5d?recursive=1",
+          "projection": "{sha,truncated,tree:[.tree[] | {path,mode,type,sha,size}]}",
+          "requested_at_utc": "2026-10-21T10:29:11.041205+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.32253890500032867
+        },
+        {
+          "endpoint": "repos/python-trio/outcome/git/commits/733667df694f2d8ac65090ed8ad1f2191447d7c0",
+          "projection": "{sha,tree_sha:.tree.sha,parents:[.parents[].sha]}",
+          "requested_at_utc": "2026-10-21T10:29:11.363880+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.41128103400023974
+        },
+        {
+          "endpoint": "repos/python-trio/outcome/git/trees/98216a1ac2252efb77583b3f7a54689dd768cc5d?recursive=1",
+          "projection": "{sha,truncated,tree:[.tree[] | {path,mode,type,sha,size}]}",
+          "requested_at_utc": "2026-10-21T10:29:11.775232+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.2943745589991522
+        }
+      ]
+    }
+  ],
+  "prequery_execution_sha256": "b30006073d9b848e69c20b498b5eb98057de59e4848e73d15d2c867b4043e142",
+  "requested_roles": 2,
+  "schema": "UDM_ORDERED_NATIVE_ADMISSION_SCREENING_POOL_V42",
+  "screening_budget": {
+    "all_refusals_and_partial_costs_retained": true,
+    "collection_seconds_per_call": 60,
+    "execution_seconds_per_call": 600,
+    "maximum_cases": 9,
+    "maximum_native_executions_per_case": 2,
+    "native_and_independent_verification_costs_charged": true,
+    "total_screening_wall_seconds": 7200
+  },
+  "selection_rule": "First two source-distinct independent native admissions; PASS and FAIL identical; do not replace a passing training task.",
+  "state": "MUST_COMMIT_BEFORE_ADMISSION_SCREENING"
+}
