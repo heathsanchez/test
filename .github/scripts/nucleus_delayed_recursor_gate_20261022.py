@@ -12,7 +12,7 @@ remain REJECT. New ACCEPT must be from the actual proof checker only.
 from pathlib import Path
 from collections import Counter
 import hashlib,json,os,subprocess,sys,time
-if len(sys.argv)!=5:
+if len(sys.argv)!=6:
   raise SystemExit("usage: gate.py ORIGINAL196 MICRODIR BASE_BIN CANDIDATE_BIN OUTDIR")
 corpus,micro,original,candidate,out=map(Path,sys.argv[1:])
 out.mkdir(parents=True,exist_ok=True)
