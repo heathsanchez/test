@@ -1,0 +1,61 @@
+{
+  "artifacts_sha256": {
+    "junit.xml": "9431f62de9c56fb93b432aede5301462d82b3eacf5f0b5bbab52f52b7d9a1aa1",
+    "stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout": "3fca4a811993e476b164441779e50667f475d6f037ac79f4ed8d4800595eea4f"
+  },
+  "baseline_commit": "8c1ff8db64415b9ce6db865f2744f40a866293c9",
+  "command": [
+    "/workspace/qualification/native-authority-v42-controller/bin/python",
+    "-B",
+    "-m",
+    "pytest",
+    "-q",
+    "--import-mode=importlib",
+    "-p",
+    "no:cacheprovider",
+    "research/unified_consequence_runtime/test_native_build_v43.py",
+    "research/unified_consequence_runtime/test_native_execution_v43.py",
+    "--basetemp=/tmp/udm-v43-preimplementation-frozen",
+    "--tb=short",
+    "--junitxml=/workspace/qualification/experiment-interface-v43-preimplementation/junit.xml"
+  ],
+  "completed_utc": "2026-10-21T20:58:35.645487+00:00",
+  "counts": {
+    "errors": 0,
+    "failures": 68,
+    "passed": 8,
+    "skipped": 0,
+    "tests": 76
+  },
+  "cwd": "/workspace/udm-v54",
+  "environment_overrides": {
+    "GIT_OPTIONAL_LOCKS": "0",
+    "PYTHONDONTWRITEBYTECODE": "1"
+  },
+  "files_sha256": {
+    "research/unified_consequence_runtime/native_v43_test_support.py": "991736fb3b2896f75a2d32d923b8725b0b11e97844cb79d06382d06dde4f705a",
+    "research/unified_consequence_runtime/test_native_build_v43.py": "c3d62d4920221349b204c7d36d83988af8b72b5b3f07272d9920612dd96dc526",
+    "research/unified_consequence_runtime/test_native_execution_v43.py": "a9d371ba08b1b00b5701ace3c75605c076f35ddf3aa04ad62829e480e8b1ce03"
+  },
+  "fixture_interpreter": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/venv/bin/python",
+  "fixture_native_pytest_version": "8.4.1",
+  "notes": [
+    "Imports are lazy per behavior; required-module checks are assertion failures. No test is skipped when V43 modules are absent.",
+    "Eight passing infrastructure controls establish distinct source/base/author identities, real independent original-backend wheel generation, actual cold native obstruction, and original tracked-only native PASS.",
+    "The expected RED is missing new V43 build and worker modules, not a native fixture failure."
+  ],
+  "original_backend_versions": {
+    "hatch-vcs": "0.5.0",
+    "hatchling": "1.27.0"
+  },
+  "production_modules_absent_before_and_after": [
+    "/workspace/udm-v54/research/unified_consequence_runtime/native_build_v43.py",
+    "/workspace/udm-v54/research/unified_consequence_runtime/native_execution_v43.py"
+  ],
+  "returncode": 1,
+  "schema": "UDM_V43_PREIMPLEMENTATION_ACCEPTANCE_TEST_FREEZE_V1",
+  "scope": "Disposable alpha/beta original Hatch VCS fixtures and existing native V42 controller are qualification infrastructure only; no prospective science, foreign source, old result or production source edited.",
+  "started_utc": "2026-10-21T20:58:23.088027+00:00",
+  "status": "EXPECTED_RED_BEFORE_PRODUCTION_IMPLEMENTATION"
+}

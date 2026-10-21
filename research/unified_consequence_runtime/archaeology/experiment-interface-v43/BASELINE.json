@@ -1,0 +1,19 @@
+{
+  "base": "8c1ff8db64415b9ce6db865f2744f40a866293c9",
+  "corrected_original_module_loader": {
+    "command": "python -m unittest research.unified_consequence_runtime.test_native_source_v42 research.unified_consequence_runtime.test_qualify_native_frontier_v42",
+    "exit_code": 0,
+    "seconds": 0.624,
+    "status": "PASS",
+    "tests": 26
+  },
+  "initial_test_driver_attempt": {
+    "command": "python -m pytest -q test_native_source_v42.py test_qualify_native_frontier_v42.py -p no:cacheprovider",
+    "error": "ImportError: attempted relative import with no known parent package",
+    "exit_code": 2,
+    "scope": "Pytest default import-mode invocation; not an original native or scientific failure"
+  },
+  "inspection_note": "Frozen modern profile has pytest8.4.1/hatchling1.27.0/hatch-vcs0.5.0/setuptools84.0.0. Initial optional wheel-distribution inspection raised PackageNotFoundError; no package installed or runtime changed. Hatch native backend does not require that distribution.",
+  "original_source_modified": false,
+  "schema": "UDM_V43_PREIMPLEMENTATION_BASELINE"
+}
