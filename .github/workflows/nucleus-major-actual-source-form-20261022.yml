@@ -1,0 +1,93 @@
+name: Nucleus original recursor major missing constructor witness
+on:
+  push:
+    branches: [research/nucleus-recursor-major-form-20261022]
+    paths:
+      - 'metatron-kernel/src/machine.rs'
+      - '.github/workflows/nucleus-major-actual-source-form-20261022.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-source-obstruction:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    env:
+      GH_TOKEN: ${{ github.token }}
+      CARGO_INCREMENTAL: "0"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Prove only feature-gated source diagnostic differs from qualified Nucleus
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/major-form-evidence /tmp/major-form-input
+          git fetch --no-tags --depth=1 origin ff003e7fad888d39a40cfd2375885fe20e3209fa
+          git diff --check ff003e7fad888d39a40cfd2375885fe20e3209fa
+          git diff --name-only ff003e7fad888d39a40cfd2375885fe20e3209fa -- metatron-kernel > /tmp/major-form-evidence/changed-files.txt
+          test "$(cat /tmp/major-form-evidence/changed-files.txt)" = metatron-kernel/src/machine.rs
+          git diff ff003e7fad888d39a40cfd2375885fe20e3209fa -- metatron-kernel/src/machine.rs > /tmp/major-form-evidence/source-diagnostic.diff
+          git rev-parse HEAD > /tmp/major-form-evidence/research-sha.txt
+          rustc -vV > /tmp/major-form-evidence/rust-compiler.txt
+      - name: Test unaltered rules and build independent checker diagnostic
+        run: |
+          set -euo pipefail
+          NUCLEUS_EXPERIMENTAL_RELEVANCE=1 NUCLEUS_EXPERIMENTAL_EXPECTED_LAMBDA=1 \
+            cargo test --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml > /tmp/major-form-evidence/rust-tests.txt 2>&1 || {
+              tail -100 /tmp/major-form-evidence/rust-tests.txt; exit 1;
+            }
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          sha256sum metatron-kernel/target/release/metatron-kernel > /tmp/major-form-evidence/binary.sha256
+      - name: Extract exact original source valid proof and forged false-equation controls
+        run: |
+          set -euo pipefail
+          gh api repos/heathsanchez/test/actions/artifacts/12336209253/zip > /tmp/major-form-source.zip
+          echo '6727b4ba0de9f4b12642307d1749fcf220047134bfbb6e6a5a789bec092dfaa4  /tmp/major-form-source.zip' | sha256sum -c -
+          unzip -q /tmp/major-form-source.zip -d /tmp/major-form-input
+      - name: Identify original major without source-authorized constructor
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib,json,os,subprocess
+          src=Path('/tmp/major-form-input')
+          out=Path('/tmp/major-form-evidence')
+          cases=[
+             ('n7','positive','magma-list-pair-n7.ndjson-positive.ndjson','49731dc62ab70379f78fa8b4aa346a373ca2df5a2cf0bde8f713d1962d46f546'),
+             ('n7','negative','magma-list-pair-n7.ndjson-negative.ndjson','658f1dbb5281237ff1112d67e9fd4a3da2960784d4a08c3c5b25b5a4e53683b7'),
+             ('n21','positive','magma-list-pair-n21.ndjson-positive.ndjson','52dcb4dd5e3b427d820f72beca1d430740f25831e3d90f3e71a303884fcbd4af'),
+             ('n21','negative','magma-list-pair-n21.ndjson-negative.ndjson','a5e0b2d6a56f95f4d6d7c187f29c7c2b2fb2f246faae8ed0e49d682f146cbb29')]
+          env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+          for flag in ('RELEVANCE','CONTEXT_BINDER','TYPED_LINEAGE','SUBSTITUTION_RECLOSURE','TYPED_VALUE_NORMALIZATION','PROJECTION_CONTEXT','PROJECTION_CROSSFRAME_512','TYPED_RECEIVER','SOURCE_PAIR_DEPTH8','POLYMORPHIC_PROP_IRREL','PROP_SINGLETON_2P1F','EXPECTED_LAMBDA'):
+            env['NUCLEUS_EXPERIMENTAL_'+flag]='1'
+          env['NUCLEUS_TRACE_MAJOR_NO_CONSTRUCTOR']='1'
+          env['NUCLEUS_TRACE_NESTED_RECURSOR_IOTA_FAILURE']='1'
+          env['NUCLEUS_TRACE_DOWNSTREAM']='1'
+          rows=[]
+          for case,kind,name,sha in cases:
+            p=src/name
+            assert hashlib.sha256(p.read_bytes()).hexdigest()==sha,(name,'SHA_DRIFT')
+            with p.open('rb') as inp:
+              run=subprocess.run(['metatron-kernel/target/release/metatron-kernel'],stdin=inp,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,env=env,timeout=180)
+            assert run.returncode==2,(case,kind,run.returncode,'DIAGNOSTIC_VERDICT_DRIFT')
+            lines=run.stderr.decode(errors='replace').splitlines()
+            source_events=[line for line in lines if line.startswith('NUCLEUS_MAJOR_NO_CONSTRUCTOR:')]
+            prior=[line for line in lines if line.startswith('NUCLEUS_NESTED_REPLAY_FAILURE:')]
+            row={'case':case,'expectation':kind,'rc':run.returncode,'input_sha256':sha,
+                 'source_major_events':source_events[:64],'nested_failures':prior[-24:],
+                 'last_verdict':[x for x in lines if x.startswith('NUCLEUS_DOWNSTREAM:')][-1:]}
+            rows.append(row)
+            print('NUCLEUS_MISSING_CONSTRUCTOR='+json.dumps({
+              'case':case,'kind':kind,'new_source_events':len(source_events),
+              'first_values':source_events[:4],'last':row['last_verdict']},ensure_ascii=False),flush=True)
+          out.joinpath('original-major-forms.json').write_text(json.dumps({
+            'rows':rows,'source_unchanged_except_observer':True,
+            'decision':'SOURCE_DIAGNOSTIC_ONLY_NO_NEW_ACCEPT'
+          },indent=2,ensure_ascii=False)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-actual-major-shape-${{ github.sha }}
+          path: /tmp/major-form-evidence/
+          if-no-files-found: warn
