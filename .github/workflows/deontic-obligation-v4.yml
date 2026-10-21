@@ -20,9 +20,12 @@ jobs:
         run: |
           python3 -m py_compile research/deontic_obligation_v4/experiment.py
           python3 research/deontic_obligation_v4/experiment.py
+          python3 research/deontic_obligation_v4/exposed_native.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: deontic-obligation-v4-evidence
-          path: research/deontic_obligation_v4/result.json
+          path: |
+            research/deontic_obligation_v4/result.json
+            research/deontic_obligation_v4/exposed_native_result.json
           if-no-files-found: warn
