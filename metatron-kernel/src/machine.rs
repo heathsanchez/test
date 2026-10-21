@@ -2241,8 +2241,25 @@ impl<'a> Machine<'a> {
                 if !active.insert(identity) {return Judgment::unknown("nested-recursor-iota-cycle");}
                 entered.entry(key.digest).or_default().push(key.clone());
                 parents.push(Continuation::Finish(key));
+                // Opt-in study: permit the independently certified source
+                // recursor-major demand to spend a larger part of the SAME
+                // remaining owner budget. Never reset or mint new fuel.
+                let remaining_major_work=self.exposure_fuel.get().unwrap_or(0);
+                let local_major_cap=
+                    if std::env::var_os("NUCLEUS_EXPERIMENTAL_NESTED_MAJOR_2048").is_some() {
+                        2048
+                    } else {512};
+                #[cfg(feature="diagnostics")]
+                if local_major_cap>512
+                    && std::env::var_os("NUCLEUS_TRACE_MAJOR_REBUDGET").is_some() {
+                    use std::sync::atomic::{AtomicUsize,Ordering};
+                    static OBS:AtomicUsize=AtomicUsize::new(0);
+                    if OBS.fetch_add(1,Ordering::Relaxed)<32 {
+                        eprintln!("NUCLEUS_MAJOR_REBUDGET:registered={name:?}:owner_remaining={remaining_major_work}:local_cap={local_major_cap}:goal={goal:?}");
+                    }
+                }
                 let major_result=self.expose(neutral.spine[required-1].clone(),
-                    Transparency::Full,self.exposure_fuel.get().unwrap_or(0).min(512));
+                    Transparency::Full,remaining_major_work.min(local_major_cap));
                 let Some(value)=major_result.proven_value() else {
                     #[cfg(feature="diagnostics")]
                     if std::env::var_os("NUCLEUS_TRACE_NESTED_RECURSOR_IOTA_FAILURE").is_some() {
@@ -2408,7 +2425,13 @@ impl<'a> Machine<'a> {
                 && matches_rule(nat.zero, 0)
                 && matches_rule(nat.succ, 1)
         });
-        let major_cap = if bool_rules {
+        // Research-only cost policy: reallocate the existing local allowance
+        // for a source-certified Bool/Nat recursor. This does not license
+        // any new constructor or increase global checker work limits.
+        let major_cap = if std::env::var_os("NUCLEUS_EXPERIMENTAL_CONSTRUCTOR_MAJOR_1024").is_some()
+            && (bool_rules || certified_nat_rec) {
+            1024
+        } else if bool_rules {
             256
         } else if certified_nat_rec {
             128
