@@ -1,0 +1,40 @@
+{
+  "argv": [
+    "/workspace/qualification/native-authority-v42-controller/bin/python",
+    "-B",
+    "-m",
+    "pytest",
+    "-q",
+    "--import-mode=importlib",
+    "-p",
+    "no:cacheprovider",
+    "research/unified_consequence_runtime/test_native_build_boundary_v43.py",
+    "--basetemp=/tmp/udm-v43-reviewer-boundary-postfix",
+    "--tb=short",
+    "--junitxml=/workspace/qualification/experiment-interface-v43-supplementary-preimplementation/junit.xml"
+  ],
+  "artifacts_sha256": {
+    "junit.xml": "e2a200265cb0d3c42f13eda34365306f41da8bf6d300121b090368fdb5bb4f77",
+    "stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout": "e33e52e62b60a03a530c2b7633de494e54760830401c7fdd3126549e7c5d0a78"
+  },
+  "claim": "POST_FIX_VALIDATION_ONLY_NOT_PREIMPLEMENTATION_RED",
+  "cwd": "/workspace/udm-v54",
+  "files_after": {
+    "research/unified_consequence_runtime/native_build_v43.py": "45980fe9468b62665870038cc6e6744d17916d037741a7e76631130517c270fc",
+    "research/unified_consequence_runtime/native_execution_v43.py": "1334f7780250ef622df829ac9c679e9a44bc974f0da49484476a0edd368be1d6",
+    "research/unified_consequence_runtime/test_native_build_boundary_v43.py": "3b2b67271aada64b1423ab0b5fa7ea7270de4f184f7284f4823b710289c3b36c"
+  },
+  "files_before": {
+    "research/unified_consequence_runtime/native_build_v43.py": "45980fe9468b62665870038cc6e6744d17916d037741a7e76631130517c270fc",
+    "research/unified_consequence_runtime/native_execution_v43.py": "1334f7780250ef622df829ac9c679e9a44bc974f0da49484476a0edd368be1d6",
+    "research/unified_consequence_runtime/test_native_build_boundary_v43.py": "3b2b67271aada64b1423ab0b5fa7ea7270de4f184f7284f4823b710289c3b36c"
+  },
+  "reason": "Implementation owners applied output-overlap guard and accounting wrapper before root authorized these reviewer controls. No pre-fix failure was observed or claimed.",
+  "returncode": 0,
+  "schema": "UDM_V43_REVIEWER_SUPPLEMENTARY_POSTFIX_VALIDATION_V1",
+  "seconds": 8.427271127700806,
+  "source_unchanged_during_run": true,
+  "started_unix": 1792617025.1764257,
+  "status": "PASS"
+}

@@ -1,0 +1,42 @@
+{
+  "argv": [
+    "/workspace/qualification/native-authority-v42-controller/bin/python",
+    "-B",
+    "-m",
+    "pytest",
+    "-q",
+    "--import-mode=importlib",
+    "-p",
+    "no:cacheprovider",
+    "research/unified_consequence_runtime/test_native_build_boundary_v43.py",
+    "-k",
+    "original_build_requirement",
+    "--basetemp=/tmp/udm-v43-reviewer-build-requirements-red",
+    "--tb=short",
+    "--junitxml=/workspace/qualification/experiment-interface-v43-build-requirements-preimplementation/junit.xml"
+  ],
+  "artifacts_sha256": {
+    "junit.xml": "581ca717f9101bb150ed5c092e1078ffd075d87ce531ac8f65a428d809c973e6",
+    "stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout": "c9ba8467c2a157b82848a043090704d90e69291ac07612bb4f70cf003fc6f9b9"
+  },
+  "claim": "PRE_FIX_FAILURE_TEST_FOR_BUILD_REQUIREMENTS_ONLY",
+  "cwd": "/workspace/udm-v54",
+  "files_after": {
+    "research/unified_consequence_runtime/native_build_v43.py": "45980fe9468b62665870038cc6e6744d17916d037741a7e76631130517c270fc",
+    "research/unified_consequence_runtime/native_execution_v43.py": "1334f7780250ef622df829ac9c679e9a44bc974f0da49484476a0edd368be1d6",
+    "research/unified_consequence_runtime/test_native_build_boundary_v43.py": "8add2e1051855ae757755e5e42f35a4ab87907995834a5609c4309a8dde2fab2"
+  },
+  "files_before": {
+    "research/unified_consequence_runtime/native_build_v43.py": "45980fe9468b62665870038cc6e6744d17916d037741a7e76631130517c270fc",
+    "research/unified_consequence_runtime/native_execution_v43.py": "1334f7780250ef622df829ac9c679e9a44bc974f0da49484476a0edd368be1d6",
+    "research/unified_consequence_runtime/test_native_build_boundary_v43.py": "8add2e1051855ae757755e5e42f35a4ab87907995834a5609c4309a8dde2fab2"
+  },
+  "reason": "Original ten output/accounting controls were post-fix only. These three source-declared build-requirement controls were added after review identified the unchecked requirement boundary and before its fix. Builder held source stable for this run.",
+  "retained_native_build_directory": "/tmp/udm-v43-reviewer-build-requirements-red",
+  "returncode": 1,
+  "schema": "UDM_V43_REVIEWER_BUILD_REQUIREMENTS_PREFX_VALIDATION_V1",
+  "seconds": 17.189839124679565,
+  "source_unchanged_during_run": true,
+  "started_unix": 1792617121.2249799
+}

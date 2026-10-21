@@ -1,0 +1,20 @@
+FFF                                                                      [100%]
+=================================== FAILURES ===================================
+_ test_original_build_requirement_is_checked_before_native_build[hatch-vcs==999] _
+research/unified_consequence_runtime/test_native_build_boundary_v43.py:86: in test_original_build_requirement_is_checked_before_native_build
+    with pytest.raises(ValueError, match='UNKNOWN.*(BUILD|REQUIREMENT|DEPENDENCY|ENVIRONMENT)'):
+E   Failed: DID NOT RAISE <class 'ValueError'>
+_ test_original_build_requirement_is_checked_before_native_build[udm-missing-build-requirement-v43==1] _
+research/unified_consequence_runtime/test_native_build_boundary_v43.py:86: in test_original_build_requirement_is_checked_before_native_build
+    with pytest.raises(ValueError, match='UNKNOWN.*(BUILD|REQUIREMENT|DEPENDENCY|ENVIRONMENT)'):
+E   Failed: DID NOT RAISE <class 'ValueError'>
+_ test_original_build_requirement_is_checked_before_native_build[hatch-vcs @ file:///definitely-missing-udm-v43-build.whl] _
+research/unified_consequence_runtime/test_native_build_boundary_v43.py:86: in test_original_build_requirement_is_checked_before_native_build
+    with pytest.raises(ValueError, match='UNKNOWN.*(BUILD|REQUIREMENT|DEPENDENCY|ENVIRONMENT)'):
+E   Failed: DID NOT RAISE <class 'ValueError'>
+- generated xml file: /workspace/qualification/experiment-interface-v43-build-requirements-preimplementation/junit.xml -
+=========================== short test summary info ============================
+FAILED research/unified_consequence_runtime/test_native_build_boundary_v43.py::test_original_build_requirement_is_checked_before_native_build[hatch-vcs==999]
+FAILED research/unified_consequence_runtime/test_native_build_boundary_v43.py::test_original_build_requirement_is_checked_before_native_build[udm-missing-build-requirement-v43==1]
+FAILED research/unified_consequence_runtime/test_native_build_boundary_v43.py::test_original_build_requirement_is_checked_before_native_build[hatch-vcs @ file:///definitely-missing-udm-v43-build.whl]
+3 failed, 10 deselected in 17.02s
