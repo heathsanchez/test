@@ -172,8 +172,8 @@ def _declared_addopts(value):
             if index>len(args):raise ValueError('missing native selection expression')
             continue
         if (re.fullmatch(r'-(?:q+|v+|r[A-Za-z]+)',arg) or arg in ('--strict-config','--strict-markers',
-                '--strict','--disable-warnings','--showlocals','--full-trace','--no-header','--no-summary')
-                or re.fullmatch(r'--(?:tb=(?:auto|long|short|line|native|no)|color=(?:yes|no|auto)|durations=[0-9]+)',arg)):
+                '--strict','--disable-warnings','--showlocals','-l','--full-trace','--no-header','--no-summary')
+                or re.fullmatch(r'--(?:tb=(?:auto|long|short|line|native|no)|color=(?:yes|no|auto)|durations=[0-9]+|import-mode=(?:importlib|prepend|append))',arg)):
             index+=1;continue
         raise ValueError('unsupported addopts collection/authority option: '+arg)
 
@@ -227,7 +227,14 @@ def _test_nodes(path, source):
                     if isinstance(child,(ast.Assign,ast.AnnAssign,ast.NamedExpr)):
                         targets=child.targets if isinstance(child,ast.Assign) else [child.target]
                         if any(isinstance(target,ast.Name) and target.id.startswith('test_') for target in targets):
-                            raise ValueError('UNKNOWN_SUITE_CONTRACT: dynamic test alias unsupported')
+                            # Constant source data cannot register executable pytest tests.
+                            # All names remain in the original AST/source identity.
+                            if len(targets) != 1 or not isinstance(node,(ast.Assign,ast.AnnAssign)):
+                                raise ValueError('UNKNOWN_SUITE_CONTRACT: dynamic test alias unsupported')
+                            try:
+                                ast.literal_eval(node.value)
+                            except (ValueError,TypeError,MemoryError,RecursionError):
+                                raise ValueError('UNKNOWN_SUITE_CONTRACT: dynamic test alias unsupported')
     visit(tree.body,path)
     if any(isinstance(node,(ast.FunctionDef,ast.AsyncFunctionDef)) and node.name.startswith('test_')
             and id(node) not in declared for node in ast.walk(tree)):
