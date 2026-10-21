@@ -1,0 +1,30 @@
+name: MathGraph Gen2 isolated native 20261021
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [research/cross-source-gen2-native-qualification-20261021]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+          cache: false
+      - name: Fixed-source generational native test
+        run: |
+          set -euo pipefail
+          git clone -q https://github.com/go-ini/ini.git "$RUNNER_TEMP/ini"
+          git -C "$RUNNER_TEMP/ini" checkout -q --detach e2db55b0e088fa4ee0c128aa4ade263cdc1d7f08
+          test "$(git -C "$RUNNER_TEMP/ini" rev-parse HEAD)" = e2db55b0e088fa4ee0c128aa4ade263cdc1d7f08
+          cp research/cross_source_compounding_20261021/GEN2_test.go.txt "$RUNNER_TEMP/ini/mathgraph_gen2_test.go"
+          cd "$RUNNER_TEMP/ini"
+          go test -count=1 -run '^TestMathGraphGen2Retention$' -v .
