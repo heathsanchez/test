@@ -1,0 +1,11 @@
+Status: PASS_ADMISSION_ONLY_SCREENING_AUDIT
+Six frozen cases screened once in fixed order; 0 eligible; 1 collection; 0 native executions.
+Controller wall: 85.05430250600057 s; nested case wall sum: 43.36143939899921 s.
+First actual obstruction: ModuleNotFoundError: No module named chardet._version, from original src/chardet/__init__.py:15 during collection.
+Hatch VCS generates ignored src/chardet/_version.py into the baseline build/wheel; the tracked-only execution world omits it and precedes the installed wheel. Missing scope condition: every required import-time generated artifact must be represented by the pre-existing qualified source-world operation.
+34 JUnit collection errors, pytest exit 2, zero native executions; all other metadata/profile refusals and helper negatives retained.
+Pool SHA256: 7bfd4a7d882c98288c562352dbe1f89e1ee5790cd87fcdd25af5be7d54b46453
+Reports canonical SHA256: 35a5e817f5303450cf613cde605d7fc6d1eb5caba6d31900090dc6b5e0238ee6
+Owned HEAD c56d29fae856cceaa0a00000b1c3b782ea1df346 and all common/current/linked raw index bytes unchanged across independent audit; indexes never restored.
+Original screening exposure claims are bounded actor attestations; postexperiment diagnostics occurred after all cases were ineligible. G2-G6 remain UNKNOWN.
+Historical prelaunch controller full-file identity: UNKNOWN_NOT_SUPPLIED_IN_BOUNDED_EVIDENCE; current receipt and original install versions are retained separately.

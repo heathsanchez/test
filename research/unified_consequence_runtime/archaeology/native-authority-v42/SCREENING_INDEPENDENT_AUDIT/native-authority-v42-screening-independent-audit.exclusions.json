@@ -1,0 +1,19 @@
+{
+  "schema": "UDM_V42_FINAL_AUDIT_ARCHIVE_EXCLUSIONS",
+  "current_audit_root_objects_excluded": [],
+  "all_current_audit_root_files_and_helper_failures_retained": true,
+  "uncompressed_full_source_identity_duplicate": {
+    "uncompressed_size_bytes": 742726538,
+    "uncompressed_sha256": "2b4d98f4d00997f742f2eb09effae122dfb9112965e98d97102b66a9011f376a",
+    "lossless_retained_archive_path": "audit/source-identity/SOURCE_IDENTITY_AUDIT.full.json.gz",
+    "compressed_size_bytes": 5315009,
+    "compressed_sha256": "0ecc4bfbdb4490cb610353bebbe768ffb91acdad2110ea4733cbc7368e673207",
+    "roundtrip_descriptor_archive_path": "audit/source-identity/GZIP_ROUNDTRIP.json",
+    "current_compact_summary_retained_archive_path": "audit/source-identity/SOURCE_IDENTITY_AUDIT.json",
+    "reason": "Auditor already replaced the 742726538-byte duplicate raw JSON with a compact summary while retaining complete original bytes as lossless gzip. This archive includes every current object; the raw JSON is recovered exactly by gzip decompression."
+  },
+  "raw_screening_inputs": "Separate canonical raw-screening shards retain original source/test/Git/runtime evidence; they are referenced by the included auditor manifests and are not duplicated into this audit packet.",
+  "source_snapshot": "Included OWNED_SOURCE_IDENTITY.json binds the complete committed source inventory; qualified-gate source snapshot is retained in the separately bound existing gate archive. No full committed-source directory exists in this final audit root.",
+  "no_audit_root_mutations": true,
+  "no_new_git_or_native_or_source_execution": true
+}

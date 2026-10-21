@@ -1,0 +1,83 @@
+{
+  "actor_attestation_preserved": {
+    "archive_path": "controller/ORIGINAL_SCREENING_ACTOR_BOUNDARY_ATTESTATION.json",
+    "crc32": "8499fc15",
+    "mode": 384,
+    "sha256": "a50d6887013a773c2b4f2393fa58a3fbfbf8634db585b4215adddb9ce62fbfdd",
+    "size": 4658,
+    "source_path": "/workspace/qualification/native-authority-v42-screening-controller/ORIGINAL_SCREENING_ACTOR_BOUNDARY_ATTESTATION.json",
+    "type": "file"
+  },
+  "aggregate_manifest_sha256": "42c8521d54fae79767aae6b9f98fccd82e43a133e2ecadb1ab84527da2c07066",
+  "all_raw_root_objects_exactly_included_or_specifically_omitted": true,
+  "audit_directory_untouched": true,
+  "common_current_all_linked_indexes_unchanged": true,
+  "current_source_regular_files_checked_including_omitted_venv_identity": 7665,
+  "descriptor_sha256": "c794fbd1170bd9b373fa11c2a5801636359a28e9f62b2188be044ede46a01a76",
+  "directories_modes_checked": 1090,
+  "exact_unique_inventory": true,
+  "generated_version": {
+    "build_wheel_and_installed_bytes_equal": true,
+    "original_baseline_wheel_sha256": "56b1b0de547b010935ec5524c7a5a59c5dd2f82b8487b51199ead6632f0f2b80",
+    "original_tracked_source_version_absent": true,
+    "sha256": "65de830ef24719bc053dfe3334f40eef851fd7aa25e4a29f27b618c2ffd68a08",
+    "size_bytes": 558
+  },
+  "gzip_crc_and_isize_verified_for_all_shards": true,
+  "independence_boundary": "Separate Python process and distinct streaming reader from V41 serializer/checker; same archive-preparation actor, not a separate scientific auditor.",
+  "index_postcheck": [
+    {
+      "sha256": "894f89eeaad5bd8d6c8242a5047d006a0b23021a5ba362d4db42c131e082fd29",
+      "size_bytes": 113571,
+      "source": "/workspace/repos/test/.git/worktrees/development/index",
+      "unchanged": true
+    },
+    {
+      "sha256": "6ea642f1a91b7239229344a2650a9af70ea2bd477b6db9518ed4153bed8cb786",
+      "size_bytes": 176832,
+      "source": "/workspace/repos/test/.git/worktrees/env-v3-native-334/index",
+      "unchanged": true
+    },
+    {
+      "sha256": "3999c60a940d9c999523ff56ec37d2bc9d7c0328c1f2503690a652fbb1f01064",
+      "size_bytes": 111030,
+      "source": "/workspace/repos/test/.git/worktrees/udm/index",
+      "unchanged": true
+    },
+    {
+      "sha256": "cce293c28fd33556bb415b65317d33223a5f2b6c13bc3c93bb44eaaf7c49fe39",
+      "size_bytes": 378209,
+      "source": "/workspace/repos/test/.git/worktrees/udm-v54/index",
+      "unchanged": true
+    }
+  ],
+  "no_archive_extraction_or_link_traversal": true,
+  "no_git_mutations_or_source_fetch_or_native_execution": true,
+  "omitted_venv_duplicate_file_count": 6352,
+  "reader_script": {
+    "path": "/workspace/qualification/native-authority-v42-screening-archive/independent_manifest_readback.py",
+    "sha256": "5577cc9ded1ab728b33732f94993087ee3565c73da5c0e8d3c0fd1ae163ea708"
+  },
+  "regular_file_byte_size_sha256_crc32_checks": 1357,
+  "schema": "UDM_V42_SCREENING_ARCHIVE_SEPARATE_PROCESS_MANIFEST_READBACK",
+  "shards": [
+    {
+      "gzip_crc32": "57a7e209",
+      "gzip_isize_mod_2_32": 45230080,
+      "members": 181,
+      "path": "/workspace/qualification/native-authority-v42-screening-archive/native-authority-v42-screening-raw-evidence-001-of-002.tar.gz",
+      "sha256": "0714d693457cbe2349798ec2413688555fab8669dbd79ec0095de391c3ee3fdf",
+      "size_bytes": 43679355
+    },
+    {
+      "gzip_crc32": "3046964e",
+      "gzip_isize_mod_2_32": 74629120,
+      "members": 2283,
+      "path": "/workspace/qualification/native-authority-v42-screening-archive/native-authority-v42-screening-raw-evidence-002-of-002.tar.gz",
+      "sha256": "4ca52091268969eba82c5d5d38c9b547471f8207b716a0467ada6e050a9cd199",
+      "size_bytes": 52838504
+    }
+  ],
+  "status": "PASS",
+  "symlink_targets_checked": 17
+}

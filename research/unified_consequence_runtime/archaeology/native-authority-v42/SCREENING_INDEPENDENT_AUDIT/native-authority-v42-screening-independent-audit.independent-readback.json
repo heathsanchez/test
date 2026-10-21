@@ -1,0 +1,33 @@
+{
+  "all_current_audit_root_files_checked": 70,
+  "all_members_exact_unique": true,
+  "archive": {
+    "gzip_crc32": "3e362bae",
+    "path": "/workspace/qualification/native-authority-v42-final-delivery/auditarchive/native-authority-v42-screening-independent-audit.tar.gz",
+    "sha256": "a0bdf04148c539c303d826d462d554a47db6867bb5552fee79a5b60c49a586f0",
+    "size_bytes": 5374930
+  },
+  "current_audit_root_objects_excluded": 0,
+  "descriptor_sha256": "0206545a0c7bf2c0564f8910bd89101baf6dca673422188bc54045e1ffa36ea5",
+  "directory_mode_checks": 7,
+  "final_audit_sha256_verified": "5dd040cc4af1f8748a3bf85c6d289680786897ba4b1bd26ab0142a193fca980a",
+  "final_summary_sha256_verified": "87cf3abea9f221a72e4f4bc46e54d5d48da87126a60eb9dbd8d4f09bfd45791c",
+  "gzip_crc_isize_verified": true,
+  "independence_boundary": "Distinct streaming reader in a separate Python process by the archive actor; original independent scientific auditor outputs are retained verbatim.",
+  "manifest_sha256": "9fb4985d0a7ad55b30db8c9ed3b733803a5ce53d55f2b750fefce08f9f611b77",
+  "nested_full_source_identity_lossless_roundtrip": {
+    "compressed_sha256": "0ecc4bfbdb4490cb610353bebbe768ffb91acdad2110ea4733cbc7368e673207",
+    "compressed_size_bytes": 5315009,
+    "gzip_crc32": "39fb1592",
+    "gzip_crc_and_isize_verified": true,
+    "uncompressed_sha256": "2b4d98f4d00997f742f2eb09effae122dfb9112965e98d97102b66a9011f376a",
+    "uncompressed_size_bytes": 742726538
+  },
+  "no_extraction_or_link_traversal": true,
+  "no_git_reads_or_index_interval_or_native_source_execution": true,
+  "reader_script_sha256": "8cb4b10b7c1dce0254e819dfc5eb1ddb48f78b95568d266ed6a108bf00eefec6",
+  "regular_file_sha_size_crc_mode_checks": 72,
+  "schema": "UDM_V42_FINAL_AUDIT_SEPARATE_PROCESS_MANIFEST_READBACK",
+  "status": "PASS",
+  "symlink_target_checks": 0
+}

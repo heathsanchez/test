@@ -1,0 +1,20 @@
+{
+  "schema": "UDM_V42_SCREENING_ARCHIVE_REOPEN_VERIFICATION",
+  "status": "PASS",
+  "archive_path": "/workspace/qualification/native-authority-v42-screening-archive/native-authority-v42-screening-raw-evidence-002-of-002.tar.gz",
+  "archive_sha256": "4ca52091268969eba82c5d5d38c9b547471f8207b716a0467ada6e050a9cd199",
+  "archive_size_bytes": 52838504,
+  "members": 2283,
+  "reopened_regular_files_checked": 1207,
+  "reopened_symlinks_checked": 17,
+  "reopened_directories_checked": 1059,
+  "failures": [],
+  "method": "Closed archive reopened; exact member inventory, regular bytes, modes, every link target and directory checked. No extraction or symlink traversal.",
+  "gzip_crc32": "3046964e",
+  "gzip_isize_mod_2_32": 74629120,
+  "gzip_uncompressed_bytes": 74629120,
+  "gzip_full_stream_crc_and_size_verified": true,
+  "maximum_blob_size_bytes": 90000000,
+  "below_90MB": true,
+  "source_commit": "c56d29fae856cceaa0a00000b1c3b782ea1df346"
+}

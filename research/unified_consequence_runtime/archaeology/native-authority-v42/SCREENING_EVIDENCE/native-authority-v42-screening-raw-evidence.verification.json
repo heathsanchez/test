@@ -1,0 +1,47 @@
+{
+  "schema": "UDM_V42_SCREENING_SHARDED_ARCHIVE_REOPEN_VERIFICATION",
+  "status": "PASS",
+  "shards": [
+    {
+      "path": "/workspace/qualification/native-authority-v42-screening-archive/native-authority-v42-screening-raw-evidence-001-of-002.tar.gz",
+      "sha256": "0714d693457cbe2349798ec2413688555fab8669dbd79ec0095de391c3ee3fdf",
+      "size_bytes": 43679355,
+      "gzip_crc32": "57a7e209",
+      "members": 181,
+      "manifest": {
+        "path": "/workspace/qualification/native-authority-v42-screening-archive/native-authority-v42-screening-raw-evidence-001-of-002.manifest.json",
+        "sha256": "dc92fb2e9db1ff839cb2ac8da04474d735bb3ca32adf7c68ee055f521e0813d1",
+        "size_bytes": 77651
+      },
+      "verification": {
+        "path": "/workspace/qualification/native-authority-v42-screening-archive/native-authority-v42-screening-raw-evidence-001-of-002.verification.json",
+        "sha256": "3352bfe96a4088bb80a3f26f4de9f69fa2ee9972a022f9a9bba97592df6578b0",
+        "size_bytes": 941
+      }
+    },
+    {
+      "path": "/workspace/qualification/native-authority-v42-screening-archive/native-authority-v42-screening-raw-evidence-002-of-002.tar.gz",
+      "sha256": "4ca52091268969eba82c5d5d38c9b547471f8207b716a0467ada6e050a9cd199",
+      "size_bytes": 52838504,
+      "gzip_crc32": "3046964e",
+      "members": 2283,
+      "manifest": {
+        "path": "/workspace/qualification/native-authority-v42-screening-archive/native-authority-v42-screening-raw-evidence-002-of-002.manifest.json",
+        "sha256": "b77b3069faf4ecb096548e78d66d2e872099ad44e6c4359c9e2b808aaec5e803",
+        "size_bytes": 901504
+      },
+      "verification": {
+        "path": "/workspace/qualification/native-authority-v42-screening-archive/native-authority-v42-screening-raw-evidence-002-of-002.verification.json",
+        "sha256": "7d054ef8d915304d4c5006991326061a5974f1c0ece5acab2ff7bcd3d08c181a",
+        "size_bytes": 946
+      }
+    }
+  ],
+  "total_members": 2464,
+  "reopened_regular_files_checked": 1357,
+  "reopened_symlinks_checked": 17,
+  "reopened_directories_checked": 1090,
+  "failures": [],
+  "method": "Unmodified V41 tar writer and reopen checker, member-list partition data only. Each closed tar.gz reopened; all bytes/SHA256/size/modes/link targets/directories verified without extraction. Separate full gzip drains checked CRC32/ISIZE.",
+  "all_shards_below_90MB": true
+}

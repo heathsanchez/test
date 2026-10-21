@@ -1,0 +1,52 @@
+{
+  "all_current_audit_root_objects_losslessly_retained": true,
+  "copy_policy": "Copy these listed files and optionally this copy list. No uncompressed full historical source-identity duplicate is present.",
+  "file_count": 8,
+  "files": [
+    {
+      "relative_path": "archive_final_audit.py",
+      "sha256": "ce1adf191e3053e7c1eb2fe6c36b293e16c776ec5eb5a1e3dac4af37cd60a209",
+      "size_bytes": 5898
+    },
+    {
+      "relative_path": "native-authority-v42-screening-independent-audit.descriptor.json",
+      "sha256": "0206545a0c7bf2c0564f8910bd89101baf6dca673422188bc54045e1ffa36ea5",
+      "size_bytes": 2170
+    },
+    {
+      "relative_path": "native-authority-v42-screening-independent-audit.exclusions.json",
+      "sha256": "d891ef01a4d25906871ab3d8bd42ed2161edc4af2c7a4058b41af0dd2539cb20",
+      "size_bytes": 1617
+    },
+    {
+      "relative_path": "native-authority-v42-screening-independent-audit.independent-readback.json",
+      "sha256": "6f472905e265eeb02ab5815c36daf915e125c8aff76e2660a0c5e36636968307",
+      "size_bytes": 1829
+    },
+    {
+      "relative_path": "native-authority-v42-screening-independent-audit.manifest.json",
+      "sha256": "9fb4985d0a7ad55b30db8c9ed3b733803a5ce53d55f2b750fefce08f9f611b77",
+      "size_bytes": 28414
+    },
+    {
+      "relative_path": "native-authority-v42-screening-independent-audit.tar.gz",
+      "sha256": "a0bdf04148c539c303d826d462d554a47db6867bb5552fee79a5b60c49a586f0",
+      "size_bytes": 5374930
+    },
+    {
+      "relative_path": "native-authority-v42-screening-independent-audit.verification.json",
+      "sha256": "e7b953e914c5719a3f81b49a97a7cf89e08e4039da8c466ec388fc1751f23289",
+      "size_bytes": 800
+    },
+    {
+      "relative_path": "readback_final_audit.py",
+      "sha256": "8cb4b10b7c1dce0254e819dfc5eb1ddb48f78b95568d266ed6a108bf00eefec6",
+      "size_bytes": 5202
+    }
+  ],
+  "files_stable": true,
+  "readback_status": "PASS",
+  "root": "/workspace/qualification/native-authority-v42-final-delivery/auditarchive",
+  "schema": "UDM_V42_FINAL_AUDIT_ARCHIVE_CANONICAL_COPY_LIST",
+  "total_bytes": 5420860
+}

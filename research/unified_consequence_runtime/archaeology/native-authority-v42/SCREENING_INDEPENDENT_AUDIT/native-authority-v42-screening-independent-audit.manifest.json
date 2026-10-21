@@ -1,0 +1,702 @@
+{
+  "schema": "UDM_V42_SCREENING_ARCHIVE_MANIFEST",
+  "archive_roots": {
+    "audit": "/workspace/qualification/native-authority-v42-screening-audit"
+  },
+  "members": [
+    {
+      "archive_path": "audit",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit",
+      "mode": 448,
+      "type": "directory"
+    },
+    {
+      "archive_path": "audit/AUDIT.json",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/AUDIT.json",
+      "mode": 384,
+      "type": "file",
+      "size": 28009,
+      "sha256": "5dd040cc4af1f8748a3bf85c6d289680786897ba4b1bd26ab0142a193fca980a",
+      "crc32": "9b7241a3"
+    },
+    {
+      "archive_path": "audit/AUDITOR_HELPER_NEGATIVES.json",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/AUDITOR_HELPER_NEGATIVES.json",
+      "mode": 384,
+      "type": "file",
+      "size": 2085,
+      "sha256": "0b7737bfd6167a4d5b88ab5ee9e3ebc129df7c3204ad32e7b683bc1a2cc7a52a",
+      "crc32": "5242e41c"
+    },
+    {
+      "archive_path": "audit/COSTS_BY_CASE.json",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/COSTS_BY_CASE.json",
+      "mode": 384,
+      "type": "file",
+      "size": 71289,
+      "sha256": "58746c69923cc1da7f78bd5e1cc2d55561f22099c1588299540812948abae44b",
+      "crc32": "37acbecf"
+    },
+    {
+      "archive_path": "audit/FINAL_ARTIFACT_VERIFICATION.json",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/FINAL_ARTIFACT_VERIFICATION.json",
+      "mode": 384,
+      "type": "file",
+      "size": 839,
+      "sha256": "129ac4d136996a9ea0c725b4a05e9846061b409651c4a1b84fb05c45ad769eb2",
+      "crc32": "2a442438"
+    },
+    {
+      "archive_path": "audit/INDEX_AFTER.json",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/INDEX_AFTER.json",
+      "mode": 384,
+      "type": "file",
+      "size": 3969,
+      "sha256": "1c5108b1a243032523be7d869f704453ffc9f713300d991ab1c3118be0981dcd",
+      "crc32": "69acbf3c"
+    },
+    {
+      "archive_path": "audit/INDEX_BEFORE.json",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/INDEX_BEFORE.json",
+      "mode": 384,
+      "type": "file",
+      "size": 1766,
+      "sha256": "518bc71530197ef89ed10d374619f535770ea0a018bbadc6e6e7533d64b678e4",
+      "crc32": "07030898"
+    },
+    {
+      "archive_path": "audit/OWNED_SOURCE_IDENTITY.json",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/OWNED_SOURCE_IDENTITY.json",
+      "mode": 384,
+      "type": "file",
+      "size": 1306864,
+      "sha256": "fa57aaddd890d4b4548dbd0a2b9e5c35ea65e7aa88516149e89a4a15e372b14e",
+      "crc32": "eaa61fc1"
+    },
+    {
+      "archive_path": "audit/PUSH_ORDER_LOCAL_REFLOG.json",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/PUSH_ORDER_LOCAL_REFLOG.json",
+      "mode": 384,
+      "type": "file",
+      "size": 549,
+      "sha256": "2d07bf9ccd2dba777f3c7d1a2363d8b7d27322896cefb4875368104dee18ad77",
+      "crc32": "6d241acf"
+    },
+    {
+      "archive_path": "audit/REFUSALS_EXACT.json",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/REFUSALS_EXACT.json",
+      "mode": 384,
+      "type": "file",
+      "size": 1957,
+      "sha256": "4bd874ad469130c7c17bbbe26c275453d1cdaa7e7ce2b125568a90e9d580d9aa",
+      "crc32": "70df0878"
+    },
+    {
+      "archive_path": "audit/RETAINED_CHECKS.json",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/RETAINED_CHECKS.json",
+      "mode": 384,
+      "type": "file",
+      "size": 164671,
+      "sha256": "80197c068760440984dee316ff929497f2555480b44ccf7c8aa3e1ce4926524f",
+      "crc32": "6275eb9f"
+    },
+    {
+      "archive_path": "audit/RETAINED_RAW_MANIFEST.json",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/RETAINED_RAW_MANIFEST.json",
+      "mode": 384,
+      "type": "file",
+      "size": 2183963,
+      "sha256": "7badba548c13557416c7411ef95b7c16654276ae3197279fff260a799603514f",
+      "crc32": "0c9b0922"
+    },
+    {
+      "archive_path": "audit/ROOT_INITIAL_READ_INTERVAL_AUDIT.json",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/ROOT_INITIAL_READ_INTERVAL_AUDIT.json",
+      "mode": 384,
+      "type": "file",
+      "size": 1583,
+      "sha256": "d93509c57594866a556580042540708163a0abbc4f07ea548bf705c16a0e9aab",
+      "crc32": "ffdf06a7"
+    },
+    {
+      "archive_path": "audit/SCREENING_ENVELOPES_EXACT.json",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/SCREENING_ENVELOPES_EXACT.json",
+      "mode": 384,
+      "type": "file",
+      "size": 3997,
+      "sha256": "30239a8c4f2d31fc214389804c47226c41ec75e8b75025345d5784ef59732d7c",
+      "crc32": "29986c04"
+    },
+    {
+      "archive_path": "audit/SUMMARY.txt",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/SUMMARY.txt",
+      "mode": 384,
+      "type": "file",
+      "size": 1448,
+      "sha256": "87cf3abea9f221a72e4f4bc46e54d5d48da87126a60eb9dbd8d4f09bfd45791c",
+      "crc32": "8b5bc66a"
+    },
+    {
+      "archive_path": "audit/audit-helper-attempts",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/audit-helper-attempts",
+      "mode": 448,
+      "type": "directory"
+    },
+    {
+      "archive_path": "audit/audit-helper-attempts/attempt-1-RETAINED_CHECKS.json",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/audit-helper-attempts/attempt-1-RETAINED_CHECKS.json",
+      "mode": 384,
+      "type": "file",
+      "size": 163672,
+      "sha256": "867903cd92f349f740500b083277bb8e2866111adbd94d12e778d08f4bd5cb31",
+      "crc32": "5e307457"
+    },
+    {
+      "archive_path": "audit/audit-helper-attempts/attempt-1-audit_retained.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/audit-helper-attempts/attempt-1-audit_retained.py",
+      "mode": 384,
+      "type": "file",
+      "size": 21897,
+      "sha256": "782e2c953721a82391261c2460ae40e7332d3bfc6ee48d38d43f11ab7da111f1",
+      "crc32": "0ae94129"
+    },
+    {
+      "archive_path": "audit/audit_retained.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/audit_retained.py",
+      "mode": 384,
+      "type": "file",
+      "size": 22360,
+      "sha256": "0dd7a941ee31d0717fa956bebca3a61836ffcfd435570b6d9f62bb2f4cef1837",
+      "crc32": "58c5c23a"
+    },
+    {
+      "archive_path": "audit/committed",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/committed",
+      "mode": 448,
+      "type": "directory"
+    },
+    {
+      "archive_path": "audit/committed/DECLARED_UNIVERSE.json",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/committed/DECLARED_UNIVERSE.json",
+      "mode": 384,
+      "type": "file",
+      "size": 796,
+      "sha256": "344e4abd210f4e914aabe73740058a41f2d2c7aa53d422ac2d7cdfa386bf7233",
+      "crc32": "25ce0236"
+    },
+    {
+      "archive_path": "audit/committed/FRONTIER_PROTOCOL.json",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/committed/FRONTIER_PROTOCOL.json",
+      "mode": 384,
+      "type": "file",
+      "size": 1550,
+      "sha256": "af6c870e28da4e9adba203cba7aa411bad414ca082b9717ce9fbd1709d192bb6",
+      "crc32": "a8c0272b"
+    },
+    {
+      "archive_path": "audit/committed/FROZEN_POOL.json",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/committed/FROZEN_POOL.json",
+      "mode": 384,
+      "type": "file",
+      "size": 30973,
+      "sha256": "7bfd4a7d882c98288c562352dbe1f89e1ee5790cd87fcdd25af5be7d54b46453",
+      "crc32": "50ca90bd"
+    },
+    {
+      "archive_path": "audit/committed/METADATA_CURATION.json",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/committed/METADATA_CURATION.json",
+      "mode": 384,
+      "type": "file",
+      "size": 674382,
+      "sha256": "752e14856cea1d189ea49432ea384df407e4e724877062719b5dc1ed202e506e",
+      "crc32": "ebdaf3df"
+    },
+    {
+      "archive_path": "audit/committed/PREQUERY.json",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/committed/PREQUERY.json",
+      "mode": 384,
+      "type": "file",
+      "size": 64222,
+      "sha256": "f06303a71128f3dc7d32d778c084987230bafd4d2a810d37801d8b7bd78d71a8",
+      "crc32": "3796a66a"
+    },
+    {
+      "archive_path": "audit/committed/PREQUERY_EXECUTION.json",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/committed/PREQUERY_EXECUTION.json",
+      "mode": 384,
+      "type": "file",
+      "size": 2310,
+      "sha256": "b30006073d9b848e69c20b498b5eb98057de59e4848e73d15d2c867b4043e142",
+      "crc32": "e08e2b25"
+    },
+    {
+      "archive_path": "audit/committed/QUALIFIED_GATE.json",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/committed/QUALIFIED_GATE.json",
+      "mode": 384,
+      "type": "file",
+      "size": 721,
+      "sha256": "21eb7692e9e547fd262c17e8372f130cafea966e0c65681f478ea40591431d1e",
+      "crc32": "80027d9d"
+    },
+    {
+      "archive_path": "audit/committed/SCREENING_AUTHORITY.json",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/committed/SCREENING_AUTHORITY.json",
+      "mode": 384,
+      "type": "file",
+      "size": 1000,
+      "sha256": "1e03a16d2eb201a6bbe15325804051c2652dd9820c8a235eed8f46bd091540cd",
+      "crc32": "00112949"
+    },
+    {
+      "archive_path": "audit/committed/curate_frontier.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/committed/curate_frontier.py",
+      "mode": 384,
+      "type": "file",
+      "size": 2755,
+      "sha256": "0ebd3bd5f51f40f7db547aafd986e99a255bc017bb71a5e4923fc5c97d6c659e",
+      "crc32": "f27ea721"
+    },
+    {
+      "archive_path": "audit/committed/prepare_records.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/committed/prepare_records.py",
+      "mode": 384,
+      "type": "file",
+      "size": 1210,
+      "sha256": "00fbd357882c3aea5a319601b3302c6208a0eef7bd0b0a560d60cee1c0533458",
+      "crc32": "252a8efe"
+    },
+    {
+      "archive_path": "audit/finalize_audit.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/finalize_audit.py",
+      "mode": 384,
+      "type": "file",
+      "size": 14108,
+      "sha256": "6781c6cc9cc635a930dee143e002e31308e02a922d37adad127453cc550b3dd6",
+      "crc32": "03d7452e"
+    },
+    {
+      "archive_path": "audit/index-after",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/index-after",
+      "mode": 448,
+      "type": "directory"
+    },
+    {
+      "archive_path": "audit/index-after/1-index.bin",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/index-after/1-index.bin",
+      "mode": 384,
+      "type": "file",
+      "size": 113571,
+      "sha256": "894f89eeaad5bd8d6c8242a5047d006a0b23021a5ba362d4db42c131e082fd29",
+      "crc32": "173d1cc2"
+    },
+    {
+      "archive_path": "audit/index-after/2-index.bin",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/index-after/2-index.bin",
+      "mode": 384,
+      "type": "file",
+      "size": 176832,
+      "sha256": "6ea642f1a91b7239229344a2650a9af70ea2bd477b6db9518ed4153bed8cb786",
+      "crc32": "715e5bc5"
+    },
+    {
+      "archive_path": "audit/index-after/3-index.bin",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/index-after/3-index.bin",
+      "mode": 384,
+      "type": "file",
+      "size": 111030,
+      "sha256": "3999c60a940d9c999523ff56ec37d2bc9d7c0328c1f2503690a652fbb1f01064",
+      "crc32": "005a4e4d"
+    },
+    {
+      "archive_path": "audit/index-after/4-index.bin",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/index-after/4-index.bin",
+      "mode": 384,
+      "type": "file",
+      "size": 378209,
+      "sha256": "cce293c28fd33556bb415b65317d33223a5f2b6c13bc3c93bb44eaaf7c49fe39",
+      "crc32": "60ebaed1"
+    },
+    {
+      "archive_path": "audit/index-before",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/index-before",
+      "mode": 448,
+      "type": "directory"
+    },
+    {
+      "archive_path": "audit/index-before/1-index.bin",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/index-before/1-index.bin",
+      "mode": 384,
+      "type": "file",
+      "size": 113571,
+      "sha256": "894f89eeaad5bd8d6c8242a5047d006a0b23021a5ba362d4db42c131e082fd29",
+      "crc32": "173d1cc2"
+    },
+    {
+      "archive_path": "audit/index-before/2-index.bin",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/index-before/2-index.bin",
+      "mode": 384,
+      "type": "file",
+      "size": 176832,
+      "sha256": "6ea642f1a91b7239229344a2650a9af70ea2bd477b6db9518ed4153bed8cb786",
+      "crc32": "715e5bc5"
+    },
+    {
+      "archive_path": "audit/index-before/3-index.bin",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/index-before/3-index.bin",
+      "mode": 384,
+      "type": "file",
+      "size": 111030,
+      "sha256": "3999c60a940d9c999523ff56ec37d2bc9d7c0328c1f2503690a652fbb1f01064",
+      "crc32": "005a4e4d"
+    },
+    {
+      "archive_path": "audit/index-before/4-index.bin",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/index-before/4-index.bin",
+      "mode": 384,
+      "type": "file",
+      "size": 378209,
+      "sha256": "cce293c28fd33556bb415b65317d33223a5f2b6c13bc3c93bb44eaaf7c49fe39",
+      "crc32": "60ebaed1"
+    },
+    {
+      "archive_path": "audit/runtime-identity",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/runtime-identity",
+      "mode": 448,
+      "type": "directory"
+    },
+    {
+      "archive_path": "audit/runtime-identity/CASE_RUNTIME_AND_OBSTRUCTION_AUDIT.json",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/runtime-identity/CASE_RUNTIME_AND_OBSTRUCTION_AUDIT.json",
+      "mode": 384,
+      "type": "file",
+      "size": 46885,
+      "sha256": "44550f0898a89bbb58a814446acd4f556e1b8d0af2cabd4a3f416859d4bcfdaf",
+      "crc32": "df328f96"
+    },
+    {
+      "archive_path": "audit/runtime-identity/CONTROLLER_CURRENT_FILESYSTEM_IDENTITY.json",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/runtime-identity/CONTROLLER_CURRENT_FILESYSTEM_IDENTITY.json",
+      "mode": 384,
+      "type": "file",
+      "size": 136924,
+      "sha256": "ebb282b15439de9a19321c9f2f853c0510000942412b2d7f846a96ce5ec7160e",
+      "crc32": "2ca6da04"
+    },
+    {
+      "archive_path": "audit/runtime-identity/CONTROLLER_CURRENT_FULL_VENV_FILES.json",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/runtime-identity/CONTROLLER_CURRENT_FULL_VENV_FILES.json",
+      "mode": 384,
+      "type": "file",
+      "size": 265375,
+      "sha256": "be031b6c053a46dc875e9e9f990909cd5e29d45852b5d7238fb05270275b8bd1",
+      "crc32": "2afe8356"
+    },
+    {
+      "archive_path": "audit/runtime-identity/CONTROLLER_CURRENT_PINNED_PACKAGE_FILES.json",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/runtime-identity/CONTROLLER_CURRENT_PINNED_PACKAGE_FILES.json",
+      "mode": 384,
+      "type": "file",
+      "size": 162593,
+      "sha256": "a4efa5b73c3596ab1d4f2632ac31e0443555fc6993bb344b05feaa2738998029",
+      "crc32": "cebdd8d7"
+    },
+    {
+      "archive_path": "audit/runtime-identity/CONTROLLER_CURRENT_STDLIB_FILES.json",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/runtime-identity/CONTROLLER_CURRENT_STDLIB_FILES.json",
+      "mode": 384,
+      "type": "file",
+      "size": 174011,
+      "sha256": "0e9e49a7c6532f192d7ec1deb58f539f00b304d78c10357c68500d024cd70fc6",
+      "crc32": "dcf1d080"
+    },
+    {
+      "archive_path": "audit/runtime-identity/NATIVE_HOST_PINNED_PACKAGE_FILES.json",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/runtime-identity/NATIVE_HOST_PINNED_PACKAGE_FILES.json",
+      "mode": 384,
+      "type": "file",
+      "size": 907669,
+      "sha256": "858986938dc37308eb376f9ee14dec951ad4b1fdbab94c6add66c252125f7070",
+      "crc32": "00958c71"
+    },
+    {
+      "archive_path": "audit/runtime-identity/NATIVE_HOST_STDLIB_FILES.json",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/runtime-identity/NATIVE_HOST_STDLIB_FILES.json",
+      "mode": 384,
+      "type": "file",
+      "size": 602940,
+      "sha256": "27f5f5d62d4f9defb08d36f1b469bd17fa6dae39af31f5c3770f849f9837cc02",
+      "crc32": "1ccb468d"
+    },
+    {
+      "archive_path": "audit/runtime-identity/RAW_CONFIG_ENV_REFUSAL_LOG_MANIFEST.json",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/runtime-identity/RAW_CONFIG_ENV_REFUSAL_LOG_MANIFEST.json",
+      "mode": 384,
+      "type": "file",
+      "size": 45195,
+      "sha256": "ba78dad71c04dd026709be8e059efe414bb0ee6e0e9fd285192532dba25941dd",
+      "crc32": "effc2e6b"
+    },
+    {
+      "archive_path": "audit/runtime-identity/RUNTIME_AUDIT.json",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/runtime-identity/RUNTIME_AUDIT.json",
+      "mode": 384,
+      "type": "file",
+      "size": 135428,
+      "sha256": "918a784731d9f314f552c402c25f61ba899077fae348a3abbc1eca118871f4a7",
+      "crc32": "0d35b978"
+    },
+    {
+      "archive_path": "audit/runtime-identity/RUNTIME_HOST_PINNED_PACKAGE_FILES.json",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/runtime-identity/RUNTIME_HOST_PINNED_PACKAGE_FILES.json",
+      "mode": 384,
+      "type": "file",
+      "size": 1281462,
+      "sha256": "fc66a87a9a119cdb079433c299fa7be6c4c0a6f32bb831651479adf0deba587a",
+      "crc32": "7638430a"
+    },
+    {
+      "archive_path": "audit/runtime-identity/RUNTIME_HOST_STDLIB_FILES.json",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/runtime-identity/RUNTIME_HOST_STDLIB_FILES.json",
+      "mode": 384,
+      "type": "file",
+      "size": 1448616,
+      "sha256": "feccb420d98b2a18d57d8d6829bcfe00948bcd3ea400e485e9c395cfbc908c28",
+      "crc32": "7380f2b8"
+    },
+    {
+      "archive_path": "audit/runtime-identity/audit_case_runtime.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/runtime-identity/audit_case_runtime.py",
+      "mode": 384,
+      "type": "file",
+      "size": 13726,
+      "sha256": "0176ed0cd1879a4c9b4c72762b9c5248633fb15016d9f214e3342b38a86e4741",
+      "crc32": "a722b987"
+    },
+    {
+      "archive_path": "audit/runtime-identity/audit_controller_current_filesystem.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/runtime-identity/audit_controller_current_filesystem.py",
+      "mode": 384,
+      "type": "file",
+      "size": 9536,
+      "sha256": "ea6b37f3e3f8d16943d161ba0d9953e50d05e3fc7a7c97264ae904f7c5005ab6",
+      "crc32": "209e6e39"
+    },
+    {
+      "archive_path": "audit/runtime-identity/audit_runtime_filesystem.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/runtime-identity/audit_runtime_filesystem.py",
+      "mode": 384,
+      "type": "file",
+      "size": 21892,
+      "sha256": "ab967175109c620f88a5be39111b3a9709751e6f7c83ca07a825b0699c5f1c73",
+      "crc32": "7c7d6d44"
+    },
+    {
+      "archive_path": "audit/source-identity",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/source-identity",
+      "mode": 448,
+      "type": "directory"
+    },
+    {
+      "archive_path": "audit/source-identity/AUDITOR_NEGATIVE_FINDINGS.json",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/source-identity/AUDITOR_NEGATIVE_FINDINGS.json",
+      "mode": 384,
+      "type": "file",
+      "size": 1438,
+      "sha256": "254bee5729304d0adbf06c4b1c8f24b5c1b1cc82965c1f4841d7a8030a387f85",
+      "crc32": "b158757a"
+    },
+    {
+      "archive_path": "audit/source-identity/BUILD_SOURCE_AUDIT.json",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/source-identity/BUILD_SOURCE_AUDIT.json",
+      "mode": 384,
+      "type": "file",
+      "size": 37289,
+      "sha256": "c88d312f279b78c0ce489ed14bf23992afc90e507f0f3e9e3155b30625a00f57",
+      "crc32": "daa44ace"
+    },
+    {
+      "archive_path": "audit/source-identity/GZIP_ROUNDTRIP.json",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/source-identity/GZIP_ROUNDTRIP.json",
+      "mode": 384,
+      "type": "file",
+      "size": 140,
+      "sha256": "4604b78e7e472870563142a0c810a631edf181cb78bfe8588a508ce78098f07e",
+      "crc32": "404792b1"
+    },
+    {
+      "archive_path": "audit/source-identity/SOURCE_IDENTITY_AUDIT.full.json.gz",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/source-identity/SOURCE_IDENTITY_AUDIT.full.json.gz",
+      "mode": 384,
+      "type": "file",
+      "size": 5315009,
+      "sha256": "0ecc4bfbdb4490cb610353bebbe768ffb91acdad2110ea4733cbc7368e673207",
+      "crc32": "1e4d79ea"
+    },
+    {
+      "archive_path": "audit/source-identity/SOURCE_IDENTITY_AUDIT.json",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/source-identity/SOURCE_IDENTITY_AUDIT.json",
+      "mode": 384,
+      "type": "file",
+      "size": 58428,
+      "sha256": "42938217ae6789c6d84fe02566136b24f87bdf982b1009743578a16b6639b70e",
+      "crc32": "bea4070d"
+    },
+    {
+      "archive_path": "audit/source-identity/SUMMARY.json",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/source-identity/SUMMARY.json",
+      "mode": 384,
+      "type": "file",
+      "size": 1069,
+      "sha256": "ce7af7e8e9572f4cd8ee8f00cf87a8bcf23ed159d5bc43c5368a1cd2d7af4ba7",
+      "crc32": "a524b4b5"
+    },
+    {
+      "archive_path": "audit/source-identity/attempt-002.stderr",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/source-identity/attempt-002.stderr",
+      "mode": 384,
+      "type": "file",
+      "size": 1205,
+      "sha256": "c52de5f6a7b596116392526edeedff8b76b1a40b789f039c0c47ac34609b3e83",
+      "crc32": "2659f21a"
+    },
+    {
+      "archive_path": "audit/source-identity/attempt-002.stdout",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/source-identity/attempt-002.stdout",
+      "mode": 384,
+      "type": "file",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "crc32": "00000000"
+    },
+    {
+      "archive_path": "audit/source-identity/attempt-003.stderr",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/source-identity/attempt-003.stderr",
+      "mode": 384,
+      "type": "file",
+      "size": 1282,
+      "sha256": "274d6e2aea49de838e9ddd2c84ca92158ee08707640450718d9f8e52e5bf0035",
+      "crc32": "8f7d619f"
+    },
+    {
+      "archive_path": "audit/source-identity/attempt-003.stdout",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/source-identity/attempt-003.stdout",
+      "mode": 384,
+      "type": "file",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "crc32": "00000000"
+    },
+    {
+      "archive_path": "audit/source-identity/audit.stderr",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/source-identity/audit.stderr",
+      "mode": 384,
+      "type": "file",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "crc32": "00000000"
+    },
+    {
+      "archive_path": "audit/source-identity/audit.stdout",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/source-identity/audit.stdout",
+      "mode": 384,
+      "type": "file",
+      "size": 571,
+      "sha256": "41caa4a27fa6b83ad93c4c183b5de3956a00412895732a0886722a175c53cab3",
+      "crc32": "9750535d"
+    },
+    {
+      "archive_path": "audit/source-identity/audit_build_source.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/source-identity/audit_build_source.py",
+      "mode": 384,
+      "type": "file",
+      "size": 3595,
+      "sha256": "6dbdd0f1f5294606b938ed3cdd4bc450f95243621864426cafed95136ace42e3",
+      "crc32": "f104c51d"
+    },
+    {
+      "archive_path": "audit/source-identity/audit_source_identity.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/source-identity/audit_source_identity.py",
+      "mode": 384,
+      "type": "file",
+      "size": 19253,
+      "sha256": "a5cc8a89b51f7737322d92cbd5ca80f36572530f2a11fe2e13d8768dc99bed84",
+      "crc32": "75c8b337"
+    },
+    {
+      "archive_path": "audit/source-identity/case-000.json",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/source-identity/case-000.json",
+      "mode": 384,
+      "type": "file",
+      "size": 49491,
+      "sha256": "75f21c6969065e2addc7d1dffe3b29611fe6993df5f3a6836654b53c45f8a4da",
+      "crc32": "e8d202aa"
+    },
+    {
+      "archive_path": "audit/source-identity/case-001.json",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/source-identity/case-001.json",
+      "mode": 384,
+      "type": "file",
+      "size": 1229,
+      "sha256": "76c33a69ed5591ed42d9f5bb118d70723205feabe516a57a061d59a995d57bdd",
+      "crc32": "462e4adb"
+    },
+    {
+      "archive_path": "audit/source-identity/case-002.json",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/source-identity/case-002.json",
+      "mode": 384,
+      "type": "file",
+      "size": 1225,
+      "sha256": "e506ecd606f77365af55f842365c8a085874ec783d0c6575ea3b15501d3f1617",
+      "crc32": "a0c85398"
+    },
+    {
+      "archive_path": "audit/source-identity/case-003.json",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/source-identity/case-003.json",
+      "mode": 384,
+      "type": "file",
+      "size": 1208,
+      "sha256": "5d5184e39b3c2f644acb5b0bfefbabd4b4e44f0139aab948abdea97be5b24cda",
+      "crc32": "528867cf"
+    },
+    {
+      "archive_path": "audit/source-identity/case-004.json",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/source-identity/case-004.json",
+      "mode": 384,
+      "type": "file",
+      "size": 1228,
+      "sha256": "ea6651283982a6d74a796b9c4c30f1bd946827369fc7f28336e9a0dee10e91c9",
+      "crc32": "32e5ade9"
+    },
+    {
+      "archive_path": "audit/source-identity/case-005.json",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-audit/source-identity/case-005.json",
+      "mode": 384,
+      "type": "file",
+      "size": 1227,
+      "sha256": "656dd8bf11d332188db4a7c91c7a333c574ff1b647475f45406ec6e38622fa07",
+      "crc32": "961ae13c"
+    },
+    {
+      "archive_path": "archive-method/reference-v41-archive_evidence.py",
+      "source_path": "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-authority-v41/SCREENING_INDEPENDENT_AUDIT/archive_evidence.py",
+      "mode": 384,
+      "type": "file",
+      "size": 7720,
+      "sha256": "44fec813c21802197116aae4536ce958a82f5a7e53eb681748e4cc82564e4eb8",
+      "crc32": "02cb4abf"
+    },
+    {
+      "archive_path": "archive-method/archive_final_audit.py",
+      "source_path": "/workspace/qualification/native-authority-v42-final-delivery/auditarchive/archive_final_audit.py",
+      "mode": 384,
+      "type": "file",
+      "size": 5898,
+      "sha256": "ce1adf191e3053e7c1eb2fe6c36b293e16c776ec5eb5a1e3dac4af37cd60a209",
+      "crc32": "2b636855"
+    }
+  ],
+  "regular_file_count": 72,
+  "symlink_count": 0,
+  "directory_count": 7,
+  "regular_file_bytes": 17094986
+}

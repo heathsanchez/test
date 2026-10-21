@@ -1,0 +1,19 @@
+{
+  "command": [
+    "/workspace/qualification/native-authority-v42-controller/bin/python",
+    "-B",
+    "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-authority-v42/prepare_records.py",
+    "finalize-records",
+    "--authority",
+    "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-authority-v42/SCREENING_AUTHORITY.json",
+    "--independent-audit",
+    "/workspace/qualification/native-authority-v42-screening-audit/AUDIT.json"
+  ],
+  "learner_or_comparator_executed": false,
+  "log_sha256": "2e308efd6eb42a2acb1dd808f563be3930c8bc81e7e4d82b970b199a375ad9f1",
+  "protocol_bytes_unchanged": true,
+  "returncode": 1,
+  "schema": "UDM_V42_ACTUAL_FROZEN_FINALIZER_REFUSAL",
+  "status": "UNKNOWN_SCREENING_SHORTFALL",
+  "wall_seconds": 0.15944784400016943
+}

@@ -1,0 +1,39 @@
+{
+  "schema": "UDM_V42_FINAL_SCREENING_AUDIT_ARCHIVE",
+  "path": "/workspace/qualification/native-authority-v42-final-delivery/auditarchive/native-authority-v42-screening-independent-audit.tar.gz",
+  "sha256": "a0bdf04148c539c303d826d462d554a47db6867bb5552fee79a5b60c49a586f0",
+  "size_bytes": 5374930,
+  "gzip_crc32": "3e362bae",
+  "manifest": {
+    "path": "/workspace/qualification/native-authority-v42-final-delivery/auditarchive/native-authority-v42-screening-independent-audit.manifest.json",
+    "sha256": "9fb4985d0a7ad55b30db8c9ed3b733803a5ce53d55f2b750fefce08f9f611b77",
+    "size_bytes": 28414
+  },
+  "verification": {
+    "path": "/workspace/qualification/native-authority-v42-final-delivery/auditarchive/native-authority-v42-screening-independent-audit.verification.json",
+    "sha256": "e7b953e914c5719a3f81b49a97a7cf89e08e4039da8c466ec388fc1751f23289",
+    "size_bytes": 800
+  },
+  "exclusions": {
+    "path": "/workspace/qualification/native-authority-v42-final-delivery/auditarchive/native-authority-v42-screening-independent-audit.exclusions.json",
+    "sha256": "d891ef01a4d25906871ab3d8bd42ed2161edc4af2c7a4058b41af0dd2539cb20",
+    "size_bytes": 1617
+  },
+  "archive_reference_script": {
+    "path": "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-authority-v41/SCREENING_INDEPENDENT_AUDIT/archive_evidence.py",
+    "sha256": "44fec813c21802197116aae4536ce958a82f5a7e53eb681748e4cc82564e4eb8",
+    "size_bytes": 7720
+  },
+  "data_adapter_script": {
+    "path": "/workspace/qualification/native-authority-v42-final-delivery/auditarchive/archive_final_audit.py",
+    "sha256": "ce1adf191e3053e7c1eb2fe6c36b293e16c776ec5eb5a1e3dac4af37cd60a209",
+    "size_bytes": 5898
+  },
+  "final_audit_sha256": "5dd040cc4af1f8748a3bf85c6d289680786897ba4b1bd26ab0142a193fca980a",
+  "final_summary_sha256": "87cf3abea9f221a72e4f4bc46e54d5d48da87126a60eb9dbd8d4f09bfd45791c",
+  "scientific_interval_closed_at_source_commit": "c56d29fae856cceaa0a00000b1c3b782ea1df346",
+  "all_current_audit_root_objects_retained": true,
+  "complete_source_identity_losslessly_retained": true,
+  "reopened_all_members_verified": true,
+  "below_90MB": true
+}

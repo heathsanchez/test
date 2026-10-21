@@ -1,0 +1,518 @@
+{
+  "all_checks_closed": true,
+  "all_screened_cases_and_costs_retained": true,
+  "audit_delegates": [
+    "/root/v42_screening_audit/source_identity",
+    "/root/v42_screening_audit/runtime_identity"
+  ],
+  "audit_helper_negatives": {
+    "findings": [
+      {
+        "attempt": 1,
+        "detail": "Unmodified V41 decoder assumes an object ID occurs in only one pack; case-000 native source has duplicate object representations across retained packs. Initial audit attempt failed unique_object:025fda95c7c57fa44aea8b9828c833f35ff275e9. Decoder updated in audit directory only to validate every duplicate representation for identical raw kind/body and object identity. This is not a target or frozen-experiment modification.",
+        "kind": "AUDIT_INFRASTRUCTURE_LIMITATION"
+      },
+      {
+        "attempt": 2,
+        "detail": "V41 source audit assumed only regular tracked modes. V42 case-002 docs/index.md is a symlink; raw filesystem tree equality passed before the stricter obsolete regular-mode assertion failed. Audit-only decoder/archive comparison updated to validate symlink target bytes and mode 120000. Frozen inputs unchanged.",
+        "kind": "AUDIT_INFRASTRUCTURE_LIMITATION"
+      },
+      {
+        "attempt": 3,
+        "detail": "After raw symlink bytes/mode/full-tree equality passed, V41-style manifest hash differed from V42 recorded typed source identity because V42 also binds link target, resolved_path and target-content sha256. Audit-only independent manifest reconstruction now includes those typed fields after separately checking the observed internal regular-file target. Frozen inputs unchanged.",
+        "kind": "AUDIT_INFRASTRUCTURE_LIMITATION"
+      },
+      {
+        "attempt": 1,
+        "detail": "Main audit initially assumed admission-v3.json == admission-v42.json == report.setup. All six equality checks failed. Complete first check report and exact first script retained under audit-helper-attempts. Static wrapper inspection established V42 adds only versioned schema and typed_source_operation source digests. The corrected audit independently verifies that exact wrapper over unchanged V3 receipt; all 1,254 checks then pass. No frozen input or experiment was changed.",
+        "kind": "AUDIT_INFRASTRUCTURE_ASSUMPTION"
+      }
+    ],
+    "frozen_experiment_changes": 0,
+    "frozen_experiment_retries": 0
+  },
+  "auditor": "/root/v42_screening_audit",
+  "checks": [
+    {
+      "check": "main_retained_checks_closed",
+      "passed": true
+    },
+    {
+      "check": "six_raw_source_cases_closed",
+      "passed": true
+    },
+    {
+      "check": "original_author_test_only_overlay_and_base_preserved",
+      "passed": true
+    },
+    {
+      "check": "build_generated_file_evidence_closed",
+      "passed": true
+    },
+    {
+      "check": "full_runtime_and_raw_log_checks_closed",
+      "passed": true
+    },
+    {
+      "check": "lossless_complete_raw_source_audit",
+      "passed": true
+    },
+    {
+      "check": "root_earliest_git_read_interval_closed",
+      "passed": true
+    },
+    {
+      "check": "original_screening_actor_bounded_attestation",
+      "passed": true
+    },
+    {
+      "check": "last_git_read_head_exact",
+      "detail": {
+        "stderr": ""
+      },
+      "passed": true
+    },
+    {
+      "check": "same_index_path_inventory",
+      "passed": true
+    },
+    {
+      "check": "actual_pre_post_index:/workspace/repos/test/.git/index",
+      "passed": true
+    },
+    {
+      "check": "actual_pre_post_index:/workspace/repos/test/.git/worktrees/development/index",
+      "passed": true
+    },
+    {
+      "check": "actual_pre_post_index:/workspace/repos/test/.git/worktrees/env-v3-native-334/index",
+      "passed": true
+    },
+    {
+      "check": "actual_pre_post_index:/workspace/repos/test/.git/worktrees/udm/index",
+      "passed": true
+    },
+    {
+      "check": "actual_pre_post_index:/workspace/repos/test/.git/worktrees/udm-v54/index",
+      "passed": true
+    },
+    {
+      "check": "exact_six_public_reports",
+      "passed": true
+    }
+  ],
+  "controller_file_identity_scope": {
+    "current_filesystem_receipt": {
+      "bytes": 136924,
+      "path": "/workspace/qualification/native-authority-v42-screening-audit/runtime-identity/CONTROLLER_CURRENT_FILESYSTEM_IDENTITY.json",
+      "sha256": "ebb282b15439de9a19321c9f2f853c0510000942412b2d7f846a96ce5ec7160e"
+    },
+    "historical_prelaunch_full_file_inventory": "UNKNOWN_NOT_SUPPLIED_IN_BOUNDED_EVIDENCE",
+    "interpretation": "Current executable, qualified-version install-log consistency, stdlib and distribution file inventories are retained as current-only supplemental evidence. They do not establish full controller bytes at historical prelaunch. The original native target/profile and prepared-runtime identity receipt checks remain closed within their specified scope."
+  },
+  "costs": {
+    "collection_calls": 1,
+    "controller_cpu_children_seconds": 72.633754,
+    "controller_cpu_self_seconds": 0.021869,
+    "metadata_api_calls": 106,
+    "metadata_total_curation_wall_seconds": 27.587004516999514,
+    "native_calls": 0,
+    "sum_case_wall_seconds": 43.36143939899921,
+    "sum_controller_case_wall_seconds": 85.02786942199873,
+    "sum_setup_phase_seconds": 34.67371287699916,
+    "sum_setup_wall_seconds": 40.21523443899878,
+    "whole_screening_controller_wall_seconds": 85.05430250600057,
+    "worker_subprocess_attempts": 1
+  },
+  "counts": {
+    "declared_repositories": 8,
+    "eligible_cases": 0,
+    "metadata_candidate_rows": 653,
+    "metadata_queries": 106,
+    "metadata_selected_cases": 6,
+    "native_collection_calls": 1,
+    "native_execution_calls": 0,
+    "owned_tracked_source_files": 2264,
+    "prepared_runtime_and_raw_diagnostic_checks": 62,
+    "retained_binding_checks": 1254,
+    "runtime_filesystem_checks": 279,
+    "screened_cases": 6,
+    "source_decoder_assertions": 16882540,
+    "source_decoder_count_note": "Mechanical per-object/per-delta/per-file assertions, not independent scientific controls. Complete checks retained in lossless compressed raw audit.",
+    "worker_subprocess_attempts": 1
+  },
+  "created_at": "2026-10-21T10:46:59.477427+00:00",
+  "eligibility_rule": "PASS_NATIVE_OR_FAIL_NATIVE_IDENTICAL",
+  "evidence": [
+    {
+      "bytes": 164671,
+      "path": "/workspace/qualification/native-authority-v42-screening-audit/RETAINED_CHECKS.json",
+      "sha256": "80197c068760440984dee316ff929497f2555480b44ccf7c8aa3e1ce4926524f"
+    },
+    {
+      "bytes": 1306864,
+      "path": "/workspace/qualification/native-authority-v42-screening-audit/OWNED_SOURCE_IDENTITY.json",
+      "sha256": "fa57aaddd890d4b4548dbd0a2b9e5c35ea65e7aa88516149e89a4a15e372b14e"
+    },
+    {
+      "bytes": 3997,
+      "path": "/workspace/qualification/native-authority-v42-screening-audit/SCREENING_ENVELOPES_EXACT.json",
+      "sha256": "30239a8c4f2d31fc214389804c47226c41ec75e8b75025345d5784ef59732d7c"
+    },
+    {
+      "bytes": 1957,
+      "path": "/workspace/qualification/native-authority-v42-screening-audit/REFUSALS_EXACT.json",
+      "sha256": "4bd874ad469130c7c17bbbe26c275453d1cdaa7e7ce2b125568a90e9d580d9aa"
+    },
+    {
+      "bytes": 71289,
+      "path": "/workspace/qualification/native-authority-v42-screening-audit/COSTS_BY_CASE.json",
+      "sha256": "58746c69923cc1da7f78bd5e1cc2d55561f22099c1588299540812948abae44b"
+    },
+    {
+      "bytes": 2183963,
+      "path": "/workspace/qualification/native-authority-v42-screening-audit/RETAINED_RAW_MANIFEST.json",
+      "sha256": "7badba548c13557416c7411ef95b7c16654276ae3197279fff260a799603514f"
+    },
+    {
+      "bytes": 1583,
+      "path": "/workspace/qualification/native-authority-v42-screening-audit/ROOT_INITIAL_READ_INTERVAL_AUDIT.json",
+      "sha256": "d93509c57594866a556580042540708163a0abbc4f07ea548bf705c16a0e9aab"
+    },
+    {
+      "bytes": 1766,
+      "path": "/workspace/qualification/native-authority-v42-screening-audit/INDEX_BEFORE.json",
+      "sha256": "518bc71530197ef89ed10d374619f535770ea0a018bbadc6e6e7533d64b678e4"
+    },
+    {
+      "bytes": 3969,
+      "path": "/workspace/qualification/native-authority-v42-screening-audit/INDEX_AFTER.json",
+      "sha256": "1c5108b1a243032523be7d869f704453ffc9f713300d991ab1c3118be0981dcd"
+    },
+    {
+      "bytes": 2085,
+      "path": "/workspace/qualification/native-authority-v42-screening-audit/AUDITOR_HELPER_NEGATIVES.json",
+      "sha256": "0b7737bfd6167a4d5b88ab5ee9e3ebc129df7c3204ad32e7b683bc1a2cc7a52a"
+    },
+    {
+      "bytes": 1069,
+      "path": "/workspace/qualification/native-authority-v42-screening-audit/source-identity/SUMMARY.json",
+      "sha256": "ce7af7e8e9572f4cd8ee8f00cf87a8bcf23ed159d5bc43c5368a1cd2d7af4ba7"
+    },
+    {
+      "bytes": 58428,
+      "path": "/workspace/qualification/native-authority-v42-screening-audit/source-identity/SOURCE_IDENTITY_AUDIT.json",
+      "sha256": "42938217ae6789c6d84fe02566136b24f87bdf982b1009743578a16b6639b70e"
+    },
+    {
+      "bytes": 5315009,
+      "path": "/workspace/qualification/native-authority-v42-screening-audit/source-identity/SOURCE_IDENTITY_AUDIT.full.json.gz",
+      "sha256": "0ecc4bfbdb4490cb610353bebbe768ffb91acdad2110ea4733cbc7368e673207"
+    },
+    {
+      "bytes": 37289,
+      "path": "/workspace/qualification/native-authority-v42-screening-audit/source-identity/BUILD_SOURCE_AUDIT.json",
+      "sha256": "c88d312f279b78c0ce489ed14bf23992afc90e507f0f3e9e3155b30625a00f57"
+    },
+    {
+      "bytes": 135428,
+      "path": "/workspace/qualification/native-authority-v42-screening-audit/runtime-identity/RUNTIME_AUDIT.json",
+      "sha256": "918a784731d9f314f552c402c25f61ba899077fae348a3abbc1eca118871f4a7"
+    },
+    {
+      "bytes": 46885,
+      "path": "/workspace/qualification/native-authority-v42-screening-audit/runtime-identity/CASE_RUNTIME_AND_OBSTRUCTION_AUDIT.json",
+      "sha256": "44550f0898a89bbb58a814446acd4f556e1b8d0af2cabd4a3f416859d4bcfdaf"
+    },
+    {
+      "bytes": 45195,
+      "path": "/workspace/qualification/native-authority-v42-screening-audit/runtime-identity/RAW_CONFIG_ENV_REFUSAL_LOG_MANIFEST.json",
+      "sha256": "ba78dad71c04dd026709be8e059efe414bb0ee6e0e9fd285192532dba25941dd"
+    },
+    {
+      "bytes": 15033,
+      "path": "/workspace/qualification/native-authority-v42-screening-controller/PUBLIC_SCREENING_SUMMARY.json",
+      "sha256": "bdfdecf87e6baff5fde0337e33349756d78cb1a3ee6b0cf43507086092be3e06"
+    },
+    {
+      "bytes": 4658,
+      "path": "/workspace/qualification/native-authority-v42-screening-controller/ORIGINAL_SCREENING_ACTOR_BOUNDARY_ATTESTATION.json",
+      "sha256": "a50d6887013a773c2b4f2393fa58a3fbfbf8634db585b4215adddb9ce62fbfdd"
+    },
+    {
+      "bytes": 136924,
+      "path": "/workspace/qualification/native-authority-v42-screening-audit/runtime-identity/CONTROLLER_CURRENT_FILESYSTEM_IDENTITY.json",
+      "sha256": "ebb282b15439de9a19321c9f2f853c0510000942412b2d7f846a96ce5ec7160e"
+    }
+  ],
+  "exposure_scope": "The three exposure/role fields describe the original independent screening boundary, supported by the actor bounded retrospective first-person attestation and inspected controller control flow/retained artifacts. Postexperiment diagnostic reads by the independent auditors occurred only after all six cases were ineligible and no learner/future role would run. These diagnostics do not retroactively expose any learner future source.",
+  "first_obstruction": {
+    "all_junit_error_count": 34,
+    "case_index": 0,
+    "collected_test_count": 61,
+    "evidence": {
+      "baseline_build_generated_version": {
+        "bytes": 558,
+        "path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/src/chardet/_version.py",
+        "sha256": "65de830ef24719bc053dfe3334f40eef851fd7aa25e4a29f27b618c2ffd68a08"
+      },
+      "baseline_build_log": {
+        "bytes": 721,
+        "path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-native-wheel.log",
+        "sha256": "495ae046326882f38cffc131d192ec3871a462d47698e76671b7c343a195182b"
+      },
+      "checked_report": {
+        "bytes": 44559,
+        "path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/collection/checked-report.json",
+        "sha256": "e447fb24a6c0f5933c739f71056c958d63795acfbd4ec317e250014b83eacaa6"
+      },
+      "installed_generated_version": {
+        "bytes": 558,
+        "path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/venv/lib/python3.12/site-packages/chardet/_version.py",
+        "sha256": "65de830ef24719bc053dfe3334f40eef851fd7aa25e4a29f27b618c2ffd68a08"
+      },
+      "junit": {
+        "bytes": 27895,
+        "path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/collection/native.xml",
+        "sha256": "9f3d8debd7f452f7caa57ec8e396099db9661356e6da16c2d09cea3897de7739"
+      },
+      "native_wheel": {
+        "base_commit": "ea7e547aa5197c32b9a4c0f8e2b0f97f071aef6c",
+        "base_identity": {
+          "file_count": 114,
+          "git_tree": "782dd21b6479db51d51004c7acc86794235ccc9c",
+          "tracked_tree_sha256": "7ffc4e893678470dbbc64420635fa2ba975cae0c9e2c63adbb0dde489af1a8cb"
+        },
+        "bytes": 626762,
+        "distribution": "chardet",
+        "path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/wheels/chardet-7.4.2.dev1+gea7e547aa-py3-none-any.whl",
+        "sha256": "56b1b0de547b010935ec5524c7a5a59c5dd2f82b8487b51199ead6632f0f2b80",
+        "synthetic_version": false,
+        "version": "7.4.2.dev1+gea7e547aa"
+      },
+      "project_install_log": {
+        "bytes": 293,
+        "path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/project.log",
+        "sha256": "ad43888b6d8ca6459eee122bea29d855341e1d03cc789ebff04ae5956eeb828d"
+      },
+      "raw_report": {
+        "bytes": 45578,
+        "path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/collection/report.json",
+        "sha256": "3bbef6172e283fcfd6e86f1bfbf6112304a6f0b35f6597ad8b87618287dfdb88"
+      },
+      "raw_stderr": {
+        "bytes": 0,
+        "path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/collection/stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "raw_stdout": {
+        "bytes": 31934,
+        "path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/collection/stdout.log",
+        "sha256": "4a75cfd741967640a3d2799dcd54008f8b569dcd402a14a85e9634b85bf5e84e"
+      },
+      "source_gitignore": {
+        "bytes": 392,
+        "path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/source/.gitignore",
+        "sha256": "e1dd347a76403c5d7f3ed79223779b57199735e6c40a91213a3acd0caac2be7c"
+      },
+      "source_init": {
+        "bytes": 7109,
+        "path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/source/src/chardet/__init__.py",
+        "sha256": "950af2c376770fe8a388ff6668751a42306ee6151767775ba10fb5de077fab69"
+      },
+      "source_pyproject": {
+        "bytes": 7613,
+        "path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/source/pyproject.toml",
+        "sha256": "8317bf5a5dbe00c27fc3bbf66fe0828f3e6851d8e59464de1fcfdcbf5798756b"
+      }
+    },
+    "exact_exception": "ModuleNotFoundError: No module named 'chardet._version'",
+    "first_junit_traceback": "ImportError while importing test module '/tmp/udm-native-v2-ozu4gl64/world/scripts/tests/test_confusion_training.py'.\nHint: make sure your test modules/packages have valid Python names.\nTraceback:\n/workspace/qualification/native-frontier-v3-runtime-preparation/modern-base/lib/python3.12/importlib/__init__.py:90: in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nscripts/tests/test_confusion_training.py:8: in <module>\n    from confusion_training import (\nscripts/confusion_training.py:14: in <module>\n    from chardet.pipeline.confusion import _CATEGORY_TO_INT, DistinguishingMaps\nsrc/chardet/__init__.py:15: in <module>\n    from chardet._version import __version__\nE   ModuleNotFoundError: No module named 'chardet._version'",
+    "missing_preexisting_scope_condition": "Source-world admission requires every import-time runtime file to be present among the tracked source contract, or otherwise represented by an already qualified generic generated-artifact operation. This case has an untracked Hatch VCS build-generated file; its generation is represented only in the baseline wheel build, not in the source-world materialization operation. No repair, retry, extra artifact projection, or changed method was performed.",
+    "native_execution_calls": 0,
+    "necessary_diagnostic_reason": "The original package imports the backend-generated src/chardet/_version.py at import time. That untracked file is generated during the original baseline wheel build and exists in base-build and the installed wheel, but is absent from the tracked-source contract. The qualified runner materializes only contract tracked files into world and places world/src before installed packages, so imports resolve the source package whose generated version module is absent.",
+    "pytest_exit_code": 2,
+    "repository": "chardet/chardet",
+    "stage": "original native pytest collection",
+    "status": "UNKNOWN_COLLECTION_ERROR"
+  },
+  "independent_screener": true,
+  "index_boundary": {
+    "all_common_current_and_linked_actual_bytes_unchanged": true,
+    "captured_before_first_auditor_git_read": true,
+    "no_index_restore": true,
+    "root_earliest_read_interval_closed": true,
+    "screener_snapshot_timing_caveat": "before first native source access and screening CLI; initial read-only HEAD/AGENTS discovery and frozen controller-code inspection preceded the screener snapshot"
+  },
+  "learner_future_source_accessed": false,
+  "limitations": [
+    "Claims concern this supplied predeclared run. Once-only controller/meter/markers and retained ordered artifacts do not prove the absence of unrelated global process launches.",
+    "Exposure fields are bounded original-role attestations supported by control flow and retained evidence; no global operating-system access log or hostile-process isolation proof was supplied.",
+    "Full original target/profile and prepared-runtime executable, qualified stdlib, pinned distribution file rows, plugin identities were compared offline to receipts and current bytes. Retained implementation/version/base_prefix claims were checked for internal consistency without executing the target interpreters. Stdlib walks and package RECORD scopes retain their original documented bounds.",
+    "Nested setup/case/controller wall measurements are nonadditive. Native counters exclude metadata transport and runtime-preflight subprocesses. Historical qualification/profile preparation costs remain in their original receipts; full engineering/model/tool lifecycle cost is UNKNOWN.",
+    "The original screener captured only its active index around screening. This auditor independently captures common/current/all linked actual index bytes around its own reads. Root task-start all-index receipts cover the earlier initial Git-read interval at an older authorized HEAD, not an uninterrupted all-index proof through later intentional commits.",
+    "The controller uses unchanged PASS/FAIL eligibility; zero eligible cases means role finalization remains a screening shortfall. Passing this audit qualifies the retained negatives and does not qualify developmental G2 or predict admission after any missing scope condition changes.",
+    "Full historical prelaunch controller executable/stdlib/package-file inventory was not supplied. Its exact historical full-file identity is UNKNOWN_NOT_SUPPLIED_IN_BOUNDED_EVIDENCE; supplemental current receipt and original install log do not upgrade it to historical byte equality."
+  ],
+  "other_retained_negatives": [
+    {
+      "case_index": 1,
+      "exact_refusal": "UNKNOWN_DYNAMIC_METADATA: reimported setup authority binding",
+      "scope_condition": "The original setup.py has mutually exclusive setuptools.setup / distutils.core.setup imports under try/except. The frozen static AST grammar counts repeated setup authority imports without branch feasibility and refuses before extracting literal environment fields.",
+      "source": {
+        "bytes": 1917,
+        "path": "/workspace/qualification/native-authority-v42-screening-sealed/case-001/source-environment/metadata-source/setup.py",
+        "sha256": "fea82194921b01ac7803bf7a3861b0eaf1045aac04d7b944528e6d9df8265fcf"
+      }
+    },
+    {
+      "case_index": 2,
+      "exact_refusal": "UNKNOWN_NO_COMPATIBLE_PROFILE",
+      "scope_condition": "The legacy row lacks required pytest-cov; modern Python 3.12 is outside the finite declared classifier matrix. Neither frozen row satisfies the admitted constraints."
+    },
+    {
+      "case_index": 3,
+      "exact_refusal": "UNKNOWN_NO_COMPATIBLE_PROFILE",
+      "scope_condition": "Modern row lacks appdirs and more_itertools. Legacy row is below requires-python>=3.9 and also lacks requirements."
+    },
+    {
+      "case_index": 4,
+      "exact_refusal": "UNKNOWN_NO_COMPATIBLE_PROFILE",
+      "scope_condition": "Legacy row lacks mock and nose. Modern row is outside declared finite Python matrix and also lacks mock and nose."
+    },
+    {
+      "case_index": 5,
+      "exact_refusal": "UNKNOWN_DYNAMIC_METADATA: dynamic execution or namespace reflection in setup metadata scope",
+      "scope_condition": "The original setup.py reads tracked src/outcome/_version.py then execs its bytes into a dict. The frozen conservative AST operation rejects dynamic execution anywhere in setup metadata scope.",
+      "source": {
+        "bytes": 1910,
+        "path": "/workspace/qualification/native-authority-v42-screening-sealed/case-005/source-environment/metadata-source/setup.py",
+        "sha256": "627b3fbe60576eb73e859b0a440afb3e6959936e122629527f85c41d9b40c166"
+      }
+    },
+    {
+      "case_index": 0,
+      "classification": "additional frozen metadata/config scope limits, not the actual first exception",
+      "scope_condition": "The source uses [tool.pytest] TOML settings and dependency-groups.dev (including pytest>=9.0.2). The frozen config reader recognizes [tool.pytest.ini_options]; the environment operation recognizes only test/tests/testing dependency-group names. Thus the receipt contains empty ini_options and does not treat dev requirements as admission constraints. No claim is made that later collection would pass if the first exception were absent."
+    }
+  ],
+  "pool_sha256": "7bfd4a7d882c98288c562352dbe1f89e1ee5790cd87fcdd25af5be7d54b46453",
+  "reports": [
+    {
+      "costs": {
+        "collection_calls": 1,
+        "native_calls": 0
+      },
+      "eligible": false,
+      "repository": "chardet/chardet",
+      "schema": "UDM_SEALED_ADMISSION_ENVELOPE_V3",
+      "screening_mode": "ADMISSION_ONLY_NO_CATALOG_OR_CANDIDATE_SEARCH",
+      "sealed_report": {
+        "path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/SCREENING_CASE.json",
+        "sha256": "33b7d12b16cc62dfbc3dc44d8634c0a6135cd95b98b7a96bf64a763378779184"
+      },
+      "spec_sha256": "4a27175184a9db58e21801a2e97208e3d0fcefc338aa559ac0a7e3bde11a0c90",
+      "status": "UNKNOWN_ADMISSION_SCREENING",
+      "total_wall_seconds": 33.90570444000059
+    },
+    {
+      "costs": {
+        "collection_calls": 0,
+        "native_calls": 0
+      },
+      "eligible": false,
+      "repository": "cloudpipe/cloudpickle",
+      "schema": "UDM_SEALED_ADMISSION_ENVELOPE_V3",
+      "screening_mode": "ADMISSION_ONLY_NO_CATALOG_OR_CANDIDATE_SEARCH",
+      "sealed_report": {
+        "path": "/workspace/qualification/native-authority-v42-screening-sealed/case-001/SCREENING_CASE.json",
+        "sha256": "798075c1e3aa46da2cf9fd83f33c656bf123111276ce3fd2d79c4b7c858b0b00"
+      },
+      "spec_sha256": "15b451dbbf49ee4f263d7193e8c7db7e49c13f9bd2abdfbfbdba67a96a0e4051",
+      "status": "UNKNOWN_ADMISSION_SCREENING",
+      "total_wall_seconds": 2.003167293999468
+    },
+    {
+      "costs": {
+        "collection_calls": 0,
+        "native_calls": 0
+      },
+      "eligible": false,
+      "repository": "coady/multimethod",
+      "schema": "UDM_SEALED_ADMISSION_ENVELOPE_V3",
+      "screening_mode": "ADMISSION_ONLY_NO_CATALOG_OR_CANDIDATE_SEARCH",
+      "sealed_report": {
+        "path": "/workspace/qualification/native-authority-v42-screening-sealed/case-002/SCREENING_CASE.json",
+        "sha256": "75ffe3c931af210cd5278651dcb9353ce778deb5eadd6933820eedb697961431"
+      },
+      "spec_sha256": "45b566c2461a1b585606fa1b504696b527e46732108d7aab4b0d13798499fe69",
+      "status": "UNKNOWN_ADMISSION_SCREENING",
+      "total_wall_seconds": 1.9495409769997423
+    },
+    {
+      "costs": {
+        "collection_calls": 0,
+        "native_calls": 0
+      },
+      "eligible": false,
+      "repository": "jaraco/path",
+      "schema": "UDM_SEALED_ADMISSION_ENVELOPE_V3",
+      "screening_mode": "ADMISSION_ONLY_NO_CATALOG_OR_CANDIDATE_SEARCH",
+      "sealed_report": {
+        "path": "/workspace/qualification/native-authority-v42-screening-sealed/case-003/SCREENING_CASE.json",
+        "sha256": "abeaba50e33339e59e7e20ed7f35b49d41764c2fc3c8fec7b66afc00f1336354"
+      },
+      "spec_sha256": "83c991b570b233155ccf601096f3f64729bb3363ca0ac6f3caf0c2a22fd1d0a1",
+      "status": "UNKNOWN_ADMISSION_SCREENING",
+      "total_wall_seconds": 1.956755246999819
+    },
+    {
+      "costs": {
+        "collection_calls": 0,
+        "native_calls": 0
+      },
+      "eligible": false,
+      "repository": "jmespath/jmespath.py",
+      "schema": "UDM_SEALED_ADMISSION_ENVELOPE_V3",
+      "screening_mode": "ADMISSION_ONLY_NO_CATALOG_OR_CANDIDATE_SEARCH",
+      "sealed_report": {
+        "path": "/workspace/qualification/native-authority-v42-screening-sealed/case-004/SCREENING_CASE.json",
+        "sha256": "da69879be4d85c63856cdeef18d860980e95355c39f683386c58f677628a9d97"
+      },
+      "spec_sha256": "3f3b9c2980bffecf5fe971c447338dfb3891ea77f1ed9863c037ee036f1b7d5f",
+      "status": "UNKNOWN_ADMISSION_SCREENING",
+      "total_wall_seconds": 1.8063177419999192
+    },
+    {
+      "costs": {
+        "collection_calls": 0,
+        "native_calls": 0
+      },
+      "eligible": false,
+      "repository": "python-trio/outcome",
+      "schema": "UDM_SEALED_ADMISSION_ENVELOPE_V3",
+      "screening_mode": "ADMISSION_ONLY_NO_CATALOG_OR_CANDIDATE_SEARCH",
+      "sealed_report": {
+        "path": "/workspace/qualification/native-authority-v42-screening-sealed/case-005/SCREENING_CASE.json",
+        "sha256": "005bc7206f8d3f8bac2e95b41bb8719a9b720e1d9c58f4dbd6027fff0adbe069"
+      },
+      "spec_sha256": "dc00f67996740980be18df96747996963708e23d487b6357dd04f6a935524dca",
+      "status": "UNKNOWN_ADMISSION_SCREENING",
+      "total_wall_seconds": 1.7399536989996705
+    }
+  ],
+  "reports_sha256": "35a5e817f5303450cf613cde605d7fc6d1eb5caba6d31900090dc6b5e0238ee6",
+  "schema": "UDM_V42_INDEPENDENT_ADMISSION_ONLY_SCREENING_AUDIT_V1",
+  "scientific_scope": "Completed admission-only screening negatives; failed admission frontier with zero eligible cases. No learner, candidate catalog, policy, or coding-agent arm was executed. No replacement/new task search; no production repair, author-test rewrite, or native retry.",
+  "scientific_verdicts": {
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN"
+  },
+  "search_or_policy_outcomes_accessed": false,
+  "source_commit": "c56d29fae856cceaa0a00000b1c3b782ea1df346",
+  "status": "PASS_ADMISSION_ONLY_SCREENING_AUDIT",
+  "unclosed_checks": []
+}

@@ -1,0 +1,1550 @@
+{
+  "schema": "UDM_V42_SCREENING_ARCHIVE_MANIFEST",
+  "archive_roots": {
+    "sealed": "/workspace/qualification/native-authority-v42-screening-sealed",
+    "controller": "/workspace/qualification/native-authority-v42-screening-controller",
+    "requests": "/workspace/qualification/native-authority-v42-screening-requests"
+  },
+  "members": [
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build",
+      "mode": 448,
+      "type": "directory"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/.claude",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/.claude",
+      "mode": 448,
+      "type": "directory"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/.claude/skills",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/.claude/skills",
+      "mode": 448,
+      "type": "directory"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/.claude/skills/update-benchmarks",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/.claude/skills/update-benchmarks",
+      "mode": 448,
+      "type": "directory"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/.claude/skills/update-benchmarks/SKILL.md",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/.claude/skills/update-benchmarks/SKILL.md",
+      "mode": 420,
+      "type": "file",
+      "size": 5948,
+      "sha256": "0258482a5819c44dd813899a0104ff3b59dc72bde28f434aad30c6a87f5be9e9",
+      "crc32": "6a7c28a1"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/.devcontainer",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/.devcontainer",
+      "mode": 448,
+      "type": "directory"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/.devcontainer/Dockerfile",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/.devcontainer/Dockerfile",
+      "mode": 420,
+      "type": "file",
+      "size": 150,
+      "sha256": "b89ef44cfd57890deb1a995fdaf39b68557ff03c91de1763ad835400e015a400",
+      "crc32": "f3348003"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/.devcontainer/devcontainer.json",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/.devcontainer/devcontainer.json",
+      "mode": 420,
+      "type": "file",
+      "size": 240,
+      "sha256": "be318bd5763bfc89de346d208b73e639ae8c9249c9c73b0eb1c85e6bb47586dd",
+      "crc32": "65dad519"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/.git",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/.git",
+      "mode": 448,
+      "type": "directory"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/.git/HEAD",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/.git/HEAD",
+      "mode": 384,
+      "type": "file",
+      "size": 41,
+      "sha256": "179eaabe9ba0822023ccc475bc2d381e3b75f40c6a5e9386e81230ff373bd0c7",
+      "crc32": "8bf45acc"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/.git/config",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/.git/config",
+      "mode": 384,
+      "type": "file",
+      "size": 267,
+      "sha256": "83b1ffd98091d77ee37cce132750e8fa14774123d22ce2ae1f8b7214cb3b9312",
+      "crc32": "df7cdb5a"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/.git/description",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/.git/description",
+      "mode": 384,
+      "type": "file",
+      "size": 73,
+      "sha256": "85ab6c163d43a17ea9cf7788308bca1466f1b0a8d1cc92e26e9bf63da4062aee",
+      "crc32": "1f078b37"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/.git/hooks",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/.git/hooks",
+      "mode": 448,
+      "type": "directory"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/.git/hooks/applypatch-msg.sample",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/.git/hooks/applypatch-msg.sample",
+      "mode": 448,
+      "type": "file",
+      "size": 478,
+      "sha256": "0223497a0b8b033aa58a3a521b8629869386cf7ab0e2f101963d328aa62193f7",
+      "crc32": "09f84f85"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/.git/hooks/commit-msg.sample",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/.git/hooks/commit-msg.sample",
+      "mode": 448,
+      "type": "file",
+      "size": 896,
+      "sha256": "1f74d5e9292979b573ebd59741d46cb93ff391acdd083d340b94370753d92437",
+      "crc32": "10caf8e9"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/.git/hooks/fsmonitor-watchman.sample",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/.git/hooks/fsmonitor-watchman.sample",
+      "mode": 448,
+      "type": "file",
+      "size": 4726,
+      "sha256": "e0549964e93897b519bd8e333c037e51fff0f88ba13e086a331592bf801fa1d0",
+      "crc32": "793c7cef"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/.git/hooks/post-update.sample",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/.git/hooks/post-update.sample",
+      "mode": 448,
+      "type": "file",
+      "size": 189,
+      "sha256": "81765af2daef323061dcbc5e61fc16481cb74b3bac9ad8a174b186523586f6c5",
+      "crc32": "c0f70c9a"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/.git/hooks/pre-applypatch.sample",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/.git/hooks/pre-applypatch.sample",
+      "mode": 448,
+      "type": "file",
+      "size": 424,
+      "sha256": "e15c5b469ea3e0a695bea6f2c82bcf8e62821074939ddd85b77e0007ff165475",
+      "crc32": "024cc0cf"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/.git/hooks/pre-commit.sample",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/.git/hooks/pre-commit.sample",
+      "mode": 448,
+      "type": "file",
+      "size": 1649,
+      "sha256": "57185b7b9f05239d7ab52db045f5b89eb31348d7b2177eab214f5eb872e1971b",
+      "crc32": "1b0e50ae"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/.git/hooks/pre-merge-commit.sample",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/.git/hooks/pre-merge-commit.sample",
+      "mode": 448,
+      "type": "file",
+      "size": 416,
+      "sha256": "d3825a70337940ebbd0a5c072984e13245920cdf8898bd225c8d27a6dfc9cb53",
+      "crc32": "5ef33f44"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/.git/hooks/pre-push.sample",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/.git/hooks/pre-push.sample",
+      "mode": 448,
+      "type": "file",
+      "size": 1374,
+      "sha256": "ecce9c7e04d3f5dd9d8ada81753dd1d549a9634b26770042b58dda00217d086a",
+      "crc32": "f90a0f0f"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/.git/hooks/pre-rebase.sample",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/.git/hooks/pre-rebase.sample",
+      "mode": 448,
+      "type": "file",
+      "size": 4898,
+      "sha256": "4febce867790052338076f4e66cc47efb14879d18097d1d61c8261859eaaa7b3",
+      "crc32": "5158ec84"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/.git/hooks/pre-receive.sample",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/.git/hooks/pre-receive.sample",
+      "mode": 448,
+      "type": "file",
+      "size": 544,
+      "sha256": "a4c3d2b9c7bb3fd8d1441c31bd4ee71a595d66b44fcf49ddb310252320169989",
+      "crc32": "96f8c492"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/.git/hooks/prepare-commit-msg.sample",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/.git/hooks/prepare-commit-msg.sample",
+      "mode": 448,
+      "type": "file",
+      "size": 1492,
+      "sha256": "e9ddcaa4189fddd25ed97fc8c789eca7b6ca16390b2392ae3276f0c8e1aa4619",
+      "crc32": "303613ed"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/.git/hooks/push-to-checkout.sample",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/.git/hooks/push-to-checkout.sample",
+      "mode": 448,
+      "type": "file",
+      "size": 2783,
+      "sha256": "a53d0741798b287c6dd7afa64aee473f305e65d3f49463bb9d7408ec3b12bf5f",
+      "crc32": "f00806d3"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/.git/hooks/sendemail-validate.sample",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/.git/hooks/sendemail-validate.sample",
+      "mode": 448,
+      "type": "file",
+      "size": 2308,
+      "sha256": "44ebfc923dc5466bc009602f0ecf067b9c65459abfe8868ddc49b78e6ced7a92",
+      "crc32": "4b9edd4e"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/.git/hooks/update.sample",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/.git/hooks/update.sample",
+      "mode": 448,
+      "type": "file",
+      "size": 3650,
+      "sha256": "8d5f2fa83e103cf08b57eaa67521df9194f45cbdbcb37da52ad586097a14d106",
+      "crc32": "06fcf0d9"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/.git/index",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/.git/index",
+      "mode": 384,
+      "type": "file",
+      "size": 10947,
+      "sha256": "11909c011b554706c7c363c7f6baebf40b5f7f677ecd78396a4d383bf5b9e45d",
+      "crc32": "10f711c4"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/.git/info",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/.git/info",
+      "mode": 448,
+      "type": "directory"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/.git/info/exclude",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/.git/info/exclude",
+      "mode": 384,
+      "type": "file",
+      "size": 240,
+      "sha256": "6671fe83b7a07c8932ee89164d1f2793b2318058eb8b98dc5c06ee0a5a3b0ec1",
+      "crc32": "21cd3d77"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/.git/logs",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/.git/logs",
+      "mode": 448,
+      "type": "directory"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/.git/logs/HEAD",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/.git/logs/HEAD",
+      "mode": 384,
+      "type": "file",
+      "size": 500,
+      "sha256": "533ed08d7438479be48262d8963f4363e521d4df912d14418955f31ebe4387c2",
+      "crc32": "dd9470c3"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/.git/objects",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/.git/objects",
+      "mode": 448,
+      "type": "directory"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/.git/objects/4c",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/.git/objects/4c",
+      "mode": 448,
+      "type": "directory"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/.git/objects/4c/4ceb3dadb3fe4f4ba034c7447610ab04f41b4a",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/.git/objects/4c/4ceb3dadb3fe4f4ba034c7447610ab04f41b4a",
+      "mode": 384,
+      "type": "file",
+      "size": 3636,
+      "sha256": "61849634552a0346b7ae2d217be828ffe10fe9260bdf0964fba33d4f6cdb3ae7",
+      "crc32": "e7f7496a"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/.git/objects/5e",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/.git/objects/5e",
+      "mode": 448,
+      "type": "directory"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/.git/objects/5e/0d9e896386bf967403fdee98da89014128b9ef",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/.git/objects/5e/0d9e896386bf967403fdee98da89014128b9ef",
+      "mode": 384,
+      "type": "file",
+      "size": 6543,
+      "sha256": "b5f0cad88593c5bfc42eb442a90fce10812119a3336ba235b4db940c25401f0a",
+      "crc32": "654b2317"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/.git/objects/81",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/.git/objects/81",
+      "mode": 448,
+      "type": "directory"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/.git/objects/81/e9a8619441f5b067315b23c5369d8f9569bee6",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/.git/objects/81/e9a8619441f5b067315b23c5369d8f9569bee6",
+      "mode": 384,
+      "type": "file",
+      "size": 1214,
+      "sha256": "0409ca9f50792fdca70a46f73237235704e786e2ac192fed4808045211cb675f",
+      "crc32": "c964f5d9"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/.git/objects/8a",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/.git/objects/8a",
+      "mode": 448,
+      "type": "directory"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/.git/objects/8a/fc43b77f7b32b16502800c492fc6de8d405b3a",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/.git/objects/8a/fc43b77f7b32b16502800c492fc6de8d405b3a",
+      "mode": 384,
+      "type": "file",
+      "size": 466,
+      "sha256": "40fd4730482d2f3e3c41b15ace94febae8bae274ae774d08a1f82ea3674dd335",
+      "crc32": "ea6cace2"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/.git/objects/c1",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/.git/objects/c1",
+      "mode": 448,
+      "type": "directory"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/.git/objects/c1/33dbdacfe5d4470289f6c46c4ad0452834c2b4",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/.git/objects/c1/33dbdacfe5d4470289f6c46c4ad0452834c2b4",
+      "mode": 384,
+      "type": "file",
+      "size": 187,
+      "sha256": "3fd84e803b50e8674052da7796678a42356e90f932a619b367fb03dc0ef1848f",
+      "crc32": "24bbc9a9"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/.git/objects/info",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/.git/objects/info",
+      "mode": 448,
+      "type": "directory"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/.git/objects/pack",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/.git/objects/pack",
+      "mode": 448,
+      "type": "directory"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/.git/objects/pack/pack-3668b03505a6d357d88a08bf5acda35676d3d65e.idx",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/.git/objects/pack/pack-3668b03505a6d357d88a08bf5acda35676d3d65e.idx",
+      "mode": 384,
+      "type": "file",
+      "size": 270656,
+      "sha256": "817c11d8ef7ade9c3ae6e208d6cb923e306f647594de25737e354a867799a528",
+      "crc32": "84b3085e"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/.git/objects/pack/pack-3668b03505a6d357d88a08bf5acda35676d3d65e.pack",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/.git/objects/pack/pack-3668b03505a6d357d88a08bf5acda35676d3d65e.pack",
+      "mode": 384,
+      "type": "file",
+      "size": 21471848,
+      "sha256": "9182d80a3f76c83d1c1c281423968739f1eed8a05660cea90379442bc1254926",
+      "crc32": "cfdd1d48"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/.git/objects/pack/pack-3668b03505a6d357d88a08bf5acda35676d3d65e.rev",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/.git/objects/pack/pack-3668b03505a6d357d88a08bf5acda35676d3d65e.rev",
+      "mode": 384,
+      "type": "file",
+      "size": 38564,
+      "sha256": "ffbf03fa212ae8c3d86ccaacaed141e0a84c7ce070239c13a39b4ab50649b822",
+      "crc32": "a36395a3"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/.git/objects/pack/pack-b55304f3d3557ef1c4de2ebb60c9fb9d21a85a65.idx",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/.git/objects/pack/pack-b55304f3d3557ef1c4de2ebb60c9fb9d21a85a65.idx",
+      "mode": 384,
+      "type": "file",
+      "size": 4712,
+      "sha256": "42e33ac6fd983f76dab76022a418b557fb5fa83612baf0b6fcf700f11c380bab",
+      "crc32": "64d16068"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/.git/objects/pack/pack-b55304f3d3557ef1c4de2ebb60c9fb9d21a85a65.pack",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/.git/objects/pack/pack-b55304f3d3557ef1c4de2ebb60c9fb9d21a85a65.pack",
+      "mode": 384,
+      "type": "file",
+      "size": 817694,
+      "sha256": "9473efbf37b522c5cbdfb600f2092d41643158db8d483403c302205b5c551a8d",
+      "crc32": "f79b8dbc"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/.git/objects/pack/pack-b55304f3d3557ef1c4de2ebb60c9fb9d21a85a65.rev",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/.git/objects/pack/pack-b55304f3d3557ef1c4de2ebb60c9fb9d21a85a65.rev",
+      "mode": 384,
+      "type": "file",
+      "size": 572,
+      "sha256": "094c9f92d716a4140302ceee32c3dfca34e666e52614681843477c4fb5b7ea9b",
+      "crc32": "ff8c9b2e"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/.git/objects/pack/pack-eb7b85e0be39c3a9b3d74b707f7099eacb3ec5c5.idx",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/.git/objects/pack/pack-eb7b85e0be39c3a9b3d74b707f7099eacb3ec5c5.idx",
+      "mode": 384,
+      "type": "file",
+      "size": 269256,
+      "sha256": "e1b1ed2303a8d43fdf2d953222c7f11b74c3198d01bdd943f6d428cf473a3b46",
+      "crc32": "7f98abbf"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/.git/objects/pack/pack-eb7b85e0be39c3a9b3d74b707f7099eacb3ec5c5.pack",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/.git/objects/pack/pack-eb7b85e0be39c3a9b3d74b707f7099eacb3ec5c5.pack",
+      "mode": 384,
+      "type": "file",
+      "size": 20354408,
+      "sha256": "9077c95a62205302fc74155d7006adedf8a40cf83f4d928d172815cd95a2f45f",
+      "crc32": "604f1576"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/.git/objects/pack/pack-eb7b85e0be39c3a9b3d74b707f7099eacb3ec5c5.rev",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/.git/objects/pack/pack-eb7b85e0be39c3a9b3d74b707f7099eacb3ec5c5.rev",
+      "mode": 384,
+      "type": "file",
+      "size": 38364,
+      "sha256": "e3ce324c8b3f05b9e1185965daad4d092ac740cd7a182c837f0c98685664eec5",
+      "crc32": "e2d7c550"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/.git/packed-refs",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/.git/packed-refs",
+      "mode": 384,
+      "type": "file",
+      "size": 2744,
+      "sha256": "76b4a96123c4b9f720e78595e063b20ad34446ba8990c3738de286de74ee04a3",
+      "crc32": "85773882"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/.git/refs",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/.git/refs",
+      "mode": 448,
+      "type": "directory"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/.git/refs/heads",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/.git/refs/heads",
+      "mode": 448,
+      "type": "directory"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/.git/refs/tags",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/.git/refs/tags",
+      "mode": 448,
+      "type": "directory"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/.github",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/.github",
+      "mode": 448,
+      "type": "directory"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/.github/workflows",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/.github/workflows",
+      "mode": 448,
+      "type": "directory"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/.github/workflows/ci.yml",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/.github/workflows/ci.yml",
+      "mode": 420,
+      "type": "file",
+      "size": 2458,
+      "sha256": "6c546b5db87fe38dfada91cc8f0f5f5155a407f10bd80b29e0964058a44bdd51",
+      "crc32": "782923a9"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/.github/workflows/release.yml",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/.github/workflows/release.yml",
+      "mode": 420,
+      "type": "file",
+      "size": 3344,
+      "sha256": "1fcba8b943cc7431a0e0ffa1c2d0020d679a35a3e5da8aa8bcf0f81be380bbe2",
+      "crc32": "a5fa8aa9"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/.gitignore",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/.gitignore",
+      "mode": 420,
+      "type": "file",
+      "size": 392,
+      "sha256": "e1dd347a76403c5d7f3ed79223779b57199735e6c40a91213a3acd0caac2be7c",
+      "crc32": "2c7f1e1e"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/.readthedocs.yaml",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/.readthedocs.yaml",
+      "mode": 420,
+      "type": "file",
+      "size": 303,
+      "sha256": "457cb052cc348ba52cfb5ce24babacdd270f012e620553c5cfda3f82e8395628",
+      "crc32": "8545dcf6"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/CLAUDE.md",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/CLAUDE.md",
+      "mode": 420,
+      "type": "file",
+      "size": 8020,
+      "sha256": "e267db9ee88b241cd012eeb070f90e907de5ec2289e305f52cf019516aaeb762",
+      "crc32": "d279fdf3"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/LICENSE",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/LICENSE",
+      "mode": 420,
+      "type": "file",
+      "size": 641,
+      "sha256": "0d4cf67e7a26e9957b8948e7dfc0e380e61b427a94b061e618889aba89bb9616",
+      "crc32": "1bdfe73e"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/README.md",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/README.md",
+      "mode": 420,
+      "type": "file",
+      "size": 7954,
+      "sha256": "2226b7bcbd8ad20c64967b2f0ce75638c340754b9c1842afd84ede3c55673edb",
+      "crc32": "607135c3"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/docs",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/docs",
+      "mode": 448,
+      "type": "directory"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/docs/api",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/docs/api",
+      "mode": 448,
+      "type": "directory"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/docs/api/index.rst",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/docs/api/index.rst",
+      "mode": 420,
+      "type": "file",
+      "size": 914,
+      "sha256": "a5811d3ab9c260ccebbbec84d8cc249095b2b1b96baecc7efd77a9521f4cc16e",
+      "crc32": "05e6fb8e"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/docs/changelog.rst",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/docs/changelog.rst",
+      "mode": 420,
+      "type": "file",
+      "size": 25318,
+      "sha256": "68ac0b0ef9f1df9a435a83a00a0c4aedab27947499fa6916f7269905de8b5eaa",
+      "crc32": "fafa8e99"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/docs/conf.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/docs/conf.py",
+      "mode": 420,
+      "type": "file",
+      "size": 666,
+      "sha256": "85a1be8f6917194f845db22263acb54c4198c5420a00c9107edf98401fdc87a0",
+      "crc32": "ebc58d79"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/docs/contributing.rst",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/docs/contributing.rst",
+      "mode": 420,
+      "type": "file",
+      "size": 5429,
+      "sha256": "b24f8749b56518fc3f9d2cb1944c2a63df5ef4f69aa11f1b4b751f3be5235acf",
+      "crc32": "33b59a15"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/docs/faq.rst",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/docs/faq.rst",
+      "mode": 420,
+      "type": "file",
+      "size": 3301,
+      "sha256": "4b13666bba4c737de5f1b8e39813fd2fb4c1bc29174e94d8f8e656af2ab19c7f",
+      "crc32": "62d191e9"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/docs/how-it-works.rst",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/docs/how-it-works.rst",
+      "mode": 420,
+      "type": "file",
+      "size": 4594,
+      "sha256": "e3c78f7adaf59a4c38dc3403bbb1e529bc9778f9301baf7bdaa1578c66f25079",
+      "crc32": "a05061d8"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/docs/index.rst",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/docs/index.rst",
+      "mode": 420,
+      "type": "file",
+      "size": 1189,
+      "sha256": "fe7724095e25aa69744d8570cb421c0489e3bbd48dfcb483b191c7cde7754a7f",
+      "crc32": "2a4cb599"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/docs/performance.rst",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/docs/performance.rst",
+      "mode": 420,
+      "type": "file",
+      "size": 11133,
+      "sha256": "36a67361753f6c51c5b754d65e48e7e0d2445b25bc29e2dd0479e03638463568",
+      "crc32": "c2625297"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/docs/requirements.txt",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/docs/requirements.txt",
+      "mode": 420,
+      "type": "file",
+      "size": 53,
+      "sha256": "e43b4f7a8ef4ba8bc15e40490802190907d347a0b3208c70eff50f38648851be",
+      "crc32": "1d64df5b"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/docs/rewrite_performance.md",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/docs/rewrite_performance.md",
+      "mode": 420,
+      "type": "file",
+      "size": 15285,
+      "sha256": "25ae9af90f0e39d19042590260d714c90ba98f01158f9c594e170c912e58c630",
+      "crc32": "a5ed3b3e"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/docs/supported-encodings.rst",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/docs/supported-encodings.rst",
+      "mode": 420,
+      "type": "file",
+      "size": 5079,
+      "sha256": "a2c5ccf26fc15d28dfbb6cb0e5305d481eb77430005df2d439e6b2daa432409f",
+      "crc32": "0cb8ebe5"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/docs/supported-mime-types.rst",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/docs/supported-mime-types.rst",
+      "mode": 420,
+      "type": "file",
+      "size": 4141,
+      "sha256": "034567b6e2c7f31b9ce6e8f5091b18645369b48e3da20ff32fa36baaa539d592",
+      "crc32": "c7f4fab4"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/docs/usage.rst",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/docs/usage.rst",
+      "mode": 420,
+      "type": "file",
+      "size": 11294,
+      "sha256": "7f2fd4525979405acf0f923d9c263a488513b25f6a1a484ef7110e9858bb3587",
+      "crc32": "25581170"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/prek.toml",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/prek.toml",
+      "mode": 420,
+      "type": "file",
+      "size": 636,
+      "sha256": "197e6ddd9473529f069b983950fa30f36dd75b199aa3abbcf30668a30730e583",
+      "crc32": "5d4ac663"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/pyproject.toml",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/pyproject.toml",
+      "mode": 420,
+      "type": "file",
+      "size": 7613,
+      "sha256": "8317bf5a5dbe00c27fc3bbf66fe0828f3e6851d8e59464de1fcfdcbf5798756b",
+      "crc32": "eb8dbe65"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/scripts",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/scripts",
+      "mode": 448,
+      "type": "directory"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/scripts/benchmark_char_dataset.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/scripts/benchmark_char_dataset.py",
+      "mode": 420,
+      "type": "file",
+      "size": 24476,
+      "sha256": "29c31ea87ec95c573482f3ff5fb62d81fc68585b484775a7293c7e092b22de32",
+      "crc32": "0fa7215f"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/scripts/benchmark_memory.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/scripts/benchmark_memory.py",
+      "mode": 420,
+      "type": "file",
+      "size": 3992,
+      "sha256": "48ad46bac86e3c4d84a9d9a4f1b08b63dde088ef7382f9654be8ad6dbfa4adf0",
+      "crc32": "696b6a45"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/scripts/benchmark_time.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/scripts/benchmark_time.py",
+      "mode": 420,
+      "type": "file",
+      "size": 7975,
+      "sha256": "622e9b26690eb64eddf8aedb43a88cbc6bd90e7c442141024cd5a27e9789e62b",
+      "crc32": "04980225"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/scripts/compare_detectors.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/scripts/compare_detectors.py",
+      "mode": 420,
+      "type": "file",
+      "size": 58322,
+      "sha256": "ff705a00bf7ef78a0aa00868fbf754c8bdd7418413964524cf28b06ff1d208dc",
+      "crc32": "9ef446a1"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/scripts/confusion_training.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/scripts/confusion_training.py",
+      "mode": 420,
+      "type": "file",
+      "size": 6948,
+      "sha256": "32925acbccdfbc36db802f8331b20bf60294b6b01c0eefc51cdff81aa1e6ccfd",
+      "crc32": "51f44a6f"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/scripts/data_sources.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/scripts/data_sources.py",
+      "mode": 420,
+      "type": "file",
+      "size": 13383,
+      "sha256": "4424f0f97d4ad63f5cdc57e87c3e0aeaa7e3d33459d767d28069ba6921a8906d",
+      "crc32": "9b2ca7bd"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/scripts/diagnose_accuracy.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/scripts/diagnose_accuracy.py",
+      "mode": 420,
+      "type": "file",
+      "size": 7158,
+      "sha256": "1c9b7795aa6d3b0a5233334bd83c8f9ca72bf4dcc835788d2a43136e1fbc648c",
+      "crc32": "a7e4d6cc"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/scripts/exclusions.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/scripts/exclusions.py",
+      "mode": 420,
+      "type": "file",
+      "size": 4178,
+      "sha256": "1d607e203437ecc8efb9a1cab7bd2ff9a323e6ab654ef36f61fbea51c9b5b180",
+      "crc32": "d914e269"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/scripts/generate_encoding_table.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/scripts/generate_encoding_table.py",
+      "mode": 420,
+      "type": "file",
+      "size": 2337,
+      "sha256": "c070a04e3f2a7383105315727c43725b2cf808f0c8d8ac6d9a1e161335473049",
+      "crc32": "b0aec5ea"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/scripts/generate_mime_type_table.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/scripts/generate_mime_type_table.py",
+      "mode": 420,
+      "type": "file",
+      "size": 8269,
+      "sha256": "186b0a414b69cda5dd4ea9f1eb75a9682df7e111d1cfa767d75aa3ef10b6b62e",
+      "crc32": "e48433ab"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/scripts/profile_detection.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/scripts/profile_detection.py",
+      "mode": 420,
+      "type": "file",
+      "size": 15030,
+      "sha256": "9fec0a67e735ac7ddaed147a34dcca4ea1c173df03e445c796564955f8b2da7f",
+      "crc32": "d3c24cd2"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/scripts/substitutions.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/scripts/substitutions.py",
+      "mode": 420,
+      "type": "file",
+      "size": 14442,
+      "sha256": "1c932edd1d93b7bc61e663144712fbbba948269209b5fb6bab868d8e9736f44e",
+      "crc32": "7b1409f2"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/scripts/tests",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/scripts/tests",
+      "mode": 448,
+      "type": "directory"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/scripts/tests/test_cache_invalidation.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/scripts/tests/test_cache_invalidation.py",
+      "mode": 420,
+      "type": "file",
+      "size": 1136,
+      "sha256": "caa3ff00d7014277fa7ee141b136a0c5851f7c7c7e75b39c1ec7d7218e611505",
+      "crc32": "6a653cf2"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/scripts/tests/test_confusion_training.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/scripts/tests/test_confusion_training.py",
+      "mode": 420,
+      "type": "file",
+      "size": 3305,
+      "sha256": "6d7de8fc370f5eb09060136c8a6e8a35b48b452c358eabba2d20cb2edd1460e6",
+      "crc32": "45731730"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/scripts/tests/test_data_sources.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/scripts/tests/test_data_sources.py",
+      "mode": 420,
+      "type": "file",
+      "size": 2453,
+      "sha256": "bc48fce8b878240d64b7b0d69e6f2ce428187ac3ae2e6aba1fd3668af841a152",
+      "crc32": "060840ba"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/scripts/tests/test_exclusions.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/scripts/tests/test_exclusions.py",
+      "mode": 420,
+      "type": "file",
+      "size": 5544,
+      "sha256": "a3fb31664d4a76630ca3c2826c89cddb2abb3c8873adc502882b8b2e244f50af",
+      "crc32": "fcafe51b"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/scripts/tests/test_train_build.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/scripts/tests/test_train_build.py",
+      "mode": 420,
+      "type": "file",
+      "size": 3623,
+      "sha256": "6a590f57de49e2b47fc9df0042a742dcf83797dd65dda33c404b6425eb5af3a9",
+      "crc32": "513b6a92"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/scripts/tests/test_utils.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/scripts/tests/test_utils.py",
+      "mode": 420,
+      "type": "file",
+      "size": 2778,
+      "sha256": "635ca5b2d851ac68a13c39b7cddfe95cbb74a8498edff21d00bf5f0bdef4d531",
+      "crc32": "d6a6dfc4"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/scripts/tests/test_verify_no_overlap.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/scripts/tests/test_verify_no_overlap.py",
+      "mode": 420,
+      "type": "file",
+      "size": 1421,
+      "sha256": "52eceff19330c7d2ab41ed6c5037cd4f14001133cf543355172f3d49d652b1cd",
+      "crc32": "01102e5d"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/scripts/train.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/scripts/train.py",
+      "mode": 420,
+      "type": "file",
+      "size": 28971,
+      "sha256": "373ecb05d0f89e71dbea11f76919cac72e6111dd15b6eb7187fc63f6c4e7ebf8",
+      "crc32": "7271d677"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/scripts/utils.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/scripts/utils.py",
+      "mode": 420,
+      "type": "file",
+      "size": 9323,
+      "sha256": "a504bd3f2cbb676fcc3aa01d189771d64aa143eb91ff347b4f19b744e88e0c68",
+      "crc32": "160e747d"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/scripts/verify_equivalences.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/scripts/verify_equivalences.py",
+      "mode": 420,
+      "type": "file",
+      "size": 10735,
+      "sha256": "739ac85c832b23a93ef98e87b9597a5444f9ff36c3e9553d12d937ed98ab521f",
+      "crc32": "803492db"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/scripts/verify_no_overlap.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/scripts/verify_no_overlap.py",
+      "mode": 420,
+      "type": "file",
+      "size": 3000,
+      "sha256": "5dcf5368ee10b93471ef431c7dafe9063f638750656aa8b67e3e3fe01b1d4d4a",
+      "crc32": "eeb34111"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/src",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/src",
+      "mode": 448,
+      "type": "directory"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/src/chardet",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/src/chardet",
+      "mode": 448,
+      "type": "directory"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/src/chardet/__init__.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/src/chardet/__init__.py",
+      "mode": 420,
+      "type": "file",
+      "size": 7109,
+      "sha256": "950af2c376770fe8a388ff6668751a42306ee6151767775ba10fb5de077fab69",
+      "crc32": "d1e40bca"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/src/chardet/__main__.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/src/chardet/__main__.py",
+      "mode": 420,
+      "type": "file",
+      "size": 143,
+      "sha256": "ad1228c76fe1c88612441fe146c1a05e361ecc301247f4a456d3d7300a71ed40",
+      "crc32": "67228f9f"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/src/chardet/_utils.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/src/chardet/_utils.py",
+      "mode": 420,
+      "type": "file",
+      "size": 2775,
+      "sha256": "03d34a2f8a5c5e777ecade06972a1fcadf6143294d622465649cc4b4757b4873",
+      "crc32": "dd9907d1"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/src/chardet/_version.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/src/chardet/_version.py",
+      "mode": 384,
+      "type": "file",
+      "size": 558,
+      "sha256": "65de830ef24719bc053dfe3334f40eef851fd7aa25e4a29f27b618c2ffd68a08",
+      "crc32": "0b2a589c"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/src/chardet/cli.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/src/chardet/cli.py",
+      "mode": 420,
+      "type": "file",
+      "size": 4786,
+      "sha256": "06c58cf954781c1ad48e24c9ba9c7fad2f3d6c3fe601b99b7f3acd450a0e64d5",
+      "crc32": "972c7337"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/src/chardet/detector.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/src/chardet/detector.py",
+      "mode": 420,
+      "type": "file",
+      "size": 7116,
+      "sha256": "bf2326163d7c5cf9a5e054c317a99d540d37d5d41bff4cd140d2a35c2e6dc755",
+      "crc32": "c69e534a"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/src/chardet/enums.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/src/chardet/enums.py",
+      "mode": 420,
+      "type": "file",
+      "size": 972,
+      "sha256": "e9977429f18ca1bb0b1302c9edca55332103c191167acb1f6997f71b2b322036",
+      "crc32": "7074fc13"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/src/chardet/equivalences.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/src/chardet/equivalences.py",
+      "mode": 420,
+      "type": "file",
+      "size": 14577,
+      "sha256": "f39e10eee6fa1eb6d4bd62059925d7936243e5e12edc2bc4686051d3756f4f3f",
+      "crc32": "71c9b9fb"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/src/chardet/models",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/src/chardet/models",
+      "mode": 448,
+      "type": "directory"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/src/chardet/models/__init__.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/src/chardet/models/__init__.py",
+      "mode": 420,
+      "type": "file",
+      "size": 12003,
+      "sha256": "4d7c14800d30df46d8260c607b4fab572c3df222e1bb8447360ed0b5c03146fc",
+      "crc32": "40092ca2"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/src/chardet/models/confusion.bin",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/src/chardet/models/confusion.bin",
+      "mode": 420,
+      "type": "file",
+      "size": 8214,
+      "sha256": "1c853cd04b400bd2d3772fcaddc4466b32d32db703a7aa415df5a20810bf9ecb",
+      "crc32": "0703072f"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/src/chardet/models/idf.bin",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/src/chardet/models/idf.bin",
+      "mode": 420,
+      "type": "file",
+      "size": 65536,
+      "sha256": "8306e28aad48cac54db7834d09f49cbbb92d3928ede53c71f2b9b232b586bb8a",
+      "crc32": "41d53576"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/src/chardet/models/models.bin",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/src/chardet/models/models.bin",
+      "mode": 420,
+      "type": "file",
+      "size": 585891,
+      "sha256": "07eb1dabcf4f8e714f9f866eaa355121bf7b3563dcde0d77ed7c3668de5f75f5",
+      "crc32": "28d3bb23"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/src/chardet/models/training_metadata.yaml",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/src/chardet/models/training_metadata.yaml",
+      "mode": 420,
+      "type": "file",
+      "size": 72401,
+      "sha256": "565bc7e3805862d692505dcba19baad7a18ac893dbe4819c07ce17324407b6d8",
+      "crc32": "3663e059"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/src/chardet/pipeline",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/src/chardet/pipeline",
+      "mode": 448,
+      "type": "directory"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/src/chardet/pipeline/__init__.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/src/chardet/pipeline/__init__.py",
+      "mode": 420,
+      "type": "file",
+      "size": 2766,
+      "sha256": "b52368ba9ac0baff0dcc314cd1eabf75ef91e31f9f387f249f9842777cdb8fd0",
+      "crc32": "02e0b30f"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/src/chardet/pipeline/ascii.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/src/chardet/pipeline/ascii.py",
+      "mode": 420,
+      "type": "file",
+      "size": 1617,
+      "sha256": "b2b43f1e64dad9000453a11706c4b8810b56ec3e44a18f87a0eec092238a25e7",
+      "crc32": "6ba12900"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/src/chardet/pipeline/binary.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/src/chardet/pipeline/binary.py",
+      "mode": 420,
+      "type": "file",
+      "size": 1065,
+      "sha256": "ea12449e228fcd2930dfebd1288d6b15b51f45f87ae605d7cf13edd9d09287df",
+      "crc32": "d1e8baa1"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/src/chardet/pipeline/bom.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/src/chardet/pipeline/bom.py",
+      "mode": 420,
+      "type": "file",
+      "size": 1452,
+      "sha256": "baed68147d951d5d17f422214e98da56a273ae476b8831e11f7d23ec9aebf465",
+      "crc32": "a721d86a"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/src/chardet/pipeline/confusion.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/src/chardet/pipeline/confusion.py",
+      "mode": 420,
+      "type": "file",
+      "size": 10667,
+      "sha256": "b0530b6077ac79b8094a6fb46f7a770fc0eecc8b822b47b30cf3cb7b44e93100",
+      "crc32": "5fe85c2e"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/src/chardet/pipeline/escape.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/src/chardet/pipeline/escape.py",
+      "mode": 420,
+      "type": "file",
+      "size": 10849,
+      "sha256": "0933bc0d9d265b03a8d3c133e1ef9725989077af8526935f4f22c558761c2978",
+      "crc32": "b54d5f78"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/src/chardet/pipeline/magic.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/src/chardet/pipeline/magic.py",
+      "mode": 420,
+      "type": "file",
+      "size": 11388,
+      "sha256": "2c869a727c941f2860d556ae357aaa0de81b995a81b5966d0c63b4a879c1cc19",
+      "crc32": "236833a7"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/src/chardet/pipeline/markup.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/src/chardet/pipeline/markup.py",
+      "mode": 420,
+      "type": "file",
+      "size": 3681,
+      "sha256": "f1717eee81d45ef11fb494054e3d52f743677f4e8b6e29dc8e256462fc870db1",
+      "crc32": "2c917fbc"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/src/chardet/pipeline/orchestrator.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/src/chardet/pipeline/orchestrator.py",
+      "mode": 420,
+      "type": "file",
+      "size": 30188,
+      "sha256": "b368b2bc67b5f22e9ef4444e27a6636a0b95475f133975e9eabc19afecc9a81e",
+      "crc32": "d1122114"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/src/chardet/pipeline/statistical.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/src/chardet/pipeline/statistical.py",
+      "mode": 420,
+      "type": "file",
+      "size": 1208,
+      "sha256": "bfdede071e72df02cfbb8be5d72ff67e0cea5755dce5d4d286d2e7599f86e669",
+      "crc32": "820ff42c"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/src/chardet/pipeline/structural.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/src/chardet/pipeline/structural.py",
+      "mode": 420,
+      "type": "file",
+      "size": 16119,
+      "sha256": "2649b43abbe06a9647681d4d4bd9cf86404bfa5c1704ce0e51a9a608172236a8",
+      "crc32": "687a7aae"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/src/chardet/pipeline/utf1632.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/src/chardet/pipeline/utf1632.py",
+      "mode": 420,
+      "type": "file",
+      "size": 11317,
+      "sha256": "f42f7bdadc1527c3cab5eb4dbdb7bc339ffc5f10dcb0098c1dbbb4eca1319d4f",
+      "crc32": "c543a7a2"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/src/chardet/pipeline/utf8.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/src/chardet/pipeline/utf8.py",
+      "mode": 420,
+      "type": "file",
+      "size": 3334,
+      "sha256": "7678887081b6cc379fb72f467604db0e7dbd329a9fa726192ada88912ec44a30",
+      "crc32": "e37c4e97"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/src/chardet/pipeline/validity.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/src/chardet/pipeline/validity.py",
+      "mode": 420,
+      "type": "file",
+      "size": 896,
+      "sha256": "75ff7b79ee0440f224bfc464616401c445d89d69c4d237d7f6d95c213f3d9557",
+      "crc32": "1fd53259"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/src/chardet/py.typed",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/src/chardet/py.typed",
+      "mode": 420,
+      "type": "file",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "crc32": "00000000"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/src/chardet/registry.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/src/chardet/registry.py",
+      "mode": 420,
+      "type": "file",
+      "size": 26934,
+      "sha256": "d80a4995d4e57974d56ad9083ae048147059ed6972b441851991b05b78e6fb4d",
+      "crc32": "0f93a27a"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/src/chardet/universaldetector.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/src/chardet/universaldetector.py",
+      "mode": 420,
+      "type": "file",
+      "size": 718,
+      "sha256": "abb4efc1d0a1555aed20946bd6ef68a2390c11d38b8d1f6a87146cf4ee71ea63",
+      "crc32": "bada373f"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/tests",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/tests",
+      "mode": 448,
+      "type": "directory"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/tests/__init__.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/tests/__init__.py",
+      "mode": 420,
+      "type": "file",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "crc32": "00000000"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/tests/conftest.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/tests/conftest.py",
+      "mode": 420,
+      "type": "file",
+      "size": 729,
+      "sha256": "2192161a24ad44d8e744f74c11835630c29d67f2d3f15e9c86a2da73aac4bd58",
+      "crc32": "d56e9b33"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/tests/test_accuracy.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/tests/test_accuracy.py",
+      "mode": 420,
+      "type": "file",
+      "size": 7126,
+      "sha256": "c3c67998d2ff83bdaa8a1401420973665178154ed99c3111db21ae29e70d2dee",
+      "crc32": "ac6211b3"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/tests/test_api.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/tests/test_api.py",
+      "mode": 420,
+      "type": "file",
+      "size": 33004,
+      "sha256": "bf8778ff7c5de50bd9b0a41fe3d0330e474906a7f9b017342e90b7be33af017c",
+      "crc32": "4b1b3963"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/tests/test_ascii.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/tests/test_ascii.py",
+      "mode": 420,
+      "type": "file",
+      "size": 3145,
+      "sha256": "36f074f5af63adcd6b79e6ce3235c6d97e072200e7a938d90f4ccac120e47753",
+      "crc32": "9808f175"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/tests/test_benchmark.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/tests/test_benchmark.py",
+      "mode": 420,
+      "type": "file",
+      "size": 10403,
+      "sha256": "8a858b2a3e9dd22ff2d50ba927ae1994dcdad1bf11c134c73ec1a543ac427d04",
+      "crc32": "d1b54c2a"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/tests/test_binary.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/tests/test_binary.py",
+      "mode": 420,
+      "type": "file",
+      "size": 1901,
+      "sha256": "82c762590f81ae343a1bb9f58a0ca4f091f9f3ab0a85ac0abbd77b66f0bc8aa7",
+      "crc32": "45762c0d"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/tests/test_bom.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/tests/test_bom.py",
+      "mode": 420,
+      "type": "file",
+      "size": 2458,
+      "sha256": "1662f2af660d1f08b9065315d28b8d9a2e6fc28a8c1e540ea26567877373e282",
+      "crc32": "cbfd095c"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/tests/test_cjk_gating.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/tests/test_cjk_gating.py",
+      "mode": 420,
+      "type": "file",
+      "size": 2937,
+      "sha256": "e87d78f8fb9e92773f723d4ed05e1b08a37a9db9d655a1b5980984f5cb91f09f",
+      "crc32": "30716861"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/tests/test_cli.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/tests/test_cli.py",
+      "mode": 420,
+      "type": "file",
+      "size": 11901,
+      "sha256": "c9bc91e38ae94df9bfbd33e6ee2754ebf77d0d7c00c4348cd72310a6de66d42c",
+      "crc32": "ba390ae6"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/tests/test_confusion.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/tests/test_confusion.py",
+      "mode": 420,
+      "type": "file",
+      "size": 12538,
+      "sha256": "ccb1c6cb6877712b26c603ae6f71d84b802d64f43566351b37801740d5dda25f",
+      "crc32": "e02e641f"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/tests/test_detector.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/tests/test_detector.py",
+      "mode": 420,
+      "type": "file",
+      "size": 5321,
+      "sha256": "9ab2c16502f7294c7971721ecc0f4fbafd8050946f70a078663c44978367fe19",
+      "crc32": "d2ed8c2e"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/tests/test_enums.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/tests/test_enums.py",
+      "mode": 420,
+      "type": "file",
+      "size": 1126,
+      "sha256": "8755b5fa8fb2b5646147f8bb40eb8fa1e7f7e5ea2a9548b6a28514aa15c444ee",
+      "crc32": "e7ad803a"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/tests/test_equivalences.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/tests/test_equivalences.py",
+      "mode": 420,
+      "type": "file",
+      "size": 8005,
+      "sha256": "53595a099a5dc6a04cc3a002aa6d1b78ed19dedff23a541f176cc5a347a3d76e",
+      "crc32": "16917291"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/tests/test_escape.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/tests/test_escape.py",
+      "mode": 420,
+      "type": "file",
+      "size": 13523,
+      "sha256": "22c3436ebc4b6fb419a08c5dd579b3e21dc4eac4e1252b3ffda4b646ced26813",
+      "crc32": "9b2bbd21"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/tests/test_github_issues.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/tests/test_github_issues.py",
+      "mode": 420,
+      "type": "file",
+      "size": 19257,
+      "sha256": "c172ca0dde5521f03a91cd36fcff4a5d3a17eed800e89afbca12d11d58846fd9",
+      "crc32": "e033dfc8"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/tests/test_koi8t.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/tests/test_koi8t.py",
+      "mode": 420,
+      "type": "file",
+      "size": 1223,
+      "sha256": "aebb77ae12aa83a8162aacc86125169ca185491701e2650bb23fa7d3dc20cc74",
+      "crc32": "40083fa5"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/tests/test_magic.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/tests/test_magic.py",
+      "mode": 420,
+      "type": "file",
+      "size": 14262,
+      "sha256": "7087d226c2d43b21286ddfca102ae7828cceaed8495cb505f33d89bdf23afc60",
+      "crc32": "5517986d"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/tests/test_markup.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/tests/test_markup.py",
+      "mode": 420,
+      "type": "file",
+      "size": 3709,
+      "sha256": "75034a6c8a9abe57707a6a4b4ff771058d959f96b7474b3fa1736fd1b4d95a1f",
+      "crc32": "4265ae5c"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/tests/test_mime_type.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/tests/test_mime_type.py",
+      "mode": 420,
+      "type": "file",
+      "size": 5060,
+      "sha256": "55f91b698f05952ca758d0c556dfb57095d0d76a0ef8ade026b6a6f8ee45f003",
+      "crc32": "9dc32a86"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/tests/test_models.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/tests/test_models.py",
+      "mode": 420,
+      "type": "file",
+      "size": 18708,
+      "sha256": "8390181a121fa48e6d639c4c3422dac561e569d6072ca7cd0c1c64220919e099",
+      "crc32": "31100eca"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/tests/test_orchestrator.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/tests/test_orchestrator.py",
+      "mode": 420,
+      "type": "file",
+      "size": 13484,
+      "sha256": "eaf903d853cc6247eed8277c0b0c9f8591ce3c0131c6ea7f69ecb13393f2756d",
+      "crc32": "4e3f2bd0"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/tests/test_pipeline_types.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/tests/test_pipeline_types.py",
+      "mode": 420,
+      "type": "file",
+      "size": 2406,
+      "sha256": "1aa8288830895bfc43119bab26e943258d46be502726a89721aa038aa39d1c15",
+      "crc32": "639ebf30"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/tests/test_python_stdlib_limitations.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/tests/test_python_stdlib_limitations.py",
+      "mode": 420,
+      "type": "file",
+      "size": 2976,
+      "sha256": "95cd73ed478ae5a4d6c1eb69589aa5eb7be657d4b86bde917d6b083010e1323f",
+      "crc32": "923e86dd"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/tests/test_registry.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/tests/test_registry.py",
+      "mode": 420,
+      "type": "file",
+      "size": 11977,
+      "sha256": "36bb49114b3ef3d36a25842effc1c56298ca05fed8b1762ac8ca397e559a6543",
+      "crc32": "bf5a05a5"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/tests/test_spec_bom_conformance.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/tests/test_spec_bom_conformance.py",
+      "mode": 420,
+      "type": "file",
+      "size": 6326,
+      "sha256": "5d68f1ab6b762312bf785abdf6a5f52215cf4def8f77fc1baaa35f113635a480",
+      "crc32": "2f40f1ac"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/tests/test_spec_decode_roundtrip.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/tests/test_spec_decode_roundtrip.py",
+      "mode": 420,
+      "type": "file",
+      "size": 11888,
+      "sha256": "612461b83e4d528a1cd25b450f8e9f4075af172d55d9717b95fc138e6d249ce6",
+      "crc32": "43fc9c5a"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/tests/test_spec_iana.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/tests/test_spec_iana.py",
+      "mode": 420,
+      "type": "file",
+      "size": 8788,
+      "sha256": "f14c4b5a650bc0369892689384ffa778f46962d7ad194707d68bd6a4a87d0e91",
+      "crc32": "d10ffc57"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/tests/test_spec_whatwg.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/tests/test_spec_whatwg.py",
+      "mode": 420,
+      "type": "file",
+      "size": 15159,
+      "sha256": "0d24d6ac2bea0d9888de8d458c31059488d0f1594e2d87f91c2da1108a9d0937",
+      "crc32": "e2cae2e5"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/tests/test_statistical.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/tests/test_statistical.py",
+      "mode": 420,
+      "type": "file",
+      "size": 2679,
+      "sha256": "571bf0242d6eca58721dc9faf0b7d18e5fd107afbcd4a08a7dd8687492323844",
+      "crc32": "016c3639"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/tests/test_structural.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/tests/test_structural.py",
+      "mode": 420,
+      "type": "file",
+      "size": 14080,
+      "sha256": "7dbb636096fc1bdb4c184f9e05d8d4e499617345dba2e7a16fcba158c2888d25",
+      "crc32": "feac159a"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/tests/test_substitutions.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/tests/test_substitutions.py",
+      "mode": 420,
+      "type": "file",
+      "size": 3550,
+      "sha256": "b212fcd2047d98ee075d5664461a72f2da3f603ab347fe3aabf33b587feef9f7",
+      "crc32": "75bcdb22"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/tests/test_thread_safety.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/tests/test_thread_safety.py",
+      "mode": 420,
+      "type": "file",
+      "size": 3979,
+      "sha256": "ac62ee780ab6adfd9783ad1e6dcd8a84d664836506ff087eb2fd4a1ad8ba2f81",
+      "crc32": "082147b7"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/tests/test_utf1632.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/tests/test_utf1632.py",
+      "mode": 420,
+      "type": "file",
+      "size": 23081,
+      "sha256": "3501f4b1348d840c515bd58023d598f5d2c83e280c89b295e70b29cfde0946eb",
+      "crc32": "18fc67fb"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/tests/test_utf8.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/tests/test_utf8.py",
+      "mode": 420,
+      "type": "file",
+      "size": 2191,
+      "sha256": "d6ac19013b383c9a049bc2538b4ae8fafd76b28aab16b0c1c87071982056b4bf",
+      "crc32": "5386edaa"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/tests/test_utils.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/tests/test_utils.py",
+      "mode": 420,
+      "type": "file",
+      "size": 5190,
+      "sha256": "cd37d8274dcd338945d1f623bee0b6c756f3bb8db8f384676e7cf6713c6351d2",
+      "crc32": "2b9a4c53"
+    },
+    {
+      "archive_path": "sealed/case-000/source-environment/native/base-build/tests/test_validity.py",
+      "source_path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/source-environment/native/base-build/tests/test_validity.py",
+      "mode": 420,
+      "type": "file",
+      "size": 2309,
+      "sha256": "cebc9ec6e295f7672db25427a93e217df3edc7a8224357bbaba95538f3d55d9b",
+      "crc32": "70c17557"
+    }
+  ],
+  "regular_file_count": 150,
+  "symlink_count": 0,
+  "directory_count": 31,
+  "regular_file_bytes": 44906332
+}

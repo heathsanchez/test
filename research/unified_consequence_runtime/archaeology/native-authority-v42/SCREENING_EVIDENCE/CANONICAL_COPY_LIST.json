@@ -1,0 +1,107 @@
+{
+  "directory_policy": "Copy only files in this list, plus this copy-list JSON if desired. pre_git_index_snapshot and archive-input-receipts are also retained within shard002; their standalone copies support inspection.",
+  "file_count": 19,
+  "files": [
+    {
+      "relative_path": "archive-input-receipts/CASE000_VENV_FULL_IDENTITY.json",
+      "sha256": "140ff0b7363ceb7abdcc2850f9653ef22b8521ff126066cf67200628f9814406",
+      "size_bytes": 3560036
+    },
+    {
+      "relative_path": "archive_evidence_v42.py",
+      "sha256": "ade015c4fdafa9a3870a32bcce4258f360067c57881a72c1df3ee28e4a8d8051",
+      "size_bytes": 12448
+    },
+    {
+      "relative_path": "independent_manifest_readback.py",
+      "sha256": "5577cc9ded1ab728b33732f94993087ee3565c73da5c0e8d3c0fd1ae163ea708",
+      "size_bytes": 7206
+    },
+    {
+      "relative_path": "native-authority-v42-screening-raw-evidence-001-of-002.manifest.json",
+      "sha256": "dc92fb2e9db1ff839cb2ac8da04474d735bb3ca32adf7c68ee055f521e0813d1",
+      "size_bytes": 77651
+    },
+    {
+      "relative_path": "native-authority-v42-screening-raw-evidence-001-of-002.tar.gz",
+      "sha256": "0714d693457cbe2349798ec2413688555fab8669dbd79ec0095de391c3ee3fdf",
+      "size_bytes": 43679355
+    },
+    {
+      "relative_path": "native-authority-v42-screening-raw-evidence-001-of-002.verification.json",
+      "sha256": "3352bfe96a4088bb80a3f26f4de9f69fa2ee9972a022f9a9bba97592df6578b0",
+      "size_bytes": 941
+    },
+    {
+      "relative_path": "native-authority-v42-screening-raw-evidence-002-of-002.manifest.json",
+      "sha256": "b77b3069faf4ecb096548e78d66d2e872099ad44e6c4359c9e2b808aaec5e803",
+      "size_bytes": 901504
+    },
+    {
+      "relative_path": "native-authority-v42-screening-raw-evidence-002-of-002.tar.gz",
+      "sha256": "4ca52091268969eba82c5d5d38c9b547471f8207b716a0467ada6e050a9cd199",
+      "size_bytes": 52838504
+    },
+    {
+      "relative_path": "native-authority-v42-screening-raw-evidence-002-of-002.verification.json",
+      "sha256": "7d054ef8d915304d4c5006991326061a5974f1c0ece5acab2ff7bcd3d08c181a",
+      "size_bytes": 946
+    },
+    {
+      "relative_path": "native-authority-v42-screening-raw-evidence.descriptor.json",
+      "sha256": "c794fbd1170bd9b373fa11c2a5801636359a28e9f62b2188be044ede46a01a76",
+      "size_bytes": 3525
+    },
+    {
+      "relative_path": "native-authority-v42-screening-raw-evidence.exclusions.json",
+      "sha256": "76254ac63223ecc03bddd907f365f3772932c40b869c7cc242e0288a67664102",
+      "size_bytes": 3548538
+    },
+    {
+      "relative_path": "native-authority-v42-screening-raw-evidence.independent-readback.json",
+      "sha256": "41e8383e91bed1dd548e80a3cd9e633fe376663fc6ad2a16982de392b1a476fd",
+      "size_bytes": 3730
+    },
+    {
+      "relative_path": "native-authority-v42-screening-raw-evidence.manifest.json",
+      "sha256": "42c8521d54fae79767aae6b9f98fccd82e43a133e2ecadb1ab84527da2c07066",
+      "size_bytes": 980698
+    },
+    {
+      "relative_path": "native-authority-v42-screening-raw-evidence.verification.json",
+      "sha256": "9ef97db63185dc1dd812403b558b0e9843f088ed4cc6b84ee48b04f4ad27c63b",
+      "size_bytes": 2395
+    },
+    {
+      "relative_path": "pre_git_index_snapshot/001-index.bin",
+      "sha256": "894f89eeaad5bd8d6c8242a5047d006a0b23021a5ba362d4db42c131e082fd29",
+      "size_bytes": 113571
+    },
+    {
+      "relative_path": "pre_git_index_snapshot/002-index.bin",
+      "sha256": "6ea642f1a91b7239229344a2650a9af70ea2bd477b6db9518ed4153bed8cb786",
+      "size_bytes": 176832
+    },
+    {
+      "relative_path": "pre_git_index_snapshot/003-index.bin",
+      "sha256": "3999c60a940d9c999523ff56ec37d2bc9d7c0328c1f2503690a652fbb1f01064",
+      "size_bytes": 111030
+    },
+    {
+      "relative_path": "pre_git_index_snapshot/004-index.bin",
+      "sha256": "cce293c28fd33556bb415b65317d33223a5f2b6c13bc3c93bb44eaaf7c49fe39",
+      "size_bytes": 378209
+    },
+    {
+      "relative_path": "pre_git_index_snapshot/MANIFEST.json",
+      "sha256": "7d8041a2a2fc59fb55ecbdb7fcd23f3b232dbcafa4d769cd9808811cb0db72e9",
+      "size_bytes": 1938
+    }
+  ],
+  "not_for_git": "/workspace/qualification/native-authority-v42-screening-archive-intermediates/ (96.52MB unsplit duplicate and its external descriptor)",
+  "readback_status": "PASS",
+  "root": "/workspace/qualification/native-authority-v42-screening-archive",
+  "schema": "UDM_V42_SCREENING_ARCHIVE_CANONICAL_COPY_LIST",
+  "source_commit": "c56d29fae856cceaa0a00000b1c3b782ea1df346",
+  "total_bytes": 106399057
+}
