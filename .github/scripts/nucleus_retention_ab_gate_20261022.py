@@ -42,10 +42,15 @@ for case,kind,basename,expected in cases:
     exe=Path("/tmp/nucleus-retention/"+arm)
     assert exe.is_file(),exe
     started=time.monotonic()
+    trial_env=env.copy()
+    if arm in ("bindings","both"):
+      trial_env["NUCLEUS_EXPERIMENTAL_BINDING_CACHE_GROWTH"]="1"
+    if arm in ("replays","both"):
+      trial_env["NUCLEUS_EXPERIMENTAL_REPLAY_CACHE_GROWTH"]="1"
     with path.open("rb") as f:
       try:
         run=subprocess.run([str(exe)],stdin=f,stdout=subprocess.DEVNULL,
-          stderr=subprocess.PIPE,timeout=240,env=env)
+          stderr=subprocess.PIPE,timeout=240,env=trial_env)
         rc=run.returncode
         stderr=run.stderr.decode(errors="replace")
       except subprocess.TimeoutExpired:
