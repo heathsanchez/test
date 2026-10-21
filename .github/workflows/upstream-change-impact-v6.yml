@@ -1,0 +1,42 @@
+name: Independent Upstream Change Impact V6
+on:
+  push:
+    branches:
+      - research/upstream-change-impact-v6-20261022
+  pull_request:
+    paths:
+      - 'research/upstream_change_impact_v6/**'
+      - '.github/workflows/upstream-change-impact-v6.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  external-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout exact independently owned MarkupSafe upstream
+        uses: actions/checkout@v4
+        with:
+          repository: pallets/markupsafe
+          ref: 4e111271b1494995708a9e878a10829b5e10c7ba
+          path: upstream
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install upstream package and test dependencies
+        run: |
+          python -m pip install pytest==9.0.3
+          python -m pip install -e ./upstream
+      - name: Execute pinned authentic upstream trials
+        run: |
+          python -m py_compile research/upstream_change_impact_v6/experiment.py
+          python research/upstream_change_impact_v6/experiment.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: independent-upstream-impact-v6
+          path: research/upstream_change_impact_v6/result.json
+          if-no-files-found: warn
