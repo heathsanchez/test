@@ -34,9 +34,12 @@ jobs:
         run: |
           python -m py_compile research/upstream_change_impact_v6/experiment.py
           python research/upstream_change_impact_v6/experiment.py
+          python research/upstream_change_impact_v6/postexposure.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: independent-upstream-impact-v6
-          path: research/upstream_change_impact_v6/result.json
+          path: |
+            research/upstream_change_impact_v6/result.json
+            research/upstream_change_impact_v6/postexposure_result.json
           if-no-files-found: warn
