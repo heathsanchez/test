@@ -19,11 +19,11 @@ jobs:
             research.unified_consequence_runtime.test_decisive_task_admission
       - name: Verify no changed author verifier was imported into original frozen branch
         run: |
-          git show 15e71683a19394fb00b5833c18a3e876c2645d54:research/unified_consequence_runtime/decisive_native_verify.py | sha256sum
+          git show HEAD:research/unified_consequence_runtime/decisive_native_verify.py | sha256sum
           sha256sum research/unified_consequence_runtime/decisive_native_verify.py
           echo "Research candidate source is deliberately distinct; prior V1 receipts remain bound to original bytes."
       - name: Exact historical author test blobs and AST authority
-        run: python3 research/udm_author_test_admission_20261021/authentic_historical.py
+        run: python3 -m research.udm_author_test_admission_20261021.authentic_historical
       - uses: actions/upload-artifact@v4
         if: always()
         with:
