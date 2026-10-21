@@ -6,6 +6,8 @@ on:
     paths:
       - 'research/cross_source_compounding_20261021/**'
       - '.github/workflows/cross-source-compounding-native-20261021.yml'
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 permissions:
   contents: read
