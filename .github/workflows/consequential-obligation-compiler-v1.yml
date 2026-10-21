@@ -1,0 +1,29 @@
+name: Consequential Obligation Compiler V1
+on:
+  push:
+    branches:
+      - research/consequential-obligation-compiler-v1-20261021
+  pull_request:
+    paths:
+      - 'research/consequential_obligation_compiler_v1/**'
+      - '.github/workflows/consequential-obligation-compiler-v1.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-sqlite:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run source-to-obligation compiler against native SQLite
+        run: |
+          python3 --version
+          python3 -c 'import sqlite3; print(sqlite3.sqlite_version)'
+          python3 research/consequential_obligation_compiler_v1/compile.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: consequential-obligation-compiler-v1-evidence
+          path: research/consequential_obligation_compiler_v1/result.json
+          if-no-files-found: warn
