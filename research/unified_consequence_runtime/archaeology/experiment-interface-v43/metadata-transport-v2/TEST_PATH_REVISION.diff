@@ -1,0 +1,20 @@
+--- frozen-red-test
++++ canonical-v2-test
+@@ -10,7 +10,7 @@
+ 
+ def load():
+     path=Path(os.environ.get('UDM_METADATA_CURATOR',
+-        '/workspace/udm-v54/research/unified_consequence_runtime/archaeology/experiment-interface-v43/prospective/curate_frontier.py'))
++        '/workspace/udm-v54/research/unified_consequence_runtime/archaeology/experiment-interface-v43/prospective/curate_frontier_v2.py'))
+     spec=importlib.util.spec_from_file_location('_metadata_transport_control',path)
+     module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+     return module
+@@ -39,7 +39,7 @@
+     research=tmp_path/'repo/research/unified_consequence_runtime'
+     records=research/'new-records';records.mkdir(parents=True)
+     prepared={'diagnostic_transport_only':True}
+-    plan_path=records/'PREQUERY.json';plan_path.write_text(json.dumps(prepared))
++    plan_path=records/'PREQUERY_V2.json';plan_path.write_text(json.dumps(prepared))
+     wrapper={'environment_gate':{'artifact_sha256':module.sha256(b'fixed-archive')},
+              'catalog':{},'interface_gate':{},'interface_archive_audit':{}}
+     gate_path=records/'GATE_WRAPPER.json';gate_path.write_text(json.dumps(wrapper))

@@ -1,0 +1,57 @@
+--- preserved-curate_frontier.py
++++ new-curate_frontier_v2.py
+@@ -1,4 +1,9 @@
+-"""Draft V43 gate-bound metadata curator; no universe or query on import."""
++"""V43 metadata transport revision 2; no universe or query on import.
++
++The first helper, PREQUERY and pre-API failure remain preserved. This revision
++selects the compiled definition by its original code name and versions only the
++canonical prequery path. Scanner, order, exclusions and first-receipt guard stay.
++"""
+ import importlib.util
+ import inspect
+ from pathlib import Path
+@@ -24,7 +29,7 @@
+ 
+ UNIVERSE = ()
+ RECORDS = q.RECORDS
+-SCHEMA = 'UDM_NATIVE_AUTHORITY_V43_METADATA_PREQUERY_V1'
++SCHEMA = 'UDM_NATIVE_AUTHORITY_V43_METADATA_PREQUERY_V2'
+ EXTRA_HISTORY = (*_carrier.EXTRA_HISTORY, *(('archaeology/native-authority-v42/'+name)
+     for name in ('DECLARED_UNIVERSE.json', 'PREQUERY.json', 'PREQUERY_EXECUTION.json',
+                  'METADATA_CURATION.json', 'FROZEN_POOL.json', 'SCREENING_AUTHORITY.json',
+@@ -43,7 +48,7 @@
+         text = text.replace(old, new)
+     namespace = dict(globals())
+     exec(compile(text, __file__+':bound-'+function.__name__, 'exec'), namespace)
+-    compiled = namespace[function.__name__]
++    compiled = namespace[function.__code__.co_name]
+     return FunctionType(compiled.__code__, globals(), compiled.__name__, compiled.__defaults__, compiled.__closure__)
+ 
+ 
+@@ -56,6 +61,16 @@
+     ("'UDM_ORDERED_NATIVE_ADMISSION_SCREENING_POOL_V3'", "'UDM_ORDERED_NATIVE_ADMISSION_SCREENING_POOL_V43'"),
+     ("'environment_gate': verified_gate,", "'environment_gate': gate['environment_gate'],\n        'interface_gate': gate['interface_gate'],\n        'interface_archive_audit': gate['interface_archive_audit'],\n        'qualified_gate_chain': verified_gate,"),
+ ))
++
++
++# The original first-query/history guard remains the same executable algorithm;
++# only its canonical plan filename changes for this source-versioned revision.
++if query.__code__.co_consts.count('PREQUERY.json') != 1:
++    raise ValueError('original canonical prequery guard binding site differs')
++_original_query_guard = query
++query = FunctionType(q._literal_code(query.__code__, {'PREQUERY.json': 'PREQUERY_V2.json'}),
++    globals(), query.__name__, query.__defaults__, query.__closure__)
++query.__kwdefaults__ = _original_query_guard.__kwdefaults__
+ 
+ 
+ def _exposure_record():
+@@ -126,7 +141,7 @@
+     configure_universe(args.universe, args.environment_gate, args.qualification_artifact,
+                        args.interface_qualification_artifact)
+     if args.write_prequery:
+-        if args.write_prequery.resolve() != (RECORDS/'PREQUERY.json').resolve():
++        if args.write_prequery.resolve() != (RECORDS/'PREQUERY_V2.json').resolve():
+             raise ValueError('canonical prequery record required')
+         write_once(args.write_prequery, plan(q.HERE))
+         result = {'path': str(args.write_prequery), 'sha256': q.digest(args.write_prequery.read_bytes()),

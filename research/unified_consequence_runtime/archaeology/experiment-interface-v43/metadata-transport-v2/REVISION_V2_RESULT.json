@@ -1,0 +1,49 @@
+{
+  "actual_first_attempt_boundary": {
+    "FROZEN_POOL_exists": false,
+    "METADATA_CURATION_exists": false,
+    "PREQUERY_EXECUTION_exists": false
+  },
+  "bound_query_actual_code_filename": "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/experiment-interface-v43/prospective/curate_frontier_v2.py:bound-_base_query",
+  "green": {
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "tests": 3
+  },
+  "new_files_sha256": {
+    "curate_frontier_v2.py": "83d7e6250228066e5c13e664c9f2d6da41aaa44cc1591d4c878442fb656ea494",
+    "test_metadata_curator_transport_v43.py": "d6069d8e9288dbd751d79b26552fbc0da4ffde5210cfc457b1bdfec34cdf862f"
+  },
+  "new_query_guard_prequery_literal": "PREQUERY_V2.json",
+  "operations": {
+    "git_commands": 0,
+    "native_or_model_calls": 0,
+    "target_api_queries": 0,
+    "target_source_or_native_outcome_reads": 0
+  },
+  "original_scientific_code_object_identity": {
+    "committed": true,
+    "exclusions": true,
+    "filter_existing_production": true,
+    "metadata_api": true,
+    "original": true,
+    "plan": true
+  },
+  "outer_first_query_guard_bytecode_preserved": true,
+  "preserved_original_bytes": {
+    "DECLARED_UNIVERSE.json": true,
+    "GATE_WRAPPER.json": true,
+    "PREQUERY.json": true,
+    "curate_frontier.py": true
+  },
+  "red": {
+    "errors": 0,
+    "failures": 2,
+    "skipped": 0,
+    "tests": 3
+  },
+  "schema": "UDM_V43_METADATA_TRANSPORT_REVISION_V2_CONTROL_RESULT_V1",
+  "source_binding_fix": "Select compiled definition by original function.__code__.co_name rather than inherited callable alias.__name__.",
+  "status": "PASS_SOURCE_FREE_TRANSPORT_CONTROLS_ONLY"
+}
