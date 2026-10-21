@@ -346,7 +346,14 @@ def write_freeze(repo, out, runtime_paths, mode):
                 raise ValueError('setup-preflight pre-fix RED differs')
             _git(repo, 'merge-base', '--is-ancestor', PREFLIGHT_COMMIT, 'HEAD')
             for name, digest in preflight['files_sha256'].items():
-                raw = _git(repo, 'show', PREFLIGHT_COMMIT+':'+name)
+                # The original test/RED descriptor was committed before repair;
+                # its two pre-fix production snapshots were retained outside Git.
+                # Verify those exact hash-bound bytes from the later archival
+                # commit without claiming they existed at PREFLIGHT_COMMIT.
+                recorded = (name if name == PREFIX+WHOLE_TESTS[2] else
+                    PREFIX+'archaeology/experiment-interface-v43/setup-preflight-preimplementation/source-before/'+name)
+                revision = PREFLIGHT_COMMIT if recorded == name else 'HEAD'
+                raw = _git(repo, 'show', revision+':'+recorded)
                 if sha(raw) != digest:
                     raise ValueError('retained pre-fix setup controller source differs: '+name)
                 retained = out.with_name(out.name+'.PRE_FIX_SOURCES')/name

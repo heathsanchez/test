@@ -1,0 +1,12 @@
+{
+  "schema": "UDM_V43_PREFLIGHT_SNAPSHOT_ARCHIVAL_BOUNDARY_V1",
+  "original_test_descriptor_commit": "1df47379e91027d5939ba6d406ce98eeaf7d9ca4",
+  "snapshot_boundary": "Actual pre-fix native_environment_v43/qualify_native_frontier_v43 bytes were captured before the repair outside Git. Their SHA256 values were committed in the original frozen descriptor. Full original captured bytes are archived now, after repair, and must match those already committed hashes. Do not claim the two production files existed at the test-only commit.",
+  "local_freeze_failure": {
+    "source_commit": "8c59ff2034900994c6381f696e0ee86b213a0f1c",
+    "status": "FAIL_BEFORE_NATIVE_EXECUTION",
+    "reason": "Qualifier incorrectly requested pre-fix production root paths at the test-only commit, where they did not exist. Original frozen descriptor and test bytes were correct and remain unchanged.",
+    "command": "--write-freeze --mode whole --out /workspace/qualification/experiment-interface-v43-start/FINAL_COMMITTED_FREEZE.json",
+    "native_or_prospective_execution": false
+  }
+}
