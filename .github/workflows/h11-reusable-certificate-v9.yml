@@ -1,0 +1,42 @@
+name: H11 Reusable Change Impact Certificate V9
+on:
+  push:
+    branches:
+      - research/h11-reusable-impact-certificate-v9-20261022
+  pull_request:
+    paths:
+      - 'research/h11_reusable_certificate_v9/**'
+      - '.github/workflows/h11-reusable-certificate-v9.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-reuse:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Exact independent upstream H11 source
+        uses: actions/checkout@v4
+        with:
+          repository: python-hyper/h11
+          ref: 62c5068c971579d61fa1b55373390e12f25fd856
+          path: upstream
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Native original H11 test dependencies
+        run: |
+          python -m pip install pytest==9.0.3
+          python -m pip install -e ./upstream
+      - name: Reuse certificate on three further edits and one defect
+        run: |
+          python -m py_compile research/h11_reusable_certificate_v9/experiment.py research/h11_reusable_certificate_v9/tracer.py
+          python research/h11_reusable_certificate_v9/experiment.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: h11-reusable-certificate-v9
+          path: research/h11_reusable_certificate_v9/result.json
+          if-no-files-found: warn
