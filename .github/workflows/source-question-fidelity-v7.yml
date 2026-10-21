@@ -1,0 +1,28 @@
+name: Source Question Fidelity V7
+on:
+  push:
+    branches:
+      - research/source-question-fidelity-v7-20261021
+  pull_request:
+    paths:
+      - 'research/source_question_fidelity_v7/**'
+      - '.github/workflows/source-question-fidelity-v7.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - name: Execute sealed source-question and BM25 comparison
+        run: |
+          python3 -m py_compile research/source_question_fidelity_v7/experiment.py
+          python3 research/source_question_fidelity_v7/experiment.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: source-question-fidelity-v7-evidence
+          path: research/source_question_fidelity_v7/result.json
+          if-no-files-found: warn
