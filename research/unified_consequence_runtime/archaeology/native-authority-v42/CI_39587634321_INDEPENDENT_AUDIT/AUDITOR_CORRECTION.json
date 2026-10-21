@@ -1,0 +1,20 @@
+{
+  "schema": "UDM_V42_SCIENTIFIC_CI_AUDITOR_HELPER_CORRECTION",
+  "kind": "AUDIT_HELPER_ASSUMPTION",
+  "initial_report": "SOURCE_PACKET_AUDIT.INITIAL.json",
+  "initial_helper": "audit_source_packet.INITIAL.py.txt",
+  "initial_failure_count": 2304,
+  "initial_only_failure": "Combined exact Git object and strict Unix archive permissions assertion",
+  "root_cause": "Helper incorrectly required tar permissions0644/0755 from first admission workflow, which explicitly supplied tar.umask=022. Scientific workflow uses default Git archive tar.umask=0002, yielding0664/0775 while Gitmode and executable bit remain exact.",
+  "corrected_criterion": "Every source member must preserve exact Git blob OID, SHA256, byte count, and Git mode100644/100755; observe and report Unix tar permissions separately.",
+  "observed_archive_permissions": {
+    "0o664": 2303,
+    "0o775": 1
+  },
+  "corrected_status": "PASS_SCIENTIFIC_REFUSAL_SOURCE_PACKET_CLOSURE",
+  "experiment_source_changes": 0,
+  "native_calls": 0,
+  "collection_calls": 0,
+  "experiment_retries": 0,
+  "raw_source_audit_handling": "Initial helper streamed gzip bytes to SHA256,size,CRC without parsing742MBJSON; corrected helper reuses exact compressed-digest-bound streaming roundtrip receipt rather than decoding or rerunning mechanical source checks."
+}

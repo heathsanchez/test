@@ -1,0 +1,134 @@
+{
+  "schema": "UDM_V42_SCIENTIFIC_RAW_REVIEW_PREARTIFACT_EXPECTATIONS",
+  "prepared_at": "2026-10-21T10:54:32.849089+00:00",
+  "source_commit": "70d21252e8540dd91ab332a102bcb2743de129c0",
+  "run_id": 39587634321,
+  "source_record_sha256": {
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/PREQUERY.json": "f06303a71128f3dc7d32d778c084987230bafd4d2a810d37801d8b7bd78d71a8",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/PREQUERY_EXECUTION.json": "b30006073d9b848e69c20b498b5eb98057de59e4848e73d15d2c867b4043e142",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/FROZEN_POOL.json": "7bfd4a7d882c98288c562352dbe1f89e1ee5790cd87fcdd25af5be7d54b46453",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/FRONTIER_PROTOCOL.json": "af6c870e28da4e9adba203cba7aa411bad414ca082b9717ce9fbd1709d192bb6",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/PUBLIC_SCREENING_SUMMARY.json": "bdfdecf87e6baff5fde0337e33349756d78cb1a3ee6b0cf43507086092be3e06",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/SCREENING_METER.json": "d39d0ef73de86556a486663ceef1e741f18152eb385c46de5ccdaab13f2ce16c",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/SCREENING_ENVELOPES.json": "30239a8c4f2d31fc214389804c47226c41ec75e8b75025345d5784ef59732d7c",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/SCREENING_AUDIT.json": "5dd040cc4af1f8748a3bf85c6d289680786897ba4b1bd26ab0142a193fca980a",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/SCIENTIFIC_RESULT.json": "d55f9f2a3cb2e9f233501845b7aa7f030c098fe46f0ce5f658eabb67576f0501",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/FINALIZATION_REFUSAL_RECEIPT.json": "8350baa0e1c43605317fd08b704f3277cf2c03e2d0bc3b7f9dfeceb4ac675cd0",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/FINALIZATION_REFUSAL.log": "2e308efd6eb42a2acb1dd808f563be3930c8bc81e7e4d82b970b199a375ad9f1",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/SCREENING_AUTHORITY.json": "1e03a16d2eb201a6bbe15325804051c2652dd9820c8a235eed8f46bd091540cd",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/DELIVERY_MANIFEST.json": "2d65231f0a7e5a0e5c939c2f852bb7fb98156ad697d04d7a2b074ae8100deb16",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/ORIGINAL_SCREENING_ACTOR_BOUNDARY_ATTESTATION.json": "a50d6887013a773c2b4f2393fa58a3fbfbf8634db585b4215adddb9ce62fbfdd",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/SCREENING_EVIDENCE/native-authority-v42-screening-raw-evidence.descriptor.json": "c794fbd1170bd9b373fa11c2a5801636359a28e9f62b2188be044ede46a01a76",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/SCREENING_EVIDENCE/native-authority-v42-screening-raw-evidence.manifest.json": "42c8521d54fae79767aae6b9f98fccd82e43a133e2ecadb1ab84527da2c07066",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/SCREENING_EVIDENCE/native-authority-v42-screening-raw-evidence-001-of-002.manifest.json": "dc92fb2e9db1ff839cb2ac8da04474d735bb3ca32adf7c68ee055f521e0813d1",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/SCREENING_EVIDENCE/native-authority-v42-screening-raw-evidence-002-of-002.manifest.json": "b77b3069faf4ecb096548e78d66d2e872099ad44e6c4359c9e2b808aaec5e803",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/SCREENING_INDEPENDENT_AUDIT/native-authority-v42-screening-independent-audit.descriptor.json": "0206545a0c7bf2c0564f8910bd89101baf6dca673422188bc54045e1ffa36ea5",
+    ".github/workflows/udm-prospective-native-selection-v42.yml": "eb8b88ca180911dc3dffc88678efd4d14c87547bb76ed08b9a7e3a22acd4a272"
+  },
+  "expected_cases": [
+    {
+      "index": 0,
+      "repository": "chardet/chardet",
+      "refusal_category": "UNKNOWN_COLLECTION_ERROR",
+      "report": {
+        "path": "/workspace/qualification/native-authority-v42-screening-sealed/case-000/SCREENING_CASE.json",
+        "sha256": "33b7d12b16cc62dfbc3dc44d8634c0a6135cd95b98b7a96bf64a763378779184"
+      },
+      "spec_sha256": "4a27175184a9db58e21801a2e97208e3d0fcefc338aa559ac0a7e3bde11a0c90",
+      "costs": {
+        "collection_calls": 1,
+        "native_calls": 0
+      }
+    },
+    {
+      "index": 1,
+      "repository": "cloudpipe/cloudpickle",
+      "refusal_category": "UNKNOWN_DYNAMIC_METADATA",
+      "report": {
+        "path": "/workspace/qualification/native-authority-v42-screening-sealed/case-001/SCREENING_CASE.json",
+        "sha256": "798075c1e3aa46da2cf9fd83f33c656bf123111276ce3fd2d79c4b7c858b0b00"
+      },
+      "spec_sha256": "15b451dbbf49ee4f263d7193e8c7db7e49c13f9bd2abdfbfbdba67a96a0e4051",
+      "costs": {
+        "collection_calls": 0,
+        "native_calls": 0
+      }
+    },
+    {
+      "index": 2,
+      "repository": "coady/multimethod",
+      "refusal_category": "UNKNOWN_NO_COMPATIBLE_PROFILE",
+      "report": {
+        "path": "/workspace/qualification/native-authority-v42-screening-sealed/case-002/SCREENING_CASE.json",
+        "sha256": "75ffe3c931af210cd5278651dcb9353ce778deb5eadd6933820eedb697961431"
+      },
+      "spec_sha256": "45b566c2461a1b585606fa1b504696b527e46732108d7aab4b0d13798499fe69",
+      "costs": {
+        "collection_calls": 0,
+        "native_calls": 0
+      }
+    },
+    {
+      "index": 3,
+      "repository": "jaraco/path",
+      "refusal_category": "UNKNOWN_NO_COMPATIBLE_PROFILE",
+      "report": {
+        "path": "/workspace/qualification/native-authority-v42-screening-sealed/case-003/SCREENING_CASE.json",
+        "sha256": "abeaba50e33339e59e7e20ed7f35b49d41764c2fc3c8fec7b66afc00f1336354"
+      },
+      "spec_sha256": "83c991b570b233155ccf601096f3f64729bb3363ca0ac6f3caf0c2a22fd1d0a1",
+      "costs": {
+        "collection_calls": 0,
+        "native_calls": 0
+      }
+    },
+    {
+      "index": 4,
+      "repository": "jmespath/jmespath.py",
+      "refusal_category": "UNKNOWN_NO_COMPATIBLE_PROFILE",
+      "report": {
+        "path": "/workspace/qualification/native-authority-v42-screening-sealed/case-004/SCREENING_CASE.json",
+        "sha256": "da69879be4d85c63856cdeef18d860980e95355c39f683386c58f677628a9d97"
+      },
+      "spec_sha256": "3f3b9c2980bffecf5fe971c447338dfb3891ea77f1ed9863c037ee036f1b7d5f",
+      "costs": {
+        "collection_calls": 0,
+        "native_calls": 0
+      }
+    },
+    {
+      "index": 5,
+      "repository": "python-trio/outcome",
+      "refusal_category": "UNKNOWN_DYNAMIC_METADATA",
+      "report": {
+        "path": "/workspace/qualification/native-authority-v42-screening-sealed/case-005/SCREENING_CASE.json",
+        "sha256": "005bc7206f8d3f8bac2e95b41bb8719a9b720e1d9c58f4dbd6027fff0adbe069"
+      },
+      "spec_sha256": "dc00f67996740980be18df96747996963708e23d487b6357dd04f6a935524dca",
+      "costs": {
+        "collection_calls": 0,
+        "native_calls": 0
+      }
+    }
+  ],
+  "readiness_obstruction": "ValueError: committed FRONTIER_PROTOCOL.json is not ready for native execution",
+  "readiness_status": "UNKNOWN_PROTOCOL_NOT_READY",
+  "scientific_assessment": "UNKNOWN_NO_COMPLETE_NATIVE_RESULT",
+  "method_source_errors": [
+    "consequence_selection.py",
+    "developmental_choice.py",
+    "decisive_native.py"
+  ],
+  "limits": [
+    "No scientific prospectivity or G2 follows from admission/refusal evidence.",
+    "Controller historical full file identity remains UNKNOWN_NOT_SUPPLIED_IN_BOUNDED_EVIDENCE.",
+    "No Git/network/native/collection experiment or untrusted source execution by this auditor."
+  ],
+  "prior_helper_provenance": {
+    "/workspace/qualification/native-authority-v41-scientific-refusal-audit/audit_refusal.py": "627bf8896f812b48ee14367049d289373659110603c00c2d6ea05ccdb68c174f",
+    "/workspace/qualification/native-authority-v41-scientific-refusal-audit/screening_checks.py": "1e49a32345f324798325fc3bc13a8b46039ed7e6931c586e6b994ef5dae15694",
+    "/workspace/qualification/native-authority-v41-scientific-refusal-audit/EXPECTATIONS.json": "fc007e1cb2436f71acfec8e03d9bac247f198046a927a23984d2efb726461e45",
+    "/workspace/qualification/native-authority-v41-scientific-refusal-audit/SCREENING_EXPECTATIONS.json": "164aef8c67a7059bcf7606d1cf502ca5cd8b11310e9b1eb8f938d8ee7dd13ae2"
+  },
+  "copied_helper_sha256": "e823973a7bc3883c600e5b778676e5ccfa4692368b978bb38d448c850dc569d4"
+}

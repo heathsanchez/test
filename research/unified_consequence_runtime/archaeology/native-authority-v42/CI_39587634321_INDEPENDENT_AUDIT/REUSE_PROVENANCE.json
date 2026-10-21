@@ -1,0 +1,23 @@
+{
+  "schema": "UDM_V42_SCIENTIFIC_CI_AUDIT_REUSE_PROVENANCE",
+  "prior_helper": {
+    "path": "/workspace/qualification/native-authority-v41-artifact-audit/audit_v41.py",
+    "sha256": "182bd28c29b2af5f753170a013d998f8d995a9f11ecbe882b750f029d6025f11"
+  },
+  "unchanged_imported_helpers": [
+    "decode",
+    "sha",
+    "hash_file",
+    "safe"
+  ],
+  "v41_reference": "/workspace/qualification/native-authority-v41-scientific-refusal-audit/audit_refusal.py",
+  "adaptations": [
+    "V42 exact commit/run/artifact/schema/path/count substitutions.",
+    "Standalone full2304-file source pack replaces V41 partial-source union logic.",
+    "V42 two-shard raw screening descriptor replaces single V41 archive.",
+    "Retained CI raw index before/after evidence checked.",
+    "Readiness and assessment fail; archive also fails honestly on three unavailable original method source objects, followed by successful artifact upload.",
+    "Git modes preserve executable bit; Unix archive permissions recorded independently."
+  ],
+  "artifact_or_repository_code_executed": false
+}

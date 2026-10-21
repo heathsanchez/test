@@ -1,0 +1,264 @@
+"""Offline V42 scientific refusal source/packet closure; no artifact execution."""
+from pathlib import Path
+import collections
+import gzip
+import hashlib
+import io
+import json
+import stat
+import struct
+import sys
+import tarfile
+import time
+import zipfile
+import zlib
+
+sys.path.insert(0, '/workspace/qualification/native-authority-v41-artifact-audit')
+from audit_v41 import decode, sha, hash_file, safe
+
+OUT = Path(__file__).parent
+COMMIT = '70d21252e8540dd91ab332a102bcb2743de129c0'
+RUN = 39587634321
+ARTIFACT = 12340861900
+DIGEST = 'b27f8328599ecf4cfc231cf069170fbdd6a06ea1f785504693e090c11a331271'
+SIZE = 268552894
+PREFIX = 'research/unified_consequence_runtime/archaeology/native-authority-v42/'
+
+
+def main():
+    started = time.monotonic()
+    path = Path(sys.argv[1])
+    checks = []
+    def check(condition, label, **details):
+        checks.append({'check': label, 'pass': bool(condition), **details})
+    report = {'schema': 'UDM_V42_SCIENTIFIC_CI_SOURCE_PACKET_INDEPENDENT_AUDIT',
+              'source_commit': COMMIT, 'run_id': RUN, 'checks': checks,
+              'artifact_code_executed': False, 'auditor_native_calls': 0,
+              'auditor_collection_calls': 0, 'auditor_network_calls': 0}
+    check(hash_file(path) == (DIGEST, SIZE), 'API artifact exact SHA256 and bytes')
+    if hash_file(path) != (DIGEST, SIZE):
+        raise ValueError('Artifact identity mismatch')
+    inventory = decode((OUT/'SOURCE_INVENTORY.json').read_bytes())
+    git_tree = decode((OUT/'SOURCE_GIT_TREE.json').read_bytes())
+    source_audit = decode((OUT/'SOURCE_AUDIT.json').read_bytes())
+    check(inventory['commit'] == git_tree['commit'] == COMMIT, 'independent Git source inventory commit')
+    with zipfile.ZipFile(path) as packet:
+        infos = packet.infolist()
+        names = [safe(info.filename, info.is_dir()) for info in infos]
+        check(len(names) == len(set(names)), 'unique safe ZIP paths')
+        check(not any(stat.S_ISLNK(info.external_attr >> 16) for info in infos), 'no outer ZIP links')
+        check(packet.testzip() is None, 'every ZIP CRC')
+        def member(suffix):
+            rows = [name for name in names if name == suffix or name.endswith('/'+suffix)]
+            if len(rows) != 1:
+                raise ValueError('Expected unique ZIP member '+suffix)
+            return rows[0]
+        manifest_raw = packet.read(member('MANIFEST.json'))
+        manifest = decode(manifest_raw)
+        (OUT/'CI_MANIFEST.json').write_bytes(manifest_raw)
+        check(manifest['schema'] == 'UDM_NATIVE_SELECTION_EVIDENCE_MANIFEST_V42'
+              and manifest['source_commit'] == COMMIT and int(manifest['run_id']) == RUN
+              and int(manifest['run_attempt']) == 1, 'manifest exact schema/source/run/attempt')
+        check(manifest['mode'] == 'REPRODUCTION_OF_COMMITTED_PREOUTCOME_PROTOCOL', 'reproduction boundary')
+        evidence_name = member('NATIVE_SELECTION_V42_EVIDENCE.tar.gz')
+        raw_evidence = packet.read(evidence_name)
+        check(manifest['packet'] == {'path': 'NATIVE_SELECTION_V42_EVIDENCE.tar.gz',
+                                    'sha256': sha(raw_evidence), 'bytes': len(raw_evidence)}, 'nested evidence archive digest/bytes')
+        evidence, actual, seen = {}, {}, set()
+        with tarfile.open(fileobj=io.BytesIO(raw_evidence), mode='r|gz') as bundle:
+            for info in bundle:
+                name = safe(info.name, info.isdir())
+                check(name not in seen and info.isfile(), 'safe unique regular evidence member', path=name)
+                if name in seen or not info.isfile():
+                    raise ValueError('Unsupported evidence member '+name)
+                seen.add(name)
+                value = bundle.extractfile(info).read()
+                evidence[name] = value
+                actual[name] = {'sha256': sha(value), 'bytes': len(value)}
+        check(actual == manifest['files'] and manifest['symlinks'] == {}, 'complete exact evidence member manifest')
+        check(manifest['archive_member_readback_verification'] == {'status': 'PASS_EXACT_MANIFEST_MEMBERS_AND_BYTES',
+                                                                'members': len(actual)}, 'independent manifest readback counts')
+        outer = {}
+        for info in infos:
+            if info.is_dir():
+                continue
+            value = packet.read(info.filename)
+            logical = info.filename.rsplit('/', 1)[-1]
+            outer[info.filename] = {'sha256': sha(value), 'bytes': len(value)}
+            if logical == 'MANIFEST.json':
+                continue
+            expected = manifest['packet'] if logical == manifest['packet']['path'] else manifest['files'].get(logical)
+            check(expected is not None and all(outer[info.filename][k] == expected[k] for k in ['sha256', 'bytes']),
+                  'outer evidence copy exact manifest binding', path=info.filename)
+        report['outer_inventory'] = outer
+        report['nested_inventory'] = actual
+        check(len(actual) == 10 and set(evidence) == {
+            'CI_ASSESSMENT.json', 'CI_BOUNDARY.json', 'INDEX_AFTER_READS/0.bytes', 'INDEX_AFTER_READS/SNAPSHOT.json',
+            'INDEX_BEFORE_READS/0.bytes', 'INDEX_BEFORE_READS/SNAPSHOT.json', 'INDEX_INTERVAL_AUDIT.json',
+            'ORIGINAL_METHOD_OBJECTS.json', 'READINESS.json', 'source-packs/UDM_SOURCE.tar.gz'}, 'exact early refusal evidence inventory')
+        source, source_rows, seen, tar_modes = {}, {}, set(), collections.Counter()
+        with tarfile.open(fileobj=io.BytesIO(evidence['source-packs/UDM_SOURCE.tar.gz']), mode='r|gz') as bundle:
+            for info in bundle:
+                name = safe(info.name, info.isdir())
+                if info.isdir():
+                    continue
+                check(name not in seen and info.isfile(), 'safe unique regular full source member', path=name)
+                if name in seen or not info.isfile():
+                    raise ValueError('Unsupported source member '+name)
+                seen.add(name)
+                stream = bundle.extractfile(info)
+                digest = hashlib.sha256()
+                oid = hashlib.sha1(b'blob '+str(info.size).encode()+b'\0')
+                pieces = []
+                keep = name.startswith(PREFIX)
+                while value := stream.read(1024 * 1024):
+                    digest.update(value)
+                    oid.update(value)
+                    if keep:
+                        pieces.append(value)
+                row = {'sha256': digest.hexdigest(), 'bytes': info.size, 'mode': '100755' if info.mode & 0o111 else '100644'}
+                source_rows[name] = row
+                intended = inventory['files'].get(name)
+                check(row == intended, 'full source exact independent SHA256/bytes/Git mode', path=name)
+                check(name in git_tree['files'] and oid.hexdigest() == git_tree['files'][name]['oid'],
+                      'full source exact Git object', path=name)
+                tar_modes[oct(info.mode)] += 1
+                if keep:
+                    source[name] = b''.join(pieces)
+            pax = dict(bundle.pax_headers)
+        check(source_rows == inventory['files'], 'standalone full source complete independent Git inventory')
+        check(pax.get('comment') == COMMIT, 'full source exact Git commit PAX binding')
+        report['source_closure'] = {'files': len(source_rows), 'bytes': sum(row['bytes'] for row in source_rows.values()),
+                                    'standalone_full_source': True, 'source_pack_sha256': sha(evidence['source-packs/UDM_SOURCE.tar.gz']),
+                                    'pax_commit': pax.get('comment'), 'baseline_preserved': source_audit['baseline_files_preserved'],
+                                    'archive_permissions_observed':dict(tar_modes),
+                                    'all_frozen_groups_preserved': all(all(x['same_tree'] and x['same_sha256'] for x in group['files']) for group in source_audit['frozen_groups'])}
+        interval = decode(evidence['INDEX_INTERVAL_AUDIT.json'])
+        check(interval['changes'] == [] and interval['before'] == interval['after'], 'CI raw index interval unchanged')
+        for phase, key in [('BEFORE', 'before'), ('AFTER', 'after')]:
+            snap = decode(evidence['INDEX_'+phase+'_READS/SNAPSHOT.json'])
+            check(snap == interval[key], 'CI index snapshot bound to interval', phase=phase)
+            for n, row in enumerate(snap['indexes']):
+                if row['exists']:
+                    value = evidence['INDEX_'+phase+'_READS/'+str(n)+'.bytes']
+                    check(sha(value) == row['sha256'] and len(value) == row['size_bytes'], 'CI raw retained index bytes', phase=phase, index=n)
+        delivery = decode(source[PREFIX+'DELIVERY_MANIFEST.json'])
+        for name, row in delivery['files'].items():
+            check(name in source_rows and {k: source_rows[name][k] for k in ['sha256','bytes']} == row,
+                  'every committed delivery record exact digest and bytes', path=name)
+
+        def bind_reference(reference, parent):
+            name = parent + Path(reference['path']).name
+            value = source[name]
+            check(sha(value) == reference['sha256'] and len(value) == reference.get('size_bytes', len(value)),
+                  'descriptor reference exact committed bytes', path=name)
+            return value
+
+        def archive_members(raw, wanted, label):
+            observed, regular, types = {}, {}, collections.Counter()
+            with tarfile.open(fileobj=io.BytesIO(raw), mode='r|gz') as bundle:
+                for info in bundle:
+                    name = safe(info.name, info.isdir())
+                    if name in observed:
+                        raise ValueError('Duplicate screening packet member '+name)
+                    row = {'mode': info.mode}
+                    if info.isdir():
+                        row['type'] = 'directory'
+                    elif info.issym():
+                        row.update(type='symlink', target=info.linkname)
+                    elif info.isfile():
+                        value = bundle.extractfile(info).read()
+                        row.update(type='file', size=len(value), sha256=sha(value), crc32=f'{zlib.crc32(value):08x}')
+                        if label == 'independent_audit':
+                            regular[name] = value
+                    else:
+                        raise ValueError('Unsupported screening packet type '+name)
+                    observed[name] = row
+                    types[row['type']] += 1
+                    check(name in wanted and all(wanted[name].get(k) == v for k,v in row.items()),
+                          'screening packet exact raw type/mode/size/SHA/CRC/link target', packet=label, path=name)
+            check(set(observed) == set(wanted), 'screening packet complete unique manifest inventory', packet=label)
+            # Drain independently to verify the entire gzip stream, including trailing tar blocks.
+            crc, size = 0, 0
+            with gzip.GzipFile(fileobj=io.BytesIO(raw)) as stream:
+                while value := stream.read(1024 * 1024):
+                    crc = zlib.crc32(value, crc)
+                    size += len(value)
+            trailer_crc, trailer_size = struct.unpack('<II', raw[-8:])
+            check(crc == trailer_crc and size % 2**32 == trailer_size, 'screening packet full gzip CRC/ISIZE', packet=label)
+            return observed, regular, dict(types), f'{crc:08x}'
+
+        raw_parent = PREFIX+'SCREENING_EVIDENCE/'
+        base = 'native-authority-v42-screening-raw-evidence'
+        descriptor = decode(source[raw_parent+base+'.descriptor.json'])
+        aggregate = decode(bind_reference(descriptor['manifest'], raw_parent))
+        aggregate_verification = decode(bind_reference(descriptor['verification'], raw_parent))
+        exclusions = decode(bind_reference(descriptor['exclusions'], raw_parent))
+        wanted_all = {row['archive_path']: row for row in aggregate['members']}
+        check(len(wanted_all) == len(aggregate['members']) == 2464, 'raw screening aggregate exact unique count')
+        combined, total_types, shard_reports = {}, collections.Counter(), []
+        for shard in descriptor['shards']:
+            raw = bind_reference(shard, raw_parent)
+            sub = decode(bind_reference(shard['manifest'], raw_parent))
+            verify = decode(bind_reference(shard['verification'], raw_parent))
+            wanted = {row['archive_path']: row for row in sub['members']}
+            observed, _, types, crc = archive_members(raw, wanted, Path(shard['path']).name)
+            check(not set(combined) & set(observed), 'screening shards have no duplicate overlap')
+            combined.update(observed); total_types.update(types)
+            check(verify['status'] == 'PASS' and not verify['failures'] and crc == shard['gzip_crc32'], 'shard verification and actual gzip CRC match')
+            shard_reports.append({'sha256': sha(raw), 'bytes': len(raw), 'members': len(observed), 'types': types, 'gzip_crc32': crc})
+        check(set(combined) == set(wanted_all) and all(all(wanted_all[name].get(k) == v for k,v in row.items()) for name,row in combined.items()), 'both raw shards exactly close aggregate member manifest')
+        check(dict(total_types) == {'directory':1090,'file':1357,'symlink':17}, 'raw screening exact type totals')
+        check(aggregate_verification['status'] == 'PASS' and not aggregate_verification['failures']
+              and aggregate_verification['total_members'] == len(combined), 'aggregate verification matches independent reopening')
+        check(exclusions['all_failed_case_artifacts_preserved'] and exclusions['no_foreign_source_or_test_omissions']
+              and exclusions['all_foreign_git_objects_indexes_symlinks_gitlink_directories_retained'], 'raw exclusions retain failed case/source/Git evidence honestly')
+        report['raw_screening_packets'] = {'shards': shard_reports, 'members':len(combined), 'types':dict(total_types),
+                                          'no_links_extracted_or_followed':True}
+
+        audit_parent = PREFIX+'SCREENING_INDEPENDENT_AUDIT/'
+        base = 'native-authority-v42-screening-independent-audit'
+        descriptor = decode(source[audit_parent+base+'.descriptor.json'])
+        raw = bind_reference(descriptor, audit_parent)
+        manifest2 = decode(bind_reference(descriptor['manifest'], audit_parent))
+        verify = decode(bind_reference(descriptor['verification'], audit_parent))
+        excludes = decode(bind_reference(descriptor['exclusions'], audit_parent))
+        wanted = {row['archive_path']: row for row in manifest2['members']}
+        observed, audit_files, types, crc = archive_members(raw, wanted, 'independent_audit')
+        check(len(observed) == 79 and types == {'directory':7,'file':72}, 'independent audit exact complete member/type counts')
+        check(verify['status'] == 'PASS' and not verify['failures'] and crc == descriptor['gzip_crc32'], 'independent audit verification and gzip CRC match')
+        audit_sha = '5dd040cc4af1f8748a3bf85c6d289680786897ba4b1bd26ab0142a193fca980a'
+        check(sha(audit_files['audit/AUDIT.json']) == descriptor['final_audit_sha256'] == sha(source[PREFIX+'SCREENING_AUDIT.json']) == audit_sha,
+              'exact final independent screening audit closure')
+        check(excludes['all_current_audit_root_files_and_helper_failures_retained']
+              and excludes['current_audit_root_objects_excluded'] == [], 'auditor helper failures/corrections retained without omissions')
+        helper_names = sorted(name for name in audit_files if 'attempt' in name.lower() or 'negative' in name.lower() or 'initial' in name.lower())
+        check(bool(helper_names) and 'audit/AUDITOR_HELPER_NEGATIVES.json' in audit_files, 'original auditor helper mistakes and corrections remain visible')
+        duplicate = excludes['uncompressed_full_source_identity_duplicate']
+        compressed = audit_files[duplicate['lossless_retained_archive_path']]
+        check(sha(compressed) == duplicate['compressed_sha256'] and len(compressed) == duplicate['compressed_size_bytes'], 'lossless raw source audit compressed identity')
+        receipt = decode((OUT/'STREAMING_ROUNDTRIP_RECEIPT.json').read_bytes())
+        check(receipt['compressed_sha256'] == sha(compressed) and receipt['compressed_bytes'] == len(compressed)
+              and receipt['uncompressed_sha256'] == duplicate['uncompressed_sha256']
+              and receipt['uncompressed_bytes'] == duplicate['uncompressed_size_bytes'],
+              'lossless raw source audit verified streaming roundtrip receipt and descriptor closure')
+        report['independent_screening_audit_packet'] = {'sha256':sha(raw),'bytes':len(raw),'members':len(observed),'types':types,
+            'final_audit_sha256':audit_sha,'helper_history_files':helper_names,
+            'full_source_audit_compressed_bytes':len(compressed),'lossless_uncompressed_bytes':receipt['uncompressed_bytes'],
+            'uncompressed_sha256':receipt['uncompressed_sha256'],'full_raw_JSON_parsed':False}
+    check(hash_file(path) == (DIGEST, SIZE), 'artifact unchanged throughout offline audit')
+    report['failures'] = [row for row in checks if not row['pass']]
+    report['check_count'] = len(checks)
+    report['status'] = 'PASS_SCIENTIFIC_REFUSAL_SOURCE_PACKET_CLOSURE' if not report['failures'] else 'OBSTRUCTED'
+    report['seconds'] = time.monotonic()-started
+    report['verdicts'] = {f'G{i}':'UNKNOWN' for i in range(2,7)}
+    report['safe_read_boundary'] = 'Regular bytes read directly with zipfile/tarfile; raw symlink targets inventoried without extraction or traversal.'
+    (OUT/'SOURCE_PACKET_AUDIT.json').write_text(json.dumps(report,indent=2,sort_keys=True)+'\n')
+    compact = {k:report[k] for k in ['status','check_count','source_closure','raw_screening_packets','independent_screening_audit_packet','seconds']}
+    compact['failure_count'] = len(report['failures'])
+    compact['first_failures'] = report['failures'][:5]
+    print(json.dumps(compact,indent=2))
+
+
+if __name__ == '__main__':
+    main()

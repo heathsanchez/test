@@ -1,0 +1,165 @@
+{
+  "captured_at": "2026-10-21T10:54:11.998961+00:00",
+  "commit": "70d21252e8540dd91ab332a102bcb2743de129c0",
+  "head_exact": true,
+  "source_files": 2304,
+  "source_bytes": 349357906,
+  "all_worktree_source_matches_git_bytes_modes_objects": true,
+  "baseline_files_preserved": 2192,
+  "baseline_changes": [],
+  "original_first_gate_ancestor": true,
+  "frozen_groups": [
+    {
+      "commit": "c547612c80307c7ad218e3f7986df918525e5e86",
+      "files": [
+        {
+          "path": "research/unified_consequence_runtime/test_native_source_v42.py",
+          "same_tree": true,
+          "same_sha256": true
+        },
+        {
+          "path": "research/unified_consequence_runtime/test_native_execution_v42.py",
+          "same_tree": true,
+          "same_sha256": true
+        },
+        {
+          "path": "research/unified_consequence_runtime/test_qualify_native_frontier_v42.py",
+          "same_tree": true,
+          "same_sha256": true
+        },
+        {
+          "path": "research/unified_consequence_runtime/archaeology/native-authority-v42/ACCEPTANCE_PROTOCOL.json",
+          "same_tree": true,
+          "same_sha256": true
+        },
+        {
+          "path": "research/unified_consequence_runtime/archaeology/native-authority-v42/ACCEPTANCE_TEST_FREEZE.json",
+          "same_tree": true,
+          "same_sha256": true
+        }
+      ]
+    },
+    {
+      "commit": "7dc52f864d885509b53c1712206c68d4264aa2ee",
+      "files": [
+        {
+          "path": "research/unified_consequence_runtime/test_native_source_v42_regressions.py",
+          "same_tree": true,
+          "same_sha256": true
+        },
+        {
+          "path": "research/unified_consequence_runtime/test_native_execution_v42_regressions.py",
+          "same_tree": true,
+          "same_sha256": true
+        },
+        {
+          "path": "research/unified_consequence_runtime/archaeology/native-authority-v42/SUPPLEMENTARY_REVIEW_FREEZE.json",
+          "same_tree": true,
+          "same_sha256": true
+        }
+      ]
+    },
+    {
+      "commit": "57dcb513d20c00d6558fbfb101e3c97f37ae2d33",
+      "files": [
+        {
+          "path": "research/unified_consequence_runtime/test_native_environment_v42.py",
+          "same_tree": true,
+          "same_sha256": true
+        },
+        {
+          "path": "research/unified_consequence_runtime/archaeology/native-authority-v42/ENVIRONMENT_INTERFACE_FREEZE.json",
+          "same_tree": true,
+          "same_sha256": true
+        }
+      ]
+    },
+    {
+      "commit": "661f16eb209e2b410c1e7c02ce42aefc20f2c01c",
+      "files": [
+        {
+          "path": "research/unified_consequence_runtime/test_native_legacy_source_v42.py",
+          "same_tree": true,
+          "same_sha256": true
+        },
+        {
+          "path": "research/unified_consequence_runtime/archaeology/native-authority-v42/LEGACY_FIXTURE_PROTOCOL.json",
+          "same_tree": true,
+          "same_sha256": true
+        }
+      ]
+    },
+    {
+      "commit": "87b36624ea3a3746686d52d25f2ed0349d53232f",
+      "files": [
+        {
+          "path": "research/unified_consequence_runtime/test_native_legacy_source_v421.py",
+          "same_tree": true,
+          "same_sha256": true
+        },
+        {
+          "path": "research/unified_consequence_runtime/archaeology/native-authority-v42/LEGACY_FIXTURE_PROTOCOL_V421.json",
+          "same_tree": true,
+          "same_sha256": true
+        }
+      ]
+    }
+  ],
+  "changed_or_added_since_first_gate": [
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/CI_39582982718_INDEPENDENT_AUDIT.json",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/CI_39582982718_INDEPENDENT_AUDIT.txt",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/CI_39582982718_LEGACY_RESULT.json",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/CI_39582982718_RESULT.json",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/DECLARED_UNIVERSE.json",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/DELIVERY_MANIFEST.json",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/FINALIZATION_REFUSAL.log",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/FINALIZATION_REFUSAL_RECEIPT.json",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/FRONTIER_PROTOCOL.json",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/FROZEN_POOL.json",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/METADATA_CURATION.json",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/ORIGINAL_SCREENING_ACTOR_BOUNDARY_ATTESTATION.json",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/PREQUERY.json",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/PREQUERY_EXECUTION.json",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/PUBLIC_SCREENING_SUMMARY.json",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/QUALIFIED_GATE.json",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/RESEARCH_REPORT.md",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/SCIENTIFIC_RESULT.json",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/SCREENING_AUDIT.json",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/SCREENING_AUDIT_SUMMARY.txt",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/SCREENING_AUTHORITY.json",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/SCREENING_ENVELOPES.json",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/SCREENING_EVIDENCE/CANONICAL_COPY_LIST.json",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/SCREENING_EVIDENCE/archive-input-receipts/CASE000_VENV_FULL_IDENTITY.json",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/SCREENING_EVIDENCE/archive_evidence_v42.py",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/SCREENING_EVIDENCE/independent_manifest_readback.py",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/SCREENING_EVIDENCE/native-authority-v42-screening-raw-evidence-001-of-002.manifest.json",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/SCREENING_EVIDENCE/native-authority-v42-screening-raw-evidence-001-of-002.tar.gz",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/SCREENING_EVIDENCE/native-authority-v42-screening-raw-evidence-001-of-002.verification.json",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/SCREENING_EVIDENCE/native-authority-v42-screening-raw-evidence-002-of-002.manifest.json",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/SCREENING_EVIDENCE/native-authority-v42-screening-raw-evidence-002-of-002.tar.gz",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/SCREENING_EVIDENCE/native-authority-v42-screening-raw-evidence-002-of-002.verification.json",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/SCREENING_EVIDENCE/native-authority-v42-screening-raw-evidence.descriptor.json",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/SCREENING_EVIDENCE/native-authority-v42-screening-raw-evidence.exclusions.json",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/SCREENING_EVIDENCE/native-authority-v42-screening-raw-evidence.independent-readback.json",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/SCREENING_EVIDENCE/native-authority-v42-screening-raw-evidence.manifest.json",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/SCREENING_EVIDENCE/native-authority-v42-screening-raw-evidence.verification.json",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/SCREENING_EVIDENCE/pre_git_index_snapshot/001-index.bin",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/SCREENING_EVIDENCE/pre_git_index_snapshot/002-index.bin",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/SCREENING_EVIDENCE/pre_git_index_snapshot/003-index.bin",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/SCREENING_EVIDENCE/pre_git_index_snapshot/004-index.bin",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/SCREENING_EVIDENCE/pre_git_index_snapshot/MANIFEST.json",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/SCREENING_INDEPENDENT_AUDIT/CANONICAL_COPY_LIST.json",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/SCREENING_INDEPENDENT_AUDIT/archive_final_audit.py",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/SCREENING_INDEPENDENT_AUDIT/native-authority-v42-screening-independent-audit.descriptor.json",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/SCREENING_INDEPENDENT_AUDIT/native-authority-v42-screening-independent-audit.exclusions.json",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/SCREENING_INDEPENDENT_AUDIT/native-authority-v42-screening-independent-audit.independent-readback.json",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/SCREENING_INDEPENDENT_AUDIT/native-authority-v42-screening-independent-audit.manifest.json",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/SCREENING_INDEPENDENT_AUDIT/native-authority-v42-screening-independent-audit.tar.gz",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/SCREENING_INDEPENDENT_AUDIT/native-authority-v42-screening-independent-audit.verification.json",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/SCREENING_INDEPENDENT_AUDIT/readback_final_audit.py",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/SCREENING_METER.json",
+    "research/unified_consequence_runtime/archaeology/native-authority-v42/UNIVERSE_INFORMATION_BOUNDARY.json"
+  ],
+  "git_optional_locks": "0",
+  "inventory_sha256": "74c8093967b8c14b341026fcdb704e5275ff1a33808470996152ad9243bbcad4"
+}

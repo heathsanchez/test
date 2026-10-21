@@ -1,0 +1,50 @@
+{
+  "schema": "UDM_V42_ROS_SYNCHRONIZATION_RECEIPT",
+  "checkpoint_url": "https://app.notion.com/p/4003e523d7ab814694a6e3e4f7736671",
+  "source_commit": "70d21252e8540dd91ab332a102bcb2743de129c0",
+  "scientific_run_id": 39587634321,
+  "artifact_id": 12340861900,
+  "artifact_sha256": "b27f8328599ecf4cfc231cf069170fbdd6a06ea1f785504693e090c11a331271",
+  "status": "PASS_TARGETED_UPDATES_AND_EXACT_PRESERVATION_READBACK",
+  "authority_boundary": "ROS summarizes committed source and independently retained evidence; it grants no execution permission and does not promote admission into G2.",
+  "root_readback": [
+    {
+      "i": 0,
+      "id": "https://app.notion.com/p/3e43e523d7ab81acb430d6d18ad258e9",
+      "old_body_chars": 2611668,
+      "new_body_chars": 2614118,
+      "old_body_preserved_exactly_as_suffix": true,
+      "old_body_occurrences": 1,
+      "new_marker_present": true,
+      "checkpoint_native_mention_present": true
+    },
+    {
+      "i": 1,
+      "id": "https://app.notion.com/p/3e43e523d7ab81a5bbc9e405e81aba6c",
+      "old_body_chars": 1106884,
+      "new_body_chars": 1109418,
+      "old_body_preserved_exactly_as_suffix": true,
+      "old_body_occurrences": 1,
+      "new_marker_present": true,
+      "checkpoint_native_mention_present": true
+    }
+  ],
+  "checkpoint_readback": {
+    "only_targeted_paragraph_requested": true,
+    "unchanged_prefix_preserved": true,
+    "unchanged_suffix_preserved": true,
+    "artifact_sha_present": true,
+    "readiness_unknown_present": true,
+    "unavailable_method_errors_retained": true,
+    "old_pending_claim_removed": true
+  },
+  "operations": [
+    "create checkpoint under Research Checkpoints",
+    "insert_content at start of Canonical Research State",
+    "insert_content at start of Research Checkpoints after refetching new child",
+    "targeted update_content of only newly created checkpoint's pending CI paragraph",
+    "fetch all edited pages and compare pre-existing content"
+  ],
+  "parser_note": "New mention-page tags were automatically converted to current native mention syntax. All prior canonical/checkpoint body characters were preserved exactly as suffixes.",
+  "checkpoint_last_edited_at": "2026-10-21T11:00:44.461Z"
+}
