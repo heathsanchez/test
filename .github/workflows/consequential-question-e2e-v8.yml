@@ -1,0 +1,28 @@
+name: Consequential Question E2E V8
+on:
+  push:
+    branches:
+      - research/consequential-question-e2e-v8-20261021
+  pull_request:
+    paths:
+      - 'research/consequential_question_e2e_v8/**'
+      - '.github/workflows/consequential-question-e2e-v8.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-qualification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - name: Frozen independent source question and native witness
+        run: |
+          python3 -m py_compile research/consequential_question_e2e_v8/experiment.py
+          python3 research/consequential_question_e2e_v8/experiment.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: consequential-question-e2e-v8
+          path: research/consequential_question_e2e_v8/result.json
+          if-no-files-found: warn
