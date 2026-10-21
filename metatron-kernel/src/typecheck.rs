@@ -2760,6 +2760,60 @@ impl<'a> TypeChecker<'a> {
                         );
                     }
                 }
+                // Research candidate: a source-formed expected Π may be
+                // checked by the existing guarded converter only after the
+                // actual argument type has already been independently inferred.
+                // Never turn the prior refutation itself into a proof.
+                // This is opt-in and refuses definitive obstructions.
+                let conversion = if std::env::var_os("NUCLEUS_EXPERIMENTAL_FORMED_PI_GUARD").is_some()
+                    && expected_formed
+                    && conversion_refutation_is_unknown
+                    && (4..=24).contains(&context.len())
+                    && *remaining >= 256
+                    && matches!(&value, TypeValue::Pi { .. })
+                    && let TypeValue::Term(source_expected) = expected
+                    && (conversion.is_unknown()
+                        || matches!(&conversion, Judgment::Refuted { obstruction }
+                            if !definite_conversion_obstruction(obstruction.0)))
+                    && matches!(
+                        self.machine().expose(
+                            source_expected.clone(), Transparency::Reducible,
+                            (*remaining).min(512),
+                        ).proven_value(),
+                        Some(Value::Pi { .. })
+                    )
+                {
+                    let mut formation_fuel = (*remaining).min(1024);
+                    let source_formed = matches!(
+                        self.infer_exact_closure_in_context(
+                            source_expected, context, &mut formation_fuel, 0,
+                        ),
+                        Some(TypeValue::Sort(_))
+                    );
+                    if source_formed {
+                        let recovered = crate::convert::convert_with_policy_in_context(
+                            self, &value, expected, (*remaining).min(512),
+                            crate::convert::DeltaPolicy::GuardedSemanticFallback,
+                            context.len(), context,
+                        );
+                        if recovered.is_proven() {
+                            #[cfg(feature = "diagnostics")]
+                            if std::env::var_os("NUCLEUS_TRACE_FORMED_PI_GUARD").is_some() {
+                                eprintln!(
+                                    "NUCLEUS_FORMED_PI_GUARD:expression={expression:?}:depth={}:source_expected={:?}:prior={conversion:?}:recovered={recovered:?}",
+                                    context.len(), source_expected.expr,
+                                );
+                            }
+                            recovered
+                        } else {
+                            conversion
+                        }
+                    } else {
+                        conversion
+                    }
+                } else {
+                    conversion
+                };
                 match conversion {
                     Judgment::Refuted { obstruction }
                         if conversion_refutation_is_unknown
