@@ -1,0 +1,28 @@
+name: Cross Domain Obligation Witness V6
+on:
+  push:
+    branches:
+      - research/cross-domain-witness-transfer-v6-20261021
+  pull_request:
+    paths:
+      - 'research/cross_domain_witness_v6/**'
+      - '.github/workflows/cross-domain-witness-v6.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  cross-family:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test original compiler and native baseline on non-SQLite source
+        run: |
+          python3 -m py_compile research/cross_domain_witness_v6/test.py
+          python3 research/cross_domain_witness_v6/test.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cross-domain-witness-v6
+          path: research/cross_domain_witness_v6/result.json
+          if-no-files-found: warn

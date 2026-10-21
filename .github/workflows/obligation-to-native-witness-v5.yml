@@ -1,0 +1,28 @@
+name: Obligation to Native Witness V5
+on:
+  push:
+    branches:
+      - research/obligation-to-native-witness-v5-20261021
+  pull_request:
+    paths:
+      - 'research/obligation_to_native_witness_v5/**'
+      - '.github/workflows/obligation-to-native-witness-v5.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  bounded-transfer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - name: Execute pre-frozen seventh-source native witness
+        run: |
+          python3 -m py_compile research/obligation_to_native_witness_v5/experiment.py
+          python3 research/obligation_to_native_witness_v5/experiment.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: obligation-to-native-witness-v5-evidence
+          path: research/obligation_to_native_witness_v5/result.json
+          if-no-files-found: warn

@@ -1,0 +1,28 @@
+name: Structural Obligation Witness V2
+on:
+  push:
+    branches:
+      - research/structural-obligation-witness-v2-20261021
+  pull_request:
+    paths:
+      - 'research/structural_obligation_witness_v2/**'
+      - '.github/workflows/structural-obligation-witness-v2.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  fourth-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify exposed catalog and test unchanged fourth-source transfer
+        run: |
+          python3 -m py_compile research/structural_obligation_witness_v2/run.py
+          python3 research/structural_obligation_witness_v2/run.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: structural-obligation-witness-v2-evidence
+          path: research/structural_obligation_witness_v2/result.json
+          if-no-files-found: warn
