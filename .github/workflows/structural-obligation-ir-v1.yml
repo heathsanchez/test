@@ -1,0 +1,30 @@
+name: Structural Obligation IR V1
+on:
+  push:
+    branches:
+      - research/structural-obligation-ir-v1-20261021
+  pull_request:
+    paths:
+      - 'research/structural_obligation_ir_v1/**'
+      - '.github/workflows/structural-obligation-ir-v1.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  transfer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Exposed native control and sealed third-source transfer
+        run: |
+          python3 research/structural_obligation_ir_v1/experiment.py
+          python3 research/structural_obligation_ir_v1/exposed_trigger_native.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: structural-obligation-ir-v1-evidence
+          path: |
+            research/structural_obligation_ir_v1/result.json
+            research/structural_obligation_ir_v1/exposed_trigger_result.json
+          if-no-files-found: warn
