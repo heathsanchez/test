@@ -20,9 +20,12 @@ jobs:
         run: |
           python3 -m py_compile research/target_relative_obligation_v3/experiment.py
           python3 research/target_relative_obligation_v3/experiment.py
+          python3 research/target_relative_obligation_v3/exposed_generated_native.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: target-relative-obligation-v3-evidence
-          path: research/target_relative_obligation_v3/result.json
+          path: |
+            research/target_relative_obligation_v3/result.json
+            research/target_relative_obligation_v3/exposed_native_result.json
           if-no-files-found: warn
