@@ -1,0 +1,23 @@
+{
+  "run_id": 38783551691,
+  "source_commit": "b450119f81ee0026f8fb0c6d6a9c5b259ebb8e82",
+  "conclusion": "failure",
+  "artifact_id": 11996434858,
+  "artifact_sha256": "498ab2ba5884edde528207407553a83a9ed4b56bb2e98f8daa4459841db713fc",
+  "artifact_bytes": 24560593,
+  "archive_independently_reopened": true,
+  "contract_tests": {
+    "run": 210,
+    "failures": 78,
+    "errors": 32,
+    "skipped": 20,
+    "seconds": 168.288
+  },
+  "causes": [
+    "Shallow evaluator checkout built0.0.post1.dev1 instead of frozen1.2.3; native verifier and pinned import-loader checks correctly refused",
+    "Pinned V54 native worlds/interpreter missing from workflow"
+  ],
+  "native_control_and_target_stages": "SKIPPED_IN_THIS_CI_RUN",
+  "separate_local_packet": "FROZEN_B450_VERDICT.json",
+  "changes_next": "Restore qualified evaluator history and original native test environments; maintenance-only coordinator retention fix; no new target execution"
+}

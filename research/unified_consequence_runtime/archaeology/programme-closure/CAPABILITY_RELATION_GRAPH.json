@@ -1,0 +1,329 @@
+{
+  "schema": "metalogic.documented-capability-relations.v1",
+  "nodes": [
+    {
+      "id": "verified-experiment-language-genesis-v1",
+      "type": "capability_candidate",
+      "classification": "CANDIDATE"
+    },
+    {
+      "id": "verified-experiment-meta-substrate-genesis-v1",
+      "type": "capability_candidate",
+      "classification": "CANDIDATE"
+    },
+    {
+      "id": "verified-prospective-repair-selection-v1",
+      "type": "capability_candidate",
+      "classification": "CANDIDATE"
+    },
+    {
+      "id": "verified-value-evidence-separator-genesis-v1",
+      "type": "capability_candidate",
+      "classification": "CANDIDATE"
+    },
+    {
+      "id": "verified-retention-policy-genesis-v1",
+      "type": "capability_candidate",
+      "classification": "CANDIDATE"
+    },
+    {
+      "id": "verified-semantic-certificate-causality-v1",
+      "type": "capability_candidate",
+      "classification": "CANDIDATE"
+    },
+    {
+      "id": "verified-cross-representation-compounding-v1",
+      "type": "capability_candidate",
+      "classification": "CANDIDATE"
+    },
+    {
+      "id": "verified-representation-genesis-v1",
+      "type": "capability_candidate",
+      "classification": "CANDIDATE"
+    },
+    {
+      "id": "verified-autonomous-adapter-genesis-v1",
+      "type": "capability_candidate",
+      "classification": "CANDIDATE"
+    },
+    {
+      "id": "emergent-persistence-geometry-v1",
+      "type": "capability_candidate",
+      "classification": "CANDIDATE"
+    },
+    {
+      "id": "emergent-persistence-hierarchy-v1",
+      "type": "capability_candidate",
+      "classification": "CANDIDATE"
+    },
+    {
+      "id": "verified-cross-domain-invariant-transfer-v1",
+      "type": "capability_candidate",
+      "classification": "CANDIDATE"
+    },
+    {
+      "id": "verified-developmental-compounding-v1",
+      "type": "capability_candidate",
+      "classification": "CANDIDATE"
+    },
+    {
+      "id": "verified-developmental-constructor-genesis-v1",
+      "type": "capability_candidate",
+      "classification": "CANDIDATE"
+    },
+    {
+      "id": "verified-expressive-development-v1",
+      "type": "capability_candidate",
+      "classification": "CANDIDATE"
+    },
+    {
+      "id": "verified-generator-construction-v1",
+      "type": "capability_candidate",
+      "classification": "CANDIDATE"
+    }
+  ],
+  "edges": [
+    {
+      "from": "verified-experiment-language-genesis-v1",
+      "to": "commit:29e9c7d1b64fb5080717ff644c9e4614e2309694",
+      "relation": "DOCUMENTED_SOURCE_BASE",
+      "field": "base_commit",
+      "boundary": "Source lineage, not independently verified runtime causal dependence"
+    },
+    {
+      "from": "verified-experiment-language-genesis-v1",
+      "to": "existing-udm-capabilities",
+      "relation": "BEHAVIOURAL_EQUIVALENCE_UNKNOWN",
+      "boundary": "No independently verified common protected-behaviour comparison supplied by scanner"
+    },
+    {
+      "from": "verified-experiment-meta-substrate-genesis-v1",
+      "to": "commit:af224f4108a3ed545ffad23fc4080225d1157b54",
+      "relation": "DOCUMENTED_SOURCE_BASE",
+      "field": "parent_freeze",
+      "boundary": "Source lineage, not independently verified runtime causal dependence"
+    },
+    {
+      "from": "verified-experiment-meta-substrate-genesis-v1",
+      "to": "existing-udm-capabilities",
+      "relation": "BEHAVIOURAL_EQUIVALENCE_UNKNOWN",
+      "boundary": "No independently verified common protected-behaviour comparison supplied by scanner"
+    },
+    {
+      "from": "verified-prospective-repair-selection-v1",
+      "to": "commit:53ef767c47281659776020ea4543e8ea56533443",
+      "relation": "DOCUMENTED_SOURCE_BASE",
+      "field": "base_commit",
+      "boundary": "Source lineage, not independently verified runtime causal dependence"
+    },
+    {
+      "from": "verified-prospective-repair-selection-v1",
+      "to": "existing-udm-capabilities",
+      "relation": "BEHAVIOURAL_EQUIVALENCE_UNKNOWN",
+      "boundary": "No independently verified common protected-behaviour comparison supplied by scanner"
+    },
+    {
+      "from": "verified-value-evidence-separator-genesis-v1",
+      "to": "commit:185476c1aa0d9fa7caa5327152b254bec45c4988",
+      "relation": "DOCUMENTED_SOURCE_BASE",
+      "field": "base_commit",
+      "boundary": "Source lineage, not independently verified runtime causal dependence"
+    },
+    {
+      "from": "verified-value-evidence-separator-genesis-v1",
+      "to": "existing-udm-capabilities",
+      "relation": "BEHAVIOURAL_EQUIVALENCE_UNKNOWN",
+      "boundary": "No independently verified common protected-behaviour comparison supplied by scanner"
+    },
+    {
+      "from": "verified-retention-policy-genesis-v1",
+      "to": "commit:616d6007a85ed74bd2a2479b1cf44e885a0ea5fe",
+      "relation": "DOCUMENTED_SOURCE_BASE",
+      "field": "base_commit",
+      "boundary": "Source lineage, not independently verified runtime causal dependence"
+    },
+    {
+      "from": "run:34648396877",
+      "to": "run:34648832202",
+      "relation": "SUPERSEDED_OR_INVALID_AS_DOCUMENTED",
+      "reason": "Lean action setup failed before experiment execution"
+    },
+    {
+      "from": "run:34648508248",
+      "to": "run:34648832202",
+      "relation": "SUPERSEDED_OR_INVALID_AS_DOCUMENTED",
+      "reason": "Lean certificate did not compile"
+    },
+    {
+      "from": "run:34648604462",
+      "to": "run:34648832202",
+      "relation": "SUPERSEDED_OR_INVALID_AS_DOCUMENTED",
+      "reason": "unordered finite-set serialization made evidence hash-seed dependent"
+    },
+    {
+      "from": "run:34648686000",
+      "to": "run:34648832202",
+      "relation": "SUPERSEDED_OR_INVALID_AS_DOCUMENTED",
+      "reason": "replayed the same hash-seed-dependent implementation"
+    },
+    {
+      "from": "verified-retention-policy-genesis-v1",
+      "to": "existing-udm-capabilities",
+      "relation": "BEHAVIOURAL_EQUIVALENCE_UNKNOWN",
+      "boundary": "No independently verified common protected-behaviour comparison supplied by scanner"
+    },
+    {
+      "from": "verified-semantic-certificate-causality-v1",
+      "to": "existing-udm-capabilities",
+      "relation": "BEHAVIOURAL_EQUIVALENCE_UNKNOWN",
+      "boundary": "No independently verified common protected-behaviour comparison supplied by scanner"
+    },
+    {
+      "from": "run:34603219913",
+      "to": "run:34603467525",
+      "relation": "SUPERSEDED_OR_INVALID_AS_DOCUMENTED",
+      "reason": "Lean disjointness theorem used invalid cross-type equality elimination"
+    },
+    {
+      "from": "verified-cross-representation-compounding-v1",
+      "to": "existing-udm-capabilities",
+      "relation": "BEHAVIOURAL_EQUIVALENCE_UNKNOWN",
+      "boundary": "No independently verified common protected-behaviour comparison supplied by scanner"
+    },
+    {
+      "from": "run:34591666019",
+      "to": "run:34591859113",
+      "relation": "SUPERSEDED_OR_INVALID_AS_DOCUMENTED",
+      "reason": "Lean contradiction, simplification, and decidability proof defects"
+    },
+    {
+      "from": "verified-representation-genesis-v1",
+      "to": "existing-udm-capabilities",
+      "relation": "BEHAVIOURAL_EQUIVALENCE_UNKNOWN",
+      "boundary": "No independently verified common protected-behaviour comparison supplied by scanner"
+    },
+    {
+      "from": "run:34605462229",
+      "to": "run:34605772751",
+      "relation": "SUPERSEDED_OR_INVALID_AS_DOCUMENTED",
+      "reason": "Historical authority lists invalid implementation run"
+    },
+    {
+      "from": "run:34605514449",
+      "to": "run:34605772751",
+      "relation": "SUPERSEDED_OR_INVALID_AS_DOCUMENTED",
+      "reason": "Historical authority lists invalid implementation run"
+    },
+    {
+      "from": "run:34605517489",
+      "to": "run:34605772751",
+      "relation": "SUPERSEDED_OR_INVALID_AS_DOCUMENTED",
+      "reason": "Historical authority lists invalid implementation run"
+    },
+    {
+      "from": "verified-autonomous-adapter-genesis-v1",
+      "to": "existing-udm-capabilities",
+      "relation": "BEHAVIOURAL_EQUIVALENCE_UNKNOWN",
+      "boundary": "No independently verified common protected-behaviour comparison supplied by scanner"
+    },
+    {
+      "from": "emergent-persistence-geometry-v1",
+      "to": "existing-udm-capabilities",
+      "relation": "BEHAVIOURAL_EQUIVALENCE_UNKNOWN",
+      "boundary": "No independently verified common protected-behaviour comparison supplied by scanner"
+    },
+    {
+      "from": "emergent-persistence-hierarchy-v1",
+      "to": "existing-udm-capabilities",
+      "relation": "BEHAVIOURAL_EQUIVALENCE_UNKNOWN",
+      "boundary": "No independently verified common protected-behaviour comparison supplied by scanner"
+    },
+    {
+      "from": "verified-cross-domain-invariant-transfer-v1",
+      "to": "existing-udm-capabilities",
+      "relation": "BEHAVIOURAL_EQUIVALENCE_UNKNOWN",
+      "boundary": "No independently verified common protected-behaviour comparison supplied by scanner"
+    },
+    {
+      "from": "verified-developmental-compounding-v1",
+      "to": "commit:ac4d0cf87118fd8e93f93d495ed9e95fa853e64a",
+      "relation": "DOCUMENTED_SOURCE_BASE",
+      "field": "base_commit",
+      "boundary": "Source lineage, not independently verified runtime causal dependence"
+    },
+    {
+      "from": "verified-developmental-compounding-v1",
+      "to": "commit:781139fdd6ec2b4687a171cbde65fc332fd1b94a",
+      "relation": "DOCUMENTED_SOURCE_BASE",
+      "field": "initial_frozen_experiment_commit",
+      "boundary": "Source lineage, not independently verified runtime causal dependence"
+    },
+    {
+      "from": "run:34562350044",
+      "to": "run:34562463842",
+      "relation": "SUPERSEDED_ACCOUNTING",
+      "reason": "Original AUTHORITY corrects matched aggregate accounting; scientific algorithm unchanged as declared"
+    },
+    {
+      "from": "verified-developmental-compounding-v1",
+      "to": "existing-udm-capabilities",
+      "relation": "BEHAVIOURAL_EQUIVALENCE_UNKNOWN",
+      "boundary": "No independently verified common protected-behaviour comparison supplied by scanner"
+    },
+    {
+      "from": "verified-developmental-constructor-genesis-v1",
+      "to": "existing-udm-capabilities",
+      "relation": "BEHAVIOURAL_EQUIVALENCE_UNKNOWN",
+      "boundary": "No independently verified common protected-behaviour comparison supplied by scanner"
+    },
+    {
+      "from": "run:34588481553",
+      "to": "run:34589130145",
+      "relation": "SUPERSEDED_OR_INVALID_AS_DOCUMENTED",
+      "reason": "Lean import error was masked by a pipeline without pipefail"
+    },
+    {
+      "from": "run:34588655262",
+      "to": "run:34589130145",
+      "relation": "SUPERSEDED_OR_INVALID_AS_DOCUMENTED",
+      "reason": "reserved field name and module-gate defects"
+    },
+    {
+      "from": "run:34588809250",
+      "to": "run:34589130145",
+      "relation": "SUPERSEDED_OR_INVALID_AS_DOCUMENTED",
+      "reason": "indexed constructor inference defects"
+    },
+    {
+      "from": "run:34588939842",
+      "to": "run:34589130145",
+      "relation": "SUPERSEDED_OR_INVALID_AS_DOCUMENTED",
+      "reason": "concrete episode membership proof defects"
+    },
+    {
+      "from": "verified-expressive-development-v1",
+      "to": "existing-udm-capabilities",
+      "relation": "BEHAVIOURAL_EQUIVALENCE_UNKNOWN",
+      "boundary": "No independently verified common protected-behaviour comparison supplied by scanner"
+    },
+    {
+      "from": "run:34590125601",
+      "to": "run:34590333207",
+      "relation": "SUPERSEDED_OR_INVALID_AS_DOCUMENTED",
+      "reason": "Lean state-index elaboration errors"
+    },
+    {
+      "from": "run:34590221591",
+      "to": "run:34590333207",
+      "relation": "SUPERSEDED_OR_INVALID_AS_DOCUMENTED",
+      "reason": "accidental commit transcript in Lean source"
+    },
+    {
+      "from": "verified-generator-construction-v1",
+      "to": "existing-udm-capabilities",
+      "relation": "BEHAVIOURAL_EQUIVALENCE_UNKNOWN",
+      "boundary": "No independently verified common protected-behaviour comparison supplied by scanner"
+    }
+  ],
+  "boundary": "Only documented source lineage/supersession. Runtime causal edges/equivalences require independent qualification; missing edges are UNKNOWN, not absent dependencies."
+}

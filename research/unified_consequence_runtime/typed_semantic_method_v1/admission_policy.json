@@ -1,0 +1,44 @@
+{
+  "schema": "metalogic.typed-semantic-method-v1.admission",
+  "run_id": 38492128421,
+  "run_commit": "93b01adc48f47143f13e153f19ea19f401eca577",
+  "qualified_workflow": ".github/workflows/unified-native-typed-method.yml",
+  "artifact_id": 11862440093,
+  "artifact_zip_sha256": "d59d91e672ee13fc0224e7dbccecf36869f35a181550fd58750dd786fa779831",
+  "original_source_commit": "4b88bcac4c0dec65b3f45b59e85f5397045efd8d",
+  "original_protocol_raw_sha256": "b953fbc2d4346340604a0d553a8582332fcd650508b91676576028434e75e535",
+  "proof_products": [
+    {
+      "stage": "ACQUISITION",
+      "goal_id": "product_relational_trace",
+      "proof": "acquisition.lean",
+      "sha256": "29029ab40a4b6a7f467384e210dda741e5a0e9d20096672e78c8d1416e3058fe",
+      "new_source_rule": "Cslib.FLTS.toLTS_mtr"
+    },
+    {
+      "stage": "HELDOUT",
+      "goal_id": "product_relational_trace_append",
+      "proof": "heldout.lean",
+      "sha256": "69381aa704202bc82dbdfaaa354324ba77f16772e687e62c0fdf3647cfcf3835",
+      "new_source_rule": "Cslib.FLTS.mtr_append_eq"
+    },
+    {
+      "stage": "GRAMMAR_REVISION",
+      "goal_id": "product_powerset_trace",
+      "proof": "grammar_revision.lean",
+      "sha256": "1303b615cae78303ec4dadb160747b9a5592c3a4a416d5bd4fb6179733d52e50",
+      "new_source_rule": "Cslib.LTS.toFLTS_mem_mtr"
+    }
+  ],
+  "expected_native_calls": 36,
+  "expected_theorem_names_mined": 9,
+  "remaining_scope": {
+    "qualified": "source-driven proof method vocabulary extension for 3 manually frozen original CSLib goals",
+    "only_verified_scope": "EXACT_SOURCE_BOUND_METHOD_PROOF",
+    "method_generator_substrate": "HUMAN_AUTHORED",
+    "original_source_lemmas": "PREEXISTING_CSLIB",
+    "method_grammar_becomes_self_generating": "UNKNOWN",
+    "scientific_L7": "UNKNOWN",
+    "action_authorization": "NONE"
+  }
+}

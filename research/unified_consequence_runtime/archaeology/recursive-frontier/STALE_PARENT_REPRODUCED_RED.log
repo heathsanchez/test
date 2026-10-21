@@ -1,0 +1,14 @@
+test_child_consequence_survives_parent_continuation (research.unified_consequence_runtime.test_recursive_restart_retention.RestartRetentionTests.test_child_consequence_survives_parent_continuation) ... FAIL
+
+======================================================================
+FAIL: test_child_consequence_survives_parent_continuation (research.unified_consequence_runtime.test_recursive_restart_retention.RestartRetentionTests.test_child_consequence_survives_parent_continuation)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_recursive_restart_retention.py", line 35, in test_child_consequence_survives_parent_continuation
+    self.assertIn(child['consequence'],ids)
+AssertionError: 'be76feb2c0150a824f7712ab86080478764df2db65905487c20487b7f0828977' not found in {'60ebb75dd0fe481d876302cc73a2d08ba8dce6ee91a4ec0d2b8eef4710dc5cbb', '180b4c8f5959b454a833b8d2e3c6da21fd2486b036e6cddc4aad2902c49b1f14'}
+
+----------------------------------------------------------------------
+Ran 1 test in 0.412s
+
+FAILED (failures=1)

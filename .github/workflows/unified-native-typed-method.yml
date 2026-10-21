@@ -1,0 +1,115 @@
+name: Native source-mined proof grammar extension
+on:
+  push:
+    branches: [research/unified-consequence-runtime-20261013]
+    paths:
+      - 'research/unified_consequence_runtime/typed_semantic_method_v1/**'
+      - '.github/workflows/unified-native-typed-method.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-method-language:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: coordinator
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: leanprover/cslib
+          ref: 4b88bcac4c0dec65b3f45b59e85f5397045efd8d
+          path: cslib
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Enforce frozen source revisions and source-only source-lemma extraction
+        run: |
+          set -euo pipefail
+          test "$(git -C cslib rev-parse HEAD)" = 4b88bcac4c0dec65b3f45b59e85f5397045efd8d
+          python - <<'PY'
+          import json,subprocess
+          from pathlib import Path
+          d=json.loads(Path('coordinator/research/unified_consequence_runtime/typed_semantic_method_v1/FROZEN_PROTOCOL.json').read_text())
+          assert [x['stage'] for x in d['target_goals']]==['ACQUISITION','HELDOUT','GRAMMAR_REVISION']
+          for x in d['exact_source_modules']:
+              got=subprocess.check_output(['git','-C','cslib','hash-object',x['path']],text=True).strip()
+              assert got==x['git_blob'],(x['path'],got)
+          assert d['limits']['scientific_e2e_system']=='UNKNOWN'
+          print('ORIGINAL_NATIVE_SOURCE_SEMANTICS_FROZEN')
+          PY
+      - name: Install pinned CSLib native checker
+        run: |
+          set -euo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          cd cslib
+          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.35.0-rc4
+          "$HOME/.elan/bin/lake" exe cache get
+          "$HOME/.elan/bin/lake" build Cslib.Foundations.Semantics.FLTS.Prod Cslib.Foundations.Semantics.FLTS.FLTSToLTS Cslib.Foundations.Semantics.FLTS.LTSToFLTS
+      - name: Discover and extend source-mined native proof method grammar
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          python coordinator/research/unified_consequence_runtime/typed_semantic_method_v1/mine_native_methods.py \
+            --cslib cslib \
+            --protocol coordinator/research/unified_consequence_runtime/typed_semantic_method_v1/FROZEN_PROTOCOL.json \
+            --out coordinator/native-typed-method-output
+      - name: Independent exact native checks and status honesty
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          cd cslib
+          test "$(lean --version | grep -o '4.35.0-rc4')" = '4.35.0-rc4'
+          count=0
+          for p in "$GITHUB_WORKSPACE"/coordinator/native-typed-method-output/{acquisition,heldout,grammar_revision}.lean; do
+            test -f "$p"
+            if grep -nE '(^|[^[:alnum:]_])(sorry|admit|axiom)([^[:alnum:]_]|$)' "$p"; then
+              echo UNTRUSTED_LEAN_PROOF
+              exit 1
+            fi
+            lake env lean "$p"
+            count=$((count+1))
+          done
+          test "$count" -eq 3
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('../coordinator/native-typed-method-output/report.json').read_text())
+          assert d['stage_passed']==3
+          assert len(d['native_goal_scoped_results'])==3
+          assert d['native_feedback_trials']
+          assert d['native_call_count']<=260
+          assert d['scientific_status']=='WARRANTED_BOUNDED_NATIVE_METHOD_GRAMMAR_EXTENSION'
+          assert d['general_autonomous_L7']=='UNKNOWN'
+          assert d['source_publication_or_action_authority']=='NONE'
+          print('PASS_THREE_NATIVE_REPRESENTATION_TRANSPORT_METHODS')
+          PY
+      - name: Tampered original source must be rejected
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          cp cslib/Cslib/Foundations/Semantics/FLTS/Prod.lean /tmp/frozen-prod.lean
+          printf '\n-- upstream source tamper probe\n' >> cslib/Cslib/Foundations/Semantics/FLTS/Prod.lean
+          if python coordinator/research/unified_consequence_runtime/typed_semantic_method_v1/mine_native_methods.py \
+            --cslib cslib \
+            --protocol coordinator/research/unified_consequence_runtime/typed_semantic_method_v1/FROZEN_PROTOCOL.json \
+            --out /tmp/cslib-bad-src > /tmp/bad-source.log 2>&1; then
+              echo UNSAFE_SOURCE_ACCEPTED
+              exit 1
+          fi
+          grep UPSTREAM_BLOB_CHANGED /tmp/bad-source.log
+          mv /tmp/frozen-prod.lean cslib/Cslib/Foundations/Semantics/FLTS/Prod.lean
+          echo ORIGINAL_NATIVE_SOURCE_TAMPER_REJECTED
+      - name: Preserve qualified source-derived methods and full error history
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cslib-typed-method-grammar-v1
+          path: coordinator/native-typed-method-output/
+          if-no-files-found: warn

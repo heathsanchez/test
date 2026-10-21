@@ -1,0 +1,109 @@
+name: Real external PR source-native evidence checks
+on:
+  push:
+    branches: [research/unified-consequence-runtime-20261013]
+    paths:
+      - 'research/unified_consequence_runtime/external_pr_v1/**'
+      - '.github/workflows/unified-external-pr-native.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-pr-advisory:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: coordinator
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Fail early on method source and frozen protocol syntax
+        working-directory: coordinator
+        run: |
+          set -euo pipefail
+          python -m py_compile research/unified_consequence_runtime/external_pr_v1/qualify.py
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          x=json.loads(Path('research/unified_consequence_runtime/external_pr_v1/FROZEN_PROTOCOL.json').read_text())
+          assert x['schema']=='metalogic.external-pr-native-regression.v1'
+          assert len(x['cases'])==2
+          assert {r['pr'] for r in x['cases']}=={155,158}
+          PY
+      - uses: actions/checkout@v4
+        with:
+          repository: teorth/IEANTN
+          ref: 2a10e721ff645865c45c344333b1934f34c45b41
+          path: upstream-base
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: teorth/IEANTN
+          ref: 7fab327e61518fa607753cd022d87ef9d243bbf4
+          path: upstream-pr158
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: teorth/IEANTN
+          ref: a70ba812e1b6e40a6ce4652fb830589030e461d0
+          path: upstream-pr155
+          persist-credentials: false
+      - name: Supply pinned Python parser dependency for external native tests
+        run: |
+          python -m pip install --disable-pip-version-check PyYAML==6.0.3 ruamel.yaml==0.18.15
+          python -c 'import yaml; print("PyYAML",yaml.__version__)'
+
+      - name: Read actual source PR metadata for exact base/head and current applicability
+        run: |
+          set -euo pipefail
+          mkdir -p coordinator/out/external-pr/metadata
+          gh api repos/teorth/IEANTN/pulls/158 > coordinator/out/external-pr/metadata/158.json
+          gh api repos/teorth/IEANTN/pulls/155 > coordinator/out/external-pr/metadata/155.json
+          test "$(git -C upstream-base rev-parse HEAD)" = 2a10e721ff645865c45c344333b1934f34c45b41
+          test "$(git -C upstream-pr158 rev-parse HEAD)" = 7fab327e61518fa607753cd022d87ef9d243bbf4
+          test "$(git -C upstream-pr155 rev-parse HEAD)" = a70ba812e1b6e40a6ce4652fb830589030e461d0
+      - name: Discover author-added regression methods and compare exact original code revisions
+        run: |
+          set -euo pipefail
+          python coordinator/research/unified_consequence_runtime/external_pr_v1/qualify.py \
+            --protocol coordinator/research/unified_consequence_runtime/external_pr_v1/FROZEN_PROTOCOL.json \
+            --base upstream-base \
+            --head-158 upstream-pr158 \
+            --head-155 upstream-pr155 \
+            --metadata-dir coordinator/out/external-pr/metadata \
+            --out coordinator/out/external-pr
+      - name: Check registered source identity controls and advisory boundaries
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('coordinator/out/external-pr/receipt.json')
+          r=json.loads(p.read_text())
+          assert r['qualified_count']==2
+          assert r['advisory_conclusion']=='NEUTRAL_REVIEW_EVIDENCE_ONLY'
+          assert r['method_generator_software_authorship']=='HUMAN_WRITTEN'
+          assert r['code_repair_generated']=='NO'
+          assert r['scientific_L7']=='UNKNOWN'
+          for row in r['cases']:
+              assert row['before_source_with_head_tests']['exit_code']!=0
+              assert row['after_source_with_head_tests']['exit_code']==0
+              assert row['old_full_suite_on_base']['exit_code']==0
+              assert row['full_suite_on_head']['exit_code']==0
+              assert len(row['AST_derived_new_test_methods'])>0
+          print('PASS_TWO_EXTERNAL_PR_NATIVE_BEFORE_AFTER_CHECKS_WITHOUT_REPAIR_CLAIM')
+          PY
+      - name: Retain original native error and passing evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mathgraph-check-real-external-pr-regressions
+          path: coordinator/out/external-pr/
+          if-no-files-found: warn

@@ -1,0 +1,16 @@
+{
+  "schema": "udm.recursive.failed-frozen-native-receipt.v1",
+  "source_commit": "b450119f81ee0026f8fb0c6d6a9c5b259ebb8e82",
+  "status": "REJECTED_COMPLETE_RESTART_RETENTION; PROSPECTIVE_UNKNOWN",
+  "archive_sha256": "a56add8688a982408b66aeafe3067c510856a5277223d760f641446b07b8e400",
+  "archive_bytes": 1137092,
+  "scientific_obstruction": "Native urllib3 import requires build-generated urllib3._version absent from immutable source-object copy; zero native tests collected in cold/sham/ledger.",
+  "integration_failure": "Parent retained stale pre-child log and overwrote verified restart consequence after real346case restartPASS.",
+  "missing_restart_consequence": "aa659b2ba1e3c81e55bd7af50dc21d4eed5d4260325347c282eccc157b87a92b",
+  "original_records_retained": 224,
+  "final_records": 248,
+  "native_control_cases": 346,
+  "native_target_cases": 0,
+  "comparative_developmental_advantage": "UNKNOWN; status parity on invalid target executions is not a protected-outcome comparison",
+  "maintenance_scope": "Fix parent reload and qualify nativecontrol only; do not rerun target or relabel a new prospective freeze."
+}

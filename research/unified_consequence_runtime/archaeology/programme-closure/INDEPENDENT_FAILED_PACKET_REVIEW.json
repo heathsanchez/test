@@ -1,0 +1,83 @@
+{
+  "schema": "udm.programme.offline-independent-review.v1",
+  "status": "PASS_NATIVE_COMPONENTS_OVERALL_WORKFLOW_FAILED",
+  "expected_source_commit": "8acd1e3015f3066efaf3c11c83b21ca3fe87936d",
+  "expected_run_id": 38708639909,
+  "gates": [
+    "exact_committed_source_and_workflow_snapshot",
+    "three_exact_original_qualification_archives",
+    "all_metatron_ids_parents_cas_and_exact_original_history",
+    "authenticated_original_receiver_producer_and_pareto_definitions",
+    "preacquisition_native_residual_original128mask_minimum_and_fixed80_refinement",
+    "independent_B8_C4_native_classification_choice_and_informed_baseline_tie",
+    "actual_native_patch_bytes_original89_and9_suites_removal_controls_and_baseline",
+    "original_FLASH_two_frontier_delta_selective_revocation_new_lineage_and_restart",
+    "retained_native_ED_V54_without_acquisition_or_discovery_rerun"
+  ],
+  "component_review": true,
+  "unclosed_workflow_gates": [
+    "programme_summary_not_produced_after_prior_workflow_failure",
+    "overall_workflow_failed_not_a_full_green_qualification",
+    "contract-tests.log:FAILED(errors=11)",
+    "formal-evidence-tests.log:NOT_RUN_OR_NOT_ARCHIVED",
+    "latest_bounded_Lean_recheck:NOT_RUN",
+    "standalone_retained_method_selector_gate:NOT_RUN"
+  ],
+  "scope": "Archive/source/finite-evidence inspection; no native experiment repeated",
+  "limits": {
+    "python_formal_refinement": "UNKNOWN",
+    "new_observation_primitive_or_constructor_grammar": "NOT_ACQUIRED",
+    "prospective_unfamiliar_source": "UNKNOWN",
+    "new_later_operation_discoverability_in_this_continuation": "UNKNOWN",
+    "nonbypassable_external_enforcement": "UNKNOWN",
+    "live_agent_comparator": "NOT_RUN",
+    "full_research_programme_exhaustiveness": "NOT_ESTABLISHED_BY_THIS_REVIEW"
+  },
+  "provider_binding": {
+    "status": "MATCHED_CALLER_SUPPLIED_PROVIDER_METADATA_ZIP_AND_EXTRACTED_BYTES",
+    "run_id": 38708639909,
+    "source_commit": "8acd1e3015f3066efaf3c11c83b21ca3fe87936d",
+    "run_conclusion": "failure",
+    "artifact_id": 11959787651,
+    "artifact_sha256": "3b9dc749006682ea253e718ef599ece041b4342bc63350994072e5a417bc3aae",
+    "extracted_files_compared": 3060,
+    "boundary": "Caller is responsible for authentic provider API retrieval"
+  },
+  "source_snapshot": {
+    "files": 197,
+    "manifest_sha256": "14735d7dfe3bff524e8ca3421e385865989bd9f5d3bb5fc1c995eb851f095f0d",
+    "all_exact_committed_hashes": true,
+    "unchanged_base_source_commit": "8acd1e3015f3066efaf3c11c83b21ca3fe87936d",
+    "workflow_pin_override": false
+  },
+  "state": {
+    "historical_records": 153,
+    "original_records": 101,
+    "final_records": 224,
+    "objects": 63,
+    "ledger_sha256": "9f86e60f0a0a5868cb410826e5beb38350f4c875e1beea6a63d1cd658d364b1a"
+  },
+  "native_future_counts": {
+    "B": {
+      "repaired": 8,
+      "detected": 8,
+      "false": 0
+    },
+    "C": {
+      "repaired": 4,
+      "detected": 4,
+      "false": 0
+    }
+  },
+  "contract_logs": {
+    "contract-tests.log": {
+      "sha256": "99d28ef13418c528b4875141ec54abfd088098711da0e47ce4b27d8af271e27f",
+      "tests_run": 151,
+      "failed_summary": "errors=11"
+    }
+  },
+  "native_experiments_rerun": false,
+  "strict_comparative_advantage": "REJECTED_MEASURED_TIE",
+  "result_sha256": "b3b6e046b031fd9ec548529f350393e3f185849a768c27c455beb4a415ba4a90",
+  "cold_restart_sha256": "8f1b09798cf004a6ef6c51c7c795664fa63309ae502935418f0f4db6ef8dbb13"
+}

@@ -1,0 +1,1024 @@
+[
+  {
+    "repo": "heathsanchez/test",
+    "branch": "verified-experiment-language-genesis-v1",
+    "commit": "fa07d7d1b916730932e2c6b2ea17049950e53615",
+    "files": [
+      {
+        "path": "experiments/verified_experiment_language_genesis_v1/AUTHORITY.json",
+        "sha256": "1c3521ff74e8aabab71b9f0f31b496764369742600f06d4dc309191897a29873",
+        "bytes": 484,
+        "run_ids": [
+          "34670317510"
+        ],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/verified_experiment_language_genesis_v1/ExperimentLanguage.lean",
+        "sha256": "dd08da806b22c7a93563fea4e77fc5eff7f12fe35feee929d786d0e3daf43860",
+        "bytes": 1401
+      },
+      {
+        "path": "experiments/verified_experiment_language_genesis_v1/PROTOCOL.md",
+        "sha256": "6083fd2287297512e8fc643ebbbbc5ef8a8017e4aba2014c07b605e838603ca4",
+        "bytes": 847,
+        "run_ids": [],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/verified_experiment_language_genesis_v1/RESULTS.md",
+        "sha256": "7b7f97a3c7643e2741d35563f6b8319c2904c29a33ea5a1ca8f746e319e96932",
+        "bytes": 768,
+        "run_ids": [],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/verified_experiment_language_genesis_v1/run.py",
+        "sha256": "a0797a55f47d8e74ad9a359a55eca59a6db4ff5254fe830f663046614f43c4f5",
+        "bytes": 6344
+      }
+    ],
+    "evidence_boundary": "SOURCE_AND_COMMITTED_RESULTS_INSPECTED; historical qualification artifact not yet independently inspected",
+    "status": "CANDIDATE",
+    "installed_in_udm_at_base_b8216cf": false
+  },
+  {
+    "repo": "heathsanchez/test",
+    "branch": "verified-experiment-meta-substrate-genesis-v1",
+    "commit": "3f8cca9c5bd09673efc7354202d54ce4722e42aa",
+    "files": [
+      {
+        "path": "experiments/verified_experiment_meta_substrate_genesis_v1/AUTHORITY.json",
+        "sha256": "bda936a70452dd9408d231b33445d4a83bae742dc1e1cda527546e05299e7c7b",
+        "bytes": 574,
+        "run_ids": [
+          "34682784242"
+        ],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/verified_experiment_meta_substrate_genesis_v1/ExperimentMetaSubstrate.lean",
+        "sha256": "488d5120bb92c09b4b7642040b63759be24c942366e61cda599efe5175a5f280",
+        "bytes": 1909
+      },
+      {
+        "path": "experiments/verified_experiment_meta_substrate_genesis_v1/PROTOCOL.md",
+        "sha256": "62bceac998e70ddf033558d3eb1ba7708674b354e5508e92720247a2e6acd7d6",
+        "bytes": 1510,
+        "run_ids": [],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/verified_experiment_meta_substrate_genesis_v1/RESULTS.md",
+        "sha256": "4735b613c191521a6b36dbf75b5049f7384d777a896790dc5936ffd749c27497",
+        "bytes": 993,
+        "run_ids": [
+          "34682737945",
+          "34682784242"
+        ],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/verified_experiment_meta_substrate_genesis_v1/results/RUN_COMMIT",
+        "sha256": "85f27faecb04ad4aed4edc08412d57dfa693ce07fc2d122e0c2f374e02d29190",
+        "bytes": 41
+      },
+      {
+        "path": "experiments/verified_experiment_meta_substrate_genesis_v1/results/SHA256SUMS",
+        "sha256": "228dbee5dbcf8f1a883468121dfecd6095ec73f430d8215abf9d5552bb37145d",
+        "bytes": 499
+      },
+      {
+        "path": "experiments/verified_experiment_meta_substrate_genesis_v1/results/evidence-lean.log",
+        "sha256": "9b48cae85db7e3cab322419ba3dfaccc2724079354d7daaa22530cee03f565ee",
+        "bytes": 596
+      },
+      {
+        "path": "experiments/verified_experiment_meta_substrate_genesis_v1/results/evidence.json",
+        "sha256": "5edbd3d33a19bf30d43147171d2ccda06dc298a0e727f2dd82d001bcd9eb2eb5",
+        "bytes": 2030,
+        "run_ids": [],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/verified_experiment_meta_substrate_genesis_v1/results/snapshot.json",
+        "sha256": "b4205e84a36d15411848b8ba5b187f676ae8ac84b273cda1a6e360f21520bbf4",
+        "bytes": 735,
+        "run_ids": [],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/verified_experiment_meta_substrate_genesis_v1/results/workflow-evidence.json",
+        "sha256": "5edbd3d33a19bf30d43147171d2ccda06dc298a0e727f2dd82d001bcd9eb2eb5",
+        "bytes": 2030,
+        "run_ids": [],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/verified_experiment_meta_substrate_genesis_v1/run.py",
+        "sha256": "822541b0900d6b4342b37a2ca0bc87708834f5df7c0f7c5997e76b4229c962da",
+        "bytes": 5369
+      }
+    ],
+    "evidence_boundary": "SOURCE_AND_COMMITTED_RESULTS_INSPECTED; historical qualification artifact not yet independently inspected",
+    "status": "CANDIDATE",
+    "installed_in_udm_at_base_b8216cf": false
+  },
+  {
+    "repo": "heathsanchez/test",
+    "branch": "verified-prospective-repair-selection-v1",
+    "commit": "af224f4108a3ed545ffad23fc4080225d1157b54",
+    "files": [
+      {
+        "path": "experiments/verified_prospective_repair_selection_v1/AUTHORITY.json",
+        "sha256": "3d498de0afa60c3259bb2ab6ff30b9537d0763911f79ebb1ef336c7c0e41002d",
+        "bytes": 467,
+        "run_ids": [
+          "34681030732"
+        ],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/verified_prospective_repair_selection_v1/PROTOCOL.md",
+        "sha256": "dd592edb2690973f9e94482980af026f8f5c1d38e1a5c99b5c7aa915fceb8fb8",
+        "bytes": 753,
+        "run_ids": [],
+        "verdicts": [
+          "UNKNOWN_CHOICE_REPAIR",
+          "UNKNOWN_SEARCH"
+        ]
+      },
+      {
+        "path": "experiments/verified_prospective_repair_selection_v1/RESULTS.md",
+        "sha256": "6335332320ec6e8b83169fa1cb52e11462199d8b47dbf30bc9e86cf974fdabb7",
+        "bytes": 654,
+        "run_ids": [],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/verified_prospective_repair_selection_v1/RepairSelection.lean",
+        "sha256": "899db3ea5969f0d3ca5eb715d2acec857bf41e3a4496a2b2889210cabe12feb3",
+        "bytes": 1305
+      },
+      {
+        "path": "experiments/verified_prospective_repair_selection_v1/run.py",
+        "sha256": "ef46969e2182a5ced64e3c80f5266c03f864d72dcd8133539e6b1a71c42a4b94",
+        "bytes": 4853
+      }
+    ],
+    "evidence_boundary": "SOURCE_AND_COMMITTED_RESULTS_INSPECTED; historical qualification artifact not yet independently inspected",
+    "status": "CANDIDATE",
+    "installed_in_udm_at_base_b8216cf": false
+  },
+  {
+    "repo": "heathsanchez/test",
+    "branch": "verified-value-evidence-separator-genesis-v1",
+    "commit": "29e9c7d1b64fb5080717ff644c9e4614e2309694",
+    "files": [
+      {
+        "path": "experiments/verified_value_evidence_separator_genesis_v1/AUTHORITY.json",
+        "sha256": "7a70eab2651f44dd070564daeaab7f314b66847a413658e32f8296f57654e4bd",
+        "bytes": 546,
+        "run_ids": [
+          "34668270318"
+        ],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/verified_value_evidence_separator_genesis_v1/EvidenceSeparator.lean",
+        "sha256": "d2b1f44f405e8d5e6f7dc2cdf67001c9abd74662469df4e99d331fdc47ee051c",
+        "bytes": 661
+      },
+      {
+        "path": "experiments/verified_value_evidence_separator_genesis_v1/PROTOCOL.md",
+        "sha256": "2d08c1b88a6bd07474ff5e4c13b23a85eba5391ddc83d6d341d9567ca9d57a15",
+        "bytes": 1270,
+        "run_ids": [],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/verified_value_evidence_separator_genesis_v1/RESULTS.md",
+        "sha256": "4540e542add79f4e35e3a3ada76315ecf259fa775bd3b9af0d89eff5e4ba91f1",
+        "bytes": 916,
+        "run_ids": [],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/verified_value_evidence_separator_genesis_v1/results/evidence.json",
+        "sha256": "cd2446d1a5d376b1ad370a8fb5ad03489e916540298268741f7c9381d1917eba",
+        "bytes": 3097,
+        "run_ids": [],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/verified_value_evidence_separator_genesis_v1/results/snapshot.json",
+        "sha256": "029a1398b366a97025f49b1feaee58e8bb6c8f7194a3aebf1974489732b36e8c",
+        "bytes": 494,
+        "run_ids": [],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/verified_value_evidence_separator_genesis_v1/run.py",
+        "sha256": "62aa93ab7fb5ab2b3dec55308ee2a30d958a5d8ae1a41122e676f637ee510c75",
+        "bytes": 4563
+      }
+    ],
+    "evidence_boundary": "SOURCE_AND_COMMITTED_RESULTS_INSPECTED; historical qualification artifact not yet independently inspected",
+    "status": "CANDIDATE",
+    "installed_in_udm_at_base_b8216cf": false
+  },
+  {
+    "repo": "heathsanchez/test",
+    "branch": "verified-retention-policy-genesis-v1",
+    "commit": "44557424b7b9002ed6e17e54bc645f13772edff1",
+    "files": [
+      {
+        "path": "experiments/verified_retention_policy_genesis_v1/AUTHORITY.json",
+        "sha256": "2ebc441f0e69fe106f5931a1f2c737d04b0451d31e4c7f3a4d6452a5cf15e06c",
+        "bytes": 903,
+        "run_ids": [
+          "34648396877",
+          "34648508248",
+          "34648604462",
+          "34648686000",
+          "34648832202"
+        ],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/verified_retention_policy_genesis_v1/PROTOCOL.md",
+        "sha256": "e661c564e52e8367074696bb930f84e984986d90f6b8e5c8aaaaab4c55a326aa",
+        "bytes": 1520,
+        "run_ids": [],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/verified_retention_policy_genesis_v1/RESULTS.md",
+        "sha256": "af33166319d019158c1ca49a98857eacc3ac09d1a8e6b8bbe0691b332ca0a38e",
+        "bytes": 1186,
+        "run_ids": [],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/verified_retention_policy_genesis_v1/RetentionPolicy.lean",
+        "sha256": "29a1740f85a5136ed408fc92dcc5b9e3b21a6030da7487ef82960727a341d33a",
+        "bytes": 545
+      },
+      {
+        "path": "experiments/verified_retention_policy_genesis_v1/results/evidence.json",
+        "sha256": "1cd84b8e020e8d11c6fdec2fe78449c3cc6b845a137243bb4d4467fdf6920c62",
+        "bytes": 1984,
+        "run_ids": [],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/verified_retention_policy_genesis_v1/results/snapshot.json",
+        "sha256": "fe0af1f05b205a0b882407199ba08126e6ad75d6c829f90471a25cb1974a9277",
+        "bytes": 1105,
+        "run_ids": [],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/verified_retention_policy_genesis_v1/run.py",
+        "sha256": "7a73ea610128f954a44cb53776616c5114a072625e213e14958246e274e015ed",
+        "bytes": 7550
+      }
+    ],
+    "evidence_boundary": "SOURCE_AND_COMMITTED_RESULTS_INSPECTED; historical qualification artifact not yet independently inspected",
+    "status": "CANDIDATE",
+    "installed_in_udm_at_base_b8216cf": false
+  },
+  {
+    "repo": "heathsanchez/test",
+    "branch": "verified-semantic-certificate-causality-v1",
+    "commit": "9f7c8f773eb7595dbb9d1037dd59280b89938fc7",
+    "files": [
+      {
+        "path": "experiments/verified_semantic_certificate_causality_v1/AUTHORITY.json",
+        "sha256": "d5e12dd6dd482737fd8ee2746af91a6fee3ae9accee378bbc762c5cbb65073e5",
+        "bytes": 453,
+        "run_ids": [
+          "34606511574",
+          "34606511715"
+        ],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/verified_semantic_certificate_causality_v1/MANIFEST.json",
+        "sha256": "27c1058fb50ad368b125bd24138d54ce93ad65c686f006ecfc15bdbd4616dd41",
+        "bytes": 114
+      },
+      {
+        "path": "experiments/verified_semantic_certificate_causality_v1/PROTOCOL.md",
+        "sha256": "d71e8df1ebc015314d60eb649852ff7fcfa0ccb8c089c49328a677d4e7a8ece8",
+        "bytes": 1176,
+        "run_ids": [],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/verified_semantic_certificate_causality_v1/RESULTS.md",
+        "sha256": "6b1ce2db30f02f26812f2c3f9b5ba7d2e2660408c3d8dcc7bd60411721f48c39",
+        "bytes": 76,
+        "run_ids": [],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/verified_semantic_certificate_causality_v1/SemanticCertificate.lean",
+        "sha256": "a50e4fd62b9df358e6c9d94abd866ddbd253589666ff6729092e2236c06fb29a",
+        "bytes": 394
+      },
+      {
+        "path": "experiments/verified_semantic_certificate_causality_v1/results/evidence.json",
+        "sha256": "5f2c1594f0261a9fdef760b3c7395833c1a63317c263ed628a0df0a198ce98d3",
+        "bytes": 7156,
+        "run_ids": [],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/verified_semantic_certificate_causality_v1/results/snapshot.json",
+        "sha256": "027bd7459d7c494f50e6ad903659089e4f857767967851df968dc3b1675b6d26",
+        "bytes": 231,
+        "run_ids": [],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/verified_semantic_certificate_causality_v1/run.py",
+        "sha256": "dab75c93d9a21a6c38b58aa3238b0e251b8cdb00d00aad47d321d980a1199b13",
+        "bytes": 3387
+      }
+    ],
+    "evidence_boundary": "SOURCE_AND_COMMITTED_RESULTS_INSPECTED; historical qualification artifact not yet independently inspected",
+    "status": "CANDIDATE",
+    "installed_in_udm_at_base_b8216cf": false
+  },
+  {
+    "repo": "heathsanchez/test",
+    "branch": "verified-cross-representation-compounding-v1",
+    "commit": "06a6e77cb2fe6566e2f49783d2937e545efed8af",
+    "files": [
+      {
+        "path": "experiments/verified_cross_representation_compounding_v1/AUTHORITY.json",
+        "sha256": "bde0e27a6739b4a13b873f4476831f796588eefacb0356c7af881ac3213e1ea3",
+        "bytes": 1280,
+        "run_ids": [
+          "34603219913",
+          "34603467525",
+          "34603649113"
+        ],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/verified_cross_representation_compounding_v1/CrossRepresentation.lean",
+        "sha256": "7522efc1fde5fd9acfa3e24de33c081f9b5c2c4ec40d83762e314b54d5f3af4c",
+        "bytes": 1236
+      },
+      {
+        "path": "experiments/verified_cross_representation_compounding_v1/MANIFEST.json",
+        "sha256": "95ad4ba35bcf48f17c34b19827c9661b486a8765807d35d8cac8de6f470ff1d1",
+        "bytes": 425
+      },
+      {
+        "path": "experiments/verified_cross_representation_compounding_v1/PROTOCOL.md",
+        "sha256": "aee629a111e0b587644bf68db7d9df21038851133fa8a2372f98b3e550445402",
+        "bytes": 2475,
+        "run_ids": [],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/verified_cross_representation_compounding_v1/RESULTS.md",
+        "sha256": "fed252cde56452e28e73867518971b154f82559279f10608d0978298f980ed75",
+        "bytes": 2049,
+        "run_ids": [],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/verified_cross_representation_compounding_v1/results/evidence.json",
+        "sha256": "c2cd8817ecaa45369617031e22cc225205541dbfffdd5c7a10803475f4ec1d63",
+        "bytes": 3556,
+        "run_ids": [],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/verified_cross_representation_compounding_v1/results/snapshot.json",
+        "sha256": "206dfd4c2fc32e3d1e144ec43dde0e3a2790f3be0db294a6dd651612d9408f60",
+        "bytes": 629,
+        "run_ids": [],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/verified_cross_representation_compounding_v1/run.py",
+        "sha256": "3a4890c450f27aa93242b664d80e5fa9f58f2ac3bed56a9f0085be518130f55f",
+        "bytes": 7296
+      }
+    ],
+    "evidence_boundary": "SOURCE_AND_COMMITTED_RESULTS_INSPECTED; historical qualification artifact not yet independently inspected",
+    "status": "CANDIDATE",
+    "installed_in_udm_at_base_b8216cf": false
+  },
+  {
+    "repo": "heathsanchez/test",
+    "branch": "verified-representation-genesis-v1",
+    "commit": "2964c5bcefdf7a3cee4c50fe8d09ff63f9163144",
+    "files": [
+      {
+        "path": "experiments/verified_representation_genesis_v1/AUTHORITY.json",
+        "sha256": "e0ff797d7952bd29191bd5f95c13e69a932ee0d3e5a99d0a8de1c9f11d16cce2",
+        "bytes": 1201,
+        "run_ids": [
+          "34591666019",
+          "34591859113"
+        ],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/verified_representation_genesis_v1/PROTOCOL.md",
+        "sha256": "257565271f63dd3ca1807341dcdd06efc83668eaa595593dd4c07b20abba830d",
+        "bytes": 2155,
+        "run_ids": [],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/verified_representation_genesis_v1/RESULTS.md",
+        "sha256": "40f25812e76cd9fcbd43b2ffbc069e63bacf3655f93dc1b620490e08c146aea6",
+        "bytes": 2930,
+        "run_ids": [
+          "34591666019"
+        ],
+        "verdicts": [
+          "FAILURE",
+          "PROVED"
+        ]
+      },
+      {
+        "path": "experiments/verified_representation_genesis_v1/RepresentationGenesis.lean",
+        "sha256": "93db432c2aefd7ad83b14c240b6cf05fed8096d80ae19bf0e49571dd78a3996b",
+        "bytes": 2232
+      },
+      {
+        "path": "experiments/verified_representation_genesis_v1/results/evidence.json",
+        "sha256": "0f2ef6ed747fe2f3136c63b7275736459f691dc4a8b1d5da9305cbf45ec8d47e",
+        "bytes": 3161,
+        "run_ids": [],
+        "verdicts": [
+          "UNKNOWN_EXPRESSIVITY",
+          "UNKNOWN_SEARCH"
+        ]
+      },
+      {
+        "path": "experiments/verified_representation_genesis_v1/results/snapshot.json",
+        "sha256": "be5106993a85433544415930c986b7687476c64f3ef4463fd92ae5c3a635512c",
+        "bytes": 277,
+        "run_ids": [],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/verified_representation_genesis_v1/run.py",
+        "sha256": "fc7bce9f7940bd7ca2ae8138bab19e42b2b0c9c1356f602ffe03bb4e409cca8e",
+        "bytes": 7328
+      }
+    ],
+    "evidence_boundary": "SOURCE_AND_COMMITTED_RESULTS_INSPECTED; historical qualification artifact not yet independently inspected",
+    "status": "CANDIDATE",
+    "installed_in_udm_at_base_b8216cf": false
+  },
+  {
+    "repo": "heathsanchez/test",
+    "branch": "verified-autonomous-adapter-genesis-v1",
+    "commit": "eec202ac19ed5973aa7c930916be7f7636d16784",
+    "files": [
+      {
+        "path": "experiments/verified_autonomous_adapter_genesis_v1/AUTHORITY.json",
+        "sha256": "a138fd2a42479fa1dbfb85f818a6c511e2ce627895aba8ff3014fc77e9be9c42",
+        "bytes": 509,
+        "run_ids": [
+          "34605462229",
+          "34605514449",
+          "34605517489",
+          "34605772751"
+        ],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/verified_autonomous_adapter_genesis_v1/AdapterGenesis.lean",
+        "sha256": "dcc9ea2f32fb50899ebd0aafbc2b9b6a26c82011d6339a69bc52c7cba5f1d9a4",
+        "bytes": 862
+      },
+      {
+        "path": "experiments/verified_autonomous_adapter_genesis_v1/MANIFEST.json",
+        "sha256": "ef0762fe6e6de24f89ade6e2d3523655bc9ac535bbbfead5a3074ae5da4a2f28",
+        "bytes": 268
+      },
+      {
+        "path": "experiments/verified_autonomous_adapter_genesis_v1/PROTOCOL.md",
+        "sha256": "aa1717f2c940b10d590fd4492a4760e243630df10fa5654d384d9c3604817f54",
+        "bytes": 1700,
+        "run_ids": [],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/verified_autonomous_adapter_genesis_v1/RESULTS.md",
+        "sha256": "c52d94910f5355dcf552f4f563f192c7d93aeecf5470be89a299a197d4d06df9",
+        "bytes": 1089,
+        "run_ids": [],
+        "verdicts": [
+          "UNKNOWN"
+        ]
+      },
+      {
+        "path": "experiments/verified_autonomous_adapter_genesis_v1/results/evidence.json",
+        "sha256": "c61363eda73f8cf7dc03d653e168209315c5de913b33645a49641181ed849203",
+        "bytes": 9838,
+        "run_ids": [],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/verified_autonomous_adapter_genesis_v1/results/snapshot.json",
+        "sha256": "c05b3c44e57f181f867d845321c10cd4fb4a4ce2e02089570e3efd5207bacecf",
+        "bytes": 405,
+        "run_ids": [],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/verified_autonomous_adapter_genesis_v1/run.py",
+        "sha256": "912b0242d70219fadaf4e11073b7c0cfc856cb04bf2ef3aeb766cdfcc9d90b86",
+        "bytes": 5474
+      }
+    ],
+    "evidence_boundary": "SOURCE_AND_COMMITTED_RESULTS_INSPECTED; historical qualification artifact not yet independently inspected",
+    "status": "CANDIDATE",
+    "installed_in_udm_at_base_b8216cf": false
+  },
+  {
+    "repo": "heathsanchez/test",
+    "branch": "emergent-persistence-geometry-v1",
+    "commit": "40c4278ae51816ad26bc1a1129db6fd7bb7c5fcd",
+    "files": [
+      {
+        "path": "experiments/emergent_persistence_geometry_v1/AUTHORITY.json",
+        "sha256": "cc2255231ad643475544116841b1efb730ac53041f4f541779fb968e5d1e6632",
+        "bytes": 690,
+        "run_ids": [
+          "34641360659"
+        ],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/emergent_persistence_geometry_v1/Geometry.lean",
+        "sha256": "cf667258f98bbcff278c5c42a8d75309cf9ad2ef5fa571b19eda175daca33f99",
+        "bytes": 559
+      },
+      {
+        "path": "experiments/emergent_persistence_geometry_v1/PROTOCOL.md",
+        "sha256": "e4f587d8b5eb600ac65f3b94c68010c3e89275688f74755305bba7c8f7b703d2",
+        "bytes": 1716,
+        "run_ids": [],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/emergent_persistence_geometry_v1/RESULTS.md",
+        "sha256": "9c068f43c321eacaf49c53f3c48c0f7eec36446fcb6295a588ec71796db4e1b4",
+        "bytes": 1136,
+        "run_ids": [],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/emergent_persistence_geometry_v1/results/evidence.json",
+        "sha256": "704732a0bc0cdc54be4ce368288ee554d0c85601a724660bbfa0cb6bc98f04b3",
+        "bytes": 2024,
+        "run_ids": [],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/emergent_persistence_geometry_v1/results/snapshot.json",
+        "sha256": "7c5d197303b6b96e7cd32dc1b1a1092eba9b29412df86329c8daa091bb312c84",
+        "bytes": 388,
+        "run_ids": [],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/emergent_persistence_geometry_v1/run.py",
+        "sha256": "f7d262ccf12f987295a618b983a418bb474a97ac2fac8b79d27adc865c3a0943",
+        "bytes": 4846
+      }
+    ],
+    "evidence_boundary": "SOURCE_AND_COMMITTED_RESULTS_INSPECTED; historical qualification artifact not yet independently inspected",
+    "status": "CANDIDATE",
+    "installed_in_udm_at_base_b8216cf": false
+  },
+  {
+    "repo": "heathsanchez/test",
+    "branch": "emergent-persistence-hierarchy-v1",
+    "commit": "f8d1782b0c4c8dcbc3d6781827eef3d6f20d4f58",
+    "files": [
+      {
+        "path": "experiments/emergent_persistence_hierarchy_v1/AUTHORITY.json",
+        "sha256": "80a2f0994930b3fcadc6eb112920a5535228ce3d425f190690a2dff049103e68",
+        "bytes": 1085,
+        "run_ids": [
+          "34634249023"
+        ],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/emergent_persistence_hierarchy_v1/Hierarchy.lean",
+        "sha256": "281c789ebe94fa15c625d9cd94fb900f619075eaf2493acad40ae32a277fe57a",
+        "bytes": 825
+      },
+      {
+        "path": "experiments/emergent_persistence_hierarchy_v1/PROTOCOL.md",
+        "sha256": "c4b458de483f5a0b905e866a39eeb2d81e39e65cbf7e41c21af1fb609a29c080",
+        "bytes": 1793,
+        "run_ids": [],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/emergent_persistence_hierarchy_v1/RESULTS.md",
+        "sha256": "383de568a7df020be4d6c25e191cdc1aa512ff6986f29d9062a8fb3ed7fa27e6",
+        "bytes": 1823,
+        "run_ids": [
+          "34634249023"
+        ],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/emergent_persistence_hierarchy_v1/results/evidence.json",
+        "sha256": "1ebc511cb65bb4f0d245dc4b7cebf598c973ad06c45d71c3cacd39bbf58006bc",
+        "bytes": 7095,
+        "run_ids": [],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/emergent_persistence_hierarchy_v1/results/snapshot.json",
+        "sha256": "c950b22dc63c5b25d3d872d89df22bead3a4e53db96d86e55dd597b628f20e60",
+        "bytes": 1772,
+        "run_ids": [],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/emergent_persistence_hierarchy_v1/run.py",
+        "sha256": "6fa5d6f59d9b286a7c0f5f85004f8181c3d3a7f93428eb3902b8f0f76dcf3502",
+        "bytes": 7798
+      }
+    ],
+    "evidence_boundary": "SOURCE_AND_COMMITTED_RESULTS_INSPECTED; historical qualification artifact not yet independently inspected",
+    "status": "CANDIDATE",
+    "installed_in_udm_at_base_b8216cf": false
+  },
+  {
+    "repo": "heathsanchez/test",
+    "branch": "verified-cross-domain-invariant-transfer-v1",
+    "commit": "9eeea60efcc153d19d8acf08a7302f45fe2b0a10",
+    "files": [
+      {
+        "path": "experiments/verified_cross_domain_invariant_transfer_v1/AUTHORITY.json",
+        "sha256": "8cef74febe8576fa88635bf2bff23c05ce8026ac39b5174953915252b719c92d",
+        "bytes": 484,
+        "run_ids": [
+          "34608128637",
+          "34608265384"
+        ],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/verified_cross_domain_invariant_transfer_v1/CommonInvariant.lean",
+        "sha256": "3a966e8b7f66a5510c53a38dbafc602ad0dc528753fe09d563f8a1a59243866e",
+        "bytes": 691
+      },
+      {
+        "path": "experiments/verified_cross_domain_invariant_transfer_v1/MANIFEST.json",
+        "sha256": "349dee6c8a047e5b8ee254b099d0ce71a3585107833899fa47f3db52a3275f39",
+        "bytes": 115
+      },
+      {
+        "path": "experiments/verified_cross_domain_invariant_transfer_v1/PROTOCOL.md",
+        "sha256": "cc67f4c88f9e37b485f07fdc35bb61b75ed1292872118d553d299b6a1a108a42",
+        "bytes": 1216,
+        "run_ids": [],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/verified_cross_domain_invariant_transfer_v1/RESULTS.md",
+        "sha256": "6b1ce2db30f02f26812f2c3f9b5ba7d2e2660408c3d8dcc7bd60411721f48c39",
+        "bytes": 76,
+        "run_ids": [],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/verified_cross_domain_invariant_transfer_v1/results/evidence.json",
+        "sha256": "a1b9338b9e78bec95f4b4547aa31fd21d69989943b9f15adc1c2e198b4680bf9",
+        "bytes": 5381,
+        "run_ids": [],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/verified_cross_domain_invariant_transfer_v1/results/snapshot.json",
+        "sha256": "0e4d5eb947ae8fb714522923f80a59e76f313920901e23d041cde6e1d3272737",
+        "bytes": 204,
+        "run_ids": [],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/verified_cross_domain_invariant_transfer_v1/run.py",
+        "sha256": "cf38acf2e6d38e4b1abbf88d6524ee5d40eb9a2db72f320f76a55bdd2b68c84f",
+        "bytes": 3718
+      }
+    ],
+    "evidence_boundary": "SOURCE_AND_COMMITTED_RESULTS_INSPECTED; historical qualification artifact not independently inspected by scanner",
+    "status": "CANDIDATE",
+    "installed_in_udm_at_base_b8216cf": false
+  },
+  {
+    "repo": "heathsanchez/test",
+    "branch": "verified-developmental-compounding-v1",
+    "commit": "379846668d040cfeaabc304413d1307db49a85fe",
+    "files": [
+      {
+        "path": "experiments/verified_developmental_compounding_v1/AUTHORITY.json",
+        "sha256": "136237e473141ea3ba1425b5bfe0edfa717bc6d5f277c2827fb695f4f2d8f477",
+        "bytes": 1735,
+        "run_ids": [
+          "34562350044",
+          "34562463842"
+        ],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/verified_developmental_compounding_v1/MANIFEST.json",
+        "sha256": "498fca941d9437f2b3ea0975a2b0bf1598a42f0606a3e7998392c17a4b4feb09",
+        "bytes": 285
+      },
+      {
+        "path": "experiments/verified_developmental_compounding_v1/PROTOCOL.md",
+        "sha256": "78db7371d58d57f58987e3cb9d73af2ae89d49235bb3279c4efa5d762200a452",
+        "bytes": 3177,
+        "run_ids": [],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/verified_developmental_compounding_v1/RESULTS.md",
+        "sha256": "fc4f280a0dcbcf4d7c1a35fdcd954990aa98aa5f50b8feb34aade1ae38f621fc",
+        "bytes": 4604,
+        "run_ids": [],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/verified_developmental_compounding_v1/ablations/summary.json",
+        "sha256": "9aef5f283e5a0454c75b1fd4b1cb233a2dbc84f040cbb20439399ad558d8facf",
+        "bytes": 248
+      },
+      {
+        "path": "experiments/verified_developmental_compounding_v1/controller/core.py",
+        "sha256": "9cb2951a3111bd24eaed003835b7174579064fbd6fd66e219215af82ee26b794",
+        "bytes": 7084
+      },
+      {
+        "path": "experiments/verified_developmental_compounding_v1/results/RUN_COMMIT",
+        "sha256": "1dfe8dac65a01c7e3ae2712e82547a6ffa1a9936d8fa95205a11e9063615f3e5",
+        "bytes": 41
+      },
+      {
+        "path": "experiments/verified_developmental_compounding_v1/results/SHA256SUMS",
+        "sha256": "56c36d8519ded9276d31d9339d450f13fa157c68d99812e40f9e7d14ce510db7",
+        "bytes": 998
+      },
+      {
+        "path": "experiments/verified_developmental_compounding_v1/results/evidence.json",
+        "sha256": "1f193e0f8f48577ebe5611bb7a0a3b2a6485c26035a2dcf5926e83b9c04fbc99",
+        "bytes": 46644,
+        "run_ids": [],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/verified_developmental_compounding_v1/results/provenance.json",
+        "sha256": "a13fd89125f3495573e43615bec996337d4686c152904f85cc4d53767d17a7ab",
+        "bytes": 5728
+      },
+      {
+        "path": "experiments/verified_developmental_compounding_v1/run.py",
+        "sha256": "2abd9aed6e2c4a05dbfa1f036072a2ecc01b9eee2048373d9eefb203f8fea39a",
+        "bytes": 7661
+      },
+      {
+        "path": "experiments/verified_developmental_compounding_v1/tasks/build_tasks.py",
+        "sha256": "9a1685c298a9c7aaef75b574ebdc481397227d898f9cf64fc85779f3a2c02423",
+        "bytes": 2097
+      },
+      {
+        "path": "experiments/verified_developmental_compounding_v1/tasks/tasks.json",
+        "sha256": "1875eddcf7fcf411b1199992dc08b0acef3d4af6387e911bd37f03e9c7187adb",
+        "bytes": 17726
+      },
+      {
+        "path": "experiments/verified_developmental_compounding_v1/transfer/result.json",
+        "sha256": "e8211c426ab43c56d2300936947405babca63cb9ee5bf0eff7337c60f9a7bbfe",
+        "bytes": 292
+      }
+    ],
+    "evidence_boundary": "SOURCE_AND_COMMITTED_RESULTS_INSPECTED; historical qualification artifact not independently inspected by scanner",
+    "status": "CANDIDATE",
+    "installed_in_udm_at_base_b8216cf": false
+  },
+  {
+    "repo": "heathsanchez/test",
+    "branch": "verified-developmental-constructor-genesis-v1",
+    "commit": "0af24a901d6a7286d54ee36734579aff4628ee31",
+    "files": [
+      {
+        "path": "experiments/verified_developmental_constructor_genesis_v1/AUTHORITY.json",
+        "sha256": "6e1cc71ecd8f0a0f709070db4d7c6a73928a9970617f3059b248566107b69213",
+        "bytes": 1015,
+        "run_ids": [
+          "34599025109"
+        ],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/verified_developmental_constructor_genesis_v1/DevelopmentalConstructorGenesis.lean",
+        "sha256": "fa448eb6b069ee282da312735978d7326a495bbfeba0a44786928bad2f4bd782",
+        "bytes": 2447
+      },
+      {
+        "path": "experiments/verified_developmental_constructor_genesis_v1/PROTOCOL.md",
+        "sha256": "b429d1b1eaa196c45ed0db6f0a562c5c10535a9125f1576dbcb71d2275f54374",
+        "bytes": 2432,
+        "run_ids": [],
+        "verdicts": [
+          "UNKNOWN_EXPRESSIVITY"
+        ]
+      },
+      {
+        "path": "experiments/verified_developmental_constructor_genesis_v1/RESULTS.md",
+        "sha256": "031c510d25ca50d057700b140b7763253e0ee3e69dc36ed56f6ced79bb91ac8b",
+        "bytes": 2980,
+        "run_ids": [],
+        "verdicts": [
+          "PROVED",
+          "UNKNOWN_EXPRESSIVITY"
+        ]
+      },
+      {
+        "path": "experiments/verified_developmental_constructor_genesis_v1/results/evidence.json",
+        "sha256": "4de49371156ab12428fa5195e8d92643ccef1be11b924aa8474407dd935e16c9",
+        "bytes": 2042,
+        "run_ids": [],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/verified_developmental_constructor_genesis_v1/results/snapshot.json",
+        "sha256": "fad2d4d4f4a08d91c1fed56fc2f6982099a113ff8f60c7a0ee3949cf1c6c48d5",
+        "bytes": 394,
+        "run_ids": [],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/verified_developmental_constructor_genesis_v1/run.py",
+        "sha256": "9587f302d8b50492ddc702567de556c7d178ee6193e40bc8c48d13fd7a2d2417",
+        "bytes": 8292
+      }
+    ],
+    "evidence_boundary": "SOURCE_AND_COMMITTED_RESULTS_INSPECTED; historical qualification artifact not independently inspected by scanner",
+    "status": "CANDIDATE",
+    "installed_in_udm_at_base_b8216cf": false
+  },
+  {
+    "repo": "heathsanchez/test",
+    "branch": "verified-expressive-development-v1",
+    "commit": "dabbf58707455ee9f06bcf8fe49dc6c5764ef517",
+    "files": [
+      {
+        "path": "experiments/verified_expressive_development_v1/AUTHORITY.json",
+        "sha256": "eb87265f97f84582bfafd0c1b399be8a9b9b7f035de51c7c17e4ffb83d3cd9e3",
+        "bytes": 1732,
+        "run_ids": [
+          "34588481553",
+          "34588655262",
+          "34588809250",
+          "34588939842",
+          "34589130145"
+        ],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/verified_expressive_development_v1/InhabitedEpisode.lean",
+        "sha256": "3074a65732b09b24607473c0a904139580a88c455d49f3fdc5c809ac28b91630",
+        "bytes": 3202
+      },
+      {
+        "path": "experiments/verified_expressive_development_v1/PROTOCOL.md",
+        "sha256": "882659f1c01ef36be3bfc0f41bfad4b6122cc591ed8a35315eb7ffaef193e3b6",
+        "bytes": 2223,
+        "run_ids": [],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/verified_expressive_development_v1/RESULTS.md",
+        "sha256": "fd0c71894626f6152dfd3c7301f1cd41b585a930906fc9368c8adaab9d3b1c49",
+        "bytes": 3805,
+        "run_ids": [
+          "34589130145"
+        ],
+        "verdicts": [
+          "PROVED",
+          "UNKNOWN_EXPRESSIVITY",
+          "UNKNOWN_SEARCH"
+        ]
+      },
+      {
+        "path": "experiments/verified_expressive_development_v1/results/evidence.json",
+        "sha256": "2ca5e9665081a9ddf3ffd18cb0d30acd91113e4618d65c2f74a18423d0290c9c",
+        "bytes": 2065,
+        "run_ids": [],
+        "verdicts": [
+          "UNKNOWN_EXPRESSIVITY",
+          "UNKNOWN_SEARCH"
+        ]
+      },
+      {
+        "path": "experiments/verified_expressive_development_v1/results/snapshot.json",
+        "sha256": "10970f110c9a11d1802d4f4476cfdd3bf471df03450a185fd573f79c60eee89c",
+        "bytes": 284,
+        "run_ids": [],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/verified_expressive_development_v1/run.py",
+        "sha256": "49acb18dc1c9a638dd8fb1c2bb3112632722b4d2e21fb10ae1c57388bffc52f3",
+        "bytes": 6140
+      }
+    ],
+    "evidence_boundary": "SOURCE_AND_COMMITTED_RESULTS_INSPECTED; historical qualification artifact not independently inspected by scanner",
+    "status": "CANDIDATE",
+    "installed_in_udm_at_base_b8216cf": false
+  },
+  {
+    "repo": "heathsanchez/test",
+    "branch": "verified-generator-construction-v1",
+    "commit": "61fd7d71af0c95e61b7971cdcbb39ef462c49d84",
+    "files": [
+      {
+        "path": "experiments/verified_generator_construction_v1/AUTHORITY.json",
+        "sha256": "1c0bb3289d3f51fe990f4c32d2037e0df532e9c2f7bd16e4fcb57d66a1a0630b",
+        "bytes": 1215,
+        "run_ids": [
+          "34590125601",
+          "34590221591",
+          "34590333207"
+        ],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/verified_generator_construction_v1/ConstructedEpisode.lean",
+        "sha256": "d92e621dcfb70f3dabf5ef8d9cdf25c5a2f72f047a27bcf2de11d07689bdb173",
+        "bytes": 2051
+      },
+      {
+        "path": "experiments/verified_generator_construction_v1/PROTOCOL.md",
+        "sha256": "831529f237ee10307de51ec97d1177cfa88fffd56098d240573136e308e40d09",
+        "bytes": 2282,
+        "run_ids": [],
+        "verdicts": [
+          "UNKNOWN_EXPRESSIVITY",
+          "UNKNOWN_SEARCH"
+        ]
+      },
+      {
+        "path": "experiments/verified_generator_construction_v1/RESULTS.md",
+        "sha256": "9806bd90cc173bb13a4ccdb8bf620ec35f71d6a7113a88337f0a0512aae63680",
+        "bytes": 2616,
+        "run_ids": [
+          "34590125601",
+          "34590221591"
+        ],
+        "verdicts": [
+          "FAILURES",
+          "PROVED"
+        ]
+      },
+      {
+        "path": "experiments/verified_generator_construction_v1/results/evidence.json",
+        "sha256": "a4bb81ef4fbc771a8ddf8cf994751bb0ff852805a9ef0268ba1d09e1212e5abe",
+        "bytes": 3037,
+        "run_ids": [],
+        "verdicts": [
+          "UNKNOWN_EXPRESSIVITY",
+          "UNKNOWN_SEARCH"
+        ]
+      },
+      {
+        "path": "experiments/verified_generator_construction_v1/results/snapshot.json",
+        "sha256": "54393c25548dc2d9c5d6703dc72b82fd2d3234265fa0072247bd0d0b4a17fb4a",
+        "bytes": 217,
+        "run_ids": [],
+        "verdicts": []
+      },
+      {
+        "path": "experiments/verified_generator_construction_v1/run.py",
+        "sha256": "cf8595c945aeb627f95ec4fd93d7e6787965957447041d39a4053274465f0700",
+        "bytes": 6820
+      }
+    ],
+    "evidence_boundary": "SOURCE_AND_COMMITTED_RESULTS_INSPECTED; historical qualification artifact not independently inspected by scanner",
+    "status": "CANDIDATE",
+    "installed_in_udm_at_base_b8216cf": false
+  }
+]

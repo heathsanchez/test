@@ -1,0 +1,42 @@
+{
+  "schema": "udm.independent-verifier-fixed-probes.v1",
+  "reviewed_source_sha256": "d4438dfd8aa9f4abefaec66aba780578e75d384e51dcabb99bf1c3e702c5d9d9",
+  "fixtures_only": true,
+  "target_access": false,
+  "results": [
+    {
+      "probe": "mixed_skip",
+      "result": {
+        "status": "UNKNOWN_PARTIAL_SKIP",
+        "junit": {
+          "tests": 2,
+          "passed": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 1
+        }
+      }
+    },
+    {
+      "probe": "custom_test_patch",
+      "result": {
+        "raised": "ValueError",
+        "message": "candidate must replace a tracked production Python file"
+      }
+    },
+    {
+      "probe": "pytest_shadow",
+      "result": {
+        "status": "FAIL_NATIVE",
+        "junit": {
+          "tests": 2,
+          "passed": 1,
+          "failures": 1,
+          "errors": 0,
+          "skipped": 0
+        }
+      }
+    }
+  ],
+  "source_unchanged": true
+}

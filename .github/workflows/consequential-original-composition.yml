@@ -1,0 +1,35 @@
+name: Original developmental and runtime evidence composition
+on:
+  push:
+    branches: [research/consequential-state-normalization-20261015]
+    paths:
+      - "research/unified_consequence_runtime/compose_original_evidence.py"
+      - ".github/workflows/consequential-original-composition.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  compose:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Fetch original GitHub evidence archives
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api /repos/heathsanchez/test/actions/artifacts/11517107016/zip > /tmp/depth5.zip
+          gh api /repos/heathsanchez/test/actions/artifacts/11865380348/zip > /tmp/runtime.zip
+      - name: Check original SHA256 and join only warranted boundaries
+        run: |
+          set -euo pipefail
+          python -m research.unified_consequence_runtime.compose_original_evidence --depth5 /tmp/depth5.zip --runtime /tmp/runtime.zip --out composed_evidence.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: consequential-original-composition
+          path: composed_evidence.json

@@ -1,0 +1,24 @@
+name: Consequential state normalization
+on:
+  push:
+    branches: [research/consequential-state-normalization-20261015]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  normalize:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Existing runtime source contracts and normalization
+        run: |
+          python -m compileall -q research/unified_consequence_runtime
+          python -m unittest -v research.unified_consequence_runtime.test_integrate research.unified_consequence_runtime.test_consequential_state
+          python -m research.unified_consequence_runtime.consequential_state > normalized_state.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: normalized-historical-evidence
+          path: normalized_state.json

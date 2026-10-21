@@ -1,0 +1,281 @@
+{
+  "schema": "udm.recursive-independent-green-packet-review.v1",
+  "reviewer": "/root/native_boundary_review",
+  "reviewed_at_utc": "2026-10-15T18:48:46.945285+00:00",
+  "status": "PASS_BOUNDED_MAINTENANCE_PACKET_WITH_EXPLICIT_HIDDEN_SOURCE_ARCHIVE_BOUNDARY",
+  "source_commit": "b12220df5c77e5b7f5ebcbf6772c059d5f74a4cd",
+  "run_id": 38784959251,
+  "job_id": 116594466108,
+  "run_url": "https://github.com/heathsanchez/test/actions/runs/38784959251",
+  "artifact": {
+    "id": 11997138093,
+    "url": "https://github.com/heathsanchez/test/actions/runs/38784959251/artifacts/11997138093",
+    "bytes": 26582834,
+    "sha256": "0568d30391a9bffd566609f43ef85ef9321f5a9a583e89de67f251e163ce6319",
+    "zip_members_byte_verified": 912,
+    "path": "/workspace/qualification/recursive-actions-green.zip"
+  },
+  "provider_status": "SUCCESS_FOR_EXACT_SOURCE",
+  "native_science_rerun_by_reviewer": false,
+  "native_and_state_gates": [
+    {
+      "gate": "exact_frozen_source_and_chronology",
+      "status": "PASS",
+      "details": {
+        "source_commit": "b12220df5c77e5b7f5ebcbf6772c059d5f74a4cd",
+        "files": 14,
+        "freeze_sha256": "a5aad0a7ba83952871c36c3c93bc728c624bc32124c5a83f96268d98dca96076",
+        "chronology": "COMMITTED_CONTROL_FLOW_PLUS_DECLARED_PROCESS; NOT_ENFORCED_INFORMATION_FLOW"
+      }
+    },
+    {
+      "gate": "hash_only_pinned_native_source_archives",
+      "status": "PASS",
+      "details": {
+        "control": {
+          "commit": "f4f288579dc3c8f82f62d0eaca7774303d9d3768",
+          "git_tree": "5cdf6f106387e0fcf3e7585213ef1d5ac61ad9ac",
+          "tracked_tree_sha256": "fb0151b91605318d3f27c44b6f19e65515e96fd2bf79840ea2b66e8803038eea",
+          "file_count": 43
+        }
+      }
+    },
+    {
+      "gate": "actual_native_JUnit_logs_imports_environment_and_costs",
+      "status": "PASS",
+      "details": {
+        "receipts": 8,
+        "control_passes": 8,
+        "target_unknowns": 0,
+        "actual_junit_verified": true,
+        "native_seconds": 38.52712427699993
+      }
+    },
+    {
+      "gate": "all_ledger_hashes_premises_CAS_and_exact224prefix",
+      "status": "PASS",
+      "details": {
+        "ledger_records": 246,
+        "original_prefix_records": 224,
+        "CAS_objects": 76,
+        "live_records": 187,
+        "ledger_sha256": "b3696b388d2f3d1df95d819d1026eb9f87f042e93e4300f0cd987073949de9ac"
+      }
+    },
+    {
+      "gate": "exact_withdrawal_fresh_restoration_unrelated_survival",
+      "status": "PASS",
+      "details": {
+        "old_capability": "96c9a917bea1ea85cf561e5da84b30afdc80dcf49661af554a9181532757ffac",
+        "restored_capability": "86ef5aee0f874a9fdc8efe9d5522221234b8adbbc64f2442187bb37929392704",
+        "new_generation": 2,
+        "fresh_nonce": true
+      }
+    },
+    {
+      "gate": "real_separate_process_native_restart_execution",
+      "status": "PASS",
+      "details": {
+        "native_passed": 346,
+        "restart_process_id": 9447,
+        "coordinator_process_id": 6949,
+        "consequence": "5a8ff95806ec63ccc001e5cf9a6837502eb302f7c4cb02c097251d7d46596b25"
+      }
+    },
+    {
+      "gate": "append_only_retention_after_parent_continuation",
+      "status": "PASS",
+      "details": {
+        "consequence": "5a8ff95806ec63ccc001e5cf9a6837502eb302f7c4cb02c097251d7d46596b25",
+        "live": true,
+        "parent_continuation_verified": true
+      }
+    },
+    {
+      "gate": "honest_recursive_prospective_comparator_authority_boundaries",
+      "status": "PASS",
+      "details": {
+        "recursive_growth": "UNKNOWN",
+        "prospective_growth": "UNKNOWN",
+        "comparative_developmental_advantage": "UNKNOWN",
+        "raw_comparative_label": "UNKNOWN",
+        "raw_label_scope": "Native UNKNOWN-status parity only; no protected-outcome or developmental-cost advantage comparison."
+      }
+    }
+  ],
+  "independent_original_FLASH_and_all_original_CAS": {
+    "schema": "udm.recursive-independent-pure-state-replay.v1",
+    "no_native_project_execution": true,
+    "exact_original_CAS_objects_byte_preserved": 63,
+    "final_CAS_count": 76,
+    "replayed_original_FLASH_commit": "50c43b14e7272469bc51ff7204dec07682a996d7",
+    "metatron_independent_live_count": 187,
+    "original_FLASH_support_live_count": 187,
+    "agreement": true
+  },
+  "additional_checks": {
+    "archived_payload_entries_verified": 911,
+    "every_extracted_file_bound_to_manifest": true,
+    "exact_scope_authority_source_and_dependency_contracts_for_both_capabilities": true,
+    "input224_and_original63CAS_bytes_preserved": true,
+    "restored_generation2_native_activation": true,
+    "fresh_child_and_subsequent_parent_records_canonical_and_live": true,
+    "target_directory_absent_and_explicit_known_prior_mode": true,
+    "original_qualification_independent11gate_review_preserved": true
+  },
+  "contracts": {
+    "tests": 211,
+    "seconds": 337.14,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 10,
+    "skipped_scope": "Ten optional prepared-native-TOML adversarial cases; prior exact native source/archive remains authority.",
+    "log_sha256": "a43b76b291da4041acf4a7a175362abb8cf96826ebae0fd1ae2167625fd80fdd"
+  },
+  "formal_evidence_tests": {
+    "tests": 5,
+    "seconds": 0.026,
+    "status": "PASS",
+    "boundary": "Existing evidence validation tests; no new Python-to-Lean refinement or generic-native Lean instance is proved."
+  },
+  "archival_boundary": {
+    "frozen_sources_exact_commit_verified": 14,
+    "frozen_sources_present_and_byte_verified_in_original_zip": 13,
+    "missing_frozen_source": [
+      ".github/workflows/udm-recursive-native-frontier.yml"
+    ],
+    "all_manifest_omissions": [
+      "source/.github/workflows/udm-recursive-native-frontier.yml",
+      "source/research/unified_consequence_runtime/.gitignore",
+      "source/research/unified_consequence_runtime/archaeology/programme-closure/.gitignore",
+      "source/research/unified_consequence_runtime/archaeology/programme-closure/ros/.gitignore",
+      "source/research/unified_consequence_runtime/archaeology/semantics/source/triskelion/v161/.github/workflows/v161-ast-role-experiential-rescue.yml",
+      "source/research/unified_consequence_runtime/archaeology/semantics/source/triskelion/v54/.github/workflows/metalogic-v54-compounding.yml",
+      "source/research/unified_consequence_runtime/v54_formal/.gitignore"
+    ],
+    "reason": "Default upload-artifact excludes hidden .github/.gitignore paths.",
+    "workflow_bound_by_original_freeze_sha256": "07d0336aca37d8a163b5b87106299117b43984b8eeb8f1039ac556655d833d20",
+    "supplemental_exact_git_workflow": {
+      "path": "/workspace/qualification/ARCHIVED_QUALIFIED_WORKFLOW.txt",
+      "sha256": "07d0336aca37d8a163b5b87106299117b43984b8eeb8f1039ac556655d833d20",
+      "status": "INDEPENDENT_EXACT_GIT_EXPORT; NOT_ORIGINAL_ZIP_MEMBER"
+    },
+    "claim": "Bounded native/scientific gates pass. Do not claim every frozen source file was present in this original ZIP; final supplemental source must be separately bound."
+  },
+  "measured_cost_scope": {
+    "qualification_wall_seconds": 123.01046361499994,
+    "native_worker_calls": 8,
+    "native_execution_seconds": 38.52712427699993,
+    "parent_native_verification_cost_entries_preserved": 7,
+    "separate_child_native_cost_present": true,
+    "setup_phase_costs": [
+      {
+        "exit_code": 0,
+        "log": "/home/runner/work/test/test/qualification/recursive/control/init.log",
+        "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "phase": "init",
+        "seconds": 0.0037713250000024345,
+        "status": "PASS"
+      },
+      {
+        "exit_code": 0,
+        "log": "/home/runner/work/test/test/qualification/recursive/control/fetch.log",
+        "log_sha256": "c1111702226900d427780d6ac79d97c9a92f7a608561018c02cc183ccd5e32ef",
+        "phase": "fetch",
+        "seconds": 0.4148662130000389,
+        "status": "PASS"
+      },
+      {
+        "exit_code": 0,
+        "log": "/home/runner/work/test/test/qualification/recursive/control/checkout.log",
+        "log_sha256": "0c52daa04da1ee09ec374757953fa2d993fd746be790ebef02bb90e7f8f299d6",
+        "phase": "checkout",
+        "seconds": 0.007886722000023383,
+        "status": "PASS"
+      },
+      {
+        "exit_code": 0,
+        "log": "/home/runner/work/test/test/qualification/recursive/control/venv.log",
+        "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "phase": "venv",
+        "seconds": 2.5200885780000135,
+        "status": "PASS"
+      },
+      {
+        "exit_code": 0,
+        "log": "/home/runner/work/test/test/qualification/recursive/control/pytest.log",
+        "log_sha256": "5d3eef0f94257ff17b2de94e1a1b86d3f8508bec3085e9005afd27e14364ee12",
+        "phase": "pytest",
+        "seconds": 2.068923451000046,
+        "status": "PASS"
+      },
+      {
+        "exit_code": 0,
+        "log": "/home/runner/work/test/test/qualification/recursive/control/project.log",
+        "log_sha256": "b7d933aec292961a3448b32573347824c929de4b61375660b16692f9ec911303",
+        "phase": "project",
+        "seconds": 2.871506495999995,
+        "status": "PASS"
+      },
+      {
+        "exit_code": 0,
+        "log": "/home/runner/work/test/test/qualification/recursive/control/environment-packages.log",
+        "log_sha256": "1ebb5f94d94881c19ae09265c522db502fd63b10a8ccaaf694d9a2c75a5c557a",
+        "phase": "environment-packages",
+        "seconds": 0.26469371500002126,
+        "status": "PASS"
+      }
+    ],
+    "native_costs_are_nested_in_qualification_wall": true,
+    "contract_and_setup_workflow_costs_separate": true,
+    "full_lifecycle_economic_advantage": "UNKNOWN"
+  },
+  "retention": {
+    "final_records": 246,
+    "ledger_sha256": "b3696b388d2f3d1df95d819d1026eb9f87f042e93e4300f0cd987073949de9ac",
+    "original_records_retained": 224,
+    "persistent_bytes": 2389585
+  },
+  "restart_retention": {
+    "consequence": "5a8ff95806ec63ccc001e5cf9a6837502eb302f7c4cb02c097251d7d46596b25",
+    "final_ledger_contains_both": true,
+    "parent_continuation": "4f8324d56d4c7ee6c6fbfd68cd356083efa6394ca5c571a879cd091736daa0bd",
+    "status": "PASS"
+  },
+  "separate_verdicts": {
+    "generic_native_admission_and_causal_restart_maintenance": "WARRANTED_BOUNDED",
+    "frozen_b450_append_only_restart_retention": "REJECTED_PRESERVED",
+    "frozen_unfamiliar_urllib3_development": "UNKNOWN_ZERO_NATIVE_TESTS_IMPORT_ERROR",
+    "O1_O2_O3_recursive_development": "UNKNOWN_NO_NATIVE_ACQUISITION_CHAIN",
+    "comparative_developmental_advantage": "UNKNOWN_NO_COMPARABLE_PROTECTED_TARGET_OUTCOME_OR_COST_RESULT",
+    "new_concrete_formal_correspondence": "UNKNOWN",
+    "nonbypassable_external_authority_enforcement": "UNKNOWN"
+  },
+  "smallest_original_obstruction": "Frozen clean source cannot import urllib3._version; zero protected native cases established. No target-specific repair was added. Native O1 and O3 semantic acquisition bindings also remain missing.",
+  "metadata_hashes": [
+    {
+      "path": "/workspace/qualification/recursive-maintenance-run-provider.json",
+      "sha256": "df6404f85ab89345f04f49ab1a0e5bff00c2df02e740f1bb639f3eac2edfd55d"
+    },
+    {
+      "path": "/workspace/qualification/recursive-maintenance-artifacts-provider.json",
+      "sha256": "b0e7670ea6eaa93e59694bafa13dca8e9151ebdfe892061a6740fc740143940c"
+    },
+    {
+      "path": "/workspace/qualification/recursive-independent-green-jobs-provider.json",
+      "sha256": "7fbb2717d1d81f944df0b393b2538278d72bd28fe42fcbf29c768e58f148ea6f"
+    },
+    {
+      "path": "/workspace/qualification/recursive-independent-green-native-review.json",
+      "sha256": "3ea878a7c4aea20d81e49f3ea27d041968e4774c5fed56161f33793ea64a5612"
+    },
+    {
+      "path": "/workspace/qualification/recursive-independent-green-state-replay.json",
+      "sha256": "01b2af669daecc9105d049f46b7d8093729f3fbfe1495717c2f225ff038d4296"
+    },
+    {
+      "path": "/workspace/qualification/audit_recursive_frozen_local.py",
+      "sha256": "bfa197c36247ac9d9c7a9abd840d7bd68c489a6d969724ef222ee2c02490e7bf"
+    }
+  ]
+}

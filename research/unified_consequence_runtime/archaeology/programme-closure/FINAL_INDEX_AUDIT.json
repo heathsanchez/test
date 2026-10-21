@@ -1,0 +1,176 @@
+{
+  "schema": "udm.programme.final-index-independent-audit.v1",
+  "audited_at": "2026-10-15T09:23:26.581257+00:00",
+  "status": "PASS_FINAL_METADATA_AND_EVIDENCE_AUDIT",
+  "source_commit": "34943a589787142e52657d05b0c3021dab5860e3",
+  "run_id": 38709973459,
+  "artifact_id": 11960084934,
+  "checks": [
+    {
+      "check": "canonical_unique_and_inherited_row_counts",
+      "status": "PASS",
+      "canonical_rows": 70,
+      "inherited_rows": 42
+    },
+    {
+      "check": "inherited_records_preserved_except_explicit_stronger_native_observation_reconciliation",
+      "status": "PASS",
+      "changed_fields": [
+        {
+          "id": "flash-v11-real-source-minimum-basis",
+          "field": "status",
+          "allowed": true
+        },
+        {
+          "id": "flash-v11-real-source-minimum-basis",
+          "field": "scope",
+          "allowed": true
+        },
+        {
+          "id": "flash-v11-real-source-minimum-basis",
+          "field": "primary_artifacts_reopened_in_this_continuation",
+          "allowed": true
+        },
+        {
+          "id": "flash-v11-real-source-minimum-basis",
+          "field": "verification_boundary",
+          "allowed": true
+        }
+      ]
+    },
+    {
+      "check": "graph_binds_current_index",
+      "status": "PASS",
+      "index_sha256": "520e11a840aaa0791f7bcf76de2ad20fb21ba5e23c1cff70c47196ec44878a21"
+    },
+    {
+      "check": "graph_endpoints_unique_resolved",
+      "status": "PASS",
+      "nodes": 104,
+      "edges": 51
+    },
+    {
+      "check": "thirteen_bounded_runtime_edges_and_four_frontiers_exact_qualification_bindings",
+      "status": "PASS",
+      "qualified_edges": 13,
+      "qualified_frontiers": 4
+    },
+    {
+      "check": "canonical_recovery_input_digests",
+      "status": "PASS",
+      "input_manifests": 11,
+      "mismatches": []
+    },
+    {
+      "check": "top_level_programme_source_input_digests",
+      "status": "PASS",
+      "mismatches": []
+    },
+    {
+      "check": "exact_green_provider_metadata_receipt_binding",
+      "status": "PASS"
+    },
+    {
+      "check": "downloaded_green_archive_bytes",
+      "status": "PASS",
+      "bytes": 44137043,
+      "sha256": "fe899af52e4453bec23102f68d4dd32476b74b5b8e1bf25669226c5e12828e59"
+    },
+    {
+      "check": "all197_frozen_source_files_and_two_first_failure_evidence_records_match_exact_green_commit",
+      "status": "PASS",
+      "frozen_source_files": 197,
+      "additional_committed_evidence_files": 2,
+      "files": 199,
+      "mismatches": []
+    },
+    {
+      "check": "current_runtime_and_qualification_workflow_unchanged_from_green_source",
+      "status": "PASS",
+      "executable_source_files_compared": 65,
+      "mismatches": []
+    },
+    {
+      "check": "result_and_nine_native_stages_match_receipt",
+      "status": "PASS",
+      "result_sha256": "64ef0cb59f6d476ef6b239e1b270e876a00da2ce2eb3203bc979f2e07da56b7c",
+      "stage_wall_seconds": 216.22643085799993
+    },
+    {
+      "check": "independent_review_exact_source_run_archive_and_eleven_gates",
+      "status": "PASS"
+    },
+    {
+      "check": "committable_review_and_offline_auditor_match_inspected_copies",
+      "status": "PASS"
+    },
+    {
+      "check": "exact_retained_history_and_final_ledger",
+      "status": "PASS",
+      "original_records": 101,
+      "historical_records": 153,
+      "final_records": 224,
+      "ledger_sha256": "f09d839d0ef26a6bc29b5915f4ef519a3d7717e54dc8fa547558d470baf2a783"
+    },
+    {
+      "check": "qualified_snapshot_digest_and_every_stored_file_match_green_packet",
+      "status": "PASS",
+      "bytes": 550866,
+      "sha256": "5086b999e3f11b08524ea201cb8c2ac24842e6e288a56d17ef3c06c2c281a09d",
+      "files_compared": 535,
+      "mismatches": []
+    },
+    {
+      "check": "four_current_native_promotions_exactly_bound",
+      "status": "PASS",
+      "rows": [
+        {
+          "id": "flash-v11-real-source-minimum-basis",
+          "bindings_match": true
+        },
+        {
+          "id": "native-obligation-compiler-constructor-integration",
+          "bindings_match": true
+        },
+        {
+          "id": "prospective-choice-native-profile-integration",
+          "bindings_match": true
+        },
+        {
+          "id": "native-cross-frontier-flash-projection",
+          "bindings_match": true
+        }
+      ]
+    },
+    {
+      "check": "broader_scientific_and_authority_limits_not_promoted",
+      "status": "PASS"
+    },
+    {
+      "check": "recorded_contract_and_formal_evidence_test_counts",
+      "status": "PASS"
+    },
+    {
+      "check": "V54_not_reacquired_and_bounded_Lean_retained",
+      "status": "PASS"
+    }
+  ],
+  "findings": [],
+  "no_false_entire_programme_closure_claim_found": true,
+  "resolved_metadata_findings": [
+    "Stale present-tense Actions-PENDING report prose replaced by exact qualified receipt.",
+    "Current native verification boundaries qualified; prequalification snapshots retained.",
+    "Thirteen bounded runtime graph edges and four frontier/control nodes qualified without erasing earlier statuses.",
+    "Top-level programme coverage input digest and graph/index bindings refreshed."
+  ],
+  "audit_method_notes": [
+    "197frozen source entries plus two separately committed first-failure evidence records are199archived files; all bytes match green source.",
+    "Historical prequalification snapshots are checked separately from current top-level status; retaining an earlier pending status is not a current qualification failure."
+  ],
+  "native_scientific_experiments_run_by_this_audit": 0,
+  "tests_run_by_this_audit": 0,
+  "files_modified_by_this_audit": [
+    "/workspace/qualification/programme-final-index-audit.json"
+  ],
+  "boundary": "Read-only byte/hash/metadata/history consistency audit. Existing strict independent11gate native-evidence packet review inspected and bound; no scientific/native experiment repeated. No universal source coverage, new constructor language, unfamiliar-source growth, formal Python refinement or non-bypassable sandbox claim inferred."
+}

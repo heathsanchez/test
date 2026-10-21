@@ -1,0 +1,39 @@
+{
+  "schema": "UDM_NATIVE_IDENTITY_MAINTENANCE_REVIEW_V1",
+  "reviewed_at_utc": "2026-10-16T02:48:27Z",
+  "status": "PASS_BOUNDED_SOURCE_IDENTITY_MAINTENANCE",
+  "checks": {
+    "old_generic_worker_exact_previous": true,
+    "old_generic_adapter_exact_previous": true,
+    "new_worker_exact_first_frozen_worker": true,
+    "new_adapter_only_import_path_changed": true,
+    "cross_frontier_unchanged": true,
+    "new_worker_adapter_frozen": true,
+    "maintenance_mode_explicit": true
+  },
+  "old_qualified_source": "d63f416b728079e1e6056521e66721933224c983",
+  "first_failure_source": "a02eb3fb10b7577cc232fc9180b8fe9d3ef2c125",
+  "new_source_commit": "PENDING_ROOT_COMMIT",
+  "target_source_outcome_or_native_execution_by_reviewer": false,
+  "source_hashes": {
+    "generic_native_verify.py": "741d5c6a8b33faf4198d860aee2343a2a44bec55e8a161561e422bb512efa7db",
+    "native_frontier.py": "c257c1c6f1199994baa4915eebde3b79358afebefc16e3ced588ee068bb9dd28",
+    "decisive_native_verify.py": "12269c8ca2dd586ccec4b162736375bcaac5717aaf07f441b67e5511b0ed4670",
+    "decisive_native_frontier.py": "9b0e6ecd90b3b52a2d7d673844faf5618a614a5857460349d71852a1423843f6",
+    "cross_frontier.py": "bc51d0b1e4c1cb27325baf1e8e67a0f3a4fe769bc5f8916731ded451767e583c"
+  },
+  "preserved_boundaries": [
+    "No old ledger migration, pin weakening or cross_frontier mutation",
+    "No target source IDs, verifier options, budgets or candidate/policy language changes",
+    "Actual native task outcomes not yet inspected by this reviewer",
+    "Protocol now acknowledges coding-agent contract refusals; no new untouched/prospective result can be inferred from maintenance continuation",
+    "New adapter direct native execution can use existing Machine causality; current cross_frontier typed publication registry continues to bind old adapter. No new typed route-publication qualification inferred"
+  ],
+  "scientific_verdicts": {
+    "G2": "UNKNOWN pending native result",
+    "G3": "UNKNOWN_PREVIOUS_ADMISSION_EXPOSED",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN"
+  }
+}

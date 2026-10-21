@@ -1,0 +1,85 @@
+{
+  "schema": "metalogic.decisive.native-suite-authority-integration.v1",
+  "status": "FINAL_LOCAL15FIXTURES_PASS_PRIOR_INDEPENDENT67_PASS_CONDITIONAL_COUNTEREXAMPLE_REFUSED",
+  "api": {
+    "derive": "derive_native_suite_authority(repo,base_commit,augmented_commit,protocol_binding,*,repository)",
+    "verify": "verify(contract,candidate,output_dir,*,generated_wheel_evidence=None,native_suite_authority=None)",
+    "runtime": "NativeFrontierRuntime(machine,contract,output,*,generated_wheel_evidence=None,native_suite_authority=None)"
+  },
+  "authority_schema": "UDM_NATIVE_SUITE_AUTHORITY_V1",
+  "authority_fields": [
+    "schema",
+    "derivation",
+    "repository",
+    "baseline_commit",
+    "source_commit",
+    "protocol_binding",
+    "config_sha256",
+    "test_source_sha256",
+    "required_test_nodes"
+  ],
+  "derivation": "NATIVE_TEST_AST_DELTA_V1: exact Git baseline+augmented bytes; meaningful changed native test AST conservatively requires every static module/class test_ function in affected file; no tests run during derivation.",
+  "enforcement": [
+    "Exact authority rederived by worker from immutable Git blobs and compared, including complete config/test-source hashes and requirednode prefixes.",
+    "Old no-authority path still refuses all nonempty addopts. Optional authority supports bounded original reporting/strict/-k/-m flags unchanged; collection authority overrides, plugins, positionalpaths and unsupported flags failclosed UNKNOWN_INTERFACE.",
+    "Native pytest command runs full original native suite with original immutable addopts, no supplied testselection override. Actual call-stage node IDs/outcomes and deselected IDs retained.",
+    "All required prefixes must have actual passed native calls for promotion; matching any deselected parameter case blocks promotion even when another parameter passes.",
+    "Missing/deselected/skipped required nodes=>UNKNOWN_REQUIRED_ASSERTION. Actual executed failing required assertion remains FAIL_NATIVE; source mutation/timeout/error semantics remain independently scoped.",
+    "Native runtime source descriptor, existing CAS and receipts bind exact authoritydigest; candidate schema cannot supply authority or edit tests/config.",
+    "Generated wheel overlay accepts declared addopts only after exact optional native suite authority validation; standalone/default overlay remains strict."
+  ],
+  "local_tests": {
+    "count": 15,
+    "result": "PASS",
+    "seconds": 11.668,
+    "log": "/workspace/qualification/decisive-suite-authority-tests-frozen-candidate.log",
+    "sha256": "9201859835bc10e3518d7bf3b6ebfe25944a19d09f0f4ff88d9f4c57152afef1"
+  },
+  "independent_review_pending": "/workspace/qualification/decisive-native-suite-independent-tests.log",
+  "boundaries": [
+    "No new target repository, source, tests or target outcomes inspected.",
+    "No source experiment executed; all tests are local Git/pytest/PEP517 contract fixtures.",
+    "Externally supplied baseline/source author lineage must be bound independently by frozen task admission metadata/checker; AST derivation does not prove semantic assertion strength.",
+    "No universal arbitrary pytest configuration support, sandbox, Python/Lean refinement or native build correctness theorem claimed.",
+    "No commits/push created by this worker."
+  ],
+  "owned_hashes": [
+    {
+      "path": "/workspace/udm-v54/research/unified_consequence_runtime/generic_native_verify.py",
+      "sha256": "12269c8ca2dd586ccec4b162736375bcaac5717aaf07f441b67e5511b0ed4670",
+      "bytes": 27835
+    },
+    {
+      "path": "/workspace/udm-v54/research/unified_consequence_runtime/native_frontier.py",
+      "sha256": "f518fc6e313d54e82bd793bb63d363116f733833d32ac104d597ea0df75d7d02",
+      "bytes": 23917
+    },
+    {
+      "path": "/workspace/udm-v54/research/unified_consequence_runtime/generated_overlay_gate.py",
+      "sha256": "bf7e7b461b69cba338f1d9684d32aa4213e26918c29e721062c9ca4a447d8a66",
+      "bytes": 4232
+    },
+    {
+      "path": "/workspace/udm-v54/research/unified_consequence_runtime/generated_wheel_evidence.py",
+      "sha256": "446515e2257cb0c932759b4e98972a6feefe70a7a65765846e113da488632772",
+      "bytes": 3428
+    },
+    {
+      "path": "/workspace/udm-v54/research/unified_consequence_runtime/test_native_suite_authority.py",
+      "sha256": "9b00cd968f227fe000975c2b03d37796a4de78e055880b68541bbb6c5b1a83d5",
+      "bytes": 11163
+    }
+  ],
+  "independent_prior_suite": {
+    "count": 67,
+    "result": "PASS",
+    "seconds": 89.856,
+    "boundary": "Before final conditional/nested/dynamic failclosed guard; finalcounterexample independently refused after guard."
+  },
+  "final_guard": "Conditional/nested static test_ definitions, top-level dynamic registration and test aliases unsupported UNKNOWN_SUITE_CONTRACT; any deselected node in changed test module blocks assertion qualification.",
+  "conditional_counterexample": {
+    "path": "/workspace/qualification/decisive-suite-conditional-counterexample.json",
+    "sha256": "caa9a14eebd043f80012d7993ee0ab1ceecce672b1c9798545e431172d33c79c",
+    "result": "REFUSED_UNKNOWN_SUITE_CONTRACT"
+  }
+}

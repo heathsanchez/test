@@ -1,0 +1,44 @@
+======================================================================
+FAIL: test_reuse_available_method_precedes_construction (research.unified_consequence_runtime.test_native_observation.NativeObservationAdversarial.test_reuse_available_method_precedes_construction)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_observation.py", line 200, in test_reuse_available_method_precedes_construction
+    selected = self.runtime.acquire()
+               ^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_observation.py", line 296, in acquire
+    self.native.producer.acquire(*paths, policy_path)
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/unittest/mock.py", line 1139, in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/unittest/mock.py", line 1143, in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/unittest/mock.py", line 1198, in _execute_mock_call
+    raise effect
+AssertionError: existing qualified operation must precede construction
+
+======================================================================
+FAIL: test_z_ambiguous_live_methods_preserve_both_candidates (research.unified_consequence_runtime.test_native_observation.NativeObservationAdversarial.test_z_ambiguous_live_methods_preserve_both_candidates)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_observation.py", line 218, in test_z_ambiguous_live_methods_preserve_both_candidates
+    runtime.acquire()
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_observation.py", line 296, in acquire
+    self.native.producer.acquire(*paths, policy_path)
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/unittest/mock.py", line 1139, in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/unittest/mock.py", line 1143, in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/unittest/mock.py", line 1198, in _execute_mock_call
+    raise effect
+AssertionError: ambiguous available methods must not trigger construction
+
+----------------------------------------------------------------------
+Ran 2 tests in 23.535s
+
+FAILED (failures=2)
+{"basis":["coherence"],"exhaustive_ties":true,"old_fail_to_head_pass":13,"phase":"ACQUIRE_A","solver_oracle_calls":2}
+{"basis":["coherence"],"exhaustive_ties":true,"old_fail_to_head_pass":13,"phase":"ACQUIRE_A","solver_oracle_calls":2}
+{"basis":["coherence"],"exhaustive_ties":true,"old_fail_to_head_pass":13,"phase":"ACQUIRE_A","solver_oracle_calls":2}
