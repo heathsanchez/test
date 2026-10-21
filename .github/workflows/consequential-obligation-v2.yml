@@ -1,0 +1,27 @@
+name: Consequential Obligation V2 - Native Separation
+on:
+  push:
+    branches:
+      - research/consequential-obligation-v2-20261021
+  pull_request:
+    paths:
+      - 'research/consequential_obligation_v2/**'
+      - '.github/workflows/consequential-obligation-v2.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-sqlite:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Native source-to-obligation separation
+        run: |
+          python3 -c 'import sqlite3; print("SQLite", sqlite3.sqlite_version)'
+          python3 research/consequential_obligation_v2/experiment.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: consequential-obligation-v2-evidence
+          path: research/consequential_obligation_v2/result.json
+          if-no-files-found: error
