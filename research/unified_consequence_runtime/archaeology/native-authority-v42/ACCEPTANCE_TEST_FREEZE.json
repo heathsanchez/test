@@ -1,0 +1,26 @@
+{
+  "implementation_absent_at_freeze": true,
+  "native_inherited_tests": 27,
+  "new_target_outcomes_inspected": false,
+  "preimplementation_corrections": [
+    "JUnit original schema uses failures, not failed; corrected before commit and before implementation."
+  ],
+  "schema": "UDM_NATIVE_V42_TEST_FREEZE",
+  "tests": {
+    "test_native_execution_v42.py": {
+      "bytes": 10095,
+      "declared_tests": 6,
+      "sha256": "24222b334b1bb93d54aac476a65a1f17e7904aca5c69beca72cd8505684a08b2"
+    },
+    "test_native_source_v42.py": {
+      "bytes": 13249,
+      "declared_tests": 16,
+      "sha256": "ab78c6c19271c57d720c062f6830bd868aaf90b4e33857ed5eab8bade31a6793"
+    },
+    "test_qualify_native_frontier_v42.py": {
+      "bytes": 7580,
+      "declared_tests": 10,
+      "sha256": "cde1740fea8cb65ca37af84e5a5d620d921be727b15fd2c1ac4013da800ea86a"
+    }
+  }
+}

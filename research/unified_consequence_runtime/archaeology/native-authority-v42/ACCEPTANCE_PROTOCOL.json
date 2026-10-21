@@ -1,0 +1,43 @@
+{
+  "schema": "UDM_TYPED_NATIVE_SOURCE_ACCEPTANCE_V42",
+  "baseline": "dc59c8fcee6efede520c531eba5e42e7b84a1a9f",
+  "purpose": "Versioned source admission only; no developmental result follows from this gate.",
+  "source_authority": "Immutable Git tree including every tracked path, mode, object identity, original regular bytes, raw symbolic-link target and opaque gitlink pointer.",
+  "supported_extension": "Safe internal file symbolic links, materialized as original symbolic links and independently checked before and after execution. Original metadata, static suite authority, collection, assertion, import, plugin and receipt-replay algorithms remain authoritative.",
+  "unsupported": [
+    "Directory symbolic-link aliases: UNKNOWN_UNSUPPORTED_DIRECTORY_ALIAS",
+    "Missing or uninitialized gitlink contents: UNKNOWN_UNINITIALIZED_GITLINK; inventory never authorizes fetching or installed substitution",
+    "Escaping, absolute, dangling, cyclic or Git-administration symbolic links",
+    "Unclosed conditional dependency and dynamic metadata grammars retain their earlier UNKNOWN status"
+  ],
+  "positive_controls": [
+    "Regular source behavior and executable bit survive source transport",
+    "Internal file symbolic link preserves raw target and actual filesystem semantics",
+    "Native import through an internal file symbolic link authenticates the canonical tracked target",
+    "Malformed Python used only as data is inventoried without parser authority",
+    "Complete original protected tests execute nonzero calls with independent recollection and native receipt replay",
+    "Protected assertion failure is independently observed as FAIL_NATIVE"
+  ],
+  "negative_controls": [
+    "Wrong raw link target with equal resolved bytes",
+    "Source kind, mode, bytes or pointer mutation",
+    "Absolute, escaping, dangling, cyclic, directory and administrative links",
+    "Author-test overlay through linked leaf or parent",
+    "Candidate targeting a link or canonical protected alias target",
+    "Missing executable or incorrectly imported original source",
+    "Malformed imported Python",
+    "Changed, missing, skipped, xfailed or deselected protected assertions",
+    "Forged, resealed or replayed collection and receipt evidence",
+    "Wrong scope, stale executable or plugin identity and unauthorized plugin replacement"
+  ],
+  "freeze_order": [
+    "Commit this protocol and executable acceptance tests before implementation",
+    "Retain missing-extension RED",
+    "Implement only the versioned extension",
+    "Commit all execution authority before qualification",
+    "Independently inspect retained native evidence and exact source before new frontier metadata queries"
+  ],
+  "audit": "Retain raw common/current/linked Git-index bytes before the first Git read in each audited interval; record differences without restoration.",
+  "scientific_verdicts": {"G2":"UNKNOWN","G3":"UNKNOWN","G4":"UNKNOWN","G5":"UNKNOWN","G6":"UNKNOWN"},
+  "diagnostic_only": "Every previously exposed V3, V4 and V41 repository/task is excluded from prospective claims. A screening refusal is retained and charged, never outcome-selected away."
+}
