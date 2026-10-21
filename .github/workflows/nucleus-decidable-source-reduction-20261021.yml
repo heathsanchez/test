@@ -1,0 +1,57 @@
+name: Nucleus source finite-decision reduction first cause
+on:
+  push:
+    branches: [research/nucleus-decidable-reduction-trace-20261021]
+    paths:
+      - '.github/scripts/nucleus_decide_source_reduction_trace_20261021.py'
+      - '.github/workflows/nucleus-decidable-source-reduction-20261021.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  original-decide-proof:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Freeze independently qualified kernel source and compiler
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/decision-trace-evidence /tmp/decision-trace-fixtures
+          test "$(git rev-parse HEAD:metatron-kernel)" = 5e7d65b1b6abc3f6380bc7a37ffb153284d7faf1
+          git rev-parse HEAD > /tmp/decision-trace-evidence/research-head.txt
+          rustc -vV > /tmp/decision-trace-evidence/rust-version.txt
+      - name: Run native Rust protected tests and compile unchanged independent checker
+        run: |
+          set -euo pipefail
+          NUCLEUS_EXPERIMENTAL_RELEVANCE=1 NUCLEUS_EXPERIMENTAL_EXPECTED_LAMBDA=1 \
+            cargo test --release --locked --features diagnostics \
+            --manifest-path metatron-kernel/Cargo.toml > /tmp/decision-trace-evidence/rust-tests.log 2>&1 || {
+              tail -100 /tmp/decision-trace-evidence/rust-tests.log; exit 1;
+            }
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          sha256sum metatron-kernel/target/release/metatron-kernel > /tmp/decision-trace-evidence/binary.sha256
+      - name: Recover independently verified source-derived positive and false Eq controls
+        run: |
+          set -euo pipefail
+          gh api repos/heathsanchez/test/actions/artifacts/12336209253/zip > /tmp/decision-trace-micro.zip
+          echo '6727b4ba0de9f4b12642307d1749fcf220047134bfbb6e6a5a789bec092dfaa4  /tmp/decision-trace-micro.zip' | sha256sum -c -
+          unzip -q /tmp/decision-trace-micro.zip -d /tmp/decision-trace-fixtures
+          test -s /tmp/decision-trace-fixtures/magma-list-pair-n7.ndjson-positive.ndjson
+          test -s /tmp/decision-trace-fixtures/magma-list-pair-n21.ndjson-negative.ndjson
+      - name: Capture typed original finite-decision failure, without checker modification
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/nucleus_decide_source_reduction_trace_20261021.py \
+            /tmp/decision-trace-fixtures \
+            metatron-kernel/target/release/metatron-kernel \
+            /tmp/decision-trace-evidence
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-decide-source-causal-trace-${{ github.sha }}
+          path: /tmp/decision-trace-evidence/
+          if-no-files-found: warn
