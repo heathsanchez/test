@@ -23,10 +23,13 @@ jobs:
           mkdir -p /tmp/nucleus-magma-evidence /tmp/nucleus-magma-testpack /tmp/nucleus-magma-corpus
           git rev-parse HEAD > /tmp/nucleus-magma-evidence/research-commit.txt
           git rev-parse HEAD:metatron-kernel > /tmp/nucleus-magma-evidence/qualified-source-tree.txt
-          git diff ff003e7fad888d39a40cfd2375885fe20e3209fa -- metatron-kernel/ > /tmp/nucleus-magma-evidence/source-diff.txt
-          test ! -s /tmp/nucleus-magma-evidence/source-diff.txt || {
-            echo 'UNAUTHORIZED_SEMANTIC_DIFF'; cat /tmp/nucleus-magma-evidence/source-diff.txt; exit 1;
+          EXPECTED_SOURCE_TREE=5e7d65b1b6abc3f6380bc7a37ffb153284d7faf1
+          ACTUAL_SOURCE_TREE=$(git rev-parse HEAD:metatron-kernel)
+          test "$ACTUAL_SOURCE_TREE" = "$EXPECTED_SOURCE_TREE" || {
+            echo "UNAUTHORIZED_SEMANTIC_SOURCE_TREE:$ACTUAL_SOURCE_TREE expected:$EXPECTED_SOURCE_TREE"
+            exit 1
           }
+          printf '%s\n' "qualified_subtree=$EXPECTED_SOURCE_TREE" > /tmp/nucleus-magma-evidence/immutable-source-proof.txt
           rustc -vV > /tmp/nucleus-magma-evidence/rustc.txt
       - name: Compile original checker and run all required native Rust tests
         run: |
