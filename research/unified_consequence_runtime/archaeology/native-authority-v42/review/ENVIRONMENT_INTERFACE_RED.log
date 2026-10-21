@@ -1,0 +1,27 @@
+test_original_environment_helper_has_unchanged_frozen_dependency (research.unified_consequence_runtime.test_native_environment_v42.NativeEnvironmentV42InterfaceContracts.test_original_environment_helper_has_unchanged_frozen_dependency) ... FAIL
+test_real_runtime_freeze_and_independent_validation_use_selected_interpreter (research.unified_consequence_runtime.test_native_environment_v42.NativeEnvironmentV42InterfaceContracts.test_real_runtime_freeze_and_independent_validation_use_selected_interpreter) ... ERROR
+
+======================================================================
+ERROR: test_real_runtime_freeze_and_independent_validation_use_selected_interpreter (research.unified_consequence_runtime.test_native_environment_v42.NativeEnvironmentV42InterfaceContracts.test_real_runtime_freeze_and_independent_validation_use_selected_interpreter)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_environment_v42.py", line 19, in test_real_runtime_freeze_and_independent_validation_use_selected_interpreter
+    record = environment.freeze_runtime(path)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_v3.py", line 35, in freeze_runtime
+    result=execution.frozen.subprocess.run([str(path),'-I','-B','-c',
+           ^^^^^^^^^^^^^^^^
+AttributeError: module 'research.unified_consequence_runtime.native_execution_v42' has no attribute 'frozen'
+
+======================================================================
+FAIL: test_original_environment_helper_has_unchanged_frozen_dependency (research.unified_consequence_runtime.test_native_environment_v42.NativeEnvironmentV42InterfaceContracts.test_original_environment_helper_has_unchanged_frozen_dependency)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_environment_v42.py", line 15, in test_original_environment_helper_has_unchanged_frozen_dependency
+    self.assertIs(getattr(execution, 'frozen', None), previous.frozen)
+AssertionError: None is not <module 'research.unified_consequence_runtime.native_execution_v2' from '/workspace/udm-v54/research/unified_consequence_runtime/native_execution_v2.py'>
+
+----------------------------------------------------------------------
+Ran 2 tests in 0.111s
+
+FAILED (failures=1, errors=1)
