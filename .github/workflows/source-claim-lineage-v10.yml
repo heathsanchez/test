@@ -1,0 +1,31 @@
+name: Source Claim Lineage V10
+on:
+  push:
+    branches:
+      - research/source-claim-lineage-v10-20261021
+  pull_request:
+    paths:
+      - 'research/source_claim_lineage_v10/**'
+      - '.github/workflows/source-claim-lineage-v10.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-authority:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Evaluate exposed calibration and unseen dependency chain
+        run: |
+          python3 -m py_compile research/source_claim_lineage_v10/experiment.py
+          python3 research/source_claim_lineage_v10/experiment.py
+          python3 research/source_claim_lineage_v10/causal_audit.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: source-claim-lineage-v10
+          path: |
+            research/source_claim_lineage_v10/result.json
+            research/source_claim_lineage_v10/causal_result.json
+          if-no-files-found: warn
