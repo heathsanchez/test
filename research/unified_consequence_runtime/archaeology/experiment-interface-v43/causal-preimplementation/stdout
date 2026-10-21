@@ -1,0 +1,45 @@
+FFF                                                                      [100%]
+=================================== FAILURES ===================================
+____________________ test_required_causal_v43_modules_exist ____________________
+research/unified_consequence_runtime/test_native_materialization_v43.py:86: in test_required_causal_v43_modules_exist
+    assert not missing, 'V43 retained causal interface is not implemented: ' + ', '.join(missing)
+E   AssertionError: V43 retained causal interface is not implemented: native_materialization_v43, cross_frontier_v43, developmental_machine_v43, native_runtime_v43
+E   assert not ['native_materialization_v43', 'cross_frontier_v43', 'developmental_machine_v43', 'native_runtime_v43']
+__ test_request_is_strict_source_bound_json_and_not_a_caller_output_allowlist __
+research/unified_consequence_runtime/test_native_materialization_v43.py:90: in test_request_is_strict_source_bound_json_and_not_a_caller_output_allowlist
+    module, machine, runtime = stack(tmp_path)
+research/unified_consequence_runtime/test_native_materialization_v43.py:34: in stack
+    module = implementation('native_materialization_v43')
+research/unified_consequence_runtime/native_v43_test_support.py:42: in implementation
+    return importlib.import_module(__package__ + '.' + name)
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1324: in _find_and_load_unlocked
+    ???
+E   ModuleNotFoundError: No module named 'research.unified_consequence_runtime.native_materialization_v43'
+_ test_real_backend_instrument_causal_withdraw_restore_tamper_and_process_restart _
+research/unified_consequence_runtime/test_native_materialization_v43.py:116: in test_real_backend_instrument_causal_withdraw_restore_tamper_and_process_restart
+    module, machine, materializer = stack(tmp_path)
+research/unified_consequence_runtime/test_native_materialization_v43.py:34: in stack
+    module = implementation('native_materialization_v43')
+research/unified_consequence_runtime/native_v43_test_support.py:42: in implementation
+    return importlib.import_module(__package__ + '.' + name)
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1324: in _find_and_load_unlocked
+    ???
+E   ModuleNotFoundError: No module named 'research.unified_consequence_runtime.native_materialization_v43'
+- generated xml file: /workspace/qualification/experiment-interface-v43-causal-preimplementation/junit.xml -
+=========================== short test summary info ============================
+FAILED research/unified_consequence_runtime/test_native_materialization_v43.py::test_required_causal_v43_modules_exist
+FAILED research/unified_consequence_runtime/test_native_materialization_v43.py::test_request_is_strict_source_bound_json_and_not_a_caller_output_allowlist
+FAILED research/unified_consequence_runtime/test_native_materialization_v43.py::test_real_backend_instrument_causal_withdraw_restore_tamper_and_process_restart
+3 failed in 1.04s

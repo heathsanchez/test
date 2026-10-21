@@ -1,0 +1,20 @@
+--- first-draft/test_native_materialization_v43.py
++++ frozen/test_native_materialization_v43.py
+@@ -173,11 +173,15 @@
+     dependent = native_runtime(machine, beta, certificate, tmp_path / 'dependent-native',
+                                evidence=evidence, instrument=capability)
+     native_capability = dependent.admit({'replacements': []})
+-    child = dependent.admit(beta.candidate(0), dependencies=(native_capability,))
++    child_candidate = beta.candidate(0)
++    child_candidate['replacements'][0]['replacement'] = 'def value():\n    return int(0)\n'
++    child = dependent.admit(child_candidate, dependencies=(native_capability,))
+     receipt, native_consequence = dependent.execute(child)
+     assert receipt['status'] == 'PASS_NATIVE'
+     assert receipt['junit']['passed'] == 2
+-    assert receipt['authority'] == 'EXTERNALLY_SUPPLIED_LOCAL_RESEARCH_ONLY'
++    assert receipt['external_enforcement'] == 'UNKNOWN_NONBYPASSABILITY'
++    assert receipt['scope'] == ('Exact original collected suite, no skips/xfails/deselection; '
++                                'trusted original tests and licensed plugins')
+     for ident in (native_capability, child):
+         assert capability in machine.descriptor(ident).dependencies
+         assert capability in node(machine, ident).premises

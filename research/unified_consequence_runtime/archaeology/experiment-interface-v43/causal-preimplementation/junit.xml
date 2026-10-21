@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="3" skipped="0" tests="3" time="1.045" timestamp="2026-10-21T21:10:42.817770+00:00" hostname="8ac9339af51c"><testcase classname="research.unified_consequence_runtime.test_native_materialization_v43" name="test_required_causal_v43_modules_exist" time="0.000"><failure message="AssertionError: V43 retained causal interface is not implemented: native_materialization_v43, cross_frontier_v43, developmental_machine_v43, native_runtime_v43&#10;assert not ['native_materialization_v43', 'cross_frontier_v43', 'developmental_machine_v43', 'native_runtime_v43']">research/unified_consequence_runtime/test_native_materialization_v43.py:86: in test_required_causal_v43_modules_exist
+    assert not missing, 'V43 retained causal interface is not implemented: ' + ', '.join(missing)
+E   AssertionError: V43 retained causal interface is not implemented: native_materialization_v43, cross_frontier_v43, developmental_machine_v43, native_runtime_v43
+E   assert not ['native_materialization_v43', 'cross_frontier_v43', 'developmental_machine_v43', 'native_runtime_v43']</failure></testcase><testcase classname="research.unified_consequence_runtime.test_native_materialization_v43" name="test_request_is_strict_source_bound_json_and_not_a_caller_output_allowlist" time="0.935"><failure message="ModuleNotFoundError: No module named 'research.unified_consequence_runtime.native_materialization_v43'">research/unified_consequence_runtime/test_native_materialization_v43.py:90: in test_request_is_strict_source_bound_json_and_not_a_caller_output_allowlist
+    module, machine, runtime = stack(tmp_path)
+research/unified_consequence_runtime/test_native_materialization_v43.py:34: in stack
+    module = implementation('native_materialization_v43')
+research/unified_consequence_runtime/native_v43_test_support.py:42: in implementation
+    return importlib.import_module(__package__ + '.' + name)
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+&lt;frozen importlib._bootstrap&gt;:1387: in _gcd_import
+    ???
+&lt;frozen importlib._bootstrap&gt;:1360: in _find_and_load
+    ???
+&lt;frozen importlib._bootstrap&gt;:1324: in _find_and_load_unlocked
+    ???
+E   ModuleNotFoundError: No module named 'research.unified_consequence_runtime.native_materialization_v43'</failure></testcase><testcase classname="research.unified_consequence_runtime.test_native_materialization_v43" name="test_real_backend_instrument_causal_withdraw_restore_tamper_and_process_restart" time="0.001"><failure message="ModuleNotFoundError: No module named 'research.unified_consequence_runtime.native_materialization_v43'">research/unified_consequence_runtime/test_native_materialization_v43.py:116: in test_real_backend_instrument_causal_withdraw_restore_tamper_and_process_restart
+    module, machine, materializer = stack(tmp_path)
+research/unified_consequence_runtime/test_native_materialization_v43.py:34: in stack
+    module = implementation('native_materialization_v43')
+research/unified_consequence_runtime/native_v43_test_support.py:42: in implementation
+    return importlib.import_module(__package__ + '.' + name)
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+&lt;frozen importlib._bootstrap&gt;:1387: in _gcd_import
+    ???
+&lt;frozen importlib._bootstrap&gt;:1360: in _find_and_load
+    ???
+&lt;frozen importlib._bootstrap&gt;:1324: in _find_and_load_unlocked
+    ???
+E   ModuleNotFoundError: No module named 'research.unified_consequence_runtime.native_materialization_v43'</failure></testcase></testsuite></testsuites>

@@ -1,0 +1,64 @@
+{
+  "artifacts_sha256": {
+    "junit.xml": "cb3529902e2137132d13d46ac3ae4740da8b21f8d1d7b397529871938c6d1334",
+    "stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout": "a43a9c3c6f14fedba7b304833aa30aac3e654a3c30c23b3b7ee1bd3c6f4db389"
+  },
+  "baseline_commit": "8c1ff8db64415b9ce6db865f2744f40a866293c9",
+  "command": [
+    "/workspace/qualification/native-authority-v42-controller/bin/python",
+    "-B",
+    "-m",
+    "pytest",
+    "-q",
+    "--import-mode=importlib",
+    "-p",
+    "no:cacheprovider",
+    "research/unified_consequence_runtime/test_native_materialization_v43.py",
+    "--basetemp=/workspace/qualification/experiment-interface-v43-causal-preimplementation/fixtures-final",
+    "--tb=short",
+    "--junitxml=/workspace/qualification/experiment-interface-v43-causal-preimplementation/junit.xml"
+  ],
+  "completed_utc": "2026-10-21T21:10:43.890271+00:00",
+  "counts": {
+    "errors": 0,
+    "failures": 3,
+    "passed": 0,
+    "skipped": 0,
+    "tests": 3
+  },
+  "cwd": "/workspace/udm-v54",
+  "environment_overrides": {
+    "GIT_OPTIONAL_LOCKS": "0",
+    "PYTHONDONTWRITEBYTECODE": "1"
+  },
+  "files_sha256": {
+    "research/unified_consequence_runtime/archaeology/experiment-interface-v43/CAUSAL_ACCEPTANCE.md": "92b2564d4d9b87f324cf5cf20201a5eae2ca03110026d469974d452c60a26690",
+    "research/unified_consequence_runtime/test_native_materialization_v43.py": "05953e5d264380bccd6f4b9de0bb467613e7170c53ae29785fbb130caea3925a"
+  },
+  "first_draft": {
+    "correction_diff_sha256": "18bf62bc5a0188aa29ca713451ff1298779a9c9df5aecd2be55c1b51b4987ad3",
+    "freeze_sha256": "524eccf03e80c76fc875600bde825f31fec692e9a41494372f9f0ebd853913c8",
+    "path": "/workspace/qualification/experiment-interface-v43-causal-preimplementation/first-draft",
+    "reason": "Before production implementation, corrected an unchanged candidate replacement and an assertion of a field absent from the original strict receipt schema."
+  },
+  "fixture_interpreter": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/venv/bin/python",
+  "notes": [
+    "Each test failed exclusively because Task4 implementation modules were absent.",
+    "Task2/3 build and worker sources may be implemented concurrently; this RED freezes the four causal Task4 modules.",
+    "No source/runtime production file or Git state was mutated by this task; test Git writes are confined to disposable fixture directories.",
+    "Future GREEN runs must retain all source/build/native trees using a unique persistent --basetemp.",
+    "The retained first draft and correction diff explain two fixture corrections before this final preimplementation freeze; production Task4 modules remained absent throughout both runs."
+  ],
+  "production_modules_absent_before_and_after": [
+    "/workspace/udm-v54/research/unified_consequence_runtime/native_materialization_v43.py",
+    "/workspace/udm-v54/research/unified_consequence_runtime/cross_frontier_v43.py",
+    "/workspace/udm-v54/research/unified_consequence_runtime/developmental_machine_v43.py",
+    "/workspace/udm-v54/research/unified_consequence_runtime/native_runtime_v43.py"
+  ],
+  "returncode": 1,
+  "schema": "UDM_V43_CAUSAL_PREIMPLEMENTATION_ACCEPTANCE_TEST_FREEZE_V1",
+  "scope": "Real existing Machine/Metatron/FLASH and disposable original Hatch VCS qualification fixtures only; admission is not G2.",
+  "started_utc": "2026-10-21T21:10:42.692779+00:00",
+  "status": "EXPECTED_RED_BEFORE_PRODUCTION_IMPLEMENTATION"
+}

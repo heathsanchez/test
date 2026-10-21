@@ -1,0 +1,57 @@
+{
+  "artifacts_sha256": {
+    "junit.xml": "eb6c951f2b894306b67e7b611001a5d0e4ebb66d57014860f267405e8a53f4a8",
+    "stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout": "4903b97bf54dfa633ee0adb85acfe03f8bb77b91360f95fc9df382ddb5e8acce"
+  },
+  "baseline_commit": "8c1ff8db64415b9ce6db865f2744f40a866293c9",
+  "command": [
+    "/workspace/qualification/native-authority-v42-controller/bin/python",
+    "-B",
+    "-m",
+    "pytest",
+    "-q",
+    "--import-mode=importlib",
+    "-p",
+    "no:cacheprovider",
+    "research/unified_consequence_runtime/test_native_materialization_v43.py",
+    "--basetemp=/workspace/qualification/experiment-interface-v43-causal-preimplementation/fixtures",
+    "--tb=short",
+    "--junitxml=/workspace/qualification/experiment-interface-v43-causal-preimplementation/junit.xml"
+  ],
+  "completed_utc": "2026-10-21T21:09:57.858053+00:00",
+  "counts": {
+    "errors": 0,
+    "failures": 3,
+    "passed": 0,
+    "skipped": 0,
+    "tests": 3
+  },
+  "cwd": "/workspace/udm-v54",
+  "environment_overrides": {
+    "GIT_OPTIONAL_LOCKS": "0",
+    "PYTHONDONTWRITEBYTECODE": "1"
+  },
+  "files_sha256": {
+    "research/unified_consequence_runtime/archaeology/experiment-interface-v43/CAUSAL_ACCEPTANCE.md": "92b2564d4d9b87f324cf5cf20201a5eae2ca03110026d469974d452c60a26690",
+    "research/unified_consequence_runtime/test_native_materialization_v43.py": "258aa9146c32df5c1dea6ed43c129f3edbd489e243d744761744c1024343c8a3"
+  },
+  "fixture_interpreter": "/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/venv/bin/python",
+  "notes": [
+    "Each test failed exclusively because Task4 implementation modules were absent.",
+    "Task2/3 build and worker sources may be implemented concurrently; this RED freezes the four causal Task4 modules.",
+    "No source/runtime production file or Git state was mutated by this task; test Git writes are confined to disposable fixture directories.",
+    "Future GREEN runs must retain all source/build/native trees using a unique persistent --basetemp."
+  ],
+  "production_modules_absent_before_and_after": [
+    "/workspace/udm-v54/research/unified_consequence_runtime/native_materialization_v43.py",
+    "/workspace/udm-v54/research/unified_consequence_runtime/cross_frontier_v43.py",
+    "/workspace/udm-v54/research/unified_consequence_runtime/developmental_machine_v43.py",
+    "/workspace/udm-v54/research/unified_consequence_runtime/native_runtime_v43.py"
+  ],
+  "returncode": 1,
+  "schema": "UDM_V43_CAUSAL_PREIMPLEMENTATION_ACCEPTANCE_TEST_FREEZE_V1",
+  "scope": "Real existing Machine/Metatron/FLASH and disposable original Hatch VCS qualification fixtures only; admission is not G2.",
+  "started_utc": "2026-10-21T21:09:56.627893+00:00",
+  "status": "EXPECTED_RED_BEFORE_PRODUCTION_IMPLEMENTATION"
+}
