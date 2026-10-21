@@ -1,0 +1,104 @@
+name: Nucleus next source-Pi obligation after guarded conversion
+on:
+  push:
+    branches: [research/nucleus-magma-pi-continuation-20261021]
+    paths:
+      - '.github/scripts/nucleus_magma_pi_continuation_20261021.py'
+      - '.github/workflows/nucleus-magma-pi-continuation-20261021.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-continuation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Verify no independent kernel source drift and prepare evidence
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/nucleus-cont-evidence /tmp/nucleus-cont-pack /tmp/nucleus-cont-fixtures
+          test "$(git rev-parse HEAD:metatron-kernel)" = 5e7d65b1b6abc3f6380bc7a37ffb153284d7faf1
+          git rev-parse HEAD > /tmp/nucleus-cont-evidence/research-head.txt
+          rustc -vV > /tmp/nucleus-cont-evidence/compiler.txt
+      - name: Compile and test unchanged independent Nucleus source
+        run: |
+          set -euo pipefail
+          NUCLEUS_EXPERIMENTAL_RELEVANCE=1 NUCLEUS_EXPERIMENTAL_EXPECTED_LAMBDA=1 \
+            cargo test --release --locked --features diagnostics \
+            --manifest-path metatron-kernel/Cargo.toml > /tmp/nucleus-cont-evidence/rust-tests.log 2>&1 || {
+              tail -100 /tmp/nucleus-cont-evidence/rust-tests.log; exit 1;
+            }
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus-cont-original
+      - name: Change diagnostic-only source telescope policy to already-proved guarded mode
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/nucleus_magma_pi_continuation_20261021.py metatron-kernel/src/typecheck.rs
+          git diff --check
+          git diff -- metatron-kernel/src/typecheck.rs > /tmp/nucleus-cont-evidence/diagnostic-source.diff
+          test -s /tmp/nucleus-cont-evidence/diagnostic-source.diff
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus-cont-diagnostic
+          sha256sum /tmp/nucleus-cont-{original,diagnostic} > /tmp/nucleus-cont-evidence/binsha256.txt
+      - name: Fetch immutable original Arena cases
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/11272848230/zip > /tmp/nucleus-cont-cases.zip
+          unzip -q /tmp/nucleus-cont-cases.zip -d /tmp/nucleus-cont-pack
+          tar --no-same-owner -xzf /tmp/nucleus-cont-pack/lean-arena-tests.tar.gz -C /tmp/nucleus-cont-fixtures
+      - name: Determine next checked obligation; prohibit any changed native verdict
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib,subprocess
+          files=pathlib.Path('/tmp/nucleus-cont-fixtures')
+          out=pathlib.Path('/tmp/nucleus-cont-evidence')
+          baselines=json.loads(pathlib.Path('metatron-kernel/evidence/performance/owned-environment-2026-10-13/nucleus-owned-environment-frozen196.json').read_text())['modes']['origin']['rows']
+          pinned={r['case']:r for r in baselines}
+          cases=['good/perf/magma-list-deep-n21.ndjson','good/perf/magma-list-deep-n36.ndjson',
+                 'good/perf/magma-list-pair-n7.ndjson','good/perf/magma-list-pair-n21.ndjson']
+          modes=[('original','/tmp/nucleus-cont-original'),('diagnostic','/tmp/nucleus-cont-diagnostic')]
+          env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+          for flag in ('RELEVANCE','CONTEXT_BINDER','TYPED_LINEAGE','SUBSTITUTION_RECLOSURE','TYPED_VALUE_NORMALIZATION','PROJECTION_CONTEXT','PROJECTION_CROSSFRAME_512','TYPED_RECEIVER','SOURCE_PAIR_DEPTH8','POLYMORPHIC_PROP_IRREL','PROP_SINGLETON_2P1F','EXPECTED_LAMBDA'):
+            env['NUCLEUS_EXPERIMENTAL_'+flag]='1'
+          env['NUCLEUS_TRACE_DOWNSTREAM']='1'
+          env['NUCLEUS_TRACE_FIRST_TYPED_CONTINUATION']='1'
+          rows=[]
+          for name in cases:
+            src=files/name
+            assert hashlib.sha256(src.read_bytes()).hexdigest()==pinned[name]['sha256'],('CHANGED_FIXTURE',name)
+            for variant,binary in modes:
+              with src.open('rb') as f:
+                p=subprocess.run([binary],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=160,env=env)
+              assert p.returncode==pinned[name]['rc']==2,(name,variant,p.returncode)
+              all_lines=p.stderr.decode(errors='replace').splitlines()
+              hits=[x for x in all_lines if x.startswith('NUCLEUS_FIRST_TYPED_CONTINUATION:')]
+              terms=[x for x in all_lines if x.startswith('NUCLEUS_DOWNSTREAM:')][-1:]
+              row={'case':name,'variant':variant,'rc':p.returncode,
+                   'source_sha256':pinned[name]['sha256'],'first_obligations':hits[:10],'terminal':terms}
+              rows.append(row)
+              print('NUCLEUS_PI_NEXT='+json.dumps({'case':name,'arm':variant,'trace_count':len(hits),
+                 'premises':[x.rsplit(':first_premise=',1)[-1][:300] for x in hits[:3]],
+                 'terminal':terms},ensure_ascii=False),flush=True)
+          for f in ('protected-false-index.ndjson','protected-eta-ctor-alias.ndjson'):
+            src=pathlib.Path('metatron-kernel/tests/fixtures')/f
+            for variant,binary in modes:
+              with src.open('rb') as inp:
+                p=subprocess.run([binary],stdin=inp,stdout=subprocess.DEVNULL,
+                                 stderr=subprocess.PIPE,env=env,timeout=40)
+              assert p.returncode in (1,2),(f,variant,p.returncode)
+          out.joinpath('next-source-pi-obligation.json').write_text(json.dumps(
+            {'qualified_source_tree':'5e7d65b1b6abc3f6380bc7a37ffb153284d7faf1',
+             'source_semantic_changes':False,'rows':rows,
+             'decision':'DIAGNOSTIC_ONLY_NO_NEW_ACCEPT'},indent=2,ensure_ascii=False)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-next-source-pi-obligation-${{ github.sha }}
+          path: /tmp/nucleus-cont-evidence/
+          if-no-files-found: warn
