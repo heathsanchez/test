@@ -1,0 +1,42 @@
+name: Independent Upstream Multiline Transfer V7
+on:
+  push:
+    branches:
+      - research/upstream-multiline-transfer-v7-20261022
+  pull_request:
+    paths:
+      - 'research/upstream_multiline_v7/**'
+      - '.github/workflows/upstream-multiline-transfer-v7.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  independent-upstream-native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 13
+    steps:
+      - uses: actions/checkout@v4
+      - name: Exact independently governed ItsDangerous upstream
+        uses: actions/checkout@v4
+        with:
+          repository: pallets/itsdangerous
+          ref: 672971d66a2ef9f85151e53283113f33d642dabd
+          path: upstream
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install real native upstream test dependencies
+        run: |
+          python -m pip install pytest==9.0.3 freezegun
+          python -m pip install -e ./upstream
+      - name: Frozen source change, upstream regression, negative control
+        run: |
+          python -m py_compile research/upstream_multiline_v7/experiment.py
+          python research/upstream_multiline_v7/experiment.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: independent-upstream-multiline-v7-evidence
+          path: research/upstream_multiline_v7/result.json
+          if-no-files-found: warn
