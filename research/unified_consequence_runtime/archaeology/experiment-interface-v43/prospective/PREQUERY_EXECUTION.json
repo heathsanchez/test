@@ -1,0 +1,90 @@
+{
+  "archive_sha256": "25edc3c805bf7cf8a050b9c3c5c4e640a8ea8dbc2b5a7920157b5201c4ca6460",
+  "code": {
+    "path": "research/unified_consequence_runtime/archaeology/experiment-interface-v43/prospective/curate_frontier_v2.py",
+    "sha256": "83d7e6250228066e5c13e664c9f2d6da41aaa44cc1591d4c878442fb656ea494",
+    "source_commit": "870e50003c9116f296449376847ce5793a2dfe7d"
+  },
+  "committed_bytes_verified_at_utc": "2026-10-21T22:57:01.491820+00:00",
+  "environment_gate": {
+    "artifact_id": 12338856551,
+    "artifact_sha256": "25edc3c805bf7cf8a050b9c3c5c4e640a8ea8dbc2b5a7920157b5201c4ca6460",
+    "qualification_result_sha256": "10d6d2255be781ea18b795b00e849a3075cd385f4bd5993d94bc72c6c039af7a",
+    "result_path": "research/unified_consequence_runtime/archaeology/native-authority-v42/CI_39582982718_RESULT.json",
+    "run_id": 39582982718,
+    "source_commit": "f1779c7443ae6035dee502a201d95d778056c05d",
+    "status": "ADMISSION_ONLY_QUALIFIED"
+  },
+  "gate_descriptor": {
+    "path": "research/unified_consequence_runtime/archaeology/experiment-interface-v43/prospective/GATE_WRAPPER.json",
+    "sha256": "8b188067dd06104eaca2bf002cd4dd215f2eaead3193a41cfe70bdf7f29c7554",
+    "source_commit": "870e50003c9116f296449376847ce5793a2dfe7d"
+  },
+  "interface_archive_audit": {
+    "path": "research/unified_consequence_runtime/archaeology/experiment-interface-v43/prospective/INTERFACE_ARCHIVE_AUDIT.json",
+    "sha256": "650ad69d0c2ca929ec3e13c17828e752911b66f96772f74471e2c10405245a34"
+  },
+  "interface_gate": {
+    "artifact_id": 12386633479,
+    "artifact_sha256": "4c9ba1bd8029efd06aa192e86d75f78d1326316a0becc2a84a4b85a9b6f0f033",
+    "qualification_result_sha256": "61ffe7857fde05f459152a3f94f340f221c9aee814558cbfba494d8cf358d599",
+    "result_path": "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/experiment-interface-v43/prospective/CI_39682460349_RESULT.json",
+    "run_id": 39682460349,
+    "source_commit": "5a449e7d6be3a54d42e2098804904c2e1223ae51",
+    "status": "ADMISSION_ONLY_QUALIFIED"
+  },
+  "plan": {
+    "path": "research/unified_consequence_runtime/archaeology/experiment-interface-v43/prospective/PREQUERY_V2.json",
+    "sha256": "a7fdea33bbf8a6d78127df810cb9286611c67819db8d93e0a881729900da27ae",
+    "source_commit": "870e50003c9116f296449376847ce5793a2dfe7d"
+  },
+  "qualified_gate_chain": {
+    "environment": {
+      "artifact_id": 12338856551,
+      "artifact_sha256": "25edc3c805bf7cf8a050b9c3c5c4e640a8ea8dbc2b5a7920157b5201c4ca6460",
+      "qualification_result_sha256": "10d6d2255be781ea18b795b00e849a3075cd385f4bd5993d94bc72c6c039af7a",
+      "result_path": "research/unified_consequence_runtime/archaeology/native-authority-v42/CI_39582982718_RESULT.json",
+      "run_id": 39582982718,
+      "source_commit": "f1779c7443ae6035dee502a201d95d778056c05d",
+      "status": "ADMISSION_ONLY_QUALIFIED"
+    },
+    "independent_archive_audit": {
+      "path": "research/unified_consequence_runtime/archaeology/experiment-interface-v43/prospective/INTERFACE_ARCHIVE_AUDIT.json",
+      "sha256": "650ad69d0c2ca929ec3e13c17828e752911b66f96772f74471e2c10405245a34"
+    },
+    "interface": {
+      "artifact_id": 12386633479,
+      "artifact_sha256": "4c9ba1bd8029efd06aa192e86d75f78d1326316a0becc2a84a4b85a9b6f0f033",
+      "qualification_result_sha256": "61ffe7857fde05f459152a3f94f340f221c9aee814558cbfba494d8cf358d599",
+      "result_path": "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/experiment-interface-v43/prospective/CI_39682460349_RESULT.json",
+      "run_id": 39682460349,
+      "source_commit": "5a449e7d6be3a54d42e2098804904c2e1223ae51",
+      "status": "ADMISSION_ONLY_QUALIFIED"
+    }
+  },
+  "repository_universe_fixed_before_github_queries": [
+    "agronholm/exceptiongroup",
+    "agronholm/typeguard",
+    "beetbox/confuse",
+    "bottlepy/bottle",
+    "dabeaz/ply",
+    "facelessuser/wcmatch",
+    "foutaise/texttable",
+    "python-trio/sniffio",
+    "uiri/toml"
+  ],
+  "requested_roles": 2,
+  "schema": "UDM_COMMITTED_METADATA_PREQUERY_EXECUTION_V43",
+  "screening_budget": {
+    "all_refusals_and_partial_costs_retained": true,
+    "collection_seconds_per_call": 60,
+    "execution_seconds_per_call": 600,
+    "maximum_cases": 9,
+    "maximum_native_executions_per_case": 2,
+    "native_and_independent_verification_costs_charged": true,
+    "total_screening_wall_seconds": 7200
+  },
+  "source_commit": "870e50003c9116f296449376847ce5793a2dfe7d",
+  "state": "PREQUERY_COMMITTED_BEFORE_QUERIES",
+  "target_query_count_before_receipt": 0
+}

@@ -1,0 +1,866 @@
+{
+  "metadata_curation_sha256": "dcbac78dc8422b93a87ee951f24b8b4325e2d6ad207cc1e2f8404f51872f7f23",
+  "pool": [
+    {
+      "base_commit": "2cba84352c3f01e8af2f37bf102d0dd515e15dc0",
+      "files": [
+        {
+          "additions": 6,
+          "changes": 6,
+          "deletions": 0,
+          "filename": "CHANGES.rst",
+          "sha": "a35a39c8e0921933f8e7910880f96d747654cfff",
+          "status": "modified"
+        },
+        {
+          "additions": 3,
+          "changes": 4,
+          "deletions": 1,
+          "filename": "src/exceptiongroup/_exceptions.py",
+          "sha": "b101e44a68550abce90527cb9c27ed5b0cd27227",
+          "status": "modified"
+        },
+        {
+          "additions": 10,
+          "changes": 14,
+          "deletions": 4,
+          "filename": "tests/test_exceptions.py",
+          "sha": "932f394456805d32303718812aaed649ea7aab40",
+          "status": "modified"
+        }
+      ],
+      "git_metadata_binding": {
+        "base": {
+          "changed_paths": {
+            "CHANGES.rst": {
+              "mode": "100644",
+              "path": "CHANGES.rst",
+              "sha": "e7f43c5970a9e3ae1d5f1f5dbe28e9cfe5085f81",
+              "size": 6108,
+              "type": "blob"
+            },
+            "src/exceptiongroup/_exceptions.py": {
+              "mode": "100644",
+              "path": "src/exceptiongroup/_exceptions.py",
+              "sha": "f42c1ad3628d927776f82dbd180cd499f26cd34d",
+              "size": 11463,
+              "type": "blob"
+            },
+            "tests/test_exceptions.py": {
+              "mode": "100644",
+              "path": "tests/test_exceptions.py",
+              "sha": "e2bc81a2069a4bdfd29aae1a705bb1552712cb10",
+              "size": 32655,
+              "type": "blob"
+            }
+          },
+          "commit_sha": "2cba84352c3f01e8af2f37bf102d0dd515e15dc0",
+          "parents": [
+            "21055084a5bc0f17ea8a04c7ddc6bf93eb20d323"
+          ],
+          "tree_entry_count": 36,
+          "tree_sha": "0f6fee9065ceea1e550e7c34c05e24f89f2846eb",
+          "tree_truncated": false
+        },
+        "head": {
+          "changed_paths": {
+            "CHANGES.rst": {
+              "mode": "100644",
+              "path": "CHANGES.rst",
+              "sha": "a35a39c8e0921933f8e7910880f96d747654cfff",
+              "size": 6320,
+              "type": "blob"
+            },
+            "src/exceptiongroup/_exceptions.py": {
+              "mode": "100644",
+              "path": "src/exceptiongroup/_exceptions.py",
+              "sha": "b101e44a68550abce90527cb9c27ed5b0cd27227",
+              "size": 11497,
+              "type": "blob"
+            },
+            "tests/test_exceptions.py": {
+              "mode": "100644",
+              "path": "tests/test_exceptions.py",
+              "sha": "932f394456805d32303718812aaed649ea7aab40",
+              "size": 33107,
+              "type": "blob"
+            }
+          },
+          "commit_sha": "bb7c0f8b91dfad9192b67674123b217eb3b1cb07",
+          "parents": [
+            "e733de95fb512ace0e1986099e00e8208cb43c25"
+          ],
+          "tree_entry_count": 36,
+          "tree_sha": "95ff42449ca354fcc1ca2d89d8f437e2cf67d238",
+          "tree_truncated": false
+        }
+      },
+      "head_commit": "bb7c0f8b91dfad9192b67674123b217eb3b1cb07",
+      "merge_commit_sha": "0c6cfbf677f6b50df17311cfdad01e9ff17310aa",
+      "metadata_binding_status": "EXACT_COMMIT_TREE_AND_CHANGED_BLOB_IDS_BOUND_WITHOUT_SOURCE_CONTENTS",
+      "metadata_stats": {
+        "production_additions": 3,
+        "production_deletions": 1,
+        "production_py_files": 1,
+        "test_py_files": 1
+      },
+      "metadata_url": "https://github.com/agronholm/exceptiongroup/pull/155",
+      "pr": 155,
+      "repo": "agronholm/exceptiongroup",
+      "selection_status": "FROZEN_ORDERED_POOL_CANDIDATE_NOT_AN_ADMITTED_TASK",
+      "tree_query_coverage": [
+        {
+          "endpoint": "repos/agronholm/exceptiongroup/git/commits/2cba84352c3f01e8af2f37bf102d0dd515e15dc0",
+          "projection": "{sha,tree_sha:.tree.sha,parents:[.parents[].sha]}",
+          "requested_at_utc": "2026-10-21T22:57:27.097283+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.2930739530002029
+        },
+        {
+          "endpoint": "repos/agronholm/exceptiongroup/git/trees/0f6fee9065ceea1e550e7c34c05e24f89f2846eb?recursive=1",
+          "projection": "{sha,truncated,tree:[.tree[] | {path,mode,type,sha,size}]}",
+          "requested_at_utc": "2026-10-21T22:57:27.390425+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.27575612500004354
+        },
+        {
+          "endpoint": "repos/agronholm/exceptiongroup/git/commits/bb7c0f8b91dfad9192b67674123b217eb3b1cb07",
+          "projection": "{sha,tree_sha:.tree.sha,parents:[.parents[].sha]}",
+          "requested_at_utc": "2026-10-21T22:57:27.666307+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.29618007499993837
+        },
+        {
+          "endpoint": "repos/agronholm/exceptiongroup/git/trees/95ff42449ca354fcc1ca2d89d8f437e2cf67d238?recursive=1",
+          "projection": "{sha,truncated,tree:[.tree[] | {path,mode,type,sha,size}]}",
+          "requested_at_utc": "2026-10-21T22:57:27.962554+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.2974606000007043
+        }
+      ]
+    },
+    {
+      "base_commit": "ff2b88b1c65f8828a178b4b2fffacd529cc76b26",
+      "files": [
+        {
+          "additions": 6,
+          "changes": 6,
+          "deletions": 0,
+          "filename": "docs/versionhistory.rst",
+          "sha": "227e4205f840af77693c3f3622b356b82cda2bc3",
+          "status": "modified"
+        },
+        {
+          "additions": 2,
+          "changes": 4,
+          "deletions": 2,
+          "filename": "src/typeguard/_checkers.py",
+          "sha": "881d6867a96521325efa1f7783eb2f0d194c0fa7",
+          "status": "modified"
+        },
+        {
+          "additions": 18,
+          "changes": 18,
+          "deletions": 0,
+          "filename": "tests/test_checkers.py",
+          "sha": "90bc982a795f7350a92d2d71a73ed30441b6622d",
+          "status": "modified"
+        }
+      ],
+      "git_metadata_binding": {
+        "base": {
+          "changed_paths": {
+            "docs/versionhistory.rst": {
+              "mode": "100644",
+              "path": "docs/versionhistory.rst",
+              "sha": "0550f3e9c876f3ba393d38eae61b789ab3e5e898",
+              "size": 28795,
+              "type": "blob"
+            },
+            "src/typeguard/_checkers.py": {
+              "mode": "100644",
+              "path": "src/typeguard/_checkers.py",
+              "sha": "6fe087fa45511664a12107c2f4ebadd3ee5b389f",
+              "size": 36205,
+              "type": "blob"
+            },
+            "tests/test_checkers.py": {
+              "mode": "100644",
+              "path": "tests/test_checkers.py",
+              "sha": "675b63b861ed0bb7005379df085e1cdff5cd495f",
+              "size": 51828,
+              "type": "blob"
+            }
+          },
+          "commit_sha": "ff2b88b1c65f8828a178b4b2fffacd529cc76b26",
+          "parents": [
+            "67cae3dc3b3984a1a0e87389937fe118ed6b4328"
+          ],
+          "tree_entry_count": 63,
+          "tree_sha": "beba3dbec0f0a881d7667946e469a38506259a93",
+          "tree_truncated": false
+        },
+        "head": {
+          "changed_paths": {
+            "docs/versionhistory.rst": {
+              "mode": "100644",
+              "path": "docs/versionhistory.rst",
+              "sha": "227e4205f840af77693c3f3622b356b82cda2bc3",
+              "size": 29016,
+              "type": "blob"
+            },
+            "src/typeguard/_checkers.py": {
+              "mode": "100644",
+              "path": "src/typeguard/_checkers.py",
+              "sha": "881d6867a96521325efa1f7783eb2f0d194c0fa7",
+              "size": 36240,
+              "type": "blob"
+            },
+            "tests/test_checkers.py": {
+              "mode": "100644",
+              "path": "tests/test_checkers.py",
+              "sha": "90bc982a795f7350a92d2d71a73ed30441b6622d",
+              "size": 52413,
+              "type": "blob"
+            }
+          },
+          "commit_sha": "f516eb63a078474748eec0b07f80948e2bf9e7ab",
+          "parents": [
+            "9bbae902d44e9ccb4340cee3c08f0d6b977d6104"
+          ],
+          "tree_entry_count": 63,
+          "tree_sha": "d9a3c353a9b7687c9a6bbdce2d3316f94b93bd0d",
+          "tree_truncated": false
+        }
+      },
+      "head_commit": "f516eb63a078474748eec0b07f80948e2bf9e7ab",
+      "merge_commit_sha": "eb77bac7efadeb58934998dc52b01c3b50efac91",
+      "metadata_binding_status": "EXACT_COMMIT_TREE_AND_CHANGED_BLOB_IDS_BOUND_WITHOUT_SOURCE_CONTENTS",
+      "metadata_stats": {
+        "production_additions": 2,
+        "production_deletions": 2,
+        "production_py_files": 1,
+        "test_py_files": 1
+      },
+      "metadata_url": "https://github.com/agronholm/typeguard/pull/551",
+      "pr": 551,
+      "repo": "agronholm/typeguard",
+      "selection_status": "FROZEN_ORDERED_POOL_CANDIDATE_NOT_AN_ADMITTED_TASK",
+      "tree_query_coverage": [
+        {
+          "endpoint": "repos/agronholm/typeguard/git/commits/ff2b88b1c65f8828a178b4b2fffacd529cc76b26",
+          "projection": "{sha,tree_sha:.tree.sha,parents:[.parents[].sha]}",
+          "requested_at_utc": "2026-10-21T22:57:28.260157+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.35448219399950176
+        },
+        {
+          "endpoint": "repos/agronholm/typeguard/git/trees/beba3dbec0f0a881d7667946e469a38506259a93?recursive=1",
+          "projection": "{sha,truncated,tree:[.tree[] | {path,mode,type,sha,size}]}",
+          "requested_at_utc": "2026-10-21T22:57:28.614726+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.2849658859995543
+        },
+        {
+          "endpoint": "repos/agronholm/typeguard/git/commits/f516eb63a078474748eec0b07f80948e2bf9e7ab",
+          "projection": "{sha,tree_sha:.tree.sha,parents:[.parents[].sha]}",
+          "requested_at_utc": "2026-10-21T22:57:28.899842+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.3187964019998617
+        },
+        {
+          "endpoint": "repos/agronholm/typeguard/git/trees/d9a3c353a9b7687c9a6bbdce2d3316f94b93bd0d?recursive=1",
+          "projection": "{sha,truncated,tree:[.tree[] | {path,mode,type,sha,size}]}",
+          "requested_at_utc": "2026-10-21T22:57:29.218703+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.3045580260004499
+        }
+      ]
+    },
+    {
+      "base_commit": "71bb933649ba009cd537c2e973519d6e024c02a2",
+      "files": [
+        {
+          "additions": 2,
+          "changes": 4,
+          "deletions": 2,
+          "filename": "bottle.py",
+          "sha": "d922562d9423ffe159a7257f5f1d1a4258719128",
+          "status": "modified"
+        },
+        {
+          "additions": 5,
+          "changes": 5,
+          "deletions": 0,
+          "filename": "test/test_sendfile.py",
+          "sha": "ef8eef582ca350b18cbe44d0f7afaf5199c9c761",
+          "status": "modified"
+        }
+      ],
+      "git_metadata_binding": {
+        "base": {
+          "changed_paths": {
+            "bottle.py": {
+              "mode": "100755",
+              "path": "bottle.py",
+              "sha": "be42bcbcc3d9eda17761a1940db65f224cf65fba",
+              "size": 171297,
+              "type": "blob"
+            },
+            "test/test_sendfile.py": {
+              "mode": "100755",
+              "path": "test/test_sendfile.py",
+              "sha": "d6693c29fd142f43843a9980fcb40de9f6cb9efa",
+              "size": 6323,
+              "type": "blob"
+            }
+          },
+          "commit_sha": "71bb933649ba009cd537c2e973519d6e024c02a2",
+          "parents": [
+            "d1413a81ead7a6f130a06e21a17ca98f4ea30df6"
+          ],
+          "tree_entry_count": 253,
+          "tree_sha": "d5a67edbcfe014e662d4ab64920377908fab5b4a",
+          "tree_truncated": false
+        },
+        "head": {
+          "changed_paths": {
+            "bottle.py": {
+              "mode": "100755",
+              "path": "bottle.py",
+              "sha": "d922562d9423ffe159a7257f5f1d1a4258719128",
+              "size": 171305,
+              "type": "blob"
+            },
+            "test/test_sendfile.py": {
+              "mode": "100755",
+              "path": "test/test_sendfile.py",
+              "sha": "ef8eef582ca350b18cbe44d0f7afaf5199c9c761",
+              "size": 6558,
+              "type": "blob"
+            }
+          },
+          "commit_sha": "c9b3f6710eee071452866478cddf685012e39a42",
+          "parents": [
+            "71bb933649ba009cd537c2e973519d6e024c02a2"
+          ],
+          "tree_entry_count": 253,
+          "tree_sha": "1d44a71247d24042a3369695eeb53e2f01e9227c",
+          "tree_truncated": false
+        }
+      },
+      "head_commit": "c9b3f6710eee071452866478cddf685012e39a42",
+      "merge_commit_sha": "eb1982ea22937a042f5a6e98c5709f779a8fd66c",
+      "metadata_binding_status": "EXACT_COMMIT_TREE_AND_CHANGED_BLOB_IDS_BOUND_WITHOUT_SOURCE_CONTENTS",
+      "metadata_stats": {
+        "production_additions": 2,
+        "production_deletions": 2,
+        "production_py_files": 1,
+        "test_py_files": 1
+      },
+      "metadata_url": "https://github.com/bottlepy/bottle/pull/1354",
+      "pr": 1354,
+      "repo": "bottlepy/bottle",
+      "selection_status": "FROZEN_ORDERED_POOL_CANDIDATE_NOT_AN_ADMITTED_TASK",
+      "tree_query_coverage": [
+        {
+          "endpoint": "repos/bottlepy/bottle/git/commits/71bb933649ba009cd537c2e973519d6e024c02a2",
+          "projection": "{sha,tree_sha:.tree.sha,parents:[.parents[].sha]}",
+          "requested_at_utc": "2026-10-21T22:57:29.523427+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.2824410709999938
+        },
+        {
+          "endpoint": "repos/bottlepy/bottle/git/trees/d5a67edbcfe014e662d4ab64920377908fab5b4a?recursive=1",
+          "projection": "{sha,truncated,tree:[.tree[] | {path,mode,type,sha,size}]}",
+          "requested_at_utc": "2026-10-21T22:57:29.805934+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.450092859000506
+        },
+        {
+          "endpoint": "repos/bottlepy/bottle/git/commits/c9b3f6710eee071452866478cddf685012e39a42",
+          "projection": "{sha,tree_sha:.tree.sha,parents:[.parents[].sha]}",
+          "requested_at_utc": "2026-10-21T22:57:30.256313+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.388188990999879
+        },
+        {
+          "endpoint": "repos/bottlepy/bottle/git/trees/1d44a71247d24042a3369695eeb53e2f01e9227c?recursive=1",
+          "projection": "{sha,truncated,tree:[.tree[] | {path,mode,type,sha,size}]}",
+          "requested_at_utc": "2026-10-21T22:57:30.644568+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.314032875000521
+        }
+      ]
+    },
+    {
+      "base_commit": "6860652be4069eaac8be88af1400f69a5197284f",
+      "files": [
+        {
+          "additions": 1,
+          "changes": 2,
+          "deletions": 1,
+          "filename": "ply/lex.py",
+          "sha": "39f6d0d51b3db2865506820af9fdebd4b32db94e",
+          "status": "modified"
+        },
+        {
+          "additions": 26,
+          "changes": 26,
+          "deletions": 0,
+          "filename": "test/lex_optimize4.py",
+          "sha": "cc6e2a9d20906c5d164803989c3de475e0275ac8",
+          "status": "added"
+        },
+        {
+          "additions": 20,
+          "changes": 20,
+          "deletions": 0,
+          "filename": "test/testlex.py",
+          "sha": "83070a7ab4e5bc7badcb6a23d4ac27cd4532c1e4",
+          "status": "modified"
+        }
+      ],
+      "git_metadata_binding": {
+        "base": {
+          "changed_paths": {
+            "ply/lex.py": {
+              "mode": "100644",
+              "path": "ply/lex.py",
+              "sha": "65deefe2e4283da6c20863ea1a4a434874e2077e",
+              "size": 42898,
+              "type": "blob"
+            },
+            "test/lex_optimize4.py": null,
+            "test/testlex.py": {
+              "mode": "100755",
+              "path": "test/testlex.py",
+              "sha": "3880f6f931a3a9d6815c6d51bbfc8f80e287f05c",
+              "size": 25311,
+              "type": "blob"
+            }
+          },
+          "commit_sha": "6860652be4069eaac8be88af1400f69a5197284f",
+          "parents": [
+            "149a11c56a47cbf0477d3d3c79a2fba96381c9bd",
+            "069239bf7cae58b26edb5ada12e53ef10ec5fc11"
+          ],
+          "tree_entry_count": 202,
+          "tree_sha": "99b7e284823697726e3a22110571810a81b70e8f",
+          "tree_truncated": false
+        },
+        "head": {
+          "changed_paths": {
+            "ply/lex.py": {
+              "mode": "100644",
+              "path": "ply/lex.py",
+              "sha": "39f6d0d51b3db2865506820af9fdebd4b32db94e",
+              "size": 42903,
+              "type": "blob"
+            },
+            "test/lex_optimize4.py": {
+              "mode": "100644",
+              "path": "test/lex_optimize4.py",
+              "sha": "cc6e2a9d20906c5d164803989c3de475e0275ac8",
+              "size": 512,
+              "type": "blob"
+            },
+            "test/testlex.py": {
+              "mode": "100755",
+              "path": "test/testlex.py",
+              "sha": "83070a7ab4e5bc7badcb6a23d4ac27cd4532c1e4",
+              "size": 25843,
+              "type": "blob"
+            }
+          },
+          "commit_sha": "e678d756427c72edd1b0107c55fd10640d8ffe2b",
+          "parents": [
+            "763acec600d5d491cea33fbf59cc61a098d816b9"
+          ],
+          "tree_entry_count": 203,
+          "tree_sha": "0db7290eecff535d51565679059a222efeac63f0",
+          "tree_truncated": false
+        }
+      },
+      "head_commit": "e678d756427c72edd1b0107c55fd10640d8ffe2b",
+      "merge_commit_sha": "807d3816a2639b41ae48ab062d8885e1f006d920",
+      "metadata_binding_status": "EXACT_COMMIT_TREE_AND_CHANGED_BLOB_IDS_BOUND_WITHOUT_SOURCE_CONTENTS",
+      "metadata_stats": {
+        "production_additions": 1,
+        "production_deletions": 1,
+        "production_py_files": 1,
+        "test_py_files": 2
+      },
+      "metadata_url": "https://github.com/dabeaz/ply/pull/153",
+      "pr": 153,
+      "repo": "dabeaz/ply",
+      "selection_status": "FROZEN_ORDERED_POOL_CANDIDATE_NOT_AN_ADMITTED_TASK",
+      "tree_query_coverage": [
+        {
+          "endpoint": "repos/dabeaz/ply/git/commits/6860652be4069eaac8be88af1400f69a5197284f",
+          "projection": "{sha,tree_sha:.tree.sha,parents:[.parents[].sha]}",
+          "requested_at_utc": "2026-10-21T22:57:30.960136+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.33842847400046594
+        },
+        {
+          "endpoint": "repos/dabeaz/ply/git/trees/99b7e284823697726e3a22110571810a81b70e8f?recursive=1",
+          "projection": "{sha,truncated,tree:[.tree[] | {path,mode,type,sha,size}]}",
+          "requested_at_utc": "2026-10-21T22:57:31.298725+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.4012684799999988
+        },
+        {
+          "endpoint": "repos/dabeaz/ply/git/commits/e678d756427c72edd1b0107c55fd10640d8ffe2b",
+          "projection": "{sha,tree_sha:.tree.sha,parents:[.parents[].sha]}",
+          "requested_at_utc": "2026-10-21T22:57:31.700653+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.2627102829992509
+        },
+        {
+          "endpoint": "repos/dabeaz/ply/git/trees/0db7290eecff535d51565679059a222efeac63f0?recursive=1",
+          "projection": "{sha,truncated,tree:[.tree[] | {path,mode,type,sha,size}]}",
+          "requested_at_utc": "2026-10-21T22:57:31.963428+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.3785641330005092
+        }
+      ]
+    },
+    {
+      "base_commit": "faf8e9d4c6215c8d6ca6b0c584ce68b8821f5f4d",
+      "files": [
+        {
+          "additions": 2,
+          "changes": 2,
+          "deletions": 0,
+          "filename": "docs/src/markdown/about/changelog.md",
+          "sha": "80ad4a3b13c33afd9a06d909fd66e3b2c4eacfac",
+          "status": "modified"
+        },
+        {
+          "additions": 22,
+          "changes": 22,
+          "deletions": 0,
+          "filename": "tests/test_pathlib.py",
+          "sha": "d09af0d17013bd1fd44b2b749b60b43a96ee5a7e",
+          "status": "modified"
+        },
+        {
+          "additions": 1,
+          "changes": 2,
+          "deletions": 1,
+          "filename": "wcmatch/glob.py",
+          "sha": "e4082da6220ea2eb99d72f4c2643cd9cec95275f",
+          "status": "modified"
+        }
+      ],
+      "git_metadata_binding": {
+        "base": {
+          "changed_paths": {
+            "docs/src/markdown/about/changelog.md": {
+              "mode": "100644",
+              "path": "docs/src/markdown/about/changelog.md",
+              "sha": "85d2c6c5816bc4746acbf58e06f6d197a78f0531",
+              "size": 26717,
+              "type": "blob"
+            },
+            "tests/test_pathlib.py": {
+              "mode": "100644",
+              "path": "tests/test_pathlib.py",
+              "sha": "255d58bfaad502ac67cc4ada30e05ee69b996172",
+              "size": 19031,
+              "type": "blob"
+            },
+            "wcmatch/glob.py": {
+              "mode": "100644",
+              "path": "wcmatch/glob.py",
+              "sha": "e8435a18faccb39e2eaf5da61269ba7f6c935f1a",
+              "size": 37208,
+              "type": "blob"
+            }
+          },
+          "commit_sha": "faf8e9d4c6215c8d6ca6b0c584ce68b8821f5f4d",
+          "parents": [
+            "7c3300c2fb9c5ee4c19e4c37c5f2fba985777131"
+          ],
+          "tree_entry_count": 62,
+          "tree_sha": "82bb06b3b23c431a043f34f1b94cea4b3618cc26",
+          "tree_truncated": false
+        },
+        "head": {
+          "changed_paths": {
+            "docs/src/markdown/about/changelog.md": {
+              "mode": "100644",
+              "path": "docs/src/markdown/about/changelog.md",
+              "sha": "80ad4a3b13c33afd9a06d909fd66e3b2c4eacfac",
+              "size": 26946,
+              "type": "blob"
+            },
+            "tests/test_pathlib.py": {
+              "mode": "100644",
+              "path": "tests/test_pathlib.py",
+              "sha": "d09af0d17013bd1fd44b2b749b60b43a96ee5a7e",
+              "size": 20065,
+              "type": "blob"
+            },
+            "wcmatch/glob.py": {
+              "mode": "100644",
+              "path": "wcmatch/glob.py",
+              "sha": "e4082da6220ea2eb99d72f4c2643cd9cec95275f",
+              "size": 37237,
+              "type": "blob"
+            }
+          },
+          "commit_sha": "a87d4d8a3d16e9da314edd6e614db906629e0812",
+          "parents": [
+            "faf8e9d4c6215c8d6ca6b0c584ce68b8821f5f4d"
+          ],
+          "tree_entry_count": 62,
+          "tree_sha": "47717e52df0bf16f3e1a34e558915840bf83cb4e",
+          "tree_truncated": false
+        }
+      },
+      "head_commit": "a87d4d8a3d16e9da314edd6e614db906629e0812",
+      "merge_commit_sha": "ef0d497fa88853d0f6f4a4acb7b4ecd19661861c",
+      "metadata_binding_status": "EXACT_COMMIT_TREE_AND_CHANGED_BLOB_IDS_BOUND_WITHOUT_SOURCE_CONTENTS",
+      "metadata_stats": {
+        "production_additions": 1,
+        "production_deletions": 1,
+        "production_py_files": 1,
+        "test_py_files": 1
+      },
+      "metadata_url": "https://github.com/facelessuser/wcmatch/pull/249",
+      "pr": 249,
+      "repo": "facelessuser/wcmatch",
+      "selection_status": "FROZEN_ORDERED_POOL_CANDIDATE_NOT_AN_ADMITTED_TASK",
+      "tree_query_coverage": [
+        {
+          "endpoint": "repos/facelessuser/wcmatch/git/commits/faf8e9d4c6215c8d6ca6b0c584ce68b8821f5f4d",
+          "projection": "{sha,tree_sha:.tree.sha,parents:[.parents[].sha]}",
+          "requested_at_utc": "2026-10-21T22:57:32.342313+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.261745050999707
+        },
+        {
+          "endpoint": "repos/facelessuser/wcmatch/git/trees/82bb06b3b23c431a043f34f1b94cea4b3618cc26?recursive=1",
+          "projection": "{sha,truncated,tree:[.tree[] | {path,mode,type,sha,size}]}",
+          "requested_at_utc": "2026-10-21T22:57:32.604123+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.2648630579997189
+        },
+        {
+          "endpoint": "repos/facelessuser/wcmatch/git/commits/a87d4d8a3d16e9da314edd6e614db906629e0812",
+          "projection": "{sha,tree_sha:.tree.sha,parents:[.parents[].sha]}",
+          "requested_at_utc": "2026-10-21T22:57:32.869127+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.380841842999871
+        },
+        {
+          "endpoint": "repos/facelessuser/wcmatch/git/trees/47717e52df0bf16f3e1a34e558915840bf83cb4e?recursive=1",
+          "projection": "{sha,truncated,tree:[.tree[] | {path,mode,type,sha,size}]}",
+          "requested_at_utc": "2026-10-21T22:57:33.250033+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.30546999299986055
+        }
+      ]
+    },
+    {
+      "base_commit": "7ffcfa3a08ffdbead6c814bcbb7c3fcd1f3a499d",
+      "files": [
+        {
+          "additions": 4,
+          "changes": 4,
+          "deletions": 0,
+          "filename": ".gitignore",
+          "sha": "83c2e1d598433027acc0a6f375019430e577e52d",
+          "status": "modified"
+        },
+        {
+          "additions": 6,
+          "changes": 6,
+          "deletions": 0,
+          "filename": "tests/test_api.py",
+          "sha": "ceb7ef41e33259a62b1a511b5e512b2ad1f495ef",
+          "status": "modified"
+        },
+        {
+          "additions": 1,
+          "changes": 2,
+          "deletions": 1,
+          "filename": "toml/decoder.py",
+          "sha": "6f23ec17aa6fed781cb3e6dc4f663abe036764d7",
+          "status": "modified"
+        },
+        {
+          "additions": 1,
+          "changes": 2,
+          "deletions": 1,
+          "filename": "toml/encoder.py",
+          "sha": "b3a3c14d9cb140ef1b20ce46442ccfce3c2f58f1",
+          "status": "modified"
+        }
+      ],
+      "git_metadata_binding": {
+        "base": {
+          "changed_paths": {
+            ".gitignore": {
+              "mode": "100644",
+              "path": ".gitignore",
+              "sha": "9f0b57d152dcb73ef021b7b795b7d13fec24a1c8",
+              "size": 1289,
+              "type": "blob"
+            },
+            "tests/test_api.py": {
+              "mode": "100644",
+              "path": "tests/test_api.py",
+              "sha": "1acc26fd618b8433f5b82de12caac1bbede22a81",
+              "size": 7060,
+              "type": "blob"
+            },
+            "toml/decoder.py": {
+              "mode": "100644",
+              "path": "toml/decoder.py",
+              "sha": "bf400e97611327e2092f31ac16a4d620d3502b0a",
+              "size": 38942,
+              "type": "blob"
+            },
+            "toml/encoder.py": {
+              "mode": "100644",
+              "path": "toml/encoder.py",
+              "sha": "00da6dd8fdcb5004d1ac45d3335c9bb0548060df",
+              "size": 9981,
+              "type": "blob"
+            }
+          },
+          "commit_sha": "7ffcfa3a08ffdbead6c814bcbb7c3fcd1f3a499d",
+          "parents": [
+            "5706d3155f4da8f3b84875f80bfe0dfc6565f61f"
+          ],
+          "tree_entry_count": 34,
+          "tree_sha": "8682317e40e830b1d3fbc3a25b44451dbdf716ae",
+          "tree_truncated": false
+        },
+        "head": {
+          "changed_paths": {
+            ".gitignore": {
+              "mode": "100644",
+              "path": ".gitignore",
+              "sha": "83c2e1d598433027acc0a6f375019430e577e52d",
+              "size": 1321,
+              "type": "blob"
+            },
+            "tests/test_api.py": {
+              "mode": "100644",
+              "path": "tests/test_api.py",
+              "sha": "ceb7ef41e33259a62b1a511b5e512b2ad1f495ef",
+              "size": 7255,
+              "type": "blob"
+            },
+            "toml/decoder.py": {
+              "mode": "100644",
+              "path": "toml/decoder.py",
+              "sha": "6f23ec17aa6fed781cb3e6dc4f663abe036764d7",
+              "size": 38964,
+              "type": "blob"
+            },
+            "toml/encoder.py": {
+              "mode": "100644",
+              "path": "toml/encoder.py",
+              "sha": "b3a3c14d9cb140ef1b20ce46442ccfce3c2f58f1",
+              "size": 9983,
+              "type": "blob"
+            }
+          },
+          "commit_sha": "41aaa56b136dfa2c8f0796d8291f6f56932d856f",
+          "parents": [
+            "7ffcfa3a08ffdbead6c814bcbb7c3fcd1f3a499d"
+          ],
+          "tree_entry_count": 34,
+          "tree_sha": "7f120fdb96ff3d9dc0a6aa20358e9de008db9375",
+          "tree_truncated": false
+        }
+      },
+      "head_commit": "41aaa56b136dfa2c8f0796d8291f6f56932d856f",
+      "merge_commit_sha": "06f54ed2a063cdae04424baea0611fb5b281f82b",
+      "metadata_binding_status": "EXACT_COMMIT_TREE_AND_CHANGED_BLOB_IDS_BOUND_WITHOUT_SOURCE_CONTENTS",
+      "metadata_stats": {
+        "production_additions": 2,
+        "production_deletions": 2,
+        "production_py_files": 2,
+        "test_py_files": 1
+      },
+      "metadata_url": "https://github.com/uiri/toml/pull/431",
+      "pr": 431,
+      "repo": "uiri/toml",
+      "selection_status": "FROZEN_ORDERED_POOL_CANDIDATE_NOT_AN_ADMITTED_TASK",
+      "tree_query_coverage": [
+        {
+          "endpoint": "repos/uiri/toml/git/commits/7ffcfa3a08ffdbead6c814bcbb7c3fcd1f3a499d",
+          "projection": "{sha,tree_sha:.tree.sha,parents:[.parents[].sha]}",
+          "requested_at_utc": "2026-10-21T22:57:33.555655+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.31829982999988715
+        },
+        {
+          "endpoint": "repos/uiri/toml/git/trees/8682317e40e830b1d3fbc3a25b44451dbdf716ae?recursive=1",
+          "projection": "{sha,truncated,tree:[.tree[] | {path,mode,type,sha,size}]}",
+          "requested_at_utc": "2026-10-21T22:57:33.874021+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.3010760270008177
+        },
+        {
+          "endpoint": "repos/uiri/toml/git/commits/41aaa56b136dfa2c8f0796d8291f6f56932d856f",
+          "projection": "{sha,tree_sha:.tree.sha,parents:[.parents[].sha]}",
+          "requested_at_utc": "2026-10-21T22:57:34.175219+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.27239966900015133
+        },
+        {
+          "endpoint": "repos/uiri/toml/git/trees/7f120fdb96ff3d9dc0a6aa20358e9de008db9375?recursive=1",
+          "projection": "{sha,truncated,tree:[.tree[] | {path,mode,type,sha,size}]}",
+          "requested_at_utc": "2026-10-21T22:57:34.447684+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.28651175100003456
+        }
+      ]
+    }
+  ],
+  "prequery_execution_sha256": "b00837d69fb63993a19f6416613ac0f643b34d0068af41f1918babdb09d9e572",
+  "requested_roles": 2,
+  "schema": "UDM_ORDERED_NATIVE_ADMISSION_SCREENING_POOL_V43",
+  "screening_budget": {
+    "all_refusals_and_partial_costs_retained": true,
+    "collection_seconds_per_call": 60,
+    "execution_seconds_per_call": 600,
+    "maximum_cases": 9,
+    "maximum_native_executions_per_case": 2,
+    "native_and_independent_verification_costs_charged": true,
+    "total_screening_wall_seconds": 7200
+  },
+  "selection_rule": "First two source-distinct independent native admissions; PASS and FAIL identical; do not replace a passing training task.",
+  "state": "MUST_COMMIT_BEFORE_ADMISSION_SCREENING"
+}
