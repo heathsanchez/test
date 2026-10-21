@@ -1,0 +1,50 @@
+{
+  "artifact_id": 12336860402,
+  "members": [
+    {
+      "bytes": 163232915,
+      "crc32": 3589439835,
+      "path": "SOURCE.tar.gz"
+    },
+    {
+      "bytes": 36008,
+      "crc32": 3726180145,
+      "path": "MANIFEST.json"
+    },
+    {
+      "bytes": 61020800,
+      "crc32": 2200376361,
+      "path": "NATIVE_AUTHORITY_V42_EVIDENCE.tar.gz"
+    },
+    {
+      "bytes": 587,
+      "crc32": 217454292,
+      "path": "ARCHIVE_INDEX_AUDIT.json"
+    },
+    {
+      "bytes": 2270860,
+      "crc32": 2330287998,
+      "path": "legacy-v42/RESULT.json"
+    },
+    {
+      "bytes": 2375,
+      "crc32": 4110738944,
+      "path": "binding-contracts.log"
+    }
+  ],
+  "run_id": 39580823002,
+  "schema": "UDM_FAILED_V42_ARTIFACT_DOWNLOAD_AUDIT_V1",
+  "selected_extracted": [
+    "ARCHIVE_INDEX_AUDIT.json",
+    "MANIFEST.json",
+    "binding-contracts.log",
+    "legacy-v42/RESULT.json"
+  ],
+  "source_commit": "f9dce396db01ab0f5b4c7e56072f1d724d0992ad",
+  "status": "PASS_API_SIZE_SHA256_ZIP_CRC_AND_SAFE_MEMBER_PATHS",
+  "zip": {
+    "bytes": 224732529,
+    "path": "/workspace/qualification/native-authority-v42-ci-observer/native-authority-v42-39580823002.zip",
+    "sha256": "849cf4a1434bfac801c7c679862f25d4c6d8d0a18d5c48ea3ab64d1bd237d32d"
+  }
+}
