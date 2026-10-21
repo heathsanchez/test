@@ -1,0 +1,103 @@
+{
+  "schema": "UDM_EXPERIMENT_INTERFACE_V43_LOCAL_IMPLEMENTATION_V1",
+  "status": "PASS_BOUNDED_LOCAL_NATIVE_INTERFACE_CONTROLS",
+  "base_source_preservation": {
+    "commit": "8c1ff8db64415b9ce6db865f2744f40a866293c9",
+    "original_files": 2361,
+    "status": "PASS"
+  },
+  "final_source_sha256": {
+    "native_materialization_v43.py": "a978da6d119d1f1f705d281aee81248427616463a188d1e29f4d3db598bc6826",
+    "cross_frontier_v43.py": "4e36f427ea2e5d3dfe128647d7fe7e0280d89ea91ab7196483898c906e9665e5",
+    "developmental_machine_v43.py": "3f1be3ff0f45f3c78edbe89f60eaa2b821e85402c1dc4844e4d7f314ce9d9c8a",
+    "native_runtime_v43.py": "ddd23a08b30e9f7eb861a48f67630f48ca03c941391507d9a916473d849225ab",
+    "native_environment_v43.py": "f419eef3079c70ec10f5fcb1f7f7308156d9ea1f4683780643728920afe83a49",
+    "qualify_native_frontier_v43.py": "d25a02b0fdeba507073b54b8297b73b488638f154de39fc53ef03a1fff246358",
+    "qualify_experiment_interface_v43.py": "15910157492bd5a9b3acfd4f5030b98fa623064d958c7c2b1a9408b4733b89fb",
+    ".github/workflows/udm-experiment-interface-v43.yml": "889ebdf9195c71612aa6630abb3d96a0cfe115b575bf5d57bf6af3101a236d84"
+  },
+  "causal_controls": {
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 724.61,
+    "source_files_stable": 19,
+    "wheel_launch_receipts": 41,
+    "collection_receipts": 24,
+    "native_assertion_receipts": 19,
+    "fixture_assertions": 38,
+    "scope": "Combined local activation, exact invocation withdrawal, restoration, original FLASH/Metatron and same-filesystem separate-process replay; not prospective discovery."
+  },
+  "prospective_wiring": {
+    "completed_utc": "2026-10-21T21:47:23.313467+00:00",
+    "final_sources_sha256": {
+      "archaeology/experiment-interface-v43/prospective-implementation/native_handoff_supplement.py": "547fa4c399b21d71ab46cfd992cf90b50efcc49f27d81c8eee702d765abcf43d",
+      "native_environment_v43.py": "f419eef3079c70ec10f5fcb1f7f7308156d9ea1f4683780643728920afe83a49",
+      "qualify_native_frontier_v43.py": "d25a02b0fdeba507073b54b8297b73b488638f154de39fc53ef03a1fff246358"
+    },
+    "original_and_frozen_files_unchanged": {
+      "native_environment_v42.py": true,
+      "qualify_native_frontier_v2.py": true,
+      "qualify_native_frontier_v3.py": true,
+      "qualify_native_frontier_v42.py": true,
+      "test_qualify_native_frontier_v43.py": true
+    },
+    "real_native_handoff": {
+      "build_calls": 24,
+      "collection_calls": 10,
+      "final_reporting_changes_exercised_separately": true,
+      "final_source_full_handoff_requires_CI_rerun": true,
+      "native_calls": 8,
+      "path": "/workspace/qualification/experiment-interface-v43-prospective-implementation/native-handoff-002",
+      "seconds": 333.02528433199996,
+      "source_unchanged": true,
+      "status": "PASS_BOUNDED_REAL_NATIVE_ENVIRONMENT_HANDOFF"
+    },
+    "reporting_controls": {
+      "controls": 6,
+      "path": "/workspace/qualification/experiment-interface-v43-prospective-implementation/reporting-001",
+      "status": "PASS_WIRING_ONLY"
+    },
+    "schema": "UDM_V43_PROSPECTIVE_IMPLEMENTATION_LOCAL_EVIDENCE_V1",
+    "scientific_verdicts": {
+      "G2": "UNKNOWN",
+      "G3": "UNKNOWN",
+      "G4": "UNKNOWN",
+      "G5": "UNKNOWN",
+      "G6": "UNKNOWN"
+    },
+    "scope": "Local fixed infrastructure only; independent archived whole-interface admission gate still required before prospective query.",
+    "status": "PASS_BOUNDED_LOCAL_WIRING_AND_REAL_HANDOFF_SUPPLEMENT",
+    "unit_controls": {
+      "errors": 0,
+      "failures": 0,
+      "path": "/workspace/qualification/experiment-interface-v43-prospective-implementation/attempt-004",
+      "skipped": 0,
+      "tests": 14
+    },
+    "unsuccessful_attempts": [
+      {
+        "path": "/workspace/qualification/experiment-interface-v43-prospective-implementation/native-handoff-001",
+        "reason": "Concurrent Task4 source changed; UNKNOWN_SOURCE_CHANGED_DURING_HANDOFF honestly retained."
+      },
+      {
+        "path": "/workspace/qualification/experiment-interface-v43-prospective-implementation/attempt-003-runner-error",
+        "reason": "Missing pytest importlib mode; two collection errors/no tests; corrected invocation succeeds."
+      }
+    ]
+  },
+  "independent_causal_review": {
+    "sha256": "c9b59736c5385a3b6dbb92f5142d2d904965e353e9775835f3d0b05b7ae2e84d",
+    "local_report": "/workspace/qualification/experiment-interface-v43-independent-review/TASK4_FINAL_REVIEW.json"
+  },
+  "cost_boundary": "Unique retained actual wheel/collection/assertion launches across parent and restart child; aggregate fixture assertions count repeated executions. Model/tool/engineering/storage complete lifecycle charges remain UNKNOWN. Native restart materializer2 plus worker2 =4 builds; parent process counters do not include child counters.",
+  "next_gate": "Final committed whole GitHub Actions run and independent archive audit before new task queries.",
+  "verdicts": {
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN"
+  }
+}

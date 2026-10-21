@@ -1,0 +1,58 @@
+{
+  "completed_utc": "2026-10-21T21:47:23.313467+00:00",
+  "final_sources_sha256": {
+    "archaeology/experiment-interface-v43/prospective-implementation/native_handoff_supplement.py": "547fa4c399b21d71ab46cfd992cf90b50efcc49f27d81c8eee702d765abcf43d",
+    "native_environment_v43.py": "f419eef3079c70ec10f5fcb1f7f7308156d9ea1f4683780643728920afe83a49",
+    "qualify_native_frontier_v43.py": "d25a02b0fdeba507073b54b8297b73b488638f154de39fc53ef03a1fff246358"
+  },
+  "original_and_frozen_files_unchanged": {
+    "native_environment_v42.py": true,
+    "qualify_native_frontier_v2.py": true,
+    "qualify_native_frontier_v3.py": true,
+    "qualify_native_frontier_v42.py": true,
+    "test_qualify_native_frontier_v43.py": true
+  },
+  "real_native_handoff": {
+    "build_calls": 24,
+    "collection_calls": 10,
+    "final_reporting_changes_exercised_separately": true,
+    "final_source_full_handoff_requires_CI_rerun": true,
+    "native_calls": 8,
+    "path": "/workspace/qualification/experiment-interface-v43-prospective-implementation/native-handoff-002",
+    "seconds": 333.02528433199996,
+    "source_unchanged": true,
+    "status": "PASS_BOUNDED_REAL_NATIVE_ENVIRONMENT_HANDOFF"
+  },
+  "reporting_controls": {
+    "controls": 6,
+    "path": "/workspace/qualification/experiment-interface-v43-prospective-implementation/reporting-001",
+    "status": "PASS_WIRING_ONLY"
+  },
+  "schema": "UDM_V43_PROSPECTIVE_IMPLEMENTATION_LOCAL_EVIDENCE_V1",
+  "scientific_verdicts": {
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN"
+  },
+  "scope": "Local fixed infrastructure only; independent archived whole-interface admission gate still required before prospective query.",
+  "status": "PASS_BOUNDED_LOCAL_WIRING_AND_REAL_HANDOFF_SUPPLEMENT",
+  "unit_controls": {
+    "errors": 0,
+    "failures": 0,
+    "path": "/workspace/qualification/experiment-interface-v43-prospective-implementation/attempt-004",
+    "skipped": 0,
+    "tests": 14
+  },
+  "unsuccessful_attempts": [
+    {
+      "path": "/workspace/qualification/experiment-interface-v43-prospective-implementation/native-handoff-001",
+      "reason": "Concurrent Task4 source changed; UNKNOWN_SOURCE_CHANGED_DURING_HANDOFF honestly retained."
+    },
+    {
+      "path": "/workspace/qualification/experiment-interface-v43-prospective-implementation/attempt-003-runner-error",
+      "reason": "Missing pytest importlib mode; two collection errors/no tests; corrected invocation succeeds."
+    }
+  ]
+}
