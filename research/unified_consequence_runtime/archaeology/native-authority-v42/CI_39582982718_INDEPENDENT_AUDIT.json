@@ -1,0 +1,299 @@
+{
+  "archive_and_raw_checks_total": 1375,
+  "archive_checks": 53,
+  "artifact_id": 12338856551,
+  "artifact_zip": {
+    "bytes": 228743664,
+    "members": [
+      "SOURCE.tar.gz",
+      "NATIVE_AUTHORITY_V42_EVIDENCE.tar.gz",
+      "MANIFEST.json",
+      "ARCHIVE_INDEX_AUDIT.json",
+      "admission-v42/RESULT.json",
+      "legacy-v42/RESULT.json",
+      "binding-contracts.log"
+    ],
+    "path": "/workspace/qualification/native-authority-v42-ci-observer/native-authority-v42-39582982718.zip",
+    "sha256": "25edc3c805bf7cf8a050b9c3c5c4e640a8ea8dbc2b5a7920157b5201c4ca6460"
+  },
+  "cost_boundary": "Parent/child native and collection attempts and measured wall only; full lifecycle/model/tool/engineering costs remain UNKNOWN.",
+  "created_at": "2026-10-21T10:25:54.205117+00:00",
+  "evidence_files": {
+    "API_ARTIFACTS.json": "e3c4a5f786c8b6b5eb4dbc721d34461b60ad2271ed31cc7ffcca21fb3923e528",
+    "API_RUN.json": "c3216fdc822807d14d8a71fbf71b1f09f494e94c3d9bdd4d04c3a092a5f86bdf",
+    "all-indexes-final.json": "6b042556daac86a400f354197578072017794403639979462bf9a46a9ffe3c51",
+    "all-indexes-post.json": "7e9e2cf56e8c28b0851ee89454e626122256535741c0253e9b8a5c8fc7f96cc0",
+    "all-indexes-pre.json": "5c270ae85e2b26c54c804bc31fc217c3b5801ad0e223c94a2f85ced9e8045a64",
+    "archive-source-scope-index-audit.json": "8f4da1a77b3cb187a598d71f99306ea58b87819a43b8d879d6ac1f27b6d60aa7",
+    "audit_archive.py": "17dc6af939281ad0b72d21b5578f80cc45381417ae49a7814b6418f006d80113",
+    "git-baseline-tree.json": "5997190948251032e706403b0de1eaa401b8da885780dbc5ef23a2bb195509c2",
+    "git-source-audit.json": "f2ba4ad703e0b76e440ead7182e6d6e76ce41fc0903dccad2bfbe9160ee13fea",
+    "git-source-tree.json": "4279832077db09b90b8194afdddbe6df3282f59cd0fdb63bd76d538d83639572",
+    "raw-control-review.json": "ea96e21f1cb46818f6ccea8b00b5fa03b093a393d1d66b8ade3707ab94ebb963",
+    "raw-control-review.py": "8d50287f8735d60193ab128a436893a368129a152e623af790b085b50d088b22",
+    "worktree-source-audit.json": "2a1623e6d589f11dba63c1e480441a3b8ef24609dceef7fcd44591dce36a98f1"
+  },
+  "evidence_manifest": {
+    "members": 3419,
+    "mode_counts": {
+      "0o444": 743,
+      "0o644": 1630,
+      "0o755": 1011,
+      "0o777": 35
+    },
+    "regular_files": 3384,
+    "symlinks": 35
+  },
+  "external_G6": "UNKNOWN",
+  "external_actions": "No new task-repository/scientific outcome queries, production writes, source edits, or commits by this audit.",
+  "formal_G5": "UNKNOWN",
+  "index_audit": {
+    "all_four_linked_indexes_unchanged": true,
+    "before_first_git_read_raw_bytes_retained": true,
+    "ci_freeze_qualification_archive_raw_index_snapshots_verified": true,
+    "common_index_absent": true,
+    "git_optional_locks": "0",
+    "no_index_restoration": true
+  },
+  "measured_qualification_costs": {
+    "admission-v42": {
+      "parent_attempt_costs": {
+        "collection_calls": 82,
+        "native_calls": 32,
+        "subprocess_attempts": 114
+      },
+      "qualification_wall_seconds": 306.45381828899997,
+      "separate_child_attempt_costs": {
+        "collection_calls": 1,
+        "native_calls": 1,
+        "subprocess_attempts": 2
+      }
+    },
+    "legacy-v42": {
+      "parent_attempt_costs": {
+        "collection_calls": 8,
+        "native_calls": 3,
+        "subprocess_attempts": 11
+      },
+      "qualification_wall_seconds": 32.150791551,
+      "separate_child_attempt_costs": {
+        "collection_calls": 1,
+        "native_calls": 1,
+        "subprocess_attempts": 2
+      }
+    }
+  },
+  "native": {
+    "certificates": 36,
+    "independently_recomputed_status_counts": {
+      "FAIL_NATIVE": 9,
+      "PASS_NATIVE": 14,
+      "UNKNOWN_EXACT_COLLECTION": 7,
+      "UNKNOWN_SKIPPED_OR_XFAIL": 5,
+      "UNKNOWN_SOURCE_OR_IMPORT_IDENTITY": 2
+    },
+    "original_unsupported_legacy": {
+      "classification": "UNKNOWN_COLLECTION_ERROR",
+      "process_exit_code": 4,
+      "stderr": "ERROR: usage: trusted-runner.py [options] [file_or_dir] [file_or_dir] [...]\ntrusted-runner.py: error: argument --import-mode: invalid choice: 'importlib' (choose from 'prepend', 'append') (via addopts config)\n\n"
+    },
+    "profile_replays": [
+      {
+        "child_attempt_costs": {
+          "collection_calls": 1,
+          "native_calls": 1,
+          "subprocess_attempts": 2
+        },
+        "full_collection": [
+          "test_subject.py::test_old",
+          "test_subject.py::test_new"
+        ],
+        "junit": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 2,
+          "skipped": 0,
+          "tests": 2
+        },
+        "label": "admission-v42",
+        "pytest": "8.4.1",
+        "status": "PASS_NATIVE"
+      },
+      {
+        "child_attempt_costs": {
+          "collection_calls": 1,
+          "native_calls": 1,
+          "subprocess_attempts": 2
+        },
+        "full_collection": [
+          "test_subject.py::test_old",
+          "test_subject.py::test_new"
+        ],
+        "junit": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 2,
+          "skipped": 0,
+          "tests": 2
+        },
+        "label": "legacy-v42",
+        "pytest": "5.4.3",
+        "status": "PASS_NATIVE"
+      }
+    ],
+    "receipts": 37,
+    "runner_source_sha256": "da4a4b19a988145d690a288b7714cd1f6d2a24f021811059de679e6c2b585d53"
+  },
+  "obstructions": [],
+  "outer_controls": {
+    "all_successful_no_skips": true,
+    "legacy_default_native_positive_and_alias_refusal": 2,
+    "legacy_original_importlib_refusal": 1,
+    "modern": 62,
+    "modern_environment_interface": 2,
+    "modern_initial_frozen": 55,
+    "modern_supplementary": 5,
+    "private_wiring": 10,
+    "raw_outer_ids_exact": true
+  },
+  "raw_control_checks": 1322,
+  "run_id": "39582982718",
+  "run_url": "https://github.com/heathsanchez/test/actions/runs/39582982718",
+  "safe_read_boundary": "Only zipfile/tarfile regular-member reads; 35 fixture symlinks inventoried as raw targets, never extracted or followed.",
+  "schema": "UDM_NATIVE_AUTHORITY_V42_CI_INDEPENDENT_ADMISSION_AUDIT",
+  "scientific_verdicts": {
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN"
+  },
+  "scope": "ADMISSION_ONLY; frozen typed-source/native admission qualification, not G2 or a new task result.",
+  "source": {
+    "all_files_bytes_modes_git_objects_exact": true,
+    "baseline_commit": "dc59c8fcee6efede520c531eba5e42e7b84a1a9f",
+    "baseline_files_exact_preserved": 2192,
+    "complete_archive_files": 2251,
+    "frozen_groups_exact": [
+      {
+        "ancestor": true,
+        "commit": "c547612c80307c7ad218e3f7986df918525e5e86",
+        "files": [
+          {
+            "path": "research/unified_consequence_runtime/test_native_source_v42.py",
+            "sha256": "ab78c6c19271c57d720c062f6830bd868aaf90b4e33857ed5eab8bade31a6793",
+            "unchanged_bytes": true,
+            "unchanged_tree_row": true
+          },
+          {
+            "path": "research/unified_consequence_runtime/test_native_execution_v42.py",
+            "sha256": "24222b334b1bb93d54aac476a65a1f17e7904aca5c69beca72cd8505684a08b2",
+            "unchanged_bytes": true,
+            "unchanged_tree_row": true
+          },
+          {
+            "path": "research/unified_consequence_runtime/test_qualify_native_frontier_v42.py",
+            "sha256": "cde1740fea8cb65ca37af84e5a5d620d921be727b15fd2c1ac4013da800ea86a",
+            "unchanged_bytes": true,
+            "unchanged_tree_row": true
+          },
+          {
+            "path": "research/unified_consequence_runtime/archaeology/native-authority-v42/ACCEPTANCE_PROTOCOL.json",
+            "sha256": "9526bda955d7026bff547613820c281e5bbe3b1bece10f5f17a6a663ea109547",
+            "unchanged_bytes": true,
+            "unchanged_tree_row": true
+          },
+          {
+            "path": "research/unified_consequence_runtime/archaeology/native-authority-v42/ACCEPTANCE_TEST_FREEZE.json",
+            "sha256": "c5bf386880d59d11f61b551dd935e77d36994a7e4014a0b7b380413bf4047cca",
+            "unchanged_bytes": true,
+            "unchanged_tree_row": true
+          }
+        ]
+      },
+      {
+        "ancestor": true,
+        "commit": "7dc52f864d885509b53c1712206c68d4264aa2ee",
+        "files": [
+          {
+            "path": "research/unified_consequence_runtime/test_native_source_v42_regressions.py",
+            "sha256": "9be9f7ac5752c48fcda8bae85925a88da808b37ed0deca456b6c215abcb4908c",
+            "unchanged_bytes": true,
+            "unchanged_tree_row": true
+          },
+          {
+            "path": "research/unified_consequence_runtime/test_native_execution_v42_regressions.py",
+            "sha256": "0e3466a0dad375250fe3f410b20e1fa7d054ef10ecc438cf28bb2487e65bc9ec",
+            "unchanged_bytes": true,
+            "unchanged_tree_row": true
+          },
+          {
+            "path": "research/unified_consequence_runtime/archaeology/native-authority-v42/SUPPLEMENTARY_REVIEW_FREEZE.json",
+            "sha256": "806d11b6e6c1b92525c8572f7632baaafbed0a14704afe5b8bc0c2d611b668fc",
+            "unchanged_bytes": true,
+            "unchanged_tree_row": true
+          }
+        ]
+      },
+      {
+        "ancestor": true,
+        "commit": "57dcb513d20c00d6558fbfb101e3c97f37ae2d33",
+        "files": [
+          {
+            "path": "research/unified_consequence_runtime/test_native_environment_v42.py",
+            "sha256": "f4ac6c53513057a953f7ac64001cfc6841505ed2331c2a18b20b020464f11c19",
+            "unchanged_bytes": true,
+            "unchanged_tree_row": true
+          },
+          {
+            "path": "research/unified_consequence_runtime/archaeology/native-authority-v42/ENVIRONMENT_INTERFACE_FREEZE.json",
+            "sha256": "8b09c2bee30bd50be46d5a74e24f819513739b31b0a58a71b8dd6351c2d2495d",
+            "unchanged_bytes": true,
+            "unchanged_tree_row": true
+          }
+        ]
+      },
+      {
+        "ancestor": true,
+        "commit": "661f16eb209e2b410c1e7c02ce42aefc20f2c01c",
+        "files": [
+          {
+            "path": "research/unified_consequence_runtime/test_native_legacy_source_v42.py",
+            "sha256": "f290374a49dae058604ccacf6954f849190198b587e1eebcbaaf02707e1c1055",
+            "unchanged_bytes": true,
+            "unchanged_tree_row": true
+          },
+          {
+            "path": "research/unified_consequence_runtime/archaeology/native-authority-v42/LEGACY_FIXTURE_PROTOCOL.json",
+            "sha256": "3bd2b585fdb805ec1baa0d0b91688fb6c9cbc8a1972026a00013e44387c6846b",
+            "unchanged_bytes": true,
+            "unchanged_tree_row": true
+          }
+        ]
+      },
+      {
+        "ancestor": true,
+        "commit": "87b36624ea3a3746686d52d25f2ed0349d53232f",
+        "files": [
+          {
+            "path": "research/unified_consequence_runtime/test_native_legacy_source_v421.py",
+            "sha256": "3afa44924c12e1d1fdd763dc0a5d439d861f63719fa9892f023044409897923e",
+            "unchanged_bytes": true,
+            "unchanged_tree_row": true
+          },
+          {
+            "path": "research/unified_consequence_runtime/archaeology/native-authority-v42/LEGACY_FIXTURE_PROTOCOL_V421.json",
+            "sha256": "48ef964fdcd316036a918fd771087d865def98f4c1861f3866d9854eeebe25e1",
+            "unchanged_bytes": true,
+            "unchanged_tree_row": true
+          }
+        ]
+      }
+    ],
+    "source_archive_embedded_git_commit": "f1779c7443ae6035dee502a201d95d778056c05d",
+    "source_tar_sha256": "dd3c31f1d3b3308c51a4dc721a893e494c663ca04d062237f113e089ee884d63",
+    "working_tree_source_unchanged_through_final_audit": true
+  },
+  "source_commit": "f1779c7443ae6035dee502a201d95d778056c05d",
+  "status": "PASS_INDEPENDENT_BOUNDED_ADMISSION_GATE"
+}

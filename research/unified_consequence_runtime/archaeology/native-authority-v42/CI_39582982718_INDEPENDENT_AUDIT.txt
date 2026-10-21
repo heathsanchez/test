@@ -1,0 +1,14 @@
+PASS_INDEPENDENT_BOUNDED_ADMISSION_GATE
+
+Run 39582982718; source f1779c7443ae6035dee502a201d95d778056c05d; artifact 12338856551.
+Independent archive checks: 53. Independent raw control checks: 1,322. Total: 1,375 checks passed, zero obstructions.
+
+The ZIP is 228,743,664 bytes with SHA256 25edc3c805bf7cf8a050b9c3c5c4e640a8ea8dbc2b5a7920157b5201c4ca6460. API size and digest match; every CRC passes.
+Complete SOURCE has 2,251 files matching FREEZE and exact Git bytes, modes, object identities, and embedded commit. All 2,192 files from baseline dc59c8fc remain preserved. Initial acceptance c547612c, supplementary 7dc52f86, interface 57dcb513, append fixture 661f16eb, and default legacy fixture 87b36624 are ancestors with unchanged frozen bytes and tree rows.
+
+All 62 modern, 3 legacy, and 10 private wiring controls pass with exact raw outer test IDs and no skips. The 36 raw certificates and 37 native receipts independently classify as 14 PASS_NATIVE, 9 FAIL_NATIVE, 7 UNKNOWN_EXACT_COLLECTION, 5 UNKNOWN_SKIPPED_OR_XFAIL, and 2 UNKNOWN_SOURCE_OR_IMPORT_IDENTITY.
+Native modern Python 3.12.14 / pytest 8.4.1 and legacy Python 3.6.5 / pytest 5.4.3 each retain the full two-test collection, actual assertion failure, two passing positive tests, and separate child replay with 1 collection call, 1 native call, and 2 subprocess attempts. Original unsupported legacy importlib has raw exit 4 and no admission certificate, preserving UNKNOWN_COLLECTION_ERROR. The supported default legacy positive has two passing tests.
+
+All 3,419 evidence members (3,384 regular files and 35 symlinks) match manifest hashes and raw link targets. No fixture links were extracted or followed. CI raw index snapshots verify. The local common index remains absent and all four linked indexes are unchanged from before the first Git read through the final audit. All 2,251 tracked worktree files retain their original bytes and modes.
+
+This is ADMISSION_ONLY qualification. Source qualification is not G2. G2 through G6, formal G5, and external G6 remain UNKNOWN. This audit made no new task repository or scientific outcome queries, source edits, commits, or production writes. Full lifecycle, model, tool, and engineering costs remain UNKNOWN.
