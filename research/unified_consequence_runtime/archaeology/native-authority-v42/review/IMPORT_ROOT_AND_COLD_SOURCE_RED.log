@@ -1,0 +1,54 @@
+test_cold_import_refuses_changed_transitive_source_bytes (research.unified_consequence_runtime.test_native_execution_v42_regressions.NativeV42SourceImportRegressions.test_cold_import_refuses_changed_transitive_source_bytes) ... 
+  test_cold_import_refuses_changed_transitive_source_bytes (research.unified_consequence_runtime.test_native_execution_v42_regressions.NativeV42SourceImportRegressions.test_cold_import_refuses_changed_transitive_source_bytes) (changed='native_source_v42.py') ... FAIL
+  test_cold_import_refuses_changed_transitive_source_bytes (research.unified_consequence_runtime.test_native_execution_v42_regressions.NativeV42SourceImportRegressions.test_cold_import_refuses_changed_transitive_source_bytes) (changed='native_admission_v42.py') ... FAIL
+  test_cold_import_refuses_changed_transitive_source_bytes (research.unified_consequence_runtime.test_native_execution_v42_regressions.NativeV42SourceImportRegressions.test_cold_import_refuses_changed_transitive_source_bytes) (changed='native_execution_v3.py') ... FAIL
+test_flat_src_module_and_internal_alias_refuse_preloaded_installed_substitution (research.unified_consequence_runtime.test_native_execution_v42_regressions.NativeV42SourceImportRegressions.test_flat_src_module_and_internal_alias_refuse_preloaded_installed_substitution) ... 
+  test_flat_src_module_and_internal_alias_refuse_preloaded_installed_substitution (research.unified_consequence_runtime.test_native_execution_v42_regressions.NativeV42SourceImportRegressions.test_flat_src_module_and_internal_alias_refuse_preloaded_installed_substitution) (kind='regular') ... FAIL
+  test_flat_src_module_and_internal_alias_refuse_preloaded_installed_substitution (research.unified_consequence_runtime.test_native_execution_v42_regressions.NativeV42SourceImportRegressions.test_flat_src_module_and_internal_alias_refuse_preloaded_installed_substitution) (kind='internal-file-alias') ... FAIL
+
+======================================================================
+FAIL: test_cold_import_refuses_changed_transitive_source_bytes (research.unified_consequence_runtime.test_native_execution_v42_regressions.NativeV42SourceImportRegressions.test_cold_import_refuses_changed_transitive_source_bytes) (changed='native_source_v42.py')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_execution_v42_regressions.py", line 87, in test_cold_import_refuses_changed_transitive_source_bytes
+    self.assertNotEqual(altered.returncode,0,'altered transitive source admitted on cold import: '+changed)
+AssertionError: 0 == 0 : altered transitive source admitted on cold import: native_source_v42.py
+
+======================================================================
+FAIL: test_cold_import_refuses_changed_transitive_source_bytes (research.unified_consequence_runtime.test_native_execution_v42_regressions.NativeV42SourceImportRegressions.test_cold_import_refuses_changed_transitive_source_bytes) (changed='native_admission_v42.py')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_execution_v42_regressions.py", line 87, in test_cold_import_refuses_changed_transitive_source_bytes
+    self.assertNotEqual(altered.returncode,0,'altered transitive source admitted on cold import: '+changed)
+AssertionError: 0 == 0 : altered transitive source admitted on cold import: native_admission_v42.py
+
+======================================================================
+FAIL: test_cold_import_refuses_changed_transitive_source_bytes (research.unified_consequence_runtime.test_native_execution_v42_regressions.NativeV42SourceImportRegressions.test_cold_import_refuses_changed_transitive_source_bytes) (changed='native_execution_v3.py')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_execution_v42_regressions.py", line 87, in test_cold_import_refuses_changed_transitive_source_bytes
+    self.assertNotEqual(altered.returncode,0,'altered transitive source admitted on cold import: '+changed)
+AssertionError: 0 == 0 : altered transitive source admitted on cold import: native_execution_v3.py
+
+======================================================================
+FAIL: test_flat_src_module_and_internal_alias_refuse_preloaded_installed_substitution (research.unified_consequence_runtime.test_native_execution_v42_regressions.NativeV42SourceImportRegressions.test_flat_src_module_and_internal_alias_refuse_preloaded_installed_substitution) (kind='regular')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_execution_v42_regressions.py", line 60, in test_flat_src_module_and_internal_alias_refuse_preloaded_installed_substitution
+    with self.assertRaisesRegex(ValueError,'UNKNOWN_SOURCE_OR_IMPORT_IDENTITY'):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_flat_src_module_and_internal_alias_refuse_preloaded_installed_substitution (research.unified_consequence_runtime.test_native_execution_v42_regressions.NativeV42SourceImportRegressions.test_flat_src_module_and_internal_alias_refuse_preloaded_installed_substitution) (kind='internal-file-alias')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_execution_v42_regressions.py", line 60, in test_flat_src_module_and_internal_alias_refuse_preloaded_installed_substitution
+    with self.assertRaisesRegex(ValueError,'UNKNOWN_SOURCE_OR_IMPORT_IDENTITY'):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+----------------------------------------------------------------------
+Ran 2 tests in 2.403s
+
+FAILED (failures=5)

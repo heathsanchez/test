@@ -1,0 +1,54 @@
+"""Typed-source worker binding; original Machine/Metatron/FLASH rules persist."""
+from pathlib import Path
+from types import FunctionType
+
+from . import native_runtime_v3 as previous
+from . import native_execution_v42 as verifier
+from . import native_admission_v42 as admission
+
+frozen = previous.frozen
+AUTHORITY = frozen._copy(previous.AUTHORITY)
+_LOADED_SOURCE_SHA256 = frozen._sha(__file__)
+_PREVIOUS_SOURCE_SHA256 = frozen._sha(previous.__file__)
+_runtime_globals = dict(vars(previous), verifier=verifier, admission=admission,
+    AUTHORITY=AUTHORITY, __file__=__file__)
+_runtime_globals.update(vars(frozen))
+_runtime_globals.update(verifier=verifier, admission=admission, AUTHORITY=AUTHORITY,
+                        __file__=__file__, json=previous.json,
+                        secrets=previous.secrets, time=previous.time)
+
+
+def _check_sources():
+    previous._check_sources()
+    if (frozen._sha(__file__) != _LOADED_SOURCE_SHA256
+            or frozen._sha(previous.__file__) != _PREVIOUS_SOURCE_SHA256):
+        raise ValueError('UNKNOWN_V42_RUNTIME_SOURCE_MUTATION')
+    verifier._runner_hash()
+
+
+def _bind(function):
+    value = FunctionType(function.__code__, _runtime_globals, function.__name__,
+                         function.__defaults__, function.__closure__)
+    value.__kwdefaults__ = function.__kwdefaults__
+    return value
+
+
+_runtime_globals.update(_check_sources=_check_sources,
+    _runtime_scope=_bind(frozen.NativeRuntimeV2._scope),
+    _runtime_expected_scope=_bind(frozen.NativeRuntimeV2._expected_scope))
+
+
+class NativeRuntimeV42(frozen.NativeRuntimeV2):
+    def _scope(self):
+        _check_sources()
+        _runtime_globals['_runtime_scope'](self)
+
+    def _expected_scope(self):
+        return {**_runtime_globals['_runtime_expected_scope'](self), 'native_runtime_version': 42}
+
+
+for _name, _function in vars(frozen.NativeRuntimeV2).items():
+    if isinstance(_function, FunctionType) and _name not in ('_scope', '_expected_scope', '_verify'):
+        setattr(NativeRuntimeV42, _name, _bind(_function))
+NativeRuntimeV42._verify = _bind(previous.NativeRuntimeV3._verify)
+_check_sources()

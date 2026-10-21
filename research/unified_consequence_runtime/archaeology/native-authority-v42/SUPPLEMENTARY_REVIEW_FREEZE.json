@@ -1,0 +1,20 @@
+{
+  "implementation_before_fix": {
+    "native_execution_v42.py": "0f48dc230ae52416291e71180b40f27225012e5b9c67853ef2fd134d48601e19",
+    "native_runtime_v42.py": "ea37dc0c51ae956d7ecd304db9406e0b03d2e247e196a5565d9b2596b4e164a3"
+  },
+  "original_acceptance_commit": "c547612c80307c7ad218e3f7986df918525e5e86",
+  "schema": "UDM_NATIVE_SOURCE_SUPPLEMENTARY_REVIEW_FREEZE_V42",
+  "scientific_status": "Exposed admission diagnostics only; G2-G6 UNKNOWN",
+  "status": "WORKER_REGRESSIONS_RED_BEFORE_FIX",
+  "tests": {
+    "test_native_execution_v42_regressions.py": {
+      "declared_tests": 2,
+      "sha256": "0e3466a0dad375250fe3f410b20e1fa7d054ef10ecc438cf28bb2487e65bc9ec"
+    },
+    "test_native_source_v42_regressions.py": {
+      "declared_tests": 3,
+      "sha256": "9be9f7ac5752c48fcda8bae85925a88da808b37ed0deca456b6c215abcb4908c"
+    }
+  }
+}

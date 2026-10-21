@@ -1,0 +1,541 @@
+EEEEEEEEEEEEEEEEEEEEEEFFFFFFFFFF
+======================================================================
+ERROR: test_candidate_cannot_change_alias_or_target_of_protected_test_alias (research.unified_consequence_runtime.test_native_source_v42.NativeSourceV42Contracts.test_candidate_cannot_change_alias_or_target_of_protected_test_alias)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_source_v42.py", line 261, in test_candidate_cannot_change_alias_or_target_of_protected_test_alias
+    _, files, manifest = self.snapshot()
+                         ^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_source_v42.py", line 55, in snapshot
+    return source()._snapshot(self.repo, commit or self.commit())
+           ^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_source_v42.py", line 28, in source
+    return importlib.import_module(__package__ + '.native_source_v42')
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1324, in _find_and_load_unlocked
+ModuleNotFoundError: No module named 'research.unified_consequence_runtime.native_source_v42'
+
+======================================================================
+ERROR: test_checkout_restore_refuses_redirected_parent_and_untracked_content (research.unified_consequence_runtime.test_native_source_v42.NativeSourceV42Contracts.test_checkout_restore_refuses_redirected_parent_and_untracked_content)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_source_v42.py", line 237, in test_checkout_restore_refuses_redirected_parent_and_untracked_content
+    _, files, manifest = self.snapshot()
+                         ^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_source_v42.py", line 55, in snapshot
+    return source()._snapshot(self.repo, commit or self.commit())
+           ^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_source_v42.py", line 28, in source
+    return importlib.import_module(__package__ + '.native_source_v42')
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1324, in _find_and_load_unlocked
+ModuleNotFoundError: No module named 'research.unified_consequence_runtime.native_source_v42'
+
+======================================================================
+ERROR: test_checkout_restore_uses_git_blobs_and_never_follows_leaf_links (research.unified_consequence_runtime.test_native_source_v42.NativeSourceV42Contracts.test_checkout_restore_uses_git_blobs_and_never_follows_leaf_links)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_source_v42.py", line 221, in test_checkout_restore_uses_git_blobs_and_never_follows_leaf_links
+    _, files, manifest = self.snapshot()
+                         ^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_source_v42.py", line 55, in snapshot
+    return source()._snapshot(self.repo, commit or self.commit())
+           ^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_source_v42.py", line 28, in source
+    return importlib.import_module(__package__ + '.native_source_v42')
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1324, in _find_and_load_unlocked
+ModuleNotFoundError: No module named 'research.unified_consequence_runtime.native_source_v42'
+
+======================================================================
+ERROR: test_deterministic_archive_keeps_link_type_raw_target_and_regular_bytes (research.unified_consequence_runtime.test_native_source_v42.NativeSourceV42Contracts.test_deterministic_archive_keeps_link_type_raw_target_and_regular_bytes)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_source_v42.py", line 117, in test_deterministic_archive_keeps_link_type_raw_target_and_regular_bytes
+    _, files, manifest = self.snapshot()
+                         ^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_source_v42.py", line 55, in snapshot
+    return source()._snapshot(self.repo, commit or self.commit())
+           ^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_source_v42.py", line 28, in source
+    return importlib.import_module(__package__ + '.native_source_v42')
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1324, in _find_and_load_unlocked
+ModuleNotFoundError: No module named 'research.unified_consequence_runtime.native_source_v42'
+
+======================================================================
+ERROR: test_forged_or_extra_projection_bytes_are_not_materialization_authority (research.unified_consequence_runtime.test_native_source_v42.NativeSourceV42Contracts.test_forged_or_extra_projection_bytes_are_not_materialization_authority)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_source_v42.py", line 212, in test_forged_or_extra_projection_bytes_are_not_materialization_authority
+    _, files, manifest = self.snapshot()
+                         ^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_source_v42.py", line 55, in snapshot
+    return source()._snapshot(self.repo, commit or self.commit())
+           ^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_source_v42.py", line 28, in source
+    return importlib.import_module(__package__ + '.native_source_v42')
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1324, in _find_and_load_unlocked
+ModuleNotFoundError: No module named 'research.unified_consequence_runtime.native_source_v42'
+
+======================================================================
+ERROR: test_gitlink_pointer_is_inventoried_but_never_executable_authority (research.unified_consequence_runtime.test_native_source_v42.NativeSourceV42Contracts.test_gitlink_pointer_is_inventoried_but_never_executable_authority)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_source_v42.py", line 132, in test_gitlink_pointer_is_inventoried_but_never_executable_authority
+    identity, files, manifest = self.snapshot(commit)
+                                ^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_source_v42.py", line 55, in snapshot
+    return source()._snapshot(self.repo, commit or self.commit())
+           ^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_source_v42.py", line 28, in source
+    return importlib.import_module(__package__ + '.native_source_v42')
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1324, in _find_and_load_unlocked
+ModuleNotFoundError: No module named 'research.unified_consequence_runtime.native_source_v42'
+
+======================================================================
+ERROR: test_internal_file_symlink_is_inventory_and_executable_alias (research.unified_consequence_runtime.test_native_source_v42.NativeSourceV42Contracts.test_internal_file_symlink_is_inventory_and_executable_alias)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_source_v42.py", line 65, in test_internal_file_symlink_is_inventory_and_executable_alias
+    identity, files, manifest = self.snapshot(commit)
+                                ^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_source_v42.py", line 55, in snapshot
+    return source()._snapshot(self.repo, commit or self.commit())
+           ^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_source_v42.py", line 28, in source
+    return importlib.import_module(__package__ + '.native_source_v42')
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1324, in _find_and_load_unlocked
+ModuleNotFoundError: No module named 'research.unified_consequence_runtime.native_source_v42'
+
+======================================================================
+ERROR: test_inventory_preserves_unparsed_data_and_regular_executable_mode (research.unified_consequence_runtime.test_native_source_v42.NativeSourceV42Contracts.test_inventory_preserves_unparsed_data_and_regular_executable_mode)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_source_v42.py", line 87, in test_inventory_preserves_unparsed_data_and_regular_executable_mode
+    _, files, manifest = self.snapshot()
+                         ^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_source_v42.py", line 55, in snapshot
+    return source()._snapshot(self.repo, commit or self.commit())
+           ^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_source_v42.py", line 28, in source
+    return importlib.import_module(__package__ + '.native_source_v42')
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1324, in _find_and_load_unlocked
+ModuleNotFoundError: No module named 'research.unified_consequence_runtime.native_source_v42'
+
+======================================================================
+ERROR: test_link_chain_preserves_each_original_raw_target (research.unified_consequence_runtime.test_native_source_v42.NativeSourceV42Contracts.test_link_chain_preserves_each_original_raw_target)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_source_v42.py", line 175, in test_link_chain_preserves_each_original_raw_target
+    _, files, manifest = self.snapshot()
+                         ^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_source_v42.py", line 55, in snapshot
+    return source()._snapshot(self.repo, commit or self.commit())
+           ^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_source_v42.py", line 28, in source
+    return importlib.import_module(__package__ + '.native_source_v42')
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1324, in _find_and_load_unlocked
+ModuleNotFoundError: No module named 'research.unified_consequence_runtime.native_source_v42'
+
+======================================================================
+ERROR: test_materialized_link_text_swap_is_detected_despite_same_contents (research.unified_consequence_runtime.test_native_source_v42.NativeSourceV42Contracts.test_materialized_link_text_swap_is_detected_despite_same_contents)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_source_v42.py", line 185, in test_materialized_link_text_swap_is_detected_despite_same_contents
+    _, files, manifest = self.snapshot()
+                         ^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_source_v42.py", line 55, in snapshot
+    return source()._snapshot(self.repo, commit or self.commit())
+           ^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_source_v42.py", line 28, in source
+    return importlib.import_module(__package__ + '.native_source_v42')
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1324, in _find_and_load_unlocked
+ModuleNotFoundError: No module named 'research.unified_consequence_runtime.native_source_v42'
+
+======================================================================
+ERROR: test_overlay_cannot_write_through_link_or_link_parent (research.unified_consequence_runtime.test_native_source_v42.NativeSourceV42Contracts.test_overlay_cannot_write_through_link_or_link_parent)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_source_v42.py", line 253, in test_overlay_cannot_write_through_link_or_link_parent
+    _, _, manifest = self.snapshot()
+                     ^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_source_v42.py", line 55, in snapshot
+    return source()._snapshot(self.repo, commit or self.commit())
+           ^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_source_v42.py", line 28, in source
+    return importlib.import_module(__package__ + '.native_source_v42')
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1324, in _find_and_load_unlocked
+ModuleNotFoundError: No module named 'research.unified_consequence_runtime.native_source_v42'
+
+======================================================================
+ERROR: test_raw_link_text_changes_identity_even_when_contents_are_equal (research.unified_consequence_runtime.test_native_source_v42.NativeSourceV42Contracts.test_raw_link_text_changes_identity_even_when_contents_are_equal)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_source_v42.py", line 107, in test_raw_link_text_changes_identity_even_when_contents_are_equal
+    first, files1, manifest1 = self.snapshot()
+                               ^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_source_v42.py", line 55, in snapshot
+    return source()._snapshot(self.repo, commit or self.commit())
+           ^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_source_v42.py", line 28, in source
+    return importlib.import_module(__package__ + '.native_source_v42')
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1324, in _find_and_load_unlocked
+ModuleNotFoundError: No module named 'research.unified_consequence_runtime.native_source_v42'
+
+======================================================================
+ERROR: test_regular_to_link_swap_bytes_and_executable_mode_changes_are_detected (research.unified_consequence_runtime.test_native_source_v42.NativeSourceV42Contracts.test_regular_to_link_swap_bytes_and_executable_mode_changes_are_detected)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_source_v42.py", line 195, in test_regular_to_link_swap_bytes_and_executable_mode_changes_are_detected
+    _, files, manifest = self.snapshot()
+                         ^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_source_v42.py", line 55, in snapshot
+    return source()._snapshot(self.repo, commit or self.commit())
+           ^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_source_v42.py", line 28, in source
+    return importlib.import_module(__package__ + '.native_source_v42')
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1324, in _find_and_load_unlocked
+ModuleNotFoundError: No module named 'research.unified_consequence_runtime.native_source_v42'
+
+======================================================================
+ERROR: test_relative_parent_traversal_is_allowed_only_when_proven_internal (research.unified_consequence_runtime.test_native_source_v42.NativeSourceV42Contracts.test_relative_parent_traversal_is_allowed_only_when_proven_internal)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_source_v42.py", line 168, in test_relative_parent_traversal_is_allowed_only_when_proven_internal
+    _, files, manifest = self.snapshot()
+                         ^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_source_v42.py", line 55, in snapshot
+    return source()._snapshot(self.repo, commit or self.commit())
+           ^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_source_v42.py", line 28, in source
+    return importlib.import_module(__package__ + '.native_source_v42')
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1324, in _find_and_load_unlocked
+ModuleNotFoundError: No module named 'research.unified_consequence_runtime.native_source_v42'
+
+======================================================================
+ERROR: test_snapshot_reads_exact_git_blobs_not_transformed_checkout (research.unified_consequence_runtime.test_native_source_v42.NativeSourceV42Contracts.test_snapshot_reads_exact_git_blobs_not_transformed_checkout)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_source_v42.py", line 98, in test_snapshot_reads_exact_git_blobs_not_transformed_checkout
+    before = self.snapshot(commit)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_source_v42.py", line 55, in snapshot
+    return source()._snapshot(self.repo, commit or self.commit())
+           ^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_source_v42.py", line 28, in source
+    return importlib.import_module(__package__ + '.native_source_v42')
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1324, in _find_and_load_unlocked
+ModuleNotFoundError: No module named 'research.unified_consequence_runtime.native_source_v42'
+
+======================================================================
+ERROR: test_unsafe_unsupported_or_unavailable_links_fail_closed (research.unified_consequence_runtime.test_native_source_v42.NativeSourceV42Contracts.test_unsafe_unsupported_or_unavailable_links_fail_closed) (case='absolute')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_source_v42.py", line 164, in test_unsafe_unsupported_or_unavailable_links_fail_closed
+    self.snapshot(commit)
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_source_v42.py", line 55, in snapshot
+    return source()._snapshot(self.repo, commit or self.commit())
+           ^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_source_v42.py", line 28, in source
+    return importlib.import_module(__package__ + '.native_source_v42')
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1324, in _find_and_load_unlocked
+ModuleNotFoundError: No module named 'research.unified_consequence_runtime.native_source_v42'
+
+======================================================================
+ERROR: test_unsafe_unsupported_or_unavailable_links_fail_closed (research.unified_consequence_runtime.test_native_source_v42.NativeSourceV42Contracts.test_unsafe_unsupported_or_unavailable_links_fail_closed) (case='escape')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_source_v42.py", line 164, in test_unsafe_unsupported_or_unavailable_links_fail_closed
+    self.snapshot(commit)
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_source_v42.py", line 55, in snapshot
+    return source()._snapshot(self.repo, commit or self.commit())
+           ^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_source_v42.py", line 28, in source
+    return importlib.import_module(__package__ + '.native_source_v42')
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1324, in _find_and_load_unlocked
+ModuleNotFoundError: No module named 'research.unified_consequence_runtime.native_source_v42'
+
+======================================================================
+ERROR: test_unsafe_unsupported_or_unavailable_links_fail_closed (research.unified_consequence_runtime.test_native_source_v42.NativeSourceV42Contracts.test_unsafe_unsupported_or_unavailable_links_fail_closed) (case='git-administration')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_source_v42.py", line 164, in test_unsafe_unsupported_or_unavailable_links_fail_closed
+    self.snapshot(commit)
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_source_v42.py", line 55, in snapshot
+    return source()._snapshot(self.repo, commit or self.commit())
+           ^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_source_v42.py", line 28, in source
+    return importlib.import_module(__package__ + '.native_source_v42')
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1324, in _find_and_load_unlocked
+ModuleNotFoundError: No module named 'research.unified_consequence_runtime.native_source_v42'
+
+======================================================================
+ERROR: test_unsafe_unsupported_or_unavailable_links_fail_closed (research.unified_consequence_runtime.test_native_source_v42.NativeSourceV42Contracts.test_unsafe_unsupported_or_unavailable_links_fail_closed) (case='dangling')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_source_v42.py", line 164, in test_unsafe_unsupported_or_unavailable_links_fail_closed
+    self.snapshot(commit)
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_source_v42.py", line 55, in snapshot
+    return source()._snapshot(self.repo, commit or self.commit())
+           ^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_source_v42.py", line 28, in source
+    return importlib.import_module(__package__ + '.native_source_v42')
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1324, in _find_and_load_unlocked
+ModuleNotFoundError: No module named 'research.unified_consequence_runtime.native_source_v42'
+
+======================================================================
+ERROR: test_unsafe_unsupported_or_unavailable_links_fail_closed (research.unified_consequence_runtime.test_native_source_v42.NativeSourceV42Contracts.test_unsafe_unsupported_or_unavailable_links_fail_closed) (case='directory-alias')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_source_v42.py", line 164, in test_unsafe_unsupported_or_unavailable_links_fail_closed
+    self.snapshot(commit)
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_source_v42.py", line 55, in snapshot
+    return source()._snapshot(self.repo, commit or self.commit())
+           ^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_source_v42.py", line 28, in source
+    return importlib.import_module(__package__ + '.native_source_v42')
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1324, in _find_and_load_unlocked
+ModuleNotFoundError: No module named 'research.unified_consequence_runtime.native_source_v42'
+
+======================================================================
+ERROR: test_unsafe_unsupported_or_unavailable_links_fail_closed (research.unified_consequence_runtime.test_native_source_v42.NativeSourceV42Contracts.test_unsafe_unsupported_or_unavailable_links_fail_closed) (case='cycle')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_source_v42.py", line 164, in test_unsafe_unsupported_or_unavailable_links_fail_closed
+    self.snapshot(commit)
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_source_v42.py", line 55, in snapshot
+    return source()._snapshot(self.repo, commit or self.commit())
+           ^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_source_v42.py", line 28, in source
+    return importlib.import_module(__package__ + '.native_source_v42')
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1324, in _find_and_load_unlocked
+ModuleNotFoundError: No module named 'research.unified_consequence_runtime.native_source_v42'
+
+======================================================================
+ERROR: research.unified_consequence_runtime.test_native_execution_v42 (unittest.loader._FailedTest.research.unified_consequence_runtime.test_native_execution_v42)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_execution_v42.py", line 176, in load_tests
+    tests.addTests(loader.loadTestsFromTestCase(inherited_suite()))
+                                                ^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_execution_v42.py", line 153, in inherited_suite
+    execution = worker()
+                ^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_execution_v42.py", line 25, in worker
+    return importlib.import_module(__package__ + '.native_execution_v42')
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1324, in _find_and_load_unlocked
+ModuleNotFoundError: No module named 'research.unified_consequence_runtime.native_execution_v42'
+
+======================================================================
+FAIL: test_catalog_has_original_generator_and_versioned_snapshot (research.unified_consequence_runtime.test_qualify_native_frontier_v42.NativeFrontierV42BindingContracts.test_catalog_has_original_generator_and_versioned_snapshot)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_qualify_native_frontier_v42.py", line 31, in setUp
+    self.assertIsNotNone(importlib.util.find_spec(MODULE), 'versioned V42 frontier required')
+AssertionError: unexpectedly None : versioned V42 frontier required
+
+======================================================================
+FAIL: test_curator_retains_all_nine_v41_exposures_and_no_initial_universe (research.unified_consequence_runtime.test_qualify_native_frontier_v42.NativeFrontierV42BindingContracts.test_curator_retains_all_nine_v41_exposures_and_no_initial_universe)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_qualify_native_frontier_v42.py", line 31, in setUp
+    self.assertIsNotNone(importlib.util.find_spec(MODULE), 'versioned V42 frontier required')
+AssertionError: unexpectedly None : versioned V42 frontier required
+
+======================================================================
+FAIL: test_default_paths_keep_previous_results_separate (research.unified_consequence_runtime.test_qualify_native_frontier_v42.NativeFrontierV42BindingContracts.test_default_paths_keep_previous_results_separate)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_qualify_native_frontier_v42.py", line 31, in setUp
+    self.assertIsNotNone(importlib.util.find_spec(MODULE), 'versioned V42 frontier required')
+AssertionError: unexpectedly None : versioned V42 frontier required
+
+======================================================================
+FAIL: test_gate_validation_precedes_universe_reading (research.unified_consequence_runtime.test_qualify_native_frontier_v42.NativeFrontierV42BindingContracts.test_gate_validation_precedes_universe_reading)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_qualify_native_frontier_v42.py", line 31, in setUp
+    self.assertIsNotNone(importlib.util.find_spec(MODULE), 'versioned V42 frontier required')
+AssertionError: unexpectedly None : versioned V42 frontier required
+
+======================================================================
+FAIL: test_independent_checker_has_importable_new_identity (research.unified_consequence_runtime.test_qualify_native_frontier_v42.NativeFrontierV42BindingContracts.test_independent_checker_has_importable_new_identity)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_qualify_native_frontier_v42.py", line 31, in setUp
+    self.assertIsNotNone(importlib.util.find_spec(MODULE), 'versioned V42 frontier required')
+AssertionError: unexpectedly None : versioned V42 frontier required
+
+======================================================================
+FAIL: test_old_admission_gate_cannot_authorize_new_worker (research.unified_consequence_runtime.test_qualify_native_frontier_v42.NativeFrontierV42BindingContracts.test_old_admission_gate_cannot_authorize_new_worker)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_qualify_native_frontier_v42.py", line 31, in setUp
+    self.assertIsNotNone(importlib.util.find_spec(MODULE), 'versioned V42 frontier required')
+AssertionError: unexpectedly None : versioned V42 frontier required
+
+======================================================================
+FAIL: test_original_search_bytecode_and_matched_budget_are_preserved (research.unified_consequence_runtime.test_qualify_native_frontier_v42.NativeFrontierV42BindingContracts.test_original_search_bytecode_and_matched_budget_are_preserved)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_qualify_native_frontier_v42.py", line 31, in setUp
+    self.assertIsNotNone(importlib.util.find_spec(MODULE), 'versioned V42 frontier required')
+AssertionError: unexpectedly None : versioned V42 frontier required
+
+======================================================================
+FAIL: test_pass_and_fail_admission_are_equally_eligible_in_fixed_order (research.unified_consequence_runtime.test_qualify_native_frontier_v42.NativeFrontierV42BindingContracts.test_pass_and_fail_admission_are_equally_eligible_in_fixed_order)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_qualify_native_frontier_v42.py", line 31, in setUp
+    self.assertIsNotNone(importlib.util.find_spec(MODULE), 'versioned V42 frontier required')
+AssertionError: unexpectedly None : versioned V42 frontier required
+
+======================================================================
+FAIL: test_prepare_selects_new_runtime_and_private_worker_without_old_mutation (research.unified_consequence_runtime.test_qualify_native_frontier_v42.NativeFrontierV42BindingContracts.test_prepare_selects_new_runtime_and_private_worker_without_old_mutation)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_qualify_native_frontier_v42.py", line 31, in setUp
+    self.assertIsNotNone(importlib.util.find_spec(MODULE), 'versioned V42 frontier required')
+AssertionError: unexpectedly None : versioned V42 frontier required
+
+======================================================================
+FAIL: test_record_assembly_uses_only_new_records (research.unified_consequence_runtime.test_qualify_native_frontier_v42.NativeFrontierV42BindingContracts.test_record_assembly_uses_only_new_records)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_qualify_native_frontier_v42.py", line 31, in setUp
+    self.assertIsNotNone(importlib.util.find_spec(MODULE), 'versioned V42 frontier required')
+AssertionError: unexpectedly None : versioned V42 frontier required
+
+----------------------------------------------------------------------
+Ran 27 tests in 0.122s
+
+FAILED (failures=10, errors=22)

@@ -1,0 +1,26 @@
+test_flat_src_module_and_internal_alias_refuse_preloaded_installed_substitution (research.unified_consequence_runtime.test_native_execution_v42_regressions.NativeV42SourceImportRegressions.test_flat_src_module_and_internal_alias_refuse_preloaded_installed_substitution) ... 
+  test_flat_src_module_and_internal_alias_refuse_preloaded_installed_substitution (research.unified_consequence_runtime.test_native_execution_v42_regressions.NativeV42SourceImportRegressions.test_flat_src_module_and_internal_alias_refuse_preloaded_installed_substitution) (kind='regular') ... FAIL
+  test_flat_src_module_and_internal_alias_refuse_preloaded_installed_substitution (research.unified_consequence_runtime.test_native_execution_v42_regressions.NativeV42SourceImportRegressions.test_flat_src_module_and_internal_alias_refuse_preloaded_installed_substitution) (kind='internal-file-alias') ... FAIL
+
+======================================================================
+FAIL: test_flat_src_module_and_internal_alias_refuse_preloaded_installed_substitution (research.unified_consequence_runtime.test_native_execution_v42_regressions.NativeV42SourceImportRegressions.test_flat_src_module_and_internal_alias_refuse_preloaded_installed_substitution) (kind='regular')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_execution_v42_regressions.py", line 59, in test_flat_src_module_and_internal_alias_refuse_preloaded_installed_substitution
+    with self.assertRaisesRegex(ValueError,'UNKNOWN_SOURCE_OR_IMPORT_IDENTITY'):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_flat_src_module_and_internal_alias_refuse_preloaded_installed_substitution (research.unified_consequence_runtime.test_native_execution_v42_regressions.NativeV42SourceImportRegressions.test_flat_src_module_and_internal_alias_refuse_preloaded_installed_substitution) (kind='internal-file-alias')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_execution_v42_regressions.py", line 59, in test_flat_src_module_and_internal_alias_refuse_preloaded_installed_substitution
+    with self.assertRaisesRegex(ValueError,'UNKNOWN_SOURCE_OR_IMPORT_IDENTITY'):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+----------------------------------------------------------------------
+Ran 1 test in 2.298s
+
+FAILED (failures=2)
