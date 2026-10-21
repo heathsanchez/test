@@ -1778,6 +1778,49 @@ impl<'a> TypeChecker<'a> {
                 }
                 let ordinary_view = self.pi_view(function_type.clone(), *remaining);
                 let checked_view = ordinary_view.or_else(|| {
+                    // Prospective source-owned recovery: the original function
+                    // was inferred in the actual lexical context above but
+                    // remained UNKNOWN. Reconstruct its type from the same
+                    // captured source expression only if a complete local
+                    // typing derivation succeeds. The argument is still
+                    // checked against the resulting dependent domain below.
+                    // This never licenses equality from a shared shape/name
+                    // or an untyped reduction; all speculative work is paid.
+                    if std::env::var_os("NUCLEUS_EXPERIMENTAL_EXACT_APP_FUNCTION").is_some()
+                        && function_type.is_unknown()
+                        && context.len() <= 12
+                        && *remaining >= 2048
+                    {
+                        let allowance = (*remaining).min(4096);
+                        let mut trial_remaining = allowance;
+                        let original_function = self.closure(*fun, frame.clone());
+                        let recovered = self.infer_exact_closure_in_context(
+                            &original_function, context, &mut trial_remaining, 0,
+                        );
+                        *remaining = remaining.saturating_sub(
+                            allowance.saturating_sub(trial_remaining)
+                        );
+                        let view = recovered.and_then(|typed| self.pi_view(
+                            Judgment::proven(typed, "original-source-dependent-function"),
+                            (*remaining).min(2048),
+                        ));
+                        #[cfg(feature = "diagnostics")]
+                        if std::env::var_os("NUCLEUS_TRACE_EXACT_APP_FUNCTION").is_some()
+                            && context.len() <= 4
+                        {
+                            use std::sync::atomic::{AtomicUsize, Ordering};
+                            static PROBE: AtomicUsize = AtomicUsize::new(0);
+                            if PROBE.fetch_add(1, Ordering::Relaxed) < 48 {
+                                eprintln!(
+                                    "NUCLEUS_EXACT_APP_FUNCTION:application={expression:?}:fun={fun:?}:context={}:remaining={}:trial_remaining={}:previous={function_type:?}:source_pi_recovered={}",
+                                    context.len(), *remaining, trial_remaining, view.is_some(),
+                                );
+                            }
+                        }
+                        if let Some(pair) = view {
+                            return Some(pair);
+                        }
+                    }
                     if self.delta_policy != crate::convert::DeltaPolicy::GuardedSemanticFallback {
                         return None;
                     }
