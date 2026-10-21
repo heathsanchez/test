@@ -1,0 +1,21 @@
+{
+  "status": "EXPECTED_RED_SEPARATE_TELEMETRY_ABSENT",
+  "command": [
+    "/workspace/qualification/native-authority-v42-controller/bin/python",
+    "-B",
+    "-m",
+    "pytest",
+    "-q",
+    "-p",
+    "no:cacheprovider",
+    "/workspace/qualification/experiment-interface-v43-prospective-readiness/test_watcher_telemetry.py",
+    "--tb=short",
+    "--junitxml=/workspace/qualification/experiment-interface-v43-prospective-readiness/watcher-telemetry-red/junit.xml"
+  ],
+  "returncode": 1,
+  "executed_model_or_native": false,
+  "files_sha256": {
+    "watch_actual_agent.py": "e7d9d9cebb8579a04d5fe34556a50869ded617ad5c73458b7ad37ef0702fac2c",
+    "test_watcher_telemetry.py": "48fc1a211402f918be08aebac6d0a8220a989eec84724474da3446f52891d9eb"
+  }
+}

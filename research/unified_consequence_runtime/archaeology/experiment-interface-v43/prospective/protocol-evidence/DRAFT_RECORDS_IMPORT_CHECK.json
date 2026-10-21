@@ -1,0 +1,23 @@
+{
+  "build_counters_unchanged": true,
+  "controller_is_actual_q43": true,
+  "draft": "/workspace/qualification/experiment-interface-v43-prospective-readiness/drafts/prepare_records.py",
+  "draft_sha256": "07b55529eeade93db69e97ac1f5dd84ecac9769b33fedebeefc240a98bb3934f",
+  "native_counters_unchanged": true,
+  "network_target_queries": 0,
+  "original_code_objects_preserved": {
+    "copy_exact": true,
+    "descriptor": true,
+    "requests": true
+  },
+  "prepare_finalize_requests_or_main_invoked": false,
+  "prospective_records_unchanged": true,
+  "schema": "UDM_V43_RECORD_HELPER_DRAFT_IMPORT_READINESS_V1",
+  "scope": "Outside-repository draft only; no CLI prepare, source provisioning, native oracle, target query or Git mutation.",
+  "source_pins": {
+    "archaeology/native-authority-v42/prepare_records.py": "00fbd357882c3aea5a319601b3302c6208a0eef7bd0b0a560d60cee1c0533458",
+    "archaeology/native-environment-v3/prepare_records.py": "7ab47d2339641a09d5ab2c6e417ed148298477e83bf19f8580b56a9655c6ce5a",
+    "qualify_native_frontier_v43.py": "d25a02b0fdeba507073b54b8297b73b488638f154de39fc53ef03a1fff246358"
+  },
+  "status": "PASS_COMPILE_IMPORT_ONLY"
+}

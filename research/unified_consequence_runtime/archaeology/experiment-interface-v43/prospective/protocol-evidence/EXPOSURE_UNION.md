@@ -1,0 +1,11 @@
+The minimum conservative exclusion union is **88 lowercase keys**: all 80 exclusions already frozen in V42 PREQUERY, plus all eight repositories declared for V42. The eight must all remain excluded even when no FROZEN_POOL entry survived. This is an accessible-record boundary, not absolute unfamiliarity. No target query or source acquisition was performed.
+
+V42 adds `benjaminp/six, chardet/chardet, cloudpipe/cloudpickle, coady/multimethod, erikrose/parsimonious, jaraco/path, jmespath/jmespath.py, python-trio/outcome`. In particular `benjaminp/six` and `erikrose/parsimonious` are absent from the six-member V42 FROZEN_POOL but were declared and queried, so a pool-only union is insufficient.
+
+`more-itertools/more-itertools` is already excluded through decisive-native FRESH_TASK_METADATA, including selected training PR 1309. The later PR154 review of `heathsanchez/test` reaffirms the same target, and both repositories were already excluded; it adds no fresh repository. Whole-repository exclusion prevents another PR in that repository from being treated as unfamiliar.
+
+All 48 exact historical inputs frozen by V42 PREQUERY were found locally and their SHA256 values match. EX-POSURE_UNION.json retains their exact relative paths, hashes, all 88 keys with provenance, 56 selected/pool PR rows, and 4188 distinct retained GitHub pull URLs. The fixed Hatch qualification fixtures do not constitute prospective target declarations.
+
+Eight legacy keys (`licenses/apache-2.0, licenses/gpl-3.0, licenses/lgpl-3.0, licenses/mit, repos/heathsanchez, repos/metalogiclabs, users/heathsanchez, users/metalogiclabs`) arise from the old conservative GitHub URL scanner. Keep them in the inherited union; silently deleting them would alter the old exclusion procedure. They do not justify adding any target.
+
+The new V43 curator should extend V42 EXTRA_HISTORY with V42 DECLARED_UNIVERSE, PREQUERY, PREQUERY_EXECUTION, METADATA_CURATION, FROZEN_POOL, SCREENING_AUTHORITY, SCREENING_ENVELOPES, SCREENING_METER and any retained SCREENING_SHORTFALL. The new prequery must hash those records and preserve every rejection, no-candidate, setup-UNKNOWN and failed screening as exposure. PR154 can be explicitly recorded as a reaffirmation in the new prior-exposure supplement. No frozen old record should be edited.

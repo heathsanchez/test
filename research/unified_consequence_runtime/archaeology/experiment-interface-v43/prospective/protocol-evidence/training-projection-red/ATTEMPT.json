@@ -1,0 +1,19 @@
+{
+  "command": [
+    "/workspace/qualification/native-authority-v42-controller/bin/python",
+    "-B",
+    "-m",
+    "pytest",
+    "-q",
+    "-p",
+    "no:cacheprovider",
+    "/workspace/qualification/experiment-interface-v43-prospective-readiness/drafts/test_training_history_projection_v43.py",
+    "--tb=short",
+    "--junitxml=/workspace/qualification/experiment-interface-v43-prospective-readiness/training-projection-red/junit.xml"
+  ],
+  "started_utc": "2026-10-21T22:01:43.278605+00:00",
+  "test_sha256": "20f5d11da22124f5b6dd0ff3e3bba65eb4627e6056f1cff2fa762e4fa301e11f",
+  "adapter_absent": true,
+  "returncode": 1,
+  "completed_utc": "2026-10-21T22:01:43.539748+00:00"
+}

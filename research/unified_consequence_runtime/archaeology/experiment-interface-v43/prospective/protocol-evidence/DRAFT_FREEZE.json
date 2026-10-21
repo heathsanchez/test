@@ -1,0 +1,43 @@
+{
+  "checks": [
+    "curator-import-only-codeobject-identity",
+    "records-import-only-codeobject-identity",
+    "88-key-hashed-exposure-union",
+    "nine-proposed-names-local-grammar-only",
+    "history-schema-adapter-11RED-11GREEN",
+    "all-draft-Python-AST-parse",
+    "watcher-model-native-telemetry-10RED-10GREEN-no-model-invocation"
+  ],
+  "created_utc": "2026-10-21T22:09:37.021436+00:00",
+  "files_sha256": {
+    "COMMANDS.md": "3632a04bdb25113b4dccc49f5400ab3be6affb9159656311c032cf3e74ec076d",
+    "READINESS.md": "a132d340ae339541e56359c0601aadf7bdf08ce6d29de451b7e49365697ca2b8",
+    "drafts/PRIOR_EXPOSURE.json": "72ba37f1ddf33c22211020ab6311cf6414380d67ec27f9682ec560de8f7b4a3a",
+    "drafts/curate_frontier.py": "79bb1f4ed653efe34d4b625277378a1dfb0aef1ac5b0a797920358776ffb8d4f",
+    "drafts/prepare_records.py": "07b55529eeade93db69e97ac1f5dd84ecac9769b33fedebeefc240a98bb3934f",
+    "drafts/training-history-original/training_history_projection.py": "3172f8a5d175d593b938db62a48db76437abbbe59c8432a91ea53488ef5f7b21",
+    "drafts/training_history_projection_v43.py": "7eb6b2103cba6cc138efc4ad2a1198520996443b07c68dc99bdb8756d7d6dbef",
+    "test_watcher_telemetry.py": "48fc1a211402f918be08aebac6d0a8220a989eec84724474da3446f52891d9eb",
+    "watch_actual_agent.py": "0cd33da61a53e6993e580e89dc4332288542e24f40c88c33b1460f2d7ce659e2"
+  },
+  "not_executed": [
+    "metadata-curator-query",
+    "record-preparation-for-prospective-targets",
+    "native-screening",
+    "prospective-selection",
+    "watcher-or-Codex-agent"
+  ],
+  "repository_source_changed": false,
+  "schema": "UDM_V43_PROSPECTIVE_READINESS_DRAFT_FREEZE_V1",
+  "scientific_verdicts": {
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN"
+  },
+  "status": "REVIEWABLE_OUTSIDE_REPOSITORY_ONLY",
+  "target_metadata_queries": 0,
+  "target_source_or_compatibility_or_outcome_inspection": false,
+  "universe_declared_or_frozen": false
+}

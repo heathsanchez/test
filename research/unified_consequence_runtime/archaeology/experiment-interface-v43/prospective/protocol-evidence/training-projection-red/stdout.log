@@ -1,0 +1,100 @@
+FFFFFFFFFFF                                                              [100%]
+=================================== FAILURES ===================================
+_____________ ProjectionTests.test_boolean_native_cost_is_refused ______________
+qualification/experiment-interface-v43-prospective-readiness/drafts/test_training_history_projection_v43.py:192: in test_boolean_native_cost_is_refused
+    self.project()
+qualification/experiment-interface-v43-prospective-readiness/drafts/test_training_history_projection_v43.py:116: in project
+    module = self.load()
+qualification/experiment-interface-v43-prospective-readiness/drafts/test_training_history_projection_v43.py:47: in load
+    self.assertTrue(CODE.is_file(), 'training-only projection helper is not implemented')
+E   AssertionError: False is not true : training-only projection helper is not implemented
+__ ProjectionTests.test_does_not_dereference_other_binding_or_future_attempts __
+qualification/experiment-interface-v43-prospective-readiness/drafts/test_training_history_projection_v43.py:138: in test_does_not_dereference_other_binding_or_future_attempts
+    result = self.project()
+qualification/experiment-interface-v43-prospective-readiness/drafts/test_training_history_projection_v43.py:116: in project
+    module = self.load()
+qualification/experiment-interface-v43-prospective-readiness/drafts/test_training_history_projection_v43.py:47: in load
+    self.assertTrue(CODE.is_file(), 'training-only projection helper is not implemented')
+E   AssertionError: False is not true : training-only projection helper is not implemented
+________________ ProjectionTests.test_duplicate_profile_refuses ________________
+qualification/experiment-interface-v43-prospective-readiness/drafts/test_training_history_projection_v43.py:180: in test_duplicate_profile_refuses
+    self.project()
+qualification/experiment-interface-v43-prospective-readiness/drafts/test_training_history_projection_v43.py:116: in project
+    module = self.load()
+qualification/experiment-interface-v43-prospective-readiness/drafts/test_training_history_projection_v43.py:47: in load
+    self.assertTrue(CODE.is_file(), 'training-only projection helper is not implemented')
+E   AssertionError: False is not true : training-only projection helper is not implemented
+__ ProjectionTests.test_metadata_pin_prevents_training_identity_substitution ___
+qualification/experiment-interface-v43-prospective-readiness/drafts/test_training_history_projection_v43.py:196: in test_metadata_pin_prevents_training_identity_substitution
+    module = self.load()
+qualification/experiment-interface-v43-prospective-readiness/drafts/test_training_history_projection_v43.py:47: in load
+    self.assertTrue(CODE.is_file(), 'training-only projection helper is not implemented')
+E   AssertionError: False is not true : training-only projection helper is not implemented
+_________ ProjectionTests.test_missing_profiles_on_future_arm_refuses __________
+qualification/experiment-interface-v43-prospective-readiness/drafts/test_training_history_projection_v43.py:151: in test_missing_profiles_on_future_arm_refuses
+    self.project()
+qualification/experiment-interface-v43-prospective-readiness/drafts/test_training_history_projection_v43.py:116: in project
+    module = self.load()
+qualification/experiment-interface-v43-prospective-readiness/drafts/test_training_history_projection_v43.py:47: in load
+    self.assertTrue(CODE.is_file(), 'training-only projection helper is not implemented')
+E   AssertionError: False is not true : training-only projection helper is not implemented
+______ ProjectionTests.test_no_profiles_is_allowed_only_for_training_arm _______
+qualification/experiment-interface-v43-prospective-readiness/drafts/test_training_history_projection_v43.py:144: in test_no_profiles_is_allowed_only_for_training_arm
+    result = self.project()
+qualification/experiment-interface-v43-prospective-readiness/drafts/test_training_history_projection_v43.py:116: in project
+    module = self.load()
+qualification/experiment-interface-v43-prospective-readiness/drafts/test_training_history_projection_v43.py:47: in load
+    self.assertTrue(CODE.is_file(), 'training-only projection helper is not implemented')
+E   AssertionError: False is not true : training-only projection helper is not implemented
+_______ ProjectionTests.test_profile_from_wrong_candidate_order_refuses ________
+qualification/experiment-interface-v43-prospective-readiness/drafts/test_training_history_projection_v43.py:174: in test_profile_from_wrong_candidate_order_refuses
+    self.project()
+qualification/experiment-interface-v43-prospective-readiness/drafts/test_training_history_projection_v43.py:116: in project
+    module = self.load()
+qualification/experiment-interface-v43-prospective-readiness/drafts/test_training_history_projection_v43.py:47: in load
+    self.assertTrue(CODE.is_file(), 'training-only projection helper is not implemented')
+E   AssertionError: False is not true : training-only projection helper is not implemented
+__ ProjectionTests.test_recovers_exact_profiles_episodes_context_and_receipts __
+qualification/experiment-interface-v43-prospective-readiness/drafts/test_training_history_projection_v43.py:123: in test_recovers_exact_profiles_episodes_context_and_receipts
+    result = self.project()
+qualification/experiment-interface-v43-prospective-readiness/drafts/test_training_history_projection_v43.py:116: in project
+    module = self.load()
+qualification/experiment-interface-v43-prospective-readiness/drafts/test_training_history_projection_v43.py:47: in load
+    self.assertTrue(CODE.is_file(), 'training-only projection helper is not implemented')
+E   AssertionError: False is not true : training-only projection helper is not implemented
+_____________ ProjectionTests.test_tampered_authority_pin_refuses ______________
+qualification/experiment-interface-v43-prospective-readiness/drafts/test_training_history_projection_v43.py:154: in test_tampered_authority_pin_refuses
+    module = self.load()
+qualification/experiment-interface-v43-prospective-readiness/drafts/test_training_history_projection_v43.py:47: in load
+    self.assertTrue(CODE.is_file(), 'training-only projection helper is not implemented')
+E   AssertionError: False is not true : training-only projection helper is not implemented
+__________________ ProjectionTests.test_tampered_cas_refuses ___________________
+qualification/experiment-interface-v43-prospective-readiness/drafts/test_training_history_projection_v43.py:164: in test_tampered_cas_refuses
+    self.project()
+qualification/experiment-interface-v43-prospective-readiness/drafts/test_training_history_projection_v43.py:116: in project
+    module = self.load()
+qualification/experiment-interface-v43-prospective-readiness/drafts/test_training_history_projection_v43.py:47: in load
+    self.assertTrue(CODE.is_file(), 'training-only projection helper is not implemented')
+E   AssertionError: False is not true : training-only projection helper is not implemented
+_____ ProjectionTests.test_unknown_receipt_is_preserved_without_promotion ______
+qualification/experiment-interface-v43-prospective-readiness/drafts/test_training_history_projection_v43.py:184: in test_unknown_receipt_is_preserved_without_promotion
+    result = self.project()
+qualification/experiment-interface-v43-prospective-readiness/drafts/test_training_history_projection_v43.py:116: in project
+    module = self.load()
+qualification/experiment-interface-v43-prospective-readiness/drafts/test_training_history_projection_v43.py:47: in load
+    self.assertTrue(CODE.is_file(), 'training-only projection helper is not implemented')
+E   AssertionError: False is not true : training-only projection helper is not implemented
+- generated xml file: /workspace/qualification/experiment-interface-v43-prospective-readiness/training-projection-red/junit.xml -
+=========================== short test summary info ============================
+FAILED qualification/experiment-interface-v43-prospective-readiness/drafts/test_training_history_projection_v43.py::ProjectionTests::test_boolean_native_cost_is_refused
+FAILED qualification/experiment-interface-v43-prospective-readiness/drafts/test_training_history_projection_v43.py::ProjectionTests::test_does_not_dereference_other_binding_or_future_attempts
+FAILED qualification/experiment-interface-v43-prospective-readiness/drafts/test_training_history_projection_v43.py::ProjectionTests::test_duplicate_profile_refuses
+FAILED qualification/experiment-interface-v43-prospective-readiness/drafts/test_training_history_projection_v43.py::ProjectionTests::test_metadata_pin_prevents_training_identity_substitution
+FAILED qualification/experiment-interface-v43-prospective-readiness/drafts/test_training_history_projection_v43.py::ProjectionTests::test_missing_profiles_on_future_arm_refuses
+FAILED qualification/experiment-interface-v43-prospective-readiness/drafts/test_training_history_projection_v43.py::ProjectionTests::test_no_profiles_is_allowed_only_for_training_arm
+FAILED qualification/experiment-interface-v43-prospective-readiness/drafts/test_training_history_projection_v43.py::ProjectionTests::test_profile_from_wrong_candidate_order_refuses
+FAILED qualification/experiment-interface-v43-prospective-readiness/drafts/test_training_history_projection_v43.py::ProjectionTests::test_recovers_exact_profiles_episodes_context_and_receipts
+FAILED qualification/experiment-interface-v43-prospective-readiness/drafts/test_training_history_projection_v43.py::ProjectionTests::test_tampered_authority_pin_refuses
+FAILED qualification/experiment-interface-v43-prospective-readiness/drafts/test_training_history_projection_v43.py::ProjectionTests::test_tampered_cas_refuses
+FAILED qualification/experiment-interface-v43-prospective-readiness/drafts/test_training_history_projection_v43.py::ProjectionTests::test_unknown_receipt_is_preserved_without_promotion
+11 failed in 0.11s

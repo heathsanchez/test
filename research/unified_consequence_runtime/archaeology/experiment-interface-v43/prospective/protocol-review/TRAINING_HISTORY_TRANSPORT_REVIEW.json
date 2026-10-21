@@ -1,0 +1,42 @@
+{
+  "adapter_sha256": "7eb6b2103cba6cc138efc4ad2a1198520996443b07c68dc99bdb8756d7d6dbef",
+  "archived_original_sha256": "3172f8a5d175d593b938db62a48db76437abbbe59c8432a91ea53488ef5f7b21",
+  "checks": {
+    "all_eleven_control_red_and_green_retained": true,
+    "all_projection_algorithms_exact_other_than_three_input_schemas": true,
+    "archived_source_exact_recovered_bytes": true,
+    "archived_source_pin_matches": true,
+    "data_only_tests_only_module_path_and_three_schemas_changed": true,
+    "exact_three_schema_bindings": true
+  },
+  "control_tests_rerun": false,
+  "function_code_checks": {
+    "_pass": true,
+    "canonical": true,
+    "digest": true,
+    "main": true,
+    "project": true
+  },
+  "native_calls": 0,
+  "network_queries": 0,
+  "project_or_main_called": false,
+  "retained_data_only_control_counts": {
+    "green": {
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "tests": 11
+    },
+    "red": {
+      "errors": 0,
+      "failures": 11,
+      "skipped": 0,
+      "tests": 11
+    }
+  },
+  "schema": "UDM_V43_INDEPENDENT_TRAINING_HISTORY_TRANSPORT_REVIEW_V1",
+  "scope": "Independent import/code-object comparison and raw retained JUnit inspection only. Original projection transport is not a native verifier or reference monitor.",
+  "status": "PASS_LITERAL_ONLY_TRANSPORT",
+  "target_source_reads": 0,
+  "test_sha256": "20f5d11da22124f5b6dd0ff3e3bba65eb4627e6056f1cff2fa762e4fa301e11f"
+}

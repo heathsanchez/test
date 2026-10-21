@@ -1,0 +1,549 @@
+name: Committed native developmental selection v4.3 reproduction
+
+# Explicit dispatch or marked research commit only. Prepared protocols remain ineligible.
+# Operational ceilings are declared before prospective queries: process 10800s, job 210min.
+# Scientific budgets remain 8 proposals / 128 unique training calls / 512 native calls / 3600 charged seconds per arm.
+on:
+  push:
+    branches: [research/udm-experiment-interface-v43-20261022]
+  workflow_dispatch:
+    inputs:
+      expected_source_commit:
+        description: Exact 40-character commit of this dispatched branch
+        required: true
+        type: string
+
+env:
+  GIT_OPTIONAL_LOCKS: '0'
+
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: udm-prospective-native-selection-v43-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  native-developmental-selection-v43:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[qualify-native-v43]')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 210
+    env:
+      GIT_OPTIONAL_LOCKS: '0'
+      PYTHONDONTWRITEBYTECODE: '1'
+      PYTHONUNBUFFERED: '1'
+      PYTHONPATH: /workspace/udm-v54
+      UDM_REPO: /workspace/udm-v54
+      UDM_COMPONENTS: /workspace/components
+      UDM_SOURCE_REPOS: /workspace/repos
+      UDM_EVIDENCE: /workspace/qualification/native-frontier-v43-ci-${{ github.run_id }}-${{ github.run_attempt }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.14'
+      - name: Create a real canonical checkout of the exact dispatched source
+        env:
+          EXPECTED_SOURCE_COMMIT: ${{ inputs.expected_source_commit || github.sha }}
+        run: |
+          export GIT_OPTIONAL_LOCKS=0
+          set -euo pipefail
+          test "$EXPECTED_SOURCE_COMMIT" = "$GITHUB_SHA"
+          sudo install -d -o "$(id -u)" -g "$(id -g)" /workspace
+          test ! -e "$UDM_REPO"
+          mkdir -p "$UDM_EVIDENCE"
+          python -B - <<'PY_CLONE'
+          import hashlib,json,os,subprocess
+          from pathlib import Path
+          from research.unified_consequence_runtime.audit_index_v4 import snapshot_indexes,compare_indexes
+          root=Path(os.environ['GITHUB_WORKSPACE']);out=Path(os.environ['UDM_EVIDENCE'])
+          def retain(value,destination):
+              destination.mkdir()
+              for number,row in enumerate(value['indexes']):
+                  if row['exists']:
+                      raw=Path(row['path']).read_bytes()
+                      if hashlib.sha256(raw).hexdigest()!=row['sha256']:raise ValueError('index changed during retention')
+                      (destination/(str(number)+'.bytes')).write_bytes(raw)
+              (destination/'SNAPSHOT.json').write_text(json.dumps(value,sort_keys=True)+'\n')
+          before=snapshot_indexes(root);retain(before,out/'ACTIONS_CHECKOUT_INDEX_BEFORE_CLONE')
+          try:
+              subprocess.run(['git','clone','--no-hardlinks',str(root),os.environ['UDM_REPO']],check=True)
+              subprocess.run(['git','-C',os.environ['UDM_REPO'],'remote','set-url','origin','https://github.com/heathsanchez/test'],check=True)
+              subprocess.run(['git','-C',os.environ['UDM_REPO'],'checkout','--detach',os.environ['GITHUB_SHA']],check=True)
+          finally:
+              after=snapshot_indexes(root);retain(after,out/'ACTIONS_CHECKOUT_INDEX_AFTER_CLONE')
+              changes=compare_indexes(before,after)
+              (out/'CLONE_INDEX_AUDIT.json').write_text(json.dumps({'before':before,'after':after,'changes':changes},sort_keys=True)+'\n')
+              if changes:raise ValueError('source index changed during deliberate canonical clone')
+          # Canonical checkout creation intentionally creates a new index. Retain its
+          # original bytes before the first subsequent read-only Git operation.
+          retain(snapshot_indexes(os.environ['UDM_REPO']),out/'INDEX_BEFORE_READS')
+          PY_CLONE
+          test "$(git -C "$UDM_REPO" rev-parse HEAD)" = "$GITHUB_SHA"
+          test ! -L "$UDM_REPO"
+          test -z "$(git -C "$UDM_REPO" status --porcelain)"
+          python -B - <<'PY'
+          import json, os
+          from pathlib import Path
+          if Path(os.environ['UDM_REPO']).resolve() != Path(os.environ['UDM_REPO']):
+              raise ValueError('canonical repository path contains a symlink')
+          evidence = Path(os.environ['UDM_EVIDENCE'])
+          (evidence/'CI_BOUNDARY.json').write_text(json.dumps({
+              'schema': 'UDM_NATIVE_SELECTION_CI_BOUNDARY_V43',
+              'mode': 'REPRODUCTION_OF_COMMITTED_PREOUTCOME_PROTOCOL',
+              'source_commit': os.environ['GITHUB_SHA'],
+              'canonical_repo': os.environ['UDM_REPO'],
+              'run_id': os.environ['GITHUB_RUN_ID'],
+              'run_attempt': os.environ['GITHUB_RUN_ATTEMPT'],
+              'new_metadata_selection': False,
+              'raw_independent_screening_future_reports_required': False,
+              'actual_coding_agent_in_CI': False,
+              'agent_boundary': 'A matched live coding agent must execute locally at original publication. This workflow reproduces native selection only; committed local transcripts or candidate replay do not constitute live model execution in CI.',
+              'prospective_boundary': 'Only the original pre-outcome commitments and first learner execution establish prospectivity; reproduction never restores untouchedness.',
+              'external_containment': 'UNKNOWN; no independent non-bypassable reference monitor claim',
+              'G4': 'UNKNOWN',
+              'job_timeout_minutes': 210,
+              'native_process_outer_timeout_seconds': 10800,
+              'scientific_budget_boundary': 'Original 8-proposal horizon, 128 unique training calls, 512 native calls and 3600 charged seconds per arm are unchanged.',
+              'interruption_boundary': 'A resource interruption is UNKNOWN; preserve partial native attempts and costs without promotion.'
+          }, sort_keys=True, indent=2)+'\n')
+          PY
+      - name: Prepare an isolated controller
+        working-directory: /workspace/udm-v54
+        run: |
+          export GIT_OPTIONAL_LOCKS=0
+          set -euo pipefail
+          python -B -m venv "$RUNNER_TEMP/native-selection-v43-controller"
+          "$RUNNER_TEMP/native-selection-v43-controller/bin/python" -B -m pip install \
+            --disable-pip-version-check --no-input pytest==8.3.5 packaging==26.3
+      - name: Require committed ready frontier and sealed public admission evidence
+        working-directory: /workspace/udm-v54
+        run: |
+          export GIT_OPTIONAL_LOCKS=0
+          set -euo pipefail
+          "$RUNNER_TEMP/native-selection-v43-controller/bin/python" -B - <<'PY'
+          import json, os
+          from pathlib import Path
+          from research.unified_consequence_runtime import qualify_native_frontier_v43 as q
+          evidence = Path(os.environ['UDM_EVIDENCE'])
+          result = {'schema': 'UDM_COMMITTED_FRONTIER_CI_READINESS_V43', 'status': 'UNKNOWN_PROTOCOL_NOT_READY',
+              'target_source_accessed': False, 'new_admission_screening_performed': False}
+          try:
+              value = q.protocol()
+              if value.get('state') != 'READY_TO_FREEZE_NO_LEARNER_SOURCE_ACCESS':
+                  raise ValueError('committed FRONTIER_PROTOCOL.json is not ready for native execution')
+              q.require_environment_gate(value)
+              screening = q.require_screening_manifest(value)
+              result.update(status='PASS_COMMITTED_READY_FRONTIER', requested_roles=value['requested_roles'],
+                  public_screening_cases=len(screening['reports']), screening_costs=screening['costs'],
+                  environment_gate=value['environment_gate'], interface_gate=value['interface_gate'],
+                  interface_archive_audit=value['interface_archive_audit'], screening_manifest=value['screening'])
+          except (ValueError, OSError, KeyError, TypeError) as error:
+              result['smallest_obstruction'] = type(error).__name__+': '+str(error)
+              raise
+          finally:
+              (evidence/'READINESS.json').write_text(json.dumps(result, sort_keys=True, indent=2)+'\n')
+          PY
+      - name: Prepare both fresh runtimes using the unchanged qualified bootstrap
+        working-directory: /workspace/udm-v54
+        run: |
+          export GIT_OPTIONAL_LOCKS=0
+          set -euo pipefail
+          "$RUNNER_TEMP/native-selection-v43-controller/bin/python" -B \
+            research/unified_consequence_runtime/archaeology/native-environment-v3/bootstrap/prepare_runtimes.py \
+            --catalog research/unified_consequence_runtime/archaeology/native-environment-v3/ENVIRONMENT_CATALOG.json \
+            --dest-root "$UDM_EVIDENCE/runtime-bootstrap" \
+            --out "$UDM_EVIDENCE/BARE_RUNTIME_PATHS.json" 2>&1 | tee "$UDM_EVIDENCE/runtime-bootstrap.log"
+      - name: Prepare the declared V43 profile and validate every runtime package before freeze
+        working-directory: /workspace/udm-v54
+        run: |
+          export GIT_OPTIONAL_LOCKS=0
+          set -euo pipefail
+          "$RUNNER_TEMP/native-selection-v43-controller/bin/python" -B \
+            research/unified_consequence_runtime/archaeology/native-authority-v41/bootstrap/prepare_profile.py \
+            --catalog research/unified_consequence_runtime/archaeology/native-authority-v41/ENVIRONMENT_CATALOG.json \
+            --runtimes "$UDM_EVIDENCE/BARE_RUNTIME_PATHS.json" \
+            --dest-root "$UDM_EVIDENCE/declared-modern-profile" \
+            --runtime-out "$UDM_EVIDENCE/RUNTIME_PATHS.json" \
+            --out "$UDM_EVIDENCE/PROFILE_PREPARATION.json" 2>&1 | tee "$UDM_EVIDENCE/profile-preparation.log"
+          "$RUNNER_TEMP/native-selection-v43-controller/bin/python" -B - <<'PY'
+          import json, os
+          from pathlib import Path
+          os.environ['GIT_OPTIONAL_LOCKS'] = '0'
+          from research.unified_consequence_runtime import qualify_native_frontier_v43 as q
+          evidence = Path(os.environ['UDM_EVIDENCE'])
+          catalog = json.loads(Path(q.CATALOG_PATH).read_text())
+          paths = json.loads((evidence/'RUNTIME_PATHS.json').read_text())
+          inventory = q.freeze_runtime_inventory(paths, catalog)
+          metadata = {}
+          for profile in catalog['profiles']:
+              record = inventory['runtimes'][profile['id']]
+              q.environment.validate_runtime(profile, record)
+              metadata[profile['id']] = q.environment.installed_package_identity(paths[profile['id']], profile)
+          (evidence/'RUNTIME_PROFILE_VALIDATION.json').write_text(q.canonical({
+              'schema': 'UDM_NATIVE_RUNTIME_PROFILE_VALIDATION_V43', 'inventory': inventory,
+              'installed_package_metadata': metadata, 'target_source_accessed': False})+'\n')
+          PY
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/test
+          ref: c9092fa57c8943e638f95689cd36e6a63310f41e
+          path: ci-stage/components/development
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/metatron
+          ref: b9d1b5cc10477188be6e55617699be60e70f6dad
+          path: ci-stage/components/metatron
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/realitygraph
+          ref: 50c43b14e7272469bc51ff7204dec07682a996d7
+          path: ci-stage/components/flash
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: ServiceNow/webarena-verified
+          ref: 6473f72db5dcefc97b5725b59e734504edc28a21
+          fetch-depth: 0
+          path: ci-stage/components/evaluator
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/triskelion
+          ref: 426c54f7c774560e0fabe7213c5ef333b1327c71
+          path: ci-stage/repos/triskelion
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/Minimal-Sufficient-Interface
+          ref: 56cfd7b523e3592cae4eafa5468f437ccb94dbe9
+          path: ci-stage/repos/msi
+          persist-credentials: false
+      - name: Install real pinned component checkouts and original method objects
+        working-directory: /workspace/udm-v54
+        run: |
+          export GIT_OPTIONAL_LOCKS=0
+          set -euo pipefail
+          test ! -e "$UDM_COMPONENTS"
+          test ! -e "$UDM_SOURCE_REPOS"
+          mv "$GITHUB_WORKSPACE/ci-stage/components" "$UDM_COMPONENTS"
+          mv "$GITHUB_WORKSPACE/ci-stage/repos" "$UDM_SOURCE_REPOS"
+          git clone --no-hardlinks "$UDM_REPO" "$UDM_SOURCE_REPOS/test"
+          git -C "$UDM_SOURCE_REPOS/test" checkout --detach "$GITHUB_SHA"
+          git -C "$UDM_SOURCE_REPOS/test" remote set-url origin https://github.com/heathsanchez/test
+          python -B - <<'PY_SOURCES'
+          import hashlib,json,os
+          from pathlib import Path
+          from research.unified_consequence_runtime.audit_index_v4 import snapshot_indexes
+          out=Path(os.environ['UDM_EVIDENCE'])/'SOURCE_INDEX_BEFORE_READS';out.mkdir()
+          roots={}
+          for variable in ('UDM_COMPONENTS','UDM_SOURCE_REPOS'):
+              for path in sorted(Path(os.environ[variable]).iterdir()):
+                  if path.is_symlink() or path.resolve()!=path:raise ValueError('canonical real source checkout required')
+                  roots[variable+':'+path.name]=str(path)
+          for key,path in roots.items():
+              snap=snapshot_indexes(path);target=out/key.replace(':','-');target.mkdir()
+              for number,row in enumerate(snap['indexes']):
+                  if row['exists']:
+                      raw=Path(row['path']).read_bytes()
+                      if hashlib.sha256(raw).hexdigest()!=row['sha256']:raise ValueError('source index changed during retention')
+                      (target/(str(number)+'.bytes')).write_bytes(raw)
+              (target/'SNAPSHOT.json').write_text(json.dumps(snap,sort_keys=True)+'\n')
+          (out/'ROOTS.json').write_text(json.dumps(roots,sort_keys=True)+'\n')
+          PY_SOURCES
+          git -C "$UDM_SOURCE_REPOS/test" fetch --no-tags --depth=1 origin \
+            13325089c471996b8b68f46540fd4ad449df752c \
+            52eb1e7995bd877a2b698efe1883ae2b80a03737 \
+            6031466188046f56b4660d772d13ad731ed4c0f2
+          git -C "$UDM_SOURCE_REPOS/msi" fetch --no-tags --depth=1 origin \
+            5d448c0ecc82ff3945d009963064ebbb67d2f308
+          python -B - <<'PY'
+          import json, os, subprocess
+          from pathlib import Path
+          rows = {}
+          for group in ('UDM_COMPONENTS', 'UDM_SOURCE_REPOS'):
+              for path in sorted(Path(os.environ[group]).iterdir()):
+                  if path.is_symlink(): raise ValueError('real source checkout required')
+                  if path.resolve() != path: raise ValueError('source checkout path contains a symlink')
+                  rows[str(path)] = subprocess.check_output(['git', '-C', str(path), 'rev-parse', 'HEAD'], text=True).strip()
+          (Path(os.environ['UDM_EVIDENCE'])/'COMPONENT_COMMITS.json').write_text(json.dumps(rows, sort_keys=True, indent=2)+'\n')
+          PY
+      - name: Independently hash-check original executable method objects before target release
+        working-directory: /workspace/udm-v54
+        run: |
+          set -euo pipefail
+          python -B - <<'PY_METHODS'
+          import ast,hashlib,json,os,re,subprocess
+          from pathlib import Path
+          folder=Path(os.environ['UDM_EVIDENCE']);research=Path(os.environ['UDM_REPO'])/'research/unified_consequence_runtime'
+          definitions=(('consequence_selection.py','SOURCE_PINS'),('developmental_choice.py','SOURCE_PIN'),('decisive_native.py','POLICY_PIN'))
+          pins=[]
+          for name,variable in definitions:
+              node=next(n for n in ast.parse((research/name).read_text()).body if isinstance(n,ast.Assign) and any(isinstance(t,ast.Name) and t.id==variable for t in n.targets))
+              value=ast.literal_eval(node.value)
+              for pin in (list(value.values()) if variable=='SOURCE_PINS' else [value]):pins.append({'declared_in':name,'pin':pin})
+          pins.append({'declared_in':'archaeology/recursive-frontier/EXPERIMENT.json','pin':json.loads((research/'archaeology/recursive-frontier/EXPERIMENT.json').read_text())['constructor_language']})
+          repository_map={'heathsanchez/test':'test','heathsanchez/Minimal-Sufficient-Interface':'msi','heathsanchez/triskelion':'triskelion'}
+          rows=[];errors=[];objects=folder/'original-method-objects';objects.mkdir()
+          for row in pins:
+              pin=row['pin'];short=pin.get('repo') or repository_map[pin['repository']]
+              if short not in ('test','msi','triskelion') or not re.fullmatch('[0-9a-f]{40}',pin['commit']):raise ValueError('unexpected original method authority')
+              root=Path(os.environ['UDM_SOURCE_REPOS'])/short
+              process=subprocess.run(['git','--no-replace-objects','-C',str(root),'show',pin['commit']+':'+pin['path']],capture_output=True)
+              actual=hashlib.sha256(process.stdout).hexdigest()
+              result={**row,'checkout':str(root),'returncode':process.returncode,'sha256':actual}
+              if process.returncode or actual!=pin['sha256']:errors.append(result)
+              else:
+                  target=objects/(short+'-'+pin['commit']+'-'+Path(pin['path']).name);target.write_bytes(process.stdout)
+                  result['archive_path']=target.relative_to(folder).as_posix()
+              rows.append(result)
+          (folder/'ORIGINAL_METHOD_PREFLIGHT.json').write_text(json.dumps({'schema':'UDM_V43_ORIGINAL_METHOD_PREFLIGHT_V1','status':'PASS_EXACT_ORIGINAL_METHOD_OBJECTS' if not errors else 'UNKNOWN_ORIGINAL_METHOD_OBJECTS','objects':rows,'errors':errors,'target_source_accessed':False},sort_keys=True,indent=2)+'\n')
+          if errors:raise ValueError('original method objects unavailable before target release')
+          PY_METHODS
+      - name: Freeze fresh runner-local identities and exact committed source
+        working-directory: /workspace/udm-v54
+        run: |
+          export GIT_OPTIONAL_LOCKS=0
+          set -euo pipefail
+          "$RUNNER_TEMP/native-selection-v43-controller/bin/python" -B \
+            -m research.unified_consequence_runtime.qualify_native_frontier_v43 \
+            --write-freeze --repo /workspace/udm-v54 \
+            --runtimes "$UDM_EVIDENCE/RUNTIME_PATHS.json" --out "$UDM_EVIDENCE/FREEZE.json" \
+            2>&1 | tee "$UDM_EVIDENCE/freeze.log"
+      - name: Execute native MSI V104 developmental selection and actual counterfactuals
+        working-directory: /workspace/udm-v54
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          export GIT_OPTIONAL_LOCKS=0
+          set -euo pipefail
+          set +e
+          timeout --signal=INT --kill-after=60s 10800s \
+            "$RUNNER_TEMP/native-selection-v43-controller/bin/python" -B \
+            -m research.unified_consequence_runtime.qualify_native_frontier_v43 \
+            --repo /workspace/udm-v54 --freeze "$UDM_EVIDENCE/FREEZE.json" \
+            --components /workspace/components --source-repos /workspace/repos \
+            --out "$UDM_EVIDENCE/run" 2>&1 | tee "$UDM_EVIDENCE/native-selection.log"
+          native_status=${PIPESTATUS[0]}
+          set -e
+          printf '%s\n' "$native_status" > "$UDM_EVIDENCE/NATIVE_EXIT_CODE.txt"
+          exit "$native_status"
+      - name: Assess actual scientific result without promoting UNKNOWN or pending agent arms
+        if: ${{ always() }}
+        run: |
+          export GIT_OPTIONAL_LOCKS=0
+          python -B - <<'PY'
+          import json, os
+          from pathlib import Path
+          folder = Path(os.environ['UDM_EVIDENCE']); folder.mkdir(parents=True, exist_ok=True)
+          path = folder/'run/RESULT.json'
+          assessment = {'schema': 'UDM_NATIVE_SELECTION_CI_ASSESSMENT_V43',
+              'mode': 'REPRODUCTION_OF_COMMITTED_PREOUTCOME_PROTOCOL',
+              'status': 'UNKNOWN_NO_COMPLETE_NATIVE_RESULT', 'G2': 'UNKNOWN', 'G3': 'UNKNOWN',
+              'G4': 'UNKNOWN', 'G5': 'UNKNOWN', 'G6': 'UNKNOWN',
+              'actual_coding_agent_in_CI': False, 'agent_status': 'PENDING_ACTUAL_EXECUTION'}
+          if path.is_file():
+              result = json.loads(path.read_text())
+              assessment.update(native_status=result.get('status'),
+                  smallest_obstruction=result.get('smallest_obstruction'),
+                  native_verdicts=result.get('verdicts'), total_wall_seconds=result.get('total_wall_seconds'),
+                  agent_status=result.get('agent_comparator', {}).get('execution_status',
+                      result.get('agent_comparator', {}).get('status', 'PENDING_ACTUAL_EXECUTION')),
+                  measured_conditions=result.get('conditions'), measured_future_results=result.get('future_results'),
+                  machine_costs=result.get('machine_costs'), screening_costs=result.get('screening_costs'))
+              verdicts = result.get('verdicts', {})
+              if (result.get('status') == 'BOUNDED_NATIVE_POLICY_SELECTION_ONLY'
+                      and verdicts.get('G2') == 'WARRANTED_BOUNDED_PROSPECTIVE_NATIVE_POLICY_SELECTION'
+                      and result.get('physical_removal', {}).get('status') == 'WARRANTED_BOUNDED_PHYSICAL_REMOVAL_COLD_FAILURE'
+                      and result.get('retention', {}).get('original_prefix_preserved') is True
+                      and verdicts.get('G4') == 'UNKNOWN'
+                      and all(str(verdicts.get(key, '')).startswith('UNKNOWN') for key in ('G3', 'G5', 'G6'))):
+                  assessment.update(status='PASS_REPRODUCED_BOUNDED_NATIVE_G2',
+                      G2='REPRODUCED_BOUNDED_NATIVE_POLICY_SELECTION; PROSPECTIVITY_REQUIRES_ORIGINAL_PREOUTCOME_LINEAGE')
+              else:
+                  assessment['status'] = 'UNKNOWN_NATIVE_DEVELOPMENTAL_SELECTION'
+          (folder/'CI_ASSESSMENT.json').write_text(json.dumps(assessment, sort_keys=True, indent=2)+'\n')
+          summary = Path(os.environ['GITHUB_STEP_SUMMARY'])
+          with summary.open('a') as stream:
+              stream.write('Native developmental selection v4.3: '+assessment['status']+'\n\n')
+              stream.write('Mode: reproduction of committed pre-outcome protocol. G4 remains UNKNOWN; no coding agent ran in CI.\n\n')
+              stream.write('First remaining obstruction: '+str(assessment.get('smallest_obstruction', assessment['status']))+'\n')
+          print(json.dumps({key: assessment[key] for key in ('status', 'G2', 'G3', 'G4', 'G5', 'G6', 'agent_status')}, sort_keys=True))
+          if assessment['status'] != 'PASS_REPRODUCED_BOUNDED_NATIVE_G2': raise SystemExit(1)
+          PY
+      - name: Archive exact source, original methods, native packets, states and all costs
+        if: ${{ always() }}
+        run: |
+          export GIT_OPTIONAL_LOCKS=0
+          python -B - <<'PY'
+          import ast, hashlib, json, os, subprocess, tarfile
+          from pathlib import Path
+          folder = Path(os.environ['UDM_EVIDENCE']); folder.mkdir(parents=True, exist_ok=True)
+          repo = Path(os.environ['UDM_REPO']); errors = []; packs = folder/'source-packs'; packs.mkdir(exist_ok=True)
+          source_manifests = []
+          def _archive(root, name, *paths, revision='HEAD'):
+              if not (root/'.git').exists():
+                  errors.append({'archive':name,'error':'UNKNOWN_MISSING_SOURCE_CHECKOUT'});return
+              target=packs/name
+              process=subprocess.run(['git','--no-replace-objects','-C',str(root),'-c','tar.umask=022','archive','--format=tar.gz','--output='+str(target),revision,*paths],capture_output=True)
+              if process.returncode:
+                  errors.append({'archive':name,'returncode':process.returncode});return
+              tree=subprocess.check_output(['git','--no-replace-objects','-C',str(root),'ls-tree','-r','-z',revision,'--',*paths])
+              expected={}
+              for entry in tree.split(b'\0'):
+                  if not entry:continue
+                  header,raw_name=entry.split(b'\t');mode,kind,oid=header.decode().split();source_name=raw_name.decode()
+                  if kind!='blob' or mode not in ('100644','100755','120000'):raise ValueError('unsupported original source topology')
+                  expected[source_name]={'mode':mode,'blob_oid':oid}
+              actual={}
+              with tarfile.open(target,'r:gz') as packet:
+                  for member in packet:
+                      if member.isdir():continue
+                      if member.name in actual or member.name not in expected:raise ValueError('unmanifested original source archive member')
+                      coordinate=expected[member.name]
+                      if coordinate['mode']=='120000':
+                          if not member.issym():raise ValueError('original symlink topology changed')
+                          raw=member.linkname.encode()
+                      else:
+                          if not member.isfile() or '100'+format(member.mode,'03o')!=coordinate['mode']:raise ValueError('original source mode changed')
+                          raw=packet.extractfile(member).read()
+                      oid=hashlib.sha1(b'blob '+str(len(raw)).encode()+b'\0'+raw).hexdigest()
+                      if oid!=coordinate['blob_oid']:raise ValueError('source archive bytes differ from original Git blob')
+                      actual[member.name]={**coordinate,'sha256':hashlib.sha256(raw).hexdigest(),'bytes':len(raw)}
+              if set(actual)!=set(expected):raise ValueError('source archive omitted original Git blobs')
+              source_manifests.append({'checkout':str(root),'revision':revision,'archive_path':target.relative_to(folder).as_posix(),'sha256':hashlib.sha256(target.read_bytes()).hexdigest(),'files':actual})
+          def archive(root,name,*paths,revision='HEAD'):
+              try:return _archive(root,name,*paths,revision=revision)
+              except (OSError,ValueError,subprocess.SubprocessError,tarfile.TarError) as error:
+                  errors.append({'archive':name,'error':type(error).__name__+': '+str(error)})
+          archive(repo, 'UDM_SOURCE.tar.gz')
+          for variable in ('UDM_COMPONENTS', 'UDM_SOURCE_REPOS'):
+              root = Path(os.environ[variable])
+              if root.exists():
+                  for path in sorted(root.iterdir()):
+                      if path.is_dir() and not path.is_symlink(): archive(path, variable.lower()+'-'+path.name+'.tar.gz')
+          objects = []
+          if repo.exists():
+              research = repo/'research/unified_consequence_runtime'
+              definitions = (('consequence_selection.py', 'SOURCE_PINS'),
+                             ('developmental_choice.py', 'SOURCE_PIN'), ('decisive_native.py', 'POLICY_PIN'))
+              for name, variable in definitions:
+                  try:
+                      node = next(node for node in ast.parse((research/name).read_text()).body
+                          if isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and t.id == variable for t in node.targets))
+                      value = ast.literal_eval(node.value)
+                      pins = list(value.values()) if variable == 'SOURCE_PINS' else [value]
+                      for pin in pins:
+                          short = pin.get('repo', 'msi' if pin.get('repository', '').endswith('Minimal-Sufficient-Interface') else 'test')
+                          root = Path(os.environ['UDM_SOURCE_REPOS'])/short
+                          process = subprocess.run(['git', '--no-replace-objects', '-C', str(root), 'show', pin['commit']+':'+pin['path']], capture_output=True)
+                          actual = hashlib.sha256(process.stdout).hexdigest()
+                          if process.returncode or actual != pin['sha256']: raise ValueError('original source object not available or hash differs')
+                          target = packs/(pin['commit']+'-'+Path(pin['path']).name)
+                          target.write_bytes(process.stdout)
+                          objects.append({'pin': pin, 'archive_path': target.relative_to(folder).as_posix(), 'sha256': actual})
+                  except (OSError, ValueError, StopIteration, SyntaxError) as error:
+                      errors.append({'source': name, 'error': type(error).__name__+': '+str(error)})
+          (folder/'ORIGINAL_METHOD_OBJECTS.json').write_text(json.dumps({'objects': objects, 'errors': errors}, sort_keys=True, indent=2)+'\n')
+          preflight=folder/'ORIGINAL_METHOD_PREFLIGHT.json'
+          if preflight.is_file():
+              historical=json.loads(preflight.read_text())
+              seen=set()
+              for row in historical['objects']:
+                  pin=row['pin'];root=Path(row['checkout']);key=(str(root),pin['commit'])
+                  if key not in seen:
+                      archive(root,'method-'+root.name+'-'+pin['commit']+'.tar.gz',revision=pin['commit']);seen.add(key)
+          else:errors.append({'method_preflight':'UNKNOWN_MISSING_METHOD_PREFLIGHT'})
+          (folder/'SOURCE_ARCHIVE_MANIFESTS.json').write_text(json.dumps({'schema':'UDM_V43_FULL_ORIGINAL_SOURCE_ARCHIVES_V1','archives':source_manifests,'errors':errors},sort_keys=True)+'\n')
+          from research.unified_consequence_runtime.audit_index_v4 import snapshot_indexes,compare_indexes
+          initial=folder/'INDEX_BEFORE_READS/SNAPSHOT.json'
+          if initial.is_file():
+              before=json.loads(initial.read_text());after=snapshot_indexes(repo)
+              retained=folder/'INDEX_AFTER_READS';retained.mkdir(exist_ok=False)
+              for number,row in enumerate(after['indexes']):
+                  if row['exists']:
+                      raw=Path(row['path']).read_bytes()
+                      if hashlib.sha256(raw).hexdigest()!=row['sha256']:
+                          raise ValueError('index changed during final raw-byte retention')
+                      (retained/(str(number)+'.bytes')).write_bytes(raw)
+              (retained/'SNAPSHOT.json').write_text(json.dumps(after,sort_keys=True)+'\n')
+              changes=compare_indexes(before,after)
+              (folder/'INDEX_INTERVAL_AUDIT.json').write_text(json.dumps({'before':before,'after':after,'changes':changes},sort_keys=True)+'\n')
+              if changes:errors.append({'index_audit':'INDEX_BYTES_CHANGED','changes':changes})
+          else:errors.append({'index_audit':'UNKNOWN_MISSING_INITIAL_RAW_BYTE_SNAPSHOT'})
+          source_indexes=folder/'SOURCE_INDEX_BEFORE_READS'
+          roots_path=source_indexes/'ROOTS.json';source_index_audits=[]
+          if roots_path.is_file():
+              for key,source_root in json.loads(roots_path.read_text()).items():
+                  before=json.loads((source_indexes/key.replace(':','-')/'SNAPSHOT.json').read_text())
+                  after=snapshot_indexes(source_root);destination=folder/'SOURCE_INDEX_AFTER_READS'/key.replace(':','-');destination.mkdir(parents=True)
+                  for number,row in enumerate(after['indexes']):
+                      if row['exists']:
+                          raw=Path(row['path']).read_bytes()
+                          if hashlib.sha256(raw).hexdigest()!=row['sha256']:raise ValueError('source index changed during retention')
+                          (destination/(str(number)+'.bytes')).write_bytes(raw)
+                  (destination/'SNAPSHOT.json').write_text(json.dumps(after,sort_keys=True)+'\n')
+                  changes=compare_indexes(before,after);source_index_audits.append({'root':source_root,'changes':changes})
+                  if changes:errors.append({'source_index_audit':key,'changes':changes})
+          else:errors.append({'source_index_audit':'UNKNOWN_MISSING_COMPONENT_SOURCE_INDEX_SNAPSHOTS'})
+          (folder/'SOURCE_INDEX_INTERVAL_AUDIT.json').write_text(json.dumps(source_index_audits,sort_keys=True)+'\n')
+          excluded = {'.git', 'venv', 'miniconda-base', 'wheels'}
+          entries = {}; symlinks = {}
+          for root, directories, names in os.walk(folder, followlinks=False):
+              for name in list(directories):
+                  path = Path(root)/name
+                  if path.is_symlink(): symlinks[path.relative_to(folder).as_posix()] = os.readlink(path)
+              directories[:] = sorted(name for name in directories if name not in excluded
+                  and not name.startswith('.venv') and not (Path(root)/name).is_symlink())
+              for name in sorted(names):
+                  path = Path(root)/name; relative = path.relative_to(folder).as_posix()
+                  if path.is_symlink(): symlinks[relative] = os.readlink(path)
+                  elif path.is_file() and name not in {'MANIFEST.json', 'NATIVE_SELECTION_V43_EVIDENCE.tar.gz'}: entries[relative] = path
+          files = {name: {'sha256': hashlib.sha256(path.read_bytes()).hexdigest(), 'bytes': path.stat().st_size}
+                   for name, path in sorted(entries.items())}
+          packet = folder/'NATIVE_SELECTION_V43_EVIDENCE.tar.gz'
+          with tarfile.open(packet, 'w:gz') as bundle:
+              for name, path in sorted(entries.items()): bundle.add(path, arcname=name, recursive=False)
+              for name in sorted(symlinks): bundle.add(folder/name, arcname=name, recursive=False)
+          verified = set()
+          with tarfile.open(packet, 'r:gz') as bundle:
+              for member in bundle:
+                  if member.name in verified: raise ValueError('duplicate evidence archive member')
+                  verified.add(member.name)
+                  if member.name in symlinks:
+                      if not member.issym() or member.linkname != symlinks[member.name]:
+                          raise ValueError('evidence symlink identity changed')
+                  elif member.name in files:
+                      source = bundle.extractfile(member)
+                      if source is None or hashlib.sha256(source.read()).hexdigest() != files[member.name]['sha256']:
+                          raise ValueError('archived evidence bytes differ from manifest')
+                  else: raise ValueError('unmanifested evidence archive member')
+          if verified != set(files) | set(symlinks): raise ValueError('evidence archive omitted a manifest member')
+          manifest = {'schema': 'UDM_NATIVE_SELECTION_EVIDENCE_MANIFEST_V43', 'source_commit': os.environ['GITHUB_SHA'],
+              'run_id': os.environ['GITHUB_RUN_ID'], 'run_attempt': os.environ['GITHUB_RUN_ATTEMPT'],
+              'mode': 'REPRODUCTION_OF_COMMITTED_PREOUTCOME_PROTOCOL', 'files': files, 'symlinks': symlinks,
+              'packet': {'path': packet.name, 'sha256': hashlib.sha256(packet.read_bytes()).hexdigest(), 'bytes': packet.stat().st_size},
+              'archive_member_readback_verification': {'status': 'PASS_EXACT_MANIFEST_MEMBERS_AND_BYTES', 'members': len(verified)},
+              'excluded_runtime_directories': sorted(excluded), 'archive_errors': errors,
+              'boundary': 'Raw native/source/state/evidence/cost packets retained; executable venvs, Git object stores and runtime installer trees are omitted. Exact source/runtime identities and recipes remain in evidence.'}
+          (folder/'MANIFEST.json').write_text(json.dumps(manifest, sort_keys=True, indent=2)+'\n')
+          if errors:
+              raise ValueError('Source or index archival authority incomplete; retained failure evidence')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: ${{ always() }}
+        with:
+          name: prospective-native-selection-v43-${{ github.sha }}-${{ github.run_attempt }}
+          path: |
+            ${{ env.UDM_EVIDENCE }}/*.json
+            ${{ env.UDM_EVIDENCE }}/*.txt
+            ${{ env.UDM_EVIDENCE }}/*.log
+            ${{ env.UDM_EVIDENCE }}/NATIVE_SELECTION_V43_EVIDENCE.tar.gz
+          include-hidden-files: true
+          retention-days: 90

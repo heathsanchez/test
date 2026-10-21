@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="10" skipped="0" tests="10" time="0.079" timestamp="2026-10-21T22:07:08.559850+00:00" hostname="8ac9339af51c"><testcase classname="qualification.experiment-interface-v43-prospective-readiness.test_watcher_telemetry" name="test_unserved_launch_never_counts_as_agent_or_native_execution[events0-False]" time="0.003"><failure message="AssertionError: separate watcher telemetry is absent&#10;assert False&#10; +  where False = hasattr(&lt;module '_watcher_telemetry_control' from '/workspace/qualification/experiment-interface-v43-prospective-readiness/watch_actual_agent.py'&gt;, '_execution_telemetry')">qualification/experiment-interface-v43-prospective-readiness/test_watcher_telemetry.py:28: in test_unserved_launch_never_counts_as_agent_or_native_execution
+    value=classify(events,meter(),meter(),started)
+qualification/experiment-interface-v43-prospective-readiness/test_watcher_telemetry.py:13: in classify
+    assert hasattr(module,'_execution_telemetry'), 'separate watcher telemetry is absent'
+E   AssertionError: separate watcher telemetry is absent
+E   assert False
+E    +  where False = hasattr(&lt;module '_watcher_telemetry_control' from '/workspace/qualification/experiment-interface-v43-prospective-readiness/watch_actual_agent.py'&gt;, '_execution_telemetry')</failure></testcase><testcase classname="qualification.experiment-interface-v43-prospective-readiness.test_watcher_telemetry" name="test_unserved_launch_never_counts_as_agent_or_native_execution[events1-True]" time="0.001"><failure message="AssertionError: separate watcher telemetry is absent&#10;assert False&#10; +  where False = hasattr(&lt;module '_watcher_telemetry_control' from '/workspace/qualification/experiment-interface-v43-prospective-readiness/watch_actual_agent.py'&gt;, '_execution_telemetry')">qualification/experiment-interface-v43-prospective-readiness/test_watcher_telemetry.py:28: in test_unserved_launch_never_counts_as_agent_or_native_execution
+    value=classify(events,meter(),meter(),started)
+qualification/experiment-interface-v43-prospective-readiness/test_watcher_telemetry.py:13: in classify
+    assert hasattr(module,'_execution_telemetry'), 'separate watcher telemetry is absent'
+E   AssertionError: separate watcher telemetry is absent
+E   assert False
+E    +  where False = hasattr(&lt;module '_watcher_telemetry_control' from '/workspace/qualification/experiment-interface-v43-prospective-readiness/watch_actual_agent.py'&gt;, '_execution_telemetry')</failure></testcase><testcase classname="qualification.experiment-interface-v43-prospective-readiness.test_watcher_telemetry" name="test_unserved_launch_never_counts_as_agent_or_native_execution[events2-True]" time="0.001"><failure message="AssertionError: separate watcher telemetry is absent&#10;assert False&#10; +  where False = hasattr(&lt;module '_watcher_telemetry_control' from '/workspace/qualification/experiment-interface-v43-prospective-readiness/watch_actual_agent.py'&gt;, '_execution_telemetry')">qualification/experiment-interface-v43-prospective-readiness/test_watcher_telemetry.py:28: in test_unserved_launch_never_counts_as_agent_or_native_execution
+    value=classify(events,meter(),meter(),started)
+qualification/experiment-interface-v43-prospective-readiness/test_watcher_telemetry.py:13: in classify
+    assert hasattr(module,'_execution_telemetry'), 'separate watcher telemetry is absent'
+E   AssertionError: separate watcher telemetry is absent
+E   assert False
+E    +  where False = hasattr(&lt;module '_watcher_telemetry_control' from '/workspace/qualification/experiment-interface-v43-prospective-readiness/watch_actual_agent.py'&gt;, '_execution_telemetry')</failure></testcase><testcase classname="qualification.experiment-interface-v43-prospective-readiness.test_watcher_telemetry" name="test_observed_model_without_native_candidate_is_not_an_executed_comparator[event0]" time="0.001"><failure message="AssertionError: separate watcher telemetry is absent&#10;assert False&#10; +  where False = hasattr(&lt;module '_watcher_telemetry_control' from '/workspace/qualification/experiment-interface-v43-prospective-readiness/watch_actual_agent.py'&gt;, '_execution_telemetry')">qualification/experiment-interface-v43-prospective-readiness/test_watcher_telemetry.py:37: in test_observed_model_without_native_candidate_is_not_an_executed_comparator
+    value=classify([event],meter(),meter())
+qualification/experiment-interface-v43-prospective-readiness/test_watcher_telemetry.py:13: in classify
+    assert hasattr(module,'_execution_telemetry'), 'separate watcher telemetry is absent'
+E   AssertionError: separate watcher telemetry is absent
+E   assert False
+E    +  where False = hasattr(&lt;module '_watcher_telemetry_control' from '/workspace/qualification/experiment-interface-v43-prospective-readiness/watch_actual_agent.py'&gt;, '_execution_telemetry')</failure></testcase><testcase classname="qualification.experiment-interface-v43-prospective-readiness.test_watcher_telemetry" name="test_observed_model_without_native_candidate_is_not_an_executed_comparator[event1]" time="0.001"><failure message="AssertionError: separate watcher telemetry is absent&#10;assert False&#10; +  where False = hasattr(&lt;module '_watcher_telemetry_control' from '/workspace/qualification/experiment-interface-v43-prospective-readiness/watch_actual_agent.py'&gt;, '_execution_telemetry')">qualification/experiment-interface-v43-prospective-readiness/test_watcher_telemetry.py:37: in test_observed_model_without_native_candidate_is_not_an_executed_comparator
+    value=classify([event],meter(),meter())
+qualification/experiment-interface-v43-prospective-readiness/test_watcher_telemetry.py:13: in classify
+    assert hasattr(module,'_execution_telemetry'), 'separate watcher telemetry is absent'
+E   AssertionError: separate watcher telemetry is absent
+E   assert False
+E    +  where False = hasattr(&lt;module '_watcher_telemetry_control' from '/workspace/qualification/experiment-interface-v43-prospective-readiness/watch_actual_agent.py'&gt;, '_execution_telemetry')</failure></testcase><testcase classname="qualification.experiment-interface-v43-prospective-readiness.test_watcher_telemetry" name="test_only_new_meter_attempt_with_positive_native_launch_counts_as_candidate_execution" time="0.002"><failure message="AssertionError: separate watcher telemetry is absent&#10;assert False&#10; +  where False = hasattr(&lt;module '_watcher_telemetry_control' from '/workspace/qualification/experiment-interface-v43-prospective-readiness/watch_actual_agent.py'&gt;, '_execution_telemetry')">qualification/experiment-interface-v43-prospective-readiness/test_watcher_telemetry.py:46: in test_only_new_meter_attempt_with_positive_native_launch_counts_as_candidate_execution
+    value=classify([model()],before,after)
+qualification/experiment-interface-v43-prospective-readiness/test_watcher_telemetry.py:13: in classify
+    assert hasattr(module,'_execution_telemetry'), 'separate watcher telemetry is absent'
+E   AssertionError: separate watcher telemetry is absent
+E   assert False
+E    +  where False = hasattr(&lt;module '_watcher_telemetry_control' from '/workspace/qualification/experiment-interface-v43-prospective-readiness/watch_actual_agent.py'&gt;, '_execution_telemetry')</failure></testcase><testcase classname="qualification.experiment-interface-v43-prospective-readiness.test_watcher_telemetry" name="test_boolean_negative_or_zero_calls_do_not_count_as_native_launch[True]" time="0.001"><failure message="AssertionError: separate watcher telemetry is absent&#10;assert False&#10; +  where False = hasattr(&lt;module '_watcher_telemetry_control' from '/workspace/qualification/experiment-interface-v43-prospective-readiness/watch_actual_agent.py'&gt;, '_execution_telemetry')">qualification/experiment-interface-v43-prospective-readiness/test_watcher_telemetry.py:56: in test_boolean_negative_or_zero_calls_do_not_count_as_native_launch
+    value=classify([model()],before,after)
+qualification/experiment-interface-v43-prospective-readiness/test_watcher_telemetry.py:13: in classify
+    assert hasattr(module,'_execution_telemetry'), 'separate watcher telemetry is absent'
+E   AssertionError: separate watcher telemetry is absent
+E   assert False
+E    +  where False = hasattr(&lt;module '_watcher_telemetry_control' from '/workspace/qualification/experiment-interface-v43-prospective-readiness/watch_actual_agent.py'&gt;, '_execution_telemetry')</failure></testcase><testcase classname="qualification.experiment-interface-v43-prospective-readiness.test_watcher_telemetry" name="test_boolean_negative_or_zero_calls_do_not_count_as_native_launch[-1]" time="0.001"><failure message="AssertionError: separate watcher telemetry is absent&#10;assert False&#10; +  where False = hasattr(&lt;module '_watcher_telemetry_control' from '/workspace/qualification/experiment-interface-v43-prospective-readiness/watch_actual_agent.py'&gt;, '_execution_telemetry')">qualification/experiment-interface-v43-prospective-readiness/test_watcher_telemetry.py:56: in test_boolean_negative_or_zero_calls_do_not_count_as_native_launch
+    value=classify([model()],before,after)
+qualification/experiment-interface-v43-prospective-readiness/test_watcher_telemetry.py:13: in classify
+    assert hasattr(module,'_execution_telemetry'), 'separate watcher telemetry is absent'
+E   AssertionError: separate watcher telemetry is absent
+E   assert False
+E    +  where False = hasattr(&lt;module '_watcher_telemetry_control' from '/workspace/qualification/experiment-interface-v43-prospective-readiness/watch_actual_agent.py'&gt;, '_execution_telemetry')</failure></testcase><testcase classname="qualification.experiment-interface-v43-prospective-readiness.test_watcher_telemetry" name="test_boolean_negative_or_zero_calls_do_not_count_as_native_launch[0]" time="0.001"><failure message="AssertionError: separate watcher telemetry is absent&#10;assert False&#10; +  where False = hasattr(&lt;module '_watcher_telemetry_control' from '/workspace/qualification/experiment-interface-v43-prospective-readiness/watch_actual_agent.py'&gt;, '_execution_telemetry')">qualification/experiment-interface-v43-prospective-readiness/test_watcher_telemetry.py:56: in test_boolean_negative_or_zero_calls_do_not_count_as_native_launch
+    value=classify([model()],before,after)
+qualification/experiment-interface-v43-prospective-readiness/test_watcher_telemetry.py:13: in classify
+    assert hasattr(module,'_execution_telemetry'), 'separate watcher telemetry is absent'
+E   AssertionError: separate watcher telemetry is absent
+E   assert False
+E    +  where False = hasattr(&lt;module '_watcher_telemetry_control' from '/workspace/qualification/experiment-interface-v43-prospective-readiness/watch_actual_agent.py'&gt;, '_execution_telemetry')</failure></testcase><testcase classname="qualification.experiment-interface-v43-prospective-readiness.test_watcher_telemetry" name="test_reset_changed_binding_or_missing_initial_meter_is_unknown" time="0.001"><failure message="AssertionError: separate watcher telemetry is absent&#10;assert False&#10; +  where False = hasattr(&lt;module '_watcher_telemetry_control' from '/workspace/qualification/experiment-interface-v43-prospective-readiness/watch_actual_agent.py'&gt;, '_execution_telemetry')">qualification/experiment-interface-v43-prospective-readiness/test_watcher_telemetry.py:63: in test_reset_changed_binding_or_missing_initial_meter_is_unknown
+    assert classify([model()],before,after)['native_candidate_execution'] is False
+qualification/experiment-interface-v43-prospective-readiness/test_watcher_telemetry.py:13: in classify
+    assert hasattr(module,'_execution_telemetry'), 'separate watcher telemetry is absent'
+E   AssertionError: separate watcher telemetry is absent
+E   assert False
+E    +  where False = hasattr(&lt;module '_watcher_telemetry_control' from '/workspace/qualification/experiment-interface-v43-prospective-readiness/watch_actual_agent.py'&gt;, '_execution_telemetry')</failure></testcase></testsuite></testsuites>

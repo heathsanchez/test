@@ -1,0 +1,67 @@
+{
+  "adapter_sha256": "7eb6b2103cba6cc138efc4ad2a1198520996443b07c68dc99bdb8756d7d6dbef",
+  "functions": {
+    "_pass": {
+      "same_bytecode": true,
+      "same_code_object": true
+    },
+    "canonical": {
+      "same_bytecode": true,
+      "same_code_object": true
+    },
+    "digest": {
+      "same_bytecode": true,
+      "same_code_object": true
+    },
+    "main": {
+      "same_bytecode": true,
+      "same_code_object": true
+    },
+    "project": {
+      "same_bytecode": true,
+      "same_code_object": false
+    }
+  },
+  "literal_changes": [
+    {
+      "after": "UDM_NATIVE_CLI_AUTHORITY_V43",
+      "before": "UDM_NATIVE_CLI_AUTHORITY_V3",
+      "constant_index": 7,
+      "function": "project"
+    },
+    {
+      "after": "UDM_NATIVE_AGENT_PARENT_RECEIPT_V43",
+      "before": "UDM_NATIVE_AGENT_PARENT_RECEIPT_V3",
+      "constant_index": 17,
+      "function": "project"
+    },
+    {
+      "after": "UDM_CODING_AGENT_NATIVE_ARM_V43",
+      "before": "UDM_CODING_AGENT_NATIVE_ARM_V3",
+      "constant_index": 23,
+      "function": "project"
+    }
+  ],
+  "native_or_scientific_verification_granted": false,
+  "network_queries": 0,
+  "original_sha256": "3172f8a5d175d593b938db62a48db76437abbbe59c8432a91ea53488ef5f7b21",
+  "output_format_preserved": true,
+  "output_schema": "UDM_AGENT_TRAINING_SHARED_HISTORY_V3",
+  "schema": "UDM_V43_TRAINING_PROJECTION_LITERAL_BINDING_AUDIT_V1",
+  "status": "PASS_LITERAL_ONLY_CODE_AUDIT",
+  "synthetic_controls": {
+    "green": {
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "tests": 11
+    },
+    "red": {
+      "errors": 0,
+      "failures": 11,
+      "reason": "V43 adapter absent",
+      "skipped": 0,
+      "tests": 11
+    }
+  }
+}

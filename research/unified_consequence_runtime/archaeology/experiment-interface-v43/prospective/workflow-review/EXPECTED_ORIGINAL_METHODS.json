@@ -1,0 +1,102 @@
+{
+  "schema": "UDM_V43_PROSPECTIVE_WORKFLOW_EXPECTED_METHODS_V1",
+  "expected_required_method_files": 7,
+  "expected_unique_historical_commit_archives": 6,
+  "objects": [
+    {
+      "declared_in": "consequence_selection.py",
+      "label": "mda",
+      "definition_file_sha256": "e39f10c5671df25761c4e2bc18c46eccbb14dfd6180834f1befc560e13a4bcaa",
+      "pin": {
+        "repo": "test",
+        "commit": "13325089c471996b8b68f46540fd4ad449df752c",
+        "path": "open_development/runtime.py",
+        "sha256": "48bc8efdbb289697c41d633773208dcbdb53bf39dbc8679127e58d0ed3e80703"
+      }
+    },
+    {
+      "declared_in": "consequence_selection.py",
+      "label": "core",
+      "definition_file_sha256": "e39f10c5671df25761c4e2bc18c46eccbb14dfd6180834f1befc560e13a4bcaa",
+      "pin": {
+        "repo": "msi",
+        "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+        "path": "consequential_core.py",
+        "sha256": "2c8be1f9fde571bfcdba6d1daf8a0e680a9636f697687fd4c128a8b214975ad8"
+      }
+    },
+    {
+      "declared_in": "consequence_selection.py",
+      "label": "version_space",
+      "definition_file_sha256": "e39f10c5671df25761c4e2bc18c46eccbb14dfd6180834f1befc560e13a4bcaa",
+      "pin": {
+        "repo": "msi",
+        "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+        "path": "consequential_version_space.py",
+        "sha256": "1494620801a524fce54ae9b87a55ae12b79094875084e883fe2183c044e181f9"
+      }
+    },
+    {
+      "declared_in": "consequence_selection.py",
+      "label": "minimal_basis",
+      "definition_file_sha256": "e39f10c5671df25761c4e2bc18c46eccbb14dfd6180834f1befc560e13a4bcaa",
+      "pin": {
+        "repo": "test",
+        "commit": "52eb1e7995bd877a2b698efe1883ae2b80a03737",
+        "path": "research/mathgraph_minimal_quotient/h11_quotient.py",
+        "sha256": "f9c5146748c324bc951b076b0db30d1a3e947eacc0d9095492d4a12e983d1f1a"
+      }
+    },
+    {
+      "declared_in": "developmental_choice.py",
+      "label": "SOURCE_PIN",
+      "definition_file_sha256": "47e356c5742fc7ccfdb4a0c7488faa1c314e531e2793da847ba7f27d7b20ca48",
+      "pin": {
+        "repository": "heathsanchez/test",
+        "branch": "verified-prospective-repair-selection-v1",
+        "commit": "6031466188046f56b4660d772d13ad731ed4c0f2",
+        "path": "experiments/verified_prospective_repair_selection_v1/run.py",
+        "sha256": "ef46969e2182a5ced64e3c80f5266c03f864d72dcd8133539e6b1a71c42a4b94"
+      }
+    },
+    {
+      "declared_in": "decisive_native.py",
+      "label": "POLICY_PIN",
+      "definition_file_sha256": "1c4143ea4f136298cca2885a5ff63d4ad83c85eeb64f2f1d1b3d7ba701e82b04",
+      "pin": {
+        "repository": "heathsanchez/Minimal-Sufficient-Interface",
+        "commit": "56cfd7b523e3592cae4eafa5468f437ccb94dbe9",
+        "path": "experiments/policy_language_genesis_cross_domain_v10.py",
+        "sha256": "836b8f677f1f252fccad8bf1136f9a966a1f2b2330fa5057c616ee20ddb56608"
+      }
+    },
+    {
+      "declared_in": "archaeology/recursive-frontier/EXPERIMENT.json",
+      "label": "constructor_language",
+      "definition_file_sha256": "ad9cb151b3832c454ec8c29c4587e101618d5feed3fca13f5277bcdb0d590443",
+      "pin": {
+        "repository": "heathsanchez/triskelion",
+        "commit": "426c54f7c774560e0fabe7213c5ef333b1327c71",
+        "path": "experiments/METALOGIC_V104_GENERIC_CONSTRUCTOR_SYNTHESIS.py",
+        "sha256": "d00301852efd278be8ac22b848e0c9e56ced7c574980753b2ebc2ef0a3b7cce9",
+        "definitions": [
+          "h",
+          "nodes_for_selector",
+          "build_expr",
+          "program_candidates"
+        ],
+        "assignments": [
+          "SEED",
+          "PROGRAM_CAP",
+          "SELECTORS",
+          "BUILDERS"
+        ],
+        "order": "LEXICOGRAPHIC_PRODUCTION_PYTHON_FILES_THEN_ORIGINAL_GENERATOR_ORDER",
+        "primitive_grammar_supplied": true
+      }
+    }
+  ],
+  "network_queries": 0,
+  "target_source_or_outcome_inspected": false,
+  "native_execution": false
+}
