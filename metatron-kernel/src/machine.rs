@@ -533,7 +533,40 @@ impl<'a> Machine<'a> {
             && matches!(&neutral.head, NeutralHead::Const { name, .. }
                 if *name != spec.constructor && self.recursor_reductions.contains_key(name))
         {
-            self.qualified_nested_recursor_result(neutral, budget)
+            // Source-checked demand experiment: first try precisely ONE
+            // registered recursor iota. Accept the result for projection
+            // only if it is the already-registered constructor with enough
+            // original source arguments. A later registered recursor, an
+            // unresolved major, or a different constructor grants no field.
+            //
+            // Failed eligibility falls through to the UNCHANGED completed
+            // recursor path. No synthetic constructor, binder or equality.
+            let direct = if std::env::var_os("NUCLEUS_EXPERIMENTAL_PROJECTION_ONE_STEP").is_some() {
+                let attempt = self.qualified_one_step_recursor_result(neutral, budget);
+                let eligible = match attempt.proven_value() {
+                    Some(Value::Neutral(Neutral {
+                        head: NeutralHead::Const { name, .. }, spine,
+                    })) => *name == spec.constructor
+                        && spine.len() >= spec.num_params + index + 1,
+                    _ => false,
+                };
+                #[cfg(feature = "diagnostics")]
+                if std::env::var_os("NUCLEUS_TRACE_PROJECTION_ONE_STEP").is_some() {
+                    use std::sync::atomic::{AtomicUsize, Ordering};
+                    static OBSERVED: AtomicUsize = AtomicUsize::new(0);
+                    if OBSERVED.fetch_add(1, Ordering::Relaxed) < 32 {
+                        eprintln!(
+                            "NUCLEUS_PROJECTION_ONE_STEP:type={type_name:?}:field={index}:eligible={eligible}:source_head={:?}:attempt={:?}",
+                            neutral.head,
+                            format!("{attempt:?}").chars().take(1300).collect::<String>(),
+                        );
+                    }
+                }
+                if eligible { Some(attempt) } else { None }
+            } else {
+                None
+            };
+            direct.unwrap_or_else(|| self.qualified_nested_recursor_result(neutral, budget))
         } else {
             Judgment::unknown("projection-no-registered-replay")
         };
