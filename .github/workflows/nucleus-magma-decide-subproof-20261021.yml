@@ -1,0 +1,68 @@
+name: Nucleus original Magma decide subproof isolation
+on:
+  push:
+    branches: [research/nucleus-magma-decide-subproof-20261021]
+    paths:
+      - '.github/scripts/nucleus_original_decide_subproof_20261021.py'
+      - '.github/workflows/nucleus-magma-decide-subproof-20261021.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  original-source-proof:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 80
+    env:
+      GH_TOKEN: ${{ github.token }}
+      CARGO_INCREMENTAL: "0"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Verify independent source identity and freeze source provenance
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/nucleus-decision-evidence /tmp/nucleus-decision-tests-zip /tmp/nucleus-decision-inputs
+          test "$(git rev-parse HEAD:metatron-kernel)" = 5e7d65b1b6abc3f6380bc7a37ffb153284d7faf1
+          git rev-parse HEAD > /tmp/nucleus-decision-evidence/research-commit.txt
+          rustc -vV > /tmp/nucleus-decision-evidence/toolchain.txt
+      - name: Build unchanged independent Nucleus and native protected tests
+        run: |
+          set -euo pipefail
+          NUCLEUS_EXPERIMENTAL_RELEVANCE=1 NUCLEUS_EXPERIMENTAL_EXPECTED_LAMBDA=1 \
+            cargo test --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml \
+            > /tmp/nucleus-decision-evidence/nucleus-rust-tests.log 2>&1 || {
+              tail -80 /tmp/nucleus-decision-evidence/nucleus-rust-tests.log; exit 1;
+            }
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus-decision-independent
+      - name: Independently build exact public Arena reference checker
+        run: |
+          set -euo pipefail
+          git clone -q https://github.com/intgrah/sokonanoda /tmp/nucleus-decision-reference-src
+          git -C /tmp/nucleus-decision-reference-src checkout --detach 7645b1e1fcacfe410c99141f1234381d995b325d
+          test "$(git -C /tmp/nucleus-decision-reference-src rev-parse HEAD)" = 7645b1e1fcacfe410c99141f1234381d995b325d
+          CARGO_TARGET_DIR=/tmp/nucleus-decision-reference-build \
+            cargo build --release --locked --manifest-path /tmp/nucleus-decision-reference-src/Cargo.toml
+          cp /tmp/nucleus-decision-reference-build/release/sokonanoda /tmp/nucleus-decision-reference
+          sha256sum /tmp/nucleus-decision-{independent,reference} > /tmp/nucleus-decision-evidence/checker-binaries.sha256
+      - name: Obtain original immutable 196-case Lean exports
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/11272848230/zip > /tmp/nucleus-decision-original.zip
+          unzip -q /tmp/nucleus-decision-original.zip -d /tmp/nucleus-decision-tests-zip
+          tar --no-same-owner -xzf /tmp/nucleus-decision-tests-zip/lean-arena-tests.tar.gz -C /tmp/nucleus-decision-inputs
+          test -s /tmp/nucleus-decision-inputs/good/perf/magma-list-pair-n7.ndjson
+      - name: Verify source-extracted positive and independently forged false-proposition control
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/nucleus_original_decide_subproof_20261021.py \
+            /tmp/nucleus-decision-inputs \
+            /tmp/nucleus-decision-independent \
+            /tmp/nucleus-decision-reference \
+            /tmp/nucleus-decision-evidence
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-original-decide-subproof-${{ github.sha }}
+          path: /tmp/nucleus-decision-evidence/
+          if-no-files-found: warn
