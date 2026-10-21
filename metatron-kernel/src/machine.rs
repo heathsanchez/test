@@ -1401,9 +1401,32 @@ impl<'a> Machine<'a> {
                                 visited.clear();
                                 continue;
                             }
-                            if preserve_stuck_projection {
+                            // Research candidate: a checked registered recursor can
+                            // legitimately be stuck before its constructor major is
+                            // known. Preserve the original source projection rather
+                            // than synthesizing a field or deciding constructor
+                            // equality. No proof/equality is admitted here; any
+                            // later iota still needs the actual registered major.
+                            //
+                            // This is the SAME inert StuckProjection already
+                            // used by conversion, not a new reduction rule.
+                            let delayed_registered_recursor =
+                                std::env::var_os("NUCLEUS_EXPERIMENTAL_DELAY_RECURSOR_PROJECTION").is_some()
+                                && matches!(&neutral.head, NeutralHead::Const { name, .. }
+                                    if self.recursor_reductions.contains_key(name));
+                            if preserve_stuck_projection || delayed_registered_recursor {
                                 let mut spine = Vec::new();
                                 append_pending(&mut spine, &mut pending);
+                                #[cfg(feature="diagnostics")]
+                                if delayed_registered_recursor
+                                    && std::env::var_os("NUCLEUS_TRACE_DELAY_RECURSOR_PROJECTION").is_some()
+                                {
+                                    use std::sync::atomic::{AtomicUsize,Ordering};
+                                    static HIT:AtomicUsize=AtomicUsize::new(0);
+                                    if HIT.fetch_add(1,Ordering::Relaxed)<32 {
+                                        eprintln!("NUCLEUS_DELAY_RECURSOR_PROJECTION:type={type_name:?}:field={index}:receiver={:?}:old_unknown=projection-constructor-mismatch",neutral.head);
+                                    }
+                                }
                                 return exposed(
                                     Value::StuckProjection {
                                         type_name: *type_name,
