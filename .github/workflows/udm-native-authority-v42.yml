@@ -1,0 +1,153 @@
+name: Typed source native authority v4.2
+on:
+  workflow_dispatch:
+  push:
+    branches: [research/udm-native-authority-v42-20261021]
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: udm-native-authority-v42-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  qualify-admission:
+    if: ${{ github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[qualify-authority-v42]') }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      PYTHONUNBUFFERED: '1'
+      GIT_OPTIONAL_LOCKS: '0'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.14'
+      - name: Prepare controller and unchanged independently pinned catalog runtimes
+        run: |
+          set -euo pipefail
+          python -B -m venv "$RUNNER_TEMP/v42-controller"
+          "$RUNNER_TEMP/v42-controller/bin/python" -B -m pip install --disable-pip-version-check --no-input pytest==8.3.5 packaging==26.3 2>&1 | tee "$RUNNER_TEMP/v42-controller-install.log"
+          "$RUNNER_TEMP/v42-controller/bin/python" -B research/unified_consequence_runtime/archaeology/native-environment-v3/bootstrap/prepare_runtimes.py --catalog research/unified_consequence_runtime/archaeology/native-environment-v3/ENVIRONMENT_CATALOG.json --dest-root "$RUNNER_TEMP/v42-original-runtimes" --out "$RUNNER_TEMP/v42-original-runtime-paths.json" 2>&1 | tee "$RUNNER_TEMP/v42-original-bootstrap.log"
+          "$RUNNER_TEMP/v42-controller/bin/python" -B research/unified_consequence_runtime/archaeology/native-authority-v41/bootstrap/prepare_profile.py --catalog research/unified_consequence_runtime/archaeology/native-authority-v41/ENVIRONMENT_CATALOG.json --runtimes "$RUNNER_TEMP/v42-original-runtime-paths.json" --dest-root "$RUNNER_TEMP/v42-modern-profile" --runtime-out "$RUNNER_TEMP/v42-runtime-paths.json" --out "$RUNNER_TEMP/v42-profile-preparation.json" 2>&1 | tee "$RUNNER_TEMP/v42-profile-bootstrap.log"
+      - name: Freeze exact committed source and both runtime authorities
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/v42-controller/bin/python" -B -m research.unified_consequence_runtime.qualify_native_authority_v42 --write-freeze --repo "$GITHUB_WORKSPACE" --runtimes "$RUNNER_TEMP/v42-runtime-paths.json" --out qualification/FREEZE.json 2>&1 | tee "$RUNNER_TEMP/v42-source-freeze.log"
+          cp "$RUNNER_TEMP/v42-runtime-paths.json" qualification/RUNTIMES.json
+          cp "$RUNNER_TEMP/v42-profile-preparation.json" qualification/PROFILE_PREPARATION.json
+      - name: Verify ten private frontier bindings without querying a task
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/v42-controller/bin/python" -B -m unittest research.unified_consequence_runtime.test_qualify_native_frontier_v42 -v 2>&1 | tee qualification/binding-contracts.log
+      - name: Execute legacy link admission and exact independent native replay
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/v42-controller/bin/python" -B -m research.unified_consequence_runtime.qualify_native_authority_v42 --legacy-native-controls --repo "$GITHUB_WORKSPACE" --freeze qualification/FREEZE.json --out "$GITHUB_WORKSPACE/qualification/legacy-v42"
+      - name: Execute 55 frozen and 5 supplementary adversarial controls
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/v42-controller/bin/python" -B -m research.unified_consequence_runtime.qualify_native_authority_v42 --repo "$GITHUB_WORKSPACE" --freeze qualification/FREEZE.json --out "$GITHUB_WORKSPACE/qualification/admission-v42"
+      - name: Require native execution while keeping scientific verdicts UNKNOWN
+        run: |
+          python -B - <<'PY'
+          import json
+          from pathlib import Path
+          for label,count,status in [('legacy-v42',2,'LEGACY_NATIVE_CONTROLS_VERIFIED'),('admission-v42',60,'ADMISSION_ONLY_QUALIFIED')]:
+              result=json.loads((Path('qualification')/label/'RESULT.json').read_text())
+              assert result['status']==status
+              assert result['contracts']['run']==count and result['contracts']['successful']
+              assert len(result['contracts']['ids'])==count and not result['contracts']['skipped']
+              assert not result['index_audit']['changes']
+              assert result['attempt_costs']['native_calls']>0 and result['attempt_costs']['collection_calls']>0
+              child=result['positive_independent_native']
+              assert child['status']=='PASS_NATIVE' and child['junit']['passed']==2
+              assert child['attempt_costs']['native_calls']>0 and child['attempt_costs']['collection_calls']>0
+              assert all(result['verdicts'][f'G{i}']=='UNKNOWN' for i in range(2,7))
+              assert result['acquisitions']==0 and result['candidates']==0
+          print('60 modern + 2 legacy admission controls; G2-G6 UNKNOWN')
+          PY
+      - name: Retain original-runtime byte audit
+        if: ${{ always() && hashFiles('qualification/FREEZE.json') != '' }}
+        run: |
+          "$RUNNER_TEMP/v42-controller/bin/python" -B research/unified_consequence_runtime/archaeology/native-environment-v3/bootstrap/prepare_runtimes.py --audit-freeze qualification/FREEZE.json --out qualification/POST_CONTROL_RUNTIME_AUDIT.json
+      - name: Archive exact committed source and every successful or failed control
+        if: always()
+        run: |
+          set -euo pipefail
+          mkdir -p qualification
+          python -B - <<'PY'
+          import hashlib,json,os,subprocess,tarfile
+          from pathlib import Path
+          from research.unified_consequence_runtime.audit_index_v4 import snapshot_indexes,compare_indexes
+          root=Path('qualification')
+          def retain(snapshot,path):
+              path.mkdir()
+              for number,row in enumerate(snapshot['indexes']):
+                  if row['exists']:
+                      raw=Path(row['path']).read_bytes()
+                      if hashlib.sha256(raw).hexdigest()!=row['sha256']:raise ValueError('index changed during archival snapshot')
+                      (path/('index-'+str(number)+'.bytes')).write_bytes(raw)
+              (path/'SNAPSHOT.json').write_text(json.dumps(snapshot,sort_keys=True)+'\n')
+          before=snapshot_indexes('.')
+          retain(before,root/'archive-index-before')
+          try:
+              subprocess.run(['git','-c','tar.umask=022','archive','--format=tar.gz','--output='+str(root/'SOURCE.tar.gz'),os.environ['GITHUB_SHA']],check=True)
+              frozen_path=root/'FREEZE.json'
+              if frozen_path.is_file():
+                  frozen=json.loads(frozen_path.read_text());actual={}
+                  with tarfile.open(root/'SOURCE.tar.gz','r:gz') as packet:
+                      for member in packet:
+                          if member.isdir():continue
+                          if not member.isfile() or member.name in actual:raise ValueError('source archive has unsupported or duplicate member')
+                          actual[member.name]=hashlib.sha256(packet.extractfile(member).read()).hexdigest()
+                  if actual!=frozen['files']:raise ValueError('source archive differs from complete committed source freeze')
+                  (root/'SOURCE_ARCHIVE_CHECK.json').write_text(json.dumps({'status':'PASS_EXACT_FULL_SOURCE','source_commit':frozen['source_commit'],'files':len(actual)},sort_keys=True)+'\n')
+          finally:
+              after=snapshot_indexes('.');retain(after,root/'archive-index-after')
+              audit={'before':before,'after':after,'changes':compare_indexes(before,after)}
+              (root/'ARCHIVE_INDEX_AUDIT.json').write_text(json.dumps(audit,sort_keys=True)+'\n')
+          entries={}
+          for name in ('v42-controller-install.log','v42-original-bootstrap.log','v42-profile-bootstrap.log','v42-source-freeze.log','v42-profile-preparation.json','v42-runtime-paths.json','v42-original-runtime-paths.json'):
+              path=Path(os.environ['RUNNER_TEMP'])/name
+              if path.is_file():entries['preparation/'+name]=path
+          for origin,prefix in [(root,''),(Path(os.environ['RUNNER_TEMP'])/'v42-original-runtimes','original-runtime-bootstrap/'),(Path(os.environ['RUNNER_TEMP'])/'v42-modern-profile','modern-profile-preparation/')]:
+              if not origin.exists():continue
+              for folder,dirs,names in os.walk(origin,followlinks=False):
+                  for name in sorted(dirs):
+                      path=Path(folder)/name
+                      if path.is_symlink():entries[prefix+path.relative_to(origin).as_posix()]=path
+                  dirs[:]=sorted(name for name in dirs if name not in {'venv','miniconda-base','wheels'} and not (Path(folder)/name).is_symlink())
+                  for name in sorted(names):
+                      path=Path(folder)/name
+                      if (path.is_file() or path.is_symlink()) and name not in {'MANIFEST.json','NATIVE_AUTHORITY_V42_EVIDENCE.tar.gz','SOURCE.tar.gz'}:
+                          entries[prefix+path.relative_to(origin).as_posix()]=path
+          files={name:{'kind':'symlink','target':os.readlink(path)} if path.is_symlink() else {'kind':'file','sha256':hashlib.sha256(path.read_bytes()).hexdigest()} for name,path in sorted(entries.items())}
+          archive=root/'NATIVE_AUTHORITY_V42_EVIDENCE.tar.gz'
+          with tarfile.open(archive,'w:gz',dereference=False) as packet:
+              for name,path in sorted(entries.items()):packet.add(path,arcname=name,recursive=False)
+          manifest={'source_commit':os.environ['GITHUB_SHA'],'run_id':os.environ['GITHUB_RUN_ID'],'files':files,
+              'archive_sha256':hashlib.sha256(archive.read_bytes()).hexdigest(),
+              'source_sha256':hashlib.sha256((root/'SOURCE.tar.gz').read_bytes()).hexdigest(),
+              'archive_boundary':'Original symlinks retained without dereference; inspect safely without automatic extraction.'}
+          (root/'MANIFEST.json').write_text(json.dumps(manifest,sort_keys=True)+'\n')
+          if audit['changes']:raise ValueError('index changed during archival; evidence retained')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-authority-v42-${{ github.sha }}-${{ github.run_attempt }}
+          path: |
+            qualification/SOURCE.tar.gz
+            qualification/NATIVE_AUTHORITY_V42_EVIDENCE.tar.gz
+            qualification/MANIFEST.json
+            qualification/ARCHIVE_INDEX_AUDIT.json
+            qualification/admission-v42/RESULT.json
+            qualification/legacy-v42/RESULT.json
+            qualification/binding-contracts.log
+          include-hidden-files: true
+          retention-days: 90

@@ -1,0 +1,83 @@
+{
+  "baseline": {
+    "auditor_initial_permission_error_preserved": true,
+    "commit": "dc59c8fcee6efede520c531eba5e42e7b84a1a9f",
+    "files_checked": 2192,
+    "source_blob_and_Git_mode_preserved": true
+  },
+  "findings": [
+    {
+      "after": {
+        "error": "ValueError('UNKNOWN_SOURCE_OR_IMPORT_IDENTITY')",
+        "status": "REFUSED"
+      },
+      "before": {
+        "collection_external": [],
+        "external_project_imports": [],
+        "import_manifest": [
+          {
+            "path": "test_native.py",
+            "sha256": "5dba06ddb63773d323eb3cd48111857bddc423ce28ca84b7d2cb1d71bec83abb"
+          }
+        ],
+        "junit": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 2,
+          "skipped": 0,
+          "tests": 2
+        },
+        "status": "PASS_NATIVE"
+      },
+      "id": "flat-src-installed-substitution",
+      "status": "RESOLVED_BY_SOURCE_DERIVED_ROOT_SUPPLEMENT"
+    },
+    {
+      "after": "3altereddependenciesrefused;unalteredcopiesimport",
+      "before": "3altereddependenciesacceptedonfreshimport",
+      "id": "cold-transitive-source-repinning",
+      "status": "RESOLVED_BY_STATIC_DEPENDENCY_PINS"
+    }
+  ],
+  "finished_at": "2026-10-21T09:50:43.683328+00:00",
+  "fixed_tests": {
+    "count": 2,
+    "log_sha256": "d3f173db3a36dfd4df6ebdbbb65b73ec99df18d27827dc120b808d681c7fc0c5",
+    "subcases": 5
+  },
+  "index_interval": {
+    "boundary": "Rootconcurrentlycommittedauthorizedsupplementaltestsandimplementation;thiswholeintervalisnotclaimedunchanged. Independentread-onlybaselinecheckintervalhadnoindexdelta.",
+    "changes": [
+      {
+        "after": {
+          "exists": true,
+          "path": "/workspace/repos/test/.git/worktrees/udm-v54/index",
+          "sha256": "6d42fb23ba7cc603b3a9a7ae2fca9e131a7a2ef0fc6e1b1e8295d44c489e1801",
+          "size_bytes": 369328
+        },
+        "before": {
+          "exists": true,
+          "path": "/workspace/repos/test/.git/worktrees/udm-v54/index",
+          "sha256": "56598a2d9f453d0b89e0817a366d75c4f0389211a9e84b90f85545c6ea96191d",
+          "size_bytes": 367424
+        },
+        "path": "/workspace/repos/test/.git/worktrees/udm-v54/index"
+      }
+    ]
+  },
+  "limitations": [
+    "ThisreviewdoesnotqualifythefulladmissionworkfloworprospectiveG2.",
+    "Noexternalfrontiermetadataorsourceoutcomeswerequeried.",
+    "Wholeprocesscontainmentandin-memoryhostilePythonarenotestablished.",
+    "DirectoryaliasesandunavailablegitlinkcontentsremainpreciseUNKNOWN."
+  ],
+  "schema": "UDM_V42_INDEPENDENT_REVIEW_RESULT",
+  "status": "CONFIRMED_FINDINGS_RESOLVED_IN_BOUNDED_REVIEW",
+  "verdicts": {
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN"
+  }
+}
