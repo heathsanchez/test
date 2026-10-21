@@ -1,0 +1,39 @@
+{
+  "artifacts_sha256": {
+    "junit.xml": "b0a9e0b8ce285566859d131a57410926a112ed142377df250cff7e7102c30f15",
+    "stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout": "6d403e5f4d37543de3f8a69098250193ba0b75c74f882c64c8af561d5f707eb9"
+  },
+  "command": [
+    "/workspace/qualification/native-authority-v42-controller/bin/python",
+    "-B",
+    "-m",
+    "pytest",
+    "-q",
+    "--import-mode=importlib",
+    "-p",
+    "no:cacheprovider",
+    "research/unified_consequence_runtime/test_controller_setup_preflight_v43.py",
+    "--basetemp=/workspace/qualification/experiment-interface-v43-setup-preflight-prefix-red/fixtures",
+    "--tb=short",
+    "--junitxml=/workspace/qualification/experiment-interface-v43-setup-preflight-prefix-red/junit.xml"
+  ],
+  "completed_utc": "2026-10-21T21:34:41.835693+00:00",
+  "counts": {
+    "errors": 0,
+    "failures": 6,
+    "passed": 0,
+    "skipped": 0,
+    "tests": 6
+  },
+  "files_sha256": {
+    "research/unified_consequence_runtime/native_environment_v43.py": "28185bc2a35a5ae9f644e034656bf37f132d39864c7af740c99663ff3cd6bf25",
+    "research/unified_consequence_runtime/qualify_native_frontier_v43.py": "bd56c9edbc88c09c270ae3754bf60615e32444f80000dfdf7123b3c5ea557e11",
+    "research/unified_consequence_runtime/test_controller_setup_preflight_v43.py": "fff64c87fa772aa6c56ad285cb064852b5861653ee762e0180ba78638fdf5124"
+  },
+  "returncode": 1,
+  "schema": "UDM_V43_SETUP_PREFLIGHT_PRE_FIX_RED_V1",
+  "scope": "Public-worker boundary wiring only; opaque tokens are not native receipts/outcomes. No prospective source or native producer executed.",
+  "started_utc": "2026-10-21T21:34:41.378812+00:00",
+  "status": "EXPECTED_RED_BEFORE_SETUP_PREFLIGHT_FIX"
+}

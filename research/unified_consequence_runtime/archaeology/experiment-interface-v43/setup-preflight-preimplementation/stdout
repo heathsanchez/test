@@ -1,0 +1,59 @@
+FFFFFF                                                                   [100%]
+=================================== FAILURES ===================================
+_______ test_explicit_setup_preflight_exists_before_runtime_construction _______
+research/unified_consequence_runtime/test_controller_setup_preflight_v43.py:21: in test_explicit_setup_preflight_exists_before_runtime_construction
+    assert callable(getattr(controller(), '_preflight_setup', None)), 'live setup witness preflight is absent'
+E   AssertionError: live setup witness preflight is absent
+E   assert False
+E    +  where False = callable(None)
+E    +    where None = getattr(<module 'research.unified_consequence_runtime.qualify_native_frontier_v43' from '/workspace/udm-v54/research/unified_consequence_runtime/qualify_native_frontier_v43.py'>, '_preflight_setup', None)
+E    +      where <module 'research.unified_consequence_runtime.qualify_native_frontier_v43' from '/workspace/udm-v54/research/unified_consequence_runtime/qualify_native_frontier_v43.py'> = controller()
+___ test_prepare_checks_live_setup_before_each_collection_operation[collect] ___
+research/unified_consequence_runtime/test_controller_setup_preflight_v43.py:51: in test_prepare_checks_live_setup_before_each_collection_operation
+    current._prepare(machine, {'repo': 'fixture/wiring-only'}, tmp_path / 'prepare', 'a' * 64, value, {})
+/workspace/udm-v54/research/unified_consequence_runtime/qualify_native_frontier_v43.py:bound-_prepare:11: in _prepare
+    ???
+research/unified_consequence_runtime/test_controller_setup_preflight_v43.py:17: in producer_forbidden
+    raise AssertionError('stale setup reached a public worker producer before preflight')
+E   AssertionError: stale setup reached a public worker producer before preflight
+_ test_prepare_checks_live_setup_before_each_collection_operation[validate_certificate] _
+research/unified_consequence_runtime/test_controller_setup_preflight_v43.py:51: in test_prepare_checks_live_setup_before_each_collection_operation
+    current._prepare(machine, {'repo': 'fixture/wiring-only'}, tmp_path / 'prepare', 'a' * 64, value, {})
+/workspace/udm-v54/research/unified_consequence_runtime/qualify_native_frontier_v43.py:bound-_prepare:12: in _prepare
+    ???
+research/unified_consequence_runtime/test_controller_setup_preflight_v43.py:17: in producer_forbidden
+    raise AssertionError('stale setup reached a public worker producer before preflight')
+E   AssertionError: stale setup reached a public worker producer before preflight
+___ test_screen_checks_live_setup_before_each_collection_operation[collect] ____
+research/unified_consequence_runtime/test_controller_setup_preflight_v43.py:76: in test_screen_checks_live_setup_before_each_collection_operation
+    result = current.admission_only_screen({'repo': 'fixture/wiring-only'}, tmp_path / 'screen', 'a' * 64,
+/workspace/udm-v54/research/unified_consequence_runtime/qualify_native_frontier_v43.py:bound-admission_only_screen:17: in admission_only_screen
+    ???
+research/unified_consequence_runtime/test_controller_setup_preflight_v43.py:17: in producer_forbidden
+    raise AssertionError('stale setup reached a public worker producer before preflight')
+E   AssertionError: stale setup reached a public worker producer before preflight
+_ test_screen_checks_live_setup_before_each_collection_operation[validate_certificate] _
+research/unified_consequence_runtime/test_controller_setup_preflight_v43.py:76: in test_screen_checks_live_setup_before_each_collection_operation
+    result = current.admission_only_screen({'repo': 'fixture/wiring-only'}, tmp_path / 'screen', 'a' * 64,
+/workspace/udm-v54/research/unified_consequence_runtime/qualify_native_frontier_v43.py:bound-admission_only_screen:18: in admission_only_screen
+    ???
+research/unified_consequence_runtime/test_controller_setup_preflight_v43.py:17: in producer_forbidden
+    raise AssertionError('stale setup reached a public worker producer before preflight')
+E   AssertionError: stale setup reached a public worker producer before preflight
+______ test_agent_rechecks_witness_before_independent_receipt_reexecution ______
+research/unified_consequence_runtime/test_controller_setup_preflight_v43.py:107: in test_agent_rechecks_witness_before_independent_receipt_reexecution
+    current._execute_agent_candidate(arm, candidate, tmp_path / 'native')
+/workspace/udm-v54/research/unified_consequence_runtime/qualify_native_frontier_v43.py:bound-_execute_agent_candidate:32: in _execute_agent_candidate
+    ???
+research/unified_consequence_runtime/test_controller_setup_preflight_v43.py:17: in producer_forbidden
+    raise AssertionError('stale setup reached a public worker producer before preflight')
+E   AssertionError: stale setup reached a public worker producer before preflight
+- generated xml file: /workspace/qualification/experiment-interface-v43-setup-preflight-prefix-red/junit.xml -
+=========================== short test summary info ============================
+FAILED research/unified_consequence_runtime/test_controller_setup_preflight_v43.py::test_explicit_setup_preflight_exists_before_runtime_construction
+FAILED research/unified_consequence_runtime/test_controller_setup_preflight_v43.py::test_prepare_checks_live_setup_before_each_collection_operation[collect]
+FAILED research/unified_consequence_runtime/test_controller_setup_preflight_v43.py::test_prepare_checks_live_setup_before_each_collection_operation[validate_certificate]
+FAILED research/unified_consequence_runtime/test_controller_setup_preflight_v43.py::test_screen_checks_live_setup_before_each_collection_operation[collect]
+FAILED research/unified_consequence_runtime/test_controller_setup_preflight_v43.py::test_screen_checks_live_setup_before_each_collection_operation[validate_certificate]
+FAILED research/unified_consequence_runtime/test_controller_setup_preflight_v43.py::test_agent_rechecks_witness_before_independent_receipt_reexecution
+6 failed in 0.29s
