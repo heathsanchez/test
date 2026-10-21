@@ -97,7 +97,7 @@ def baseline_selector(analyses):
     """Equally informed conventional dependency-aware selector: retain all
        if source is package-module and importing tests/module could execute it."""
     return [name for name,row in analyses.items()
-            if row["package_dependency"] or row["opaque"] or True]
+            if row["package_dependency"] or row["opaque"] or row["reason"].startswith("package-boundary")]
 
 def dynamic_negative():
     payload="import importlib\nimportlib.import_module('markupsafe._native')\n"
