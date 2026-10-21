@@ -1,0 +1,79 @@
+name: Cross-source compounding native qualification 20261021
+on:
+  push:
+    branches:
+      - research/cross-source-compounding-native-20261021
+    paths:
+      - 'research/cross_source_compounding_20261021/**'
+      - '.github/workflows/cross-source-compounding-native-20261021.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  pinned-native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+          cache: false
+      - name: Validate exact source-native A B and original suites
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/evidence"
+          A="$RUNNER_TEMP/toml"
+          B="$RUNNER_TEMP/ini"
+          t0=$(date +%s%N)
+          git clone -q https://github.com/BurntSushi/toml.git "$A"
+          git -C "$A" checkout --detach -q d733fc535e4a9f3c454e421a87b90ade5d49bf31
+          git clone -q https://github.com/go-ini/ini.git "$B"
+          git -C "$B" checkout --detach -q e2db55b0e088fa4ee0c128aa4ade263cdc1d7f08
+          test "$(git -C "$A" rev-parse HEAD)" = d733fc535e4a9f3c454e421a87b90ade5d49bf31
+          test "$(git -C "$B" rev-parse HEAD)" = e2db55b0e088fa4ee0c128aa4ade263cdc1d7f08
+          cp research/cross_source_compounding_20261021/A_test.go.txt "$A/mathgraph_cross_source_test.go"
+          cp research/cross_source_compounding_20261021/B_test.go.txt "$B/mathgraph_cross_source_test.go"
+          t1=$(date +%s%N)
+          set +e
+          (cd "$A" && go test -count=1 -run '^TestMathGraphCrossSourceStringInvariant$' .) > "$RUNNER_TEMP/evidence/A.log" 2>&1
+          status_a=$?
+          (cd "$B" && go test -count=1 -run '^TestMathGraphCrossSourceStringInvariant$' .) > "$RUNNER_TEMP/evidence/B.log" 2>&1
+          status_b=$?
+          t2=$(date +%s%N)
+          (cd "$A" && go test -count=1 ./...) > "$RUNNER_TEMP/evidence/A-full.log" 2>&1
+          status_a_full=$?
+          (cd "$B" && go test -count=1 ./...) > "$RUNNER_TEMP/evidence/B-full.log" 2>&1
+          status_b_full=$?
+          t3=$(date +%s%N)
+          set -e
+          cat "$RUNNER_TEMP/evidence/A.log" "$RUNNER_TEMP/evidence/B.log"
+          A="$status_a" B="$status_b" AF="$status_a_full" BF="$status_b_full" T0="$t0" T1="$t1" T2="$t2" T3="$t3" python3 - <<'PY'
+          import os,json,pathlib
+          n=lambda k:int(os.environ[k])
+          r={"schema":"mathgraph.cross-source-compounding-native.v1",
+             "source_a":"BurntSushi/toml@d733fc535e4a9f3c454e421a87b90ade5d49bf31",
+             "source_b":"go-ini/ini@e2db55b0e088fa4ee0c128aa4ade263cdc1d7f08",
+             "native_a_ok":n("A")==0,"native_b_ok":n("B")==0,
+             "full_a_ok":n("AF")==0,"full_b_ok":n("BF")==0,
+             "checkout_seconds":(n("T1")-n("T0"))/1e9,
+             "targeted_native_seconds":(n("T2")-n("T1"))/1e9,
+             "full_suite_seconds":(n("T3")-n("T2"))/1e9,
+             "method_discovery":"HUMAN_SUPPLIED","adapter_construction":"HUMAN_SUPPLIED",
+             "equal_information_baseline":"same method and APIs",
+             "comparative_compounding":"UNKNOWN_NOT_TESTED",
+             "all_costs_charged":False}
+          out=pathlib.Path(os.environ["RUNNER_TEMP"])/"evidence"/"result.json"
+          out.write_text(json.dumps(r,indent=2,sort_keys=True))
+          print(json.dumps(r))
+          PY
+          test "$status_a" -eq 0 && test "$status_b" -eq 0 && test "$status_a_full" -eq 0 && test "$status_b_full" -eq 0
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cross-source-compounding-native-20261021
+          path: ${{ runner.temp }}/evidence/
+          if-no-files-found: error
