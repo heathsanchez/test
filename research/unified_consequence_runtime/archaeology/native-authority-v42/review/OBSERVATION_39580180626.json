@@ -1,0 +1,79 @@
+{
+  "artifacts": [
+    {
+      "digest": "sha256:b3eb97cd25a4ca6a343776d20beb55e55e15991ec465ca9ce445a8f9d26214f6",
+      "expired": false,
+      "id": 12336098030,
+      "name": "native-authority-v42-d22166ce307251ceaeda7dfb0d784cac6a572a95-1",
+      "size_in_bytes": 223117279
+    }
+  ],
+  "branch": "research/udm-native-authority-v42-20261021",
+  "conclusion": "failure",
+  "external_mutations": [],
+  "files": {
+    "ARTIFACTS_39580180626.json": {
+      "bytes": 798,
+      "sha256": "6ffc7dd766d00313013573775da1fbd42a2951c40299fd4069ed5519018cfba8"
+    },
+    "INITIAL_RUNS.json": {
+      "bytes": 24440,
+      "sha256": "937b4f911d100e88553bb538dc8ef2aa473911d346035cde18e855b107486bc9"
+    },
+    "JOBS_001.json": {
+      "bytes": 3109,
+      "sha256": "54ccbcfaa2e5ccd607b1ffc84e5274722a60e88da7c2df529f28607445d28127"
+    },
+    "JOBS_002.json": {
+      "bytes": 3735,
+      "sha256": "d9c27fb50311dcdf3528f0ae085bc977b6f47296a6b5e2fd47065e87384327f5"
+    },
+    "JOBS_003_FINAL.json": {
+      "bytes": 3735,
+      "sha256": "d9c27fb50311dcdf3528f0ae085bc977b6f47296a6b5e2fd47065e87384327f5"
+    },
+    "JOB_119155568708.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "JOB_119155568708_CONNECTOR.log": {
+      "bytes": 329239,
+      "sha256": "c8ab91760f681a680b499ff6f8e2e79e64ccd70bb554fe4c057b14ab0325f8e6"
+    },
+    "RUN_39580180626.json": {
+      "bytes": 12185,
+      "sha256": "a62c00b65f9405244f18a9d504790604b56c0d4a5a6d2fd6fae3e796c9388219"
+    }
+  },
+  "jobs": [
+    {
+      "conclusion": "failure",
+      "executed_qualification_steps": [],
+      "failed_steps": [
+        {
+          "completed_at": "2026-10-21T09:52:59Z",
+          "conclusion": "failure",
+          "name": "Freeze exact committed source and both runtime authorities",
+          "number": 5,
+          "started_at": "2026-10-21T09:52:52Z",
+          "status": "completed"
+        }
+      ],
+      "id": 119155568708,
+      "status": "completed"
+    }
+  ],
+  "log_retrieval": {
+    "connected_github_tool": "DECODED_JOB_LOG_RETAINED",
+    "gh_direct_redirect": "REFUSED_403; no source/runtime conclusion follows"
+  },
+  "native_scientific_qualification_executed": false,
+  "new_frontier_queries": 0,
+  "observed_at_utc": "2026-10-21T09:55:03.532079+00:00",
+  "run_id": 39580180626,
+  "run_url": "https://github.com/heathsanchez/test/actions/runs/39580180626",
+  "schema": "UDM_V42_CI_OBSERVATION_V1",
+  "smallest_obstruction": "AttributeError: native_execution_v42 has no public frozen attribute required by unchanged native_environment_v3.freeze_runtime",
+  "source_commit": "d22166ce307251ceaeda7dfb0d784cac6a572a95",
+  "status": "completed"
+}

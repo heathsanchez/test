@@ -1,0 +1,11 @@
+{
+  "callsite": "native_environment_v3.py:35 execution.frozen.subprocess.run",
+  "collection_worker_calls": 0,
+  "error": "AttributeError: module 'research.unified_consequence_runtime.native_execution_v42' has no attribute 'frozen'",
+  "native_worker_calls": 0,
+  "note": "CLI stderr observed in tool output; raw pre/post index bytes and INDEX_AUDIT retained. No source freeze or scientific qualification was produced. A bare runtime-identity child was launched before the unavailable helper was accessed; complete setup cost is UNKNOWN.",
+  "phase": "write_freeze/environment.freeze_runtime",
+  "schema": "UDM_NATIVE_AUTHORITY_V42_PREFREEZE_FAILURE",
+  "source_commit": "d22166ce307251ceaeda7dfb0d784cac6a572a95",
+  "status": "UNKNOWN_PREFREEZE_OPERATION_INTERFACE"
+}

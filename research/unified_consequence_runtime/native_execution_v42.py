@@ -12,6 +12,7 @@ from . import native_execution_v3 as previous
 from . import native_admission_v42 as admission
 from . import native_source_v42 as source
 
+frozen = previous.frozen
 SCHEMA = 'UDM_GENERIC_NATIVE_PYTEST_V42'
 CERTIFICATE_SCHEMA = 'UDM_NATIVE_ADMISSION_CERTIFICATE_V42'
 POLICY_SCHEMA = 'UDM_NATIVE_EXECUTION_POLICY_V42'
