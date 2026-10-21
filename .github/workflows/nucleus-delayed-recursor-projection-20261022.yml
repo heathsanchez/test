@@ -1,0 +1,73 @@
+name: Nucleus source-preserving delayed recursor projection A/B
+on:
+  push:
+    branches: [research/nucleus-neutral-recursor-projection-20261022]
+    paths:
+      - 'metatron-kernel/src/machine.rs'
+      - '.github/scripts/nucleus_delayed_recursor_gate_20261022.py'
+      - '.github/workflows/nucleus-delayed-recursor-projection-20261022.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  protected-causes:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 95
+    env:
+      GH_TOKEN: ${{ github.token }}
+      CARGO_INCREMENTAL: "0"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Verify source provenance and isolate the exact evaluator delta
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/nucleus-delayed-evidence /tmp/nucleus-delayed-original /tmp/nucleus-delayed-micro /tmp/nucleus-delayed-pack /tmp/nucleus-delayed-corpus
+          git rev-parse HEAD > /tmp/nucleus-delayed-evidence/candidate-research-sha.txt
+          git fetch --no-tags --depth=1 origin ff003e7fad888d39a40cfd2375885fe20e3209fa
+          git worktree add --detach /tmp/nucleus-delayed-original ff003e7fad888d39a40cfd2375885fe20e3209fa
+          test "$(git -C /tmp/nucleus-delayed-original rev-parse HEAD:metatron-kernel)" = 5e7d65b1b6abc3f6380bc7a37ffb153284d7faf1
+          git diff --check ff003e7fad888d39a40cfd2375885fe20e3209fa
+          git diff --name-only ff003e7fad888d39a40cfd2375885fe20e3209fa -- metatron-kernel > /tmp/nucleus-delayed-evidence/source-changed-files.txt
+          test "$(cat /tmp/nucleus-delayed-evidence/source-changed-files.txt)" = 'metatron-kernel/src/machine.rs' || {
+            echo 'SOURCE_SCOPE_DRIFT'; cat /tmp/nucleus-delayed-evidence/source-changed-files.txt; exit 1;
+          }
+          git diff ff003e7fad888d39a40cfd2375885fe20e3209fa -- metatron-kernel/src/machine.rs > /tmp/nucleus-delayed-evidence/real-source-diff.patch
+          rustc -vV > /tmp/nucleus-delayed-evidence/compiler.txt
+      - name: Compile unchanged and changed independent Nucleus with native unit tests
+        run: |
+          set -euo pipefail
+          NUCLEUS_EXPERIMENTAL_RELEVANCE=1 NUCLEUS_EXPERIMENTAL_EXPECTED_LAMBDA=1 \
+            CARGO_TARGET_DIR=/tmp/nucleus-delayed-target \
+            cargo test --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml > /tmp/nucleus-delayed-evidence/rust-tests.log 2>&1 || {
+              tail -100 /tmp/nucleus-delayed-evidence/rust-tests.log; exit 1;
+            }
+          CARGO_TARGET_DIR=/tmp/nucleus-delayed-base-build \
+            cargo build --release --locked --features diagnostics --manifest-path /tmp/nucleus-delayed-original/metatron-kernel/Cargo.toml
+          CARGO_TARGET_DIR=/tmp/nucleus-delayed-target \
+            cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          cp /tmp/nucleus-delayed-base-build/release/metatron-kernel /tmp/nucleus-delayed-original-binary
+          cp /tmp/nucleus-delayed-target/release/metatron-kernel /tmp/nucleus-delayed-candidate-binary
+          sha256sum /tmp/nucleus-delayed-{original,candidate}-binary > /tmp/nucleus-delayed-evidence/binaries.sha256
+      - name: Recover frozen true-versus-false decision source and all 196 Arena fixtures
+        run: |
+          set -euo pipefail
+          gh api repos/heathsanchez/test/actions/artifacts/12336209253/zip > /tmp/nucleus-delayed-micro.zip
+          echo '6727b4ba0de9f4b12642307d1749fcf220047134bfbb6e6a5a789bec092dfaa4  /tmp/nucleus-delayed-micro.zip' | sha256sum -c -
+          unzip -q /tmp/nucleus-delayed-micro.zip -d /tmp/nucleus-delayed-micro
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/11272848230/zip > /tmp/nucleus-delayed-196.zip
+          unzip -q /tmp/nucleus-delayed-196.zip -d /tmp/nucleus-delayed-pack
+          tar --no-same-owner -xzf /tmp/nucleus-delayed-pack/lean-arena-tests.tar.gz -C /tmp/nucleus-delayed-corpus
+      - name: Demand protected exact causal result against both independent checker binaries
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/nucleus_delayed_recursor_gate_20261022.py \
+            /tmp/nucleus-delayed-corpus /tmp/nucleus-delayed-micro \
+            /tmp/nucleus-delayed-original-binary /tmp/nucleus-delayed-candidate-binary \
+            /tmp/nucleus-delayed-evidence
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-delayed-recursor-${{ github.sha }}
+          path: /tmp/nucleus-delayed-evidence/
+          if-no-files-found: warn
