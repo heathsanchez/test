@@ -20,9 +20,12 @@ jobs:
         run: |
           python3 -m py_compile research/source_operation_identity_v9/test.py
           python3 research/source_operation_identity_v9/test.py
+          python3 research/source_operation_identity_v9/fair_baseline_audit.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: source-operation-identity-v9
-          path: research/source_operation_identity_v9/result.json
+          path: |
+            research/source_operation_identity_v9/result.json
+            research/source_operation_identity_v9/baseline_audit_result.json
           if-no-files-found: warn
