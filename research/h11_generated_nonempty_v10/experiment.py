@@ -181,7 +181,7 @@ def main():
          "fair equal-information cached-coverage selector makes same decisions",
          "no full CI economic or unmatched competitor advantage"]
     }
-    OUT.write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
+    REPORT.write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
     print(json.dumps({"status":report["status"],
        "positive":len(positive),"real_changes":11,"negative":len(negative),
        "accepted_preheader":sum(c["would_skip"] for c in candidates),
