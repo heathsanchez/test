@@ -1,0 +1,110 @@
+name: Nucleus cold-vs-warm checked Pi conversion
+on:
+  push:
+    branches: [research/nucleus-magma-pi-order-20261021]
+    paths:
+      - '.github/scripts/nucleus_magma_pi_order_20261021.py'
+      - '.github/workflows/nucleus-magma-pi-order-20261021.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-order-test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 65
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Freeze independent baseline source and tooling
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/pi-order-evidence /tmp/pi-order-pack /tmp/pi-order-fixtures
+          test "$(git rev-parse HEAD:metatron-kernel)" = 5e7d65b1b6abc3f6380bc7a37ffb153284d7faf1
+          git rev-parse HEAD > /tmp/pi-order-evidence/research-commit.txt
+          rustc -vV > /tmp/pi-order-evidence/compiler.txt
+      - name: Validate and compile unchanged independent checker
+        run: |
+          set -euo pipefail
+          NUCLEUS_EXPERIMENTAL_RELEVANCE=1 NUCLEUS_EXPERIMENTAL_EXPECTED_LAMBDA=1 \
+            cargo test --release --locked --features diagnostics \
+              --manifest-path metatron-kernel/Cargo.toml > /tmp/pi-order-evidence/native-tests.log 2>&1 || {
+              tail -100 /tmp/pi-order-evidence/native-tests.log; exit 1;
+            }
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/pi-order-baseline
+      - name: Compile isolated diagnostic observer with no production rule changes
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/nucleus_magma_pi_policy_separator_20261021.py metatron-kernel/src/typecheck.rs
+          python3 .github/scripts/nucleus_magma_pi_order_20261021.py metatron-kernel/src/typecheck.rs
+          git diff --check
+          git diff -- metatron-kernel/src/typecheck.rs > /tmp/pi-order-evidence/diagnostic-only-source.diff
+          test -s /tmp/pi-order-evidence/diagnostic-only-source.diff
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/pi-order-observer
+          sha256sum /tmp/pi-order-{baseline,observer} > /tmp/pi-order-evidence/binaries.sha256
+      - name: Fetch byte-pinned original Arena cases
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/11272848230/zip > /tmp/pi-order-tests.zip
+          unzip -q /tmp/pi-order-tests.zip -d /tmp/pi-order-pack
+          tar --no-same-owner -xzf /tmp/pi-order-pack/lean-arena-tests.tar.gz -C /tmp/pi-order-fixtures
+      - name: Test cold-first, guarded-repeat and preferred-first on the same original source
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib,subprocess
+          root=pathlib.Path('/tmp/pi-order-fixtures')
+          out=pathlib.Path('/tmp/pi-order-evidence')
+          manifest=json.loads(pathlib.Path('metatron-kernel/evidence/performance/owned-environment-2026-10-13/nucleus-owned-environment-frozen196.json').read_text())['modes']['origin']['rows']
+          pinned={row['case']:row for row in manifest}
+          flags=('RELEVANCE','CONTEXT_BINDER','TYPED_LINEAGE','SUBSTITUTION_RECLOSURE','TYPED_VALUE_NORMALIZATION','PROJECTION_CONTEXT','PROJECTION_CROSSFRAME_512','TYPED_RECEIVER','SOURCE_PAIR_DEPTH8','POLYMORPHIC_PROP_IRREL','PROP_SINGLETON_2P1F','EXPECTED_LAMBDA')
+          environ={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+          for flag in flags: environ['NUCLEUS_EXPERIMENTAL_'+flag]='1'
+          environ['NUCLEUS_TRACE_DOWNSTREAM']='1'
+          cases=('good/perf/magma-list-deep-n21.ndjson','good/perf/magma-list-deep-n36.ndjson')
+          results=[]
+          for name in cases:
+            path=root/name
+            assert hashlib.sha256(path.read_bytes()).hexdigest()==pinned[name]['sha256'], 'SOURCE_HASH_DRIFT'
+            for scenario,binary in (('unchanged','/tmp/pi-order-baseline'),('preferred-then-guarded','/tmp/pi-order-observer'),('guarded-twice-first','/tmp/pi-order-observer')):
+              env=environ.copy()
+              if scenario!='unchanged':
+                env['NUCLEUS_TRACE_FIRST_TYPED_CONTINUATION']='1'
+                env['NUCLEUS_TRACE_PI_POLICY_SEPARATOR']='1'
+              if scenario=='guarded-twice-first':
+                env['NUCLEUS_TRACE_PI_ORDER']='1'
+              with path.open('rb') as src:
+                p=subprocess.run([binary],stdin=src,stderr=subprocess.PIPE,stdout=subprocess.DEVNULL,timeout=160,env=env)
+              assert p.returncode==pinned[name]['rc']==2,(name,scenario,p.returncode)
+              lines=p.stderr.decode(errors='replace').splitlines()
+              cold=[line for line in lines if line.startswith('NUCLEUS_PI_COLD_ORDER:')]
+              pref=[line for line in lines if line.startswith('NUCLEUS_PI_POLICY_SEPARATOR:')]
+              traces=[line for line in lines if line.startswith('NUCLEUS_FIRST_TYPED_CONTINUATION:')]
+              terminal=[line for line in lines if line.startswith('NUCLEUS_DOWNSTREAM:')][-1:]
+              entry={'name':name,'scenario':scenario,'rc':p.returncode,'cold':cold[:8],'post_preferred':pref[:8],'context_source_traces':traces[:5],'terminal':terminal}
+              results.append(entry)
+              print('NUCLEUS_PI_ORDER_RESULT='+json.dumps({'name':name,'scenario':scenario,'rc':p.returncode,
+                 'cold':cold[:2],'post_preferred':pref[:2],'terminal':terminal},ensure_ascii=False),flush=True)
+          assert all(any(row['cold'] for row in results if row['name']==name and row['scenario']=='guarded-twice-first') for name in cases),'NO_COLD_SEPARATORS'
+          assert all(any(row['post_preferred'] for row in results if row['name']==name and row['scenario']=='preferred-then-guarded') for name in cases),'NO_PREFERRED_FIRST_SEPARATORS'
+          for bad in ('protected-false-index.ndjson','protected-eta-ctor-alias.ndjson'):
+            path=pathlib.Path('metatron-kernel/tests/fixtures')/bad
+            for binary in ('/tmp/pi-order-baseline','/tmp/pi-order-observer'):
+              with path.open('rb') as src:
+                p=subprocess.run([binary],stdin=src,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,env=environ,timeout=40)
+              assert p.returncode in (1,2),(bad,binary,p.returncode)
+          out.joinpath('pi-cold-warm-order.json').write_text(json.dumps({
+            'source_tree_sha':'5e7d65b1b6abc3f6380bc7a37ffb153284d7faf1','rows':results,
+            'original_verdicts_unchanged':True,'protected_negative_nonaccept':True,
+            'decision':'DIAGNOSTIC_ONLY_NO_SEMANTIC_PROMOTION'
+          },indent=2,ensure_ascii=False)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-cold-warm-source-pi-${{ github.sha }}
+          path: /tmp/pi-order-evidence/
+          if-no-files-found: warn
