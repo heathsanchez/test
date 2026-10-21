@@ -1,0 +1,32 @@
+name: Gen3 independent native witness and ablation 20261021
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [research/gen3-independent-20261021]
+permissions:
+  contents: read
+jobs:
+  independent:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+          cache: false
+      - name: Execute independent literal witness and source-fixed ablations
+        run: |
+          set -euo pipefail
+          git clone -q https://github.com/go-ini/ini.git "$RUNNER_TEMP/ini"
+          git -C "$RUNNER_TEMP/ini" checkout -q --detach e2db55b0e088fa4ee0c128aa4ade263cdc1d7f08
+          test "$(git -C "$RUNNER_TEMP/ini" rev-parse HEAD)" = e2db55b0e088fa4ee0c128aa4ade263cdc1d7f08
+          cp research/cross_source_compounding_20261021/GEN3_independent_test.go.txt "$RUNNER_TEMP/ini/mathgraph_independent_test.go"
+          (cd "$RUNNER_TEMP/ini" && go test -count=1 -v -run '^TestMathGraphGen3(IndependentWitness|EqualInformationAndAblation)$' .) | tee gen3-independent.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gen3-independent-evidence
+          path: gen3-independent.log
+          if-no-files-found: error
