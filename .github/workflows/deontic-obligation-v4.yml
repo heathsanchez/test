@@ -1,0 +1,28 @@
+name: Deontic Obligation V4
+on:
+  push:
+    branches:
+      - research/deontic-obligation-v4-20261021
+  pull_request:
+    paths:
+      - 'research/deontic_obligation_v4/**'
+      - '.github/workflows/deontic-obligation-v4.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  independent-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - name: Frozen deontic source-obligation sixth-source transfer
+        run: |
+          python3 -m py_compile research/deontic_obligation_v4/experiment.py
+          python3 research/deontic_obligation_v4/experiment.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: deontic-obligation-v4-evidence
+          path: research/deontic_obligation_v4/result.json
+          if-no-files-found: warn
