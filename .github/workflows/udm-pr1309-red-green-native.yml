@@ -39,7 +39,8 @@ jobs:
           done
           python - <<'PY'
           import pathlib,json
-          p=pathlib.Path("evidence")
+          import os
+          p=pathlib.Path(os.environ["GITHUB_WORKSPACE"])/"evidence"
           a=int((p/"base.exit").read_text());b=int((p/"head.exit").read_text())
           result={"base_exit":a,"head_exit":b,"expected_red_green":a!=0 and b==0,
           "base":"1ea82a711c69f590054987b5cb194157f8ce8ac4",
