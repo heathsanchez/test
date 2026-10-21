@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="8" skipped="0" tests="8" time="0.157" timestamp="2026-10-21T21:22:03.572555+00:00" hostname="8ac9339af51c"><testcase classname="research.unified_consequence_runtime.test_qualify_native_frontier_v43" name="test_versioned_environment_and_controller_modules_exist" time="0.000"><failure message="AssertionError: V43 prospective binding is not implemented: native_environment_v43.py, qualify_native_frontier_v43.py&#10;assert not ['native_environment_v43.py', 'qualify_native_frontier_v43.py']">research/unified_consequence_runtime/test_qualify_native_frontier_v43.py:42: in test_versioned_environment_and_controller_modules_exist
+    assert not missing, 'V43 prospective binding is not implemented: ' + ', '.join(missing)
+E   AssertionError: V43 prospective binding is not implemented: native_environment_v43.py, qualify_native_frontier_v43.py
+E   assert not ['native_environment_v43.py', 'qualify_native_frontier_v43.py']</failure></testcase><testcase classname="research.unified_consequence_runtime.test_qualify_native_frontier_v43" name="test_bindings_preserve_original_search_orders_eligibility_and_select_v43_core" time="0.000"><failure message="ModuleNotFoundError: No module named 'research.unified_consequence_runtime.qualify_native_frontier_v43'">research/unified_consequence_runtime/test_qualify_native_frontier_v43.py:46: in test_bindings_preserve_original_search_orders_eligibility_and_select_v43_core
+    current = controller()
+research/unified_consequence_runtime/test_qualify_native_frontier_v43.py:28: in controller
+    return implementation('qualify_native_frontier_v43')
+research/unified_consequence_runtime/native_v43_test_support.py:42: in implementation
+    return importlib.import_module(__package__ + '.' + name)
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+&lt;frozen importlib._bootstrap&gt;:1387: in _gcd_import
+    ???
+&lt;frozen importlib._bootstrap&gt;:1360: in _find_and_load
+    ???
+&lt;frozen importlib._bootstrap&gt;:1324: in _find_and_load_unlocked
+    ???
+E   ModuleNotFoundError: No module named 'research.unified_consequence_runtime.qualify_native_frontier_v43'</failure></testcase><testcase classname="research.unified_consequence_runtime.test_qualify_native_frontier_v43" name="test_real_machine_records_external_obligation_before_environment_provision" time="0.001"><failure message="ModuleNotFoundError: No module named 'research.unified_consequence_runtime.qualify_native_frontier_v43'">research/unified_consequence_runtime/test_qualify_native_frontier_v43.py:76: in test_real_machine_records_external_obligation_before_environment_provision
+    current = controller()
+research/unified_consequence_runtime/test_qualify_native_frontier_v43.py:28: in controller
+    return implementation('qualify_native_frontier_v43')
+research/unified_consequence_runtime/native_v43_test_support.py:42: in implementation
+    return importlib.import_module(__package__ + '.' + name)
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+&lt;frozen importlib._bootstrap&gt;:1387: in _gcd_import
+    ???
+&lt;frozen importlib._bootstrap&gt;:1360: in _find_and_load
+    ???
+&lt;frozen importlib._bootstrap&gt;:1324: in _find_and_load_unlocked
+    ???
+E   ModuleNotFoundError: No module named 'research.unified_consequence_runtime.qualify_native_frontier_v43'</failure></testcase><testcase classname="research.unified_consequence_runtime.test_qualify_native_frontier_v43" name="test_screening_components_come_from_exact_committed_authority_not_environment" time="0.000"><failure message="ModuleNotFoundError: No module named 'research.unified_consequence_runtime.qualify_native_frontier_v43'">research/unified_consequence_runtime/test_qualify_native_frontier_v43.py:113: in test_screening_components_come_from_exact_committed_authority_not_environment
+    current = controller()
+research/unified_consequence_runtime/test_qualify_native_frontier_v43.py:28: in controller
+    return implementation('qualify_native_frontier_v43')
+research/unified_consequence_runtime/native_v43_test_support.py:42: in implementation
+    return importlib.import_module(__package__ + '.' + name)
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+&lt;frozen importlib._bootstrap&gt;:1387: in _gcd_import
+    ???
+&lt;frozen importlib._bootstrap&gt;:1360: in _find_and_load
+    ???
+&lt;frozen importlib._bootstrap&gt;:1324: in _find_and_load_unlocked
+    ???
+E   ModuleNotFoundError: No module named 'research.unified_consequence_runtime.qualify_native_frontier_v43'</failure></testcase><testcase classname="research.unified_consequence_runtime.test_qualify_native_frontier_v43" name="test_profile_witness_preflight_precedes_uncached_and_cached_receipt_use[False]" time="0.000"><failure message="ModuleNotFoundError: No module named 'research.unified_consequence_runtime.qualify_native_frontier_v43'">research/unified_consequence_runtime/test_qualify_native_frontier_v43.py:151: in test_profile_witness_preflight_precedes_uncached_and_cached_receipt_use
+    current = controller()
+research/unified_consequence_runtime/test_qualify_native_frontier_v43.py:28: in controller
+    return implementation('qualify_native_frontier_v43')
+research/unified_consequence_runtime/native_v43_test_support.py:42: in implementation
+    return importlib.import_module(__package__ + '.' + name)
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+&lt;frozen importlib._bootstrap&gt;:1387: in _gcd_import
+    ???
+&lt;frozen importlib._bootstrap&gt;:1360: in _find_and_load
+    ???
+&lt;frozen importlib._bootstrap&gt;:1324: in _find_and_load_unlocked
+    ???
+E   ModuleNotFoundError: No module named 'research.unified_consequence_runtime.qualify_native_frontier_v43'</failure></testcase><testcase classname="research.unified_consequence_runtime.test_qualify_native_frontier_v43" name="test_profile_witness_preflight_precedes_uncached_and_cached_receipt_use[True]" time="0.000"><failure message="ModuleNotFoundError: No module named 'research.unified_consequence_runtime.qualify_native_frontier_v43'">research/unified_consequence_runtime/test_qualify_native_frontier_v43.py:151: in test_profile_witness_preflight_precedes_uncached_and_cached_receipt_use
+    current = controller()
+research/unified_consequence_runtime/test_qualify_native_frontier_v43.py:28: in controller
+    return implementation('qualify_native_frontier_v43')
+research/unified_consequence_runtime/native_v43_test_support.py:42: in implementation
+    return importlib.import_module(__package__ + '.' + name)
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+&lt;frozen importlib._bootstrap&gt;:1387: in _gcd_import
+    ???
+&lt;frozen importlib._bootstrap&gt;:1360: in _find_and_load
+    ???
+&lt;frozen importlib._bootstrap&gt;:1324: in _find_and_load_unlocked
+    ???
+E   ModuleNotFoundError: No module named 'research.unified_consequence_runtime.qualify_native_frontier_v43'</failure></testcase><testcase classname="research.unified_consequence_runtime.test_qualify_native_frontier_v43" name="test_agent_candidate_witness_preflight_precedes_direct_worker_calls" time="0.001"><failure message="ModuleNotFoundError: No module named 'research.unified_consequence_runtime.qualify_native_frontier_v43'">research/unified_consequence_runtime/test_qualify_native_frontier_v43.py:172: in test_agent_candidate_witness_preflight_precedes_direct_worker_calls
+    current = controller()
+research/unified_consequence_runtime/test_qualify_native_frontier_v43.py:28: in controller
+    return implementation('qualify_native_frontier_v43')
+research/unified_consequence_runtime/native_v43_test_support.py:42: in implementation
+    return importlib.import_module(__package__ + '.' + name)
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+&lt;frozen importlib._bootstrap&gt;:1387: in _gcd_import
+    ???
+&lt;frozen importlib._bootstrap&gt;:1360: in _find_and_load
+    ???
+&lt;frozen importlib._bootstrap&gt;:1324: in _find_and_load_unlocked
+    ???
+E   ModuleNotFoundError: No module named 'research.unified_consequence_runtime.qualify_native_frontier_v43'</failure></testcase><testcase classname="research.unified_consequence_runtime.test_qualify_native_frontier_v43" name="test_original_pass_and_fail_admission_have_identical_fixed_order_eligibility" time="0.000"><failure message="ModuleNotFoundError: No module named 'research.unified_consequence_runtime.qualify_native_frontier_v43'">research/unified_consequence_runtime/test_qualify_native_frontier_v43.py:195: in test_original_pass_and_fail_admission_have_identical_fixed_order_eligibility
+    current = controller()
+research/unified_consequence_runtime/test_qualify_native_frontier_v43.py:28: in controller
+    return implementation('qualify_native_frontier_v43')
+research/unified_consequence_runtime/native_v43_test_support.py:42: in implementation
+    return importlib.import_module(__package__ + '.' + name)
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+&lt;frozen importlib._bootstrap&gt;:1387: in _gcd_import
+    ???
+&lt;frozen importlib._bootstrap&gt;:1360: in _find_and_load
+    ???
+&lt;frozen importlib._bootstrap&gt;:1324: in _find_and_load_unlocked
+    ???
+E   ModuleNotFoundError: No module named 'research.unified_consequence_runtime.qualify_native_frontier_v43'</failure></testcase></testsuite></testsuites>

@@ -1,0 +1,53 @@
+{
+  "artifacts_sha256": {
+    "junit.xml": "15630d5cdf710d42b8727f7d0ee0e042a9dba7fa77f03603124d5124dafeee4a",
+    "stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout": "db55f3e28989f9260e76866152b5e3c0b699bd34c8381c6f82b00b625cb240b5"
+  },
+  "baseline_commit": "8c1ff8db64415b9ce6db865f2744f40a866293c9",
+  "command": [
+    "/workspace/qualification/native-authority-v42-controller/bin/python",
+    "-B",
+    "-m",
+    "pytest",
+    "-q",
+    "--import-mode=importlib",
+    "-p",
+    "no:cacheprovider",
+    "research/unified_consequence_runtime/test_qualify_native_frontier_v43.py",
+    "--basetemp=/workspace/qualification/experiment-interface-v43-prospective-preimplementation/fixtures",
+    "--tb=short",
+    "--junitxml=/workspace/qualification/experiment-interface-v43-prospective-preimplementation/junit.xml"
+  ],
+  "completed_utc": "2026-10-21T21:22:03.752787+00:00",
+  "counts": {
+    "errors": 0,
+    "failures": 8,
+    "passed": 0,
+    "skipped": 0,
+    "tests": 8
+  },
+  "cwd": "/workspace/udm-v54",
+  "environment_overrides": {
+    "GIT_OPTIONAL_LOCKS": "0",
+    "PYTHONDONTWRITEBYTECODE": "1"
+  },
+  "files_sha256": {
+    "research/unified_consequence_runtime/archaeology/experiment-interface-v43/PROSPECTIVE_BINDINGS.md": "18aa75812e3e8fa8df1583373252ae35bf505cb63201d08379f59246a41e3faf",
+    "research/unified_consequence_runtime/test_qualify_native_frontier_v43.py": "4bf4b194cf1848ef258139fc54fb021aae5a6f075c7379220bb68b83f80c7eaa"
+  },
+  "notes": [
+    "All failures are missing V43 prospective binding modules; no test is skipped.",
+    "Native truth remains in existing real Hatch build/native/causal controls. These tests add no native oracle, winning method, grammar, budget or scientific claim.",
+    "Two versioned production modules remain absent before and after this test freeze. No production source or Git state was mutated by this task."
+  ],
+  "production_modules_absent_before_and_after": [
+    "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_v43.py",
+    "/workspace/udm-v54/research/unified_consequence_runtime/qualify_native_frontier_v43.py"
+  ],
+  "returncode": 1,
+  "schema": "UDM_V43_PROSPECTIVE_BINDING_PREIMPLEMENTATION_TEST_FREEZE_V1",
+  "scope": "Unit wiring only; real Machine is used for pre-provision ordering after implementation. Dependency doubles stop before native/source operations and never return a native verdict. No prospective queries, sources or tasks.",
+  "started_utc": "2026-10-21T21:22:03.449736+00:00",
+  "status": "EXPECTED_RED_BEFORE_PRODUCTION_IMPLEMENTATION"
+}
