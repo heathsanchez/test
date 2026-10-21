@@ -31,6 +31,8 @@ def extract(text):
         low=para.lower()
         if "check" not in low or "zero" not in low or "violation" not in low:
             continue
+        if re.search(r"\b(?:no|not|without)\s+(?:a\s+)?(?:check\s+constraint\s+)?violation\b",low):
+            continue
         pattern=r'(?:if|when)\b.{0,250}?(?:result|expression).{0,250}?\bzero\b.{0,180}?\b(?:violation|violated|fails|failed)\b'
         if re.search(pattern,low,re.S):
             return dict(status="CLAUSE_EXTRACTED",kind="CHECK_ZERO_VIOLATION",source_clause=para[:900],
