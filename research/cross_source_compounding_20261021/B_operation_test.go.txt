@@ -1,0 +1,40 @@
+package toml
+import("bytes";"fmt";"testing")
+func mgTrace(v string)(string,string,string,string,error){
+ src:=struct{Value string}{v}
+ var first bytes.Buffer
+ if e:=NewEncoder(&first).Encode(src);e!=nil{return "","","","",e}
+ var once struct{Value string}
+ if _,e:=Decode(first.String(),&once);e!=nil{return first.String(),"","","",e}
+ var second bytes.Buffer
+ if e:=NewEncoder(&second).Encode(once);e!=nil{return first.String(),once.Value,"","",e}
+ var twice struct{Value string}
+ if _,e:=Decode(second.String(),&twice);e!=nil{return first.String(),once.Value,second.String(),"",e}
+ return first.String(),once.Value,second.String(),twice.Value,nil
+}
+func TestMathGraphTransferredDriftLocalization(t *testing.T){
+ seeds:=[]string{"plain"," leading","trailing ","has.dot","a=b","has#hash","quote\"value","slash\\value","unicode λ"}
+ modifiers:=[]string{"#",";","="," ","\"","\\","\r","\n"}
+ seen:=map[string]bool{};cases:=0;drift:=0
+ for _,s:=range seeds{
+  candidates:=[]string{s}
+  for _,m:=range modifiers{candidates=append(candidates,s+m,m+s)}
+  for _,v:=range candidates{
+   if seen[v]{continue};seen[v]=true;cases++
+   a,mid,b,final,err:=mgTrace(v)
+   if err!=nil{t.Fatalf("native encoder/decoder rejected %q: %v",v,err)}
+   if mid!=v || final!=mid {
+    drift++
+    t.Logf("DRIFT input=%q first_decoded=%q final_decoded=%q first_hex=%x second_hex=%x stage=%s",
+      v,mid,final,[]byte(a),[]byte(b),func()string{if mid!=v{return "first"};return "second"}())
+    // Independent literal recheck, not just copying the trace decision.
+    _,m2,_,f2,e2:=mgTrace(v)
+    if e2!=nil || m2!=mid || f2!=final{t.Fatalf("unstable drift witness %q",v)}
+   }
+  }
+ }
+ t.Logf("TRANSFER_NATIVE cases=%d drift=%d",cases,drift)
+ ordinary:=[]string{"plain","unicode λ"}
+ for _,s:=range ordinary{_,m,_,f,e:=mgTrace(s);if e!=nil||m!=s||f!=s{t.Fatalf("ordinary negative control %q",s)}}
+ if cases<100{t.Fatal(fmt.Sprintf("incomplete generation %d",cases))}
+}
