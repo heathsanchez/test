@@ -1,0 +1,17 @@
+name: UDM source-author test-admission preflight
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [research/udm-author-test-admission-preflight-20261021]
+permissions:
+  contents: read
+jobs:
+  isolated-policy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test scoped admission and refused unsafe commands
+        run: |
+          cd research/udm_author_test_admission_20261021
+          python3 -m unittest -v test_pytest_admission.py
