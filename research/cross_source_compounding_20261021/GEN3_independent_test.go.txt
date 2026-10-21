@@ -1,0 +1,46 @@
+package ini
+import("bytes";"fmt";"testing";"time")
+func probeMG(v string)(string,string,string,error){
+ f:=Empty()
+ if _,e:=f.Section("main").NewKey("Value",v);e!=nil{return "","","",e}
+ var a bytes.Buffer
+ if _,e:=f.WriteTo(&a);e!=nil{return "","","",e}
+ mid,e:=Load(a.Bytes());if e!=nil{return a.String(),"","",e}
+ var b bytes.Buffer
+ if _,e=mid.WriteTo(&b);e!=nil{return a.String(),"","",e}
+ last,e:=Load(b.Bytes());if e!=nil{return a.String(),b.String(),"",e}
+ return a.String(),b.String(),last.Section("main").Key("Value").String(),nil
+}
+func TestMathGraphGen3IndependentWitness(t *testing.T){
+ for _,v:=range []string{"plain\\","plain"}{
+  a,b,got,e:=probeMG(v);if e!=nil{t.Fatal(e)}
+  t.Logf("INDEPENDENT input=%q first_hex=%x second_hex=%x recovered=%q",v,[]byte(a),[]byte(b),got)
+  if v=="plain\\" && got==v{t.Fatal("expected previous witness no longer reproduced")}
+  if v=="plain" && got!=v{t.Fatal("negative ordinary control changed")}
+ }
+}
+func TestMathGraphGen3EqualInformationAndAblation(t *testing.T){
+ seeds:=[]string{"plain"," leading","trailing ","has.dot","a=b","has#hash","quote\"value","slash\\value","unicode λ"}
+ mods:=[]string{"#",";","="," ","\"","\\","\r","\n"}
+ makeCandidates:=func(useRetained bool)[]string{
+  if !useRetained{ seeds=[]string{"plain"} }
+  seen:=map[string]bool{};v:=[]string{}
+  for _,s:=range seeds{
+   for _,q:=range append([]string{s},func()[]string{z:=[]string{};for _,m:=range mods{z=append(z,s+m,m+s)};return z}()...){
+    if !seen[q]{seen[q]=true;v=append(v,q)}
+   }
+  };return v
+ }
+ for _,arm:=range []struct{name string;retained bool}{
+  {"warm",true},{"cold_ablated",false},{"equal_info_competitor",true},{"restored",true},
+ }{
+  start:=time.Now();n:=0;found:=""
+  for _,v:=range makeCandidates(arm.retained){
+   n++
+   _,_,got,e:=probeMG(v)
+   if e==nil && got!=v{found=fmt.Sprintf("%q -> %q",v,got);break}
+  }
+  t.Logf("ACQUISITION arm=%s probes=%d elapsed_ns=%d witness=%s",arm.name,n,time.Since(start).Nanoseconds(),found)
+  if found==""{t.Fatalf("arm %s no witness",arm.name)}
+ }
+}
