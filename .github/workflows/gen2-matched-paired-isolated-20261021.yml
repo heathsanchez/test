@@ -1,0 +1,53 @@
+name: Gen2 paired comparison isolated 20261021
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [research/gen2-matched-cost-20261021]
+permissions:
+  contents: read
+jobs:
+  measure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+          cache: false
+      - name: Native equal-information matched six-pair comparator
+        run: |
+          set -euo pipefail
+          git clone -q https://github.com/go-ini/ini.git "$RUNNER_TEMP/ini"
+          git -C "$RUNNER_TEMP/ini" checkout -q --detach e2db55b0e088fa4ee0c128aa4ade263cdc1d7f08
+          cp research/cross_source_compounding_20261021/GEN2_test.go.txt "$RUNNER_TEMP/ini/mathgraph_gen2_test.go"
+          (cd "$RUNNER_TEMP/ini" && go test -count=1 -run '^TestMathGraphGen2Retention$' .)
+          python3 - <<'PY'
+          import subprocess,time,json,statistics,os,pathlib
+          repo=pathlib.Path(os.environ["RUNNER_TEMP"])/"ini"
+          rows=[]
+          for i in range(6):
+            row={"pair":i}
+            for arm in (["retained","conventional"] if i%2==0 else ["conventional","retained"]):
+              start=time.perf_counter()
+              p=subprocess.run(["go","test","-count=1","-run","^TestMathGraphGen2Retention$","."],cwd=repo,capture_output=True,text=True)
+              row[arm+"_seconds"]=time.perf_counter()-start
+              if p.returncode:raise RuntimeError(p.stdout+p.stderr)
+            rows.append(row)
+          x=statistics.median(r["retained_seconds"] for r in rows)
+          y=statistics.median(r["conventional_seconds"] for r in rows)
+          report={"source":"go-ini/ini@e2db55b0e088fa4ee0c128aa4ade263cdc1d7f08",
+             "retained_median_seconds":x,"conventional_median_seconds":y,
+             "paired_samples":rows,"both_arms_same_executable":True,
+             "full_acquisition_and_human_cost_measured":False,
+             "compounding_cost_advantage":"NOT_ESTABLISHED"}
+          print(json.dumps(report))
+          pathlib.Path("gen2-cost-result.json").write_text(json.dumps(report,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gen2-cost-matched-20261021
+          path: gen2-cost-result.json
+          if-no-files-found: warn

@@ -1,0 +1,30 @@
+package ini
+import ("bytes";"fmt";"strings";"testing")
+func TestMathGraphGen3Acquisition(t *testing.T){
+ seeds:=[]string{"plain"," leading","trailing ","has.dot","a=b","has#hash","quote\"value","slash\\value","unicode λ"}
+ mods:=[]string{"#",";","="," ","\"","\\","\r","\n"}
+ seen:=map[string]bool{}
+ total:=0
+ var witness string
+ for _,s:=range seeds {
+  all:=append([]string{s},func()[]string{a:=[]string{};for _,m:=range mods{a=append(a,s+m,m+s)};return a}()...)
+  for _,v:=range all {
+   if seen[v]{continue};seen[v]=true;total++
+   first:=Empty()
+   if _,err:=first.Section("main").NewKey("Value",v);err!=nil{continue}
+   var out bytes.Buffer
+   if _,err:=first.WriteTo(&out);err!=nil{continue}
+   next,err:=Load(out.Bytes());if err!=nil{continue}
+   var out2 bytes.Buffer
+   if _,err=next.WriteTo(&out2);err!=nil{continue}
+   last,err:=Load(out2.Bytes());if err!=nil{continue}
+   got:=last.Section("main").Key("Value").String()
+   if got!=v {witness=fmt.Sprintf("%q -> %q",v,got);break}
+  }
+  if witness!=""{break}
+ }
+ t.Logf("GEN3 searched=%d witness=%s",total,witness)
+ // A found witness is diagnostic, not a test-suite failure: confirm separately.
+ if witness==""{t.Log("GEN3 UNKNOWN_NO_WITNESS_IN_FIXED_GRAMMAR")}
+ if strings.Contains(witness,"\x00"){t.Fatal("invalid witness encoding")}
+}

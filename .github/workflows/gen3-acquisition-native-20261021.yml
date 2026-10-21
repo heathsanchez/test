@@ -1,0 +1,44 @@
+name: Gen3 acquisition source-native 20261021
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [research/gen3-acquisition-qualification-20261021]
+permissions:
+  contents: read
+jobs:
+  acquire:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+          cache: false
+      - name: Run source-pinned Gen3 acquisition and equal-information test
+        run: |
+          set -euo pipefail
+          git clone -q https://github.com/go-ini/ini.git "$RUNNER_TEMP/ini"
+          git -C "$RUNNER_TEMP/ini" checkout -q --detach e2db55b0e088fa4ee0c128aa4ade263cdc1d7f08
+          cp research/cross_source_compounding_20261021/GEN3_test.go.txt "$RUNNER_TEMP/ini/mathgraph_gen3_test.go"
+          cd "$RUNNER_TEMP/ini"
+          go test -count=1 -v -run '^TestMathGraphGen3Acquisition$' . | tee "$GITHUB_WORKSPACE/gen3-native.log"
+          python3 - <<'PY'
+          import json,pathlib
+          obj={"schema":"mathgraph.gen3.acquisition.v1","source":"go-ini/ini@e2db55b0e088fa4ee0c128aa4ade263cdc1d7f08",
+          "native_test":"PASS","method":"HUMAN_SUPPLIED","baseline":"EQUAL_INFORMATION_CAN_REUSE_SAME_GRAMMAR",
+          "causal_compounding_advantage":"NOT_ESTABLISHED","human_and_method_costs":"NOT_CHARGED",
+          "restarts_and_method_ablation":"NOT_YET_RUN"}
+          pathlib.Path("gen3-result.json").write_text(json.dumps(obj,indent=2))
+          print(json.dumps(obj))
+          PY
+          cp gen3-result.json "$GITHUB_WORKSPACE/gen3-result.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gen3-native-acquisition
+          path: |
+            gen3-native.log
+            gen3-result.json
+          if-no-files-found: warn
