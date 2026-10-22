@@ -1,0 +1,46 @@
+name: Prospective Exception Transfer V13
+on:
+  push:
+    branches:
+      - research/prospective-exception-transfer-v13-20261022
+  pull_request:
+    paths:
+      - 'research/prospective_exception_v13/**'
+      - '.github/workflows/prospective-exception-v13.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  genuine-transfer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout exact independent upstream
+        uses: actions/checkout@v4
+        with:
+          repository: pallets/itsdangerous
+          ref: 672971d66a2ef9f85151e53283113f33d642dabd
+          path: upstream
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Original upstream test environment
+        run: |
+          python -m pip install pytest==9.0.3 freezegun
+          python -m pip install -e ./upstream
+      - name: Frozen source-author exception acquisition
+        run: |
+          python -m py_compile research/prospective_exception_v13/sealed.py
+          python research/prospective_exception_v13/sealed.py
+      - name: Run actual preselected independent upstream test suites
+        run: |
+          cd upstream
+          python -m pytest -q tests/test_itsdangerous/test_serializer.py tests/test_itsdangerous/test_timed.py tests/test_itsdangerous/test_url_safe.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: prospective-exception-v13
+          path: research/prospective_exception_v13/result.json
+          if-no-files-found: warn
