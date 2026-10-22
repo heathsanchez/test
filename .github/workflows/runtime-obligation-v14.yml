@@ -1,0 +1,45 @@
+name: Prospective Runtime Exception Obligations V14
+on:
+  push:
+    branches:
+      - research/runtime-author-obligations-v14-20261022
+  pull_request:
+    paths:
+      - 'research/runtime_obligation_v14/**'
+      - '.github/workflows/runtime-obligation-v14.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  upstream-runtime-exception:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout exact independent Click upstream
+        uses: actions/checkout@v4
+        with:
+          repository: pallets/click
+          ref: 2247b35ea1c47c727d7a06e51fa280e12a863ff6
+          path: upstream
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Native Python pytest and Click
+        run: |
+          python -m pip install pytest==9.0.3
+          python -m pip install -e ./upstream
+      - name: Passively extract source-author rejection obligations and falsify mutant
+        run: |
+          python -m py_compile research/runtime_obligation_v14/experiment.py research/runtime_obligation_v14/runtime_obligation_plugin.py
+          python research/runtime_obligation_v14/experiment.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: runtime-obligation-v14
+          path: |
+            research/runtime_obligation_v14/result.json
+            research/runtime_obligation_v14/trace_original.json
+            research/runtime_obligation_v14/trace_mutant.json
+          if-no-files-found: warn
