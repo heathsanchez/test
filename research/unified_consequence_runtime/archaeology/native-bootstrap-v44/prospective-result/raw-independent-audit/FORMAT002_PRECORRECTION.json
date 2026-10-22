@@ -1,0 +1,10 @@
+{
+  "allowed_change": "Compare exact retained raw developmental_sources bytes and exact three-component projection; preserve strict component source pins and original failed attempts. New data-audit output only.",
+  "new_native_calls": 0,
+  "new_source_queries": 0,
+  "old_source_sha256": "3eb1c6e6d9ead8d146285234b2eb8184e12dfe0cd69e80a24dcedbf842ea5b25",
+  "original_unknown_report_sha256": "49607445d8e567b807d65e2b71d02d9390e09c27eb56568216c7f7a6348f25f9",
+  "reason": "COMPONENT_ARCHIVE_BOUNDARY.source_pins_sha256 is the exact raw developmental_sources.json digest, not a canonical digest of its three-component projection. Independent immutable transport already authenticates that raw file.",
+  "schema": "UDM_V44_DATA_AUDITOR_FORMAT002_PRECORRECTION",
+  "scientific_promotion": false
+}

@@ -1,0 +1,53 @@
+.......FFF                                                               [100%]
+=================================== FAILURES ===================================
+_ test_component_boundary_preserves_exact_raw_pinset_and_projection[raw_digest] _
+
+change = 'raw_digest'
+
+    @pytest.mark.parametrize('change',('raw_digest','component_commit','component_pin'))
+    def test_component_boundary_preserves_exact_raw_pinset_and_projection(change):
+        import json
+        m=module();config={key:{'commit':'original','files':{'one.py':'exact'}} for key in ('development','metatron','flash')}
+        config['schema']='retained original full file'
+        raw=json.dumps(config,indent=2).encode()
+        boundary={'source_pins_sha256':m.sha(raw),'source_pins':{key:config[key] for key in ('development','metatron','flash')}}
+>       assert m.component_pinset_matches(boundary,raw)
+E       AttributeError: module 'raw_packet_auditor' has no attribute 'component_pinset_matches'
+
+test_format001.py:36: AttributeError
+_ test_component_boundary_preserves_exact_raw_pinset_and_projection[component_commit] _
+
+change = 'component_commit'
+
+    @pytest.mark.parametrize('change',('raw_digest','component_commit','component_pin'))
+    def test_component_boundary_preserves_exact_raw_pinset_and_projection(change):
+        import json
+        m=module();config={key:{'commit':'original','files':{'one.py':'exact'}} for key in ('development','metatron','flash')}
+        config['schema']='retained original full file'
+        raw=json.dumps(config,indent=2).encode()
+        boundary={'source_pins_sha256':m.sha(raw),'source_pins':{key:config[key] for key in ('development','metatron','flash')}}
+>       assert m.component_pinset_matches(boundary,raw)
+E       AttributeError: module 'raw_packet_auditor' has no attribute 'component_pinset_matches'
+
+test_format001.py:36: AttributeError
+_ test_component_boundary_preserves_exact_raw_pinset_and_projection[component_pin] _
+
+change = 'component_pin'
+
+    @pytest.mark.parametrize('change',('raw_digest','component_commit','component_pin'))
+    def test_component_boundary_preserves_exact_raw_pinset_and_projection(change):
+        import json
+        m=module();config={key:{'commit':'original','files':{'one.py':'exact'}} for key in ('development','metatron','flash')}
+        config['schema']='retained original full file'
+        raw=json.dumps(config,indent=2).encode()
+        boundary={'source_pins_sha256':m.sha(raw),'source_pins':{key:config[key] for key in ('development','metatron','flash')}}
+>       assert m.component_pinset_matches(boundary,raw)
+E       AttributeError: module 'raw_packet_auditor' has no attribute 'component_pinset_matches'
+
+test_format001.py:36: AttributeError
+- generated xml file: /workspace/qualification/native-bootstrap-v44-raw-independent-audit/FORMAT002_RED.xml -
+=========================== short test summary info ============================
+FAILED test_format001.py::test_component_boundary_preserves_exact_raw_pinset_and_projection[raw_digest]
+FAILED test_format001.py::test_component_boundary_preserves_exact_raw_pinset_and_projection[component_commit]
+FAILED test_format001.py::test_component_boundary_preserves_exact_raw_pinset_and_projection[component_pin]
+3 failed, 7 passed in 0.05s

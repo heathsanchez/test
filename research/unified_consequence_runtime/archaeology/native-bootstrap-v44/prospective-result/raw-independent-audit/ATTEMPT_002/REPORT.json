@@ -1,0 +1,504 @@
+{
+  "archive_extracted": false,
+  "archived_code_executed": false,
+  "audit_wall_seconds": 0.4880516519988305,
+  "auditor_source_sha256": "3eb1c6e6d9ead8d146285234b2eb8184e12dfe0cd69e80a24dcedbf842ea5b25",
+  "checks": [
+    {
+      "check": "held archive exact digest and size",
+      "pass": true
+    },
+    {
+      "check": "held external manifest exact digest and size",
+      "pass": true
+    },
+    {
+      "check": "original independent readback implementation pin",
+      "pass": true
+    },
+    {
+      "check": "strict original full CAS and actual-source verification",
+      "pass": true
+    },
+    {
+      "check": "producer readback exact held bytes",
+      "pass": true
+    },
+    {
+      "check": "independent replay equals every producer readback field",
+      "pass": true
+    },
+    {
+      "check": "original inventory exact held digest",
+      "pass": true
+    },
+    {
+      "check": "all original 1151 paths unchanged",
+      "pass": true
+    },
+    {
+      "check": "all documentary 199 attachment entries retained",
+      "pass": true
+    },
+    {
+      "check": "exact lossless inventory union no omission or extra",
+      "pass": true
+    },
+    {
+      "check": "sidecar identity:RAW_SCREENING_PACKET.tar.gz",
+      "pass": true
+    },
+    {
+      "check": "sidecar identity:RAW_SCREENING_PACKET.MANIFEST.json",
+      "pass": true
+    },
+    {
+      "check": "sidecar identity:RAW_SCREENING_PACKET.READBACK.json",
+      "pass": true
+    },
+    {
+      "check": "sidecar identity:RAW_SCREENING_PACKET.BUILD_SUMMARY.json",
+      "pass": true
+    },
+    {
+      "check": "sidecar identity:ATTACHMENT_PRESERVATION.json",
+      "pass": true
+    },
+    {
+      "check": "sidecar identity:ATTACHMENT_FILES.json",
+      "pass": true
+    },
+    {
+      "check": "sidecar identity:ORIGINAL_OPERATOR_INVENTORY.json",
+      "pass": true
+    },
+    {
+      "check": "original actor exact held bytes",
+      "pass": true
+    },
+    {
+      "check": "original controller exact held bytes",
+      "pass": true
+    },
+    {
+      "check": "actor bounded original authority and no solver/retry access",
+      "pass": true
+    },
+    {
+      "check": "complete exactly ordered once-only original processes",
+      "pass": true
+    },
+    {
+      "check": "exact immutable source transport commit",
+      "pass": true
+    },
+    {
+      "check": "committed original source transport:research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective/BOOTSTRAP_API_ARTIFACTS.json",
+      "pass": true
+    },
+    {
+      "check": "committed original source transport:research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective/BOOTSTRAP_API_RUN.json",
+      "pass": true
+    },
+    {
+      "check": "committed original source transport:research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective/BOOTSTRAP_ARCHIVE_AUDIT.json",
+      "pass": true
+    },
+    {
+      "check": "committed original source transport:research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective/BOOTSTRAP_INDEPENDENT_REPORT.json",
+      "pass": true
+    },
+    {
+      "check": "committed original source transport:research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective/CI_39702634983_RESULT.json",
+      "pass": true
+    },
+    {
+      "check": "committed original source transport:research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective/CI_39704649682_RESULT.json",
+      "pass": true
+    },
+    {
+      "check": "committed original source transport:research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective/DECLARED_UNIVERSE.json",
+      "pass": true
+    },
+    {
+      "check": "committed original source transport:research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective/FRONTIER_PROTOCOL.json",
+      "pass": true
+    },
+    {
+      "check": "committed original source transport:research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective/FROZEN_POOL.json",
+      "pass": true
+    },
+    {
+      "check": "committed original source transport:research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective/GATE_WRAPPER.json",
+      "pass": true
+    },
+    {
+      "check": "committed original source transport:research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective/METADATA_CURATION.json",
+      "pass": true
+    },
+    {
+      "check": "committed original source transport:research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective/PREQUERY.json",
+      "pass": true
+    },
+    {
+      "check": "committed original source transport:research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective/PREQUERY_EXECUTION.json",
+      "pass": true
+    },
+    {
+      "check": "committed original source transport:research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective/PRIOR_EXPOSURE.json",
+      "pass": true
+    },
+    {
+      "check": "committed original source transport:research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective/SCREENING_AUTHORITY.json",
+      "pass": true
+    },
+    {
+      "check": "committed original source transport:research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective/curate_frontier.py",
+      "pass": true
+    },
+    {
+      "check": "committed original source transport:research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective/metadata-query-observer/MANIFEST.json",
+      "pass": true
+    },
+    {
+      "check": "committed original source transport:research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective/metadata-query-observer/RAW_QUERY_OBSERVER.tar.gz",
+      "pass": true
+    },
+    {
+      "check": "committed original source transport:research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective/prepare_records.py",
+      "pass": true
+    },
+    {
+      "check": "committed original source transport:research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective/training-history-original/GREEN.log",
+      "pass": true
+    },
+    {
+      "check": "committed original source transport:research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective/training-history-original/HANDOFF.md",
+      "pass": true
+    },
+    {
+      "check": "committed original source transport:research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective/training-history-original/RED.log",
+      "pass": true
+    },
+    {
+      "check": "committed original source transport:research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective/training-history-original/test_training_history_projection.py",
+      "pass": true
+    },
+    {
+      "check": "committed original source transport:research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective/training-history-original/training_history_projection.py",
+      "pass": true
+    },
+    {
+      "check": "committed original source transport:research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective/training_history_projection_v44.py",
+      "pass": true
+    },
+    {
+      "check": "committed original source transport:research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective/watch_actual_agent.py",
+      "pass": true
+    },
+    {
+      "check": "committed original source transport:research/unified_consequence_runtime/archaeology/native-authority-v42/CI_39582982718_RESULT.json",
+      "pass": true
+    },
+    {
+      "check": "committed original source transport:research/unified_consequence_runtime/archaeology/experiment-interface-v43/prospective/CI_39682460349_RESULT.json",
+      "pass": true
+    },
+    {
+      "check": "committed original source transport:research/unified_consequence_runtime/archaeology/experiment-interface-v43/prospective/INTERFACE_ARCHIVE_AUDIT.json",
+      "pass": true
+    },
+    {
+      "check": "committed original source transport:research/unified_consequence_runtime/archaeology/native-authority-v41/ENVIRONMENT_CATALOG.json",
+      "pass": true
+    },
+    {
+      "check": "committed original source transport:research/unified_consequence_runtime/developmental_sources.json",
+      "pass": true
+    },
+    {
+      "check": "committed original source transport:research/unified_consequence_runtime/qualify_native_frontier_v44.py",
+      "pass": true
+    },
+    {
+      "check": "committed original source transport:research/unified_consequence_runtime/qualify_native_frontier_v43.py",
+      "pass": true
+    },
+    {
+      "check": "committed original source transport:research/unified_consequence_runtime/qualify_native_frontier_v42.py",
+      "pass": true
+    },
+    {
+      "check": "committed original source transport:research/unified_consequence_runtime/qualify_native_frontier_v3.py",
+      "pass": true
+    },
+    {
+      "check": "committed original source transport:research/unified_consequence_runtime/native_admission_v2.py",
+      "pass": true
+    },
+    {
+      "check": "committed original source transport:research/unified_consequence_runtime/native_admission_v42.py",
+      "pass": true
+    },
+    {
+      "check": "committed original source transport:research/unified_consequence_runtime/native_environment_v2.py",
+      "pass": true
+    },
+    {
+      "check": "committed original source transport:research/unified_consequence_runtime/native_environment_v44.py",
+      "pass": true
+    },
+    {
+      "check": "committed original source transport:research/unified_consequence_runtime/native_environment_selection_v44.py",
+      "pass": true
+    },
+    {
+      "check": "committed original source transport:research/unified_consequence_runtime/native_execution_v2.py",
+      "pass": true
+    },
+    {
+      "check": "committed original source transport:research/unified_consequence_runtime/native_execution_v42.py",
+      "pass": true
+    },
+    {
+      "check": "committed original source transport:research/unified_consequence_runtime/native_execution_v43.py",
+      "pass": true
+    },
+    {
+      "check": "committed original source transport:research/unified_consequence_runtime/native_runtime_v44.py",
+      "pass": true
+    },
+    {
+      "check": "committed original source transport:research/unified_consequence_runtime/native_metadata_v44.py",
+      "pass": true
+    },
+    {
+      "check": "committed original source transport:research/unified_consequence_runtime/native_bootstrap_runtime_v44.py",
+      "pass": true
+    },
+    {
+      "check": "committed original source transport:research/unified_consequence_runtime/developmental_machine_v44.py",
+      "pass": true
+    },
+    {
+      "check": "committed original source transport:research/unified_consequence_runtime/cross_frontier_v44.py",
+      "pass": true
+    },
+    {
+      "check": "committed original source transport:research/unified_consequence_runtime/developmental_machine.py",
+      "pass": true
+    },
+    {
+      "check": "committed original source transport:research/unified_consequence_runtime/archaeology/native-environment-v3/prepare_records.py",
+      "pass": true
+    },
+    {
+      "check": "committed original source transport:research/unified_consequence_runtime/archaeology/native-authority-v42/prepare_records.py",
+      "pass": true
+    },
+    {
+      "check": "all committed prospective source records included",
+      "pass": true
+    },
+    {
+      "check": "complete declared nine-repository source universe",
+      "pass": true
+    },
+    {
+      "check": "all original prior exposure exclusions retained",
+      "pass": true
+    },
+    {
+      "check": "all seven metadata negatives retained without resampling",
+      "pass": true
+    },
+    {
+      "check": "committed exact complete ordered requests",
+      "pass": true
+    },
+    {
+      "check": "actual independent screening audit retained byte-for-byte",
+      "pass": true
+    },
+    {
+      "check": "actual supplied-run audit source and full pool closure",
+      "pass": true
+    },
+    {
+      "check": "frozen independent auditor transport:/workspace/qualification/experiment-interface-v43-screening-audit-preparation/AUDITOR_FREEZE.json",
+      "pass": true
+    },
+    {
+      "check": "frozen independent auditor transport:/workspace/qualification/experiment-interface-v43-screening-audit-preparation/TRUSTED_SOURCE_PINS.json",
+      "pass": true
+    },
+    {
+      "check": "frozen independent auditor transport:/workspace/qualification/experiment-interface-v43-screening-audit-preparation/audit_retained.py",
+      "pass": true
+    },
+    {
+      "check": "frozen independent auditor transport:/workspace/qualification/experiment-interface-v43-screening-audit-preparation/finalize_audit.py",
+      "pass": true
+    },
+    {
+      "check": "frozen independent auditor transport:/workspace/qualification/experiment-interface-v43-screening-audit-preparation/original/archive_audit_v43.py",
+      "pass": true
+    },
+    {
+      "check": "frozen independent auditor transport:/workspace/qualification/experiment-interface-v43-screening-audit-preparation/raw_identity.py",
+      "pass": true
+    },
+    {
+      "check": "frozen independent auditor transport:/workspace/qualification/native-bootstrap-v44-independent-audit/AUDITOR_FORMAT_002_CORRECTION.json",
+      "pass": true
+    },
+    {
+      "check": "frozen independent auditor transport:/workspace/qualification/native-bootstrap-v44-independent-audit/AUDITOR_REVIEW_005_CORRECTION.json",
+      "pass": true
+    },
+    {
+      "check": "frozen independent auditor transport:/workspace/qualification/native-bootstrap-v44-independent-audit/SCREENING_READ_REVIEW_001.json",
+      "pass": true
+    },
+    {
+      "check": "frozen independent auditor transport:/workspace/qualification/native-bootstrap-v44-independent-audit/SCREENING_READ_REVIEW_002_CLOSURE.json",
+      "pass": true
+    },
+    {
+      "check": "frozen independent auditor transport:/workspace/qualification/native-bootstrap-v44-independent-audit/audit_v44.py",
+      "pass": true
+    },
+    {
+      "check": "frozen independent auditor transport:/workspace/qualification/native-bootstrap-v44-independent-audit/reused_v43_pure_auditor.py",
+      "pass": true
+    },
+    {
+      "check": "frozen independent auditor transport:/workspace/qualification/native-bootstrap-v44-screening-audit-preparation/AUDITOR_FREEZE_V1.json",
+      "pass": true
+    },
+    {
+      "check": "frozen independent auditor transport:/workspace/qualification/native-bootstrap-v44-screening-audit-preparation/AUDITOR_REVIEW001_CORRECTION.json",
+      "pass": true
+    },
+    {
+      "check": "frozen independent auditor transport:/workspace/qualification/native-bootstrap-v44-screening-audit-preparation/INPUT_PROTOCOL.md",
+      "pass": true
+    },
+    {
+      "check": "frozen independent auditor transport:/workspace/qualification/native-bootstrap-v44-screening-audit-preparation/PREIMPLEMENTATION_PROTOCOL.json",
+      "pass": true
+    },
+    {
+      "check": "frozen independent auditor transport:/workspace/qualification/native-bootstrap-v44-screening-audit-preparation/REUSE_REVISION001.json",
+      "pass": true
+    },
+    {
+      "check": "frozen independent auditor transport:/workspace/qualification/native-bootstrap-v44-screening-audit-preparation/REUSE_REVISION002.json",
+      "pass": true
+    },
+    {
+      "check": "frozen independent auditor transport:/workspace/qualification/native-bootstrap-v44-screening-audit-preparation/REVIEW001_FINAL_PINNED_GREEN.xml",
+      "pass": true
+    },
+    {
+      "check": "frozen independent auditor transport:/workspace/qualification/native-bootstrap-v44-screening-audit-preparation/audit_retained_v44.py",
+      "pass": true
+    },
+    {
+      "check": "frozen independent auditor transport:/workspace/qualification/native-bootstrap-v44-screening-audit-preparation/finalize_audit_v44.py",
+      "pass": true
+    },
+    {
+      "check": "frozen independent auditor transport:/workspace/qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py",
+      "pass": true
+    },
+    {
+      "check": "frozen independent auditor transport:/workspace/udm-v54/research/unified_consequence_runtime/cross_frontier_v44.py",
+      "pass": true
+    },
+    {
+      "check": "frozen independent auditor transport:/workspace/udm-v54/research/unified_consequence_runtime/developmental_machine_v44.py",
+      "pass": true
+    },
+    {
+      "check": "frozen independent auditor transport:/workspace/udm-v54/research/unified_consequence_runtime/native_bootstrap_runtime_v44.py",
+      "pass": true
+    },
+    {
+      "check": "frozen independent auditor transport:/workspace/udm-v54/research/unified_consequence_runtime/native_environment_selection_v44.py",
+      "pass": true
+    },
+    {
+      "check": "frozen independent auditor transport:/workspace/udm-v54/research/unified_consequence_runtime/native_environment_v44.py",
+      "pass": true
+    },
+    {
+      "check": "frozen independent auditor transport:/workspace/udm-v54/research/unified_consequence_runtime/native_metadata_v44.py",
+      "pass": true
+    },
+    {
+      "check": "frozen independent auditor transport:/workspace/udm-v54/research/unified_consequence_runtime/native_runtime_v44.py",
+      "pass": true
+    },
+    {
+      "check": "frozen independent auditor transport:/workspace/udm-v54/research/unified_consequence_runtime/qualify_native_frontier_v44.py",
+      "pass": true
+    },
+    {
+      "check": "all frozen 30 audit dependencies retained",
+      "pass": true
+    },
+    {
+      "check": "source coverage exact closed campaign",
+      "pass": true
+    },
+    {
+      "check": "unchanged original refusal:0",
+      "pass": true
+    },
+    {
+      "check": "no actual native or backend launch:0",
+      "pass": true
+    },
+    {
+      "check": "no scientific acquisition in causal state:0",
+      "pass": true
+    },
+    {
+      "check": "unchanged original refusal:1",
+      "pass": true
+    },
+    {
+      "check": "no actual native or backend launch:1",
+      "pass": true
+    },
+    {
+      "check": "no scientific acquisition in causal state:1",
+      "pass": true
+    },
+    {
+      "check": "all actual native/backend/build launch counters remain zero",
+      "pass": true
+    },
+    {
+      "check": "original parent and nested intervals preserved without double charging",
+      "pass": true
+    },
+    {
+      "check": "no scientific promotion from packaging or audit",
+      "pass": true
+    },
+    {
+      "check": "full original component trees explicitly separate final-CI artifacts",
+      "pass": false
+    }
+  ],
+  "error": "ValueError: full original component trees explicitly separate final-CI artifacts",
+  "new_collection_calls": 0,
+  "new_model_calls": 0,
+  "new_native_calls": 0,
+  "new_source_queries": 0,
+  "schema": "UDM_V44_INDEPENDENT_RAW_PACKET_AUDIT_V1",
+  "scope": "Independent data retention/source-union and original bounded refusal/cost evidence only. No acquisition, solver/comparator, containment or general source-universe exhaustiveness claim.",
+  "status": "UNKNOWN"
+}

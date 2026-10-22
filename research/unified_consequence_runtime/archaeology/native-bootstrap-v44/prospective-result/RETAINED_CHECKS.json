@@ -1,0 +1,596 @@
+{
+  "attestation": {
+    "path": "/workspace/qualification/native-frontier-v44-operator/SCREENING_ACTOR_ATTESTATION.json",
+    "sha256": "3fe66d3232595fa23b90a4aa8f8bc9a155872d7a4379183df7bf3fa6db1c9291"
+  },
+  "authority": {
+    "path": "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective/SCREENING_AUTHORITY.json",
+    "sha256": "8c1ae9852b4cc60fb8773863b790c18b0b9dc4c1733fddb96e4a577e5a0dc0b0"
+  },
+  "builds": [],
+  "cases": [
+    {
+      "eligible": false,
+      "identity": {
+        "partial_packets": {
+          "controller_attempt_counts": {
+            "collection_calls": 0,
+            "native_calls": 0,
+            "subprocess_attempts": 0
+          },
+          "coverage": "Retained completed packets plus original controller launch-attempt counters; interrupted attempts may have no final packet. No missing packet licenses admission.",
+          "packets": [],
+          "raw_totals": {
+            "collection_calls": 0,
+            "native_calls": 0
+          }
+        },
+        "partial_sources": [
+          {
+            "commit": "0413d8cb5e5deb3477336c1e10b7fac769232e4e",
+            "identity": {
+              "file_count": 57,
+              "git_tree": "f3a7158a7ed73f04dfd649d75a73e8e4fee2059b",
+              "tracked_tree_sha256": "ef13df4487234c673fd06b856d60eb7b81798e0eb23afc3648304969cc7f36f2"
+            },
+            "path": "/workspace/qualification/native-frontier-v44-operator/screening/case-000/source-environment/metadata-source"
+          },
+          {
+            "commit": "5742e74a78060540a1dfcf55880d249c2c3da162",
+            "identity": {
+              "file_count": 57,
+              "git_tree": "6648d731dc0bff031f847e104687a456cc955452",
+              "tracked_tree_sha256": "adffe280b7e6e630fb43fa1c97fb555d5484a8ed9d5a850e0777817b2d492612"
+            },
+            "path": "/workspace/qualification/native-frontier-v44-operator/screening/case-000/source-environment/native/source"
+          }
+        ],
+        "runtime": "NOT_PREPARED",
+        "source": "NOT_PREPARED"
+      },
+      "index": 0,
+      "ledger": {
+        "admission_request": "d284b6be6ec3d0ffbfd4734fffeb19f7849b0fe9f9c9f3a927c1ac365dafbf29",
+        "bootstrap_costs": {
+          "backend_calls": 0,
+          "backend_seconds": 0,
+          "coverage": "Original-backend metadata observations and independent verification in this screening interval; native counters remain separate and parent wall time includes these nested operations.",
+          "inclusive_parent_wall_seconds": 5.639641532001406
+        },
+        "metadata_capabilities": [],
+        "metadata_observations": [],
+        "records": 2,
+        "selected_environment_binding": null
+      },
+      "raw_manifest": {
+        "path": "/workspace/qualification/native-bootstrap-v44-screening-audit-preparation/ACTUAL_SCREENING_ATTEMPT_001/case-000-RAW_MANIFEST.json",
+        "sha256": "dd13f63b18a8564ab6a83bb9b248106fcfa9536a221f2417690fc00860e12c78"
+      },
+      "status": "UNKNOWN_CONTRACT"
+    },
+    {
+      "eligible": false,
+      "identity": {
+        "partial_packets": {
+          "controller_attempt_counts": {
+            "collection_calls": 0,
+            "native_calls": 0,
+            "subprocess_attempts": 0
+          },
+          "coverage": "Retained completed packets plus original controller launch-attempt counters; interrupted attempts may have no final packet. No missing packet licenses admission.",
+          "packets": [],
+          "raw_totals": {
+            "collection_calls": 0,
+            "native_calls": 0
+          }
+        },
+        "partial_sources": [
+          {
+            "commit": "af3ac8722eb4e4990f464fa5f7c756e8a3bc1519",
+            "identity": {
+              "file_count": 209,
+              "git_tree": "0ef64ac3798022edf72e0e3038b3aba0188ed935",
+              "tracked_tree_sha256": "cda5c03864e08f387286d23d9fd6f9ba30cf982887cae6af50700017a8d0ec1c"
+            },
+            "path": "/workspace/qualification/native-frontier-v44-operator/screening/case-001/source-environment/metadata-source"
+          },
+          {
+            "commit": "80c4ebc7bb0c308d4022f5d521cb9871ec97242f",
+            "identity": {
+              "file_count": 209,
+              "git_tree": "9bee894e469851b8b479bd4c7c5a0b1ca64e5279",
+              "tracked_tree_sha256": "fbe66e9bec3c7dd16591a4daea38155e09f1f1683a9efbbaa7ae65d4cd4be0b9"
+            },
+            "path": "/workspace/qualification/native-frontier-v44-operator/screening/case-001/source-environment/native/source"
+          }
+        ],
+        "runtime": "NOT_PREPARED",
+        "source": "NOT_PREPARED"
+      },
+      "index": 1,
+      "ledger": {
+        "admission_request": "18d8e7f361beaa22e450bd60d1164ce3e9fdbbf01adfabb3ba94698cfb05d79f",
+        "bootstrap_costs": {
+          "backend_calls": 0,
+          "backend_seconds": 0,
+          "coverage": "Original-backend metadata observations and independent verification in this screening interval; native counters remain separate and parent wall time includes these nested operations.",
+          "inclusive_parent_wall_seconds": 7.560302462999971
+        },
+        "metadata_capabilities": [],
+        "metadata_observations": [],
+        "records": 2,
+        "selected_environment_binding": null
+      },
+      "raw_manifest": {
+        "path": "/workspace/qualification/native-bootstrap-v44-screening-audit-preparation/ACTUAL_SCREENING_ATTEMPT_001/case-001-RAW_MANIFEST.json",
+        "sha256": "d9e7630f3762db7f3833ed7d56a6b5e3c4508c0208f3541075e35c4635cfc4d5"
+      },
+      "status": "UNKNOWN_CONTRACT"
+    }
+  ],
+  "checks": [
+    {
+      "check": "ledger_content_id:/workspace/qualification/native-frontier-v44-operator/screening/case-000/machine-state/metatron-ledger.jsonl:1",
+      "pass": true
+    },
+    {
+      "check": "ledger_ordered_premises:/workspace/qualification/native-frontier-v44-operator/screening/case-000/machine-state/metatron-ledger.jsonl:1",
+      "pass": true
+    },
+    {
+      "check": "ledger_content_id:/workspace/qualification/native-frontier-v44-operator/screening/case-000/machine-state/metatron-ledger.jsonl:2",
+      "pass": true
+    },
+    {
+      "check": "ledger_ordered_premises:/workspace/qualification/native-frontier-v44-operator/screening/case-000/machine-state/metatron-ledger.jsonl:2",
+      "pass": true
+    },
+    {
+      "check": "cas_hash:/workspace/qualification/native-frontier-v44-operator/screening/case-000/machine-state/objects/fb08c5e5d999cd1837ff81a86f99dd5dacb775817f1aa23e2fbf85d3400c870f",
+      "pass": true
+    },
+    {
+      "check": "ledger_content_id:/workspace/qualification/native-frontier-v44-operator/screening/case-000/machine-state/metatron-ledger.jsonl:1",
+      "pass": true
+    },
+    {
+      "check": "ledger_ordered_premises:/workspace/qualification/native-frontier-v44-operator/screening/case-000/machine-state/metatron-ledger.jsonl:1",
+      "pass": true
+    },
+    {
+      "check": "ledger_content_id:/workspace/qualification/native-frontier-v44-operator/screening/case-000/machine-state/metatron-ledger.jsonl:2",
+      "pass": true
+    },
+    {
+      "check": "ledger_ordered_premises:/workspace/qualification/native-frontier-v44-operator/screening/case-000/machine-state/metatron-ledger.jsonl:2",
+      "pass": true
+    },
+    {
+      "check": "cas_hash:/workspace/qualification/native-frontier-v44-operator/screening/case-000/machine-state/objects/fb08c5e5d999cd1837ff81a86f99dd5dacb775817f1aa23e2fbf85d3400c870f",
+      "pass": true
+    },
+    {
+      "check": "flash_complete_event_inventory:/workspace/qualification/native-frontier-v44-operator/screening/case-000/machine-state",
+      "pass": true
+    },
+    {
+      "check": "flash_exact_original_record:/workspace/qualification/native-frontier-v44-operator/screening/case-000/machine-state:303ba62f5c671df78421aa6051f27ca33cfe593171595e87f20a47c0627a4540",
+      "pass": true
+    },
+    {
+      "check": "flash_exact_support:/workspace/qualification/native-frontier-v44-operator/screening/case-000/machine-state:303ba62f5c671df78421aa6051f27ca33cfe593171595e87f20a47c0627a4540",
+      "pass": true
+    },
+    {
+      "check": "flash_exact_original_record:/workspace/qualification/native-frontier-v44-operator/screening/case-000/machine-state:d284b6be6ec3d0ffbfd4734fffeb19f7849b0fe9f9c9f3a927c1ac365dafbf29",
+      "pass": true
+    },
+    {
+      "check": "flash_exact_support:/workspace/qualification/native-frontier-v44-operator/screening/case-000/machine-state:d284b6be6ec3d0ffbfd4734fffeb19f7849b0fe9f9c9f3a927c1ac365dafbf29",
+      "pass": true
+    },
+    {
+      "check": "flash_event_manifest:/workspace/qualification/native-frontier-v44-operator/screening/case-000/machine-state",
+      "pass": true
+    },
+    {
+      "check": "independent_flash_metatron_agreement:/workspace/qualification/native-frontier-v44-operator/screening/case-000/machine-state",
+      "pass": true
+    },
+    {
+      "check": "screening_metadata_scope_closed",
+      "pass": true
+    },
+    {
+      "check": "case_complete:0",
+      "pass": true
+    },
+    {
+      "check": "ledger_content_id:/workspace/qualification/native-frontier-v44-operator/screening/case-001/machine-state/metatron-ledger.jsonl:1",
+      "pass": true
+    },
+    {
+      "check": "ledger_ordered_premises:/workspace/qualification/native-frontier-v44-operator/screening/case-001/machine-state/metatron-ledger.jsonl:1",
+      "pass": true
+    },
+    {
+      "check": "ledger_content_id:/workspace/qualification/native-frontier-v44-operator/screening/case-001/machine-state/metatron-ledger.jsonl:2",
+      "pass": true
+    },
+    {
+      "check": "ledger_ordered_premises:/workspace/qualification/native-frontier-v44-operator/screening/case-001/machine-state/metatron-ledger.jsonl:2",
+      "pass": true
+    },
+    {
+      "check": "cas_hash:/workspace/qualification/native-frontier-v44-operator/screening/case-001/machine-state/objects/841bcc9634abfbef04221d76fb5a9e35906e48766dec4a837893fddceb3a56b8",
+      "pass": true
+    },
+    {
+      "check": "ledger_content_id:/workspace/qualification/native-frontier-v44-operator/screening/case-001/machine-state/metatron-ledger.jsonl:1",
+      "pass": true
+    },
+    {
+      "check": "ledger_ordered_premises:/workspace/qualification/native-frontier-v44-operator/screening/case-001/machine-state/metatron-ledger.jsonl:1",
+      "pass": true
+    },
+    {
+      "check": "ledger_content_id:/workspace/qualification/native-frontier-v44-operator/screening/case-001/machine-state/metatron-ledger.jsonl:2",
+      "pass": true
+    },
+    {
+      "check": "ledger_ordered_premises:/workspace/qualification/native-frontier-v44-operator/screening/case-001/machine-state/metatron-ledger.jsonl:2",
+      "pass": true
+    },
+    {
+      "check": "cas_hash:/workspace/qualification/native-frontier-v44-operator/screening/case-001/machine-state/objects/841bcc9634abfbef04221d76fb5a9e35906e48766dec4a837893fddceb3a56b8",
+      "pass": true
+    },
+    {
+      "check": "flash_complete_event_inventory:/workspace/qualification/native-frontier-v44-operator/screening/case-001/machine-state",
+      "pass": true
+    },
+    {
+      "check": "flash_exact_original_record:/workspace/qualification/native-frontier-v44-operator/screening/case-001/machine-state:18d8e7f361beaa22e450bd60d1164ce3e9fdbbf01adfabb3ba94698cfb05d79f",
+      "pass": true
+    },
+    {
+      "check": "flash_exact_support:/workspace/qualification/native-frontier-v44-operator/screening/case-001/machine-state:18d8e7f361beaa22e450bd60d1164ce3e9fdbbf01adfabb3ba94698cfb05d79f",
+      "pass": true
+    },
+    {
+      "check": "flash_exact_original_record:/workspace/qualification/native-frontier-v44-operator/screening/case-001/machine-state:303ba62f5c671df78421aa6051f27ca33cfe593171595e87f20a47c0627a4540",
+      "pass": true
+    },
+    {
+      "check": "flash_exact_support:/workspace/qualification/native-frontier-v44-operator/screening/case-001/machine-state:303ba62f5c671df78421aa6051f27ca33cfe593171595e87f20a47c0627a4540",
+      "pass": true
+    },
+    {
+      "check": "flash_event_manifest:/workspace/qualification/native-frontier-v44-operator/screening/case-001/machine-state",
+      "pass": true
+    },
+    {
+      "check": "independent_flash_metatron_agreement:/workspace/qualification/native-frontier-v44-operator/screening/case-001/machine-state",
+      "pass": true
+    },
+    {
+      "check": "screening_metadata_scope_closed",
+      "pass": true
+    },
+    {
+      "check": "case_complete:1",
+      "pass": true
+    },
+    {
+      "check": "all_pool_members_and_unknowns_closed",
+      "pass": true
+    }
+  ],
+  "controller": {
+    "path": "/workspace/qualification/native-frontier-v44-operator/ORDERED_PROCESS_COSTS.json",
+    "sha256": "5ea1296374faa661bd175e24ac0b4e2a486256cc0241cc9119de04767dcb98b1"
+  },
+  "costs": {
+    "build_calls": 0,
+    "build_seconds": 0.0,
+    "collection_calls": 0,
+    "controller_wall_seconds": 31.265388347001135,
+    "metadata_backend_calls": 0,
+    "metadata_backend_seconds": 0,
+    "native_calls": 0,
+    "sum_case_inclusive_wall_seconds": 13.199943995001377,
+    "verification_attempts": 0
+  },
+  "created_utc": "2026-10-22T02:00:29.432811+00:00",
+  "inputs": {
+    "/workspace/qualification/native-frontier-v44-operator/ORDERED_PROCESS_COSTS.json": {
+      "bytes": 3047,
+      "sha256": "5ea1296374faa661bd175e24ac0b4e2a486256cc0241cc9119de04767dcb98b1"
+    },
+    "/workspace/qualification/native-frontier-v44-operator/SCREENING_ACTOR_ATTESTATION.json": {
+      "bytes": 1591,
+      "sha256": "3fe66d3232595fa23b90a4aa8f8bc9a155872d7a4379183df7bf3fa6db1c9291"
+    },
+    "/workspace/qualification/native-frontier-v44-operator/SCREENING_SOURCE_BEFORE.json": {
+      "bytes": 689776,
+      "sha256": "ece0acaa9a5fb891b0a5dee8e8c529594619e594e371aa4d66dd00ae6e41eefd"
+    },
+    "/workspace/qualification/native-frontier-v44-operator/requests/request-000.json": {
+      "bytes": 3190,
+      "sha256": "35720e5f2bf136a12d573e708cb926208c248260e477dd0b615cbb1b0fc9bf56"
+    },
+    "/workspace/qualification/native-frontier-v44-operator/requests/request-001.json": {
+      "bytes": 3227,
+      "sha256": "9b58d9a9f5dd5e049ed4a5d7389770ba375061625c6c12f346ad90a8c111be5e"
+    },
+    "/workspace/qualification/native-frontier-v44-operator/screening/SCREENING_METER.json": {
+      "bytes": 1173,
+      "sha256": "c2c1ce98c3b13ffa2daaf3485d25dcd69ce1ba8c0c7025e473a9ba844cc02614"
+    },
+    "/workspace/qualification/native-frontier-v44-operator/screening/case-000.RUNTIME_INVENTORY.json": {
+      "bytes": 1305021,
+      "sha256": "a3d0141d4004d633237f3868ce6c27d5f70637848afc64f43742bc3223880c7f"
+    },
+    "/workspace/qualification/native-frontier-v44-operator/screening/case-000/SCREENING_CASE.json": {
+      "bytes": 627527,
+      "sha256": "6b5c13c47da6ded57e551ed7a453a42fd77078e7384502d031844865ba50985f"
+    },
+    "/workspace/qualification/native-frontier-v44-operator/screening/case-000/SCREENING_ENVELOPE.json": {
+      "bytes": 1276,
+      "sha256": "be204502697aba58e6f4c6c58f65e1d9e3712c248fd5e2868916993de15227c8"
+    },
+    "/workspace/qualification/native-frontier-v44-operator/screening/case-000/machine-state/flash-state-bundle.json": {
+      "bytes": 3316,
+      "sha256": "96cf3639765c45a092601145b1364a884764b102db34f9015b78edd46a61f577"
+    },
+    "/workspace/qualification/native-frontier-v44-operator/screening/case-000/machine-state/metatron-ledger.jsonl": {
+      "bytes": 960,
+      "sha256": "af210520e7fcd28164224b908a46acafc2fdadd65da172c63bdf1d1a6ca11cc1"
+    },
+    "/workspace/qualification/native-frontier-v44-operator/screening/case-000/machine-state/objects/fb08c5e5d999cd1837ff81a86f99dd5dacb775817f1aa23e2fbf85d3400c870f": {
+      "bytes": 3079,
+      "sha256": "fb08c5e5d999cd1837ff81a86f99dd5dacb775817f1aa23e2fbf85d3400c870f"
+    },
+    "/workspace/qualification/native-frontier-v44-operator/screening/case-000/source-environment/metadata-checkout.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "/workspace/qualification/native-frontier-v44-operator/screening/case-000/source-environment/metadata-fetch.log": {
+      "bytes": 111,
+      "sha256": "b33b00e72f59c9a084e1f47c9dba4473f96dea6a298654605cf488e4f9d0b554"
+    },
+    "/workspace/qualification/native-frontier-v44-operator/screening/case-000/source-environment/metadata-init.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "/workspace/qualification/native-frontier-v44-operator/screening/case-000/source-environment/native/author-test-0.log": {
+      "bytes": 141351,
+      "sha256": "c8fa75262b4d35a642252b2da148a762db23d254023ee93aa1f0eb185b6f43f8"
+    },
+    "/workspace/qualification/native-frontier-v44-operator/screening/case-000/source-environment/native/base-checkout.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "/workspace/qualification/native-frontier-v44-operator/screening/case-000/source-environment/native/base-fetch.log": {
+      "bytes": 111,
+      "sha256": "b33b00e72f59c9a084e1f47c9dba4473f96dea6a298654605cf488e4f9d0b554"
+    },
+    "/workspace/qualification/native-frontier-v44-operator/screening/case-000/source-environment/native/git-init.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "/workspace/qualification/native-frontier-v44-operator/screening/case-001.RUNTIME_INVENTORY.json": {
+      "bytes": 1305021,
+      "sha256": "a3d0141d4004d633237f3868ce6c27d5f70637848afc64f43742bc3223880c7f"
+    },
+    "/workspace/qualification/native-frontier-v44-operator/screening/case-001/SCREENING_CASE.json": {
+      "bytes": 682850,
+      "sha256": "6daa134bad5cadbc1dfeef4fbfaa43a70a0f6fa54771a3c6c64f94411809b534"
+    },
+    "/workspace/qualification/native-frontier-v44-operator/screening/case-001/SCREENING_ENVELOPE.json": {
+      "bytes": 1282,
+      "sha256": "0c7e7c929e44c7bc44b6ddde41cf4817b57b2a9aa9e7634acf9bf0c81831fc57"
+    },
+    "/workspace/qualification/native-frontier-v44-operator/screening/case-001/machine-state/flash-state-bundle.json": {
+      "bytes": 3316,
+      "sha256": "06a043b21226622704c092788cb4002948e28ed10042777227d18ff9d19fd147"
+    },
+    "/workspace/qualification/native-frontier-v44-operator/screening/case-001/machine-state/metatron-ledger.jsonl": {
+      "bytes": 960,
+      "sha256": "3e39ab764541b678d3ea873fe0b188bf33cdabd07f88f989c5e63f3efbc4cf49"
+    },
+    "/workspace/qualification/native-frontier-v44-operator/screening/case-001/machine-state/objects/841bcc9634abfbef04221d76fb5a9e35906e48766dec4a837893fddceb3a56b8": {
+      "bytes": 3116,
+      "sha256": "841bcc9634abfbef04221d76fb5a9e35906e48766dec4a837893fddceb3a56b8"
+    },
+    "/workspace/qualification/native-frontier-v44-operator/screening/case-001/source-environment/metadata-checkout.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "/workspace/qualification/native-frontier-v44-operator/screening/case-001/source-environment/metadata-fetch.log": {
+      "bytes": 117,
+      "sha256": "9cb981fd7ee7174d28ee3a29693146fda7c9603b075e07313f2d667b53c4e03d"
+    },
+    "/workspace/qualification/native-frontier-v44-operator/screening/case-001/source-environment/metadata-init.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "/workspace/qualification/native-frontier-v44-operator/screening/case-001/source-environment/native/author-test-0.log": {
+      "bytes": 169113,
+      "sha256": "b8c340e515bd4f39ad1806d0471d00ecdadcba9cd6b389f350cb1a19496c1a79"
+    },
+    "/workspace/qualification/native-frontier-v44-operator/screening/case-001/source-environment/native/base-checkout.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "/workspace/qualification/native-frontier-v44-operator/screening/case-001/source-environment/native/base-fetch.log": {
+      "bytes": 117,
+      "sha256": "9cb981fd7ee7174d28ee3a29693146fda7c9603b075e07313f2d667b53c4e03d"
+    },
+    "/workspace/qualification/native-frontier-v44-operator/screening/case-001/source-environment/native/git-init.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-authority-v41/ENVIRONMENT_CATALOG.json": {
+      "bytes": 66236,
+      "sha256": "2050def754f8b0b7d39f3ea256a6c4a5997876fd21ebd6a1afb134b06cb8dfc6"
+    },
+    "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective/FRONTIER_PROTOCOL.json": {
+      "bytes": 2985,
+      "sha256": "e1d7be5b27cc7f0af1f020d92826f3cf7dcefa86cb0a2194125926192cb3a738"
+    },
+    "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective/FROZEN_POOL.json": {
+      "bytes": 9832,
+      "sha256": "0b6b83e3f443dc9e455b19615ebc8cab74dd39865d4842d629c969b3317c578e"
+    },
+    "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective/GATE_WRAPPER.json": {
+      "bytes": 2063,
+      "sha256": "9ee2146084b35f7c27228d900f7d7d942955b1f1364a45f32dc0a17acd2e38a2"
+    },
+    "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective/METADATA_CURATION.json": {
+      "bytes": 776590,
+      "sha256": "51d60a9e0d883591353087d6866dcaea832738f7a859cd8ef8f2ffa1e48ea8c8"
+    },
+    "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective/PREQUERY.json": {
+      "bytes": 108064,
+      "sha256": "c5fae9be7684dff4a89777f2754e94bd403e2a88a7d2e2ca36aa98459936e5f9"
+    },
+    "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective/PREQUERY_EXECUTION.json": {
+      "bytes": 6038,
+      "sha256": "da8a7aee7436846b764dba5587f4085182bb1e241b53ecce517154f74791fd13"
+    },
+    "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective/SCREENING_AUTHORITY.json": {
+      "bytes": 2572,
+      "sha256": "8c1ae9852b4cc60fb8773863b790c18b0b9dc4c1733fddb96e4a577e5a0dc0b0"
+    },
+    "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective/curate_frontier.py": {
+      "bytes": 9882,
+      "sha256": "3d79e607f8f07a08861ff0363c92bfd811e2924c8699bd8126209f2fd3dd4d04"
+    },
+    "/workspace/udm-v54/research/unified_consequence_runtime/cross_frontier_v44.py": {
+      "bytes": 1915,
+      "sha256": "d5d2262d1fc1808a8c228a9a9cf5b3095807b9d0aa4b2127dba93738ece77ff8"
+    },
+    "/workspace/udm-v54/research/unified_consequence_runtime/decisive_native_frontier.py": {
+      "bytes": 23918,
+      "sha256": "9b0e6ecd90b3b52a2d7d673844faf5618a614a5857460349d71852a1423843f6"
+    },
+    "/workspace/udm-v54/research/unified_consequence_runtime/developmental_machine_v44.py": {
+      "bytes": 3351,
+      "sha256": "b1bc1ddfa677157465c64d8ecdef4c6dce192c0a5c37f5c0861fa0424400a5b9"
+    },
+    "/workspace/udm-v54/research/unified_consequence_runtime/native_bootstrap_runtime_v44.py": {
+      "bytes": 19364,
+      "sha256": "e8eb2332eb2427f5ad2c6bb37d72e5cf6d1fb9b739c1ba71160bc283980797f7"
+    },
+    "/workspace/udm-v54/research/unified_consequence_runtime/native_constructor.py": {
+      "bytes": 30556,
+      "sha256": "74cd7e642da616825f5d0bf72c5162d7b9c6a79de2fe125eee2195c46441eaf4"
+    },
+    "/workspace/udm-v54/research/unified_consequence_runtime/native_frontier.py": {
+      "bytes": 17162,
+      "sha256": "c257c1c6f1199994baa4915eebde3b79358afebefc16e3ced588ee068bb9dd28"
+    },
+    "/workspace/udm-v54/research/unified_consequence_runtime/native_materialization_v43.py": {
+      "bytes": 23696,
+      "sha256": "a978da6d119d1f1f705d281aee81248427616463a188d1e29f4d3db598bc6826"
+    },
+    "/workspace/udm-v54/research/unified_consequence_runtime/native_metadata_v44.py": {
+      "bytes": 18731,
+      "sha256": "63f5c35ba39cfa29a5887fc0e067e2ceed17debd3798e8c1ec14bad9b3722146"
+    },
+    "/workspace/udm-v54/research/unified_consequence_runtime/native_observation.py": {
+      "bytes": 29716,
+      "sha256": "4c5f9617a43370a9359929897c2080c3ce9a11dbf940cab58a9531a0bfe01925"
+    },
+    "/workspace/udm-v54/research/unified_consequence_runtime/native_source_v42.py": {
+      "bytes": 18798,
+      "sha256": "f16d4a05a6d3fccde048921559ab130872806afc84757ec8da95d7c2193c8b98"
+    }
+  },
+  "limitations": [
+    "Bounded supplied-run/actor attestation; no global absence-of-unrelated-processes or hostile-host isolation proof.",
+    "No target interpreter, backend, pytest or native verifier executed by this audit. Runtime implementation/version claims retain offline evidence limits.",
+    "Inclusive parent and nested phase wall intervals are nonadditive. All successful/refused launches retained; unmeasured tool/model/engineering/lifecycle cost remains UNKNOWN."
+  ],
+  "metadata_summary": {
+    "pool_members": 2,
+    "repositories": 9,
+    "retained_query_count": 64
+  },
+  "native": [],
+  "pool_sha256": "0b6b83e3f443dc9e455b19615ebc8cab74dd39865d4842d629c969b3317c578e",
+  "reports": [
+    {
+      "bootstrap_costs": {
+        "backend_calls": 0,
+        "backend_seconds": 0,
+        "coverage": "Original-backend metadata observations and independent verification in this screening interval; native counters remain separate and parent wall time includes these nested operations.",
+        "inclusive_parent_wall_seconds": 5.639641532001406
+      },
+      "build_costs": {
+        "build_calls": 0,
+        "build_seconds": 0.0,
+        "coverage": "V43 builder launches and generated-build verification attempts in this screening interval; parent wall time includes provisioning, host checks and independent oracle work. Original native counters and ceilings are unchanged; build seconds are included in parent wall time.",
+        "inclusive_parent_wall_seconds": 5.639641532001406,
+        "verification_attempts": 0
+      },
+      "costs": {
+        "collection_calls": 0,
+        "native_calls": 0
+      },
+      "eligible": false,
+      "repository": "amoffat/sh",
+      "schema": "UDM_SEALED_ADMISSION_ENVELOPE_V44",
+      "screening_mode": "ADMISSION_ONLY_NO_CATALOG_OR_CANDIDATE_SEARCH",
+      "sealed_report": {
+        "path": "/workspace/qualification/native-frontier-v44-operator/screening/case-000/SCREENING_CASE.json",
+        "sha256": "6b5c13c47da6ded57e551ed7a453a42fd77078e7384502d031844865ba50985f"
+      },
+      "spec_sha256": "fb08c5e5d999cd1837ff81a86f99dd5dacb775817f1aa23e2fbf85d3400c870f",
+      "status": "UNKNOWN_ADMISSION_SCREENING",
+      "total_wall_seconds": 5.639641532001406
+    },
+    {
+      "bootstrap_costs": {
+        "backend_calls": 0,
+        "backend_seconds": 0,
+        "coverage": "Original-backend metadata observations and independent verification in this screening interval; native counters remain separate and parent wall time includes these nested operations.",
+        "inclusive_parent_wall_seconds": 7.560302462999971
+      },
+      "build_costs": {
+        "build_calls": 0,
+        "build_seconds": 0.0,
+        "coverage": "V43 builder launches and generated-build verification attempts in this screening interval; parent wall time includes provisioning, host checks and independent oracle work. Original native counters and ceilings are unchanged; build seconds are included in parent wall time.",
+        "inclusive_parent_wall_seconds": 7.560302462999971,
+        "verification_attempts": 0
+      },
+      "costs": {
+        "collection_calls": 0,
+        "native_calls": 0
+      },
+      "eligible": false,
+      "repository": "eliben/pycparser",
+      "schema": "UDM_SEALED_ADMISSION_ENVELOPE_V44",
+      "screening_mode": "ADMISSION_ONLY_NO_CATALOG_OR_CANDIDATE_SEARCH",
+      "sealed_report": {
+        "path": "/workspace/qualification/native-frontier-v44-operator/screening/case-001/SCREENING_CASE.json",
+        "sha256": "6daa134bad5cadbc1dfeef4fbfaa43a70a0f6fa54771a3c6c64f94411809b534"
+      },
+      "spec_sha256": "841bcc9634abfbef04221d76fb5a9e35906e48766dec4a837893fddceb3a56b8",
+      "status": "UNKNOWN_ADMISSION_SCREENING",
+      "total_wall_seconds": 7.560302462999971
+    }
+  ],
+  "reports_sha256": "47fbe4c1aec68f50d158a9031f06a59e5ccea6a085a0576c928075496276a6b6",
+  "schema": "UDM_V44_OFFLINE_RETAINED_SCREENING_DOSSIER_V1",
+  "scientific_verdicts": {
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN"
+  },
+  "source_commit": "77c2ef539aed252e037c5c0a67dd62816d5306b4",
+  "status": "PASS_RETAINED_SCREENING_BINDINGS"
+}

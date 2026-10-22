@@ -1,0 +1,10 @@
+{
+  "allowed_change": "Replace direct full-record equality by exact closed projection comparison, preserving all other data-only checks. Write new attempt output, never rewrite attempt001.",
+  "new_native_calls": 0,
+  "new_source_queries": 0,
+  "old_source_sha256": "0b6a2fcca04781d1e2c0ba0062720456bf3c4aca913d00b650af20d902b63879",
+  "original_unknown_report_sha256": "c43203695dd471772f521892d94608ab6c6c8006dafc51a5008d0a1de9043590",
+  "reason": "Summary ordered_records deliberately projects repo/status/window/count/qualifying IDs and query-endpoint count from full retained repository records; direct whole-object equality is not its format. All full raw curation bytes remain bound to immutable source and CAS.",
+  "schema": "UDM_V44_DATA_AUDITOR_FORMAT001_PRECORRECTION",
+  "scientific_promotion": false
+}

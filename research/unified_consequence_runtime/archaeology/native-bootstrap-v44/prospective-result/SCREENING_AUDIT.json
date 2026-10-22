@@ -1,0 +1,280 @@
+{
+  "all_checks_closed": true,
+  "all_screened_cases_and_costs_retained": true,
+  "attestation": {
+    "path": "/workspace/qualification/native-frontier-v44-operator/SCREENING_ACTOR_ATTESTATION.json",
+    "sha256": "3fe66d3232595fa23b90a4aa8f8bc9a155872d7a4379183df7bf3fa6db1c9291"
+  },
+  "auditor": "/root/integrate_bootstrap_runtime",
+  "authority": {
+    "path": "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective/SCREENING_AUTHORITY.json",
+    "sha256": "8c1ae9852b4cc60fb8773863b790c18b0b9dc4c1733fddb96e4a577e5a0dc0b0"
+  },
+  "checks": [
+    {
+      "check": "ledger_content_id:/workspace/qualification/native-frontier-v44-operator/screening/case-000/machine-state/metatron-ledger.jsonl:1",
+      "pass": true
+    },
+    {
+      "check": "ledger_ordered_premises:/workspace/qualification/native-frontier-v44-operator/screening/case-000/machine-state/metatron-ledger.jsonl:1",
+      "pass": true
+    },
+    {
+      "check": "ledger_content_id:/workspace/qualification/native-frontier-v44-operator/screening/case-000/machine-state/metatron-ledger.jsonl:2",
+      "pass": true
+    },
+    {
+      "check": "ledger_ordered_premises:/workspace/qualification/native-frontier-v44-operator/screening/case-000/machine-state/metatron-ledger.jsonl:2",
+      "pass": true
+    },
+    {
+      "check": "cas_hash:/workspace/qualification/native-frontier-v44-operator/screening/case-000/machine-state/objects/fb08c5e5d999cd1837ff81a86f99dd5dacb775817f1aa23e2fbf85d3400c870f",
+      "pass": true
+    },
+    {
+      "check": "ledger_content_id:/workspace/qualification/native-frontier-v44-operator/screening/case-000/machine-state/metatron-ledger.jsonl:1",
+      "pass": true
+    },
+    {
+      "check": "ledger_ordered_premises:/workspace/qualification/native-frontier-v44-operator/screening/case-000/machine-state/metatron-ledger.jsonl:1",
+      "pass": true
+    },
+    {
+      "check": "ledger_content_id:/workspace/qualification/native-frontier-v44-operator/screening/case-000/machine-state/metatron-ledger.jsonl:2",
+      "pass": true
+    },
+    {
+      "check": "ledger_ordered_premises:/workspace/qualification/native-frontier-v44-operator/screening/case-000/machine-state/metatron-ledger.jsonl:2",
+      "pass": true
+    },
+    {
+      "check": "cas_hash:/workspace/qualification/native-frontier-v44-operator/screening/case-000/machine-state/objects/fb08c5e5d999cd1837ff81a86f99dd5dacb775817f1aa23e2fbf85d3400c870f",
+      "pass": true
+    },
+    {
+      "check": "flash_complete_event_inventory:/workspace/qualification/native-frontier-v44-operator/screening/case-000/machine-state",
+      "pass": true
+    },
+    {
+      "check": "flash_exact_original_record:/workspace/qualification/native-frontier-v44-operator/screening/case-000/machine-state:303ba62f5c671df78421aa6051f27ca33cfe593171595e87f20a47c0627a4540",
+      "pass": true
+    },
+    {
+      "check": "flash_exact_support:/workspace/qualification/native-frontier-v44-operator/screening/case-000/machine-state:303ba62f5c671df78421aa6051f27ca33cfe593171595e87f20a47c0627a4540",
+      "pass": true
+    },
+    {
+      "check": "flash_exact_original_record:/workspace/qualification/native-frontier-v44-operator/screening/case-000/machine-state:d284b6be6ec3d0ffbfd4734fffeb19f7849b0fe9f9c9f3a927c1ac365dafbf29",
+      "pass": true
+    },
+    {
+      "check": "flash_exact_support:/workspace/qualification/native-frontier-v44-operator/screening/case-000/machine-state:d284b6be6ec3d0ffbfd4734fffeb19f7849b0fe9f9c9f3a927c1ac365dafbf29",
+      "pass": true
+    },
+    {
+      "check": "flash_event_manifest:/workspace/qualification/native-frontier-v44-operator/screening/case-000/machine-state",
+      "pass": true
+    },
+    {
+      "check": "independent_flash_metatron_agreement:/workspace/qualification/native-frontier-v44-operator/screening/case-000/machine-state",
+      "pass": true
+    },
+    {
+      "check": "screening_metadata_scope_closed",
+      "pass": true
+    },
+    {
+      "check": "case_complete:0",
+      "pass": true
+    },
+    {
+      "check": "ledger_content_id:/workspace/qualification/native-frontier-v44-operator/screening/case-001/machine-state/metatron-ledger.jsonl:1",
+      "pass": true
+    },
+    {
+      "check": "ledger_ordered_premises:/workspace/qualification/native-frontier-v44-operator/screening/case-001/machine-state/metatron-ledger.jsonl:1",
+      "pass": true
+    },
+    {
+      "check": "ledger_content_id:/workspace/qualification/native-frontier-v44-operator/screening/case-001/machine-state/metatron-ledger.jsonl:2",
+      "pass": true
+    },
+    {
+      "check": "ledger_ordered_premises:/workspace/qualification/native-frontier-v44-operator/screening/case-001/machine-state/metatron-ledger.jsonl:2",
+      "pass": true
+    },
+    {
+      "check": "cas_hash:/workspace/qualification/native-frontier-v44-operator/screening/case-001/machine-state/objects/841bcc9634abfbef04221d76fb5a9e35906e48766dec4a837893fddceb3a56b8",
+      "pass": true
+    },
+    {
+      "check": "ledger_content_id:/workspace/qualification/native-frontier-v44-operator/screening/case-001/machine-state/metatron-ledger.jsonl:1",
+      "pass": true
+    },
+    {
+      "check": "ledger_ordered_premises:/workspace/qualification/native-frontier-v44-operator/screening/case-001/machine-state/metatron-ledger.jsonl:1",
+      "pass": true
+    },
+    {
+      "check": "ledger_content_id:/workspace/qualification/native-frontier-v44-operator/screening/case-001/machine-state/metatron-ledger.jsonl:2",
+      "pass": true
+    },
+    {
+      "check": "ledger_ordered_premises:/workspace/qualification/native-frontier-v44-operator/screening/case-001/machine-state/metatron-ledger.jsonl:2",
+      "pass": true
+    },
+    {
+      "check": "cas_hash:/workspace/qualification/native-frontier-v44-operator/screening/case-001/machine-state/objects/841bcc9634abfbef04221d76fb5a9e35906e48766dec4a837893fddceb3a56b8",
+      "pass": true
+    },
+    {
+      "check": "flash_complete_event_inventory:/workspace/qualification/native-frontier-v44-operator/screening/case-001/machine-state",
+      "pass": true
+    },
+    {
+      "check": "flash_exact_original_record:/workspace/qualification/native-frontier-v44-operator/screening/case-001/machine-state:18d8e7f361beaa22e450bd60d1164ce3e9fdbbf01adfabb3ba94698cfb05d79f",
+      "pass": true
+    },
+    {
+      "check": "flash_exact_support:/workspace/qualification/native-frontier-v44-operator/screening/case-001/machine-state:18d8e7f361beaa22e450bd60d1164ce3e9fdbbf01adfabb3ba94698cfb05d79f",
+      "pass": true
+    },
+    {
+      "check": "flash_exact_original_record:/workspace/qualification/native-frontier-v44-operator/screening/case-001/machine-state:303ba62f5c671df78421aa6051f27ca33cfe593171595e87f20a47c0627a4540",
+      "pass": true
+    },
+    {
+      "check": "flash_exact_support:/workspace/qualification/native-frontier-v44-operator/screening/case-001/machine-state:303ba62f5c671df78421aa6051f27ca33cfe593171595e87f20a47c0627a4540",
+      "pass": true
+    },
+    {
+      "check": "flash_event_manifest:/workspace/qualification/native-frontier-v44-operator/screening/case-001/machine-state",
+      "pass": true
+    },
+    {
+      "check": "independent_flash_metatron_agreement:/workspace/qualification/native-frontier-v44-operator/screening/case-001/machine-state",
+      "pass": true
+    },
+    {
+      "check": "screening_metadata_scope_closed",
+      "pass": true
+    },
+    {
+      "check": "case_complete:1",
+      "pass": true
+    },
+    {
+      "check": "all_pool_members_and_unknowns_closed",
+      "pass": true
+    }
+  ],
+  "controller": {
+    "path": "/workspace/qualification/native-frontier-v44-operator/ORDERED_PROCESS_COSTS.json",
+    "sha256": "5ea1296374faa661bd175e24ac0b4e2a486256cc0241cc9119de04767dcb98b1"
+  },
+  "costs": {
+    "build_calls": 0,
+    "build_seconds": 0.0,
+    "collection_calls": 0,
+    "controller_wall_seconds": 31.265388347001135,
+    "metadata_backend_calls": 0,
+    "metadata_backend_seconds": 0,
+    "native_calls": 0,
+    "sum_case_inclusive_wall_seconds": 13.199943995001377,
+    "verification_attempts": 0
+  },
+  "counts": {
+    "eligible_cases": 0,
+    "screened_cases": 2
+  },
+  "created_at": "2026-10-22T02:01:00.539120+00:00",
+  "dossier": {
+    "path": "/workspace/qualification/native-bootstrap-v44-screening-audit-preparation/ACTUAL_SCREENING_ATTEMPT_001/RETAINED_CHECKS.json",
+    "sha256": "1c6a992c2c698de56d11ced52186785aa992e92afa689166c13acedeeb15c06c"
+  },
+  "eligibility_rule": "PASS_NATIVE_OR_FAIL_NATIVE_IDENTICAL",
+  "exposure_scope": "Original independent screening role only, supported by exact actor attestation and controller evidence. Auditor source/native diagnostics remain sealed before learner role release.",
+  "independent_screener": true,
+  "learner_future_source_accessed": false,
+  "limitations": [
+    "Bounded supplied-run/actor attestation; no global absence-of-unrelated-processes or hostile-host isolation proof.",
+    "No target interpreter, backend, pytest or native verifier executed by this audit. Runtime implementation/version claims retain offline evidence limits.",
+    "Inclusive parent and nested phase wall intervals are nonadditive. All successful/refused launches retained; unmeasured tool/model/engineering/lifecycle cost remains UNKNOWN."
+  ],
+  "pool_sha256": "0b6b83e3f443dc9e455b19615ebc8cab74dd39865d4842d629c969b3317c578e",
+  "reports": [
+    {
+      "bootstrap_costs": {
+        "backend_calls": 0,
+        "backend_seconds": 0,
+        "coverage": "Original-backend metadata observations and independent verification in this screening interval; native counters remain separate and parent wall time includes these nested operations.",
+        "inclusive_parent_wall_seconds": 5.639641532001406
+      },
+      "build_costs": {
+        "build_calls": 0,
+        "build_seconds": 0.0,
+        "coverage": "V43 builder launches and generated-build verification attempts in this screening interval; parent wall time includes provisioning, host checks and independent oracle work. Original native counters and ceilings are unchanged; build seconds are included in parent wall time.",
+        "inclusive_parent_wall_seconds": 5.639641532001406,
+        "verification_attempts": 0
+      },
+      "costs": {
+        "collection_calls": 0,
+        "native_calls": 0
+      },
+      "eligible": false,
+      "repository": "amoffat/sh",
+      "schema": "UDM_SEALED_ADMISSION_ENVELOPE_V44",
+      "screening_mode": "ADMISSION_ONLY_NO_CATALOG_OR_CANDIDATE_SEARCH",
+      "sealed_report": {
+        "path": "/workspace/qualification/native-frontier-v44-operator/screening/case-000/SCREENING_CASE.json",
+        "sha256": "6b5c13c47da6ded57e551ed7a453a42fd77078e7384502d031844865ba50985f"
+      },
+      "spec_sha256": "fb08c5e5d999cd1837ff81a86f99dd5dacb775817f1aa23e2fbf85d3400c870f",
+      "status": "UNKNOWN_ADMISSION_SCREENING",
+      "total_wall_seconds": 5.639641532001406
+    },
+    {
+      "bootstrap_costs": {
+        "backend_calls": 0,
+        "backend_seconds": 0,
+        "coverage": "Original-backend metadata observations and independent verification in this screening interval; native counters remain separate and parent wall time includes these nested operations.",
+        "inclusive_parent_wall_seconds": 7.560302462999971
+      },
+      "build_costs": {
+        "build_calls": 0,
+        "build_seconds": 0.0,
+        "coverage": "V43 builder launches and generated-build verification attempts in this screening interval; parent wall time includes provisioning, host checks and independent oracle work. Original native counters and ceilings are unchanged; build seconds are included in parent wall time.",
+        "inclusive_parent_wall_seconds": 7.560302462999971,
+        "verification_attempts": 0
+      },
+      "costs": {
+        "collection_calls": 0,
+        "native_calls": 0
+      },
+      "eligible": false,
+      "repository": "eliben/pycparser",
+      "schema": "UDM_SEALED_ADMISSION_ENVELOPE_V44",
+      "screening_mode": "ADMISSION_ONLY_NO_CATALOG_OR_CANDIDATE_SEARCH",
+      "sealed_report": {
+        "path": "/workspace/qualification/native-frontier-v44-operator/screening/case-001/SCREENING_CASE.json",
+        "sha256": "6daa134bad5cadbc1dfeef4fbfaa43a70a0f6fa54771a3c6c64f94411809b534"
+      },
+      "spec_sha256": "841bcc9634abfbef04221d76fb5a9e35906e48766dec4a837893fddceb3a56b8",
+      "status": "UNKNOWN_ADMISSION_SCREENING",
+      "total_wall_seconds": 7.560302462999971
+    }
+  ],
+  "reports_sha256": "47fbe4c1aec68f50d158a9031f06a59e5ccea6a085a0576c928075496276a6b6",
+  "schema": "UDM_V44_INDEPENDENT_ADMISSION_ONLY_SCREENING_AUDIT_V1",
+  "scientific_scope": "Metadata/admission-only; all authentic PASS/FAIL admissions equally eligible; all UNKNOWN/refusals retained; no replacement, repairs, native retries, candidate or policy search.",
+  "scientific_verdicts": {
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN"
+  },
+  "search_or_policy_outcomes_accessed": false,
+  "source_commit": "77c2ef539aed252e037c5c0a67dd62816d5306b4",
+  "status": "PASS_ADMISSION_ONLY_SCREENING_AUDIT"
+}

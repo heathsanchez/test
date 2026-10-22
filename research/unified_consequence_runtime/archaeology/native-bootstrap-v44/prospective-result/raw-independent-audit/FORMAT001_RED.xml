@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="7" skipped="0" tests="7" time="0.044" timestamp="2026-10-22T02:17:06.302281+00:00" hostname="8ac9339af51c"><testcase classname="test_format001" name="test_exact_summary_projection_never_demands_raw_only_fields" time="0.004"><failure message="AttributeError: module 'raw_packet_auditor' has no attribute 'coverage_projection'">def test_exact_summary_projection_never_demands_raw_only_fields():
+        m=module()
+&gt;       assert m.coverage_projection(fixture())==[{'repo':'fixture/unread','status':'NO_QUALIFYING_CANDIDATE',
+            'closed_pr_count':2,'closed_pr_window':{'page':1},'qualifying_prs':[],'query_endpoints':2}]
+E       AttributeError: module 'raw_packet_auditor' has no attribute 'coverage_projection'
+
+test_format001.py:19: AttributeError</failure></testcase><testcase classname="test_format001" name="test_all_declared_summary_fields_remain_exact[repo-other/unread]" time="0.002"><failure message="AttributeError: module 'raw_packet_auditor' has no attribute 'coverage_projection'">field = 'repo', value = 'other/unread'
+
+    @pytest.mark.parametrize('field,value',[('repo','other/unread'),('status','QUALIFYING_METADATA_CANDIDATE'),
+        ('closed_pr_count',3),('closed_pr_window',{'page':2}),('qualifying_prs',[1]),
+        ('query_coverage',[{'endpoint':'one'}])])
+    def test_all_declared_summary_fields_remain_exact(field,value):
+&gt;       m=module();rows=fixture();expected=m.coverage_projection(rows);rows[0][field]=value
+E       AttributeError: module 'raw_packet_auditor' has no attribute 'coverage_projection'
+
+test_format001.py:26: AttributeError</failure></testcase><testcase classname="test_format001" name="test_all_declared_summary_fields_remain_exact[status-QUALIFYING_METADATA_CANDIDATE]" time="0.002"><failure message="AttributeError: module 'raw_packet_auditor' has no attribute 'coverage_projection'">field = 'status', value = 'QUALIFYING_METADATA_CANDIDATE'
+
+    @pytest.mark.parametrize('field,value',[('repo','other/unread'),('status','QUALIFYING_METADATA_CANDIDATE'),
+        ('closed_pr_count',3),('closed_pr_window',{'page':2}),('qualifying_prs',[1]),
+        ('query_coverage',[{'endpoint':'one'}])])
+    def test_all_declared_summary_fields_remain_exact(field,value):
+&gt;       m=module();rows=fixture();expected=m.coverage_projection(rows);rows[0][field]=value
+E       AttributeError: module 'raw_packet_auditor' has no attribute 'coverage_projection'
+
+test_format001.py:26: AttributeError</failure></testcase><testcase classname="test_format001" name="test_all_declared_summary_fields_remain_exact[closed_pr_count-3]" time="0.002"><failure message="AttributeError: module 'raw_packet_auditor' has no attribute 'coverage_projection'">field = 'closed_pr_count', value = 3
+
+    @pytest.mark.parametrize('field,value',[('repo','other/unread'),('status','QUALIFYING_METADATA_CANDIDATE'),
+        ('closed_pr_count',3),('closed_pr_window',{'page':2}),('qualifying_prs',[1]),
+        ('query_coverage',[{'endpoint':'one'}])])
+    def test_all_declared_summary_fields_remain_exact(field,value):
+&gt;       m=module();rows=fixture();expected=m.coverage_projection(rows);rows[0][field]=value
+E       AttributeError: module 'raw_packet_auditor' has no attribute 'coverage_projection'
+
+test_format001.py:26: AttributeError</failure></testcase><testcase classname="test_format001" name="test_all_declared_summary_fields_remain_exact[closed_pr_window-value3]" time="0.002"><failure message="AttributeError: module 'raw_packet_auditor' has no attribute 'coverage_projection'">field = 'closed_pr_window', value = {'page': 2}
+
+    @pytest.mark.parametrize('field,value',[('repo','other/unread'),('status','QUALIFYING_METADATA_CANDIDATE'),
+        ('closed_pr_count',3),('closed_pr_window',{'page':2}),('qualifying_prs',[1]),
+        ('query_coverage',[{'endpoint':'one'}])])
+    def test_all_declared_summary_fields_remain_exact(field,value):
+&gt;       m=module();rows=fixture();expected=m.coverage_projection(rows);rows[0][field]=value
+E       AttributeError: module 'raw_packet_auditor' has no attribute 'coverage_projection'
+
+test_format001.py:26: AttributeError</failure></testcase><testcase classname="test_format001" name="test_all_declared_summary_fields_remain_exact[qualifying_prs-value4]" time="0.002"><failure message="AttributeError: module 'raw_packet_auditor' has no attribute 'coverage_projection'">field = 'qualifying_prs', value = [1]
+
+    @pytest.mark.parametrize('field,value',[('repo','other/unread'),('status','QUALIFYING_METADATA_CANDIDATE'),
+        ('closed_pr_count',3),('closed_pr_window',{'page':2}),('qualifying_prs',[1]),
+        ('query_coverage',[{'endpoint':'one'}])])
+    def test_all_declared_summary_fields_remain_exact(field,value):
+&gt;       m=module();rows=fixture();expected=m.coverage_projection(rows);rows[0][field]=value
+E       AttributeError: module 'raw_packet_auditor' has no attribute 'coverage_projection'
+
+test_format001.py:26: AttributeError</failure></testcase><testcase classname="test_format001" name="test_all_declared_summary_fields_remain_exact[query_coverage-value5]" time="0.002"><failure message="AttributeError: module 'raw_packet_auditor' has no attribute 'coverage_projection'">field = 'query_coverage', value = [{'endpoint': 'one'}]
+
+    @pytest.mark.parametrize('field,value',[('repo','other/unread'),('status','QUALIFYING_METADATA_CANDIDATE'),
+        ('closed_pr_count',3),('closed_pr_window',{'page':2}),('qualifying_prs',[1]),
+        ('query_coverage',[{'endpoint':'one'}])])
+    def test_all_declared_summary_fields_remain_exact(field,value):
+&gt;       m=module();rows=fixture();expected=m.coverage_projection(rows);rows[0][field]=value
+E       AttributeError: module 'raw_packet_auditor' has no attribute 'coverage_projection'
+
+test_format001.py:26: AttributeError</failure></testcase></testsuite></testsuites>

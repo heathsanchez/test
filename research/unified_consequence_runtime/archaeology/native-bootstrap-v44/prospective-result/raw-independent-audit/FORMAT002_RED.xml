@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="3" skipped="0" tests="10" time="0.048" timestamp="2026-10-22T02:18:10.014097+00:00" hostname="8ac9339af51c"><testcase classname="test_format001" name="test_exact_summary_projection_never_demands_raw_only_fields" time="0.004" /><testcase classname="test_format001" name="test_all_declared_summary_fields_remain_exact[repo-other/unread]" time="0.003" /><testcase classname="test_format001" name="test_all_declared_summary_fields_remain_exact[status-QUALIFYING_METADATA_CANDIDATE]" time="0.002" /><testcase classname="test_format001" name="test_all_declared_summary_fields_remain_exact[closed_pr_count-3]" time="0.002" /><testcase classname="test_format001" name="test_all_declared_summary_fields_remain_exact[closed_pr_window-value3]" time="0.002" /><testcase classname="test_format001" name="test_all_declared_summary_fields_remain_exact[qualifying_prs-value4]" time="0.002" /><testcase classname="test_format001" name="test_all_declared_summary_fields_remain_exact[query_coverage-value5]" time="0.002" /><testcase classname="test_format001" name="test_component_boundary_preserves_exact_raw_pinset_and_projection[raw_digest]" time="0.002"><failure message="AttributeError: module 'raw_packet_auditor' has no attribute 'component_pinset_matches'">change = 'raw_digest'
+
+    @pytest.mark.parametrize('change',('raw_digest','component_commit','component_pin'))
+    def test_component_boundary_preserves_exact_raw_pinset_and_projection(change):
+        import json
+        m=module();config={key:{'commit':'original','files':{'one.py':'exact'}} for key in ('development','metatron','flash')}
+        config['schema']='retained original full file'
+        raw=json.dumps(config,indent=2).encode()
+        boundary={'source_pins_sha256':m.sha(raw),'source_pins':{key:config[key] for key in ('development','metatron','flash')}}
+&gt;       assert m.component_pinset_matches(boundary,raw)
+E       AttributeError: module 'raw_packet_auditor' has no attribute 'component_pinset_matches'
+
+test_format001.py:36: AttributeError</failure></testcase><testcase classname="test_format001" name="test_component_boundary_preserves_exact_raw_pinset_and_projection[component_commit]" time="0.002"><failure message="AttributeError: module 'raw_packet_auditor' has no attribute 'component_pinset_matches'">change = 'component_commit'
+
+    @pytest.mark.parametrize('change',('raw_digest','component_commit','component_pin'))
+    def test_component_boundary_preserves_exact_raw_pinset_and_projection(change):
+        import json
+        m=module();config={key:{'commit':'original','files':{'one.py':'exact'}} for key in ('development','metatron','flash')}
+        config['schema']='retained original full file'
+        raw=json.dumps(config,indent=2).encode()
+        boundary={'source_pins_sha256':m.sha(raw),'source_pins':{key:config[key] for key in ('development','metatron','flash')}}
+&gt;       assert m.component_pinset_matches(boundary,raw)
+E       AttributeError: module 'raw_packet_auditor' has no attribute 'component_pinset_matches'
+
+test_format001.py:36: AttributeError</failure></testcase><testcase classname="test_format001" name="test_component_boundary_preserves_exact_raw_pinset_and_projection[component_pin]" time="0.002"><failure message="AttributeError: module 'raw_packet_auditor' has no attribute 'component_pinset_matches'">change = 'component_pin'
+
+    @pytest.mark.parametrize('change',('raw_digest','component_commit','component_pin'))
+    def test_component_boundary_preserves_exact_raw_pinset_and_projection(change):
+        import json
+        m=module();config={key:{'commit':'original','files':{'one.py':'exact'}} for key in ('development','metatron','flash')}
+        config['schema']='retained original full file'
+        raw=json.dumps(config,indent=2).encode()
+        boundary={'source_pins_sha256':m.sha(raw),'source_pins':{key:config[key] for key in ('development','metatron','flash')}}
+&gt;       assert m.component_pinset_matches(boundary,raw)
+E       AttributeError: module 'raw_packet_auditor' has no attribute 'component_pinset_matches'
+
+test_format001.py:36: AttributeError</failure></testcase></testsuite></testsuites>

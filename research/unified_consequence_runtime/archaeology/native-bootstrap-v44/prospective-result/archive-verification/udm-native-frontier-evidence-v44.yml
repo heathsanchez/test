@@ -1,0 +1,97 @@
+name: Archive V44 frontier evidence (data only)
+on:
+  push:
+    branches: [research/udm-native-bootstrap-v44-20261022]
+    paths:
+      - .github/workflows/udm-native-frontier-evidence-v44.yml
+      - research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective-result/**
+  workflow_dispatch:
+    inputs:
+      expected_source_commit:
+        description: Exact owned-branch publication commit; this workflow executes no native science
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: udm-v44-final-data-archive-${{ github.ref }}
+  cancel-in-progress: false
+env:
+  GIT_OPTIONAL_LOCKS: '0'
+  PYTHONDONTWRITEBYTECODE: '1'
+  PYTHONUNBUFFERED: '1'
+  # Root fills this only after the actual report, audit and complete raw evidence exist.
+  ARCHIVE_EXPECTATION_SHA256: '__ACTUAL_FROZEN_EXPECTATION_SHA256_REQUIRED__'
+jobs:
+  archive-integrity-only:
+    if: github.ref == 'refs/heads/research/udm-native-bootstrap-v44-20261022' && (github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[archive-frontier-v44]'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.14'
+      - name: Require exact owned publication source and real pinned expectation
+        env:
+          EXPECTED_SOURCE_COMMIT: ${{ inputs.expected_source_commit || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$EXPECTED_SOURCE_COMMIT" = "$GITHUB_SHA"
+          test "$GITHUB_REF" = refs/heads/research/udm-native-bootstrap-v44-20261022
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          [[ "$ARCHIVE_EXPECTATION_SHA256" =~ ^[0-9a-f]{64}$ ]]
+          # Packaging is needed by the existing source-preservation import chain;
+          # no native environment, target dependency, pytest or agent is installed.
+          python -B -m pip install --disable-pip-version-check --no-input packaging==26.3
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/test
+          ref: c9092fa57c8943e638f95689cd36e6a63310f41e
+          path: archive-component-stage/development
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/metatron
+          ref: b9d1b5cc10477188be6e55617699be60e70f6dad
+          path: archive-component-stage/metatron
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/realitygraph
+          ref: 50c43b14e7272469bc51ff7204dec07682a996d7
+          path: archive-component-stage/flash
+          persist-credentials: false
+      - name: Verify committed evidence as data and archive complete exact source
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+          EXPECTED_SOURCE_COMMIT: ${{ inputs.expected_source_commit || github.sha }}
+        run: |
+          set -euo pipefail
+          UDM_ARCHIVE_COMPONENTS="$RUNNER_TEMP/udm-v44-archive-components"
+          UDM_ARCHIVE_OUTPUT="$RUNNER_TEMP/udm-v44-final-archive-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          test ! -e "$UDM_ARCHIVE_COMPONENTS"
+          test ! -e "$UDM_ARCHIVE_OUTPUT"
+          mv "$GITHUB_WORKSPACE/archive-component-stage" "$UDM_ARCHIVE_COMPONENTS"
+          test -z "$(git status --porcelain)"
+          python -B research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective-result/ARCHIVE_ONLY_CHECK.py check \
+            --repo "$GITHUB_WORKSPACE" \
+            --expectation "$GITHUB_WORKSPACE/research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective-result/ARCHIVE_EXPECTATION.json" \
+            --expectation-sha256 "$ARCHIVE_EXPECTATION_SHA256" \
+            --expected-source-commit "$EXPECTED_SOURCE_COMMIT" \
+            --components "$UDM_ARCHIVE_COMPONENTS" --out "$UDM_ARCHIVE_OUTPUT"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-frontier-v44-archive-only-${{ github.sha }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/udm-v44-final-archive-${{ github.run_id }}-${{ github.run_attempt }}/
+            research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective-result/
+            .github/workflows/udm-native-frontier-evidence-v44.yml
+          include-hidden-files: true
+          compression-level: 0
+          retention-days: 90

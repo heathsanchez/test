@@ -1,0 +1,14 @@
+The fresh campaign stopped at suite-contract derivation: **0/2 tasks admitted; zero native, collection or metadata-backend calls**. Both cases are now exposed diagnostics. The original refusals and G2–G6 UNKNOWNs remain unchanged.
+
+| Case | Exact cause | Consequence |
+|---|---|---|
+| `amoffat/sh` | `tests/sh_test.py:70` assigns `unittest.TestLoader.sortTestMethodsUsing = staticmethod(randomize_order)`. V2 `targets()` rejects every attribute/subscript assignment at collection scope. | This is visibly an original ordering hook, not test registration or ordinary inert data. Its comparator hashes names with per-process `os.urandom(10)` salt, so independent exact-order replay may still fail. That later obstruction has not been tested. |
+| `eliben/pycparser` | `tests/test_c_parser.py:5` imports `*` from original `pycparser.c_ast`. V2 `visit()` refuses every wildcard import without resolving origins. | The retained origin contains AST-node classes/helpers, no `__all__`, module `__getattr__`, or visible public test/Test-prefix declaration. This source observation is not an independently checked import/export certificate. |
+
+The smallest missing operation is a **versioned, source-bound native test-namespace contract derivation**, supplying checked export/origin and collection-effect evidence to the existing assertion authority. It needs no new learning framework. Reuse the original configuration/class inheritance mapping, exact native collector, independent recollector, runtime/import/plugin identity, code hashes, required-call receipts and V42/V43 transport.
+
+The existing collector is capable of recording real nodes, executable code hashes, source/import identities, deselection and call reports. Qualified controls already cover a lawful original reorder and reject changed order, missing assertions, wrong imports and forged receipts. It cannot currently supply the missing authority: `_context` independently derives the static suite contract **before** starting collection.
+
+The open certificate obligation is to bind every changed author assertion to its actual collected executable object while preserving the complete original namespace, import origins, collection/selection and source identity. A valid collection receipt alone cannot rule out a deleted or rebound assertion. For sh, preserve exact declared order or independently establish an appropriate order correspondence; do not sort away the random-order issue or inject an RNG shim. For pycparser, establish the complete source-local export set and its lack of test-authority effects rather than blindly allowing `import *`.
+
+No implementation, native rerun, import, repair, resampling, solver or baseline was performed during this diagnosis. Whether either diagnostic can ultimately execute remains UNKNOWN. Exact commits, source hashes and unchanged refusal/audit lineage are in `DIAGNOSTIC_RESIDUAL.json`.

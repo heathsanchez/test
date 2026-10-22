@@ -1,0 +1,129 @@
+{
+  "arms": {
+    "actual_coding_agent": {
+      "native_calls": 0,
+      "released": false,
+      "status": "NOT_STARTED"
+    },
+    "informed_executable_ledger": {
+      "native_calls": 0,
+      "released": false,
+      "status": "NOT_STARTED"
+    },
+    "learner_msi_v104": {
+      "native_calls": 0,
+      "released": false,
+      "status": "NOT_STARTED"
+    },
+    "unchanged_method_baseline": {
+      "native_calls": 0,
+      "released": false,
+      "status": "NOT_STARTED"
+    }
+  },
+  "cases": [
+    {
+      "author_test_head_commit": "78d8159d995872e9cca369149e8c5eae86988ec2",
+      "base_commit": "0413d8cb5e5deb3477336c1e10b7fac769232e4e",
+      "case": 0,
+      "collection_calls": 0,
+      "eligible": false,
+      "native_calls": 0,
+      "pr": 792,
+      "reason": "UNKNOWN_SUITE_CONTRACT: dynamic namespace write unsupported",
+      "repository": "amoffat/sh",
+      "screening_case_sha256": "6b5c13c47da6ded57e551ed7a453a42fd77078e7384502d031844865ba50985f",
+      "status": "UNKNOWN_CONTRACT"
+    },
+    {
+      "author_test_head_commit": "80ee8b769b029e7534eb78ab3955583e5a6deac2",
+      "base_commit": "af3ac8722eb4e4990f464fa5f7c756e8a3bc1519",
+      "case": 1,
+      "collection_calls": 0,
+      "eligible": false,
+      "native_calls": 0,
+      "pr": 606,
+      "reason": "UNKNOWN_SUITE_CONTRACT: wildcard imported tests unsupported",
+      "repository": "eliben/pycparser",
+      "screening_case_sha256": "6daa134bad5cadbc1dfeef4fbfaa43a70a0f6fa54771a3c6c64f94411809b534",
+      "status": "UNKNOWN_CONTRACT"
+    }
+  ],
+  "classification": "UNKNOWN",
+  "comparison": "NOT_STARTED_NO_TIE_OR_ADVANTAGE",
+  "exposure": "All nine repository identities were metadata-queried; amoffat/sh and eliben/pycparser were source-screened and are now exposed diagnostics, never fresh prospective successes.",
+  "final_screening_archive_workflow": {
+    "artifact_id": null,
+    "artifact_sha256": null,
+    "run_id": null,
+    "status": "PENDING"
+  },
+  "first_residual": "Independently verified, versioned source-bound native test-namespace contract derivation: certify non-test namespace effects and source-local wildcard export origins, bind every changed author assertion to the actual collected executable object, and establish explicit collection-order/replay semantics. The original collector requires independently derived assertion authority before collection and cannot mint this missing authority itself. Both sources reached compatible static environment selection; this is not a current metadata-bootstrap refusal.",
+  "fixed_metadata_repositories": [
+    "aio-libs/aiosignal",
+    "aio-libs/frozenlist",
+    "amoffat/sh",
+    "eliben/pycparser",
+    "litl/backoff",
+    "mahmoud/glom",
+    "pallets/flask",
+    "pallets/jinja",
+    "pallets/werkzeug"
+  ],
+  "metadata_costs": {
+    "collection_calls": 0,
+    "intervals_nonadditive": true,
+    "metadata_api_calls": 64,
+    "metadata_budget_seconds": 900,
+    "metadata_wall_seconds": 16.21559207199971,
+    "native_calls": 0,
+    "outer_query_process_seconds": 18.110675445001107,
+    "total_curation_wall_seconds": 16.660635790001834
+  },
+  "metadata_identities": 9,
+  "no_qualifying_metadata_candidate": 7,
+  "pool_sha256": "0b6b83e3f443dc9e455b19615ebc8cab74dd39865d4842d629c969b3317c578e",
+  "posthoc_diagnosis": {
+    "new_collection_calls": 0,
+    "new_native_calls": 0,
+    "new_source_queries": 0,
+    "old_verifier_changes": 0,
+    "path": "/workspace/qualification/native-frontier-v44-posthoc-diagnostic/DIAGNOSTIC_RESIDUAL.json",
+    "pycparser": "Wildcard imports original production AST-node classes/helpers; no visible test exports. Complete runtime export/origin authority is not yet independently established.",
+    "schema": "UDM_V44_POSTHOC_NATIVE_CONTRACT_DIAGNOSTIC_V1",
+    "sh": "Original unittest ordering-hook assignment, not a visible test factory. Per-process os.urandom salt may prevent exact independent order replay; untested UNKNOWN.",
+    "sha256": "a0a8f367916b95d8b765802e0c7116be7e98601242faa3c3b61e639d6c9c0774",
+    "status": "DIAGNOSTIC_EXPOSED_NOT_PROSPECTIVE"
+  },
+  "prequery_commit": "b112b69dcda962c9323cbcd13aefdcd580a5449a",
+  "prequery_execution_sha256": "da8a7aee7436846b764dba5587f4085182bb1e241b53ecce517154f74791fd13",
+  "schema": "UDM_V44_FINAL_FRONTIER_RESULT_V1",
+  "scientific_verdicts": {
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN"
+  },
+  "screening_audit": {
+    "checks": 39,
+    "failures": 0,
+    "path": "/workspace/qualification/native-bootstrap-v44-screening-audit-preparation/ACTUAL_SCREENING_ATTEMPT_001/SCREENING_AUDIT.json",
+    "sha256": "9b50d86e36b11eaf3e78a0c4b4d022cd8a71bf6f8cd8453c63c33a80f91b241b",
+    "status": "PASS_ADMISSION_ONLY_SCREENING_AUDIT"
+  },
+  "screening_authority_sha256": "8c1ae9852b4cc60fb8773863b790c18b0b9dc4c1733fddb96e4a577e5a0dc0b0",
+  "screening_costs": {
+    "build_calls": 0,
+    "build_seconds": 0.0,
+    "collection_calls": 0,
+    "controller_wall_seconds": 31.265388347001135,
+    "metadata_backend_calls": 0,
+    "metadata_backend_seconds": 0,
+    "native_calls": 0,
+    "sum_case_inclusive_wall_seconds": 13.199943995001377,
+    "verification_attempts": 0
+  },
+  "source_commit": "77c2ef539aed252e037c5c0a67dd62816d5306b4",
+  "status": "ZERO_ADMITTED_TASKS_NO_LEARNER_OR_COMPARISON"
+}

@@ -1,0 +1,31 @@
+{
+  "actual_runtime_inventory_sha256": "a3d0141d4004d633237f3868ce6c27d5f70637848afc64f43742bc3223880c7f",
+  "actual_runtime_profiles": [
+    "cpython-3.12.14-pytest-8.4.1-linux-x86_64",
+    "cpython-3.6.5-pytest-5.4.3-linux-x86_64"
+  ],
+  "classification": "RETAINED_ENGINEERING_NEGATIVE_AND_CORRECTION_NOT_SCIENTIFIC_RESULT",
+  "corrected_source_commit": "e596d6af124b819197d17d447b247a9007fbbf42",
+  "correction": "Export selection = static_selection, preserving the original V41 catalog checker. No catalog, task, original test or verifier changes.",
+  "exposed_source_commit": "e823ce2f4d8a42384dcb56816b1eb48c5f4fa00f",
+  "failure": "Original freeze_runtime_inventory consumer reached environment.selection._catalog, but the V44 environment adapter omitted selection API export. Source-free incomplete and complete declared inventories both stopped at AttributeError before target access.",
+  "green_controls": 2,
+  "native_test_calls": 0,
+  "new_qualification_declared_controls": 90,
+  "new_qualification_gate_files": 29,
+  "red_controls": 2,
+  "schema": "UDM_V44_RUNTIME_INVENTORY_READINESS_LINEAGE_V1",
+  "scope": "Runner-local executable inventory/readiness transport only; not native learning or prospective selection.",
+  "source_evidence": {
+    "research/unified_consequence_runtime/archaeology/native-bootstrap-v44/inventory-transport/ACTUAL_RUNTIME.stdout": "9f4182a83b7edc320d15147886b40e8e641cd9cd3ce1ca1306cf1e9d4c7c4acf",
+    "research/unified_consequence_runtime/archaeology/native-bootstrap-v44/inventory-transport/ACTUAL_RUNTIME_INVENTORY.json.gz": "0c791abe0a185b3a0f8bcde9f302b95d050f71f781005a773c5a43bdea82bc69",
+    "research/unified_consequence_runtime/archaeology/native-bootstrap-v44/inventory-transport/CORRECTION.json": "60c85ef23a4045490271278ed1411da9ec57e2894fa6eed1db506fbc64c8d2da",
+    "research/unified_consequence_runtime/archaeology/native-bootstrap-v44/inventory-transport/FREEZE.json": "9da7c28da95388caed051487be108886263d0fb5ac8dfa14e44eb917f77bfa4c",
+    "research/unified_consequence_runtime/archaeology/native-bootstrap-v44/inventory-transport/GREEN.stdout": "8eb73ddf47011bfaf9f54f945231938dd8e22add9d4a60777d415550a9116eff",
+    "research/unified_consequence_runtime/archaeology/native-bootstrap-v44/inventory-transport/GREEN.xml": "6d07911583134925bf6cc471b3f1f723b9a7a697763967962191c82f05f800fe",
+    "research/unified_consequence_runtime/archaeology/native-bootstrap-v44/inventory-transport/RED.stdout": "24e066431f5c4e4da627d54a9200092a2b4b1341c4f67b8298b694d112d9b351",
+    "research/unified_consequence_runtime/archaeology/native-bootstrap-v44/inventory-transport/RED.xml": "983a34e592ccf25b692edca316abb4dbf1133003648f43a8548941a7e63bc4f7",
+    "research/unified_consequence_runtime/archaeology/native-bootstrap-v44/inventory-transport/readiness-FROZEN_RED_MANIFEST.json": "6cc4b888460db0da64e4c9eee667d36a44895117367426a78325694a572fa39d"
+  },
+  "target_queries": 0
+}

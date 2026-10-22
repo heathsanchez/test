@@ -1,0 +1,41 @@
+FFF
+======================================================================
+FAIL: test_bad_archive_bytes_fail_without_source_execution (test_archive_draft.DataArchiveChecks.test_bad_archive_bytes_fail_without_source_execution)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/qualification/native-bootstrap-v44-final-archive-preparation/test_archive_draft.py", line 36, in test_bad_archive_bytes_fail_without_source_execution
+    m=load()
+      ^^^^^^
+  File "/workspace/qualification/native-bootstrap-v44-final-archive-preparation/test_archive_draft.py", line 12, in load
+    assert DRAFT.is_file(), 'V44 final archive draft is absent'
+           ^^^^^^^^^^^^^^^
+AssertionError: V44 final archive draft is absent
+
+======================================================================
+FAIL: test_data_bytes_and_link_metadata_are_retained_without_execution (test_archive_draft.DataArchiveChecks.test_data_bytes_and_link_metadata_are_retained_without_execution)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/qualification/native-bootstrap-v44-final-archive-preparation/test_archive_draft.py", line 21, in test_data_bytes_and_link_metadata_are_retained_without_execution
+    m=load()
+      ^^^^^^
+  File "/workspace/qualification/native-bootstrap-v44-final-archive-preparation/test_archive_draft.py", line 12, in load
+    assert DRAFT.is_file(), 'V44 final archive draft is absent'
+           ^^^^^^^^^^^^^^^
+AssertionError: V44 final archive draft is absent
+
+======================================================================
+FAIL: test_forged_expectation_is_refused_before_source_audit (test_archive_draft.DataArchiveChecks.test_forged_expectation_is_refused_before_source_audit)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/qualification/native-bootstrap-v44-final-archive-preparation/test_archive_draft.py", line 46, in test_forged_expectation_is_refused_before_source_audit
+    m=load()
+      ^^^^^^
+  File "/workspace/qualification/native-bootstrap-v44-final-archive-preparation/test_archive_draft.py", line 12, in load
+    assert DRAFT.is_file(), 'V44 final archive draft is absent'
+           ^^^^^^^^^^^^^^^
+AssertionError: V44 final archive draft is absent
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.001s
+
+FAILED (failures=3)

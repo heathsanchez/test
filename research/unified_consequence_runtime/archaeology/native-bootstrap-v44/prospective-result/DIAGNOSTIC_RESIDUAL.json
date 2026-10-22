@@ -1,0 +1,126 @@
+{
+  "campaign_commit": "77c2ef539aed252e037c5c0a67dd62816d5306b4",
+  "cases": [
+    {
+      "augmented_test_only_commit": "5742e74a78060540a1dfcf55880d249c2c3da162",
+      "author_test_head_commit": "78d8159d995872e9cca369149e8c5eae86988ec2",
+      "base_commit": "0413d8cb5e5deb3477336c1e10b7fac769232e4e",
+      "classification": "DIAGNOSTIC_EXPOSED_NOT_PROSPECTIVE",
+      "collection_calls": 0,
+      "exact_statement": {
+        "line": 70,
+        "source": "unittest.TestLoader.sortTestMethodsUsing = staticmethod(randomize_order)"
+      },
+      "index": 0,
+      "metadata_backend_calls": 0,
+      "native_calls": 0,
+      "original_reason": "UNKNOWN_SUITE_CONTRACT: dynamic namespace write unsupported",
+      "original_screening_status": "UNKNOWN_CONTRACT",
+      "refusing_grammar": {
+        "line": 390,
+        "path": "/workspace/udm-v54/research/unified_consequence_runtime/native_admission_v2.py",
+        "reason": "targets() rejects every collection-scope ast.Attribute or ast.Subscript assignment"
+      },
+      "remaining_unknowns": [
+        "Actual native collection and execution were never run.",
+        "Even a justified namespace-write admission extension may fail independent exact-order replay. No order-insensitivity certificate or lawful RNG replay authority has been supplied."
+      ],
+      "repository": "amoffat/sh",
+      "source_interpretation": "Original collection-scope unittest ordering-hook assignment, not a visible test constructor/registration. randomize_order hashes method names with module RAND_BYTES=os.urandom(10); ordering may differ between fresh processes.",
+      "test_file": {
+        "path": "/workspace/qualification/native-frontier-v44-operator/screening/case-000/source-environment/native/source/tests/sh_test.py",
+        "sha256": "1c1ac045ff8f19f082c4173019691dc235091fc15587a7953799f2e035a64c17"
+      }
+    },
+    {
+      "augmented_test_only_commit": "80c4ebc7bb0c308d4022f5d521cb9871ec97242f",
+      "author_test_head_commit": "80ee8b769b029e7534eb78ab3955583e5a6deac2",
+      "base_commit": "af3ac8722eb4e4990f464fa5f7c756e8a3bc1519",
+      "classification": "DIAGNOSTIC_EXPOSED_NOT_PROSPECTIVE",
+      "collection_calls": 0,
+      "exact_statement": {
+        "line": 5,
+        "source": "from pycparser.c_ast import *"
+      },
+      "import_origin": {
+        "path": "/workspace/qualification/native-frontier-v44-operator/screening/case-001/source-environment/native/source/pycparser/c_ast.py",
+        "sha256": "080c51dd5e0844e19788bf3b84910d40c187519b8b08c7b2ee8d9c32faa8f8c7"
+      },
+      "index": 1,
+      "metadata_backend_calls": 0,
+      "native_calls": 0,
+      "original_reason": "UNKNOWN_SUITE_CONTRACT: wildcard imported tests unsupported",
+      "original_screening_status": "UNKNOWN_CONTRACT",
+      "refusing_grammar": {
+        "line": 458,
+        "path": "/workspace/udm-v54/research/unified_consequence_runtime/native_admission_v2.py",
+        "reason": "visit() rejects every wildcard ImportFrom without inspecting its origin/export set"
+      },
+      "remaining_unknowns": [
+        "Exact import origin and complete runtime export namespace were not independently executed.",
+        "A generic certificate must exclude rebinding/extra test exports and map changed author assertions to actual collected executable objects."
+      ],
+      "repository": "eliben/pycparser",
+      "source_interpretation": "Original production AST-node classes/helper imports. Retained c_ast.py has no __all__, no module __getattr__, no statically declared public test/Test-prefix export. This is source evidence, not a qualified runtime namespace certificate.",
+      "test_file": {
+        "path": "/workspace/qualification/native-frontier-v44-operator/screening/case-001/source-environment/native/source/tests/test_c_parser.py",
+        "sha256": "149badcc01ea9bf5e36f0fc6e4b7e49ea9d2d70e01e55ced6118d25c55280d40"
+      }
+    }
+  ],
+  "counterfactuals_not_executed": [
+    "Removing either static guard",
+    "Importing either original source",
+    "Any native pytest collection or assertion execution",
+    "Any posthoc task repair or policy/solver baseline"
+  ],
+  "created_utc": "2026-10-22T02:06:27.652117+00:00",
+  "existing_authority_boundary": "native_execution_v2._context validates the static suite contract before _run. The existing native collector cannot currently bypass that guard or mint its own missing assertion authority.",
+  "new_collection_calls": 0,
+  "new_model_calls": 0,
+  "new_native_calls": 0,
+  "new_source_queries": 0,
+  "old_verifier_changes": 0,
+  "original_screening_audit": {
+    "path": "/workspace/qualification/native-bootstrap-v44-screening-audit-preparation/ACTUAL_SCREENING_ATTEMPT_001/SCREENING_AUDIT.json",
+    "sha256": "9b50d86e36b11eaf3e78a0c4b4d022cd8a71bf6f8cd8453c63c33a80f91b241b"
+  },
+  "read_only": true,
+  "schema": "UDM_V44_POSTHOC_NATIVE_CONTRACT_DIAGNOSTIC_V1",
+  "smallest_common_open_operation": {
+    "critical_negative": "Successful collection alone cannot authorize deletion or rebinding of a required changed assertion. Existing code hashes relate original collection to later execution; the new certificate must independently relate author-source assertions to that collection.",
+    "name": "versioned source-bound native test-namespace contract derivation",
+    "not_yet_warranted": [
+      "complete source-local wildcard export/origin certificate",
+      "collection-scope namespace effect certificate",
+      "non-deterministic ordering correspondence under exact independent replay"
+    ],
+    "purpose": "Supply independently checked namespace/export/effect-to-protected-assertion mapping so existing native collection can be invoked lawfully; do not remove old V2/V42 guards.",
+    "reuse": [
+      "original native_admission_v2 configuration and _class_test_nodes inheritance mapping",
+      "native_execution_v2 collect/validate_certificate/_collection/_status via source-preserving V42/V43 bindings",
+      "source-identity manifests, code hashes, exact import/plugin/environment binding, native assertion receipts and independent replay",
+      "original qualified reorder control: test_original_fixture_reorder_binds_collection_and_final_execution_orders"
+    ]
+  },
+  "source_changes": 0,
+  "source_pins": {
+    "/workspace/udm-v54/research/unified_consequence_runtime/native_admission_v2.py": "4056cb0fd40af3badbe41225919e660d560cac7bb2fda25580399e865778977e",
+    "/workspace/udm-v54/research/unified_consequence_runtime/native_admission_v42.py": "96671d481728559ea0b7f751d2a7774dd92fef6c5677b24fdd6a81a21b90e92f",
+    "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_v2.py": "33d6f2a8905d1e1bb054c0f105c9ef92aab3e15adac9f8eee3bb1423cd15732d",
+    "/workspace/udm-v54/research/unified_consequence_runtime/native_execution_v2.py": "57e2fb40c6ff39f0959764e8f48f05ee99170b97995f9a584aaa8409af8871f1",
+    "/workspace/udm-v54/research/unified_consequence_runtime/native_execution_v42.py": "da4a4b19a988145d690a288b7714cd1f6d2a24f021811059de679e6c2b585d53",
+    "/workspace/udm-v54/research/unified_consequence_runtime/native_execution_v43.py": "7d449419909c94ce6186d984545ce218c15ee97dc407104bd4e903180c564827",
+    "/workspace/udm-v54/research/unified_consequence_runtime/test_native_admission_v2_adversarial.py": "ea5cc3d76dec18a4dfed8e94a3b1865c4a6bfed26642633132d45488186a686b"
+  },
+  "status": "DIAGNOSTIC_RESIDUAL_NOT_DEVELOPMENTAL_SUCCESS",
+  "verdicts": {
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN",
+    "admission_gate": "WARRANTED_BOUNDED on independently qualified fixture/control scope",
+    "fresh_pool": "WARRANTED_BOUNDED refusal and cost audit; 0 of 2 eligible"
+  }
+}
