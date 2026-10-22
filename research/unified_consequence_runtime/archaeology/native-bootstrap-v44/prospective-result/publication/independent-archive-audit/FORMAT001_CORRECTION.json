@@ -1,0 +1,14 @@
+{
+  "GREEN_sha256": "651660ff45a517b93320a7926cbcdfb6876945d52ae47af2cf59fadd66ba8bc0",
+  "RED_sha256": "6183d450038196a5250ff2597965797ce1fee0fcd2a4b61cc187c67242143cf4",
+  "cause": "Uploaded nested README matched unrelated top-level committed README basename because all source files were considered eligible duplicate mappings. Exact workflow source upload scope is only prospective-result subtree plus workflow file.",
+  "change": "Restrict eligible source duplicate mappings to exact original upload scopes and require exactly one matching source/evidence identity with exact bytes. Unknown paths, ambiguous suffix matches, and changed bytes refuse.",
+  "new_auditor_sha256": "82671442cc476087927b03c6223cfc10999cbc572e934db77a8d307c8dbdde51",
+  "old_auditor_sha256": "715b2f00cb89bec9506d6349cf1e48f17fef1c18f7caa214ec641a213ddf910e",
+  "original_attempt": "RUN_39711277271_ATTEMPT_001/REPORT.json",
+  "original_status": "UNKNOWN_FINAL_ARCHIVE_AUDIT_OBSTRUCTION",
+  "preserved": "Actual archive ZIP, Git source, native/scientific results and original attempt are unchanged. Data-only format correction; four source-free RED then GREEN controls.",
+  "revision": 1,
+  "schema": "UDM_V44_FINAL_ARCHIVE_DATA_AUDITOR_FORMAT_CORRECTION",
+  "test_sha256": "343d178a35b6a4e88bc55e939cc07d2dfa88c202416cc741bb455d8ee51f0174"
+}

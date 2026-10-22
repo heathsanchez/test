@@ -1,0 +1,65 @@
+FFFF                                                                     [100%]
+=================================== FAILURES ===================================
+_ test_exact_uploaded_scope_disambiguates_committed_nested_readme_from_root_basename _
+
+    def test_exact_uploaded_scope_disambiguates_committed_nested_readme_from_root_basename():
+        m=module();raw=b'actual committed nested report README';name='test/test/'+m.ROOT+'archive-verification/README.md'
+        source={'README.md':{'kind':'file','sha256':m.sha(b'unrelated root readme')},m.ROOT+'archive-verification/README.md':{'kind':'file','sha256':m.sha(raw)}}
+>       assert m.uploaded_binding(name,raw,source,{})==[('source',m.ROOT+'archive-verification/README.md')]
+E       AttributeError: module 'archive_data_audit' has no attribute 'uploaded_binding'
+
+qualification/native-bootstrap-v44-final-archive-independent-audit/test_upload_scope.py:13: AttributeError
+_ test_upload_scope_unknown_changed_or_ambiguous_paths_refuse[undeclared_scope] _
+
+change = 'undeclared_scope'
+
+    @pytest.mark.parametrize('change',('undeclared_scope','changed_bytes','ambiguous_evidence'))
+    def test_upload_scope_unknown_changed_or_ambiguous_paths_refuse(change):
+        m=module();raw=b'original archived file';key=m.ROOT+'README.md';name='test/test/'+key
+        source={key:{'kind':'file','sha256':m.sha(raw)}};evidence={}
+        if change=='undeclared_scope':source={'README.md':{'kind':'file','sha256':m.sha(raw)}};name='test/test/README.md'
+        elif change=='changed_bytes':raw=b'changed uploaded payload'
+        elif change=='ambiguous_evidence':
+            source={};name='outer/report.json';evidence={'report.json':{'kind':'file','sha256':m.sha(raw)},'outer/report.json':{'kind':'file','sha256':m.sha(b'another payload')}}
+>       with pytest.raises(ValueError):m.uploaded_binding(name,raw,source,evidence)
+E       AttributeError: module 'archive_data_audit' has no attribute 'uploaded_binding'
+
+qualification/native-bootstrap-v44-final-archive-independent-audit/test_upload_scope.py:23: AttributeError
+__ test_upload_scope_unknown_changed_or_ambiguous_paths_refuse[changed_bytes] __
+
+change = 'changed_bytes'
+
+    @pytest.mark.parametrize('change',('undeclared_scope','changed_bytes','ambiguous_evidence'))
+    def test_upload_scope_unknown_changed_or_ambiguous_paths_refuse(change):
+        m=module();raw=b'original archived file';key=m.ROOT+'README.md';name='test/test/'+key
+        source={key:{'kind':'file','sha256':m.sha(raw)}};evidence={}
+        if change=='undeclared_scope':source={'README.md':{'kind':'file','sha256':m.sha(raw)}};name='test/test/README.md'
+        elif change=='changed_bytes':raw=b'changed uploaded payload'
+        elif change=='ambiguous_evidence':
+            source={};name='outer/report.json';evidence={'report.json':{'kind':'file','sha256':m.sha(raw)},'outer/report.json':{'kind':'file','sha256':m.sha(b'another payload')}}
+>       with pytest.raises(ValueError):m.uploaded_binding(name,raw,source,evidence)
+E       AttributeError: module 'archive_data_audit' has no attribute 'uploaded_binding'
+
+qualification/native-bootstrap-v44-final-archive-independent-audit/test_upload_scope.py:23: AttributeError
+_ test_upload_scope_unknown_changed_or_ambiguous_paths_refuse[ambiguous_evidence] _
+
+change = 'ambiguous_evidence'
+
+    @pytest.mark.parametrize('change',('undeclared_scope','changed_bytes','ambiguous_evidence'))
+    def test_upload_scope_unknown_changed_or_ambiguous_paths_refuse(change):
+        m=module();raw=b'original archived file';key=m.ROOT+'README.md';name='test/test/'+key
+        source={key:{'kind':'file','sha256':m.sha(raw)}};evidence={}
+        if change=='undeclared_scope':source={'README.md':{'kind':'file','sha256':m.sha(raw)}};name='test/test/README.md'
+        elif change=='changed_bytes':raw=b'changed uploaded payload'
+        elif change=='ambiguous_evidence':
+            source={};name='outer/report.json';evidence={'report.json':{'kind':'file','sha256':m.sha(raw)},'outer/report.json':{'kind':'file','sha256':m.sha(b'another payload')}}
+>       with pytest.raises(ValueError):m.uploaded_binding(name,raw,source,evidence)
+E       AttributeError: module 'archive_data_audit' has no attribute 'uploaded_binding'
+
+qualification/native-bootstrap-v44-final-archive-independent-audit/test_upload_scope.py:23: AttributeError
+=========================== short test summary info ============================
+FAILED qualification/native-bootstrap-v44-final-archive-independent-audit/test_upload_scope.py::test_exact_uploaded_scope_disambiguates_committed_nested_readme_from_root_basename
+FAILED qualification/native-bootstrap-v44-final-archive-independent-audit/test_upload_scope.py::test_upload_scope_unknown_changed_or_ambiguous_paths_refuse[undeclared_scope]
+FAILED qualification/native-bootstrap-v44-final-archive-independent-audit/test_upload_scope.py::test_upload_scope_unknown_changed_or_ambiguous_paths_refuse[changed_bytes]
+FAILED qualification/native-bootstrap-v44-final-archive-independent-audit/test_upload_scope.py::test_upload_scope_unknown_changed_or_ambiguous_paths_refuse[ambiguous_evidence]
+4 failed in 0.06s

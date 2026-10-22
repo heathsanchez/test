@@ -1,0 +1,7 @@
+This append-only publication records the actual Actions artifact for source `5a5573431658d08ea7da7fffbc39006e80aed536`. The native executable warrant remains at `e596d6af124b819197d17d447b247a9007fbbf42` and run39704649682; the data-only publication run39711277271 is a separate integrity gate.
+
+The actual 421,106,343-byte artifact passed 5,872 independent checks with zero failures. Both audit attempts, the upload-scope matching correction and four RED/GREEN controls are retained. The first audit refused a basename ambiguity in the data auditor; original archived/source/native bytes were unchanged. Only reproducible duplicate hash caches/generated caches are omitted from this checked preservation copy. Original index windows are retained.
+
+ROS synchronization created one checkpoint and prepended one dated section to each canonical state and checkpoint map. Readback confirmed all prior loaded page content remains contiguous and the new evidence references/UNKNOWN verdicts are present.
+
+The fresh campaign admitted 0/2 tasks. Learning and all comparator arms are NOT_STARTED; there is no tie or advantage claim. G2–G6 remain UNKNOWN. The next missing operation is independently verified source-bound test-namespace contract derivation; the two exposed sources remain diagnostics. No original report, archive expectation, task pool, protocol, authority or result is replaced by this addendum.

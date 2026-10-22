@@ -1,0 +1,113 @@
+{
+  "baseline_commit": "8830a66fcb261b192d98da495b6cb91697d21f28",
+  "boundary": "Archive integrity and source preservation only. Actual native/scientific/comparator claims remain exactly those in the separately pinned original evidence.",
+  "component_source_manifest_sha256": "eb9b99c231dd5d963bdbc21e0a9222e9ab4b4fdd3be91f5d507334dccdb58206",
+  "component_source_status": "PASS_EXACT_ORIGINAL_COMPONENT_SOURCES",
+  "expectation_sha256": "04c335873062f8d25043d38a053c1513cd4716a4b7ff1ac5c8ebaaa0a14e30ff",
+  "full_evidence_archive": {
+    "path": "EXPERIMENT_INTERFACE_V43_EVIDENCE.tar.gz",
+    "sha256": "1bb34dbf6fe171544bd4a320db324b1f365fdd26f98c97203e3ef71e9165c01f"
+  },
+  "full_source_archive": {
+    "path": "SOURCE.tar.gz",
+    "sha256": "69f4efb6f5e7f00a17dbb0d7d645f6a7643f375a3473fa159e2dee16f61b7e46"
+  },
+  "index_restoration": false,
+  "model_calls": 0,
+  "native_calls": 0,
+  "new_source_queries": 0,
+  "preserved_files": 2628,
+  "qualified_gate_references": [
+    {
+      "descriptor": {
+        "artifact_id": 12338856551,
+        "artifact_sha256": "25edc3c805bf7cf8a050b9c3c5c4e640a8ea8dbc2b5a7920157b5201c4ca6460",
+        "qualification_result_sha256": "10d6d2255be781ea18b795b00e849a3075cd385f4bd5993d94bc72c6c039af7a",
+        "result_path": "research/unified_consequence_runtime/archaeology/native-authority-v42/CI_39582982718_RESULT.json",
+        "run_id": 39582982718,
+        "source_commit": "f1779c7443ae6035dee502a201d95d778056c05d",
+        "status": "ADMISSION_ONLY_QUALIFIED"
+      },
+      "kind": "environment_v42",
+      "result_record": "research/unified_consequence_runtime/archaeology/native-authority-v42/CI_39582982718_RESULT.json"
+    },
+    {
+      "descriptor": {
+        "artifact_id": 12386633479,
+        "artifact_sha256": "4c9ba1bd8029efd06aa192e86d75f78d1326316a0becc2a84a4b85a9b6f0f033",
+        "qualification_result_sha256": "61ffe7857fde05f459152a3f94f340f221c9aee814558cbfba494d8cf358d599",
+        "result_path": "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/experiment-interface-v43/prospective/CI_39682460349_RESULT.json",
+        "run_id": 39682460349,
+        "source_commit": "5a449e7d6be3a54d42e2098804904c2e1223ae51",
+        "status": "ADMISSION_ONLY_QUALIFIED"
+      },
+      "kind": "interface_v43",
+      "result_record": "research/unified_consequence_runtime/archaeology/experiment-interface-v43/prospective/CI_39682460349_RESULT.json"
+    },
+    {
+      "descriptor": {
+        "artifact_id": 12395561842,
+        "artifact_sha256": "a5981b9af6c1251c97cb695772f0546834b142a9ed1910a84f4c11cc44e82382",
+        "qualification_result_sha256": "0e4a9092cc5841d2e3bddb2614a93c4b6c2fe6caa528dd882afd98f46e9158ad",
+        "result_path": "research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective/CI_39704649682_RESULT.json",
+        "run_id": 39704649682,
+        "source_commit": "e596d6af124b819197d17d447b247a9007fbbf42",
+        "status": "ADMISSION_ONLY_QUALIFIED"
+      },
+      "kind": "bootstrap_v44",
+      "result_record": "research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective/CI_39704649682_RESULT.json"
+    }
+  ],
+  "raw_archives": [
+    {
+      "archive_bytes": 8529335,
+      "archive_data_never_extracted_or_executed": true,
+      "archive_members": 458,
+      "archive_path": "/home/runner/work/test/test/research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective-result/RAW_SCREENING_PACKET.tar.gz",
+      "archive_sha256": "80e5a5678bd1c713ab8aeb7fabd9c12b8bef85b6274a4302e4c8887968738d34",
+      "every_member_hash_size_mode_verified": true,
+      "every_member_regular": true,
+      "exact_member_inventory_no_extra": true,
+      "external_manifest_bytes": 297606,
+      "external_manifest_identical": true,
+      "external_manifest_path": "/home/runner/work/test/test/research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective-result/RAW_SCREENING_PACKET.MANIFEST.json",
+      "external_manifest_sha256": "628cc380368ba698f8a05cf552bf680eab953092fd3e2db61abbc5cd415e1482",
+      "original_path_map_preserved": true,
+      "raw_tar_bytes": 32051200,
+      "schema": "UDM_INDEPENDENT_CAS_READBACK_V43",
+      "single_gzip_stream_no_trailing_bytes": true,
+      "source_counts": {
+        "directory": 318,
+        "file": 1033,
+        "symlink": 0
+      },
+      "source_entries": 1351,
+      "source_lstat_and_bytes_verified": false,
+      "source_regular_bytes": 39335461,
+      "source_symlinks_never_followed": true,
+      "status": "PASS",
+      "strict_raw_tar_headers_and_zero_end_verified": true,
+      "unique_object_bytes": 31391562,
+      "unique_objects": 457
+    }
+  ],
+  "retained_independent_audit_status": "PASS_ADMISSION_ONLY_SCREENING_AUDIT",
+  "retained_scientific_verdicts": {
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN"
+  },
+  "schema": "UDM_V44_FINAL_ARCHIVE_INTEGRITY_RESULT_V1",
+  "source_commit": "5a5573431658d08ea7da7fffbc39006e80aed536",
+  "source_files": 2928,
+  "status": "PASS_ARCHIVE_INTEGRITY_ONLY_NO_NATIVE_REPLAY",
+  "verdicts": {
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN"
+  }
+}
