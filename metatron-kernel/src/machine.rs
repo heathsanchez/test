@@ -529,6 +529,64 @@ impl<'a> Machine<'a> {
                 );
             }
         }
+        // SOURCE-ONLY DIAGNOSTIC: locate the immutable actual recursor-major
+        // binding underneath a projection. This never changes evaluation or
+        // suggests a constructor from the desired projection result.
+        #[cfg(feature="diagnostics")]
+        if std::env::var_os("NUCLEUS_TRACE_PROJECTION_MAJOR_BINDING").is_some()
+            && let Some(Value::Neutral(neutral))=exposed.proven_value().map(|x|&x.value)
+            && let NeutralHead::Const {name,..}=&neutral.head
+            && let Some(rule)=self.recursor_reductions.get(name)
+        {
+            use std::sync::atomic::{AtomicUsize,Ordering};
+            static INSPECTED:AtomicUsize=AtomicUsize::new(0);
+            if INSPECTED.fetch_add(1,Ordering::Relaxed)<40 {
+                let required=rule.num_params.saturating_add(1)
+                    .saturating_add(rule.rules.len())
+                    .saturating_add(rule.num_indices).saturating_add(1);
+                let major=neutral.spine.get(required.saturating_sub(1)).cloned();
+                let mut stages=Vec::<String>::new();
+                if let Some(mut cursor)=major.clone() {
+                    let mut seen=HashSet::new();
+                    for _ in 0..12 {
+                        if !seen.insert((cursor.expr,cursor.env.id())) {
+                            stages.push("source-binding-cycle".to_owned());
+                            break;
+                        }
+                        match self.expressions.get(cursor.expr) {
+                            Some(Expr::BVar(index)) => match cursor.env.lookup_with_node_id(*index) {
+                                Some((node,EnvBinding::Closure(next))) => {
+                                    stages.push(format!("BVar({index})@node{node}->closure={:?}@{}",
+                                        next.expr,next.env.id()));
+                                    cursor=next;
+                                }
+                                Some((node,binding)) => {
+                                    stages.push(format!("BVar({index})@node{node}:terminal={binding:?}"));
+                                    break;
+                                }
+                                None => {
+                                    stages.push(format!("BVar({index}):UNBOUND"));
+                                    break;
+                                }
+                            },
+                            syntax=>{
+                                stages.push(format!("source={:?}@{}:syntax={syntax:?}",
+                                    cursor.expr,cursor.env.id()));
+                                break;
+                            }
+                        }
+                    }
+                } else {
+                    stages.push(format!("missing-major:spine={}:required={required}",neutral.spine.len()));
+                }
+                eprintln!(
+                    "NUCLEUS_PROJECTION_MAJOR_BINDING:type={type_name:?}:expected_constructor={:?}:field={index}:actual_recursor={name:?}:recursor_arity={required}:source_major={}:binding_chain={}",
+                    spec.constructor,
+                    format!("{major:?}").chars().take(600).collect::<String>(),
+                    stages.join(" -> ").chars().take(3000).collect::<String>(),
+                );
+            }
+        }
         let replayed = if let Some(Value::Neutral(neutral)) = exposed.proven_value().map(|value| &value.value)
             && matches!(&neutral.head, NeutralHead::Const { name, .. }
                 if *name != spec.constructor && self.recursor_reductions.contains_key(name))
