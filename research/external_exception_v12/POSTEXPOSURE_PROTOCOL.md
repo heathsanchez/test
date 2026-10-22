@@ -1,0 +1,9 @@
+# V12b POST-EXPOSURE extension, separate from sealed first result
+
+After the sealed rule was frozen, upstream test_signer.py was exposed. It contains a nontrivial local binding `alg = SigningAlgorithm()`, followed by `with pytest.raises(NotImplementedError): alg.get_signature(b"a", b"b")`. This case was NOT admissible under original frozen V12 direct-expression grammar.
+
+This extension is strictly post-exposure. New narrow extractor performs source-local def-use on a single preceding assignment of bare local variable to an imported upstream class constructor with literal arguments, followed by an exact `pytest.raises(ExceptionName)` body consisting of a call to that local's method with literal args. Both expected exception and original byte inputs MUST be extracted from the independent upstream test AST; never hardcode exception or input bytes as witness gold values. It cannot solve fixture dependencies, mutative setup, arbitrary dataflow, or infer universal abstract-base-class law.
+
+Source must be original pinned `pallets/itsdangerous@672971d66a2ef9f85151e53283113f33d642dabd`, signer source Git blob `e324dc03da90d9002200b68088f501df62777cd6`. Negative source mutation exactly `raise NotImplementedError()` → `return b""` within `SigningAlgorithm.get_signature` (one occurrence), with old/new full module diff certified. Independently run genuine upstream test_signer.py and separately generated native exception witness, both original/mutated, no upstream changes. Preserve sealed zero-eligible result unchanged.
+
+Fair baseline is original upstream pytest test_signer.py and an equally informed AST/dataflow extractor: expect TIE. Charge all work and no release permit. Only documentary selective warrant via unchanged original MathGraph resolver, withdraw source/test/witness/policy evidence to UNKNOWN. No R7.2/CLC formal adapter or new semantic grammar discovery.
