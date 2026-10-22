@@ -533,7 +533,38 @@ impl<'a> Machine<'a> {
             && matches!(&neutral.head, NeutralHead::Const { name, .. }
                 if *name != spec.constructor && self.recursor_reductions.contains_key(name))
         {
-            self.qualified_nested_recursor_result(neutral, budget)
+            // Demand-driven checked projection. A source-declared recursor may
+            // yield the actual registered structure constructor in ONE checked
+            // iota step. If so, field selection is licensed immediately:
+            // there is no reason to completely reduce unrelated nested RHS
+            // computations. A nonconstructor or unsupported one-step result
+            // cannot grant any equality or field selection; in that case
+            // retain the original full registered-recursor replay.
+            if std::env::var_os("NUCLEUS_EXPERIMENTAL_ONE_STEP_PROJECTION").is_some()
+                && budget>=48
+            {
+                let trial=self.qualified_one_step_recursor_result(neutral,budget);
+                let source_constructor=matches!(trial.proven_value(),
+                    Some(Value::Neutral(Neutral {
+                        head:NeutralHead::Const{name,..},spine,
+                    })) if *name==spec.constructor && spine.len()>spec.num_params+index);
+                #[cfg(feature="diagnostics")]
+                if std::env::var_os("NUCLEUS_TRACE_ONE_STEP_PROJECTION").is_some(){
+                    use std::sync::atomic::{AtomicUsize,Ordering};
+                    static PROBES:AtomicUsize=AtomicUsize::new(0);
+                    if PROBES.fetch_add(1,Ordering::Relaxed)<48 {
+                        eprintln!("NUCLEUS_ONE_STEP_PROJECTION:source_recursor={:?}:type={type_name:?}:field={index}:matched={source_constructor}:trial={}",
+                            neutral.head,match trial.proven_value() {
+                                Some(Value::Neutral(v))=>format!("{:?},spine={}",v.head,v.spine.len()),
+                                _=>format!("{trial:?}").chars().take(400).collect(),
+                            });
+                    }
+                }
+                if source_constructor { trial }
+                else { self.qualified_nested_recursor_result(neutral,budget) }
+            } else {
+                self.qualified_nested_recursor_result(neutral,budget)
+            }
         } else {
             Judgment::unknown("projection-no-registered-replay")
         };
