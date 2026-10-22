@@ -2241,8 +2241,33 @@ impl<'a> Machine<'a> {
                 if !active.insert(identity) {return Judgment::unknown("nested-recursor-iota-cycle");}
                 entered.entry(key.digest).or_default().push(key.clone());
                 parents.push(Continuation::Finish(key));
+                // The enclosing source-checked recursor already owns the
+                // single paid fuel account. A hard 512-step *local* slice
+                // may decline a valid major while that account still has
+                // thousands of steps. Opt-in transport grants at most 4096
+                // from that SAME owner; every exposure step remains charged.
+                let major_available=self.exposure_fuel.get().unwrap_or(0);
+                let major_limit=if std::env::var_os("NUCLEUS_EXPERIMENTAL_RECURSOR_MAJOR_TRANSPORT").is_some() {
+                    major_available.min(4096)
+                } else {major_available.min(512)};
                 let major_result=self.expose(neutral.spine[required-1].clone(),
-                    Transparency::Full,self.exposure_fuel.get().unwrap_or(0).min(512));
+                    Transparency::Full,major_limit);
+                #[cfg(feature="diagnostics")]
+                if std::env::var_os("NUCLEUS_TRACE_RECURSOR_BUDGET_TRANSPORT").is_some()
+                    && major_limit>512
+                {
+                    use std::sync::atomic::{AtomicUsize,Ordering};
+                    static MAJOR:AtomicUsize=AtomicUsize::new(0);
+                    if MAJOR.fetch_add(1,Ordering::Relaxed)<40 {
+                        eprintln!("NUCLEUS_RECURSOR_BUDGET_TRANSPORT:phase=major:source={name:?}:owner_before={major_available}:granted={major_limit}:after={:?}:outcome={}",
+                            self.exposure_fuel.get(),
+                            match &major_result {
+                                Judgment::Proven{..}=>"PROVEN",
+                                Judgment::Unknown{..}=>"UNKNOWN",
+                                Judgment::Refuted{..}=>"REFUTED",
+                            });
+                    }
+                }
                 let Some(value)=major_result.proven_value() else {
                     #[cfg(feature="diagnostics")]
                     if std::env::var_os("NUCLEUS_TRACE_NESTED_RECURSOR_IOTA_FAILURE").is_some() {
@@ -2335,10 +2360,34 @@ impl<'a> Machine<'a> {
                     );
                 }
             }
+            // Similarly transport a larger paid slice to the ORIGINAL
+            // checked RHS telescope, but only on opt-in research runs.
+            // No invented constructor, unbounded evaluation or increased
+            // global judgment fuel is permitted by this scheduling change.
+            let rhs_available=self.exposure_fuel.get().unwrap_or(0);
+            let rhs_limit=if std::env::var_os("NUCLEUS_EXPERIMENTAL_RECURSOR_RHS_TRANSPORT").is_some() {
+                rhs_available.min(4096)
+            } else {rhs_available.min(512)};
             let exposed=self.expose_internal_with_pending(
-                result, Transparency::Full, self.exposure_fuel.get().unwrap_or(0).min(512),
+                result, Transparency::Full, rhs_limit,
                 false, true, neutral.spine[required..].iter().rev().cloned().collect(),
             ).map(|exposure| exposure.value);
+            #[cfg(feature="diagnostics")]
+            if std::env::var_os("NUCLEUS_TRACE_RECURSOR_BUDGET_TRANSPORT").is_some()
+                && rhs_limit>512
+            {
+                use std::sync::atomic::{AtomicUsize,Ordering};
+                static RHS:AtomicUsize=AtomicUsize::new(0);
+                if RHS.fetch_add(1,Ordering::Relaxed)<40 {
+                    eprintln!("NUCLEUS_RECURSOR_BUDGET_TRANSPORT:phase=rhs:source={name:?}:owner_before={rhs_available}:granted={rhs_limit}:after={:?}:outcome={}",
+                        self.exposure_fuel.get(),
+                        match &exposed {
+                            Judgment::Proven{..}=>"PROVEN",
+                            Judgment::Unknown{..}=>"UNKNOWN",
+                            Judgment::Refuted{..}=>"REFUTED",
+                        });
+                }
+            }
             let value=match exposed {
                 Judgment::Proven{value,..}=>value,
                 failure=>{
