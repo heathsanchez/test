@@ -1,0 +1,72 @@
+name: Nucleus checked recursor budget-transport factorial
+on:
+  push:
+    branches: [research/nucleus-recursor-budget-transport-20261022]
+    paths:
+      - 'metatron-kernel/src/machine.rs'
+      - '.github/scripts/nucleus_recursor_budget_transport_gate_20261022.py'
+      - '.github/workflows/nucleus-recursor-budget-transport-20261022.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-budget-factorial:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    env:
+      GH_TOKEN: ${{ github.token }}
+      CARGO_INCREMENTAL: "0"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Freeze exact qualified source and minimal candidate diff
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/nucleus-budget-evidence /tmp/nucleus-budget-pack /tmp/nucleus-budget-frozen /tmp/nucleus-budget-micro
+          git rev-parse HEAD > /tmp/nucleus-budget-evidence/candidate-source-sha.txt
+          git fetch --no-tags --depth=1 origin ff003e7fad888d39a40cfd2375885fe20e3209fa
+          git worktree add --detach /tmp/nucleus-budget-original ff003e7fad888d39a40cfd2375885fe20e3209fa
+          test "$(git -C /tmp/nucleus-budget-original rev-parse HEAD:metatron-kernel)" = 5e7d65b1b6abc3f6380bc7a37ffb153284d7faf1
+          git diff --check ff003e7fad888d39a40cfd2375885fe20e3209fa
+          git diff --name-only ff003e7fad888d39a40cfd2375885fe20e3209fa -- metatron-kernel > /tmp/nucleus-budget-evidence/native-changes.txt
+          test "$(cat /tmp/nucleus-budget-evidence/native-changes.txt)" = 'metatron-kernel/src/machine.rs'
+          git diff ff003e7fad888d39a40cfd2375885fe20e3209fa -- metatron-kernel/src/machine.rs > /tmp/nucleus-budget-evidence/candidate.diff
+          rustc -vV > /tmp/nucleus-budget-evidence/compiler.txt
+      - name: Require native test suite and source-matched base/candidate builds
+        run: |
+          set -euo pipefail
+          NUCLEUS_EXPERIMENTAL_RELEVANCE=1 NUCLEUS_EXPERIMENTAL_EXPECTED_LAMBDA=1 \
+            cargo test --release --locked --features diagnostics \
+            --manifest-path metatron-kernel/Cargo.toml > /tmp/nucleus-budget-evidence/native-tests.log 2>&1 || {
+              tail -100 /tmp/nucleus-budget-evidence/native-tests.log; exit 1;
+            }
+          CARGO_TARGET_DIR=/tmp/nucleus-budget-original-target \
+            cargo build --release --locked --features diagnostics \
+            --manifest-path /tmp/nucleus-budget-original/metatron-kernel/Cargo.toml
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          cp /tmp/nucleus-budget-original-target/release/metatron-kernel /tmp/nucleus-budget-original-bin
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus-budget-candidate-bin
+          sha256sum /tmp/nucleus-budget-{original,candidate}-bin > /tmp/nucleus-budget-evidence/binaries.sha256
+      - name: Recover exact original Lean positive/false decide witnesses and 196 corpus
+        run: |
+          set -euo pipefail
+          gh api repos/heathsanchez/test/actions/artifacts/12336209253/zip > /tmp/nucleus-budget-micro.zip
+          echo '6727b4ba0de9f4b12642307d1749fcf220047134bfbb6e6a5a789bec092dfaa4  /tmp/nucleus-budget-micro.zip' | sha256sum -c -
+          unzip -q /tmp/nucleus-budget-micro.zip -d /tmp/nucleus-budget-micro
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/11272848230/zip > /tmp/nucleus-budget-frozen.zip
+          sha256sum /tmp/nucleus-budget-frozen.zip > /tmp/nucleus-budget-evidence/archive.sha256
+          unzip -q /tmp/nucleus-budget-frozen.zip -d /tmp/nucleus-budget-pack
+          tar --no-same-owner -xzf /tmp/nucleus-budget-pack/lean-arena-tests.tar.gz -C /tmp/nucleus-budget-frozen
+      - name: Compare base vs major-only vs RHS-only vs both; protect every original verdict
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/nucleus_recursor_budget_transport_gate_20261022.py \
+            /tmp/nucleus-budget-micro /tmp/nucleus-budget-frozen \
+            /tmp/nucleus-budget-original-bin /tmp/nucleus-budget-candidate-bin \
+            /tmp/nucleus-budget-evidence
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-recursor-budget-transport-${{ github.sha }}
+          path: /tmp/nucleus-budget-evidence/
+          if-no-files-found: warn
