@@ -1,0 +1,22 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_ test_frozen_runtime_alias_reads_exact_regular_target_without_relaxing_case_reader _
+
+tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-42/test_frozen_runtime_alias_read0')
+
+    def test_frozen_runtime_alias_reads_exact_regular_target_without_relaxing_case_reader(tmp_path):
+        m=module();target=tmp_path/'actual-image';target.write_bytes(b'fixed-executable-image')
+        alias=tmp_path/'python';alias.symlink_to(target.name)
+        class Reader:
+            def read(self,path):
+                path=Path(path)
+                assert path.resolve()==path and not path.is_symlink()
+                return path.read_bytes()
+>       assert m.runtime_bytes(Reader(),alias)==target.read_bytes()
+E       AttributeError: module 'v44_screening_audit' has no attribute 'runtime_bytes'
+
+../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py:93: AttributeError
+- generated xml file: /workspace/qualification/native-bootstrap-v44-screening-audit-preparation/ALIAS_RED.xml -
+=========================== short test summary info ============================
+FAILED ../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py::test_frozen_runtime_alias_reads_exact_regular_target_without_relaxing_case_reader
+1 failed, 15 deselected in 0.09s

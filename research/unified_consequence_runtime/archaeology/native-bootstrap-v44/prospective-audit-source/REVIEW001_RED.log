@@ -1,0 +1,243 @@
+................FFFF..FFFFFFFF                                           [100%]
+=================================== FAILURES ===================================
+_ test_metadata_witness_cannot_be_rebound_to_another_instrument[other_capability] _
+
+change = 'other_capability'
+
+    @pytest.mark.parametrize('change',('other_capability','other_scope','wrong_receipt_generation','missing_witness_edge'))
+    def test_metadata_witness_cannot_be_rebound_to_another_instrument(change):
+        m=module();request={'commit':'base'}
+        observation={'metadata':{}}
+        invocation={'schema':'UDM_RETAINED_SOURCE_NATIVE_METADATA_INVOCATION_V44',
+                    'request':m.fp(request),'observation':m.fp(observation),'artifacts':[]}
+        binding={'capability_id':'cap','generation':1}
+        cap={'generation':1,'scope':{'request_sha256':m.fp(request)},'program':'program'}
+        receipt={'schema':'UDM_SOURCE_NATIVE_METADATA_EXECUTION_V44','status':'INDEPENDENT_METADATA_ONLY_NOT_NATIVE_OUTCOME',
+                 'instrument':'cap','generation':1,'program':'program','invocation':m.fp(invocation)}
+        witness={'kind':'verified_consequence','premises':['cap'],'payload':{'family':'source-native-metadata-v44',
+                 'receipt':m.fp(receipt),'request':m.fp(request),'observation':m.fp(observation)}}
+>       m.validate_invocation_binding(binding,cap,witness,receipt,request,observation,invocation)
+E       TypeError: validate_invocation_binding() takes 5 positional arguments but 7 were given
+
+../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py:108: TypeError
+__ test_metadata_witness_cannot_be_rebound_to_another_instrument[other_scope] __
+
+change = 'other_scope'
+
+    @pytest.mark.parametrize('change',('other_capability','other_scope','wrong_receipt_generation','missing_witness_edge'))
+    def test_metadata_witness_cannot_be_rebound_to_another_instrument(change):
+        m=module();request={'commit':'base'}
+        observation={'metadata':{}}
+        invocation={'schema':'UDM_RETAINED_SOURCE_NATIVE_METADATA_INVOCATION_V44',
+                    'request':m.fp(request),'observation':m.fp(observation),'artifacts':[]}
+        binding={'capability_id':'cap','generation':1}
+        cap={'generation':1,'scope':{'request_sha256':m.fp(request)},'program':'program'}
+        receipt={'schema':'UDM_SOURCE_NATIVE_METADATA_EXECUTION_V44','status':'INDEPENDENT_METADATA_ONLY_NOT_NATIVE_OUTCOME',
+                 'instrument':'cap','generation':1,'program':'program','invocation':m.fp(invocation)}
+        witness={'kind':'verified_consequence','premises':['cap'],'payload':{'family':'source-native-metadata-v44',
+                 'receipt':m.fp(receipt),'request':m.fp(request),'observation':m.fp(observation)}}
+>       m.validate_invocation_binding(binding,cap,witness,receipt,request,observation,invocation)
+E       TypeError: validate_invocation_binding() takes 5 positional arguments but 7 were given
+
+../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py:108: TypeError
+_ test_metadata_witness_cannot_be_rebound_to_another_instrument[wrong_receipt_generation] _
+
+change = 'wrong_receipt_generation'
+
+    @pytest.mark.parametrize('change',('other_capability','other_scope','wrong_receipt_generation','missing_witness_edge'))
+    def test_metadata_witness_cannot_be_rebound_to_another_instrument(change):
+        m=module();request={'commit':'base'}
+        observation={'metadata':{}}
+        invocation={'schema':'UDM_RETAINED_SOURCE_NATIVE_METADATA_INVOCATION_V44',
+                    'request':m.fp(request),'observation':m.fp(observation),'artifacts':[]}
+        binding={'capability_id':'cap','generation':1}
+        cap={'generation':1,'scope':{'request_sha256':m.fp(request)},'program':'program'}
+        receipt={'schema':'UDM_SOURCE_NATIVE_METADATA_EXECUTION_V44','status':'INDEPENDENT_METADATA_ONLY_NOT_NATIVE_OUTCOME',
+                 'instrument':'cap','generation':1,'program':'program','invocation':m.fp(invocation)}
+        witness={'kind':'verified_consequence','premises':['cap'],'payload':{'family':'source-native-metadata-v44',
+                 'receipt':m.fp(receipt),'request':m.fp(request),'observation':m.fp(observation)}}
+>       m.validate_invocation_binding(binding,cap,witness,receipt,request,observation,invocation)
+E       TypeError: validate_invocation_binding() takes 5 positional arguments but 7 were given
+
+../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py:108: TypeError
+_ test_metadata_witness_cannot_be_rebound_to_another_instrument[missing_witness_edge] _
+
+change = 'missing_witness_edge'
+
+    @pytest.mark.parametrize('change',('other_capability','other_scope','wrong_receipt_generation','missing_witness_edge'))
+    def test_metadata_witness_cannot_be_rebound_to_another_instrument(change):
+        m=module();request={'commit':'base'}
+        observation={'metadata':{}}
+        invocation={'schema':'UDM_RETAINED_SOURCE_NATIVE_METADATA_INVOCATION_V44',
+                    'request':m.fp(request),'observation':m.fp(observation),'artifacts':[]}
+        binding={'capability_id':'cap','generation':1}
+        cap={'generation':1,'scope':{'request_sha256':m.fp(request)},'program':'program'}
+        receipt={'schema':'UDM_SOURCE_NATIVE_METADATA_EXECUTION_V44','status':'INDEPENDENT_METADATA_ONLY_NOT_NATIVE_OUTCOME',
+                 'instrument':'cap','generation':1,'program':'program','invocation':m.fp(invocation)}
+        witness={'kind':'verified_consequence','premises':['cap'],'payload':{'family':'source-native-metadata-v44',
+                 'receipt':m.fp(receipt),'request':m.fp(request),'observation':m.fp(observation)}}
+>       m.validate_invocation_binding(binding,cap,witness,receipt,request,observation,invocation)
+E       TypeError: validate_invocation_binding() takes 5 positional arguments but 7 were given
+
+../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py:108: TypeError
+_ test_metadata_execution_schema_cannot_be_replaced_by_another_cas_receipt[wrong_family] _
+
+change = 'wrong_family'
+
+    @pytest.mark.parametrize('change',('wrong_family','admission_receipt','program','request','observation'))
+    def test_metadata_execution_schema_cannot_be_replaced_by_another_cas_receipt(change):
+        m=module();request={'commit':'base'};observation={'metadata':{}}
+        invocation={'schema':'UDM_RETAINED_SOURCE_NATIVE_METADATA_INVOCATION_V44','request':m.fp(request),'observation':m.fp(observation),'artifacts':[]}
+        binding={'capability_id':'cap','generation':1};cap={'generation':1,'scope':{'request_sha256':m.fp(request)},'program':'program'}
+        receipt={'schema':'UDM_SOURCE_NATIVE_METADATA_EXECUTION_V44','status':'INDEPENDENT_METADATA_ONLY_NOT_NATIVE_OUTCOME',
+                 'instrument':'cap','generation':1,'program':'program','invocation':m.fp(invocation)}
+        witness={'kind':'verified_consequence','premises':['cap'],'payload':{'family':'source-native-metadata-v44',
+                 'receipt':m.fp(receipt),'request':m.fp(request),'observation':m.fp(observation)}}
+        if change=='wrong_family':witness['payload']['family']='unrelated-family'
+        elif change=='admission_receipt':receipt['schema']='UDM_SOURCE_NATIVE_METADATA_ADMISSION_V44'
+        elif change=='program':receipt['program']='different'
+        elif change=='request':invocation['request']='different'
+        else:invocation['observation']='different'
+        receipt['invocation']=m.fp(invocation);witness['payload']['receipt']=m.fp(receipt)
+>       with pytest.raises(ValueError):m.validate_invocation_binding(binding,cap,witness,receipt,request,observation,invocation)
+E       TypeError: validate_invocation_binding() takes 5 positional arguments but 7 were given
+
+../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py:142: TypeError
+_ test_metadata_execution_schema_cannot_be_replaced_by_another_cas_receipt[admission_receipt] _
+
+change = 'admission_receipt'
+
+    @pytest.mark.parametrize('change',('wrong_family','admission_receipt','program','request','observation'))
+    def test_metadata_execution_schema_cannot_be_replaced_by_another_cas_receipt(change):
+        m=module();request={'commit':'base'};observation={'metadata':{}}
+        invocation={'schema':'UDM_RETAINED_SOURCE_NATIVE_METADATA_INVOCATION_V44','request':m.fp(request),'observation':m.fp(observation),'artifacts':[]}
+        binding={'capability_id':'cap','generation':1};cap={'generation':1,'scope':{'request_sha256':m.fp(request)},'program':'program'}
+        receipt={'schema':'UDM_SOURCE_NATIVE_METADATA_EXECUTION_V44','status':'INDEPENDENT_METADATA_ONLY_NOT_NATIVE_OUTCOME',
+                 'instrument':'cap','generation':1,'program':'program','invocation':m.fp(invocation)}
+        witness={'kind':'verified_consequence','premises':['cap'],'payload':{'family':'source-native-metadata-v44',
+                 'receipt':m.fp(receipt),'request':m.fp(request),'observation':m.fp(observation)}}
+        if change=='wrong_family':witness['payload']['family']='unrelated-family'
+        elif change=='admission_receipt':receipt['schema']='UDM_SOURCE_NATIVE_METADATA_ADMISSION_V44'
+        elif change=='program':receipt['program']='different'
+        elif change=='request':invocation['request']='different'
+        else:invocation['observation']='different'
+        receipt['invocation']=m.fp(invocation);witness['payload']['receipt']=m.fp(receipt)
+>       with pytest.raises(ValueError):m.validate_invocation_binding(binding,cap,witness,receipt,request,observation,invocation)
+E       TypeError: validate_invocation_binding() takes 5 positional arguments but 7 were given
+
+../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py:142: TypeError
+_ test_metadata_execution_schema_cannot_be_replaced_by_another_cas_receipt[program] _
+
+change = 'program'
+
+    @pytest.mark.parametrize('change',('wrong_family','admission_receipt','program','request','observation'))
+    def test_metadata_execution_schema_cannot_be_replaced_by_another_cas_receipt(change):
+        m=module();request={'commit':'base'};observation={'metadata':{}}
+        invocation={'schema':'UDM_RETAINED_SOURCE_NATIVE_METADATA_INVOCATION_V44','request':m.fp(request),'observation':m.fp(observation),'artifacts':[]}
+        binding={'capability_id':'cap','generation':1};cap={'generation':1,'scope':{'request_sha256':m.fp(request)},'program':'program'}
+        receipt={'schema':'UDM_SOURCE_NATIVE_METADATA_EXECUTION_V44','status':'INDEPENDENT_METADATA_ONLY_NOT_NATIVE_OUTCOME',
+                 'instrument':'cap','generation':1,'program':'program','invocation':m.fp(invocation)}
+        witness={'kind':'verified_consequence','premises':['cap'],'payload':{'family':'source-native-metadata-v44',
+                 'receipt':m.fp(receipt),'request':m.fp(request),'observation':m.fp(observation)}}
+        if change=='wrong_family':witness['payload']['family']='unrelated-family'
+        elif change=='admission_receipt':receipt['schema']='UDM_SOURCE_NATIVE_METADATA_ADMISSION_V44'
+        elif change=='program':receipt['program']='different'
+        elif change=='request':invocation['request']='different'
+        else:invocation['observation']='different'
+        receipt['invocation']=m.fp(invocation);witness['payload']['receipt']=m.fp(receipt)
+>       with pytest.raises(ValueError):m.validate_invocation_binding(binding,cap,witness,receipt,request,observation,invocation)
+E       TypeError: validate_invocation_binding() takes 5 positional arguments but 7 were given
+
+../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py:142: TypeError
+_ test_metadata_execution_schema_cannot_be_replaced_by_another_cas_receipt[request] _
+
+change = 'request'
+
+    @pytest.mark.parametrize('change',('wrong_family','admission_receipt','program','request','observation'))
+    def test_metadata_execution_schema_cannot_be_replaced_by_another_cas_receipt(change):
+        m=module();request={'commit':'base'};observation={'metadata':{}}
+        invocation={'schema':'UDM_RETAINED_SOURCE_NATIVE_METADATA_INVOCATION_V44','request':m.fp(request),'observation':m.fp(observation),'artifacts':[]}
+        binding={'capability_id':'cap','generation':1};cap={'generation':1,'scope':{'request_sha256':m.fp(request)},'program':'program'}
+        receipt={'schema':'UDM_SOURCE_NATIVE_METADATA_EXECUTION_V44','status':'INDEPENDENT_METADATA_ONLY_NOT_NATIVE_OUTCOME',
+                 'instrument':'cap','generation':1,'program':'program','invocation':m.fp(invocation)}
+        witness={'kind':'verified_consequence','premises':['cap'],'payload':{'family':'source-native-metadata-v44',
+                 'receipt':m.fp(receipt),'request':m.fp(request),'observation':m.fp(observation)}}
+        if change=='wrong_family':witness['payload']['family']='unrelated-family'
+        elif change=='admission_receipt':receipt['schema']='UDM_SOURCE_NATIVE_METADATA_ADMISSION_V44'
+        elif change=='program':receipt['program']='different'
+        elif change=='request':invocation['request']='different'
+        else:invocation['observation']='different'
+        receipt['invocation']=m.fp(invocation);witness['payload']['receipt']=m.fp(receipt)
+>       with pytest.raises(ValueError):m.validate_invocation_binding(binding,cap,witness,receipt,request,observation,invocation)
+E       TypeError: validate_invocation_binding() takes 5 positional arguments but 7 were given
+
+../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py:142: TypeError
+_ test_metadata_execution_schema_cannot_be_replaced_by_another_cas_receipt[observation] _
+
+change = 'observation'
+
+    @pytest.mark.parametrize('change',('wrong_family','admission_receipt','program','request','observation'))
+    def test_metadata_execution_schema_cannot_be_replaced_by_another_cas_receipt(change):
+        m=module();request={'commit':'base'};observation={'metadata':{}}
+        invocation={'schema':'UDM_RETAINED_SOURCE_NATIVE_METADATA_INVOCATION_V44','request':m.fp(request),'observation':m.fp(observation),'artifacts':[]}
+        binding={'capability_id':'cap','generation':1};cap={'generation':1,'scope':{'request_sha256':m.fp(request)},'program':'program'}
+        receipt={'schema':'UDM_SOURCE_NATIVE_METADATA_EXECUTION_V44','status':'INDEPENDENT_METADATA_ONLY_NOT_NATIVE_OUTCOME',
+                 'instrument':'cap','generation':1,'program':'program','invocation':m.fp(invocation)}
+        witness={'kind':'verified_consequence','premises':['cap'],'payload':{'family':'source-native-metadata-v44',
+                 'receipt':m.fp(receipt),'request':m.fp(request),'observation':m.fp(observation)}}
+        if change=='wrong_family':witness['payload']['family']='unrelated-family'
+        elif change=='admission_receipt':receipt['schema']='UDM_SOURCE_NATIVE_METADATA_ADMISSION_V44'
+        elif change=='program':receipt['program']='different'
+        elif change=='request':invocation['request']='different'
+        else:invocation['observation']='different'
+        receipt['invocation']=m.fp(invocation);witness['payload']['receipt']=m.fp(receipt)
+>       with pytest.raises(ValueError):m.validate_invocation_binding(binding,cap,witness,receipt,request,observation,invocation)
+E       TypeError: validate_invocation_binding() takes 5 positional arguments but 7 were given
+
+../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py:142: TypeError
+_____ test_metadata_selection_cannot_lose_its_exact_binding_while_admitted _____
+
+    def test_metadata_selection_cannot_lose_its_exact_binding_while_admitted():
+        m=module();setup={'status':'PREPARED','selection':{'constraints':{'observation_evidence':{'source_identity':'actual'}}},'bootstrap_binding':None}
+>       with pytest.raises(ValueError):m.validate_selection_binding_presence(setup,{'eligible':True,'controller_attempts':{'native_calls':2,'collection_calls':4}})
+E       AttributeError: module 'v44_screening_audit' has no attribute 'validate_selection_binding_presence'
+
+../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py:147: AttributeError
+__ test_lawful_partial_metadata_refusal_preserves_original_five_field_binding __
+
+    def test_lawful_partial_metadata_refusal_preserves_original_five_field_binding():
+        m=module();binding={k:'held' for k in ('capability_id','generation','consequence_id','request_sha256','observation_sha256')}
+        setup={'status':'UNKNOWN_SETUP','selection':{'constraints':{'observation_evidence':{}}},'bootstrap_binding':binding}
+>       m.validate_selection_binding_presence(setup,{'eligible':False,'controller_attempts':{'native_calls':0,'collection_calls':0}})
+E       AttributeError: module 'v44_screening_audit' has no attribute 'validate_selection_binding_presence'
+
+../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py:153: AttributeError
+__ test_unindexed_failed_original_metadata_build_cannot_disappear_from_costs ___
+
+tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-47/test_unindexed_failed_original0')
+
+    def test_unindexed_failed_original_metadata_build_cannot_disappear_from_costs(tmp_path):
+        m=module();case=tmp_path/'case-000';output=case/'source-environment/native-metadata-bootstrap/admission/nonce/observe';output.mkdir(parents=True)
+        import json
+        (output/'build-attempt.json').write_text(json.dumps({'schema':'udm.generic-build-attempt.v1','build_calls':1,'build_seconds':.2,'status':'UNKNOWN_BUILD_EXECUTION'}))
+        class Reader:
+            def js(self,path):return json.loads(Path(path).read_text())
+>       with pytest.raises(ValueError):m._bootstrap_attempts(Reader(),case,record())
+E       Failed: DID NOT RAISE <class 'ValueError'>
+
+../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py:163: Failed
+- generated xml file: /workspace/qualification/native-bootstrap-v44-screening-audit-preparation/REVIEW001_RED.xml -
+=========================== short test summary info ============================
+FAILED ../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py::test_metadata_witness_cannot_be_rebound_to_another_instrument[other_capability]
+FAILED ../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py::test_metadata_witness_cannot_be_rebound_to_another_instrument[other_scope]
+FAILED ../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py::test_metadata_witness_cannot_be_rebound_to_another_instrument[wrong_receipt_generation]
+FAILED ../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py::test_metadata_witness_cannot_be_rebound_to_another_instrument[missing_witness_edge]
+FAILED ../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py::test_metadata_execution_schema_cannot_be_replaced_by_another_cas_receipt[wrong_family]
+FAILED ../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py::test_metadata_execution_schema_cannot_be_replaced_by_another_cas_receipt[admission_receipt]
+FAILED ../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py::test_metadata_execution_schema_cannot_be_replaced_by_another_cas_receipt[program]
+FAILED ../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py::test_metadata_execution_schema_cannot_be_replaced_by_another_cas_receipt[request]
+FAILED ../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py::test_metadata_execution_schema_cannot_be_replaced_by_another_cas_receipt[observation]
+FAILED ../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py::test_metadata_selection_cannot_lose_its_exact_binding_while_admitted
+FAILED ../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py::test_lawful_partial_metadata_refusal_preserves_original_five_field_binding
+FAILED ../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py::test_unindexed_failed_original_metadata_build_cannot_disappear_from_costs
+12 failed, 18 passed in 0.80s

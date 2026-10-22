@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="4" skipped="0" tests="4" time="0.179" timestamp="2026-10-22T01:37:45.741080+00:00" hostname="8ac9339af51c"><testcase classname="qualification.native-bootstrap-v44-screening-audit-preparation.test_screening_audit_v44" name="test_two_metadata_wheels_need_exact_retained_cas_backups[empty]" time="0.030"><failure message="AttributeError: module 'v44_screening_audit' has no attribute 'validate_invocation_artifacts'. Did you mean: 'validate_invocation_binding'?">change = 'empty'
+
+    @pytest.mark.parametrize('change',('empty','missing_cas','altered_backup','other_path'))
+    def test_two_metadata_wheels_need_exact_retained_cas_backups(change):
+        import base64
+        m=module();raw=b'opaque exact wheel data; parser qualified separately'
+        first={'wheel_path':'/retained/one/example.whl','wheel_sha256':m.sha(raw)}
+        second={'wheel_path':'/retained/two/example.whl','wheel_sha256':m.sha(raw)}
+        backup={'schema':'UDM_RETAINED_MATERIALIZATION_WHEEL_V43','filename':'example.whl','base64':base64.b64encode(raw).decode()}
+        objects={'backup':backup}
+        invocation={'artifacts':[{'evidence':first,'artifact':'backup'},{'evidence':second,'artifact':'backup'}]}
+        observation={'evidence':{'build':{'generated_wheel_evidence':first}},'independent_build':{'generated_wheel_evidence':second}}
+&gt;       m.validate_invocation_artifacts(invocation,observation,objects,lambda path:raw)
+E       AttributeError: module 'v44_screening_audit' has no attribute 'validate_invocation_artifacts'. Did you mean: 'validate_invocation_binding'?
+
+../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py:188: AttributeError</failure></testcase><testcase classname="qualification.native-bootstrap-v44-screening-audit-preparation.test_screening_audit_v44" name="test_two_metadata_wheels_need_exact_retained_cas_backups[missing_cas]" time="0.022"><failure message="AttributeError: module 'v44_screening_audit' has no attribute 'validate_invocation_artifacts'. Did you mean: 'validate_invocation_binding'?">change = 'missing_cas'
+
+    @pytest.mark.parametrize('change',('empty','missing_cas','altered_backup','other_path'))
+    def test_two_metadata_wheels_need_exact_retained_cas_backups(change):
+        import base64
+        m=module();raw=b'opaque exact wheel data; parser qualified separately'
+        first={'wheel_path':'/retained/one/example.whl','wheel_sha256':m.sha(raw)}
+        second={'wheel_path':'/retained/two/example.whl','wheel_sha256':m.sha(raw)}
+        backup={'schema':'UDM_RETAINED_MATERIALIZATION_WHEEL_V43','filename':'example.whl','base64':base64.b64encode(raw).decode()}
+        objects={'backup':backup}
+        invocation={'artifacts':[{'evidence':first,'artifact':'backup'},{'evidence':second,'artifact':'backup'}]}
+        observation={'evidence':{'build':{'generated_wheel_evidence':first}},'independent_build':{'generated_wheel_evidence':second}}
+&gt;       m.validate_invocation_artifacts(invocation,observation,objects,lambda path:raw)
+E       AttributeError: module 'v44_screening_audit' has no attribute 'validate_invocation_artifacts'. Did you mean: 'validate_invocation_binding'?
+
+../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py:188: AttributeError</failure></testcase><testcase classname="qualification.native-bootstrap-v44-screening-audit-preparation.test_screening_audit_v44" name="test_two_metadata_wheels_need_exact_retained_cas_backups[altered_backup]" time="0.026"><failure message="AttributeError: module 'v44_screening_audit' has no attribute 'validate_invocation_artifacts'. Did you mean: 'validate_invocation_binding'?">change = 'altered_backup'
+
+    @pytest.mark.parametrize('change',('empty','missing_cas','altered_backup','other_path'))
+    def test_two_metadata_wheels_need_exact_retained_cas_backups(change):
+        import base64
+        m=module();raw=b'opaque exact wheel data; parser qualified separately'
+        first={'wheel_path':'/retained/one/example.whl','wheel_sha256':m.sha(raw)}
+        second={'wheel_path':'/retained/two/example.whl','wheel_sha256':m.sha(raw)}
+        backup={'schema':'UDM_RETAINED_MATERIALIZATION_WHEEL_V43','filename':'example.whl','base64':base64.b64encode(raw).decode()}
+        objects={'backup':backup}
+        invocation={'artifacts':[{'evidence':first,'artifact':'backup'},{'evidence':second,'artifact':'backup'}]}
+        observation={'evidence':{'build':{'generated_wheel_evidence':first}},'independent_build':{'generated_wheel_evidence':second}}
+&gt;       m.validate_invocation_artifacts(invocation,observation,objects,lambda path:raw)
+E       AttributeError: module 'v44_screening_audit' has no attribute 'validate_invocation_artifacts'. Did you mean: 'validate_invocation_binding'?
+
+../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py:188: AttributeError</failure></testcase><testcase classname="qualification.native-bootstrap-v44-screening-audit-preparation.test_screening_audit_v44" name="test_two_metadata_wheels_need_exact_retained_cas_backups[other_path]" time="0.023"><failure message="AttributeError: module 'v44_screening_audit' has no attribute 'validate_invocation_artifacts'. Did you mean: 'validate_invocation_binding'?">change = 'other_path'
+
+    @pytest.mark.parametrize('change',('empty','missing_cas','altered_backup','other_path'))
+    def test_two_metadata_wheels_need_exact_retained_cas_backups(change):
+        import base64
+        m=module();raw=b'opaque exact wheel data; parser qualified separately'
+        first={'wheel_path':'/retained/one/example.whl','wheel_sha256':m.sha(raw)}
+        second={'wheel_path':'/retained/two/example.whl','wheel_sha256':m.sha(raw)}
+        backup={'schema':'UDM_RETAINED_MATERIALIZATION_WHEEL_V43','filename':'example.whl','base64':base64.b64encode(raw).decode()}
+        objects={'backup':backup}
+        invocation={'artifacts':[{'evidence':first,'artifact':'backup'},{'evidence':second,'artifact':'backup'}]}
+        observation={'evidence':{'build':{'generated_wheel_evidence':first}},'independent_build':{'generated_wheel_evidence':second}}
+&gt;       m.validate_invocation_artifacts(invocation,observation,objects,lambda path:raw)
+E       AttributeError: module 'v44_screening_audit' has no attribute 'validate_invocation_artifacts'. Did you mean: 'validate_invocation_binding'?
+
+../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py:188: AttributeError</failure></testcase></testsuite></testsuites>

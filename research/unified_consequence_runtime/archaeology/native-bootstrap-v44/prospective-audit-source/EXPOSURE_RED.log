@@ -1,0 +1,33 @@
+FF                                                                       [100%]
+=================================== FAILURES ===================================
+____ test_complete_prior_exposure_union_cannot_be_weakened[missing_history] ____
+
+change = 'missing_history'
+
+    @pytest.mark.parametrize('change',('missing_history','exposed_universe'))
+    def test_complete_prior_exposure_union_cannot_be_weakened(change):
+        m=module();prior={'repositories':['old/source','other/exposed']}
+        plan={'historically_touched_repository_exclusions':['old/source','other/exposed'],
+              'repository_universe_fixed_before_github_queries':['new/unread']}
+>       m.validate_exposure(plan,prior)
+E       AttributeError: module 'v44_screening_audit' has no attribute 'validate_exposure'
+
+../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py:116: AttributeError
+___ test_complete_prior_exposure_union_cannot_be_weakened[exposed_universe] ____
+
+change = 'exposed_universe'
+
+    @pytest.mark.parametrize('change',('missing_history','exposed_universe'))
+    def test_complete_prior_exposure_union_cannot_be_weakened(change):
+        m=module();prior={'repositories':['old/source','other/exposed']}
+        plan={'historically_touched_repository_exclusions':['old/source','other/exposed'],
+              'repository_universe_fixed_before_github_queries':['new/unread']}
+>       m.validate_exposure(plan,prior)
+E       AttributeError: module 'v44_screening_audit' has no attribute 'validate_exposure'
+
+../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py:116: AttributeError
+- generated xml file: /workspace/qualification/native-bootstrap-v44-screening-audit-preparation/EXPOSURE_RED.xml -
+=========================== short test summary info ============================
+FAILED ../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py::test_complete_prior_exposure_union_cannot_be_weakened[missing_history]
+FAILED ../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py::test_complete_prior_exposure_union_cannot_be_weakened[exposed_universe]
+2 failed, 20 deselected in 0.11s

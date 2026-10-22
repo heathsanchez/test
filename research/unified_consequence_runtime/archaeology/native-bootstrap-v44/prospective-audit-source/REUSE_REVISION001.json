@@ -1,0 +1,14 @@
+{
+  "correction": {
+    "path": "/workspace/qualification/native-bootstrap-v44-independent-audit/AUDITOR_FORMAT_002_CORRECTION.json",
+    "sha256": "7a480780a876cb402799874dea2db22e209e9fef180f36f953edefa701dbd18a"
+  },
+  "created_utc": "2026-10-22T01:29:58.303919+00:00",
+  "new_frontier_queries": 0,
+  "new_sha256": "ba1d4324e0e850006426ec2d4025a988231e5fa844ce590b338b3aa578c3f9be",
+  "old_sha256": "922b6d71973330aac14bc459014c1af161ca5a064987737773bec2e554f1d08f",
+  "protocol_sha256": "8a8d52c0ea8403ba400717bfc9a656c9d25697740be9ec572cf0c64ae6edfba4",
+  "reason": "Independent artifact audit found metadata contract local shadowed by later native context across ledgers; pure predicate variable rename, no source/native experiment rerun. Original preparation protocol/source and controls retained.",
+  "schema": "UDM_V44_SCREENING_PURE_PREDICATE_REUSE_REVISION001",
+  "source_path": "/workspace/qualification/native-bootstrap-v44-independent-audit/audit_v44.py"
+}

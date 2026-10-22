@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="0.091" timestamp="2026-10-22T01:25:02.907622+00:00" hostname="8ac9339af51c"><testcase classname="qualification.native-bootstrap-v44-screening-audit-preparation.test_screening_audit_v44" name="test_frozen_runtime_alias_reads_exact_regular_target_without_relaxing_case_reader" time="0.041"><failure message="AttributeError: module 'v44_screening_audit' has no attribute 'runtime_bytes'">tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-42/test_frozen_runtime_alias_read0')
+
+    def test_frozen_runtime_alias_reads_exact_regular_target_without_relaxing_case_reader(tmp_path):
+        m=module();target=tmp_path/'actual-image';target.write_bytes(b'fixed-executable-image')
+        alias=tmp_path/'python';alias.symlink_to(target.name)
+        class Reader:
+            def read(self,path):
+                path=Path(path)
+                assert path.resolve()==path and not path.is_symlink()
+                return path.read_bytes()
+&gt;       assert m.runtime_bytes(Reader(),alias)==target.read_bytes()
+E       AttributeError: module 'v44_screening_audit' has no attribute 'runtime_bytes'
+
+../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py:93: AttributeError</failure></testcase></testsuite></testsuites>

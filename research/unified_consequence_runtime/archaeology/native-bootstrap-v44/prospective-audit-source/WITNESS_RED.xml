@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="4" skipped="0" tests="4" time="0.154" timestamp="2026-10-22T01:26:57.171414+00:00" hostname="8ac9339af51c"><testcase classname="qualification.native-bootstrap-v44-screening-audit-preparation.test_screening_audit_v44" name="test_metadata_witness_cannot_be_rebound_to_another_instrument[other_capability]" time="0.029"><failure message="AttributeError: module 'v44_screening_audit' has no attribute 'validate_invocation_binding'">change = 'other_capability'
+
+    @pytest.mark.parametrize('change',('other_capability','other_scope','wrong_receipt_generation','missing_witness_edge'))
+    def test_metadata_witness_cannot_be_rebound_to_another_instrument(change):
+        m=module();request={'commit':'base'}
+        binding={'capability_id':'cap','generation':1}
+        cap={'generation':1,'scope':{'request_sha256':m.fp(request)}}
+        witness={'kind':'verified_consequence','premises':['cap']}
+        receipt={'instrument':'cap','generation':1}
+&gt;       m.validate_invocation_binding(binding,cap,witness,receipt,request)
+E       AttributeError: module 'v44_screening_audit' has no attribute 'validate_invocation_binding'
+
+../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py:103: AttributeError</failure></testcase><testcase classname="qualification.native-bootstrap-v44-screening-audit-preparation.test_screening_audit_v44" name="test_metadata_witness_cannot_be_rebound_to_another_instrument[other_scope]" time="0.021"><failure message="AttributeError: module 'v44_screening_audit' has no attribute 'validate_invocation_binding'">change = 'other_scope'
+
+    @pytest.mark.parametrize('change',('other_capability','other_scope','wrong_receipt_generation','missing_witness_edge'))
+    def test_metadata_witness_cannot_be_rebound_to_another_instrument(change):
+        m=module();request={'commit':'base'}
+        binding={'capability_id':'cap','generation':1}
+        cap={'generation':1,'scope':{'request_sha256':m.fp(request)}}
+        witness={'kind':'verified_consequence','premises':['cap']}
+        receipt={'instrument':'cap','generation':1}
+&gt;       m.validate_invocation_binding(binding,cap,witness,receipt,request)
+E       AttributeError: module 'v44_screening_audit' has no attribute 'validate_invocation_binding'
+
+../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py:103: AttributeError</failure></testcase><testcase classname="qualification.native-bootstrap-v44-screening-audit-preparation.test_screening_audit_v44" name="test_metadata_witness_cannot_be_rebound_to_another_instrument[wrong_receipt_generation]" time="0.020"><failure message="AttributeError: module 'v44_screening_audit' has no attribute 'validate_invocation_binding'">change = 'wrong_receipt_generation'
+
+    @pytest.mark.parametrize('change',('other_capability','other_scope','wrong_receipt_generation','missing_witness_edge'))
+    def test_metadata_witness_cannot_be_rebound_to_another_instrument(change):
+        m=module();request={'commit':'base'}
+        binding={'capability_id':'cap','generation':1}
+        cap={'generation':1,'scope':{'request_sha256':m.fp(request)}}
+        witness={'kind':'verified_consequence','premises':['cap']}
+        receipt={'instrument':'cap','generation':1}
+&gt;       m.validate_invocation_binding(binding,cap,witness,receipt,request)
+E       AttributeError: module 'v44_screening_audit' has no attribute 'validate_invocation_binding'
+
+../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py:103: AttributeError</failure></testcase><testcase classname="qualification.native-bootstrap-v44-screening-audit-preparation.test_screening_audit_v44" name="test_metadata_witness_cannot_be_rebound_to_another_instrument[missing_witness_edge]" time="0.022"><failure message="AttributeError: module 'v44_screening_audit' has no attribute 'validate_invocation_binding'">change = 'missing_witness_edge'
+
+    @pytest.mark.parametrize('change',('other_capability','other_scope','wrong_receipt_generation','missing_witness_edge'))
+    def test_metadata_witness_cannot_be_rebound_to_another_instrument(change):
+        m=module();request={'commit':'base'}
+        binding={'capability_id':'cap','generation':1}
+        cap={'generation':1,'scope':{'request_sha256':m.fp(request)}}
+        witness={'kind':'verified_consequence','premises':['cap']}
+        receipt={'instrument':'cap','generation':1}
+&gt;       m.validate_invocation_binding(binding,cap,witness,receipt,request)
+E       AttributeError: module 'v44_screening_audit' has no attribute 'validate_invocation_binding'
+
+../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py:103: AttributeError</failure></testcase></testsuite></testsuites>

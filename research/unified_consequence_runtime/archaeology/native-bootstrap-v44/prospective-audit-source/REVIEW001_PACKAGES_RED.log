@@ -1,0 +1,57 @@
+FFFF                                                                     [100%]
+=================================== FAILURES ===================================
+_ test_selected_environment_witness_binds_both_actual_package_inventories[schema] _
+
+change = 'schema'
+
+    @pytest.mark.parametrize('change',('schema','build_packages','native_packages','profile'))
+    def test_selected_environment_witness_binds_both_actual_package_inventories(change):
+        m=module();profile={'id':'modern'}
+        value={'schema':'UDM_VERIFIED_NATIVE_ENVIRONMENT_SELECTION_V44','build_packages_sha256':'b','native_packages_sha256':'n','profile':profile}
+>       m.validate_environment_selection_identity(value,'modern','b','n',profile)
+E       AttributeError: module 'v44_screening_audit' has no attribute 'validate_environment_selection_identity'
+
+../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py:170: AttributeError
+_ test_selected_environment_witness_binds_both_actual_package_inventories[build_packages] _
+
+change = 'build_packages'
+
+    @pytest.mark.parametrize('change',('schema','build_packages','native_packages','profile'))
+    def test_selected_environment_witness_binds_both_actual_package_inventories(change):
+        m=module();profile={'id':'modern'}
+        value={'schema':'UDM_VERIFIED_NATIVE_ENVIRONMENT_SELECTION_V44','build_packages_sha256':'b','native_packages_sha256':'n','profile':profile}
+>       m.validate_environment_selection_identity(value,'modern','b','n',profile)
+E       AttributeError: module 'v44_screening_audit' has no attribute 'validate_environment_selection_identity'
+
+../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py:170: AttributeError
+_ test_selected_environment_witness_binds_both_actual_package_inventories[native_packages] _
+
+change = 'native_packages'
+
+    @pytest.mark.parametrize('change',('schema','build_packages','native_packages','profile'))
+    def test_selected_environment_witness_binds_both_actual_package_inventories(change):
+        m=module();profile={'id':'modern'}
+        value={'schema':'UDM_VERIFIED_NATIVE_ENVIRONMENT_SELECTION_V44','build_packages_sha256':'b','native_packages_sha256':'n','profile':profile}
+>       m.validate_environment_selection_identity(value,'modern','b','n',profile)
+E       AttributeError: module 'v44_screening_audit' has no attribute 'validate_environment_selection_identity'
+
+../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py:170: AttributeError
+_ test_selected_environment_witness_binds_both_actual_package_inventories[profile] _
+
+change = 'profile'
+
+    @pytest.mark.parametrize('change',('schema','build_packages','native_packages','profile'))
+    def test_selected_environment_witness_binds_both_actual_package_inventories(change):
+        m=module();profile={'id':'modern'}
+        value={'schema':'UDM_VERIFIED_NATIVE_ENVIRONMENT_SELECTION_V44','build_packages_sha256':'b','native_packages_sha256':'n','profile':profile}
+>       m.validate_environment_selection_identity(value,'modern','b','n',profile)
+E       AttributeError: module 'v44_screening_audit' has no attribute 'validate_environment_selection_identity'
+
+../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py:170: AttributeError
+- generated xml file: /workspace/qualification/native-bootstrap-v44-screening-audit-preparation/REVIEW001_PACKAGES_RED.xml -
+=========================== short test summary info ============================
+FAILED ../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py::test_selected_environment_witness_binds_both_actual_package_inventories[schema]
+FAILED ../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py::test_selected_environment_witness_binds_both_actual_package_inventories[build_packages]
+FAILED ../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py::test_selected_environment_witness_binds_both_actual_package_inventories[native_packages]
+FAILED ../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py::test_selected_environment_witness_binds_both_actual_package_inventories[profile]
+4 failed, 30 deselected in 0.16s

@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="15" skipped="0" tests="15" time="0.088" timestamp="2026-10-22T01:20:46.900872+00:00" hostname="8ac9339af51c"><testcase classname="qualification.native-bootstrap-v44-screening-audit-preparation.test_screening_audit_v44" name="test_both_actual_native_outcomes_have_same_public_eligibility_and_hide_status" time="0.000"><failure message="AssertionError: independent V44 screening auditor not implemented&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-bootstrap-v44-screening-audit-preparation/audit_retained_v44.py').is_file">def test_both_actual_native_outcomes_have_same_public_eligibility_and_hide_status():
+&gt;       m=module();good=m.public_fields(record('PASS_NATIVE'));bad=m.public_fields(record('FAIL_NATIVE'))
+
+../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py:28: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path=Path(__file__).with_name('audit_retained_v44.py')
+&gt;       assert path.is_file(), 'independent V44 screening auditor not implemented'
+E       AssertionError: independent V44 screening auditor not implemented
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-bootstrap-v44-screening-audit-preparation/audit_retained_v44.py').is_file
+
+../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py:11: AssertionError</failure></testcase><testcase classname="qualification.native-bootstrap-v44-screening-audit-preparation.test_screening_audit_v44" name="test_unknown_cannot_be_promoted_by_public_envelope" time="0.000"><failure message="AssertionError: independent V44 screening auditor not implemented&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-bootstrap-v44-screening-audit-preparation/audit_retained_v44.py').is_file">def test_unknown_cannot_be_promoted_by_public_envelope():
+&gt;       m=module();r=record();r['eligible']=True
+
+../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py:36: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path=Path(__file__).with_name('audit_retained_v44.py')
+&gt;       assert path.is_file(), 'independent V44 screening auditor not implemented'
+E       AssertionError: independent V44 screening auditor not implemented
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-bootstrap-v44-screening-audit-preparation/audit_retained_v44.py').is_file
+
+../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py:11: AssertionError</failure></testcase><testcase classname="qualification.native-bootstrap-v44-screening-audit-preparation.test_screening_audit_v44" name="test_bootstrap_counter_tampering_and_rollback_refuse[backend_calls--1]" time="0.000"><failure message="AssertionError: independent V44 screening auditor not implemented&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-bootstrap-v44-screening-audit-preparation/audit_retained_v44.py').is_file">field = 'backend_calls', value = -1
+
+    @pytest.mark.parametrize('field,value',[('backend_calls',-1),('backend_calls',1.5),('backend_seconds',float('nan')),('backend_seconds',-1)])
+    def test_bootstrap_counter_tampering_and_rollback_refuse(field,value):
+&gt;       m=module();r=record();r['bootstrap_attempts']['after'][field]=value
+
+../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py:42: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path=Path(__file__).with_name('audit_retained_v44.py')
+&gt;       assert path.is_file(), 'independent V44 screening auditor not implemented'
+E       AssertionError: independent V44 screening auditor not implemented
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-bootstrap-v44-screening-audit-preparation/audit_retained_v44.py').is_file
+
+../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py:11: AssertionError</failure></testcase><testcase classname="qualification.native-bootstrap-v44-screening-audit-preparation.test_screening_audit_v44" name="test_bootstrap_counter_tampering_and_rollback_refuse[backend_calls-1.5]" time="0.001"><failure message="AssertionError: independent V44 screening auditor not implemented&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-bootstrap-v44-screening-audit-preparation/audit_retained_v44.py').is_file">field = 'backend_calls', value = 1.5
+
+    @pytest.mark.parametrize('field,value',[('backend_calls',-1),('backend_calls',1.5),('backend_seconds',float('nan')),('backend_seconds',-1)])
+    def test_bootstrap_counter_tampering_and_rollback_refuse(field,value):
+&gt;       m=module();r=record();r['bootstrap_attempts']['after'][field]=value
+
+../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py:42: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path=Path(__file__).with_name('audit_retained_v44.py')
+&gt;       assert path.is_file(), 'independent V44 screening auditor not implemented'
+E       AssertionError: independent V44 screening auditor not implemented
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-bootstrap-v44-screening-audit-preparation/audit_retained_v44.py').is_file
+
+../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py:11: AssertionError</failure></testcase><testcase classname="qualification.native-bootstrap-v44-screening-audit-preparation.test_screening_audit_v44" name="test_bootstrap_counter_tampering_and_rollback_refuse[backend_seconds-nan]" time="0.000"><failure message="AssertionError: independent V44 screening auditor not implemented&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-bootstrap-v44-screening-audit-preparation/audit_retained_v44.py').is_file">field = 'backend_seconds', value = nan
+
+    @pytest.mark.parametrize('field,value',[('backend_calls',-1),('backend_calls',1.5),('backend_seconds',float('nan')),('backend_seconds',-1)])
+    def test_bootstrap_counter_tampering_and_rollback_refuse(field,value):
+&gt;       m=module();r=record();r['bootstrap_attempts']['after'][field]=value
+
+../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py:42: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path=Path(__file__).with_name('audit_retained_v44.py')
+&gt;       assert path.is_file(), 'independent V44 screening auditor not implemented'
+E       AssertionError: independent V44 screening auditor not implemented
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-bootstrap-v44-screening-audit-preparation/audit_retained_v44.py').is_file
+
+../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py:11: AssertionError</failure></testcase><testcase classname="qualification.native-bootstrap-v44-screening-audit-preparation.test_screening_audit_v44" name="test_bootstrap_counter_tampering_and_rollback_refuse[backend_seconds--1]" time="0.000"><failure message="AssertionError: independent V44 screening auditor not implemented&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-bootstrap-v44-screening-audit-preparation/audit_retained_v44.py').is_file">field = 'backend_seconds', value = -1
+
+    @pytest.mark.parametrize('field,value',[('backend_calls',-1),('backend_calls',1.5),('backend_seconds',float('nan')),('backend_seconds',-1)])
+    def test_bootstrap_counter_tampering_and_rollback_refuse(field,value):
+&gt;       m=module();r=record();r['bootstrap_attempts']['after'][field]=value
+
+../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py:42: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path=Path(__file__).with_name('audit_retained_v44.py')
+&gt;       assert path.is_file(), 'independent V44 screening auditor not implemented'
+E       AssertionError: independent V44 screening auditor not implemented
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-bootstrap-v44-screening-audit-preparation/audit_retained_v44.py').is_file
+
+../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py:11: AssertionError</failure></testcase><testcase classname="qualification.native-bootstrap-v44-screening-audit-preparation.test_screening_audit_v44" name="test_bootstrap_record_prefix_cannot_be_rewritten" time="0.000"><failure message="AssertionError: independent V44 screening auditor not implemented&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-bootstrap-v44-screening-audit-preparation/audit_retained_v44.py').is_file">def test_bootstrap_record_prefix_cannot_be_rewritten():
+&gt;       m=module();r=record();r['bootstrap_attempts']['before']['records']=[{'path':'original'}]
+
+../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py:47: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path=Path(__file__).with_name('audit_retained_v44.py')
+&gt;       assert path.is_file(), 'independent V44 screening auditor not implemented'
+E       AssertionError: independent V44 screening auditor not implemented
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-bootstrap-v44-screening-audit-preparation/audit_retained_v44.py').is_file
+
+../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py:11: AssertionError</failure></testcase><testcase classname="qualification.native-bootstrap-v44-screening-audit-preparation.test_screening_audit_v44" name="test_bootstrap_binding_requires_exact_live_source_observation_and_selection[missing_witness]" time="0.000"><failure message="AssertionError: independent V44 screening auditor not implemented&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-bootstrap-v44-screening-audit-preparation/audit_retained_v44.py').is_file">change = 'missing_witness'
+
+    @pytest.mark.parametrize('change',('missing_witness','generation','observation','request','selection_edge','scope'))
+    def test_bootstrap_binding_requires_exact_live_source_observation_and_selection(change):
+&gt;       m=module();binding={'capability_id':'cap','generation':1,'consequence_id':'obs','request_sha256':'r','observation_sha256':'o','environment_selection_id':'choice'}
+
+../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py:54: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path=Path(__file__).with_name('audit_retained_v44.py')
+&gt;       assert path.is_file(), 'independent V44 screening auditor not implemented'
+E       AssertionError: independent V44 screening auditor not implemented
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-bootstrap-v44-screening-audit-preparation/audit_retained_v44.py').is_file
+
+../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py:11: AssertionError</failure></testcase><testcase classname="qualification.native-bootstrap-v44-screening-audit-preparation.test_screening_audit_v44" name="test_bootstrap_binding_requires_exact_live_source_observation_and_selection[generation]" time="0.000"><failure message="AssertionError: independent V44 screening auditor not implemented&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-bootstrap-v44-screening-audit-preparation/audit_retained_v44.py').is_file">change = 'generation'
+
+    @pytest.mark.parametrize('change',('missing_witness','generation','observation','request','selection_edge','scope'))
+    def test_bootstrap_binding_requires_exact_live_source_observation_and_selection(change):
+&gt;       m=module();binding={'capability_id':'cap','generation':1,'consequence_id':'obs','request_sha256':'r','observation_sha256':'o','environment_selection_id':'choice'}
+
+../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py:54: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path=Path(__file__).with_name('audit_retained_v44.py')
+&gt;       assert path.is_file(), 'independent V44 screening auditor not implemented'
+E       AssertionError: independent V44 screening auditor not implemented
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-bootstrap-v44-screening-audit-preparation/audit_retained_v44.py').is_file
+
+../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py:11: AssertionError</failure></testcase><testcase classname="qualification.native-bootstrap-v44-screening-audit-preparation.test_screening_audit_v44" name="test_bootstrap_binding_requires_exact_live_source_observation_and_selection[observation]" time="0.000"><failure message="AssertionError: independent V44 screening auditor not implemented&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-bootstrap-v44-screening-audit-preparation/audit_retained_v44.py').is_file">change = 'observation'
+
+    @pytest.mark.parametrize('change',('missing_witness','generation','observation','request','selection_edge','scope'))
+    def test_bootstrap_binding_requires_exact_live_source_observation_and_selection(change):
+&gt;       m=module();binding={'capability_id':'cap','generation':1,'consequence_id':'obs','request_sha256':'r','observation_sha256':'o','environment_selection_id':'choice'}
+
+../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py:54: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path=Path(__file__).with_name('audit_retained_v44.py')
+&gt;       assert path.is_file(), 'independent V44 screening auditor not implemented'
+E       AssertionError: independent V44 screening auditor not implemented
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-bootstrap-v44-screening-audit-preparation/audit_retained_v44.py').is_file
+
+../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py:11: AssertionError</failure></testcase><testcase classname="qualification.native-bootstrap-v44-screening-audit-preparation.test_screening_audit_v44" name="test_bootstrap_binding_requires_exact_live_source_observation_and_selection[request]" time="0.000"><failure message="AssertionError: independent V44 screening auditor not implemented&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-bootstrap-v44-screening-audit-preparation/audit_retained_v44.py').is_file">change = 'request'
+
+    @pytest.mark.parametrize('change',('missing_witness','generation','observation','request','selection_edge','scope'))
+    def test_bootstrap_binding_requires_exact_live_source_observation_and_selection(change):
+&gt;       m=module();binding={'capability_id':'cap','generation':1,'consequence_id':'obs','request_sha256':'r','observation_sha256':'o','environment_selection_id':'choice'}
+
+../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py:54: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path=Path(__file__).with_name('audit_retained_v44.py')
+&gt;       assert path.is_file(), 'independent V44 screening auditor not implemented'
+E       AssertionError: independent V44 screening auditor not implemented
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-bootstrap-v44-screening-audit-preparation/audit_retained_v44.py').is_file
+
+../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py:11: AssertionError</failure></testcase><testcase classname="qualification.native-bootstrap-v44-screening-audit-preparation.test_screening_audit_v44" name="test_bootstrap_binding_requires_exact_live_source_observation_and_selection[selection_edge]" time="0.000"><failure message="AssertionError: independent V44 screening auditor not implemented&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-bootstrap-v44-screening-audit-preparation/audit_retained_v44.py').is_file">change = 'selection_edge'
+
+    @pytest.mark.parametrize('change',('missing_witness','generation','observation','request','selection_edge','scope'))
+    def test_bootstrap_binding_requires_exact_live_source_observation_and_selection(change):
+&gt;       m=module();binding={'capability_id':'cap','generation':1,'consequence_id':'obs','request_sha256':'r','observation_sha256':'o','environment_selection_id':'choice'}
+
+../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py:54: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path=Path(__file__).with_name('audit_retained_v44.py')
+&gt;       assert path.is_file(), 'independent V44 screening auditor not implemented'
+E       AssertionError: independent V44 screening auditor not implemented
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-bootstrap-v44-screening-audit-preparation/audit_retained_v44.py').is_file
+
+../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py:11: AssertionError</failure></testcase><testcase classname="qualification.native-bootstrap-v44-screening-audit-preparation.test_screening_audit_v44" name="test_bootstrap_binding_requires_exact_live_source_observation_and_selection[scope]" time="0.000"><failure message="AssertionError: independent V44 screening auditor not implemented&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-bootstrap-v44-screening-audit-preparation/audit_retained_v44.py').is_file">change = 'scope'
+
+    @pytest.mark.parametrize('change',('missing_witness','generation','observation','request','selection_edge','scope'))
+    def test_bootstrap_binding_requires_exact_live_source_observation_and_selection(change):
+&gt;       m=module();binding={'capability_id':'cap','generation':1,'consequence_id':'obs','request_sha256':'r','observation_sha256':'o','environment_selection_id':'choice'}
+
+../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py:54: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path=Path(__file__).with_name('audit_retained_v44.py')
+&gt;       assert path.is_file(), 'independent V44 screening auditor not implemented'
+E       AssertionError: independent V44 screening auditor not implemented
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-bootstrap-v44-screening-audit-preparation/audit_retained_v44.py').is_file
+
+../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py:11: AssertionError</failure></testcase><testcase classname="qualification.native-bootstrap-v44-screening-audit-preparation.test_screening_audit_v44" name="test_original_native_and_source_checks_are_reused_byte_exactly" time="0.000"><failure message="AssertionError: independent V44 screening auditor not implemented&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-bootstrap-v44-screening-audit-preparation/audit_retained_v44.py').is_file">def test_original_native_and_source_checks_are_reused_byte_exactly():
+&gt;       m=module()
+
+../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py:72: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path=Path(__file__).with_name('audit_retained_v44.py')
+&gt;       assert path.is_file(), 'independent V44 screening auditor not implemented'
+E       AssertionError: independent V44 screening auditor not implemented
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-bootstrap-v44-screening-audit-preparation/audit_retained_v44.py').is_file
+
+../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py:11: AssertionError</failure></testcase><testcase classname="qualification.native-bootstrap-v44-screening-audit-preparation.test_screening_audit_v44" name="test_incomplete_dossier_never_authorizes_finalization" time="0.000"><failure message="AssertionError: independent V44 screening auditor not implemented&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-bootstrap-v44-screening-audit-preparation/audit_retained_v44.py').is_file">def test_incomplete_dossier_never_authorizes_finalization():
+&gt;       m=module()
+
+../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py:79: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path=Path(__file__).with_name('audit_retained_v44.py')
+&gt;       assert path.is_file(), 'independent V44 screening auditor not implemented'
+E       AssertionError: independent V44 screening auditor not implemented
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-bootstrap-v44-screening-audit-preparation/audit_retained_v44.py').is_file
+
+../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py:11: AssertionError</failure></testcase></testsuite></testsuites>

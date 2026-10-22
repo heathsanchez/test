@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="4" skipped="0" tests="4" time="0.160" timestamp="2026-10-22T01:35:28.346321+00:00" hostname="8ac9339af51c"><testcase classname="qualification.native-bootstrap-v44-screening-audit-preparation.test_screening_audit_v44" name="test_selected_environment_witness_binds_both_actual_package_inventories[schema]" time="0.029"><failure message="AttributeError: module 'v44_screening_audit' has no attribute 'validate_environment_selection_identity'">change = 'schema'
+
+    @pytest.mark.parametrize('change',('schema','build_packages','native_packages','profile'))
+    def test_selected_environment_witness_binds_both_actual_package_inventories(change):
+        m=module();profile={'id':'modern'}
+        value={'schema':'UDM_VERIFIED_NATIVE_ENVIRONMENT_SELECTION_V44','build_packages_sha256':'b','native_packages_sha256':'n','profile':profile}
+&gt;       m.validate_environment_selection_identity(value,'modern','b','n',profile)
+E       AttributeError: module 'v44_screening_audit' has no attribute 'validate_environment_selection_identity'
+
+../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py:170: AttributeError</failure></testcase><testcase classname="qualification.native-bootstrap-v44-screening-audit-preparation.test_screening_audit_v44" name="test_selected_environment_witness_binds_both_actual_package_inventories[build_packages]" time="0.021"><failure message="AttributeError: module 'v44_screening_audit' has no attribute 'validate_environment_selection_identity'">change = 'build_packages'
+
+    @pytest.mark.parametrize('change',('schema','build_packages','native_packages','profile'))
+    def test_selected_environment_witness_binds_both_actual_package_inventories(change):
+        m=module();profile={'id':'modern'}
+        value={'schema':'UDM_VERIFIED_NATIVE_ENVIRONMENT_SELECTION_V44','build_packages_sha256':'b','native_packages_sha256':'n','profile':profile}
+&gt;       m.validate_environment_selection_identity(value,'modern','b','n',profile)
+E       AttributeError: module 'v44_screening_audit' has no attribute 'validate_environment_selection_identity'
+
+../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py:170: AttributeError</failure></testcase><testcase classname="qualification.native-bootstrap-v44-screening-audit-preparation.test_screening_audit_v44" name="test_selected_environment_witness_binds_both_actual_package_inventories[native_packages]" time="0.021"><failure message="AttributeError: module 'v44_screening_audit' has no attribute 'validate_environment_selection_identity'">change = 'native_packages'
+
+    @pytest.mark.parametrize('change',('schema','build_packages','native_packages','profile'))
+    def test_selected_environment_witness_binds_both_actual_package_inventories(change):
+        m=module();profile={'id':'modern'}
+        value={'schema':'UDM_VERIFIED_NATIVE_ENVIRONMENT_SELECTION_V44','build_packages_sha256':'b','native_packages_sha256':'n','profile':profile}
+&gt;       m.validate_environment_selection_identity(value,'modern','b','n',profile)
+E       AttributeError: module 'v44_screening_audit' has no attribute 'validate_environment_selection_identity'
+
+../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py:170: AttributeError</failure></testcase><testcase classname="qualification.native-bootstrap-v44-screening-audit-preparation.test_screening_audit_v44" name="test_selected_environment_witness_binds_both_actual_package_inventories[profile]" time="0.022"><failure message="AttributeError: module 'v44_screening_audit' has no attribute 'validate_environment_selection_identity'">change = 'profile'
+
+    @pytest.mark.parametrize('change',('schema','build_packages','native_packages','profile'))
+    def test_selected_environment_witness_binds_both_actual_package_inventories(change):
+        m=module();profile={'id':'modern'}
+        value={'schema':'UDM_VERIFIED_NATIVE_ENVIRONMENT_SELECTION_V44','build_packages_sha256':'b','native_packages_sha256':'n','profile':profile}
+&gt;       m.validate_environment_selection_identity(value,'modern','b','n',profile)
+E       AttributeError: module 'v44_screening_audit' has no attribute 'validate_environment_selection_identity'
+
+../qualification/native-bootstrap-v44-screening-audit-preparation/test_screening_audit_v44.py:170: AttributeError</failure></testcase></testsuite></testsuites>
