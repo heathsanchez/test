@@ -1,0 +1,55 @@
+name: External Exception Obligation V12
+on:
+  push:
+    branches:
+      - research/external-exception-obligation-v12-20261022
+  pull_request:
+    paths:
+      - 'research/external_exception_v12/**'
+      - '.github/workflows/external-exception-v12.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-authored-exception:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pinned independent ItsDangerous upstream
+        uses: actions/checkout@v4
+        with:
+          repository: pallets/itsdangerous
+          ref: 672971d66a2ef9f85151e53283113f33d642dabd
+          path: upstream
+          persist-credentials: false
+      - name: Original MathGraph documentary warrant backend
+        uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/mathgraph
+          ref: e48f094fa400c77ab07404645f6e12cfba7ebf45
+          path: mathgraph_pinned
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install native upstream requirements
+        run: |
+          python -m pip install pytest==9.0.3 freezegun
+          python -m pip install -e ./upstream
+      - name: Sealed preexposure grammar audit
+        run: |
+          python -m py_compile research/external_exception_v12/sealed.py
+          python research/external_exception_v12/sealed.py
+      - name: Separately preregistered postexposure dataflow calibration
+        run: |
+          python -m py_compile research/external_exception_v12/postexposure.py research/external_exception_v12/worker.py
+          python research/external_exception_v12/postexposure.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: external-exception-obligation-v12
+          path: |
+            research/external_exception_v12/sealed_result.json
+            research/external_exception_v12/postexposure_result.json
+          if-no-files-found: warn
