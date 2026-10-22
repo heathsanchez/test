@@ -1,0 +1,7 @@
+# V11b post-exposure real source-change requalification (distinct from sealed first run)
+
+Original V11 sealed run #39698689480 acquired seven eligible executable author-test assertions and checked original/comment-only/malicious uppercase h11 header code. This protocol is written AFTER opening original source and cannot retroactively change V11's first-run prospective status.
+
+Freeze a new *source-changing implementation* edit: in the pinned h11/_headers.py normalize_and_validate body only, replace exactly one line `name = name.lower()` with `name = bytes.lower(name)`. The latter calls the bytes type method rather than the instance method. This is equivalent on the controlled ordinary bytes values but not claimed observationally identical for custom subclasses, Python tracing, metaprogramming, or all environments.
+
+Reuse EXACT seven AST-extracted native obligations and their expected values without modifying source-authored tests or extractor grammar. Re-run generated native witnesses + unmodified original upstream header tests under the changed source, compare with same conventional full test suite. Check source identity and exact one-line diff and deliberately re-admit new source digest rather than silently using old warrant. A changed source with no requalification remains UNKNOWN. Old result artifact remains immutable. No new semantic grammar acquisition or cost win expected.
