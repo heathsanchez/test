@@ -30,6 +30,10 @@ jobs:
           test "$(cat /tmp/nucleus-work-evidence/source-changes.txt)" = 'metatron-kernel/src/checker.rs'
           git diff ff003e7fad888d39a40cfd2375885fe20e3209fa -- metatron-kernel/src/checker.rs > /tmp/nucleus-work-evidence/opt-in-work-only.diff
           rustc -vV > /tmp/nucleus-work-evidence/compiler.txt
+      - name: Syntax-check diagnostic harness before compiling Nucleus
+        run: |
+          set -euo pipefail
+          python3 -m py_compile .github/scripts/nucleus_total_work_separator_20261022.py
       - name: Require independent source native tests and exact original checker
         run: |
           set -euo pipefail
