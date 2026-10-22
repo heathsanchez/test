@@ -1867,15 +1867,48 @@ fn compare_values(
                         let mut available = current_budget;
                         let mut reduced = None;
                         if left.head != right.head {
+                            // Source-authorized scheduling experiment: when
+                            // EXACTLY ONE side is an application of a registered
+                            // recursor and the other is rigid, do not reserve a
+                            // second recursor probe for an ineligible side.
+                            // Allocate 3/4 to the actual source iota witness
+                            // and retain 1/4 for subsequent comparison.
+                            // Neither branch, major, nor expected result is
+                            // guessed, and all original rules still apply.
+                            let eligible = |n:&Neutral| {
+                                !n.spine.is_empty()
+                                    && matches!(&n.head, NeutralHead::Const{name,..}
+                                        if checker.has_qualified_recursor(*name))
+                            };
+                            let exactly_one = eligible(left) != eligible(right);
                             for (is_left, candidate) in [(false, right), (true, left)] {
                                 if !matches!(candidate.head, NeutralHead::Const { .. })
                                     || candidate.spine.is_empty() || available < 128 {
                                     continue;
                                 }
-                                let probe = available / 2;
+                                let use_larger_probe =
+                                    std::env::var_os("NUCLEUS_EXPERIMENTAL_SINGLE_RECURSOR_BUDGET").is_some()
+                                    && exactly_one && eligible(candidate);
+                                let probe = if use_larger_probe {
+                                    available.saturating_sub(available/4)
+                                } else { available/2 };
                                 available -= probe;
-                                if let Judgment::Proven { value, .. } = checker.machine()
-                                    .qualified_one_step_recursor_result(candidate, probe)
+                                let attempt=checker.machine()
+                                    .qualified_one_step_recursor_result(candidate, probe);
+                                #[cfg(feature="diagnostics")]
+                                if use_larger_probe
+                                    && std::env::var_os("NUCLEUS_TRACE_SINGLE_RECURSOR_BUDGET").is_some() {
+                                    use std::sync::atomic::{AtomicUsize,Ordering};
+                                    static SEEN:AtomicUsize=AtomicUsize::new(0);
+                                    if SEEN.fetch_add(1,Ordering::Relaxed)<64 {
+                                        eprintln!(
+                                            "NUCLEUS_SINGLE_RECURSOR_BUDGET:depth={depth}:source_head={:?}:source_arity={}:allowance={probe}:retained={available}:outcome={}",
+                                            candidate.head,candidate.spine.len(),
+                                            format!("{attempt:?}").chars().take(850).collect::<String>(),
+                                        );
+                                    }
+                                }
+                                if let Judgment::Proven { value, .. } = attempt
                                     && !matches!(&value, Value::Neutral(n) if n == candidate)
                                 {
                                     reduced = Some((is_left, value));
