@@ -486,6 +486,43 @@ impl<'a> Machine<'a> {
         self.expose_internal(closure, transparency, budget, true, false)
     }
 
+    // Eligibility ONLY: find an actual kernel Nat numeral in the immutable
+    // source major's binding chain. This does not prove the recursor result.
+    // The result may be used only by the ordinary source-certified iota
+    // machinery, which still selects the constructor from that exact major.
+    fn source_numeric_nat_rec_major(&self,neutral:&Neutral)->bool {
+        let NeutralHead::Const {name,..}=&neutral.head else {return false;};
+        let Some(nat)=self.nat_primitives.as_ref() else {return false;};
+        if *name!=nat.recursor {return false;}
+        let Some(rule)=self.recursor_reductions.get(name) else {return false;};
+        if rule.k || rule.num_params!=0 || rule.num_indices!=0
+            || rule.level_params.len()!=1 || rule.rules.len()!=2
+            || !rule.rules.iter().any(|r|r.constructor==nat.zero
+                && r.num_params==0 && r.num_fields==0)
+            || !rule.rules.iter().any(|r|r.constructor==nat.succ
+                && r.num_params==0 && r.num_fields==1)
+        {return false;}
+        let required=rule.num_params.saturating_add(1)
+            .saturating_add(rule.rules.len())
+            .saturating_add(rule.num_indices).saturating_add(1);
+        let Some(mut major)=neutral.spine.get(required.saturating_sub(1)).cloned()
+            else {return false;};
+        // Only direct actual captured BVar bindings: no arbitrary delta,
+        // evaluator, computed major, or guessed external local identity.
+        for _ in 0..32 {
+            match self.expressions.get(major.expr) {
+                Some(Expr::NatLit(_))=>return true,
+                Some(Expr::BVar(index))=>match major.env.lookup(*index) {
+                    Some(EnvBinding::NatLit(_))=>return true,
+                    Some(EnvBinding::Closure(c))=>major=c,
+                    _=>return false,
+                },
+                _=>return false,
+            }
+        }
+        false
+    }
+
     pub(crate) fn projection_field_for_conversion(
         &self,
         structure: Closure,
@@ -533,7 +570,34 @@ impl<'a> Machine<'a> {
             && matches!(&neutral.head, NeutralHead::Const { name, .. }
                 if *name != spec.constructor && self.recursor_reductions.contains_key(name))
         {
-            self.qualified_nested_recursor_result(neutral, budget)
+            // A completed recursor replay can spend substantial work proving
+            // a nested minor/major that the requested field never consumes.
+            // First request ONE source-certified iota step, but ONLY when the
+            // actual original Nat.rec major is a captured literal. If the
+            // selected genuine RHS exposes the registered structure
+            // constructor, immediately select its exact field. Otherwise
+            // retain the entire original completed-replay path unchanged.
+            // Never infer a branch from the expected constructor/value.
+            let first = if std::env::var_os("NUCLEUS_EXPERIMENTAL_NUMERIC_MAJOR_STEP").is_some()
+                && self.source_numeric_nat_rec_major(neutral)
+            {
+                let trial=self.qualified_one_step_recursor_result(neutral,budget);
+                if matches!(trial.proven_value(),
+                    Some(Value::Neutral(Neutral {
+                        head:NeutralHead::Const {name,..}, ..
+                    })) if *name==spec.constructor)
+                {
+                    #[cfg(feature="diagnostics")]
+                    if std::env::var_os("NUCLEUS_TRACE_NUMERIC_MAJOR_STEP").is_some() {
+                        eprintln!(
+                            "NUCLEUS_NUMERIC_MAJOR_STEP:recursor={:?}:structure={:?}:field={index}:source_constructor={:?}:selected_after_exact_iota=true",
+                            neutral.head, spec.constructor, spec.constructor,
+                        );
+                    }
+                    Some(trial)
+                } else {None}
+            } else {None};
+            first.unwrap_or_else(||self.qualified_nested_recursor_result(neutral,budget))
         } else {
             Judgment::unknown("projection-no-registered-replay")
         };
