@@ -49,7 +49,7 @@ def run(path,binary,enabled,tag,timeout=180,trace=False):
             if t.startswith("NUCLEUS_STAGED_IOTA:"))
     terminal=[t for t in data.splitlines() if t.startswith("NUCLEUS_DOWNSTREAM:")][-1:]
     if trace:
-        (evidence/(tag+".stderr")).write_text(data[:400000])
+        (evidence/(tag.replace("/", "_").replace("/", "_")+".stderr")).write_text(data[:400000])
     return {"rc":proc.returncode,"seconds":round(time.monotonic()-started,4),
             "stage_events":dict(counts),"terminal":terminal,
             "stage_samples":[t for t in data.splitlines() if t.startswith("NUCLEUS_STAGED_IOTA:")][:28]}
