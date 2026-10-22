@@ -1,0 +1,52 @@
+name: External Source Obligation V11
+on:
+  push:
+    branches:
+      - research/external-source-obligation-v11-20261022
+  pull_request:
+    paths:
+      - 'research/external_obligation_v11/**'
+      - '.github/workflows/external-obligation-v11.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-executable-authority:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pinned independent h11 upstream
+        uses: actions/checkout@v4
+        with:
+          repository: python-hyper/h11
+          ref: 62c5068c971579d61fa1b55373390e12f25fd856
+          path: upstream
+          persist-credentials: false
+      - name: Original MathGraph documentary warrant backend
+        uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/mathgraph
+          ref: e48f094fa400c77ab07404645f6e12cfba7ebf45
+          path: mathgraph_pinned
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Native pytest and upstream library
+        run: |
+          python -m pip install pytest==9.0.3
+          python -m pip install -e ./upstream
+      - name: Original executable source requirement extraction and mutation
+        run: |
+          python -m py_compile research/external_obligation_v11/experiment.py research/external_obligation_v11/witness_worker.py
+          python research/external_obligation_v11/experiment.py
+          python research/external_obligation_v11/postrun_requalification.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: external-source-obligation-v11
+          path: |
+            research/external_obligation_v11/result.json
+            research/external_obligation_v11/postrun_requalification.json
+          if-no-files-found: warn
