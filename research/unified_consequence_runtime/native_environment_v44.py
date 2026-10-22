@@ -16,6 +16,8 @@ from . import native_environment_v43 as previous
 from . import native_environment_v42 as source_environment
 from . import native_environment_selection_v41 as static_selection
 
+# Preserve the original inventory consumer API and its unchanged catalog checker.
+selection = static_selection
 canonical, fingerprint, sha256 = previous.canonical, previous.fingerprint, previous.sha256
 _LOADED_SHA256 = sha256(Path(__file__).read_bytes())
 _ORIGINAL_PINS = {str(Path(module.__file__)): sha256(Path(module.__file__).read_bytes())

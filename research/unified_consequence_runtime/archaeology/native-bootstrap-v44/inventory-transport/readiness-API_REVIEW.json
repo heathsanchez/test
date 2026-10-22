@@ -1,0 +1,126 @@
+{
+  "actual_complete_catalog_path_test": "RED_COMPLETE.xml: AttributeError before guarded interpreter invocation; exact existing original catalog and complete RUNTIMES.json passed.",
+  "actual_incomplete_path_refusal_test": "RED.xml: AttributeError prevents original complete-path ValueError; no interpreter invoked.",
+  "checks": {
+    "_guard": {
+      "available": true,
+      "uses": [
+        {
+          "file": "qualify_native_frontier_v43.py",
+          "line": 103
+        },
+        {
+          "file": "qualify_native_frontier_v44.py",
+          "line": 78
+        },
+        {
+          "file": "native_runtime_v44.py",
+          "line": 17
+        }
+      ]
+    },
+    "bootstrap_snapshot": {
+      "available": true,
+      "uses": [
+        {
+          "file": "qualify_native_frontier_v44.py",
+          "line": 224
+        }
+      ]
+    },
+    "execution_policy": {
+      "available": true,
+      "uses": []
+    },
+    "freeze_runtime": {
+      "available": true,
+      "uses": [
+        {
+          "file": "qualify_native_frontier_v3.py",
+          "line": 163
+        }
+      ]
+    },
+    "installed_package_identity": {
+      "available": true,
+      "uses": []
+    },
+    "package_requirements": {
+      "available": true,
+      "uses": []
+    },
+    "preflight_bootstrap": {
+      "available": true,
+      "uses": [
+        {
+          "file": "qualify_native_frontier_v44.py",
+          "line": 171
+        },
+        {
+          "file": "qualify_native_frontier_v44.py",
+          "line": 156
+        },
+        {
+          "file": "native_runtime_v44.py",
+          "line": 31
+        },
+        {
+          "file": "native_runtime_v44.py",
+          "line": 37
+        }
+      ]
+    },
+    "provision": {
+      "available": true,
+      "uses": [
+        {
+          "file": "qualify_native_frontier_v3.py",
+          "line": 877
+        },
+        {
+          "file": "qualify_native_frontier_v3.py",
+          "line": 634
+        }
+      ]
+    },
+    "selection": {
+      "available": false,
+      "uses": [
+        {
+          "file": "qualify_native_frontier_v3.py",
+          "line": 157
+        },
+        {
+          "file": "qualify_native_frontier_v3.py",
+          "line": 171
+        }
+      ]
+    },
+    "validate_runtime": {
+      "available": true,
+      "uses": [
+        {
+          "file": "qualify_native_frontier_v3.py",
+          "line": 164
+        },
+        {
+          "file": "qualify_native_frontier_v3.py",
+          "line": 176
+        }
+      ]
+    }
+  },
+  "interpreter_invocations": 0,
+  "metadata_queries": 0,
+  "missing": [
+    "selection"
+  ],
+  "model_calls": 0,
+  "native_calls": 0,
+  "schema": "UDM_V44_READ_ONLY_PROSPECTIVE_ENVIRONMENT_API_REVIEW_V1",
+  "selector_identity_equal_to_preserved_v43": true,
+  "smallest_correction": "Add selection = static_selection to native_environment_v44. static_selection is identity-equal to the preserved V43 environment.selection; its original finite catalog validation semantics and catalog bytes remain unchanged.",
+  "source_commit": "e823ce2f4d8a42384dcb56816b1eb48c5f4fa00f",
+  "source_mutations": 0,
+  "target_source_reads": 0
+}

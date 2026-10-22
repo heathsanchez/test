@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="0.168" timestamp="2026-10-22T01:12:42.576036+00:00" hostname="8ac9339af51c"><testcase classname="qualification.native-bootstrap-v44-prospective-preparation.readiness-review-e823ce2f.test_complete_inventory_boundary" name="test_complete_original_profile_paths_reach_interpreter_boundary" time="0.011"><failure message="AttributeError: module 'research.unified_consequence_runtime.native_environment_v44' has no attribute 'selection'">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x7fab8c0505f0&gt;
+
+    def test_complete_original_profile_paths_reach_interpreter_boundary(monkeypatch):
+        catalog=json.loads((q.HERE.parents[1]/q.CATALOG_PATH).read_text())
+        paths=json.loads(Path('/workspace/qualification/native-authority-v41-profile-preparation/RUNTIMES.json').read_text())
+        seen=[]
+        def before_interpreter(path):
+            assert path in paths.values()
+            seen.append(path)
+            raise PermissionError('stopped before any interpreter invocation')
+        monkeypatch.setattr(q.environment,'freeze_runtime',before_interpreter)
+        with pytest.raises(PermissionError,match='stopped before any interpreter invocation'):
+&gt;           q.freeze_runtime_inventory(paths,catalog)
+
+../qualification/native-bootstrap-v44-prospective-preparation/readiness-review-e823ce2f/test_complete_inventory_boundary.py:18: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+runtime_paths = {'cpython-3.12.14-pytest-8.4.1-linux-x86_64': '/workspace/qualification/native-authority-v41-profile-preparation/moder...ation/native-frontier-v3-runtime-preparation/catalog-runtimes/cpython-3.6.5-pytest-5.4.3-linux-x86_64/venv/bin/python'}
+catalog = {'authority': 'Finite source-independent exact CPython/pytest profiles frozen from generic runtime/dependency metadata... == "doc"', 'typing-extensions; python_version &lt; "3.12" and extra == "doc"', ...], 'cloudpickle': [], ...}, ...}], ...}
+
+    def freeze_runtime_inventory(runtime_paths, catalog):
+        """Bind fresh runner-local identities; qualified CI paths are never reused."""
+&gt;       _guard(); profiles = {row['id']: row for row in environment.selection._catalog(catalog)}
+E       AttributeError: module 'research.unified_consequence_runtime.native_environment_v44' has no attribute 'selection'
+
+research/unified_consequence_runtime/qualify_native_frontier_v3.py:157: AttributeError</failure></testcase></testsuite></testsuites>

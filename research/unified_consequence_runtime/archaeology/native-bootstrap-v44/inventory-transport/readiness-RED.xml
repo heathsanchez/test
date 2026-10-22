@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="0.178" timestamp="2026-10-22T01:12:18.504156+00:00" hostname="8ac9339af51c"><testcase classname="qualification.native-bootstrap-v44-prospective-preparation.readiness-review-e823ce2f.test_inventory_interface" name="test_incomplete_runtime_paths_return_declared_refusal_before_any_interpreter" time="0.012"><failure message="AttributeError: module 'research.unified_consequence_runtime.native_environment_v44' has no attribute 'selection'">def test_incomplete_runtime_paths_return_declared_refusal_before_any_interpreter():
+        catalog=json.loads((q.HERE.parents[1]/q.CATALOG_PATH).read_text())
+        with pytest.raises(ValueError,match='complete runner-local runtime paths required'):
+&gt;           q.freeze_runtime_inventory({},catalog)
+
+../qualification/native-bootstrap-v44-prospective-preparation/readiness-review-e823ce2f/test_inventory_interface.py:11: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+runtime_paths = {}
+catalog = {'authority': 'Finite source-independent exact CPython/pytest profiles frozen from generic runtime/dependency metadata... == "doc"', 'typing-extensions; python_version &lt; "3.12" and extra == "doc"', ...], 'cloudpickle': [], ...}, ...}], ...}
+
+    def freeze_runtime_inventory(runtime_paths, catalog):
+        """Bind fresh runner-local identities; qualified CI paths are never reused."""
+&gt;       _guard(); profiles = {row['id']: row for row in environment.selection._catalog(catalog)}
+E       AttributeError: module 'research.unified_consequence_runtime.native_environment_v44' has no attribute 'selection'
+
+research/unified_consequence_runtime/qualify_native_frontier_v3.py:157: AttributeError</failure></testcase></testsuite></testsuites>

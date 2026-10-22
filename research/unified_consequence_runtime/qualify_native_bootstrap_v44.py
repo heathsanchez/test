@@ -28,7 +28,7 @@ RESULT_SCHEMA = 'UDM_NATIVE_BOOTSTRAP_QUALIFICATION_V44'
 QUALIFIED = 'QUALIFIED_BOUNDED_NATIVE_METADATA_BOOTSTRAP_ONLY'
 TESTS = ('test_native_environment_v44.py', 'test_native_bootstrap_runtime_v44.py',
          'test_native_runtime_v44.py', 'test_qualify_native_frontier_v44.py',
-         'test_native_frontier_helpers_v44.py')
+         'test_native_frontier_helpers_v44.py', 'test_native_inventory_transport_v44.py')
 BOOTSTRAP_GATE_FILES = tuple(PREFIX+name for name in (
     'native_metadata_v44.py', 'native_environment_selection_v44.py',
     'native_environment_v44.py', 'native_bootstrap_runtime_v44.py',
