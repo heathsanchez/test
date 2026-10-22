@@ -1,0 +1,60 @@
+name: Nucleus original Lean finite-decision total-work separator
+on:
+  push:
+    branches: [research/nucleus-recursor-total-work-separator-20261022]
+    paths:
+      - 'metatron-kernel/src/checker.rs'
+      - '.github/scripts/nucleus_total_work_separator_20261022.py'
+      - '.github/workflows/nucleus-total-work-separator-20261022.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-separator:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 95
+    env:
+      GH_TOKEN: ${{ github.token }}
+      CARGO_INCREMENTAL: "0"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Freeze qualified source; verify sole opt-in total-work parameter
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/nucleus-work-evidence /tmp/nucleus-work-micro
+          git rev-parse HEAD > /tmp/nucleus-work-evidence/experiment-sha.txt
+          git fetch --no-tags --depth=1 origin ff003e7fad888d39a40cfd2375885fe20e3209fa
+          git diff --check ff003e7fad888d39a40cfd2375885fe20e3209fa
+          git diff --name-only ff003e7fad888d39a40cfd2375885fe20e3209fa -- metatron-kernel > /tmp/nucleus-work-evidence/source-changes.txt
+          test "$(cat /tmp/nucleus-work-evidence/source-changes.txt)" = 'metatron-kernel/src/checker.rs'
+          git diff ff003e7fad888d39a40cfd2375885fe20e3209fa -- metatron-kernel/src/checker.rs > /tmp/nucleus-work-evidence/opt-in-work-only.diff
+          rustc -vV > /tmp/nucleus-work-evidence/compiler.txt
+      - name: Require independent source native tests and exact original checker
+        run: |
+          set -euo pipefail
+          NUCLEUS_EXPERIMENTAL_RELEVANCE=1 NUCLEUS_EXPERIMENTAL_EXPECTED_LAMBDA=1 \
+            cargo test --release --locked --features diagnostics \
+            --manifest-path metatron-kernel/Cargo.toml > /tmp/nucleus-work-evidence/native-tests.log 2>&1 || {
+              tail -100 /tmp/nucleus-work-evidence/native-tests.log; exit 1;
+            }
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          sha256sum metatron-kernel/target/release/metatron-kernel > /tmp/nucleus-work-evidence/binary.sha256
+      - name: Verify original independent Lean positive and false proof inputs
+        run: |
+          set -euo pipefail
+          gh api repos/heathsanchez/test/actions/artifacts/12336209253/zip > /tmp/nucleus-work-source.zip
+          echo '6727b4ba0de9f4b12642307d1749fcf220047134bfbb6e6a5a789bec092dfaa4  /tmp/nucleus-work-source.zip' | sha256sum -c -
+          unzip -q /tmp/nucleus-work-source.zip -d /tmp/nucleus-work-micro
+      - name: Decide whether work limit alone can close the independently valid proofs
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/nucleus_total_work_separator_20261022.py \
+            /tmp/nucleus-work-micro metatron-kernel/target/release/metatron-kernel \
+            /tmp/nucleus-work-evidence
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-total-work-separator-${{ github.sha }}
+          path: /tmp/nucleus-work-evidence/
+          if-no-files-found: warn
