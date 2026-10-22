@@ -1,0 +1,260 @@
+{
+  "metadata_curation_sha256": "51d60a9e0d883591353087d6866dcaea832738f7a859cd8ef8f2ffa1e48ea8c8",
+  "pool": [
+    {
+      "base_commit": "0413d8cb5e5deb3477336c1e10b7fac769232e4e",
+      "files": [
+        {
+          "additions": 1,
+          "changes": 2,
+          "deletions": 1,
+          "filename": "src/sh/__init__.py",
+          "sha": "6240977c32c55e0dd48c0083ebb5e00fffd7a6e3",
+          "status": "modified"
+        },
+        {
+          "additions": 10,
+          "changes": 10,
+          "deletions": 0,
+          "filename": "tests/sh_test.py",
+          "sha": "6c2a064d6763d1fb4f4e498d4dd772c837c3c740",
+          "status": "modified"
+        }
+      ],
+      "git_metadata_binding": {
+        "base": {
+          "changed_paths": {
+            "src/sh/__init__.py": {
+              "mode": "100644",
+              "path": "src/sh/__init__.py",
+              "sha": "8d5e98ce525cf5487a7705495651123e5bc968fc",
+              "size": 130186,
+              "type": "blob"
+            },
+            "tests/sh_test.py": {
+              "mode": "100644",
+              "path": "tests/sh_test.py",
+              "sha": "a43b0db82259e53c550714291f21bce4c6299a58",
+              "size": 101414,
+              "type": "blob"
+            }
+          },
+          "commit_sha": "0413d8cb5e5deb3477336c1e10b7fac769232e4e",
+          "parents": [
+            "79e4070ab55b67dc0d0ea41f55e06f06f133563d",
+            "e88270dd3aac29cbf26eafaf953798b5caa1d953"
+          ],
+          "tree_entry_count": 72,
+          "tree_sha": "f3a7158a7ed73f04dfd649d75a73e8e4fee2059b",
+          "tree_truncated": false
+        },
+        "head": {
+          "changed_paths": {
+            "src/sh/__init__.py": {
+              "mode": "100644",
+              "path": "src/sh/__init__.py",
+              "sha": "6240977c32c55e0dd48c0083ebb5e00fffd7a6e3",
+              "size": 130189,
+              "type": "blob"
+            },
+            "tests/sh_test.py": {
+              "mode": "100644",
+              "path": "tests/sh_test.py",
+              "sha": "6c2a064d6763d1fb4f4e498d4dd772c837c3c740",
+              "size": 101912,
+              "type": "blob"
+            }
+          },
+          "commit_sha": "78d8159d995872e9cca369149e8c5eae86988ec2",
+          "parents": [
+            "fa7339df0737f3a4e125e400980ccf0aaf183058"
+          ],
+          "tree_entry_count": 72,
+          "tree_sha": "7600a0c04980547c0cca216dd20ab266672e4ec0",
+          "tree_truncated": false
+        }
+      },
+      "head_commit": "78d8159d995872e9cca369149e8c5eae86988ec2",
+      "merge_commit_sha": "9b61fdc829c38d8fbc6a9783d9f660c915b3eb37",
+      "metadata_binding_status": "EXACT_COMMIT_TREE_AND_CHANGED_BLOB_IDS_BOUND_WITHOUT_SOURCE_CONTENTS",
+      "metadata_stats": {
+        "production_additions": 1,
+        "production_deletions": 1,
+        "production_py_files": 1,
+        "test_py_files": 1
+      },
+      "metadata_url": "https://github.com/amoffat/sh/pull/792",
+      "pr": 792,
+      "repo": "amoffat/sh",
+      "selection_status": "FROZEN_ORDERED_POOL_CANDIDATE_NOT_AN_ADMITTED_TASK",
+      "tree_query_coverage": [
+        {
+          "endpoint": "repos/amoffat/sh/git/commits/0413d8cb5e5deb3477336c1e10b7fac769232e4e",
+          "projection": "{sha,tree_sha:.tree.sha,parents:[.parents[].sha]}",
+          "requested_at_utc": "2026-10-22T01:54:06.569164+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.3982788109969988
+        },
+        {
+          "endpoint": "repos/amoffat/sh/git/trees/f3a7158a7ed73f04dfd649d75a73e8e4fee2059b?recursive=1",
+          "projection": "{sha,truncated,tree:[.tree[] | {path,mode,type,sha,size}]}",
+          "requested_at_utc": "2026-10-22T01:54:06.967533+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.2741734310002357
+        },
+        {
+          "endpoint": "repos/amoffat/sh/git/commits/78d8159d995872e9cca369149e8c5eae86988ec2",
+          "projection": "{sha,tree_sha:.tree.sha,parents:[.parents[].sha]}",
+          "requested_at_utc": "2026-10-22T01:54:07.241855+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.4883414449977863
+        },
+        {
+          "endpoint": "repos/amoffat/sh/git/trees/7600a0c04980547c0cca216dd20ab266672e4ec0?recursive=1",
+          "projection": "{sha,truncated,tree:[.tree[] | {path,mode,type,sha,size}]}",
+          "requested_at_utc": "2026-10-22T01:54:07.730254+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.28965545699975337
+        }
+      ]
+    },
+    {
+      "base_commit": "af3ac8722eb4e4990f464fa5f7c756e8a3bc1519",
+      "files": [
+        {
+          "additions": 6,
+          "changes": 7,
+          "deletions": 1,
+          "filename": "pycparser/c_parser.py",
+          "sha": "10364696bda8286e0deca676d027ad20ed900676",
+          "status": "modified"
+        },
+        {
+          "additions": 24,
+          "changes": 24,
+          "deletions": 0,
+          "filename": "tests/test_c_parser.py",
+          "sha": "73af2683943e115b18458b17299cb8acd2ecd783",
+          "status": "modified"
+        }
+      ],
+      "git_metadata_binding": {
+        "base": {
+          "changed_paths": {
+            "pycparser/c_parser.py": {
+              "mode": "100644",
+              "path": "pycparser/c_parser.py",
+              "sha": "bab2ff11f70300c5c536436025784e25f82ccc72",
+              "size": 89949,
+              "type": "blob"
+            },
+            "tests/test_c_parser.py": {
+              "mode": "100644",
+              "path": "tests/test_c_parser.py",
+              "sha": "952cfc1f29089ed36080c24c3e6133846eecdb29",
+              "size": 121079,
+              "type": "blob"
+            }
+          },
+          "commit_sha": "af3ac8722eb4e4990f464fa5f7c756e8a3bc1519",
+          "parents": [
+            "10d17757e282d8af5426d6df4d55eb394042b550"
+          ],
+          "tree_entry_count": 233,
+          "tree_sha": "0ef64ac3798022edf72e0e3038b3aba0188ed935",
+          "tree_truncated": false
+        },
+        "head": {
+          "changed_paths": {
+            "pycparser/c_parser.py": {
+              "mode": "100644",
+              "path": "pycparser/c_parser.py",
+              "sha": "10364696bda8286e0deca676d027ad20ed900676",
+              "size": 90247,
+              "type": "blob"
+            },
+            "tests/test_c_parser.py": {
+              "mode": "100644",
+              "path": "tests/test_c_parser.py",
+              "sha": "73af2683943e115b18458b17299cb8acd2ecd783",
+              "size": 122001,
+              "type": "blob"
+            }
+          },
+          "commit_sha": "80ee8b769b029e7534eb78ab3955583e5a6deac2",
+          "parents": [
+            "af3ac8722eb4e4990f464fa5f7c756e8a3bc1519"
+          ],
+          "tree_entry_count": 233,
+          "tree_sha": "a6dc951c8adfcdc06cc8c457123ae9040aa5a39d",
+          "tree_truncated": false
+        }
+      },
+      "head_commit": "80ee8b769b029e7534eb78ab3955583e5a6deac2",
+      "merge_commit_sha": "4d00573aa2433c7483533dae9385ee69256413e7",
+      "metadata_binding_status": "EXACT_COMMIT_TREE_AND_CHANGED_BLOB_IDS_BOUND_WITHOUT_SOURCE_CONTENTS",
+      "metadata_stats": {
+        "production_additions": 6,
+        "production_deletions": 1,
+        "production_py_files": 1,
+        "test_py_files": 1
+      },
+      "metadata_url": "https://github.com/eliben/pycparser/pull/606",
+      "pr": 606,
+      "repo": "eliben/pycparser",
+      "selection_status": "FROZEN_ORDERED_POOL_CANDIDATE_NOT_AN_ADMITTED_TASK",
+      "tree_query_coverage": [
+        {
+          "endpoint": "repos/eliben/pycparser/git/commits/af3ac8722eb4e4990f464fa5f7c756e8a3bc1519",
+          "projection": "{sha,tree_sha:.tree.sha,parents:[.parents[].sha]}",
+          "requested_at_utc": "2026-10-22T01:54:08.020086+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.2633891030018276
+        },
+        {
+          "endpoint": "repos/eliben/pycparser/git/trees/0ef64ac3798022edf72e0e3038b3aba0188ed935?recursive=1",
+          "projection": "{sha,truncated,tree:[.tree[] | {path,mode,type,sha,size}]}",
+          "requested_at_utc": "2026-10-22T01:54:08.283533+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.2926801469984639
+        },
+        {
+          "endpoint": "repos/eliben/pycparser/git/commits/80ee8b769b029e7534eb78ab3955583e5a6deac2",
+          "projection": "{sha,tree_sha:.tree.sha,parents:[.parents[].sha]}",
+          "requested_at_utc": "2026-10-22T01:54:08.576482+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.2919500060015707
+        },
+        {
+          "endpoint": "repos/eliben/pycparser/git/trees/a6dc951c8adfcdc06cc8c457123ae9040aa5a39d?recursive=1",
+          "projection": "{sha,truncated,tree:[.tree[] | {path,mode,type,sha,size}]}",
+          "requested_at_utc": "2026-10-22T01:54:08.868501+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.5256683030020213
+        }
+      ]
+    }
+  ],
+  "prequery_execution_sha256": "da8a7aee7436846b764dba5587f4085182bb1e241b53ecce517154f74791fd13",
+  "requested_roles": 2,
+  "schema": "UDM_ORDERED_NATIVE_ADMISSION_SCREENING_POOL_V44",
+  "screening_budget": {
+    "all_refusals_and_partial_costs_retained": true,
+    "collection_seconds_per_call": 60,
+    "execution_seconds_per_call": 600,
+    "maximum_cases": 9,
+    "maximum_native_executions_per_case": 2,
+    "native_and_independent_verification_costs_charged": true,
+    "total_screening_wall_seconds": 7200
+  },
+  "selection_rule": "First two source-distinct independent native admissions; PASS and FAIL identical; do not replace a passing training task.",
+  "state": "MUST_COMMIT_BEFORE_ADMISSION_SCREENING"
+}
