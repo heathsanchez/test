@@ -41,7 +41,7 @@ def analyze():
     before=SRC.read_text()
     assert before.count(OLD)==1,"FROZEN_MUTATION_INELIGIBLE"
     after=before.replace(OLD,BAD,1)
-    assert after.replace(BAD,OLD,1)==before
+    assert after==before.replace(OLD,BAD,1)
     try:
         original=run("original")
         SRC.write_text(after)
