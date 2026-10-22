@@ -165,6 +165,11 @@ pub(crate) struct ExposureCacheStore {
     numeric_bindings: HashMap<(AuthorityId, ExprId, crate::nat::BigNat), EnvFrame>,
     completed_replays:HashMap<u64,Vec<(Rc<ReplayKey>,Value)>>,
     completed_replay_count:usize,
+    // Source-witnessed intermediate iota steps are NOT completed values.
+    // They may only resume a checked recursor, never justify a constructor
+    // or an ACCEPT on their own. Exact source/certificate keys are retained.
+    staged_replays:HashMap<u64,Vec<(Rc<ReplayKey>,Value)>>,
+    staged_replay_count:usize,
 }
 impl ExposureCacheStore {
     fn retain_exposure(&mut self,key:Rc<CachedExposureKey>,value:&Value,mut spend:impl FnMut()->bool) {
@@ -871,6 +876,54 @@ impl<'a> Machine<'a> {
         let key=&left.exact;
         if !self.reserve_replay_key(&key.levels,&key.spine,&key.certificate) {return None;}
         Some(left.exact==right.exact)
+    }
+
+    // A source-checked iota RHS can itself be a registered recursor. Retain
+    // that *one-step transition* so a later visit need not rebuild the same
+    // constructor telescope. A stage is never a completed constructor.
+    fn lookup_staged_replay(&self,key:&Rc<ReplayKey>)->Judgment<Option<Value>> {
+        let Some(cache)=self.exposure_cache.as_ref() else {return Judgment::proven(None,"no-staged-replay-cache");};
+        let entries=cache.borrow();
+        if let Some(bucket)=entries.staged_replays.get(&key.digest) {
+            for (saved,value) in bucket {
+                let Some(equal)=self.replay_keys_equal(key,saved) else {return Judgment::unknown("staged-replay-comparison-work");};
+                if equal {
+                    if !self.reserve_replay_value_clone(value) {return Judgment::unknown("staged-replay-value-work");}
+                    return Judgment::proven(Some(value.clone()),"exact-source-staged-iota");
+                }
+            }
+        }
+        Judgment::proven(None,"no-exact-staged-replay")
+    }
+
+    fn cache_staged_replay(&self,key:Rc<ReplayKey>,value:&Value) {
+        // An exact checked RHS may contain an unfinished recursor; all other
+        // shapes belong to the existing full-result cache. This stage does
+        // NOT change the meaning of the unfinished computation.
+        let Value::Neutral(Neutral{head:NeutralHead::Const{name,..},..})=value else {return;};
+        if !self.recursor_reductions.contains_key(name) {return;}
+        let Some(cache)=self.exposure_cache.as_ref() else {return;};
+        {
+            let entries=cache.borrow();
+            if let Some(bucket)=entries.staged_replays.get(&key.digest) {
+                for (saved,_) in bucket {
+                    match self.replay_keys_equal(&key,saved) {Some(false)=>{},_=>return}
+                }
+            }
+            if entries.staged_replay_count>=8192 {return;}
+        }
+        if !self.reserve_replay_value_clone(value) {return;}
+        let mut entries=cache.borrow_mut();
+        entries.staged_replays.entry(key.digest).or_default().push((key,value.clone()));
+        entries.staged_replay_count+=1;
+        #[cfg(feature="diagnostics")]
+        if std::env::var_os("NUCLEUS_TRACE_STAGED_IOTA").is_some() {
+            use std::sync::atomic::{AtomicUsize,Ordering};
+            static STORED:AtomicUsize=AtomicUsize::new(0);
+            if STORED.fetch_add(1,Ordering::Relaxed)<32 {
+                eprintln!("NUCLEUS_STAGED_IOTA:stored:next_recursor={name:?}:count={}",entries.staged_replay_count);
+            }
+        }
     }
 
     fn lookup_completed_replay(&self,key:&Rc<ReplayKey>)->Judgment<Option<Value>> {
@@ -2238,6 +2291,39 @@ impl<'a> Machine<'a> {
                     Judgment::Proven{value:None,..}=>{},
                     failure=>return failure.map(|_|unreachable!()),
                 }
+                // Checked intermediate iota is a resumable *reduction step*,
+                // not a completed value. A cache hit still traverses and
+                // verifies all subsequent source recursors to a real result.
+                // The same exact authority, universe and closure key is used
+                // as for completed replays; a digest alone never licenses reuse.
+                if std::env::var_os("NUCLEUS_EXPERIMENTAL_STAGED_IOTA_REPLAY").is_some() {
+                    match self.lookup_staged_replay(&key) {
+                        Judgment::Proven{value:Some(Value::Neutral(next)),..} => {
+                            if !active.insert(identity) {return Judgment::unknown("nested-recursor-iota-cycle");}
+                            entered.entry(key.digest).or_default().push(key.clone());
+                            parents.push(Continuation::Finish(key));
+                            #[cfg(feature="diagnostics")]
+                            if std::env::var_os("NUCLEUS_TRACE_STAGED_IOTA").is_some() {
+                                use std::sync::atomic::{AtomicUsize,Ordering};
+                                static HITS:AtomicUsize=AtomicUsize::new(0);
+                                if HITS.fetch_add(1,Ordering::Relaxed)<32 {
+                                    eprintln!("NUCLEUS_STAGED_IOTA:hit:next_recursor={:?}:depth={}",next.head,parents.len());
+                                }
+                            }
+                            if goal==CheckedReplayGoal::OneStep && current_is_requested {
+                                return Judgment::proven(Value::Neutral(next),"checked-staged-one-step-iota");
+                            }
+                            current=next;
+                            current_is_requested=false;
+                            continue 'evaluate;
+                        }
+                        Judgment::Proven{value:Some(_),..} => {
+                            return Judgment::unknown("staged-replay-not-recursor");
+                        }
+                        Judgment::Proven{value:None,..} => {},
+                        failure => return failure.map(|_|unreachable!()),
+                    }
+                }
                 if !active.insert(identity) {return Judgment::unknown("nested-recursor-iota-cycle");}
                 entered.entry(key.digest).or_default().push(key.clone());
                 parents.push(Continuation::Finish(key));
@@ -2360,6 +2446,14 @@ impl<'a> Machine<'a> {
             if let Value::Neutral(nested)=&value
                 && matches!(&nested.head,NeutralHead::Const{name,..} if self.recursor_reductions.contains_key(name))
             {
+                if std::env::var_os("NUCLEUS_EXPERIMENTAL_STAGED_IOTA_REPLAY").is_some()
+                    && let Some(Continuation::Finish(key))=parents.last()
+                {
+                    // The prior checked constructor and the actual source RHS
+                    // have already been established, but the RHS still needs
+                    // its own checked reduction. Never memoize it as COMPLETE.
+                    self.cache_staged_replay(key.clone(),&value);
+                }
                 current=nested.clone();current_is_requested=false;
                 continue;
             }
@@ -3257,5 +3351,52 @@ mod exposure_clock_tests {
             assert_eq!(cache.borrow().values.len(),8192);
             assert!(cache.borrow().values.keys().any(|k|k.exact.1==term(0)),"a hot source proof was discarded by cold churn");
         }
+    }
+}
+
+
+#[cfg(test)]
+mod staged_source_iota_cache_tests {
+    use super::*;
+
+    #[test]
+    fn partial_checked_source_step_never_becomes_a_completed_proof() {
+        let mut expressions=IdTable::default();
+        expressions.insert(ExprId(0),Expr::BVar(0)).unwrap();
+        expressions.insert(ExprId(1),Expr::Const{name:NameId(2),levels:vec![]}).unwrap();
+        let levels=IdTable::default();
+        let cache=new_exposure_cache();
+        let machine=Machine::new(AuthorityId(1),&expressions,&levels,HashMap::new())
+            .with_exposure_cache(cache.clone()).with_recursor_reductions(
+                HashMap::from([(NameId(1),RecursorReduction {
+                    k:false,num_params:0,num_indices:0,level_params:vec![],
+                    rules:vec![RecursorRule{
+                        constructor:NameId(2),constructor_level_params:vec![],
+                        num_params:0,num_fields:0,rhs:ExprId(0),
+                    }],
+                }), (NameId(3),RecursorReduction {
+                    k:false,num_params:0,num_indices:0,level_params:vec![],
+                    rules:vec![RecursorRule{
+                        constructor:NameId(2),constructor_level_params:vec![],
+                        num_params:0,num_fields:0,rhs:ExprId(0),
+                    }],
+                })]));
+        let actual=Closure::new(ExprId(1),EnvFrame::empty());
+        let spine=vec![actual.clone(),actual.clone(),actual];
+        machine.exposure_fuel.set(Some(2048));
+        let key=machine.completed_replay_key(NameId(1),&[],&spine).unwrap();
+        let next=Value::Neutral(Neutral{
+            head:NeutralHead::Const{name:NameId(3),levels:vec![]},
+            spine:spine.clone(),
+        });
+        machine.cache_staged_replay(key.clone(),&next);
+        assert_eq!(machine.lookup_staged_replay(&key).proven_value(),Some(&Some(next)));
+        assert_eq!(machine.lookup_completed_replay(&key).proven_value(),Some(&None),
+            "a source iota step cannot certify a completed recursor or proof");
+        let changed=vec![Closure::new(ExprId(0),EnvFrame::empty()),spine[1].clone(),spine[2].clone()];
+        let unrelated=machine.completed_replay_key(NameId(1),&[],&changed).unwrap();
+        assert_eq!(machine.lookup_staged_replay(&unrelated).proven_value(),Some(&None),
+            "source-distinct argument must not reuse a staged value");
+        machine.exposure_fuel.set(None);
     }
 }
