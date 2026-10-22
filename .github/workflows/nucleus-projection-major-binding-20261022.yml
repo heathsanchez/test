@@ -1,0 +1,69 @@
+name: Nucleus original PProd recursor major binding provenance
+on:
+  push:
+    branches: [research/nucleus-projection-major-binding-20261022]
+    paths:
+      - 'metatron-kernel/src/machine.rs'
+      - '.github/scripts/nucleus_projection_major_binding_gate_20261022.py'
+      - '.github/workflows/nucleus-projection-major-binding-20261022.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  pinned-major-source:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    env:
+      GH_TOKEN: ${{ github.token }}
+      CARGO_INCREMENTAL: "0"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Freeze original source and diff provenance
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/nucleus-binding-evidence /tmp/nucleus-binding-sources
+          python3 -m py_compile .github/scripts/nucleus_projection_major_binding_gate_20261022.py
+          git rev-parse HEAD > /tmp/nucleus-binding-evidence/research-commit.txt
+          git fetch --no-tags --depth=1 origin ff003e7fad888d39a40cfd2375885fe20e3209fa
+          git worktree add --detach /tmp/nucleus-binding-baseline ff003e7fad888d39a40cfd2375885fe20e3209fa
+          test "$(git -C /tmp/nucleus-binding-baseline rev-parse HEAD:metatron-kernel)" = 5e7d65b1b6abc3f6380bc7a37ffb153284d7faf1
+          git diff --check ff003e7fad888d39a40cfd2375885fe20e3209fa
+          git diff --name-only ff003e7fad888d39a40cfd2375885fe20e3209fa -- metatron-kernel > /tmp/nucleus-binding-evidence/checker-changes.txt
+          test "$(cat /tmp/nucleus-binding-evidence/checker-changes.txt)" = 'metatron-kernel/src/machine.rs'
+          git diff ff003e7fad888d39a40cfd2375885fe20e3209fa -- metatron-kernel/src/machine.rs > /tmp/nucleus-binding-evidence/diagnostic-only.diff
+          rustc -vV > /tmp/nucleus-binding-evidence/compiler.txt
+      - name: Compile and run protected native Rust tests
+        run: |
+          set -euo pipefail
+          NUCLEUS_EXPERIMENTAL_RELEVANCE=1 NUCLEUS_EXPERIMENTAL_EXPECTED_LAMBDA=1 \
+            cargo test --release --locked --features diagnostics \
+              --manifest-path metatron-kernel/Cargo.toml \
+              > /tmp/nucleus-binding-evidence/native-tests.log 2>&1 || {
+                tail -120 /tmp/nucleus-binding-evidence/native-tests.log; exit 1;
+              }
+          CARGO_TARGET_DIR=/tmp/nucleus-binding-baseline-target \
+            cargo build --release --locked --features diagnostics \
+              --manifest-path /tmp/nucleus-binding-baseline/metatron-kernel/Cargo.toml
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          cp /tmp/nucleus-binding-baseline-target/release/metatron-kernel /tmp/nucleus-binding-baseline-bin
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus-binding-diagnostic-bin
+          sha256sum /tmp/nucleus-binding-{baseline,diagnostic}-bin > /tmp/nucleus-binding-evidence/binaries.sha256
+      - name: Recover independently verified Lean source positives and invalid controls
+        run: |
+          set -euo pipefail
+          gh api repos/heathsanchez/test/actions/artifacts/12336209253/zip > /tmp/nucleus-binding-original.zip
+          echo '6727b4ba0de9f4b12642307d1749fcf220047134bfbb6e6a5a789bec092dfaa4  /tmp/nucleus-binding-original.zip' | sha256sum -c -
+          unzip -q /tmp/nucleus-binding-original.zip -d /tmp/nucleus-binding-sources
+      - name: Audit original recursor major BVar capture and verify zero changed verdicts
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/nucleus_projection_major_binding_gate_20261022.py \
+            /tmp/nucleus-binding-sources /tmp/nucleus-binding-baseline-bin \
+            /tmp/nucleus-binding-diagnostic-bin /tmp/nucleus-binding-evidence
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-original-major-binding-${{ github.sha }}
+          path: /tmp/nucleus-binding-evidence/
+          if-no-files-found: warn
