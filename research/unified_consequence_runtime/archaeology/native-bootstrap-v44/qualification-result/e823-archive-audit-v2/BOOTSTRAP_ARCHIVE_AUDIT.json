@@ -1,0 +1,53 @@
+{
+  "all_native_packets_checked": true,
+  "bootstrap_gate": {
+    "artifact_id": 12394880951,
+    "artifact_sha256": "8fc862528ccada4da8399e3e0a9ef724c403227136d63bc18329d078b496fb6b",
+    "qualification_result_sha256": "3039a6477f28dbbc4e87bee8bcec0965131358ae05eaa657605e1dfdc941575d",
+    "result_path": "research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective/CI_39702634983_RESULT.json",
+    "run_id": 39702634983,
+    "source_commit": "e823ce2f4d8a42384dcb56816b1eb48c5f4fa00f",
+    "status": "ADMISSION_ONLY_QUALIFIED"
+  },
+  "gate_files_sha256": {
+    ".github/workflows/udm-native-bootstrap-v44.yml": "0f32d068dfcc1de0629d5c3755786a53cddfa331de7194350a90ad300d6473e2",
+    ".github/workflows/udm-prospective-native-selection-v44.yml": "63c1d6537dbd88ce33e26cab3c337ac534d3bef30df6bfc9b50060314d6e221b",
+    "research/unified_consequence_runtime/archaeology/native-bootstrap-v44/metadata-cost-preimplementation/test_metadata_attempts_v44.py": "11064c50bc19921c7974e2b9c54d3c20be3996935726e4085621b3d903d71574",
+    "research/unified_consequence_runtime/archaeology/native-bootstrap-v44/metadata-review-preimplementation/test_metadata_absent_static_v44.py": "d3f40e59b5e7c4ac136ba067cb620d5bd5ecdcdb8470873bab041d2e1577185b",
+    "research/unified_consequence_runtime/archaeology/native-bootstrap-v44/metadata-review-preimplementation/test_metadata_review_v44.py": "7bff3000c08bf8c06f7ee02ea4956caf170281dedc5686b10da7eee37b215f6d",
+    "research/unified_consequence_runtime/archaeology/native-bootstrap-v44/preimplementation/FREEZE_MANIFEST.json": "2423fb5879481deb796e1f2a5e2b4f337af240917c3096711d733373a5146656",
+    "research/unified_consequence_runtime/archaeology/native-bootstrap-v44/preimplementation/PROTOCOL.json": "34d5004184feb6c02abae384e954325787535043f8f18deec7aa835fee4243f3",
+    "research/unified_consequence_runtime/archaeology/native-bootstrap-v44/preimplementation/test_native_metadata_v44_acceptance.py": "a8ef96b8140566f1a296b5e11243249c750306bcf68a92be6c454165875a6e4f",
+    "research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective/PRIOR_EXPOSURE.json": "f8716f3720a63f65ec2551bc8230712b75c42915010ccc59847e3bf29ce3e818",
+    "research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective/curate_frontier.py": "3d79e607f8f07a08861ff0363c92bfd811e2924c8699bd8126209f2fd3dd4d04",
+    "research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective/prepare_records.py": "d8cc3e99f5404e467bc6cd958ded6019082b7c266279765c1680a485fd4c2576",
+    "research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective/training-history-original/training_history_projection.py": "3172f8a5d175d593b938db62a48db76437abbbe59c8432a91ea53488ef5f7b21",
+    "research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective/training_history_projection_v44.py": "6d7bb4e634a1ac01dc86ed4ca8367223368c249033efcd368abc8f22ec7385d9",
+    "research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective/watch_actual_agent.py": "608386225e0b129e781bf8f645a7968a69701c273d3e8db4703864731b06d99a",
+    "research/unified_consequence_runtime/cross_frontier_v44.py": "d5d2262d1fc1808a8c228a9a9cf5b3095807b9d0aa4b2127dba93738ece77ff8",
+    "research/unified_consequence_runtime/developmental_machine_v44.py": "b1bc1ddfa677157465c64d8ecdef4c6dce192c0a5c37f5c0861fa0424400a5b9",
+    "research/unified_consequence_runtime/native_bootstrap_runtime_v44.py": "e8eb2332eb2427f5ad2c6bb37d72e5cf6d1fb9b739c1ba71160bc283980797f7",
+    "research/unified_consequence_runtime/native_environment_selection_v44.py": "ddbdc8b4b5dd672277c17150c69a7f60c28007d4dfd74b27cbb43647065114d8",
+    "research/unified_consequence_runtime/native_environment_v44.py": "2df1d09b1af70656a370e929ebf3e41edc87df39e0b8492cdf3e82e7d2ad9f69",
+    "research/unified_consequence_runtime/native_metadata_v44.py": "63f5c35ba39cfa29a5887fc0e067e2ceed17debd3798e8c1ec14bad9b3722146",
+    "research/unified_consequence_runtime/native_runtime_v44.py": "f2740f27fb279af7312506aa8ce5a5c9f424eda1c5d1314cab11650b44778212",
+    "research/unified_consequence_runtime/qualify_native_bootstrap_v44.py": "6fb84b5bc31520e8e28ce6d08884866ab817fb3c4d7950ac0871655ff0ecff7e",
+    "research/unified_consequence_runtime/qualify_native_frontier_v44.py": "5006932fedc8b321d6f36002d1c3086790dd49ad18ca8327feb6148bb0948f02",
+    "research/unified_consequence_runtime/test_native_bootstrap_runtime_v44.py": "fde53c0dd050b6bbe774f8fae1da3d21cf1f99c5ca31fabb9e1ce5acc5453e5f",
+    "research/unified_consequence_runtime/test_native_environment_v44.py": "25c0f775dec17b07a2bdb4802a53a25e1a02f5a90b87da1222a2e600ea8a1239",
+    "research/unified_consequence_runtime/test_native_frontier_helpers_v44.py": "3ff8b51e0b918921a045a6091d2a35956a51a71c163fffb883770e51faf0548e",
+    "research/unified_consequence_runtime/test_native_runtime_v44.py": "92a008433fa2a14e362af94ff947d100a91e7391a101186d516bf9f1c6b75ab7",
+    "research/unified_consequence_runtime/test_qualify_native_frontier_v44.py": "b30062e43e046ea1e2748d2444e2fe50149f2eeb2e550519a5ecc5ffaa27c749"
+  },
+  "independent_report_sha256": "8bcccad840c1181964d20f582b627acacfde88f4f5bb12dc67bd3a8913a16f67",
+  "native_proof_scope": "Retained original collection/import/assertion/status packets; exact immutable source/candidate/import bytes additionally closed for complete native supplement. Metadata invocation wheels and Metatron/FLASH edges independently checked. No universal Python refinement claim.",
+  "schema": "UDM_V44_INDEPENDENT_BOOTSTRAP_AUDIT",
+  "scientific_verdicts": {
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN"
+  },
+  "status": "PASS_INDEPENDENT_NATIVE_BOOTSTRAP_AUDIT"
+}
