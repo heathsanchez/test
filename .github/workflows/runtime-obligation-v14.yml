@@ -23,6 +23,13 @@ jobs:
           ref: 2247b35ea1c47c727d7a06e51fa280e12a863ff6
           path: upstream
           persist-credentials: false
+      - name: Checkout unmodified MathGraph warrant backend
+        uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/mathgraph
+          ref: e48f094fa400c77ab07404645f6e12cfba7ebf45
+          path: mathgraph_pinned
+          persist-credentials: false
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -34,12 +41,14 @@ jobs:
         run: |
           python -m py_compile research/runtime_obligation_v14/experiment.py research/runtime_obligation_v14/runtime_obligation_plugin.py
           python research/runtime_obligation_v14/experiment.py
+          python research/runtime_obligation_v14/warrant_admission.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: runtime-obligation-v14
           path: |
             research/runtime_obligation_v14/result.json
+            research/runtime_obligation_v14/warrant.json
             research/runtime_obligation_v14/trace_original.json
             research/runtime_obligation_v14/trace_mutant.json
           if-no-files-found: warn
