@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="2" time="6.258" timestamp="2026-10-22T00:44:16.906978+00:00" hostname="8ac9339af51c"><testcase classname="qualification.native-bootstrap-v44-metadata-review-fix.test_metadata_absent_static_v44" name="test_absent_static_dependencies_are_empty_and_keep_lawful_test_extras[False]" time="3.097" /><testcase classname="qualification.native-bootstrap-v44-metadata-review-fix.test_metadata_absent_static_v44" name="test_absent_static_dependencies_are_empty_and_keep_lawful_test_extras[True]" time="3.089"><failure message="AssertionError: assert 'CANDIDATE_SOURCE_ENVIRONMENT' == 'UNKNOWN'&#10;  &#10;  - UNKNOWN&#10;  + CANDIDATE_SOURCE_ENVIRONMENT">tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-31/test_absent_static_dependencie1')
+extra_runtime = True
+
+    @pytest.mark.parametrize('extra_runtime',[False,True])
+    def test_absent_static_dependencies_are_empty_and_keep_lawful_test_extras(tmp_path,extra_runtime):
+        base=(fixture.FIXTURE/'pyproject.toml').read_bytes().replace(b'dynamic = ["requires-python", "dependencies", "classifiers"]',b'dynamic = ["requires-python", "classifiers"]')
+        details=json.loads((fixture.FIXTURE/'source-metadata.json').read_text())
+        if extra_runtime:details['requires_dist'].append('undeclared-native-bootstrap-package&gt;=99')
+        values=fixture.genuine_observation(tmp_path,modifications={'pyproject.toml':base,'source-metadata.json':json.dumps(details).encode()})
+        result=selection.select_profile(values[3][1],fixture.catalog(),observation=values[-2])
+&gt;       assert result['status']==('UNKNOWN' if extra_runtime else 'CANDIDATE_SOURCE_ENVIRONMENT')
+E       AssertionError: assert 'CANDIDATE_SOURCE_ENVIRONMENT' == 'UNKNOWN'
+E         
+E         - UNKNOWN
+E         + CANDIDATE_SOURCE_ENVIRONMENT
+
+../qualification/native-bootstrap-v44-metadata-review-fix/test_metadata_absent_static_v44.py:17: AssertionError</failure></testcase></testsuite></testsuites>

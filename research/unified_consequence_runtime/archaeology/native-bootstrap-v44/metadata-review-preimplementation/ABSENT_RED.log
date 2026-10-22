@@ -1,0 +1,25 @@
+.F                                                                       [100%]
+=================================== FAILURES ===================================
+_ test_absent_static_dependencies_are_empty_and_keep_lawful_test_extras[True] __
+
+tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-31/test_absent_static_dependencie1')
+extra_runtime = True
+
+    @pytest.mark.parametrize('extra_runtime',[False,True])
+    def test_absent_static_dependencies_are_empty_and_keep_lawful_test_extras(tmp_path,extra_runtime):
+        base=(fixture.FIXTURE/'pyproject.toml').read_bytes().replace(b'dynamic = ["requires-python", "dependencies", "classifiers"]',b'dynamic = ["requires-python", "classifiers"]')
+        details=json.loads((fixture.FIXTURE/'source-metadata.json').read_text())
+        if extra_runtime:details['requires_dist'].append('undeclared-native-bootstrap-package>=99')
+        values=fixture.genuine_observation(tmp_path,modifications={'pyproject.toml':base,'source-metadata.json':json.dumps(details).encode()})
+        result=selection.select_profile(values[3][1],fixture.catalog(),observation=values[-2])
+>       assert result['status']==('UNKNOWN' if extra_runtime else 'CANDIDATE_SOURCE_ENVIRONMENT')
+E       AssertionError: assert 'CANDIDATE_SOURCE_ENVIRONMENT' == 'UNKNOWN'
+E         
+E         - UNKNOWN
+E         + CANDIDATE_SOURCE_ENVIRONMENT
+
+../qualification/native-bootstrap-v44-metadata-review-fix/test_metadata_absent_static_v44.py:17: AssertionError
+- generated xml file: /workspace/qualification/native-bootstrap-v44-metadata-review-fix/ABSENT_RED.xml -
+=========================== short test summary info ============================
+FAILED ../qualification/native-bootstrap-v44-metadata-review-fix/test_metadata_absent_static_v44.py::test_absent_static_dependencies_are_empty_and_keep_lawful_test_extras[True]
+1 failed, 1 passed in 6.26s

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="4" skipped="0" tests="5" time="3.486" timestamp="2026-10-22T00:42:50.692306+00:00" hostname="8ac9339af51c"><testcase classname="qualification.native-bootstrap-v44-metadata-review-fix.test_metadata_review_v44" name="test_no_dynamic_wheel_header_can_license_final_environment_metadata[Requires-Python, Requires-Dist]" time="0.002"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-28/test_no_dynamic_wheel_header_c0')
+field = 'Requires-Python, Requires-Dist'
+
+    @pytest.mark.parametrize('field',['Requires-Python, Requires-Dist','Requires-Python','Description','Undefined, Field'])
+    def test_no_dynamic_wheel_header_can_license_final_environment_metadata(tmp_path,field):
+        raw=fixture.VALID.replace(b'Metadata-Version: 2.1\n',('Metadata-Version: 2.1\nDynamic: '+field+'\n').encode())
+&gt;       with pytest.raises(ValueError):
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+../qualification/native-bootstrap-v44-metadata-review-fix/test_metadata_review_v44.py:15: Failed</failure></testcase><testcase classname="qualification.native-bootstrap-v44-metadata-review-fix.test_metadata_review_v44" name="test_no_dynamic_wheel_header_can_license_final_environment_metadata[Requires-Python]" time="0.001" /><testcase classname="qualification.native-bootstrap-v44-metadata-review-fix.test_metadata_review_v44" name="test_no_dynamic_wheel_header_can_license_final_environment_metadata[Description]" time="0.001"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-28/test_no_dynamic_wheel_header_c2')
+field = 'Description'
+
+    @pytest.mark.parametrize('field',['Requires-Python, Requires-Dist','Requires-Python','Description','Undefined, Field'])
+    def test_no_dynamic_wheel_header_can_license_final_environment_metadata(tmp_path,field):
+        raw=fixture.VALID.replace(b'Metadata-Version: 2.1\n',('Metadata-Version: 2.1\nDynamic: '+field+'\n').encode())
+&gt;       with pytest.raises(ValueError):
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+../qualification/native-bootstrap-v44-metadata-review-fix/test_metadata_review_v44.py:15: Failed</failure></testcase><testcase classname="qualification.native-bootstrap-v44-metadata-review-fix.test_metadata_review_v44" name="test_no_dynamic_wheel_header_can_license_final_environment_metadata[Undefined, Field]" time="0.001"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-28/test_no_dynamic_wheel_header_c3')
+field = 'Undefined, Field'
+
+    @pytest.mark.parametrize('field',['Requires-Python, Requires-Dist','Requires-Python','Description','Undefined, Field'])
+    def test_no_dynamic_wheel_header_can_license_final_environment_metadata(tmp_path,field):
+        raw=fixture.VALID.replace(b'Metadata-Version: 2.1\n',('Metadata-Version: 2.1\nDynamic: '+field+'\n').encode())
+&gt;       with pytest.raises(ValueError):
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+../qualification/native-bootstrap-v44-metadata-review-fix/test_metadata_review_v44.py:15: Failed</failure></testcase><testcase classname="qualification.native-bootstrap-v44-metadata-review-fix.test_metadata_review_v44" name="test_unexpected_unmarked_dependency_in_static_project_is_conflicting_metadata" time="3.404"><failure message="AssertionError: assert 'CANDIDATE_SOURCE_ENVIRONMENT' == 'UNKNOWN'&#10;  &#10;  - UNKNOWN&#10;  + CANDIDATE_SOURCE_ENVIRONMENT">tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-28/test_unexpected_unmarked_depen0')
+
+    def test_unexpected_unmarked_dependency_in_static_project_is_conflicting_metadata(tmp_path):
+        base=(fixture.FIXTURE/'pyproject.toml').read_bytes()
+        base=base.replace(b'dynamic = ["requires-python", "dependencies", "classifiers"]',b'dynamic = ["requires-python", "classifiers"]\ndependencies = []')
+        details=json.loads((fixture.FIXTURE/'source-metadata.json').read_text())
+        details['requires_dist'].append('undeclared-native-bootstrap-package&gt;=99')
+        values=fixture.genuine_observation(tmp_path,modifications={'pyproject.toml':base,'source-metadata.json':json.dumps(details).encode()})
+        observation,snapshot=values[-2],values[3]
+        result=selection.select_profile(snapshot[1],fixture.catalog(),observation=observation)
+&gt;       assert result['status']=='UNKNOWN'
+E       AssertionError: assert 'CANDIDATE_SOURCE_ENVIRONMENT' == 'UNKNOWN'
+E         
+E         - UNKNOWN
+E         + CANDIDATE_SOURCE_ENVIRONMENT
+
+../qualification/native-bootstrap-v44-metadata-review-fix/test_metadata_review_v44.py:26: AssertionError</failure></testcase></testsuite></testsuites>

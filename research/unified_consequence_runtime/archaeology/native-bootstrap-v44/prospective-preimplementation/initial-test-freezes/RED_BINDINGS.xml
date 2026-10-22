@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="12" skipped="0" tests="13" time="0.084" timestamp="2026-10-22T00:30:51.203717+00:00" hostname="8ac9339af51c"><testcase classname="research.unified_consequence_runtime.test_qualify_native_frontier_v44" name="test_versioned_controller_preserves_original_algorithm_and_native_authority" time="0.001"><failure message="AssertionError: V44 prospective transport is not implemented&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/qualify_native_frontier_v44.py').is_file">def test_versioned_controller_preserves_original_algorithm_and_native_authority():
+&gt;       current = controller()
+
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py:36: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def controller():
+        path = HERE / 'qualify_native_frontier_v44.py'
+&gt;       assert path.is_file(), 'V44 prospective transport is not implemented'
+E       AssertionError: V44 prospective transport is not implemented
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/qualify_native_frontier_v44.py').is_file
+
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py:23: AssertionError</failure></testcase><testcase classname="research.unified_consequence_runtime.test_qualify_native_frontier_v44" name="test_preserved_v43_controller_and_old_verifier_bytes" time="0.000" /><testcase classname="research.unified_consequence_runtime.test_qualify_native_frontier_v44" name="test_new_bootstrap_gate_is_required_after_preserved_gates" time="0.000"><failure message="AssertionError: V44 prospective transport is not implemented&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/qualify_native_frontier_v44.py').is_file">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x7f4c3eb87fe0&gt;
+
+    def test_new_bootstrap_gate_is_required_after_preserved_gates(monkeypatch):
+&gt;       current = controller()
+
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py:67: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def controller():
+        path = HERE / 'qualify_native_frontier_v44.py'
+&gt;       assert path.is_file(), 'V44 prospective transport is not implemented'
+E       AssertionError: V44 prospective transport is not implemented
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/qualify_native_frontier_v44.py').is_file
+
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py:23: AssertionError</failure></testcase><testcase classname="research.unified_consequence_runtime.test_qualify_native_frontier_v44" name="test_bootstrap_gate_rejects_incomplete_or_forged_descriptor[status]" time="0.000"><failure message="AssertionError: V44 prospective transport is not implemented&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/qualify_native_frontier_v44.py').is_file">field = 'status'
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x7f4c3eb9a720&gt;
+
+    @pytest.mark.parametrize('field', ('status', 'source_commit', 'artifact_sha256', 'run_id', 'artifact_id'))
+    def test_bootstrap_gate_rejects_incomplete_or_forged_descriptor(field, monkeypatch):
+&gt;       current = controller()
+
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py:79: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def controller():
+        path = HERE / 'qualify_native_frontier_v44.py'
+&gt;       assert path.is_file(), 'V44 prospective transport is not implemented'
+E       AssertionError: V44 prospective transport is not implemented
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/qualify_native_frontier_v44.py').is_file
+
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py:23: AssertionError</failure></testcase><testcase classname="research.unified_consequence_runtime.test_qualify_native_frontier_v44" name="test_bootstrap_gate_rejects_incomplete_or_forged_descriptor[source_commit]" time="0.000"><failure message="AssertionError: V44 prospective transport is not implemented&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/qualify_native_frontier_v44.py').is_file">field = 'source_commit'
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x7f4c3eb9bd70&gt;
+
+    @pytest.mark.parametrize('field', ('status', 'source_commit', 'artifact_sha256', 'run_id', 'artifact_id'))
+    def test_bootstrap_gate_rejects_incomplete_or_forged_descriptor(field, monkeypatch):
+&gt;       current = controller()
+
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py:79: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def controller():
+        path = HERE / 'qualify_native_frontier_v44.py'
+&gt;       assert path.is_file(), 'V44 prospective transport is not implemented'
+E       AssertionError: V44 prospective transport is not implemented
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/qualify_native_frontier_v44.py').is_file
+
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py:23: AssertionError</failure></testcase><testcase classname="research.unified_consequence_runtime.test_qualify_native_frontier_v44" name="test_bootstrap_gate_rejects_incomplete_or_forged_descriptor[artifact_sha256]" time="0.000"><failure message="AssertionError: V44 prospective transport is not implemented&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/qualify_native_frontier_v44.py').is_file">field = 'artifact_sha256'
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x7f4c3eb989b0&gt;
+
+    @pytest.mark.parametrize('field', ('status', 'source_commit', 'artifact_sha256', 'run_id', 'artifact_id'))
+    def test_bootstrap_gate_rejects_incomplete_or_forged_descriptor(field, monkeypatch):
+&gt;       current = controller()
+
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py:79: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def controller():
+        path = HERE / 'qualify_native_frontier_v44.py'
+&gt;       assert path.is_file(), 'V44 prospective transport is not implemented'
+E       AssertionError: V44 prospective transport is not implemented
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/qualify_native_frontier_v44.py').is_file
+
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py:23: AssertionError</failure></testcase><testcase classname="research.unified_consequence_runtime.test_qualify_native_frontier_v44" name="test_bootstrap_gate_rejects_incomplete_or_forged_descriptor[run_id]" time="0.000"><failure message="AssertionError: V44 prospective transport is not implemented&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/qualify_native_frontier_v44.py').is_file">field = 'run_id'
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x7f4c3eb995e0&gt;
+
+    @pytest.mark.parametrize('field', ('status', 'source_commit', 'artifact_sha256', 'run_id', 'artifact_id'))
+    def test_bootstrap_gate_rejects_incomplete_or_forged_descriptor(field, monkeypatch):
+&gt;       current = controller()
+
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py:79: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def controller():
+        path = HERE / 'qualify_native_frontier_v44.py'
+&gt;       assert path.is_file(), 'V44 prospective transport is not implemented'
+E       AssertionError: V44 prospective transport is not implemented
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/qualify_native_frontier_v44.py').is_file
+
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py:23: AssertionError</failure></testcase><testcase classname="research.unified_consequence_runtime.test_qualify_native_frontier_v44" name="test_bootstrap_gate_rejects_incomplete_or_forged_descriptor[artifact_id]" time="0.000"><failure message="AssertionError: V44 prospective transport is not implemented&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/qualify_native_frontier_v44.py').is_file">field = 'artifact_id'
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x7f4c3eb9a8a0&gt;
+
+    @pytest.mark.parametrize('field', ('status', 'source_commit', 'artifact_sha256', 'run_id', 'artifact_id'))
+    def test_bootstrap_gate_rejects_incomplete_or_forged_descriptor(field, monkeypatch):
+&gt;       current = controller()
+
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py:79: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def controller():
+        path = HERE / 'qualify_native_frontier_v44.py'
+&gt;       assert path.is_file(), 'V44 prospective transport is not implemented'
+E       AssertionError: V44 prospective transport is not implemented
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/qualify_native_frontier_v44.py').is_file
+
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py:23: AssertionError</failure></testcase><testcase classname="research.unified_consequence_runtime.test_qualify_native_frontier_v44" name="test_withdrawn_bootstrap_preflight_precedes_cached_and_uncached_native_receipt[False]" time="0.000"><failure message="AssertionError: V44 prospective transport is not implemented&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/qualify_native_frontier_v44.py').is_file">cached = False
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x7f4c3eb9b620&gt;
+
+    @pytest.mark.parametrize('cached', (False, True))
+    def test_withdrawn_bootstrap_preflight_precedes_cached_and_uncached_native_receipt(cached, monkeypatch):
+&gt;       current = controller()
+
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py:92: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def controller():
+        path = HERE / 'qualify_native_frontier_v44.py'
+&gt;       assert path.is_file(), 'V44 prospective transport is not implemented'
+E       AssertionError: V44 prospective transport is not implemented
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/qualify_native_frontier_v44.py').is_file
+
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py:23: AssertionError</failure></testcase><testcase classname="research.unified_consequence_runtime.test_qualify_native_frontier_v44" name="test_withdrawn_bootstrap_preflight_precedes_cached_and_uncached_native_receipt[True]" time="0.000"><failure message="AssertionError: V44 prospective transport is not implemented&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/qualify_native_frontier_v44.py').is_file">cached = True
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x7f4c3ebbe840&gt;
+
+    @pytest.mark.parametrize('cached', (False, True))
+    def test_withdrawn_bootstrap_preflight_precedes_cached_and_uncached_native_receipt(cached, monkeypatch):
+&gt;       current = controller()
+
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py:92: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def controller():
+        path = HERE / 'qualify_native_frontier_v44.py'
+&gt;       assert path.is_file(), 'V44 prospective transport is not implemented'
+E       AssertionError: V44 prospective transport is not implemented
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/qualify_native_frontier_v44.py').is_file
+
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py:23: AssertionError</failure></testcase><testcase classname="research.unified_consequence_runtime.test_qualify_native_frontier_v44" name="test_original_equal_pass_fail_eligibility_and_order" time="0.000"><failure message="AssertionError: V44 prospective transport is not implemented&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/qualify_native_frontier_v44.py').is_file">def test_original_equal_pass_fail_eligibility_and_order():
+&gt;       current = controller()
+
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py:110: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def controller():
+        path = HERE / 'qualify_native_frontier_v44.py'
+&gt;       assert path.is_file(), 'V44 prospective transport is not implemented'
+E       AssertionError: V44 prospective transport is not implemented
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/qualify_native_frontier_v44.py').is_file
+
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py:23: AssertionError</failure></testcase><testcase classname="research.unified_consequence_runtime.test_qualify_native_frontier_v44" name="test_bootstrap_costs_are_separate_from_unchanged_native_counters" time="0.000"><failure message="AssertionError: V44 prospective transport is not implemented&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/qualify_native_frontier_v44.py').is_file">def test_bootstrap_costs_are_separate_from_unchanged_native_counters():
+&gt;       current = controller()
+
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py:125: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def controller():
+        path = HERE / 'qualify_native_frontier_v44.py'
+&gt;       assert path.is_file(), 'V44 prospective transport is not implemented'
+E       AssertionError: V44 prospective transport is not implemented
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/qualify_native_frontier_v44.py').is_file
+
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py:23: AssertionError</failure></testcase><testcase classname="research.unified_consequence_runtime.test_qualify_native_frontier_v44" name="test_no_target_identity_or_winning_method_in_new_controller" time="0.000"><failure message="AssertionError: V44 prospective transport is not implemented&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/qualify_native_frontier_v44.py').is_file">def test_no_target_identity_or_winning_method_in_new_controller():
+&gt;       current = controller()
+
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py:142: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def controller():
+        path = HERE / 'qualify_native_frontier_v44.py'
+&gt;       assert path.is_file(), 'V44 prospective transport is not implemented'
+E       AssertionError: V44 prospective transport is not implemented
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/qualify_native_frontier_v44.py').is_file
+
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py:23: AssertionError</failure></testcase></testsuite></testsuites>

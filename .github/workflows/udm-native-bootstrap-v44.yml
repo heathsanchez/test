@@ -1,0 +1,201 @@
+name: UDM V44 independently verified native metadata bootstrap
+
+on:
+  push:
+    branches: [research/udm-native-bootstrap-v44-20261022]
+  workflow_dispatch:
+    inputs:
+      expected_source_commit:
+        description: Exact committed source on the isolated V44 branch
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: udm-native-bootstrap-v44-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  qualify-native-bootstrap:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[qualify-bootstrap-v44]')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      GIT_OPTIONAL_LOCKS: '0'
+      PYTHONDONTWRITEBYTECODE: '1'
+      PYTHONUNBUFFERED: '1'
+      PYTHONPATH: /workspace/udm-v54
+      UDM_REPO: /workspace/udm-v54
+      UDM_COMPONENTS: /workspace/components
+      UDM_EVIDENCE: /workspace/qualification/native-bootstrap-v44-ci-${{ github.run_id }}-${{ github.run_attempt }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.14'
+      - name: Retain checkout index before cloning exact canonical source
+        env:
+          EXPECTED_SOURCE_COMMIT: ${{ inputs.expected_source_commit || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$EXPECTED_SOURCE_COMMIT" = "$GITHUB_SHA"
+          sudo install -d -o "$(id -u)" -g "$(id -g)" /workspace
+          test ! -e "$UDM_REPO"
+          mkdir -p "$UDM_EVIDENCE"
+          python -B - <<'PY'
+          import json,os,subprocess
+          from pathlib import Path
+          from research.unified_consequence_runtime.audit_index_v4 import snapshot_indexes,compare_indexes
+          from research.unified_consequence_runtime.qualify_experiment_interface_v43 import _retain_indexes
+          root=Path(os.environ['GITHUB_WORKSPACE']);out=Path(os.environ['UDM_EVIDENCE'])
+          before=snapshot_indexes(root);_retain_indexes(before,out/'checkout-index-before-clone')
+          try:
+              subprocess.run(['git','clone','--no-hardlinks',str(root),os.environ['UDM_REPO']],check=True)
+              subprocess.run(['git','-C',os.environ['UDM_REPO'],'checkout','--detach',os.environ['GITHUB_SHA']],check=True)
+          finally:
+              after=snapshot_indexes(root);_retain_indexes(after,out/'checkout-index-after-clone')
+              changes=compare_indexes(before,after)
+              (out/'CLONE_INDEX_AUDIT.json').write_text(json.dumps({'before':before,'after':after,'changes':changes},sort_keys=True)+'\n')
+              if changes:raise ValueError('checkout index changed during source cloning')
+          (out/'CI_BOUNDARY.json').write_text(json.dumps({'schema':'UDM_NATIVE_BOOTSTRAP_CI_BOUNDARY_V44',
+              'source_commit':os.environ['GITHUB_SHA'],'run_id':os.environ['GITHUB_RUN_ID'],
+              'scope':'NATIVE_METADATA_BOOTSTRAP_INFRASTRUCTURE_ONLY','prospective_source_access':False,
+              'coding_agent_executed':False,'verdicts':{f'G{i}':'UNKNOWN' for i in range(2,7)},
+              'external_enforcement':'UNKNOWN_NONBYPASSABILITY'},sort_keys=True)+'\n')
+          PY
+      - name: Prepare original independently pinned runtime catalog
+        working-directory: /workspace/udm-v54
+        run: |
+          set -euo pipefail
+          python -B -m venv "$RUNNER_TEMP/v44-controller"
+          "$RUNNER_TEMP/v44-controller/bin/python" -B -m pip install --disable-pip-version-check --no-input pytest==8.3.5 packaging==26.3 2>&1 | tee "$UDM_EVIDENCE/controller-install.log"
+          "$RUNNER_TEMP/v44-controller/bin/python" -B research/unified_consequence_runtime/archaeology/native-environment-v3/bootstrap/prepare_runtimes.py --catalog research/unified_consequence_runtime/archaeology/native-environment-v3/ENVIRONMENT_CATALOG.json --dest-root "$UDM_EVIDENCE/original-runtimes" --out "$UDM_EVIDENCE/BARE_RUNTIME_PATHS.json" 2>&1 | tee "$UDM_EVIDENCE/runtime-bootstrap.log"
+          "$RUNNER_TEMP/v44-controller/bin/python" -B research/unified_consequence_runtime/archaeology/native-authority-v41/bootstrap/prepare_profile.py --catalog research/unified_consequence_runtime/archaeology/native-authority-v41/ENVIRONMENT_CATALOG.json --runtimes "$UDM_EVIDENCE/BARE_RUNTIME_PATHS.json" --dest-root /workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final --runtime-out "$UDM_EVIDENCE/RUNTIME_PATHS.json" --out "$UDM_EVIDENCE/PROFILE_PREPARATION.json" 2>&1 | tee "$UDM_EVIDENCE/profile-bootstrap.log"
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/test
+          ref: c9092fa57c8943e638f95689cd36e6a63310f41e
+          path: ci-stage/components/development
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/metatron
+          ref: b9d1b5cc10477188be6e55617699be60e70f6dad
+          path: ci-stage/components/metatron
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/realitygraph
+          ref: 50c43b14e7272469bc51ff7204dec07682a996d7
+          path: ci-stage/components/flash
+          persist-credentials: false
+      - name: Retain original authority source checkouts
+        run: |
+          set -euo pipefail
+          test ! -e "$UDM_COMPONENTS"
+          mv "$GITHUB_WORKSPACE/ci-stage/components" "$UDM_COMPONENTS"
+      - name: Transport exact frozen acceptance bytes to their original declared fixture path
+        working-directory: /workspace/udm-v54
+        run: |
+          set -euo pipefail
+          python -B - <<'PY'
+          import hashlib,json,os,stat
+          from pathlib import Path
+          from research.unified_consequence_runtime.qualify_experiment_interface_v43 import _tree,_git,index_interval
+          root=Path(os.environ['UDM_REPO']);out=Path(os.environ['UDM_EVIDENCE'])
+          prefix='research/unified_consequence_runtime/archaeology/native-bootstrap-v44/preimplementation/'
+          destination=Path('/workspace/qualification/native-bootstrap-v44-preimplementation')
+          if destination.exists() or destination.is_symlink():raise ValueError('new empty frozen-fixture transport destination required')
+          destination.mkdir(parents=True)
+          records={}
+          with index_interval(root,out/'acceptance-transport-source-indexes'):
+              commit=_git(root,'rev-parse','HEAD').decode().strip()
+              for name,row in sorted(_tree(root,commit).items()):
+                  if not name.startswith(prefix):continue
+                  source=root/name;relative=name[len(prefix):]
+                  if source.is_symlink() or not source.is_file() or row['mode'] not in ('100644','100755'):
+                      raise ValueError('nonregular acceptance transport source')
+                  raw=source.read_bytes()
+                  if hashlib.sha1(b'blob '+str(len(raw)).encode()+b'\0'+raw).hexdigest()!=row['oid']:
+                      raise ValueError('acceptance bytes differ from committed object')
+                  target=destination/relative;target.parent.mkdir(parents=True,exist_ok=True)
+                  with target.open('xb') as stream:stream.write(raw)
+                  target.chmod(int(row['mode'],8)&0o777)
+                  if target.read_bytes()!=raw or stat.S_IMODE(target.stat().st_mode)!=(int(row['mode'],8)&0o777):
+                      raise ValueError('transport changed frozen acceptance bytes/mode')
+                  records[relative]={'sha256':hashlib.sha256(raw).hexdigest(),'bytes':len(raw),'git_mode':row['mode']}
+              actual={p.relative_to(destination).as_posix() for p in destination.rglob('*') if p.is_file()}
+              if not records or actual!=set(records) or any(p.is_symlink() for p in destination.rglob('*')):
+                  raise ValueError('frozen acceptance transport has extra or missing entries')
+          (out/'ACCEPTANCE_FIXTURE_TRANSPORT.json').write_text(json.dumps({'schema':'UDM_FROZEN_ACCEPTANCE_PATH_TRANSPORT_V44',
+              'status':'PASS_EXACT_COMMITTED_BYTES_AND_MODES','source_commit':commit,'source_prefix':prefix,
+              'destination':str(destination),'files':records,'scope':'Acceptance infrastructure path transport only; no upstream source/test shim or scientific result.'},sort_keys=True)+'\n')
+          PY
+      - name: Freeze exact source, acceptance and executable environment before qualification
+        working-directory: /workspace/udm-v54
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/v44-controller/bin/python" -B -m research.unified_consequence_runtime.qualify_native_bootstrap_v44 --write-freeze --repo "$UDM_REPO" --runtimes "$UDM_EVIDENCE/RUNTIME_PATHS.json" --out "$UDM_EVIDENCE/FREEZE.json" 2>&1 | tee "$UDM_EVIDENCE/freeze.log"
+      - name: Execute original backend metadata, protected native assertions and causal restart
+        working-directory: /workspace/udm-v54
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/v44-controller/bin/python" -B -m research.unified_consequence_runtime.qualify_native_bootstrap_v44 --repo "$UDM_REPO" --components "$UDM_COMPONENTS" --freeze "$UDM_EVIDENCE/FREEZE.json" --out "$UDM_EVIDENCE/run" 2>&1 | tee "$UDM_EVIDENCE/qualification.log"
+      - name: Independently audit frozen native runtime bytes
+        if: always()
+        working-directory: /workspace/udm-v54
+        run: |
+          set -euo pipefail
+          if test -f "$UDM_EVIDENCE/FREEZE.json"; then
+            "$RUNNER_TEMP/v44-controller/bin/python" -B research/unified_consequence_runtime/archaeology/native-environment-v3/bootstrap/prepare_runtimes.py --audit-freeze "$UDM_EVIDENCE/FREEZE.json" --out "$UDM_EVIDENCE/POST_CONTROL_RUNTIME_AUDIT.json"
+          fi
+      - name: Require native infrastructure warrant and preserve scientific UNKNOWNs
+        working-directory: /workspace/udm-v54
+        run: |
+          set -euo pipefail
+          python -B - <<'PY'
+          import json,os
+          from pathlib import Path
+          out=Path(os.environ['UDM_EVIDENCE']);r=json.loads((out/'run/RESULT.json').read_text())
+          assert r['schema']=='UDM_NATIVE_BOOTSTRAP_QUALIFICATION_V44'
+          assert r['status']=='QUALIFIED_BOUNDED_NATIVE_METADATA_BOOTSTRAP_ONLY'
+          assert all(r['verdicts'][f'G{i}']=='UNKNOWN' for i in range(2,7))
+          assert not r['prospective_task_sources_accessed'] and not r['coding_agent_executed']
+          assert r['contracts']['junit']['tests']>0 and not any(r['contracts']['junit'][k] for k in ['failures','errors','skipped'])
+          assert r['inherited_controls']['status']=='PASS' and r['inherited_controls']['tests']==27
+          assert r['native_attempts']['delta']['native_calls']>0 and r['native_attempts']['delta']['collection_calls']>0
+          assert r['build_attempts']['build_calls']>0 and not r['index_audit']['changes']
+          assert r['native_supplement']['restart']['status']=='PASS_SEPARATE_PROCESS_METADATA_AND_PROTECTED_NATIVE_EXECUTION'
+          assert json.loads((out/'POST_CONTROL_RUNTIME_AUDIT.json').read_text())['status']=='PASS_FROZEN_RUNTIME_BYTES'
+          with Path(os.environ['GITHUB_STEP_SUMMARY']).open('a') as stream:
+              stream.write('Qualified bounded native metadata bootstrap and original native causal restart. Admission infrastructure only; prospective G2–G6 remain UNKNOWN.\n')
+          PY
+      - name: Archive exact committed source and every successful or failed attempt
+        if: always()
+        working-directory: /workspace/udm-v54
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/v44-controller/bin/python" -B -m research.unified_consequence_runtime.qualify_native_bootstrap_v44 --archive --repo "$UDM_REPO" --components "$UDM_COMPONENTS" --freeze "$UDM_EVIDENCE/FREEZE.json" --out "$UDM_EVIDENCE" --preparation /workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-bootstrap-v44-${{ github.sha }}-${{ github.run_attempt }}
+          path: |
+            /workspace/qualification/native-bootstrap-v44-ci-${{ github.run_id }}-${{ github.run_attempt }}/SOURCE.tar.gz
+            /workspace/qualification/native-bootstrap-v44-ci-${{ github.run_id }}-${{ github.run_attempt }}/NATIVE_BOOTSTRAP_V44_EVIDENCE.tar.gz
+            /workspace/qualification/native-bootstrap-v44-ci-${{ github.run_id }}-${{ github.run_attempt }}/MANIFEST.json
+            /workspace/qualification/native-bootstrap-v44-ci-${{ github.run_id }}-${{ github.run_attempt }}/COMPONENT_*_SOURCE.tar.gz
+            /workspace/qualification/native-bootstrap-v44-ci-${{ github.run_id }}-${{ github.run_attempt }}/COMPONENT_SOURCE_MANIFEST.json
+            /workspace/qualification/native-bootstrap-v44-ci-${{ github.run_id }}-${{ github.run_attempt }}/FREEZE.json
+            /workspace/qualification/native-bootstrap-v44-ci-${{ github.run_id }}-${{ github.run_attempt }}/run/RESULT.json
+            /workspace/qualification/native-bootstrap-v44-ci-${{ github.run_id }}-${{ github.run_attempt }}/POST_CONTROL_RUNTIME_AUDIT.json
+            /workspace/qualification/native-bootstrap-v44-ci-${{ github.run_id }}-${{ github.run_attempt }}/*.log
+            /workspace/qualification/native-bootstrap-v44-ci-${{ github.run_id }}-${{ github.run_attempt }}/CI_BOUNDARY.json
+          include-hidden-files: true
+          retention-days: 90

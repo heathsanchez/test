@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="0.098" timestamp="2026-10-22T00:48:34.666414+00:00" hostname="8ac9339af51c"><testcase classname="research.unified_consequence_runtime.test_native_environment_v44" name="test_original_backend_identity_and_extended_native_identity_remain_distinct" time="0.059"><failure message="AttributeError: module 'research.unified_consequence_runtime.native_environment_v44' has no attribute 'metadata_environment_identity'">def test_original_backend_identity_and_extended_native_identity_remain_distinct():
+        from research.unified_consequence_runtime import decisive_native_verify as original
+        from research.unified_consequence_runtime import native_execution_v43 as native
+        interpreter = '/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/venv/bin/python'
+&gt;       backend = operation().metadata_environment_identity(interpreter)
+E       AttributeError: module 'research.unified_consequence_runtime.native_environment_v44' has no attribute 'metadata_environment_identity'
+
+research/unified_consequence_runtime/test_native_environment_v44.py:115: AttributeError</failure></testcase></testsuite></testsuites>

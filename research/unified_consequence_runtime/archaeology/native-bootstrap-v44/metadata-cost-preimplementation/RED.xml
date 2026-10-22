@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="3" skipped="0" tests="3" time="0.076" timestamp="2026-10-22T00:34:20.669396+00:00" hostname="8ac9339af51c"><testcase classname="qualification.native-bootstrap-v44-metadata-attempts.test_metadata_attempts_v44" name="test_no_command_before_environment_refusal" time="0.001"><failure message="AttributeError: module 'research.unified_consequence_runtime.native_metadata_v44' has no attribute 'attempt_snapshot'">tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-21/test_no_command_before_environ0')
+
+    def test_no_command_before_environment_refusal(tmp_path):
+&gt;       before=metadata.attempt_snapshot()
+E       AttributeError: module 'research.unified_consequence_runtime.native_metadata_v44' has no attribute 'attempt_snapshot'
+
+../qualification/native-bootstrap-v44-metadata-attempts/test_metadata_attempts_v44.py:12: AttributeError</failure></testcase><testcase classname="qualification.native-bootstrap-v44-metadata-attempts.test_metadata_attempts_v44" name="test_failed_original_backend_command_is_retained_and_charged" time="0.000"><failure message="AttributeError: module 'research.unified_consequence_runtime.native_metadata_v44' has no attribute 'attempt_snapshot'">tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-21/test_failed_original_backend_c0')
+
+    def test_failed_original_backend_command_is_retained_and_charged(tmp_path):
+&gt;       before=metadata.attempt_snapshot()
+E       AttributeError: module 'research.unified_consequence_runtime.native_metadata_v44' has no attribute 'attempt_snapshot'
+
+../qualification/native-bootstrap-v44-metadata-attempts/test_metadata_attempts_v44.py:21: AttributeError</failure></testcase><testcase classname="qualification.native-bootstrap-v44-metadata-attempts.test_metadata_attempts_v44" name="test_original_acquisition_and_independent_rebuild_count_separately" time="0.000"><failure message="AttributeError: module 'research.unified_consequence_runtime.native_metadata_v44' has no attribute 'attempt_snapshot'">tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-21/test_original_acquisition_and_0')
+
+    def test_original_acquisition_and_independent_rebuild_count_separately(tmp_path):
+&gt;       before=metadata.attempt_snapshot()
+E       AttributeError: module 'research.unified_consequence_runtime.native_metadata_v44' has no attribute 'attempt_snapshot'
+
+../qualification/native-bootstrap-v44-metadata-attempts/test_metadata_attempts_v44.py:35: AttributeError</failure></testcase></testsuite></testsuites>

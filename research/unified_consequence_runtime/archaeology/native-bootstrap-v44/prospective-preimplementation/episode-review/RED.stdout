@@ -1,0 +1,68 @@
+F..                                                                      [100%]
+=================================== FAILURES ===================================
+_ test_episode_reconstruction_keeps_bootstrap_prefix_for_tracked_and_generated_sources[None-False] _
+
+generated = None, already_prefixed = False
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f5b7e499f40>
+
+    @pytest.mark.parametrize('generated,already_prefixed', ((None, False), ({}, False), ({}, True)))
+    def test_episode_reconstruction_keeps_bootstrap_prefix_for_tracked_and_generated_sources(
+            generated, already_prefixed, monkeypatch):
+        current = controller()
+        record = {'source_free_wiring_token': True}
+        machine = SimpleNamespace(get=lambda key: record)
+        binding = {'materialization': None if generated is None else {
+                       'capability_id': 'build', 'consequence_id': 'build-invocation'},
+                   'bootstrap': {'capability_id': 'metadata', 'consequence_id': 'metadata-invocation',
+                                 'environment_selection_id': 'environment-selection'}}
+        prefix = (() if generated is None else ('build', 'build-invocation')) + (
+            'metadata', 'metadata-invocation', 'environment-selection')
+        supplied = (*prefix, 'policy') if already_prefixed else ('policy',)
+        seen = []
+    
+        def preflight(actual, actual_machine):
+            assert actual is record and actual_machine is machine
+            seen.append('live-bootstrap')
+            return binding
+    
+        def original_boundary(actual_machine, actual_episode, actual_order, actual_budget, *,
+                              contract, dependencies, **kwargs):
+            assert actual_machine is machine
+            assert dependencies == (*prefix, 'policy')
+            assert seen == ['live-bootstrap']
+            raise PermissionError('stopped at unchanged original episode checker')
+    
+        monkeypatch.setattr(current, '_preflight_record', preflight)
+        monkeypatch.setattr(current, '_original_check_episode', original_boundary)
+        with pytest.raises(PermissionError, match='unchanged original episode checker'):
+>           current._check_episode(machine, {'attempts': ['record']}, ['candidate'], 8,
+                                   contract={'generated_build': generated}, dependencies=supplied)
+
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py:192: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+research/unified_consequence_runtime/qualify_native_frontier_v43.py:417: in _check_episode
+    return _original_check_episode(machine, episode, order, budget, contract=contract, dependencies=dependencies, **kwargs)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+actual_machine = namespace(get=<function test_episode_reconstruction_keeps_bootstrap_prefix_for_tracked_and_generated_sources.<locals>.<lambda> at 0x7f5b7e28d6c0>)
+actual_episode = {'attempts': ['record']}, actual_order = ['candidate']
+actual_budget = 8, contract = {'generated_build': None}
+dependencies = ('policy',), kwargs = {}, @py_assert1 = False
+@py_assert2 = ('metadata', 'metadata-invocation', 'environment-selection', 'policy')
+@py_format4 = "('policy',) == ('metadata', ...on', 'policy')\n~\n~At index 0 diff: 'policy' != 'metadata'\n~Right contains 3 more items, first extra item: 'metadata-invocation'\n~Use -v to get more diff"
+
+    def original_boundary(actual_machine, actual_episode, actual_order, actual_budget, *,
+                          contract, dependencies, **kwargs):
+        assert actual_machine is machine
+>       assert dependencies == (*prefix, 'policy')
+E       AssertionError: assert ('policy',) == ('metadata', ...on', 'policy')
+E         
+E         At index 0 diff: 'policy' != 'metadata'
+E         Right contains 3 more items, first extra item: 'metadata-invocation'
+E         Use -v to get more diff
+
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py:185: AssertionError
+- generated xml file: /workspace/qualification/native-bootstrap-v44-prospective-preparation/episode-review/RED.xml -
+=========================== short test summary info ============================
+FAILED research/unified_consequence_runtime/test_qualify_native_frontier_v44.py::test_episode_reconstruction_keeps_bootstrap_prefix_for_tracked_and_generated_sources[None-False]
+1 failed, 2 passed, 14 deselected in 0.15s

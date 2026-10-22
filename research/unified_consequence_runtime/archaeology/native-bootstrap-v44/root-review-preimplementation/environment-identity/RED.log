@@ -1,0 +1,16 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_ test_original_backend_identity_and_extended_native_identity_remain_distinct __
+
+    def test_original_backend_identity_and_extended_native_identity_remain_distinct():
+        from research.unified_consequence_runtime import decisive_native_verify as original
+        from research.unified_consequence_runtime import native_execution_v43 as native
+        interpreter = '/workspace/qualification/native-authority-v41-profile-preparation/modern-runtime-final/venv/bin/python'
+>       backend = operation().metadata_environment_identity(interpreter)
+E       AttributeError: module 'research.unified_consequence_runtime.native_environment_v44' has no attribute 'metadata_environment_identity'
+
+research/unified_consequence_runtime/test_native_environment_v44.py:115: AttributeError
+- generated xml file: /workspace/qualification/native-bootstrap-v44-root-preimplementation/environment-identity-controls/RED.xml -
+=========================== short test summary info ============================
+FAILED research/unified_consequence_runtime/test_native_environment_v44.py::test_original_backend_identity_and_extended_native_identity_remain_distinct
+1 failed, 10 deselected in 0.10s

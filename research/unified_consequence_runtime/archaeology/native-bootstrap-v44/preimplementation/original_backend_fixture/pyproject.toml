@@ -1,0 +1,16 @@
+[build-system]
+requires = []
+build-backend = "bootstrap_fixture_backend"
+backend-path = ["backend"]
+
+[project]
+name = "native-bootstrap-alpha"
+version = "1.0.0"
+dynamic = ["requires-python", "dependencies", "classifiers"]
+
+[project.optional-dependencies]
+test = ["pytest>=7"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--import-mode=importlib"

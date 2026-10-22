@@ -1,0 +1,69 @@
+{
+  "findings": [
+    {
+      "file": "native_environment_v44.py",
+      "finding": "Mixed supported dynamic fields and unsupported dynamic optional-dependencies activate backend builds even though selector knows it cannot close the residual. Failclosed later but costs and minimal justified selection incorrect.",
+      "function": "diagnose",
+      "id": "R1",
+      "requested_control": "Mixed dynamic dependencies+optional-dependencies should refuse before backend invocation.",
+      "severity": "MEDIUM",
+      "status": "OPEN_REPORTED"
+    },
+    {
+      "file": "native_environment_v44.py",
+      "finding": "Perprofile attempt build_calls initialized0 and never updated after actual MetadataRuntime.admit/execute or failed backend paths. Aggregate process counters do not make these serialized perprofile zeros correct.",
+      "function": "provision.choose",
+      "id": "R2",
+      "requested_control": "Retain actual attempt_snapshot delta in finally for successful and failed profile attempts; label nested cost intervals nonadditive.",
+      "severity": "MEDIUM",
+      "status": "OPEN_REPORTED"
+    },
+    {
+      "evidence": "SOURCE_FREE_METADATA_GRAMMAR_REVIEW.json",
+      "file": "native_metadata_v44.py",
+      "finding": "Invalid Dynamic header comma-list Requires-Python, Requires-Dist accepted while exact Dynamic Requires-Python refuses. Strict singlefield grammar absent.",
+      "function": "parse_wheel_metadata",
+      "id": "R3",
+      "severity": "MEDIUM",
+      "status": "OPEN_REPORTED_REPRODUCED_DATA_ONLY"
+    },
+    {
+      "file": "native_environment_v44.py",
+      "finding": "Checks same BASE identity and protocol plus originalnativecontext, but does not prove nativeprofile was selected by this exact metadata observation. An arbitrary same-source/same-protocol witness could be grafted as artificial dependency. Independent native outcome correctness remains protected.",
+      "function": "preflight_bootstrap",
+      "id": "R4",
+      "requested_control": "Bind and independently reconstruct profile/selection relation or bound causal-use claim to verified wrapper path.",
+      "severity": "CAUSAL_SCOPE_QUESTION",
+      "status": "REPORTED_REQUIRES_BOUNDARY_DECISION"
+    },
+    {
+      "file": "native_environment_selection_v44.py",
+      "finding": "Static dependencies checked as subset of all observed Requires-Dist; unexpected unmarked runtime Requires-Dist can be ignored when only classifiers/requires-python dynamic. Consider UNKNOWN conflicting backend metadata; extra-marked optional requirements require separate semantics.",
+      "function": "_view",
+      "id": "R5",
+      "severity": "LOW_SCOPE",
+      "status": "REPORTED_TO_IMPLEMENTER"
+    }
+  ],
+  "positive_findings": [
+    "Plain/copied observation dictionaries cannot self-grant selector authority; exact minted type/token/digest required.",
+    "Observed metadata bound to exact source files/manifest, original builder/source/verifier pins, executable environment and two retained complete normalized wheel witnesses.",
+    "Fresh source-native independent rebuild required to mint observation; retained serialized bytes alone mint no new authority.",
+    "Original static tox, test requirements, dependency groups and static optional dependencies pass through original V41 derivation; setup.py override and dynamic optionaldeps rejected in selector.",
+    "NativeRuntimeV44 injects both instrument and exactinvocation premises and checks liveness before governed _scope/admit; Metatron/FLASH algorithms reused.",
+    "External ceiling unchanged and nonbypassable hostile-host sandbox not claimed."
+  ],
+  "remaining_native_qualification": "Original protected full execution, assertion/skip/deselection/import controls, real withdrawal/restoration/restart and complete future scientific/comparator arms remain independent obligations.",
+  "reviewed_utc": "2026-10-22T00:39:03.580022+00:00",
+  "schema": "UDM_V44_INDEPENDENT_PREQUALIFICATION_SOURCE_REVIEW_V1",
+  "scope": "Read-only source review and three hostile-wheel parser probes only. No upstream target queries, source builds, native execution, scientific qualification or code edits.",
+  "sources_sha256": {
+    "cross_frontier_v44.py": "d5d2262d1fc1808a8c228a9a9cf5b3095807b9d0aa4b2127dba93738ece77ff8",
+    "developmental_machine_v44.py": "b1bc1ddfa677157465c64d8ecdef4c6dce192c0a5c37f5c0861fa0424400a5b9",
+    "native_bootstrap_runtime_v44.py": "e8eb2332eb2427f5ad2c6bb37d72e5cf6d1fb9b739c1ba71160bc283980797f7",
+    "native_environment_selection_v44.py": "db046929eda43fd536bcd545e397276f3ecbfcf878f9eaa695a5f9d2abe4d0d1",
+    "native_environment_v44.py": "99710a0dedf403d7de3056cecefcc21939f56d05dbe9382cb3d16e1068eed22e",
+    "native_metadata_v44.py": "644c7933ccb115367457389975ff2b8d8461e47820ed4c597f60f99e28a2558e",
+    "native_runtime_v44.py": "1e6ee401b4c3db319f9b7c5dd7c0adbf4ddc4758752707e65929526b3e6d985d"
+  }
+}

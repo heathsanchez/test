@@ -1,0 +1,93 @@
+FFFF                                                                     [100%]
+=================================== FAILURES ===================================
+_ test_withdrawn_bootstrap_is_rejected_before_original_runtime_operation[_scope] _
+
+operation = '_scope'
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7fcadcfff2c0>
+
+    @pytest.mark.parametrize('operation', ('_scope', 'admit'))
+    def test_withdrawn_bootstrap_is_rejected_before_original_runtime_operation(operation, monkeypatch):
+>       module = implementation()
+
+research/unified_consequence_runtime/test_native_runtime_v44.py:30: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def implementation():
+>       assert Path(__file__).with_name('native_runtime_v44.py').is_file(), 'V44 native bootstrap transport is absent'
+E       AssertionError: V44 native bootstrap transport is absent
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/native_runtime_v44.py').is_file
+E        +      where PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/native_runtime_v44.py') = with_name('native_runtime_v44.py')
+E        +        where with_name = PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/test_native_runtime_v44.py').with_name
+E        +          where PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/test_native_runtime_v44.py') = Path('/workspace/udm-v54/research/unified_consequence_runtime/test_native_runtime_v44.py')
+
+research/unified_consequence_runtime/test_native_runtime_v44.py:11: AssertionError
+_ test_withdrawn_bootstrap_is_rejected_before_original_runtime_operation[admit] _
+
+operation = 'admit'
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7fcadcfef470>
+
+    @pytest.mark.parametrize('operation', ('_scope', 'admit'))
+    def test_withdrawn_bootstrap_is_rejected_before_original_runtime_operation(operation, monkeypatch):
+>       module = implementation()
+
+research/unified_consequence_runtime/test_native_runtime_v44.py:30: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def implementation():
+>       assert Path(__file__).with_name('native_runtime_v44.py').is_file(), 'V44 native bootstrap transport is absent'
+E       AssertionError: V44 native bootstrap transport is absent
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/native_runtime_v44.py').is_file
+E        +      where PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/native_runtime_v44.py') = with_name('native_runtime_v44.py')
+E        +        where with_name = PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/test_native_runtime_v44.py').with_name
+E        +          where PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/test_native_runtime_v44.py') = Path('/workspace/udm-v54/research/unified_consequence_runtime/test_native_runtime_v44.py')
+
+research/unified_consequence_runtime/test_native_runtime_v44.py:11: AssertionError
+______ test_original_materialization_and_bootstrap_premises_both_survive _______
+
+    def test_original_materialization_and_bootstrap_premises_both_survive():
+>       module = implementation()
+
+research/unified_consequence_runtime/test_native_runtime_v44.py:51: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def implementation():
+>       assert Path(__file__).with_name('native_runtime_v44.py').is_file(), 'V44 native bootstrap transport is absent'
+E       AssertionError: V44 native bootstrap transport is absent
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/native_runtime_v44.py').is_file
+E        +      where PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/native_runtime_v44.py') = with_name('native_runtime_v44.py')
+E        +        where with_name = PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/test_native_runtime_v44.py').with_name
+E        +          where PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/test_native_runtime_v44.py') = Path('/workspace/udm-v54/research/unified_consequence_runtime/test_native_runtime_v44.py')
+
+research/unified_consequence_runtime/test_native_runtime_v44.py:11: AssertionError
+_______ test_bootstrap_binding_is_persisted_as_exact_native_source_input _______
+
+    def test_bootstrap_binding_is_persisted_as_exact_native_source_input():
+>       module = implementation()
+
+research/unified_consequence_runtime/test_native_runtime_v44.py:63: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def implementation():
+>       assert Path(__file__).with_name('native_runtime_v44.py').is_file(), 'V44 native bootstrap transport is absent'
+E       AssertionError: V44 native bootstrap transport is absent
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/native_runtime_v44.py').is_file
+E        +      where PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/native_runtime_v44.py') = with_name('native_runtime_v44.py')
+E        +        where with_name = PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/test_native_runtime_v44.py').with_name
+E        +          where PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/test_native_runtime_v44.py') = Path('/workspace/udm-v54/research/unified_consequence_runtime/test_native_runtime_v44.py')
+
+research/unified_consequence_runtime/test_native_runtime_v44.py:11: AssertionError
+- generated xml file: /workspace/qualification/native-bootstrap-v44-prospective-preparation/preimplementation/RED_RUNTIME.xml -
+=========================== short test summary info ============================
+FAILED research/unified_consequence_runtime/test_native_runtime_v44.py::test_withdrawn_bootstrap_is_rejected_before_original_runtime_operation[_scope]
+FAILED research/unified_consequence_runtime/test_native_runtime_v44.py::test_withdrawn_bootstrap_is_rejected_before_original_runtime_operation[admit]
+FAILED research/unified_consequence_runtime/test_native_runtime_v44.py::test_original_materialization_and_bootstrap_premises_both_survive
+FAILED research/unified_consequence_runtime/test_native_runtime_v44.py::test_bootstrap_binding_is_persisted_as_exact_native_source_input
+4 failed in 0.04s

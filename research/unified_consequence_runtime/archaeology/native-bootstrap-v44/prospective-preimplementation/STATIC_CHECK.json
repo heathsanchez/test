@@ -1,0 +1,139 @@
+{
+  "metadata_queries": 0,
+  "model_calls": 0,
+  "native_calls": 0,
+  "python": [
+    {
+      "path": "research/unified_consequence_runtime/qualify_native_frontier_v44.py",
+      "sha256": "b040360d82514ebb827d19ccd8cd16e76a2ee14a6ff342662392abcb9fb74139",
+      "status": "PASS_AST_PARSE"
+    },
+    {
+      "path": "research/unified_consequence_runtime/native_runtime_v44.py",
+      "sha256": "f2740f27fb279af7312506aa8ce5a5c9f424eda1c5d1314cab11650b44778212",
+      "status": "PASS_AST_PARSE"
+    },
+    {
+      "path": "research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective/curate_frontier.py",
+      "sha256": "3d79e607f8f07a08861ff0363c92bfd811e2924c8699bd8126209f2fd3dd4d04",
+      "status": "PASS_AST_PARSE"
+    },
+    {
+      "path": "research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective/prepare_records.py",
+      "sha256": "0a18b8a57d0cc295cfb877f1fba0ec372f68b4fd96007cec6ef48e3539ec1002",
+      "status": "PASS_AST_PARSE"
+    },
+    {
+      "path": "research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective/training_history_projection_v44.py",
+      "sha256": "6d7bb4e634a1ac01dc86ed4ca8367223368c249033efcd368abc8f22ec7385d9",
+      "status": "PASS_AST_PARSE"
+    },
+    {
+      "path": "research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective/watch_actual_agent.py",
+      "sha256": "608386225e0b129e781bf8f645a7968a69701c273d3e8db4703864731b06d99a",
+      "status": "PASS_AST_PARSE"
+    }
+  ],
+  "schema": "UDM_V44_PROSPECTIVE_TRANSPORT_STATIC_CHECK_V1",
+  "status": "PASS_SOURCE_AND_SHELL_SYNTAX_ONLY",
+  "workflow": {
+    "path": ".github/workflows/udm-prospective-native-selection-v44.yml",
+    "python_heredocs": [
+      {
+        "heredoc": "PY_CLONE",
+        "status": "PASS_PYTHON_AST_PARSE"
+      },
+      {
+        "heredoc": "PY",
+        "status": "PASS_PYTHON_AST_PARSE"
+      },
+      {
+        "heredoc": "PY",
+        "status": "PASS_PYTHON_AST_PARSE"
+      },
+      {
+        "heredoc": "PY",
+        "status": "PASS_PYTHON_AST_PARSE"
+      },
+      {
+        "heredoc": "PY_SOURCES",
+        "status": "PASS_PYTHON_AST_PARSE"
+      },
+      {
+        "heredoc": "PY",
+        "status": "PASS_PYTHON_AST_PARSE"
+      },
+      {
+        "heredoc": "PY_METHODS",
+        "status": "PASS_PYTHON_AST_PARSE"
+      },
+      {
+        "heredoc": "PY",
+        "status": "PASS_PYTHON_AST_PARSE"
+      },
+      {
+        "heredoc": "PY",
+        "status": "PASS_PYTHON_AST_PARSE"
+      }
+    ],
+    "sha256": "63c1d6537dbd88ce33e26cab3c337ac534d3bef30df6bfc9b50060314d6e221b",
+    "shell": [
+      {
+        "returncode": 0,
+        "stderr": "",
+        "step": 0
+      },
+      {
+        "returncode": 0,
+        "stderr": "",
+        "step": 1
+      },
+      {
+        "returncode": 0,
+        "stderr": "",
+        "step": 2
+      },
+      {
+        "returncode": 0,
+        "stderr": "",
+        "step": 3
+      },
+      {
+        "returncode": 0,
+        "stderr": "",
+        "step": 4
+      },
+      {
+        "returncode": 0,
+        "stderr": "",
+        "step": 5
+      },
+      {
+        "returncode": 0,
+        "stderr": "",
+        "step": 6
+      },
+      {
+        "returncode": 0,
+        "stderr": "",
+        "step": 7
+      },
+      {
+        "returncode": 0,
+        "stderr": "",
+        "step": 8
+      },
+      {
+        "returncode": 0,
+        "stderr": "",
+        "step": 9
+      },
+      {
+        "returncode": 0,
+        "stderr": "",
+        "step": 10
+      }
+    ],
+    "yaml": "PASS_YAML_PARSE"
+  }
+}

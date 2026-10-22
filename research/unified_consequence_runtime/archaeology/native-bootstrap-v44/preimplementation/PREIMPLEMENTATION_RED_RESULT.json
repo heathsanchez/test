@@ -1,0 +1,17 @@
+{
+  "execution": "/workspace/qualification/native-authority-v42-controller/bin/python -m pytest -q -p no:cacheprovider",
+  "junit": {
+    "errors": "0",
+    "failures": "32",
+    "hostname": "8ac9339af51c",
+    "name": "pytest",
+    "skipped": "0",
+    "tests": "32",
+    "time": "0.229",
+    "timestamp": "2026-10-22T00:30:09.149756+00:00"
+  },
+  "manifest_sha256": "2423fb5879481deb796e1f2a5e2b4f337af240917c3096711d733373a5146656",
+  "prior_environment_attempts": "Host runtime and modern-base have no pytest; attempts preserved outside scientific experiment. No installs or source/native target execution.",
+  "status": "RED_MISSING_V44_IMPLEMENTATION",
+  "test_sha256": "a8ef96b8140566f1a296b5e11243249c750306bcf68a92be6c454165875a6e4f"
+}

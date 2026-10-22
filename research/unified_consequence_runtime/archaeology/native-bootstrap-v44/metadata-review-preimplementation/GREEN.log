@@ -1,0 +1,9 @@
+........................................                                 [100%]
+=============================== warnings summary ===============================
+qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py::test_metadata_archive_identity_is_unambiguous_and_regular[fixture-1.0.0.dist-info/METADATA-extra2-33188]
+  /opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/zipfile/__init__.py:1625: UserWarning: Duplicate name: 'fixture-1.0.0.dist-info/METADATA'
+    return self._open_to_write(zinfo, force_zip64=force_zip64)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+- generated xml file: /workspace/qualification/native-bootstrap-v44-metadata-review-fix/GREEN.xml -
+40 passed, 1 warning in 44.51s

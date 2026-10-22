@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="7" skipped="0" tests="7" time="0.047" timestamp="2026-10-22T00:30:14.062717+00:00" hostname="8ac9339af51c"><testcase classname="research.unified_consequence_runtime.test_native_environment_v44" name="test_dynamic_declared_metadata_becomes_a_typed_existing_operation_residual" time="0.001"><failure message="AssertionError: versioned source-derived environment bootstrap is missing&#10;assert None is not None">def test_dynamic_declared_metadata_becomes_a_typed_existing_operation_residual():
+        files = project()
+        before = dict(files)
+&gt;       row = operation().diagnose(files, CATALOG)
+
+research/unified_consequence_runtime/test_native_environment_v44.py:30: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def operation():
+        try:
+            module = importlib.import_module('research.unified_consequence_runtime.native_environment_v44')
+        except ModuleNotFoundError:
+            module = None
+&gt;       assert module is not None, 'versioned source-derived environment bootstrap is missing'
+E       AssertionError: versioned source-derived environment bootstrap is missing
+E       assert None is not None
+
+research/unified_consequence_runtime/test_native_environment_v44.py:17: AssertionError</failure></testcase><testcase classname="research.unified_consequence_runtime.test_native_environment_v44" name="test_existing_compatible_environment_does_not_invent_a_metadata_operation" time="0.000"><failure message="AssertionError: versioned source-derived environment bootstrap is missing&#10;assert None is not None">def test_existing_compatible_environment_does_not_invent_a_metadata_operation():
+        files = {'pyproject.toml': b'[project]\nname="original_example"\nversion="1.0"\nrequires-python="&gt;=3.9"\n'}
+&gt;       row = operation().diagnose(files, CATALOG)
+
+research/unified_consequence_runtime/test_native_environment_v44.py:40: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def operation():
+        try:
+            module = importlib.import_module('research.unified_consequence_runtime.native_environment_v44')
+        except ModuleNotFoundError:
+            module = None
+&gt;       assert module is not None, 'versioned source-derived environment bootstrap is missing'
+E       AssertionError: versioned source-derived environment bootstrap is missing
+E       assert None is not None
+
+research/unified_consequence_runtime/test_native_environment_v44.py:17: AssertionError</failure></testcase><testcase classname="research.unified_consequence_runtime.test_native_environment_v44" name="test_unresolved_setup_test_metadata_cannot_be_erased_by_wheel_observation" time="0.000"><failure message="AssertionError: versioned source-derived environment bootstrap is missing&#10;assert None is not None">def test_unresolved_setup_test_metadata_cannot_be_erased_by_wheel_observation():
+        files = project()
+        files['setup.py'] = b'from setuptools import setup\nsetup(tests_require=unknown())\n'
+&gt;       assert operation().diagnose(files, CATALOG)['route'] == 'UNKNOWN'
+
+research/unified_consequence_runtime/test_native_environment_v44.py:48: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def operation():
+        try:
+            module = importlib.import_module('research.unified_consequence_runtime.native_environment_v44')
+        except ModuleNotFoundError:
+            module = None
+&gt;       assert module is not None, 'versioned source-derived environment bootstrap is missing'
+E       AssertionError: versioned source-derived environment bootstrap is missing
+E       assert None is not None
+
+research/unified_consequence_runtime/test_native_environment_v44.py:17: AssertionError</failure></testcase><testcase classname="research.unified_consequence_runtime.test_native_environment_v44" name="test_dynamic_unrelated_field_is_not_a_license_to_run_an_observer" time="0.000"><failure message="AssertionError: versioned source-derived environment bootstrap is missing&#10;assert None is not None">def test_dynamic_unrelated_field_is_not_a_license_to_run_an_observer():
+        files = project('description')
+&gt;       row = operation().diagnose(files, CATALOG)
+
+research/unified_consequence_runtime/test_native_environment_v44.py:53: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def operation():
+        try:
+            module = importlib.import_module('research.unified_consequence_runtime.native_environment_v44')
+        except ModuleNotFoundError:
+            module = None
+&gt;       assert module is not None, 'versioned source-derived environment bootstrap is missing'
+E       AssertionError: versioned source-derived environment bootstrap is missing
+E       assert None is not None
+
+research/unified_consequence_runtime/test_native_environment_v44.py:17: AssertionError</failure></testcase><testcase classname="research.unified_consequence_runtime.test_native_environment_v44" name="test_no_compatible_profile_remains_an_environment_authority_residual" time="0.000"><failure message="AssertionError: versioned source-derived environment bootstrap is missing&#10;assert None is not None">def test_no_compatible_profile_remains_an_environment_authority_residual():
+        files = {'pyproject.toml': b'[project]\nrequires-python="&lt;3.0"\n'}
+&gt;       row = operation().diagnose(files, CATALOG)
+
+research/unified_consequence_runtime/test_native_environment_v44.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def operation():
+        try:
+            module = importlib.import_module('research.unified_consequence_runtime.native_environment_v44')
+        except ModuleNotFoundError:
+            module = None
+&gt;       assert module is not None, 'versioned source-derived environment bootstrap is missing'
+E       AssertionError: versioned source-derived environment bootstrap is missing
+E       assert None is not None
+
+research/unified_consequence_runtime/test_native_environment_v44.py:17: AssertionError</failure></testcase><testcase classname="research.unified_consequence_runtime.test_native_environment_v44" name="test_backend_requirements_filter_never_grants_test_or_plugin_authority" time="0.000"><failure message="AssertionError: versioned source-derived environment bootstrap is missing&#10;assert None is not None">def test_backend_requirements_filter_never_grants_test_or_plugin_authority():
+&gt;       module = operation()
+
+research/unified_consequence_runtime/test_native_environment_v44.py:66: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def operation():
+        try:
+            module = importlib.import_module('research.unified_consequence_runtime.native_environment_v44')
+        except ModuleNotFoundError:
+            module = None
+&gt;       assert module is not None, 'versioned source-derived environment bootstrap is missing'
+E       AssertionError: versioned source-derived environment bootstrap is missing
+E       assert None is not None
+
+research/unified_consequence_runtime/test_native_environment_v44.py:17: AssertionError</failure></testcase><testcase classname="research.unified_consequence_runtime.test_native_environment_v44" name="test_skip_or_xfail_is_not_a_metadata_residual" time="0.000"><failure message="AssertionError: versioned source-derived environment bootstrap is missing&#10;assert None is not None">def test_skip_or_xfail_is_not_a_metadata_residual():
+&gt;       module = operation()
+
+research/unified_consequence_runtime/test_native_environment_v44.py:77: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def operation():
+        try:
+            module = importlib.import_module('research.unified_consequence_runtime.native_environment_v44')
+        except ModuleNotFoundError:
+            module = None
+&gt;       assert module is not None, 'versioned source-derived environment bootstrap is missing'
+E       AssertionError: versioned source-derived environment bootstrap is missing
+E       assert None is not None
+
+research/unified_consequence_runtime/test_native_environment_v44.py:17: AssertionError</failure></testcase></testsuite></testsuites>

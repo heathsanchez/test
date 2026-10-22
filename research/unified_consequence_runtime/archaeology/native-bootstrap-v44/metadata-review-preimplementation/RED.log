@@ -1,0 +1,64 @@
+F.FFF                                                                    [100%]
+=================================== FAILURES ===================================
+_ test_no_dynamic_wheel_header_can_license_final_environment_metadata[Requires-Python, Requires-Dist] _
+
+tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-28/test_no_dynamic_wheel_header_c0')
+field = 'Requires-Python, Requires-Dist'
+
+    @pytest.mark.parametrize('field',['Requires-Python, Requires-Dist','Requires-Python','Description','Undefined, Field'])
+    def test_no_dynamic_wheel_header_can_license_final_environment_metadata(tmp_path,field):
+        raw=fixture.VALID.replace(b'Metadata-Version: 2.1\n',('Metadata-Version: 2.1\nDynamic: '+field+'\n').encode())
+>       with pytest.raises(ValueError):
+E       Failed: DID NOT RAISE <class 'ValueError'>
+
+../qualification/native-bootstrap-v44-metadata-review-fix/test_metadata_review_v44.py:15: Failed
+_ test_no_dynamic_wheel_header_can_license_final_environment_metadata[Description] _
+
+tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-28/test_no_dynamic_wheel_header_c2')
+field = 'Description'
+
+    @pytest.mark.parametrize('field',['Requires-Python, Requires-Dist','Requires-Python','Description','Undefined, Field'])
+    def test_no_dynamic_wheel_header_can_license_final_environment_metadata(tmp_path,field):
+        raw=fixture.VALID.replace(b'Metadata-Version: 2.1\n',('Metadata-Version: 2.1\nDynamic: '+field+'\n').encode())
+>       with pytest.raises(ValueError):
+E       Failed: DID NOT RAISE <class 'ValueError'>
+
+../qualification/native-bootstrap-v44-metadata-review-fix/test_metadata_review_v44.py:15: Failed
+_ test_no_dynamic_wheel_header_can_license_final_environment_metadata[Undefined, Field] _
+
+tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-28/test_no_dynamic_wheel_header_c3')
+field = 'Undefined, Field'
+
+    @pytest.mark.parametrize('field',['Requires-Python, Requires-Dist','Requires-Python','Description','Undefined, Field'])
+    def test_no_dynamic_wheel_header_can_license_final_environment_metadata(tmp_path,field):
+        raw=fixture.VALID.replace(b'Metadata-Version: 2.1\n',('Metadata-Version: 2.1\nDynamic: '+field+'\n').encode())
+>       with pytest.raises(ValueError):
+E       Failed: DID NOT RAISE <class 'ValueError'>
+
+../qualification/native-bootstrap-v44-metadata-review-fix/test_metadata_review_v44.py:15: Failed
+_ test_unexpected_unmarked_dependency_in_static_project_is_conflicting_metadata _
+
+tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-28/test_unexpected_unmarked_depen0')
+
+    def test_unexpected_unmarked_dependency_in_static_project_is_conflicting_metadata(tmp_path):
+        base=(fixture.FIXTURE/'pyproject.toml').read_bytes()
+        base=base.replace(b'dynamic = ["requires-python", "dependencies", "classifiers"]',b'dynamic = ["requires-python", "classifiers"]\ndependencies = []')
+        details=json.loads((fixture.FIXTURE/'source-metadata.json').read_text())
+        details['requires_dist'].append('undeclared-native-bootstrap-package>=99')
+        values=fixture.genuine_observation(tmp_path,modifications={'pyproject.toml':base,'source-metadata.json':json.dumps(details).encode()})
+        observation,snapshot=values[-2],values[3]
+        result=selection.select_profile(snapshot[1],fixture.catalog(),observation=observation)
+>       assert result['status']=='UNKNOWN'
+E       AssertionError: assert 'CANDIDATE_SOURCE_ENVIRONMENT' == 'UNKNOWN'
+E         
+E         - UNKNOWN
+E         + CANDIDATE_SOURCE_ENVIRONMENT
+
+../qualification/native-bootstrap-v44-metadata-review-fix/test_metadata_review_v44.py:26: AssertionError
+- generated xml file: /workspace/qualification/native-bootstrap-v44-metadata-review-fix/RED.xml -
+=========================== short test summary info ============================
+FAILED ../qualification/native-bootstrap-v44-metadata-review-fix/test_metadata_review_v44.py::test_no_dynamic_wheel_header_can_license_final_environment_metadata[Requires-Python, Requires-Dist]
+FAILED ../qualification/native-bootstrap-v44-metadata-review-fix/test_metadata_review_v44.py::test_no_dynamic_wheel_header_can_license_final_environment_metadata[Description]
+FAILED ../qualification/native-bootstrap-v44-metadata-review-fix/test_metadata_review_v44.py::test_no_dynamic_wheel_header_can_license_final_environment_metadata[Undefined, Field]
+FAILED ../qualification/native-bootstrap-v44-metadata-review-fix/test_metadata_review_v44.py::test_unexpected_unmarked_dependency_in_static_project_is_conflicting_metadata
+4 failed, 1 passed in 3.48s

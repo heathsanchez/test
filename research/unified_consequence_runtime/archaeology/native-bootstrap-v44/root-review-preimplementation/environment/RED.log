@@ -1,0 +1,58 @@
+.......FFF                                                               [100%]
+=================================== FAILURES ===================================
+_ test_mixed_dynamic_optional_dependencies_remain_precise_unknown_before_build _
+
+    def test_mixed_dynamic_optional_dependencies_remain_precise_unknown_before_build():
+        files = project()
+        files['pyproject.toml'] = files['pyproject.toml'].replace(
+            b'dynamic=["classifiers"]', b'dynamic=["classifiers","optional-dependencies"]')
+        row = operation().diagnose(files, CATALOG)
+>       assert row['route'] == 'UNKNOWN'
+E       AssertionError: assert 'ACTIVATE_EXI...A_OBSERVATION' == 'UNKNOWN'
+E         
+E         - UNKNOWN
+E         + ACTIVATE_EXISTING_METADATA_OBSERVATION
+
+research/unified_consequence_runtime/test_native_environment_v44.py:88: AssertionError
+_ test_metadata_binding_alone_cannot_be_grafted_into_native_execution_authority _
+
+    def test_metadata_binding_alone_cannot_be_grafted_into_native_execution_authority():
+        binding = {'capability_id':'cap', 'generation':1, 'consequence_id':'invocation',
+                   'request_sha256':'0'*64, 'observation_sha256':'1'*64}
+        with pytest.raises(ValueError, match='environment selection witness'):
+>           operation().preflight_bootstrap(None, binding, {}, {}, {})
+
+research/unified_consequence_runtime/test_native_environment_v44.py:96: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+machine = None
+setup_or_binding = {'capability_id': 'cap', 'consequence_id': 'invocation', 'generation': 1, 'observation_sha256': '1111111111111111111111111111111111111111111111111111111111111111', ...}
+contract = {}, authority = {}, policy = {}
+
+    def preflight_bootstrap(machine, setup_or_binding, contract, authority, policy):
+        from .native_bootstrap_runtime_v44 import MetadataRuntime
+        from . import native_source_v42 as source
+        binding = setup_or_binding.get('bootstrap_binding') if 'bootstrap_binding' in setup_or_binding else setup_or_binding
+        if binding is None:
+            return None
+>       value, observation = MetadataRuntime(machine, machine.state.parent/'bootstrap-preflight').preflight(binding)
+E       AttributeError: 'NoneType' object has no attribute 'state'
+
+research/unified_consequence_runtime/native_environment_v44.py:96: AttributeError
+_ test_profile_costs_charge_all_actual_successful_and_failed_original_attempts _
+
+    def test_profile_costs_charge_all_actual_successful_and_failed_original_attempts():
+        module = operation()
+        before = {'build_calls':3, 'build_seconds':4.0, 'records':[{'old':True}]}
+        after = {'build_calls':7, 'build_seconds':9.5,
+                 'records':[{'old':True}, {'status':'BUILD_COMMAND_PASS'}, {'status':'UNKNOWN_BUILD_EXECUTION'}]}
+>       row = module.profile_attempt_costs(before, after)
+E       AttributeError: module 'research.unified_consequence_runtime.native_environment_v44' has no attribute 'profile_attempt_costs'
+
+research/unified_consequence_runtime/test_native_environment_v44.py:104: AttributeError
+- generated xml file: /workspace/qualification/native-bootstrap-v44-root-preimplementation/review-controls/RED.xml -
+=========================== short test summary info ============================
+FAILED research/unified_consequence_runtime/test_native_environment_v44.py::test_mixed_dynamic_optional_dependencies_remain_precise_unknown_before_build
+FAILED research/unified_consequence_runtime/test_native_environment_v44.py::test_metadata_binding_alone_cannot_be_grafted_into_native_execution_authority
+FAILED research/unified_consequence_runtime/test_native_environment_v44.py::test_profile_costs_charge_all_actual_successful_and_failed_original_attempts
+3 failed, 7 passed in 0.29s

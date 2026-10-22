@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="6" skipped="0" tests="6" time="0.047" timestamp="2026-10-22T00:35:30.589102+00:00" hostname="8ac9339af51c"><testcase classname="research.unified_consequence_runtime.test_native_frontier_helpers_v44" name="test_new_curator_preserves_fixed_original_metadata_scanner" time="0.000"><failure message="AssertionError: V44 prospective helper is not implemented: curate_frontier.py&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective/curate_frontier.py').is_file">def test_new_curator_preserves_fixed_original_metadata_scanner():
+&gt;       current = helper('curate_frontier.py')
+
+research/unified_consequence_runtime/test_native_frontier_helpers_v44.py:26: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'curate_frontier.py'
+
+    def helper(name):
+        path = RECORDS/name
+&gt;       assert path.is_file(), 'V44 prospective helper is not implemented: '+name
+E       AssertionError: V44 prospective helper is not implemented: curate_frontier.py
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective/curate_frontier.py').is_file
+
+research/unified_consequence_runtime/test_native_frontier_helpers_v44.py:18: AssertionError</failure></testcase><testcase classname="research.unified_consequence_runtime.test_native_frontier_helpers_v44" name="test_original_wrapper_alias_bug_is_not_reintroduced" time="0.000"><failure message="AssertionError: V44 prospective helper is not implemented: curate_frontier.py&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective/curate_frontier.py').is_file">def test_original_wrapper_alias_bug_is_not_reintroduced():
+&gt;       current = helper('curate_frontier.py')
+
+research/unified_consequence_runtime/test_native_frontier_helpers_v44.py:37: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'curate_frontier.py'
+
+    def helper(name):
+        path = RECORDS/name
+&gt;       assert path.is_file(), 'V44 prospective helper is not implemented: '+name
+E       AssertionError: V44 prospective helper is not implemented: curate_frontier.py
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective/curate_frontier.py').is_file
+
+research/unified_consequence_runtime/test_native_frontier_helpers_v44.py:18: AssertionError</failure></testcase><testcase classname="research.unified_consequence_runtime.test_native_frontier_helpers_v44" name="test_new_curator_requires_gate_before_target_universe_access" time="0.001"><failure message="AssertionError: V44 prospective helper is not implemented: curate_frontier.py&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective/curate_frontier.py').is_file">tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-23/test_new_curator_requires_gate0')
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x7f58d727b530&gt;
+
+    def test_new_curator_requires_gate_before_target_universe_access(tmp_path, monkeypatch):
+&gt;       current = helper('curate_frontier.py')
+
+research/unified_consequence_runtime/test_native_frontier_helpers_v44.py:45: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'curate_frontier.py'
+
+    def helper(name):
+        path = RECORDS/name
+&gt;       assert path.is_file(), 'V44 prospective helper is not implemented: '+name
+E       AssertionError: V44 prospective helper is not implemented: curate_frontier.py
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective/curate_frontier.py').is_file
+
+research/unified_consequence_runtime/test_native_frontier_helpers_v44.py:18: AssertionError</failure></testcase><testcase classname="research.unified_consequence_runtime.test_native_frontier_helpers_v44" name="test_prior_exposure_covers_all_97_previous_identifiers" time="0.000"><failure message="AssertionError: V44 prospective helper is not implemented: curate_frontier.py&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective/curate_frontier.py').is_file">def test_prior_exposure_covers_all_97_previous_identifiers():
+&gt;       current = helper('curate_frontier.py')
+
+research/unified_consequence_runtime/test_native_frontier_helpers_v44.py:62: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'curate_frontier.py'
+
+    def helper(name):
+        path = RECORDS/name
+&gt;       assert path.is_file(), 'V44 prospective helper is not implemented: '+name
+E       AssertionError: V44 prospective helper is not implemented: curate_frontier.py
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective/curate_frontier.py').is_file
+
+research/unified_consequence_runtime/test_native_frontier_helpers_v44.py:18: AssertionError</failure></testcase><testcase classname="research.unified_consequence_runtime.test_native_frontier_helpers_v44" name="test_projection_changes_only_three_authority_schema_literals" time="0.000"><failure message="AssertionError: V44 prospective helper is not implemented: training_history_projection_v44.py&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective/training_history_projection_v44.py').is_file">def test_projection_changes_only_three_authority_schema_literals():
+&gt;       current = helper('training_history_projection_v44.py')
+
+research/unified_consequence_runtime/test_native_frontier_helpers_v44.py:70: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'training_history_projection_v44.py'
+
+    def helper(name):
+        path = RECORDS/name
+&gt;       assert path.is_file(), 'V44 prospective helper is not implemented: '+name
+E       AssertionError: V44 prospective helper is not implemented: training_history_projection_v44.py
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective/training_history_projection_v44.py').is_file
+
+research/unified_consequence_runtime/test_native_frontier_helpers_v44.py:18: AssertionError</failure></testcase><testcase classname="research.unified_consequence_runtime.test_native_frontier_helpers_v44" name="test_actual_agent_watcher_keeps_native_execution_and_information_guards" time="0.000"><failure message="AssertionError: V44 actual-agent transport is not implemented&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective/watch_actual_agent.py').is_file">def test_actual_agent_watcher_keeps_native_execution_and_information_guards():
+        path = RECORDS/'watch_actual_agent.py'
+&gt;       assert path.is_file(), 'V44 actual-agent transport is not implemented'
+E       AssertionError: V44 actual-agent transport is not implemented
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective/watch_actual_agent.py').is_file
+
+research/unified_consequence_runtime/test_native_frontier_helpers_v44.py:79: AssertionError</failure></testcase></testsuite></testsuites>

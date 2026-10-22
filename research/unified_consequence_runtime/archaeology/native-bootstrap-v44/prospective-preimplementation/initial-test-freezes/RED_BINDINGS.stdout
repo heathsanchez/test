@@ -1,0 +1,251 @@
+F.FFFFFFFFFFF                                                            [100%]
+=================================== FAILURES ===================================
+_ test_versioned_controller_preserves_original_algorithm_and_native_authority __
+
+    def test_versioned_controller_preserves_original_algorithm_and_native_authority():
+>       current = controller()
+
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py:36: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def controller():
+        path = HERE / 'qualify_native_frontier_v44.py'
+>       assert path.is_file(), 'V44 prospective transport is not implemented'
+E       AssertionError: V44 prospective transport is not implemented
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/qualify_native_frontier_v44.py').is_file
+
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py:23: AssertionError
+__________ test_new_bootstrap_gate_is_required_after_preserved_gates ___________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f4c3eb87fe0>
+
+    def test_new_bootstrap_gate_is_required_after_preserved_gates(monkeypatch):
+>       current = controller()
+
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py:67: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def controller():
+        path = HERE / 'qualify_native_frontier_v44.py'
+>       assert path.is_file(), 'V44 prospective transport is not implemented'
+E       AssertionError: V44 prospective transport is not implemented
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/qualify_native_frontier_v44.py').is_file
+
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py:23: AssertionError
+_____ test_bootstrap_gate_rejects_incomplete_or_forged_descriptor[status] ______
+
+field = 'status'
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f4c3eb9a720>
+
+    @pytest.mark.parametrize('field', ('status', 'source_commit', 'artifact_sha256', 'run_id', 'artifact_id'))
+    def test_bootstrap_gate_rejects_incomplete_or_forged_descriptor(field, monkeypatch):
+>       current = controller()
+
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py:79: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def controller():
+        path = HERE / 'qualify_native_frontier_v44.py'
+>       assert path.is_file(), 'V44 prospective transport is not implemented'
+E       AssertionError: V44 prospective transport is not implemented
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/qualify_native_frontier_v44.py').is_file
+
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py:23: AssertionError
+__ test_bootstrap_gate_rejects_incomplete_or_forged_descriptor[source_commit] __
+
+field = 'source_commit'
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f4c3eb9bd70>
+
+    @pytest.mark.parametrize('field', ('status', 'source_commit', 'artifact_sha256', 'run_id', 'artifact_id'))
+    def test_bootstrap_gate_rejects_incomplete_or_forged_descriptor(field, monkeypatch):
+>       current = controller()
+
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py:79: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def controller():
+        path = HERE / 'qualify_native_frontier_v44.py'
+>       assert path.is_file(), 'V44 prospective transport is not implemented'
+E       AssertionError: V44 prospective transport is not implemented
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/qualify_native_frontier_v44.py').is_file
+
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py:23: AssertionError
+_ test_bootstrap_gate_rejects_incomplete_or_forged_descriptor[artifact_sha256] _
+
+field = 'artifact_sha256'
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f4c3eb989b0>
+
+    @pytest.mark.parametrize('field', ('status', 'source_commit', 'artifact_sha256', 'run_id', 'artifact_id'))
+    def test_bootstrap_gate_rejects_incomplete_or_forged_descriptor(field, monkeypatch):
+>       current = controller()
+
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py:79: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def controller():
+        path = HERE / 'qualify_native_frontier_v44.py'
+>       assert path.is_file(), 'V44 prospective transport is not implemented'
+E       AssertionError: V44 prospective transport is not implemented
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/qualify_native_frontier_v44.py').is_file
+
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py:23: AssertionError
+_____ test_bootstrap_gate_rejects_incomplete_or_forged_descriptor[run_id] ______
+
+field = 'run_id'
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f4c3eb995e0>
+
+    @pytest.mark.parametrize('field', ('status', 'source_commit', 'artifact_sha256', 'run_id', 'artifact_id'))
+    def test_bootstrap_gate_rejects_incomplete_or_forged_descriptor(field, monkeypatch):
+>       current = controller()
+
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py:79: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def controller():
+        path = HERE / 'qualify_native_frontier_v44.py'
+>       assert path.is_file(), 'V44 prospective transport is not implemented'
+E       AssertionError: V44 prospective transport is not implemented
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/qualify_native_frontier_v44.py').is_file
+
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py:23: AssertionError
+___ test_bootstrap_gate_rejects_incomplete_or_forged_descriptor[artifact_id] ___
+
+field = 'artifact_id'
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f4c3eb9a8a0>
+
+    @pytest.mark.parametrize('field', ('status', 'source_commit', 'artifact_sha256', 'run_id', 'artifact_id'))
+    def test_bootstrap_gate_rejects_incomplete_or_forged_descriptor(field, monkeypatch):
+>       current = controller()
+
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py:79: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def controller():
+        path = HERE / 'qualify_native_frontier_v44.py'
+>       assert path.is_file(), 'V44 prospective transport is not implemented'
+E       AssertionError: V44 prospective transport is not implemented
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/qualify_native_frontier_v44.py').is_file
+
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py:23: AssertionError
+_ test_withdrawn_bootstrap_preflight_precedes_cached_and_uncached_native_receipt[False] _
+
+cached = False
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f4c3eb9b620>
+
+    @pytest.mark.parametrize('cached', (False, True))
+    def test_withdrawn_bootstrap_preflight_precedes_cached_and_uncached_native_receipt(cached, monkeypatch):
+>       current = controller()
+
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py:92: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def controller():
+        path = HERE / 'qualify_native_frontier_v44.py'
+>       assert path.is_file(), 'V44 prospective transport is not implemented'
+E       AssertionError: V44 prospective transport is not implemented
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/qualify_native_frontier_v44.py').is_file
+
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py:23: AssertionError
+_ test_withdrawn_bootstrap_preflight_precedes_cached_and_uncached_native_receipt[True] _
+
+cached = True
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f4c3ebbe840>
+
+    @pytest.mark.parametrize('cached', (False, True))
+    def test_withdrawn_bootstrap_preflight_precedes_cached_and_uncached_native_receipt(cached, monkeypatch):
+>       current = controller()
+
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py:92: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def controller():
+        path = HERE / 'qualify_native_frontier_v44.py'
+>       assert path.is_file(), 'V44 prospective transport is not implemented'
+E       AssertionError: V44 prospective transport is not implemented
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/qualify_native_frontier_v44.py').is_file
+
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py:23: AssertionError
+_____________ test_original_equal_pass_fail_eligibility_and_order ______________
+
+    def test_original_equal_pass_fail_eligibility_and_order():
+>       current = controller()
+
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py:110: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def controller():
+        path = HERE / 'qualify_native_frontier_v44.py'
+>       assert path.is_file(), 'V44 prospective transport is not implemented'
+E       AssertionError: V44 prospective transport is not implemented
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/qualify_native_frontier_v44.py').is_file
+
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py:23: AssertionError
+_______ test_bootstrap_costs_are_separate_from_unchanged_native_counters _______
+
+    def test_bootstrap_costs_are_separate_from_unchanged_native_counters():
+>       current = controller()
+
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py:125: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def controller():
+        path = HERE / 'qualify_native_frontier_v44.py'
+>       assert path.is_file(), 'V44 prospective transport is not implemented'
+E       AssertionError: V44 prospective transport is not implemented
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/qualify_native_frontier_v44.py').is_file
+
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py:23: AssertionError
+_________ test_no_target_identity_or_winning_method_in_new_controller __________
+
+    def test_no_target_identity_or_winning_method_in_new_controller():
+>       current = controller()
+
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py:142: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def controller():
+        path = HERE / 'qualify_native_frontier_v44.py'
+>       assert path.is_file(), 'V44 prospective transport is not implemented'
+E       AssertionError: V44 prospective transport is not implemented
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/udm-v54/research/unified_consequence_runtime/qualify_native_frontier_v44.py').is_file
+
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py:23: AssertionError
+- generated xml file: /workspace/qualification/native-bootstrap-v44-prospective-preparation/preimplementation/RED_BINDINGS.xml -
+=========================== short test summary info ============================
+FAILED research/unified_consequence_runtime/test_qualify_native_frontier_v44.py::test_versioned_controller_preserves_original_algorithm_and_native_authority
+FAILED research/unified_consequence_runtime/test_qualify_native_frontier_v44.py::test_new_bootstrap_gate_is_required_after_preserved_gates
+FAILED research/unified_consequence_runtime/test_qualify_native_frontier_v44.py::test_bootstrap_gate_rejects_incomplete_or_forged_descriptor[status]
+FAILED research/unified_consequence_runtime/test_qualify_native_frontier_v44.py::test_bootstrap_gate_rejects_incomplete_or_forged_descriptor[source_commit]
+FAILED research/unified_consequence_runtime/test_qualify_native_frontier_v44.py::test_bootstrap_gate_rejects_incomplete_or_forged_descriptor[artifact_sha256]
+FAILED research/unified_consequence_runtime/test_qualify_native_frontier_v44.py::test_bootstrap_gate_rejects_incomplete_or_forged_descriptor[run_id]
+FAILED research/unified_consequence_runtime/test_qualify_native_frontier_v44.py::test_bootstrap_gate_rejects_incomplete_or_forged_descriptor[artifact_id]
+FAILED research/unified_consequence_runtime/test_qualify_native_frontier_v44.py::test_withdrawn_bootstrap_preflight_precedes_cached_and_uncached_native_receipt[False]
+FAILED research/unified_consequence_runtime/test_qualify_native_frontier_v44.py::test_withdrawn_bootstrap_preflight_precedes_cached_and_uncached_native_receipt[True]
+FAILED research/unified_consequence_runtime/test_qualify_native_frontier_v44.py::test_original_equal_pass_fail_eligibility_and_order
+FAILED research/unified_consequence_runtime/test_qualify_native_frontier_v44.py::test_bootstrap_costs_are_separate_from_unchanged_native_counters
+FAILED research/unified_consequence_runtime/test_qualify_native_frontier_v44.py::test_no_target_identity_or_winning_method_in_new_controller
+12 failed, 1 passed in 0.08s

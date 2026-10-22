@@ -1,0 +1,32 @@
+{
+  "actual_green": {
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "tests": 32
+  },
+  "actual_red": {
+    "errors": 0,
+    "failures": 1,
+    "skipped": 0,
+    "tests": 3
+  },
+  "current_controller_sha256": "5006932fedc8b321d6f36002d1c3086790dd49ad18ca8327feb6148bb0948f02",
+  "fix": "For a scoped episode with explicit dependencies, authenticate the first retained record and derive/deduplicate the same exact prefix used by native_probe; delegate unchanged original _check_episode order/budget/receipt algorithm.",
+  "metadata_queries": 0,
+  "model_calls": 0,
+  "native_calls": 0,
+  "original_before_sha256": "b040360d82514ebb827d19ccd8cd16e76a2ee14a6ff342662392abcb9fb74139",
+  "prepare_records_sha256": "d8cc3e99f5404e467bc6cd958ded6019082b7c266279765c1680a485fd4c2576",
+  "red_failed_case": "tracked-only bootstrap prefix was absent; combined generated-source cases already passed",
+  "review_residual": "Inherited V43 _check_episode only added live instrument premises when generated_build was non-null. Tracked-only native sources may depend on an upstream metadata observation and exact environment-selection witness too.",
+  "schema": "UDM_V44_BOOTSTRAP_EPISODE_PREMISE_REVIEW_V1",
+  "scientific_verdicts": {
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN"
+  },
+  "status": "PASS_SOURCE_FREE_EXACT_PREMISE_TRANSPORT_ONLY"
+}

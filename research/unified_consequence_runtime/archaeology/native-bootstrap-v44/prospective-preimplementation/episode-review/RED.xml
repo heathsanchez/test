@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="3" time="0.152" timestamp="2026-10-22T00:48:38.685716+00:00" hostname="8ac9339af51c"><testcase classname="research.unified_consequence_runtime.test_qualify_native_frontier_v44" name="test_episode_reconstruction_keeps_bootstrap_prefix_for_tracked_and_generated_sources[None-False]" time="0.096"><failure message="AssertionError: assert ('policy',) == ('metadata', ...on', 'policy')&#10;  &#10;  At index 0 diff: 'policy' != 'metadata'&#10;  Right contains 3 more items, first extra item: 'metadata-invocation'&#10;  Use -v to get more diff">generated = None, already_prefixed = False
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x7f5b7e499f40&gt;
+
+    @pytest.mark.parametrize('generated,already_prefixed', ((None, False), ({}, False), ({}, True)))
+    def test_episode_reconstruction_keeps_bootstrap_prefix_for_tracked_and_generated_sources(
+            generated, already_prefixed, monkeypatch):
+        current = controller()
+        record = {'source_free_wiring_token': True}
+        machine = SimpleNamespace(get=lambda key: record)
+        binding = {'materialization': None if generated is None else {
+                       'capability_id': 'build', 'consequence_id': 'build-invocation'},
+                   'bootstrap': {'capability_id': 'metadata', 'consequence_id': 'metadata-invocation',
+                                 'environment_selection_id': 'environment-selection'}}
+        prefix = (() if generated is None else ('build', 'build-invocation')) + (
+            'metadata', 'metadata-invocation', 'environment-selection')
+        supplied = (*prefix, 'policy') if already_prefixed else ('policy',)
+        seen = []
+    
+        def preflight(actual, actual_machine):
+            assert actual is record and actual_machine is machine
+            seen.append('live-bootstrap')
+            return binding
+    
+        def original_boundary(actual_machine, actual_episode, actual_order, actual_budget, *,
+                              contract, dependencies, **kwargs):
+            assert actual_machine is machine
+            assert dependencies == (*prefix, 'policy')
+            assert seen == ['live-bootstrap']
+            raise PermissionError('stopped at unchanged original episode checker')
+    
+        monkeypatch.setattr(current, '_preflight_record', preflight)
+        monkeypatch.setattr(current, '_original_check_episode', original_boundary)
+        with pytest.raises(PermissionError, match='unchanged original episode checker'):
+&gt;           current._check_episode(machine, {'attempts': ['record']}, ['candidate'], 8,
+                                   contract={'generated_build': generated}, dependencies=supplied)
+
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py:192: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+research/unified_consequence_runtime/qualify_native_frontier_v43.py:417: in _check_episode
+    return _original_check_episode(machine, episode, order, budget, contract=contract, dependencies=dependencies, **kwargs)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+actual_machine = namespace(get=&lt;function test_episode_reconstruction_keeps_bootstrap_prefix_for_tracked_and_generated_sources.&lt;locals&gt;.&lt;lambda&gt; at 0x7f5b7e28d6c0&gt;)
+actual_episode = {'attempts': ['record']}, actual_order = ['candidate']
+actual_budget = 8, contract = {'generated_build': None}
+dependencies = ('policy',), kwargs = {}, @py_assert1 = False
+@py_assert2 = ('metadata', 'metadata-invocation', 'environment-selection', 'policy')
+@py_format4 = "('policy',) == ('metadata', ...on', 'policy')\n~\n~At index 0 diff: 'policy' != 'metadata'\n~Right contains 3 more items, first extra item: 'metadata-invocation'\n~Use -v to get more diff"
+
+    def original_boundary(actual_machine, actual_episode, actual_order, actual_budget, *,
+                          contract, dependencies, **kwargs):
+        assert actual_machine is machine
+&gt;       assert dependencies == (*prefix, 'policy')
+E       AssertionError: assert ('policy',) == ('metadata', ...on', 'policy')
+E         
+E         At index 0 diff: 'policy' != 'metadata'
+E         Right contains 3 more items, first extra item: 'metadata-invocation'
+E         Use -v to get more diff
+
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py:185: AssertionError</failure></testcase><testcase classname="research.unified_consequence_runtime.test_qualify_native_frontier_v44" name="test_episode_reconstruction_keeps_bootstrap_prefix_for_tracked_and_generated_sources[generated1-False]" time="0.000" /><testcase classname="research.unified_consequence_runtime.test_qualify_native_frontier_v44" name="test_episode_reconstruction_keeps_bootstrap_prefix_for_tracked_and_generated_sources[generated2-True]" time="0.000" /></testsuite></testsuites>

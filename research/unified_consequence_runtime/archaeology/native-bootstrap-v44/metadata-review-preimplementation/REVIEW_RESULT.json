@@ -1,0 +1,73 @@
+{
+  "decision": [
+    "Refuse every Dynamic field in final wheel metadata",
+    "Compare canonical non-extra observed runtime dependencies exactly with static runtime source dependencies, including absent/static-empty declarations",
+    "Static original optional test requirements and native assertion authority remain unchanged"
+  ],
+  "files_sha256": {
+    "ABSENT_RED.log": "726203d88596c9a8de0beec7e79c5ae01644e0f7708c55d7e1d8fbadb920741a",
+    "ABSENT_RED.xml": "03aca9beee48e6e66769a5da6722ad2d6d2018b5dc14c577b134a01fa89ccdf5",
+    "FINAL_REVIEW_GREEN.log": "1f75b6251e56a32a569352a35af0bb86584fd759cbf7c28700c0eab5b8cfe908",
+    "FINAL_REVIEW_GREEN.xml": "34f92006ce948870a48dce43caa2832456c7f7d9a3faff888005bd07c2190b4f",
+    "GREEN.log": "fb34b0d4b569a29f8693ba744b7ee07d1a39cc9957f4c5a969aa76823eebb7a5",
+    "GREEN.xml": "a59c955eae75acf898257abc82a368f0733a048baf103dc1e109477cb4d98917",
+    "RED.log": "50c116c3c55cd805be28b759728b66b942228b3f4266fd93e6f3fa9877587425",
+    "RED.xml": "e8c82196a65da5ae668ef5fb51553fee734526803e00e5dfd91915f14a89fcb9",
+    "SOURCE_FREE_METADATA_GRAMMAR_REVIEW.json": "e4b45fa07a9587e5ff7e37cbddad9abcc2bc05e6e386a78d32860af2dddd6784",
+    "native_environment_selection_v44.before.py": "db046929eda43fd536bcd545e397276f3ecbfcf878f9eaa695a5f9d2abe4d0d1",
+    "native_environment_selection_v44.before_absent_fix.py": "97add03eaf2bb457bcb91ff35abd7edcb7b5fed2d1148a9420cbb16519014096",
+    "native_metadata_v44.before.py": "644c7933ccb115367457389975ff2b8d8461e47820ed4c597f60f99e28a2558e",
+    "test_metadata_absent_static_v44.py": "d3f40e59b5e7c4ac136ba067cb620d5bd5ecdcdb8470873bab041d2e1577185b",
+    "test_metadata_review_v44.py": "7bff3000c08bf8c06f7ee02ea4956caf170281dedc5686b10da7eee37b215f6d"
+  },
+  "junit": {
+    "ABSENT_RED.xml": [
+      {
+        "errors": "0",
+        "failures": "1",
+        "skipped": "0",
+        "tests": "2",
+        "time": "6.258"
+      }
+    ],
+    "FINAL_REVIEW_GREEN.xml": [
+      {
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "7",
+        "time": "9.269"
+      }
+    ],
+    "GREEN.xml": [
+      {
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "40",
+        "time": "44.509"
+      }
+    ],
+    "RED.xml": [
+      {
+        "errors": "0",
+        "failures": "4",
+        "skipped": "0",
+        "tests": "5",
+        "time": "3.486"
+      }
+    ]
+  },
+  "production_sha256": {
+    "native_environment_selection_v44.py": "ddbdc8b4b5dd672277c17150c69a7f60c28007d4dfd74b27cbb43647065114d8",
+    "native_metadata_v44.py": "63f5c35ba39cfa29a5887fc0e067e2ceed17debd3798e8c1ec14bad9b3722146"
+  },
+  "review_findings": [
+    "Malformed Dynamic header accepted by old parser",
+    "Unexpected unmarked backend runtime dependency accepted despite static source dependency declaration",
+    "Omitted non-dynamic project.dependencies must remain an empty static runtime contract"
+  ],
+  "schema": "UDM_V44_METADATA_INDEPENDENT_REVIEW_FIX_V1",
+  "scope": "Infrastructure review regressions only; no target or prospective task outcomes.",
+  "verdict": "PASS_SEVEN_REVIEW_REGRESSIONS_NO_SCIENTIFIC_PROMOTION"
+}

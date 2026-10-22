@@ -1,0 +1,954 @@
+FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF                                         [100%]
+=================================== FAILURES ===================================
+__ test_strict_parser_preserves_declared_fields_and_ignores_description_body ___
+
+tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-19/test_strict_parser_preserves_d0')
+
+    def test_strict_parser_preserves_declared_fields_and_ignores_description_body(tmp_path):
+>       value = metadata_module().parse_wheel_metadata(wheel(tmp_path, VALID))
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:55: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def metadata_module():
+>       assert importlib.util.find_spec(MODULE), 'V44 source-native metadata operation not implemented'
+E       AssertionError: V44 source-native metadata operation not implemented
+E       assert None
+E        +  where None = <function find_spec at 0x7f9988ee7920>('research.unified_consequence_runtime.native_metadata_v44')
+E        +    where <function find_spec at 0x7f9988ee7920> = <module 'importlib.util' (frozen)>.find_spec
+E        +      where <module 'importlib.util' (frozen)> = importlib.util
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:31: AssertionError
+_ test_malformed_or_conflicting_metadata_never_becomes_observed_authority[\xff\xfeinvalid] _
+
+tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-19/test_malformed_or_conflicting_0')
+raw = b'\xff\xfeinvalid'
+
+    @pytest.mark.parametrize('raw', [
+        b'\xff\xfeinvalid',
+        VALID.replace(b'Name: fixture\n', b''),
+        VALID.replace(b'Version: 1.0.0\n', b''),
+        VALID.replace(b'Metadata-Version: 2.1\n', b''),
+        VALID.replace(b'Name: fixture\n', b'Name: fixture\nName: forged\n'),
+        VALID.replace(b'Version: 1.0.0\n', b'Version: 1.0.0\nVersion: 2.0.0\n'),
+        VALID.replace(b'Requires-Python: >=3.10\n', b'Requires-Python: >=3.10\nRequires-Python: <2\n'),
+        VALID.replace(b'Requires-Python: >=3.10\n', b'Requires-Python: not-a-specifier\n'),
+        VALID.replace(b'Requires-Dist: attrs>=24\n', b'Requires-Dist: attrs=>24\n'),
+        VALID.replace(b'Requires-Dist: attrs>=24\n', b'Requires-Dist: attrs @ https://example.invalid/wheel.whl\n'),
+        VALID.replace(b'Provides-Extra: test\n', b'Provides-Extra: ../../outside\n'),
+        b'Not a core metadata header\n\n' + VALID,
+    ])
+    def test_malformed_or_conflicting_metadata_never_becomes_observed_authority(tmp_path, raw):
+        with pytest.raises((ValueError, RuntimeError)):
+>           metadata_module().parse_wheel_metadata(wheel(tmp_path, raw))
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:80: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def metadata_module():
+>       assert importlib.util.find_spec(MODULE), 'V44 source-native metadata operation not implemented'
+E       AssertionError: V44 source-native metadata operation not implemented
+E       assert None
+E        +  where None = <function find_spec at 0x7f9988ee7920>('research.unified_consequence_runtime.native_metadata_v44')
+E        +    where <function find_spec at 0x7f9988ee7920> = <module 'importlib.util' (frozen)>.find_spec
+E        +      where <module 'importlib.util' (frozen)> = importlib.util
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:31: AssertionError
+_ test_malformed_or_conflicting_metadata_never_becomes_observed_authority[Metadata-Version: 2.1\nVersion: 1.0.0\nRequires-Python: >=3.10\nRequires-Dist: attrs>=24\nRequires-Dist: pytest>=7; extra == "test"\nProvides-Extra: test\nClassifier: Programming Language :: Python :: 3\n\nDescription is not authority: Requires-Python: <1\n] _
+
+tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-19/test_malformed_or_conflicting_1')
+raw = b'Metadata-Version: 2.1\nVersion: 1.0.0\nRequires-Python: >=3.10\nRequires-Dist: attrs>=24\nRequires-Dist: pytest>=7; ...es-Extra: test\nClassifier: Programming Language :: Python :: 3\n\nDescription is not authority: Requires-Python: <1\n'
+
+    @pytest.mark.parametrize('raw', [
+        b'\xff\xfeinvalid',
+        VALID.replace(b'Name: fixture\n', b''),
+        VALID.replace(b'Version: 1.0.0\n', b''),
+        VALID.replace(b'Metadata-Version: 2.1\n', b''),
+        VALID.replace(b'Name: fixture\n', b'Name: fixture\nName: forged\n'),
+        VALID.replace(b'Version: 1.0.0\n', b'Version: 1.0.0\nVersion: 2.0.0\n'),
+        VALID.replace(b'Requires-Python: >=3.10\n', b'Requires-Python: >=3.10\nRequires-Python: <2\n'),
+        VALID.replace(b'Requires-Python: >=3.10\n', b'Requires-Python: not-a-specifier\n'),
+        VALID.replace(b'Requires-Dist: attrs>=24\n', b'Requires-Dist: attrs=>24\n'),
+        VALID.replace(b'Requires-Dist: attrs>=24\n', b'Requires-Dist: attrs @ https://example.invalid/wheel.whl\n'),
+        VALID.replace(b'Provides-Extra: test\n', b'Provides-Extra: ../../outside\n'),
+        b'Not a core metadata header\n\n' + VALID,
+    ])
+    def test_malformed_or_conflicting_metadata_never_becomes_observed_authority(tmp_path, raw):
+        with pytest.raises((ValueError, RuntimeError)):
+>           metadata_module().parse_wheel_metadata(wheel(tmp_path, raw))
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:80: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def metadata_module():
+>       assert importlib.util.find_spec(MODULE), 'V44 source-native metadata operation not implemented'
+E       AssertionError: V44 source-native metadata operation not implemented
+E       assert None
+E        +  where None = <function find_spec at 0x7f9988ee7920>('research.unified_consequence_runtime.native_metadata_v44')
+E        +    where <function find_spec at 0x7f9988ee7920> = <module 'importlib.util' (frozen)>.find_spec
+E        +      where <module 'importlib.util' (frozen)> = importlib.util
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:31: AssertionError
+_ test_malformed_or_conflicting_metadata_never_becomes_observed_authority[Metadata-Version: 2.1\nName: fixture\nRequires-Python: >=3.10\nRequires-Dist: attrs>=24\nRequires-Dist: pytest>=7; extra == "test"\nProvides-Extra: test\nClassifier: Programming Language :: Python :: 3\n\nDescription is not authority: Requires-Python: <1\n] _
+
+tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-19/test_malformed_or_conflicting_2')
+raw = b'Metadata-Version: 2.1\nName: fixture\nRequires-Python: >=3.10\nRequires-Dist: attrs>=24\nRequires-Dist: pytest>=7; e...es-Extra: test\nClassifier: Programming Language :: Python :: 3\n\nDescription is not authority: Requires-Python: <1\n'
+
+    @pytest.mark.parametrize('raw', [
+        b'\xff\xfeinvalid',
+        VALID.replace(b'Name: fixture\n', b''),
+        VALID.replace(b'Version: 1.0.0\n', b''),
+        VALID.replace(b'Metadata-Version: 2.1\n', b''),
+        VALID.replace(b'Name: fixture\n', b'Name: fixture\nName: forged\n'),
+        VALID.replace(b'Version: 1.0.0\n', b'Version: 1.0.0\nVersion: 2.0.0\n'),
+        VALID.replace(b'Requires-Python: >=3.10\n', b'Requires-Python: >=3.10\nRequires-Python: <2\n'),
+        VALID.replace(b'Requires-Python: >=3.10\n', b'Requires-Python: not-a-specifier\n'),
+        VALID.replace(b'Requires-Dist: attrs>=24\n', b'Requires-Dist: attrs=>24\n'),
+        VALID.replace(b'Requires-Dist: attrs>=24\n', b'Requires-Dist: attrs @ https://example.invalid/wheel.whl\n'),
+        VALID.replace(b'Provides-Extra: test\n', b'Provides-Extra: ../../outside\n'),
+        b'Not a core metadata header\n\n' + VALID,
+    ])
+    def test_malformed_or_conflicting_metadata_never_becomes_observed_authority(tmp_path, raw):
+        with pytest.raises((ValueError, RuntimeError)):
+>           metadata_module().parse_wheel_metadata(wheel(tmp_path, raw))
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:80: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def metadata_module():
+>       assert importlib.util.find_spec(MODULE), 'V44 source-native metadata operation not implemented'
+E       AssertionError: V44 source-native metadata operation not implemented
+E       assert None
+E        +  where None = <function find_spec at 0x7f9988ee7920>('research.unified_consequence_runtime.native_metadata_v44')
+E        +    where <function find_spec at 0x7f9988ee7920> = <module 'importlib.util' (frozen)>.find_spec
+E        +      where <module 'importlib.util' (frozen)> = importlib.util
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:31: AssertionError
+_ test_malformed_or_conflicting_metadata_never_becomes_observed_authority[Name: fixture\nVersion: 1.0.0\nRequires-Python: >=3.10\nRequires-Dist: attrs>=24\nRequires-Dist: pytest>=7; extra == "test"\nProvides-Extra: test\nClassifier: Programming Language :: Python :: 3\n\nDescription is not authority: Requires-Python: <1\n] _
+
+tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-19/test_malformed_or_conflicting_3')
+raw = b'Name: fixture\nVersion: 1.0.0\nRequires-Python: >=3.10\nRequires-Dist: attrs>=24\nRequires-Dist: pytest>=7; extra ==...es-Extra: test\nClassifier: Programming Language :: Python :: 3\n\nDescription is not authority: Requires-Python: <1\n'
+
+    @pytest.mark.parametrize('raw', [
+        b'\xff\xfeinvalid',
+        VALID.replace(b'Name: fixture\n', b''),
+        VALID.replace(b'Version: 1.0.0\n', b''),
+        VALID.replace(b'Metadata-Version: 2.1\n', b''),
+        VALID.replace(b'Name: fixture\n', b'Name: fixture\nName: forged\n'),
+        VALID.replace(b'Version: 1.0.0\n', b'Version: 1.0.0\nVersion: 2.0.0\n'),
+        VALID.replace(b'Requires-Python: >=3.10\n', b'Requires-Python: >=3.10\nRequires-Python: <2\n'),
+        VALID.replace(b'Requires-Python: >=3.10\n', b'Requires-Python: not-a-specifier\n'),
+        VALID.replace(b'Requires-Dist: attrs>=24\n', b'Requires-Dist: attrs=>24\n'),
+        VALID.replace(b'Requires-Dist: attrs>=24\n', b'Requires-Dist: attrs @ https://example.invalid/wheel.whl\n'),
+        VALID.replace(b'Provides-Extra: test\n', b'Provides-Extra: ../../outside\n'),
+        b'Not a core metadata header\n\n' + VALID,
+    ])
+    def test_malformed_or_conflicting_metadata_never_becomes_observed_authority(tmp_path, raw):
+        with pytest.raises((ValueError, RuntimeError)):
+>           metadata_module().parse_wheel_metadata(wheel(tmp_path, raw))
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:80: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def metadata_module():
+>       assert importlib.util.find_spec(MODULE), 'V44 source-native metadata operation not implemented'
+E       AssertionError: V44 source-native metadata operation not implemented
+E       assert None
+E        +  where None = <function find_spec at 0x7f9988ee7920>('research.unified_consequence_runtime.native_metadata_v44')
+E        +    where <function find_spec at 0x7f9988ee7920> = <module 'importlib.util' (frozen)>.find_spec
+E        +      where <module 'importlib.util' (frozen)> = importlib.util
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:31: AssertionError
+_ test_malformed_or_conflicting_metadata_never_becomes_observed_authority[Metadata-Version: 2.1\nName: fixture\nName: forged\nVersion: 1.0.0\nRequires-Python: >=3.10\nRequires-Dist: attrs>=24\nRequires-Dist: pytest>=7; extra == "test"\nProvides-Extra: test\nClassifier: Programming Language :: Python :: 3\n\nDescription is not authority: Requires-Python: <1\n] _
+
+tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-19/test_malformed_or_conflicting_4')
+raw = b'Metadata-Version: 2.1\nName: fixture\nName: forged\nVersion: 1.0.0\nRequires-Python: >=3.10\nRequires-Dist: attrs>=2...es-Extra: test\nClassifier: Programming Language :: Python :: 3\n\nDescription is not authority: Requires-Python: <1\n'
+
+    @pytest.mark.parametrize('raw', [
+        b'\xff\xfeinvalid',
+        VALID.replace(b'Name: fixture\n', b''),
+        VALID.replace(b'Version: 1.0.0\n', b''),
+        VALID.replace(b'Metadata-Version: 2.1\n', b''),
+        VALID.replace(b'Name: fixture\n', b'Name: fixture\nName: forged\n'),
+        VALID.replace(b'Version: 1.0.0\n', b'Version: 1.0.0\nVersion: 2.0.0\n'),
+        VALID.replace(b'Requires-Python: >=3.10\n', b'Requires-Python: >=3.10\nRequires-Python: <2\n'),
+        VALID.replace(b'Requires-Python: >=3.10\n', b'Requires-Python: not-a-specifier\n'),
+        VALID.replace(b'Requires-Dist: attrs>=24\n', b'Requires-Dist: attrs=>24\n'),
+        VALID.replace(b'Requires-Dist: attrs>=24\n', b'Requires-Dist: attrs @ https://example.invalid/wheel.whl\n'),
+        VALID.replace(b'Provides-Extra: test\n', b'Provides-Extra: ../../outside\n'),
+        b'Not a core metadata header\n\n' + VALID,
+    ])
+    def test_malformed_or_conflicting_metadata_never_becomes_observed_authority(tmp_path, raw):
+        with pytest.raises((ValueError, RuntimeError)):
+>           metadata_module().parse_wheel_metadata(wheel(tmp_path, raw))
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:80: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def metadata_module():
+>       assert importlib.util.find_spec(MODULE), 'V44 source-native metadata operation not implemented'
+E       AssertionError: V44 source-native metadata operation not implemented
+E       assert None
+E        +  where None = <function find_spec at 0x7f9988ee7920>('research.unified_consequence_runtime.native_metadata_v44')
+E        +    where <function find_spec at 0x7f9988ee7920> = <module 'importlib.util' (frozen)>.find_spec
+E        +      where <module 'importlib.util' (frozen)> = importlib.util
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:31: AssertionError
+_ test_malformed_or_conflicting_metadata_never_becomes_observed_authority[Metadata-Version: 2.1\nName: fixture\nVersion: 1.0.0\nVersion: 2.0.0\nRequires-Python: >=3.10\nRequires-Dist: attrs>=24\nRequires-Dist: pytest>=7; extra == "test"\nProvides-Extra: test\nClassifier: Programming Language :: Python :: 3\n\nDescription is not authority: Requires-Python: <1\n] _
+
+tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-19/test_malformed_or_conflicting_5')
+raw = b'Metadata-Version: 2.1\nName: fixture\nVersion: 1.0.0\nVersion: 2.0.0\nRequires-Python: >=3.10\nRequires-Dist: attrs>...es-Extra: test\nClassifier: Programming Language :: Python :: 3\n\nDescription is not authority: Requires-Python: <1\n'
+
+    @pytest.mark.parametrize('raw', [
+        b'\xff\xfeinvalid',
+        VALID.replace(b'Name: fixture\n', b''),
+        VALID.replace(b'Version: 1.0.0\n', b''),
+        VALID.replace(b'Metadata-Version: 2.1\n', b''),
+        VALID.replace(b'Name: fixture\n', b'Name: fixture\nName: forged\n'),
+        VALID.replace(b'Version: 1.0.0\n', b'Version: 1.0.0\nVersion: 2.0.0\n'),
+        VALID.replace(b'Requires-Python: >=3.10\n', b'Requires-Python: >=3.10\nRequires-Python: <2\n'),
+        VALID.replace(b'Requires-Python: >=3.10\n', b'Requires-Python: not-a-specifier\n'),
+        VALID.replace(b'Requires-Dist: attrs>=24\n', b'Requires-Dist: attrs=>24\n'),
+        VALID.replace(b'Requires-Dist: attrs>=24\n', b'Requires-Dist: attrs @ https://example.invalid/wheel.whl\n'),
+        VALID.replace(b'Provides-Extra: test\n', b'Provides-Extra: ../../outside\n'),
+        b'Not a core metadata header\n\n' + VALID,
+    ])
+    def test_malformed_or_conflicting_metadata_never_becomes_observed_authority(tmp_path, raw):
+        with pytest.raises((ValueError, RuntimeError)):
+>           metadata_module().parse_wheel_metadata(wheel(tmp_path, raw))
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:80: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def metadata_module():
+>       assert importlib.util.find_spec(MODULE), 'V44 source-native metadata operation not implemented'
+E       AssertionError: V44 source-native metadata operation not implemented
+E       assert None
+E        +  where None = <function find_spec at 0x7f9988ee7920>('research.unified_consequence_runtime.native_metadata_v44')
+E        +    where <function find_spec at 0x7f9988ee7920> = <module 'importlib.util' (frozen)>.find_spec
+E        +      where <module 'importlib.util' (frozen)> = importlib.util
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:31: AssertionError
+_ test_malformed_or_conflicting_metadata_never_becomes_observed_authority[Metadata-Version: 2.1\nName: fixture\nVersion: 1.0.0\nRequires-Python: >=3.10\nRequires-Python: <2\nRequires-Dist: attrs>=24\nRequires-Dist: pytest>=7; extra == "test"\nProvides-Extra: test\nClassifier: Programming Language :: Python :: 3\n\nDescription is not authority: Requires-Python: <1\n] _
+
+tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-19/test_malformed_or_conflicting_6')
+raw = b'Metadata-Version: 2.1\nName: fixture\nVersion: 1.0.0\nRequires-Python: >=3.10\nRequires-Python: <2\nRequires-Dist: a...es-Extra: test\nClassifier: Programming Language :: Python :: 3\n\nDescription is not authority: Requires-Python: <1\n'
+
+    @pytest.mark.parametrize('raw', [
+        b'\xff\xfeinvalid',
+        VALID.replace(b'Name: fixture\n', b''),
+        VALID.replace(b'Version: 1.0.0\n', b''),
+        VALID.replace(b'Metadata-Version: 2.1\n', b''),
+        VALID.replace(b'Name: fixture\n', b'Name: fixture\nName: forged\n'),
+        VALID.replace(b'Version: 1.0.0\n', b'Version: 1.0.0\nVersion: 2.0.0\n'),
+        VALID.replace(b'Requires-Python: >=3.10\n', b'Requires-Python: >=3.10\nRequires-Python: <2\n'),
+        VALID.replace(b'Requires-Python: >=3.10\n', b'Requires-Python: not-a-specifier\n'),
+        VALID.replace(b'Requires-Dist: attrs>=24\n', b'Requires-Dist: attrs=>24\n'),
+        VALID.replace(b'Requires-Dist: attrs>=24\n', b'Requires-Dist: attrs @ https://example.invalid/wheel.whl\n'),
+        VALID.replace(b'Provides-Extra: test\n', b'Provides-Extra: ../../outside\n'),
+        b'Not a core metadata header\n\n' + VALID,
+    ])
+    def test_malformed_or_conflicting_metadata_never_becomes_observed_authority(tmp_path, raw):
+        with pytest.raises((ValueError, RuntimeError)):
+>           metadata_module().parse_wheel_metadata(wheel(tmp_path, raw))
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:80: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def metadata_module():
+>       assert importlib.util.find_spec(MODULE), 'V44 source-native metadata operation not implemented'
+E       AssertionError: V44 source-native metadata operation not implemented
+E       assert None
+E        +  where None = <function find_spec at 0x7f9988ee7920>('research.unified_consequence_runtime.native_metadata_v44')
+E        +    where <function find_spec at 0x7f9988ee7920> = <module 'importlib.util' (frozen)>.find_spec
+E        +      where <module 'importlib.util' (frozen)> = importlib.util
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:31: AssertionError
+_ test_malformed_or_conflicting_metadata_never_becomes_observed_authority[Metadata-Version: 2.1\nName: fixture\nVersion: 1.0.0\nRequires-Python: not-a-specifier\nRequires-Dist: attrs>=24\nRequires-Dist: pytest>=7; extra == "test"\nProvides-Extra: test\nClassifier: Programming Language :: Python :: 3\n\nDescription is not authority: Requires-Python: <1\n] _
+
+tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-19/test_malformed_or_conflicting_7')
+raw = b'Metadata-Version: 2.1\nName: fixture\nVersion: 1.0.0\nRequires-Python: not-a-specifier\nRequires-Dist: attrs>=24\nRe...es-Extra: test\nClassifier: Programming Language :: Python :: 3\n\nDescription is not authority: Requires-Python: <1\n'
+
+    @pytest.mark.parametrize('raw', [
+        b'\xff\xfeinvalid',
+        VALID.replace(b'Name: fixture\n', b''),
+        VALID.replace(b'Version: 1.0.0\n', b''),
+        VALID.replace(b'Metadata-Version: 2.1\n', b''),
+        VALID.replace(b'Name: fixture\n', b'Name: fixture\nName: forged\n'),
+        VALID.replace(b'Version: 1.0.0\n', b'Version: 1.0.0\nVersion: 2.0.0\n'),
+        VALID.replace(b'Requires-Python: >=3.10\n', b'Requires-Python: >=3.10\nRequires-Python: <2\n'),
+        VALID.replace(b'Requires-Python: >=3.10\n', b'Requires-Python: not-a-specifier\n'),
+        VALID.replace(b'Requires-Dist: attrs>=24\n', b'Requires-Dist: attrs=>24\n'),
+        VALID.replace(b'Requires-Dist: attrs>=24\n', b'Requires-Dist: attrs @ https://example.invalid/wheel.whl\n'),
+        VALID.replace(b'Provides-Extra: test\n', b'Provides-Extra: ../../outside\n'),
+        b'Not a core metadata header\n\n' + VALID,
+    ])
+    def test_malformed_or_conflicting_metadata_never_becomes_observed_authority(tmp_path, raw):
+        with pytest.raises((ValueError, RuntimeError)):
+>           metadata_module().parse_wheel_metadata(wheel(tmp_path, raw))
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:80: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def metadata_module():
+>       assert importlib.util.find_spec(MODULE), 'V44 source-native metadata operation not implemented'
+E       AssertionError: V44 source-native metadata operation not implemented
+E       assert None
+E        +  where None = <function find_spec at 0x7f9988ee7920>('research.unified_consequence_runtime.native_metadata_v44')
+E        +    where <function find_spec at 0x7f9988ee7920> = <module 'importlib.util' (frozen)>.find_spec
+E        +      where <module 'importlib.util' (frozen)> = importlib.util
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:31: AssertionError
+_ test_malformed_or_conflicting_metadata_never_becomes_observed_authority[Metadata-Version: 2.1\nName: fixture\nVersion: 1.0.0\nRequires-Python: >=3.10\nRequires-Dist: attrs=>24\nRequires-Dist: pytest>=7; extra == "test"\nProvides-Extra: test\nClassifier: Programming Language :: Python :: 3\n\nDescription is not authority: Requires-Python: <1\n] _
+
+tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-19/test_malformed_or_conflicting_8')
+raw = b'Metadata-Version: 2.1\nName: fixture\nVersion: 1.0.0\nRequires-Python: >=3.10\nRequires-Dist: attrs=>24\nRequires-Di...es-Extra: test\nClassifier: Programming Language :: Python :: 3\n\nDescription is not authority: Requires-Python: <1\n'
+
+    @pytest.mark.parametrize('raw', [
+        b'\xff\xfeinvalid',
+        VALID.replace(b'Name: fixture\n', b''),
+        VALID.replace(b'Version: 1.0.0\n', b''),
+        VALID.replace(b'Metadata-Version: 2.1\n', b''),
+        VALID.replace(b'Name: fixture\n', b'Name: fixture\nName: forged\n'),
+        VALID.replace(b'Version: 1.0.0\n', b'Version: 1.0.0\nVersion: 2.0.0\n'),
+        VALID.replace(b'Requires-Python: >=3.10\n', b'Requires-Python: >=3.10\nRequires-Python: <2\n'),
+        VALID.replace(b'Requires-Python: >=3.10\n', b'Requires-Python: not-a-specifier\n'),
+        VALID.replace(b'Requires-Dist: attrs>=24\n', b'Requires-Dist: attrs=>24\n'),
+        VALID.replace(b'Requires-Dist: attrs>=24\n', b'Requires-Dist: attrs @ https://example.invalid/wheel.whl\n'),
+        VALID.replace(b'Provides-Extra: test\n', b'Provides-Extra: ../../outside\n'),
+        b'Not a core metadata header\n\n' + VALID,
+    ])
+    def test_malformed_or_conflicting_metadata_never_becomes_observed_authority(tmp_path, raw):
+        with pytest.raises((ValueError, RuntimeError)):
+>           metadata_module().parse_wheel_metadata(wheel(tmp_path, raw))
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:80: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def metadata_module():
+>       assert importlib.util.find_spec(MODULE), 'V44 source-native metadata operation not implemented'
+E       AssertionError: V44 source-native metadata operation not implemented
+E       assert None
+E        +  where None = <function find_spec at 0x7f9988ee7920>('research.unified_consequence_runtime.native_metadata_v44')
+E        +    where <function find_spec at 0x7f9988ee7920> = <module 'importlib.util' (frozen)>.find_spec
+E        +      where <module 'importlib.util' (frozen)> = importlib.util
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:31: AssertionError
+_ test_malformed_or_conflicting_metadata_never_becomes_observed_authority[Metadata-Version: 2.1\nName: fixture\nVersion: 1.0.0\nRequires-Python: >=3.10\nRequires-Dist: attrs @ https://example.invalid/wheel.whl\nRequires-Dist: pytest>=7; extra == "test"\nProvides-Extra: test\nClassifier: Programming Language :: Python :: 3\n\nDescription is not authority: Requires-Python: <1\n] _
+
+tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-19/test_malformed_or_conflicting_9')
+raw = b'Metadata-Version: 2.1\nName: fixture\nVersion: 1.0.0\nRequires-Python: >=3.10\nRequires-Dist: attrs @ https://exampl...es-Extra: test\nClassifier: Programming Language :: Python :: 3\n\nDescription is not authority: Requires-Python: <1\n'
+
+    @pytest.mark.parametrize('raw', [
+        b'\xff\xfeinvalid',
+        VALID.replace(b'Name: fixture\n', b''),
+        VALID.replace(b'Version: 1.0.0\n', b''),
+        VALID.replace(b'Metadata-Version: 2.1\n', b''),
+        VALID.replace(b'Name: fixture\n', b'Name: fixture\nName: forged\n'),
+        VALID.replace(b'Version: 1.0.0\n', b'Version: 1.0.0\nVersion: 2.0.0\n'),
+        VALID.replace(b'Requires-Python: >=3.10\n', b'Requires-Python: >=3.10\nRequires-Python: <2\n'),
+        VALID.replace(b'Requires-Python: >=3.10\n', b'Requires-Python: not-a-specifier\n'),
+        VALID.replace(b'Requires-Dist: attrs>=24\n', b'Requires-Dist: attrs=>24\n'),
+        VALID.replace(b'Requires-Dist: attrs>=24\n', b'Requires-Dist: attrs @ https://example.invalid/wheel.whl\n'),
+        VALID.replace(b'Provides-Extra: test\n', b'Provides-Extra: ../../outside\n'),
+        b'Not a core metadata header\n\n' + VALID,
+    ])
+    def test_malformed_or_conflicting_metadata_never_becomes_observed_authority(tmp_path, raw):
+        with pytest.raises((ValueError, RuntimeError)):
+>           metadata_module().parse_wheel_metadata(wheel(tmp_path, raw))
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:80: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def metadata_module():
+>       assert importlib.util.find_spec(MODULE), 'V44 source-native metadata operation not implemented'
+E       AssertionError: V44 source-native metadata operation not implemented
+E       assert None
+E        +  where None = <function find_spec at 0x7f9988ee7920>('research.unified_consequence_runtime.native_metadata_v44')
+E        +    where <function find_spec at 0x7f9988ee7920> = <module 'importlib.util' (frozen)>.find_spec
+E        +      where <module 'importlib.util' (frozen)> = importlib.util
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:31: AssertionError
+_ test_malformed_or_conflicting_metadata_never_becomes_observed_authority[Metadata-Version: 2.1\nName: fixture\nVersion: 1.0.0\nRequires-Python: >=3.10\nRequires-Dist: attrs>=24\nRequires-Dist: pytest>=7; extra == "test"\nProvides-Extra: ../../outside\nClassifier: Programming Language :: Python :: 3\n\nDescription is not authority: Requires-Python: <1\n] _
+
+tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-19/test_malformed_or_conflicting_10')
+raw = b'Metadata-Version: 2.1\nName: fixture\nVersion: 1.0.0\nRequires-Python: >=3.10\nRequires-Dist: attrs>=24\nRequires-Di... ../../outside\nClassifier: Programming Language :: Python :: 3\n\nDescription is not authority: Requires-Python: <1\n'
+
+    @pytest.mark.parametrize('raw', [
+        b'\xff\xfeinvalid',
+        VALID.replace(b'Name: fixture\n', b''),
+        VALID.replace(b'Version: 1.0.0\n', b''),
+        VALID.replace(b'Metadata-Version: 2.1\n', b''),
+        VALID.replace(b'Name: fixture\n', b'Name: fixture\nName: forged\n'),
+        VALID.replace(b'Version: 1.0.0\n', b'Version: 1.0.0\nVersion: 2.0.0\n'),
+        VALID.replace(b'Requires-Python: >=3.10\n', b'Requires-Python: >=3.10\nRequires-Python: <2\n'),
+        VALID.replace(b'Requires-Python: >=3.10\n', b'Requires-Python: not-a-specifier\n'),
+        VALID.replace(b'Requires-Dist: attrs>=24\n', b'Requires-Dist: attrs=>24\n'),
+        VALID.replace(b'Requires-Dist: attrs>=24\n', b'Requires-Dist: attrs @ https://example.invalid/wheel.whl\n'),
+        VALID.replace(b'Provides-Extra: test\n', b'Provides-Extra: ../../outside\n'),
+        b'Not a core metadata header\n\n' + VALID,
+    ])
+    def test_malformed_or_conflicting_metadata_never_becomes_observed_authority(tmp_path, raw):
+        with pytest.raises((ValueError, RuntimeError)):
+>           metadata_module().parse_wheel_metadata(wheel(tmp_path, raw))
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:80: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def metadata_module():
+>       assert importlib.util.find_spec(MODULE), 'V44 source-native metadata operation not implemented'
+E       AssertionError: V44 source-native metadata operation not implemented
+E       assert None
+E        +  where None = <function find_spec at 0x7f9988ee7920>('research.unified_consequence_runtime.native_metadata_v44')
+E        +    where <function find_spec at 0x7f9988ee7920> = <module 'importlib.util' (frozen)>.find_spec
+E        +      where <module 'importlib.util' (frozen)> = importlib.util
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:31: AssertionError
+_ test_malformed_or_conflicting_metadata_never_becomes_observed_authority[Not a core metadata header\n\nMetadata-Version: 2.1\nName: fixture\nVersion: 1.0.0\nRequires-Python: >=3.10\nRequires-Dist: attrs>=24\nRequires-Dist: pytest>=7; extra == "test"\nProvides-Extra: test\nClassifier: Programming Language :: Python :: 3\n\nDescription is not authority: Requires-Python: <1\n] _
+
+tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-19/test_malformed_or_conflicting_11')
+raw = b'Not a core metadata header\n\nMetadata-Version: 2.1\nName: fixture\nVersion: 1.0.0\nRequires-Python: >=3.10\nRequire...es-Extra: test\nClassifier: Programming Language :: Python :: 3\n\nDescription is not authority: Requires-Python: <1\n'
+
+    @pytest.mark.parametrize('raw', [
+        b'\xff\xfeinvalid',
+        VALID.replace(b'Name: fixture\n', b''),
+        VALID.replace(b'Version: 1.0.0\n', b''),
+        VALID.replace(b'Metadata-Version: 2.1\n', b''),
+        VALID.replace(b'Name: fixture\n', b'Name: fixture\nName: forged\n'),
+        VALID.replace(b'Version: 1.0.0\n', b'Version: 1.0.0\nVersion: 2.0.0\n'),
+        VALID.replace(b'Requires-Python: >=3.10\n', b'Requires-Python: >=3.10\nRequires-Python: <2\n'),
+        VALID.replace(b'Requires-Python: >=3.10\n', b'Requires-Python: not-a-specifier\n'),
+        VALID.replace(b'Requires-Dist: attrs>=24\n', b'Requires-Dist: attrs=>24\n'),
+        VALID.replace(b'Requires-Dist: attrs>=24\n', b'Requires-Dist: attrs @ https://example.invalid/wheel.whl\n'),
+        VALID.replace(b'Provides-Extra: test\n', b'Provides-Extra: ../../outside\n'),
+        b'Not a core metadata header\n\n' + VALID,
+    ])
+    def test_malformed_or_conflicting_metadata_never_becomes_observed_authority(tmp_path, raw):
+        with pytest.raises((ValueError, RuntimeError)):
+>           metadata_module().parse_wheel_metadata(wheel(tmp_path, raw))
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:80: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def metadata_module():
+>       assert importlib.util.find_spec(MODULE), 'V44 source-native metadata operation not implemented'
+E       AssertionError: V44 source-native metadata operation not implemented
+E       assert None
+E        +  where None = <function find_spec at 0x7f9988ee7920>('research.unified_consequence_runtime.native_metadata_v44')
+E        +    where <function find_spec at 0x7f9988ee7920> = <module 'importlib.util' (frozen)>.find_spec
+E        +      where <module 'importlib.util' (frozen)> = importlib.util
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:31: AssertionError
+_ test_metadata_archive_identity_is_unambiguous_and_regular[package/METADATA-extra0-33188] _
+
+tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-19/test_metadata_archive_identity0')
+name = 'package/METADATA', extra = (), mode = 33188
+
+    @pytest.mark.parametrize('name,extra,mode', [
+        ('package/METADATA', (), 0o100644),
+        ('fixture-1.0.0.dist-info/METADATA', [('other-1.0.0.dist-info/METADATA', VALID)], 0o100644),
+        ('fixture-1.0.0.dist-info/METADATA', [('fixture-1.0.0.dist-info/METADATA', VALID)], 0o100644),
+        ('fixture-1.0.0.dist-info/METADATA', [('../outside', b'x')], 0o100644),
+        ('fixture-1.0.0.dist-info/METADATA', [('/absolute', b'x')], 0o100644),
+        ('fixture-1.0.0.dist-info/METADATA', (), 0o120777),
+    ])
+    def test_metadata_archive_identity_is_unambiguous_and_regular(tmp_path, name, extra, mode):
+        with pytest.raises((ValueError, RuntimeError)):
+>           metadata_module().parse_wheel_metadata(wheel(tmp_path, VALID, name=name, extra=extra, mode=mode))
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:93: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def metadata_module():
+>       assert importlib.util.find_spec(MODULE), 'V44 source-native metadata operation not implemented'
+E       AssertionError: V44 source-native metadata operation not implemented
+E       assert None
+E        +  where None = <function find_spec at 0x7f9988ee7920>('research.unified_consequence_runtime.native_metadata_v44')
+E        +    where <function find_spec at 0x7f9988ee7920> = <module 'importlib.util' (frozen)>.find_spec
+E        +      where <module 'importlib.util' (frozen)> = importlib.util
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:31: AssertionError
+_ test_metadata_archive_identity_is_unambiguous_and_regular[fixture-1.0.0.dist-info/METADATA-extra1-33188] _
+
+tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-19/test_metadata_archive_identity1')
+name = 'fixture-1.0.0.dist-info/METADATA'
+extra = [('other-1.0.0.dist-info/METADATA', b'Metadata-Version: 2.1\nName: fixture\nVersion: 1.0.0\nRequires-Python: >=3.10\nR...-Extra: test\nClassifier: Programming Language :: Python :: 3\n\nDescription is not authority: Requires-Python: <1\n')]
+mode = 33188
+
+    @pytest.mark.parametrize('name,extra,mode', [
+        ('package/METADATA', (), 0o100644),
+        ('fixture-1.0.0.dist-info/METADATA', [('other-1.0.0.dist-info/METADATA', VALID)], 0o100644),
+        ('fixture-1.0.0.dist-info/METADATA', [('fixture-1.0.0.dist-info/METADATA', VALID)], 0o100644),
+        ('fixture-1.0.0.dist-info/METADATA', [('../outside', b'x')], 0o100644),
+        ('fixture-1.0.0.dist-info/METADATA', [('/absolute', b'x')], 0o100644),
+        ('fixture-1.0.0.dist-info/METADATA', (), 0o120777),
+    ])
+    def test_metadata_archive_identity_is_unambiguous_and_regular(tmp_path, name, extra, mode):
+        with pytest.raises((ValueError, RuntimeError)):
+>           metadata_module().parse_wheel_metadata(wheel(tmp_path, VALID, name=name, extra=extra, mode=mode))
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:93: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def metadata_module():
+>       assert importlib.util.find_spec(MODULE), 'V44 source-native metadata operation not implemented'
+E       AssertionError: V44 source-native metadata operation not implemented
+E       assert None
+E        +  where None = <function find_spec at 0x7f9988ee7920>('research.unified_consequence_runtime.native_metadata_v44')
+E        +    where <function find_spec at 0x7f9988ee7920> = <module 'importlib.util' (frozen)>.find_spec
+E        +      where <module 'importlib.util' (frozen)> = importlib.util
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:31: AssertionError
+_ test_metadata_archive_identity_is_unambiguous_and_regular[fixture-1.0.0.dist-info/METADATA-extra2-33188] _
+
+tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-19/test_metadata_archive_identity2')
+name = 'fixture-1.0.0.dist-info/METADATA'
+extra = [('fixture-1.0.0.dist-info/METADATA', b'Metadata-Version: 2.1\nName: fixture\nVersion: 1.0.0\nRequires-Python: >=3.10\...-Extra: test\nClassifier: Programming Language :: Python :: 3\n\nDescription is not authority: Requires-Python: <1\n')]
+mode = 33188
+
+    @pytest.mark.parametrize('name,extra,mode', [
+        ('package/METADATA', (), 0o100644),
+        ('fixture-1.0.0.dist-info/METADATA', [('other-1.0.0.dist-info/METADATA', VALID)], 0o100644),
+        ('fixture-1.0.0.dist-info/METADATA', [('fixture-1.0.0.dist-info/METADATA', VALID)], 0o100644),
+        ('fixture-1.0.0.dist-info/METADATA', [('../outside', b'x')], 0o100644),
+        ('fixture-1.0.0.dist-info/METADATA', [('/absolute', b'x')], 0o100644),
+        ('fixture-1.0.0.dist-info/METADATA', (), 0o120777),
+    ])
+    def test_metadata_archive_identity_is_unambiguous_and_regular(tmp_path, name, extra, mode):
+        with pytest.raises((ValueError, RuntimeError)):
+>           metadata_module().parse_wheel_metadata(wheel(tmp_path, VALID, name=name, extra=extra, mode=mode))
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:93: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def metadata_module():
+>       assert importlib.util.find_spec(MODULE), 'V44 source-native metadata operation not implemented'
+E       AssertionError: V44 source-native metadata operation not implemented
+E       assert None
+E        +  where None = <function find_spec at 0x7f9988ee7920>('research.unified_consequence_runtime.native_metadata_v44')
+E        +    where <function find_spec at 0x7f9988ee7920> = <module 'importlib.util' (frozen)>.find_spec
+E        +      where <module 'importlib.util' (frozen)> = importlib.util
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:31: AssertionError
+_ test_metadata_archive_identity_is_unambiguous_and_regular[fixture-1.0.0.dist-info/METADATA-extra3-33188] _
+
+tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-19/test_metadata_archive_identity3')
+name = 'fixture-1.0.0.dist-info/METADATA', extra = [('../outside', b'x')]
+mode = 33188
+
+    @pytest.mark.parametrize('name,extra,mode', [
+        ('package/METADATA', (), 0o100644),
+        ('fixture-1.0.0.dist-info/METADATA', [('other-1.0.0.dist-info/METADATA', VALID)], 0o100644),
+        ('fixture-1.0.0.dist-info/METADATA', [('fixture-1.0.0.dist-info/METADATA', VALID)], 0o100644),
+        ('fixture-1.0.0.dist-info/METADATA', [('../outside', b'x')], 0o100644),
+        ('fixture-1.0.0.dist-info/METADATA', [('/absolute', b'x')], 0o100644),
+        ('fixture-1.0.0.dist-info/METADATA', (), 0o120777),
+    ])
+    def test_metadata_archive_identity_is_unambiguous_and_regular(tmp_path, name, extra, mode):
+        with pytest.raises((ValueError, RuntimeError)):
+>           metadata_module().parse_wheel_metadata(wheel(tmp_path, VALID, name=name, extra=extra, mode=mode))
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:93: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def metadata_module():
+>       assert importlib.util.find_spec(MODULE), 'V44 source-native metadata operation not implemented'
+E       AssertionError: V44 source-native metadata operation not implemented
+E       assert None
+E        +  where None = <function find_spec at 0x7f9988ee7920>('research.unified_consequence_runtime.native_metadata_v44')
+E        +    where <function find_spec at 0x7f9988ee7920> = <module 'importlib.util' (frozen)>.find_spec
+E        +      where <module 'importlib.util' (frozen)> = importlib.util
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:31: AssertionError
+_ test_metadata_archive_identity_is_unambiguous_and_regular[fixture-1.0.0.dist-info/METADATA-extra4-33188] _
+
+tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-19/test_metadata_archive_identity4')
+name = 'fixture-1.0.0.dist-info/METADATA', extra = [('/absolute', b'x')]
+mode = 33188
+
+    @pytest.mark.parametrize('name,extra,mode', [
+        ('package/METADATA', (), 0o100644),
+        ('fixture-1.0.0.dist-info/METADATA', [('other-1.0.0.dist-info/METADATA', VALID)], 0o100644),
+        ('fixture-1.0.0.dist-info/METADATA', [('fixture-1.0.0.dist-info/METADATA', VALID)], 0o100644),
+        ('fixture-1.0.0.dist-info/METADATA', [('../outside', b'x')], 0o100644),
+        ('fixture-1.0.0.dist-info/METADATA', [('/absolute', b'x')], 0o100644),
+        ('fixture-1.0.0.dist-info/METADATA', (), 0o120777),
+    ])
+    def test_metadata_archive_identity_is_unambiguous_and_regular(tmp_path, name, extra, mode):
+        with pytest.raises((ValueError, RuntimeError)):
+>           metadata_module().parse_wheel_metadata(wheel(tmp_path, VALID, name=name, extra=extra, mode=mode))
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:93: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def metadata_module():
+>       assert importlib.util.find_spec(MODULE), 'V44 source-native metadata operation not implemented'
+E       AssertionError: V44 source-native metadata operation not implemented
+E       assert None
+E        +  where None = <function find_spec at 0x7f9988ee7920>('research.unified_consequence_runtime.native_metadata_v44')
+E        +    where <function find_spec at 0x7f9988ee7920> = <module 'importlib.util' (frozen)>.find_spec
+E        +      where <module 'importlib.util' (frozen)> = importlib.util
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:31: AssertionError
+_ test_metadata_archive_identity_is_unambiguous_and_regular[fixture-1.0.0.dist-info/METADATA-extra5-41471] _
+
+tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-19/test_metadata_archive_identity5')
+name = 'fixture-1.0.0.dist-info/METADATA', extra = (), mode = 41471
+
+    @pytest.mark.parametrize('name,extra,mode', [
+        ('package/METADATA', (), 0o100644),
+        ('fixture-1.0.0.dist-info/METADATA', [('other-1.0.0.dist-info/METADATA', VALID)], 0o100644),
+        ('fixture-1.0.0.dist-info/METADATA', [('fixture-1.0.0.dist-info/METADATA', VALID)], 0o100644),
+        ('fixture-1.0.0.dist-info/METADATA', [('../outside', b'x')], 0o100644),
+        ('fixture-1.0.0.dist-info/METADATA', [('/absolute', b'x')], 0o100644),
+        ('fixture-1.0.0.dist-info/METADATA', (), 0o120777),
+    ])
+    def test_metadata_archive_identity_is_unambiguous_and_regular(tmp_path, name, extra, mode):
+        with pytest.raises((ValueError, RuntimeError)):
+>           metadata_module().parse_wheel_metadata(wheel(tmp_path, VALID, name=name, extra=extra, mode=mode))
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:93: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def metadata_module():
+>       assert importlib.util.find_spec(MODULE), 'V44 source-native metadata operation not implemented'
+E       AssertionError: V44 source-native metadata operation not implemented
+E       assert None
+E        +  where None = <function find_spec at 0x7f9988ee7920>('research.unified_consequence_runtime.native_metadata_v44')
+E        +    where <function find_spec at 0x7f9988ee7920> = <module 'importlib.util' (frozen)>.find_spec
+E        +      where <module 'importlib.util' (frozen)> = importlib.util
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:31: AssertionError
+___ test_real_original_backend_metadata_is_independently_rebuilt_before_use ____
+
+tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-19/test_real_original_backend_met0')
+
+    def test_real_original_backend_metadata_is_independently_rebuilt_before_use(tmp_path):
+>       module, repo, commit, snapshot, env, evidence, observation, checked = genuine_observation(tmp_path)
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:133: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:122: in genuine_observation
+    module = metadata_module()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def metadata_module():
+>       assert importlib.util.find_spec(MODULE), 'V44 source-native metadata operation not implemented'
+E       AssertionError: V44 source-native metadata operation not implemented
+E       assert None
+E        +  where None = <function find_spec at 0x7f9988ee7920>('research.unified_consequence_runtime.native_metadata_v44')
+E        +    where <function find_spec at 0x7f9988ee7920> = <module 'importlib.util' (frozen)>.find_spec
+E        +      where <module 'importlib.util' (frozen)> = importlib.util
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:31: AssertionError
+______ test_dirty_worktree_does_not_replace_exact_original_backend_source ______
+
+tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-19/test_dirty_worktree_does_not_r0')
+
+    def test_dirty_worktree_does_not_replace_exact_original_backend_source(tmp_path):
+>       module, repo, commit, snapshot, env, evidence, observation, checked = genuine_observation(tmp_path)
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:146: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:122: in genuine_observation
+    module = metadata_module()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def metadata_module():
+>       assert importlib.util.find_spec(MODULE), 'V44 source-native metadata operation not implemented'
+E       AssertionError: V44 source-native metadata operation not implemented
+E       assert None
+E        +  where None = <function find_spec at 0x7f9988ee7920>('research.unified_consequence_runtime.native_metadata_v44')
+E        +    where <function find_spec at 0x7f9988ee7920> = <module 'importlib.util' (frozen)>.find_spec
+E        +      where <module 'importlib.util' (frozen)> = importlib.util
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:31: AssertionError
+_ test_retained_observation_rejects_wrong_input_or_missing_independent_evidence[source] _
+
+tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-19/test_retained_observation_reje0')
+field = 'source'
+
+    @pytest.mark.parametrize('field', ['source', 'environment', 'missing-independent-wheel', 'altered-independent-wheel'])
+    def test_retained_observation_rejects_wrong_input_or_missing_independent_evidence(tmp_path, field):
+>       module, repo, commit, snapshot, env, evidence, observation, checked = genuine_observation(tmp_path)
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:155: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:122: in genuine_observation
+    module = metadata_module()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def metadata_module():
+>       assert importlib.util.find_spec(MODULE), 'V44 source-native metadata operation not implemented'
+E       AssertionError: V44 source-native metadata operation not implemented
+E       assert None
+E        +  where None = <function find_spec at 0x7f9988ee7920>('research.unified_consequence_runtime.native_metadata_v44')
+E        +    where <function find_spec at 0x7f9988ee7920> = <module 'importlib.util' (frozen)>.find_spec
+E        +      where <module 'importlib.util' (frozen)> = importlib.util
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:31: AssertionError
+_ test_retained_observation_rejects_wrong_input_or_missing_independent_evidence[environment] _
+
+tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-19/test_retained_observation_reje1')
+field = 'environment'
+
+    @pytest.mark.parametrize('field', ['source', 'environment', 'missing-independent-wheel', 'altered-independent-wheel'])
+    def test_retained_observation_rejects_wrong_input_or_missing_independent_evidence(tmp_path, field):
+>       module, repo, commit, snapshot, env, evidence, observation, checked = genuine_observation(tmp_path)
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:155: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:122: in genuine_observation
+    module = metadata_module()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def metadata_module():
+>       assert importlib.util.find_spec(MODULE), 'V44 source-native metadata operation not implemented'
+E       AssertionError: V44 source-native metadata operation not implemented
+E       assert None
+E        +  where None = <function find_spec at 0x7f9988ee7920>('research.unified_consequence_runtime.native_metadata_v44')
+E        +    where <function find_spec at 0x7f9988ee7920> = <module 'importlib.util' (frozen)>.find_spec
+E        +      where <module 'importlib.util' (frozen)> = importlib.util
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:31: AssertionError
+_ test_retained_observation_rejects_wrong_input_or_missing_independent_evidence[missing-independent-wheel] _
+
+tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-19/test_retained_observation_reje2')
+field = 'missing-independent-wheel'
+
+    @pytest.mark.parametrize('field', ['source', 'environment', 'missing-independent-wheel', 'altered-independent-wheel'])
+    def test_retained_observation_rejects_wrong_input_or_missing_independent_evidence(tmp_path, field):
+>       module, repo, commit, snapshot, env, evidence, observation, checked = genuine_observation(tmp_path)
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:155: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:122: in genuine_observation
+    module = metadata_module()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def metadata_module():
+>       assert importlib.util.find_spec(MODULE), 'V44 source-native metadata operation not implemented'
+E       AssertionError: V44 source-native metadata operation not implemented
+E       assert None
+E        +  where None = <function find_spec at 0x7f9988ee7920>('research.unified_consequence_runtime.native_metadata_v44')
+E        +    where <function find_spec at 0x7f9988ee7920> = <module 'importlib.util' (frozen)>.find_spec
+E        +      where <module 'importlib.util' (frozen)> = importlib.util
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:31: AssertionError
+_ test_retained_observation_rejects_wrong_input_or_missing_independent_evidence[altered-independent-wheel] _
+
+tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-19/test_retained_observation_reje3')
+field = 'altered-independent-wheel'
+
+    @pytest.mark.parametrize('field', ['source', 'environment', 'missing-independent-wheel', 'altered-independent-wheel'])
+    def test_retained_observation_rejects_wrong_input_or_missing_independent_evidence(tmp_path, field):
+>       module, repo, commit, snapshot, env, evidence, observation, checked = genuine_observation(tmp_path)
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:155: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:122: in genuine_observation
+    module = metadata_module()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def metadata_module():
+>       assert importlib.util.find_spec(MODULE), 'V44 source-native metadata operation not implemented'
+E       AssertionError: V44 source-native metadata operation not implemented
+E       assert None
+E        +  where None = <function find_spec at 0x7f9988ee7920>('research.unified_consequence_runtime.native_metadata_v44')
+E        +    where <function find_spec at 0x7f9988ee7920> = <module 'importlib.util' (frozen)>.find_spec
+E        +      where <module 'importlib.util' (frozen)> = importlib.util
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:31: AssertionError
+___ test_verified_source_native_observation_resolves_declared_dynamic_fields ___
+
+tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-19/test_verified_source_native_ob0')
+
+    def test_verified_source_native_observation_resolves_declared_dynamic_fields(tmp_path):
+>       module, repo, commit, snapshot, env, evidence, observation, checked = genuine_observation(tmp_path)
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:180: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:122: in genuine_observation
+    module = metadata_module()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def metadata_module():
+>       assert importlib.util.find_spec(MODULE), 'V44 source-native metadata operation not implemented'
+E       AssertionError: V44 source-native metadata operation not implemented
+E       assert None
+E        +  where None = <function find_spec at 0x7f9988ee7920>('research.unified_consequence_runtime.native_metadata_v44')
+E        +    where <function find_spec at 0x7f9988ee7920> = <module 'importlib.util' (frozen)>.find_spec
+E        +      where <module 'importlib.util' (frozen)> = importlib.util
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:31: AssertionError
+______ test_observation_cannot_silently_replace_static_test_requirements _______
+
+tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-19/test_observation_cannot_silent0')
+
+    def test_observation_cannot_silently_replace_static_test_requirements(tmp_path):
+        base = (FIXTURE / 'pyproject.toml').read_bytes()
+>       module, repo, commit, snapshot, env, evidence, observation, checked = genuine_observation(tmp_path,
+            modifications={'pyproject.toml': base + b'\n[dependency-groups]\ntest = ["pytest<1"]\n'})
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:194: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:122: in genuine_observation
+    module = metadata_module()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def metadata_module():
+>       assert importlib.util.find_spec(MODULE), 'V44 source-native metadata operation not implemented'
+E       AssertionError: V44 source-native metadata operation not implemented
+E       assert None
+E        +  where None = <function find_spec at 0x7f9988ee7920>('research.unified_consequence_runtime.native_metadata_v44')
+E        +    where <function find_spec at 0x7f9988ee7920> = <module 'importlib.util' (frozen)>.find_spec
+E        +      where <module 'importlib.util' (frozen)> = importlib.util
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:31: AssertionError
+_______ test_observation_for_different_source_cannot_be_used_by_selector _______
+
+tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-19/test_observation_for_different0')
+
+    def test_observation_for_different_source_cannot_be_used_by_selector(tmp_path):
+>       module, repo, commit, snapshot, env, evidence, observation, checked = genuine_observation(tmp_path)
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:202: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:122: in genuine_observation
+    module = metadata_module()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def metadata_module():
+>       assert importlib.util.find_spec(MODULE), 'V44 source-native metadata operation not implemented'
+E       AssertionError: V44 source-native metadata operation not implemented
+E       assert None
+E        +  where None = <function find_spec at 0x7f9988ee7920>('research.unified_consequence_runtime.native_metadata_v44')
+E        +    where <function find_spec at 0x7f9988ee7920> = <module 'importlib.util' (frozen)>.find_spec
+E        +      where <module 'importlib.util' (frozen)> = importlib.util
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:31: AssertionError
+______ test_setup_py_does_not_gain_override_authority_from_wheel_metadata ______
+
+tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-19/test_setup_py_does_not_gain_ov0')
+
+    def test_setup_py_does_not_gain_override_authority_from_wheel_metadata(tmp_path):
+>       module, repo, commit, snapshot, env, evidence, observation, checked = genuine_observation(tmp_path,
+            modifications={'setup.py': b'from setuptools import setup\nsetup(tests_require=arbitrary_dynamic_call())\n'})
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:210: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:122: in genuine_observation
+    module = metadata_module()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def metadata_module():
+>       assert importlib.util.find_spec(MODULE), 'V44 source-native metadata operation not implemented'
+E       AssertionError: V44 source-native metadata operation not implemented
+E       assert None
+E        +  where None = <function find_spec at 0x7f9988ee7920>('research.unified_consequence_runtime.native_metadata_v44')
+E        +    where <function find_spec at 0x7f9988ee7920> = <module 'importlib.util' (frozen)>.find_spec
+E        +      where <module 'importlib.util' (frozen)> = importlib.util
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:31: AssertionError
+_ test_malformed_python_fixture_data_is_inventory_not_executable_compatibility _
+
+tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-19/test_malformed_python_fixture_0')
+
+    def test_malformed_python_fixture_data_is_inventory_not_executable_compatibility(tmp_path):
+>       module, repo, commit, snapshot, env, evidence, observation, checked = genuine_observation(tmp_path,
+            modifications={'fixtures/intentional_bad_syntax.py': b'if = intentional fixture data\n'})
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:218: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:122: in genuine_observation
+    module = metadata_module()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def metadata_module():
+>       assert importlib.util.find_spec(MODULE), 'V44 source-native metadata operation not implemented'
+E       AssertionError: V44 source-native metadata operation not implemented
+E       assert None
+E        +  where None = <function find_spec at 0x7f9988ee7920>('research.unified_consequence_runtime.native_metadata_v44')
+E        +    where <function find_spec at 0x7f9988ee7920> = <module 'importlib.util' (frozen)>.find_spec
+E        +      where <module 'importlib.util' (frozen)> = importlib.util
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:31: AssertionError
+____ test_serialized_mapping_cannot_self_grant_fresh_observation_authority _____
+
+tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-19/test_serialized_mapping_cannot0')
+
+    def test_serialized_mapping_cannot_self_grant_fresh_observation_authority(tmp_path):
+>       module, repo, commit, snapshot, env, evidence, observation, checked = genuine_observation(tmp_path)
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:224: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:122: in genuine_observation
+    module = metadata_module()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def metadata_module():
+>       assert importlib.util.find_spec(MODULE), 'V44 source-native metadata operation not implemented'
+E       AssertionError: V44 source-native metadata operation not implemented
+E       assert None
+E        +  where None = <function find_spec at 0x7f9988ee7920>('research.unified_consequence_runtime.native_metadata_v44')
+E        +    where <function find_spec at 0x7f9988ee7920> = <module 'importlib.util' (frozen)>.find_spec
+E        +      where <module 'importlib.util' (frozen)> = importlib.util
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:31: AssertionError
+__________ test_mutated_minted_observation_does_not_retain_authority ___________
+
+tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-19/test_mutated_minted_observatio0')
+
+    def test_mutated_minted_observation_does_not_retain_authority(tmp_path):
+>       module, repo, commit, snapshot, env, evidence, observation, checked = genuine_observation(tmp_path)
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:231: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:122: in genuine_observation
+    module = metadata_module()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def metadata_module():
+>       assert importlib.util.find_spec(MODULE), 'V44 source-native metadata operation not implemented'
+E       AssertionError: V44 source-native metadata operation not implemented
+E       assert None
+E        +  where None = <function find_spec at 0x7f9988ee7920>('research.unified_consequence_runtime.native_metadata_v44')
+E        +    where <function find_spec at 0x7f9988ee7920> = <module 'importlib.util' (frozen)>.find_spec
+E        +      where <module 'importlib.util' (frozen)> = importlib.util
+
+../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py:31: AssertionError
+- generated xml file: /workspace/qualification/native-bootstrap-v44-preimplementation/PREIMPLEMENTATION_RED.xml -
+=========================== short test summary info ============================
+FAILED ../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py::test_strict_parser_preserves_declared_fields_and_ignores_description_body
+FAILED ../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py::test_malformed_or_conflicting_metadata_never_becomes_observed_authority[\xff\xfeinvalid]
+FAILED ../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py::test_malformed_or_conflicting_metadata_never_becomes_observed_authority[Metadata-Version: 2.1\nVersion: 1.0.0\nRequires-Python: >=3.10\nRequires-Dist: attrs>=24\nRequires-Dist: pytest>=7; extra == "test"\nProvides-Extra: test\nClassifier: Programming Language :: Python :: 3\n\nDescription is not authority: Requires-Python: <1\n]
+FAILED ../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py::test_malformed_or_conflicting_metadata_never_becomes_observed_authority[Metadata-Version: 2.1\nName: fixture\nRequires-Python: >=3.10\nRequires-Dist: attrs>=24\nRequires-Dist: pytest>=7; extra == "test"\nProvides-Extra: test\nClassifier: Programming Language :: Python :: 3\n\nDescription is not authority: Requires-Python: <1\n]
+FAILED ../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py::test_malformed_or_conflicting_metadata_never_becomes_observed_authority[Name: fixture\nVersion: 1.0.0\nRequires-Python: >=3.10\nRequires-Dist: attrs>=24\nRequires-Dist: pytest>=7; extra == "test"\nProvides-Extra: test\nClassifier: Programming Language :: Python :: 3\n\nDescription is not authority: Requires-Python: <1\n]
+FAILED ../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py::test_malformed_or_conflicting_metadata_never_becomes_observed_authority[Metadata-Version: 2.1\nName: fixture\nName: forged\nVersion: 1.0.0\nRequires-Python: >=3.10\nRequires-Dist: attrs>=24\nRequires-Dist: pytest>=7; extra == "test"\nProvides-Extra: test\nClassifier: Programming Language :: Python :: 3\n\nDescription is not authority: Requires-Python: <1\n]
+FAILED ../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py::test_malformed_or_conflicting_metadata_never_becomes_observed_authority[Metadata-Version: 2.1\nName: fixture\nVersion: 1.0.0\nVersion: 2.0.0\nRequires-Python: >=3.10\nRequires-Dist: attrs>=24\nRequires-Dist: pytest>=7; extra == "test"\nProvides-Extra: test\nClassifier: Programming Language :: Python :: 3\n\nDescription is not authority: Requires-Python: <1\n]
+FAILED ../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py::test_malformed_or_conflicting_metadata_never_becomes_observed_authority[Metadata-Version: 2.1\nName: fixture\nVersion: 1.0.0\nRequires-Python: >=3.10\nRequires-Python: <2\nRequires-Dist: attrs>=24\nRequires-Dist: pytest>=7; extra == "test"\nProvides-Extra: test\nClassifier: Programming Language :: Python :: 3\n\nDescription is not authority: Requires-Python: <1\n]
+FAILED ../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py::test_malformed_or_conflicting_metadata_never_becomes_observed_authority[Metadata-Version: 2.1\nName: fixture\nVersion: 1.0.0\nRequires-Python: not-a-specifier\nRequires-Dist: attrs>=24\nRequires-Dist: pytest>=7; extra == "test"\nProvides-Extra: test\nClassifier: Programming Language :: Python :: 3\n\nDescription is not authority: Requires-Python: <1\n]
+FAILED ../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py::test_malformed_or_conflicting_metadata_never_becomes_observed_authority[Metadata-Version: 2.1\nName: fixture\nVersion: 1.0.0\nRequires-Python: >=3.10\nRequires-Dist: attrs=>24\nRequires-Dist: pytest>=7; extra == "test"\nProvides-Extra: test\nClassifier: Programming Language :: Python :: 3\n\nDescription is not authority: Requires-Python: <1\n]
+FAILED ../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py::test_malformed_or_conflicting_metadata_never_becomes_observed_authority[Metadata-Version: 2.1\nName: fixture\nVersion: 1.0.0\nRequires-Python: >=3.10\nRequires-Dist: attrs @ https://example.invalid/wheel.whl\nRequires-Dist: pytest>=7; extra == "test"\nProvides-Extra: test\nClassifier: Programming Language :: Python :: 3\n\nDescription is not authority: Requires-Python: <1\n]
+FAILED ../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py::test_malformed_or_conflicting_metadata_never_becomes_observed_authority[Metadata-Version: 2.1\nName: fixture\nVersion: 1.0.0\nRequires-Python: >=3.10\nRequires-Dist: attrs>=24\nRequires-Dist: pytest>=7; extra == "test"\nProvides-Extra: ../../outside\nClassifier: Programming Language :: Python :: 3\n\nDescription is not authority: Requires-Python: <1\n]
+FAILED ../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py::test_malformed_or_conflicting_metadata_never_becomes_observed_authority[Not a core metadata header\n\nMetadata-Version: 2.1\nName: fixture\nVersion: 1.0.0\nRequires-Python: >=3.10\nRequires-Dist: attrs>=24\nRequires-Dist: pytest>=7; extra == "test"\nProvides-Extra: test\nClassifier: Programming Language :: Python :: 3\n\nDescription is not authority: Requires-Python: <1\n]
+FAILED ../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py::test_metadata_archive_identity_is_unambiguous_and_regular[package/METADATA-extra0-33188]
+FAILED ../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py::test_metadata_archive_identity_is_unambiguous_and_regular[fixture-1.0.0.dist-info/METADATA-extra1-33188]
+FAILED ../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py::test_metadata_archive_identity_is_unambiguous_and_regular[fixture-1.0.0.dist-info/METADATA-extra2-33188]
+FAILED ../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py::test_metadata_archive_identity_is_unambiguous_and_regular[fixture-1.0.0.dist-info/METADATA-extra3-33188]
+FAILED ../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py::test_metadata_archive_identity_is_unambiguous_and_regular[fixture-1.0.0.dist-info/METADATA-extra4-33188]
+FAILED ../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py::test_metadata_archive_identity_is_unambiguous_and_regular[fixture-1.0.0.dist-info/METADATA-extra5-41471]
+FAILED ../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py::test_real_original_backend_metadata_is_independently_rebuilt_before_use
+FAILED ../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py::test_dirty_worktree_does_not_replace_exact_original_backend_source
+FAILED ../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py::test_retained_observation_rejects_wrong_input_or_missing_independent_evidence[source]
+FAILED ../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py::test_retained_observation_rejects_wrong_input_or_missing_independent_evidence[environment]
+FAILED ../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py::test_retained_observation_rejects_wrong_input_or_missing_independent_evidence[missing-independent-wheel]
+FAILED ../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py::test_retained_observation_rejects_wrong_input_or_missing_independent_evidence[altered-independent-wheel]
+FAILED ../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py::test_verified_source_native_observation_resolves_declared_dynamic_fields
+FAILED ../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py::test_observation_cannot_silently_replace_static_test_requirements
+FAILED ../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py::test_observation_for_different_source_cannot_be_used_by_selector
+FAILED ../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py::test_setup_py_does_not_gain_override_authority_from_wheel_metadata
+FAILED ../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py::test_malformed_python_fixture_data_is_inventory_not_executable_compatibility
+FAILED ../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py::test_serialized_mapping_cannot_self_grant_fresh_observation_authority
+FAILED ../qualification/native-bootstrap-v44-preimplementation/test_native_metadata_v44_acceptance.py::test_mutated_minted_observation_does_not_retain_authority
+32 failed in 0.23s

@@ -1,0 +1,48 @@
+{
+  "final_actual_green": {
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "tests": 29
+  },
+  "initial_actual_reds": {
+    "RED_BINDINGS.xml": {
+      "errors": 0,
+      "failures": 12,
+      "skipped": 0,
+      "tests": 13
+    },
+    "RED_HELPERS.xml": {
+      "errors": 0,
+      "failures": 6,
+      "skipped": 0,
+      "tests": 6
+    },
+    "RED_RUNTIME.xml": {
+      "errors": 0,
+      "failures": 4,
+      "skipped": 0,
+      "tests": 4
+    }
+  },
+  "initial_missing_dependency_attempt": "Preserved RED.stderr reports no pytest in the earlier V3 controller; this is not an assertion RED. A stdlib probe then failed the missing-controller assertion. Subsequent tests used the actual V42 controller interpreter.",
+  "model_calls": 0,
+  "native_calls": 0,
+  "root_test_files_sha256": {
+    "test_native_frontier_helpers_v44.py": "3ff8b51e0b918921a045a6091d2a35956a51a71c163fffb883770e51faf0548e",
+    "test_native_runtime_v44.py": "92a008433fa2a14e362af94ff947d100a91e7391a101186d516bf9f1c6b75ab7",
+    "test_qualify_native_frontier_v44.py": "c6885da57e4400042efe801801b416e19c0e3f5415ebce23238e796abfab73cc"
+  },
+  "schema": "UDM_V44_PROSPECTIVE_TRANSPORT_TEST_HISTORY_V1",
+  "scientific_verdict": {
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN"
+  },
+  "status": "PASS_SOURCE_FREE_TRANSPORT_CONTROLS_ONLY",
+  "supplemental_controls": "Final files add inherited alias/first-query checks and explicit selected-environment witness rejection/premise checks after independent review; final test files are not mislabeled the original preimplementation freeze.",
+  "target_queries": 0,
+  "target_source_reads": 0
+}
