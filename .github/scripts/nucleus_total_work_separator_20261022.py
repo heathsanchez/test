@@ -24,7 +24,7 @@ flags=("RELEVANCE","CONTEXT_BINDER","TYPED_LINEAGE","SUBSTITUTION_RECLOSURE",
 "TYPED_RECEIVER","SOURCE_PAIR_DEPTH8","POLYMORPHIC_PROP_IRREL",
 "PROP_SINGLETON_2P1F","EXPECTED_LAMBDA")
 envbase={k:v for k,v in os.environ.items() if not k.startswith("NUCLEUS_")}
-envbase.update({"NUCLEUS_EXPERIMENTAL_"+f:"1" for f in flags)
+envbase.update({"NUCLEUS_EXPERIMENTAL_"+f:"1" for f in flags})
 envbase["NUCLEUS_TRACE_DOWNSTREAM"]="1"
 envbase["NUCLEUS_TRACE_WORK_CEILING"]="1"
 envbase["NUCLEUS_TRACE_NESTED_RECURSOR_IOTA_FAILURE"]="1"
