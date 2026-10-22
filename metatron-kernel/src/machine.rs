@@ -686,6 +686,12 @@ impl<'a> Machine<'a> {
             preserve_stuck_projection, pending,
         );
         if let Some(established) = result.proven_value()
+            // A speculative stuck projection may become reducible after
+            // additional original-source computation; unlike a completed
+            // constructor value, it must not be retained as a cost-independent
+            // positive exposure cache result.
+            && !(std::env::var_os("NUCLEUS_EXPERIMENTAL_CAPTURED_STUCK_PROJECTION").is_some()
+                && matches!(&established.value, Value::StuckProjection { .. }))
             // A certified recursor stopped because its major did not expose.
             // This is not a budget-independent normal form; permit a later
             // constructor demand to evaluate the same exact lexical closure.
@@ -1401,9 +1407,35 @@ impl<'a> Machine<'a> {
                                 visited.clear();
                                 continue;
                             }
-                            if preserve_stuck_projection {
+                            // Research: retain the exact stuck projection
+                            // when a source-registered recursor's original
+                            // major has not yet exposed its constructor.
+                            // A returned StuckProjection is NOT a constructor
+                            // proof or an iota step, and cannot select fields.
+                            // Preserve its source closure, pending arguments,
+                            // universe substitution and original lexical frame.
+                            // No theorem, name, or desired result special case.
+                            let source_recursor_waiting = std::env::var_os(
+                                "NUCLEUS_EXPERIMENTAL_CAPTURED_STUCK_PROJECTION"
+                            ).is_some()
+                                && transparency == Transparency::Full
+                                && !preserve_stuck_projection
+                                && matches!(&neutral.head, NeutralHead::Const { name, .. }
+                                    if self.recursor_reductions.contains_key(name));
+                            if preserve_stuck_projection || source_recursor_waiting {
                                 let mut spine = Vec::new();
                                 append_pending(&mut spine, &mut pending);
+                                #[cfg(feature="diagnostics")]
+                                if source_recursor_waiting
+                                    && std::env::var_os("NUCLEUS_TRACE_CAPTURED_STUCK_PROJECTION").is_some() {
+                                    use std::sync::atomic::{AtomicUsize,Ordering};
+                                    static TRACE:AtomicUsize=AtomicUsize::new(0);
+                                    if TRACE.fetch_add(1,Ordering::Relaxed)<48 {
+                                        eprintln!("NUCLEUS_CAPTURED_STUCK_PROJECTION:type={type_name:?}:field={index}:source_receiver={:?}:env={}:universe={:?}:source_head={:?}:source_arity={}:pending={}:NO_CONSTRUCTOR_SELECTED",
+                                            structure.expr,structure.env.id(),structure.levels,
+                                            neutral.head,neutral.spine.len(),spine.len());
+                                    }
+                                }
                                 return exposed(
                                     Value::StuckProjection {
                                         type_name: *type_name,
