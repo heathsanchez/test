@@ -27,9 +27,22 @@ pub struct Limits {
 
 impl Default for Limits {
     fn default() -> Self {
-        Self {
-            judgment_steps: 65_536,
+        // Causal source-completeness diagnostic ONLY. Production and all
+        // normal runs keep the original fixed allowance. The registered
+        // kernel rules, proof irrelevance and source authorization are
+        // identical across all experimental work ceilings.
+        let judgment_steps = match std::env::var("NUCLEUS_EXPERIMENTAL_WORK_CEILING").as_deref() {
+            Ok("131072") => 131_072,
+            Ok("262144") => 262_144,
+            Ok("524288") => 524_288,
+            Ok("1048576") => 1_048_576,
+            _ => 65_536,
+        };
+        #[cfg(feature="diagnostics")]
+        if std::env::var_os("NUCLEUS_TRACE_WORK_CEILING").is_some() {
+            eprintln!("NUCLEUS_WORK_CEILING:steps={judgment_steps}");
         }
+        Self { judgment_steps }
     }
 }
 
