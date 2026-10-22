@@ -1,0 +1,100 @@
+research/unified_consequence_runtime/archaeology/native-bootstrap-v44/preimplementation/test_native_metadata_v44_acceptance.py::test_strict_parser_preserves_declared_fields_and_ignores_description_body
+research/unified_consequence_runtime/archaeology/native-bootstrap-v44/preimplementation/test_native_metadata_v44_acceptance.py::test_malformed_or_conflicting_metadata_never_becomes_observed_authority[\xff\xfeinvalid]
+research/unified_consequence_runtime/archaeology/native-bootstrap-v44/preimplementation/test_native_metadata_v44_acceptance.py::test_malformed_or_conflicting_metadata_never_becomes_observed_authority[Metadata-Version: 2.1\nVersion: 1.0.0\nRequires-Python: >=3.10\nRequires-Dist: attrs>=24\nRequires-Dist: pytest>=7; extra == "test"\nProvides-Extra: test\nClassifier: Programming Language :: Python :: 3\n\nDescription is not authority: Requires-Python: <1\n]
+research/unified_consequence_runtime/archaeology/native-bootstrap-v44/preimplementation/test_native_metadata_v44_acceptance.py::test_malformed_or_conflicting_metadata_never_becomes_observed_authority[Metadata-Version: 2.1\nName: fixture\nRequires-Python: >=3.10\nRequires-Dist: attrs>=24\nRequires-Dist: pytest>=7; extra == "test"\nProvides-Extra: test\nClassifier: Programming Language :: Python :: 3\n\nDescription is not authority: Requires-Python: <1\n]
+research/unified_consequence_runtime/archaeology/native-bootstrap-v44/preimplementation/test_native_metadata_v44_acceptance.py::test_malformed_or_conflicting_metadata_never_becomes_observed_authority[Name: fixture\nVersion: 1.0.0\nRequires-Python: >=3.10\nRequires-Dist: attrs>=24\nRequires-Dist: pytest>=7; extra == "test"\nProvides-Extra: test\nClassifier: Programming Language :: Python :: 3\n\nDescription is not authority: Requires-Python: <1\n]
+research/unified_consequence_runtime/archaeology/native-bootstrap-v44/preimplementation/test_native_metadata_v44_acceptance.py::test_malformed_or_conflicting_metadata_never_becomes_observed_authority[Metadata-Version: 2.1\nName: fixture\nName: forged\nVersion: 1.0.0\nRequires-Python: >=3.10\nRequires-Dist: attrs>=24\nRequires-Dist: pytest>=7; extra == "test"\nProvides-Extra: test\nClassifier: Programming Language :: Python :: 3\n\nDescription is not authority: Requires-Python: <1\n]
+research/unified_consequence_runtime/archaeology/native-bootstrap-v44/preimplementation/test_native_metadata_v44_acceptance.py::test_malformed_or_conflicting_metadata_never_becomes_observed_authority[Metadata-Version: 2.1\nName: fixture\nVersion: 1.0.0\nVersion: 2.0.0\nRequires-Python: >=3.10\nRequires-Dist: attrs>=24\nRequires-Dist: pytest>=7; extra == "test"\nProvides-Extra: test\nClassifier: Programming Language :: Python :: 3\n\nDescription is not authority: Requires-Python: <1\n]
+research/unified_consequence_runtime/archaeology/native-bootstrap-v44/preimplementation/test_native_metadata_v44_acceptance.py::test_malformed_or_conflicting_metadata_never_becomes_observed_authority[Metadata-Version: 2.1\nName: fixture\nVersion: 1.0.0\nRequires-Python: >=3.10\nRequires-Python: <2\nRequires-Dist: attrs>=24\nRequires-Dist: pytest>=7; extra == "test"\nProvides-Extra: test\nClassifier: Programming Language :: Python :: 3\n\nDescription is not authority: Requires-Python: <1\n]
+research/unified_consequence_runtime/archaeology/native-bootstrap-v44/preimplementation/test_native_metadata_v44_acceptance.py::test_malformed_or_conflicting_metadata_never_becomes_observed_authority[Metadata-Version: 2.1\nName: fixture\nVersion: 1.0.0\nRequires-Python: not-a-specifier\nRequires-Dist: attrs>=24\nRequires-Dist: pytest>=7; extra == "test"\nProvides-Extra: test\nClassifier: Programming Language :: Python :: 3\n\nDescription is not authority: Requires-Python: <1\n]
+research/unified_consequence_runtime/archaeology/native-bootstrap-v44/preimplementation/test_native_metadata_v44_acceptance.py::test_malformed_or_conflicting_metadata_never_becomes_observed_authority[Metadata-Version: 2.1\nName: fixture\nVersion: 1.0.0\nRequires-Python: >=3.10\nRequires-Dist: attrs=>24\nRequires-Dist: pytest>=7; extra == "test"\nProvides-Extra: test\nClassifier: Programming Language :: Python :: 3\n\nDescription is not authority: Requires-Python: <1\n]
+research/unified_consequence_runtime/archaeology/native-bootstrap-v44/preimplementation/test_native_metadata_v44_acceptance.py::test_malformed_or_conflicting_metadata_never_becomes_observed_authority[Metadata-Version: 2.1\nName: fixture\nVersion: 1.0.0\nRequires-Python: >=3.10\nRequires-Dist: attrs @ https://example.invalid/wheel.whl\nRequires-Dist: pytest>=7; extra == "test"\nProvides-Extra: test\nClassifier: Programming Language :: Python :: 3\n\nDescription is not authority: Requires-Python: <1\n]
+research/unified_consequence_runtime/archaeology/native-bootstrap-v44/preimplementation/test_native_metadata_v44_acceptance.py::test_malformed_or_conflicting_metadata_never_becomes_observed_authority[Metadata-Version: 2.1\nName: fixture\nVersion: 1.0.0\nRequires-Python: >=3.10\nRequires-Dist: attrs>=24\nRequires-Dist: pytest>=7; extra == "test"\nProvides-Extra: ../../outside\nClassifier: Programming Language :: Python :: 3\n\nDescription is not authority: Requires-Python: <1\n]
+research/unified_consequence_runtime/archaeology/native-bootstrap-v44/preimplementation/test_native_metadata_v44_acceptance.py::test_malformed_or_conflicting_metadata_never_becomes_observed_authority[Not a core metadata header\n\nMetadata-Version: 2.1\nName: fixture\nVersion: 1.0.0\nRequires-Python: >=3.10\nRequires-Dist: attrs>=24\nRequires-Dist: pytest>=7; extra == "test"\nProvides-Extra: test\nClassifier: Programming Language :: Python :: 3\n\nDescription is not authority: Requires-Python: <1\n]
+research/unified_consequence_runtime/archaeology/native-bootstrap-v44/preimplementation/test_native_metadata_v44_acceptance.py::test_metadata_archive_identity_is_unambiguous_and_regular[package/METADATA-extra0-33188]
+research/unified_consequence_runtime/archaeology/native-bootstrap-v44/preimplementation/test_native_metadata_v44_acceptance.py::test_metadata_archive_identity_is_unambiguous_and_regular[fixture-1.0.0.dist-info/METADATA-extra1-33188]
+research/unified_consequence_runtime/archaeology/native-bootstrap-v44/preimplementation/test_native_metadata_v44_acceptance.py::test_metadata_archive_identity_is_unambiguous_and_regular[fixture-1.0.0.dist-info/METADATA-extra2-33188]
+research/unified_consequence_runtime/archaeology/native-bootstrap-v44/preimplementation/test_native_metadata_v44_acceptance.py::test_metadata_archive_identity_is_unambiguous_and_regular[fixture-1.0.0.dist-info/METADATA-extra3-33188]
+research/unified_consequence_runtime/archaeology/native-bootstrap-v44/preimplementation/test_native_metadata_v44_acceptance.py::test_metadata_archive_identity_is_unambiguous_and_regular[fixture-1.0.0.dist-info/METADATA-extra4-33188]
+research/unified_consequence_runtime/archaeology/native-bootstrap-v44/preimplementation/test_native_metadata_v44_acceptance.py::test_metadata_archive_identity_is_unambiguous_and_regular[fixture-1.0.0.dist-info/METADATA-extra5-41471]
+research/unified_consequence_runtime/archaeology/native-bootstrap-v44/preimplementation/test_native_metadata_v44_acceptance.py::test_real_original_backend_metadata_is_independently_rebuilt_before_use
+research/unified_consequence_runtime/archaeology/native-bootstrap-v44/preimplementation/test_native_metadata_v44_acceptance.py::test_dirty_worktree_does_not_replace_exact_original_backend_source
+research/unified_consequence_runtime/archaeology/native-bootstrap-v44/preimplementation/test_native_metadata_v44_acceptance.py::test_retained_observation_rejects_wrong_input_or_missing_independent_evidence[source]
+research/unified_consequence_runtime/archaeology/native-bootstrap-v44/preimplementation/test_native_metadata_v44_acceptance.py::test_retained_observation_rejects_wrong_input_or_missing_independent_evidence[environment]
+research/unified_consequence_runtime/archaeology/native-bootstrap-v44/preimplementation/test_native_metadata_v44_acceptance.py::test_retained_observation_rejects_wrong_input_or_missing_independent_evidence[missing-independent-wheel]
+research/unified_consequence_runtime/archaeology/native-bootstrap-v44/preimplementation/test_native_metadata_v44_acceptance.py::test_retained_observation_rejects_wrong_input_or_missing_independent_evidence[altered-independent-wheel]
+research/unified_consequence_runtime/archaeology/native-bootstrap-v44/preimplementation/test_native_metadata_v44_acceptance.py::test_verified_source_native_observation_resolves_declared_dynamic_fields
+research/unified_consequence_runtime/archaeology/native-bootstrap-v44/preimplementation/test_native_metadata_v44_acceptance.py::test_observation_cannot_silently_replace_static_test_requirements
+research/unified_consequence_runtime/archaeology/native-bootstrap-v44/preimplementation/test_native_metadata_v44_acceptance.py::test_observation_for_different_source_cannot_be_used_by_selector
+research/unified_consequence_runtime/archaeology/native-bootstrap-v44/preimplementation/test_native_metadata_v44_acceptance.py::test_setup_py_does_not_gain_override_authority_from_wheel_metadata
+research/unified_consequence_runtime/archaeology/native-bootstrap-v44/preimplementation/test_native_metadata_v44_acceptance.py::test_malformed_python_fixture_data_is_inventory_not_executable_compatibility
+research/unified_consequence_runtime/archaeology/native-bootstrap-v44/preimplementation/test_native_metadata_v44_acceptance.py::test_serialized_mapping_cannot_self_grant_fresh_observation_authority
+research/unified_consequence_runtime/archaeology/native-bootstrap-v44/preimplementation/test_native_metadata_v44_acceptance.py::test_mutated_minted_observation_does_not_retain_authority
+research/unified_consequence_runtime/archaeology/native-bootstrap-v44/metadata-cost-preimplementation/test_metadata_attempts_v44.py::test_no_command_before_environment_refusal
+research/unified_consequence_runtime/archaeology/native-bootstrap-v44/metadata-cost-preimplementation/test_metadata_attempts_v44.py::test_failed_original_backend_command_is_retained_and_charged
+research/unified_consequence_runtime/archaeology/native-bootstrap-v44/metadata-cost-preimplementation/test_metadata_attempts_v44.py::test_original_acquisition_and_independent_rebuild_count_separately
+research/unified_consequence_runtime/archaeology/native-bootstrap-v44/metadata-review-preimplementation/test_metadata_review_v44.py::test_no_dynamic_wheel_header_can_license_final_environment_metadata[Requires-Python, Requires-Dist]
+research/unified_consequence_runtime/archaeology/native-bootstrap-v44/metadata-review-preimplementation/test_metadata_review_v44.py::test_no_dynamic_wheel_header_can_license_final_environment_metadata[Requires-Python]
+research/unified_consequence_runtime/archaeology/native-bootstrap-v44/metadata-review-preimplementation/test_metadata_review_v44.py::test_no_dynamic_wheel_header_can_license_final_environment_metadata[Description]
+research/unified_consequence_runtime/archaeology/native-bootstrap-v44/metadata-review-preimplementation/test_metadata_review_v44.py::test_no_dynamic_wheel_header_can_license_final_environment_metadata[Undefined, Field]
+research/unified_consequence_runtime/archaeology/native-bootstrap-v44/metadata-review-preimplementation/test_metadata_review_v44.py::test_unexpected_unmarked_dependency_in_static_project_is_conflicting_metadata
+research/unified_consequence_runtime/archaeology/native-bootstrap-v44/metadata-review-preimplementation/test_metadata_absent_static_v44.py::test_absent_static_dependencies_are_empty_and_keep_lawful_test_extras[False]
+research/unified_consequence_runtime/archaeology/native-bootstrap-v44/metadata-review-preimplementation/test_metadata_absent_static_v44.py::test_absent_static_dependencies_are_empty_and_keep_lawful_test_extras[True]
+research/unified_consequence_runtime/test_native_environment_v44.py::test_dynamic_declared_metadata_becomes_a_typed_existing_operation_residual
+research/unified_consequence_runtime/test_native_environment_v44.py::test_existing_compatible_environment_does_not_invent_a_metadata_operation
+research/unified_consequence_runtime/test_native_environment_v44.py::test_unresolved_setup_test_metadata_cannot_be_erased_by_wheel_observation
+research/unified_consequence_runtime/test_native_environment_v44.py::test_dynamic_unrelated_field_is_not_a_license_to_run_an_observer
+research/unified_consequence_runtime/test_native_environment_v44.py::test_no_compatible_profile_remains_an_environment_authority_residual
+research/unified_consequence_runtime/test_native_environment_v44.py::test_backend_requirements_filter_never_grants_test_or_plugin_authority
+research/unified_consequence_runtime/test_native_environment_v44.py::test_skip_or_xfail_is_not_a_metadata_residual
+research/unified_consequence_runtime/test_native_environment_v44.py::test_mixed_dynamic_optional_dependencies_remain_precise_unknown_before_build
+research/unified_consequence_runtime/test_native_environment_v44.py::test_metadata_binding_alone_cannot_be_grafted_into_native_execution_authority
+research/unified_consequence_runtime/test_native_environment_v44.py::test_profile_costs_charge_all_actual_successful_and_failed_original_attempts
+research/unified_consequence_runtime/test_native_environment_v44.py::test_original_backend_identity_and_extended_native_identity_remain_distinct
+research/unified_consequence_runtime/test_native_runtime_v44.py::test_withdrawn_bootstrap_is_rejected_before_original_runtime_operation[_scope]
+research/unified_consequence_runtime/test_native_runtime_v44.py::test_withdrawn_bootstrap_is_rejected_before_original_runtime_operation[admit]
+research/unified_consequence_runtime/test_native_runtime_v44.py::test_original_materialization_and_bootstrap_premises_both_survive
+research/unified_consequence_runtime/test_native_runtime_v44.py::test_bootstrap_binding_is_persisted_as_exact_native_source_input
+research/unified_consequence_runtime/test_native_runtime_v44.py::test_metadata_observation_without_selected_environment_cannot_create_native_source
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py::test_versioned_controller_preserves_original_algorithm_and_native_authority
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py::test_preserved_v43_controller_and_old_verifier_bytes
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py::test_new_bootstrap_gate_is_required_after_preserved_gates
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py::test_bootstrap_gate_rejects_incomplete_or_forged_descriptor[status]
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py::test_bootstrap_gate_rejects_incomplete_or_forged_descriptor[source_commit]
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py::test_bootstrap_gate_rejects_incomplete_or_forged_descriptor[artifact_sha256]
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py::test_bootstrap_gate_rejects_incomplete_or_forged_descriptor[run_id]
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py::test_bootstrap_gate_rejects_incomplete_or_forged_descriptor[artifact_id]
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py::test_withdrawn_bootstrap_preflight_precedes_cached_and_uncached_native_receipt[False]
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py::test_withdrawn_bootstrap_preflight_precedes_cached_and_uncached_native_receipt[True]
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py::test_original_equal_pass_fail_eligibility_and_order
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py::test_bootstrap_costs_are_separate_from_unchanged_native_counters
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py::test_no_target_identity_or_winning_method_in_new_controller
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py::test_environment_selection_witness_is_an_exact_native_dependency
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py::test_episode_reconstruction_keeps_bootstrap_prefix_for_tracked_and_generated_sources[None-False]
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py::test_episode_reconstruction_keeps_bootstrap_prefix_for_tracked_and_generated_sources[generated1-False]
+research/unified_consequence_runtime/test_qualify_native_frontier_v44.py::test_episode_reconstruction_keeps_bootstrap_prefix_for_tracked_and_generated_sources[generated2-True]
+research/unified_consequence_runtime/test_native_frontier_helpers_v44.py::test_new_curator_preserves_fixed_original_metadata_scanner
+research/unified_consequence_runtime/test_native_frontier_helpers_v44.py::test_original_wrapper_alias_bug_is_not_reintroduced
+research/unified_consequence_runtime/test_native_frontier_helpers_v44.py::test_records_assembly_binds_new_authority_and_separate_bootstrap_costs
+research/unified_consequence_runtime/test_native_frontier_helpers_v44.py::test_new_curator_requires_gate_before_target_universe_access
+research/unified_consequence_runtime/test_native_frontier_helpers_v44.py::test_prior_exposure_covers_all_97_previous_identifiers
+research/unified_consequence_runtime/test_native_frontier_helpers_v44.py::test_projection_changes_only_three_authority_schema_literals
+research/unified_consequence_runtime/test_native_frontier_helpers_v44.py::test_actual_agent_watcher_keeps_native_execution_and_information_guards
+research/unified_consequence_runtime/test_native_frontier_helpers_v44.py::test_actual_aliased_source_binding_executes_the_new_definition
+research/unified_consequence_runtime/test_native_frontier_helpers_v44.py::test_six_field_gate_reaches_independent_validation_before_any_api
+research/unified_consequence_runtime/test_native_frontier_helpers_v44.py::test_first_query_receipt_cannot_be_replaced
+
+==================================== ERRORS ====================================
+_ ERROR collecting research/unified_consequence_runtime/test_native_bootstrap_runtime_v44.py _
+ImportError while importing test module '/workspace/udm-v54/research/unified_consequence_runtime/test_native_bootstrap_runtime_v44.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+research/unified_consequence_runtime/test_native_bootstrap_runtime_v44.py:19: in <module>
+    from . import decisive_native_verify as original
+E   ImportError: attempted relative import with no known parent package
+=========================== short test summary info ============================
+ERROR research/unified_consequence_runtime/test_native_bootstrap_runtime_v44.py
+!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+85 tests collected, 1 error in 0.22s

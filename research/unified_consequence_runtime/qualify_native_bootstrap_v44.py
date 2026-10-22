@@ -103,7 +103,8 @@ def _collect_controls(repo, out):
         os.chdir(repo)
         with Path(out).open('w') as stream:
             with redirect_stdout(stream), redirect_stderr(stream):
-                code = int(pytest.main(['-q', '-p', 'no:cacheprovider', '--collect-only', *_control_tests()],
+                code = int(pytest.main(['-q', '-p', 'no:cacheprovider', '--import-mode=importlib',
+                                       '--collect-only', *_control_tests()],
                                        plugins=[inventory]))
     finally:
         os.chdir(previous)
@@ -418,7 +419,7 @@ def qualify(repo, freeze_path, out, components):
             components_before = original.component_inventory(components, out/'components-before')
             inventory = original._PytestInventory()
             tests = _control_tests()
-            args = ['-q', '-p', 'no:cacheprovider', '--basetemp='+str(out/'pytest'),
+            args = ['-q', '-p', 'no:cacheprovider', '--import-mode=importlib', '--basetemp='+str(out/'pytest'),
                     '--junitxml='+str(out/'contracts.xml'), *tests]
             previous = Path.cwd()
             try:
