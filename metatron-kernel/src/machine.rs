@@ -1414,6 +1414,49 @@ impl<'a> Machine<'a> {
                                     transitions,
                                 );
                             }
+                            // Research experiment: a source-registered recursor
+                            // can remain neutral because its ACTUAL major is
+                            // not yet constructor-headed. Do not choose or
+                            // synthesize its constructor, and do not turn it
+                            // into a completed cache result. Transport the
+                            // original stuck projection as a neutral application
+                            // with its exact source head, arguments and levels.
+                            // This can support ordinary checked congruence
+                            // after later lexical substitution, but makes no
+                            // unsupported iota or proof-irrelevance claim.
+                            if std::env::var_os("NUCLEUS_EXPERIMENTAL_STUCK_RECURSOR_PROJECTION").is_some()
+                                && transparency == Transparency::Full
+                                && matches!(&neutral.head, NeutralHead::Const { name, .. }
+                                    if self.recursor_reductions.contains_key(name))
+                            {
+                                let mut spine = Vec::new();
+                                append_pending(&mut spine, &mut pending);
+                                #[cfg(feature = "diagnostics")]
+                                if std::env::var_os("NUCLEUS_TRACE_STUCK_RECURSOR_PROJECTION").is_some() {
+                                    use std::sync::atomic::{AtomicUsize, Ordering};
+                                    static EVENTS:AtomicUsize=AtomicUsize::new(0);
+                                    if EVENTS.fetch_add(1,Ordering::Relaxed)<32 {
+                                        eprintln!(
+                                            "NUCLEUS_STUCK_RECURSOR_PROJECTION:type={type_name:?}:field={index}:source_head={:?}:source_arity={}:pending={}:actual_construction=NONE",
+                                            neutral.head,neutral.spine.len(),spine.len(),
+                                        );
+                                    }
+                                }
+                                record_transition(
+                                    &mut transitions,record_witnesses,
+                                    TransitionWitness::Rigid,
+                                );
+                                return exposed(
+                                    Value::Neutral(Neutral {
+                                        head:NeutralHead::Projection {
+                                            type_name:*type_name,index,
+                                            structure:Box::new(neutral.clone()),
+                                        },
+                                        spine,
+                                    }),
+                                    transitions,
+                                );
+                            }
                             return Judgment::unknown("projection-constructor-mismatch");
                         }
                         NeutralHead::Free(_) | NeutralHead::Projection { .. } => {
