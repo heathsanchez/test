@@ -41,9 +41,12 @@ jobs:
         run: |
           python -m py_compile research/external_obligation_v11/experiment.py research/external_obligation_v11/witness_worker.py
           python research/external_obligation_v11/experiment.py
+          python research/external_obligation_v11/postrun_requalification.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: external-source-obligation-v11
-          path: research/external_obligation_v11/result.json
+          path: |
+            research/external_obligation_v11/result.json
+            research/external_obligation_v11/postrun_requalification.json
           if-no-files-found: warn
