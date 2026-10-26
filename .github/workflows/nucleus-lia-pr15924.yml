@@ -17,19 +17,22 @@ jobs:
     timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
-      - uses: leanprover/lean-action@v1
-        with:
-          lean-version: leanprover/lean4:nightly
-          build: false
-          test: false
-      - name: Compile all five upstream-derived certificates
+      - name: Install and resolve Lean toolchain explicitly
+        shell: bash
         run: |
-          lean --version
-          lean compat/lean-pr15924/lia_divmod_direct_nucleus.lean
+          set -euo pipefail
+          curl -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -o /tmp/elan-init.sh
+          sh /tmp/elan-init.sh -y --default-toolchain leanprover/lean4:nightly
+          "$HOME/.elan/bin/lean" --version
+      - name: Compile all five upstream-derived certificates
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$HOME/.elan/bin/lean" compat/lean-pr15924/lia_divmod_direct_nucleus.lean
       - name: Report evidence boundary
         if: always()
         run: |
-          echo "This job checks only Lean compilation on the resolved nightly." >> "$GITHUB_STEP_SUMMARY"
+          echo "This job checks only Lean compilation on resolved nightly, not pinned PR bytes." >> "$GITHUB_STEP_SUMMARY"
           echo "It does NOT produce an NDJSON export or establish Nucleus acceptance." >> "$GITHUB_STEP_SUMMARY"
           echo "Exact PR commit to compare: 9e118e97309ae41cba636cd0b5027dbfcc58f115." >> "$GITHUB_STEP_SUMMARY"
 
@@ -42,9 +45,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      - name: Existing kernel tests
+      - name: Existing kernel tests — fail on any red, including proof irrelevance
         run: cargo test --locked --all-targets
       - name: Record scope
         if: always()
         run: |
-          echo "Unit tests only; not the original frozen 196-case source-hashed corpus." >> "$GITHUB_STEP_SUMMARY"
+          echo "Full kernel unit suite; proof relevance failure stays red." >> "$GITHUB_STEP_SUMMARY"
+          echo "Not the original frozen196 byte-pinned corpus." >> "$GITHUB_STEP_SUMMARY"
