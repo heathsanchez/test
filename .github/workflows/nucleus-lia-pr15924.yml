@@ -5,6 +5,7 @@ on:
       - exp/nucleus-lia-pr15924-20261026
     paths:
       - "compat/lean-pr15924/**"
+      - "compat/arena-nested-recursor/**"
       - ".github/workflows/nucleus-lia-pr15924.yml"
   workflow_dispatch:
 
@@ -12,6 +13,21 @@ permissions:
   contents: read
 
 jobs:
+  upstream-arena-fixture-integrity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify byte-identical upstream Arena regression source
+        shell: bash
+        run: |
+          set -euo pipefail
+          p=compat/arena-nested-recursor/nested-rec-rule-nfields.lean
+          actual=$(git hash-object "$p")
+          expected=780a8cc425874e85a27f0095d680eb016148eccb
+          test "$actual" = "$expected"
+          echo "Arena f0a0d057 fixture Git blob: $actual" >> "$GITHUB_STEP_SUMMARY"
+          echo "SOURCE INTEGRITY ONLY; not an exported checker verdict." >> "$GITHUB_STEP_SUMMARY"
+
   lean-source-smoke:
     runs-on: ubuntu-latest
     timeout-minutes: 35
