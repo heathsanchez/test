@@ -45,10 +45,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      - name: Focused proof-irrelevance reproduction\n        env:\n          NUCLEUS_TRACE_LOCAL_PROOF_IRREL: "1"
-          NUCLEUS_TRACE_VALUE_MISMATCH: "1"\n        run: |
+      - name: Focused proof-irrelevance reproduction
+        id: focused
+        continue-on-error: true
+        env:
+          NUCLEUS_TRACE_LOCAL_PROOF_IRREL: "1"
+          NUCLEUS_TRACE_VALUE_MISMATCH: "1"
+        run: |
           set -o pipefail
-          cargo test --locked --features diagnostics --test checked_relevance_signature -- --nocapture 2>&1 | tee ../focused-proof-irrelevance.log\n      - name: Existing kernel tests — fail on any red, including proof irrelevance
+          cargo test --locked --features diagnostics --test checked_relevance_signature -- --nocapture 2>&1 | tee ../focused-proof-irrelevance.log
+      - name: Existing kernel tests — fail on any red, including proof irrelevance
         id: full
         continue-on-error: true
         run: |
