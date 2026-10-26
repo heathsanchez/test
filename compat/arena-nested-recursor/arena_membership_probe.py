@@ -60,7 +60,6 @@ def run():
                 block = obj.get("inductive")
                 if block and block.get("types") and block["types"][0].get("ctors") and block["types"][0].get("all"):
                     candidates.append((path, row, lines, i, obj))
-                    break
         assert candidates, "no SHA-pinned previously ACCEPTED inductive positive available"
         candidates.sort(key=lambda c: (
             not any(t.get("numNested", 0) > 0 for t in c[4]["inductive"]["types"]),
@@ -101,7 +100,8 @@ def run():
                 if candidate_block:
                     available_names.update(t["name"] for t in candidate_block["types"])
         current_owner = original["inductive"]["ctors"][0]["induct"]
-        foreign = sorted(available_names - {current_owner})
+        current_block = {t["name"] for t in original["inductive"]["types"]}
+        foreign = sorted(available_names - current_block) or sorted(available_names - {current_owner})
         if foreign:
             c = copy.deepcopy(original)
             c["inductive"]["ctors"][0]["induct"] = foreign[0]
@@ -114,7 +114,8 @@ def run():
             assert r["exit_code"] in (1, 2), f"unsound ACCEPT or execution ERROR: {r}"
         else:
             results.append({"case": "constructor-owner-relocation", "status": "UNKNOWN_NO_FOREIGN_TYPE"})
-        report = {"status": "PASS_BOUNDED_MUTATIONS", "official_export_sha256": BAD_SHA,
+        report = {"status": "PASS_BOUNDED_MUTATIONS" if foreign else "PASS_CTORS_ALL_OWNER_UNKNOWN",
+                  "official_export_sha256": BAD_SHA,
                   "pinned_positive_sha256": pinned["sha256"], "results": results}
         rc = 0
     except Exception as error:
