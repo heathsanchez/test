@@ -62,7 +62,9 @@ def run():
                     candidates.append((path, row, lines, i, obj))
                     break
         assert candidates, "no SHA-pinned previously ACCEPTED inductive positive available"
-        candidates.sort(key=lambda c: (c[0].stat().st_size, str(c[0])))
+        candidates.sort(key=lambda c: (
+            not any(t.get("numNested", 0) > 0 for t in c[4]["inductive"]["types"]),
+            c[0].stat().st_size, str(c[0])))
         positive, pinned, lines, line_number, original = candidates[0]
         r = verdict(positive)
         results.append({"case": "original-accepted-inductive", "pinned_case": pinned["case"], **r})
@@ -89,6 +91,29 @@ def run():
         results.append({"case": "inductive-family-membership", "changed_line": line_number + 1,
                         "changed_path": "inductive.types[0].all", **r})
         assert r["exit_code"] in (1, 2), f"unsound ACCEPT or execution ERROR: {r}"
+        # Mutation C: keep the constructor name and type intact, but assign its
+        # declared ownership to a *different existing* inductive type. This
+        # isolates block ownership rather than replacing a name with a missing ID.
+        available_names = set()
+        for line in lines:
+            if b'"inductive"' in line:
+                candidate_block = json.loads(line).get("inductive")
+                if candidate_block:
+                    available_names.update(t["name"] for t in candidate_block["types"])
+        current_owner = original["inductive"]["ctors"][0]["induct"]
+        foreign = sorted(available_names - {current_owner})
+        if foreign:
+            c = copy.deepcopy(original)
+            c["inductive"]["ctors"][0]["induct"] = foreign[0]
+            pc = mutate(lines, line_number, c, "incorrect-ctor-owner")
+            r = verdict(pc)
+            results.append({"case": "constructor-owner-relocation",
+                            "changed_line": line_number + 1,
+                            "changed_path": "inductive.ctors[0].induct",
+                            "original_owner": current_owner, "foreign_owner": foreign[0], **r})
+            assert r["exit_code"] in (1, 2), f"unsound ACCEPT or execution ERROR: {r}"
+        else:
+            results.append({"case": "constructor-owner-relocation", "status": "UNKNOWN_NO_FOREIGN_TYPE"})
         report = {"status": "PASS_BOUNDED_MUTATIONS", "official_export_sha256": BAD_SHA,
                   "pinned_positive_sha256": pinned["sha256"], "results": results}
         rc = 0
