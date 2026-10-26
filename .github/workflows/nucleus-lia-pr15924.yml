@@ -46,8 +46,29 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - name: Focused proof-irrelevance reproduction\n        env:\n          NUCLEUS_TRACE_LOCAL_PROOF_IRREL: "1"
-          NUCLEUS_TRACE_VALUE_MISMATCH: "1"\n        run: cargo test --locked --features diagnostics --test checked_relevance_signature -- --nocapture\n      - name: Existing kernel tests — fail on any red, including proof irrelevance
-        run: cargo test --locked --all-targets
+          NUCLEUS_TRACE_VALUE_MISMATCH: "1"\n        run: |
+          set -o pipefail
+          cargo test --locked --features diagnostics --test checked_relevance_signature -- --nocapture 2>&1 | tee ../focused-proof-irrelevance.log\n      - name: Existing kernel tests — fail on any red, including proof irrelevance
+        id: full
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          cargo test --locked --all-targets 2>&1 | tee ../all-kernel-tests.log
+      - name: Retain actual diagnostic outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-pr15924-kernel-logs
+          path: |
+            focused-proof-irrelevance.log
+            all-kernel-tests.log
+          if-no-files-found: warn
+      - name: Enforce both test gates
+        if: always()
+        run: |
+          echo "focused=${{ steps.focused.outcome }} full=${{ steps.full.outcome }}" >> "$GITHUB_STEP_SUMMARY"
+          test "${{ steps.focused.outcome }}" = success
+          test "${{ steps.full.outcome }}" = success
       - name: Record scope
         if: always()
         run: |
