@@ -28,6 +28,51 @@ jobs:
           echo "Arena f0a0d057 fixture Git blob: $actual" >> "$GITHUB_STEP_SUMMARY"
           echo "SOURCE INTEGRITY ONLY; not an exported checker verdict." >> "$GITHUB_STEP_SUMMARY"
 
+  nucleus-arena-membership-differential:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Download two retained external Arena test artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/nucleus-frozen-inputs /tmp/nucleus-arena-inputs /tmp/arena-archives /tmp/nucleus-arena-membership-evidence
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/11272848230/zip > /tmp/arena-archives/frozen.zip
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/12495419265/zip > /tmp/arena-archives/oct24.zip
+          sha256sum /tmp/arena-archives/{frozen,oct24}.zip | tee /tmp/nucleus-arena-membership-evidence/archives.sha256
+          mkdir -p /tmp/arena-archives/frozen /tmp/arena-archives/oct24
+          unzip -q /tmp/arena-archives/frozen.zip -d /tmp/arena-archives/frozen
+          unzip -q /tmp/arena-archives/oct24.zip -d /tmp/arena-archives/oct24
+          test -f /tmp/arena-archives/frozen/lean-arena-tests.tar.gz
+          test -f /tmp/arena-archives/oct24/lean-arena-tests.tar.gz
+          tar -xzf /tmp/arena-archives/frozen/lean-arena-tests.tar.gz -C /tmp/nucleus-frozen-inputs
+          tar -xzf /tmp/arena-archives/oct24/lean-arena-tests.tar.gz -C /tmp/nucleus-arena-inputs
+      - name: Build unchanged Nucleus checker
+        run: cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+      - name: Run exact export and independently mutated constructor/family membership gates
+        id: membership
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 compat/arena-nested-recursor/arena_membership_probe.py
+      - name: Retain differential report even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-arena-membership-evidence
+          path: /tmp/nucleus-arena-membership-evidence/
+          if-no-files-found: warn
+      - name: Record qualification scope
+        if: always()
+        run: |
+          echo "Uses official Arena test artifact 12495419265 and prior frozen196 artifact 11272848230." >> "$GITHUB_STEP_SUMMARY"
+          echo "Requires upstream false-proof REJECT, pinned authentic inductive ACCEPT, and both membership mutants never ACCEPT." >> "$GITHUB_STEP_SUMMARY"
+          echo "Not whole-Arena qualification or an official current Lean checker replay." >> "$GITHUB_STEP_SUMMARY"
+
   lean-source-smoke:
     runs-on: ubuntu-latest
     timeout-minutes: 35
