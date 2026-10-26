@@ -1,11 +1,11 @@
+import Lean
+
 /-!
 Nucleus upstream compatibility probe (source only; not proof of Nucleus compatibility).
 Upstream Lean PR #15924 / 9e118e97309ae41cba636cd0b5027dbfcc58f115
 Upstream fixture tests/elab/lia_divmod_direct.lean, blob 3899238e7850a80776e680501fbb769a743124df.
 Pin Lean and matching lean4export before exporting.
 -/
-import Lean
-
 theorem nucleus_lia_divmod (x : Int) :
     x = 7 * (x / 7) + x % 7 := by
   lia
