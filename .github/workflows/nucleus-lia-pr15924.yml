@@ -1,0 +1,50 @@
+name: Nucleus Lean PR 15924 smoke gate
+on:
+  push:
+    branches:
+      - exp/nucleus-lia-pr15924-20261026
+    paths:
+      - "compat/lean-pr15924/**"
+      - ".github/workflows/nucleus-lia-pr15924.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lean-source-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: leanprover/lean-action@v1
+        with:
+          lean-version: leanprover/lean4:nightly
+          build: false
+          test: false
+      - name: Compile all five upstream-derived certificates
+        run: |
+          lean --version
+          lean compat/lean-pr15924/lia_divmod_direct_nucleus.lean
+      - name: Report evidence boundary
+        if: always()
+        run: |
+          echo "This job checks only Lean compilation on the resolved nightly." >> "$GITHUB_STEP_SUMMARY"
+          echo "It does NOT produce an NDJSON export or establish Nucleus acceptance." >> "$GITHUB_STEP_SUMMARY"
+          echo "Exact PR commit to compare: 9e118e97309ae41cba636cd0b5027dbfcc58f115." >> "$GITHUB_STEP_SUMMARY"
+
+  nucleus-unit-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: metatron-kernel
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Existing kernel tests
+        run: cargo test --locked --all-targets
+      - name: Record scope
+        if: always()
+        run: |
+          echo "Unit tests only; not the original frozen 196-case source-hashed corpus." >> "$GITHUB_STEP_SUMMARY"
