@@ -45,7 +45,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      - name: Focused proof-irrelevance reproduction\n        env:\n          NUCLEUS_TRACE_LOCAL_PROOF_IRREL: "1"\n        run: cargo test --locked --test checked_relevance_signature -- --nocapture\n      - name: Existing kernel tests — fail on any red, including proof irrelevance
+      - name: Focused proof-irrelevance reproduction\n        env:\n          NUCLEUS_TRACE_LOCAL_PROOF_IRREL: "1"
+          NUCLEUS_TRACE_VALUE_MISMATCH: "1"\n        run: cargo test --locked --features diagnostics --test checked_relevance_signature -- --nocapture\n      - name: Existing kernel tests — fail on any red, including proof irrelevance
         run: cargo test --locked --all-targets
       - name: Record scope
         if: always()
