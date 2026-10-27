@@ -1,0 +1,74 @@
+name: Nucleus Cow-context three-mode semantic qualification
+on:
+  push:
+    branches:
+      - exp/nucleus-context-cow-20261027
+    paths:
+      - "experiments/nucleus_context_allmodes.py"
+      - ".github/workflows/nucleus-cow-allmodes.yml"
+      - "metatron-kernel/src/convert.rs"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  three-mode-source-parity:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 70
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: candidate
+      - uses: actions/checkout@v4
+        with:
+          path: baseline
+          ref: ff003e7fad888d39a40cfd2375885fe20e3209fa
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build exact protected reference checker
+        shell: bash
+        working-directory: baseline
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = ff003e7fad888d39a40cfd2375885fe20e3209fa
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus-baseline
+      - name: Build unchanged candidate configuration
+        shell: bash
+        working-directory: candidate
+        run: |
+          set -euo pipefail
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus-candidate
+          mkdir -p /tmp/nucleus-cow-allmodes-evidence
+          sha256sum /tmp/nucleus-baseline /tmp/nucleus-candidate > /tmp/nucleus-cow-allmodes-evidence/binaries.sha256
+          git rev-parse HEAD > /tmp/nucleus-cow-allmodes-evidence/candidate-commit.txt
+      - name: Restore source SHA-pinned Arena exports
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/nucleus-cow-inputs /tmp/nucleus-input-archive
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/11272848230/zip > /tmp/nucleus-input-archive/frozen196.zip
+          sha256sum /tmp/nucleus-input-archive/frozen196.zip > /tmp/nucleus-cow-allmodes-evidence/input-archive.sha256
+          unzip -q /tmp/nucleus-input-archive/frozen196.zip -d /tmp/nucleus-input-archive
+          tar -xzf /tmp/nucleus-input-archive/lean-arena-tests.tar.gz -C /tmp/nucleus-cow-inputs
+      - name: Require all 588 source-qualified verdicts and six adversarial controls to match
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 candidate/experiments/nucleus_context_allmodes.py
+      - name: Retain machine-readable verdict provenance
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-cow-allmodes-qualified-evidence
+          path: /tmp/nucleus-cow-allmodes-evidence/
+          if-no-files-found: warn
+      - name: Qualification boundary
+        if: always()
+        run: |
+          echo "Three modes * 196 SHA-pinned exports, plus two protected controls per mode." >> "$GITHUB_STEP_SUMMARY"
+          echo "Any soundness, completeness, hash or exit-code mismatch fails CI." >> "$GITHUB_STEP_SUMMARY"
+          echo "No full-Mathlib acceptance or Arena retired-instruction claim." >> "$GITHUB_STEP_SUMMARY"
