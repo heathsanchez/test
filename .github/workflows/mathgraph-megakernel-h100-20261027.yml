@@ -4,6 +4,10 @@ name: MathGraph H100 Differential - RUN THIS
 # exact reviewed experiment commit, independent of workflow selection branch.
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/mathgraph-megakernel-h100-20261027.yml
 
 permissions:
   contents: read
@@ -14,6 +18,7 @@ concurrency:
 
 jobs:
   bounded-h100:
+    if: github.event_name == 'workflow_dispatch' || github.event.head_commit.message == 'H100: launch once after async verification'
     runs-on: ubuntu-latest
     timeout-minutes: 35
     env:
