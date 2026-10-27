@@ -1,0 +1,50 @@
+name: Nucleus Reachability six — historical proof-neutral transfer
+on:
+  push:
+    branches:
+      - exp/nucleus-quotient-lift2-20261027
+    paths:
+      - "experiments/reachability_proof_neutral_transfer.py"
+      - ".github/workflows/nucleus-reachability-proof-neutral.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  replay:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build isolated Nucleus, preserve source
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/reach-evidence
+          git rev-parse HEAD > /tmp/reach-evidence/source-commit.txt
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          sha256sum metatron-kernel/target/release/metatron-kernel > /tmp/reach-evidence/binary.sha256
+      - name: Download six previous official-ACCEPT exports with pinned SHA
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/reach-test
+          gh api repos/heathsanchez/test/actions/artifacts/12722408982/zip > /tmp/reach-source.zip
+          printf '%s  %s\n' 8f3fe62d60740fae640ed716b58ce1671a558fd88dd14723d758934e49197b31 /tmp/reach-source.zip | sha256sum -c -
+          unzip -q /tmp/reach-source.zip -d /tmp/reach-test
+          test "$(find /tmp/reach-test -name '*.ndjson' | wc -l)" -eq 6
+      - name: Replay and retain earliest new obstruction, never misclassify rejection
+        run: |
+          set -euo pipefail
+          python3 experiments/reachability_proof_neutral_transfer.py
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-six-proof-neutral-transfer-evidence
+          path: /tmp/reach-evidence/
+          if-no-files-found: warn
+      - if: always()
+        run: |
+          echo 'Actual six frozen Reachability exports reused from run 40481894451; no generated substitute.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Valid official ACCEPT status and exact source SHA are independently established.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Only complete current checker ACCEPT warrants improvement; UNKNOWN retained, REJECT/errors fail.' >> "$GITHUB_STEP_SUMMARY"
