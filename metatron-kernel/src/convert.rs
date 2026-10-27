@@ -2506,6 +2506,11 @@ fn compare_neutral_heads(
                     q.map(|c| machine.expose(c.clone(), Transparency::Full, budget.min(1024))),
                     prior.map(|c| machine.expose(c.clone(), Transparency::Full, budget.min(1024))),
                 );
+                eprintln!(
+                    "NUCLEUS_QUOTIENT_DIRECT_REPLAY:head={:?}:replay={:?}",
+                    left.head,
+                    machine.qualified_quotient_neutral_result(left, budget.min(2048)),
+                );
             }
             if std::env::var_os("NUCLEUS_TRACE_RECURSOR_MAJOR").is_some() { eprintln!("NUCLEUS_RECURSOR_MAJOR:left={:?}:right={:?}", left.spine.last(), right.spine.last()); if let Some(c) = right.spine.last() { eprintln!("NUCLEUS_RECURSOR_MAJOR_VALUE:{:?}", checker.machine().expose(c.clone(), Transparency::Full, budget.min(64))); } }
             #[cfg(feature = "diagnostics")]
