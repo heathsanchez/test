@@ -1,4 +1,4 @@
-name: MathGraph H100 Full16 Differential - RUN THIS
+name: MathGraph H100 Depth Diagnosis - RUN THIS
 
 # Separate source-native full-model architecture test; no upstream writes.
 on:
@@ -19,7 +19,7 @@ jobs:
   full16:
     if: >-
       github.event_name == 'workflow_dispatch' ||
-      github.event.head_commit.message == 'H100-FULL16: launch bounded verified full-model test'
+      github.event.head_commit.message == 'H100-DEPTH: launch one bounded numerical diagnostic'
     runs-on: ubuntu-latest
     timeout-minutes: 19
     env:
@@ -29,7 +29,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 8898f0f5590df6c12e33c2ac854e4344b5f23dc5
+          ref: d7bdb193c3337769ac19a82573d0f5ca8b581428
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -50,35 +50,45 @@ jobs:
           echo DEPLOY_ATTEMPTED > h100_evidence/deploy_attempted
           cd experiments/megakernel_h100
           flash deploy --app "$FLASH_APP" --env "$FLASH_ENV" --no-deps
-      - name: Execute pinned 16-layer full-model differential (single run)
+      - name: Execute pinned full16 depth and scheduler diagnostics
         run: |
           python experiments/megakernel_h100/runpod_flash_h100_bridge.py \
-            --probe-kind full16 \
+            --probe-kind depth_diagnostic \
             --gate experiments/megakernel_h100/gpu_megakernel_gate.py \
             --out h100_evidence/remote_result.json
-      - name: Require real device, source, reference, and full16 parity
+      - name: Require complete diagnostic matrix without promoting correctness
         run: |
           python - <<'PY'
           import json
           from pathlib import Path
           r = json.loads(Path("h100_evidence/remote_result.json").read_text())
-          assert r["status"] == "PASS_FULL16", r.get("status")
+          assert r["status"] == "DIAGNOSTIC_RECORDED", r.get("status")
+          assert r.get("probe_kind") == "depth_diagnostic"
           assert r.get("runpod_status") == "COMPLETED"
           assert r.get("runpod_job_id")
           assert r.get("source_pin") == "7309cec801537b61fea3b50d7dfe454a6cde578e"
           assert r.get("sm_count") == 132
           assert "H100" in r.get("gpu_name", "")
-          for name in ("rr", "dag"):
-              c = r["checks"][name]
-              assert c["passed"] is True, c
+          plan = ["rr_1", "rr_2", "rr_4", "rr_8", "rr_12", "rr_16", "dag_16"]
+          assert r.get("diagnostic_plan") == plan
+          assert set(r["checks"]) == set(plan)
+          for key in plan:
+              c = r["checks"][key]
+              depth = int(key.split("_")[1])
               assert c["source_commit"] == r["source_pin"]
               assert c["pyvm_completed_calls"] >= 1
-              assert c["fixture_layers"] == 16 and c["executed_layers"] == 16
-              assert c["lm_head_exercised"] is True
-              assert c["fields_compared"] == ["hidden_states", "k_cache", "v_cache", "logits"]
-              assert all(v["violations"] == 0 and v["nonfinite"] == 0 for v in c["fields"].values())
-          print("MATHGRAPH_H100_FULL16_PINNED_DIFFERENTIAL_PASS")
+              assert c["fixture_layers"] == 16 and c["executed_layers"] == depth
+              assert c["lm_head_exercised"] is (depth == 16)
+              expected = ["hidden_states", "k_cache", "v_cache"] + (["logits"] if depth == 16 else [])
+              assert c["fields_compared"] == expected
+              assert c["passed"] in (True, False)
+          print("MATHGRAPH_H100_DEPTH_DIAGNOSTIC_RECORDED_NOT_CORRECTNESS_PASS")
+          print(json.dumps({k: {"passed": v["passed"],
+                               "violations": {n: x["violations"] for n,x in v["fields"].items()},
+                               "top1_equal": (v.get("logit_choice") or {}).get("top1_equal")}
+                            for k,v in r["checks"].items()}, sort_keys=True))
           PY
+
       - name: Delete RunPod app and verify absence
         if: always()
         run: |
