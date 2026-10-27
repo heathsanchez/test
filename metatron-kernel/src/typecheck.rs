@@ -1782,8 +1782,12 @@ impl<'a> TypeChecker<'a> {
                 // under the same checked Gamma and universe substitution.
                 // Failed premises preserve UNKNOWN and never license a Pi.
                 let source_captured_view = ordinary_view.or_else(|| {
-                    if std::env::var_os("NUCLEUS_EXPERIMENTAL_CAPTURED_PI_RECOVERY").is_none()
-                        || *remaining < 512
+                    let low_budget = std::env::var_os(
+                        "NUCLEUS_EXPERIMENTAL_CAPTURED_PI_LOWBUDGET"
+                    ).is_some();
+                    if (std::env::var_os("NUCLEUS_EXPERIMENTAL_CAPTURED_PI_RECOVERY").is_none()
+                        && !low_budget)
+                        || *remaining < if low_budget { 128 } else { 512 }
                     {
                         return None;
                     }
@@ -1798,7 +1802,7 @@ impl<'a> TypeChecker<'a> {
                     let source_first_failure = CaptureSourceFailureScope::first();
                     #[cfg(feature = "diagnostics")]
                     if std::env::var_os("NUCLEUS_TRACE_CAPTURED_PI_RECOVERY").is_some()
-                        && context.len() == 11
+                        && (context.len() == 11 || context.len() == 4)
                     {
                         eprintln!(
                             "NUCLEUS_CAPTURED_PI_RECOVERY:fun={fun:?}:context={}:remaining={}:source_fuel={}:checked={rechecked:?}:first_failed_premise={source_first_failure:?}",
