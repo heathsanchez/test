@@ -1,0 +1,128 @@
+name: Nucleus four new Arena soundness regressions (306-307)
+on:
+  push:
+    branches:
+      - exp/nucleus-quotient-lift2-20261027
+    paths:
+      - ".github/workflows/nucleus-arena-306-307.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-pinned-negative-acceptance:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: candidate
+      - uses: actions/checkout@v4
+        with:
+          ref: ff003e7fad888d39a40cfd2375885fe20e3209fa
+          path: baseline
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build baseline and candidate Nucleus independently
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/nucleus-new-bugs/evidence
+          (cd baseline && cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml)
+          (cd candidate && cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml)
+          cp baseline/metatron-kernel/target/release/metatron-kernel /tmp/nucleus-new-bugs/nucleus-baseline
+          cp candidate/metatron-kernel/target/release/metatron-kernel /tmp/nucleus-new-bugs/nucleus-candidate
+          sha256sum /tmp/nucleus-new-bugs/nucleus-* > /tmp/nucleus-new-bugs/evidence/checker-sha256.txt
+          git -C baseline rev-parse HEAD > /tmp/nucleus-new-bugs/evidence/baseline-commit.txt
+          git -C candidate rev-parse HEAD > /tmp/nucleus-new-bugs/evidence/candidate-commit.txt
+      - name: Source-pin four upstream malicious exports
+        shell: bash
+        run: |
+          set -euo pipefail
+          git init -q /tmp/nucleus-new-bugs/arena
+          git -C /tmp/nucleus-new-bugs/arena remote add origin https://github.com/leanprover/lean-kernel-arena
+          git -C /tmp/nucleus-new-bugs/arena fetch -q --depth=1 origin 59c8821afb2909e73985fc03f2d8635f240984d8
+          git -C /tmp/nucleus-new-bugs/arena checkout -q --detach FETCH_HEAD
+          test "$(git -C /tmp/nucleus-new-bugs/arena rev-parse HEAD)" = 59c8821afb2909e73985fc03f2d8635f240984d8
+          python3 - <<'PY'
+          import subprocess,pathlib
+          root=pathlib.Path('/tmp/nucleus-new-bugs/arena')
+          hashes={
+            'loose-bvar-value.ndjson':'56e21dbc8a283808db42023694ef547496856a1b',
+            'unit-rec-rule.ndjson':'64a5dfe3c75f879afbb47efe0bb5df4f1a58d4a5',
+            'pi-closure-context.ndjson':'86082f6955340c4fbd697d06d995e7879f576d98',
+            'closure-level-subst.ndjson':'02000dd2ed69a8d3c352c4daefafc39d103a36eb',
+          }
+          for name,pin in hashes.items():
+              source=root/'tests'/'bugs'/name
+              assert source.is_file() and source.stat().st_size>100, name
+              actual=subprocess.check_output(['git','hash-object',str(source)],text=True).strip()
+              assert actual==pin,(name,actual,pin)
+              print(name,pin,source.stat().st_size)
+          PY
+      - name: Install historical official Lean Arena checker
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -o /tmp/elan-init.sh
+          sh /tmp/elan-init.sh -y --default-toolchain leanprover/lean4:v4.34.1
+          cd /tmp/nucleus-new-bugs/arena/checkers/official
+          "$HOME/.elan/bin/lake" build
+          test -x .lake/build/bin/kernel
+      - name: Require official REJECT and never Nucleus ACCEPT across four cases, two modes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os,subprocess,pathlib,json,hashlib
+          root=pathlib.Path('/tmp/nucleus-new-bugs')
+          inputs=root/'arena/tests/bugs'
+          evidence=root/'evidence'
+          official=root/'arena/checkers/official/.lake/build/bin/kernel'
+          flags=json.loads(pathlib.Path('candidate/metatron-kernel/evidence/performance/owned-environment-2026-10-13/nucleus-owned-environment-frozen196.json').read_text())['origin_flags']
+          report={'status':'UNKNOWN','arena_commit':'59c8821afb2909e73985fc03f2d8635f240984d8','rows':[]}
+          try:
+              for name in ('loose-bvar-value','unit-rec-rule','pi-closure-context','closure-level-subst'):
+                  p=inputs/(name+'.ndjson')
+                  with p.open('rb') as file:
+                      first=json.loads(file.readline())
+                  assert first['meta']['format']['version']=='3.1.0'
+                  ref=subprocess.run([str(official),str(p)],capture_output=True,timeout=30)
+                  row={'case':name,'sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+                       'official':ref.returncode,'checks':{}}
+                  report['rows'].append(row)
+                  assert ref.returncode==1,('official checker not REJECT',name,ref.returncode,ref.stderr[-450:])
+                  for checker in ('baseline','candidate'):
+                      for mode in ('default','origin'):
+                          env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+                          if mode=='origin':
+                              env.update({'NUCLEUS_EXPERIMENTAL_'+f:'1' for f in flags})
+                          with p.open('rb') as file:
+                              result=subprocess.run([str(root/('nucleus-'+checker))],stdin=file,
+                                                    capture_output=True,env=env,timeout=20)
+                          key=checker+'-'+mode
+                          row['checks'][key]={'exit':result.returncode,
+                              'stderr_tail':result.stderr.decode(errors='replace')[-700:]}
+                          print(name,key,result.returncode,flush=True)
+                          assert result.returncode in (1,2),('Nucleus ACCEPT or execution error',name,key,result.returncode)
+              report['status']='WARRANTED_BOUNDED_FOUR_INVALID_EXPORTS_NEVER_ACCEPT'
+          except Exception as err:
+              report['error']=repr(err)
+          finally:
+              (evidence/'negative-gate.json').write_text(json.dumps(report,indent=2)+'\n')
+              print('FINAL',report['status'],flush=True)
+          assert report['status']=='WARRANTED_BOUNDED_FOUR_INVALID_EXPORTS_NEVER_ACCEPT'
+          PY
+      - name: Retain negative-gate evidence even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-arena-306-307-source-pinned-regressions
+          path: /tmp/nucleus-new-bugs/evidence/
+          if-no-files-found: warn
+      - name: Evidence boundary
+        if: always()
+        run: |
+          echo 'Four exact invalid Arena inputs are expected REJECT under the official checker.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Nucleus REJECT is complete, UNKNOWN is safe but incomplete, ACCEPT is a soundness failure.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Tests are neither full-Mathlib qualification nor Arena performance evidence.' >> "$GITHUB_STEP_SUMMARY"
