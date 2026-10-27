@@ -2495,11 +2495,28 @@ fn compare_neutral_heads(
                 let mut argument_results = Vec::new();
                 let mut all_proven = head_check.is_proven();
                 if all_proven {
-                    for (l, r) in left_structure.spine.iter().zip(&right_structure.spine) {
+                    for (index, (l, r)) in left_structure.spine.iter()
+                        .zip(&right_structure.spine).enumerate()
+                    {
                         let typed = checker.checked_source_conversion(
                             l, r, context, budget.min(2048),
                         );
                         all_proven &= typed.is_proven();
+                        #[cfg(feature = "diagnostics")]
+                        if !all_proven
+                            && depth == 12
+                            && std::env::var_os("NUCLEUS_TRACE_ADDITIVE_RECEIVER").is_some()
+                        {
+                            let mut same_source_budget = budget.min(2048);
+                            let source_identity = checker.exact_source_capture_identity(
+                                l, r, &mut same_source_budget,
+                            );
+                            eprintln!(
+                                "NUCLEUS_ADDITIVE_RECEIVER_OBSTRUCTION:index={index}:typed={typed:?}:left_expr={:?}:right_expr={:?}:left_env={}:right_env={}:source_identity={source_identity}:source_budget_left={same_source_budget}:left_levels={:?}:right_levels={:?}",
+                                l.expr, r.expr, l.env.id(), r.env.id(),
+                                l.levels, r.levels,
+                            );
+                        }
                         argument_results.push(typed);
                         if !all_proven { break; }
                     }
