@@ -7,6 +7,7 @@ on:
       - "experiments/nucleus_getelem_source_prefix.py"
       - ".github/workflows/nucleus-getelem-lowbudget.yml"
       - "metatron-kernel/src/typecheck.rs"
+      - "metatron-kernel/src/convert.rs"
   workflow_dispatch:
 permissions:
   contents: read
