@@ -11,6 +11,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
   preflight:
@@ -39,3 +40,35 @@ jobs:
           python experiments/megakernel_h100/h100_architecture_audit.py --repo "$source_dir" --fixture-layers 2 --executed-layers 2 --expect REJECTED_INVALID_LMHEAD_ARCHITECTURE
           python experiments/megakernel_h100/h100_architecture_audit.py --repo "$source_dir" --fixture-layers 3 --executed-layers 2 --expect PARTIAL_PATH_LMHEAD_NOT_EXECUTED
           python experiments/megakernel_h100/h100_architecture_audit.py --repo "$source_dir" --fixture-layers 16 --executed-layers 16 --expect ELIGIBLE_FULL_MODEL_COMPATIBILITY_UNPROVEN
+
+      - name: Retrieve authentic retained H100 depth artifact
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 40492440974
+          github-token: ${{ github.token }}
+          name: mathgraph-h100-depth-diagnostic-40492440974
+          path: depth_evidence
+
+      - name: Independently audit reported depth evidence (no GPU)
+        run: |
+          python experiments/megakernel_h100/independent_depth_assurance.py \
+            depth_evidence/remote_result.json \
+            --out depth_evidence/independent_summary_audit.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r = json.loads(Path("depth_evidence/independent_summary_audit.json").read_text())
+          assert r["status"] == "SUMMARY_CONSISTENT_NOT_RAW_NUMERICALLY_REVERIFIED"
+          assert r["cases_checked"] == 7
+          assert r["first_observed_rr_failure_depth"] == 12
+          assert r["full16_top1_equal"] == {"rr_16": True, "dag_16": True}
+          print("MATHGRAPH_H100_INDEPENDENT_SUMMARY_CHECK_PASS_RAW_NOT_RECOMPUTED")
+          PY
+
+      - name: Retain independent assessment
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mathgraph-h100-independent-depth-summary-check
+          path: depth_evidence/independent_summary_audit.json
+          if-no-files-found: warn
