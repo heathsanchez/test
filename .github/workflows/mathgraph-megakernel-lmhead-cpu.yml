@@ -26,3 +26,16 @@ jobs:
           python -m compileall -q experiments/megakernel_h100
           python -m unittest discover -s experiments/megakernel_h100 -p 'test_*.py' -v
           python experiments/megakernel_h100/gpu_megakernel_gate.py --self-test
+
+      - name: Audit pinned upstream compiled architecture without GPU
+        run: |
+          set -euo pipefail
+          source_dir="$(mktemp -d)"
+          trap 'rm -rf "$source_dir"' EXIT
+          git -C "$source_dir" init -q
+          git -C "$source_dir" fetch -q --depth 1 https://github.com/HazyResearch/Megakernels.git 7309cec801537b61fea3b50d7dfe454a6cde578e
+          git -C "$source_dir" checkout -q --detach FETCH_HEAD
+          python experiments/megakernel_h100/h100_architecture_audit.py --repo "$source_dir" --fixture-layers 1 --executed-layers 1 --expect REJECTED_INVALID_LMHEAD_ARCHITECTURE
+          python experiments/megakernel_h100/h100_architecture_audit.py --repo "$source_dir" --fixture-layers 2 --executed-layers 2 --expect REJECTED_INVALID_LMHEAD_ARCHITECTURE
+          python experiments/megakernel_h100/h100_architecture_audit.py --repo "$source_dir" --fixture-layers 3 --executed-layers 2 --expect PARTIAL_PATH_LMHEAD_NOT_EXECUTED
+          python experiments/megakernel_h100/h100_architecture_audit.py --repo "$source_dir" --fixture-layers 16 --executed-layers 16 --expect ELIGIBLE_FULL_MODEL_COMPATIBILITY_UNPROVEN
