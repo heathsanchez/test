@@ -756,7 +756,7 @@ impl<'a> TypeChecker<'a> {
                                                                 "NUCLEUS_GETELEM_EQ_CODOMAIN_ARG:index={index}:left_expr={:?}:right_expr={:?}:left_frame={}:right_frame={}:relation={relation:?}",
                                                                 a.expr, b.expr, a.env.id(), b.env.id(),
                                                             );
-                                                            if index == 1 {
+                                                            if index == 1 || index == 2 {
                                                                 let guarded = crate::convert::convert_with_policy_in_context(
                                                                     self, &TypeValue::Term(a.clone()),
                                                                     &TypeValue::Term(b.clone()),
