@@ -90,7 +90,8 @@ try:
         "NUCLEUS_EXPERIMENTAL_NEUTRAL_PAIR_PROOF_IRREL":"1",
         "NUCLEUS_TRACE_DOWNSTREAM":"1",
     })
-    for budget in (65536,131072,262144,524288):
+    budgets=(65536,) if os.environ.get("NUCLEUS_DIAG_ONE_BUDGET")=="1" else (65536,131072,262144,524288)
+    for budget in budgets:
         env=dict(origin)
         env["NUCLEUS_DIAG_JUDGMENT_STEPS"]=str(budget)
         if budget == 65536:
