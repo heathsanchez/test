@@ -250,6 +250,11 @@ async def run_h100_differential(gate_source: str, probe_kind: str = "baseline"):
                     if (report["checks"][key].get("input_seed") != seed or
                             report["checks"][key].get("input_seed_override_calls") != 1):
                         raise RuntimeError("Seed injection evidence missing: " + key)
+                    if sched == "dag":
+                        rr = report["checks"][f"seed{seed}_rr"]
+                        dg = report["checks"][key]
+                        if rr.get("initial_state_sample_sha256") != dg.get("initial_state_sample_sha256"):
+                            raise RuntimeError("Scheduler input fingerprint mismatch: " + key)
                 report["status"] = "CONSEQUENCE_VARIANTS_RECORDED"
             elif probe_kind == "depth_diagnostic":
                 # Diagnostic only: the original numerical tolerance remains fixed.
