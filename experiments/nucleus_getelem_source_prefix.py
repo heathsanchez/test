@@ -45,6 +45,7 @@ try:
   cases["combined-captured-pi"]["NUCLEUS_EXPERIMENTAL_CAPTURED_PI_RECOVERY"]="1"
   cases["combined-captured-pi"]["NUCLEUS_TRACE_CAPTURED_PI_RECOVERY"]="1"
   cases["combined-captured-pi"]["NUCLEUS_TRACE_FAILED_RECEIVER_CONVERSION"]="1"
+  cases["combined-captured-pi"]["NUCLEUS_TRACE_GETELEM_EQ_TRANSPORT"]="1"
   cases["combined-captured-pi"]["NUCLEUS_TRACE_EXACT_PROJECTION"]="1"
   cases["combined-captured-pi"]["NUCLEUS_TRACE_GETELEM_RECEIVER"]="1"
   cases["combined-captured-pi"]["NUCLEUS_TRACE_GETELEM_EQ_TRANSPORT"]="1"
