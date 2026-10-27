@@ -19,7 +19,7 @@ BASE = Path("/tmp/nucleus-baseline")
 CAND = Path("/tmp/nucleus-candidate")
 LEDGER = Path("baseline/metatron-kernel/evidence/performance/owned-environment-2026-10-13/nucleus-owned-environment-frozen196.json")
 PROTECTED = Path("candidate/metatron-kernel/tests/fixtures")
-RESULTS = {"status": "UNKNOWN", "source_pin": PIN, "candidate_flag": "NUCLEUS_EXPERIMENTAL_QUOTIENT_CONTRACTOR", "modes": {}}
+RESULTS = {"status": "UNKNOWN", "source_pin": PIN, "candidate_flags": ["NUCLEUS_EXPERIMENTAL_QUOTIENT_CONTRACTOR", "NUCLEUS_EXPERIMENTAL_PROP_SHAPE_DECLINE"], "modes": {}}
 REPORT.mkdir(parents=True, exist_ok=True)
 
 def digest(p):
@@ -55,7 +55,7 @@ try:
             sha = digest(path)
             assert sha == entry["sha256"], f"source hash drift {entry['case']}"
             b = execute(BASE, path, env)
-            c = execute(CAND, path, {**env, "NUCLEUS_EXPERIMENTAL_QUOTIENT_CONTRACTOR":"1"})
+            c = execute(CAND, path, {**env, "NUCLEUS_EXPERIMENTAL_QUOTIENT_CONTRACTOR":"1", "NUCLEUS_EXPERIMENTAL_PROP_SHAPE_DECLINE":"1"})
             assert b == c == entry["rc"], {
                 "case": entry["case"], "mode": mode,
                 "expected": entry["rc"], "baseline": b, "candidate": c
@@ -69,7 +69,7 @@ try:
             path = PROTECTED / name
             assert path.is_file(), f"missing protected control {name}"
             b = execute(BASE, path, env)
-            c = execute(CAND, path, {**env, "NUCLEUS_EXPERIMENTAL_QUOTIENT_CONTRACTOR":"1"})
+            c = execute(CAND, path, {**env, "NUCLEUS_EXPERIMENTAL_QUOTIENT_CONTRACTOR":"1", "NUCLEUS_EXPERIMENTAL_PROP_SHAPE_DECLINE":"1"})
             assert b == c and b in (1, 2), {
                 "control": name, "mode": mode, "baseline": b, "candidate": c
             }
@@ -86,7 +86,7 @@ try:
             assert counts == {"accept": 119, "reject": 71, "unknown": 6, "error": 0}, counts
         RESULTS["modes"][mode] = {"counts": counts, "cases": rows, "protected": negatives}
         print(json.dumps({"mode": mode, "counts": counts, "protected": negatives}), flush=True)
-    RESULTS["status"] = "WARRANTED_QUOTIENT_CONTRACTOR_588_EXACT_VERDICT_PARITY"
+    RESULTS["status"] = "WARRANTED_GUARDED_QUOTIENT_588_EXACT_VERDICT_PARITY"
     exit_code = 0
 except Exception as error:
     RESULTS["error"] = repr(error)
