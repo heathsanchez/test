@@ -18,7 +18,12 @@ jobs:
           mkdir -p /tmp/nucleus-regression-evidence
           git rev-parse HEAD > /tmp/nucleus-regression-evidence/source-commit.txt
           git rev-parse HEAD:metatron-kernel > /tmp/nucleus-regression-evidence/source-tree.txt
-          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml > /tmp/nucleus-regression-evidence/rust-tests.log 2>&1
+          set +e
+          NUCLEUS_EXPERIMENTAL_RELEVANCE=1 NUCLEUS_EXPERIMENTAL_EXPECTED_LAMBDA=1 cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml > /tmp/nucleus-regression-evidence/rust-tests.log 2>&1
+          rust_rc=$?
+          set -e
+          printf '%s\n' "$rust_rc" > /tmp/nucleus-regression-evidence/rust-test-rc.txt
+          tail -n 100 /tmp/nucleus-regression-evidence/rust-tests.log
           cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
           sha256sum metatron-kernel/target/release/metatron-kernel > /tmp/nucleus-regression-evidence/binary.sha256
       - name: Replay exact six upstream malformed exports and independent controls
