@@ -27,7 +27,22 @@ use verdict::Verdict;
 ///
 pub fn run<R: BufRead>(reader: R) -> Verdict {
     match parse(reader).and_then(|export| export.resolve()) {
-        Ok(export) => check_export(export, Limits::default()),
+        Ok(export) => {
+            let mut limits = Limits::default();
+            // Diagnostic-only finite budget sensitivity test; never active
+            // in release builds without the explicit diagnostics feature.
+            #[cfg(feature = "diagnostics")]
+            if let Ok(raw) = std::env::var("NUCLEUS_DIAG_JUDGMENT_STEPS")
+                && let Ok(requested) = raw.parse::<usize>()
+                && (65_536..=524_288).contains(&requested)
+            {
+                limits.judgment_steps = requested;
+                eprintln!("NUCLEUS_DIAG_JUDGMENT_STEPS={requested}");
+            }
+            #[cfg(not(feature = "diagnostics"))]
+            let _ = &mut limits;
+            check_export(export, limits)
+        },
         Err(error) => {
             if std::env::var_os("NUCLEUS_TRACE_PARSE_ERROR").is_some() {
                 eprintln!("NUCLEUS_PARSE_ERROR: {error}");
