@@ -201,9 +201,9 @@ jobs:
           flags=data['origin_flags']
           records=[]
           failures=[]
-          for mode in ['default','origin','demand','captured-pi','origin-captured-pi','certified-quot-iota','origin-certified-quot-iota','origin-certified-quot-plus-pi','proof-only-contractor','origin-proof-only-contractor']:
+          for mode in ['default','origin','demand','captured-pi','origin-captured-pi','certified-quot-iota','origin-certified-quot-iota','origin-certified-quot-plus-pi','proof-only-contractor','origin-proof-only-contractor','certified-quot-source-proof','origin-certified-quot-source-proof']:
               env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
-              if mode in ('origin','demand','origin-captured-pi','origin-certified-quot-iota','origin-certified-quot-plus-pi','origin-proof-only-contractor'):
+              if mode in ('origin','demand','origin-captured-pi','origin-certified-quot-iota','origin-certified-quot-plus-pi','origin-proof-only-contractor','origin-certified-quot-source-proof'):
                   env.update({'NUCLEUS_EXPERIMENTAL_'+x:'1' for x in flags})
               if mode=='demand':
                   env['NUCLEUS_EXPERIMENTAL_DEMAND_MAJOR']='1'
@@ -220,6 +220,10 @@ jobs:
               if 'proof-only-contractor' in mode:
                   env['NUCLEUS_EXPERIMENTAL_QUOTIENT_CONTRACTOR']='1'
                   env['NUCLEUS_TRACE_QUOTIENT_CONTRACTOR']='1'
+              if 'quot-source-proof' in mode:
+                  env['NUCLEUS_EXPERIMENTAL_CERTIFIED_QUOT_IOTA']='1'
+                  env['NUCLEUS_EXPERIMENTAL_SOURCE_PROOF_IRREL']='1'
+                  env['NUCLEUS_TRACE_SOURCE_PROOF_IRREL']='1'
               if mode=='origin-certified-quot-plus-pi':
                   env['NUCLEUS_EXPERIMENTAL_CAPTURED_PI_RECOVERY']='1'
               entry={'mode':mode}
