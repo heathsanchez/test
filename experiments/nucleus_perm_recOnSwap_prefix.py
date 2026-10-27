@@ -62,6 +62,7 @@ try:
         env["NUCLEUS_TRACE_DOWNSTREAM"]="1"
         env["NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE"]="1"
         env["NUCLEUS_TRACE_VALUE_MISMATCH"]="1"
+        env["NUCLEUS_TRACE_NEUTRAL_HEADS"]="1"
         result=run(nucleus,path,env)
         report["results"][mode]=result
         print(mode,result["exit"],result["stderr_tail"][-900:],flush=True)
@@ -74,5 +75,5 @@ except Exception as ex:
 finally:
     (E/"recOnSwap-prefix-verdicts.json").write_text(json.dumps(report,indent=2)+"\n")
     print(json.dumps({"status":report["status"],
-                      "exits":{k:v["exit"] for k,v in report["results"].items()}},flush=True))
+                      "exits":{k:v["exit"] for k,v in report["results"].items()}}),flush=True)
 sys.exit(return_code)
