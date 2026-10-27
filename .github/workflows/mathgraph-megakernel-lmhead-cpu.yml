@@ -176,3 +176,49 @@ jobs:
           name: mathgraph-h100-counterfactual-near-tie
           path: raw_logits_evidence/near_tie_counterfactual.json
           if-no-files-found: warn
+
+      - name: Retrieve real H100 repeated-execution evidence
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 40599459515
+          github-token: ${{ github.token }}
+          name: mathgraph-h100-repeatability-40599459515
+          path: repeat_evidence
+
+      - name: Recompute pairwise native BF16 drift and decisive-token stability
+        run: |
+          python experiments/megakernel_h100/independent_repeat_variance.py \
+            repeat_evidence/remote_result.json \
+            --out repeat_evidence/independent_repeat_variance.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d = json.loads(Path("repeat_evidence/independent_repeat_variance.json").read_text())
+          assert d["schema"] == "mathgraph-h100-independent-repeat-variance-v1"
+          assert d["status"] == "NATIVE_BF16_OUTPUTS_NONREPEATABLE_TOP1_STABLE"
+          assert d["cases_checked"] == 6
+          assert d["sampled_initial_states_equal"] is True
+          assert d["reference_logit_bits_equal"] is True
+          assert d["native_matches_reference_top1_in_all_six"] is True
+          assert d["all_six_top1_winners_equal"] is True
+          for s in ("rr", "dag"):
+              assert d["by_scheduler"][s]["all_pairwise_bitwise_identical"] is False
+              assert d["by_scheduler"][s]["pair_count"] == 3
+              assert d["by_scheduler"][s]["min_changed_elements"] > 100000
+              assert d["by_scheduler"][s]["max_changed_elements"] < 128256
+          assert len(d["pairwise"]) == 9
+          print("MATHGRAPH_H100_NATIVE_NONBITWISE_REFERENCE_STABLE_SIX_REPEATS")
+          print(json.dumps({
+              "status": d["status"], "by_scheduler": d["by_scheduler"],
+              "all_six_top1_winners_equal": d["all_six_top1_winners_equal"],
+              "reference_logit_bits_equal": d["reference_logit_bits_equal"],
+          }, sort_keys=True))
+          PY
+
+      - name: Retain independent repeated-output variance assessment
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mathgraph-h100-independent-repeat-variance
+          path: repeat_evidence/independent_repeat_variance.json
+          if-no-files-found: warn
