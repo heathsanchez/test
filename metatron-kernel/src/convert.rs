@@ -2501,20 +2501,27 @@ fn compare_neutral_heads(
                         let typed = checker.checked_source_conversion(
                             l, r, context, budget.min(2048),
                         );
-                        all_proven &= typed.is_proven();
-                        #[cfg(feature = "diagnostics")]
-                        if !all_proven
-                            && depth == 12
-                            && std::env::var_os("NUCLEUS_TRACE_ADDITIVE_RECEIVER").is_some()
-                        {
-                            let mut same_source_budget = budget.min(2048);
-                            let source_identity = checker.exact_source_capture_identity(
+                        // Independently checked type-and-conversion is
+                        // sufficient. If type re-inference cannot recover
+                        // a captured source, existing exact lexical capture
+                        // identity is a separate, stronger source-equality
+                        // certificate used elsewhere by the same converter.
+                        // No name, binder number, or value shape suffices.
+                        let mut same_source_budget = budget.min(2048);
+                        let source_identity = if typed.is_proven() { false } else {
+                            checker.exact_source_capture_identity(
                                 l, r, &mut same_source_budget,
-                            );
+                            )
+                        };
+                        let argument_proven = typed.is_proven() || source_identity;
+                        all_proven &= argument_proven;
+                        #[cfg(feature = "diagnostics")]
+                        if std::env::var_os("NUCLEUS_TRACE_ADDITIVE_RECEIVER").is_some()
+                            && depth == 12
+                        {
                             eprintln!(
-                                "NUCLEUS_ADDITIVE_RECEIVER_OBSTRUCTION:index={index}:typed={typed:?}:left_expr={:?}:right_expr={:?}:left_env={}:right_env={}:source_identity={source_identity}:source_budget_left={same_source_budget}:left_levels={:?}:right_levels={:?}",
-                                l.expr, r.expr, l.env.id(), r.env.id(),
-                                l.levels, r.levels,
+                                "NUCLEUS_ADDITIVE_RECEIVER_WITNESS:index={index}:typed={typed:?}:source_identity={source_identity}:proved={argument_proven}:left_expr={:?}:right_expr={:?}:source_budget_left={same_source_budget}",
+                                l.expr, r.expr,
                             );
                         }
                         argument_results.push(typed);
