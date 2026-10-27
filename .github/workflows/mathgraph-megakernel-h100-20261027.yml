@@ -30,7 +30,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 4644d447d7e5c24b321ec038683e41f5f2af218d
+          ref: 5aa16dfa8f0d13ba593c2e9a7da75c82673b8ccf
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -88,7 +88,9 @@ jobs:
           assert r["sm_count"] == 132
           assert all(r["checks"][x]["passed"] is True for x in ("rr", "dag"))
           assert all(r["checks"][x]["pyvm_completed_calls"] >= 1 for x in ("rr", "dag"))
-          print("MATHGRAPH_H100_PINNED_DIFFERENTIAL_PASS")
+          assert all(r["checks"][x]["model_kind"] == "synthetic_2_layer_model_executing_layer0" for x in ("rr", "dag"))
+          assert all(r["checks"][x]["lm_head_exercised"] is False for x in ("rr", "dag"))
+          print("MATHGRAPH_H100_LAYER0_DIFFERENTIAL_PASS")
           PY
 
       - name: Delete dedicated H100 app and endpoints even after error
