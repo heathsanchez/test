@@ -18,8 +18,8 @@ class Full16ContractTests(unittest.TestCase):
         self.assertIn('elif probe_kind == "full16":', worker)
         self.assertIn('report["status"] = "PASS_FULL16"', worker)
         self.assertIn('allowed = ("PASS_FULL16",)', worker)
-        self.assertIn('["fixture_layers"]', gate)
-        self.assertIn('["executed_layers"]', gate)
+        self.assertIn('"fixture_layers": num_layers', gate)
+        self.assertIn('"executed_layers": layer_limit', gate)
 
     def test_full_short_fixtures_rejected_not_gpu_failures(self):
         facts = audit_sources(
