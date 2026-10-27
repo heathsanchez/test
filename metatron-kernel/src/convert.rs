@@ -2520,6 +2520,28 @@ fn compare_neutral_heads(
                 );
                 if !argument_result.is_proven() {
                     #[cfg(feature = "diagnostics")]
+                    if std::env::var_os("NUCLEUS_TRACE_GETELEM_RECEIVER").is_some()
+                        && (9..=16).contains(&depth)
+                    {
+                        use std::sync::atomic::{AtomicUsize, Ordering};
+                        static ARG_FAILURE_TRACES: AtomicUsize=AtomicUsize::new(0);
+                        if ARG_FAILURE_TRACES.fetch_add(1,Ordering::Relaxed)<5 {
+                            let mut capture_budget=budget.min(512);
+                            let capture=checker.exact_source_capture_identity(
+                                lhs,rhs,&mut capture_budget,
+                            );
+                            eprintln!(
+                                "NUCLEUS_GETELEM_RECEIVER_ARGUMENT_FAILURE:depth={depth}:field={left_index}:budget={budget}:per_arg_budget={argument_budget}:relation={argument_result:?}:exact_source={capture}:left={lhs:?}:right={rhs:?}",
+                            );
+                            let checked=checker.checked_source_conversion(
+                                lhs,rhs,context,budget.min(1024),
+                            );
+                            eprintln!(
+                                "NUCLEUS_GETELEM_RECEIVER_TYPED_OBLIGATION:depth={depth}:relation={checked:?}:capture_budget_left={capture_budget}",
+                            );
+                        }
+                    }
+                    #[cfg(feature = "diagnostics")]
                     if std::env::var_os("NUCLEUS_TRACE_FAILED_RECEIVER_CAPTURES").is_some()
                         && matches!(lhs.expr.0, 600 | 1214)
                         && lhs.expr == rhs.expr && argument_budget >= 2048
