@@ -47,9 +47,10 @@ def prepare_python_build_env(root: Path, env: dict) -> dict:
 
 
 def full16_verdict(checks: dict) -> str:
-    """Both scheduler receipts are mandatory; completion alone never means PASS."""
+    """Fail closed unless both full16 scheduler receipts have a valid scope."""
     schedulers = ("rr", "dag")
-    if any(s not in checks for s in schedulers):
+    required = ("hidden_states", "k_cache", "v_cache", "logits")
+    if not isinstance(checks, dict) or any(s not in checks for s in schedulers):
         return "UNKNOWN_FULL16_INCOMPLETE"
     for sched in schedulers:
         c = checks[sched]
@@ -59,16 +60,20 @@ def full16_verdict(checks: dict) -> str:
             or c.get("fixture_layers") != 16
             or c.get("executed_layers") != 16
             or c.get("lm_head_exercised") is not True
-            or c.get("pyvm_completed_calls", 0) < 1
-            or c.get("fields_compared") != [
-                "hidden_states", "k_cache", "v_cache", "logits"
-            ]
-            or c.get("passed") not in (True, False)
+            or not isinstance(c.get("pyvm_completed_calls"), int)
+            or c["pyvm_completed_calls"] < 1
+            or c.get("fields_compared") != list(required)
+            or not isinstance(c.get("passed"), bool)
         ):
             return "UNKNOWN_FULL16_INVALID_RECEIPT"
-        for field in ("hidden_states", "k_cache", "v_cache", "logits"):
-            m = c.get("fields", {}).get(field)
-            if not isinstance(m, dict) or m.get("elements", 0) < 1:
+        fields = c.get("fields")
+        if not isinstance(fields, dict):
+            return "UNKNOWN_FULL16_INVALID_RECEIPT"
+        for name in required:
+            m = fields.get(name)
+            if (not isinstance(m, dict)
+                    or not isinstance(m.get("elements"), int)
+                    or m["elements"] < 1):
                 return "UNKNOWN_FULL16_INVALID_RECEIPT"
             if c["passed"] is True and (
                 m.get("violations") != 0 or m.get("nonfinite") != 0
