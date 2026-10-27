@@ -68,13 +68,21 @@ try:
             candidates.append((old[name]["slots_cloned"], name, path))
     candidates.sort(reverse=True)
     chosen = [(count, name, path) for count, name, path in candidates if count > 100]
-    assert len(chosen) >= 2, "too few eligible accepted high-copy cases"
-    for index, (count, name, path) in enumerate(chosen[:3]):
+    assert len(chosen) >= 3 and len(candidates) >= 12, "insufficient pinned accepted cases"
+    # Previously qualified top three plus predeclared holdouts sampled across
+    # the accepted-copy distribution, including the lowest-copy case.
+    positions = [0, 1, 2, len(candidates)//4, len(candidates)//2,
+                 3*len(candidates)//4, len(candidates)-1]
+    selected = [candidates[i] for i in positions]
+    assert len({name for _, name, _ in selected}) == len(selected)
+    result["selection"] = {"rule": "top-three plus accepted quartiles and minimum",
+                           "indices": positions, "eligible_count": len(candidates)}
+    for index, (count, name, path) in enumerate(selected):
         base_ir = count_guest_ir(BASE, path, f"case{index}-baseline")
         cand_ir = count_guest_ir(CANDIDATE, path, f"case{index}-candidate")
         ratio = cand_ir / base_ir
         receipt = {"case": name, "source_sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
-                   "context_slots_cloned_in_v1": count, "baseline_guest_ir": base_ir,
+                   "context_slots_cloned_in_v1": count, "selection_index": positions[index], "baseline_guest_ir": base_ir,
                    "candidate_guest_ir": cand_ir, "candidate_div_baseline": ratio}
         result["cost"].append(receipt)
         print(json.dumps(receipt), flush=True)
