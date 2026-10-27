@@ -163,12 +163,15 @@ def run_diff(repo, fixture, sched, out):
             raise AssertionError("Independent GPU tensor gate rejected: " + ",".join(verdict["reasons"]))
 
     BaseGlobals.diff = gated_diff
+    # Do not pass skip_pyvm=false: the pinned parser may treat presence
+    # of a boolean option as enabled. Upstream defaults skip_pyvm to False.
+    # The reference interpreter must run before any comparison can be warranted.
     old_argv = sys.argv[:]
     try:
         sys.argv = [str(repo / "megakernels/scripts/diff_test.py"),
                     f"model={fixture}", f"sched={sched}", "layer_limit=1",
                     "prompt_len=10", "ntok=10", "exec_reps=1",
-                    "setting=latency", "device=cuda:0", "skip_pyvm=false"]
+                    "setting=latency", "device=cuda:0"]
         os.chdir(repo)
         runpy.run_path(sys.argv[0], run_name="__main__")
     finally:
