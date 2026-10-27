@@ -50,6 +50,15 @@ try:
   cases["combined-captured-pi"]["NUCLEUS_TRACE_GETELEM_RECEIVER"]="1"
   cases["combined-captured-pi"]["NUCLEUS_TRACE_GETELEM_EQ_TRANSPORT"]="1"
   cases["combined-captured-pi"]["NUCLEUS_TRACE_SOURCE_CAPTURE_TARGET"]="1"
+  # One source-matched but low-noise diagnostic pass. Other modes retain
+  # their old receipts; this extra pass is observational only.
+  receiver_env=dict(cases["combined-captured-pi"])
+  for key in list(receiver_env):
+    if key.startswith("NUCLEUS_TRACE_"):
+      receiver_env.pop(key)
+  receiver_env["NUCLEUS_TRACE_GETELEM_RECEIVER"]="1"
+  receiver_env["NUCLEUS_TRACE_DOWNSTREAM"]="1"
+  cases["receiver-source-only"]=receiver_env
   for nm,env in cases.items():
     cmd=[OFF,str(path)] if nm=="official" else [EXE]
     if nm!="official":
