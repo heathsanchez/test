@@ -63,6 +63,7 @@ try:
         env["NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE"]="1"
         env["NUCLEUS_TRACE_VALUE_MISMATCH"]="1"
         env["NUCLEUS_TRACE_NEUTRAL_HEADS"]="1"
+        env["NUCLEUS_TRACE_PERM_PROPOSITION"]="1"
         result=run(nucleus,path,env)
         report["results"][mode]=result
         print(mode,result["exit"],result["stderr_tail"][-900:],flush=True)
