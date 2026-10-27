@@ -39,6 +39,8 @@ class ReplayTests(unittest.TestCase):
         self.assertEqual(value["pairs_of_logits_replayed"],6*N)
         self.assertEqual(value["top1_agreements"],6)
         self.assertEqual(value["sufficient_ranking_margins"],6)
+        self.assertEqual(value["exhaustive_strict_winner_certificates"],6)
+        self.assertTrue(all(x["exhaustive_winner_gap"] > 0 for x in value["cases"].values()))
         self.assertIn("NOT_INDEPENDENT_GPU",value["status"])
 
     def test_mutated_payload_hash_rejected(self):
