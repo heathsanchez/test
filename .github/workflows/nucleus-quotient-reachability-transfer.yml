@@ -1,0 +1,105 @@
+name: Nucleus Quotient — six source-pinned Reachability transfers
+on:
+  push:
+    branches:
+      - exp/nucleus-quotient-lift2-20261027
+    paths:
+      - "experiments/nucleus_quotient_reachability_transfer.py"
+      - ".github/workflows/nucleus-quotient-reachability-transfer.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  authentic-reachability:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 100
+    env:
+      LEAN_TOOLCHAIN: leanprover/lean4:v4.34.1
+      EXPORTER_SHA: 076e8e57707e813375e8f9da8bf989799ace9680
+      REACH_SHA: d822b1c70b4a6ec858b54ee51f12b0cb30628982
+      ARENA_SHA: cd2dd0244b9ed5e704463a26fbbe5fc67ba16108
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install exact Lean and build candidate checker
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/reachability-evidence /tmp/reachability-inputs
+          curl -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -o /tmp/elan-init.sh
+          sh /tmp/elan-init.sh -y --default-toolchain "$LEAN_TOOLCHAIN"
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          "$HOME/.elan/bin/lean" --version | tee /tmp/reachability-evidence/lean-version.txt
+          cargo test --locked --lib --manifest-path metatron-kernel/Cargo.toml
+          cargo build --locked --release --manifest-path metatron-kernel/Cargo.toml
+          git rev-parse HEAD | tee /tmp/reachability-evidence/nucleus-commit.txt
+          git rev-parse HEAD:metatron-kernel > /tmp/reachability-evidence/nucleus-subtree.txt
+          sha256sum metatron-kernel/target/release/metatron-kernel > /tmp/reachability-evidence/binary.sha256
+      - name: Build historical source-matched exporter
+        shell: bash
+        run: |
+          set -euo pipefail
+          git init -q /tmp/quotient-exporter
+          git -C /tmp/quotient-exporter remote add origin https://github.com/leanprover/lean4export.git
+          git -C /tmp/quotient-exporter fetch -q --depth=1 origin "$EXPORTER_SHA"
+          git -C /tmp/quotient-exporter checkout -q --detach FETCH_HEAD
+          test "$(git -C /tmp/quotient-exporter rev-parse HEAD)" = "$EXPORTER_SHA"
+          echo "$LEAN_TOOLCHAIN" > /tmp/quotient-exporter/lean-toolchain
+          (cd /tmp/quotient-exporter && "$HOME/.elan/bin/lake" build)
+          test -x /tmp/quotient-exporter/.lake/build/bin/lean4export
+      - name: Build exact Reachability Arena module and retained six exports
+        shell: bash
+        run: |
+          set -euo pipefail
+          git init -q /tmp/quotient-reach
+          git -C /tmp/quotient-reach remote add origin https://github.com/Arrow7000/reachability.git
+          git -C /tmp/quotient-reach fetch -q --depth=1 origin "$REACH_SHA"
+          git -C /tmp/quotient-reach checkout -q --detach FETCH_HEAD
+          test "$(git -C /tmp/quotient-reach rev-parse HEAD)" = "$REACH_SHA"
+          cd /tmp/quotient-reach
+          "$HOME/.elan/bin/lake" exe cache get
+          "$HOME/.elan/bin/lake" build Bench.Arena
+          python3 - <<'PY'
+          import pathlib,subprocess,hashlib
+          root=pathlib.Path("/tmp/reachability-inputs")
+          exporter="/tmp/quotient-exporter/.lake/build/bin/lean4export"
+          names=['path_reachable','path_unreachable','grid_reachable','random_reachable','dag_reachable','grid_shortest']
+          for name in names:
+              p=root/(name+".ndjson")
+              with p.open("wb") as output:
+                  subprocess.run(["lake","env",exporter,"Bench.Arena","--","Bench.Arena."+name],
+                                 stdout=output,check=True,timeout=180)
+              print(name,len(p.read_bytes()),hashlib.sha256(p.read_bytes()).hexdigest(),flush=True)
+          PY
+      - name: Build original Arena Lean checker at source pinned revision
+        shell: bash
+        run: |
+          set -euo pipefail
+          git init -q /tmp/arena-reference
+          git -C /tmp/arena-reference remote add origin https://github.com/leanprover/lean-kernel-arena.git
+          git -C /tmp/arena-reference fetch -q --depth=1 origin "$ARENA_SHA"
+          git -C /tmp/arena-reference checkout -q --detach FETCH_HEAD
+          test "$(git -C /tmp/arena-reference rev-parse HEAD)" = "$ARENA_SHA"
+          (cd /tmp/arena-reference/checkers/official && "$HOME/.elan/bin/lake" build)
+          test -x /tmp/arena-reference/checkers/official/.lake/build/bin/kernel
+      - name: Verify exact export SHA, official ACCEPT and independent Nucleus outcome
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 experiments/nucleus_quotient_reachability_transfer.py
+      - name: Retain verdicts and byte authorities even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-quotient-six-reachability-source-pinned
+          path: /tmp/reachability-evidence/
+          if-no-files-found: warn
+      - name: Boundary
+        if: always()
+        shell: bash
+        run: |
+          echo "Exactly six original Reachability declarations, Lean 4.34.1 / historical export and official checker." >> "$GITHUB_STEP_SUMMARY"
+          echo "No new complete ACCEPT is claimed unless emitted and checked by the retained report." >> "$GITHUB_STEP_SUMMARY"
+          echo "Previously qualified Nucleus frozen196 and negative controls are independent." >> "$GITHUB_STEP_SUMMARY"
