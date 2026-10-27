@@ -1,0 +1,73 @@
+name: Pinned OpenAI Math local-smoothing Lean replay
+on:
+  push:
+    branches: [research/openai-math-replay-20261028]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  replay:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 345
+    env:
+      OPENAI_MATH_SHA: 7ef5c0cc5ca4b0e072b7a050fca09ab24bc6fa3a
+      GLIBC_TUNABLES: glibc.malloc.mmap_max=0:glibc.malloc.arena_max=1
+      LEAN_NUM_THREADS: 2
+    steps:
+      - name: Environment
+        run: |
+          mkdir -p evidence
+          { uname -a; lscpu; free -h; df -h; } > evidence/environment.txt
+      - name: Install pinned Lean 4.34.1
+        run: |
+          set -euxo pipefail
+          curl -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -o /tmp/elan-init.sh
+          sh /tmp/elan-init.sh -y --default-toolchain leanprover/lean4:v4.34.1
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Pin exact OpenAI source
+        run: |
+          set -euxo pipefail
+          git clone --filter=blob:none --no-checkout --depth 1 https://github.com/openai/math.git upstream
+          git -C upstream sparse-checkout set lean
+          git -C upstream fetch --depth 1 origin "$OPENAI_MATH_SHA"
+          git -C upstream checkout --detach "$OPENAI_MATH_SHA"
+          test "$(git -C upstream rev-parse HEAD)" = "$OPENAI_MATH_SHA"
+          echo "$OPENAI_MATH_SHA" > evidence/source_commit.txt
+          sha256sum upstream/lean/lakefile.lean upstream/lean/lean-toolchain upstream/lean/OAI/Analysis/Fourier/LocalSmoothing/Main.lean upstream/lean/OAI/MeasureTheory/Kakeya/Logarithmic.lean > evidence/source_hashes.txt
+          lean --version > evidence/lean_version.txt
+          lake --version > evidence/lake_version.txt
+      - name: Resolve and cache pinned dependencies
+        working-directory: upstream/lean
+        run: |
+          set -euo pipefail
+          lake update 2>&1 | tee "$GITHUB_WORKSPACE/evidence/lake_update.log"
+          lake exe cache get 2>&1 | tee "$GITHUB_WORKSPACE/evidence/cache_get.log"
+          sha256sum lake-manifest.json > "$GITHUB_WORKSPACE/evidence/manifest_hash.txt"
+      - name: Compile exact Kakeya declaration and print assumptions
+        working-directory: upstream/lean
+        run: |
+          set -euo pipefail
+          lake build OAI.MeasureTheory.Kakeya.Logarithmic 2>&1 | tee "$GITHUB_WORKSPACE/evidence/target_build.log"
+          cat > ReplayCheck.lean <<'LEAN'
+          import OAI.Analysis.Fourier.LocalSmoothing.Main
+          import OAI.MeasureTheory.Kakeya.Logarithmic
+          #check OAI.Analysis.Fourier.LocalSmoothing.logarithmic_refinement
+          #check OAI.Analysis.Fourier.LocalSmoothing.logarithmic_sobolev
+          #check OAI.MeasureTheory.Kakeya.tube_union_logarithmic
+          #check OAI.MeasureTheory.Kakeya.tube_union_logarithmic_three_dimensional
+          #print axioms OAI.Analysis.Fourier.LocalSmoothing.logarithmic_refinement
+          #print axioms OAI.Analysis.Fourier.LocalSmoothing.logarithmic_sobolev
+          #print axioms OAI.MeasureTheory.Kakeya.tube_union_logarithmic
+          #print axioms OAI.MeasureTheory.Kakeya.tube_union_logarithmic_three_dimensional
+          LEAN
+          sha256sum ReplayCheck.lean > "$GITHUB_WORKSPACE/evidence/replay_check_hash.txt"
+          lake env lean ReplayCheck.lean 2>&1 | tee "$GITHUB_WORKSPACE/evidence/axiom_check.log"
+          ! grep -Eq 'sorryAx|Lean\.ofReduceBool|error:' "$GITHUB_WORKSPACE/evidence/axiom_check.log"
+      - name: Retain evidence including failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: openai-math-pinned-local-smoothing-replay
+          path: evidence/
+          if-no-files-found: warn
+          retention-days: 30
