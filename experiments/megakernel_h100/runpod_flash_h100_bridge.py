@@ -175,6 +175,29 @@ async def run_h100_differential(gate_source: str, probe_kind: str = "baseline"):
                 report["status"] = "PASS" if all(
                     report["checks"][s]["passed"] for s in ("rr", "dag")
                 ) else "REJECTED_DIFFERENTIAL"
+            elif probe_kind == "full16":
+                report["probe_kind"] = "full16"
+                fixture = root / "fixture_full16"
+                stage("fixture_full16",
+                      [sys.executable, str(gate), "--make-fixture",
+                       "--fixture", str(fixture), "--fixture-layers", "16"],
+                      180, env=env)
+                for sched in ("rr", "dag"):
+                    dest = root / f"full16_{sched}.json"
+                    try:
+                        stage(f"diff_full16_{sched}",
+                              [sys.executable, "-u", str(gate),
+                               "--diff", sched, "--repo", str(repo),
+                               "--fixture", str(fixture), "--layer-limit",
+                               "16", "--out", str(dest)], 180, env=env)
+                    finally:
+                        if dest.exists():
+                            report["checks"][sched] = json.loads(dest.read_text())
+                    if not report["checks"].get(sched, {}).get("passed"):
+                        report["status"] = "REJECTED_FULL16_DIFFERENTIAL"
+                        break
+                else:
+                    report["status"] = "PASS_FULL16"
             elif probe_kind == "lmhead":
                 # Control: 2 of 3 layers. Treatment: 2 of 2 layers (LM head).
                 # Both fixtures are deterministically seeded; common weights
@@ -289,8 +312,8 @@ async def run_async_differential(gate_source: str, out: Path, probe_kind: str = 
         endpoint_id = await resolve_deployed_endpoint_id()
         report["runpod_endpoint_id"] = endpoint_id
         payload = {"gate_source": gate_source}
-        if probe_kind == "lmhead":
-            payload["probe_kind"] = "lmhead"
+        if probe_kind in ("lmhead", "full16"):
+            payload["probe_kind"] = probe_kind
         elif probe_kind != "baseline":
             raise ValueError("Unregistered RunPod probe kind")
         job = await Endpoint(id=endpoint_id).run(payload)
@@ -351,9 +374,13 @@ async def _main(out: Path, gate: Path, probe_kind: str = "baseline"):
     data = await run_async_differential(gate.read_text(), out, probe_kind=probe_kind)
     print(json.dumps({"status": data.get("status"), "gpu_name": data.get("gpu_name"),
                       "stages": len(data.get("stages", []))}, sort_keys=True))
-    allowed = ("PASS",) if probe_kind == "baseline" else (
-        "LMHEAD_FULL_PASS", "LMHEAD_NATIVE_TIMEOUT", "LMHEAD_REJECTED_DIFFERENTIAL"
-    )
+    if probe_kind == "baseline":
+        allowed = ("PASS",)
+    elif probe_kind == "full16":
+        allowed = ("PASS_FULL16",)
+    else:
+        allowed = ("LMHEAD_FULL_PASS", "LMHEAD_NATIVE_TIMEOUT",
+                   "LMHEAD_REJECTED_DIFFERENTIAL")
     return 0 if data.get("status") in allowed else 1
 
 
@@ -361,7 +388,7 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument("--gate", type=Path, required=True)
     p.add_argument("--out", type=Path, required=True)
-    p.add_argument("--probe-kind", choices=("baseline", "lmhead"), default="baseline")
+    p.add_argument("--probe-kind", choices=("baseline", "lmhead", "full16"), default="baseline")
     a = p.parse_args()
     raise SystemExit(asyncio.run(_main(a.out, a.gate, a.probe_kind)))
 
