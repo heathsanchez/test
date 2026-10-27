@@ -14,7 +14,7 @@ class LMHeadPairContract(unittest.TestCase):
         bridge = (HERE / "runpod_flash_h100_bridge.py").read_text()
         ast.parse(gate)
         ast.parse(bridge)
-        self.assertIn('((2, 1), (3, 2), (2, 2))', gate)
+        self.assertIn('((2, 1), (3, 2), (2, 2), (16, 16))', gate)
         self.assertIn('("partial_2of3", 3, 2), ("full_2of2", 2, 2)', bridge)
         self.assertIn("if case == \"partial_2of3\" and not", bridge)
         self.assertIn("UNKNOWN_PARTIAL_CONTROL_FAILED", bridge)
