@@ -34,12 +34,19 @@ try:
   report["prefix"]={"record_count":idx+1,"length":len(prefix),"sha256":hashlib.sha256(prefix).hexdigest(),"theorem_record":thm}
   ledger=json.loads(LEDGER.read_text())
   base={k:v for k,v in os.environ.items() if not k.startswith("NUCLEUS_")}
-  cases={"official":dict(base),"unmodified":dict(base),"historical-origin":dict(base),"combined-origin":dict(base)}
-  for nm in ("historical-origin","combined-origin"):
+  cases={"official":dict(base),"unmodified":dict(base),"historical-origin":dict(base),"combined-origin":dict(base),"combined-captured-pi":dict(base)}
+  for nm in ("historical-origin","combined-origin","combined-captured-pi"):
     cases[nm].update({"NUCLEUS_EXPERIMENTAL_"+k:"1" for k in ledger["origin_flags"]})
     cases[nm]["NUCLEUS_EXPERIMENTAL_EXACT_PROOF_NEUTRALS"]="1"
   cases["combined-origin"]["NUCLEUS_EXPERIMENTAL_CERTIFIED_QUOT_IOTA"]="1"
   cases["combined-origin"]["NUCLEUS_EXPERIMENTAL_SOURCE_PROOF_IRREL"]="1"
+  cases["combined-captured-pi"]["NUCLEUS_EXPERIMENTAL_CERTIFIED_QUOT_IOTA"]="1"
+  cases["combined-captured-pi"]["NUCLEUS_EXPERIMENTAL_SOURCE_PROOF_IRREL"]="1"
+  cases["combined-captured-pi"]["NUCLEUS_EXPERIMENTAL_CAPTURED_PI_RECOVERY"]="1"
+  cases["combined-captured-pi"]["NUCLEUS_TRACE_CAPTURED_PI_RECOVERY"]="1"
+  cases["combined-captured-pi"]["NUCLEUS_TRACE_FAILED_RECEIVER_CONVERSION"]="1"
+  cases["combined-captured-pi"]["NUCLEUS_TRACE_EXACT_PROJECTION"]="1"
+  cases["combined-captured-pi"]["NUCLEUS_TRACE_SOURCE_CAPTURE_TARGET"]="1"
   for nm,env in cases.items():
     cmd=[OFF,str(path)] if nm=="official" else [EXE]
     if nm!="official":
@@ -49,9 +56,9 @@ try:
       env["NUCLEUS_TRACE_VALUE_MISMATCH"]="1"
       env["NUCLEUS_TRACE_EXACT_PROOF_NEUTRALS"]="1"
     p=subprocess.run(cmd,input=None if nm=="official" else prefix,env=env,capture_output=True,timeout=210)
-    r={"exit_code":p.returncode,"stderr_tail":p.stderr.decode(errors="replace")[-16000:],"stdout_tail":p.stdout.decode(errors="replace")[-1500:]}
+    r={"exit_code":p.returncode,"stderr_tail":p.stderr.decode(errors="replace")[-48000:],"stdout_tail":p.stdout.decode(errors="replace")[-1500:]}
     report["results"][nm]=r
-    print(nm,r["exit_code"],r["stderr_tail"][-1500:],flush=True)
+    print(nm,r["exit_code"],r["stderr_tail"][-5500:],flush=True)
     if nm=="official":assert p.returncode==0,("official source invalid",r)
     else:assert p.returncode in (0,2),("valid source REJECT/crash",nm,r)
   report["status"]="WARRANTED_SOURCE_PINNED_FIRST_GETELEM_OBSTRUCTION"
