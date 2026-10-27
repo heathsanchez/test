@@ -54,7 +54,7 @@ jobs:
           cp compat/nucleus-quotient/QuotientSourceProbe.lean /tmp/lean4export/QuotientSourceProbe.lean
           cd /tmp/lean4export
           "$HOME/.elan/bin/lake" env "$HOME/.elan/bin/lean" -o QuotientSourceProbe.olean QuotientSourceProbe.lean
-          "$HOME/.elan/bin/lake" env .lake/build/bin/lean4export QuotientSourceProbe -- QuotientSourceProbe.indirect_beta > /tmp/quotient-evidence/indirect-beta.ndjson
+          "$HOME/.elan/bin/lake" env sh -c 'export LEAN_PATH="$PWD:$LEAN_PATH"; .lake/build/bin/lean4export QuotientSourceProbe -- QuotientSourceProbe.indirect_beta' > /tmp/quotient-evidence/indirect-beta.ndjson
           test -s /tmp/quotient-evidence/indirect-beta.ndjson
           sha256sum /tmp/quotient-evidence/indirect-beta.ndjson > /tmp/quotient-evidence/indirect-beta.sha256
       - name: Inspect exact source and theorem metadata
