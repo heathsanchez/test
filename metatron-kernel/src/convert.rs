@@ -2470,6 +2470,54 @@ fn compare_neutral_heads(
             if budget < 8 || left_structure.spine.len() != right_structure.spine.len() {
                 return Judgment::unknown("neutral-projection-receiver-congruence");
             }
+            // Independent *additive* proof attempt: unlike the destructive
+            // budget-reservation experiment, this cannot alter the old path's
+            // work allowance or upgrade any failed premise to equality.
+            // The caller's original Γ is retained; each dependent argument
+            // must independently pass the source-owned typing-and-equality
+            // checker. No names or numeric binder IDs are trusted by shape.
+            if std::env::var_os(
+                "NUCLEUS_EXPERIMENTAL_ADDITIVE_RECEIVER_CONGRUENCE"
+            ).is_some()
+                && budget >= 128 && left_structure.spine.len() <= 8
+                && matches!(
+                    (&left_structure.head, &right_structure.head),
+                    (
+                        NeutralHead::Const { name: l, .. },
+                        NeutralHead::Const { name: r, .. }
+                    ) if l == r
+                )
+            {
+                let head_check = compare_neutral_heads(
+                    checker, left_structure, right_structure,
+                    (budget / 2).min(1024), depth, context,
+                );
+                let mut argument_results = Vec::new();
+                let mut all_proven = head_check.is_proven();
+                if all_proven {
+                    for (l, r) in left_structure.spine.iter().zip(&right_structure.spine) {
+                        let typed = checker.checked_source_conversion(
+                            l, r, context, budget.min(2048),
+                        );
+                        all_proven &= typed.is_proven();
+                        argument_results.push(typed);
+                        if !all_proven { break; }
+                    }
+                }
+                #[cfg(feature = "diagnostics")]
+                if std::env::var_os("NUCLEUS_TRACE_ADDITIVE_RECEIVER").is_some()
+                    && depth == 12
+                {
+                    eprintln!(
+                        "NUCLEUS_ADDITIVE_RECEIVER:depth={depth}:budget={budget}:head={head_check:?}:arguments={argument_results:?}:proved={all_proven}",
+                    );
+                }
+                if all_proven {
+                    return Judgment::proven(
+                        (), "independent-source-typed-additive-receiver-congruence",
+                    );
+                }
+            }
             let mut source_work = budget.saturating_sub(1);
             let source_equal = exact_neutral_source_congruence(
                 checker, left_structure, right_structure, &mut source_work
