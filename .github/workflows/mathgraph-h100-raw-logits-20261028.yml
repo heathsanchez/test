@@ -1,0 +1,115 @@
+name: MathGraph H100 Raw Logit Replay - RUN THIS
+
+# Single bounded raw-vector replay: six matched, deterministic GPU/reference cases.
+# Only synthetic model outputs; never publish private collaboration notes.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/mathgraph-h100-raw-logits-20261028.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mathgraph-h100-raw-logit-replay-20261028
+  cancel-in-progress: false
+
+jobs:
+  replay:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.head_commit.message == 'H100-RAW-LOGITS: launch one bounded full-vector replay'
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    env:
+      RUNPOD_API_KEY: ${{ secrets.RUNPOD_API_KEY }}
+      FLASH_APP: mathgraph-raw-logits-${{ github.run_id }}
+      FLASH_ENV: production
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: e5b5109907e4196cd773873cfee640e81e3944a1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify CPU tests before any paid deployment
+        run: |
+          python -m compileall -q experiments/megakernel_h100
+          python -m unittest discover -s experiments/megakernel_h100 -p 'test_*.py' -v
+          python experiments/megakernel_h100/gpu_megakernel_gate.py --self-test
+
+      - name: Require existing RunPod credential
+        run: |
+          test -n "$RUNPOD_API_KEY" || { echo "::error::RUNPOD_API_KEY missing"; exit 1; }
+
+      - name: Install pinned RunPod Flash
+        run: python -m pip install --disable-pip-version-check --no-input runpod-flash==1.21.0
+
+      - name: Deploy one isolated H100 endpoint
+        run: |
+          mkdir -p h100_evidence
+          echo DEPLOY_ATTEMPTED > h100_evidence/deploy_attempted
+          cd experiments/megakernel_h100
+          flash deploy --app "$FLASH_APP" --env "$FLASH_ENV" --no-deps
+
+      - name: Record six reference and native raw BF16 logit pairs
+        run: |
+          python experiments/megakernel_h100/runpod_flash_h100_bridge.py \
+            --probe-kind consequence_variants \
+            --gate experiments/megakernel_h100/gpu_megakernel_gate.py \
+            --out h100_evidence/remote_result.json
+
+      - name: Independently replay all saved logit elements on CPU
+        run: |
+          python experiments/megakernel_h100/independent_full_logit_replay.py \
+            h100_evidence/remote_result.json \
+            --out h100_evidence/full_logit_replay.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          evidence = json.loads(Path("h100_evidence/full_logit_replay.json").read_text())
+          assert evidence["status"] == "FULL_BF16_LOGIT_VECTOR_REPLAYED_NOT_INDEPENDENT_GPU_EXECUTION"
+          assert evidence["cases_checked"] == 6
+          assert evidence["pairs_of_logits_replayed"] == 6*128256
+          assert set(evidence["cases"]) == {
+            f"seed{s}_{sched}" for s in (0, 7, 21) for sched in ("rr", "dag")}
+          print("MATHGRAPH_H100_FULL_BF16_LOGIT_VECTOR_REPLAY_COMPLETE")
+          print(json.dumps({
+             "top1_agreements": evidence["top1_agreements"],
+             "sufficient_ranking_margins": evidence["sufficient_ranking_margins"],
+             "per_case": {
+                 k: {"top1_equal": v["top1_equal"],
+                     "logit_tolerance_violations": v["tolerance_violations"],
+                     "ranking_margin": v["margin_slack"]}
+                 for k,v in evidence["cases"].items()}
+          }, sort_keys=True))
+          PY
+
+      - name: Delete app and confirm cloud absence
+        if: always()
+        run: |
+          if [ ! -f h100_evidence/deploy_attempted ]; then
+            echo CLEANUP_NOT_REQUIRED_NO_DEPLOY_ATTEMPT
+          elif command -v flash >/dev/null 2>&1 && [ -n "$RUNPOD_API_KEY" ]; then
+            if flash app list | grep -Fq "$FLASH_APP"; then
+              flash app delete "$FLASH_APP"
+            fi
+            if flash app list | grep -Fq "$FLASH_APP"; then
+              echo "::error::CLOUD_CLEANUP_UNVERIFIED"
+              exit 1
+            fi
+            echo CLOUD_APP_DELETION_VERIFIED
+          else
+            echo "::error::CLEANUP_NOT_ATTEMPTED"
+            exit 1
+          fi
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mathgraph-h100-raw-logits-${{ github.run_id }}
+          path: h100_evidence/
+          if-no-files-found: warn
