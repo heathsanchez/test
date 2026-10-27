@@ -2470,11 +2470,37 @@ fn compare_neutral_heads(
             if budget < 8 || left_structure.spine.len() != right_structure.spine.len() {
                 return Judgment::unknown("neutral-projection-receiver-congruence");
             }
-            let mut source_work = budget.saturating_sub(1);
+            let original_allowance = budget.saturating_sub(1);
+            let split = std::env::var_os("NUCLEUS_EXPERIMENTAL_RECEIVER_BUDGET_SPLIT").is_some();
+            // A failed optional source-identity proof must not monopolize
+            // the work owner. Reserve the rest for ordinary typed conversion.
+            // Charge every source-work step; no additional semantic equality
+            // or work is introduced by this trial.
+            let source_allowance = if split {
+                (original_allowance / 4).max(1).min(128)
+            } else {
+                original_allowance
+            };
+            let mut source_work = source_allowance;
             if exact_neutral_source_congruence(checker, left_structure, right_structure, &mut source_work) {
                 return Judgment::proven((), "exact-source-neutral-receiver-congruence");
             }
-            let budget = source_work;
+            let budget = if split {
+                original_allowance.saturating_sub(source_allowance - source_work)
+            } else {
+                source_work
+            };
+            #[cfg(feature = "diagnostics")]
+            if split && std::env::var_os("NUCLEUS_TRACE_GETELEM_RECEIVER").is_some()
+                && (9..=16).contains(&depth) {
+                use std::sync::atomic::{AtomicUsize, Ordering};
+                static PRINTED: AtomicUsize=AtomicUsize::new(0);
+                if PRINTED.fetch_add(1,Ordering::Relaxed)<8 {
+                    eprintln!(
+                        "NUCLEUS_RECEIVER_BUDGET_SPLIT:depth={depth}:source_allocated={source_allowance}:source_left={source_work}:fallback_remaining={budget}",
+                    );
+                }
+            }
             let probe = budget.saturating_sub(1) / 2;
             let receiver_heads = compare_neutral_heads(
                 checker, left_structure, right_structure, probe, depth, context,
