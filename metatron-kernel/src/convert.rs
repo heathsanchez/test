@@ -2476,9 +2476,22 @@ fn compare_neutral_heads(
             }
             let budget = source_work;
             let probe = budget.saturating_sub(1) / 2;
-            if !compare_neutral_heads(
+            let receiver_heads = compare_neutral_heads(
                 checker, left_structure, right_structure, probe, depth, context,
-            ).is_proven() {
+            );
+            if !receiver_heads.is_proven() {
+                #[cfg(feature = "diagnostics")]
+                if std::env::var_os("NUCLEUS_TRACE_GETELEM_RECEIVER").is_some()
+                    && (9..=16).contains(&depth)
+                {
+                    use std::sync::atomic::{AtomicUsize, Ordering};
+                    static TRACE_COUNT: AtomicUsize = AtomicUsize::new(0);
+                    if TRACE_COUNT.fetch_add(1, Ordering::Relaxed) < 6 {
+                        eprintln!(
+                            "NUCLEUS_GETELEM_RECEIVER_HEAD:depth={depth}:field={left_index}:budget={budget}:head_result={receiver_heads:?}:left={left_structure:?}:right={right_structure:?}",
+                        );
+                    }
+                }
                 return Judgment::unknown("neutral-projection-receiver-congruence");
             }
             let argument_budget = probe / left_structure.spine.len().max(1);
