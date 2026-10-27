@@ -1686,6 +1686,52 @@ fn compare_values(
                         );
                     }
                 }
+                // This optional contractor proves an equality, never a
+                // refutation. The certified Quot.mk iota reduct must match
+                // the other source neutral under independently checked
+                // argument conversions, with no erased or guessed binders.
+                if std::env::var_os("NUCLEUS_EXPERIMENTAL_QUOTIENT_CONTRACTOR").is_some()
+                    && current_budget >= 1024
+                    && depth == context.len()
+                {
+                    let machine = checker.machine();
+                    for (source, expected) in [(left, right), (right, left)] {
+                        let Judgment::Proven {
+                            value: Value::Neutral(reduced),
+                            ..
+                        } = machine.qualified_quotient_neutral_result(
+                            source, current_budget.min(2048),
+                        ) else { continue };
+                        if reduced.head != expected.head
+                            || reduced.spine.len() != expected.spine.len()
+                        {
+                            continue;
+                        }
+                        let proved = reduced.spine.iter().zip(&expected.spine).all(|(a,b)| {
+                            convert_with_policy_in_context(
+                                checker,
+                                &TypeValue::Term(a.clone()),
+                                &TypeValue::Term(b.clone()),
+                                current_budget.min(512),
+                                DeltaPolicy::PreferredOnly,
+                                depth,
+                                context,
+                            ).is_proven()
+                        });
+                        #[cfg(feature = "diagnostics")]
+                        if std::env::var_os("NUCLEUS_TRACE_QUOTIENT_CONTRACTOR").is_some() {
+                            eprintln!(
+                                "NUCLEUS_QUOTIENT_CONTRACTOR:depth={depth}:head={:?}:arity={}:all_arguments_proven={proved}",
+                                reduced.head, reduced.spine.len(),
+                            );
+                        }
+                        if proved {
+                            return Judgment::proven(
+                                (), "registered-quotient-iota-congruence",
+                            );
+                        }
+                    }
+                }
                 // The original closure machine can leave a registered
                 // Quot.lift neutral after cheap exposure, even though its
                 // exact source major evaluates to Quot.mk. Replay that
