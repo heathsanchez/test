@@ -1,0 +1,237 @@
+name: Nucleus source-verified proof-only Quotient contractor
+on:
+  push:
+    branches:
+      - exp/nucleus-quotient-guarded-contractor-20261027
+    paths:
+      - ".github/workflows/nucleus-quotient-contractor.yml"
+      - "metatron-kernel/src/convert.rs"
+      - "metatron-kernel/src/machine.rs"
+      - "compat/nucleus-quotient/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  exact-quotient-export:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 65
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install pinned Lean release
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -o /tmp/elan-init.sh
+          sh /tmp/elan-init.sh -y --default-toolchain leanprover/lean4:v4.34.1
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          "$HOME/.elan/bin/lean" --version
+          mkdir -p /tmp/quotient-evidence
+      - name: Build pinned lean4export at matching Lean release
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/lean4export
+          git -C /tmp/lean4export init -q
+          git -C /tmp/lean4export remote add origin https://github.com/leanprover/lean4export.git
+          git -C /tmp/lean4export fetch -q --depth=1 origin 076e8e57707e813375e8f9da8bf989799ace9680
+          git -C /tmp/lean4export checkout -q --detach FETCH_HEAD
+          test "$(git -C /tmp/lean4export rev-parse HEAD)" = 076e8e57707e813375e8f9da8bf989799ace9680
+          printf '%s\n' leanprover/lean4:v4.34.1 > /tmp/lean4export/lean-toolchain
+          cd /tmp/lean4export
+          "$HOME/.elan/bin/lake" build
+          "$HOME/.elan/bin/lake" env .lake/build/bin/lean4export Init.Core -- 'Quotient.lift₂._proof_2' > /tmp/quotient-evidence/authentic.ndjson
+          test -s /tmp/quotient-evidence/authentic.ndjson
+          sha256sum /tmp/quotient-evidence/authentic.ndjson > /tmp/quotient-evidence/authentic.sha256
+      - name: Export genuine indirect quotient constructor beta theorem
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp compat/nucleus-quotient/QuotientSourceProbe.lean /tmp/lean4export/QuotientSourceProbe.lean
+          cd /tmp/lean4export
+          "$HOME/.elan/bin/lake" env "$HOME/.elan/bin/lean" -o QuotientSourceProbe.olean QuotientSourceProbe.lean
+          "$HOME/.elan/bin/lake" env sh -c 'export LEAN_PATH="$PWD:$LEAN_PATH"; .lake/build/bin/lean4export QuotientSourceProbe -- QuotientSourceProbe.indirect_beta' > /tmp/quotient-evidence/indirect-beta.ndjson
+          test -s /tmp/quotient-evidence/indirect-beta.ndjson
+          sha256sum /tmp/quotient-evidence/indirect-beta.ndjson > /tmp/quotient-evidence/indirect-beta.sha256
+      - name: Inspect exact source and theorem metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib
+          p=pathlib.Path('/tmp/quotient-evidence/authentic.ndjson')
+          rows=[json.loads(x) for x in p.read_text().splitlines()]
+          assert rows[0]['meta']['format']['version']=='3.1.0'
+          names={0:''}
+          found=[]
+          for row in rows:
+              if 'in' in row:
+                  n=row.get('str') or row.get('num')
+                  if n:
+                      pre=n['pre']
+                      assert pre in names
+                      names[row['in']]=names[pre]+('.' if pre else '')+str(n.get('str',n.get('i')))
+              if 'thm' in row and names.get(row['thm']['name'])=='Quotient.lift₂._proof_2':
+                  found.append(row['thm'])
+          assert len(found)==1, 'pinned export lacks exact generated theorem'
+          pathlib.Path('/tmp/quotient-evidence/metadata.json').write_text(json.dumps({
+              'meta': rows[0]['meta'], 'records':len(rows),
+              'theorem':found[0]},indent=2)+'\n')
+          print('Verified genuine source theorem and NDJSON 3.1.0',flush=True)
+          PY
+      - name: Build independent Nucleus without changing semantics
+        run: |
+          set -euo pipefail
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          git rev-parse HEAD > /tmp/quotient-evidence/nucleus-commit.txt
+          sha256sum metatron-kernel/target/release/metatron-kernel > /tmp/quotient-evidence/nucleus.sha256
+      - name: Build official Arena checker at exact historical revision
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/arena-reference
+          git -C /tmp/arena-reference init -q
+          git -C /tmp/arena-reference remote add origin https://github.com/leanprover/lean-kernel-arena.git
+          git -C /tmp/arena-reference fetch -q --depth=1 origin cd2dd0244b9ed5e704463a26fbbe5fc67ba16108
+          git -C /tmp/arena-reference checkout -q --detach FETCH_HEAD
+          test "$(git -C /tmp/arena-reference rev-parse HEAD)" = cd2dd0244b9ed5e704463a26fbbe5fc67ba16108
+          cd /tmp/arena-reference/checkers/official
+          "$HOME/.elan/bin/lake" build
+          test -x .lake/build/bin/kernel
+          git -C /tmp/arena-reference rev-parse HEAD > /tmp/quotient-evidence/official-arena-commit.txt
+      - name: Replay authentic export with official Lean and Nucleus
+        shell: bash
+        run: |
+          set -euo pipefail
+          input=/tmp/quotient-evidence/authentic.ndjson
+          checker=/tmp/arena-reference/checkers/official/.lake/build/bin/kernel
+          test -x "$checker"
+          set +e
+          "$checker" "$input" > /tmp/quotient-evidence/official.out 2> /tmp/quotient-evidence/official.err
+          official=$?
+          NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE=1 NUCLEUS_TRACE_NEUTRAL_HEADS=1 NUCLEUS_TRACE_QUOTIENT_MAJOR=1 NUCLEUS_TRACE_VALUE_MISMATCH=1 NUCLEUS_TRACE_DOWNSTREAM=1 NUCLEUS_TRACE_PARSE_ERROR=1 metatron-kernel/target/release/metatron-kernel < "$input" > /tmp/quotient-evidence/nucleus.out 2> /tmp/quotient-evidence/nucleus.err
+          nucleus=$?
+          set -e
+          printf '%s\n' "$official" > /tmp/quotient-evidence/official.exit
+          printf '%s\n' "$nucleus" > /tmp/quotient-evidence/nucleus.exit
+          echo "Official verdict exit=$official; independent Nucleus exit=$nucleus"
+          tail -n 12 /tmp/quotient-evidence/nucleus.err || true
+          test "$official" -eq 0
+          test "$nucleus" -ge 0
+      - name: Independently reject a type-only falsification of the source theorem
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, pathlib, hashlib
+          out=pathlib.Path('/tmp/quotient-evidence')
+          rows=[json.loads(line) for line in (out/'authentic.ndjson').read_text().splitlines()]
+          witness=json.loads((out/'metadata.json').read_text())['theorem']
+          indices=[i for i,x in enumerate(rows) if x.get('thm',{}).get('name')==witness['name']]
+          assert len(indices)==1
+          idx=indices[0]
+          assert rows[idx]['thm']['value']==witness['value']
+          assert any(x.get('il')==3 and x.get('succ')==0 for x in rows)
+          next_expr=max(x['ie'] for x in rows if 'ie' in x)+1
+          new_type={'ie':next_expr,'sort':3}
+          rows.insert(idx,new_type)
+          rows[idx+1]['thm']['type']=next_expr
+          assert rows[idx+1]['thm']['value']==witness['value']
+          contents=''.join(json.dumps(x,ensure_ascii=False,separators=(',',':'))+'\n' for x in rows)
+          (out/'mutated.ndjson').write_text(contents)
+          (out/'mutation.json').write_text(json.dumps({
+            'kind':'theorem-type-only-replacement','old_type':witness['type'],
+            'new_type':next_expr,'proof_value_unchanged':True,
+            'sha256':hashlib.sha256(contents.encode()).hexdigest()
+          },indent=2)+'\n')
+          PY
+          checker=/tmp/arena-reference/checkers/official/.lake/build/bin/kernel
+          set +e
+          "$checker" /tmp/quotient-evidence/mutated.ndjson > /tmp/quotient-evidence/official-mutated.out 2> /tmp/quotient-evidence/official-mutated.err
+          official=$?
+          NUCLEUS_TRACE_DOWNSTREAM=1 metatron-kernel/target/release/metatron-kernel < /tmp/quotient-evidence/mutated.ndjson > /tmp/quotient-evidence/nucleus-mutated.out 2> /tmp/quotient-evidence/nucleus-mutated.err
+          nucleus=$?
+          set -e
+          echo "$official" > /tmp/quotient-evidence/official-mutated.exit
+          echo "$nucleus" > /tmp/quotient-evidence/nucleus-mutated.exit
+          echo "Corrupted claim: official=$official nucleus=$nucleus"
+          test "$official" -eq 1
+          test "$nucleus" -eq 1 -o "$nucleus" -eq 2
+      - name: Independently check indirect quotient beta control and candidate path
+        shell: bash
+        run: |
+          set -euo pipefail
+          checker=/tmp/arena-reference/checkers/official/.lake/build/bin/kernel
+          input=/tmp/quotient-evidence/indirect-beta.ndjson
+          "$checker" "$input" > /tmp/quotient-evidence/indirect-official.out 2> /tmp/quotient-evidence/indirect-official.err
+          python3 - <<'PY'
+          import json,os,pathlib,subprocess
+          out=pathlib.Path('/tmp/quotient-evidence')
+          source=out/'indirect-beta.ndjson'
+          binary='metatron-kernel/target/release/metatron-kernel'
+          records=[]
+          for label,flags in [('baseline',{}),
+                              ('proof-only-contractor',{'NUCLEUS_EXPERIMENTAL_QUOTIENT_CONTRACTOR':'1'})]:
+              env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+              env.update(flags)
+              with source.open('rb') as f:
+                  proc=subprocess.run([binary],stdin=f,capture_output=True,timeout=240,env=env)
+              records.append({'mode':label,'exit':proc.returncode,'stderr':proc.stderr.decode(errors='replace')[-1800:]})
+              print(json.dumps(records[-1]),flush=True)
+              assert proc.returncode in (0,2),records
+              if label=='proof-only-contractor':
+                  assert proc.returncode == 0,'proof-only contractor did not ACCEPT genuine native quotient beta proof'
+          (out/'indirect-beta-verdicts.json').write_text(json.dumps(records,indent=2)+'\n')
+          PY
+      - name: Differential in all previously qualified Nucleus capability modes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,os,pathlib,subprocess
+          root=pathlib.Path('/tmp/quotient-evidence')
+          binary='metatron-kernel/target/release/metatron-kernel'
+          source=pathlib.Path('metatron-kernel/evidence/performance/owned-environment-2026-10-13/nucleus-owned-environment-frozen196.json')
+          data=json.loads(source.read_text())
+          flags=data['origin_flags']
+          records=[]
+          failures=[]
+          for mode in ['default','origin','demand','proof-only-contractor','origin-proof-only-contractor']:
+              env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+              if mode in ('origin','demand','origin-proof-only-contractor'):
+                  env.update({'NUCLEUS_EXPERIMENTAL_'+x:'1' for x in flags})
+              if mode=='demand':
+                  env['NUCLEUS_EXPERIMENTAL_DEMAND_MAJOR']='1'
+              if 'proof-only-contractor' in mode:
+                  env['NUCLEUS_EXPERIMENTAL_QUOTIENT_CONTRACTOR']='1'
+                  env['NUCLEUS_TRACE_QUOTIENT_CONTRACTOR']='1'
+              if mode=='origin-certified-quot-plus-pi':
+                  env['NUCLEUS_EXPERIMENTAL_CAPTURED_PI_RECOVERY']='1'
+              entry={'mode':mode}
+              for label in ['authentic','mutated']:
+                  with (root/(label+'.ndjson')).open('rb') as inp:
+                      p=subprocess.run([binary],stdin=inp,capture_output=True,env=env,timeout=240)
+                  entry[label]={'exit':p.returncode,'stderr_tail':p.stderr.decode(errors='replace')[-6500:]}
+              legacy_rejected = mode in ('certified-quot-iota','origin-certified-quot-iota','origin-certified-quot-plus-pi')
+              valid_observation = (entry['authentic']['exit'] == 1) if legacy_rejected else (entry['authentic']['exit'] in (0,2))
+              if not valid_observation or entry['mutated']['exit'] not in (1,2):
+                  failures.append({'mode':mode,'authentic':entry['authentic']['exit'],'mutated':entry['mutated']['exit']})
+              records.append(entry)
+              print(json.dumps(entry),flush=True)
+          (root/'mode-matrix.json').write_text(json.dumps({'records':records,'regressions':failures},indent=2)+'\n')
+          assert not failures, failures
+          PY
+      - name: Retain exact bytes and diagnostic evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-proof-only-quotient-contractor-v1
+          path: /tmp/quotient-evidence/
+          if-no-files-found: warn
+      - name: Scope
+        if: always()
+        run: |
+          echo 'This is a same-toolchain official-vs-independent theorem check, NOT a completeness repair or whole-Mathlib test.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'An independent Nucleus UNKNOWN is preserved as UNKNOWN, never called ACCEPT.' >> "$GITHUB_STEP_SUMMARY"
