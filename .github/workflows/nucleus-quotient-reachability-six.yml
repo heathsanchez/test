@@ -1,0 +1,119 @@
+name: Nucleus quotient proof — six exact Reachability transfers
+on:
+  push:
+    branches:
+      - exp/nucleus-quotient-lift2-20261027
+    paths:
+      - "experiments/nucleus_quotient_reachability_transfer.py"
+      - ".github/workflows/nucleus-quotient-reachability-six.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  REACH_SHA: d822b1c70b4a6ec858b54ee51f12b0cb30628982
+  EXPORTER_SHA: 076e8e57707e813375e8f9da8bf989799ace9680
+
+jobs:
+  six-whole-lean-exports:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 95
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Compile independent Nucleus with local diagnostic capability
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/reachability-evidence /tmp/reachability-inputs
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          git rev-parse HEAD > /tmp/reachability-evidence/nucleus-source-commit.txt
+          git rev-parse HEAD:metatron-kernel > /tmp/reachability-evidence/nucleus-source-tree.txt
+          sha256sum metatron-kernel/target/release/metatron-kernel > /tmp/reachability-evidence/nucleus-binary.sha256
+      - name: Install matching Lean and source-pinned exporter
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -o /tmp/elan-init.sh
+          sh /tmp/elan-init.sh -y --default-toolchain leanprover/lean4:v4.34.1
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          git clone -q https://github.com/leanprover/lean4export /tmp/exporter34
+          git -C /tmp/exporter34 checkout -q "$EXPORTER_SHA"
+          test "$(git -C /tmp/exporter34 rev-parse HEAD)" = "$EXPORTER_SHA"
+          printf '%s\n' leanprover/lean4:v4.34.1 > /tmp/exporter34/lean-toolchain
+          cd /tmp/exporter34
+          "$HOME/.elan/bin/lake" build
+          test -x .lake/build/bin/lean4export
+      - name: Reconstruct pinned Reachability benchmark module
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone -q https://github.com/Arrow7000/reachability /tmp/reach
+          git -C /tmp/reach checkout -q "$REACH_SHA"
+          test "$(git -C /tmp/reach rev-parse HEAD)" = "$REACH_SHA"
+          mkdir -p /tmp/reach/bench/Bench
+          cat > /tmp/reach/bench/Bench/Arena.lean <<'EOF'
+          import Bench.Graphs
+          namespace Bench.Arena
+          open Relation
+          set_option Elab.async false
+          theorem path_reachable : TransGen (path 100).Adj 0 99 := by decide +kernel
+          theorem path_unreachable : ¬TransGen (path 100).Adj 1 0 := by decide +kernel
+          theorem grid_reachable : TransGen (grid 10).Adj 0 99 := by decide +kernel
+          theorem random_reachable : TransGen (random 100 3 0).Adj 0 99 := by decide +kernel
+          theorem dag_reachable : TransGen (dag 300).Adj 0 299 := by decide +kernel
+          theorem grid_shortest :
+              (grid 5).shortest 0 24 = some [1, 2, 3, 4, 9, 14, 19] := by decide +kernel
+          end Bench.Arena
+          EOF
+          cd /tmp/reach
+          "$HOME/.elan/bin/lake" update
+          "$HOME/.elan/bin/lake" exe cache get
+          "$HOME/.elan/bin/lake" build Bench.Arena
+          git -C /tmp/reach rev-parse HEAD > /tmp/reachability-evidence/reachability-source-commit.txt
+      - name: Build reference checker from historical Arena revision
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone -q https://github.com/leanprover/lean-kernel-arena /tmp/arena-reference
+          git -C /tmp/arena-reference checkout -q cd2dd0244b9ed5e704463a26fbbe5fc67ba16108
+          cd /tmp/arena-reference/checkers/official
+          "$HOME/.elan/bin/lake" build
+          test -x .lake/build/bin/kernel
+      - name: Generate all six original source-hashed NDJSON exports
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          for name in path_reachable path_unreachable grid_reachable random_reachable dag_reachable grid_shortest; do
+            (cd /tmp/reach && lake env /tmp/exporter34/.lake/build/bin/lean4export Bench.Arena -- "Bench.Arena.$name") > "/tmp/reachability-inputs/$name.ndjson"
+            test -s "/tmp/reachability-inputs/$name.ndjson"
+          done
+          sha256sum /tmp/reachability-inputs/*.ndjson > /tmp/reachability-evidence/six-input-sha256.txt
+      - name: Exact original-input/official/candidate comparison
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 experiments/nucleus_quotient_reachability_transfer.py
+      - name: Retain exact six exports for independently reproducible replay
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-quotient-reachability-exact-six-inputs
+          path: /tmp/reachability-inputs/
+          if-no-files-found: warn
+          retention-days: 45
+      - name: Retain source-linked, honest outcome matrix
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-quotient-reachability-six-verdicts
+          path: /tmp/reachability-evidence/
+          if-no-files-found: warn
+      - name: Qualification boundary
+        if: always()
+        run: |
+          echo 'No formal whole-Mathlib result or hardware retired-instruction score is established.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Only source-hash-identical, official-ACCEPT benchmark exports can support independently measured new Nucleus ACCEPTs.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Any source drift, official rejection, Nucleus REJECT/error/timeout fails closed.' >> "$GITHUB_STEP_SUMMARY"
