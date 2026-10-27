@@ -16,7 +16,7 @@ class Full16ContractTests(unittest.TestCase):
         self.assertIn('if lm_head_active:', gate)
         self.assertIn('REJECTED_INVALID_LMHEAD_ARCHITECTURE', gate)
         self.assertIn('elif probe_kind == "full16":', worker)
-        self.assertIn('report["status"] = "PASS_FULL16"', worker)
+        self.assertIn('report["status"] = ("PASS_FULL16" if all(', worker)
         self.assertIn('allowed = ("PASS_FULL16",)', worker)
         self.assertIn('"fixture_layers": num_layers', gate)
         self.assertIn('"executed_layers": layer_limit', gate)
