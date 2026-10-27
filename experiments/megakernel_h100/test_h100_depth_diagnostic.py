@@ -18,7 +18,7 @@ class DepthDiagnosticTests(unittest.TestCase):
         self.assertIn('report["status"] = "DIAGNOSTIC_RECORDED"', worker)
         self.assertIn('if outcome.get("passed") is not False:', worker)
         self.assertIn('if key not in report["checks"]:', worker)
-        self.assertIn('if probe_kind in ("lmhead", "full16", "depth_diagnostic", "consequence_variants")', worker)
+        self.assertIn('if probe_kind in ("lmhead", "full16", "depth_diagnostic", "consequence_variants", "repeat_seed0")', worker)
 
     def test_diagnostic_status_cannot_be_promoted_to_full_model_pass(self):
         worker = (ROOT / "runpod_flash_h100_bridge.py").read_text()
