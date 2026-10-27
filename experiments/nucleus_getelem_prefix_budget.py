@@ -47,6 +47,8 @@ try:
     with zipfile.ZipFile(ZIP) as archive:
         source=archive.read("path_reachable.ndjson")
     assert sha(source)==SOURCE_SHA, "source bytes not historically authorized"
+    whole_source = ZIP.parent / "path_reachable-original.ndjson"
+    whole_source.write_bytes(source)
     lines=source.splitlines(keepends=True)
     assert json.loads(lines[0])["meta"]["lean"]["githash"]==LEAN_SHA
     match=[]
@@ -72,6 +74,10 @@ try:
     report["official"]=official
     print("official prefix",official,flush=True)
     assert official["exit"]==0,("reference kernel rejected exact prefix",official)
+    full_official = run(OFFICIAL,whole_source,empty,[str(whole_source)])
+    report["official_whole"] = full_official
+    assert full_official["exit"]==0,("reference kernel rejected original complete input",full_official)
+    print("official whole",full_official,flush=True)
 
     ledger=json.loads(Path(
       "metatron-kernel/evidence/performance/owned-environment-2026-10-13/nucleus-owned-environment-frozen196.json"
@@ -87,12 +93,17 @@ try:
     for budget in (65536,131072,262144,524288):
         env=dict(origin)
         env["NUCLEUS_DIAG_JUDGMENT_STEPS"]=str(budget)
-        result=run(CHECKER,PREFIX,env,[])
-        report["verdicts"][str(budget)]=result
-        print("budget",budget,"verdict",result["exit"],
-              "seconds",result["seconds"],"tail",result.get("stderr_tail","")[-350:],flush=True)
-        assert result["exit"] in (0,2),("invalid REJECT/ERROR on official-accepted prefix",budget,result)
-    report["status"]="WARRANTED_BOUNDED_PREFIX_BUDGET_DIAGNOSTIC"
+        if budget == 65536:
+            prefix_recheck=run(CHECKER,PREFIX,env,[])
+            report["verdicts"][str(budget)]=prefix_recheck
+            assert prefix_recheck["exit"] in (0,2),(
+                "invalid REJECT/ERROR on official-accepted prefix",budget,prefix_recheck)
+        result=run(CHECKER,whole_source,env,[])
+        report.setdefault("whole_verdicts",{})[str(budget)]=result
+        print("whole budget",budget,"verdict",result["exit"],
+              "seconds",result["seconds"],"tail",result.get("stderr_tail","")[-650:],flush=True)
+        assert result["exit"] in (0,2),("invalid REJECT/ERROR on official-accepted complete export",budget,result)
+    report["status"]="WARRANTED_BOUNDED_PREFIX_AND_WHOLE_BUDGET_DIAGNOSTIC"
     rc=0
 except Exception as error:
     report["error"]=repr(error)
