@@ -7,6 +7,7 @@ independently reconstruct unretained full tensors or establish global maxima.
 import argparse
 import json
 import math
+import re
 from pathlib import Path
 
 PIN = "7309cec801537b61fea3b50d7dfe454a6cde578e"
@@ -58,6 +59,9 @@ def audit(report):
             require(case.get("source_commit") == PIN and case.get("tracked_worktree_clean") is True, "source " + key)
             require(case.get("input_seed") == seed and type(case.get("input_seed")) is int, "seed " + key)
             require(case.get("input_seed_override_calls") == 1, "seed hook " + key)
+            require(isinstance(case.get("initial_state_sample_sha256"), str) and
+                    re.fullmatch(r"[0-9a-f]{64}", case["initial_state_sample_sha256"]) is not None,
+                    "initial-state fingerprint " + key)
             require(case.get("scheduler") == sched, "scheduler " + key)
             require(case.get("fixture_layers") == 16 and case.get("executed_layers") == 16, "architecture " + key)
             require(case.get("lm_head_exercised") is True, "LM head scope " + key)
@@ -117,8 +121,16 @@ def audit(report):
                 require(abs((vals[0] - vals[1]) - choice[margin_name]) <= 1e-5, "top1 margin mismatch")
                 require(vals[0] >= max(c[field] for c in candidates), "candidate top1 mismatch")
             checked[key] = {"passed": case["passed"], "top1_equal": choice["top1_equal"],
+                            "initial_state_sample_sha256": case["initial_state_sample_sha256"],
                             "reference_top1": choice["reference_top1"], "native_top1": choice["native_top1"],
                             "violations": {k: fields[k]["violations"] for k in FIELDS}}
+    for seed in SEEDS:
+        require(checks[f"seed{seed}_rr"]["initial_state_sample_sha256"] ==
+                checks[f"seed{seed}_dag"]["initial_state_sample_sha256"],
+                "RR and DAG initialized input samples differ")
+    require(len({checks[f"seed{seed}_rr"]["initial_state_sample_sha256"]
+                 for seed in SEEDS}) == len(SEEDS),
+            "distinct input seeds produced identical sampled states")
     return {"schema": "mathgraph-h100-consequence-witness-audit-v1",
             "status": "BOUNDED_WITNESSES_CONSISTENT_NOT_RAW_FULL_TENSOR_REPLAY",
             "source_pin": PIN, "cases_checked": len(PLAN),
