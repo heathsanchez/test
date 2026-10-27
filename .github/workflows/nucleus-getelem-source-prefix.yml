@@ -5,6 +5,7 @@ on:
       - exp/nucleus-quotient-lift2-20261027
     paths:
       - "experiments/nucleus_getelem_source_prefix.py"
+      - "experiments/nucleus_getelem_motive_witness.py"
       - "metatron-kernel/src/typecheck.rs"
       - ".github/workflows/nucleus-getelem-source-prefix.yml"
   workflow_dispatch:
@@ -44,6 +45,10 @@ jobs:
         run: |
           set -euo pipefail
           python3 experiments/nucleus_getelem_source_prefix.py
+      - name: Validate original Eq.ndrec motive DAG and reject wrong receiver independently
+        run: |
+          set -euo pipefail
+          python3 experiments/nucleus_getelem_motive_witness.py
       - if: always()
         uses: actions/upload-artifact@v4
         with:
