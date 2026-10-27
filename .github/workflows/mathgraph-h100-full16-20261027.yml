@@ -50,7 +50,7 @@ jobs:
           echo DEPLOY_ATTEMPTED > h100_evidence/deploy_attempted
           cd experiments/megakernel_h100
           flash deploy --app "$FLASH_APP" --env "$FLASH_ENV" --no-deps
-      - name: Execute pinned 16-layer full-model differential
+      - name: Execute pinned 16-layer full-model differential (single run)
         run: |
           python experiments/megakernel_h100/runpod_flash_h100_bridge.py \
             --probe-kind full16 \
