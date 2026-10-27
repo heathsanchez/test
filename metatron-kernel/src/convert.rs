@@ -1810,6 +1810,13 @@ fn compare_values(
                     }
                     return Judgment::proven((), "checked-local-proof-irrelevance");
                 }
+                if checker.certified_distinct_source_proofs(
+                    left, right, context, current_budget, depth,
+                ) {
+                    return Judgment::proven(
+                        (), "source-typed-distinct-proof-neutrals",
+                    );
+                }
                 if certified_structure_eta(
                     checker,
                     left,
