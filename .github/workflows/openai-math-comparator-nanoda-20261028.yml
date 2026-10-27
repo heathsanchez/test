@@ -1,0 +1,114 @@
+name: Pinned OpenAI Local Smoothing Comparator and NanoDa
+on:
+  push:
+    branches: [research/openai-math-comparator-20261028]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  comparator:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 350
+    env:
+      OPENAI_MATH_SHA: 7ef5c0cc5ca4b0e072b7a050fca09ab24bc6fa3a
+      COMPARATOR_SHA: d03acab154d269c06e60e4de7e4cc85deebff94b
+      LANDRUN_SHA: 5ed4a3db3a4ad930d577215c6b9abaa19df7f99f
+      LEAN4EXPORT_SHA: 076e8e57707e813375e8f9da8bf989799ace9680
+      NANODA_SHA: 37cb87b7e6cd6862ef2bd121faa9f4604f59fe96
+      GLIBC_TUNABLES: glibc.malloc.mmap_max=0:glibc.malloc.arena_max=1
+      LEAN_NUM_THREADS: 2
+    steps:
+      - name: Capture environment
+        run: |
+          mkdir -p evidence tooling
+          { uname -a; lscpu; free -h; df -h; rustc --version; cargo --version; } > evidence/environment.txt
+      - name: Install exact Lean toolchain
+        run: |
+          set -euxo pipefail
+          curl -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -o /tmp/elan-init.sh
+          sh /tmp/elan-init.sh -y --default-toolchain leanprover/lean4:v4.34.1
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Install source-pinned landrun
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.25.12'
+          cache: false
+      - name: Build source-pinned landrun
+        run: |
+          set -euxo pipefail
+          go install "github.com/zouuup/landrun/cmd/landrun@$LANDRUN_SHA" 2>&1 | tee evidence/landrun_install.log
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+          test -x "$(go env GOPATH)/bin/landrun"
+      - name: Clone exact OpenAI source and trusted evaluator
+        run: |
+          set -euxo pipefail
+          git clone --filter=blob:none --no-checkout --depth 1 https://github.com/openai/math.git upstream
+          git -C upstream sparse-checkout set lean
+          git -C upstream fetch --depth 1 origin "$OPENAI_MATH_SHA"
+          git -C upstream checkout --detach "$OPENAI_MATH_SHA"
+          test "$(git -C upstream rev-parse HEAD)" = "$OPENAI_MATH_SHA"
+          git clone https://github.com/leanprover/comparator.git tooling/comparator
+          git -C tooling/comparator checkout --detach "$COMPARATOR_SHA"
+          test "$(git -C tooling/comparator rev-parse HEAD)" = "$COMPARATOR_SHA"
+          cp upstream/lean/lean-toolchain tooling/comparator/lean-toolchain
+          sha256sum upstream/lean/lean-toolchain upstream/lean/lakefile.lean upstream/lean/lake-manifest.json upstream/lean/ComparatorChallenges/LocalSmoothing.json upstream/lean/ComparatorChallenges/LocalSmoothing.lean upstream/lean/OAI/Analysis/Fourier/LocalSmoothing/Comparator.lean > evidence/sha_before.txt
+          git -C upstream rev-parse HEAD > evidence/upstream_commit.txt
+          git -C tooling/comparator rev-parse HEAD > evidence/comparator_commit.txt
+          grep -F "$LEAN4EXPORT_SHA" tooling/comparator/lake-manifest.json
+          lean --version > evidence/lean_version.txt
+          lake --version > evidence/lake_version.txt
+      - name: Build pinned Comparator and lean4export
+        working-directory: tooling/comparator
+        run: |
+          set -euo pipefail
+          lake build lean4export comparator 2>&1 | tee "$GITHUB_WORKSPACE/evidence/comparator_build.log"
+          test -x .lake/build/bin/comparator
+          test -x .lake/packages/lean4export/.lake/build/bin/lean4export
+          git -C .lake/packages/lean4export rev-parse HEAD | tee "$GITHUB_WORKSPACE/evidence/lean4export_resolved_commit.txt"
+          grep -Fx "$LEAN4EXPORT_SHA" "$GITHUB_WORKSPACE/evidence/lean4export_resolved_commit.txt"
+          sha256sum .lake/build/bin/comparator .lake/packages/lean4export/.lake/build/bin/lean4export > "$GITHUB_WORKSPACE/evidence/evaluator_binary_hashes.txt"
+      - name: Resolve OpenAI dependencies and install Mathlib cache
+        working-directory: upstream/lean
+        run: |
+          set -euo pipefail
+          lake update 2>&1 | tee "$GITHUB_WORKSPACE/evidence/openai_lake_update.log"
+          lake exe cache get 2>&1 | tee "$GITHUB_WORKSPACE/evidence/openai_cache_get.log"
+          sha256sum lake-manifest.json > "$GITHUB_WORKSPACE/evidence/manifest_after_hash.txt"
+          sha256sum ComparatorChallenges/LocalSmoothing.json ComparatorChallenges/LocalSmoothing.lean OAI/Analysis/Fourier/LocalSmoothing/Comparator.lean > "$GITHUB_WORKSPACE/evidence/reference_after_hashes.txt"
+      - name: Comparator verify six original reference theorems
+        working-directory: upstream/lean
+        run: |
+          set -euo pipefail
+          export COMPARATOR_LANDRUN="$(command -v landrun)"
+          export COMPARATOR_LEAN4EXPORT="$GITHUB_WORKSPACE/tooling/comparator/.lake/packages/lean4export/.lake/build/bin/lean4export"
+          "$COMPARATOR_LANDRUN" --help > "$GITHUB_WORKSPACE/evidence/landrun_help.txt" 2>&1 || true
+          lake env "$GITHUB_WORKSPACE/tooling/comparator/.lake/build/bin/comparator" ComparatorChallenges/LocalSmoothing.json 2>&1 | tee "$GITHUB_WORKSPACE/evidence/comparator_six_targets.log"
+          echo COMPARATOR_SIX_TARGETS_ACCEPTED > "$GITHUB_WORKSPACE/evidence/comparator_verdict.txt"
+      - name: Build source-pinned second kernel NanoDa
+        run: |
+          set -euo pipefail
+          git clone https://github.com/ammkrn/nanoda_lib.git tooling/nanoda
+          git -C tooling/nanoda checkout --detach "$NANODA_SHA"
+          test "$(git -C tooling/nanoda rev-parse HEAD)" = "$NANODA_SHA"
+          git -C tooling/nanoda rev-parse HEAD > evidence/nanoda_commit.txt
+          (cd tooling/nanoda && cargo build --release) 2>&1 | tee evidence/nanoda_build.log
+          test -x tooling/nanoda/target/release/nanoda_bin
+          sha256sum tooling/nanoda/target/release/nanoda_bin > evidence/nanoda_binary_hash.txt
+      - name: Comparator plus NanoDa external kernel
+        working-directory: upstream/lean
+        run: |
+          set -euo pipefail
+          jq '. + {"enable_nanoda": true}' ComparatorChallenges/LocalSmoothing.json > "$GITHUB_WORKSPACE/evidence/LocalSmoothing.nanoda.json"
+          export COMPARATOR_LANDRUN="$(command -v landrun)"
+          export COMPARATOR_LEAN4EXPORT="$GITHUB_WORKSPACE/tooling/comparator/.lake/packages/lean4export/.lake/build/bin/lean4export"
+          export COMPARATOR_NANODA="$GITHUB_WORKSPACE/tooling/nanoda/target/release/nanoda_bin"
+          lake env "$GITHUB_WORKSPACE/tooling/comparator/.lake/build/bin/comparator" "$GITHUB_WORKSPACE/evidence/LocalSmoothing.nanoda.json" 2>&1 | tee "$GITHUB_WORKSPACE/evidence/comparator_nanoda.log"
+          echo COMPARATOR_AND_NANODA_ACCEPTED > "$GITHUB_WORKSPACE/evidence/second_kernel_verdict.txt"
+      - name: Retain all technical evidence even if checking fails
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: openai-local-smoothing-comparator-nanoda
+          path: evidence/
+          if-no-files-found: warn
+          retention-days: 30
