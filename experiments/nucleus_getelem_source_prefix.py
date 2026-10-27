@@ -62,11 +62,15 @@ try:
   split_env=dict(receiver_env)
   split_env["NUCLEUS_EXPERIMENTAL_RECEIVER_BUDGET_SPLIT"]="1"
   cases["receiver-budget-split"]=split_env
+  typed_env=dict(split_env)
+  typed_env["NUCLEUS_EXPERIMENTAL_TYPED_RECEIVER_ARGUMENT"]="1"
+  typed_env["NUCLEUS_TRACE_TYPED_RECEIVER_ARGUMENT"]="1"
+  cases["receiver-budget-typed"]=typed_env
   for nm,env in cases.items():
     cmd=[OFF,str(path)] if nm=="official" else [EXE]
     if nm!="official":
       env["NUCLEUS_TRACE_DOWNSTREAM"]="1"
-      if nm not in ("receiver-source-only","receiver-budget-split"):
+      if nm not in ("receiver-source-only","receiver-budget-split","receiver-budget-typed"):
         env["NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE"]="1"
         env["NUCLEUS_TRACE_NEUTRAL_HEADS"]="1"
         env["NUCLEUS_TRACE_VALUE_MISMATCH"]="1"
