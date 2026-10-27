@@ -107,6 +107,10 @@ class ConsequenceAuditTests(unittest.TestCase):
         v = audit(self.data)
         self.assertEqual(v["top_token_differences"], 1)
 
+    def test_forged_global_error_smaller_than_witness_rejected(self):
+        self.data["checks"]["seed21_rr"]["fields"]["hidden_states"]["max_abs_diff"] = 0.02
+        with self.assertRaises(ValueError): audit(self.data)
+
     def test_top_margin_forgery_rejected(self):
         self.data["checks"]["seed0_rr"]["logit_choice"]["reference_top1_margin"] = 0.5
         with self.assertRaises(ValueError): audit(self.data)
