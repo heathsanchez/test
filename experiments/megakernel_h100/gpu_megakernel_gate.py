@@ -128,11 +128,27 @@ def run_diff(repo, fixture, sched, out):
     # when outputs disagree or are nonfinite, and writes machine-readable data.
     sys.path.insert(0, str(repo))
     from megakernels.instructions import BaseGlobals
+    import megakernels.dispatch as dispatch
 
     original = BaseGlobals.diff
+    original_make_pyvm = dispatch.make_pyvm_interpreter
+    pyvm_completed = [0]
     captured = []
 
+    def traced_pyvm_factory(*args, **kwargs):
+        inner = original_make_pyvm(*args, **kwargs)
+
+        class TracedReference:
+            def interpret(self, *a, **kw):
+                result = inner.interpret(*a, **kw)
+                pyvm_completed[0] += 1
+                return result
+
+        return TracedReference()
+
     def gated_diff(self, other, skip_kv_cache=False):
+        if pyvm_completed[0] < 1:
+            raise AssertionError("Python reference never completed; refusing comparison")
         original(self, other, skip_kv_cache=skip_kv_cache)
         records = {}
         for name in FIELDS:
@@ -155,6 +171,7 @@ def run_diff(repo, fixture, sched, out):
         verdict = evaluate_summary(records)
         record = {**manifest, "scheduler": sched, "model_kind": "synthetic_1_layer",
                   "tolerances": {"atol": ATOL, "rtol": RTOL},
+                  "pyvm_completed_calls": pyvm_completed[0],
                   "fields": records, **verdict}
         captured.append(record)
         Path(out).write_text(json.dumps(record, indent=2, sort_keys=True) + "\n")
@@ -163,6 +180,7 @@ def run_diff(repo, fixture, sched, out):
             raise AssertionError("Independent GPU tensor gate rejected: " + ",".join(verdict["reasons"]))
 
     BaseGlobals.diff = gated_diff
+    dispatch.make_pyvm_interpreter = traced_pyvm_factory
     # Do not pass skip_pyvm=false: the pinned parser may treat presence
     # of a boolean option as enabled. Upstream defaults skip_pyvm to False.
     # The reference interpreter must run before any comparison can be warranted.
@@ -177,6 +195,7 @@ def run_diff(repo, fixture, sched, out):
     finally:
         sys.argv = old_argv
         BaseGlobals.diff = original
+        dispatch.make_pyvm_interpreter = original_make_pyvm
     if len(captured) != 1:
         raise RuntimeError(f"Expected one comparison; received {len(captured)}")
 
