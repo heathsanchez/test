@@ -1,0 +1,86 @@
+name: MathGraph H100 Differential - RUN THIS
+
+# Manual-only launcher registered on the default branch. It checks out the
+# exact reviewed experiment commit, independent of workflow selection branch.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mathgraph-megakernel-h100-20261027
+  cancel-in-progress: false
+
+jobs:
+  bounded-h100:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      RUNPOD_API_KEY: ${{ secrets.RUNPOD_API_KEY }}
+      FLASH_APP: mathgraph-megakernel-h100-20261027
+      FLASH_ENV: production
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 665e622c357e9fba0b8be8305cd66191e63df9d3
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify CPU controls before touching RunPod
+        run: |
+          python -m unittest discover -s experiments/megakernel_h100 -p 'test_*.py' -v
+          python experiments/megakernel_h100/gpu_megakernel_gate.py --self-test
+
+      - name: Require existing RunPod secret
+        run: |
+          if [ -z "$RUNPOD_API_KEY" ]; then
+            echo "::error::Repository secret RUNPOD_API_KEY unavailable"
+            exit 1
+          fi
+
+      - name: Install RunPod client
+        run: |
+          python -m pip install --disable-pip-version-check --no-input runpod-flash
+
+      - name: Deploy isolated H100 endpoint
+        run: |
+          cd experiments/megakernel_h100
+          flash deploy --app "$FLASH_APP" --env "$FLASH_ENV" --no-deps
+
+      - name: Run bounded pinned differential
+        run: |
+          mkdir -p h100_evidence
+          python experiments/megakernel_h100/runpod_flash_h100_bridge.py \
+            --gate experiments/megakernel_h100/gpu_megakernel_gate.py \
+            --out h100_evidence/remote_result.json
+
+      - name: Require GPU evidence
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path("h100_evidence/remote_result.json").read_text())
+          assert r["status"] == "PASS", r["status"]
+          assert r["source_pin"] == "7309cec801537b61fea3b50d7dfe454a6cde578e"
+          assert r["sm_count"] == 132
+          assert all(r["checks"][x]["passed"] for x in ("rr", "dag"))
+          print("MATHGRAPH_H100_PINNED_DIFFERENTIAL_PASS")
+          PY
+
+      - name: Delete endpoint even after an error
+        if: always()
+        run: |
+          if command -v flash >/dev/null 2>&1 && [ -n "$RUNPOD_API_KEY" ]; then
+            flash undeploy "$FLASH_APP" --force
+          else
+            echo "CLEANUP_NOT_ATTEMPTED_NO_FLASH_OR_CREDENTIAL"
+          fi
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mathgraph-h100-source-native-20261027
+          path: h100_evidence/
+          if-no-files-found: warn
