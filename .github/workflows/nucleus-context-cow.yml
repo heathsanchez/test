@@ -57,7 +57,12 @@ jobs:
           cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus-candidate
           sha256sum /tmp/nucleus-candidate > /tmp/nucleus-cow-evidence/candidate-binary.sha256
           git rev-parse HEAD > /tmp/nucleus-cow-evidence/candidate-source-commit.txt
-          git diff ff003e7fad888d39a40cfd2375885fe20e3209fa -- metatron-kernel/src/convert.rs > /tmp/nucleus-cow-evidence/cow-conversion.patch
+          set +e
+          diff -u ../baseline/metatron-kernel/src/convert.rs metatron-kernel/src/convert.rs > /tmp/nucleus-cow-evidence/cow-conversion.patch
+          delta_status=$?
+          set -e
+          test "$delta_status" -eq 1
+          test -s /tmp/nucleus-cow-evidence/cow-conversion.patch
       - name: Download pinned Arena corpus and previous measured census
         shell: bash
         env:
