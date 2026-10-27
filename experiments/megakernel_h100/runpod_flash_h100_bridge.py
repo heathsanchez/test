@@ -10,8 +10,41 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import sys
 
 from runpod_flash import Endpoint, GpuType
+
+
+def prepare_python_build_env(root: Path, env: dict) -> dict:
+    """Make upstream's `python3`/`python3-config` use the pip worker Python.
+
+    The pinned Makefile invokes those executable names without customization.
+    RunPod's image can resolve them to `/usr/bin/python3` while installing
+    packages into `sys.executable`, which breaks pybind11 header discovery.
+    The local tool shims preserve the upstream source tree byte for byte.
+    """
+    shims = root / "python-build-tools"
+    shims.mkdir()
+    (shims / "python3").symlink_to(sys.executable)
+    config = shims / "python3-config"
+    config.write_text(
+        f"#!{sys.executable}\n"
+        "import shlex, sys, sysconfig\n"
+        "if sys.argv[1:] == ['--extension-suffix']:\n"
+        "    print(sysconfig.get_config_var('EXT_SUFFIX') or '.so')\n"
+        "elif sys.argv[1:] == ['--ldflags']:\n"
+        "    c = sysconfig.get_config_var\n"
+        "    fields = ([f\"-L{c('LIBDIR')}\"] if c('LIBDIR') else [])\n"
+        "    for k in ('LDFLAGS', 'LIBS', 'SYSLIBS'):\n"
+        "        fields.extend(shlex.split(c(k) or ''))\n"
+        "    print(' '.join(fields))\n"
+        "else:\n"
+        "    raise SystemExit('unsupported python3-config argument')\n"
+    )
+    config.chmod(0o755)
+    build_env = env.copy()
+    build_env["PATH"] = str(shims) + os.pathsep + env.get("PATH", "")
+    return build_env
 
 
 @Endpoint(
@@ -109,6 +142,7 @@ async def run_h100_differential(gate_source: str):
                 "PYTHON_VERSION": f"{sys.version_info.major}.{sys.version_info.minor}",
                 "GPU": "H100",
             })
+            env = prepare_python_build_env(root, env)
             stage("build", ["make", "-C", str(repo / "demos" / "low-latency-llama")],
                   420, env=env)
             fixture = root / "fixture"
