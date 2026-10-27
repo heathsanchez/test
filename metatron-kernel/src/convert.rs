@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
 
 use crate::id::ExprId;
@@ -147,7 +148,7 @@ fn convert_in_context_with_congruence(
     crate::diagnostics::conversion();
 
     let mut remaining = budget;
-    let mut work = vec![(left.clone(), right.clone(), initial_depth, context.to_vec())];
+    let mut work = vec![(left.clone(), right.clone(), initial_depth, Cow::Borrowed(context))];
     let mut visited = ConversionVisitSet::new();
     let mut unit_like_frees = HashMap::new();
     let mut proposition_frees = HashSet::new();
@@ -156,7 +157,7 @@ fn convert_in_context_with_congruence(
     let mut lazy_head_delta_used = false;
 
     while let Some((left, right, depth, local_context)) = work.pop() {
-        let context = local_context.as_slice();
+        let context: &[TypeValue] = local_context.as_ref();
         if left == right {
             continue;
         }
@@ -328,7 +329,7 @@ fn convert_in_context_with_congruence(
                     left_body,
                     right_body,
                     depth.saturating_add(1),
-                    body_context,
+                    Cow::Owned(body_context),
                 ));
                 work.push((*left_domain, *right_domain, depth, local_context));
             }
@@ -873,7 +874,7 @@ fn evaluated_free_eta(
     lambda_body: &Closure,
     budget: usize,
     depth: usize,
-    work: &mut Vec<(TypeValue, TypeValue, usize, Vec<TypeValue>)>,
+    work: &mut Vec<(TypeValue, TypeValue, usize, Cow<'_, [TypeValue]>)>,
     context: &[TypeValue],
 ) -> bool {
     if !neutral.spine.is_empty() {
@@ -938,7 +939,7 @@ fn evaluated_free_eta(
         function_domain,
         TypeValue::Term(lambda_domain.clone()),
         depth,
-        context.to_vec(),
+        Cow::Owned(context.to_vec()),
     ));
     true
 }
@@ -1023,7 +1024,7 @@ fn certified_structure_eta(
     constructed: &Neutral,
     budget: usize,
     depth: usize,
-    work: &mut Vec<(TypeValue, TypeValue, usize, Vec<TypeValue>)>,
+    work: &mut Vec<(TypeValue, TypeValue, usize, Cow<'_, [TypeValue]>)>,
     context: &[TypeValue],
 ) -> bool {
     if depth!=context.len() || !target.spine.is_empty() {
@@ -1089,7 +1090,7 @@ fn certified_structure_eta(
             TypeValue::Term(actual.clone()),
             TypeValue::Term(rebuilt.clone()),
             depth,
-            context.to_vec(),
+            Cow::Owned(context.to_vec()),
         ));
     }
     true
@@ -1190,7 +1191,7 @@ fn compare_values(
     budget: usize,
     depth: usize,
     context: &[TypeValue],
-    work: &mut Vec<(TypeValue, TypeValue, usize, Vec<TypeValue>)>,
+    work: &mut Vec<(TypeValue, TypeValue, usize, Cow<'_, [TypeValue]>)>,
     proof_function_frees: &mut HashMap<FreeId, (crate::id::NameId, Vec<crate::level::LevelTerm>)>,
 ) -> Judgment<()> {
     let mut current_left = left.clone();
@@ -1232,7 +1233,7 @@ fn compare_values(
                     TypeValue::Sort(left.clone()),
                     TypeValue::Sort(right.clone()),
                     depth,
-                    context.to_vec(),
+                    Cow::Owned(context.to_vec()),
                 ));
             }
             (
@@ -1288,7 +1289,7 @@ fn compare_values(
                     TypeValue::Term(left_domain.clone()),
                     TypeValue::Term(right_domain.clone()),
                     depth,
-                    context.to_vec(),
+                    Cow::Owned(context.to_vec()),
                 ));
             }
             (
@@ -1924,7 +1925,7 @@ fn compare_values(
                         TypeValue::Term(left.clone()),
                         TypeValue::Term(right.clone()),
                         depth,
-                        context.to_vec(),
+                        Cow::Owned(context.to_vec()),
                     )
                 }));
             }
@@ -2120,7 +2121,7 @@ fn compare_nat_literal_neutral(
     budget: usize,
     depth: usize,
     context: &[TypeValue],
-    work: &mut Vec<(TypeValue, TypeValue, usize, Vec<TypeValue>)>,
+    work: &mut Vec<(TypeValue, TypeValue, usize, Cow<'_, [TypeValue]>)>,
     proof_function_frees: &mut HashMap<FreeId, (crate::id::NameId, Vec<crate::level::LevelTerm>)>,
 ) -> Judgment<()> {
     let Some(primitives) = checker.nat_primitives() else {
