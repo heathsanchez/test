@@ -92,6 +92,27 @@ def main():
         forged=run([OFFICIAL,str(path)],None)
         assert orig["exit"]==0,("official original not accepted",orig)
         assert forged["exit"]==1,("mutant did not independently falsify premise",forged)
+        # Second, narrower falsification: keep the SAME List element type and
+        # receiver, but replace only the Nat index of GetElem.getElem.
+        # Its dependent bounds proof stays untouched. This cannot be
+        # dismissed as changing the Option carrier from List to an element.
+        lines3=lines.copy()
+        index_pos=next(i for i,o in enumerate(rows) if o.get("ie")==84269)
+        index_node=json.loads(lines3[index_pos])
+        assert index_node["app"]=={"arg":2,"fn":84268}
+        assert names[exprs[137]["const"]["name"]]=="Nat.zero"
+        index_node["app"]["arg"]=137
+        lines3[index_pos]=(json.dumps(index_node,separators=(",",":"),ensure_ascii=False)+"\\n").encode()
+        index_mutant=b"".join(lines3)
+        index_path=EVIDENCE/"forged-dependent-index.ndjson"
+        index_path.write_bytes(index_mutant)
+        typed_forged=run([OFFICIAL,str(index_path)],None)
+        report["index_mutant"]={"changed_expr":84269,"old_index":2,
+            "new_index":137,"new_index_type":"Nat",
+            "dependent_proof_left_unchanged":True,
+            "sha256":digest(index_mutant),"official":typed_forged}
+        assert typed_forged["exit"]==1,(
+            "incorrect-index mutant was not rejected by Lean",typed_forged)
         report["official"]={"authentic":orig,"mutated":forged}
         modes={}
         for mode in ("default","origin"):
@@ -105,10 +126,11 @@ def main():
             def check(raw):
                 p=subprocess.run([NUCLEUS],input=raw,capture_output=True,timeout=180,env=e)
                 return {"exit":p.returncode,"stderr_tail":p.stderr.decode(errors="replace")[-700:]}
-            a=check(data);b=check(altered)
+            a=check(data);b=check(altered);c=check(index_mutant)
             assert a["exit"] in (0,2),(mode,"original incorrectly rejected",a)
             assert b["exit"] in (1,2),(mode,"receiver forgery accepted",b)
-            modes[mode]={"authentic":a,"mutated":b}
+            assert c["exit"] in (1,2),(mode,"index forgery accepted",c)
+            modes[mode]={"authentic":a,"mutated":b,"wrong_index":c}
         report["nucleus"]=modes
         report["status"]="SOURCE_WITNESS_MUTANT_REJECTED_BOUNDED"
         result=0
