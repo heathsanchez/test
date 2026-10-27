@@ -34,8 +34,8 @@ try:
   report["prefix"]={"record_count":idx+1,"length":len(prefix),"sha256":hashlib.sha256(prefix).hexdigest(),"theorem_record":thm}
   ledger=json.loads(LEDGER.read_text())
   base={k:v for k,v in os.environ.items() if not k.startswith("NUCLEUS_")}
-  cases={"official":dict(base),"unmodified":dict(base),"historical-origin":dict(base),"combined-origin":dict(base),"combined-captured-pi":dict(base),"combined-lowbudget-pi":dict(base)}
-  for nm in ("historical-origin","combined-origin","combined-captured-pi","combined-lowbudget-pi"):
+  cases={"official":dict(base),"unmodified":dict(base),"historical-origin":dict(base),"combined-origin":dict(base),"combined-captured-pi":dict(base),"combined-lowbudget-pi":dict(base),"combined-receiver-reserve":dict(base)}
+  for nm in ("historical-origin","combined-origin","combined-captured-pi","combined-lowbudget-pi","combined-receiver-reserve"):
     cases[nm].update({"NUCLEUS_EXPERIMENTAL_"+k:"1" for k in ledger["origin_flags"]})
     cases[nm]["NUCLEUS_EXPERIMENTAL_EXACT_PROOF_NEUTRALS"]="1"
   cases["combined-origin"]["NUCLEUS_EXPERIMENTAL_CERTIFIED_QUOT_IOTA"]="1"
@@ -50,6 +50,8 @@ try:
   cases["combined-lowbudget-pi"].update(cases["combined-captured-pi"])
   cases["combined-lowbudget-pi"]["NUCLEUS_EXPERIMENTAL_CAPTURED_PI_LOWBUDGET"]="1"
   cases["combined-lowbudget-pi"]["NUCLEUS_TRACE_GETELEM_PROJECTION"]="1"
+  cases["combined-receiver-reserve"].update(cases["combined-lowbudget-pi"])
+  cases["combined-receiver-reserve"]["NUCLEUS_EXPERIMENTAL_RECEIVER_BUDGET_RESERVE"]="1"
   for nm,env in cases.items():
     cmd=[OFF,str(path)] if nm=="official" else [EXE]
     if nm!="official":
