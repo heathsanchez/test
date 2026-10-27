@@ -74,15 +74,29 @@ jobs:
           cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
           git rev-parse HEAD > /tmp/quotient-evidence/nucleus-commit.txt
           sha256sum metatron-kernel/target/release/metatron-kernel > /tmp/quotient-evidence/nucleus.sha256
+      - name: Build official Arena checker at exact historical revision
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/arena-reference
+          git -C /tmp/arena-reference init -q
+          git -C /tmp/arena-reference remote add origin https://github.com/leanprover/lean-kernel-arena.git
+          git -C /tmp/arena-reference fetch -q --depth=1 origin cd2dd0244b9ed5e704463a26fbbe5fc67ba16108
+          git -C /tmp/arena-reference checkout -q --detach FETCH_HEAD
+          test "$(git -C /tmp/arena-reference rev-parse HEAD)" = cd2dd0244b9ed5e704463a26fbbe5fc67ba16108
+          cd /tmp/arena-reference/checkers/official
+          "$HOME/.elan/bin/lake" build
+          test -x .lake/build/bin/kernel
+          git -C /tmp/arena-reference rev-parse HEAD > /tmp/quotient-evidence/official-arena-commit.txt
       - name: Replay authentic export with official Lean and Nucleus
         shell: bash
         run: |
           set -euo pipefail
           input=/tmp/quotient-evidence/authentic.ndjson
-          checker="$HOME/.elan/toolchains/leanprover--lean4---v4.34.1/bin/leanchecker"
+          checker=/tmp/arena-reference/checkers/official/.lake/build/bin/kernel
           test -x "$checker"
           set +e
-          "$checker" --from-export "$input" > /tmp/quotient-evidence/official.out 2> /tmp/quotient-evidence/official.err
+          "$checker" "$input" > /tmp/quotient-evidence/official.out 2> /tmp/quotient-evidence/official.err
           official=$?
           NUCLEUS_TRACE_DOWNSTREAM=1 NUCLEUS_TRACE_PARSE_ERROR=1 metatron-kernel/target/release/metatron-kernel < "$input" > /tmp/quotient-evidence/nucleus.out 2> /tmp/quotient-evidence/nucleus.err
           nucleus=$?
