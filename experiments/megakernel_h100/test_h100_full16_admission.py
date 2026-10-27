@@ -12,7 +12,7 @@ class Full16ContractTests(unittest.TestCase):
         worker = Path(__file__).with_name("runpod_flash_h100_bridge.py").read_text()
         ast.parse(gate)
         ast.parse(worker)
-        self.assertIn('(16, 16)', gate)
+        self.assertIn('(16, depth)', gate)
         self.assertIn('if lm_head_active:', gate)
         self.assertIn('REJECTED_INVALID_LMHEAD_ARCHITECTURE', gate)
         self.assertIn('elif probe_kind == "full16":', worker)
