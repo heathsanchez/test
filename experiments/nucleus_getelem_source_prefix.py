@@ -49,6 +49,7 @@ try:
   cases["combined-captured-pi"]["NUCLEUS_TRACE_SOURCE_CAPTURE_TARGET"]="1"
   cases["combined-lowbudget-pi"].update(cases["combined-captured-pi"])
   cases["combined-lowbudget-pi"]["NUCLEUS_EXPERIMENTAL_CAPTURED_PI_LOWBUDGET"]="1"
+  cases["combined-lowbudget-pi"]["NUCLEUS_TRACE_GETELEM_PROJECTION"]="1"
   for nm,env in cases.items():
     cmd=[OFF,str(path)] if nm=="official" else [EXE]
     if nm!="official":
