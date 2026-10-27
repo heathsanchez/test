@@ -1,5 +1,6 @@
 """Mutation controls for bounded H100 consequence witness assurance (CPU only)."""
 import copy
+import hashlib
 import json
 import unittest
 from independent_consequence_assurance import audit, load_json, PIN, PLAN, FIELDS, SIZES, ATOL, RTOL
@@ -26,6 +27,7 @@ def fixture():
         checks[key] = {
             "source_commit": PIN, "tracked_worktree_clean": True,
             "input_seed": seed, "input_seed_override_calls": 1,
+            "initial_state_sample_sha256": hashlib.sha256(str(seed).encode()).hexdigest(),
             "scheduler": sched, "fixture_layers": 16, "executed_layers": 16,
             "lm_head_exercised": True, "fields_compared": list(FIELDS),
             "tolerances": {"atol": ATOL, "rtol": RTOL},
@@ -76,6 +78,16 @@ class ConsequenceAuditTests(unittest.TestCase):
 
     def test_forged_pass_rejected(self):
         self.data["checks"]["seed21_rr"]["passed"] = True
+        with self.assertRaises(ValueError): audit(self.data)
+
+    def test_mismatched_scheduler_inputs_rejected(self):
+        self.data["checks"]["seed7_dag"]["initial_state_sample_sha256"] = "f" * 64
+        with self.assertRaises(ValueError): audit(self.data)
+
+    def test_repeated_seed_fingerprints_rejected(self):
+        sha = self.data["checks"]["seed0_rr"]["initial_state_sample_sha256"]
+        for scheduler in ("rr", "dag"):
+            self.data["checks"]["seed7_" + scheduler]["initial_state_sample_sha256"] = sha
         with self.assertRaises(ValueError): audit(self.data)
 
     def test_forged_witness_rejected(self):
