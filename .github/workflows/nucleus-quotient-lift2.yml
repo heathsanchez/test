@@ -71,7 +71,7 @@ jobs:
       - name: Build independent Nucleus without changing semantics
         run: |
           set -euo pipefail
-          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
           git rev-parse HEAD > /tmp/quotient-evidence/nucleus-commit.txt
           sha256sum metatron-kernel/target/release/metatron-kernel > /tmp/quotient-evidence/nucleus.sha256
       - name: Build official Arena checker at exact historical revision
@@ -98,7 +98,7 @@ jobs:
           set +e
           "$checker" "$input" > /tmp/quotient-evidence/official.out 2> /tmp/quotient-evidence/official.err
           official=$?
-          NUCLEUS_TRACE_DOWNSTREAM=1 NUCLEUS_TRACE_PARSE_ERROR=1 metatron-kernel/target/release/metatron-kernel < "$input" > /tmp/quotient-evidence/nucleus.out 2> /tmp/quotient-evidence/nucleus.err
+          NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE=1 NUCLEUS_TRACE_DOWNSTREAM=1 NUCLEUS_TRACE_PARSE_ERROR=1 metatron-kernel/target/release/metatron-kernel < "$input" > /tmp/quotient-evidence/nucleus.out 2> /tmp/quotient-evidence/nucleus.err
           nucleus=$?
           set -e
           printf '%s\n' "$official" > /tmp/quotient-evidence/official.exit
@@ -107,6 +107,45 @@ jobs:
           tail -n 12 /tmp/quotient-evidence/nucleus.err || true
           test "$official" -eq 0
           test "$nucleus" -ge 0
+      - name: Independently reject a type-only falsification of the source theorem
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, pathlib, hashlib
+          out=pathlib.Path('/tmp/quotient-evidence')
+          rows=[json.loads(line) for line in (out/'authentic.ndjson').read_text().splitlines()]
+          witness=json.loads((out/'metadata.json').read_text())['theorem']
+          indices=[i for i,x in enumerate(rows) if x.get('thm',{}).get('name')==witness['name']]
+          assert len(indices)==1
+          idx=indices[0]
+          assert rows[idx]['thm']['value']==witness['value']
+          assert any(x.get('il')==3 and x.get('succ')==0 for x in rows)
+          next_expr=max(x['ie'] for x in rows if 'ie' in x)+1
+          new_type={'ie':next_expr,'sort':3}
+          rows.insert(idx,new_type)
+          rows[idx+1]['thm']['type']=next_expr
+          assert rows[idx+1]['thm']['value']==witness['value']
+          contents=''.join(json.dumps(x,ensure_ascii=False,separators=(',',':'))+'\\n' for x in rows)
+          (out/'mutated.ndjson').write_text(contents)
+          (out/'mutation.json').write_text(json.dumps({
+            'kind':'theorem-type-only-replacement','old_type':witness['type'],
+            'new_type':next_expr,'proof_value_unchanged':True,
+            'sha256':hashlib.sha256(contents.encode()).hexdigest()
+          },indent=2)+'\\n')
+          PY
+          checker=/tmp/arena-reference/checkers/official/.lake/build/bin/kernel
+          set +e
+          "$checker" /tmp/quotient-evidence/mutated.ndjson > /tmp/quotient-evidence/official-mutated.out 2> /tmp/quotient-evidence/official-mutated.err
+          official=$?
+          NUCLEUS_TRACE_DOWNSTREAM=1 metatron-kernel/target/release/metatron-kernel < /tmp/quotient-evidence/mutated.ndjson > /tmp/quotient-evidence/nucleus-mutated.out 2> /tmp/quotient-evidence/nucleus-mutated.err
+          nucleus=$?
+          set -e
+          echo "$official" > /tmp/quotient-evidence/official-mutated.exit
+          echo "$nucleus" > /tmp/quotient-evidence/nucleus-mutated.exit
+          echo "Corrupted claim: official=$official nucleus=$nucleus"
+          test "$official" -eq 1
+          test "$nucleus" -eq 1 -o "$nucleus" -eq 2
       - name: Retain exact bytes and diagnostic evidence
         if: always()
         uses: actions/upload-artifact@v4
