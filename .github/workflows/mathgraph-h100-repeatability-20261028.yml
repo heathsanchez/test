@@ -54,7 +54,7 @@ jobs:
           cd experiments/megakernel_h100
           flash deploy --app "$FLASH_APP" --env "$FLASH_ENV" --no-deps
 
-      - name: Execute three fresh RR and DAG repetitions
+      - name: Execute three fresh RR and DAG repetitions (one invocation)
         run: |
           python experiments/megakernel_h100/runpod_flash_h100_bridge.py \
             --probe-kind repeat_seed0 \
