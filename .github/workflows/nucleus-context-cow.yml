@@ -1,0 +1,94 @@
+name: Nucleus Cow context benchmark — soundness and guest instructions
+on:
+  push:
+    branches:
+      - exp/nucleus-context-cow-20261027
+    paths:
+      - "metatron-kernel/src/convert.rs"
+      - "experiments/nucleus_context_borrow_benchmark.py"
+      - ".github/workflows/nucleus-context-cow.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  paired-cow-context:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 100
+    steps:
+      - name: Checkout candidate kernel
+        uses: actions/checkout@v4
+        with:
+          path: candidate
+      - name: Checkout exact baseline kernel
+        uses: actions/checkout@v4
+        with:
+          ref: ff003e7fad888d39a40cfd2375885fe20e3209fa
+          path: baseline
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install Valgrind
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y valgrind
+          mkdir -p /tmp/nucleus-cow-evidence
+      - name: Build uninstrumented baseline release
+        working-directory: baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = ff003e7fad888d39a40cfd2375885fe20e3209fa
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus-baseline
+          sha256sum /tmp/nucleus-baseline > /tmp/nucleus-cow-evidence/baseline-binary.sha256
+      - name: Compile Cow candidate and run unchanged protected unit tests
+        working-directory: candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo test --locked --manifest-path metatron-kernel/Cargo.toml --lib
+          cargo test --locked --manifest-path metatron-kernel/Cargo.toml --test captured_projection_warrant
+          cargo test --locked --manifest-path metatron-kernel/Cargo.toml --test captured_source_equivalence
+          cargo test --locked --manifest-path metatron-kernel/Cargo.toml --test checked_relevance_signature mismatched_data_arguments_stay_distinct
+          cargo test --locked --manifest-path metatron-kernel/Cargo.toml --test checked_relevance_signature an_ill_typed_proposition_argument_does_not_count_as_a_proof
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus-candidate
+          sha256sum /tmp/nucleus-candidate > /tmp/nucleus-cow-evidence/candidate-binary.sha256
+          git rev-parse HEAD > /tmp/nucleus-cow-evidence/candidate-source-commit.txt
+          git diff ff003e7fad888d39a40cfd2375885fe20e3209fa -- metatron-kernel/src/convert.rs > /tmp/nucleus-cow-evidence/cow-conversion.patch
+      - name: Download pinned Arena corpus and previous measured census
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/nucleus-cow-inputs /tmp/nucleus-cow-archive /tmp/nucleus-context-census
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/11272848230/zip > /tmp/nucleus-cow-archive/corpus.zip
+          unzip -q /tmp/nucleus-cow-archive/corpus.zip -d /tmp/nucleus-cow-archive
+          tar -xzf /tmp/nucleus-cow-archive/lean-arena-tests.tar.gz -C /tmp/nucleus-cow-inputs
+          gh api repos/heathsanchez/test/actions/artifacts/12716784162/zip > /tmp/nucleus-cow-archive/census.zip
+          unzip -q /tmp/nucleus-cow-archive/census.zip -d /tmp/nucleus-context-census
+          sha256sum /tmp/nucleus-cow-archive/{corpus,census}.zip > /tmp/nucleus-cow-evidence/input-artifacts.sha256
+      - name: Frozen 196 exact verdict parity and paired guest instructions
+        id: qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 candidate/experiments/nucleus_context_borrow_benchmark.py
+      - name: Retain evidence on both success and failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-cow-context-paired-evidence
+          path: /tmp/nucleus-cow-evidence/
+          if-no-files-found: warn
+      - name: Explain the evidence boundary
+        if: always()
+        shell: bash
+        run: |
+          echo "Only 196 exact pinned corpus cases and 3 selected accepted hot cases are qualified." >> "$GITHUB_STEP_SUMMARY"
+          echo "Callgrind guest Ir is NOT hardware retired instructions or Arena rank." >> "$GITHUB_STEP_SUMMARY"
+          echo "The existing proof irrelevance positive test is still an independent open residual." >> "$GITHUB_STEP_SUMMARY"
+          echo "No source changes to qualified baseline or official Arena." >> "$GITHUB_STEP_SUMMARY"
