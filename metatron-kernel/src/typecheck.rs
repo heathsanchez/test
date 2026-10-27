@@ -3595,6 +3595,92 @@ impl<'a> TypeChecker<'a> {
     }
 
 
+    /// Experimental proof irrelevance for two original, independently typed
+    /// neutral proof applications. The two different heads are *not* treated as
+    /// equal; only their checked result proposition is compared. Each argument
+    /// must be independently typed under its actual captured source Gamma.
+    pub(crate) fn certified_neutral_pair_proof_irrelevance(
+        &self,
+        left: &Neutral,
+        right: &Neutral,
+        context: &[TypeValue],
+        budget: usize,
+    ) -> bool {
+        if std::env::var_os("NUCLEUS_EXPERIMENTAL_NEUTRAL_PAIR_PROOF_IRREL").is_none()
+            || budget < 2048 || context.len() > 24
+        { return false; }
+        std::thread_local! {
+            static IN_FLIGHT: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+        }
+        IN_FLIGHT.with(|guard| {
+            if guard.replace(true) { return false; }
+            let certify = |neutral: &Neutral| -> Option<TypeValue> {
+                let NeutralHead::Const {name, levels} = &neutral.head else {return None};
+                let decl = self.environment.get(*name)?;
+                if decl.level_params.len() != levels.len() {return None;}
+                let substitution = decl.level_params.iter().copied()
+                    .zip(levels.iter().cloned()).collect::<Vec<_>>();
+                let mut current = TypeValue::Term(Closure::with_levels(
+                    decl.ty, EnvFrame::empty(), LevelSubstitution::new(substitution)
+                ));
+                for argument in &neutral.spine {
+                    let (domain, body) = self.pi_view(
+                        Judgment::proven(current, "source-checked-neutral-proof-telescope"),
+                        budget.min(1024),
+                    )?;
+                    let mut remaining = budget.min(2048);
+                    let actual_type = self.infer_exact_closure_in_context(
+                        argument, context, &mut remaining, 0,
+                    )?;
+                    if !crate::convert::convert_with_policy_in_context(
+                        self, &actual_type, &domain, remaining.min(512),
+                        crate::convert::DeltaPolicy::PreferredOnly, context.len(), context,
+                    ).is_proven() {return None;}
+                    current = match body {
+                        PiBody::Fixed(binder, body) => {
+                            let mut fuel = budget.min(512);
+                            self.instantiate_fixed_pi_body(
+                                &body, binder, argument, &mut fuel,
+                            )?
+                        },
+                        PiBody::Closure(body) => TypeValue::Term(
+                            Closure::with_levels(body.expr,
+                                body.env.extend(argument.clone()), body.levels)
+                        ),
+                    };
+                }
+                let TypeValue::Term(proposition) = &current else {return None;};
+                if !self.checked_captured_prop_type_in_context(
+                    proposition, context, budget.min(2048),
+                ).is_proven() {return None;}
+                Some(current)
+            };
+            let left_type = certify(left);
+            let right_type = certify(right);
+            let relation = match (&left_type, &right_type) {
+                (Some(a), Some(b)) => Some(
+                    crate::convert::convert_with_policy_in_context(
+                        self, a, b, budget.min(1024),
+                        crate::convert::DeltaPolicy::PreferredOnly, context.len(), context,
+                    )
+                ),
+                _ => None,
+            };
+            let success = relation.as_ref().is_some_and(Judgment::is_proven);
+            guard.set(false);
+            #[cfg(feature = "diagnostics")]
+            if std::env::var_os("NUCLEUS_TRACE_NEUTRAL_PAIR_PROOF").is_some()
+                && context.len() == 10
+            {
+                eprintln!(
+                    "NUCLEUS_NEUTRAL_PAIR_PROOF:heads={:?}/{:?}:left_type={left_type:?}:right_type={right_type:?}:relation={relation:?}:certified={success}",
+                    left.head, right.head,
+                );
+            }
+            success
+        })
+    }
+
     pub(crate) fn certified_neutral_lambda_proof_irrelevance(
         &self,
         neutral: &Neutral,
