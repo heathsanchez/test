@@ -15,14 +15,13 @@ import sys
 from runpod_flash import Endpoint, GpuType
 
 
-def prepare_python_build_env(root: Path, env: dict) -> dict:
-    """Make upstream's `python3`/`python3-config` use the pip worker Python.
+SOURCE_PIN = "7309cec801537b61fea3b50d7dfe454a6cde578e"
+ENDPOINT_NAME = "mathgraph-megakernel-h100-20261027"
+ASYNC_WAIT_SECONDS = 1140
 
-    The pinned Makefile invokes those executable names without customization.
-    RunPod's image can resolve them to `/usr/bin/python3` while installing
-    packages into `sys.executable`, which breaks pybind11 header discovery.
-    The local tool shims preserve the upstream source tree byte for byte.
-    """
+
+def prepare_python_build_env(root: Path, env: dict) -> dict:
+    """Ensure upstream Make uses the Python with installed pybind11 headers."""
     shims = root / "python-build-tools"
     shims.mkdir()
     (shims / "python3").symlink_to(sys.executable)
@@ -70,7 +69,7 @@ async def run_h100_differential(gate_source: str):
     report = {
         "schema": "mathgraph-h100-differential-v1",
         "status": "UNKNOWN",
-        "source_pin": "7309cec801537b61fea3b50d7dfe454a6cde578e",
+        "source_pin": SOURCE_PIN,
         "gpu_name": None,
         "checks": {},
         "stages": [],
@@ -172,12 +171,107 @@ async def run_h100_differential(gate_source: str):
     return report
 
 
-async def _main(out: Path, gate: Path):
-    if not os.getenv("RUNPOD_API_KEY", "").strip():
-        raise RuntimeError("Missing GitHub repository secret RUNPOD_API_KEY")
-    data = await run_h100_differential(gate.read_text())
+def select_endpoint_id(endpoints, name: str) -> str:
+    """Fail closed unless exactly one deployed endpoint matches the pinned name."""
+    matches = [e.get("id") for e in endpoints if e.get("name") == name]
+    if len(matches) != 1 or not matches[0]:
+        raise ValueError(f"expected one deployed endpoint named {name}, found {len(matches)}")
+    return matches[0]
+
+
+async def resolve_deployed_endpoint_id() -> str:
+    """Resolve the endpoint from the Flash app's server-side environment record."""
+    from runpod_flash.core.api.runpod import RunpodGraphQLClient
+    from runpod_flash.core.resources.app import FlashApp
+
+    app_name = os.environ.get("FLASH_APP", "").strip()
+    if not app_name:
+        raise RuntimeError("FLASH_APP is required for isolated experiment resolution")
+    app = await FlashApp.from_name(app_name)
+    environment = await app.get_environment_by_name(os.environ.get("FLASH_ENV", "production"))
+    async with RunpodGraphQLClient() as client:
+        hydrated = await client.get_flash_environment(
+            {"flashEnvironmentId": environment["id"]}
+        )
+    if not isinstance(hydrated, dict):
+        raise RuntimeError("Flash environment not available after deployment")
+    return select_endpoint_id(hydrated.get("endpoints") or [], ENDPOINT_NAME)
+
+
+def persist_evidence(out: Path, data: dict) -> None:
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n")
+
+
+def redact_error(exc: object) -> str:
+    result = str(exc)
+    secret = os.environ.get("RUNPOD_API_KEY", "")
+    if secret:
+        result = result.replace(secret, "[REDACTED]")
+    return result[:800]
+
+
+async def run_async_differential(gate_source: str, out: Path) -> dict:
+    """Submit a bounded /run job, retain its ID and poll for the actual result."""
+    report = {
+        "schema": "mathgraph-h100-differential-v1",
+        "status": "UNKNOWN_CLIENT_STARTUP",
+        "source_pin": SOURCE_PIN,
+        "checks": {},
+    }
+    job = None
+    try:
+        endpoint_id = await resolve_deployed_endpoint_id()
+        report["runpod_endpoint_id"] = endpoint_id
+        job = await Endpoint(id=endpoint_id).run({"gate_source": gate_source})
+        if not job.id:
+            raise RuntimeError("asynchronous job response has no job ID")
+        report["runpod_job_id"] = job.id
+        persist_evidence(out, report)  # retain ID before the long GPU wait
+        print(f"MATHGRAPH_H100_ASYNC_JOB={job.id}", flush=True)
+
+        await job.wait(timeout=ASYNC_WAIT_SECONDS)
+        if job.error:
+            report["status"] = "UNKNOWN_REMOTE_JOB_FAILED"
+            report["exception_summary"] = redact_error(job.error)
+        elif isinstance(job.output, dict):
+            # A GPU-produced FAIL/REJECTED report must never be promoted to PASS.
+            report = dict(job.output)
+            report["runpod_job_id"] = job.id
+            report["runpod_endpoint_id"] = endpoint_id
+        else:
+            report["status"] = "UNKNOWN_REMOTE_MISSING_OUTPUT"
+    except TimeoutError as exc:
+        report["status"] = "UNKNOWN_CLIENT_TIMEOUT"
+        report["exception_type"] = type(exc).__name__
+        report["exception_summary"] = redact_error(exc)
+        if job is not None:
+            try:
+                await asyncio.wait_for(job.cancel(), timeout=10)
+                report["cancel_requested"] = True
+            except Exception as cancel_exc:
+                report["cancel_error"] = redact_error(cancel_exc)
+    except Exception as exc:
+        report["status"] = "UNKNOWN_CLIENT_FAILURE"
+        report["exception_type"] = type(exc).__name__
+        report["exception_summary"] = redact_error(exc)
+        if job is not None and job.id:
+            try:
+                await asyncio.wait_for(job.cancel(), timeout=10)
+                report["cancel_requested"] = True
+            except Exception as cancel_exc:
+                report["cancel_error"] = redact_error(cancel_exc)
+    persist_evidence(out, report)
+    return report
+
+
+async def _main(out: Path, gate: Path):
+    if not os.getenv("RUNPOD_API_KEY", "").strip():
+        persist_evidence(out, {"schema": "mathgraph-h100-differential-v1",
+                               "status": "UNKNOWN_NO_RUNPOD_CREDENTIAL",
+                               "source_pin": SOURCE_PIN, "checks": {}})
+        return 1
+    data = await run_async_differential(gate.read_text(), out)
     print(json.dumps({"status": data.get("status"), "gpu_name": data.get("gpu_name"),
                       "stages": len(data.get("stages", []))}, sort_keys=True))
     return 0 if data.get("status") == "PASS" else 1
