@@ -6,6 +6,7 @@ on:
     paths:
       - "experiments/nucleus_getelem_prefix_budget.py"
       - ".github/workflows/nucleus-getelem-exact-prefix.yml"
+      - "metatron-kernel/src/checker.rs"
   workflow_dispatch:
 
 permissions:
@@ -52,6 +53,8 @@ jobs:
           test -x .lake/build/bin/kernel
       - name: Independently replay source prefix and compare bounded diagnostic budgets
         shell: bash
+        env:
+          NUCLEUS_DIAG_ONE_BUDGET: "1"
         run: |
           set -euo pipefail
           python3 experiments/nucleus_getelem_prefix_budget.py
