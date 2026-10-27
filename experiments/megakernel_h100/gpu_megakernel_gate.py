@@ -75,7 +75,7 @@ def make_fixture(folder):
     out.mkdir(parents=True, exist_ok=True)
     config = LlamaConfig(
         vocab_size=128256, hidden_size=2048, intermediate_size=8192,
-        num_hidden_layers=1, num_attention_heads=32,
+        num_hidden_layers=2, num_attention_heads=32,
         num_key_value_heads=8, head_dim=64,
         max_position_embeddings=2048, rms_norm_eps=1e-5,
         rope_theta=500000.0, tie_word_embeddings=True,
@@ -83,19 +83,25 @@ def make_fixture(folder):
     )
     config.save_pretrained(out)
     g = torch.Generator(device="cpu").manual_seed(20261027)
+    # Upstream executes layer_limit=1 against a model with >1 layers.
+    # With a one-layer model it also schedules LM-head instructions, a
+    # different path from the intended one-layer differential.
     shapes = {
         "model.embed_tokens.weight": (128256, 2048),
         "model.norm.weight": (2048,),
-        "model.layers.0.input_layernorm.weight": (2048,),
-        "model.layers.0.post_attention_layernorm.weight": (2048,),
-        "model.layers.0.self_attn.q_proj.weight": (2048, 2048),
-        "model.layers.0.self_attn.k_proj.weight": (512, 2048),
-        "model.layers.0.self_attn.v_proj.weight": (512, 2048),
-        "model.layers.0.self_attn.o_proj.weight": (2048, 2048),
-        "model.layers.0.mlp.gate_proj.weight": (8192, 2048),
-        "model.layers.0.mlp.up_proj.weight": (8192, 2048),
-        "model.layers.0.mlp.down_proj.weight": (2048, 8192),
     }
+    for i in range(2):
+        shapes.update({
+            f"model.layers.{i}.input_layernorm.weight": (2048,),
+            f"model.layers.{i}.post_attention_layernorm.weight": (2048,),
+            f"model.layers.{i}.self_attn.q_proj.weight": (2048, 2048),
+            f"model.layers.{i}.self_attn.k_proj.weight": (512, 2048),
+            f"model.layers.{i}.self_attn.v_proj.weight": (512, 2048),
+            f"model.layers.{i}.self_attn.o_proj.weight": (2048, 2048),
+            f"model.layers.{i}.mlp.gate_proj.weight": (8192, 2048),
+            f"model.layers.{i}.mlp.up_proj.weight": (8192, 2048),
+            f"model.layers.{i}.mlp.down_proj.weight": (2048, 8192),
+        })
     weights = {}
     for name, shape in shapes.items():
         if "norm.weight" in name:
@@ -105,7 +111,7 @@ def make_fixture(folder):
         weights[name] = value.contiguous()
     save_file(weights, str(out / "model.safetensors"), metadata={"origin": "mathgraph_synthetic_not_pretrained"})
     print(json.dumps({"fixture": str(out), "tensors": len(weights),
-                      "model": "one-layer synthetic 1B-shaped Llama", "seed": 20261027}))
+                      "model": "two-layer synthetic 1B-shaped Llama, layer zero executed", "seed": 20261027}))
 
 
 def run_diff(repo, fixture, sched, out):
@@ -123,6 +129,10 @@ def run_diff(repo, fixture, sched, out):
         raise RuntimeError(f"Expected H100 SXM 132 SM; found {prop.name} ({prop.multi_processor_count} SM)")
     if sched not in ("rr", "dag"):
         raise ValueError("Unregistered scheduler")
+    from transformers import LlamaConfig
+    model_config = LlamaConfig.from_pretrained(fixture)
+    if model_config.num_hidden_layers != 2:
+        raise RuntimeError("Expected two-layer fixture with layer_limit=1 to exclude LM head")
 
     # Unlike upstream BaseGlobals.diff(), this comparator fails the process
     # when outputs disagree or are nonfinite, and writes machine-readable data.
@@ -169,7 +179,8 @@ def run_diff(repo, fixture, sched, out):
                 "max_abs_diff": float(delta[finite].max().item()) if finite.any() else None,
             }
         verdict = evaluate_summary(records)
-        record = {**manifest, "scheduler": sched, "model_kind": "synthetic_1_layer",
+        record = {**manifest, "scheduler": sched, "model_kind": "synthetic_2_layer_model_executing_layer0",
+                  "lm_head_exercised": False,
                   "tolerances": {"atol": ATOL, "rtol": RTOL},
                   "pyvm_completed_calls": pyvm_completed[0],
                   "fields": records, **verdict}
