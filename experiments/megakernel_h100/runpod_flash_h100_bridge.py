@@ -20,7 +20,6 @@ from runpod_flash import Endpoint, GpuType
     workers=(0, 1),
     idle_timeout=10,
     execution_timeout_ms=1500000,
-    python_version="3.12",
     dependencies=[
         "torch", "transformers==4.48.3", "accelerate",
         "safetensors", "einops", "pydra-config", "pybind11",
