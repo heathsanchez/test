@@ -1995,6 +1995,18 @@ fn compare_values(
                 ) => {}
             _ => {
                 if std::env::var_os("NUCLEUS_TRACE_VALUE_MISMATCH").is_some() {
+                    #[cfg(feature = "diagnostics")]
+                    if (10..=12).contains(&depth)
+                        && let (Value::Neutral(neutral), Value::Lam { .. }) =
+                            (&current_left, &current_right)
+                    {
+                        eprintln!(
+                            "NUCLEUS_PROOF_NEUTRAL_LAMBDA:depth={depth}:source_proposition={}",
+                            checker.diagnostic_neutral_proposition(
+                                neutral, context, current_budget.min(2048),
+                            ),
+                        );
+                    }
                     eprintln!(
                         "NUCLEUS_VALUE_MISMATCH:left={:?}:right={:?}:budget={}:depth={}",
                         current_left, current_right, current_budget, depth
