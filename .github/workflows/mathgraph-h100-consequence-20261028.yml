@@ -1,0 +1,103 @@
+name: MathGraph H100 Consequence Variants - RUN THIS
+
+# One bounded research run. Tests fixed synthetic inputs on RR/DAG.
+# No private notes, upstream modification, or implicit correctness promotion.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/mathgraph-h100-consequence-20261028.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mathgraph-h100-consequence-20261028
+  cancel-in-progress: false
+
+jobs:
+  evidence:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.head_commit.message == 'H100-CONSEQUENCE: launch one bounded six-case diagnostic'
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    env:
+      RUNPOD_API_KEY: ${{ secrets.RUNPOD_API_KEY }}
+      FLASH_APP: mathgraph-consequence-${{ github.run_id }}
+      FLASH_ENV: production
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: c6fc5e9b41bdfae97ab7044090f51aee1e9fbdb7
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Verify CPU controls before billed deployment
+        run: |
+          python -m compileall -q experiments/megakernel_h100
+          python -m unittest discover -s experiments/megakernel_h100 -p 'test_*.py' -v
+          python experiments/megakernel_h100/gpu_megakernel_gate.py --self-test
+      - name: Require existing RunPod credentials
+        run: |
+          test -n "$RUNPOD_API_KEY" || { echo "::error::RUNPOD_API_KEY unavailable"; exit 1; }
+      - name: Install pinned RunPod client
+        run: python -m pip install --disable-pip-version-check --no-input runpod-flash==1.21.0
+      - name: Deploy isolated H100 endpoint
+        run: |
+          mkdir -p h100_evidence
+          printf '%s\n' DEPLOY_ATTEMPTED > h100_evidence/deploy_attempted
+          cd experiments/megakernel_h100
+          flash deploy --app "$FLASH_APP" --env "$FLASH_ENV" --no-deps
+      - name: Run six bounded H100 consequence variants
+        run: |
+          python experiments/megakernel_h100/runpod_flash_h100_bridge.py \
+            --probe-kind consequence_variants \
+            --gate experiments/megakernel_h100/gpu_megakernel_gate.py \
+            --out h100_evidence/remote_result.json
+      - name: Independently audit bounded raw-value witnesses
+        run: |
+          python experiments/megakernel_h100/independent_consequence_assurance.py \
+            h100_evidence/remote_result.json \
+            --out h100_evidence/independent_consequence_audit.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path("h100_evidence/independent_consequence_audit.json")
+          a = json.loads(p.read_text())
+          assert a["status"] == "BOUNDED_WITNESSES_CONSISTENT_NOT_RAW_FULL_TENSOR_REPLAY"
+          assert a["cases_checked"] == 6
+          assert set(a["cases"]) == {
+              f"seed{seed}_{sched}" for seed in (0,7,21) for sched in ("rr","dag")}
+          print("MATHGRAPH_H100_CONSEQUENCE_WITNESS_CONSISTENT_NOT_FULL_RAW_REPLAY")
+          print(json.dumps({
+              "top_token_differences": a["top_token_differences"],
+              "per_case": {k: {"passed": v["passed"], "top1_equal": v["top1_equal"],
+                   "violations": v["violations"]} for k,v in a["cases"].items()}
+          }, sort_keys=True))
+          PY
+      - name: Delete RunPod app and independently verify absence
+        if: always()
+        run: |
+          if [ ! -f h100_evidence/deploy_attempted ]; then
+            echo CLEANUP_NOT_REQUIRED_NO_DEPLOY_ATTEMPT
+          elif command -v flash >/dev/null 2>&1 && [ -n "$RUNPOD_API_KEY" ]; then
+            if flash app list | grep -Fq "$FLASH_APP"; then
+              flash app delete "$FLASH_APP"
+            fi
+            if flash app list | grep -Fq "$FLASH_APP"; then
+              echo "::error::CLOUD_CLEANUP_UNVERIFIED"
+              exit 1
+            fi
+            echo CLOUD_APP_DELETION_VERIFIED
+          else
+            echo "::error::CLEANUP_NOT_ATTEMPTED"
+            exit 1
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mathgraph-h100-consequence-${{ github.run_id }}
+          path: h100_evidence/
+          if-no-files-found: warn
