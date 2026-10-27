@@ -2490,6 +2490,24 @@ fn compare_neutral_heads(
                         eprintln!(
                             "NUCLEUS_GETELEM_RECEIVER_HEAD:depth={depth}:field={left_index}:budget={budget}:head_result={receiver_heads:?}:left={left_structure:?}:right={right_structure:?}",
                         );
+                        // Diagnostic only. The exact source, its binder
+                        // ownership and dependent argument types must be
+                        // established before this observation can authorize
+                        // any equality, especially Eq.ndrec motive transport.
+                        for (arg_index,(a,b)) in left_structure.spine.iter()
+                            .zip(&right_structure.spine).enumerate()
+                        {
+                            let mut source_budget=budget.min(256);
+                            let identical_source=checker.exact_source_capture_identity(
+                                a,b,&mut source_budget,
+                            );
+                            let typed=checker.checked_source_conversion(
+                                a,b,context,budget.min(512),
+                            );
+                            eprintln!(
+                                "NUCLEUS_GETELEM_RECEIVER_ARGUMENT:depth={depth}:index={arg_index}:exact_source={identical_source}:source_budget_left={source_budget}:typed={typed:?}:left={a:?}:right={b:?}",
+                            );
+                        }
                     }
                 }
                 return Judgment::unknown("neutral-projection-receiver-congruence");
