@@ -1,0 +1,70 @@
+name: Nucleus quotient exact Reachability first-obstruction A/B
+on:
+  push:
+    branches:
+      - exp/nucleus-quotient-lift2-20261027
+    paths:
+      - "experiments/nucleus_quotient_reachability_first_obstruction.py"
+      - ".github/workflows/nucleus-quotient-first-obstruction.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-pinned-four-arm:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: candidate
+      - uses: actions/checkout@v4
+        with:
+          path: baseline
+          ref: ff003e7fad888d39a40cfd2375885fe20e3209fa
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build exact independent reference Nucleus
+        working-directory: baseline
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = ff003e7fad888d39a40cfd2375885fe20e3209fa
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus-protected
+      - name: Build unpromoted proof candidate
+        working-directory: candidate
+        run: |
+          set -euo pipefail
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus-current
+          mkdir -p /tmp/reachability-first-obstruction
+          git rev-parse HEAD > /tmp/reachability-first-obstruction/candidate-commit.txt
+          sha256sum /tmp/nucleus-protected /tmp/nucleus-current > /tmp/reachability-first-obstruction/checkers.sha256
+      - name: Restore six original Arena inputs with ZIP and individual SHA authority
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/reachability-originals
+          gh api repos/heathsanchez/test/actions/artifacts/12722408982/zip > /tmp/verified-reachability.zip
+          printf '%s  %s\n' 8f3fe62d60740fae640ed716b58ce1671a558fd88dd14723d758934e49197b31 /tmp/verified-reachability.zip | sha256sum -c -
+          unzip -q /tmp/verified-reachability.zip -d /tmp/reachability-originals
+          test "$(find /tmp/reachability-originals -name '*.ndjson' | wc -l)" -eq 6
+      - name: Replay two unchanged source revisions across two qualified modes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 candidate/experiments/nucleus_quotient_reachability_first_obstruction.py
+      - name: Retain true source/exit trace on failures too
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-reachability-first-obstruction-four-arm
+          path: /tmp/reachability-first-obstruction/
+          if-no-files-found: warn
+      - name: Boundary
+        if: always()
+        run: |
+          echo "Exact six original official-ACCEPT Reachability inputs, historical per-export and ZIP SHA checks." >> "$GITHUB_STEP_SUMMARY"
+          echo "No source checker mutation, no rank claim; first-obstruction comparison only." >> "$GITHUB_STEP_SUMMARY"
