@@ -93,10 +93,16 @@ jobs:
                   report['rows'].append(row)
                   assert ref.returncode==1,('official checker not REJECT',name,ref.returncode,ref.stderr[-450:])
                   for checker in ('baseline','candidate'):
-                      for mode in ('default','origin'):
+                      modes=('default','origin') if checker=='baseline' else (
+                          'default','origin','source-proof','origin-source-proof')
+                      for mode in modes:
                           env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
-                          if mode=='origin':
+                          if mode in ('origin','origin-source-proof'):
                               env.update({'NUCLEUS_EXPERIMENTAL_'+f:'1' for f in flags})
+                          if 'source-proof' in mode:
+                              env['NUCLEUS_EXPERIMENTAL_CERTIFIED_QUOT_IOTA']='1'
+                              env['NUCLEUS_EXPERIMENTAL_SOURCE_PROOF_IRREL']='1'
+                              env['NUCLEUS_EXPERIMENTAL_NEUTRAL_PAIR_PROOF_IRREL']='1'
                           with p.open('rb') as file:
                               result=subprocess.run([str(root/('nucleus-'+checker))],stdin=file,
                                                     capture_output=True,env=env,timeout=20)
