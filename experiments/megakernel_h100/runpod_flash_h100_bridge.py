@@ -57,7 +57,7 @@ def prepare_python_build_env(root: Path, env: dict) -> dict:
         "safetensors", "einops", "pydra-config", "pybind11",
     ],
 )
-async def run_h100_differential(gate_source: str):
+async def run_h100_differential(gate_source: str, probe_kind: str = "baseline"):
     """GPU worker executes a finite, fail-closed source-native differential test."""
     import shutil
     import subprocess
@@ -158,22 +158,67 @@ async def run_h100_differential(gate_source: str):
             env = prepare_python_build_env(root, env)
             stage("build", ["make", "-C", str(repo / "demos" / "low-latency-llama")],
                   420, env=env)
-            fixture = root / "fixture"
-            stage("fixture", [sys.executable, str(gate), "--make-fixture",
-                              "--fixture", str(fixture)], 180, env=env)
-            for sched in ("rr", "dag"):
-                dest = root / f"{sched}.json"
-                try:
-                    stage(f"diff_{sched}", [sys.executable, "-u", str(gate),
-                         "--diff", sched, "--repo", str(repo),
-                         "--fixture", str(fixture), "--out", str(dest)],
-                         180, env=env)
-                finally:
-                    if dest.exists():
-                        report["checks"][sched] = json.loads(dest.read_text())
-            report["status"] = "PASS" if all(
-                report["checks"][s]["passed"] for s in ("rr", "dag")
-            ) else "REJECTED_DIFFERENTIAL"
+            if probe_kind == "baseline":
+                fixture = root / "fixture"
+                stage("fixture", [sys.executable, str(gate), "--make-fixture",
+                                  "--fixture", str(fixture)], 180, env=env)
+                for sched in ("rr", "dag"):
+                    dest = root / f"{sched}.json"
+                    try:
+                        stage(f"diff_{sched}", [sys.executable, "-u", str(gate),
+                             "--diff", sched, "--repo", str(repo),
+                             "--fixture", str(fixture), "--out", str(dest)],
+                             180, env=env)
+                    finally:
+                        if dest.exists():
+                            report["checks"][sched] = json.loads(dest.read_text())
+                report["status"] = "PASS" if all(
+                    report["checks"][s]["passed"] for s in ("rr", "dag")
+                ) else "REJECTED_DIFFERENTIAL"
+            elif probe_kind == "lmhead":
+                # Control: 2 of 3 layers. Treatment: 2 of 2 layers (LM head).
+                # Both fixtures are deterministically seeded; common weights
+                # have identical values and upstream code remains pinned.
+                report["probe_kind"] = "lmhead"
+                for case, fixture_layers, run_layers in (
+                    ("partial_2of3", 3, 2), ("full_2of2", 2, 2)
+                ):
+                    fixture = root / case
+                    stage(f"fixture_{case}",
+                          [sys.executable, str(gate), "--make-fixture",
+                           "--fixture", str(fixture), "--fixture-layers",
+                           str(fixture_layers)], 180, env=env)
+                    dest = root / f"{case}.json"
+                    try:
+                        stage(f"diff_{case}",
+                              [sys.executable, "-u", str(gate),
+                               "--diff", "rr", "--repo", str(repo),
+                               "--fixture", str(fixture), "--layer-limit",
+                               str(run_layers), "--out", str(dest)],
+                              120, env=env)
+                    except subprocess.TimeoutExpired:
+                        report["checks"][case] = {
+                            "status": "UNKNOWN_NATIVE_TIMEOUT", "passed": False,
+                            "lm_head_exercised": fixture_layers == run_layers,
+                        }
+                    finally:
+                        if dest.exists():
+                            report["checks"][case] = json.loads(dest.read_text())
+                    # If the control itself cannot complete, do not pay for
+                    # the full-model treatment; its result is uninformative.
+                    if case == "partial_2of3" and not report["checks"].get(case, {}).get("passed"):
+                        report["status"] = "UNKNOWN_PARTIAL_CONTROL_FAILED"
+                        break
+                else:
+                    full = report["checks"]["full_2of2"]
+                    if full.get("passed") is True:
+                        report["status"] = "LMHEAD_FULL_PASS"
+                    elif full.get("status") == "UNKNOWN_NATIVE_TIMEOUT":
+                        report["status"] = "LMHEAD_NATIVE_TIMEOUT"
+                    else:
+                        report["status"] = "LMHEAD_REJECTED_DIFFERENTIAL" if full.get("passed") is False else "UNKNOWN_LMHEAD_RESULT"
+            else:
+                report["status"] = "UNKNOWN_UNREGISTERED_PROBE"
     except Exception as exc:
         if any(c.get("passed") is False for c in report["checks"].values()):
             report["status"] = "REJECTED_DIFFERENTIAL"
@@ -225,7 +270,7 @@ def redact_error(exc: object) -> str:
     return result[:800]
 
 
-async def run_async_differential(gate_source: str, out: Path) -> dict:
+async def run_async_differential(gate_source: str, out: Path, probe_kind: str = "baseline") -> dict:
     """Submit a bounded /run job, retain its ID and poll for the actual result."""
     report = {
         "schema": "mathgraph-h100-differential-v1",
@@ -237,7 +282,12 @@ async def run_async_differential(gate_source: str, out: Path) -> dict:
     try:
         endpoint_id = await resolve_deployed_endpoint_id()
         report["runpod_endpoint_id"] = endpoint_id
-        job = await Endpoint(id=endpoint_id).run({"gate_source": gate_source})
+        payload = {"gate_source": gate_source}
+        if probe_kind == "lmhead":
+            payload["probe_kind"] = "lmhead"
+        elif probe_kind != "baseline":
+            raise ValueError("Unregistered RunPod probe kind")
+        job = await Endpoint(id=endpoint_id).run(payload)
         if not job.id:
             raise RuntimeError("asynchronous job response has no job ID")
         report["runpod_job_id"] = job.id
@@ -286,24 +336,28 @@ async def run_async_differential(gate_source: str, out: Path) -> dict:
     return report
 
 
-async def _main(out: Path, gate: Path):
+async def _main(out: Path, gate: Path, probe_kind: str = "baseline"):
     if not os.getenv("RUNPOD_API_KEY", "").strip():
         persist_evidence(out, {"schema": "mathgraph-h100-differential-v1",
                                "status": "UNKNOWN_NO_RUNPOD_CREDENTIAL",
                                "source_pin": SOURCE_PIN, "checks": {}})
         return 1
-    data = await run_async_differential(gate.read_text(), out)
+    data = await run_async_differential(gate.read_text(), out, probe_kind=probe_kind)
     print(json.dumps({"status": data.get("status"), "gpu_name": data.get("gpu_name"),
                       "stages": len(data.get("stages", []))}, sort_keys=True))
-    return 0 if data.get("status") == "PASS" else 1
+    allowed = ("PASS",) if probe_kind == "baseline" else (
+        "LMHEAD_FULL_PASS", "LMHEAD_NATIVE_TIMEOUT", "LMHEAD_REJECTED_DIFFERENTIAL"
+    )
+    return 0 if data.get("status") in allowed else 1
 
 
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--gate", type=Path, required=True)
     p.add_argument("--out", type=Path, required=True)
+    p.add_argument("--probe-kind", choices=("baseline", "lmhead"), default="baseline")
     a = p.parse_args()
-    raise SystemExit(asyncio.run(_main(a.out, a.gate)))
+    raise SystemExit(asyncio.run(_main(a.out, a.gate, a.probe_kind)))
 
 
 if __name__ == "__main__":
