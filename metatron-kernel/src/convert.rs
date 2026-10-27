@@ -2039,6 +2039,15 @@ fn compare_values(
                     work,
                     context,
                 ) => {}
+            (Value::Neutral(neutral), Value::Lam { domain, body })
+            | (Value::Lam { domain, body }, Value::Neutral(neutral))
+                if checker.certified_neutral_lambda_proof_irrelevance(
+                    neutral, domain, body, context, current_budget,
+                ) => {
+                    return Judgment::proven(
+                        (), "independently-typed-source-proposition-proof-irrelevance",
+                    );
+                }
             _ => {
                 if std::env::var_os("NUCLEUS_TRACE_VALUE_MISMATCH").is_some() {
                     #[cfg(feature = "diagnostics")]
