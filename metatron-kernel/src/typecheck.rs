@@ -676,6 +676,27 @@ impl<'a> TypeChecker<'a> {
                             "NUCLEUS_GETELEM_EQ_TRANSPORT:source={term:?}:original_argument={argument:?}:context_len={}:fuel={}:inferred={argument_ty:?}:expected_domain={domain:?}:conversion={domain_check:?}:actual_exposed={:?}:expected_exposed={:?}",
                             context.len(), *remaining, exposure(&argument_ty), exposure(&domain),
                         );
+                        if let (TypeValue::Pi { domain: inferred_domain, .. },
+                                TypeValue::Term(expected_pi)) = (&argument_ty, &domain)
+                        {
+                            if let Judgment::Proven {
+                                value: Value::Pi { domain: expected_domain, .. }, ..
+                            } = self.machine().expose_for_conversion(
+                                expected_pi.clone(), Transparency::Full, (*remaining).min(512),
+                            ) {
+                                let domains = crate::convert::convert_with_policy_in_context(
+                                    self, inferred_domain.as_ref(),
+                                    &TypeValue::Term(expected_domain.clone()),
+                                    (*remaining).min(256),
+                                    crate::convert::DeltaPolicy::PreferredOnly,
+                                    context.len(), context,
+                                );
+                                eprintln!(
+                                    "NUCLEUS_GETELEM_PI_DOMAIN:source={term:?}:inferred_domain={inferred_domain:?}:expected_domain={expected_domain:?}:domain_conversion={domains:?}:remaining={}",
+                                    *remaining,
+                                );
+                            }
+                        }
                     }
                     #[cfg(feature = "diagnostics")]
                     self.record_capture_source_failure(term, context, *remaining, depth, &format!("argument-domain-relation:{domain_check:?}"));
