@@ -2545,6 +2545,38 @@ fn compare_neutral_heads(
                     argument_budget, DeltaPolicy::GuardedSemanticFallback, depth, context,
                 );
                 if !argument_result.is_proven() {
+                    // Optional fallback on the *same original* captured pair.
+                    // The source checker must independently infer both types
+                    // and actually prove conversion, and the capture resolver
+                    // must establish the same exact bound sources. Never turn
+                    // a merely similar value or numeric local ID into proof.
+                    let certified_source = if std::env::var_os(
+                        "NUCLEUS_EXPERIMENTAL_TYPED_RECEIVER_ARGUMENT"
+                    ).is_some() && budget >= 128 && depth == context.len() {
+                        std::thread_local! {
+                            static INSIDE_TYPED_RECEIVER: std::cell::Cell<bool> =
+                                const { std::cell::Cell::new(false) };
+                        }
+                        INSIDE_TYPED_RECEIVER.with(|inside| {
+                            if inside.replace(true) { return false; }
+                            let mut capture_fuel = budget.min(512);
+                            let accepted = checker.exact_source_capture_identity(
+                                lhs, rhs, &mut capture_fuel,
+                            ) && checker.checked_source_conversion(
+                                lhs, rhs, context, budget.min(1024),
+                            ).is_proven();
+                            inside.set(false);
+                            accepted
+                        })
+                    } else { false };
+                    #[cfg(feature = "diagnostics")]
+                    if std::env::var_os("NUCLEUS_TRACE_TYPED_RECEIVER_ARGUMENT").is_some()
+                        && (9..=16).contains(&depth) {
+                        eprintln!(
+                            "NUCLEUS_TYPED_RECEIVER_ARGUMENT:depth={depth}:verified={certified_source}:ordinary={argument_result:?}:budget={budget}",
+                        );
+                    }
+                    if certified_source { continue; }
                     #[cfg(feature = "diagnostics")]
                     if std::env::var_os("NUCLEUS_TRACE_GETELEM_RECEIVER").is_some()
                         && (9..=16).contains(&depth)
