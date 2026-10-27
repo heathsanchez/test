@@ -16,12 +16,23 @@ class GateTests(unittest.TestCase):
             "logits": {"elements": 128256, "nonfinite": 0, "violations": 0, "max_abs_diff": 0.01},
         }
 
-    def test_fixture_excludes_full_model_lm_head_path(self):
+    def test_registered_lmhead_pair_scope(self):
         source = Path(__file__).with_name("gpu_megakernel_gate.py").read_text()
-        self.assertIn("num_hidden_layers=2, num_attention_heads=32", source)
-        self.assertIn('"layer_limit=1"', source)
-        self.assertIn('"lm_head_exercised": False', source)
-        self.assertIn("model_config.num_hidden_layers != 2", source)
+        self.assertIn("num_hidden_layers=num_layers, num_attention_heads=32", source)
+        self.assertIn('((2, 1), (3, 2), (2, 2))', source)
+        self.assertIn("lm_head_active = num_layers == layer_limit", source)
+        self.assertIn('f"layer_limit={layer_limit}"', source)
+        self.assertIn('"lm_head_exercised": lm_head_active', source)
+
+    def test_partial_layer_gate_excludes_vacuous_logits(self):
+        three = {k: v for k, v in self.good.items() if k != "logits"}
+        self.assertTrue(evaluate_summary(three, required_fields=("hidden_states", "k_cache", "v_cache"))["passed"])
+        self.assertFalse(evaluate_summary(three)["passed"])
+
+    def test_full_head_missing_logits_rejected(self):
+        bad = dict(self.good)
+        del bad["logits"]
+        self.assertFalse(evaluate_summary(bad, required_fields=("hidden_states", "k_cache", "v_cache", "logits"))["passed"])
 
     def test_unexecuted_reference_cannot_authorize(self):
         source = Path(__file__).with_name("gpu_megakernel_gate.py")
