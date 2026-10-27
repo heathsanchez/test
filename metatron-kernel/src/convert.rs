@@ -2548,6 +2548,16 @@ fn compare_neutral_heads(
             Judgment::proven((), "same-rigid-constant")
         }
         _ => {
+            #[cfg(feature = "diagnostics")]
+            if std::env::var_os("NUCLEUS_TRACE_PERM_PROPOSITION").is_some()
+                && depth == 10 && context.len() == 10
+            {
+                eprintln!(
+                    "NUCLEUS_PERM_PROPOSITION:left={}:right={}",
+                    checker.diagnostic_neutral_proposition(left, context, budget.min(2048)),
+                    checker.diagnostic_neutral_proposition(right, context, budget.min(2048)),
+                );
+            }
             if std::env::var_os("NUCLEUS_TRACE_NEUTRAL_HEADS").is_some() {
                 #[cfg(feature = "diagnostics")]
                 if depth == 12 && context.len() == 12
