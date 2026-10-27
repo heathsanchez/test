@@ -63,10 +63,11 @@ try:
     cmd=[OFF,str(path)] if nm=="official" else [EXE]
     if nm!="official":
       env["NUCLEUS_TRACE_DOWNSTREAM"]="1"
-      env["NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE"]="1"
-      env["NUCLEUS_TRACE_NEUTRAL_HEADS"]="1"
-      env["NUCLEUS_TRACE_VALUE_MISMATCH"]="1"
-      env["NUCLEUS_TRACE_EXACT_PROOF_NEUTRALS"]="1"
+      if nm!="receiver-source-only":
+        env["NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE"]="1"
+        env["NUCLEUS_TRACE_NEUTRAL_HEADS"]="1"
+        env["NUCLEUS_TRACE_VALUE_MISMATCH"]="1"
+        env["NUCLEUS_TRACE_EXACT_PROOF_NEUTRALS"]="1"
     p=subprocess.run(cmd,input=None if nm=="official" else prefix,env=env,capture_output=True,timeout=210)
     r={"exit_code":p.returncode,"stderr_tail":p.stderr.decode(errors="replace")[-48000:],"stdout_tail":p.stdout.decode(errors="replace")[-1500:]}
     report["results"][nm]=r
