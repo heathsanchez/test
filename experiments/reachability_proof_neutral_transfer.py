@@ -21,7 +21,7 @@ try:
     assert hashlib.sha256(data).hexdigest()==h,(name,"SHA mismatch")
     assert json.loads(data.splitlines()[0])["meta"]["format"]["version"]=="3.1.0"
     entry={"name":name,"sha256":h,"modes":{}}
-    for mode in ("original","historical-proof-neutral","origin-proof-neutral","origin-quotient-plus-historical"):
+    for mode in ("original","historical-proof-neutral","origin-proof-neutral","origin-quotient-plus-historical","origin-quotient-plus-historical-pi"):
       env={k:v for k,v in os.environ.items() if not k.startswith("NUCLEUS_")}
       if mode.startswith("origin"):
         env.update({"NUCLEUS_EXPERIMENTAL_"+f:"1" for f in ledger["origin_flags"]})
@@ -31,6 +31,9 @@ try:
       if "quotient" in mode or "historical" in mode:
         env["NUCLEUS_EXPERIMENTAL_CERTIFIED_QUOT_IOTA"]="1"
         env["NUCLEUS_EXPERIMENTAL_SOURCE_PROOF_IRREL"]="1"
+      if mode.endswith("-pi"):
+        env["NUCLEUS_EXPERIMENTAL_CAPTURED_PI_RECOVERY"]="1"
+        env["NUCLEUS_TRACE_CAPTURED_PI_RECOVERY"]="1"
       env["NUCLEUS_TRACE_DOWNSTREAM"]="1"
       with path.open("rb") as inp:
         p=subprocess.run([BIN],stdin=inp,capture_output=True,timeout=180,env=env)
