@@ -1445,6 +1445,70 @@ impl<'a> Machine<'a> {
         }
     }
 
+    /// Replay the registered Quot.lift iota rule from a neutral value already
+    /// produced by an earlier evaluator pass. Neither the constructor major
+    /// nor the result is inferred from the comparison target.
+    pub(crate) fn qualified_quotient_neutral_result(
+        &self,
+        neutral: &Neutral,
+        budget: usize,
+    ) -> Judgment<Value> {
+        if budget < 128 {
+            return Judgment::unknown("quotient-neutral-insufficient-fuel");
+        }
+        let Some(registered) = self.quot_primitives.as_ref() else {
+            return Judgment::unknown("quotient-neutral-no-source-package");
+        };
+        let NeutralHead::Const { name, levels } = &neutral.head else {
+            return Judgment::unknown("quotient-neutral-not-registered");
+        };
+        if *name != registered.lift || levels.len() != 2 || neutral.spine.len() != 6 {
+            return Judgment::unknown("quotient-neutral-not-lift");
+        }
+        let Some(major) = neutral.spine.last() else {
+            return Judgment::unknown("quotient-neutral-no-major");
+        };
+        let normalized = self.expose_internal(
+            major.clone(), Transparency::Full, budget.min(1024), false, false,
+        );
+        let Some(Exposure {
+            value: Value::Neutral(Neutral {
+                head: NeutralHead::Const {
+                    name: constructor,
+                    levels: constructor_levels,
+                },
+                spine: constructor_arguments,
+            }),
+            ..
+        }) = normalized.proven_value() else {
+            return Judgment::unknown("quotient-neutral-major-not-constructor");
+        };
+        if *constructor != registered.mk
+            || constructor_levels.len() != 1
+            || constructor_arguments.len() != 3
+            || !crate::level::level_equal(
+                levels[0].clone(), constructor_levels[0].clone(), budget.min(256),
+            ).is_proven()
+        {
+            return Judgment::unknown("quotient-neutral-major-not-matching-mk");
+        }
+        let function = neutral.spine[3].clone();
+        let value = constructor_arguments[2].clone();
+        let reduced = self.expose_internal_with_pending(
+            function,
+            Transparency::Full,
+            budget.min(2048),
+            false,
+            false,
+            vec![value],
+        ).map(|out| out.value);
+        #[cfg(feature = "diagnostics")]
+        if std::env::var_os("NUCLEUS_TRACE_CERTIFIED_QUOT_IOTA").is_some() {
+            eprintln!("NUCLEUS_QUOTIENT_NEUTRAL_IOTA:head={name:?}:result={reduced:?}");
+        }
+        reduced
+    }
+
     fn try_quot_reduction(
         &self,
         name: NameId,
