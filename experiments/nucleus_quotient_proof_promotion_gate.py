@@ -64,7 +64,7 @@ try:
             assert path.is_file() and digest(path)==row["sha256"],row["case"]
             verdict=check(path,env)
             old=row["rc"]
-            group=row["group"]
+            group="good" if row["case"].startswith("good/") else "bad"
             assert verdict in (0,1,2), ("execution error", mode,row["case"],verdict)
             # Never lose a previously warranted ACCEPT or REJECT. A valid,
             # previously unhandled whole theorem may become ACCEPT.
