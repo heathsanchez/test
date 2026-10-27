@@ -321,7 +321,7 @@ fn convert_in_context_with_congruence(
                         proof_function_frees.insert(free, left_key);
                     }
                 }
-                let mut body_context = local_context.clone();
+                let mut body_context = local_context.as_ref().to_vec();
                 if body_context.len() == depth {
                     body_context.push((*left_domain).clone());
                 }
@@ -1283,7 +1283,7 @@ fn compare_values(
                     TypeValue::Term(left_body.under_free(free)),
                     TypeValue::Term(right_body.under_free(free)),
                     depth.saturating_add(1),
-                    body_context,
+                    Cow::Owned(body_context),
                 ));
                 work.push((
                     TypeValue::Term(left_domain.clone()),
