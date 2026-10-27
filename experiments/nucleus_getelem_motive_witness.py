@@ -102,7 +102,7 @@ def main():
         assert index_node["app"]=={"arg":2,"fn":84268}
         assert names[exprs[137]["const"]["name"]]=="Nat.zero"
         index_node["app"]["arg"]=137
-        lines3[index_pos]=(json.dumps(index_node,separators=(",",":"),ensure_ascii=False)+"\\n").encode()
+        lines3[index_pos]=(json.dumps(index_node,separators=(",",":"),ensure_ascii=False)+"\n").encode()
         index_mutant=b"".join(lines3)
         index_path=EVIDENCE/"forged-dependent-index.ndjson"
         index_path.write_bytes(index_mutant)
