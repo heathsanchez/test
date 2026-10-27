@@ -116,6 +116,26 @@ def make_fixture(folder, num_layers=2):
                       "model": "synthetic Llama-shaped deterministic", "num_layers": num_layers, "seed": 20261027}))
 
 
+
+def verify_paired_fixture_weights(partial_folder, full_folder):
+    """Certify common first-two-layer tensors match exactly before contrast."""
+    import torch
+    from safetensors import safe_open
+
+    with safe_open(str(Path(partial_folder) / "model.safetensors"), framework="pt", device="cpu") as partial, \
+         safe_open(str(Path(full_folder) / "model.safetensors"), framework="pt", device="cpu") as full:
+        common = sorted(full.keys())
+        if len(common) < 20 or not set(common).issubset(set(partial.keys())):
+            raise RuntimeError("LM-head pair missing shared model tensors")
+        for name in common:
+            if not torch.equal(partial.get_tensor(name), full.get_tensor(name)):
+                raise RuntimeError(f"LM-head fixture weight mismatch: {name}")
+    result = {"shared_weights_identical": True, "shared_tensor_count": len(common),
+              "partial_layers": 3, "full_layers": 2, "seed": 20261027}
+    print(json.dumps(result, sort_keys=True), flush=True)
+    return result
+
+
 def run_diff(repo, fixture, sched, out, layer_limit=1):
     import torch
 
@@ -232,9 +252,11 @@ def main():
     action.add_argument("--self-test", action="store_true")
     action.add_argument("--verify-checkout", action="store_true")
     action.add_argument("--make-fixture", action="store_true")
+    action.add_argument("--compare-fixtures", action="store_true")
     action.add_argument("--diff", choices=("rr", "dag"))
     parser.add_argument("--repo", default="megakernels_upstream")
     parser.add_argument("--fixture", default="synthetic_llama_1b_shape")
+    parser.add_argument("--other-fixture", default=None)
     parser.add_argument("--out", default="gpu_diff.json")
     parser.add_argument("--fixture-layers", type=int, choices=(2, 3), default=2)
     parser.add_argument("--layer-limit", type=int, choices=(1, 2), default=1)
@@ -254,6 +276,10 @@ def main():
         print(json.dumps(verify_checkout(args.repo)))
     elif args.make_fixture:
         make_fixture(args.fixture, num_layers=args.fixture_layers)
+    elif args.compare_fixtures:
+        if not args.other_fixture:
+            raise RuntimeError("--compare-fixtures requires --other-fixture")
+        verify_paired_fixture_weights(args.fixture, args.other_fixture)
     else:
         run_diff(args.repo, args.fixture, args.diff, args.out, layer_limit=args.layer_limit)
 
