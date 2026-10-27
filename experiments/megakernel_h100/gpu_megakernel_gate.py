@@ -294,7 +294,7 @@ def main():
     parser.add_argument("--other-fixture", default=None)
     parser.add_argument("--out", default="gpu_diff.json")
     parser.add_argument("--fixture-layers", type=int, choices=(2, 3, 16), default=2)
-    parser.add_argument("--layer-limit", type=int, choices=(1, 2, 16), default=1)
+    parser.add_argument("--layer-limit", type=int, choices=(1, 2, 4, 8, 12, 16), default=1)
     args = parser.parse_args()
     if args.self_test:
         import unittest
