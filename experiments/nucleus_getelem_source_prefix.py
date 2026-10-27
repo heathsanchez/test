@@ -59,11 +59,14 @@ try:
   receiver_env["NUCLEUS_TRACE_GETELEM_RECEIVER"]="1"
   receiver_env["NUCLEUS_TRACE_DOWNSTREAM"]="1"
   cases["receiver-source-only"]=receiver_env
+  split_env=dict(receiver_env)
+  split_env["NUCLEUS_EXPERIMENTAL_RECEIVER_BUDGET_SPLIT"]="1"
+  cases["receiver-budget-split"]=split_env
   for nm,env in cases.items():
     cmd=[OFF,str(path)] if nm=="official" else [EXE]
     if nm!="official":
       env["NUCLEUS_TRACE_DOWNSTREAM"]="1"
-      if nm!="receiver-source-only":
+      if nm not in ("receiver-source-only","receiver-budget-split"):
         env["NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE"]="1"
         env["NUCLEUS_TRACE_NEUTRAL_HEADS"]="1"
         env["NUCLEUS_TRACE_VALUE_MISMATCH"]="1"
