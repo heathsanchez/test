@@ -54,11 +54,17 @@ try:
         official=run(REFERENCE,p,os.environ,True)
         assert official["exit"]==0,("official prefix not ACCEPT",name,official)
         test={}
-        for mode in ["default","origin","quot-source-proof","origin-quot-source-proof"]:
+        for mode in ["default","origin","quot-source-proof","origin-quot-source-proof","neutral-pair","origin-neutral-pair","origin-neutral-pair-quot"]:
             env={k:v for k,v in os.environ.items() if not k.startswith("NUCLEUS_")}
-            if mode in ("origin","origin-quot-source-proof"):
+            if mode in ("origin","origin-quot-source-proof","origin-neutral-pair","origin-neutral-pair-quot"):
                 env.update({"NUCLEUS_EXPERIMENTAL_"+f:"1" for f in ledger["origin_flags"]})
             if "quot-source-proof" in mode:
+                env["NUCLEUS_EXPERIMENTAL_CERTIFIED_QUOT_IOTA"]="1"
+                env["NUCLEUS_EXPERIMENTAL_SOURCE_PROOF_IRREL"]="1"
+            if "neutral-pair" in mode:
+                env["NUCLEUS_EXPERIMENTAL_NEUTRAL_PAIR_PROOF_IRREL"]="1"
+                env["NUCLEUS_TRACE_NEUTRAL_PAIR_PROOF"]="1"
+            if mode=="origin-neutral-pair-quot":
                 env["NUCLEUS_EXPERIMENTAL_CERTIFIED_QUOT_IOTA"]="1"
                 env["NUCLEUS_EXPERIMENTAL_SOURCE_PROOF_IRREL"]="1"
             env["NUCLEUS_TRACE_DOWNSTREAM"]="1"
