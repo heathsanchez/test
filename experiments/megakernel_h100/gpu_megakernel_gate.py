@@ -25,10 +25,10 @@ def validate_manifest(commit):
     return commit == PIN
 
 
-def evaluate_summary(metrics):
+def evaluate_summary(metrics, required_fields=FIELDS):
     """Result contract independent of torch and of the device evaluator."""
     reasons = []
-    for name in FIELDS:
+    for name in required_fields:
         m = metrics.get(name)
         if m is None:
             reasons.append(f"missing:{name}")
@@ -60,7 +60,7 @@ def verify_checkout(repo):
     return {"source_commit": commit, "tracked_worktree_clean": True}
 
 
-def make_fixture(folder):
+def make_fixture(folder, num_layers=2):
     """Write deterministic, architecture-matched *synthetic* Llama-shaped weights.
 
     One layer exercises QKV, attention, MLP and LM head while keeping RAM/disk
@@ -71,11 +71,13 @@ def make_fixture(folder):
     from safetensors.torch import save_file
     from transformers import LlamaConfig
 
+    if num_layers not in (2, 3):
+        raise ValueError("Only registered 2- or 3-layer synthetic fixtures allowed")
     out = Path(folder)
     out.mkdir(parents=True, exist_ok=True)
     config = LlamaConfig(
         vocab_size=128256, hidden_size=2048, intermediate_size=8192,
-        num_hidden_layers=2, num_attention_heads=32,
+        num_hidden_layers=num_layers, num_attention_heads=32,
         num_key_value_heads=8, head_dim=64,
         max_position_embeddings=2048, rms_norm_eps=1e-5,
         rope_theta=500000.0, tie_word_embeddings=True,
@@ -90,7 +92,7 @@ def make_fixture(folder):
         "model.embed_tokens.weight": (128256, 2048),
         "model.norm.weight": (2048,),
     }
-    for i in range(2):
+    for i in range(num_layers):
         shapes.update({
             f"model.layers.{i}.input_layernorm.weight": (2048,),
             f"model.layers.{i}.post_attention_layernorm.weight": (2048,),
@@ -111,10 +113,10 @@ def make_fixture(folder):
         weights[name] = value.contiguous()
     save_file(weights, str(out / "model.safetensors"), metadata={"origin": "mathgraph_synthetic_not_pretrained"})
     print(json.dumps({"fixture": str(out), "tensors": len(weights),
-                      "model": "two-layer synthetic 1B-shaped Llama, layer zero executed", "seed": 20261027}))
+                      "model": "synthetic Llama-shaped deterministic", "num_layers": num_layers, "seed": 20261027}))
 
 
-def run_diff(repo, fixture, sched, out):
+def run_diff(repo, fixture, sched, out, layer_limit=1):
     import torch
 
     repo = Path(repo).resolve()
@@ -131,8 +133,11 @@ def run_diff(repo, fixture, sched, out):
         raise ValueError("Unregistered scheduler")
     from transformers import LlamaConfig
     model_config = LlamaConfig.from_pretrained(fixture)
-    if model_config.num_hidden_layers != 2:
-        raise RuntimeError("Expected two-layer fixture with layer_limit=1 to exclude LM head")
+    num_layers = model_config.num_hidden_layers
+    if (num_layers, layer_limit) not in ((2, 1), (3, 2), (2, 2)):
+        raise RuntimeError("Unregistered fixture/layer-limit pair")
+    lm_head_active = num_layers == layer_limit
+    required_fields = FIELDS if lm_head_active else FIELDS[:-1]
 
     # Unlike upstream BaseGlobals.diff(), this comparator fails the process
     # when outputs disagree or are nonfinite, and writes machine-readable data.
@@ -161,7 +166,7 @@ def run_diff(repo, fixture, sched, out):
             raise AssertionError("Python reference never completed; refusing comparison")
         original(self, other, skip_kv_cache=skip_kv_cache)
         records = {}
-        for name in FIELDS:
+        for name in required_fields:
             a = getattr(self, name).detach().float()
             b = getattr(other, name).detach().float()
             if a.shape != b.shape:
@@ -178,9 +183,19 @@ def run_diff(repo, fixture, sched, out):
                 "violations": int(violations),
                 "max_abs_diff": float(delta[finite].max().item()) if finite.any() else None,
             }
-        verdict = evaluate_summary(records)
-        record = {**manifest, "scheduler": sched, "model_kind": "synthetic_2_layer_model_executing_layer0",
-                  "lm_head_exercised": False,
+        verdict = evaluate_summary(records, required_fields=required_fields)
+        if lm_head_active:
+            # Prevent vacuous all-zero LM-head parity.
+            ref_logits = self.logits.detach()
+            gpu_logits = other.logits.detach()
+            if torch.count_nonzero(ref_logits).item() == 0 or torch.count_nonzero(gpu_logits).item() == 0:
+                verdict["passed"] = False
+                verdict["reasons"].append("lm_head_output_unobserved")
+        record = {**manifest, "scheduler": sched,
+                  "model_kind": "synthetic_2_layer_model_executing_layer0" if (num_layers, layer_limit) == (2, 1) else "synthetic_lmhead_pair",
+                  "fixture_layers": num_layers, "executed_layers": layer_limit,
+                  "lm_head_exercised": lm_head_active,
+                  "fields_compared": list(required_fields),
                   "tolerances": {"atol": ATOL, "rtol": RTOL},
                   "pyvm_completed_calls": pyvm_completed[0],
                   "fields": records, **verdict}
@@ -198,7 +213,7 @@ def run_diff(repo, fixture, sched, out):
     old_argv = sys.argv[:]
     try:
         sys.argv = [str(repo / "megakernels/scripts/diff_test.py"),
-                    f"model={fixture}", f"sched={sched}", "layer_limit=1",
+                    f"model={fixture}", f"sched={sched}", f"layer_limit={layer_limit}",
                     "prompt_len=10", "ntok=10", "exec_reps=1",
                     "setting=latency", "device=cuda:0"]
         os.chdir(repo)
@@ -221,6 +236,8 @@ def main():
     parser.add_argument("--repo", default="megakernels_upstream")
     parser.add_argument("--fixture", default="synthetic_llama_1b_shape")
     parser.add_argument("--out", default="gpu_diff.json")
+    parser.add_argument("--fixture-layers", type=int, choices=(2, 3), default=2)
+    parser.add_argument("--layer-limit", type=int, choices=(1, 2), default=1)
     args = parser.parse_args()
     if args.self_test:
         import unittest
@@ -236,9 +253,9 @@ def main():
     elif args.verify_checkout:
         print(json.dumps(verify_checkout(args.repo)))
     elif args.make_fixture:
-        make_fixture(args.fixture)
+        make_fixture(args.fixture, num_layers=args.fixture_layers)
     else:
-        run_diff(args.repo, args.fixture, args.diff, args.out)
+        run_diff(args.repo, args.fixture, args.diff, args.out, layer_limit=args.layer_limit)
 
 
 if __name__ == "__main__":
