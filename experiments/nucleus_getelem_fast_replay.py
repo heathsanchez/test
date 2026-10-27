@@ -64,6 +64,8 @@ try:
     }
     for mode in ("combined-origin","budget-split","typed-receiver"):
         modes[mode].update({"NUCLEUS_EXPERIMENTAL_"+x:"1" for x in ledger["origin_flags"]})
+        modes[mode]["NUCLEUS_EXPERIMENTAL_EXACT_PROOF_NEUTRALS"]="1"
+        modes[mode]["NUCLEUS_TRACE_DOWNSTREAM"]="1"
         modes[mode]["NUCLEUS_EXPERIMENTAL_CERTIFIED_QUOT_IOTA"]="1"
         modes[mode]["NUCLEUS_EXPERIMENTAL_SOURCE_PROOF_IRREL"]="1"
     for mode in ("budget-split","typed-receiver"):
