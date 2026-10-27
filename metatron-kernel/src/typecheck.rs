@@ -661,6 +661,23 @@ impl<'a> TypeChecker<'a> {
                 );
                 if !domain_check.is_proven() {
                     #[cfg(feature = "diagnostics")]
+                    if std::env::var_os("NUCLEUS_TRACE_GETELEM_EQ_TRANSPORT").is_some()
+                        && context.len() == 11 && term.expr.0 == 84286
+                    {
+                        let exposure = |ty: &TypeValue| match ty {
+                            TypeValue::Term(c) => Some(
+                                self.machine().expose_for_conversion(
+                                    c.clone(), Transparency::Full, (*remaining).min(512),
+                                )
+                            ),
+                            _ => None,
+                        };
+                        eprintln!(
+                            "NUCLEUS_GETELEM_EQ_TRANSPORT:source={term:?}:original_argument={argument:?}:context_len={}:fuel={}:inferred={argument_ty:?}:expected_domain={domain:?}:conversion={domain_check:?}:actual_exposed={:?}:expected_exposed={:?}",
+                            context.len(), *remaining, exposure(&argument_ty), exposure(&domain),
+                        );
+                    }
+                    #[cfg(feature = "diagnostics")]
                     self.record_capture_source_failure(term, context, *remaining, depth, &format!("argument-domain-relation:{domain_check:?}"));
                     return None;
                 }
