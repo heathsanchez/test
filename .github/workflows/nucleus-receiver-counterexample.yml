@@ -1,0 +1,92 @@
+name: Nucleus receiver reservation — authentic ACCEPT regression falsifier
+on:
+  push:
+    branches:
+      - exp/nucleus-getelem-lowbudget-20261027
+    paths:
+      - ".github/workflows/nucleus-receiver-counterexample.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  regression-reproducer:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: candidate
+      - uses: actions/checkout@v4
+        with:
+          ref: ff003e7fad888d39a40cfd2375885fe20e3209fa
+          path: baseline
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build both binaries with identical diagnostic compilation
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/receiver-counterexample
+          (cd baseline && cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml)
+          (cd candidate && cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml)
+          cp baseline/metatron-kernel/target/release/metatron-kernel /tmp/nucleus-protected
+          cp candidate/metatron-kernel/target/release/metatron-kernel /tmp/nucleus-candidate
+          sha256sum /tmp/nucleus-{protected,candidate} > /tmp/receiver-counterexample/binaries.sha256
+          git -C candidate rev-parse HEAD > /tmp/receiver-counterexample/candidate-source-commit.txt
+      - name: Download and verify original frozen Arena case
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/receiver-source
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/11272848230/zip > /tmp/receiver-counterexample/archive.zip
+          unzip -q /tmp/receiver-counterexample/archive.zip -d /tmp/receiver-source
+          tar -xzf /tmp/receiver-source/lean-arena-tests.tar.gz -C /tmp/receiver-source
+      - name: Establish original ACCEPT, independent no-flag ACCEPT, flagged regression and first reason
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib,json,os,subprocess,pathlib
+          root=pathlib.Path('/tmp/receiver-counterexample')
+          path=pathlib.Path('/tmp/receiver-source/good/init-prelude.ndjson')
+          ledger=json.loads(pathlib.Path('baseline/metatron-kernel/evidence/performance/owned-environment-2026-10-13/nucleus-owned-environment-frozen196.json').read_text())
+          row=next(x for x in ledger['modes']['default']['rows'] if x['case']=='good/init-prelude.ndjson')
+          digest=hashlib.sha256(path.read_bytes()).hexdigest()
+          assert digest==row['sha256'] and row['rc']==0
+          run={}
+          original={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+          original.update(NUCLEUS_TRACE_DOWNSTREAM='1',NUCLEUS_TRACE_NEUTRAL_HEADS='1',
+                          NUCLEUS_TRACE_VALUE_MISMATCH='1',NUCLEUS_TRACE_PARSE_ERROR='1')
+          for name,binary,reserved in [('protected','/tmp/nucleus-protected',False),
+                                       ('candidate-no-flag','/tmp/nucleus-candidate',False),
+                                       ('candidate-reserved','/tmp/nucleus-candidate',True)]:
+              env=dict(original)
+              if reserved:
+                  env['NUCLEUS_EXPERIMENTAL_RECEIVER_BUDGET_RESERVE']='1'
+                  env['NUCLEUS_TRACE_GETELEM_PROJECTION']='1'
+              with path.open('rb') as input:
+                  p=subprocess.run([binary],stdin=input,capture_output=True,env=env,timeout=120)
+              (root/(name+'.stderr.txt')).write_bytes(p.stderr)
+              run[name]={'exit':p.returncode,'stderr_tail':p.stderr.decode(errors='replace')[-3500:]}
+              print(name,p.returncode,run[name]['stderr_tail'][-800:],flush=True)
+          report={'case':'good/init-prelude.ndjson','sha256':digest,'source_pin':'ff003e7fad888d39a40cfd2375885fe20e3209fa','verdicts':run}
+          report['status']=('WARRANTED_RESERVE_ONLY_REGRESSION' if
+              run['protected']['exit']==run['candidate-no-flag']['exit']==0
+              and run['candidate-reserved']['exit']==1 else 'OTHER_RESULT_OR_UNKNOWN')
+          (root/'report.json').write_text(json.dumps(report,indent=2)+'\n')
+          print('FINAL',report['status'])
+          assert report['status']=='WARRANTED_RESERVE_ONLY_REGRESSION'
+          PY
+      - name: Retain all bounded regression evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-reserve-real-valid-counterexample
+          path: /tmp/receiver-counterexample/
+          if-no-files-found: warn
+      - name: Qualification boundary
+        if: always()
+        run: |
+          echo "Only falsifies proposed budget scheduling; no checker semantics promoted." >> "$GITHUB_STEP_SUMMARY"
+          echo "No accept-by-name shortcut, source rewrite, or official upstream change." >> "$GITHUB_STEP_SUMMARY"
