@@ -146,6 +146,35 @@ jobs:
           echo "Corrupted claim: official=$official nucleus=$nucleus"
           test "$official" -eq 1
           test "$nucleus" -eq 1 -o "$nucleus" -eq 2
+      - name: Differential in all previously qualified Nucleus capability modes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,os,pathlib,subprocess
+          root=pathlib.Path('/tmp/quotient-evidence')
+          binary='metatron-kernel/target/release/metatron-kernel'
+          source=pathlib.Path('metatron-kernel/evidence/performance/owned-environment-2026-10-13/nucleus-owned-environment-frozen196.json')
+          data=json.loads(source.read_text())
+          flags=data['origin_flags']
+          records=[]
+          for mode in ['default','origin','demand']:
+              env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+              if mode!='default':
+                  env.update({'NUCLEUS_EXPERIMENTAL_'+x:'1' for x in flags})
+              if mode=='demand':
+                  env['NUCLEUS_EXPERIMENTAL_DEMAND_MAJOR']='1'
+              entry={'mode':mode}
+              for label in ['authentic','mutated']:
+                  with (root/(label+'.ndjson')).open('rb') as inp:
+                      p=subprocess.run([binary],stdin=inp,capture_output=True,env=env,timeout=240)
+                  entry[label]={'exit':p.returncode,'stderr_tail':p.stderr.decode(errors='replace')[-1100:]}
+              assert entry['authentic']['exit'] in (0,2),entry
+              assert entry['mutated']['exit'] in (1,2),entry
+              records.append(entry)
+              print(json.dumps(entry),flush=True)
+          (root/'mode-matrix.json').write_text(json.dumps(records,indent=2)+'\n')
+          PY
       - name: Retain exact bytes and diagnostic evidence
         if: always()
         uses: actions/upload-artifact@v4
