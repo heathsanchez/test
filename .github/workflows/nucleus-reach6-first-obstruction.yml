@@ -1,0 +1,59 @@
+name: Nucleus first obstruction — pinned six Reachability exports
+on:
+  push:
+    branches: 
+      - exp/nucleus-reachability-residual-20261027
+    paths:
+      - "experiments/nucleus_reach6_first_obstructions.py"
+      - ".github/workflows/nucleus-reach6-first-obstruction.yml"
+      - "metatron-kernel/src/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-pinned-first-obstruction:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build independent Nucleus candidate, keep source provenance
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/reach6/evidence
+          git rev-parse HEAD > /tmp/reach6/evidence/source-commit.txt
+          git rev-parse HEAD:metatron-kernel > /tmp/reach6/evidence/source-subtree.txt
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          sha256sum metatron-kernel/target/release/metatron-kernel > /tmp/reach6/evidence/binary.sha256
+      - name: Restore previous independently checked exact six Lean inputs
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/reach6/inputs /tmp/reach6/archive
+          gh api repos/heathsanchez/test/actions/artifacts/12722408982/zip > /tmp/reach6/archive/original-six.zip
+          printf '%s  %s\n' 8f3fe62d60740fae640ed716b58ce1671a558fd88dd14723d758934e49197b31 /tmp/reach6/archive/original-six.zip | sha256sum -c -
+          unzip -q /tmp/reach6/archive/original-six.zip -d /tmp/reach6/inputs
+          sha256sum /tmp/reach6/archive/original-six.zip > /tmp/reach6/evidence/original-six-archive.sha256
+      - name: Compare first checker obstruction for exact six Lean ACCEPT inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 experiments/nucleus_reach6_first_obstructions.py
+      - name: Retain first-obstruction evidence even when an attempted repair fails
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-reachability-first-obstructions
+          path: /tmp/reach6/evidence/
+          if-no-files-found: warn
+      - name: Qualification boundary
+        if: always()
+        run: |
+          echo 'Six exact inputs were already independently accepted by Lean and SHA-qualified against October 18 export bytes.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'This replay classifies first Nucleus residuals; it does not assert proof acceptance when Nucleus returns UNKNOWN.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Any input hash mismatch, Nucleus REJECT or checker ERROR fails closed.' >> "$GITHUB_STEP_SUMMARY"
