@@ -1,0 +1,53 @@
+name: Nucleus Eq.ndrec fast source-hash adversarial replay
+on:
+  push:
+    branches:
+      - exp/nucleus-getelem-receiver-20261028
+    paths:
+      - "experiments/nucleus_getelem_fast_replay.py"
+      - "metatron-kernel/src/convert.rs"
+      - "metatron-kernel/src/typecheck.rs"
+      - ".github/workflows/nucleus-getelem-fast-replay.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-pinned-fast-replay:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build Nucleus with exact experimental semantics
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/nucleus-getelem-fast/evidence
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          git rev-parse HEAD > /tmp/nucleus-getelem-fast/evidence/source-commit.txt
+          git rev-parse HEAD:metatron-kernel > /tmp/nucleus-getelem-fast/evidence/source-tree.txt
+          sha256sum metatron-kernel/target/release/metatron-kernel > /tmp/nucleus-getelem-fast/evidence/binary.sha256
+      - name: Recover historical source and both independently falsified receiver/index controls
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/heathsanchez/test/actions/artifacts/12766696440/zip > /tmp/nucleus-getelem-fast/archived-source.zip
+          printf '%s  %s\n' 94f78d49378c5cf5a8ecb229eb70fa8dd9b02a090112974b12d40af13fac397a /tmp/nucleus-getelem-fast/archived-source.zip | sha256sum -c -
+          unzip -q -o /tmp/nucleus-getelem-fast/archived-source.zip forged-dependent-motive.ndjson forged-dependent-index.ndjson -d /tmp/nucleus-getelem-fast
+      - name: Require original source hash and complete honest 4-mode verdict matrix
+        run: |
+          set -euo pipefail
+          python3 experiments/nucleus_getelem_fast_replay.py
+      - name: Retain source and classification evidence even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-getelem-fast-replay-evidence
+          path: /tmp/nucleus-getelem-fast/evidence/
+          if-no-files-found: warn
+      - name: Evidence boundary
+        if: always()
+        run: |
+          echo 'Authentic exported source is reconstructed by exact byte-hash reversion of the official-REJECT receiver mutation.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Official checker prior ACCEPT is from source-pinned run 40573804820; this job only runs independent Nucleus.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'No Nucleus ACCEPT, full-Mathlib score, or soundness claim is made for failed or UNKNOWN proofs.' >> "$GITHUB_STEP_SUMMARY"
