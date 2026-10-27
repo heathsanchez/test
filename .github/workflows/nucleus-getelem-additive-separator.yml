@@ -1,0 +1,97 @@
+name: Nucleus getElem additive receiver — init-prelude regression separator
+on:
+  push:
+    branches:
+      - exp/nucleus-getelem-additive-receiver-20261027
+    paths:
+      - ".github/workflows/nucleus-getelem-additive-separator.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  separate-regression:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build unchanged experimental checker with diagnostics
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/getelem-separator
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          git rev-parse HEAD > /tmp/getelem-separator/commit.txt
+          sha256sum metatron-kernel/target/release/metatron-kernel > /tmp/getelem-separator/binary-sha256.txt
+      - name: Recover authentic source-hashed init-prelude from Arena
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/getelem-separator/arena
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/11272848230/zip > /tmp/getelem-separator/arena.zip
+          unzip -q /tmp/getelem-separator/arena.zip -d /tmp/getelem-separator/arena
+          tar -xzf /tmp/getelem-separator/arena/lean-arena-tests.tar.gz -C /tmp/getelem-separator/arena
+      - name: Replay baseline flags versus additive only and identify first rejected theorem
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib,subprocess
+          root=pathlib.Path('/tmp/getelem-separator')
+          path=root/'arena/good/init-prelude.ndjson'
+          ledger=json.loads(pathlib.Path('metatron-kernel/evidence/performance/owned-environment-2026-10-13/nucleus-owned-environment-frozen196.json').read_text())
+          row=next(x for x in ledger['modes']['default']['rows'] if x['case']=='good/init-prelude.ndjson')
+          assert hashlib.sha256(path.read_bytes()).hexdigest()==row['sha256']
+          assert row['rc']==0
+          binary='metatron-kernel/target/release/metatron-kernel'
+          clean={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+          clean.update(NUCLEUS_EXPERIMENTAL_CERTIFIED_QUOT_IOTA='1',
+                       NUCLEUS_EXPERIMENTAL_SOURCE_PROOF_IRREL='1',
+                       NUCLEUS_EXPERIMENTAL_CAPTURED_PI_LOWBUDGET='1',
+                       NUCLEUS_TRACE_DOWNSTREAM='1',
+                       NUCLEUS_TRACE_ADDITIVE_RECEIVER='1',
+                       NUCLEUS_TRACE_VALUE_MISMATCH='1')
+          result={}
+          for name in ['without-additive','with-additive']:
+              env=dict(clean)
+              if name=='with-additive': env['NUCLEUS_EXPERIMENTAL_ADDITIVE_RECEIVER_CONGRUENCE']='1'
+              with path.open('rb') as stream:
+                  p=subprocess.run([binary],stdin=stream,env=env,capture_output=True,timeout=180)
+              lines=p.stderr.decode(errors='replace').splitlines()
+              result[name]={'exit':p.returncode,
+                            'downstream':[x for x in lines if x.startswith('NUCLEUS_DOWNSTREAM:')][-10:],
+                            'additive_proven_count':sum(x.startswith('NUCLEUS_ADDITIVE_RECEIVER:') and 'proved=true' in x for x in lines),
+                            'first_additive_witnesses':[x[:1700] for x in lines if x.startswith('NUCLEUS_ADDITIVE_RECEIVER:')][:12],
+                            'last_stderr':lines[-50:]}
+              print(name,'rc=',p.returncode,
+                    'first=',result[name]['downstream'][:2],
+                    'additive_proven=',result[name]['additive_proven_count'],flush=True)
+          result['case']='good/init-prelude.ndjson'
+          result['original_sha256']=row['sha256']
+          result['status']='WARRANTED_REGRESSION_SEPARATOR' if result['without-additive']['exit']==0 and result['with-additive']['exit']==1 else 'UNEXPECTED_PAIR'
+          (root/'report.json').write_text(json.dumps(result,indent=2)+'\n')
+          assert result['status']=='WARRANTED_REGRESSION_SEPARATOR',result
+          PY
+      - name: Preserve exact regression receipts even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-getelem-additive-init-prelude-regression
+          path: /tmp/getelem-separator/*.txt
+          if-no-files-found: warn
+      - name: Retain separate machine-readable report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-getelem-additive-regression-report
+          path: /tmp/getelem-separator/report.json
+          if-no-files-found: warn
+      - name: Scope
+        if: always()
+        run: |
+          echo 'The added equality certificate is NOT qualified for adoption.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'A previously accepted original Arena proof that becomes REJECT is disqualifying.' >> "$GITHUB_STEP_SUMMARY"
