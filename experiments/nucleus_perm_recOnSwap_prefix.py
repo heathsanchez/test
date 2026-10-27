@@ -52,13 +52,16 @@ try:
     ref=run(official,path,base,True)
     report["results"]["official"]=ref
     assert ref["exit"]==0,("original official Lean rejected prefix",ref)
-    for mode in ("default","origin","quotient-proof","origin-quotient-proof"):
+    for mode in ("default","origin","quotient-proof","origin-quotient-proof","typed-neutral-pair","origin-typed-neutral-pair","origin-quotient-proof-typed-neutral-pair"):
         env=dict(base)
-        if mode in ("origin","origin-quotient-proof"):
+        if mode == "origin" or mode.startswith("origin-"):
             env.update({"NUCLEUS_EXPERIMENTAL_"+flag:"1" for flag in ledger["origin_flags"]})
         if "quotient-proof" in mode:
             env["NUCLEUS_EXPERIMENTAL_CERTIFIED_QUOT_IOTA"]="1"
             env["NUCLEUS_EXPERIMENTAL_SOURCE_PROOF_IRREL"]="1"
+        if "typed-neutral-pair" in mode:
+            env["NUCLEUS_EXPERIMENTAL_NEUTRAL_PAIR_PROOF_IRREL"]="1"
+            env["NUCLEUS_TRACE_NEUTRAL_PAIR_PROOF"]="1"
         env["NUCLEUS_TRACE_DOWNSTREAM"]="1"
         env["NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE"]="1"
         env["NUCLEUS_TRACE_VALUE_MISMATCH"]="1"
