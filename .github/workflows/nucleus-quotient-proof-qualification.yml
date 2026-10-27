@@ -1,0 +1,65 @@
+name: Nucleus Quotient proof — three-mode protected promotion gate
+on:
+  push:
+    branches:
+      - exp/nucleus-quotient-lift2-20261027
+    paths:
+      - "experiments/nucleus_quotient_proof_promotion_gate.py"
+      - ".github/workflows/nucleus-quotient-proof-qualification.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-owned-proof-qualification:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 65
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build experimental Nucleus and preserve exact source
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/quotient-qualify/evidence
+          git rev-parse HEAD > /tmp/quotient-qualify/evidence/source-commit.txt
+          git rev-parse HEAD:metatron-kernel > /tmp/quotient-qualify/evidence/kernel-subtree.txt
+          cargo test --locked --lib --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          sha256sum metatron-kernel/target/release/metatron-kernel > /tmp/quotient-qualify/evidence/binary.sha256
+      - name: Recover exact source-hashed Arena frozen196 and independently checked Quotient proofs
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/quotient-qualify/frozen /tmp/quotient-qualify/target /tmp/quotient-qualify/archives
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/11272848230/zip > /tmp/quotient-qualify/archives/frozen.zip
+          gh api repos/heathsanchez/test/actions/artifacts/12722726849/zip > /tmp/quotient-qualify/archives/heldout.zip
+          printf '%s  %s\n' 9c87997078886a2be111d192f8a49c7a8afc10c61fd5111fb865e9af64ff45df /tmp/quotient-qualify/archives/heldout.zip | sha256sum -c -
+          mkdir -p /tmp/quotient-qualify/archives/frozen
+          unzip -q /tmp/quotient-qualify/archives/frozen.zip -d /tmp/quotient-qualify/archives/frozen
+          test -f /tmp/quotient-qualify/archives/frozen/lean-arena-tests.tar.gz
+          tar -xzf /tmp/quotient-qualify/archives/frozen/lean-arena-tests.tar.gz -C /tmp/quotient-qualify/frozen
+          unzip -q /tmp/quotient-qualify/archives/heldout.zip -d /tmp/quotient-qualify/target
+          sha256sum /tmp/quotient-qualify/archives/frozen.zip /tmp/quotient-qualify/archives/heldout.zip > /tmp/quotient-qualify/evidence/input-artifacts.sha256
+      - name: Check 588 original outcomes, six adversarial controls, genuine proofs, counterfeit
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 experiments/nucleus_quotient_proof_promotion_gate.py
+      - name: Retain all outcomes and test inputs' hashes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-quotient-proof-three-mode-promotion
+          path: /tmp/quotient-qualify/evidence/
+          if-no-files-found: warn
+      - name: Explicit scope
+        if: always()
+        run: |
+          echo "The main gate covers the original 196 byte-pinned cases in three modes." >> "$GITHUB_STEP_SUMMARY"
+          echo "It preserves old ACCEPT and REJECT, prohibits invalid ACCEPT, and verifies both protected controls in every mode." >> "$GITHUB_STEP_SUMMARY"
+          echo "It also requires exact exported Quotient.lift₂._proof_2 and indirect beta ACCEPT, but the forged theorem REJECT." >> "$GITHUB_STEP_SUMMARY"
+          echo "No full-Mathlib independent Nucleus ACCEPT, formal semantic proof or hardware Arena #1 is claimed." >> "$GITHUB_STEP_SUMMARY"
