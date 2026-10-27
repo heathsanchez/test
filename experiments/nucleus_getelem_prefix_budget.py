@@ -36,8 +36,12 @@ def run(exe, path, env, args):
         with path.open("rb") as stream:
             p=subprocess.run([str(exe),*args],stdin=stream if not args else None,
                              capture_output=True,env=env,timeout=150)
+        stderr=p.stderr.decode(errors="replace")
+        first_function_type=next((x for x in stderr.splitlines()
+            if x.startswith("NUCLEUS_APPLICATION_FUNCTION_TYPE:")),None)
         return {"exit":p.returncode,"seconds":round(time.monotonic()-start,3),
-                "stderr_tail":p.stderr.decode(errors="replace")[-2200:],
+                "stderr_tail":stderr[-2200:],
+                "first_function_type":first_function_type,
                 "stdout_tail":p.stdout.decode(errors="replace")[-250:]}
     except subprocess.TimeoutExpired:
         return {"exit":124,"seconds":round(time.monotonic()-start,3),"error":"timeout"}
@@ -90,10 +94,14 @@ try:
         "NUCLEUS_EXPERIMENTAL_NEUTRAL_PAIR_PROOF_IRREL":"1",
         "NUCLEUS_TRACE_DOWNSTREAM":"1",
     })
-    budgets=(65536,) if os.environ.get("NUCLEUS_DIAG_ONE_BUDGET")=="1" else (65536,131072,262144,524288)
+    budgets=(65536,524288) if os.environ.get("NUCLEUS_DIAG_TRACE_COMPARISON")=="1" else (
+        (65536,) if os.environ.get("NUCLEUS_DIAG_ONE_BUDGET")=="1" else (65536,131072,262144,524288)
+    )
     for budget in budgets:
         env=dict(origin)
         env["NUCLEUS_DIAG_JUDGMENT_STEPS"]=str(budget)
+        if os.environ.get("NUCLEUS_DIAG_TRACE_COMPARISON")=="1":
+            env["NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE"]="1"
         if budget == 65536:
             prefix_recheck=run(CHECKER,PREFIX,env,[])
             report["verdicts"][str(budget)]=prefix_recheck
