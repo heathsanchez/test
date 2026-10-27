@@ -695,6 +695,41 @@ impl<'a> TypeChecker<'a> {
                                     "NUCLEUS_GETELEM_PI_DOMAIN:source={term:?}:inferred_domain={inferred_domain:?}:expected_domain={expected_domain:?}:domain_conversion={domains:?}:remaining={}",
                                     *remaining,
                                 );
+                                if domains.is_proven() {
+                                    if let TypeValue::Pi {
+                                        body: inferred_body, binder: actual_binder, ..
+                                    } = &argument_ty {
+                                        let fresh = FreeId(context.len() as u64);
+                                        let mut alpha_fuel = (*remaining).min(512);
+                                        let opened = self.reopen_fixed_pi_body(
+                                            inferred_body, *actual_binder, fresh,
+                                            &mut alpha_fuel,
+                                        );
+                                        let expected_opened = expected_domain; // Source Pi-domain already proven.
+                                        let _ = expected_opened;
+                                        let expected_pi = self.machine().expose_for_conversion(
+                                            expected_pi.clone(), Transparency::Full, (*remaining).min(512)
+                                        );
+                                        if let Judgment::Proven {
+                                            value: Value::Pi { body: expected_body, .. }, ..
+                                        } = expected_pi {
+                                            let mut gamma = context.to_vec();
+                                            gamma.push((**inferred_domain).clone());
+                                            let result = opened.as_ref().map(|left_body| {
+                                                crate::convert::convert_with_policy_in_context(
+                                                    self, left_body,
+                                                    &TypeValue::Term(expected_body.under_free(fresh)),
+                                                    alpha_fuel.min(256),
+                                                    crate::convert::DeltaPolicy::PreferredOnly,
+                                                    gamma.len(), &gamma,
+                                                )
+                                            });
+                                            eprintln!(
+                                                "NUCLEUS_GETELEM_PI_CODOMAIN:source={term:?}:binder={actual_binder:?}:fresh={fresh:?}:alpha_fuel={alpha_fuel}:opened={opened:?}:codomain_conversion={result:?}",
+                                            );
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
