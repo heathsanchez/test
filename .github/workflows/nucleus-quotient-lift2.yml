@@ -8,6 +8,7 @@ on:
       - "metatron-kernel/src/typecheck.rs"
       - "metatron-kernel/src/machine.rs"
       - "metatron-kernel/src/convert.rs"
+      - "compat/nucleus-quotient/**"
       - "metatron-kernel/src/convert.rs"
   workflow_dispatch:
 
@@ -46,6 +47,16 @@ jobs:
           "$HOME/.elan/bin/lake" env .lake/build/bin/lean4export Init.Core -- 'Quotient.lift₂._proof_2' > /tmp/quotient-evidence/authentic.ndjson
           test -s /tmp/quotient-evidence/authentic.ndjson
           sha256sum /tmp/quotient-evidence/authentic.ndjson > /tmp/quotient-evidence/authentic.sha256
+      - name: Export genuine indirect quotient constructor beta theorem
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp compat/nucleus-quotient/QuotientSourceProbe.lean /tmp/lean4export/QuotientSourceProbe.lean
+          cd /tmp/lean4export
+          "$HOME/.elan/bin/lake" env "$HOME/.elan/bin/lean" -o QuotientSourceProbe.olean QuotientSourceProbe.lean
+          "$HOME/.elan/bin/lake" env .lake/build/bin/lean4export QuotientSourceProbe -- QuotientSourceProbe.indirect_beta > /tmp/quotient-evidence/indirect-beta.ndjson
+          test -s /tmp/quotient-evidence/indirect-beta.ndjson
+          sha256sum /tmp/quotient-evidence/indirect-beta.ndjson > /tmp/quotient-evidence/indirect-beta.sha256
       - name: Inspect exact source and theorem metadata
         shell: bash
         run: |
@@ -192,6 +203,29 @@ jobs:
               print(json.dumps(entry),flush=True)
           (root/'mode-matrix.json').write_text(json.dumps({'records':records,'regressions':failures},indent=2)+'\n')
           assert not failures, failures
+          PY
+      - name: Independently check indirect quotient beta control and candidate path
+        shell: bash
+        run: |
+          set -euo pipefail
+          checker=/tmp/arena-reference/checkers/official/.lake/build/bin/kernel
+          input=/tmp/quotient-evidence/indirect-beta.ndjson
+          "$checker" "$input" > /tmp/quotient-evidence/indirect-official.out 2> /tmp/quotient-evidence/indirect-official.err
+          python3 - <<'PY'
+          import json,os,pathlib,subprocess
+          out=pathlib.Path('/tmp/quotient-evidence')
+          source=out/'indirect-beta.ndjson'
+          binary='metatron-kernel/target/release/metatron-kernel'
+          records=[]
+          for label,flags in [('baseline',{}),('certified-quot-iota',{'NUCLEUS_EXPERIMENTAL_CERTIFIED_QUOT_IOTA':'1'})]:
+              env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+              env.update(flags)
+              with source.open('rb') as f:
+                  proc=subprocess.run([binary],stdin=f,capture_output=True,timeout=240,env=env)
+              records.append({'mode':label,'exit':proc.returncode,'stderr':proc.stderr.decode(errors='replace')[-1800:]})
+              print(json.dumps(records[-1]),flush=True)
+              assert proc.returncode in (0,2),records
+          (out/'indirect-beta-verdicts.json').write_text(json.dumps(records,indent=2)+'\n')
           PY
       - name: Retain exact bytes and diagnostic evidence
         if: always()
