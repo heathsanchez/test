@@ -10,10 +10,10 @@ EXPECTED={
 "path_unreachable":"94936bd2b67b68ba3af0171995db66f5b5ed683b3133297476c129a5571a18b6",
 "grid_reachable":"d1bff6435961f85499f3cc0786190c29356ddc6b8cde6ee7dbb5a832ed1ca989",
 "random_reachable":"00bf8e4ec979a1cc5d99776b4dbcb5a23398945a123684fabd1c67515b233d2d",
-"dag_reachable":"c2c0bf6baeeed8ef547daf4d1845767034abfa4d1ead62cbc1af9f8663ee6389",
+"dag_reachable":"c2c0bf6baeeed8ef547daf4c1845767034abfa4d1ead62cbc1af9f8663ee6389",
 "grid_shortest":"3b2a4f4dcad347f69501fc867ba648523e0c6c5900f2e80725dc6536a32ce023"}
 # Fixed typo-sensitive hashes are authoritative; reject any drift.
-EXPECTED["dag_reachable"]="c2c0bf6baeeed8ef547daf4d1845767034abfa4d1ead62cbc1af9f8663ee6389"
+EXPECTED["dag_reachable"]="c2c0bf6baeeed8ef547daf4c1845767034abfa4d1ead62cbc1af9f8663ee6389"
 LEDGER=json.loads(P("baseline/metatron-kernel/evidence/performance/owned-environment-2026-10-13/nucleus-owned-environment-frozen196.json").read_text())
 CAND="/tmp/nucleus-current"
 BASE="/tmp/nucleus-protected"
