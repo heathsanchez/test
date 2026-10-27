@@ -3492,6 +3492,27 @@ impl<'a> TypeChecker<'a> {
         skipped_proof
     }
 
+    /// Diagnostic only: independently inspect whether a neutral's recovered
+    /// exact source result type is a proposition in the supplied Gamma.
+    /// Nothing about this observation licenses a conversion judgment.
+    #[cfg(feature = "diagnostics")]
+    pub(crate) fn diagnostic_neutral_proposition(
+        &self,
+        neutral: &Neutral,
+        context: &[TypeValue],
+        budget: usize,
+    ) -> String {
+        let ty = self.neutral_result_type(neutral, context, budget.min(2048));
+        let formation = match &ty {
+            Some(TypeValue::Term(source)) =>
+                Some(self.checked_captured_prop_type_in_context(
+                    source, context, budget.min(2048),
+                )),
+            _ => None,
+        };
+        format!("type={ty:?}:proposition_formation={formation:?}")
+    }
+
     pub(crate) fn proof_terms_same_proposition(
         &self,
         left: &Closure,
