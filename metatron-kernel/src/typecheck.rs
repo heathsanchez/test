@@ -727,6 +727,43 @@ impl<'a> TypeChecker<'a> {
                                             eprintln!(
                                                 "NUCLEUS_GETELEM_PI_CODOMAIN:source={term:?}:binder={actual_binder:?}:fresh={fresh:?}:alpha_fuel={alpha_fuel}:opened={opened:?}:codomain_conversion={result:?}",
                                             );
+                                            if let Some(TypeValue::Term(left_source)) = opened.as_ref() {
+                                                let right_source = expected_body.under_free(fresh);
+                                                let lhs = self.machine().expose_for_conversion(
+                                                    left_source.clone(), Transparency::Full,
+                                                    (*remaining).min(512),
+                                                );
+                                                let rhs = self.machine().expose_for_conversion(
+                                                    right_source.clone(), Transparency::Full,
+                                                    (*remaining).min(512),
+                                                );
+                                                if let (
+                                                    Some(Value::Neutral(l)),
+                                                    Some(Value::Neutral(r)),
+                                                ) = (lhs.proven_value(), rhs.proven_value()) {
+                                                    eprintln!(
+                                                        "NUCLEUS_GETELEM_EQ_CODOMAIN_HEADS:left_head={:?}:right_head={:?}:left_arity={}:right_arity={}",
+                                                        l.head, r.head, l.spine.len(), r.spine.len(),
+                                                    );
+                                                    if l.head == r.head && l.spine.len() == r.spine.len() {
+                                                        for (index, (a, b)) in l.spine.iter().zip(r.spine.iter()).enumerate() {
+                                                            let relation = crate::convert::convert_with_policy_in_context(
+                                                                self, &TypeValue::Term(a.clone()), &TypeValue::Term(b.clone()),
+                                                                (*remaining).min(128), crate::convert::DeltaPolicy::PreferredOnly,
+                                                                gamma.len(), &gamma,
+                                                            );
+                                                            eprintln!(
+                                                                "NUCLEUS_GETELEM_EQ_CODOMAIN_ARG:index={index}:left_expr={:?}:right_expr={:?}:left_frame={}:right_frame={}:relation={relation:?}",
+                                                                a.expr, b.expr, a.env.id(), b.env.id(),
+                                                            );
+                                                        }
+                                                    }
+                                                } else {
+                                                    eprintln!(
+                                                        "NUCLEUS_GETELEM_EQ_CODOMAIN_EXPOSURE:left={lhs:?}:right={rhs:?}",
+                                                    );
+                                                }
+                                            }
                                         }
                                     }
                                 }
