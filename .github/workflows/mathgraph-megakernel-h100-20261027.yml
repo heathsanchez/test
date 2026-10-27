@@ -1,7 +1,7 @@
 name: MathGraph H100 Differential - RUN THIS
 
 # Registered launcher with an exact-message one-shot push trigger. It checks out the
-# exact reviewed experiment commit, independent of workflow selection branch.
+# exact reviewed experiment commit and checks CPU controls before deploying.
 on:
   workflow_dispatch:
   push:
