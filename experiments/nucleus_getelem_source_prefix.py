@@ -46,6 +46,7 @@ try:
   cases["combined-captured-pi"]["NUCLEUS_TRACE_CAPTURED_PI_RECOVERY"]="1"
   cases["combined-captured-pi"]["NUCLEUS_TRACE_FAILED_RECEIVER_CONVERSION"]="1"
   cases["combined-captured-pi"]["NUCLEUS_TRACE_EXACT_PROJECTION"]="1"
+  cases["combined-captured-pi"]["NUCLEUS_TRACE_GETELEM_RECEIVER"]="1"
   cases["combined-captured-pi"]["NUCLEUS_TRACE_SOURCE_CAPTURE_TARGET"]="1"
   for nm,env in cases.items():
     cmd=[OFF,str(path)] if nm=="official" else [EXE]
