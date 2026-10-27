@@ -22,7 +22,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p /tmp/nucleus-getelem-fast/evidence
-          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
           git rev-parse HEAD > /tmp/nucleus-getelem-fast/evidence/source-commit.txt
           git rev-parse HEAD:metatron-kernel > /tmp/nucleus-getelem-fast/evidence/source-tree.txt
           sha256sum metatron-kernel/target/release/metatron-kernel > /tmp/nucleus-getelem-fast/evidence/binary.sha256
