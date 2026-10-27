@@ -67,7 +67,7 @@ jobs:
           cd experiments/megakernel_h100
           flash deploy --app "$FLASH_APP" --env "$FLASH_ENV" --no-deps
 
-      - name: Record depth sweep and scheduler contrast
+      - name: Record bounded depth sweep and DAG contrast
         run: |
           timeout -s TERM -k 10s 600s \
             python experiments/megakernel_h100/runpod_flash_h100_bridge.py \
