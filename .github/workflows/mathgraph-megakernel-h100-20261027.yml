@@ -30,7 +30,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 94d7547d573946bc1a0f772a7beb7fbdec5e0922
+          ref: 4644d447d7e5c24b321ec038683e41f5f2af218d
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -87,6 +87,7 @@ jobs:
           assert r["source_pin"] == "7309cec801537b61fea3b50d7dfe454a6cde578e"
           assert r["sm_count"] == 132
           assert all(r["checks"][x]["passed"] is True for x in ("rr", "dag"))
+          assert all(r["checks"][x]["pyvm_completed_calls"] >= 1 for x in ("rr", "dag"))
           print("MATHGRAPH_H100_PINNED_DIFFERENTIAL_PASS")
           PY
 
