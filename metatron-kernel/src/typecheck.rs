@@ -1290,10 +1290,31 @@ impl<'a> TypeChecker<'a> {
         context: &[TypeValue],
         budget: usize,
     ) -> Judgment<()> {
+        #[cfg(feature="diagnostics")]
+        let _source_failure_scope = if std::env::var_os(
+            "NUCLEUS_TRACE_TYPED_RECEIVER_SOURCE_FAILURE"
+        ).is_some() {
+            Some(CaptureSourceFailureScope::enter())
+        } else { None };
         let mut left_fuel=budget.min(4096);
         let Some(left_type)=self.infer_exact_closure_in_context(
             left,context,&mut left_fuel,0,
-        ) else { return Judgment::unknown("source-left-type-unavailable") };
+        ) else {
+            #[cfg(feature="diagnostics")]
+            if std::env::var_os("NUCLEUS_TRACE_TYPED_RECEIVER_SOURCE_FAILURE").is_some()
+                && context.len()>=9 && context.len()<=16
+            {
+                use std::sync::atomic::{AtomicUsize,Ordering};
+                static REPORTED:AtomicUsize=AtomicUsize::new(0);
+                if REPORTED.fetch_add(1,Ordering::Relaxed)<8 {
+                    eprintln!(
+                        "NUCLEUS_TYPED_RECEIVER_SOURCE_FAILURE:context={}:left={left:?}:right={right:?}:budget={budget}:fuel_left={left_fuel}:first_obligation={:?}",
+                        context.len(), CaptureSourceFailureScope::first(),
+                    );
+                }
+            }
+            return Judgment::unknown("source-left-type-unavailable");
+        };
         let mut right_fuel=budget.min(4096);
         let Some(right_type)=self.infer_exact_closure_in_context(
             right,context,&mut right_fuel,0,
