@@ -1,0 +1,71 @@
+name: Nucleus first getElem obstruction — exact prefix and bounded budgets
+on:
+  push:
+    branches:
+      - exp/nucleus-reachability-residual-20261027
+    paths:
+      - "experiments/nucleus_getelem_prefix_budget.py"
+      - ".github/workflows/nucleus-getelem-exact-prefix.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  reference-pinned-budget-diagnostic:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build independent Nucleus with diagnostic-only budget option
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/nucleus-getelem/evidence /tmp/nucleus-getelem/archive
+          git rev-parse HEAD > /tmp/nucleus-getelem/evidence/source-commit.txt
+          git rev-parse HEAD:metatron-kernel > /tmp/nucleus-getelem/evidence/kernel-subtree.txt
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          sha256sum metatron-kernel/target/release/metatron-kernel > /tmp/nucleus-getelem/evidence/binary.sha256
+      - name: Restore previously official-accepted six Reachability exports
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/heathsanchez/test/actions/artifacts/12722408982/zip > /tmp/nucleus-getelem/archive/inputs.zip
+          printf '%s  %s\n' 8f3fe62d60740fae640ed716b58ce1671a558fd88dd14723d758934e49197b31 /tmp/nucleus-getelem/archive/inputs.zip | sha256sum -c -
+          sha256sum /tmp/nucleus-getelem/archive/inputs.zip > /tmp/nucleus-getelem/evidence/archive.sha256
+      - name: Build official Arena kernel from pinned Lean v4.34.1 source
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -o /tmp/elan-init.sh
+          sh /tmp/elan-init.sh -y --default-toolchain leanprover/lean4:v4.34.1
+          git init -q /tmp/arena-reference
+          git -C /tmp/arena-reference remote add origin https://github.com/leanprover/lean-kernel-arena.git
+          git -C /tmp/arena-reference fetch -q --depth=1 origin cd2dd0244b9ed5e704463a26fbbe5fc67ba16108
+          git -C /tmp/arena-reference checkout -q --detach FETCH_HEAD
+          test "$(git -C /tmp/arena-reference rev-parse HEAD)" = cd2dd0244b9ed5e704463a26fbbe5fc67ba16108
+          cd /tmp/arena-reference/checkers/official
+          "$HOME/.elan/bin/lake" build
+          test -x .lake/build/bin/kernel
+      - name: Independently replay source prefix and compare bounded diagnostic budgets
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 experiments/nucleus_getelem_prefix_budget.py
+      - name: Retain original exact prefix and results on both success and failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-getelem-budget-prefix-evidence
+          path: /tmp/nucleus-getelem/evidence/
+          if-no-files-found: warn
+          retention-days: 45
+      - name: Qualification scope
+        if: always()
+        run: |
+          echo 'Official Lean acceptance of the source-hashed prefix is mandatory.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Any Nucleus REJECT or error on that valid prefix fails. Budget comparisons are diagnostic, not semantic qualification.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Never promote increased judgment fuel without independently protecting all invalid controls and whole-Mathlib performance.' >> "$GITHUB_STEP_SUMMARY"
