@@ -207,6 +207,50 @@ async def run_h100_differential(gate_source: str, probe_kind: str = "baseline"):
                 report["status"] = ("PASS_FULL16" if all(
                     report["checks"][s].get("passed") is True for s in ("rr", "dag")
                 ) else "REJECTED_FULL16_DIFFERENTIAL")
+            elif probe_kind == "consequence_variants":
+                # Fixed synthetic model weights; independent input initialization
+                # 0,7,21 injected where pinned upstream seeds the Python VM.
+                # ALL comparisons retained; no post-hoc tolerance changes.
+                report["probe_kind"] = "consequence_variants"
+                fixture = root / "fixture_consequence16"
+                stage("fixture_consequence16",
+                      [sys.executable, str(gate), "--make-fixture",
+                       "--fixture", str(fixture), "--fixture-layers", "16"],
+                      180, env=env)
+                plan = [(seed, sched) for seed in (0, 7, 21)
+                        for sched in ("rr", "dag")]
+                report["diagnostic_plan"] = [
+                    f"seed{seed}_{sched}" for seed, sched in plan]
+                for seed, sched in plan:
+                    key = f"seed{seed}_{sched}"
+                    dest = root / f"{key}.json"
+                    try:
+                        stage(f"diff_{key}",
+                              [sys.executable, "-u", str(gate),
+                               "--diff", sched, "--repo", str(repo),
+                               "--fixture", str(fixture), "--layer-limit", "16",
+                               "--input-seed", str(seed), "--out", str(dest)],
+                              120, env=env)
+                    except RuntimeError:
+                        # Numerical rejection writes a structured witness
+                        # before returning nonzero. Any other failure aborts.
+                        output_tail = report["stages"][-1].get("output_tail", "")
+                        if "Independent GPU tensor gate rejected:" not in output_tail:
+                            raise
+                        if not dest.exists():
+                            raise
+                        outcome = json.loads(dest.read_text())
+                        if outcome.get("passed") is not False:
+                            raise
+                    finally:
+                        if dest.exists():
+                            report["checks"][key] = json.loads(dest.read_text())
+                    if key not in report["checks"]:
+                        raise RuntimeError("Missing deterministic case evidence: " + key)
+                    if (report["checks"][key].get("input_seed") != seed or
+                            report["checks"][key].get("input_seed_override_calls") != 1):
+                        raise RuntimeError("Seed injection evidence missing: " + key)
+                report["status"] = "CONSEQUENCE_VARIANTS_RECORDED"
             elif probe_kind == "depth_diagnostic":
                 # Diagnostic only: the original numerical tolerance remains fixed.
                 # All jobs use the same pinned source and identical full16 weights.
@@ -353,7 +397,7 @@ async def run_async_differential(gate_source: str, out: Path, probe_kind: str = 
         endpoint_id = await resolve_deployed_endpoint_id()
         report["runpod_endpoint_id"] = endpoint_id
         payload = {"gate_source": gate_source}
-        if probe_kind in ("lmhead", "full16", "depth_diagnostic"):
+        if probe_kind in ("lmhead", "full16", "depth_diagnostic", "consequence_variants"):
             payload["probe_kind"] = probe_kind
         elif probe_kind != "baseline":
             raise ValueError("Unregistered RunPod probe kind")
@@ -421,6 +465,8 @@ async def _main(out: Path, gate: Path, probe_kind: str = "baseline"):
         allowed = ("PASS_FULL16",)
     elif probe_kind == "depth_diagnostic":
         allowed = ("DIAGNOSTIC_RECORDED",)
+    elif probe_kind == "consequence_variants":
+        allowed = ("CONSEQUENCE_VARIANTS_RECORDED",)
     else:
         allowed = ("LMHEAD_FULL_PASS", "LMHEAD_NATIVE_TIMEOUT",
                    "LMHEAD_REJECTED_DIFFERENTIAL")
@@ -431,7 +477,7 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument("--gate", type=Path, required=True)
     p.add_argument("--out", type=Path, required=True)
-    p.add_argument("--probe-kind", choices=("baseline", "lmhead", "full16", "depth_diagnostic"), default="baseline")
+    p.add_argument("--probe-kind", choices=("baseline", "lmhead", "full16", "depth_diagnostic", "consequence_variants"), default="baseline")
     a = p.parse_args()
     raise SystemExit(asyncio.run(_main(a.out, a.gate, a.probe_kind)))
 
