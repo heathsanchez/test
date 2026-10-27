@@ -1,0 +1,128 @@
+name: MathGraph H100 Full16 Depth Diagnostic
+
+# One bounded comparison, technical evidence only, no upstream changes.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/mathgraph-h100-depth-diagnostic-20261027.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mathgraph-h100-depth-diagnostic
+  cancel-in-progress: false
+
+jobs:
+  diagnostic:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.head_commit.message == 'H100-DEPTH: launch one bounded diagnostic'
+    runs-on: ubuntu-latest
+    timeout-minutes: 17
+    env:
+      RUNPOD_API_KEY: ${{ secrets.RUNPOD_API_KEY }}
+      FLASH_APP: mathgraph-depth-${{ github.run_id }}
+      FLASH_ENV: production
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: d7bdb193c3337769ac19a82573d0f5ca8b581428
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify fixed-tolerance CPU contracts before GPU
+        run: |
+          python -m compileall -q experiments/megakernel_h100
+          python -m unittest discover -s experiments/megakernel_h100 -p 'test_*.py' -v
+          python experiments/megakernel_h100/gpu_megakernel_gate.py --self-test
+
+      - name: Check actual pinned native architecture
+        run: |
+          set -euo pipefail
+          dir="$(mktemp -d)"
+          trap 'rm -rf "$dir"' EXIT
+          git -C "$dir" init -q
+          git -C "$dir" fetch -q --depth 1 https://github.com/HazyResearch/Megakernels.git 7309cec801537b61fea3b50d7dfe454a6cde578e
+          git -C "$dir" checkout -q --detach FETCH_HEAD
+          python experiments/megakernel_h100/h100_architecture_audit.py \
+            --repo "$dir" --fixture-layers 16 --executed-layers 16 \
+            --expect ELIGIBLE_FULL_MODEL_COMPATIBILITY_UNPROVEN
+          python experiments/megakernel_h100/native_barrier_contract.py \
+            --repo "$dir" --model-layers 16 --executed-layers 16
+
+      - name: Require repository RunPod secret
+        run: |
+          test -n "$RUNPOD_API_KEY" || { echo "::error::RUNPOD_API_KEY missing"; exit 1; }
+      - name: Install pinned RunPod Flash
+        run: python -m pip install --disable-pip-version-check --no-input runpod-flash==1.21.0
+
+      - name: Deploy one isolated H100
+        run: |
+          mkdir -p h100_evidence
+          echo DEPLOY_ATTEMPTED > h100_evidence/deploy_attempted
+          cd experiments/megakernel_h100
+          flash deploy --app "$FLASH_APP" --env "$FLASH_ENV" --no-deps
+
+      - name: Record depth sweep and scheduler contrast
+        run: |
+          timeout -s TERM -k 10s 600s \
+            python experiments/megakernel_h100/runpod_flash_h100_bridge.py \
+              --probe-kind depth_diagnostic \
+              --gate experiments/megakernel_h100/gpu_megakernel_gate.py \
+              --out h100_evidence/remote_result.json
+
+      - name: Admit complete diagnostic only - never promote to correctness
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r = json.loads(Path("h100_evidence/remote_result.json").read_text())
+          assert r["status"] == "DIAGNOSTIC_RECORDED"
+          assert r["runpod_status"] == "COMPLETED"
+          assert r.get("runpod_job_id")
+          assert r["source_pin"] == "7309cec801537b61fea3b50d7dfe454a6cde578e"
+          assert r["sm_count"] == 132
+          expected = [(f"rr_{d}", "rr", d) for d in (1, 2, 4, 8, 12, 16)] + [("dag_16", "dag", 16)]
+          assert set(r["checks"]) == {key for key, _, _ in expected}
+          for key, scheduler, depth in expected:
+              c = r["checks"][key]
+              assert c["scheduler"] == scheduler and c["executed_layers"] == depth
+              assert c["fixture_layers"] == 16 and c["pyvm_completed_calls"] >= 1
+              assert c["source_commit"] == r["source_pin"]
+              assert c["lm_head_exercised"] is (depth == 16)
+              assert "hidden_states" in c["fields_compared"]
+              assert ("logits" in c["fields_compared"]) is (depth == 16)
+              assert isinstance(c["passed"], bool)
+              assert all(v["nonfinite"] == 0 for v in c["fields"].values())
+          print("MATHGRAPH_DEPTH_DIAGNOSTIC_RECORDED_NOT_WARRANTED")
+          PY
+
+      - name: Delete RunPod app and verify absence
+        if: always()
+        run: |
+          if [ ! -f h100_evidence/deploy_attempted ]; then
+            echo CLEANUP_NOT_REQUIRED_NO_DEPLOY_ATTEMPT
+          elif command -v flash >/dev/null 2>&1 && [ -n "$RUNPOD_API_KEY" ]; then
+            if flash app list | grep -Fq "$FLASH_APP"; then
+              flash app delete "$FLASH_APP"
+            fi
+            if flash app list | grep -Fq "$FLASH_APP"; then
+              echo "::error::CLOUD_CLEANUP_UNVERIFIED"
+              exit 1
+            fi
+            echo CLOUD_APP_DELETION_VERIFIED
+          else
+            echo "::error::CLEANUP_NOT_ATTEMPTED"
+            exit 1
+          fi
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mathgraph-h100-depth-diagnostic-${{ github.run_id }}
+          path: h100_evidence/
+          if-no-files-found: warn
