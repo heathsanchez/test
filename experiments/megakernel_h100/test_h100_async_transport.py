@@ -47,6 +47,7 @@ class FakeJob:
     def __init__(self, mode="complete"):
         self.mode = mode
         self.cancelled = False
+        self._data = {"status": "COMPLETED"}
 
     async def wait(self, timeout):
         assert timeout <= 1200
@@ -54,6 +55,7 @@ class FakeJob:
             raise TimeoutError("remote job exceeded client bound")
         if self.mode == "failed":
             self.error = "worker failed"
+            self._data["status"] = "FAILED"
             self.output = None
 
     async def cancel(self):
@@ -147,6 +149,20 @@ class AsyncRunPodTests(unittest.TestCase):
                 result = asyncio.run(bridge.run_async_differential("gate text", out))
             self.assertEqual(result["status"], "UNKNOWN_REMOTE_JOB_FAILED")
             self.assertTrue(out.exists())
+
+    def test_failed_job_cannot_promote_stale_pass_output(self):
+        job = FakeJob()
+        job._data["status"] = "FAILED"
+        FakeEndpoint.job = job
+        with tempfile.TemporaryDirectory() as root:
+            out = Path(root) / "evidence.json"
+            async def fake_resolve():
+                return "endpoint-123"
+            with patch.object(bridge, "resolve_deployed_endpoint_id", fake_resolve):
+                result = asyncio.run(bridge.run_async_differential("gate text", out))
+            self.assertEqual(result["status"], "UNKNOWN_REMOTE_JOB_FAILED")
+            self.assertEqual(result["runpod_status"], "FAILED")
+            self.assertEqual(result["runpod_job_id"], job.id)
 
     def test_pre_submission_failure_writes_artifact_and_redacts_secret(self):
         with tempfile.TemporaryDirectory() as root:
