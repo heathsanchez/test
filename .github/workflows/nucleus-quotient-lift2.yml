@@ -1,0 +1,107 @@
+name: Nucleus exact Quotient lift2 certificate
+on:
+  push:
+    branches:
+      - exp/nucleus-quotient-lift2-20261027
+    paths:
+      - ".github/workflows/nucleus-quotient-lift2.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  exact-quotient-export:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 65
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install pinned Lean release
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -o /tmp/elan-init.sh
+          sh /tmp/elan-init.sh -y --default-toolchain leanprover/lean4:v4.34.1
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          "$HOME/.elan/bin/lean" --version
+          mkdir -p /tmp/quotient-evidence
+      - name: Build pinned lean4export at matching Lean release
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/lean4export
+          git -C /tmp/lean4export init -q
+          git -C /tmp/lean4export remote add origin https://github.com/leanprover/lean4export.git
+          git -C /tmp/lean4export fetch -q --depth=1 origin 076e8e57707e813375e8f9da8bf989799ace9680
+          git -C /tmp/lean4export checkout -q --detach FETCH_HEAD
+          test "$(git -C /tmp/lean4export rev-parse HEAD)" = 076e8e57707e813375e8f9da8bf989799ace9680
+          printf '%s\n' leanprover/lean4:v4.34.1 > /tmp/lean4export/lean-toolchain
+          cd /tmp/lean4export
+          "$HOME/.elan/bin/lake" build
+          "$HOME/.elan/bin/lake" env .lake/build/bin/lean4export Init.Core -- 'Quotient.lift₂._proof_2' > /tmp/quotient-evidence/authentic.ndjson
+          test -s /tmp/quotient-evidence/authentic.ndjson
+          sha256sum /tmp/quotient-evidence/authentic.ndjson > /tmp/quotient-evidence/authentic.sha256
+      - name: Inspect exact source and theorem metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib
+          p=pathlib.Path('/tmp/quotient-evidence/authentic.ndjson')
+          rows=[json.loads(x) for x in p.read_text().splitlines()]
+          assert rows[0]['meta']['format']['version']=='3.1.0'
+          names={0:''}
+          found=[]
+          for row in rows:
+              if 'in' in row:
+                  n=row.get('str') or row.get('num')
+                  if n:
+                      pre=n['pre']
+                      assert pre in names
+                      names[row['in']]=names[pre]+('.' if pre else '')+str(n.get('str',n.get('i')))
+              if 'thm' in row and names.get(row['thm']['name'])=='Quotient.lift₂._proof_2':
+                  found.append(row['thm'])
+          assert len(found)==1, 'pinned export lacks exact generated theorem'
+          pathlib.Path('/tmp/quotient-evidence/metadata.json').write_text(json.dumps({
+              'meta': rows[0]['meta'], 'records':len(rows),
+              'theorem':found[0]},indent=2)+'\n')
+          print('Verified genuine source theorem and NDJSON 3.1.0',flush=True)
+          PY
+      - name: Build independent Nucleus without changing semantics
+        run: |
+          set -euo pipefail
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          git rev-parse HEAD > /tmp/quotient-evidence/nucleus-commit.txt
+          sha256sum metatron-kernel/target/release/metatron-kernel > /tmp/quotient-evidence/nucleus.sha256
+      - name: Replay authentic export with official Lean and Nucleus
+        shell: bash
+        run: |
+          set -euo pipefail
+          input=/tmp/quotient-evidence/authentic.ndjson
+          checker="$HOME/.elan/toolchains/leanprover--lean4---v4.34.1/bin/leanchecker"
+          test -x "$checker"
+          set +e
+          "$checker" --from-export "$input" > /tmp/quotient-evidence/official.out 2> /tmp/quotient-evidence/official.err
+          official=$?
+          NUCLEUS_TRACE_DOWNSTREAM=1 NUCLEUS_TRACE_PARSE_ERROR=1 metatron-kernel/target/release/metatron-kernel < "$input" > /tmp/quotient-evidence/nucleus.out 2> /tmp/quotient-evidence/nucleus.err
+          nucleus=$?
+          set -e
+          printf '%s\n' "$official" > /tmp/quotient-evidence/official.exit
+          printf '%s\n' "$nucleus" > /tmp/quotient-evidence/nucleus.exit
+          echo "Official verdict exit=$official; independent Nucleus exit=$nucleus"
+          tail -n 12 /tmp/quotient-evidence/nucleus.err || true
+          test "$official" -eq 0
+          test "$nucleus" -ge 0
+      - name: Retain exact bytes and diagnostic evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-exact-quotient-lift2-v1
+          path: /tmp/quotient-evidence/
+          if-no-files-found: warn
+      - name: Scope
+        if: always()
+        run: |
+          echo 'This is a same-toolchain official-vs-independent theorem check, NOT a completeness repair or whole-Mathlib test.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'An independent Nucleus UNKNOWN is preserved as UNKNOWN, never called ACCEPT.' >> "$GITHUB_STEP_SUMMARY"
