@@ -310,7 +310,15 @@ fn check_export_with_policy(
                 // Group labels grant no forward or recursive authority.
                 // Admit this one opaque only when its type and body check
                 // against the preceding environment, without its own name.
-                if is_unsafe || !all.contains(&name) || has_duplicate_parameter(&all) { return Verdict::Unknown; }
+                if is_unsafe || !all.contains(&name) || has_duplicate_parameter(&all) {
+                    if std::env::var_os("NUCLEUS_TRACE_DOWNSTREAM").is_some() {
+                        eprintln!(
+                            "NUCLEUS_DOWNSTREAM:name={}:stage=opaque-source-ownership:verdict=UNKNOWN:unsafe={is_unsafe}:listed={}:duplicate_parameters={}",
+                            trace_name(&export,name), all.contains(&name),has_duplicate_parameter(&all),
+                        );
+                    }
+                    return Verdict::Unknown;
+                }
                 let checker = TypeChecker::with_level_substitution(
                     &export.exprs, &export.levels, &environment, parameter_substitution(&level_params),
                 ).with_delta_policy(delta_policy);
