@@ -8,7 +8,7 @@ on:
       - ".github/workflows/nucleus-quotient-contractor-allmodes.yml"
       - "metatron-kernel/src/checker.rs"
       - "metatron-kernel/src/convert.rs"
-    workflow_dispatch:
+  workflow_dispatch:
 
 permissions:
   contents: read
