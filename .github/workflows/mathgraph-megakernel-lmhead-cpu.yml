@@ -72,3 +72,43 @@ jobs:
           name: mathgraph-h100-independent-depth-summary-check
           path: depth_evidence/independent_summary_audit.json
           if-no-files-found: warn
+
+      - name: Download independent H100 six-input consequence evidence
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 40573464365
+          github-token: ${{ github.token }}
+          name: mathgraph-h100-consequence-40573464365
+          path: consequence_evidence
+
+      - name: Verify paired witnesses and sufficient ranking margins on CPU
+        run: |
+          python experiments/megakernel_h100/independent_consequence_assurance.py \
+            consequence_evidence/remote_result.json \
+            --out consequence_evidence/witness_audit_replayed.json
+          python experiments/megakernel_h100/consequence_ranking_certificate.py \
+            consequence_evidence/remote_result.json \
+            --out consequence_evidence/conditional_ranking_certificate.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path("consequence_evidence/conditional_ranking_certificate.json")
+          c = json.loads(p.read_text())
+          assert c["status"] == "CONDITIONAL_RANKING_CERTIFICATES_RECORDED_NOT_RAW_REVERIFIED"
+          assert c["cases_checked"] == 6
+          assert c["cases_with_sufficient_ranking_margin"] == 6
+          assert c["cases_with_observed_token_disagreement"] == 0
+          assert c["raw_full_tensor_independently_replayed"] is False
+          assert all(case["conditional_stability_certificate"] is True for case in c["cases"].values())
+          print("MATHGRAPH_H100_SIX_OF_SIX_CONDITIONAL_TOKEN_RANKING_CERTIFICATES")
+          PY
+
+      - name: Retain CPU-generated H100 ranking certificate
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mathgraph-h100-six-case-conditional-ranking
+          path: |
+            consequence_evidence/witness_audit_replayed.json
+            consequence_evidence/conditional_ranking_certificate.json
+          if-no-files-found: warn
