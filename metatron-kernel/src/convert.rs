@@ -1673,6 +1673,18 @@ fn compare_values(
                         left.head, left.spine.len(), right.spine.len(),
                         left.spine, right.spine,
                     );
+                    let machine = checker.machine();
+                    for (index, (a, b)) in left.spine.iter().zip(&right.spine).enumerate().take(3) {
+                        let left_evaluated = machine.expose_for_conversion(
+                            a.clone(), Transparency::Full, budget.min(1024),
+                        );
+                        let right_evaluated = machine.expose_for_conversion(
+                            b.clone(), Transparency::Full, budget.min(1024),
+                        );
+                        eprintln!(
+                            "NUCLEUS_QUOTIENT_BINDER_EVALUATED:index={index}:left={left_evaluated:?}:right={right_evaluated:?}",
+                        );
+                    }
                 }
                 // The original closure machine can leave a registered
                 // Quot.lift neutral after cheap exposure, even though its
