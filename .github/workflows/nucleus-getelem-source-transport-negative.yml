@@ -1,0 +1,115 @@
+name: Nucleus GetElem source-owned transport negative gate
+on:
+  push:
+    branches:
+      - exp/nucleus-quotient-lift2-20261027
+    paths:
+      - ".github/workflows/nucleus-getelem-source-transport-negative.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-derived-getelem-mutants:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Compile experimental independent Nucleus
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/nucleus-getelem-guard/evidence
+          git rev-parse HEAD > /tmp/nucleus-getelem-guard/evidence/source-commit.txt
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          sha256sum metatron-kernel/target/release/metatron-kernel > /tmp/nucleus-getelem-guard/evidence/binary.sha256
+      - name: Restore exact source and two independently falsified protected claims
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/nucleus-getelem-guard/source /tmp/nucleus-getelem-guard/mutants
+          gh api repos/heathsanchez/test/actions/artifacts/12722408982/zip > /tmp/nucleus-getelem-guard/inputs.zip
+          gh api repos/heathsanchez/test/actions/artifacts/12766696440/zip > /tmp/nucleus-getelem-guard/mutants.zip
+          printf '%s  %s\n' 8f3fe62d60740fae640ed716b58ce1671a558fd88dd14723d758934e49197b31 /tmp/nucleus-getelem-guard/inputs.zip | sha256sum -c -
+          printf '%s  %s\n' 94f78d49378c5cf5a8ecb229eb70fa8dd9b02a090112974b12d40af13fac397a /tmp/nucleus-getelem-guard/mutants.zip | sha256sum -c -
+          unzip -q /tmp/nucleus-getelem-guard/inputs.zip -d /tmp/nucleus-getelem-guard/source
+          unzip -q /tmp/nucleus-getelem-guard/mutants.zip -d /tmp/nucleus-getelem-guard/mutants
+          sha256sum /tmp/nucleus-getelem-guard/{inputs,mutants}.zip > /tmp/nucleus-getelem-guard/evidence/archives.sha256
+      - name: Install source-pinned historical official Lean checker
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -o /tmp/elan-init.sh
+          sh /tmp/elan-init.sh -y --default-toolchain leanprover/lean4:v4.34.1
+          git init -q /tmp/nucleus-getelem-guard/arena
+          git -C /tmp/nucleus-getelem-guard/arena remote add origin https://github.com/leanprover/lean-kernel-arena
+          git -C /tmp/nucleus-getelem-guard/arena fetch -q --depth=1 origin cd2dd0244b9ed5e704463a26fbbe5fc67ba16108
+          git -C /tmp/nucleus-getelem-guard/arena checkout -q --detach FETCH_HEAD
+          (cd /tmp/nucleus-getelem-guard/arena/checkers/official && "$HOME/.elan/bin/lake" build)
+      - name: Check exact dependent GetElem receiver and index negatives in all active proof modes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import pathlib,hashlib,subprocess,os,json
+          root=pathlib.Path('/tmp/nucleus-getelem-guard')
+          evidence=root/'evidence'
+          source=root/'source/path_reachable.ndjson'
+          assert hashlib.sha256(source.read_bytes()).hexdigest()=='96918fb408e535b34b50780d6b8fcbae51e5340659ec5a782d0cded926eae479'
+          authentic=b''.join(source.read_bytes().splitlines(keepends=True)[:95635])
+          samples={
+            'authentic':(authentic,'fa21f2a48d84f66aeffc252e988d370634db1ad0706ebc717efdd7d5d379b71a',0),
+            'wrong-dependent-receiver':((root/'mutants/forged-dependent-motive.ndjson').read_bytes(),'4883556bc4956db44688d560a472940837a3defa40cdad77d3b6caeda7773332',1),
+            'wrong-Nat-index':((root/'mutants/forged-dependent-index.ndjson').read_bytes(),'3653b131393012eb60b6b749ebc3c652b79a3b7601981cbacaff0106919e9263',1),
+          }
+          checker=pathlib.Path('metatron-kernel/target/release/metatron-kernel')
+          reference=root/'arena/checkers/official/.lake/build/bin/kernel'
+          ledger=json.loads(pathlib.Path('metatron-kernel/evidence/performance/owned-environment-2026-10-13/nucleus-owned-environment-frozen196.json').read_text())
+          report={'status':'UNKNOWN','rows':{}}
+          try:
+              for name,(data,pin,expected) in samples.items():
+                  assert hashlib.sha256(data).hexdigest()==pin,('source hash mismatch',name)
+                  path=root/(name+'.ndjson')
+                  path.write_bytes(data)
+                  ref=subprocess.run([str(reference),str(path)],capture_output=True,timeout=80)
+                  assert ref.returncode==expected,('official mismatch',name,ref.returncode,expected)
+                  reports={}
+                  for mode in ('default','origin','source-proof','origin-source-proof'):
+                      env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+                      if mode in ('origin','origin-source-proof'):
+                          env.update({'NUCLEUS_EXPERIMENTAL_'+f:'1' for f in ledger['origin_flags']})
+                      if 'source-proof' in mode:
+                          env['NUCLEUS_EXPERIMENTAL_CERTIFIED_QUOT_IOTA']='1'
+                          env['NUCLEUS_EXPERIMENTAL_SOURCE_PROOF_IRREL']='1'
+                          env['NUCLEUS_EXPERIMENTAL_NEUTRAL_PAIR_PROOF_IRREL']='1'
+                      with path.open('rb') as handle:
+                          result=subprocess.run([str(checker)],stdin=handle,capture_output=True,timeout=90,env=env)
+                      reports[mode]={'exit':result.returncode,'stderr_tail':result.stderr.decode(errors='replace')[-350:]}
+                      assert result.returncode in ((0,2) if expected==0 else (1,2)),('Nucleus invalid verdict',name,mode,result.returncode)
+                      print(name,mode,result.returncode,flush=True)
+                  report['rows'][name]={'sha256':pin,'official':ref.returncode,'modes':reports}
+              report['status']='WARRANTED_BOUNDED_GETELEM_ORIGINAL_AND_TWO_FORGERIES'
+          except Exception as err:
+              report['error']=repr(err)
+          finally:
+              (evidence/'getelem-guard.json').write_text(json.dumps(report,indent=2)+'\n')
+              print('FINAL',report['status'],flush=True)
+          assert report['status']=='WARRANTED_BOUNDED_GETELEM_ORIGINAL_AND_TWO_FORGERIES'
+          PY
+      - name: Retain source-hash and independent checker verdicts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-getelem-transport-three-way-guard
+          path: /tmp/nucleus-getelem-guard/evidence/
+          if-no-files-found: warn
+      - name: Boundary
+        if: always()
+        run: |
+          echo 'Authentic GetElem prefix must be officially ACCEPT; receiver and index mutants officially REJECT.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Experimental Nucleus may DECLINE valid but may not REJECT it; either mutant may REJECT or DECLINE but never ACCEPT.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'No full Reachability, Mathlib, or hardware performance claim.' >> "$GITHUB_STEP_SUMMARY"
