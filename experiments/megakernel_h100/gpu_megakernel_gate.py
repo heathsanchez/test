@@ -11,6 +11,7 @@ import math
 import os
 from pathlib import Path
 import runpy
+import re
 import subprocess
 import sys
 
@@ -71,8 +72,8 @@ def make_fixture(folder, num_layers=2):
     from safetensors.torch import save_file
     from transformers import LlamaConfig
 
-    if num_layers not in (2, 3):
-        raise ValueError("Only registered 2- or 3-layer synthetic fixtures allowed")
+    if num_layers not in (2, 3, 16):
+        raise ValueError("Only registered 2/3/16-layer synthetic fixtures allowed")
     out = Path(folder)
     out.mkdir(parents=True, exist_ok=True)
     config = LlamaConfig(
@@ -154,9 +155,17 @@ def run_diff(repo, fixture, sched, out, layer_limit=1):
     from transformers import LlamaConfig
     model_config = LlamaConfig.from_pretrained(fixture)
     num_layers = model_config.num_hidden_layers
-    if (num_layers, layer_limit) not in ((2, 1), (3, 2), (2, 2)):
+    if (num_layers, layer_limit) not in ((2, 1), (3, 2), (2, 2), (16, 16)):
         raise RuntimeError("Unregistered fixture/layer-limit pair")
     lm_head_active = num_layers == layer_limit
+    # Compile-time CUDA globals are specialized to a 16-layer model.
+    # A short synthetic full-model test would wait on layer 15 despite
+    # allocating only 1/2/3 runtime barrier layers.
+    if lm_head_active:
+        header = (repo / "demos" / "low-latency-llama" / "llama.cuh").read_text()
+        counts = re.findall(r"(?m)^#define\\s+LLAMA_1B_NUM_LAYERS\\s+(\\d+)\\s*$", header)
+        if len(counts) != 1 or int(counts[0]) != num_layers:
+            raise RuntimeError("REJECTED_INVALID_LMHEAD_ARCHITECTURE")
     required_fields = FIELDS if lm_head_active else FIELDS[:-1]
 
     # Unlike upstream BaseGlobals.diff(), this comparator fails the process
@@ -258,8 +267,8 @@ def main():
     parser.add_argument("--fixture", default="synthetic_llama_1b_shape")
     parser.add_argument("--other-fixture", default=None)
     parser.add_argument("--out", default="gpu_diff.json")
-    parser.add_argument("--fixture-layers", type=int, choices=(2, 3), default=2)
-    parser.add_argument("--layer-limit", type=int, choices=(1, 2), default=1)
+    parser.add_argument("--fixture-layers", type=int, choices=(2, 3, 16), default=2)
+    parser.add_argument("--layer-limit", type=int, choices=(1, 2, 16), default=1)
     args = parser.parse_args()
     if args.self_test:
         import unittest
