@@ -1810,6 +1810,16 @@ fn compare_values(
                     }
                     return Judgment::proven((), "checked-local-proof-irrelevance");
                 }
+                // Source-local, independently typed proof-neutral pilot.
+                // No equality is admitted merely from differing heads or
+                // matching binder IDs; every exact captured argument must type.
+                if checker.certified_distinct_source_proofs(
+                    left, right, context, current_budget, depth,
+                ) {
+                    return Judgment::proven(
+                        (), "independently-typed-distinct-proof-neutrals",
+                    );
+                }
                 if certified_structure_eta(
                     checker,
                     left,
