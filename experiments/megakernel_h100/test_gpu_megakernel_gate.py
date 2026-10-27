@@ -1,5 +1,7 @@
 """CPU-only contract tests for the pre-registered GPU result gate."""
 
+import ast
+from pathlib import Path
 import unittest
 
 from gpu_megakernel_gate import evaluate_summary, validate_manifest
@@ -13,6 +15,21 @@ class GateTests(unittest.TestCase):
             "v_cache": {"elements": 1024, "nonfinite": 0, "violations": 0, "max_abs_diff": 0.0},
             "logits": {"elements": 128256, "nonfinite": 0, "violations": 0, "max_abs_diff": 0.01},
         }
+
+    def test_unexecuted_reference_cannot_authorize(self):
+        source = Path(__file__).with_name("gpu_megakernel_gate.py")
+        code = source.read_text()
+        self.assertNotIn('"skip_pyvm=false"', code)
+        module = ast.parse(code)
+        run_diff = next(n for n in module.body
+                        if isinstance(n, ast.FunctionDef) and n.name == "run_diff")
+        guarded = next(n for n in run_diff.body
+                       if isinstance(n, ast.FunctionDef) and n.name == "gated_diff")
+        isolated = ast.fix_missing_locations(ast.Module(body=[guarded], type_ignores=[]))
+        scope = {"pyvm_completed": [0]}
+        exec(compile(isolated, str(source), "exec"), scope)
+        with self.assertRaisesRegex(AssertionError, "reference never completed"):
+            scope["gated_diff"](None, None)
 
     def test_positive(self):
         self.assertTrue(evaluate_summary(self.good)["passed"])
