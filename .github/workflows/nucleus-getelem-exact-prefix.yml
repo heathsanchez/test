@@ -54,7 +54,7 @@ jobs:
       - name: Independently replay source prefix and compare bounded diagnostic budgets
         shell: bash
         env:
-          NUCLEUS_DIAG_ONE_BUDGET: "1"
+          NUCLEUS_DIAG_TRACE_COMPARISON: "1"
         run: |
           set -euo pipefail
           python3 experiments/nucleus_getelem_prefix_budget.py
