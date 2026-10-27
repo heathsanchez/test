@@ -2511,6 +2511,24 @@ fn compare_neutral_heads(
                     left.head,
                     machine.qualified_quotient_neutral_result(left, budget.min(2048)),
                 );
+                if let Judgment::Proven {
+                    value: Value::Neutral(replay_neutral), ..
+                } = machine.qualified_quotient_neutral_result(left, budget.min(2048))
+                {
+                    if replay_neutral.head == right.head
+                        && replay_neutral.spine.len() == right.spine.len()
+                    {
+                        for (index, (original_arg, expected_arg)) in replay_neutral.spine.iter()
+                            .zip(right.spine.iter()).enumerate()
+                        {
+                            eprintln!(
+                                "NUCLEUS_QUOTIENT_REPLAY_ARGUMENT:index={index}:original_source={original_arg:?}:expected_source={expected_arg:?}:original_exposed={:?}:expected_exposed={:?}",
+                                machine.expose(original_arg.clone(), Transparency::Full, budget.min(1024)),
+                                machine.expose(expected_arg.clone(), Transparency::Full, budget.min(1024)),
+                            );
+                        }
+                    }
+                }
             }
             if std::env::var_os("NUCLEUS_TRACE_RECURSOR_MAJOR").is_some() { eprintln!("NUCLEUS_RECURSOR_MAJOR:left={:?}:right={:?}", left.spine.last(), right.spine.last()); if let Some(c) = right.spine.last() { eprintln!("NUCLEUS_RECURSOR_MAJOR_VALUE:{:?}", checker.machine().expose(c.clone(), Transparency::Full, budget.min(64))); } }
             #[cfg(feature = "diagnostics")]
