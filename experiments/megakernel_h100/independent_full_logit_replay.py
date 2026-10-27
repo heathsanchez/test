@@ -78,10 +78,20 @@ def replay(case):
         demand(abs(entry["reference"]-ref[idx])<=1e-6 and
                abs(entry["native"]-gpu[idx])<=1e-6,"paired values mismatch")
     slack=gpu[refbest]-(r2[1]+maxerr)
+    # Exhaustively compare the reference winner to *every* other native
+    # logit, not merely a conservative norm bound.
+    native_rival_max=max(value for i,value in enumerate(gpu) if i!=refbest)
+    direct_gap=gpu[refbest]-native_rival_max
+    exact_winner_warrant=direct_gap>0
+    demand(not exact_winner_warrant or (refbest==gpubest),
+           "exhaustive rank proof conflicts with native argmax")
     return {"elements_checked":N,"tolerance_violations":violations,"max_abs_error":maxerr,
             "reference_top1":refbest,"native_top1":gpubest,
             "top1_equal":refbest==gpubest,"reference_margin":r2[0]-r2[1],
             "sufficient_one_sided_rank_margin":slack>0,"margin_slack":slack,
+            "exhaustive_native_rival_max":native_rival_max,
+            "exhaustive_winner_gap":direct_gap,
+            "exhaustive_strict_winner_proven":exact_winner_warrant,
             "reference_raw_sha256":raw["reference"]["raw_sha256"],
             "native_raw_sha256":raw["native"]["raw_sha256"]}
 
@@ -94,6 +104,7 @@ def audit(report):
             "pairs_of_logits_replayed":len(PLAN)*N,
             "top1_agreements":sum(x["top1_equal"] for x in cases.values()),
             "sufficient_ranking_margins":sum(x["sufficient_one_sided_rank_margin"] for x in cases.values()),
+            "exhaustive_strict_winner_certificates":sum(x["exhaustive_strict_winner_proven"] for x in cases.values()),
             "cases":cases,
             "trusted_boundary":"worker-emitted raw BF16 bits replayed on CPU; GPU execution and model weights not independently reproduced"}
 
