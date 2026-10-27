@@ -1,0 +1,66 @@
+name: Nucleus exact List Perm recOnSwap source prefix
+on:
+  push:
+    branches:
+      - exp/nucleus-quotient-lift2-20261027
+    paths:
+      - "experiments/nucleus_perm_recOnSwap_prefix.py"
+      - ".github/workflows/nucleus-perm-prefix.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pinned-valid-prefix:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build unchanged independent candidate with diagnostic-only instrumentation
+        run: |
+          set -euo pipefail
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          mkdir -p /tmp/recOnSwap/evidence
+          git rev-parse HEAD > /tmp/recOnSwap/evidence/source-commit.txt
+          git rev-parse HEAD:metatron-kernel > /tmp/recOnSwap/evidence/nucleus-tree.txt
+          sha256sum metatron-kernel/target/release/metatron-kernel > /tmp/recOnSwap/evidence/checker-binary.sha256
+      - name: Build source-pinned official Lean reference checker
+        run: |
+          set -euo pipefail
+          curl -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -o /tmp/elan-init.sh
+          sh /tmp/elan-init.sh -y --default-toolchain leanprover/lean4:v4.34.1
+          git clone -q https://github.com/leanprover/lean-kernel-arena /tmp/arena-reference
+          git -C /tmp/arena-reference checkout -q cd2dd0244b9ed5e704463a26fbbe5fc67ba16108
+          cd /tmp/arena-reference/checkers/official
+          "$HOME/.elan/bin/lake" build
+          test -x .lake/build/bin/kernel
+      - name: Recover first complete source-hashed Reachability export
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/recOnSwap
+          gh api repos/heathsanchez/test/actions/artifacts/12722408982/zip > /tmp/recOnSwap/source.zip
+          unzip -q /tmp/recOnSwap/source.zip -d /tmp/recOnSwap path_reachable.ndjson
+          sha256sum /tmp/recOnSwap/source.zip > /tmp/recOnSwap/evidence/downloaded-artifact.sha256
+      - name: Require authentic List.Perm.recOnSwap source and official acceptance
+        run: |
+          set -euo pipefail
+          python3 experiments/nucleus_perm_recOnSwap_prefix.py
+      - name: Retain original precise prefix and all comparison traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-reachability-recOnSwap-source-prefix
+          path: |
+            /tmp/recOnSwap/evidence/
+            /tmp/recOnSwap/recOnSwap-exact.ndjson
+          if-no-files-found: warn
+      - name: State scope
+        if: always()
+        run: |
+          echo "Source pinned Reachability input and exact first obstructing theorem prefix." >> "$GITHUB_STEP_SUMMARY"
+          echo "A prefix ACCEPT does not qualify any full Reachability export or full Mathlib." >> "$GITHUB_STEP_SUMMARY"
+          echo "No Nucleus semantic source changes in this job." >> "$GITHUB_STEP_SUMMARY"
