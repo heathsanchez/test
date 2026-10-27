@@ -46,7 +46,7 @@ jobs:
           ledger=json.loads(pathlib.Path('metatron-kernel/evidence/performance/owned-environment-2026-10-13/nucleus-owned-environment-frozen196.json').read_text())
           row=next(x for x in ledger['modes']['default']['rows'] if x['case']=='good/init-prelude.ndjson')
           assert hashlib.sha256(path.read_bytes()).hexdigest()==row['sha256']
-          assert row['rc']==0
+          assert row['rc']==2
           binary='metatron-kernel/target/release/metatron-kernel'
           clean={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
           clean.update(NUCLEUS_EXPERIMENTAL_CERTIFIED_QUOT_IOTA='1',
@@ -72,9 +72,9 @@ jobs:
                     'additive_proven=',result[name]['additive_proven_count'],flush=True)
           result['case']='good/init-prelude.ndjson'
           result['original_sha256']=row['sha256']
-          result['status']='WARRANTED_REGRESSION_SEPARATOR' if result['without-additive']['exit']==0 and result['with-additive']['exit']==1 else 'UNEXPECTED_PAIR'
+          result['status']='WARRANTED_VALID_UNKNOWN_TO_FALSE_REJECT_SEPARATOR' if result['without-additive']['exit']==2 and result['with-additive']['exit']==1 else 'UNEXPECTED_PAIR'
           (root/'report.json').write_text(json.dumps(result,indent=2)+'\n')
-          assert result['status']=='WARRANTED_REGRESSION_SEPARATOR',result
+          assert result['status']=='WARRANTED_VALID_UNKNOWN_TO_FALSE_REJECT_SEPARATOR',result
           PY
       - name: Preserve exact regression receipts even on failure
         if: always()
@@ -94,4 +94,4 @@ jobs:
         if: always()
         run: |
           echo 'The added equality certificate is NOT qualified for adoption.' >> "$GITHUB_STEP_SUMMARY"
-          echo 'A previously accepted original Arena proof that becomes REJECT is disqualifying.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'A genuine original Arena proof changing UNKNOWN to REJECT is disqualifying.' >> "$GITHUB_STEP_SUMMARY"
