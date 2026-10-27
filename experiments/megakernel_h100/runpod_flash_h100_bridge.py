@@ -180,14 +180,20 @@ async def run_h100_differential(gate_source: str, probe_kind: str = "baseline"):
                 # Both fixtures are deterministically seeded; common weights
                 # have identical values and upstream code remains pinned.
                 report["probe_kind"] = "lmhead"
+                for case, fixture_layers in (("partial_2of3", 3), ("full_2of2", 2)):
+                    stage(f"fixture_{case}",
+                          [sys.executable, str(gate), "--make-fixture",
+                           "--fixture", str(root / case), "--fixture-layers",
+                           str(fixture_layers)], 180, env=env)
+                stage("shared_weight_equivalence",
+                      [sys.executable, str(gate), "--compare-fixtures",
+                       "--fixture", str(root / "partial_2of3"),
+                       "--other-fixture", str(root / "full_2of2")], 120, env=env)
+                report["shared_fixture_weights_checked"] = True
                 for case, fixture_layers, run_layers in (
                     ("partial_2of3", 3, 2), ("full_2of2", 2, 2)
                 ):
                     fixture = root / case
-                    stage(f"fixture_{case}",
-                          [sys.executable, str(gate), "--make-fixture",
-                           "--fixture", str(fixture), "--fixture-layers",
-                           str(fixture_layers)], 180, env=env)
                     dest = root / f"{case}.json"
                     try:
                         stage(f"diff_{case}",
