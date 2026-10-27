@@ -184,20 +184,29 @@ async def run_h100_differential(gate_source: str, probe_kind: str = "baseline"):
                       180, env=env)
                 for sched in ("rr", "dag"):
                     dest = root / f"full16_{sched}.json"
+                    numerical_rejection = False
                     try:
                         stage(f"diff_full16_{sched}",
                               [sys.executable, "-u", str(gate),
                                "--diff", sched, "--repo", str(repo),
                                "--fixture", str(fixture), "--layer-limit",
                                "16", "--out", str(dest)], 180, env=env)
+                    except RuntimeError:
+                        # The independent gate deliberately exits nonzero on
+                        # mismatch. Continue ONLY if it produced a structured
+                        # numerical rejection; all unrelated failures stop.
+                        if dest.exists():
+                            outcome = json.loads(dest.read_text())
+                            if outcome.get("passed") is False:
+                                numerical_rejection = True
+                        if not numerical_rejection:
+                            raise
                     finally:
                         if dest.exists():
                             report["checks"][sched] = json.loads(dest.read_text())
-                    if not report["checks"].get(sched, {}).get("passed"):
-                        report["status"] = "REJECTED_FULL16_DIFFERENTIAL"
-                        break
-                else:
-                    report["status"] = "PASS_FULL16"
+                report["status"] = ("PASS_FULL16" if all(
+                    report["checks"][s].get("passed") is True for s in ("rr", "dag")
+                ) else "REJECTED_FULL16_DIFFERENTIAL")
             elif probe_kind == "lmhead":
                 # Control: 2 of 3 layers. Treatment: 2 of 2 layers (LM head).
                 # Both fixtures are deterministically seeded; common weights
