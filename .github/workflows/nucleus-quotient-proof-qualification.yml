@@ -5,6 +5,9 @@ on:
       - exp/nucleus-quotient-lift2-20261027
     paths:
       - "experiments/nucleus_quotient_proof_promotion_gate.py"
+      - "metatron-kernel/src/convert.rs"
+      - "metatron-kernel/src/typecheck.rs"
+      - "metatron-kernel/src/machine.rs"
       - ".github/workflows/nucleus-quotient-proof-qualification.yml"
   workflow_dispatch:
 
