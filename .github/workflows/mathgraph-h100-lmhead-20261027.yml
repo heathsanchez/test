@@ -1,0 +1,123 @@
+name: MathGraph H100 LM-Head Contrast - RUN THIS
+
+# Single bounded paired experiment. No upstream writes or private notes.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/mathgraph-h100-lmhead-20261027.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mathgraph-h100-lmhead-contrast
+  cancel-in-progress: false
+
+jobs:
+  contrast:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.head_commit.message == 'H100-LMHEAD: launch approved bounded contrast'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      RUNPOD_API_KEY: ${{ secrets.RUNPOD_API_KEY }}
+      FLASH_APP: mathgraph-lmhead-${{ github.run_id }}
+      FLASH_ENV: production
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 0d4940b330d2feb8a92cb3e616c7154d8079951e
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: CPU-only preflight before deployment
+        run: |
+          python -m compileall -q experiments/megakernel_h100
+          python -m unittest discover -s experiments/megakernel_h100 -p 'test_*.py' -v
+          python experiments/megakernel_h100/gpu_megakernel_gate.py --self-test
+
+      - name: Require existing RunPod secret
+        run: |
+          test -n "$RUNPOD_API_KEY" || { echo "::error::RUNPOD_API_KEY missing"; exit 1; }
+
+      - name: Install pinned RunPod Flash
+        run: python -m pip install --disable-pip-version-check --no-input runpod-flash==1.21.0
+
+      - name: Deploy isolated H100 endpoint
+        run: |
+          mkdir -p h100_evidence
+          echo "DEPLOY_ATTEMPTED" > h100_evidence/deploy_attempted
+          cd experiments/megakernel_h100
+          flash deploy --app "$FLASH_APP" --env "$FLASH_ENV" --no-deps
+
+      - name: Run paired LM-head contrast
+        run: |
+          python experiments/megakernel_h100/runpod_flash_h100_bridge.py \
+            --probe-kind lmhead \
+            --gate experiments/megakernel_h100/gpu_megakernel_gate.py \
+            --out h100_evidence/remote_result.json
+
+      - name: Require independently checked experiment verdict
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r = json.loads(Path("h100_evidence/remote_result.json").read_text())
+          assert r.get("runpod_status") == "COMPLETED"
+          assert r.get("runpod_job_id")
+          assert r.get("source_pin") == "7309cec801537b61fea3b50d7dfe454a6cde578e"
+          assert r.get("sm_count") == 132
+          assert r.get("shared_fixture_weights_checked") is True
+          c = r["checks"]
+          a = c["partial_2of3"]
+          assert a["passed"] is True and a["pyvm_completed_calls"] >= 1
+          assert a["fixture_layers"] == 3 and a["executed_layers"] == 2
+          assert a["lm_head_exercised"] is False
+          assert a["fields_compared"] == ["hidden_states", "k_cache", "v_cache"]
+          b = c["full_2of2"]
+          if r["status"] == "LMHEAD_NATIVE_TIMEOUT":
+              assert b["status"] == "UNKNOWN_NATIVE_TIMEOUT"
+              assert b["passed"] is False and b["lm_head_exercised"] is True
+              trace = [x for x in r["stages"] if x["name"] == "diff_full_2of2"]
+              assert len(trace) == 1 and trace[0]["timed_out"] is True
+              print("MATHGRAPH_LMHEAD_CONTRAST_NATIVE_TIMEOUT_RECORDED")
+          elif r["status"] in ("LMHEAD_FULL_PASS", "LMHEAD_REJECTED_DIFFERENTIAL"):
+              assert b["lm_head_exercised"] is True
+              assert b["fixture_layers"] == 2 and b["executed_layers"] == 2
+              assert b["pyvm_completed_calls"] >= 1
+              assert "logits" in b["fields_compared"]
+              assert b["passed"] is (r["status"] == "LMHEAD_FULL_PASS")
+              print("MATHGRAPH_LMHEAD_CONTRAST_NUMERICAL_VERDICT", r["status"])
+          else:
+              raise AssertionError("Unknown/unqualified experiment: " + str(r.get("status")))
+          PY
+
+      - name: Delete dedicated app and verify absence
+        if: always()
+        run: |
+          if [ ! -f h100_evidence/deploy_attempted ]; then
+            echo "CLEANUP_NOT_REQUIRED_NO_DEPLOY_ATTEMPT"
+          elif command -v flash >/dev/null 2>&1 && [ -n "$RUNPOD_API_KEY" ]; then
+            if flash app list | grep -Fq "$FLASH_APP"; then
+              flash app delete "$FLASH_APP"
+            fi
+            if flash app list | grep -Fq "$FLASH_APP"; then
+              echo "::error::CLOUD_CLEANUP_UNVERIFIED"
+              exit 1
+            fi
+            echo "CLOUD_APP_DELETION_VERIFIED"
+          else
+            echo "::error::CLEANUP_NOT_ATTEMPTED"
+            exit 1
+          fi
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mathgraph-h100-lmhead-contrast-${{ github.run_id }}
+          path: h100_evidence/
+          if-no-files-found: warn
