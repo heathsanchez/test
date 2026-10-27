@@ -1777,7 +1777,37 @@ impl<'a> TypeChecker<'a> {
                     };
                 }
                 let ordinary_view = self.pi_view(function_type.clone(), *remaining);
-                let checked_view = ordinary_view.or_else(|| {
+                // Optional source-checked recovery: unlike a value-head guess,
+                // this re-infers the original captured function's exact type
+                // under the same checked Gamma and universe substitution.
+                // Failed premises preserve UNKNOWN and never license a Pi.
+                let source_captured_view = ordinary_view.or_else(|| {
+                    if std::env::var_os("NUCLEUS_EXPERIMENTAL_CAPTURED_PI_RECOVERY").is_none()
+                        || *remaining < 512
+                    {
+                        return None;
+                    }
+                    let original_source = self.closure(*fun, frame.clone());
+                    let mut source_fuel = (*remaining).min(4096);
+                    let rechecked = self.infer_exact_closure_in_context(
+                        &original_source, context, &mut source_fuel, 0,
+                    );
+                    #[cfg(feature = "diagnostics")]
+                    if std::env::var_os("NUCLEUS_TRACE_CAPTURED_PI_RECOVERY").is_some()
+                        && context.len() == 11
+                    {
+                        eprintln!(
+                            "NUCLEUS_CAPTURED_PI_RECOVERY:fun={fun:?}:context={}:remaining={}:source_fuel={}:checked={rechecked:?}",
+                            context.len(), *remaining, source_fuel,
+                        );
+                    }
+                    let inferred = rechecked?;
+                    self.pi_view(
+                        Judgment::proven(inferred, "independent-captured-function-inference"),
+                        source_fuel.min(512),
+                    )
+                });
+                let checked_view = source_captured_view.or_else(|| {
                     if self.delta_policy != crate::convert::DeltaPolicy::GuardedSemanticFallback {
                         return None;
                     }
