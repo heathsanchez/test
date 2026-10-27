@@ -1116,7 +1116,7 @@ impl<'a> Machine<'a> {
                         return exposed(native, transitions);
                     }
 
-                    if let Some(next) = self.try_quot_reduction(*name, levels, &mut pending) {
+                    if let Some(next) = self.try_quot_reduction(*name, levels, &mut pending, budget) {
                         record_transition(
                             &mut transitions,
                             record_witnesses,
@@ -1450,6 +1450,7 @@ impl<'a> Machine<'a> {
         name: NameId,
         levels: &[LevelId],
         pending: &mut Vec<Closure>,
+        budget: usize,
     ) -> Option<Closure> {
         let primitives = self.quot_primitives.as_ref()?;
 
@@ -1467,10 +1468,45 @@ impl<'a> Machine<'a> {
         let offset = pending.len() - required;
         let arguments = pending[offset..].iter().rev().cloned().collect::<Vec<_>>();
         let target = arguments.get(target_index)?;
-        let (constructor, constructor_arguments) = self.constructor_application(target)?;
-        if constructor != primitives.mk || constructor_arguments.len() != 3 {
+        let source_constructor = self.constructor_application(target);
+        // A quotient major may be a bound closure whose original syntax is
+        // not a constructor, but whose separately evaluated source value is.
+        // Only an independently exposed, registered Quot.mk authorizes iota.
+        let certified_constructor = source_constructor.or_else(|| {
+            if std::env::var_os("NUCLEUS_EXPERIMENTAL_CERTIFIED_QUOT_IOTA").is_none()
+                || budget < 32
+            {
+                return None;
+            }
+            let exposure = self.expose_internal(
+                target.clone(), Transparency::Full, budget.min(1024), false, false,
+            );
+            let Some(Exposure {
+                value: Value::Neutral(Neutral {
+                    head: NeutralHead::Const { name: ctor, levels: ctor_levels },
+                    spine: ctor_args,
+                }),
+                ..
+            }) = exposure.proven_value()
+            else {
+                return None;
+            };
+            if *ctor != primitives.mk || ctor_levels.len() != 1 || ctor_args.len() != 3 {
+                return None;
+            }
+            #[cfg(feature = "diagnostics")]
+            if std::env::var_os("NUCLEUS_TRACE_CERTIFIED_QUOT_IOTA").is_some() {
+                eprintln!(
+                    "NUCLEUS_CERTIFIED_QUOT_IOTA:constructor={ctor:?}:source_major={target:?}:arguments={}:budget={budget}",
+                    ctor_args.len(),
+                );
+            }
+            Some((*ctor, ctor_args.clone()))
+        })?;
+        if certified_constructor.0 != primitives.mk || certified_constructor.1.len() != 3 {
             return None;
         }
+        let constructor_arguments = certified_constructor.1;
 
         let function = arguments.get(function_index)?.clone();
         let value = constructor_arguments[2].clone();
