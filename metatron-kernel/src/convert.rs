@@ -1798,6 +1798,16 @@ fn compare_values(
                 ) {
                     return Judgment::proven((), "checked-prop-spine-congruence");
                 }
+                // Do not equate different neutral heads merely because both
+                // result in Prop. Their original argument telescopes and
+                // exact dependent result propositions must independently typecheck.
+                if checker.certified_neutral_pair_proof_irrelevance(
+                    left, right, context, current_budget,
+                ) {
+                    return Judgment::proven(
+                        (), "source-checked-neutral-proofs-same-proposition",
+                    );
+                }
                 // Lean proof irrelevance: two checked proof terms of the same
                 // *independently verified* proposition are convertible.
                 // Do not quotient their FreeId values or closure frames.
