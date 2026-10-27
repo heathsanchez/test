@@ -99,7 +99,7 @@ jobs:
           set +e
           "$checker" "$input" > /tmp/quotient-evidence/official.out 2> /tmp/quotient-evidence/official.err
           official=$?
-          NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE=1 NUCLEUS_TRACE_NEUTRAL_HEADS=1 NUCLEUS_TRACE_VALUE_MISMATCH=1 NUCLEUS_TRACE_DOWNSTREAM=1 NUCLEUS_TRACE_PARSE_ERROR=1 metatron-kernel/target/release/metatron-kernel < "$input" > /tmp/quotient-evidence/nucleus.out 2> /tmp/quotient-evidence/nucleus.err
+          NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE=1 NUCLEUS_TRACE_NEUTRAL_HEADS=1 NUCLEUS_TRACE_QUOTIENT_MAJOR=1 NUCLEUS_TRACE_VALUE_MISMATCH=1 NUCLEUS_TRACE_DOWNSTREAM=1 NUCLEUS_TRACE_PARSE_ERROR=1 metatron-kernel/target/release/metatron-kernel < "$input" > /tmp/quotient-evidence/nucleus.out 2> /tmp/quotient-evidence/nucleus.err
           nucleus=$?
           set -e
           printf '%s\n' "$official" > /tmp/quotient-evidence/official.exit
