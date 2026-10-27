@@ -212,6 +212,30 @@ def run_diff(repo, fixture, sched, out, layer_limit=1):
                 "violations": int(violations),
                 "max_abs_diff": float(delta[finite].max().item()) if finite.any() else None,
             }
+            if int(violations):
+                # Fixed-size retained witness, never materialize whole tensors
+                # or publish model weights. Record only offending locations.
+                bad = torch.nonzero(((delta > allowed) & finite).flatten(), as_tuple=False).flatten()[:8]
+                indices = [int(x) for x in bad.cpu().tolist()]
+                aa, bb, dd, lim = (x.flatten() for x in (a, b, delta, allowed))
+                records[name]["first_violations"] = [
+                    {"flat_index": ix, "reference": float(aa[ix].item()),
+                     "gpu": float(bb[ix].item()), "abs_error": float(dd[ix].item()),
+                     "allowed_error": float(lim[ix].item())}
+                    for ix in indices
+                ]
+        if lm_head_active:
+            ref_log = self.logits.detach().float().flatten()
+            native_log = other.logits.detach().float().flatten()
+            logit_choice = {
+                "reference_top1": int(ref_log.argmax().item()),
+                "native_top1": int(native_log.argmax().item()),
+                "top1_equal": bool(ref_log.argmax().item() == native_log.argmax().item()),
+                "reference_top1_margin": float(
+                    (ref_log.topk(2).values[0] - ref_log.topk(2).values[1]).item()),
+            }
+        else:
+            logit_choice = None
         verdict = evaluate_summary(records, required_fields=required_fields)
         if lm_head_active:
             # Prevent vacuous all-zero LM-head parity.
@@ -225,6 +249,7 @@ def run_diff(repo, fixture, sched, out, layer_limit=1):
                   "fixture_layers": num_layers, "executed_layers": layer_limit,
                   "lm_head_exercised": lm_head_active,
                   "fields_compared": list(required_fields),
+                  "logit_choice": logit_choice,
                   "tolerances": {"atol": ATOL, "rtol": RTOL},
                   "pyvm_completed_calls": pyvm_completed[0],
                   "fields": records, **verdict}
