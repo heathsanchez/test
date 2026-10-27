@@ -6,6 +6,7 @@ The GPU path does not require gated Hugging Face downloads.
 """
 
 import argparse
+import hashlib
 import json
 import math
 import os
@@ -193,6 +194,7 @@ def run_diff(repo, fixture, sched, out, layer_limit=1, input_seed=0):
         seed_override_calls[0] += 1
         return original_manual_seed(input_seed)
     pyvm_completed = [0]
+    initial_state_samples = []
     captured = []
 
     def traced_pyvm_factory(*args, **kwargs):
@@ -200,6 +202,17 @@ def run_diff(repo, fixture, sched, out, layer_limit=1, input_seed=0):
 
         class TracedReference:
             def interpret(self, *a, **kw):
+                # Fingerprint bounded pre-execution samples, not model weights.
+                if len(a) < 1:
+                    raise RuntimeError("Reference VM did not receive globals")
+                globs = a[0]
+                h = hashlib.sha256()
+                for field_name in ("hidden_states", "k_cache", "v_cache"):
+                    h.update(field_name.encode())
+                    h.update(getattr(globs, field_name).detach().flatten()[:128]
+                             .float().cpu().numpy().tobytes())
+                h.update(str(globs.pos_id).encode())
+                initial_state_samples.append(h.hexdigest())
                 result = inner.interpret(*a, **kw)
                 pyvm_completed[0] += 1
                 return result
@@ -211,6 +224,8 @@ def run_diff(repo, fixture, sched, out, layer_limit=1, input_seed=0):
             raise AssertionError("Python reference never completed; refusing comparison")
         if seed_override_calls[0] != 1:
             raise AssertionError("Unwarranted input seed injection count")
+        if len(initial_state_samples) != 1:
+            raise AssertionError("Missing unique reference input fingerprint")
         original(self, other, skip_kv_cache=skip_kv_cache)
         records = {}
         for name in required_fields:
@@ -286,6 +301,7 @@ def run_diff(repo, fixture, sched, out, layer_limit=1, input_seed=0):
                   "pyvm_completed_calls": pyvm_completed[0],
                   "input_seed": input_seed,
                   "input_seed_override_calls": seed_override_calls[0],
+                  "initial_state_sample_sha256": initial_state_samples[0],
                   "fields": records, **verdict}
         captured.append(record)
         Path(out).write_text(json.dumps(record, indent=2, sort_keys=True) + "\n")
