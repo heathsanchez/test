@@ -115,13 +115,15 @@ def main():
             "incorrect-index mutant was not rejected by Lean",typed_forged)
         report["official"]={"authentic":orig,"mutated":forged}
         modes={}
-        for mode in ("default","origin","receiver-budget-split"):
+        for mode in ("default","origin","receiver-budget-split","receiver-budget-typed"):
             e=os.environ.copy()
-            if mode in ("origin","receiver-budget-split"):
+            if mode in ("origin","receiver-budget-split","receiver-budget-typed"):
                 ledger=json.loads(pathlib.Path("metatron-kernel/evidence/performance/owned-environment-2026-10-13/nucleus-owned-environment-frozen196.json").read_text())
                 e.update({"NUCLEUS_EXPERIMENTAL_"+n:"1" for n in ledger["origin_flags"]})
-            if mode=="receiver-budget-split":
+            if mode in ("receiver-budget-split","receiver-budget-typed"):
                 e["NUCLEUS_EXPERIMENTAL_RECEIVER_BUDGET_SPLIT"]="1"
+            if mode=="receiver-budget-typed":
+                e["NUCLEUS_EXPERIMENTAL_TYPED_RECEIVER_ARGUMENT"]="1"
             e["NUCLEUS_EXPERIMENTAL_CERTIFIED_QUOT_IOTA"]="1"
             e["NUCLEUS_EXPERIMENTAL_SOURCE_PROOF_IRREL"]="1"
             e["NUCLEUS_EXPERIMENTAL_NEUTRAL_PAIR_PROOF_IRREL"]="1"
