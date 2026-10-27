@@ -9,6 +9,21 @@ use crate::syntax::Expr;
 use crate::typecheck::{RuleKAttempt, TypeChecker, TypeValue};
 use crate::value::{Closure, EnvBinding, FreeId, Neutral, NeutralHead, Value};
 
+// Source-checked, opt-in quotient-contractor evidence is local to one
+// declaration's proof-checking attempt. A successful subcomparison alone
+// is not authority to make a definitive *negative* judgment downstream.
+thread_local! {
+    static QUOTIENT_CONTRACTOR_USED: std::cell::Cell<bool> =
+        const { std::cell::Cell::new(false) };
+}
+
+pub(crate) fn reset_quotient_contractor_trial() {
+    QUOTIENT_CONTRACTOR_USED.with(|state| state.set(false));
+}
+pub(crate) fn take_quotient_contractor_trial() -> bool {
+    QUOTIENT_CONTRACTOR_USED.with(|state| state.replace(false))
+}
+
 type ConversionVisitKey = (crate::machine::AuthorityId, TypeValue, TypeValue);
 const INLINE_CONVERSION_VISIT_CAPACITY: usize = 8;
 const CHEAP_PROJECTION_CONGRUENCE_BUDGET: usize = 64;
@@ -1726,6 +1741,7 @@ fn compare_values(
                             );
                         }
                         if proved {
+                            QUOTIENT_CONTRACTOR_USED.with(|state| state.set(true));
                             return Judgment::proven(
                                 (), "registered-quotient-iota-congruence",
                             );
