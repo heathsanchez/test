@@ -2056,6 +2056,34 @@ fn compare_values(
                     context,
                 ) => {}
             _ => {
+                // A neutral and a lambda are not disjoint constructors of
+                // terms: eta or proof irrelevance may convert them. On a
+                // separately formed proposition, this syntactic mismatch
+                // cannot justify REJECT. This optional guard only declines.
+                if std::env::var_os("NUCLEUS_EXPERIMENTAL_PROP_SHAPE_DECLINE").is_some()
+                    && depth == context.len()
+                    && current_budget >= 512
+                {
+                    let neutral = match (&current_left, &current_right) {
+                        (Value::Neutral(n), Value::Lam { .. }) |
+                        (Value::Lam { .. }, Value::Neutral(n)) => Some(n),
+                        _ => None,
+                    };
+                    if let Some(n) = neutral
+                        && checker.neutral_may_be_a_proof_in_context(
+                            n, context, current_budget.min(2048),
+                        )
+                    {
+                        #[cfg(feature = "diagnostics")]
+                        if std::env::var_os("NUCLEUS_TRACE_PROP_SHAPE_DECLINE").is_some() {
+                            eprintln!(
+                                "NUCLEUS_PROP_SHAPE_DECLINE:scope={depth}:neutral_head={:?}:budget={current_budget}",
+                                n.head,
+                            );
+                        }
+                        return Judgment::unknown("proposition-neutral-lambda-unresolved");
+                    }
+                }
                 if std::env::var_os("NUCLEUS_TRACE_VALUE_MISMATCH").is_some() {
                     #[cfg(feature = "diagnostics")]
                     if (10..=12).contains(&depth)
