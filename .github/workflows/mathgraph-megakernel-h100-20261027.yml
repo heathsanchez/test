@@ -23,7 +23,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 665e622c357e9fba0b8be8305cd66191e63df9d3
+          ref: 6a52591cfe07db48c5a79db98a446cd5ef255d18
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -42,7 +42,7 @@ jobs:
 
       - name: Install RunPod client
         run: |
-          python -m pip install --disable-pip-version-check --no-input runpod-flash
+          python -m pip install --disable-pip-version-check --no-input runpod-flash==1.21.0
 
       - name: Deploy isolated H100 endpoint
         run: |
