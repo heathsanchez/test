@@ -23,7 +23,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: a462d0c6556ff015b67a25f98ec093d449319e6e
+          ref: 35fbd031be2e03c260dadd7c568e236f80605035
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -48,7 +48,7 @@ jobs:
         run: |
           legacy="mathgraph-megakernel-h100-20261027"
           listing="$(flash app list)"
-          if printf '%s\n' "$listing" | rg -q "^[[:space:]]*${legacy}[[:space:]]"; then
+          if printf '%s\n' "$listing" | grep -Eq "^[[:space:]]*${legacy}[[:space:]]"; then
             flash app delete "$legacy"
           else
             echo "LEGACY_FLASH_APP_NOT_LISTED"
@@ -73,9 +73,11 @@ jobs:
           from pathlib import Path
           r=json.loads(Path("h100_evidence/remote_result.json").read_text())
           assert r["status"] == "PASS", r["status"]
+          assert r.get("runpod_job_id"), "missing RunPod job identity"
+          assert r.get("runpod_status") == "COMPLETED", r.get("runpod_status")
           assert r["source_pin"] == "7309cec801537b61fea3b50d7dfe454a6cde578e"
           assert r["sm_count"] == 132
-          assert all(r["checks"][x]["passed"] for x in ("rr", "dag"))
+          assert all(r["checks"][x]["passed"] is True for x in ("rr", "dag"))
           print("MATHGRAPH_H100_PINNED_DIFFERENTIAL_PASS")
           PY
 
@@ -84,6 +86,11 @@ jobs:
         run: |
           if command -v flash >/dev/null 2>&1 && [ -n "$RUNPOD_API_KEY" ]; then
             flash app delete "$FLASH_APP"
+            if flash app list | grep -Fq "$FLASH_APP"; then
+              echo "::error::CLOUD_CLEANUP_UNVERIFIED"
+              exit 1
+            fi
+            echo "CLOUD_APP_DELETION_VERIFIED"
           else
             echo "::error::CLEANUP_NOT_ATTEMPTED_NO_FLASH_OR_CREDENTIAL"
             exit 1
