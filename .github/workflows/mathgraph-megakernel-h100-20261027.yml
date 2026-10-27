@@ -18,7 +18,7 @@ jobs:
     timeout-minutes: 35
     env:
       RUNPOD_API_KEY: ${{ secrets.RUNPOD_API_KEY }}
-      FLASH_APP: mathgraph-megakernel-h100-20261027
+      FLASH_APP: mathgraph-megakernel-h100-${{ github.run_id }}
       FLASH_ENV: production
     steps:
       - uses: actions/checkout@v4
@@ -43,6 +43,16 @@ jobs:
       - name: Install RunPod client
         run: |
           python -m pip install --disable-pip-version-check --no-input runpod-flash==1.21.0
+
+      - name: Retire legacy dedicated H100 Flash app
+        run: |
+          legacy="mathgraph-megakernel-h100-20261027"
+          listing="$(flash app list)"
+          if printf '%s\n' "$listing" | rg -q "^[[:space:]]*${legacy}[[:space:]]"; then
+            flash app delete "$legacy"
+          else
+            echo "LEGACY_FLASH_APP_NOT_LISTED"
+          fi
 
       - name: Deploy isolated H100 endpoint
         run: |
@@ -69,13 +79,14 @@ jobs:
           print("MATHGRAPH_H100_PINNED_DIFFERENTIAL_PASS")
           PY
 
-      - name: Delete endpoint even after an error
+      - name: Delete dedicated H100 app and endpoints even after error
         if: always()
         run: |
           if command -v flash >/dev/null 2>&1 && [ -n "$RUNPOD_API_KEY" ]; then
-            flash undeploy "$FLASH_APP" --force
+            flash app delete "$FLASH_APP"
           else
-            echo "CLEANUP_NOT_ATTEMPTED_NO_FLASH_OR_CREDENTIAL"
+            echo "::error::CLEANUP_NOT_ATTEMPTED_NO_FLASH_OR_CREDENTIAL"
+            exit 1
           fi
 
       - uses: actions/upload-artifact@v4
