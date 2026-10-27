@@ -20,6 +20,9 @@ PIN = "7309cec801537b61fea3b50d7dfe454a6cde578e"
 FIELDS = ("hidden_states", "k_cache", "v_cache", "logits")
 ATOL = 0.05
 RTOL = 0.10
+INPUT_SEEDS = (0, 7, 21)
+TOP_K = 5
+
 
 
 def validate_manifest(commit):
@@ -137,7 +140,7 @@ def verify_paired_fixture_weights(partial_folder, full_folder):
     return result
 
 
-def run_diff(repo, fixture, sched, out, layer_limit=1):
+def run_diff(repo, fixture, sched, out, layer_limit=1, input_seed=0):
     import torch
 
     repo = Path(repo).resolve()
@@ -152,6 +155,8 @@ def run_diff(repo, fixture, sched, out, layer_limit=1):
         raise RuntimeError(f"Expected H100 SXM 132 SM; found {prop.name} ({prop.multi_processor_count} SM)")
     if sched not in ("rr", "dag"):
         raise ValueError("Unregistered scheduler")
+    if input_seed not in INPUT_SEEDS or type(input_seed) is not int:
+        raise ValueError("Unregistered deterministic input seed")
     from transformers import LlamaConfig
     model_config = LlamaConfig.from_pretrained(fixture)
     num_layers = model_config.num_hidden_layers
@@ -177,6 +182,16 @@ def run_diff(repo, fixture, sched, out, layer_limit=1):
 
     original = BaseGlobals.diff
     original_make_pyvm = dispatch.make_pyvm_interpreter
+    original_manual_seed = torch.manual_seed
+    seed_override_calls = [0]
+
+    def deterministic_input_seed(upstream_seed):
+        # Pinned upstream diff_test.py sets manual_seed(0) at entry.
+        # Substitute one pre-registered input seed, no upstream file changes.
+        if upstream_seed != 0:
+            raise RuntimeError("Unrecognized upstream initialization seed")
+        seed_override_calls[0] += 1
+        return original_manual_seed(input_seed)
     pyvm_completed = [0]
     captured = []
 
@@ -194,6 +209,8 @@ def run_diff(repo, fixture, sched, out, layer_limit=1):
     def gated_diff(self, other, skip_kv_cache=False):
         if pyvm_completed[0] < 1:
             raise AssertionError("Python reference never completed; refusing comparison")
+        if seed_override_calls[0] != 1:
+            raise AssertionError("Unwarranted input seed injection count")
         original(self, other, skip_kv_cache=skip_kv_cache)
         records = {}
         for name in required_fields:
@@ -228,12 +245,26 @@ def run_diff(repo, fixture, sched, out, layer_limit=1):
         if lm_head_active:
             ref_log = self.logits.detach().float().flatten()
             native_log = other.logits.detach().float().flatten()
+            ref_top = ref_log.topk(TOP_K)
+            native_top = native_log.topk(TOP_K)
+            ref_ids = [int(i) for i in ref_top.indices.cpu().tolist()]
+            native_ids = [int(i) for i in native_top.indices.cpu().tolist()]
+            candidate_ids = sorted(set(ref_ids) | set(native_ids))
             logit_choice = {
                 "reference_top1": int(ref_log.argmax().item()),
                 "native_top1": int(native_log.argmax().item()),
                 "top1_equal": bool(ref_log.argmax().item() == native_log.argmax().item()),
                 "reference_top1_margin": float(
-                    (ref_log.topk(2).values[0] - ref_log.topk(2).values[1]).item()),
+                    (ref_top.values[0] - ref_top.values[1]).item()),
+                "native_top1_margin": float(
+                    (native_top.values[0] - native_top.values[1]).item()),
+                "reference_top5": ref_ids,
+                "native_top5": native_ids,
+                "candidate_logits": [
+                    {"index": ix, "reference": float(ref_log[ix].item()),
+                     "native": float(native_log[ix].item())}
+                    for ix in candidate_ids
+                ],
             }
         else:
             logit_choice = None
@@ -253,6 +284,8 @@ def run_diff(repo, fixture, sched, out, layer_limit=1):
                   "logit_choice": logit_choice,
                   "tolerances": {"atol": ATOL, "rtol": RTOL},
                   "pyvm_completed_calls": pyvm_completed[0],
+                  "input_seed": input_seed,
+                  "input_seed_override_calls": seed_override_calls[0],
                   "fields": records, **verdict}
         captured.append(record)
         Path(out).write_text(json.dumps(record, indent=2, sort_keys=True) + "\n")
@@ -262,6 +295,7 @@ def run_diff(repo, fixture, sched, out, layer_limit=1):
 
     BaseGlobals.diff = gated_diff
     dispatch.make_pyvm_interpreter = traced_pyvm_factory
+    torch.manual_seed = deterministic_input_seed
     # Do not pass skip_pyvm=false: the pinned parser may treat presence
     # of a boolean option as enabled. Upstream defaults skip_pyvm to False.
     # The reference interpreter must run before any comparison can be warranted.
@@ -277,6 +311,7 @@ def run_diff(repo, fixture, sched, out, layer_limit=1):
         sys.argv = old_argv
         BaseGlobals.diff = original
         dispatch.make_pyvm_interpreter = original_make_pyvm
+        torch.manual_seed = original_manual_seed
     if len(captured) != 1:
         raise RuntimeError(f"Expected one comparison; received {len(captured)}")
 
@@ -295,6 +330,7 @@ def main():
     parser.add_argument("--out", default="gpu_diff.json")
     parser.add_argument("--fixture-layers", type=int, choices=(2, 3, 16), default=2)
     parser.add_argument("--layer-limit", type=int, choices=(1, 2, 4, 8, 12, 16), default=1)
+    parser.add_argument("--input-seed", type=int, choices=INPUT_SEEDS, default=0)
     args = parser.parse_args()
     if args.self_test:
         import unittest
@@ -316,7 +352,8 @@ def main():
             raise RuntimeError("--compare-fixtures requires --other-fixture")
         verify_paired_fixture_weights(args.fixture, args.other_fixture)
     else:
-        run_diff(args.repo, args.fixture, args.diff, args.out, layer_limit=args.layer_limit)
+        run_diff(args.repo, args.fixture, args.diff, args.out,
+                 layer_limit=args.layer_limit, input_seed=args.input_seed)
 
 
 if __name__ == "__main__":
