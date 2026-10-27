@@ -2462,6 +2462,24 @@ fn compare_neutral_heads(
                     );
                 }
             }
+            #[cfg(feature = "diagnostics")]
+            if std::env::var_os("NUCLEUS_TRACE_QUOTIENT_MAJOR").is_some()
+                && context.len() == 12
+                && left.spine.len() >= 5
+            {
+                let machine = checker.machine();
+                let q = left.spine.last();
+                let prior = left.spine.get(left.spine.len().saturating_sub(2));
+                eprintln!(
+                    "NUCLEUS_QUOTIENT_MAJOR:left_head={:?}:left_arity={}:right_head={:?}:right_arity={}:left_last={q:?}:last_full={:?}:penultimate={prior:?}:penultimate_full={:?}",
+                    left.head,
+                    left.spine.len(),
+                    right.head,
+                    right.spine.len(),
+                    q.map(|c| machine.expose(c.clone(), Transparency::Full, budget.min(1024))),
+                    prior.map(|c| machine.expose(c.clone(), Transparency::Full, budget.min(1024))),
+                );
+            }
             if std::env::var_os("NUCLEUS_TRACE_RECURSOR_MAJOR").is_some() { eprintln!("NUCLEUS_RECURSOR_MAJOR:left={:?}:right={:?}", left.spine.last(), right.spine.last()); if let Some(c) = right.spine.last() { eprintln!("NUCLEUS_RECURSOR_MAJOR_VALUE:{:?}", checker.machine().expose(c.clone(), Transparency::Full, budget.min(64))); } }
             #[cfg(feature = "diagnostics")]
             if std::env::var_os("NUCLEUS_TRACE_CHECKED_MAJOR_CHAIN").is_some() && left.spine.len()>=4 && context.len()<=24 {
