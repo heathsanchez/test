@@ -162,6 +162,7 @@ jobs:
           data=json.loads(source.read_text())
           flags=data['origin_flags']
           records=[]
+          failures=[]
           for mode in ['default','origin','demand','captured-pi','origin-captured-pi','certified-quot-iota','origin-certified-quot-iota','origin-certified-quot-plus-pi']:
               env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
               if mode in ('origin','demand','origin-captured-pi','origin-certified-quot-iota','origin-certified-quot-plus-pi'):
@@ -174,18 +175,21 @@ jobs:
               if 'certified-quot' in mode:
                   env['NUCLEUS_EXPERIMENTAL_CERTIFIED_QUOT_IOTA']='1'
                   env['NUCLEUS_TRACE_CERTIFIED_QUOT_IOTA']='1'
+                  env['NUCLEUS_TRACE_QUOTIENT_BINDER_PAIR']='1'
+                  env['NUCLEUS_TRACE_DOWNSTREAM']='1'
               if mode=='origin-certified-quot-plus-pi':
                   env['NUCLEUS_EXPERIMENTAL_CAPTURED_PI_RECOVERY']='1'
               entry={'mode':mode}
               for label in ['authentic','mutated']:
                   with (root/(label+'.ndjson')).open('rb') as inp:
                       p=subprocess.run([binary],stdin=inp,capture_output=True,env=env,timeout=240)
-                  entry[label]={'exit':p.returncode,'stderr_tail':p.stderr.decode(errors='replace')[-1100:]}
-              assert entry['authentic']['exit'] in (0,2),entry
-              assert entry['mutated']['exit'] in (1,2),entry
+                  entry[label]={'exit':p.returncode,'stderr_tail':p.stderr.decode(errors='replace')[-6500:]}
+              if entry['authentic']['exit'] not in (0,2) or entry['mutated']['exit'] not in (1,2):
+                  failures.append({'mode':mode,'authentic':entry['authentic']['exit'],'mutated':entry['mutated']['exit']})
               records.append(entry)
               print(json.dumps(entry),flush=True)
-          (root/'mode-matrix.json').write_text(json.dumps(records,indent=2)+'\n')
+          (root/'mode-matrix.json').write_text(json.dumps({'records':records,'regressions':failures},indent=2)+'\n')
+          assert not failures, failures
           PY
       - name: Retain exact bytes and diagnostic evidence
         if: always()
