@@ -2,11 +2,12 @@ name: Nucleus exact List.getElem source obstruction
 on:
   push:
     branches:
-      - exp/nucleus-quotient-lift2-20261027
+      - exp/nucleus-getelem-receiver-20261028
     paths:
       - "experiments/nucleus_getelem_source_prefix.py"
       - "experiments/nucleus_getelem_motive_witness.py"
       - "metatron-kernel/src/typecheck.rs"
+      - "metatron-kernel/src/convert.rs"
       - ".github/workflows/nucleus-getelem-source-prefix.yml"
   workflow_dispatch:
 permissions:
