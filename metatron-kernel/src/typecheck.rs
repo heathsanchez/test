@@ -3492,6 +3492,110 @@ impl<'a> TypeChecker<'a> {
         skipped_proof
     }
 
+    /// Experimental proof irrelevance for a source-typed theorem application
+    /// versus a source-typed lambda. This is not head/shape equality:
+    /// every neutral argument is independently checked against its dependent
+    /// Pi domain, the lambda is independently re-inferred from its exact
+    /// original source expression and capture, and both resulting types must
+    /// convert to the SAME certified proposition.
+    ///
+    /// Unknown or refuted premises confer no authority. The recursion guard
+    /// prevents this proof-rule from justifying its own prerequisites.
+    pub(crate) fn certified_neutral_lambda_proof_irrelevance(
+        &self,
+        neutral: &Neutral,
+        lambda_domain: &Closure,
+        lambda_body: &Closure,
+        context: &[TypeValue],
+        budget: usize,
+    ) -> bool {
+        if std::env::var_os("NUCLEUS_EXPERIMENTAL_SOURCE_PROOF_IRREL").is_none()
+            || budget < 2048 || context.len() > 24
+            || lambda_domain.env != lambda_body.env
+            || lambda_domain.levels != lambda_body.levels
+        { return false; }
+        std::thread_local! {
+            static IN_FLIGHT: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+        }
+        IN_FLIGHT.with(|guard| {
+            if guard.replace(true) { return false; }
+            let success = (|| {
+                let NeutralHead::Const { name, levels } = &neutral.head else {
+                    return false;
+                };
+                let Some(decl) = self.environment.get(*name) else { return false; };
+                if decl.level_params.len() != levels.len() { return false; }
+                let substitutions = decl.level_params.iter().copied()
+                    .zip(levels.iter().cloned()).collect::<Vec<_>>();
+                let mut current = TypeValue::Term(Closure::with_levels(
+                    decl.ty, EnvFrame::empty(), LevelSubstitution::new(substitutions),
+                ));
+                for argument in &neutral.spine {
+                    let Some((domain, body)) = self.pi_view(
+                        Judgment::proven(current, "certified-neutral-proof-Pi"),
+                        budget.min(1024),
+                    ) else { return false; };
+                    let mut remaining = budget.min(2048);
+                    let Some(argument_type) = self.infer_exact_closure_in_context(
+                        argument, context, &mut remaining, 0,
+                    ) else { return false; };
+                    if !crate::convert::convert_with_policy_in_context(
+                        self, &argument_type, &domain, remaining.min(512),
+                        crate::convert::DeltaPolicy::PreferredOnly,
+                        context.len(), context,
+                    ).is_proven() { return false; }
+                    current = match body {
+                        PiBody::Fixed(binder, body) => {
+                            let mut remaining = budget.min(512);
+                            let Some(next) = self.instantiate_fixed_pi_body(
+                                &body, binder, argument, &mut remaining,
+                            ) else { return false; };
+                            next
+                        },
+                        PiBody::Closure(body) => TypeValue::Term(Closure::with_levels(
+                            body.expr, body.env.extend(argument.clone()), body.levels,
+                        )),
+                    };
+                }
+                let TypeValue::Term(proposition) = &current else { return false; };
+                if !self.checked_captured_prop_type_in_context(
+                    proposition, context, budget.min(2048),
+                ).is_proven() { return false; }
+
+                let matches = self.expressions.iter_raw().filter_map(|(raw, term)| {
+                    match term {
+                        Expr::Lam { domain, body, .. }
+                            if *domain == lambda_domain.expr && *body == lambda_body.expr
+                            => Some(ExprId(raw)),
+                        _ => None,
+                    }
+                }).collect::<Vec<_>>();
+                let [lambda_expr] = matches.as_slice() else { return false; };
+                let source_lambda = Closure::with_levels(
+                    *lambda_expr, lambda_domain.env.clone(), lambda_domain.levels.clone(),
+                );
+                let mut remaining = budget.min(2048);
+                let Some(lambda_type) = self.infer_exact_closure_in_context(
+                    &source_lambda, context, &mut remaining, 0,
+                ) else { return false; };
+                crate::convert::convert_with_policy_in_context(
+                    self, &current, &lambda_type, remaining.min(512),
+                    crate::convert::DeltaPolicy::PreferredOnly,
+                    context.len(), context,
+                ).is_proven()
+            })();
+            guard.set(false);
+            #[cfg(feature = "diagnostics")]
+            if std::env::var_os("NUCLEUS_TRACE_SOURCE_PROOF_IRREL").is_some() {
+                eprintln!(
+                    "NUCLEUS_SOURCE_PROOF_IRREL:context={}:spine={}:certified={success}",
+                    context.len(), neutral.spine.len(),
+                );
+            }
+            success
+        })
+    }
+
     /// Diagnostic only: reconstruct an actual source lambda by its exact
     /// immutable binder domain and body node plus captured frame and levels.
     /// Do not give syntactic similarities or source ID searches equality authority.
