@@ -30,7 +30,7 @@ def run(input_path,env):
     with input_path.open("rb") as inp:
         r=subprocess.run(["metatron-kernel/target/release/metatron-kernel"],
                          stdin=inp,capture_output=True,timeout=150,env=env)
-    return {"exit":r.returncode,"stderr_tail":r.stderr.decode(errors="replace")[-1200:]}
+    return {"exit":r.returncode,"stderr_tail":r.stderr.decode(errors="replace")[-4200:]}
 try:
     forged=ROOT/"forged-dependent-motive.ndjson"
     wrong=ROOT/"forged-dependent-index.ndjson"
@@ -71,6 +71,7 @@ try:
     for mode in ("budget-split","typed-receiver"):
         modes[mode]["NUCLEUS_EXPERIMENTAL_RECEIVER_BUDGET_SPLIT"]="1"
     modes["typed-receiver"]["NUCLEUS_EXPERIMENTAL_TYPED_RECEIVER_ARGUMENT"]="1"
+    modes["typed-receiver"]["NUCLEUS_TRACE_TYPED_RECEIVER_SOURCE_FAILURE"]="1"
     for mode,env in modes.items():
         verdicts={
             "authentic":run(auth,env),
