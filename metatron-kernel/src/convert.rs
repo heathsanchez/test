@@ -2471,14 +2471,31 @@ fn compare_neutral_heads(
                 return Judgment::unknown("neutral-projection-receiver-congruence");
             }
             let mut source_work = budget.saturating_sub(1);
-            if exact_neutral_source_congruence(checker, left_structure, right_structure, &mut source_work) {
+            let source_equal = exact_neutral_source_congruence(
+                checker, left_structure, right_structure, &mut source_work
+            );
+            #[cfg(feature="diagnostics")]
+            if std::env::var_os("NUCLEUS_TRACE_GETELEM_PROJECTION").is_some() && depth==12 {
+                eprintln!(
+                    "NUCLEUS_GETELEM_PROJECTION_SOURCE:depth={depth}:original_budget={budget}:source_equal={source_equal}:remaining={source_work}:left_head={:?}:right_head={:?}:left_spine={}:right_spine={}",
+                    left_structure.head,right_structure.head,left_structure.spine.len(),right_structure.spine.len()
+                );
+            }
+            if source_equal {
                 return Judgment::proven((), "exact-source-neutral-receiver-congruence");
             }
             let budget = source_work;
             let probe = budget.saturating_sub(1) / 2;
-            if !compare_neutral_heads(
+            let receiver_head_relation = compare_neutral_heads(
                 checker, left_structure, right_structure, probe, depth, context,
-            ).is_proven() {
+            );
+            #[cfg(feature="diagnostics")]
+            if std::env::var_os("NUCLEUS_TRACE_GETELEM_PROJECTION").is_some() && depth==12 {
+                eprintln!(
+                    "NUCLEUS_GETELEM_PROJECTION_HEAD:depth={depth}:probe={probe}:result={receiver_head_relation:?}",
+                );
+            }
+            if !receiver_head_relation.is_proven() {
                 return Judgment::unknown("neutral-projection-receiver-congruence");
             }
             let argument_budget = probe / left_structure.spine.len().max(1);
@@ -2488,6 +2505,13 @@ fn compare_neutral_heads(
                     argument_budget, DeltaPolicy::GuardedSemanticFallback, depth, context,
                 );
                 if !argument_result.is_proven() {
+                    #[cfg(feature="diagnostics")]
+                    if std::env::var_os("NUCLEUS_TRACE_GETELEM_PROJECTION").is_some() && depth==12 {
+                        eprintln!(
+                            "NUCLEUS_GETELEM_PROJECTION_ARG:depth={depth}:budget={argument_budget}:result={argument_result:?}:left_expr={:?}:right_expr={:?}",
+                            lhs.expr,rhs.expr,
+                        );
+                    }
                     #[cfg(feature = "diagnostics")]
                     if std::env::var_os("NUCLEUS_TRACE_FAILED_RECEIVER_CAPTURES").is_some()
                         && matches!(lhs.expr.0, 600 | 1214)
