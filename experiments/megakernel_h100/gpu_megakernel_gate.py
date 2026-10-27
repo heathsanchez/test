@@ -212,6 +212,29 @@ def run_diff(repo, fixture, sched, out, layer_limit=1):
                 "violations": int(violations),
                 "max_abs_diff": float(delta[finite].max().item()) if finite.any() else None,
             }
+            # Preserve bounded synthetic observations needed to distinguish
+            # BF16-scale drift from a scheduler fault. Only sample the two
+            # small fields; large cache arrays retain aggregate checks.
+            if int(violations) and name in ("hidden_states", "logits"):
+                excess = torch.where(
+                    finite & (delta > allowed), delta - allowed,
+                    torch.full_like(delta, -float("inf")),
+                ).flatten()
+                positions = torch.topk(
+                    excess, k=min(int(violations), 8)
+                ).indices.tolist()
+                af, bf = a.flatten(), b.flatten()
+                df, tf = delta.flatten(), allowed.flatten()
+                records[name]["mismatch_examples"] = [
+                    {
+                        "flat_index": int(i),
+                        "lhs": float(af[i].item()),
+                        "rhs": float(bf[i].item()),
+                        "absolute_error": float(df[i].item()),
+                        "allowed_error": float(tf[i].item()),
+                    }
+                    for i in positions
+                ]
         verdict = evaluate_summary(records, required_fields=required_fields)
         if lm_head_active:
             # Prevent vacuous all-zero LM-head parity.
