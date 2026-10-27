@@ -19,7 +19,8 @@ class GateTests(unittest.TestCase):
     def test_registered_lmhead_pair_scope(self):
         source = Path(__file__).with_name("gpu_megakernel_gate.py").read_text()
         self.assertIn("num_hidden_layers=num_layers, num_attention_heads=32", source)
-        self.assertIn('((2, 1), (3, 2), (2, 2), (16, 16))', source)
+        self.assertIn("registered = {(2, 1), (3, 2), (2, 2)}", source)
+        self.assertIn("(16, depth) for depth in (1, 2, 4, 8, 12, 16)", source)
         self.assertIn("lm_head_active = num_layers == layer_limit", source)
         self.assertIn('f"layer_limit={layer_limit}"', source)
         self.assertIn('"lm_head_exercised": lm_head_active', source)
