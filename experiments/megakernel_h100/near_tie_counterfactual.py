@@ -110,6 +110,11 @@ def audit(report):
         "source_pin": baseline["source_pin"],
         "cases_checked": len(PLAN),
         "strict_split_witnesses": sum(v["boosted_winners_differ"] for v in cases.values()),
+        "budget_split_counts": {
+            str(budget): sum(v["budgets"][str(budget)] == "COUNTERFACTUAL_SPLIT_EXISTS"
+                             for v in cases.values())
+            for budget in BUDGETS
+        },
         "intervention": "identical positive FP64 additive offset to exactly one challenger logit; no upstream or GPU execution",
         "budget_units": "logit-score units; strict boost less than stated budget",
         "cases": cases,
