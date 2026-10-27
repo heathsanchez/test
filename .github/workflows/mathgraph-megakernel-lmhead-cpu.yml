@@ -112,3 +112,38 @@ jobs:
             consequence_evidence/witness_audit_replayed.json
             consequence_evidence/conditional_ranking_certificate.json
           if-no-files-found: warn
+
+      - name: Download authentic full BF16 logit evidence
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 40597374153
+          github-token: ${{ github.token }}
+          name: mathgraph-h100-raw-logits-40597374153
+          path: raw_logits_evidence
+
+      - name: Independently replay complete vectors and certify exact native rank
+        run: |
+          python experiments/megakernel_h100/independent_full_logit_replay.py \
+            raw_logits_evidence/remote_result.json \
+            --out raw_logits_evidence/exhaustive_winner_audit.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r = json.loads(Path("raw_logits_evidence/exhaustive_winner_audit.json").read_text())
+          assert r["status"] == "FULL_BF16_LOGIT_VECTOR_REPLAYED_NOT_INDEPENDENT_GPU_EXECUTION"
+          assert r["cases_checked"] == 6
+          assert r["pairs_of_logits_replayed"] == 6 * 128256
+          assert r["top1_agreements"] == 6
+          assert r["sufficient_ranking_margins"] == 5
+          assert r["exhaustive_strict_winner_certificates"] == 6
+          assert all(x["exhaustive_winner_gap"] > 0 for x in r["cases"].values())
+          print("MATHGRAPH_FULL_VECTOR_EXHAUSTIVE_SIX_OF_SIX_WINNER_CERTIFICATES")
+          PY
+
+      - name: Retain independently generated exhaustive winner audit
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mathgraph-h100-exhaustive-winner-audit
+          path: raw_logits_evidence/exhaustive_winner_audit.json
+          if-no-files-found: warn
