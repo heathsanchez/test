@@ -1661,6 +1661,19 @@ fn compare_values(
                 continue;
             }
             (Value::Neutral(left), Value::Neutral(right)) => {
+                #[cfg(feature = "diagnostics")]
+                if std::env::var_os("NUCLEUS_TRACE_QUOTIENT_BINDER_PAIR").is_some()
+                    && depth == 12
+                    && left.head == right.head
+                    && matches!(&left.head, NeutralHead::Free(_))
+                    && !left.spine.is_empty()
+                {
+                    eprintln!(
+                        "NUCLEUS_QUOTIENT_BINDER_PAIR:head={:?}:left_arity={}:right_arity={}:left_args={:?}:right_args={:?}:depth={depth}",
+                        left.head, left.spine.len(), right.spine.len(),
+                        left.spine, right.spine,
+                    );
+                }
                 // The original closure machine can leave a registered
                 // Quot.lift neutral after cheap exposure, even though its
                 // exact source major evaluates to Quot.mk. Replay that
