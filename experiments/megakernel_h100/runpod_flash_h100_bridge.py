@@ -231,12 +231,19 @@ async def run_async_differential(gate_source: str, out: Path) -> dict:
         print(f"MATHGRAPH_H100_ASYNC_JOB={job.id}", flush=True)
 
         await job.wait(timeout=ASYNC_WAIT_SECONDS)
-        if job.error:
+        runpod_status = getattr(job, "_data", {}).get("status")
+        report["runpod_status"] = runpod_status
+        if runpod_status != "COMPLETED":
+            report["status"] = ("UNKNOWN_REMOTE_JOB_FAILED" if runpod_status == "FAILED"
+                                else "UNKNOWN_REMOTE_JOB_NOT_COMPLETED")
+            report["remote_error_present"] = bool(job.error)
+        elif job.error:
             report["status"] = "UNKNOWN_REMOTE_JOB_FAILED"
             report["exception_summary"] = redact_error(job.error)
         elif isinstance(job.output, dict):
             # A GPU-produced FAIL/REJECTED report must never be promoted to PASS.
             report = dict(job.output)
+            report["runpod_status"] = runpod_status
             report["runpod_job_id"] = job.id
             report["runpod_endpoint_id"] = endpoint_id
         else:
