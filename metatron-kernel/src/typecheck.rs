@@ -3492,6 +3492,54 @@ impl<'a> TypeChecker<'a> {
         skipped_proof
     }
 
+    /// Diagnostic only: reconstruct an actual source lambda by its exact
+    /// immutable binder domain and body node plus captured frame and levels.
+    /// Do not give syntactic similarities or source ID searches equality authority.
+    #[cfg(feature = "diagnostics")]
+    pub(crate) fn diagnostic_neutral_lambda_source_types(
+        &self,
+        neutral: &Neutral,
+        lambda_domain: &Closure,
+        lambda_body: &Closure,
+        context: &[TypeValue],
+        budget: usize,
+    ) -> String {
+        if lambda_domain.env != lambda_body.env
+            || lambda_domain.levels != lambda_body.levels
+        {
+            return "lambda-source-capture-not-identical".into();
+        }
+        let candidates: Vec<_> = self.expressions.iter_raw().filter_map(|(index, syntax)| {
+            match syntax {
+                Expr::Lam { domain, body, .. }
+                    if *domain == lambda_domain.expr && *body == lambda_body.expr
+                    => Some(ExprId(index)),
+                _ => None,
+            }
+        }).collect();
+        if candidates.len() != 1 {
+            return format!("source-lambda-candidates={candidates:?}");
+        }
+        let lambda = Closure::with_levels(
+            candidates[0], lambda_domain.env.clone(), lambda_domain.levels.clone()
+        );
+        let mut fuel = budget.min(2048);
+        let left_type = self.neutral_result_type(neutral, context, fuel);
+        let right_type = self.infer_exact_closure_in_context(
+            &lambda, context, &mut fuel, 0,
+        );
+        let conversion = match (&left_type, &right_type) {
+            (Some(left), Some(right)) =>
+                Some(crate::convert::convert_with_policy_in_context(
+                    self, left, right, fuel.min(512),
+                    crate::convert::DeltaPolicy::PreferredOnly,
+                    context.len(), context,
+                )),
+            _ => None,
+        };
+        format!("source_lambda={:?}:left_type={left_type:?}:right_type={right_type:?}:type_conversion={conversion:?}:fuel_left={fuel}",candidates[0])
+    }
+
     /// Diagnostic only: independently inspect whether a neutral's recovered
     /// exact source result type is a proposition in the supplied Gamma.
     /// Nothing about this observation licenses a conversion judgment.
