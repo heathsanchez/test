@@ -78,13 +78,27 @@ async def run_h100_differential(gate_source: str):
 
     def stage(name, argv, timeout, cwd=None, env=None):
         begin = time.monotonic()
-        p = subprocess.run(
-            argv, cwd=cwd, env=env, timeout=timeout,
-            capture_output=True, text=True, errors="replace", check=False,
-        )
+        try:
+            p = subprocess.run(
+                argv, cwd=cwd, env=env, timeout=timeout,
+                capture_output=True, text=True, errors="replace", check=False,
+            )
+        except subprocess.TimeoutExpired as exc:
+            # TimeoutExpired may retain stdout/stderr as bytes even with text=True.
+            def decoded(stream):
+                return (stream or b"").decode("utf-8", "replace") if isinstance(stream, bytes) else (stream or "")
+            combined = decoded(exc.stdout) + "\n" + decoded(exc.stderr)
+            report["stages"].append({
+                "name": name, "returncode": None, "timed_out": True,
+                "timeout_seconds": timeout,
+                "wall_seconds": round(time.monotonic() - begin, 3),
+                "output_sha256": hashlib.sha256(combined.encode()).hexdigest(),
+                "output_size": len(combined), "output_tail": combined[-6500:],
+            })
+            raise
         combined = p.stdout + "\n" + p.stderr
         row = {
-            "name": name, "returncode": p.returncode,
+            "name": name, "returncode": p.returncode, "timed_out": False,
             "wall_seconds": round(time.monotonic() - begin, 3),
             "output_sha256": hashlib.sha256(combined.encode()).hexdigest(),
             "output_size": len(combined),
@@ -150,7 +164,7 @@ async def run_h100_differential(gate_source: str):
             for sched in ("rr", "dag"):
                 dest = root / f"{sched}.json"
                 try:
-                    stage(f"diff_{sched}", [sys.executable, str(gate),
+                    stage(f"diff_{sched}", [sys.executable, "-u", str(gate),
                          "--diff", sched, "--repo", str(repo),
                          "--fixture", str(fixture), "--out", str(dest)],
                          180, env=env)
