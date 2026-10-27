@@ -82,7 +82,7 @@ def audit(data):
         for name in fields:
             m = metrics[name]
             require(m.get("elements") == ELEMENTS[name], "tensor shape " + key + "/" + name)
-            require(type(m.get("violations")) is int and m["violations"] >= 0, "violation count")
+            require(type(m.get("violations")) is int and 0 <= m["violations"] <= m["elements"], "violation count")
             require(type(m.get("nonfinite")) is int and m["nonfinite"] == 0, "nonfinite output")
             require(finite_number(m.get("max_abs_diff")) and m["max_abs_diff"] >= 0, "difference statistic")
             if m["violations"]:
@@ -98,6 +98,9 @@ def audit(data):
                             "witness nonfinite")
                     require(abs(abs(w["reference"]-w["gpu"])-w["abs_error"]) < 1e-5,
                             "witness arithmetic")
+                    expected_allowance = TOLERANCE["atol"] + TOLERANCE["rtol"] * abs(w["reference"])
+                    require(abs(w["allowed_error"] - expected_allowance) < 1e-5,
+                            "witness allowance is not derived from reference")
                     require(w["abs_error"] > w["allowed_error"], "witness not violating bound")
         require(case.get("reasons") == failures, "reasons disagree with observed violations " + key)
         require(case.get("passed") is (len(failures) == 0), "reported verdict inconsistent " + key)
@@ -106,9 +109,12 @@ def audit(data):
             require(isinstance(choice, dict), "missing top-token observation")
             require(type(choice.get("reference_top1")) is int and
                     type(choice.get("native_top1")) is int, "top-token identity")
+            require(0 <= choice["reference_top1"] < ELEMENTS["logits"] and
+                    0 <= choice["native_top1"] < ELEMENTS["logits"], "top-token range")
             require(choice.get("top1_equal") is
                     (choice["reference_top1"] == choice["native_top1"]), "top-token consistency")
-            require(finite_number(choice.get("reference_top1_margin")), "token margin")
+            require(finite_number(choice.get("reference_top1_margin")) and
+                    choice["reference_top1_margin"] >= 0, "token margin")
         else:
             require(choice is None, "unexecuted LM-head token claim")
         result[key] = {"passed": case["passed"],
