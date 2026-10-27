@@ -32,6 +32,8 @@ class DepthDiagnosticTests(unittest.TestCase):
         gate = (ROOT / "gpu_megakernel_gate.py").read_text()
         self.assertIn('registered = {(2, 1), (3, 2), (2, 2)}', gate)
         self.assertIn('{(16, depth) for depth in (1, 2, 4, 8, 12, 16)}', gate)
+        self.assertIn('choices=(1, 2, 4, 8, 12, 16)', gate)
+        self.assertNotIn('choices=(1, 2, 16)', gate)
         self.assertIn('if pyvm_completed[0] < 1:', gate)
 
 
