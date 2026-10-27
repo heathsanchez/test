@@ -1,0 +1,105 @@
+name: MathGraph H100 Full16 Differential - RUN THIS
+
+# Separate source-native full-model architecture test; no upstream writes.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/mathgraph-h100-full16-20261027.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mathgraph-h100-full16
+  cancel-in-progress: false
+
+jobs:
+  full16:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.head_commit.message == 'H100-FULL16: launch bounded verified full-model test'
+    runs-on: ubuntu-latest
+    timeout-minutes: 19
+    env:
+      RUNPOD_API_KEY: ${{ secrets.RUNPOD_API_KEY }}
+      FLASH_APP: mathgraph-full16-${{ github.run_id }}
+      FLASH_ENV: production
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 8898f0f5590df6c12e33c2ac854e4344b5f23dc5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: CPU validation before spending GPU
+        run: |
+          python -m compileall -q experiments/megakernel_h100
+          python -m unittest discover -s experiments/megakernel_h100 -p 'test_*.py' -v
+          python experiments/megakernel_h100/gpu_megakernel_gate.py --self-test
+      - name: Require RunPod credentials
+        run: |
+          test -n "$RUNPOD_API_KEY" || { echo "::error::Missing RUNPOD_API_KEY"; exit 1; }
+      - name: Install pinned Flash
+        run: |
+          python -m pip install --disable-pip-version-check --no-input runpod-flash==1.21.0
+      - name: Deploy isolated H100 endpoint
+        run: |
+          mkdir -p h100_evidence
+          echo DEPLOY_ATTEMPTED > h100_evidence/deploy_attempted
+          cd experiments/megakernel_h100
+          flash deploy --app "$FLASH_APP" --env "$FLASH_ENV" --no-deps
+      - name: Execute pinned 16-layer full-model differential
+        run: |
+          python experiments/megakernel_h100/runpod_flash_h100_bridge.py \
+            --probe-kind full16 \
+            --gate experiments/megakernel_h100/gpu_megakernel_gate.py \
+            --out h100_evidence/remote_result.json
+      - name: Require real device, source, reference, and full16 parity
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r = json.loads(Path("h100_evidence/remote_result.json").read_text())
+          assert r["status"] == "PASS_FULL16", r.get("status")
+          assert r.get("runpod_status") == "COMPLETED"
+          assert r.get("runpod_job_id")
+          assert r.get("source_pin") == "7309cec801537b61fea3b50d7dfe454a6cde578e"
+          assert r.get("sm_count") == 132
+          assert "H100" in r.get("gpu_name", "")
+          for name in ("rr", "dag"):
+              c = r["checks"][name]
+              assert c["passed"] is True, c
+              assert c["source_commit"] == r["source_pin"]
+              assert c["pyvm_completed_calls"] >= 1
+              assert c["fixture_layers"] == 16 and c["executed_layers"] == 16
+              assert c["lm_head_exercised"] is True
+              assert c["fields_compared"] == ["hidden_states", "k_cache", "v_cache", "logits"]
+              assert all(v["violations"] == 0 and v["nonfinite"] == 0 for v in c["fields"].values())
+          print("MATHGRAPH_H100_FULL16_PINNED_DIFFERENTIAL_PASS")
+          PY
+      - name: Delete RunPod app and verify absence
+        if: always()
+        run: |
+          if [ ! -f h100_evidence/deploy_attempted ]; then
+            echo CLEANUP_NOT_REQUIRED_NO_DEPLOY_ATTEMPT
+          elif command -v flash >/dev/null 2>&1 && [ -n "$RUNPOD_API_KEY" ]; then
+            if flash app list | grep -Fq "$FLASH_APP"; then
+              flash app delete "$FLASH_APP"
+            fi
+            if flash app list | grep -Fq "$FLASH_APP"; then
+              echo "::error::CLOUD_CLEANUP_UNVERIFIED"
+              exit 1
+            fi
+            echo CLOUD_APP_DELETION_VERIFIED
+          else
+            echo "::error::CLEANUP_NOT_ATTEMPTED"
+            exit 1
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mathgraph-h100-full16-${{ github.run_id }}
+          path: h100_evidence/
+          if-no-files-found: warn
