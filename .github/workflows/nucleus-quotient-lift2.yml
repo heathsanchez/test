@@ -7,6 +7,7 @@ on:
       - ".github/workflows/nucleus-quotient-lift2.yml"
       - "metatron-kernel/src/typecheck.rs"
       - "metatron-kernel/src/machine.rs"
+      - "metatron-kernel/src/convert.rs"
   workflow_dispatch:
 
 permissions:
