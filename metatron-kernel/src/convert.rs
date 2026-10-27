@@ -2470,7 +2470,17 @@ fn compare_neutral_heads(
             if budget < 8 || left_structure.spine.len() != right_structure.spine.len() {
                 return Judgment::unknown("neutral-projection-receiver-congruence");
             }
-            let mut source_work = budget.saturating_sub(1);
+            // The exact captured-source identity probe is only a sufficient
+            // fast path. Its failure does NOT mean the receivers are unequal.
+            // In this experimental scheduling policy, reserve 3/4 of the
+            // original allowance for the independently checked semantic
+            // receiver/argument congruence path.
+            let reserve = if std::env::var_os(
+                "NUCLEUS_EXPERIMENTAL_RECEIVER_BUDGET_RESERVE"
+            ).is_some() && depth == context.len() {
+                budget.saturating_sub(1).saturating_mul(3) / 4
+            } else { 0 };
+            let mut source_work = budget.saturating_sub(1).saturating_sub(reserve);
             let source_equal = exact_neutral_source_congruence(
                 checker, left_structure, right_structure, &mut source_work
             );
@@ -2484,7 +2494,9 @@ fn compare_neutral_heads(
             if source_equal {
                 return Judgment::proven((), "exact-source-neutral-receiver-congruence");
             }
-            let budget = source_work;
+            // Both spent source work and fallback use the same finite
+            // original budget; a failed fast path cannot consume its reserve.
+            let budget = reserve.saturating_add(source_work);
             let probe = budget.saturating_sub(1) / 2;
             let receiver_head_relation = compare_neutral_heads(
                 checker, left_structure, right_structure, probe, depth, context,
