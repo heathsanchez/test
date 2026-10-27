@@ -21,6 +21,19 @@ class Full16ContractTests(unittest.TestCase):
         self.assertIn('"fixture_layers": num_layers', gate)
         self.assertIn('"executed_layers": layer_limit', gate)
 
+    def test_numeric_failure_witness_and_scheduler_continuation(self):
+        gate = Path(__file__).with_name("gpu_megakernel_gate.py").read_text()
+        worker = Path(__file__).with_name("runpod_flash_h100_bridge.py").read_text()
+        self.assertIn('"first_violations"', gate)
+        self.assertIn('"reference_top1"', gate)
+        self.assertIn('"native_top1"', gate)
+        self.assertIn('"top1_equal"', gate)
+        self.assertIn('"allowed_error"', gate)
+        self.assertIn('if outcome.get("passed") is False:', worker)
+        self.assertIn('if not numerical_rejection:', worker)
+        self.assertIn('for sched in ("rr", "dag"):', worker)
+        self.assertIn('"REJECTED_FULL16_DIFFERENTIAL"', worker)
+
     def test_full_short_fixtures_rejected_not_gpu_failures(self):
         facts = audit_sources(
             "#define LLAMA_1B_NUM_LAYERS 16\n",
