@@ -6,6 +6,7 @@ on:
     paths:
       - ".github/workflows/nucleus-quotient-lift2.yml"
       - "metatron-kernel/src/typecheck.rs"
+      - "metatron-kernel/src/machine.rs"
   workflow_dispatch:
 
 permissions:
@@ -159,15 +160,20 @@ jobs:
           data=json.loads(source.read_text())
           flags=data['origin_flags']
           records=[]
-          for mode in ['default','origin','demand','captured-pi','origin-captured-pi']:
+          for mode in ['default','origin','demand','captured-pi','origin-captured-pi','certified-quot-iota','origin-certified-quot-iota','origin-certified-quot-plus-pi']:
               env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
-              if mode in ('origin','demand','origin-captured-pi'):
+              if mode in ('origin','demand','origin-captured-pi','origin-certified-quot-iota','origin-certified-quot-plus-pi'):
                   env.update({'NUCLEUS_EXPERIMENTAL_'+x:'1' for x in flags})
               if mode=='demand':
                   env['NUCLEUS_EXPERIMENTAL_DEMAND_MAJOR']='1'
               if 'captured-pi' in mode:
                   env['NUCLEUS_EXPERIMENTAL_CAPTURED_PI_RECOVERY']='1'
                   env['NUCLEUS_TRACE_CAPTURED_PI_RECOVERY']='1'
+              if 'certified-quot' in mode:
+                  env['NUCLEUS_EXPERIMENTAL_CERTIFIED_QUOT_IOTA']='1'
+                  env['NUCLEUS_TRACE_CERTIFIED_QUOT_IOTA']='1'
+              if mode=='origin-certified-quot-plus-pi':
+                  env['NUCLEUS_EXPERIMENTAL_CAPTURED_PI_RECOVERY']='1'
               entry={'mode':mode}
               for label in ['authentic','mutated']:
                   with (root/(label+'.ndjson')).open('rb') as inp:
