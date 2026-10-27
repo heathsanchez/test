@@ -1,0 +1,113 @@
+name: MathGraph H100 Repeatability - RUN THIS
+
+# One bounded, fresh-process repeatability experiment with the public
+# pinned Megakernels source and synthetic weights. No upstream changes.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/mathgraph-h100-repeatability-20261028.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mathgraph-h100-repeatability-20261028
+  cancel-in-progress: false
+
+jobs:
+  repeatability:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.head_commit.message == 'H100-REPEAT: launch one bounded repeated-execution diagnostic'
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    env:
+      RUNPOD_API_KEY: ${{ secrets.RUNPOD_API_KEY }}
+      FLASH_APP: mathgraph-h100-repeat-${{ github.run_id }}
+      FLASH_ENV: production
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fed72362e4a7fd423a6d44d874845089563d583d
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run all CPU tests before paid GPU
+        run: |
+          python -m compileall -q experiments/megakernel_h100
+          python -m unittest discover -s experiments/megakernel_h100 -p 'test_*.py' -v
+          python experiments/megakernel_h100/gpu_megakernel_gate.py --self-test
+
+      - name: Require existing RunPod key
+        run: |
+          test -n "$RUNPOD_API_KEY" || { echo "::error::RUNPOD_API_KEY unavailable"; exit 1; }
+
+      - name: Install pinned RunPod Flash SDK
+        run: python -m pip install --disable-pip-version-check --no-input runpod-flash==1.21.0
+
+      - name: Deploy isolated H100 endpoint
+        run: |
+          mkdir -p h100_evidence
+          echo DEPLOY_ATTEMPTED > h100_evidence/deploy_attempted
+          cd experiments/megakernel_h100
+          flash deploy --app "$FLASH_APP" --env "$FLASH_ENV" --no-deps
+
+      - name: Execute three fresh RR and DAG repetitions
+        run: |
+          python experiments/megakernel_h100/runpod_flash_h100_bridge.py \
+            --probe-kind repeat_seed0 \
+            --gate experiments/megakernel_h100/gpu_megakernel_gate.py \
+            --out h100_evidence/remote_result.json
+
+      - name: Independently replay all raw logits and classify repeatability
+        run: |
+          python experiments/megakernel_h100/independent_repeatability_assurance.py \
+            h100_evidence/remote_result.json \
+            --out h100_evidence/independent_repeatability.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r = json.loads(Path("h100_evidence/independent_repeatability.json").read_text())
+          assert r["schema"] == "mathgraph-h100-bf16-repeatability-audit-v1"
+          assert r["cases_checked"] == 6
+          assert set(r["cases"]) == {f"rep{i}_{s}" for i in (1,2,3) for s in ("rr","dag")}
+          assert r["source_pin"] == "7309cec801537b61fea3b50d7dfe454a6cde578e"
+          assert r["status"] in ("REFERENCE_AND_INPUT_REPEATABILITY_ESTABLISHED",
+                                 "REFERENCE_OR_SAMPLED_INPUT_NONREPEATABLE")
+          print("MATHGRAPH_H100_REPEATABILITY_DIAGNOSTIC_ONLY", json.dumps({
+              "status": r["status"],
+              "input_sample_digest_distinct_count": r["input_sample_digest_distinct_count"],
+              "reference_output_digest_distinct_count": r["reference_output_digest_distinct_count"],
+              "all_six_native_winners_equal": r["all_six_native_winners_equal"],
+              "all_six_reference_native_top1_agree": r["all_six_reference_native_top1_agree"],
+              "by_scheduler": r["by_scheduler"]
+          }, sort_keys=True))
+          PY
+
+      - name: Delete cloud app and verify absence
+        if: always()
+        run: |
+          if [ ! -f h100_evidence/deploy_attempted ]; then
+            echo CLEANUP_NOT_REQUIRED_NO_DEPLOY_ATTEMPT
+          elif command -v flash >/dev/null 2>&1 && [ -n "$RUNPOD_API_KEY" ]; then
+            if flash app list | grep -Fq "$FLASH_APP"; then
+              flash app delete "$FLASH_APP"
+            fi
+            if flash app list | grep -Fq "$FLASH_APP"; then
+              echo "::error::CLOUD_CLEANUP_UNVERIFIED"
+              exit 1
+            fi
+            echo CLOUD_APP_DELETION_VERIFIED
+          else
+            echo "::error::CLEANUP_NOT_ATTEMPTED"
+            exit 1
+          fi
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mathgraph-h100-repeatability-${{ github.run_id }}
+          path: h100_evidence/
+          if-no-files-found: warn
