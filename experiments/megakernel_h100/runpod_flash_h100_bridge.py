@@ -46,6 +46,38 @@ def prepare_python_build_env(root: Path, env: dict) -> dict:
     return build_env
 
 
+def full16_verdict(checks: dict) -> str:
+    """Both scheduler receipts are mandatory; completion alone never means PASS."""
+    schedulers = ("rr", "dag")
+    if any(s not in checks for s in schedulers):
+        return "UNKNOWN_FULL16_INCOMPLETE"
+    for sched in schedulers:
+        c = checks[sched]
+        if not isinstance(c, dict) or (
+            c.get("scheduler") != sched
+            or c.get("source_commit") != SOURCE_PIN
+            or c.get("fixture_layers") != 16
+            or c.get("executed_layers") != 16
+            or c.get("lm_head_exercised") is not True
+            or c.get("pyvm_completed_calls", 0) < 1
+            or c.get("fields_compared") != [
+                "hidden_states", "k_cache", "v_cache", "logits"
+            ]
+            or c.get("passed") not in (True, False)
+        ):
+            return "UNKNOWN_FULL16_INVALID_RECEIPT"
+        for field in ("hidden_states", "k_cache", "v_cache", "logits"):
+            m = c.get("fields", {}).get(field)
+            if not isinstance(m, dict) or m.get("elements", 0) < 1:
+                return "UNKNOWN_FULL16_INVALID_RECEIPT"
+            if c["passed"] is True and (
+                m.get("violations") != 0 or m.get("nonfinite") != 0
+            ):
+                return "UNKNOWN_FULL16_INVALID_RECEIPT"
+    return ("PASS_FULL16" if all(checks[s]["passed"] is True for s in schedulers)
+            else "REJECTED_FULL16_DIFFERENTIAL")
+
+
 @Endpoint(
     name="mathgraph-megakernel-h100-20261027",
     gpu=GpuType.NVIDIA_H100_80GB_HBM3,
@@ -190,14 +222,21 @@ async def run_h100_differential(gate_source: str, probe_kind: str = "baseline"):
                                "--diff", sched, "--repo", str(repo),
                                "--fixture", str(fixture), "--layer-limit",
                                "16", "--out", str(dest)], 180, env=env)
+                    except RuntimeError as exc:
+                        # A recorded numerical rejection (rc=1) is not a
+                        # transport/crash failure. Still collect the other
+                        # scheduler independently.
+                        if (str(exc) != f"diff_full16_{sched} failed: rc=1"
+                                or not dest.exists()):
+                            raise
+                        receipt = json.loads(dest.read_text())
+                        if (receipt.get("scheduler") != sched
+                                or receipt.get("passed") is not False):
+                            raise
                     finally:
                         if dest.exists():
                             report["checks"][sched] = json.loads(dest.read_text())
-                    if not report["checks"].get(sched, {}).get("passed"):
-                        report["status"] = "REJECTED_FULL16_DIFFERENTIAL"
-                        break
-                else:
-                    report["status"] = "PASS_FULL16"
+                report["status"] = full16_verdict(report["checks"])
             elif probe_kind == "lmhead":
                 # Control: 2 of 3 layers. Treatment: 2 of 2 layers (LM head).
                 # Both fixtures are deterministically seeded; common weights
@@ -249,7 +288,10 @@ async def run_h100_differential(gate_source: str, probe_kind: str = "baseline"):
             else:
                 report["status"] = "UNKNOWN_UNREGISTERED_PROBE"
     except Exception as exc:
-        if any(c.get("passed") is False for c in report["checks"].values()):
+        if probe_kind == "full16":
+            # Incomplete RR/DAG coverage cannot be promoted to full16 PASS.
+            report["status"] = "UNKNOWN_FULL16_INCOMPLETE"
+        elif any(c.get("passed") is False for c in report["checks"].values()):
             report["status"] = "REJECTED_DIFFERENTIAL"
         else:
             report["status"] = "UNKNOWN_EXPERIMENT_INTERRUPTED"
