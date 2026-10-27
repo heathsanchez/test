@@ -1,0 +1,28 @@
+name: MathGraph H100 LM-head CPU Gate
+
+on:
+  push:
+    branches:
+      - gpu-developmental-hardware-v1
+    paths:
+      - experiments/megakernel_h100/**
+      - .github/workflows/mathgraph-megakernel-lmhead-cpu.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Syntax and unit controls (no GPU, no RunPod secret)
+        run: |
+          python -m compileall -q experiments/megakernel_h100
+          python -m unittest discover -s experiments/megakernel_h100 -p 'test_*.py' -v
+          python experiments/megakernel_h100/gpu_megakernel_gate.py --self-test
