@@ -30,7 +30,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 35fbd031be2e03c260dadd7c568e236f80605035
+          ref: bd648dfe25f616801972ea8207a2efcdf02746cf
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -63,6 +63,8 @@ jobs:
 
       - name: Deploy isolated H100 endpoint
         run: |
+          mkdir -p h100_evidence
+          echo "DEPLOY_ATTEMPTED" > h100_evidence/deploy_attempted
           cd experiments/megakernel_h100
           flash deploy --app "$FLASH_APP" --env "$FLASH_ENV" --no-deps
 
@@ -91,7 +93,9 @@ jobs:
       - name: Delete dedicated H100 app and endpoints even after error
         if: always()
         run: |
-          if command -v flash >/dev/null 2>&1 && [ -n "$RUNPOD_API_KEY" ]; then
+          if [ ! -f h100_evidence/deploy_attempted ]; then
+            echo "CLEANUP_NOT_REQUIRED_NO_DEPLOY_ATTEMPT"
+          elif command -v flash >/dev/null 2>&1 && [ -n "$RUNPOD_API_KEY" ]; then
             flash app delete "$FLASH_APP"
             if flash app list | grep -Fq "$FLASH_APP"; then
               echo "::error::CLOUD_CLEANUP_UNVERIFIED"
