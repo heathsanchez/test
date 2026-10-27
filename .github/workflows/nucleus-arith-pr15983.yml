@@ -1,0 +1,96 @@
+name: Nucleus exact Lean PR 15983 arithmetic certificate differential
+on:
+  push:
+    branches:
+      - exp/nucleus-lia-pr15924-20261026
+    paths:
+      - "compat/lean-pr15983/**"
+      - ".github/workflows/nucleus-arith-pr15983.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  exact-lean-checker-nucleus-differential:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    env:
+      LEAN_COMMIT: 33c050d0430abeb345e27a4e3f6a261e97e15a16
+      LEAN_SOURCE: /tmp/nucleus-lean-pr15983-exact
+      EVIDENCE: /tmp/nucleus-pr15983-evidence
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install official Lean build prerequisites
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y cmake make git clang libgmp-dev libuv1-dev libssl-dev
+          mkdir -p "$EVIDENCE"
+      - name: Fetch and identify exact upstream Lean commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          git init -q "$LEAN_SOURCE"
+          git -C "$LEAN_SOURCE" remote add origin https://github.com/leanprover/lean4.git
+          git -C "$LEAN_SOURCE" fetch --no-tags --depth=1 origin "$LEAN_COMMIT"
+          git -C "$LEAN_SOURCE" checkout -q --detach FETCH_HEAD
+          test "$(git -C "$LEAN_SOURCE" rev-parse HEAD)" = "$LEAN_COMMIT"
+          git -C "$LEAN_SOURCE" rev-parse HEAD | tee "$EVIDENCE/lean-source-commit.txt"
+      - name: Build official leanexport and leanchecker from exact Lean source
+        shell: bash
+        timeout-minutes: 115
+        run: |
+          set -euo pipefail
+          cd "$LEAN_SOURCE"
+          cmake --preset release
+          make -C build/release -j2
+          LEAN_ROOT="$LEAN_SOURCE/build/release/stage1"
+          test -x "$LEAN_ROOT/bin/lean"
+          test -x "$LEAN_ROOT/bin/leanexport"
+          test -x "$LEAN_ROOT/bin/leanchecker"
+          "$LEAN_ROOT/bin/lean" --version | tee "$EVIDENCE/lean-version.txt"
+          echo "LEAN_ROOT=$LEAN_ROOT" >> "$GITHUB_ENV"
+      - name: Elaborate pinned ex1 and export original certificate
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd compat/lean-pr15983
+          export LEAN_PATH="$LEAN_ROOT/lib/lean:$PWD"
+          "$LEAN_ROOT/bin/lean" -o NucleusSimpArith.olean NucleusSimpArith.lean > "$EVIDENCE/ex1-elaboration.txt"
+          grep -Fq 'le_eq_true_k' "$EVIDENCE/ex1-elaboration.txt"
+          grep -Fq 'Eq.refl true' "$EVIDENCE/ex1-elaboration.txt"
+          "$LEAN_ROOT/bin/leanexport" NucleusSimpArith -- ex₁ > "$EVIDENCE/ex1-authentic.ndjson"
+          test -s "$EVIDENCE/ex1-authentic.ndjson"
+          sha256sum "$EVIDENCE/ex1-authentic.ndjson" > "$EVIDENCE/ex1-authentic.sha256"
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build unchanged independent Nucleus at branch source
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          git rev-parse HEAD | tee "$EVIDENCE/nucleus-source-commit.txt"
+          sha256sum metatron-kernel/target/release/metatron-kernel > "$EVIDENCE/nucleus-binary.sha256"
+      - name: Compare genuine and type-only counterfeit under official and Nucleus checkers
+        id: differential
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 compat/lean-pr15983/exact_certificate_differential.py --authentic "$EVIDENCE/ex1-authentic.ndjson" --report-dir "$EVIDENCE" --leanchecker "$LEAN_ROOT/bin/leanchecker" --nucleus metatron-kernel/target/release/metatron-kernel
+      - name: Retain exact bytes and verdicts, including on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-lean15983-exact-differential-evidence
+          path: /tmp/nucleus-pr15983-evidence/
+          if-no-files-found: warn
+      - name: Explicit evidence boundary
+        if: always()
+        shell: bash
+        run: |
+          echo "Lean source pinned: 33c050d0430abeb345e27a4e3f6a261e97e15a16" >> "$GITHUB_STEP_SUMMARY"
+          echo "Source benchmark theorem: tests/elab/simp_int_arith.lean ex₁" >> "$GITHUB_STEP_SUMMARY"
+          echo "Official leanexport and leanchecker built from the identical pinned Lean checkout." >> "$GITHUB_STEP_SUMMARY"
+          echo "The authentic export must ACCEPT in both checkers and the claim-only coefficient mutation must REJECT officially and never ACCEPT in Nucleus." >> "$GITHUB_STEP_SUMMARY"
+          echo "This job does not rerun the frozen196 corpus or qualify all of Nucleus." >> "$GITHUB_STEP_SUMMARY"
