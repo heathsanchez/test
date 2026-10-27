@@ -1,0 +1,87 @@
+name: Nucleus context-copy cost census (frozen196)
+on:
+  push:
+    branches:
+      - exp/nucleus-context-census-20261027
+    paths:
+      - "experiments/patch_context_census.py"
+      - "experiments/run_census.py"
+      - ".github/workflows/nucleus-context-cost-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  context-cost:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Checkout independently qualified kernel source
+        uses: actions/checkout@v4
+        with:
+          ref: ff003e7fad888d39a40cfd2375885fe20e3209fa
+          path: qualified
+      - name: Checkout experiment scripts
+        uses: actions/checkout@v4
+        with:
+          path: experiment
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build unmodified reference executable
+        working-directory: qualified
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = ff003e7fad888d39a40cfd2375885fe20e3209fa
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus-baseline
+          mkdir -p /tmp/nucleus-context-evidence
+          sha256sum /tmp/nucleus-baseline > /tmp/nucleus-context-evidence/baseline-binary.sha256
+      - name: Instrument exact seven source sites and build diagnostic binary
+        working-directory: qualified
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 ../experiment/experiments/patch_context_census.py
+          git diff -- metatron-kernel/src/convert.rs metatron-kernel/src/main.rs > /tmp/nucleus-context-evidence/instrumentation.diff
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus-profile
+          sha256sum /tmp/nucleus-profile > /tmp/nucleus-context-evidence/profile-binary.sha256
+      - name: Download pinned historical Arena corpus
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/nucleus-context-inputs /tmp/arena-input-artifact
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/11272848230/zip > /tmp/arena-input.zip
+          sha256sum /tmp/arena-input.zip > /tmp/nucleus-context-evidence/source-zip.sha256
+          unzip -q /tmp/arena-input.zip -d /tmp/arena-input-artifact
+          test -f /tmp/arena-input-artifact/lean-arena-tests.tar.gz
+          tar -xzf /tmp/arena-input-artifact/lean-arena-tests.tar.gz -C /tmp/nucleus-context-inputs
+      - name: Run exact frozen196 source-hash and verdict parity with per-site counters
+        working-directory: qualified
+        shell: bash
+        env:
+          BASE: /tmp/nucleus-baseline
+          PROFILE: /tmp/nucleus-profile
+          INPUTS: /tmp/nucleus-context-inputs
+          OUTPUT: /tmp/nucleus-context-evidence
+        run: |
+          set -euo pipefail
+          python3 ../experiment/experiments/run_census.py
+      - name: Retain original source identities and bounded census
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-context-copy-cost-v1
+          path: /tmp/nucleus-context-evidence/
+          if-no-files-found: warn
+      - name: Record strict boundary
+        if: always()
+        shell: bash
+        run: |
+          echo "Qualified kernel pin: ff003e7fad888d39a40cfd2375885fe20e3209fa" >> "$GITHUB_STEP_SUMMARY"
+          echo "The only instrumented source files are local temporary copies of convert.rs and main.rs." >> "$GITHUB_STEP_SUMMARY"
+          echo "Any missing input, mismatched SHA, changed verdict or missing per-site counter fails this job." >> "$GITHUB_STEP_SUMMARY"
+          echo "The census is NOT an instruction-speed benchmark; no performance gain is claimed." >> "$GITHUB_STEP_SUMMARY"
