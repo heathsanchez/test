@@ -2006,6 +2006,14 @@ fn compare_values(
                                 neutral, context, current_budget.min(2048),
                             ),
                         );
+                        if let Value::Lam { domain, body } = &current_right {
+                            eprintln!(
+                                "NUCLEUS_PROOF_LAMBDA_SOURCE:depth={depth}:typed={}",
+                                checker.diagnostic_neutral_lambda_source_types(
+                                    neutral, domain, body, context, current_budget.min(2048),
+                                ),
+                            );
+                        }
                     }
                     eprintln!(
                         "NUCLEUS_VALUE_MISMATCH:left={:?}:right={:?}:budget={}:depth={}",
