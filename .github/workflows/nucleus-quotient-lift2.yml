@@ -188,6 +188,50 @@ jobs:
                   assert proc.returncode == 0,'proof-only contractor did not ACCEPT genuine native quotient beta proof'
           (out/'indirect-beta-verdicts.json').write_text(json.dumps(records,indent=2)+'\n')
           PY
+      - name: Reject a forged type in the independent positive quotient-beta control
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,hashlib
+          out=pathlib.Path('/tmp/quotient-evidence')
+          rows=[json.loads(line) for line in (out/'indirect-beta.ndjson').read_text().splitlines()]
+          names={0:''}
+          result=[]
+          for i,obj in enumerate(rows):
+              if 'in' in obj:
+                  node=obj.get('str') or obj.get('num')
+                  if node:
+                      pre=node['pre']
+                      assert pre in names
+                      names[obj['in']]=names[pre]+('.' if pre else '')+str(node.get('str',node.get('i')))
+              if 'thm' in obj and names.get(obj['thm']['name'])=='QuotientSourceProbe.indirect_beta':
+                  result.append((i,obj['thm']['type'],obj['thm']['value']))
+          assert len(result)==1,result
+          target,prior_type,prior_proof=result[0]
+          next_id=max(x['ie'] for x in rows if 'ie' in x)+1
+          rows.insert(target,{'ie':next_id,'sort':0})
+          rows[target+1]['thm']['type']=next_id
+          assert rows[target+1]['thm']['value']==prior_proof
+          bytes_out=(''.join(json.dumps(x,ensure_ascii=False,separators=(',',':'))+'\n' for x in rows)).encode()
+          (out/'indirect-forged-type.ndjson').write_bytes(bytes_out)
+          (out/'indirect-forged-type.json').write_text(json.dumps({
+              'old_type':prior_type,'new_type':next_id,'proof_unchanged':True,
+              'sha256':hashlib.sha256(bytes_out).hexdigest()},indent=2)+'\n')
+          PY
+          input=/tmp/quotient-evidence/indirect-forged-type.ndjson
+          checker=/tmp/arena-reference/checkers/official/.lake/build/bin/kernel
+          set +e
+          "$checker" "$input" > /tmp/quotient-evidence/indirect-forged-official.out 2> /tmp/quotient-evidence/indirect-forged-official.err
+          official=$?
+          NUCLEUS_EXPERIMENTAL_QUOTIENT_CONTRACTOR=1 metatron-kernel/target/release/metatron-kernel < "$input" > /tmp/quotient-evidence/indirect-forged-nucleus.out 2> /tmp/quotient-evidence/indirect-forged-nucleus.err
+          independent=$?
+          set -e
+          echo "For original proof with false declared type: official=$official Nucleus=$independent"
+          echo "$official" > /tmp/quotient-evidence/indirect-forged-official.exit
+          echo "$independent" > /tmp/quotient-evidence/indirect-forged-nucleus.exit
+          test "$official" -eq 1
+          test "$independent" -eq 1
       - name: Differential in all previously qualified Nucleus capability modes
         shell: bash
         run: |
