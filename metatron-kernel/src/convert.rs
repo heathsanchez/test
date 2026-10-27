@@ -1661,6 +1661,33 @@ fn compare_values(
                 continue;
             }
             (Value::Neutral(left), Value::Neutral(right)) => {
+                // The original closure machine can leave a registered
+                // Quot.lift neutral after cheap exposure, even though its
+                // exact source major evaluates to Quot.mk. Replay that
+                // registered iota step before comparing rigid heads.
+                if std::env::var_os("NUCLEUS_EXPERIMENTAL_CERTIFIED_QUOT_IOTA").is_some()
+                    && current_budget >= 256
+                {
+                    let machine = checker.machine();
+                    let mut replayed = None;
+                    for (is_left, candidate) in [(true, left), (false, right)] {
+                        if let Judgment::Proven { value, .. } =
+                            machine.qualified_quotient_neutral_result(
+                                candidate, current_budget.min(2048),
+                            )
+                            && !matches!(&value, Value::Neutral(n) if n == candidate)
+                        {
+                            replayed = Some((is_left, value));
+                            break;
+                        }
+                    }
+                    if let Some((is_left, value)) = replayed {
+                        if is_left { current_left = value; }
+                        else { current_right = value; }
+                        current_budget = current_budget.saturating_sub(128);
+                        continue;
+                    }
+                }
                 // A registered recursor with an actual constructor major is
                 // reducible even when both applications retain the same head.
                 // Replay source iota before treating its arguments as rigid.
