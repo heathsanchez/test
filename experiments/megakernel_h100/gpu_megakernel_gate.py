@@ -6,6 +6,7 @@ The GPU path does not require gated Hugging Face downloads.
 """
 
 import argparse
+import base64
 import hashlib
 import json
 import math
@@ -15,6 +16,7 @@ import runpy
 import re
 import subprocess
 import sys
+import zlib
 
 
 PIN = "7309cec801537b61fea3b50d7dfe454a6cde578e"
@@ -23,6 +25,30 @@ ATOL = 0.05
 RTOL = 0.10
 INPUT_SEEDS = (0, 7, 21)
 TOP_K = 5
+RAW_LOGIT_ELEMENTS = 128256
+RAW_LOGIT_BYTES = RAW_LOGIT_ELEMENTS * 2
+
+
+def pack_bf16_logits(tensor):
+    """Bounded, exact output bits for external full-vector CPU comparison."""
+    import torch
+    if tensor.dtype != torch.bfloat16 or tensor.numel() != RAW_LOGIT_ELEMENTS:
+        raise RuntimeError("REJECTED_UNREGISTERED_RAW_LOGIT_DTYPE_OR_SHAPE")
+    if sys.byteorder != "little":
+        raise RuntimeError("REJECTED_NON_LITTLE_ENDIAN_WORKER")
+    raw = tensor.detach().contiguous().view(torch.int16).cpu().numpy().tobytes()
+    if len(raw) != RAW_LOGIT_BYTES:
+        raise RuntimeError("REJECTED_RAW_LOGIT_BYTE_COUNT")
+    compressed = zlib.compress(raw, level=6)
+    if len(compressed) > 270000:
+        raise RuntimeError("REJECTED_RAW_LOGIT_PAYLOAD_TOO_LARGE")
+    return {
+        "dtype": "bf16-le", "elements": RAW_LOGIT_ELEMENTS,
+        "raw_bytes": RAW_LOGIT_BYTES, "raw_sha256": hashlib.sha256(raw).hexdigest(),
+        "compressed_bytes": len(compressed),
+        "zlib_base64": base64.b64encode(compressed).decode("ascii"),
+    }
+
 
 
 
@@ -283,6 +309,11 @@ def run_diff(repo, fixture, sched, out, layer_limit=1, input_seed=0):
             }
         else:
             logit_choice = None
+        raw_logits_bf16 = (
+            {"reference": pack_bf16_logits(self.logits),
+             "native": pack_bf16_logits(other.logits)}
+            if lm_head_active else None
+        )
         verdict = evaluate_summary(records, required_fields=required_fields)
         if lm_head_active:
             # Prevent vacuous all-zero LM-head parity.
@@ -297,6 +328,7 @@ def run_diff(repo, fixture, sched, out, layer_limit=1, input_seed=0):
                   "lm_head_exercised": lm_head_active,
                   "fields_compared": list(required_fields),
                   "logit_choice": logit_choice,
+                  "raw_logits_bf16": raw_logits_bf16,
                   "tolerances": {"atol": ATOL, "rtol": RTOL},
                   "pyvm_completed_calls": pyvm_completed[0],
                   "input_seed": input_seed,
@@ -305,7 +337,10 @@ def run_diff(repo, fixture, sched, out, layer_limit=1, input_seed=0):
                   "fields": records, **verdict}
         captured.append(record)
         Path(out).write_text(json.dumps(record, indent=2, sort_keys=True) + "\n")
-        print("MATHGRAPH_GPU_GATE " + json.dumps(record, sort_keys=True), flush=True)
+        # Never echo bulk binary evidence in workflow logs.
+        console = {k: v for k, v in record.items() if k != "raw_logits_bf16"}
+        console["raw_logits_present"] = raw_logits_bf16 is not None
+        print("MATHGRAPH_GPU_GATE " + json.dumps(console, sort_keys=True), flush=True)
         if not verdict["passed"]:
             raise AssertionError("Independent GPU tensor gate rejected: " + ",".join(verdict["reasons"]))
 
