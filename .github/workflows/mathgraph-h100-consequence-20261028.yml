@@ -50,7 +50,7 @@ jobs:
           printf '%s\n' DEPLOY_ATTEMPTED > h100_evidence/deploy_attempted
           cd experiments/megakernel_h100
           flash deploy --app "$FLASH_APP" --env "$FLASH_ENV" --no-deps
-      - name: Run six bounded H100 consequence variants
+      - name: Run six bounded H100 consequence variants (one invocation)
         run: |
           python experiments/megakernel_h100/runpod_flash_h100_bridge.py \
             --probe-kind consequence_variants \
