@@ -30,7 +30,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: bd648dfe25f616801972ea8207a2efcdf02746cf
+          ref: 94d7547d573946bc1a0f772a7beb7fbdec5e0922
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -68,7 +68,7 @@ jobs:
           cd experiments/megakernel_h100
           flash deploy --app "$FLASH_APP" --env "$FLASH_ENV" --no-deps
 
-      - name: Run bounded pinned differential
+      - name: Run bounded pinned differential with timeout evidence
         run: |
           mkdir -p h100_evidence
           python experiments/megakernel_h100/runpod_flash_h100_bridge.py \
