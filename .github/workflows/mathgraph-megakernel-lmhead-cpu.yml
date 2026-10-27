@@ -147,3 +147,32 @@ jobs:
           name: mathgraph-h100-exhaustive-winner-audit
           path: raw_logits_evidence/exhaustive_winner_audit.json
           if-no-files-found: warn
+
+      - name: Exhaustively probe counterfactual common-offset decision boundaries
+        run: |
+          python experiments/megakernel_h100/near_tie_counterfactual.py \
+            raw_logits_evidence/remote_result.json \
+            --out raw_logits_evidence/near_tie_counterfactual.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r = json.loads(Path("raw_logits_evidence/near_tie_counterfactual.json").read_text())
+          assert r["status"] == "COUNTERFACTUAL_DECISION_BOUNDARIES_NOT_GPU_REEXECUTION"
+          assert r["cases_checked"] == 6
+          assert r["strict_split_witnesses"] == 6
+          assert r["budget_split_counts"] == {"0.05": 0, "0.1": 2, "0.2": 5, "0.25": 6}
+          for key, case in r["cases"].items():
+              assert case["reference_top1"] == case["native_top1"]
+              assert case["boosted_winners_differ"] is True
+              assert case["boosted_reference_top1"] != case["boosted_native_top1"]
+              assert case["earliest_split_infimum"] < case["strict_midpoint_boost"] < case["split_interval_upper"]
+          print("MATHGRAPH_COUNTERFACTUAL_ALL_SIX_FINITE_SPLITS_RECORDED_NO_GPU_REEXECUTION")
+          PY
+
+      - name: Retain bounded counterfactual threshold assessment
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mathgraph-h100-counterfactual-near-tie
+          path: raw_logits_evidence/near_tie_counterfactual.json
+          if-no-files-found: warn
