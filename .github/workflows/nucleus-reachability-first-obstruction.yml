@@ -1,0 +1,69 @@
+name: Nucleus first Reachability obstruction — exact-source prefix
+on:
+  push:
+    branches:
+      - exp/nucleus-quotient-lift2-20261027
+    paths:
+      - "experiments/nucleus_reachability_first_obstruction.py"
+      - ".github/workflows/nucleus-reachability-first-obstruction.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  original-perm-prefix:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build experimental independent checker with diagnostic-only instrumentation
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/reachability-first/evidence
+          git rev-parse HEAD > /tmp/reachability-first/evidence/nucleus-commit.txt
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          sha256sum metatron-kernel/target/release/metatron-kernel > /tmp/reachability-first/evidence/nucleus-binary.sha256
+      - name: Retrieve six frozen Reachability exports and verify ZIP digest
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/reachability-first/inputs
+          gh api repos/heathsanchez/test/actions/artifacts/12722408982/zip > /tmp/reachability-first/six-inputs.zip
+          printf '%s  %s\n' 8f3fe62d60740fae640ed716b58ce1671a558fd88dd14723d758934e49197b31 /tmp/reachability-first/six-inputs.zip | sha256sum -c -
+          unzip -q /tmp/reachability-first/six-inputs.zip -d /tmp/reachability-first/inputs
+          sha256sum /tmp/reachability-first/inputs/*.ndjson > /tmp/reachability-first/evidence/original-six-inputs.sha256
+      - name: Build exact historical official Lean Arena checker
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -o /tmp/elan-init.sh
+          sh /tmp/elan-init.sh -y --default-toolchain leanprover/lean4:v4.34.1
+          git init -q /tmp/arena-reference
+          git -C /tmp/arena-reference remote add origin https://github.com/leanprover/lean-kernel-arena.git
+          git -C /tmp/arena-reference fetch --depth=1 -q origin cd2dd0244b9ed5e704463a26fbbe5fc67ba16108
+          git -C /tmp/arena-reference checkout -q --detach FETCH_HEAD
+          cd /tmp/arena-reference/checkers/official
+          "$HOME/.elan/bin/lake" build
+          test -x .lake/build/bin/kernel
+      - name: Officially validate authentic List.Perm.recOnSwap declaration prefixes; locate Nucleus failure
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 experiments/nucleus_reachability_first_obstruction.py
+      - name: Preserve two exact prefixes and all Nucleus failure traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-reachability-perm-first-obstruction
+          path: /tmp/reachability-first/evidence/
+          if-no-files-found: warn
+      - name: State authority limit
+        if: always()
+        run: |
+          echo 'This diagnostic gate tests authentic source-order prefixes, not completed six proofs.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'A source-valid first obstruction may remain UNKNOWN; no kernel semantics changed by this workflow.' >> "$GITHUB_STEP_SUMMARY"
