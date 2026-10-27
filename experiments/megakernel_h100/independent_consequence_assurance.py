@@ -93,6 +93,8 @@ def audit(report):
                         require(abs(a["abs_error"] - expected_error) <= 1e-5, "raw error mismatch")
                         require(abs(a["allowed_error"] - expected_allowed) <= 1e-5, "allowance mismatch")
                         require(a["abs_error"] > a["allowed_error"], "nonviolating witness")
+                        require(a["abs_error"] <= f["max_abs_diff"] + 1e-6,
+                                "claimed global max error smaller than retained witness")
             require(case.get("reasons") == failures, "reason list " + key)
             require(case.get("passed") is (len(failures) == 0), "case verdict " + key)
             choice = case.get("logit_choice")
