@@ -39,8 +39,6 @@ try:
     for mode in modes:
         modes[mode].update({
             "NUCLEUS_TRACE_DOWNSTREAM":"1",
-            "NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE":"1",
-            "NUCLEUS_TRACE_CAPTURED_PI_RECOVERY":"1",
         })
     for name, expected in PINS.items():
         source=INPUT/(name+".ndjson")
