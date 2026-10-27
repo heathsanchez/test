@@ -3540,6 +3540,27 @@ impl<'a> TypeChecker<'a> {
         format!("source_lambda={:?}:left_type={left_type:?}:right_type={right_type:?}:type_conversion={conversion:?}:fuel_left={fuel}",candidates[0])
     }
 
+    /// This is a conservative reason NOT to commit a rigid-value refutation:
+    /// neutral-vs-lambda has no constructor-disjointness warrant if the exact
+    /// recovered neutral result type is independently formed as Prop.
+    /// It never proves equality or accepts a theorem.
+    pub(crate) fn neutral_may_be_a_proof_in_context(
+        &self,
+        neutral: &Neutral,
+        context: &[TypeValue],
+        budget: usize,
+    ) -> bool {
+        if !(4..=24).contains(&context.len()) || budget < 512 {
+            return false;
+        }
+        let Some(TypeValue::Term(ty)) =
+            self.neutral_result_type(neutral, context, budget.min(2048))
+        else { return false; };
+        self.checked_captured_prop_type_in_context(
+            &ty, context, budget.min(2048),
+        ).is_proven()
+    }
+
     /// Diagnostic only: independently inspect whether a neutral's recovered
     /// exact source result type is a proposition in the supplied Gamma.
     /// Nothing about this observation licenses a conversion judgment.
