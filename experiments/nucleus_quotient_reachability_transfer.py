@@ -49,6 +49,7 @@ try:
     for env in modes.values():
         env["NUCLEUS_EXPERIMENTAL_CERTIFIED_QUOT_IOTA"]="1"
         env["NUCLEUS_EXPERIMENTAL_SOURCE_PROOF_IRREL"]="1"
+        env["NUCLEUS_EXPERIMENTAL_NEUTRAL_PAIR_PROOF_IRREL"]="1"
         env["NUCLEUS_TRACE_DOWNSTREAM"]="1"
     for name,sha in DECLS.items():
         source=EXPORT/(name+".ndjson")
