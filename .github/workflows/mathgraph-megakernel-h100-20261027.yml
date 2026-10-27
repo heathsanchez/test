@@ -1,6 +1,6 @@
 name: MathGraph H100 Differential - RUN THIS
 
-# Manual-only launcher registered on the default branch. It checks out the
+# Registered launcher with an exact-message one-shot push trigger. It checks out the
 # exact reviewed experiment commit, independent of workflow selection branch.
 on:
   workflow_dispatch:
@@ -18,7 +18,9 @@ concurrency:
 
 jobs:
   bounded-h100:
-    if: github.event_name == 'workflow_dispatch' || github.event.head_commit.message == 'H100: launch once after async verification'
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.head_commit.message == 'H100: launch once after async verification'
     runs-on: ubuntu-latest
     timeout-minutes: 35
     env:
