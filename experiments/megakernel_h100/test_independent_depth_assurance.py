@@ -89,6 +89,16 @@ class AuditTests(unittest.TestCase):
         del self.report["checks"]["rr_12"]["fields"]["hidden_states"]["first_violations"]
         with self.assertRaises(ValueError): audit(self.report)
 
+    def test_forged_witness_allowance_rejected(self):
+        self.report["checks"]["rr_12"]["fields"]["hidden_states"]["first_violations"][0]["allowed_error"] = 0.06
+        with self.assertRaises(ValueError): audit(self.report)
+
+    def test_out_of_range_top_token_rejected(self):
+        choice = self.report["checks"]["dag_16"]["logit_choice"]
+        choice["reference_top1"] = 128256
+        choice["native_top1"] = 128256
+        with self.assertRaises(ValueError): audit(self.report)
+
     def test_duplicate_json_key_rejected(self):
         with self.assertRaises(ValueError):
             json.loads('{"a":1,"a":2}', object_pairs_hook=no_duplicate_keys)
