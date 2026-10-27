@@ -52,6 +52,9 @@ try:
   cases["combined-lowbudget-pi"]["NUCLEUS_TRACE_GETELEM_PROJECTION"]="1"
   cases["combined-receiver-reserve"].update(cases["combined-lowbudget-pi"])
   cases["combined-receiver-reserve"]["NUCLEUS_EXPERIMENTAL_RECEIVER_BUDGET_RESERVE"]="1"
+  assert "combined-receiver-reserve" in cases
+  cases["combined-receiver-reserve"]["NUCLEUS_TRACE_GETELEM_PROJECTION"]="1"
+  report["experiment"] = "reserved local receiver budget versus exact-source identity probe"
   for nm,env in cases.items():
     cmd=[OFF,str(path)] if nm=="official" else [EXE]
     if nm!="official":
@@ -66,6 +69,7 @@ try:
     print(nm,r["exit_code"],r["stderr_tail"][-5500:],flush=True)
     if nm=="official":assert p.returncode==0,("official source invalid",r)
     else:assert p.returncode in (0,2),("valid source REJECT/crash",nm,r)
+  assert "combined-receiver-reserve" in report["results"]
   report["status"]="WARRANTED_SOURCE_PINNED_FIRST_GETELEM_OBSTRUCTION"
   rc=0
 except Exception as e:
