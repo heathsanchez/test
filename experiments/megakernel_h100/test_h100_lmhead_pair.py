@@ -19,6 +19,10 @@ class LMHeadPairContract(unittest.TestCase):
         self.assertIn("if case == \"partial_2of3\" and not", bridge)
         self.assertIn("UNKNOWN_PARTIAL_CONTROL_FAILED", bridge)
         self.assertIn("LMHEAD_NATIVE_TIMEOUT", bridge)
+        self.assertIn('"shared_weight_equivalence"', bridge)
+        self.assertIn('"shared_fixture_weights_checked"] = True', bridge)
+        self.assertIn('verify_paired_fixture_weights', gate)
+        self.assertIn('torch.equal(partial.get_tensor(name), full.get_tensor(name))', gate)
         self.assertIn('run_async_differential(gate.read_text(), out, probe_kind=probe_kind)', bridge)
         self.assertIn('"pyvm_completed_calls": pyvm_completed[0]', gate)
 
