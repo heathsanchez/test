@@ -161,6 +161,29 @@ jobs:
           echo "Corrupted claim: official=$official nucleus=$nucleus"
           test "$official" -eq 1
           test "$nucleus" -eq 1 -o "$nucleus" -eq 2
+      - name: Independently check indirect quotient beta control and candidate path
+        shell: bash
+        run: |
+          set -euo pipefail
+          checker=/tmp/arena-reference/checkers/official/.lake/build/bin/kernel
+          input=/tmp/quotient-evidence/indirect-beta.ndjson
+          "$checker" "$input" > /tmp/quotient-evidence/indirect-official.out 2> /tmp/quotient-evidence/indirect-official.err
+          python3 - <<'PY'
+          import json,os,pathlib,subprocess
+          out=pathlib.Path('/tmp/quotient-evidence')
+          source=out/'indirect-beta.ndjson'
+          binary='metatron-kernel/target/release/metatron-kernel'
+          records=[]
+          for label,flags in [('baseline',{}),('certified-quot-iota',{'NUCLEUS_EXPERIMENTAL_CERTIFIED_QUOT_IOTA':'1'})]:
+              env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+              env.update(flags)
+              with source.open('rb') as f:
+                  proc=subprocess.run([binary],stdin=f,capture_output=True,timeout=240,env=env)
+              records.append({'mode':label,'exit':proc.returncode,'stderr':proc.stderr.decode(errors='replace')[-1800:]})
+              print(json.dumps(records[-1]),flush=True)
+              assert proc.returncode in (0,2),records
+          (out/'indirect-beta-verdicts.json').write_text(json.dumps(records,indent=2)+'\n')
+          PY
       - name: Differential in all previously qualified Nucleus capability modes
         shell: bash
         run: |
@@ -203,29 +226,6 @@ jobs:
               print(json.dumps(entry),flush=True)
           (root/'mode-matrix.json').write_text(json.dumps({'records':records,'regressions':failures},indent=2)+'\n')
           assert not failures, failures
-          PY
-      - name: Independently check indirect quotient beta control and candidate path
-        shell: bash
-        run: |
-          set -euo pipefail
-          checker=/tmp/arena-reference/checkers/official/.lake/build/bin/kernel
-          input=/tmp/quotient-evidence/indirect-beta.ndjson
-          "$checker" "$input" > /tmp/quotient-evidence/indirect-official.out 2> /tmp/quotient-evidence/indirect-official.err
-          python3 - <<'PY'
-          import json,os,pathlib,subprocess
-          out=pathlib.Path('/tmp/quotient-evidence')
-          source=out/'indirect-beta.ndjson'
-          binary='metatron-kernel/target/release/metatron-kernel'
-          records=[]
-          for label,flags in [('baseline',{}),('certified-quot-iota',{'NUCLEUS_EXPERIMENTAL_CERTIFIED_QUOT_IOTA':'1'})]:
-              env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
-              env.update(flags)
-              with source.open('rb') as f:
-                  proc=subprocess.run([binary],stdin=f,capture_output=True,timeout=240,env=env)
-              records.append({'mode':label,'exit':proc.returncode,'stderr':proc.stderr.decode(errors='replace')[-1800:]})
-              print(json.dumps(records[-1]),flush=True)
-              assert proc.returncode in (0,2),records
-          (out/'indirect-beta-verdicts.json').write_text(json.dumps(records,indent=2)+'\n')
           PY
       - name: Retain exact bytes and diagnostic evidence
         if: always()
