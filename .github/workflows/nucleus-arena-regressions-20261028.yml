@@ -1,0 +1,95 @@
+name: Nucleus pinned Arena regression replay
+on:
+  push:
+    branches: [research/nucleus-arena-regressions-20261028]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  independent-regressions:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build independent Nucleus and run existing Rust tests
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/nucleus-regression-evidence
+          git rev-parse HEAD > /tmp/nucleus-regression-evidence/source-commit.txt
+          git rev-parse HEAD:metatron-kernel > /tmp/nucleus-regression-evidence/source-tree.txt
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml > /tmp/nucleus-regression-evidence/rust-tests.log 2>&1
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          sha256sum metatron-kernel/target/release/metatron-kernel > /tmp/nucleus-regression-evidence/binary.sha256
+      - name: Replay exact six upstream malformed exports and independent controls
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib, subprocess, sys, urllib.request
+          root = pathlib.Path('/tmp/nucleus-regression-evidence')
+          fixture_dir = root / 'upstream'
+          fixture_dir.mkdir(parents=True, exist_ok=True)
+          upstream_sha = '112b2ed3ef66f022235684c969ccb1046cf1600b'
+          blobs = {
+              'pi-closure-context': '86082f6955340c4fbd697d06d995e7879f576d98',
+              'closure-level-subst': '02000dd2ed69a8d3c352c4daefafc39d103a36eb',
+              'unit-rec-rule': '64a5dfe3c75f879afbb47efe0bb5df4f1a58d4a5',
+              'loose-bvar-value': '56e21dbc8a283808db42023694ef547496856a1b',
+              'forged-quot-ind': '0b9c057f9202f5f749f2aa4ceea13e81ccb57b80',
+              'nested-name-capture': '6552ae13f90fd711c9b2c7dc87b8a0e584281b5d',
+          }
+          for case, expected_blob in blobs.items():
+              url = 'https://raw.githubusercontent.com/leanprover/lean-kernel-arena/' + upstream_sha + '/tests/bugs/' + case + '.ndjson'
+              req = urllib.request.Request(url, headers={'User-Agent': 'nucleus-regression-replay'})
+              with urllib.request.urlopen(req, timeout=30) as response: raw = response.read()
+              blob_sha = hashlib.sha1(b'blob ' + str(len(raw)).encode() + b'\0' + raw).hexdigest()
+              if blob_sha != expected_blob: raise RuntimeError('UPSTREAM_HASH_MISMATCH: ' + case)
+              meta = json.loads(raw.splitlines()[0])['meta']
+              if meta['format']['version'] != '3.1.0' or meta['exporter']['version'] != '3.1.0':
+                  raise RuntimeError('UPSTREAM_METADATA_DRIFT: ' + case)
+              (fixture_dir / (case + '.ndjson')).write_bytes(raw)
+          controls = {
+              'good-beta-definition': 0,
+              'good-theorem-use': 0,
+              'bad-self-proof': 1,
+              'protected-false-index': (1,2),
+              'protected-eta-ctor-alias': (1,2),
+          }
+          flags = ['RELEVANCE','CONTEXT_BINDER','TYPED_LINEAGE','SUBSTITUTION_RECLOSURE','TYPED_VALUE_NORMALIZATION','PROJECTION_CONTEXT','PROJECTION_CROSSFRAME_512','TYPED_RECEIVER','SOURCE_PAIR_DEPTH8','POLYMORPHIC_PROP_IRREL','PROP_SINGLETON_2P1F','EXPECTED_LAMBDA']
+          binary = 'metatron-kernel/target/release/metatron-kernel'
+          results = []
+          for mode in ['default', 'origin', 'demand']:
+              env = {k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+              env['NUCLEUS_TRACE_PARSE_ERROR'] = '1'
+              if mode != 'default':
+                  env.update({'NUCLEUS_EXPERIMENTAL_'+flag:'1' for flag in flags})
+              if mode == 'demand': env['NUCLEUS_EXPERIMENTAL_DEMAND_MAJOR']='1'
+              def check(case,path,expected,group):
+                  try:
+                      with path.open('rb') as stream:
+                          p = subprocess.run([binary], stdin=stream, capture_output=True, env=env, timeout=90)
+                      rc=p.returncode
+                      tail=(p.stderr+p.stdout).decode(errors='replace')[-1500:]
+                  except subprocess.TimeoutExpired:
+                      rc=124; tail='TIMEOUT'
+                  ok=rc in expected if isinstance(expected,tuple) else rc == expected
+                  results.append(dict(mode=mode,case=case,group=group,expected=expected,rc=rc,status={0:'ACCEPT',1:'REJECT',2:'UNKNOWN',3:'ERROR'}.get(rc,'TIMEOUT_OR_ERROR'),pass_exact=ok,output_tail=tail))
+                  print(mode,case,'rc='+str(rc),'PASS' if ok else 'NOT_PASSED',flush=True)
+              for case in blobs:
+                  check(case,fixture_dir/(case+'.ndjson'),1,'upstream-malformed')
+              for case,expected in controls.items():
+                  check(case,pathlib.Path('metatron-kernel/tests/fixtures')/(case+'.ndjson'),expected,'local-control')
+          report=dict(upstream_repository='leanprover/lean-kernel-arena',upstream_commit=upstream_sha,blobs=blobs,source_commit=os.environ.get('GITHUB_SHA'),results=results,all_exact=all(r['pass_exact'] for r in results))
+          (root/'report.json').write_text(json.dumps(report,indent=2)+'\n')
+          (root/'summary.txt').write_text('\n'.join('%s %s %s %s' % (r['mode'],r['case'],r['status'],'PASS' if r['pass_exact'] else 'NOT_PASSED') for r in results)+'\n')
+          if not report['all_exact']:
+              print('Some cases did not meet exact expected verdicts; no soundness pass is claimed.',file=sys.stderr)
+              sys.exit(1)
+          PY
+      - name: Retain independent replay evidence
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-arena-regressions-20261028
+          path: /tmp/nucleus-regression-evidence/
+          if-no-files-found: warn
