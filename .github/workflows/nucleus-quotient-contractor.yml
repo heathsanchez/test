@@ -225,8 +225,6 @@ jobs:
                   entry[label]={'exit':p.returncode,'stderr_tail':p.stderr.decode(errors='replace')[-6500:]}
               legacy_rejected = mode in ('certified-quot-iota','origin-certified-quot-iota','origin-certified-quot-plus-pi')
               valid_observation = (entry['authentic']['exit'] == 1) if legacy_rejected else (entry['authentic']['exit'] in (0,2))
-              if mode in ('proof-only-contractor','origin-proof-only-contractor'):
-                  valid_observation = entry['authentic']['exit'] == 1
               if not valid_observation or entry['mutated']['exit'] != 1:
                   failures.append({'mode':mode,'authentic':entry['authentic']['exit'],'mutated':entry['mutated']['exit']})
               records.append(entry)
