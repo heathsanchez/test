@@ -1789,15 +1789,19 @@ impl<'a> TypeChecker<'a> {
                     }
                     let original_source = self.closure(*fun, frame.clone());
                     let mut source_fuel = (*remaining).min(4096);
+                    #[cfg(feature = "diagnostics")]
+                    let _source_capture_scope = CaptureSourceFailureScope::enter();
                     let rechecked = self.infer_exact_closure_in_context(
                         &original_source, context, &mut source_fuel, 0,
                     );
+                    #[cfg(feature = "diagnostics")]
+                    let source_first_failure = CaptureSourceFailureScope::first();
                     #[cfg(feature = "diagnostics")]
                     if std::env::var_os("NUCLEUS_TRACE_CAPTURED_PI_RECOVERY").is_some()
                         && context.len() == 11
                     {
                         eprintln!(
-                            "NUCLEUS_CAPTURED_PI_RECOVERY:fun={fun:?}:context={}:remaining={}:source_fuel={}:checked={rechecked:?}",
+                            "NUCLEUS_CAPTURED_PI_RECOVERY:fun={fun:?}:context={}:remaining={}:source_fuel={}:checked={rechecked:?}:first_failed_premise={source_first_failure:?}",
                             context.len(), *remaining, source_fuel,
                         );
                     }
