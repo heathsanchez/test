@@ -155,7 +155,8 @@ def run_diff(repo, fixture, sched, out, layer_limit=1):
     from transformers import LlamaConfig
     model_config = LlamaConfig.from_pretrained(fixture)
     num_layers = model_config.num_hidden_layers
-    if (num_layers, layer_limit) not in ((2, 1), (3, 2), (2, 2), (16, 16)):
+    registered = {(2, 1), (3, 2), (2, 2)} | {(16, depth) for depth in (1, 2, 4, 8, 12, 16)}
+    if (num_layers, layer_limit) not in registered:
         raise RuntimeError("Unregistered fixture/layer-limit pair")
     lm_head_active = num_layers == layer_limit
     # Compile-time CUDA globals are specialized to a 16-layer model.
