@@ -5,6 +5,7 @@ on:
       - exp/nucleus-quotient-lift2-20261027
     paths:
       - "experiments/nucleus_getelem_source_prefix.py"
+      - "metatron-kernel/src/typecheck.rs"
       - ".github/workflows/nucleus-getelem-source-prefix.yml"
   workflow_dispatch:
 permissions:
