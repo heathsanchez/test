@@ -39,9 +39,15 @@ def run(exe, path, env, args):
         stderr=p.stderr.decode(errors="replace")
         first_function_type=next((x for x in stderr.splitlines()
             if x.startswith("NUCLEUS_APPLICATION_FUNCTION_TYPE:")),None)
+        conversion_exposures=[line[:3500] for line in stderr.splitlines()
+            if line.startswith("NUCLEUS_TYPE_EXPOSURE_UNKNOWN:")
+            or line.startswith("NUCLEUS_RIGID_TYPE_MISMATCH:")
+            or line.startswith("NUCLEUS_LITERAL_CONVERSION:")]
         return {"exit":p.returncode,"seconds":round(time.monotonic()-start,3),
                 "stderr_tail":stderr[-2200:],
                 "first_function_type":first_function_type,
+                "conversion_exposures":conversion_exposures[:24],
+                "conversion_exposure_count":len(conversion_exposures),
                 "stdout_tail":p.stdout.decode(errors="replace")[-250:]}
     except subprocess.TimeoutExpired:
         return {"exit":124,"seconds":round(time.monotonic()-start,3),"error":"timeout"}
@@ -94,14 +100,19 @@ try:
         "NUCLEUS_EXPERIMENTAL_NEUTRAL_PAIR_PROOF_IRREL":"1",
         "NUCLEUS_TRACE_DOWNSTREAM":"1",
     })
-    budgets=(65536,524288) if os.environ.get("NUCLEUS_DIAG_TRACE_COMPARISON")=="1" else (
-        (65536,) if os.environ.get("NUCLEUS_DIAG_ONE_BUDGET")=="1" else (65536,131072,262144,524288)
+    budgets=(65536,) if os.environ.get("NUCLEUS_DIAG_CONVERSION_DETAIL")=="1" else (
+        (65536,524288) if os.environ.get("NUCLEUS_DIAG_TRACE_COMPARISON")=="1" else (
+            (65536,) if os.environ.get("NUCLEUS_DIAG_ONE_BUDGET")=="1" else (65536,131072,262144,524288)
+        )
     )
     for budget in budgets:
         env=dict(origin)
         env["NUCLEUS_DIAG_JUDGMENT_STEPS"]=str(budget)
-        if os.environ.get("NUCLEUS_DIAG_TRACE_COMPARISON")=="1":
+        if os.environ.get("NUCLEUS_DIAG_TRACE_COMPARISON")=="1" or os.environ.get("NUCLEUS_DIAG_CONVERSION_DETAIL")=="1":
             env["NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE"]="1"
+        if os.environ.get("NUCLEUS_DIAG_CONVERSION_DETAIL")=="1":
+            env["NUCLEUS_TRACE_RIGID_TYPE_MISMATCH"]="1"
+            env["NUCLEUS_TRACE_LITERAL_CONVERSION"]="1"
         if budget == 65536:
             prefix_recheck=run(CHECKER,PREFIX,env,[])
             report["verdicts"][str(budget)]=prefix_recheck
