@@ -1,0 +1,57 @@
+name: Nucleus getElem low-budget source-captured Pi differential
+on:
+  push:
+    branches:
+      - exp/nucleus-getelem-lowbudget-20261027
+    paths:
+      - "experiments/nucleus_getelem_source_prefix.py"
+      - ".github/workflows/nucleus-getelem-lowbudget.yml"
+      - "metatron-kernel/src/typecheck.rs"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-prefix:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build isolated diagnostic Nucleus
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/getelem/evidence
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          git rev-parse HEAD > /tmp/getelem/evidence/source-commit.txt
+      - name: Recover byte-identical official-accepted Reachability source
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/heathsanchez/test/actions/artifacts/12722408982/zip > /tmp/getelem-original.zip
+          printf '%s  %s\n' 8f3fe62d60740fae640ed716b58ce1671a558fd88dd14723d758934e49197b31 /tmp/getelem-original.zip | sha256sum -c -
+          unzip -p /tmp/getelem-original.zip path_reachable.ndjson > /tmp/getelem/path_reachable.ndjson
+      - name: Rebuild exact historical official Arena verifier
+        run: |
+          set -euo pipefail
+          curl -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -o /tmp/elan-init.sh
+          sh /tmp/elan-init.sh -y --default-toolchain leanprover/lean4:v4.34.1
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          git clone -q https://github.com/leanprover/lean-kernel-arena /tmp/arena-reference
+          git -C /tmp/arena-reference checkout -q cd2dd0244b9ed5e704463a26fbbe5fc67ba16108
+          (cd /tmp/arena-reference/checkers/official && "$HOME/.elan/bin/lake" build)
+      - name: Exact source prefix reference ACCEPT and independent candidate obstruction
+        run: |
+          set -euo pipefail
+          python3 experiments/nucleus_getelem_source_prefix.py
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-getelem-lowbudget-pi-evidence
+          path: /tmp/getelem/evidence/
+          if-no-files-found: warn
+      - if: always()
+        run: |
+          echo 'This test extracts an exact theorem prefix from the SHA-pinned Reachability export.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Reference Lean must ACCEPT. Experimental Nucleus may ACCEPT or UNKNOWN; REJECT fails.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'No whole Reachability ACCEPT or rank claim follows from a prefix.' >> "$GITHUB_STEP_SUMMARY"
