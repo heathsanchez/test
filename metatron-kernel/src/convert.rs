@@ -2422,6 +2422,15 @@ fn compare_neutral_heads(
         }
         _ => {
             if std::env::var_os("NUCLEUS_TRACE_NEUTRAL_HEADS").is_some() {
+                #[cfg(feature = "diagnostics")]
+                if depth == 12 && context.len() == 12
+                    && matches!(&right.head, NeutralHead::Free(FreeId(5)))
+                {
+                    eprintln!(
+                        "NUCLEUS_QUOTIENT_FREE5_CONTEXT:depth={depth}:local5_type={:?}:local6_type={:?}:left_head={:?}:right_head={:?}",
+                        context.get(5), context.get(6), left.head, right.head,
+                    );
+                }
                 eprintln!(
                     "NUCLEUS_NEUTRAL_HEAD_MISMATCH:depth={depth}:context_len={}:left={:?}:left_spine={:?}:right={:?}:right_spine={:?}:budget={}",
                     context.len(),left.head,left.spine,right.head,right.spine,budget,
