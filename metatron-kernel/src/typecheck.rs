@@ -756,6 +756,19 @@ impl<'a> TypeChecker<'a> {
                                                                 "NUCLEUS_GETELEM_EQ_CODOMAIN_ARG:index={index}:left_expr={:?}:right_expr={:?}:left_frame={}:right_frame={}:relation={relation:?}",
                                                                 a.expr, b.expr, a.env.id(), b.env.id(),
                                                             );
+                                                            if index == 1 {
+                                                                let guarded = crate::convert::convert_with_policy_in_context(
+                                                                    self, &TypeValue::Term(a.clone()),
+                                                                    &TypeValue::Term(b.clone()),
+                                                                    (*remaining).min(1024),
+                                                                    crate::convert::DeltaPolicy::GuardedSemanticFallback,
+                                                                    gamma.len(), &gamma,
+                                                                );
+                                                                eprintln!(
+                                                                    "NUCLEUS_GETELEM_EQ_SOURCE_GUARDED:left_expr={:?}:right_expr={:?}:relation={guarded:?}",
+                                                                    a.expr,b.expr,
+                                                                );
+                                                            }
                                                         }
                                                     }
                                                 } else {
