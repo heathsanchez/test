@@ -163,7 +163,7 @@ def run_diff(repo, fixture, sched, out, layer_limit=1):
     # allocating only 1/2/3 runtime barrier layers.
     if lm_head_active:
         header = (repo / "demos" / "low-latency-llama" / "llama.cuh").read_text()
-        counts = re.findall(r"(?m)^#define\\s+LLAMA_1B_NUM_LAYERS\\s+(\\d+)\\s*$", header)
+        counts = re.findall(r"(?m)^#define\s+LLAMA_1B_NUM_LAYERS\s+(\d+)\s*$", header)
         if len(counts) != 1 or int(counts[0]) != num_layers:
             raise RuntimeError("REJECTED_INVALID_LMHEAD_ARCHITECTURE")
     required_fields = FIELDS if lm_head_active else FIELDS[:-1]
