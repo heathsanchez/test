@@ -342,11 +342,29 @@ fn check_export_with_policy(
                     return verdict;
                 }
                 let expected = TypeValue::Term(checker.closure(ty, EnvFrame::empty()));
+                crate::convert::reset_quotient_contractor_trial();
+                let checked = checker.check_formed(value, &expected, limits.judgment_steps);
+                let relied_on_trial = crate::convert::take_quotient_contractor_trial();
+                // The optional contractor can prove an intermediate equality
+                // without having proved *all* dependent premises of this
+                // theorem. A later ambiguous constructor mismatch after such
+                // a trial may NOT become a definitive theorem REJECT.
+                // Keep independent proposition/structural REJECT authority.
+                let checked = match checked {
+                    Judgment::Refuted { obstruction }
+                        if std::env::var_os("NUCLEUS_EXPERIMENTAL_QUOTIENT_CONTRACTOR").is_some()
+                            && relied_on_trial
+                            && obstruction.0 == "rigid-value-constructor-mismatch" =>
+                    {
+                        if std::env::var_os("NUCLEUS_TRACE_QUOTIENT_CONTRACTOR").is_some() {
+                            eprintln!("NUCLEUS_QUOTIENT_CONTRACTOR:downstream-rigid-mismatch=UNKNOWN");
+                        }
+                        Judgment::unknown("quotient-contractor-dependent-proof-not-established")
+                    }
+                    other => other,
+                };
                 if let Err(verdict) = trace_verdict_boundary(
-                    &export,
-                    name,
-                    "theorem.value",
-                    checker.check_formed(value, &expected, limits.judgment_steps),
+                    &export, name, "theorem.value", checked,
                 ) {
                     return verdict;
                 }
