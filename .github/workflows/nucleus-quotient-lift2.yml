@@ -126,13 +126,13 @@ jobs:
           rows.insert(idx,new_type)
           rows[idx+1]['thm']['type']=next_expr
           assert rows[idx+1]['thm']['value']==witness['value']
-          contents=''.join(json.dumps(x,ensure_ascii=False,separators=(',',':'))+'\\n' for x in rows)
+          contents=''.join(json.dumps(x,ensure_ascii=False,separators=(',',':'))+'\n' for x in rows)
           (out/'mutated.ndjson').write_text(contents)
           (out/'mutation.json').write_text(json.dumps({
             'kind':'theorem-type-only-replacement','old_type':witness['type'],
             'new_type':next_expr,'proof_value_unchanged':True,
             'sha256':hashlib.sha256(contents.encode()).hexdigest()
-          },indent=2)+'\\n')
+          },indent=2)+'\n')
           PY
           checker=/tmp/arena-reference/checkers/official/.lake/build/bin/kernel
           set +e
