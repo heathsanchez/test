@@ -1,0 +1,27 @@
+test_closed_original_wildcard_binds_raw_source_and_declaration (research.unified_consequence_runtime.test_native_admission_v45.NativeAdmissionV45.test_closed_original_wildcard_binds_raw_source_and_declaration) ... ERROR
+
+======================================================================
+ERROR: test_closed_original_wildcard_binds_raw_source_and_declaration (research.unified_consequence_runtime.test_native_admission_v45.NativeAdmissionV45.test_closed_original_wildcard_binds_raw_source_and_declaration)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_admission_v45.py", line 73, in test_closed_original_wildcard_binds_raw_source_and_declaration
+    self.frozen('W01_closed_production_wildcard')
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_admission_v45.py", line 56, in frozen
+    self.head = self.commit()
+                ^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_admission_v45.py", line 33, in commit
+    self.git('-c', 'user.name=Namespace fixture', '-c', 'user.email=fixture@example.invalid',
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_admission_v45.py", line 29, in git
+    return subprocess.check_output(['git', '-C', str(self.repo), *args], stderr=subprocess.PIPE)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/subprocess.py", line 466, in check_output
+    return run(*popenargs, stdout=PIPE, timeout=timeout, check=True,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['git', '-C', '/tmp/tmpmu5oab3l/repo', '-c', 'user.name=Namespace fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-qm', 'fixture']' returned non-zero exit status 1.
+
+----------------------------------------------------------------------
+Ran 1 test in 0.027s
+
+FAILED (errors=1)

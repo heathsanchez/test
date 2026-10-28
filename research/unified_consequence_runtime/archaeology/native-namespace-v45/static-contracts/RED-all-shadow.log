@@ -1,0 +1,86 @@
+test_definition_expressions_and_string_captures_cannot_shadow_exports (research.unified_consequence_runtime.test_native_admission_v45.NativeAdmissionV45.test_definition_expressions_and_string_captures_cannot_shadow_exports) ... 
+  test_definition_expressions_and_string_captures_cannot_shadow_exports (research.unified_consequence_runtime.test_native_admission_v45.NativeAdmissionV45.test_definition_expressions_and_string_captures_cannot_shadow_exports) (statement='match 0:\n case ANSWER: pass\n') ... FAIL
+  test_definition_expressions_and_string_captures_cannot_shadow_exports (research.unified_consequence_runtime.test_native_admission_v45.NativeAdmissionV45.test_definition_expressions_and_string_captures_cannot_shadow_exports) (statement='match {}:\n case {**ANSWER}: pass\n') ... FAIL
+  test_definition_expressions_and_string_captures_cannot_shadow_exports (research.unified_consequence_runtime.test_native_admission_v45.NativeAdmissionV45.test_definition_expressions_and_string_captures_cannot_shadow_exports) (statement='try:\n raise RuntimeError()\nexcept RuntimeError as ANSWER:\n pass\n') ... FAIL
+  test_definition_expressions_and_string_captures_cannot_shadow_exports (research.unified_consequence_runtime.test_native_admission_v45.NativeAdmissionV45.test_definition_expressions_and_string_captures_cannot_shadow_exports) (statement='def helper(x=(ANSWER := 0)): pass\n') ... FAIL
+  test_definition_expressions_and_string_captures_cannot_shadow_exports (research.unified_consequence_runtime.test_native_admission_v45.NativeAdmissionV45.test_definition_expressions_and_string_captures_cannot_shadow_exports) (statement='def helper(x: (ANSWER := 0)): pass\n') ... FAIL
+  test_definition_expressions_and_string_captures_cannot_shadow_exports (research.unified_consequence_runtime.test_native_admission_v45.NativeAdmissionV45.test_definition_expressions_and_string_captures_cannot_shadow_exports) (statement='@(ANSWER := lambda function: function)\ndef helper(): pass\n') ... FAIL
+  test_definition_expressions_and_string_captures_cannot_shadow_exports (research.unified_consequence_runtime.test_native_admission_v45.NativeAdmissionV45.test_definition_expressions_and_string_captures_cannot_shadow_exports) (statement='class Helper((ANSWER := object)): pass\n') ... FAIL
+  test_definition_expressions_and_string_captures_cannot_shadow_exports (research.unified_consequence_runtime.test_native_admission_v45.NativeAdmissionV45.test_definition_expressions_and_string_captures_cannot_shadow_exports) (statement='class Helper(metaclass=(ANSWER := type)): pass\n') ... FAIL
+
+======================================================================
+FAIL: test_definition_expressions_and_string_captures_cannot_shadow_exports (research.unified_consequence_runtime.test_native_admission_v45.NativeAdmissionV45.test_definition_expressions_and_string_captures_cannot_shadow_exports) (statement='match 0:\n case ANSWER: pass\n')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_admission_v45.py", line 200, in test_definition_expressions_and_string_captures_cannot_shadow_exports
+    with self.assertRaisesRegex(ValueError, 'UNKNOWN'):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_definition_expressions_and_string_captures_cannot_shadow_exports (research.unified_consequence_runtime.test_native_admission_v45.NativeAdmissionV45.test_definition_expressions_and_string_captures_cannot_shadow_exports) (statement='match {}:\n case {**ANSWER}: pass\n')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_admission_v45.py", line 200, in test_definition_expressions_and_string_captures_cannot_shadow_exports
+    with self.assertRaisesRegex(ValueError, 'UNKNOWN'):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_definition_expressions_and_string_captures_cannot_shadow_exports (research.unified_consequence_runtime.test_native_admission_v45.NativeAdmissionV45.test_definition_expressions_and_string_captures_cannot_shadow_exports) (statement='try:\n raise RuntimeError()\nexcept RuntimeError as ANSWER:\n pass\n')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_admission_v45.py", line 200, in test_definition_expressions_and_string_captures_cannot_shadow_exports
+    with self.assertRaisesRegex(ValueError, 'UNKNOWN'):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_definition_expressions_and_string_captures_cannot_shadow_exports (research.unified_consequence_runtime.test_native_admission_v45.NativeAdmissionV45.test_definition_expressions_and_string_captures_cannot_shadow_exports) (statement='def helper(x=(ANSWER := 0)): pass\n')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_admission_v45.py", line 200, in test_definition_expressions_and_string_captures_cannot_shadow_exports
+    with self.assertRaisesRegex(ValueError, 'UNKNOWN'):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_definition_expressions_and_string_captures_cannot_shadow_exports (research.unified_consequence_runtime.test_native_admission_v45.NativeAdmissionV45.test_definition_expressions_and_string_captures_cannot_shadow_exports) (statement='def helper(x: (ANSWER := 0)): pass\n')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_admission_v45.py", line 200, in test_definition_expressions_and_string_captures_cannot_shadow_exports
+    with self.assertRaisesRegex(ValueError, 'UNKNOWN'):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_definition_expressions_and_string_captures_cannot_shadow_exports (research.unified_consequence_runtime.test_native_admission_v45.NativeAdmissionV45.test_definition_expressions_and_string_captures_cannot_shadow_exports) (statement='@(ANSWER := lambda function: function)\ndef helper(): pass\n')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_admission_v45.py", line 200, in test_definition_expressions_and_string_captures_cannot_shadow_exports
+    with self.assertRaisesRegex(ValueError, 'UNKNOWN'):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_definition_expressions_and_string_captures_cannot_shadow_exports (research.unified_consequence_runtime.test_native_admission_v45.NativeAdmissionV45.test_definition_expressions_and_string_captures_cannot_shadow_exports) (statement='class Helper((ANSWER := object)): pass\n')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_admission_v45.py", line 200, in test_definition_expressions_and_string_captures_cannot_shadow_exports
+    with self.assertRaisesRegex(ValueError, 'UNKNOWN'):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_definition_expressions_and_string_captures_cannot_shadow_exports (research.unified_consequence_runtime.test_native_admission_v45.NativeAdmissionV45.test_definition_expressions_and_string_captures_cannot_shadow_exports) (statement='class Helper(metaclass=(ANSWER := type)): pass\n')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_admission_v45.py", line 200, in test_definition_expressions_and_string_captures_cannot_shadow_exports
+    with self.assertRaisesRegex(ValueError, 'UNKNOWN'):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+----------------------------------------------------------------------
+Ran 1 test in 1.130s
+
+FAILED (failures=8)

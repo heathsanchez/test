@@ -1,0 +1,15 @@
+test_package_import_control_dunders_cannot_redirect_the_original_route (research.unified_consequence_runtime.test_native_admission_v45.NativeAdmissionV45.test_package_import_control_dunders_cannot_redirect_the_original_route) ... FAIL
+
+======================================================================
+FAIL: test_package_import_control_dunders_cannot_redirect_the_original_route (research.unified_consequence_runtime.test_native_admission_v45.NativeAdmissionV45.test_package_import_control_dunders_cannot_redirect_the_original_route)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_admission_v45.py", line 181, in test_package_import_control_dunders_cannot_redirect_the_original_route
+    with self.assertRaisesRegex(ValueError, 'UNKNOWN'):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+----------------------------------------------------------------------
+Ran 1 test in 0.141s
+
+FAILED (failures=1)

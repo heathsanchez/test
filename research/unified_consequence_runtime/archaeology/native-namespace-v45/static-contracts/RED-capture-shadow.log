@@ -1,0 +1,26 @@
+test_exception_and_match_capture_cannot_shadow_wildcard_exports (research.unified_consequence_runtime.test_native_admission_v45.NativeAdmissionV45.test_exception_and_match_capture_cannot_shadow_wildcard_exports) ... 
+  test_exception_and_match_capture_cannot_shadow_wildcard_exports (research.unified_consequence_runtime.test_native_admission_v45.NativeAdmissionV45.test_exception_and_match_capture_cannot_shadow_wildcard_exports) (statement='match 0:\n case ANSWER: pass\n') ... FAIL
+  test_exception_and_match_capture_cannot_shadow_wildcard_exports (research.unified_consequence_runtime.test_native_admission_v45.NativeAdmissionV45.test_exception_and_match_capture_cannot_shadow_wildcard_exports) (statement='try:\n raise RuntimeError()\nexcept RuntimeError as ANSWER:\n pass\n') ... FAIL
+
+======================================================================
+FAIL: test_exception_and_match_capture_cannot_shadow_wildcard_exports (research.unified_consequence_runtime.test_native_admission_v45.NativeAdmissionV45.test_exception_and_match_capture_cannot_shadow_wildcard_exports) (statement='match 0:\n case ANSWER: pass\n')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_admission_v45.py", line 194, in test_exception_and_match_capture_cannot_shadow_wildcard_exports
+    with self.assertRaisesRegex(ValueError, 'UNKNOWN'):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_exception_and_match_capture_cannot_shadow_wildcard_exports (research.unified_consequence_runtime.test_native_admission_v45.NativeAdmissionV45.test_exception_and_match_capture_cannot_shadow_wildcard_exports) (statement='try:\n raise RuntimeError()\nexcept RuntimeError as ANSWER:\n pass\n')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_admission_v45.py", line 194, in test_exception_and_match_capture_cannot_shadow_wildcard_exports
+    with self.assertRaisesRegex(ValueError, 'UNKNOWN'):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+----------------------------------------------------------------------
+Ran 1 test in 0.288s
+
+FAILED (failures=2)

@@ -1,0 +1,36 @@
+test_collection_class_global_cannot_shadow_a_wildcard_export (research.unified_consequence_runtime.test_native_admission_v45.NativeAdmissionV45.test_collection_class_global_cannot_shadow_a_wildcard_export) ... FAIL
+test_function_or_class_all_is_not_a_literal_export_protocol (research.unified_consequence_runtime.test_native_admission_v45.NativeAdmissionV45.test_function_or_class_all_is_not_a_literal_export_protocol) ... 
+  test_function_or_class_all_is_not_a_literal_export_protocol (research.unified_consequence_runtime.test_native_admission_v45.NativeAdmissionV45.test_function_or_class_all_is_not_a_literal_export_protocol) (source='ANSWER = 42\ndef __all__(): pass\n') ... FAIL
+  test_function_or_class_all_is_not_a_literal_export_protocol (research.unified_consequence_runtime.test_native_admission_v45.NativeAdmissionV45.test_function_or_class_all_is_not_a_literal_export_protocol) (source='ANSWER = 42\nclass __all__: pass\n') ... FAIL
+
+======================================================================
+FAIL: test_collection_class_global_cannot_shadow_a_wildcard_export (research.unified_consequence_runtime.test_native_admission_v45.NativeAdmissionV45.test_collection_class_global_cannot_shadow_a_wildcard_export)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_admission_v45.py", line 206, in test_collection_class_global_cannot_shadow_a_wildcard_export
+    with self.assertRaisesRegex(ValueError, 'UNKNOWN'):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_function_or_class_all_is_not_a_literal_export_protocol (research.unified_consequence_runtime.test_native_admission_v45.NativeAdmissionV45.test_function_or_class_all_is_not_a_literal_export_protocol) (source='ANSWER = 42\ndef __all__(): pass\n')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_admission_v45.py", line 216, in test_function_or_class_all_is_not_a_literal_export_protocol
+    with self.assertRaisesRegex(ValueError, 'UNKNOWN'):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_function_or_class_all_is_not_a_literal_export_protocol (research.unified_consequence_runtime.test_native_admission_v45.NativeAdmissionV45.test_function_or_class_all_is_not_a_literal_export_protocol) (source='ANSWER = 42\nclass __all__: pass\n')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_admission_v45.py", line 216, in test_function_or_class_all_is_not_a_literal_export_protocol
+    with self.assertRaisesRegex(ValueError, 'UNKNOWN'):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+----------------------------------------------------------------------
+Ran 2 tests in 0.462s
+
+FAILED (failures=3)

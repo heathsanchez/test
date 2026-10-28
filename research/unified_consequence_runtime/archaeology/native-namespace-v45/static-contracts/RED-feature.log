@@ -1,0 +1,41 @@
+test_closed_original_wildcard_binds_raw_source_and_declaration (research.unified_consequence_runtime.test_native_admission_v45.NativeAdmissionV45.test_closed_original_wildcard_binds_raw_source_and_declaration) ... FAIL
+
+======================================================================
+FAIL: test_closed_original_wildcard_binds_raw_source_and_declaration (research.unified_consequence_runtime.test_native_admission_v45.NativeAdmissionV45.test_closed_original_wildcard_binds_raw_source_and_declaration)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_admission_v45.py", line 64, in positive
+    return self.derive()
+           ^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_admission_v45.py", line 59, in derive
+    return self.admission.derive_suite_contract(self.repo, self.base, self.head,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_admission_v42.py", line 65, in derive_suite_contract
+    return _original_derive(repo, base_commit, augmented_commit,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_admission_v2.py", line 519, in derive_suite_contract
+    tree, nodes = _test_nodes(name, files[name], function_patterns=config['function_patterns'],
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_admission_v2.py", line 488, in _test_nodes
+    module_env.update(visit(tree.body, path, module_env))
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_admission_v2.py", line 458, in visit
+    refuse('wildcard imported tests unsupported')
+  File "/workspace/udm-v54/research/unified_consequence_runtime/native_admission_v2.py", line 336, in refuse
+    raise ValueError('UNKNOWN_SUITE_CONTRACT: ' + reason)
+ValueError: UNKNOWN_SUITE_CONTRACT: wildcard imported tests unsupported
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_admission_v45.py", line 77, in test_closed_original_wildcard_binds_raw_source_and_declaration
+    authority = self.positive()
+                ^^^^^^^^^^^^^^^
+  File "/workspace/udm-v54/research/unified_consequence_runtime/test_native_admission_v45.py", line 66, in positive
+    self.fail('closed original namespace must derive: ' + str(error))
+AssertionError: closed original namespace must derive: UNKNOWN_SUITE_CONTRACT: wildcard imported tests unsupported
+
+----------------------------------------------------------------------
+Ran 1 test in 0.276s
+
+FAILED (failures=1)
