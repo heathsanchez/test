@@ -1,0 +1,137 @@
+{
+  "blockers": [],
+  "components_receipt": "/workspace/qualification/native-namespace-v45-environment/components-setup/COMPONENTS_SETUP.json",
+  "controller": {
+    "binary_sha256": "5ebcd7993f0e40cb4b16e15d2c4c3c343ecad419966299b8e8f6f9e6a36bf779",
+    "executable": "/workspace/qualification/native-namespace-v45-environment/controller/bin/python",
+    "packaging": "26.3",
+    "pytest": "8.3.5",
+    "python": "3.12.14",
+    "real_executable": "/workspace/qualification/native-namespace-v45-environment/managed-python/cpython-3.12.14-linux-x86_64-gnu/bin/python3.12"
+  },
+  "directory_apparent_bytes": {
+    "controller": 15011716,
+    "managed-python": 133532883,
+    "modern-runtime-final": 195743635,
+    "original-runtimes": 400794717,
+    "uv-cache": 44
+  },
+  "initial_bookkeeping_failure": {
+    "command": "/usr/bin/time",
+    "effect": "No install attempted by this failed command; existing shell operations otherwise preserved.",
+    "status": "UNAVAILABLE_USED_INLINE_SUBPROCESS_TIMING"
+  },
+  "legacy_distribution_count": 22,
+  "legacy_native": {
+    "binary_sha256": "432d7e3d3e032b950e34e9fb04cbfb252734f3118f20ff7974e2562d497cd233",
+    "executable": "/workspace/qualification/native-namespace-v45-environment/original-runtimes/cpython-3.6.5-pytest-5.4.3-linux-x86_64/venv/bin/python",
+    "pytest": "5.4.3",
+    "python": "3.6.5",
+    "real_executable": "/workspace/qualification/native-namespace-v45-environment/original-runtimes/miniconda-base/bin/python3.6"
+  },
+  "modern_distribution_count": 45,
+  "modern_native": {
+    "binary_sha256": "5ebcd7993f0e40cb4b16e15d2c4c3c343ecad419966299b8e8f6f9e6a36bf779",
+    "executable": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+    "packaging": "26.3",
+    "pytest": "8.4.1",
+    "python": "3.12.14",
+    "real_executable": "/workspace/qualification/native-namespace-v45-environment/managed-python/cpython-3.12.14-linux-x86_64-gnu/bin/python3.12"
+  },
+  "phase_costs": [
+    {
+      "argv": [
+        "uv",
+        "python",
+        "install",
+        "3.12.14",
+        "--install-dir",
+        "/workspace/qualification/native-namespace-v45-environment/managed-python",
+        "--no-bin",
+        "--cache-dir",
+        "/workspace/qualification/native-namespace-v45-environment/uv-cache",
+        "--system-certs",
+        "--no-progress"
+      ],
+      "returncode": 0,
+      "seconds": 2.023862618999999
+    },
+    {
+      "argv": [
+        "/workspace/qualification/native-namespace-v45-environment/managed-python/cpython-3.12.14-linux-x86_64-gnu/bin/python3.12",
+        "-B",
+        "-m",
+        "venv",
+        "/workspace/qualification/native-namespace-v45-environment/controller"
+      ],
+      "label": "controller-venv",
+      "returncode": 0,
+      "seconds": 3.098962911000001
+    },
+    {
+      "argv": [
+        "/workspace/qualification/native-namespace-v45-environment/controller/bin/python",
+        "-B",
+        "-m",
+        "pip",
+        "install",
+        "--disable-pip-version-check",
+        "--no-input",
+        "pytest==8.3.5",
+        "packaging==26.3"
+      ],
+      "label": "controller-install",
+      "returncode": 0,
+      "seconds": 2.213332753999964
+    },
+    {
+      "argv": [
+        "/workspace/qualification/native-namespace-v45-environment/controller/bin/python",
+        "-B",
+        "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-environment-v3/bootstrap/prepare_runtimes.py",
+        "--catalog",
+        "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-environment-v3/ENVIRONMENT_CATALOG.json",
+        "--dest-root",
+        "/workspace/qualification/native-namespace-v45-environment/original-runtimes",
+        "--out",
+        "/workspace/qualification/native-namespace-v45-environment/BARE_RUNTIME_PATHS.json"
+      ],
+      "returncode": 0,
+      "seconds": 50.55624408
+    },
+    {
+      "argv": [
+        "/workspace/qualification/native-namespace-v45-environment/controller/bin/python",
+        "-B",
+        "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-authority-v41/bootstrap/prepare_profile.py",
+        "--catalog",
+        "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-authority-v41/ENVIRONMENT_CATALOG.json",
+        "--runtimes",
+        "/workspace/qualification/native-namespace-v45-environment/BARE_RUNTIME_PATHS.json",
+        "--dest-root",
+        "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final",
+        "--runtime-out",
+        "/workspace/qualification/native-namespace-v45-environment/RUNTIME_PATHS.json",
+        "--out",
+        "/workspace/qualification/native-namespace-v45-environment/PROFILE_PREPARATION.json"
+      ],
+      "returncode": 0,
+      "seconds": 19.219395513999984
+    }
+  ],
+  "profile_preparation": "/workspace/qualification/native-namespace-v45-environment/PROFILE_PREPARATION.json",
+  "profile_preparation_status": "PREPARED_EXACT_MODERN_PROFILE_NOT_NATIVE_ADMISSION",
+  "root_repository_edits_or_ref_changes_by_setup_agent": false,
+  "runtime_map": {
+    "cpython-3.12.14-pytest-8.4.1-linux-x86_64": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+    "cpython-3.6.5-pytest-5.4.3-linux-x86_64": "/workspace/qualification/native-namespace-v45-environment/original-runtimes/cpython-3.6.5-pytest-5.4.3-linux-x86_64/venv/bin/python"
+  },
+  "schema": "UDM_NAMESPACE_V45_ENVIRONMENT_SETUP_ONLY",
+  "scientific_frontier_queries": 0,
+  "scope": "External install and setup only; no source/test shims; no target collection or execution; no scientific frontier queries.",
+  "source_shims": false,
+  "status": "READY_ORIGINAL_EXECUTION_PREREQUISITES",
+  "sum_recorded_environment_setup_seconds": 77.11179787799995,
+  "target_collection_calls": 0,
+  "target_native_calls": 0
+}

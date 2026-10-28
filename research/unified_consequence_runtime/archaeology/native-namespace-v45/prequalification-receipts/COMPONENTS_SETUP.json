@@ -1,0 +1,450 @@
+{
+  "components": [
+    {
+      "clean_porcelain": true,
+      "commands": [
+        {
+          "argv": [
+            "git",
+            "clone",
+            "--no-hardlinks",
+            "--no-checkout",
+            "--shared",
+            "/workspace/repos/test",
+            "/workspace/components/development"
+          ],
+          "returncode": 0,
+          "seconds": 0.023
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/components/development",
+            "remote",
+            "set-url",
+            "origin",
+            "https://github.com/heathsanchez/test.git"
+          ],
+          "returncode": 0,
+          "seconds": 0.003
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/components/development",
+            "cat-file",
+            "-e",
+            "c9092fa57c8943e638f95689cd36e6a63310f41e^{commit}"
+          ],
+          "returncode": 0,
+          "seconds": 0.004
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/components/development",
+            "checkout",
+            "--detach",
+            "c9092fa57c8943e638f95689cd36e6a63310f41e"
+          ],
+          "returncode": 0,
+          "seconds": 0.064
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/components/development",
+            "rev-parse",
+            "HEAD"
+          ],
+          "returncode": 0,
+          "seconds": 0.003
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/components/development",
+            "rev-parse",
+            "HEAD^{tree}"
+          ],
+          "returncode": 0,
+          "seconds": 0.004
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/components/development",
+            "status",
+            "--porcelain=v1",
+            "--untracked-files=normal"
+          ],
+          "returncode": 0,
+          "seconds": 0.024
+        },
+        {
+          "argv": [
+            "du",
+            "-s",
+            "-B1",
+            "/workspace/components/development"
+          ],
+          "returncode": 0,
+          "seconds": 0.004
+        }
+      ],
+      "disk_bytes": 6615040,
+      "elapsed_seconds": 1.365,
+      "expected_commit": "c9092fa57c8943e638f95689cd36e6a63310f41e",
+      "head": "c9092fa57c8943e638f95689cd36e6a63310f41e",
+      "materialization_attempt": {
+        "commands": [
+          {
+            "argv": [
+              "git",
+              "-C",
+              "/workspace/components/development",
+              "config",
+              "extensions.partialClone",
+              "origin"
+            ],
+            "returncode": 0,
+            "seconds": 0.005
+          },
+          {
+            "argv": [
+              "git",
+              "-C",
+              "/workspace/components/development",
+              "config",
+              "remote.origin.promisor",
+              "true"
+            ],
+            "returncode": 0,
+            "seconds": 0.002
+          },
+          {
+            "argv": [
+              "git",
+              "-C",
+              "/workspace/components/development",
+              "config",
+              "remote.origin.partialclonefilter",
+              "blob:none"
+            ],
+            "returncode": 0,
+            "seconds": 0.002
+          },
+          {
+            "argv": [
+              "git",
+              "-C",
+              "/workspace/components/development",
+              "checkout",
+              "--force",
+              "--detach",
+              "c9092fa57c8943e638f95689cd36e6a63310f41e"
+            ],
+            "returncode": 0,
+            "seconds": 1.212
+          },
+          {
+            "argv": [
+              "git",
+              "-C",
+              "/workspace/components/development",
+              "rev-parse",
+              "HEAD"
+            ],
+            "returncode": 0,
+            "seconds": 0.002
+          },
+          {
+            "argv": [
+              "git",
+              "-C",
+              "/workspace/components/development",
+              "rev-parse",
+              "HEAD^{tree}"
+            ],
+            "returncode": 0,
+            "seconds": 0.003
+          },
+          {
+            "argv": [
+              "git",
+              "-C",
+              "/workspace/components/development",
+              "status",
+              "--porcelain=v1",
+              "--untracked-files=normal"
+            ],
+            "returncode": 0,
+            "seconds": 0.007
+          },
+          {
+            "argv": [
+              "du",
+              "-s",
+              "-B1",
+              "/workspace/components/development"
+            ],
+            "returncode": 0,
+            "seconds": 0.003
+          }
+        ],
+        "elapsed_seconds": 1.236,
+        "reason": "Local shared clone reused promisor objects but did not inherit promisor configuration; exact checkout had missing files, so enable its own origin promisor and re-materialize original pinned checkout."
+      },
+      "name": "development",
+      "origin": "https://github.com/heathsanchez/test.git",
+      "path": "/workspace/components/development",
+      "shared_object_alternate": "/workspace/repos/test/.git/objects",
+      "status": "PREPARED_EXACT_PINNED_CHECKOUT",
+      "tree": "b82c1c0b232ed1a9411b88dd5628a7c8f0e86010"
+    },
+    {
+      "clean_porcelain": true,
+      "commands": [
+        {
+          "argv": [
+            "git",
+            "init",
+            "/workspace/components/metatron"
+          ],
+          "returncode": 0,
+          "seconds": 0.008
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/components/metatron",
+            "remote",
+            "add",
+            "origin",
+            "https://github.com/metalogiclabs/metatron.git"
+          ],
+          "returncode": 0,
+          "seconds": 0.005
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/components/metatron",
+            "cat-file",
+            "-e",
+            "b9d1b5cc10477188be6e55617699be60e70f6dad^{commit}"
+          ],
+          "returncode": 128,
+          "seconds": 0.003
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/components/metatron",
+            "fetch",
+            "--depth",
+            "1",
+            "origin",
+            "b9d1b5cc10477188be6e55617699be60e70f6dad"
+          ],
+          "returncode": 0,
+          "seconds": 1.681
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/components/metatron",
+            "checkout",
+            "--detach",
+            "b9d1b5cc10477188be6e55617699be60e70f6dad"
+          ],
+          "returncode": 0,
+          "seconds": 0.02
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/components/metatron",
+            "rev-parse",
+            "HEAD"
+          ],
+          "returncode": 0,
+          "seconds": 0.002
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/components/metatron",
+            "rev-parse",
+            "HEAD^{tree}"
+          ],
+          "returncode": 0,
+          "seconds": 0.002
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/components/metatron",
+            "status",
+            "--porcelain=v1",
+            "--untracked-files=normal"
+          ],
+          "returncode": 0,
+          "seconds": 0.005
+        },
+        {
+          "argv": [
+            "du",
+            "-s",
+            "-B1",
+            "/workspace/components/metatron"
+          ],
+          "returncode": 0,
+          "seconds": 0.002
+        }
+      ],
+      "disk_bytes": 1294336,
+      "elapsed_seconds": 1.73,
+      "expected_commit": "b9d1b5cc10477188be6e55617699be60e70f6dad",
+      "head": "b9d1b5cc10477188be6e55617699be60e70f6dad",
+      "name": "metatron",
+      "origin": "https://github.com/metalogiclabs/metatron.git",
+      "path": "/workspace/components/metatron",
+      "status": "PREPARED_EXACT_PINNED_CHECKOUT",
+      "tree": "db53547f20dd3064693054c289f9bffa003ba74d"
+    },
+    {
+      "clean_porcelain": true,
+      "commands": [
+        {
+          "argv": [
+            "git",
+            "init",
+            "/workspace/components/flash"
+          ],
+          "returncode": 0,
+          "seconds": 0.009
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/components/flash",
+            "remote",
+            "add",
+            "origin",
+            "https://github.com/heathsanchez/realitygraph.git"
+          ],
+          "returncode": 0,
+          "seconds": 0.007
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/components/flash",
+            "cat-file",
+            "-e",
+            "50c43b14e7272469bc51ff7204dec07682a996d7^{commit}"
+          ],
+          "returncode": 128,
+          "seconds": 0.004
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/components/flash",
+            "fetch",
+            "--depth",
+            "1",
+            "origin",
+            "50c43b14e7272469bc51ff7204dec07682a996d7"
+          ],
+          "returncode": 0,
+          "seconds": 1.537
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/components/flash",
+            "checkout",
+            "--detach",
+            "50c43b14e7272469bc51ff7204dec07682a996d7"
+          ],
+          "returncode": 0,
+          "seconds": 0.073
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/components/flash",
+            "rev-parse",
+            "HEAD"
+          ],
+          "returncode": 0,
+          "seconds": 0.003
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/components/flash",
+            "rev-parse",
+            "HEAD^{tree}"
+          ],
+          "returncode": 0,
+          "seconds": 0.009
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "/workspace/components/flash",
+            "status",
+            "--porcelain=v1",
+            "--untracked-files=normal"
+          ],
+          "returncode": 0,
+          "seconds": 0.008
+        },
+        {
+          "argv": [
+            "du",
+            "-s",
+            "-B1",
+            "/workspace/components/flash"
+          ],
+          "returncode": 0,
+          "seconds": 0.002
+        }
+      ],
+      "disk_bytes": 2834432,
+      "elapsed_seconds": 1.652,
+      "expected_commit": "50c43b14e7272469bc51ff7204dec07682a996d7",
+      "head": "50c43b14e7272469bc51ff7204dec07682a996d7",
+      "name": "flash",
+      "origin": "https://github.com/heathsanchez/realitygraph.git",
+      "path": "/workspace/components/flash",
+      "status": "PREPARED_EXACT_PINNED_CHECKOUT",
+      "tree": "f1e99f6516aed1fcda7180907ed1cc3655ccc569"
+    }
+  ],
+  "scope": "PINNED_COMPONENT_CHECKOUT_SETUP_ONLY",
+  "target_collection_or_execution": false
+}

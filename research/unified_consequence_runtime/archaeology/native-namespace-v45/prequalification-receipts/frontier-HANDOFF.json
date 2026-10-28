@@ -1,0 +1,43 @@
+{
+  "additional_reds": [
+    "RED-native-evidence-counts-resealed.stdout",
+    "RED-generated-materialization.stdout"
+  ],
+  "archive_audit_fields_required": [
+    "namespace_gate",
+    "gate_files_sha256",
+    "all_native_packets_checked",
+    "raw_native_audit"
+  ],
+  "coding_agent_executions": 0,
+  "earlier_verification_obstruction": "Default pytest import mode failed original V43 package-relative collection; preserved GREEN.json/stdout records exit2. Same file set passes under original qualifier importlib mode.",
+  "git_mutations": 0,
+  "green": {
+    "new_frontier_controls": 45,
+    "path": "/workspace/qualification/native-namespace-v45-frontier/GREEN-importlib.json",
+    "returncode": 0,
+    "sha256": "48a3bedc3dc7d66d950358332245396397299adea6ec3d45fa710dc2251dd4b6",
+    "tests_passed": 101
+  },
+  "namespace_archive_audit_schema": "UDM_V45_INDEPENDENT_NATIVE_NAMESPACE_ARCHIVE_AUDIT",
+  "namespace_archive_audit_status": "PASS_INDEPENDENT_NATIVE_NAMESPACE_ARCHIVE_AUDIT",
+  "namespace_qualification_status": "QUALIFIED_BOUNDED_NATIVE_NAMESPACE_ADMISSION_ONLY",
+  "original_files_modified": false,
+  "raw_native_audit_descriptor": "Exact {path,sha256} descriptor; bound JSON must equal qualification result.raw_native_audit. Actual independent packet validation belongs to downloaded-artifact auditor, never these fixtures.",
+  "red": {
+    "path": "/workspace/qualification/native-namespace-v45-frontier/RED.json",
+    "sha256": "6c637891dace65f08dd38e5adb16838e1173b327df809d18e9975352b25b87e0"
+  },
+  "scientific_native_calls": 0,
+  "scientific_task_queries": 0,
+  "source_sha256": {
+    "research/unified_consequence_runtime/archaeology/native-namespace-v45/prospective/curate_frontier.py": "a51cff076d43b222bd90c316642f60221916428c5c2c4a8875632065b0a93185",
+    "research/unified_consequence_runtime/archaeology/native-namespace-v45/prospective/prepare_records.py": "df8e7901817d94f5064537cc070c4dd5bb6cdcc74a00cbaed3e89b29f8ac0098",
+    "research/unified_consequence_runtime/archaeology/native-namespace-v45/prospective/training_history_projection_v45.py": "4be377306c5c4c6b4f51a279b6f7cde8fc2b0fb0e79480ccbe2970880384995c",
+    "research/unified_consequence_runtime/archaeology/native-namespace-v45/prospective/watch_actual_agent.py": "456a003ae0de2c86536515a13a27dee8c8eb19435cb3e6e5a9fd9599dc6fe778",
+    "research/unified_consequence_runtime/qualify_native_frontier_v45.py": "609e5a8a3fea8d0b924cf1924abc72805cab9edf0288bc6e193e04d0c12918b5",
+    "research/unified_consequence_runtime/test_qualify_native_frontier_v45.py": "5d527b5590bc6ff376cc7d3175d0398317c9ca0cf9967daec0053c59d54f3777"
+  },
+  "status": "SOURCE_FREE_CARRIER_VERIFIED_PENDING_ACTUAL_NAMESPACE_QUALIFICATION",
+  "universe_or_protocol_created": false
+}

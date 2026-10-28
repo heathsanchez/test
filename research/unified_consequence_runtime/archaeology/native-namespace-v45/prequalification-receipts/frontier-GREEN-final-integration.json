@@ -1,0 +1,37 @@
+{
+  "coding_agent_executions": 0,
+  "command": [
+    "/workspace/qualification/native-namespace-v45-environment/controller/bin/python",
+    "-B",
+    "-m",
+    "pytest",
+    "-q",
+    "--import-mode=importlib",
+    "-p",
+    "no:cacheprovider",
+    "--junitxml=/workspace/qualification/native-namespace-v45-frontier/GREEN-final-integration.xml",
+    "research/unified_consequence_runtime/test_qualify_native_frontier_v45.py",
+    "research/unified_consequence_runtime/test_qualify_native_frontier_v44.py",
+    "research/unified_consequence_runtime/test_qualify_native_frontier_v43.py",
+    "research/unified_consequence_runtime/test_qualify_native_frontier_v42.py",
+    "research/unified_consequence_runtime/archaeology/experiment-interface-v43/prospective/test_watcher_telemetry.py",
+    "research/unified_consequence_runtime/archaeology/experiment-interface-v43/prospective/test_training_history_projection_v43.py"
+  ],
+  "regressions": [
+    "mixed-original-versions-and-exact-V45-counter-schema",
+    "unique-actual-invocation-identity",
+    "separate-authenticated-child-main-scope-and-known-totals"
+  ],
+  "returncode": 0,
+  "scientific_native_calls": 0,
+  "scientific_task_queries": 0,
+  "seconds": 2.355823922000127,
+  "source_sha256": {
+    "research/unified_consequence_runtime/archaeology/native-namespace-v45/prospective/curate_frontier.py": "a51cff076d43b222bd90c316642f60221916428c5c2c4a8875632065b0a93185",
+    "research/unified_consequence_runtime/archaeology/native-namespace-v45/prospective/prepare_records.py": "df8e7901817d94f5064537cc070c4dd5bb6cdcc74a00cbaed3e89b29f8ac0098",
+    "research/unified_consequence_runtime/archaeology/native-namespace-v45/prospective/training_history_projection_v45.py": "4be377306c5c4c6b4f51a279b6f7cde8fc2b0fb0e79480ccbe2970880384995c",
+    "research/unified_consequence_runtime/archaeology/native-namespace-v45/prospective/watch_actual_agent.py": "456a003ae0de2c86536515a13a27dee8c8eb19435cb3e6e5a9fd9599dc6fe778",
+    "research/unified_consequence_runtime/qualify_native_frontier_v45.py": "ece5d43d25fb470b89a043c32767e3e72976d000134cad8ddccd184dc3e7cbbb",
+    "research/unified_consequence_runtime/test_qualify_native_frontier_v45.py": "9e5d4230275f2585607150e0814b29491f5e6b2ab70254649ef2ed3c7e79564b"
+  }
+}

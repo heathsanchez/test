@@ -1,0 +1,22 @@
+{
+  "coding_agent_executions": 0,
+  "counter_schema": "UDM_GENERIC_NATIVE_PYTEST_V45",
+  "duplicate_policy": "reject globally across all retained versions; never collapse duplicate receipt roles",
+  "green_stdout_sha256": "7680beca339c86e06c4dd02f3dd07bfb83877471248ed5adee16c5d0bdb36930",
+  "green_tests_passed": 49,
+  "original_versions_preserved": [
+    "V2",
+    "V42",
+    "V43"
+  ],
+  "red_expected_failures": 4,
+  "red_stdout_sha256": "f8a04ba37ff1fa5bf1e6a4a75017a2a63bd1ab03b66e8808f3c0e89396da0ddd",
+  "scientific_native_calls": 0,
+  "scientific_task_queries": 0,
+  "source_sha256": {
+    "qualify_native_frontier_v45.py": "ece5d43d25fb470b89a043c32767e3e72976d000134cad8ddccd184dc3e7cbbb",
+    "test_qualify_native_frontier_v45.py": "461a4f1a44f53ee3863f1b372d030f59db4fc47e936ccd50805147162efa7513"
+  },
+  "status": "MIXED_VERSION_GATE_REGRESSION_FIXED_SOURCE_FREE",
+  "unique_identity_field": "invocation_path"
+}

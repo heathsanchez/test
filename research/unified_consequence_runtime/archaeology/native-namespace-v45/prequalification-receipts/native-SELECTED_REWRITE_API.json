@@ -1,0 +1,31 @@
+{
+  "records": [
+    {
+      "argv": [
+        "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+        "-I",
+        "-B",
+        "-c",
+        "import inspect; from _pytest.assertion.rewrite import rewrite_asserts; print(inspect.signature(rewrite_asserts))"
+      ],
+      "returncode": 0,
+      "seconds": 0.14978865100010808,
+      "stderr": "",
+      "stdout": "(mod: 'ast.Module', source: 'bytes', module_path: 'str | None' = None, config: 'Config | None' = None) -> 'None'\n"
+    },
+    {
+      "argv": [
+        "/workspace/qualification/native-namespace-v45-environment/original-runtimes/cpython-3.6.5-pytest-5.4.3-linux-x86_64/venv/bin/python",
+        "-I",
+        "-B",
+        "-c",
+        "import inspect; from _pytest.assertion.rewrite import rewrite_asserts; print(inspect.signature(rewrite_asserts))"
+      ],
+      "returncode": 0,
+      "seconds": 0.14050101099996937,
+      "stderr": "",
+      "stdout": "(mod, source, module_path=None, config=None)\n"
+    }
+  ],
+  "scope": "metadata only; no target import/collection/execution"
+}

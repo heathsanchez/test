@@ -1,0 +1,85 @@
+{
+  "limitations": [
+    "Original runtime preliminary GREEN-attempt-2 raw /tmp data lost to pytest rotation; retained stdout/costs do not qualify that run.",
+    "Earlier context-only compiler artifacts outside retained roots are not falsely counted as available packets.",
+    "Original data-archive schemas/algorithms retained byte-for-byte; these new archives grant integrity only."
+  ],
+  "original_builder_sha256": "98f44e38b0b5e71a168e6ffe30e616ad7f3125dc4f381ef3d9a60f76865150d8",
+  "original_verifier_sha256": "05ea4d635494f045ab5c39c1420c2143ffec22110577e6492b9d9d1bfa92a018",
+  "packets": [
+    {
+      "archive": "static.tar.gz",
+      "archive_bytes": 7961,
+      "archive_sha256": "1c572f27f36f3c4590e5a5db9c837d0ee3ed2dcb3e9c2e2ec1bdaf0bc47f0c89",
+      "label": "static",
+      "manifest": "static.MANIFEST.json",
+      "manifest_sha256": "dfef649b782e1e1b931f86986756477e693a1e3070b815039f5c89a38a05c0ef",
+      "readback": "static.READBACK.json",
+      "readback_sha256": "dfdb9539f25ffdc2a3eb2a2a82448f8cc3f4ea400808fa28e0eaf0c32e211377",
+      "source": "/workspace/qualification/native-namespace-v45-static",
+      "source_regular_bytes": 114957,
+      "wall_seconds": 0.01178287300035663
+    },
+    {
+      "archive": "native.tar.gz",
+      "archive_bytes": 2742008,
+      "archive_sha256": "1e9f7aeaf7da4de75b9a6cbdd2387f7ffaf7f4d497403e7ff294f9d60ba02bf8",
+      "label": "native",
+      "manifest": "native.MANIFEST.json",
+      "manifest_sha256": "0fc9f47e6832e3f41b906459b0bbcc90fbd0082af42d60bffbd513ed56b22015",
+      "readback": "native.READBACK.json",
+      "readback_sha256": "bfae30b671689072cf6b96a00311799ec6cccdd17539a828724c1bc603a51a49",
+      "source": "/workspace/qualification/native-namespace-v45-native",
+      "source_regular_bytes": 19902020,
+      "wall_seconds": 1.962615870999798
+    },
+    {
+      "archive": "frontier.tar.gz",
+      "archive_bytes": 16701,
+      "archive_sha256": "e1d5ea4901d25d688e8175e6b6247d4877645036e47967a066d0bc94bbeaf179",
+      "label": "frontier",
+      "manifest": "frontier.MANIFEST.json",
+      "manifest_sha256": "e9208c97d6b3b3c7412f6a4ed1e662f705fdbc7fb7108aafa82e8f0c4f80c59d",
+      "readback": "frontier.READBACK.json",
+      "readback_sha256": "77ac0e64d01feb96c7ed75d59548f4b64da7b23cd6887093b8e17fd283a365d6",
+      "source": "/workspace/qualification/native-namespace-v45-frontier",
+      "source_regular_bytes": 142943,
+      "wall_seconds": 0.012012224000045535
+    },
+    {
+      "archive": "driver.tar.gz",
+      "archive_bytes": 750473,
+      "archive_sha256": "8720e600e617ab0534c735c338a61e6aff204c6fb418186fc4944fbee87a603a",
+      "label": "driver",
+      "manifest": "driver.MANIFEST.json",
+      "manifest_sha256": "8acfc56b8fa7241d7cd6b04b71ee4655bdf44c0e35d762442e3c3cb195d89325",
+      "readback": "driver.READBACK.json",
+      "readback_sha256": "f303c4304c9b32d808c3af9753d39aa3fa721a48c35644f083d9b8b3539811f8",
+      "source": "/workspace/qualification/native-namespace-v45-driver",
+      "source_regular_bytes": 10862415,
+      "wall_seconds": 2.022859923999931
+    },
+    {
+      "archive": "runtime.tar.gz",
+      "archive_bytes": 846477,
+      "archive_sha256": "2f3abee246efd001f90c29d2bd5abff734221770abbe05313a86005ad415092e",
+      "label": "runtime",
+      "manifest": "runtime.MANIFEST.json",
+      "manifest_sha256": "c47743663d6004af976557f642edc73a682ce8e71376db94ff214d08fc10381e",
+      "readback": "runtime.READBACK.json",
+      "readback_sha256": "4c884e68d7a1db71ef0a43c727d116228e3918a26cb969ce845d561086479063",
+      "source": "/workspace/qualification/native-namespace-v45-runtime",
+      "source_regular_bytes": 5517525,
+      "wall_seconds": 0.46789582800010976
+    }
+  ],
+  "schema": "UDM_V45_RETAINED_ENGINEERING_LINEAGE_ARCHIVES",
+  "status": "PASS_RAW_DATA_READBACK_ONLY_NOT_NATIVE_OR_SCIENTIFIC_PROMOTION",
+  "verdicts": {
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN"
+  }
+}

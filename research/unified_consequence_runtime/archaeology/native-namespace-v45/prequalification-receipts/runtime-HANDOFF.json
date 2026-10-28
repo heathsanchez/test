@@ -1,0 +1,1075 @@
+{
+  "created_utc": "2026-10-28T22:09:21.511688+00:00",
+  "engineering_only": true,
+  "external_root_final_state": "STABLE_AFTER_THIS_HANDOFF_NO_FURTHER_WRITES_PLANNED",
+  "final_costs": {
+    "actual_main_plus_child_native_attempts": {
+      "collection_calls": 11,
+      "native_calls": 7,
+      "subprocess_attempts": 18
+    },
+    "child_attempts": [
+      {
+        "path": "/workspace/qualification/native-namespace-v45-runtime/stable-5/pytest/test_w01_native_admit_execute_0/CHILD_NATIVE_ATTEMPTS.json",
+        "value": {
+          "compilation_attempts": {
+            "after": {
+              "compilation_calls": 17,
+              "compilation_seconds": 3.0029694570002903,
+              "records": [
+                {
+                  "compilation_calls": 1,
+                  "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+                  "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+                  "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+                  "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-zn0uf7s3",
+                  "process_exit_code": 0,
+                  "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+                  "seconds": 0.21452360099965517,
+                  "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+                },
+                {
+                  "compilation_calls": 1,
+                  "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+                  "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+                  "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+                  "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-pn9htvst",
+                  "process_exit_code": 0,
+                  "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+                  "seconds": 0.2150531269999192,
+                  "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+                },
+                {
+                  "compilation_calls": 1,
+                  "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+                  "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+                  "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+                  "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-wyp3kc1e",
+                  "process_exit_code": 0,
+                  "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+                  "seconds": 0.16459979799992652,
+                  "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+                },
+                {
+                  "compilation_calls": 1,
+                  "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+                  "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+                  "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+                  "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-69gt4wcv",
+                  "process_exit_code": 0,
+                  "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+                  "seconds": 0.16455431600024895,
+                  "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+                },
+                {
+                  "compilation_calls": 1,
+                  "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+                  "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+                  "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+                  "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-glhruia7",
+                  "process_exit_code": 0,
+                  "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+                  "seconds": 0.16427789499994105,
+                  "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+                },
+                {
+                  "compilation_calls": 1,
+                  "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+                  "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+                  "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+                  "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-k0m254p9",
+                  "process_exit_code": 0,
+                  "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+                  "seconds": 0.16439268500016624,
+                  "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+                },
+                {
+                  "compilation_calls": 1,
+                  "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+                  "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+                  "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+                  "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-ebvo6tbk",
+                  "process_exit_code": 0,
+                  "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+                  "seconds": 0.16445074400007798,
+                  "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+                },
+                {
+                  "compilation_calls": 1,
+                  "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+                  "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+                  "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+                  "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-gx8o1wtn",
+                  "process_exit_code": 0,
+                  "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+                  "seconds": 0.16497068199987552,
+                  "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+                },
+                {
+                  "compilation_calls": 1,
+                  "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+                  "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+                  "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+                  "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-wuxa4u4p",
+                  "process_exit_code": 0,
+                  "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+                  "seconds": 0.16583353600026385,
+                  "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+                },
+                {
+                  "compilation_calls": 1,
+                  "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+                  "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+                  "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+                  "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-tw2datl5",
+                  "process_exit_code": 0,
+                  "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+                  "seconds": 0.16478253800005405,
+                  "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+                },
+                {
+                  "compilation_calls": 1,
+                  "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+                  "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+                  "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+                  "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-ouq2y5ak",
+                  "process_exit_code": 0,
+                  "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+                  "seconds": 0.21514667200017357,
+                  "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+                },
+                {
+                  "compilation_calls": 1,
+                  "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+                  "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+                  "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+                  "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-w90jnojt",
+                  "process_exit_code": 0,
+                  "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+                  "seconds": 0.16488643899992894,
+                  "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+                },
+                {
+                  "compilation_calls": 1,
+                  "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+                  "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+                  "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+                  "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-amhne34x",
+                  "process_exit_code": 0,
+                  "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+                  "seconds": 0.16518003200008025,
+                  "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+                },
+                {
+                  "compilation_calls": 1,
+                  "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+                  "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+                  "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+                  "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-vj4rb8pd",
+                  "process_exit_code": 0,
+                  "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+                  "seconds": 0.16655907199992726,
+                  "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+                },
+                {
+                  "compilation_calls": 1,
+                  "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+                  "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+                  "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+                  "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-ca_1dh7l",
+                  "process_exit_code": 0,
+                  "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+                  "seconds": 0.1645006420003483,
+                  "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+                },
+                {
+                  "compilation_calls": 1,
+                  "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+                  "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+                  "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+                  "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-y2uvgc6z",
+                  "process_exit_code": 0,
+                  "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+                  "seconds": 0.164440341000045,
+                  "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+                },
+                {
+                  "compilation_calls": 1,
+                  "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+                  "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+                  "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+                  "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-01wqx4g5",
+                  "process_exit_code": 0,
+                  "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+                  "seconds": 0.21481733699965844,
+                  "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+                }
+              ]
+            },
+            "before": {
+              "compilation_calls": 0,
+              "compilation_seconds": 0,
+              "records": []
+            },
+            "delta": {
+              "compilation_calls": 17,
+              "compilation_seconds": 3.0029694570002903
+            }
+          },
+          "native_attempts": {
+            "after": {
+              "collection_calls": 1,
+              "native_calls": 1,
+              "subprocess_attempts": 2
+            },
+            "before": {
+              "collection_calls": 0,
+              "native_calls": 0,
+              "subprocess_attempts": 0
+            },
+            "delta": {
+              "collection_calls": 1,
+              "native_calls": 1,
+              "subprocess_attempts": 2
+            }
+          },
+          "native_run_outputs": [
+            "/workspace/qualification/native-namespace-v45-runtime/stable-5/pytest/test_w01_native_admit_execute_0/restart/native-runs/46b6999b7d5322294495756470f5931c"
+          ],
+          "schema": "UDM_NATIVE_V45_CHILD_ATTEMPTS",
+          "status": "PASS_NATIVE"
+        }
+      }
+    ],
+    "child_compiler_delta": {
+      "compilation_calls": 17,
+      "compilation_seconds": 3.0029694570002903
+    },
+    "cost_scope": "Main and child counters are separate actual intervals. Unique receipt invocation paths identify calls; artifact copies or later independent replays do not add original calls. Wall/controller/compiler/build durations overlap and are not additive. Complete model/engineering lifecycle cost remains UNKNOWN.",
+    "main_build_attempts": {
+      "after": {
+        "build_calls": 7,
+        "build_seconds": 4.803055407001011,
+        "records": [
+          "/workspace/qualification/native-namespace-v45-runtime/stable-5/pytest/test_original_declared_materia0/materialization/admission/2a46935f40d1320272277c81501cd6f3/prepare/build-receipt.json",
+          "/workspace/qualification/native-namespace-v45-runtime/stable-5/pytest/test_original_declared_materia0/materialization/admission/2a46935f40d1320272277c81501cd6f3/independent/build-receipt.json",
+          "/workspace/qualification/native-namespace-v45-runtime/stable-5/pytest/test_original_declared_materia0/materialization/execution/090af2637f3ed47c823cfc49de603571/prepare/build-receipt.json",
+          "/workspace/qualification/native-namespace-v45-runtime/stable-5/pytest/test_original_declared_materia0/materialization/execution/090af2637f3ed47c823cfc49de603571/independent/build-receipt.json",
+          "/workspace/qualification/native-namespace-v45-runtime/stable-5/pytest/test_original_declared_materia0/collection/generated-build-verification/build-receipt.json",
+          "/workspace/qualification/native-namespace-v45-runtime/stable-5/pytest/test_original_declared_materia0/native/independent-collection/generated-build-verification/build-receipt.json",
+          "/workspace/qualification/native-namespace-v45-runtime/stable-5/pytest/test_original_declared_materia0/native/execution/generated-build-verification/build-receipt.json"
+        ]
+      },
+      "before": {
+        "build_calls": 0,
+        "build_seconds": 0.0,
+        "records": []
+      },
+      "delta": {
+        "build_calls": 7,
+        "build_seconds": 4.803055407001011
+      }
+    },
+    "main_compilation_attempts": {
+      "after": {
+        "compilation_calls": 60,
+        "compilation_seconds": 10.452300812999965,
+        "records": [
+          {
+            "compilation_calls": 1,
+            "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+            "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+            "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+            "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-h78_v20q",
+            "process_exit_code": 0,
+            "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+            "seconds": 0.1650519049999275,
+            "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+          },
+          {
+            "compilation_calls": 1,
+            "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+            "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+            "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+            "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-xixndth7",
+            "process_exit_code": 0,
+            "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+            "seconds": 0.16443545000038284,
+            "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+          },
+          {
+            "compilation_calls": 1,
+            "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+            "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+            "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+            "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-zb0md4ji",
+            "process_exit_code": 0,
+            "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+            "seconds": 0.1648574149999149,
+            "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+          },
+          {
+            "compilation_calls": 1,
+            "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+            "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+            "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+            "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-3pqj_52o",
+            "process_exit_code": 0,
+            "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+            "seconds": 0.16441903699978866,
+            "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+          },
+          {
+            "compilation_calls": 1,
+            "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+            "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+            "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+            "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-u4iaf_mp",
+            "process_exit_code": 0,
+            "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+            "seconds": 0.1644252010000855,
+            "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+          },
+          {
+            "compilation_calls": 1,
+            "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+            "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+            "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+            "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-_ch_43fp",
+            "process_exit_code": 0,
+            "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+            "seconds": 0.16465653900013422,
+            "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+          },
+          {
+            "compilation_calls": 1,
+            "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+            "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+            "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+            "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-wb3t33qu",
+            "process_exit_code": 0,
+            "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+            "seconds": 0.2263333830001102,
+            "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+          },
+          {
+            "compilation_calls": 1,
+            "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+            "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+            "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+            "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-x2m_qsti",
+            "process_exit_code": 0,
+            "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+            "seconds": 0.16439103600032468,
+            "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+          },
+          {
+            "compilation_calls": 1,
+            "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+            "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+            "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+            "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-o4hyk56e",
+            "process_exit_code": 0,
+            "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+            "seconds": 0.16450266399988323,
+            "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+          },
+          {
+            "compilation_calls": 1,
+            "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+            "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+            "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+            "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-vm254hd8",
+            "process_exit_code": 0,
+            "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+            "seconds": 0.16507466299981388,
+            "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+          },
+          {
+            "compilation_calls": 1,
+            "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+            "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+            "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+            "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-b3q_bpic",
+            "process_exit_code": 0,
+            "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+            "seconds": 0.1642555930002345,
+            "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+          },
+          {
+            "compilation_calls": 1,
+            "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+            "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+            "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+            "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-zhkp5nr6",
+            "process_exit_code": 0,
+            "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+            "seconds": 0.16431345000000874,
+            "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+          },
+          {
+            "compilation_calls": 1,
+            "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+            "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+            "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+            "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-orrd06af",
+            "process_exit_code": 0,
+            "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+            "seconds": 0.16582963699966058,
+            "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+          },
+          {
+            "compilation_calls": 1,
+            "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+            "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+            "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+            "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-5ye7jzvj",
+            "process_exit_code": 0,
+            "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+            "seconds": 0.1644215310002437,
+            "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+          },
+          {
+            "compilation_calls": 1,
+            "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+            "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+            "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+            "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-sykbdxsu",
+            "process_exit_code": 0,
+            "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+            "seconds": 0.1828328460001103,
+            "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+          },
+          {
+            "compilation_calls": 1,
+            "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+            "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+            "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+            "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-5es6k_dr",
+            "process_exit_code": 0,
+            "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+            "seconds": 0.16506215800018254,
+            "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+          },
+          {
+            "compilation_calls": 1,
+            "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+            "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+            "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+            "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-n8at31k5",
+            "process_exit_code": 0,
+            "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+            "seconds": 0.1646051070001704,
+            "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+          },
+          {
+            "compilation_calls": 1,
+            "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+            "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+            "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+            "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-w22q2_w0",
+            "process_exit_code": 0,
+            "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+            "seconds": 0.1652328000000125,
+            "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+          },
+          {
+            "compilation_calls": 1,
+            "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+            "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+            "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+            "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-z0d33_hn",
+            "process_exit_code": 0,
+            "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+            "seconds": 0.21581333099993572,
+            "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+          },
+          {
+            "compilation_calls": 1,
+            "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+            "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+            "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+            "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-z1gtjb23",
+            "process_exit_code": 0,
+            "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+            "seconds": 0.21491745599996648,
+            "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+          },
+          {
+            "compilation_calls": 1,
+            "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+            "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+            "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+            "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-v5nsxuwj",
+            "process_exit_code": 0,
+            "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+            "seconds": 0.16437656299967784,
+            "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+          },
+          {
+            "compilation_calls": 1,
+            "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+            "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+            "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+            "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-sha_2ozd",
+            "process_exit_code": 0,
+            "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+            "seconds": 0.21492692599986185,
+            "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+          },
+          {
+            "compilation_calls": 1,
+            "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+            "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+            "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+            "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-b4_0ab5y",
+            "process_exit_code": 0,
+            "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+            "seconds": 0.11450904399998763,
+            "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+          },
+          {
+            "compilation_calls": 1,
+            "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+            "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+            "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+            "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-_xnv8s8q",
+            "process_exit_code": 0,
+            "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+            "seconds": 0.16507637699987754,
+            "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+          },
+          {
+            "compilation_calls": 1,
+            "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+            "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+            "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+            "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-yz0qhbf7",
+            "process_exit_code": 0,
+            "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+            "seconds": 0.16515295999988666,
+            "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+          },
+          {
+            "compilation_calls": 1,
+            "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+            "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+            "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+            "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-zs8rb8z2",
+            "process_exit_code": 0,
+            "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+            "seconds": 0.16640783299999384,
+            "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+          },
+          {
+            "compilation_calls": 1,
+            "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+            "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+            "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+            "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-8naoh3e8",
+            "process_exit_code": 0,
+            "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+            "seconds": 0.21573510700000043,
+            "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+          },
+          {
+            "compilation_calls": 1,
+            "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+            "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+            "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+            "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-4jje3d0n",
+            "process_exit_code": 0,
+            "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+            "seconds": 0.26509102700038056,
+            "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+          },
+          {
+            "compilation_calls": 1,
+            "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+            "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+            "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+            "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-zyatjbbk",
+            "process_exit_code": 0,
+            "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+            "seconds": 0.16780070899994826,
+            "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+          },
+          {
+            "compilation_calls": 1,
+            "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+            "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+            "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+            "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-wpy9t5mq",
+            "process_exit_code": 0,
+            "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+            "seconds": 0.16528702999994493,
+            "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+          },
+          {
+            "compilation_calls": 1,
+            "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+            "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+            "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+            "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-84jgs6sk",
+            "process_exit_code": 0,
+            "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+            "seconds": 0.21492507499988278,
+            "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+          },
+          {
+            "compilation_calls": 1,
+            "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+            "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+            "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+            "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-j1ni5g2m",
+            "process_exit_code": 0,
+            "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+            "seconds": 0.16435959399996136,
+            "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+          },
+          {
+            "compilation_calls": 1,
+            "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+            "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+            "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+            "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-6y25mmgo",
+            "process_exit_code": 0,
+            "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+            "seconds": 0.16607936700029313,
+            "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+          },
+          {
+            "compilation_calls": 1,
+            "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+            "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+            "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+            "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-nc1nn1dy",
+            "process_exit_code": 0,
+            "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+            "seconds": 0.2161904479999066,
+            "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+          },
+          {
+            "compilation_calls": 1,
+            "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+            "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+            "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+            "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-6o81fdpw",
+            "process_exit_code": 0,
+            "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+            "seconds": 0.21508937699991293,
+            "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+          },
+          {
+            "compilation_calls": 1,
+            "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+            "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+            "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+            "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-pa283p2s",
+            "process_exit_code": 0,
+            "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+            "seconds": 0.1146035810002104,
+            "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+          },
+          {
+            "compilation_calls": 1,
+            "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+            "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+            "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+            "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-d14rsc35",
+            "process_exit_code": 0,
+            "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+            "seconds": 0.11432954100018833,
+            "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+          },
+          {
+            "compilation_calls": 1,
+            "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+            "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+            "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+            "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-99m8sb_4",
+            "process_exit_code": 0,
+            "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+            "seconds": 0.16440722500010452,
+            "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+          },
+          {
+            "compilation_calls": 1,
+            "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+            "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+            "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+            "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-1qv4q8og",
+            "process_exit_code": 0,
+            "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+            "seconds": 0.16604403900009856,
+            "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+          },
+          {
+            "compilation_calls": 1,
+            "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+            "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+            "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+            "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-73z7_fho",
+            "process_exit_code": 0,
+            "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+            "seconds": 0.1642798809998567,
+            "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+          },
+          {
+            "compilation_calls": 1,
+            "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+            "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+            "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+            "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-u5dwyzlb",
+            "process_exit_code": 0,
+            "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+            "seconds": 0.16433852099999058,
+            "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+          },
+          {
+            "compilation_calls": 1,
+            "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+            "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+            "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+            "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-dasimiyw",
+            "process_exit_code": 0,
+            "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+            "seconds": 0.16458077600009346,
+            "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+          },
+          {
+            "compilation_calls": 1,
+            "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+            "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+            "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+            "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-jy_cyk5z",
+            "process_exit_code": 0,
+            "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+            "seconds": 0.16452576099982252,
+            "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+          },
+          {
+            "compilation_calls": 1,
+            "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+            "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+            "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+            "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-wanoobhx",
+            "process_exit_code": 0,
+            "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+            "seconds": 0.16482957700009138,
+            "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+          },
+          {
+            "compilation_calls": 1,
+            "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+            "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+            "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+            "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-6fx6wxds",
+            "process_exit_code": 0,
+            "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+            "seconds": 0.16468315499969322,
+            "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+          },
+          {
+            "compilation_calls": 1,
+            "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+            "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+            "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+            "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-g_ekqw68",
+            "process_exit_code": 0,
+            "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+            "seconds": 0.1647057870000026,
+            "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+          },
+          {
+            "compilation_calls": 1,
+            "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+            "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+            "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+            "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-srnsr3z7",
+            "process_exit_code": 0,
+            "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+            "seconds": 0.16437954100001662,
+            "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+          },
+          {
+            "compilation_calls": 1,
+            "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+            "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+            "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+            "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-tdwte9uy",
+            "process_exit_code": 0,
+            "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+            "seconds": 0.23654597399990962,
+            "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+          },
+          {
+            "compilation_calls": 1,
+            "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+            "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+            "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+            "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-5vc17vqy",
+            "process_exit_code": 0,
+            "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+            "seconds": 0.16429272699997455,
+            "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+          },
+          {
+            "compilation_calls": 1,
+            "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+            "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+            "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+            "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-zg52jhe7",
+            "process_exit_code": 0,
+            "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+            "seconds": 0.16438545600021826,
+            "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+          },
+          {
+            "compilation_calls": 1,
+            "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+            "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+            "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+            "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-p54o5sc8",
+            "process_exit_code": 0,
+            "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+            "seconds": 0.1646272890002365,
+            "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+          },
+          {
+            "compilation_calls": 1,
+            "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+            "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+            "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+            "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-mpyj78ff",
+            "process_exit_code": 0,
+            "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+            "seconds": 0.16496319399993808,
+            "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+          },
+          {
+            "compilation_calls": 1,
+            "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+            "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+            "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+            "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-7tiwo8fv",
+            "process_exit_code": 0,
+            "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+            "seconds": 0.1643874319997849,
+            "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+          },
+          {
+            "compilation_calls": 1,
+            "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+            "input_sha256": "78e076bb35c60970cf062994734106db21a889f1cc5cc1310ec870c1179b9357",
+            "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+            "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-29f1sp7d",
+            "process_exit_code": 0,
+            "report_sha256": "1daaf8e229aaab1f00c1267a69a1a02c2d05127d2cfd09db7ef0fdd887740a18",
+            "seconds": 0.16439567899988106,
+            "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+          },
+          {
+            "compilation_calls": 1,
+            "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+            "input_sha256": "670adb90636d219960aa99fe4a57539de9f7914ed75a8201f636e193e61e371b",
+            "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+            "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-cndku4ov",
+            "process_exit_code": 0,
+            "report_sha256": "d99bd8d5c6082aeb94ffb00166fe97385ff6f6d6cb5258c67ccd53a0fb3f985c",
+            "seconds": 0.1644859850002831,
+            "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+          },
+          {
+            "compilation_calls": 1,
+            "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+            "input_sha256": "670adb90636d219960aa99fe4a57539de9f7914ed75a8201f636e193e61e371b",
+            "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+            "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-6syl5doo",
+            "process_exit_code": 0,
+            "report_sha256": "d99bd8d5c6082aeb94ffb00166fe97385ff6f6d6cb5258c67ccd53a0fb3f985c",
+            "seconds": 0.16432694400009495,
+            "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+          },
+          {
+            "compilation_calls": 1,
+            "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+            "input_sha256": "670adb90636d219960aa99fe4a57539de9f7914ed75a8201f636e193e61e371b",
+            "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+            "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-dffuf21q",
+            "process_exit_code": 0,
+            "report_sha256": "d99bd8d5c6082aeb94ffb00166fe97385ff6f6d6cb5258c67ccd53a0fb3f985c",
+            "seconds": 0.1645734679996167,
+            "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+          },
+          {
+            "compilation_calls": 1,
+            "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+            "input_sha256": "670adb90636d219960aa99fe4a57539de9f7914ed75a8201f636e193e61e371b",
+            "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+            "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-dwz6fag3",
+            "process_exit_code": 0,
+            "report_sha256": "d99bd8d5c6082aeb94ffb00166fe97385ff6f6d6cb5258c67ccd53a0fb3f985c",
+            "seconds": 0.21442484299996067,
+            "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+          },
+          {
+            "compilation_calls": 1,
+            "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+            "input_sha256": "670adb90636d219960aa99fe4a57539de9f7914ed75a8201f636e193e61e371b",
+            "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+            "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-teq52e3r",
+            "process_exit_code": 0,
+            "report_sha256": "d99bd8d5c6082aeb94ffb00166fe97385ff6f6d6cb5258c67ccd53a0fb3f985c",
+            "seconds": 0.22391184999969482,
+            "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+          },
+          {
+            "compilation_calls": 1,
+            "compiler_sha256": "ceb578374c6b25022935535ec222032a5004a04da144286581b7b3c510d5416c",
+            "input_sha256": "670adb90636d219960aa99fe4a57539de9f7914ed75a8201f636e193e61e371b",
+            "interpreter": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+            "output": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries/udm-v45-original-declarations-mzuoe0fs",
+            "process_exit_code": 0,
+            "report_sha256": "d99bd8d5c6082aeb94ffb00166fe97385ff6f6d6cb5258c67ccd53a0fb3f985c",
+            "seconds": 0.16483394799979578,
+            "status": "COMPILED_ORIGINAL_DECLARATIONS_WITHOUT_EXECUTION"
+          }
+        ]
+      },
+      "before": {
+        "compilation_calls": 0,
+        "compilation_seconds": 0,
+        "records": []
+      },
+      "delta": {
+        "compilation_calls": 60,
+        "compilation_seconds": 10.452300812999965
+      }
+    },
+    "main_compiler_delta": {
+      "compilation_calls": 60,
+      "compilation_seconds": 10.452300812999965
+    },
+    "main_native_attempts": {
+      "after": {
+        "collection_calls": 10,
+        "native_calls": 6,
+        "subprocess_attempts": 16
+      },
+      "before": {
+        "collection_calls": 0,
+        "native_calls": 0,
+        "subprocess_attempts": 0
+      },
+      "delta": {
+        "collection_calls": 10,
+        "native_calls": 6,
+        "subprocess_attempts": 16
+      }
+    }
+  },
+  "git_mutations_by_this_agent": false,
+  "independent_child_readback": {
+    "audit_native_calls": 0,
+    "collection_calls": 1,
+    "compilation_calls": 17,
+    "native_calls": 1,
+    "receipt": "/workspace/qualification/native-namespace-v45-driver/ACTUAL_CHILD_READBACK.json",
+    "status": "READ_ONLY_PARSER_PASSED"
+  },
+  "original_source_modified_by_this_agent": false,
+  "owned_files_only": [
+    "native_runtime_v45.py",
+    "native_environment_v45.py",
+    "test_native_runtime_v45.py",
+    "test_native_environment_v45.py"
+  ],
+  "preliminary_GREEN_attempt2_raw_loss": {
+    "basis": "The test passed assertions for two admitted verification rows and one actual native call per row before the next execute operation refused concurrent admission source modification.",
+    "collection_calls": "UNKNOWN_RAW_RECORDS_UNAVAILABLE",
+    "compiler_calls": "UNKNOWN_RAW_RECORDS_UNAVAILABLE",
+    "limitation": "Preliminary GREEN-attempt-2 used default /tmp pytest basetemp. Other concurrent pytest runs rotated its raw directory before preservation. Its raw packets, machine state and detailed native/compiler cost records are unavailable.",
+    "native_seconds": "UNKNOWN_RAW_RECORDS_UNAVAILABLE",
+    "observed_native_calls": 2,
+    "policy": "Never use this lost preliminary attempt as qualification evidence. Stable-5 independently performs and retains the full lifecycle.",
+    "qualification_warrant": false,
+    "retained_limitation_record": "/workspace/qualification/native-namespace-v45-runtime/retained-pre-stability-attempt-2-RECEIPT-INVENTORY.json",
+    "retained_stdout": "/workspace/qualification/native-namespace-v45-runtime/GREEN-attempt-2.txt"
+  },
+  "preliminary_failures_retained": {
+    "initial_RED": "/workspace/qualification/native-namespace-v45-runtime/RED.txt",
+    "provisioning_transport_RED": "/workspace/qualification/native-namespace-v45-runtime/RED-provision-transport.txt",
+    "provisioning_transport_raw": "/workspace/qualification/native-namespace-v45-runtime/red-provision-transport",
+    "source_guarded_attempt3_raw": "/workspace/qualification/native-namespace-v45-runtime/green-3",
+    "source_guarded_attempt3_stdout": "/workspace/qualification/native-namespace-v45-runtime/GREEN-attempt-3.txt",
+    "stable_attempt4_counts": {
+      "failed": 3,
+      "native_attempts": {
+        "collection_calls": 7,
+        "native_calls": 4,
+        "subprocess_attempts": 11
+      },
+      "passed": 7
+    },
+    "stable_attempt4_diagnosis": "Test adapters used capability-only Machine.withdraw on record IDs and monkeypatched a helper namespace instead of actual worker module. Corrected tests to original append(revoke)+flush and actual runtime.verifier; production source unchanged.",
+    "stable_attempt4_result": "/workspace/qualification/native-namespace-v45-runtime/stable-4/RESULT.json",
+    "stable_attempt4_stdout": "/workspace/qualification/native-namespace-v45-runtime/stable-4/stdout.log"
+  },
+  "schema": "UDM_NATIVE_NAMESPACE_V45_RUNTIME_HANDOFF",
+  "scientific_verdicts": {
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN"
+  },
+  "source_files": {
+    "/workspace/udm-v54/research/unified_consequence_runtime/native_environment_v45.py": {
+      "bytes": 7396,
+      "sha256": "bc33a9924be9bff9a56f59bfbad1b866372e0b5a962fc3d939c669e0e697ec8c"
+    },
+    "/workspace/udm-v54/research/unified_consequence_runtime/native_runtime_v45.py": {
+      "bytes": 6622,
+      "sha256": "325e1b4b724b86923837ecfcc1b476b554f603b04bc5c1f5a551b2e28ceafd8d"
+    },
+    "/workspace/udm-v54/research/unified_consequence_runtime/test_native_environment_v45.py": {
+      "bytes": 9030,
+      "sha256": "6cf936f37178468f4c6e20d0aa8f668a4f3512396a7e888316037289e0a22c36"
+    },
+    "/workspace/udm-v54/research/unified_consequence_runtime/test_native_runtime_v45.py": {
+      "bytes": 10438,
+      "sha256": "7a24c7fb18de143b8bc13f6b8800557cea63d13ad6e31b8bebb01eaf8e90359d"
+    }
+  },
+  "status": "PASS_DEVELOPMENT_CONTROLS_INDEPENDENT_QUALIFICATION_PENDING",
+  "verified": {
+    "TMPDIR": "/workspace/qualification/native-namespace-v45-runtime/stable-5/default-temporaries",
+    "basetemp": "/workspace/qualification/native-namespace-v45-runtime/stable-5/pytest",
+    "behaviors": [
+      "existing unchanged MachineV44 + CAS/Metatron/FLASH and native.pytest_suite opcode",
+      "actual frozen W01 V45 native admission with two actual checks and native execution",
+      "unrelated record withdrawal preserves native capability and consequence",
+      "exact source ancestor withdrawal closes old capability/consequence before any new native attempt",
+      "fresh certificate restoration preserves exact candidate/dependencies and increments generation without reviving old branch",
+      "separate-process reopened Machine/CAS executes original native verifier again",
+      "persisted namespace CAS/input corruption and runtime/worker/admission source staleness refuse before native/compiler attempt",
+      "original private V3/V2 provisioner typed45 contract adapter, profile/package/time/selection algorithms",
+      "original metadata bootstrap bind/preflight algorithms privately use V45 context and source pins",
+      "actual original Hatch VCS declared materialization retains independent builds and generated native PASS with45 namespace authority",
+      "exact retained materialization invocation withdrawal refuses before native attempt"
+    ],
+    "command": "/workspace/qualification/native-namespace-v45-environment/controller/bin/python -B /workspace/qualification/native-namespace-v45-runtime/run_controls.py stable-5",
+    "environment_tests": 6,
+    "junit": "/workspace/qualification/native-namespace-v45-runtime/stable-5/contracts.xml",
+    "result": "/workspace/qualification/native-namespace-v45-runtime/stable-5/RESULT.json",
+    "runtime_tests": 4,
+    "source_before_after_equal": true,
+    "stderr": "/workspace/qualification/native-namespace-v45-runtime/stable-5/stderr.log",
+    "stdout": "/workspace/qualification/native-namespace-v45-runtime/stable-5/stdout.log",
+    "tests_failed": 0,
+    "tests_passed": 10,
+    "wall_seconds": 238.89493295700004
+  },
+  "warrant_boundary": "Local development controls only. Independent frozen source qualification, downloaded owned-branch artifact verification and prospective scientific gates remain root tasks."
+}

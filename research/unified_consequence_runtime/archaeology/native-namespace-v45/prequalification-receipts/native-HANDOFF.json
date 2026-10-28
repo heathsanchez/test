@@ -1,0 +1,1365 @@
+{
+  "api": {
+    "certificate": "UDM_NATIVE_ADMISSION_CERTIFICATE_V45",
+    "policy": "UDM_NATIVE_EXECUTION_POLICY_V45",
+    "schema": "UDM_GENERIC_NATIVE_PYTEST_V45"
+  },
+  "cost_scope": {
+    "collection_reports": 177,
+    "compiler_inventory_limit": "Unique retained compilation.json outputs under this qualification root, including copied earlier /tmp records; earlier context-only /tmp artifacts are not silently assigned to this local counter.",
+    "execution_reports": 73,
+    "full_and_late_controller_seconds": 528.28,
+    "guard_refusals_without_checked_report": 0,
+    "limit": "Physical completed-report inventory across local implementation attempts; not a replacement for fresh before/after worker and compiler counters.",
+    "retained_compiler_calls": 307,
+    "retained_compiler_seconds": 47.23991055499641,
+    "retained_completed_native_reports": 250,
+    "retained_unique_compiler_records": 307
+  },
+  "final_inventory_count": 72,
+  "final_whole_suite": "ROOT_FRESH_QUALIFICATION_PENDING",
+  "full_run": {
+    "exit_code": 0,
+    "log": "/workspace/qualification/native-namespace-v45-native/GREEN-final-attempt-2.log",
+    "scope": "pre-final audit sidecars and four additional cases; production worker identical to final source",
+    "seconds": 509.47,
+    "tests": 68
+  },
+  "late_run": {
+    "deselected": 67,
+    "exit_code": 0,
+    "log": "/workspace/qualification/native-namespace-v45-native/GREEN-late-controls.log",
+    "scope": "final source; four added cases and one overlapping order control",
+    "seconds": 18.81,
+    "tests": 5
+  },
+  "red_logs": [
+    "/workspace/qualification/native-namespace-v45-native/RED.log",
+    "/workspace/qualification/native-namespace-v45-native/RED-forged-func.log",
+    "/workspace/qualification/native-namespace-v45-native/RED-direct-callable-types.log",
+    "/workspace/qualification/native-namespace-v45-native/RED-spoofed-class.log",
+    "/workspace/qualification/native-namespace-v45-native/RED-bound-types.log"
+  ],
+  "replay_control_map": {
+    "R01": [
+      "test_certificate_cannot_replay_to_other_protocol_environment_source_or_horizon"
+    ],
+    "R02": [
+      "test_weaker_required_assertions_are_not_certificate_authority"
+    ],
+    "R03": [
+      "test_resealed_hidden_test_like_export_does_not_grant_wildcard_authority"
+    ],
+    "R04": [
+      "test_missing_namespace_or_compilation_authority_fails_closed"
+    ],
+    "R05": [
+      "test_resealed_observed_code_forgery_does_not_grant_original_declaration_authority"
+    ],
+    "R06": [
+      "test_resealed_selected_order_cannot_replace_independent_original_order[missing_protected]"
+    ],
+    "R07": [
+      "test_resealed_collection_manifest_is_checked_against_original_recollection"
+    ],
+    "R08": [
+      "test_resealed_missing_call_or_changed_execution_order_cannot_promote[missing_call]"
+    ],
+    "R09": [
+      "test_skip_xfail_and_xpass_are_not_fully_executed_native_passes"
+    ],
+    "R10": [
+      "test_fully_resealed_false_native_pass_requires_independent_candidate_execution"
+    ],
+    "R11": [
+      "test_certificate_cannot_replay_to_other_protocol_environment_source_or_horizon"
+    ],
+    "R12": [
+      "test_same_module_name_unlicensed_plugin_registration_does_not_grant_authority"
+    ],
+    "R13": [
+      "test_resealed_selected_order_cannot_replace_independent_original_order"
+    ],
+    "R14": [
+      "test_resealed_missing_call_or_changed_execution_order_cannot_promote[execution_order]"
+    ],
+    "R15": [
+      "test_candidate_wildcard_source_change_cannot_reuse_namespace_authority"
+    ],
+    "R16": [
+      "test_missing_namespace_or_compilation_authority_fails_closed"
+    ],
+    "R17": [
+      "test_direct_candidate_test_or_configuration_replacements_are_refused"
+    ],
+    "R18": [
+      "test_actual_outer_code_replacement_after_collection_is_unknown"
+    ]
+  },
+  "retained_reports": [
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-vxipx833/collection-1/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-vxipx833/collection-1/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-vxipx833/execution-3/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-vxipx833/execution-3/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-vxipx833/execution-3/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-vxipx833/execution-3/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-vxipx833/execution-2/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-vxipx833/execution-2/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-vxipx833/execution-2/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-vxipx833/execution-2/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-zt6u90qa/collection-1/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-zt6u90qa/collection-1/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-aspl70zb/collection-1/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-aspl70zb/collection-1/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-sabm5whw/collection-1/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-sabm5whw/collection-1/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-sabm5whw/execution-3/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-sabm5whw/execution-3/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-sabm5whw/execution-3/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-sabm5whw/execution-3/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-sabm5whw/execution-2/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-sabm5whw/execution-2/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-sabm5whw/execution-2/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-sabm5whw/execution-2/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-gqhhhije/collection-1/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-gqhhhije/collection-1/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-283_f7op/collection-1/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-283_f7op/collection-1/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-bxaqfjso/collection-1/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-bxaqfjso/collection-1/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-bxaqfjso/receipt-recheck-3/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-bxaqfjso/receipt-recheck-3/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-bxaqfjso/receipt-recheck-3/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-bxaqfjso/receipt-recheck-3/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-bxaqfjso/execution-2/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-bxaqfjso/execution-2/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-bxaqfjso/execution-2/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-bxaqfjso/execution-2/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-t970ys9_/collection-3/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-t970ys9_/collection-3/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-t970ys9_/collection-5/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-t970ys9_/collection-5/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-t970ys9_/collection-1/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-t970ys9_/collection-1/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-t970ys9_/execution-6/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-t970ys9_/execution-6/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-t970ys9_/execution-6/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-t970ys9_/execution-6/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-t970ys9_/execution-2/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-t970ys9_/execution-2/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-t970ys9_/execution-2/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-t970ys9_/execution-2/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-t970ys9_/execution-4/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-t970ys9_/execution-4/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-t970ys9_/execution-4/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-t970ys9_/execution-4/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-504j9pmn/collection-1/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-504j9pmn/collection-1/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-504j9pmn/execution-2/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-504j9pmn/execution-2/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-504j9pmn/execution-2/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-504j9pmn/execution-2/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-odonj6so/collection-1/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-odonj6so/collection-1/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-odonj6so/execution-2/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-odonj6so/execution-2/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-odonj6so/execution-2/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-odonj6so/execution-2/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-epihnbfg/collection-1/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-epihnbfg/collection-1/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-uiiiipvh/collection-1/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-uiiiipvh/collection-1/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-3kqits69/collection-3/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-3kqits69/collection-3/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-3kqits69/collection-4/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-3kqits69/collection-4/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-3kqits69/collection-2/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-3kqits69/collection-2/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-3kqits69/collection-1/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-3kqits69/collection-1/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-ptn41a4b/collection-1/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-ptn41a4b/collection-1/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-6w0b1d8j/collection-1/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-6w0b1d8j/collection-1/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-6w0b1d8j/execution-2/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-6w0b1d8j/execution-2/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-6w0b1d8j/execution-2/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-6w0b1d8j/execution-2/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-ioqg1ler/collection-1/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-ioqg1ler/collection-1/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-asmc8icv/collection-1/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-asmc8icv/collection-1/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-asmc8icv/execution-2/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-asmc8icv/execution-2/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-asmc8icv/execution-2/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-asmc8icv/execution-2/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-y1q8lb0d/collection-1/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-y1q8lb0d/collection-1/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-69kpu_kr/collection-3/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-69kpu_kr/collection-3/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-69kpu_kr/collection-1/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-69kpu_kr/collection-1/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-69kpu_kr/execution-2/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-69kpu_kr/execution-2/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-69kpu_kr/execution-2/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-69kpu_kr/execution-2/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-69kpu_kr/execution-4/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-69kpu_kr/execution-4/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-69kpu_kr/execution-4/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-69kpu_kr/execution-4/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-kfv5ygkq/collection-1/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-kfv5ygkq/collection-1/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-kfv5ygkq/receipt-cases-3/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-kfv5ygkq/receipt-cases-3/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-kfv5ygkq/receipt-cases-3/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-kfv5ygkq/receipt-cases-3/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-kfv5ygkq/execution-2/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-kfv5ygkq/execution-2/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-kfv5ygkq/execution-2/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-kfv5ygkq/execution-2/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-8w79o0gi/collection-1/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-8w79o0gi/collection-1/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-8w79o0gi/execution-2/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-8w79o0gi/execution-2/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-8w79o0gi/execution-2/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-8w79o0gi/execution-2/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-l9ep13_u/collection-1/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-l9ep13_u/collection-1/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-l9ep13_u/execution-2/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-l9ep13_u/execution-2/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-l9ep13_u/execution-2/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-l9ep13_u/execution-2/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-_bh6_tka/collection-1/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-_bh6_tka/collection-1/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-_bh6_tka/execution-2/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-_bh6_tka/execution-2/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-_bh6_tka/execution-2/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-_bh6_tka/execution-2/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-o6s8cexw/collection-1/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-o6s8cexw/collection-1/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-o6s8cexw/execution-3/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-o6s8cexw/execution-3/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-o6s8cexw/execution-3/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-o6s8cexw/execution-3/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-o6s8cexw/execution-2/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-o6s8cexw/execution-2/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-o6s8cexw/execution-2/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-o6s8cexw/execution-2/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-xmxm8m9p/collection-1/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-xmxm8m9p/collection-1/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-xmxm8m9p/execution-2/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-xmxm8m9p/execution-2/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-xmxm8m9p/execution-2/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-xmxm8m9p/execution-2/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-e2oj30ox/collection-1/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-e2oj30ox/collection-1/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-6n39rkoj/collection-1/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-6n39rkoj/collection-1/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-6n39rkoj/execution-2/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-6n39rkoj/execution-2/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-6n39rkoj/execution-2/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/inherited-evidence/udm-admission-v2-adversarial-6n39rkoj/execution-2/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-4/test_frozen_wildcard_controls_0/evidence/collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-4/test_frozen_wildcard_controls_0/evidence/collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-4/test_frozen_wildcard_controls_0/evidence/native/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-4/test_frozen_wildcard_controls_0/evidence/native/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-4/test_frozen_wildcard_controls_0/evidence/native/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-4/test_frozen_wildcard_controls_0/evidence/native/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-4/test_frozen_wildcard_controls_0/replay/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-4/test_frozen_wildcard_controls_0/replay/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-4/test_frozen_wildcard_controls_0/replay/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-4/test_frozen_wildcard_controls_0/replay/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-4/test_runtime_malformed_import_0/malformed/collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-4/test_runtime_malformed_import_0/malformed/collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-4/test_runtime_malformed_import_0/malformed/native/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-4/test_runtime_malformed_import_0/malformed/native/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-4/test_runtime_malformed_import_0/malformed/native/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-4/test_runtime_malformed_import_0/malformed/native/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-4/test_frozen_wildcard_controls_1/evidence/collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-4/test_frozen_wildcard_controls_1/evidence/collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-4/test_frozen_wildcard_controls_1/evidence/native/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-4/test_frozen_wildcard_controls_1/evidence/native/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-4/test_frozen_wildcard_controls_1/evidence/native/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-4/test_frozen_wildcard_controls_1/evidence/native/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-4/test_frozen_wildcard_controls_1/replay/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-4/test_frozen_wildcard_controls_1/replay/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-4/test_frozen_wildcard_controls_1/replay/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-4/test_frozen_wildcard_controls_1/replay/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-3/test_frozen_wildcard_controls_0/evidence/collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-3/test_frozen_wildcard_controls_0/evidence/collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-3/test_frozen_wildcard_controls_0/evidence/native/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-3/test_frozen_wildcard_controls_0/evidence/native/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-3/test_frozen_wildcard_controls_0/evidence/native/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-3/test_frozen_wildcard_controls_0/evidence/native/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-3/test_frozen_wildcard_controls_0/replay/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-3/test_frozen_wildcard_controls_0/replay/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-3/test_frozen_wildcard_controls_0/replay/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-3/test_frozen_wildcard_controls_0/replay/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-3/test_real_failed_assertion_and0/failed/collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-3/test_real_failed_assertion_and0/failed/collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-3/test_real_failed_assertion_and0/failed/native/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-3/test_real_failed_assertion_and0/failed/native/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-3/test_real_failed_assertion_and0/failed/native/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-3/test_real_failed_assertion_and0/failed/native/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-3/test_real_failed_assertion_and0/fixed/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-3/test_real_failed_assertion_and0/fixed/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-3/test_real_failed_assertion_and0/fixed/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-3/test_real_failed_assertion_and0/fixed/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-3/test_frozen_missing_or_rebound2/refused/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-3/test_frozen_missing_or_rebound2/refused/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-3/test_runtime_malformed_import_0/malformed/collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-3/test_runtime_malformed_import_0/malformed/collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-3/test_runtime_malformed_import_0/malformed/native/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-3/test_runtime_malformed_import_0/malformed/native/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-3/test_runtime_malformed_import_0/malformed/native/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-3/test_runtime_malformed_import_0/malformed/native/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-3/test_runtime_malformed_import_0/malformed-replay/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-3/test_runtime_malformed_import_0/malformed-replay/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-3/test_runtime_malformed_import_0/malformed-replay/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-3/test_runtime_malformed_import_0/malformed-replay/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-3/test_frozen_missing_or_rebound6/refused/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-3/test_frozen_missing_or_rebound6/refused/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-3/test_skipped_or_xfailed_protec0/skip/collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-3/test_skipped_or_xfailed_protec0/skip/collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-3/test_skipped_or_xfailed_protec0/skip/native/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-3/test_skipped_or_xfailed_protec0/skip/native/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-3/test_skipped_or_xfailed_protec0/skip/native/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-3/test_skipped_or_xfailed_protec0/skip/native/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-3/test_c3_winning_origin_and_eac0/parameterized/collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-3/test_c3_winning_origin_and_eac0/parameterized/collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-3/test_c3_winning_origin_and_eac0/parameterized/native/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-3/test_c3_winning_origin_and_eac0/parameterized/native/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-3/test_c3_winning_origin_and_eac0/parameterized/native/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-3/test_c3_winning_origin_and_eac0/parameterized/native/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-3/test_frozen_missing_or_rebound0/refused/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-3/test_frozen_missing_or_rebound0/refused/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-3/test_frozen_missing_or_rebound1/refused/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-3/test_frozen_missing_or_rebound1/refused/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-3/test_frozen_wildcard_controls_1/evidence/collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-3/test_frozen_wildcard_controls_1/evidence/collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-3/test_frozen_wildcard_controls_1/evidence/native/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-3/test_frozen_wildcard_controls_1/evidence/native/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-3/test_frozen_wildcard_controls_1/evidence/native/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-3/test_frozen_wildcard_controls_1/evidence/native/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-3/test_frozen_wildcard_controls_1/replay/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-3/test_frozen_wildcard_controls_1/replay/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-3/test_frozen_wildcard_controls_1/replay/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-3/test_frozen_wildcard_controls_1/replay/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-3/test_skipped_or_xfailed_protec1/skip/collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-3/test_skipped_or_xfailed_protec1/skip/collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/late-controls/test_same_module_name_unlicens0/collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/late-controls/test_same_module_name_unlicens0/collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/late-controls/test_same_module_name_unlicens0/imposter/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/late-controls/test_same_module_name_unlicens0/imposter/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/late-controls/test_same_module_name_unlicens0/imposter/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/late-controls/test_same_module_name_unlicens0/imposter/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/late-controls/test_resealed_selected_order_c0/collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/late-controls/test_resealed_selected_order_c0/collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/late-controls/test_resealed_selected_order_c0/independent-order/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/late-controls/test_resealed_selected_order_c0/independent-order/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/late-controls/test_resealed_hidden_test_like0/honest/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/late-controls/test_resealed_hidden_test_like0/honest/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/late-controls/test_resealed_hidden_test_like1/honest/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/late-controls/test_resealed_hidden_test_like1/honest/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/late-controls/test_resealed_selected_order_c1/collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/late-controls/test_resealed_selected_order_c1/collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_frozen_wildcard_controls_0/evidence/collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_frozen_wildcard_controls_0/evidence/collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_frozen_wildcard_controls_0/evidence/native/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_frozen_wildcard_controls_0/evidence/native/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_frozen_wildcard_controls_0/evidence/native/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_frozen_wildcard_controls_0/evidence/native/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_frozen_wildcard_controls_0/replay/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_frozen_wildcard_controls_0/replay/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_frozen_wildcard_controls_0/replay/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_frozen_wildcard_controls_0/replay/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_real_failed_assertion_and0/failed/collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_real_failed_assertion_and0/failed/collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_real_failed_assertion_and0/failed/native/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_real_failed_assertion_and0/failed/native/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_real_failed_assertion_and0/failed/native/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_real_failed_assertion_and0/failed/native/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_real_failed_assertion_and0/fixed/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_real_failed_assertion_and0/fixed/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_real_failed_assertion_and0/fixed/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_real_failed_assertion_and0/fixed/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_frozen_missing_or_rebound2/refused/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_frozen_missing_or_rebound2/refused/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_candidate_wildcard_source0/collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_candidate_wildcard_source0/collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_candidate_wildcard_source0/changed/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_candidate_wildcard_source0/changed/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_legacy_original_interpret0/legacy/collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_legacy_original_interpret0/legacy/collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_resealed_observed_code_fo0/collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_resealed_observed_code_fo0/collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_runtime_malformed_import_0/malformed/collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_runtime_malformed_import_0/malformed/collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_runtime_malformed_import_0/malformed/native/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_runtime_malformed_import_0/malformed/native/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_runtime_malformed_import_0/malformed/native/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_runtime_malformed_import_0/malformed/native/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_runtime_malformed_import_0/malformed-replay/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_runtime_malformed_import_0/malformed-replay/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_runtime_malformed_import_0/malformed-replay/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_runtime_malformed_import_0/malformed-replay/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_frozen_missing_or_rebound6/refused/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_frozen_missing_or_rebound6/refused/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_skipped_or_xfailed_protec0/skip/collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_skipped_or_xfailed_protec0/skip/collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_skipped_or_xfailed_protec0/skip/native/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_skipped_or_xfailed_protec0/skip/native/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_skipped_or_xfailed_protec0/skip/native/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_skipped_or_xfailed_protec0/skip/native/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_c3_winning_origin_and_eac0/parameterized/collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_c3_winning_origin_and_eac0/parameterized/collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_c3_winning_origin_and_eac0/parameterized/native/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_c3_winning_origin_and_eac0/parameterized/native/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_c3_winning_origin_and_eac0/parameterized/native/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_c3_winning_origin_and_eac0/parameterized/native/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_frozen_missing_or_rebound0/refused/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_frozen_missing_or_rebound0/refused/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_frozen_missing_or_rebound1/refused/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_frozen_missing_or_rebound1/refused/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_frozen_wildcard_controls_1/evidence/collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_frozen_wildcard_controls_1/evidence/collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_frozen_wildcard_controls_1/evidence/native/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_frozen_wildcard_controls_1/evidence/native/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_frozen_wildcard_controls_1/evidence/native/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_frozen_wildcard_controls_1/evidence/native/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_frozen_wildcard_controls_1/replay/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_frozen_wildcard_controls_1/replay/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_frozen_wildcard_controls_1/replay/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_frozen_wildcard_controls_1/replay/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_skipped_or_xfailed_protec1/skip/collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_skipped_or_xfailed_protec1/skip/collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_skipped_or_xfailed_protec1/skip/native/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_skipped_or_xfailed_protec1/skip/native/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_skipped_or_xfailed_protec1/skip/native/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final/test_skipped_or_xfailed_protec1/skip/native/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/compiler-temporaries/udm-v2-independent-bn0ob4_z/recollection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/compiler-temporaries/udm-v2-independent-bn0ob4_z/recollection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/compiler-temporaries/udm-v2-independent-33pzpxke/recollection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/compiler-temporaries/udm-v2-independent-33pzpxke/recollection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_frozen_wildcard_controls_0/evidence/collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_frozen_wildcard_controls_0/evidence/collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_frozen_wildcard_controls_0/evidence/native/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_frozen_wildcard_controls_0/evidence/native/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_frozen_wildcard_controls_0/evidence/native/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_frozen_wildcard_controls_0/evidence/native/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_frozen_wildcard_controls_0/replay/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_frozen_wildcard_controls_0/replay/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_frozen_wildcard_controls_0/replay/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_frozen_wildcard_controls_0/replay/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_real_failed_assertion_and0/failed/collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_real_failed_assertion_and0/failed/collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_real_failed_assertion_and0/failed/native/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_real_failed_assertion_and0/failed/native/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_real_failed_assertion_and0/failed/native/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_real_failed_assertion_and0/failed/native/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_real_failed_assertion_and0/fixed/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_real_failed_assertion_and0/fixed/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_real_failed_assertion_and0/fixed/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_real_failed_assertion_and0/fixed/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_resealed_missing_call_or_0/honest/collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_resealed_missing_call_or_0/honest/collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_resealed_missing_call_or_0/honest/native/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_resealed_missing_call_or_0/honest/native/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_resealed_missing_call_or_0/honest/native/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_resealed_missing_call_or_0/honest/native/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_resealed_selected_order_c0/collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_resealed_selected_order_c0/collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_resealed_selected_order_c0/independent-order/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_resealed_selected_order_c0/independent-order/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_actual_outer_code_replace1/outer-change/collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_actual_outer_code_replace1/outer-change/collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_actual_outer_code_replace1/outer-change/native/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_actual_outer_code_replace1/outer-change/native/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_actual_outer_code_replace1/outer-change/native/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_actual_outer_code_replace1/outer-change/native/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_frozen_missing_or_rebound2/refused/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_frozen_missing_or_rebound2/refused/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_original_generated_build_0/generated-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_original_generated_build_0/generated-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_original_generated_build_0/generated-replay/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_original_generated_build_0/generated-replay/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_original_generated_build_0/generated-replay/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_original_generated_build_0/generated-replay/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_original_generated_build_0/generated-native/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_original_generated_build_0/generated-native/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_original_generated_build_0/generated-native/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_original_generated_build_0/generated-native/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_candidate_wildcard_source0/collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_candidate_wildcard_source0/collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_candidate_wildcard_source0/changed/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_candidate_wildcard_source0/changed/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_frozen_legacy_importlib_c1/legacy-refusal/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_frozen_legacy_importlib_c1/legacy-refusal/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_actual_outer_code_replace0/outer-change/collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_actual_outer_code_replace0/outer-change/collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_actual_outer_code_replace0/outer-change/native/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_actual_outer_code_replace0/outer-change/native/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_actual_outer_code_replace0/outer-change/native/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_actual_outer_code_replace0/outer-change/native/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_resealed_observed_code_fo0/collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_resealed_observed_code_fo0/collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_resealed_missing_call_or_1/honest/collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_resealed_missing_call_or_1/honest/collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_resealed_missing_call_or_1/honest/native/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_resealed_missing_call_or_1/honest/native/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_resealed_missing_call_or_1/honest/native/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_resealed_missing_call_or_1/honest/native/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_runtime_malformed_import_0/malformed/collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_runtime_malformed_import_0/malformed/collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_runtime_malformed_import_0/malformed/native/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_runtime_malformed_import_0/malformed/native/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_runtime_malformed_import_0/malformed/native/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_runtime_malformed_import_0/malformed/native/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_runtime_malformed_import_0/malformed-replay/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_runtime_malformed_import_0/malformed-replay/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_runtime_malformed_import_0/malformed-replay/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_runtime_malformed_import_0/malformed-replay/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_frozen_missing_or_rebound6/refused/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_frozen_missing_or_rebound6/refused/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_skipped_or_xfailed_protec0/skip/collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_skipped_or_xfailed_protec0/skip/collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_skipped_or_xfailed_protec0/skip/native/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_skipped_or_xfailed_protec0/skip/native/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_skipped_or_xfailed_protec0/skip/native/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_skipped_or_xfailed_protec0/skip/native/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_frozen_legacy_importlib_c0/legacy-refusal/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_frozen_legacy_importlib_c0/legacy-refusal/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_c3_winning_origin_and_eac0/parameterized/collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_c3_winning_origin_and_eac0/parameterized/collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_c3_winning_origin_and_eac0/parameterized/native/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_c3_winning_origin_and_eac0/parameterized/native/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_c3_winning_origin_and_eac0/parameterized/native/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_c3_winning_origin_and_eac0/parameterized/native/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_direct_candidate_test_or_1/collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_direct_candidate_test_or_1/collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_direct_candidate_test_or_1/candidate/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_direct_candidate_test_or_1/candidate/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_frozen_missing_or_rebound0/refused/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_frozen_missing_or_rebound0/refused/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_frozen_missing_or_rebound1/refused/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_frozen_missing_or_rebound1/refused/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_frozen_wildcard_controls_1/evidence/collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_frozen_wildcard_controls_1/evidence/collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_frozen_wildcard_controls_1/evidence/native/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_frozen_wildcard_controls_1/evidence/native/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_frozen_wildcard_controls_1/evidence/native/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_frozen_wildcard_controls_1/evidence/native/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_frozen_wildcard_controls_1/replay/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_frozen_wildcard_controls_1/replay/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_frozen_wildcard_controls_1/replay/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_frozen_wildcard_controls_1/replay/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_candidate_wildcard_source1/collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_candidate_wildcard_source1/collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_candidate_wildcard_source1/changed/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_candidate_wildcard_source1/changed/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_real_unittest_bound_metho0/unittest/collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_real_unittest_bound_metho0/unittest/collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_real_unittest_bound_metho0/unittest/native/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_real_unittest_bound_metho0/unittest/native/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_real_unittest_bound_metho0/unittest/native/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_real_unittest_bound_metho0/unittest/native/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_separately_declared_legac1/legacy-replay/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_separately_declared_legac1/legacy-replay/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_separately_declared_legac1/legacy-replay/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_separately_declared_legac1/legacy-replay/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_separately_declared_legac1/legacy/collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_separately_declared_legac1/legacy/collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_separately_declared_legac1/legacy/native/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_separately_declared_legac1/legacy/native/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_separately_declared_legac1/legacy/native/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_separately_declared_legac1/legacy/native/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_direct_candidate_test_or_2/collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_direct_candidate_test_or_2/collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_direct_candidate_test_or_2/candidate/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_direct_candidate_test_or_2/candidate/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_skipped_or_xfailed_protec1/skip/collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_skipped_or_xfailed_protec1/skip/collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_skipped_or_xfailed_protec1/skip/native/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_skipped_or_xfailed_protec1/skip/native/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_skipped_or_xfailed_protec1/skip/native/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_skipped_or_xfailed_protec1/skip/native/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_separately_declared_legac0/legacy-replay/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_separately_declared_legac0/legacy-replay/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_separately_declared_legac0/legacy-replay/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_separately_declared_legac0/legacy-replay/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_separately_declared_legac0/legacy/collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_separately_declared_legac0/legacy/collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_separately_declared_legac0/legacy/native/execution/checked-report.json",
+      "mode": "run",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_separately_declared_legac0/legacy/native/execution/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_separately_declared_legac0/legacy/native/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_separately_declared_legac0/legacy/native/independent-collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_direct_candidate_test_or_0/collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_direct_candidate_test_or_0/collection/report.json"
+    },
+    {
+      "checked_report": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_direct_candidate_test_or_0/candidate/independent-collection/checked-report.json",
+      "mode": "collect",
+      "path": "/workspace/qualification/native-namespace-v45-native/green-work-final-2/test_direct_candidate_test_or_0/candidate/independent-collection/report.json"
+    }
+  ],
+  "schema": "UDM_NATIVE_V45_IMPLEMENTER_HANDOFF",
+  "selected_rewrite_metadata": "/workspace/qualification/native-namespace-v45-native/SELECTED_REWRITE_API.json",
+  "source_sha256": {
+    "native_execution_v45.py": "27e14f937f64bfa53536c5611dd7e3374bba5bc8c226f13408915622d2038058",
+    "native_v45_test_support.py": "29b8223c8fb248ec7610b208523d50c5a874e04138c833308c4a50b99c02b597",
+    "test_native_execution_v45.py": "e7807230e533d60f0e1251f8e0c6fea2f1e84263915b44d837b5bf5810815b04"
+  },
+  "unknown": [
+    "Frozen W01/W04 importlib configuration is unsupported under exact pytest5.4.3; collection refuses with native_calls=0.",
+    "Legacy PASS/FAIL/replay qualify separately frozen compatible [pytest] fixtures only.",
+    "Candidate edits to wildcard dependency or initializer source remain conservatively UNKNOWN.",
+    "Ordering attribute/subscript writes, dynamic exports/reexports and opaque initializers remain UNKNOWN.",
+    "No general Python correctness, sandbox/nonbypassability or scientific G2-G6 warrant."
+  ]
+}

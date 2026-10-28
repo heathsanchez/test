@@ -1,0 +1,126 @@
+{
+  "collection_calls": 0,
+  "commands": [
+    {
+      "argv": [
+        "/workspace/qualification/native-namespace-v45-environment/managed-python/cpython-3.12.14-linux-x86_64-gnu/bin/python3.12",
+        "-B",
+        "-m",
+        "venv",
+        "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv"
+      ],
+      "log": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv.log",
+      "returncode": 0,
+      "seconds": 2.1249983980000025
+    },
+    {
+      "argv": [
+        "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+        "-B",
+        "-m",
+        "pip",
+        "install",
+        "--disable-pip-version-check",
+        "--no-input",
+        "--no-index",
+        "--find-links",
+        "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/wheels",
+        "--no-deps",
+        "--require-hashes",
+        "--only-binary=:all:",
+        "-r",
+        "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/pins.txt"
+      ],
+      "log": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/fixed-packages.log",
+      "returncode": 0,
+      "seconds": 4.877087042000028
+    },
+    {
+      "argv": [
+        "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+        "-B",
+        "-m",
+        "pip",
+        "check"
+      ],
+      "log": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/pip-check.log",
+      "returncode": 0,
+      "seconds": 0.3154843859999801
+    }
+  ],
+  "distribution_count": 45,
+  "environment_sha256": "db98e5da1dc325816104d8d6cdc9fb335c2e5babee95821294ca173293586553",
+  "legacy_runtime_map_unchanged": true,
+  "metadata": {
+    "activated_extension_extras": [
+      {
+        "distribution": "coverage",
+        "extra": "toml"
+      },
+      {
+        "distribution": "pytest-xdist",
+        "extra": "psutil"
+      }
+    ],
+    "added_pins": [
+      "ast-serialize==0.13.0",
+      "librt==0.16.0",
+      "mypy-extensions==1.1.0",
+      "mypy==2.4.0",
+      "pytest-cov==6.3.0",
+      "setuptools-git-versioning==3.2.0"
+    ],
+    "catalog_fingerprint": "c71b043cd4da5d87ed7295095081c7aa9059ab2ab177a1798b8b362acf9f381d",
+    "catalog_sha256": "2050def754f8b0b7d39f3ea256a6c4a5997876fd21ebd6a1afb134b06cb8dfc6",
+    "immutable_modern_pins": 39,
+    "legacy_row_unchanged": true,
+    "modern_pin_count": 45,
+    "native_tests_executed": false,
+    "new_plugin_license": {
+      "distribution": "pytest-cov",
+      "module": "pytest_cov.plugin",
+      "version": "6.3.0"
+    },
+    "old_package_records_preserved": 61,
+    "package_metadata_sha256": "79b82db4d56056cb268b99e9cc9da2f54768c6ee2696f13fd4264864b20bff89",
+    "profiles": [
+      {
+        "id": "cpython-3.6.5-pytest-5.4.3-linux-x86_64",
+        "pytest_version": "5.4.3",
+        "python_version": "3.6.5",
+        "reason": null,
+        "reasons": [],
+        "status": "COMPATIBLE"
+      },
+      {
+        "id": "cpython-3.12.14-pytest-8.4.1-linux-x86_64",
+        "pytest_version": "8.4.1",
+        "python_version": "3.12.14",
+        "reason": null,
+        "reasons": [],
+        "status": "COMPATIBLE"
+      }
+    ],
+    "protocol_sha256": "5c5abc8e6f210306287f7714249ab98e6fc3b0a96c3070097d571eb81c0500f3",
+    "schema": "UDM_NATIVE_PROFILE_METADATA_RECEIPT_V41",
+    "status": "PASS_EXACT_METADATA_AND_EXTRA_CLOSURE",
+    "target_source_accessed": false
+  },
+  "native_calls": 0,
+  "native_tests_executed": false,
+  "pinned_package_files_sha256": "961e7415becd0c5b525cd6c92fa78c4c81ab2514cc9c612fa755ed3bfb4da5ad",
+  "plugin_identity_sha256": "275f5d8720e70699bbe91b92b70889a01740082789276291acaa6b8af30c5e4f",
+  "profile_id": "cpython-3.12.14-pytest-8.4.1-linux-x86_64",
+  "runtime_map_path": "/workspace/qualification/native-namespace-v45-environment/RUNTIME_PATHS.json",
+  "runtimes": {
+    "cpython-3.12.14-pytest-8.4.1-linux-x86_64": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/venv/bin/python",
+    "cpython-3.6.5-pytest-5.4.3-linux-x86_64": "/workspace/qualification/native-namespace-v45-environment/original-runtimes/cpython-3.6.5-pytest-5.4.3-linux-x86_64/venv/bin/python"
+  },
+  "schema": "UDM_NATIVE_PROFILE_PREPARATION_V41",
+  "scientific_verdict": "G2_G6_UNKNOWN",
+  "seconds": 18.916175153999973,
+  "source": "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-authority-v41/bootstrap/prepare_profile.py",
+  "source_sha256": "f2a5f88a1c15ae22cc8d7741111a121b77fcbacb6a8a28678523a43a1e880896",
+  "status": "PREPARED_EXACT_MODERN_PROFILE_NOT_NATIVE_ADMISSION",
+  "target_source_accessed": false
+}

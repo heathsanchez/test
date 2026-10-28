@@ -1,0 +1,92 @@
+{
+  "known_cost_scope": "Counted V45 main controller plus authenticated child; original V2 regression calls separately visible in raw invocation inventory; wall intervals nonadditive.",
+  "owned_files": {
+    ".github/workflows/udm-native-namespace-v45.yml": "cd095d1e4b045fa5698f5f14063004e0fd2464d89b77fddef6c62e87d952a26e",
+    "research/unified_consequence_runtime/qualify_native_namespace_v45.py": "db63180f797fb447987799fb23dce0362200d54dc138cc72ea3538c04ec1c273",
+    "research/unified_consequence_runtime/test_qualify_native_namespace_v45.py": "4b4f406110fcdf19e26416179577536ed4152a8d0c45f0359846ea9024ffe775"
+  },
+  "raw_inventory_scope": "All retained checked-report invocation directories and versioned receipt/certificate wrappers outside tracked fixture source, including UNKNOWN/partial packets; V45 positives use unique execution paths.",
+  "root_git_mutations": false,
+  "runs": {
+    "ACCOUNTING-FINAL-STATIC": {
+      "junit": {
+        "errors": 0,
+        "failures": 0,
+        "passed": 93,
+        "skipped": 0,
+        "tests": 93
+      },
+      "junit_sha256": "e3ac98bee4d7c47216ae3a6d6e8cfb9d70a918f668bcf49cc2d120543588f99d",
+      "log_sha256": "bf6e33bcf57636b1eb0373d6363c6d2951101693c385c653ea6e161719e3d978"
+    },
+    "ACCOUNTING-GREEN": {
+      "junit": {
+        "errors": 0,
+        "failures": 0,
+        "passed": 33,
+        "skipped": 0,
+        "tests": 33
+      },
+      "junit_sha256": "949507a2b7c0c29d7a0b18fa18c1b4bc6784dcd5fefae462d4c92faa232a71d5",
+      "log_sha256": "dd1a029ef50ec489797f1c057c80a55c22c315c9921c3b38ce63961f571c99d3"
+    },
+    "ACCOUNTING-RED": {
+      "junit": {
+        "errors": 0,
+        "failures": 6,
+        "passed": 27,
+        "skipped": 0,
+        "tests": 33
+      },
+      "junit_sha256": "9d54095fb3f17121af79e27c12ff00a7407c929362d1bff5f49c4fa1809a4a28",
+      "log_sha256": "d991b8b8d3e9b957b69b7052293455dcfa81df6fc70a855874dff9c172deaf81"
+    },
+    "CHILD-BOUND-RED": {
+      "junit": {
+        "errors": 0,
+        "failures": 3,
+        "passed": 0,
+        "skipped": 0,
+        "tests": 3
+      },
+      "junit_sha256": "d001171c76747e8baca073edec9a8d6379d1bb1f52016812f3ffb62306d4e117",
+      "log_sha256": "c728ac5d551e008968c6b0c5ff3e34096d1347dbf5399db89b0bbe00cea38330"
+    },
+    "FINAL-GREEN": {
+      "junit": {
+        "errors": 0,
+        "failures": 0,
+        "passed": 37,
+        "skipped": 0,
+        "tests": 37
+      },
+      "junit_sha256": "9548b3a10d8c312a8986502d4a84af8da4802dd2587d3940e7dc3f2f772f4c6c",
+      "log_sha256": "8582efa28390da316ca82ca7f23ea094e74783f9fd4f7e167e9185118407d6e4"
+    },
+    "REAL-PACKET-GREEN": {
+      "junit": {
+        "errors": 0,
+        "failures": 0,
+        "passed": 3,
+        "skipped": 0,
+        "tests": 3
+      },
+      "junit_sha256": "17dcd5ea6bf80e0cda24b1c148522cfb4d67b414e308a2cdc180dc2952d368b2",
+      "log_sha256": "cecd45ae4fb18391a122d0ef51c849d89edd932fdedf807ee61bd2addd09029b"
+    },
+    "XML-RED": {
+      "junit": {
+        "errors": 0,
+        "failures": 1,
+        "passed": 0,
+        "skipped": 0,
+        "tests": 1
+      },
+      "junit_sha256": "5753d7dd042fd801295557c361c3c49e8396ad06223f887a670e8480b3879ab7",
+      "log_sha256": "faa237097c267b5583d5db8512bfe2fdf458d7415539b63c0a4b1c9f4997ee81"
+    }
+  },
+  "schema": "UDM_V45_QUALIFIER_ACCOUNTING_REVIEW_HANDOFF",
+  "source_review": "No unresolved concrete source blocker after independent closure reread; whole qualification/artifact audit remain separate.",
+  "whole_qualification_executed": false
+}
