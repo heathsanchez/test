@@ -1,0 +1,81 @@
+name: Recover exact V45 failed evidence without native re-execution
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  recover-existing-artifact:
+    if: github.ref == 'refs/heads/research/udm-native-namespace-v45-20261029'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Download only the existing failed-run artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p recovery
+          gh api repos/heathsanchez/test/actions/artifacts/12857138267/zip > recovery/ORIGINAL.zip
+          python - <<'PY'
+          import hashlib,json,zipfile
+          from pathlib import Path
+          root=Path('recovery'); archive=root/'ORIGINAL.zip'
+          expected='97897f543dee0be0f09f6c5492f2e4c383b757d0ce4a891327ca06348e126fdc'
+          digest=hashlib.file_digest(archive.open('rb'),'sha256').hexdigest()
+          assert archive.stat().st_size==585195900 and digest==expected
+          manifest={'schema':'UDM_V45_EXACT_FAILED_ARTIFACT_TRANSPORT','native_execution':False,
+                    'original_run_id':40778435124,'original_artifact_id':12857138267,
+                    'original_zip_bytes':archive.stat().st_size,'original_zip_sha256':digest,'parts':[]}
+          with archive.open('rb') as stream:
+              for i in range(3):
+                  raw=stream.read(192*1024*1024); assert raw
+                  name=f'ORIGINAL.zip.part-{i:03d}'; (root/name).write_bytes(raw)
+                  manifest['parts'].append({'name':name,'bytes':len(raw),'sha256':hashlib.sha256(raw).hexdigest()})
+              assert not stream.read(1)
+          diagnostic=root/'diagnostic'; diagnostic.mkdir()
+          with zipfile.ZipFile(archive) as z:
+              manifest['members']=[{'name':i.filename,'bytes':i.file_size,'compressed_bytes':i.compress_size,'crc32':i.CRC} for i in z.infolist()]
+              for info in z.infolist():
+                  path=Path(info.filename)
+                  if (info.file_size<10*1024*1024 and not path.is_absolute() and '..' not in path.parts
+                      and path.name in ('receipt.json','CHILD_NATIVE_ATTEMPTS.json','RESULT.json','contracts.xml','stdout.log','stderr.log','PYTEST_INVENTORY.json')):
+                      target=diagnostic/path; target.parent.mkdir(parents=True,exist_ok=True); target.write_bytes(z.read(info))
+          (root/'TRANSPORT.json').write_text(json.dumps(manifest,sort_keys=True,indent=2)+'\n')
+          print(json.dumps({k:v for k,v in manifest.items() if k!='members'}))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: v45-failed-evidence-diagnostic
+          path: |
+            recovery/TRANSPORT.json
+            recovery/diagnostic/
+          include-hidden-files: true
+          retention-days: 90
+      - uses: actions/upload-artifact@v4
+        with:
+          name: v45-failed-evidence-part-000
+          path: |
+            recovery/TRANSPORT.json
+            recovery/ORIGINAL.zip.part-000
+          compression-level: 0
+          retention-days: 90
+      - uses: actions/upload-artifact@v4
+        with:
+          name: v45-failed-evidence-part-001
+          path: |
+            recovery/TRANSPORT.json
+            recovery/ORIGINAL.zip.part-001
+          compression-level: 0
+          retention-days: 90
+      - uses: actions/upload-artifact@v4
+        with:
+          name: v45-failed-evidence-part-002
+          path: |
+            recovery/TRANSPORT.json
+            recovery/ORIGINAL.zip.part-002
+          compression-level: 0
+          retention-days: 90
