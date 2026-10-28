@@ -1,0 +1,15 @@
+
+==================================== ERRORS ====================================
+_ ERROR collecting udm-v54/research/unified_consequence_runtime/test_qualify_native_namespace_v45.py _
+ImportError while importing test module '/workspace/udm-v54/research/unified_consequence_runtime/test_qualify_native_namespace_v45.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+qualification/native-namespace-v45-environment/managed-python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+udm-v54/research/unified_consequence_runtime/test_qualify_native_namespace_v45.py:13: in <module>
+    from .native_v45_test_support import project_factory, modern_environment
+E   ImportError: attempted relative import with no known parent package
+=========================== short test summary info ============================
+ERROR udm-v54/research/unified_consequence_runtime/test_qualify_native_namespace_v45.py
+!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+1 error in 0.11s

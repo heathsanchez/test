@@ -316,6 +316,18 @@ def test_raw_invocation_inventory_covers_external_inherited_unknowns_without_gra
     assert 'native_passes' not in inventory
 
 
+@pytest.mark.parametrize('version', ('V2', 'V42', 'V43', 'V45'))
+def test_malformed_retained_receipt_fails_closed_with_exact_binding_diagnostic(accounting_input, version):
+    """A parser fixture cannot be mistaken for authentic native execution."""
+    current = qualifier()
+    path = accounting_input/'synthetic-parser-input/restart/native-run/receipt.json'
+    path.parent.mkdir(parents=True)
+    path.write_text(json.dumps({'schema': 'UDM_GENERIC_NATIVE_PYTEST_'+version, 'status': 'PASS_NATIVE'}))
+    with pytest.raises(ValueError, match='native receipt certificate binding missing') as caught:
+        current.audit_native_packets(accounting_input, {})
+    assert str(path) in str(caught.value)
+
+
 def test_known_attempt_totals_sum_calls_and_keep_overlapping_intervals_explicit():
     current = qualifier()
     main_native = {'native_calls': 4, 'collection_calls': 3, 'subprocess_attempts': 7}

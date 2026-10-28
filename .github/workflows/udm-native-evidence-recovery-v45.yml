@@ -4,6 +4,23 @@ on:
   push:
     branches: [research/udm-native-namespace-v45-20261029]
   workflow_dispatch:
+    inputs:
+      artifact_id:
+        type: string
+        default: '12857138267'
+        required: true
+      original_run_id:
+        type: string
+        default: '40778435124'
+        required: true
+      expected_bytes:
+        type: string
+        default: '585195900'
+        required: true
+      expected_sha256:
+        type: string
+        default: '97897f543dee0be0f09f6c5492f2e4c383b757d0ce4a891327ca06348e126fdc'
+        required: true
 
 permissions:
   contents: read
@@ -18,19 +35,35 @@ jobs:
       - name: Download only the existing failed-run artifact
         env:
           GH_TOKEN: ${{ github.token }}
+          ARTIFACT_ID: ${{ inputs.artifact_id || '12857138267' }}
+          ORIGINAL_RUN_ID: ${{ inputs.original_run_id || '40778435124' }}
+          EXPECTED_BYTES: ${{ inputs.expected_bytes || '585195900' }}
+          EXPECTED_SHA256: ${{ inputs.expected_sha256 || '97897f543dee0be0f09f6c5492f2e4c383b757d0ce4a891327ca06348e126fdc' }}
         run: |
           set -euo pipefail
           mkdir -p recovery
-          gh api repos/heathsanchez/test/actions/artifacts/12857138267/zip > recovery/ORIGINAL.zip
           python - <<'PY'
-          import hashlib,json,zipfile
+          import json,os,re,subprocess
+          for key in ('ARTIFACT_ID','ORIGINAL_RUN_ID','EXPECTED_BYTES'):
+              assert re.fullmatch('[0-9]+',os.environ[key])
+          assert re.fullmatch('[0-9a-f]{64}',os.environ['EXPECTED_SHA256'])
+          metadata=json.loads(subprocess.check_output(['gh','api','repos/heathsanchez/test/actions/artifacts/'+os.environ['ARTIFACT_ID']]))
+          assert metadata['workflow_run']['id']==int(os.environ['ORIGINAL_RUN_ID'])
+          assert metadata['workflow_run']['head_branch']=='research/udm-native-namespace-v45-20261029'
+          assert metadata['size_in_bytes']==int(os.environ['EXPECTED_BYTES'])
+          assert metadata['digest']=='sha256:'+os.environ['EXPECTED_SHA256']
+          open('recovery/ORIGINAL_ARTIFACT_API.json','w').write(json.dumps(metadata,sort_keys=True,indent=2)+'\n')
+          PY
+          gh api "repos/heathsanchez/test/actions/artifacts/$ARTIFACT_ID/zip" > recovery/ORIGINAL.zip
+          python - <<'PY'
+          import hashlib,json,os,zipfile
           from pathlib import Path
           root=Path('recovery'); archive=root/'ORIGINAL.zip'
-          expected='97897f543dee0be0f09f6c5492f2e4c383b757d0ce4a891327ca06348e126fdc'
+          expected=os.environ['EXPECTED_SHA256']
           digest=hashlib.file_digest(archive.open('rb'),'sha256').hexdigest()
-          assert archive.stat().st_size==585195900 and digest==expected
+          assert archive.stat().st_size==int(os.environ['EXPECTED_BYTES']) and digest==expected
           manifest={'schema':'UDM_V45_EXACT_FAILED_ARTIFACT_TRANSPORT','native_execution':False,
-                    'original_run_id':40778435124,'original_artifact_id':12857138267,
+                    'original_run_id':int(os.environ['ORIGINAL_RUN_ID']),'original_artifact_id':int(os.environ['ARTIFACT_ID']),
                     'original_zip_bytes':archive.stat().st_size,'original_zip_sha256':digest,'parts':[]}
           with archive.open('rb') as stream:
               for i in range(3):

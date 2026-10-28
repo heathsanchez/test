@@ -76,7 +76,7 @@ def _json(path, value, root):
 
 @pytest.fixture
 def gate_fixture(tmp_path, monkeypatch):
-    """Synthetic parser inputs, never published as an actual qualification."""
+    """Synthetic parser inputs retained under explicit non-native filenames."""
     current = controller()
     qualifier = importlib.import_module('research.unified_consequence_runtime.qualify_native_namespace_v45')
     root = tmp_path/'source-free-gate'
@@ -128,12 +128,12 @@ def gate_fixture(tmp_path, monkeypatch):
                                       'after': {**child_compile, 'records': [{'compilation_calls': 1}]},
                                       'delta': child_compile},
              'native_run_outputs': ['synthetic/child/restart/native-run']}
-    descriptor = _json(root/'fixture/child/CHILD_NATIVE_ATTEMPTS.json', child, root)
+    descriptor = _json(root/'fixture/child/CHILD_NATIVE_ATTEMPTS.PARSER_FIXTURE.json', child, root)
     result['child_attempts'] = [{**descriptor, 'summary': child,
         'stdout': _json(root/'fixture/child/RESTART_STDOUT.log',
                         {'status': 'PASS_NATIVE', 'native_calls': 1, 'attempts': child}, root),
         'stderr': _json(root/'fixture/child/RESTART_STDERR.log', {}, root),
-        'native_outputs': [_json(root/'fixture/child/restart/native-run/receipt.json',
+        'native_outputs': [_json(root/'fixture/child/restart/native-run/receipt.PARSER_FIXTURE.json',
             {'schema': 'UDM_GENERIC_NATIVE_PYTEST_V45', 'status': 'PASS_NATIVE'}, root)]}]
     result['known_attempt_totals'] = {'native_calls': 3, 'collection_calls': 3, 'subprocess_attempts': 6,
         'compilation_calls': 3, 'compilation_seconds': 0.03, 'child_processes': 1,
@@ -166,6 +166,23 @@ def test_namespace_parser_accepts_complete_source_free_bound_inputs(gate_fixture
     assert checked['namespace'] == wrapper['namespace_gate']
     assert checked['independent_namespace_audit'] == wrapper['namespace_archive_audit']
     assert checked['old'] == 'preserved'
+
+
+def test_source_free_gate_inputs_cannot_publish_native_evidence(gate_fixture):
+    """Parser fixtures remain retained data, outside actual native discovery."""
+    current, root, wrapper, result, _, _ = gate_fixture
+    qualifier = importlib.import_module('research.unified_consequence_runtime.qualify_native_namespace_v45')
+    for name in ('receipt.json', 'admission-certificate.json', 'CHILD_NATIVE_ATTEMPTS.json',
+                 'V45_NATIVE_EVIDENCE.json', 'checked-report.json'):
+        assert list(qualifier._retained_files(root, name)) == [], name
+    assert qualifier.native_invocation_inventory(root)['invocations'] == []
+    assert qualifier.child_attempts(root, required=False) == []
+    child = result['child_attempts'][0]
+    assert json.loads((root/child['path']).read_text()) == child['summary']
+    receipt = child['native_outputs'][0]
+    assert json.loads((root/receipt['path']).read_text()) == {
+        'schema': 'UDM_GENERIC_NATIVE_PYTEST_V45', 'status': 'PASS_NATIVE'}
+    assert current.require_environment_gate(wrapper)['namespace'] == wrapper['namespace_gate']
 
 
 def test_namespace_gate_counts_unique_v45_invocations_and_retains_original_versions(gate_fixture):

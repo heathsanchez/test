@@ -1,0 +1,408 @@
+FFFF                                                                     [100%]
+=================================== FAILURES ===================================
+_ test_malformed_retained_receipt_fails_closed_with_exact_binding_diagnostic[V2] _
+
+accounting_input = PosixPath('/workspace/qualification/native-namespace-v45-driver-failure-repair/red-importlib-tmp/test_malformed_retained_receip0/synthetic-accounting-input')
+version = 'V2'
+
+    @pytest.mark.parametrize('version', ('V2', 'V42', 'V43', 'V45'))
+    def test_malformed_retained_receipt_fails_closed_with_exact_binding_diagnostic(accounting_input, version):
+        """A parser fixture cannot be mistaken for authentic native execution."""
+        current = qualifier()
+        path = accounting_input/'synthetic-parser-input/restart/native-run/receipt.json'
+        path.parent.mkdir(parents=True)
+        path.write_text(json.dumps({'schema': 'UDM_GENERIC_NATIVE_PYTEST_'+version, 'status': 'PASS_NATIVE'}))
+        with pytest.raises(ValueError, match='native receipt certificate binding missing') as caught:
+>           current.audit_native_packets(accounting_input, {})
+
+research/unified_consequence_runtime/test_qualify_native_namespace_v45.py:327: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+root = PosixPath('/workspace/qualification/native-namespace-v45-driver-failure-repair/red-importlib-tmp/test_malformed_retained_receip0/synthetic-accounting-input')
+frozen = {}
+
+    def audit_native_packets(root, frozen):
+        """Apply the original raw packet/status reconstruction to genuine V45 rows.
+    
+        Frozen tests explicitly enumerate genuine evidence. Deliberately tampered
+        negative packets remain archived but cannot masquerade as successful rows.
+        """
+        root = Path(root).resolve()
+        entries = {}
+        manifests = list(_retained_files(root, 'V45_NATIVE_EVIDENCE.json'))
+        for manifest in manifests:
+            value = json.loads(manifest.read_text())
+            if manifest.is_symlink() or value.get('schema') != 'UDM_NATIVE_V45_TEST_EVIDENCE':
+                raise ValueError('invalid genuine native evidence manifest')
+            for row in value['records']:
+                path = Path(row['path'])
+                if not path.is_absolute():
+                    path = manifest.parent/path
+                if (not path.resolve().is_relative_to(root) or path.is_symlink()
+                        or not path.is_file() or file_sha(path) != row['sha256']):
+                    raise ValueError('genuine native evidence bytes/path differ')
+                if row['role'] not in ('certificate', 'receipt', 'independent_reexecution'):
+                    raise ValueError('unrecognized genuine native evidence role')
+                entries[(row['role'], str(path))] = json.loads(path.read_text())
+        # Include retained V45 inherited adversarial and original V2 regression
+        # packets, even where the frozen tests supplied no success manifest.
+        for filename, role in (('admission-certificate.json', 'certificate'), ('receipt.json', 'retained_receipt')):
+            for path in _retained_files(root, filename):
+                if any(name == str(path) for _, name in entries):
+                    continue
+                value = json.loads(path.read_text())
+                if value.get('schema') in ('UDM_NATIVE_ADMISSION_CERTIFICATE_V2', 'UDM_NATIVE_ADMISSION_CERTIFICATE_V42',
+                        'UDM_NATIVE_ADMISSION_CERTIFICATE_V43', 'UDM_NATIVE_ADMISSION_CERTIFICATE_V45',
+                        'UDM_GENERIC_NATIVE_PYTEST_V2', 'UDM_GENERIC_NATIVE_PYTEST_V42',
+                        'UDM_GENERIC_NATIVE_PYTEST_V43', 'UDM_GENERIC_NATIVE_PYTEST_V45'):
+                    entries[(role, str(path))] = value
+        raw_inventory = native_invocation_inventory(root)
+        raw_paths = {row['path']: row for row in raw_inventory['invocations']}
+        certificates, receipts = {}, []
+        for (role, name), value in entries.items():
+            if role != 'certificate':
+                continue
+            version = value.get('schema', '').rsplit('_', 1)[-1]
+            if version not in ('V2', 'V42', 'V43', 'V45') or not value.get('schema', '').startswith('UDM_NATIVE_ADMISSION_CERTIFICATE_'):
+                raise ValueError('native certificate schema differs')
+            packet = {key: base64.b64decode(raw, validate=True) for key, raw in value['packet'].items()}
+            if value['packet_sha256'] != {key: sha(raw) for key, raw in packet.items()}:
+                raise ValueError('native certificate packet hashes differ')
+            environments = [row['environment'] for row in frozen['profile_identities'].values()]
+            if version == 'V2':
+                environments.append(frozen['controller']['original_v2_environment'])
+            if value['environment'] not in environments:
+                raise ValueError('native certificate environment differs from original profiles')
+            runner = PREFIX+'native_execution_'+version.lower()+'.py'
+            if value.get('runner_sha256') != frozen['files'][runner]:
+                raise ValueError('native certificate runner differs from frozen original/versioned source')
+            data = json.loads(packet['checked-report.json'])
+            if (value['collection'] != {key: data[key] for key in value['collection']}
+                    or data['mode'] != 'collect' or data['process_exit_code'] != 0
+                    or data['timeout'] or data.get('collection_errors') or data.get('deselected_test_nodes')):
+                raise ValueError('native certificate collection is incomplete')
+            for key, raw in packet.items():
+                sidecar = Path(name).parent/key
+                if sidecar.is_symlink() or not sidecar.is_file() or sidecar.read_bytes() != raw:
+                    raise ValueError('collection packet sidecar differs')
+            if str(Path(name).parent) not in raw_paths:
+                raise ValueError('certificate lacks retained raw invocation inventory')
+            certificates[sha(canonical(value).encode())] = value
+        passes = failures = replays = 0
+        counted_paths = set()
+        for (role, name), value in entries.items():
+            if role not in ('receipt', 'independent_reexecution', 'retained_receipt'):
+                continue
+            version = value.get('schema', '').rsplit('_', 1)[-1]
+            if version not in ('V2', 'V42', 'V43', 'V45') or not value.get('schema', '').startswith('UDM_GENERIC_NATIVE_PYTEST_'):
+                raise ValueError('native receipt schema differs')
+>           certificate = certificates.get(value['certificate_sha256'])
+E           KeyError: 'certificate_sha256'
+
+research/unified_consequence_runtime/qualify_native_namespace_v45.py:477: KeyError
+_ test_malformed_retained_receipt_fails_closed_with_exact_binding_diagnostic[V42] _
+
+accounting_input = PosixPath('/workspace/qualification/native-namespace-v45-driver-failure-repair/red-importlib-tmp/test_malformed_retained_receip1/synthetic-accounting-input')
+version = 'V42'
+
+    @pytest.mark.parametrize('version', ('V2', 'V42', 'V43', 'V45'))
+    def test_malformed_retained_receipt_fails_closed_with_exact_binding_diagnostic(accounting_input, version):
+        """A parser fixture cannot be mistaken for authentic native execution."""
+        current = qualifier()
+        path = accounting_input/'synthetic-parser-input/restart/native-run/receipt.json'
+        path.parent.mkdir(parents=True)
+        path.write_text(json.dumps({'schema': 'UDM_GENERIC_NATIVE_PYTEST_'+version, 'status': 'PASS_NATIVE'}))
+        with pytest.raises(ValueError, match='native receipt certificate binding missing') as caught:
+>           current.audit_native_packets(accounting_input, {})
+
+research/unified_consequence_runtime/test_qualify_native_namespace_v45.py:327: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+root = PosixPath('/workspace/qualification/native-namespace-v45-driver-failure-repair/red-importlib-tmp/test_malformed_retained_receip1/synthetic-accounting-input')
+frozen = {}
+
+    def audit_native_packets(root, frozen):
+        """Apply the original raw packet/status reconstruction to genuine V45 rows.
+    
+        Frozen tests explicitly enumerate genuine evidence. Deliberately tampered
+        negative packets remain archived but cannot masquerade as successful rows.
+        """
+        root = Path(root).resolve()
+        entries = {}
+        manifests = list(_retained_files(root, 'V45_NATIVE_EVIDENCE.json'))
+        for manifest in manifests:
+            value = json.loads(manifest.read_text())
+            if manifest.is_symlink() or value.get('schema') != 'UDM_NATIVE_V45_TEST_EVIDENCE':
+                raise ValueError('invalid genuine native evidence manifest')
+            for row in value['records']:
+                path = Path(row['path'])
+                if not path.is_absolute():
+                    path = manifest.parent/path
+                if (not path.resolve().is_relative_to(root) or path.is_symlink()
+                        or not path.is_file() or file_sha(path) != row['sha256']):
+                    raise ValueError('genuine native evidence bytes/path differ')
+                if row['role'] not in ('certificate', 'receipt', 'independent_reexecution'):
+                    raise ValueError('unrecognized genuine native evidence role')
+                entries[(row['role'], str(path))] = json.loads(path.read_text())
+        # Include retained V45 inherited adversarial and original V2 regression
+        # packets, even where the frozen tests supplied no success manifest.
+        for filename, role in (('admission-certificate.json', 'certificate'), ('receipt.json', 'retained_receipt')):
+            for path in _retained_files(root, filename):
+                if any(name == str(path) for _, name in entries):
+                    continue
+                value = json.loads(path.read_text())
+                if value.get('schema') in ('UDM_NATIVE_ADMISSION_CERTIFICATE_V2', 'UDM_NATIVE_ADMISSION_CERTIFICATE_V42',
+                        'UDM_NATIVE_ADMISSION_CERTIFICATE_V43', 'UDM_NATIVE_ADMISSION_CERTIFICATE_V45',
+                        'UDM_GENERIC_NATIVE_PYTEST_V2', 'UDM_GENERIC_NATIVE_PYTEST_V42',
+                        'UDM_GENERIC_NATIVE_PYTEST_V43', 'UDM_GENERIC_NATIVE_PYTEST_V45'):
+                    entries[(role, str(path))] = value
+        raw_inventory = native_invocation_inventory(root)
+        raw_paths = {row['path']: row for row in raw_inventory['invocations']}
+        certificates, receipts = {}, []
+        for (role, name), value in entries.items():
+            if role != 'certificate':
+                continue
+            version = value.get('schema', '').rsplit('_', 1)[-1]
+            if version not in ('V2', 'V42', 'V43', 'V45') or not value.get('schema', '').startswith('UDM_NATIVE_ADMISSION_CERTIFICATE_'):
+                raise ValueError('native certificate schema differs')
+            packet = {key: base64.b64decode(raw, validate=True) for key, raw in value['packet'].items()}
+            if value['packet_sha256'] != {key: sha(raw) for key, raw in packet.items()}:
+                raise ValueError('native certificate packet hashes differ')
+            environments = [row['environment'] for row in frozen['profile_identities'].values()]
+            if version == 'V2':
+                environments.append(frozen['controller']['original_v2_environment'])
+            if value['environment'] not in environments:
+                raise ValueError('native certificate environment differs from original profiles')
+            runner = PREFIX+'native_execution_'+version.lower()+'.py'
+            if value.get('runner_sha256') != frozen['files'][runner]:
+                raise ValueError('native certificate runner differs from frozen original/versioned source')
+            data = json.loads(packet['checked-report.json'])
+            if (value['collection'] != {key: data[key] for key in value['collection']}
+                    or data['mode'] != 'collect' or data['process_exit_code'] != 0
+                    or data['timeout'] or data.get('collection_errors') or data.get('deselected_test_nodes')):
+                raise ValueError('native certificate collection is incomplete')
+            for key, raw in packet.items():
+                sidecar = Path(name).parent/key
+                if sidecar.is_symlink() or not sidecar.is_file() or sidecar.read_bytes() != raw:
+                    raise ValueError('collection packet sidecar differs')
+            if str(Path(name).parent) not in raw_paths:
+                raise ValueError('certificate lacks retained raw invocation inventory')
+            certificates[sha(canonical(value).encode())] = value
+        passes = failures = replays = 0
+        counted_paths = set()
+        for (role, name), value in entries.items():
+            if role not in ('receipt', 'independent_reexecution', 'retained_receipt'):
+                continue
+            version = value.get('schema', '').rsplit('_', 1)[-1]
+            if version not in ('V2', 'V42', 'V43', 'V45') or not value.get('schema', '').startswith('UDM_GENERIC_NATIVE_PYTEST_'):
+                raise ValueError('native receipt schema differs')
+>           certificate = certificates.get(value['certificate_sha256'])
+E           KeyError: 'certificate_sha256'
+
+research/unified_consequence_runtime/qualify_native_namespace_v45.py:477: KeyError
+_ test_malformed_retained_receipt_fails_closed_with_exact_binding_diagnostic[V43] _
+
+accounting_input = PosixPath('/workspace/qualification/native-namespace-v45-driver-failure-repair/red-importlib-tmp/test_malformed_retained_receip2/synthetic-accounting-input')
+version = 'V43'
+
+    @pytest.mark.parametrize('version', ('V2', 'V42', 'V43', 'V45'))
+    def test_malformed_retained_receipt_fails_closed_with_exact_binding_diagnostic(accounting_input, version):
+        """A parser fixture cannot be mistaken for authentic native execution."""
+        current = qualifier()
+        path = accounting_input/'synthetic-parser-input/restart/native-run/receipt.json'
+        path.parent.mkdir(parents=True)
+        path.write_text(json.dumps({'schema': 'UDM_GENERIC_NATIVE_PYTEST_'+version, 'status': 'PASS_NATIVE'}))
+        with pytest.raises(ValueError, match='native receipt certificate binding missing') as caught:
+>           current.audit_native_packets(accounting_input, {})
+
+research/unified_consequence_runtime/test_qualify_native_namespace_v45.py:327: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+root = PosixPath('/workspace/qualification/native-namespace-v45-driver-failure-repair/red-importlib-tmp/test_malformed_retained_receip2/synthetic-accounting-input')
+frozen = {}
+
+    def audit_native_packets(root, frozen):
+        """Apply the original raw packet/status reconstruction to genuine V45 rows.
+    
+        Frozen tests explicitly enumerate genuine evidence. Deliberately tampered
+        negative packets remain archived but cannot masquerade as successful rows.
+        """
+        root = Path(root).resolve()
+        entries = {}
+        manifests = list(_retained_files(root, 'V45_NATIVE_EVIDENCE.json'))
+        for manifest in manifests:
+            value = json.loads(manifest.read_text())
+            if manifest.is_symlink() or value.get('schema') != 'UDM_NATIVE_V45_TEST_EVIDENCE':
+                raise ValueError('invalid genuine native evidence manifest')
+            for row in value['records']:
+                path = Path(row['path'])
+                if not path.is_absolute():
+                    path = manifest.parent/path
+                if (not path.resolve().is_relative_to(root) or path.is_symlink()
+                        or not path.is_file() or file_sha(path) != row['sha256']):
+                    raise ValueError('genuine native evidence bytes/path differ')
+                if row['role'] not in ('certificate', 'receipt', 'independent_reexecution'):
+                    raise ValueError('unrecognized genuine native evidence role')
+                entries[(row['role'], str(path))] = json.loads(path.read_text())
+        # Include retained V45 inherited adversarial and original V2 regression
+        # packets, even where the frozen tests supplied no success manifest.
+        for filename, role in (('admission-certificate.json', 'certificate'), ('receipt.json', 'retained_receipt')):
+            for path in _retained_files(root, filename):
+                if any(name == str(path) for _, name in entries):
+                    continue
+                value = json.loads(path.read_text())
+                if value.get('schema') in ('UDM_NATIVE_ADMISSION_CERTIFICATE_V2', 'UDM_NATIVE_ADMISSION_CERTIFICATE_V42',
+                        'UDM_NATIVE_ADMISSION_CERTIFICATE_V43', 'UDM_NATIVE_ADMISSION_CERTIFICATE_V45',
+                        'UDM_GENERIC_NATIVE_PYTEST_V2', 'UDM_GENERIC_NATIVE_PYTEST_V42',
+                        'UDM_GENERIC_NATIVE_PYTEST_V43', 'UDM_GENERIC_NATIVE_PYTEST_V45'):
+                    entries[(role, str(path))] = value
+        raw_inventory = native_invocation_inventory(root)
+        raw_paths = {row['path']: row for row in raw_inventory['invocations']}
+        certificates, receipts = {}, []
+        for (role, name), value in entries.items():
+            if role != 'certificate':
+                continue
+            version = value.get('schema', '').rsplit('_', 1)[-1]
+            if version not in ('V2', 'V42', 'V43', 'V45') or not value.get('schema', '').startswith('UDM_NATIVE_ADMISSION_CERTIFICATE_'):
+                raise ValueError('native certificate schema differs')
+            packet = {key: base64.b64decode(raw, validate=True) for key, raw in value['packet'].items()}
+            if value['packet_sha256'] != {key: sha(raw) for key, raw in packet.items()}:
+                raise ValueError('native certificate packet hashes differ')
+            environments = [row['environment'] for row in frozen['profile_identities'].values()]
+            if version == 'V2':
+                environments.append(frozen['controller']['original_v2_environment'])
+            if value['environment'] not in environments:
+                raise ValueError('native certificate environment differs from original profiles')
+            runner = PREFIX+'native_execution_'+version.lower()+'.py'
+            if value.get('runner_sha256') != frozen['files'][runner]:
+                raise ValueError('native certificate runner differs from frozen original/versioned source')
+            data = json.loads(packet['checked-report.json'])
+            if (value['collection'] != {key: data[key] for key in value['collection']}
+                    or data['mode'] != 'collect' or data['process_exit_code'] != 0
+                    or data['timeout'] or data.get('collection_errors') or data.get('deselected_test_nodes')):
+                raise ValueError('native certificate collection is incomplete')
+            for key, raw in packet.items():
+                sidecar = Path(name).parent/key
+                if sidecar.is_symlink() or not sidecar.is_file() or sidecar.read_bytes() != raw:
+                    raise ValueError('collection packet sidecar differs')
+            if str(Path(name).parent) not in raw_paths:
+                raise ValueError('certificate lacks retained raw invocation inventory')
+            certificates[sha(canonical(value).encode())] = value
+        passes = failures = replays = 0
+        counted_paths = set()
+        for (role, name), value in entries.items():
+            if role not in ('receipt', 'independent_reexecution', 'retained_receipt'):
+                continue
+            version = value.get('schema', '').rsplit('_', 1)[-1]
+            if version not in ('V2', 'V42', 'V43', 'V45') or not value.get('schema', '').startswith('UDM_GENERIC_NATIVE_PYTEST_'):
+                raise ValueError('native receipt schema differs')
+>           certificate = certificates.get(value['certificate_sha256'])
+E           KeyError: 'certificate_sha256'
+
+research/unified_consequence_runtime/qualify_native_namespace_v45.py:477: KeyError
+_ test_malformed_retained_receipt_fails_closed_with_exact_binding_diagnostic[V45] _
+
+accounting_input = PosixPath('/workspace/qualification/native-namespace-v45-driver-failure-repair/red-importlib-tmp/test_malformed_retained_receip3/synthetic-accounting-input')
+version = 'V45'
+
+    @pytest.mark.parametrize('version', ('V2', 'V42', 'V43', 'V45'))
+    def test_malformed_retained_receipt_fails_closed_with_exact_binding_diagnostic(accounting_input, version):
+        """A parser fixture cannot be mistaken for authentic native execution."""
+        current = qualifier()
+        path = accounting_input/'synthetic-parser-input/restart/native-run/receipt.json'
+        path.parent.mkdir(parents=True)
+        path.write_text(json.dumps({'schema': 'UDM_GENERIC_NATIVE_PYTEST_'+version, 'status': 'PASS_NATIVE'}))
+        with pytest.raises(ValueError, match='native receipt certificate binding missing') as caught:
+>           current.audit_native_packets(accounting_input, {})
+
+research/unified_consequence_runtime/test_qualify_native_namespace_v45.py:327: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+root = PosixPath('/workspace/qualification/native-namespace-v45-driver-failure-repair/red-importlib-tmp/test_malformed_retained_receip3/synthetic-accounting-input')
+frozen = {}
+
+    def audit_native_packets(root, frozen):
+        """Apply the original raw packet/status reconstruction to genuine V45 rows.
+    
+        Frozen tests explicitly enumerate genuine evidence. Deliberately tampered
+        negative packets remain archived but cannot masquerade as successful rows.
+        """
+        root = Path(root).resolve()
+        entries = {}
+        manifests = list(_retained_files(root, 'V45_NATIVE_EVIDENCE.json'))
+        for manifest in manifests:
+            value = json.loads(manifest.read_text())
+            if manifest.is_symlink() or value.get('schema') != 'UDM_NATIVE_V45_TEST_EVIDENCE':
+                raise ValueError('invalid genuine native evidence manifest')
+            for row in value['records']:
+                path = Path(row['path'])
+                if not path.is_absolute():
+                    path = manifest.parent/path
+                if (not path.resolve().is_relative_to(root) or path.is_symlink()
+                        or not path.is_file() or file_sha(path) != row['sha256']):
+                    raise ValueError('genuine native evidence bytes/path differ')
+                if row['role'] not in ('certificate', 'receipt', 'independent_reexecution'):
+                    raise ValueError('unrecognized genuine native evidence role')
+                entries[(row['role'], str(path))] = json.loads(path.read_text())
+        # Include retained V45 inherited adversarial and original V2 regression
+        # packets, even where the frozen tests supplied no success manifest.
+        for filename, role in (('admission-certificate.json', 'certificate'), ('receipt.json', 'retained_receipt')):
+            for path in _retained_files(root, filename):
+                if any(name == str(path) for _, name in entries):
+                    continue
+                value = json.loads(path.read_text())
+                if value.get('schema') in ('UDM_NATIVE_ADMISSION_CERTIFICATE_V2', 'UDM_NATIVE_ADMISSION_CERTIFICATE_V42',
+                        'UDM_NATIVE_ADMISSION_CERTIFICATE_V43', 'UDM_NATIVE_ADMISSION_CERTIFICATE_V45',
+                        'UDM_GENERIC_NATIVE_PYTEST_V2', 'UDM_GENERIC_NATIVE_PYTEST_V42',
+                        'UDM_GENERIC_NATIVE_PYTEST_V43', 'UDM_GENERIC_NATIVE_PYTEST_V45'):
+                    entries[(role, str(path))] = value
+        raw_inventory = native_invocation_inventory(root)
+        raw_paths = {row['path']: row for row in raw_inventory['invocations']}
+        certificates, receipts = {}, []
+        for (role, name), value in entries.items():
+            if role != 'certificate':
+                continue
+            version = value.get('schema', '').rsplit('_', 1)[-1]
+            if version not in ('V2', 'V42', 'V43', 'V45') or not value.get('schema', '').startswith('UDM_NATIVE_ADMISSION_CERTIFICATE_'):
+                raise ValueError('native certificate schema differs')
+            packet = {key: base64.b64decode(raw, validate=True) for key, raw in value['packet'].items()}
+            if value['packet_sha256'] != {key: sha(raw) for key, raw in packet.items()}:
+                raise ValueError('native certificate packet hashes differ')
+            environments = [row['environment'] for row in frozen['profile_identities'].values()]
+            if version == 'V2':
+                environments.append(frozen['controller']['original_v2_environment'])
+            if value['environment'] not in environments:
+                raise ValueError('native certificate environment differs from original profiles')
+            runner = PREFIX+'native_execution_'+version.lower()+'.py'
+            if value.get('runner_sha256') != frozen['files'][runner]:
+                raise ValueError('native certificate runner differs from frozen original/versioned source')
+            data = json.loads(packet['checked-report.json'])
+            if (value['collection'] != {key: data[key] for key in value['collection']}
+                    or data['mode'] != 'collect' or data['process_exit_code'] != 0
+                    or data['timeout'] or data.get('collection_errors') or data.get('deselected_test_nodes')):
+                raise ValueError('native certificate collection is incomplete')
+            for key, raw in packet.items():
+                sidecar = Path(name).parent/key
+                if sidecar.is_symlink() or not sidecar.is_file() or sidecar.read_bytes() != raw:
+                    raise ValueError('collection packet sidecar differs')
+            if str(Path(name).parent) not in raw_paths:
+                raise ValueError('certificate lacks retained raw invocation inventory')
+            certificates[sha(canonical(value).encode())] = value
+        passes = failures = replays = 0
+        counted_paths = set()
+        for (role, name), value in entries.items():
+            if role not in ('receipt', 'independent_reexecution', 'retained_receipt'):
+                continue
+            version = value.get('schema', '').rsplit('_', 1)[-1]
+            if version not in ('V2', 'V42', 'V43', 'V45') or not value.get('schema', '').startswith('UDM_GENERIC_NATIVE_PYTEST_'):
+                raise ValueError('native receipt schema differs')
+>           certificate = certificates.get(value['certificate_sha256'])
+E           KeyError: 'certificate_sha256'
+
+research/unified_consequence_runtime/qualify_native_namespace_v45.py:477: KeyError
+=========================== short test summary info ============================
+FAILED research/unified_consequence_runtime/test_qualify_native_namespace_v45.py::test_malformed_retained_receipt_fails_closed_with_exact_binding_diagnostic[V2]
+FAILED research/unified_consequence_runtime/test_qualify_native_namespace_v45.py::test_malformed_retained_receipt_fails_closed_with_exact_binding_diagnostic[V42]
+FAILED research/unified_consequence_runtime/test_qualify_native_namespace_v45.py::test_malformed_retained_receipt_fails_closed_with_exact_binding_diagnostic[V43]
+FAILED research/unified_consequence_runtime/test_qualify_native_namespace_v45.py::test_malformed_retained_receipt_fails_closed_with_exact_binding_diagnostic[V45]
+4 failed, 39 deselected in 0.44s

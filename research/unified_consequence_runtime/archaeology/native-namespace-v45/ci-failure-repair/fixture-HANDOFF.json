@@ -1,0 +1,47 @@
+{
+  "schema": "UDM_V45_SOURCE_FREE_PARSER_FIXTURE_ISOLATION",
+  "status": "PASS_SOURCE_FREE_REGRESSION_ONLY",
+  "source_file": "/workspace/udm-v54/research/unified_consequence_runtime/test_qualify_native_frontier_v45.py",
+  "source_sha256": "831d5067121cdee3896e2f3cdbb5f5e35df6e6f0ece9c1f66bcd2d06d7b9d26e",
+  "red": {
+    "log": "/workspace/qualification/native-namespace-v45-source-free-isolation/red/pytest.log",
+    "expected_failure": "AssertionError: receipt.json",
+    "tests": 1,
+    "failed": 1
+  },
+  "green": {
+    "log": "/workspace/qualification/native-namespace-v45-source-free-isolation/preserved-green/pytest.log",
+    "junit": "/workspace/qualification/native-namespace-v45-source-free-isolation/preserved-green/junit.xml",
+    "counts": {
+      "tests": 113,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "preserved_synthetic_bytes": [
+    {
+      "before_path": "/workspace/qualification/native-namespace-v45-source-free-isolation/red/fixtures/test_source_free_gate_inputs_c0/source-free-gate/fixture/child/CHILD_NATIVE_ATTEMPTS.json",
+      "after_path": "/workspace/qualification/native-namespace-v45-source-free-isolation/full-green/fixtures/test_source_free_gate_inputs_c0/source-free-gate/fixture/child/CHILD_NATIVE_ATTEMPTS.PARSER_FIXTURE.json",
+      "bytes": 612,
+      "sha256": "024cc19ffe8d0088c6b0bd92d86424273c94ade976410fad9106fd923ac8f443",
+      "exact_bytes_preserved": true
+    },
+    {
+      "before_path": "/workspace/qualification/native-namespace-v45-source-free-isolation/red/fixtures/test_source_free_gate_inputs_c0/source-free-gate/fixture/child/restart/native-run/receipt.json",
+      "after_path": "/workspace/qualification/native-namespace-v45-source-free-isolation/full-green/fixtures/test_source_free_gate_inputs_c0/source-free-gate/fixture/child/restart/native-run/receipt.PARSER_FIXTURE.json",
+      "bytes": 66,
+      "sha256": "cb7696844df37e8a13ff999690d1e64340d4cbfc0847a3d69fc3114d326512dd",
+      "exact_bytes_preserved": true
+    }
+  ],
+  "product_qualifier_relaxed": false,
+  "native_experiments_executed": false,
+  "scientific_promotion": false,
+  "additional_current_v44_green": {
+    "log": "/workspace/qualification/native-namespace-v45-source-free-isolation/full-green/pytest.log",
+    "tests": 74,
+    "failed": 0
+  },
+  "receipt_format_correction": "An initially written expected combined count113 was premature: current+V44 alone actually74. Corrected this report from actual XML; full six-file preserved suite independently executed113PASS. No test or runtime verdict was promoted from the premature expected count."
+}

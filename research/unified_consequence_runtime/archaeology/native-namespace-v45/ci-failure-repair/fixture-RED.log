@@ -1,0 +1,23 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_________ test_source_free_gate_inputs_cannot_publish_native_evidence __________
+
+gate_fixture = (<module 'research.unified_consequence_runtime.qualify_native_frontier_v45' from '/workspace/udm-v54/research/unified_...fc560d87da04f509664d95afef914e5f37b58bdeff62828a233'}, ...}, <function gate_fixture.<locals>.reseal at 0x7f7179800ea0>)
+
+    def test_source_free_gate_inputs_cannot_publish_native_evidence(gate_fixture):
+        """Parser fixtures remain retained data, outside actual native discovery."""
+        current, root, wrapper, result, _, _ = gate_fixture
+        qualifier = importlib.import_module('research.unified_consequence_runtime.qualify_native_namespace_v45')
+        for name in ('receipt.json', 'admission-certificate.json', 'CHILD_NATIVE_ATTEMPTS.json',
+                     'V45_NATIVE_EVIDENCE.json', 'checked-report.json'):
+>           assert list(qualifier._retained_files(root, name)) == [], name
+E           AssertionError: receipt.json
+E           assert [PosixPath('/...eceipt.json')] == []
+E             
+E             Left contains one more item: PosixPath('/workspace/qualification/native-namespace-v45-source-free-isolation/red/fixtures/test_source_free_gate_inputs_c0/source-free-gate/fixture/child/restart/native-run/receipt.json')
+E             Use -v to get more diff
+
+research/unified_consequence_runtime/test_qualify_native_frontier_v45.py:177: AssertionError
+=========================== short test summary info ============================
+FAILED research/unified_consequence_runtime/test_qualify_native_frontier_v45.py::test_source_free_gate_inputs_cannot_publish_native_evidence
+1 failed in 0.28s

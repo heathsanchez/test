@@ -474,6 +474,8 @@ def audit_native_packets(root, frozen):
         version = value.get('schema', '').rsplit('_', 1)[-1]
         if version not in ('V2', 'V42', 'V43', 'V45') or not value.get('schema', '').startswith('UDM_GENERIC_NATIVE_PYTEST_'):
             raise ValueError('native receipt schema differs')
+        if 'certificate_sha256' not in value:
+            raise ValueError('native receipt certificate binding missing: '+name)
         certificate = certificates.get(value['certificate_sha256'])
         if certificate is None:
             raise ValueError('genuine receipt lacks genuine retained certificate')
