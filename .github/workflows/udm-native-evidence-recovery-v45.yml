@@ -1,6 +1,8 @@
 name: Recover exact V45 failed evidence without native re-execution
 
 on:
+  push:
+    branches: [research/udm-native-namespace-v45-20261029]
   workflow_dispatch:
 
 permissions:
@@ -9,7 +11,7 @@ permissions:
 
 jobs:
   recover-existing-artifact:
-    if: github.ref == 'refs/heads/research/udm-native-namespace-v45-20261029'
+    if: github.ref == 'refs/heads/research/udm-native-namespace-v45-20261029' && (github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[recover-v45]'))
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
