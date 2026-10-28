@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="14" skipped="0" tests="14" time="0.262" timestamp="2026-10-28T23:07:35.407942+00:00" hostname="bd53dcf47e47"><testcase classname="qualification.native-namespace-v45-screening-audit-preparation.test_screening_audit_v45" name="test_actual_pass_fail_keep_identical_public_eligibility" time="0.001"><failure message="AssertionError: V45 independent screening transport missing&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-namespace-v45-screening-audit-preparation/audit_retained_v45.py').is_file">def test_actual_pass_fail_keep_identical_public_eligibility():
+&gt;       m=module()
+
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:35: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path = HERE/'audit_retained_v45.py'
+&gt;       assert path.is_file(), 'V45 independent screening transport missing'
+E       AssertionError: V45 independent screening transport missing
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-namespace-v45-screening-audit-preparation/audit_retained_v45.py').is_file
+
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:16: AssertionError</failure></testcase><testcase classname="qualification.native-namespace-v45-screening-audit-preparation.test_screening_audit_v45" name="test_old_outer_schema_is_not_new_admission[V43]" time="0.000"><failure message="AssertionError: V45 independent screening transport missing&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-namespace-v45-screening-audit-preparation/audit_retained_v45.py').is_file">version = 'V43'
+
+    @pytest.mark.parametrize('version',('V43','V44'))
+    def test_old_outer_schema_is_not_new_admission(version):
+&gt;       m=module();r=record('PASS_NATIVE');r['schema']='UDM_ADMISSION_ONLY_CASE_'+version
+
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:42: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path = HERE/'audit_retained_v45.py'
+&gt;       assert path.is_file(), 'V45 independent screening transport missing'
+E       AssertionError: V45 independent screening transport missing
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-namespace-v45-screening-audit-preparation/audit_retained_v45.py').is_file
+
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:16: AssertionError</failure></testcase><testcase classname="qualification.native-namespace-v45-screening-audit-preparation.test_screening_audit_v45" name="test_old_outer_schema_is_not_new_admission[V44]" time="0.000"><failure message="AssertionError: V45 independent screening transport missing&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-namespace-v45-screening-audit-preparation/audit_retained_v45.py').is_file">version = 'V44'
+
+    @pytest.mark.parametrize('version',('V43','V44'))
+    def test_old_outer_schema_is_not_new_admission(version):
+&gt;       m=module();r=record('PASS_NATIVE');r['schema']='UDM_ADMISSION_ONLY_CASE_'+version
+
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:42: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path = HERE/'audit_retained_v45.py'
+&gt;       assert path.is_file(), 'V45 independent screening transport missing'
+E       AssertionError: V45 independent screening transport missing
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-namespace-v45-screening-audit-preparation/audit_retained_v45.py').is_file
+
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:16: AssertionError</failure></testcase><testcase classname="qualification.native-namespace-v45-screening-audit-preparation.test_screening_audit_v45" name="test_unknown_cannot_be_promoted" time="0.000"><failure message="AssertionError: V45 independent screening transport missing&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-namespace-v45-screening-audit-preparation/audit_retained_v45.py').is_file">def test_unknown_cannot_be_promoted():
+&gt;       m=module();r=record();r['eligible']=True
+
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:47: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path = HERE/'audit_retained_v45.py'
+&gt;       assert path.is_file(), 'V45 independent screening transport missing'
+E       AssertionError: V45 independent screening transport missing
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-namespace-v45-screening-audit-preparation/audit_retained_v45.py').is_file
+
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:16: AssertionError</failure></testcase><testcase classname="qualification.native-namespace-v45-screening-audit-preparation.test_screening_audit_v45" name="test_transport_keeps_metadata_and_generated_build_schemas" time="0.000"><failure message="AssertionError: V45 independent screening transport missing&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-namespace-v45-screening-audit-preparation/audit_retained_v45.py').is_file">def test_transport_keeps_metadata_and_generated_build_schemas():
+&gt;       m=module()
+
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:52: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path = HERE/'audit_retained_v45.py'
+&gt;       assert path.is_file(), 'V45 independent screening transport missing'
+E       AssertionError: V45 independent screening transport missing
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-namespace-v45-screening-audit-preparation/audit_retained_v45.py').is_file
+
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:16: AssertionError</failure></testcase><testcase classname="qualification.native-namespace-v45-screening-audit-preparation.test_screening_audit_v45" name="test_exact_v45_receipt_identity_remains_joint_binding[runner]" time="0.000"><failure message="AssertionError: V45 independent screening transport missing&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-namespace-v45-screening-audit-preparation/audit_retained_v45.py').is_file">change = 'runner'
+
+    @pytest.mark.parametrize('change',('runner','task','candidate'))
+    def test_exact_v45_receipt_identity_remains_joint_binding(change):
+&gt;       m=module();contract={'repository':'fixture/unread','commit':'b'*40,'protocol_binding':'p',
+            'git_tree':'t','tracked_tree_sha256':'s','file_count':2}
+
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:61: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path = HERE/'audit_retained_v45.py'
+&gt;       assert path.is_file(), 'V45 independent screening transport missing'
+E       AssertionError: V45 independent screening transport missing
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-namespace-v45-screening-audit-preparation/audit_retained_v45.py').is_file
+
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:16: AssertionError</failure></testcase><testcase classname="qualification.native-namespace-v45-screening-audit-preparation.test_screening_audit_v45" name="test_exact_v45_receipt_identity_remains_joint_binding[task]" time="0.000"><failure message="AssertionError: V45 independent screening transport missing&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-namespace-v45-screening-audit-preparation/audit_retained_v45.py').is_file">change = 'task'
+
+    @pytest.mark.parametrize('change',('runner','task','candidate'))
+    def test_exact_v45_receipt_identity_remains_joint_binding(change):
+&gt;       m=module();contract={'repository':'fixture/unread','commit':'b'*40,'protocol_binding':'p',
+            'git_tree':'t','tracked_tree_sha256':'s','file_count':2}
+
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:61: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path = HERE/'audit_retained_v45.py'
+&gt;       assert path.is_file(), 'V45 independent screening transport missing'
+E       AssertionError: V45 independent screening transport missing
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-namespace-v45-screening-audit-preparation/audit_retained_v45.py').is_file
+
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:16: AssertionError</failure></testcase><testcase classname="qualification.native-namespace-v45-screening-audit-preparation.test_screening_audit_v45" name="test_exact_v45_receipt_identity_remains_joint_binding[candidate]" time="0.000"><failure message="AssertionError: V45 independent screening transport missing&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-namespace-v45-screening-audit-preparation/audit_retained_v45.py').is_file">change = 'candidate'
+
+    @pytest.mark.parametrize('change',('runner','task','candidate'))
+    def test_exact_v45_receipt_identity_remains_joint_binding(change):
+&gt;       m=module();contract={'repository':'fixture/unread','commit':'b'*40,'protocol_binding':'p',
+            'git_tree':'t','tracked_tree_sha256':'s','file_count':2}
+
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:61: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path = HERE/'audit_retained_v45.py'
+&gt;       assert path.is_file(), 'V45 independent screening transport missing'
+E       AssertionError: V45 independent screening transport missing
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-namespace-v45-screening-audit-preparation/audit_retained_v45.py').is_file
+
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:16: AssertionError</failure></testcase><testcase classname="qualification.native-namespace-v45-screening-audit-preparation.test_screening_audit_v45" name="test_new_authority_uses_original_typed_git_bytes_and_independent_v45_grammar" time="0.000"><failure message="AssertionError: V45 independent screening transport missing&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-namespace-v45-screening-audit-preparation/audit_retained_v45.py').is_file">def test_new_authority_uses_original_typed_git_bytes_and_independent_v45_grammar():
+&gt;       m=module();before={'tests/test_case.py':b'def test_original():\n    assert 1 == 1\n'}
+
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:80: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path = HERE/'audit_retained_v45.py'
+&gt;       assert path.is_file(), 'V45 independent screening transport missing'
+E       AssertionError: V45 independent screening transport missing
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-namespace-v45-screening-audit-preparation/audit_retained_v45.py').is_file
+
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:16: AssertionError</failure></testcase><testcase classname="qualification.native-namespace-v45-screening-audit-preparation.test_screening_audit_v45" name="test_supplemental_ros_exposure_is_separate_strict_prequery_boundary[already-exposed]" time="0.000"><failure message="AssertionError: V45 independent screening transport missing&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-namespace-v45-screening-audit-preparation/audit_retained_v45.py').is_file">change = 'already-exposed'
+
+    @pytest.mark.parametrize('change',('already-exposed','missing-prior','wrong-count'))
+    def test_supplemental_ros_exposure_is_separate_strict_prequery_boundary(change):
+&gt;       m=module();plan={'historically_touched_repository_exclusions':['old/exposed'],
+           'repository_universe_fixed_before_github_queries':['new/unread']}
+
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:93: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path = HERE/'audit_retained_v45.py'
+&gt;       assert path.is_file(), 'V45 independent screening transport missing'
+E       AssertionError: V45 independent screening transport missing
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-namespace-v45-screening-audit-preparation/audit_retained_v45.py').is_file
+
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:16: AssertionError</failure></testcase><testcase classname="qualification.native-namespace-v45-screening-audit-preparation.test_screening_audit_v45" name="test_supplemental_ros_exposure_is_separate_strict_prequery_boundary[missing-prior]" time="0.000"><failure message="AssertionError: V45 independent screening transport missing&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-namespace-v45-screening-audit-preparation/audit_retained_v45.py').is_file">change = 'missing-prior'
+
+    @pytest.mark.parametrize('change',('already-exposed','missing-prior','wrong-count'))
+    def test_supplemental_ros_exposure_is_separate_strict_prequery_boundary(change):
+&gt;       m=module();plan={'historically_touched_repository_exclusions':['old/exposed'],
+           'repository_universe_fixed_before_github_queries':['new/unread']}
+
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:93: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path = HERE/'audit_retained_v45.py'
+&gt;       assert path.is_file(), 'V45 independent screening transport missing'
+E       AssertionError: V45 independent screening transport missing
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-namespace-v45-screening-audit-preparation/audit_retained_v45.py').is_file
+
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:16: AssertionError</failure></testcase><testcase classname="qualification.native-namespace-v45-screening-audit-preparation.test_screening_audit_v45" name="test_supplemental_ros_exposure_is_separate_strict_prequery_boundary[wrong-count]" time="0.000"><failure message="AssertionError: V45 independent screening transport missing&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-namespace-v45-screening-audit-preparation/audit_retained_v45.py').is_file">change = 'wrong-count'
+
+    @pytest.mark.parametrize('change',('already-exposed','missing-prior','wrong-count'))
+    def test_supplemental_ros_exposure_is_separate_strict_prequery_boundary(change):
+&gt;       m=module();plan={'historically_touched_repository_exclusions':['old/exposed'],
+           'repository_universe_fixed_before_github_queries':['new/unread']}
+
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:93: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path = HERE/'audit_retained_v45.py'
+&gt;       assert path.is_file(), 'V45 independent screening transport missing'
+E       AssertionError: V45 independent screening transport missing
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-namespace-v45-screening-audit-preparation/audit_retained_v45.py').is_file
+
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:16: AssertionError</failure></testcase><testcase classname="qualification.native-namespace-v45-screening-audit-preparation.test_screening_audit_v45" name="test_independent_expected_outer_code_is_required_even_for_schema_valid_receipt" time="0.000"><failure message="AssertionError: V45 independent screening transport missing&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-namespace-v45-screening-audit-preparation/audit_retained_v45.py').is_file">def test_independent_expected_outer_code_is_required_even_for_schema_valid_receipt():
+&gt;       m=module();expected={'required_test_nodes':['tests/t.py::test_x'],
+          'namespace_certificate':{'required_declarations':{'tests/t.py::test_x':{'path':'tests/t.py','source_sha256':'source'}}}}
+
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:105: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path = HERE/'audit_retained_v45.py'
+&gt;       assert path.is_file(), 'V45 independent screening transport missing'
+E       AssertionError: V45 independent screening transport missing
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-namespace-v45-screening-audit-preparation/audit_retained_v45.py').is_file
+
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:16: AssertionError</failure></testcase><testcase classname="qualification.native-namespace-v45-screening-audit-preparation.test_screening_audit_v45" name="test_final_dossier_requires_all_new_namespace_closures" time="0.000"><failure message="AssertionError: V45 independent screening transport missing&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-namespace-v45-screening-audit-preparation/audit_retained_v45.py').is_file">def test_final_dossier_requires_all_new_namespace_closures():
+&gt;       m=module();v={'status':'PASS_RETAINED_SCREENING_BINDINGS','checks':[{'pass':True}],
+                     'namespace_authority_closed':False,'declaration_compilations':[]}
+
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:115: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path = HERE/'audit_retained_v45.py'
+&gt;       assert path.is_file(), 'V45 independent screening transport missing'
+E       AssertionError: V45 independent screening transport missing
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-namespace-v45-screening-audit-preparation/audit_retained_v45.py').is_file
+
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:16: AssertionError</failure></testcase></testsuite></testsuites>

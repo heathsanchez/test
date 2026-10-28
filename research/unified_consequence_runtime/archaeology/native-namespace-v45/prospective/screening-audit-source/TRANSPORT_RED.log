@@ -1,0 +1,26 @@
+FF                                                                       [100%]
+=================================== FAILURES ===================================
+_______ test_complete_typed_git_identity_keeps_original_keyword_defaults _______
+
+tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-21/test_complete_typed_git_identi0')
+
+    def test_complete_typed_git_identity_keeps_original_keyword_defaults(tmp_path):
+        m=module()
+        fixtures=m.load(Path(m._raw.HERE)/'test_raw_identity.py','_v45_original_raw_fixture')
+        repo,base,aug,before_files,after_files=fixtures.fixture(tmp_path)
+>       before=m.identity.raw_snapshot(repo,base)
+E       TypeError: raw_snapshot() missing 1 required keyword-only argument: 'filesystem'
+
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:124: TypeError
+_____________ test_main_transport_is_closed_before_any_real_inputs _____________
+
+    def test_main_transport_is_closed_before_any_real_inputs():
+>       m=module();prepared=m.prepare_main_binding()
+E       AttributeError: module 'v45_screening_audit' has no attribute 'prepare_main_binding'
+
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:135: AttributeError
+- generated xml file: /workspace/qualification/native-namespace-v45-screening-audit-preparation/TRANSPORT_RED.xml -
+=========================== short test summary info ============================
+FAILED qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py::test_complete_typed_git_identity_keeps_original_keyword_defaults
+FAILED qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py::test_main_transport_is_closed_before_any_real_inputs
+2 failed, 14 deselected in 0.25s

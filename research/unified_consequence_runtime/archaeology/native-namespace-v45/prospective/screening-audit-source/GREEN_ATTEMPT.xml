@@ -1,0 +1,495 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="14" skipped="0" tests="14" time="1.160" timestamp="2026-10-28T23:09:18.031114+00:00" hostname="bd53dcf47e47"><testcase classname="qualification.native-namespace-v45-screening-audit-preparation.test_screening_audit_v45" name="test_actual_pass_fail_keep_identical_public_eligibility" time="0.072"><failure message="FileNotFoundError: [Errno 2] No such file or directory: '/workspace/qualification/native-namespace-v45-screening-audit-preparation/test_source_grammar.py'">def test_actual_pass_fail_keep_identical_public_eligibility():
+&gt;       m=module()
+
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:35: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:19: in module
+    spec.loader.exec_module(m)
+&lt;frozen importlib._bootstrap_external&gt;:999: in exec_module
+    ???
+&lt;frozen importlib._bootstrap&gt;:488: in _call_with_frames_removed
+    ???
+qualification/native-namespace-v45-screening-audit-preparation/audit_retained_v45.py:39: in &lt;module&gt;
+    authority_checker=load(HERE/'source_authority.py','_v45_screening_independent_source')
+qualification/native-namespace-v45-screening-audit-preparation/audit_retained_v45.py:33: in load
+    spec.loader.exec_module(module);return module
+&lt;frozen importlib._bootstrap_external&gt;:999: in exec_module
+    ???
+&lt;frozen importlib._bootstrap&gt;:488: in _call_with_frames_removed
+    ???
+qualification/native-namespace-v45-screening-audit-preparation/source_authority.py:43: in &lt;module&gt;
+    _grammar_spec.loader.exec_module(_grammar)
+&lt;frozen importlib._bootstrap_external&gt;:995: in exec_module
+    ???
+&lt;frozen importlib._bootstrap_external&gt;:1132: in get_code
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;_frozen_importlib_external.SourceFileLoader object at 0x7f50e6b01340&gt;
+path = '/workspace/qualification/native-namespace-v45-screening-audit-preparation/test_source_grammar.py'
+
+&gt;   ???
+E   FileNotFoundError: [Errno 2] No such file or directory: '/workspace/qualification/native-namespace-v45-screening-audit-preparation/test_source_grammar.py'
+
+&lt;frozen importlib._bootstrap_external&gt;:1190: FileNotFoundError</failure></testcase><testcase classname="qualification.native-namespace-v45-screening-audit-preparation.test_screening_audit_v45" name="test_old_outer_schema_is_not_new_admission[V43]" time="0.053"><failure message="FileNotFoundError: [Errno 2] No such file or directory: '/workspace/qualification/native-namespace-v45-screening-audit-preparation/test_source_grammar.py'">version = 'V43'
+
+    @pytest.mark.parametrize('version',('V43','V44'))
+    def test_old_outer_schema_is_not_new_admission(version):
+&gt;       m=module();r=record('PASS_NATIVE');r['schema']='UDM_ADMISSION_ONLY_CASE_'+version
+
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:42: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:19: in module
+    spec.loader.exec_module(m)
+&lt;frozen importlib._bootstrap_external&gt;:999: in exec_module
+    ???
+&lt;frozen importlib._bootstrap&gt;:488: in _call_with_frames_removed
+    ???
+qualification/native-namespace-v45-screening-audit-preparation/audit_retained_v45.py:39: in &lt;module&gt;
+    authority_checker=load(HERE/'source_authority.py','_v45_screening_independent_source')
+qualification/native-namespace-v45-screening-audit-preparation/audit_retained_v45.py:33: in load
+    spec.loader.exec_module(module);return module
+&lt;frozen importlib._bootstrap_external&gt;:999: in exec_module
+    ???
+&lt;frozen importlib._bootstrap&gt;:488: in _call_with_frames_removed
+    ???
+qualification/native-namespace-v45-screening-audit-preparation/source_authority.py:43: in &lt;module&gt;
+    _grammar_spec.loader.exec_module(_grammar)
+&lt;frozen importlib._bootstrap_external&gt;:995: in exec_module
+    ???
+&lt;frozen importlib._bootstrap_external&gt;:1132: in get_code
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;_frozen_importlib_external.SourceFileLoader object at 0x7f50e6a28b30&gt;
+path = '/workspace/qualification/native-namespace-v45-screening-audit-preparation/test_source_grammar.py'
+
+&gt;   ???
+E   FileNotFoundError: [Errno 2] No such file or directory: '/workspace/qualification/native-namespace-v45-screening-audit-preparation/test_source_grammar.py'
+
+&lt;frozen importlib._bootstrap_external&gt;:1190: FileNotFoundError</failure></testcase><testcase classname="qualification.native-namespace-v45-screening-audit-preparation.test_screening_audit_v45" name="test_old_outer_schema_is_not_new_admission[V44]" time="0.055"><failure message="FileNotFoundError: [Errno 2] No such file or directory: '/workspace/qualification/native-namespace-v45-screening-audit-preparation/test_source_grammar.py'">version = 'V44'
+
+    @pytest.mark.parametrize('version',('V43','V44'))
+    def test_old_outer_schema_is_not_new_admission(version):
+&gt;       m=module();r=record('PASS_NATIVE');r['schema']='UDM_ADMISSION_ONLY_CASE_'+version
+
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:42: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:19: in module
+    spec.loader.exec_module(m)
+&lt;frozen importlib._bootstrap_external&gt;:999: in exec_module
+    ???
+&lt;frozen importlib._bootstrap&gt;:488: in _call_with_frames_removed
+    ???
+qualification/native-namespace-v45-screening-audit-preparation/audit_retained_v45.py:39: in &lt;module&gt;
+    authority_checker=load(HERE/'source_authority.py','_v45_screening_independent_source')
+qualification/native-namespace-v45-screening-audit-preparation/audit_retained_v45.py:33: in load
+    spec.loader.exec_module(module);return module
+&lt;frozen importlib._bootstrap_external&gt;:999: in exec_module
+    ???
+&lt;frozen importlib._bootstrap&gt;:488: in _call_with_frames_removed
+    ???
+qualification/native-namespace-v45-screening-audit-preparation/source_authority.py:43: in &lt;module&gt;
+    _grammar_spec.loader.exec_module(_grammar)
+&lt;frozen importlib._bootstrap_external&gt;:995: in exec_module
+    ???
+&lt;frozen importlib._bootstrap_external&gt;:1132: in get_code
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;_frozen_importlib_external.SourceFileLoader object at 0x7f50e6a28b90&gt;
+path = '/workspace/qualification/native-namespace-v45-screening-audit-preparation/test_source_grammar.py'
+
+&gt;   ???
+E   FileNotFoundError: [Errno 2] No such file or directory: '/workspace/qualification/native-namespace-v45-screening-audit-preparation/test_source_grammar.py'
+
+&lt;frozen importlib._bootstrap_external&gt;:1190: FileNotFoundError</failure></testcase><testcase classname="qualification.native-namespace-v45-screening-audit-preparation.test_screening_audit_v45" name="test_unknown_cannot_be_promoted" time="0.058"><failure message="FileNotFoundError: [Errno 2] No such file or directory: '/workspace/qualification/native-namespace-v45-screening-audit-preparation/test_source_grammar.py'">def test_unknown_cannot_be_promoted():
+&gt;       m=module();r=record();r['eligible']=True
+
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:47: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:19: in module
+    spec.loader.exec_module(m)
+&lt;frozen importlib._bootstrap_external&gt;:999: in exec_module
+    ???
+&lt;frozen importlib._bootstrap&gt;:488: in _call_with_frames_removed
+    ???
+qualification/native-namespace-v45-screening-audit-preparation/audit_retained_v45.py:39: in &lt;module&gt;
+    authority_checker=load(HERE/'source_authority.py','_v45_screening_independent_source')
+qualification/native-namespace-v45-screening-audit-preparation/audit_retained_v45.py:33: in load
+    spec.loader.exec_module(module);return module
+&lt;frozen importlib._bootstrap_external&gt;:999: in exec_module
+    ???
+&lt;frozen importlib._bootstrap&gt;:488: in _call_with_frames_removed
+    ???
+qualification/native-namespace-v45-screening-audit-preparation/source_authority.py:43: in &lt;module&gt;
+    _grammar_spec.loader.exec_module(_grammar)
+&lt;frozen importlib._bootstrap_external&gt;:995: in exec_module
+    ???
+&lt;frozen importlib._bootstrap_external&gt;:1132: in get_code
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;_frozen_importlib_external.SourceFileLoader object at 0x7f50e6a296d0&gt;
+path = '/workspace/qualification/native-namespace-v45-screening-audit-preparation/test_source_grammar.py'
+
+&gt;   ???
+E   FileNotFoundError: [Errno 2] No such file or directory: '/workspace/qualification/native-namespace-v45-screening-audit-preparation/test_source_grammar.py'
+
+&lt;frozen importlib._bootstrap_external&gt;:1190: FileNotFoundError</failure></testcase><testcase classname="qualification.native-namespace-v45-screening-audit-preparation.test_screening_audit_v45" name="test_transport_keeps_metadata_and_generated_build_schemas" time="0.052"><failure message="FileNotFoundError: [Errno 2] No such file or directory: '/workspace/qualification/native-namespace-v45-screening-audit-preparation/test_source_grammar.py'">def test_transport_keeps_metadata_and_generated_build_schemas():
+&gt;       m=module()
+
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:52: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:19: in module
+    spec.loader.exec_module(m)
+&lt;frozen importlib._bootstrap_external&gt;:999: in exec_module
+    ???
+&lt;frozen importlib._bootstrap&gt;:488: in _call_with_frames_removed
+    ???
+qualification/native-namespace-v45-screening-audit-preparation/audit_retained_v45.py:39: in &lt;module&gt;
+    authority_checker=load(HERE/'source_authority.py','_v45_screening_independent_source')
+qualification/native-namespace-v45-screening-audit-preparation/audit_retained_v45.py:33: in load
+    spec.loader.exec_module(module);return module
+&lt;frozen importlib._bootstrap_external&gt;:999: in exec_module
+    ???
+&lt;frozen importlib._bootstrap&gt;:488: in _call_with_frames_removed
+    ???
+qualification/native-namespace-v45-screening-audit-preparation/source_authority.py:43: in &lt;module&gt;
+    _grammar_spec.loader.exec_module(_grammar)
+&lt;frozen importlib._bootstrap_external&gt;:995: in exec_module
+    ???
+&lt;frozen importlib._bootstrap_external&gt;:1132: in get_code
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;_frozen_importlib_external.SourceFileLoader object at 0x7f50e69ef830&gt;
+path = '/workspace/qualification/native-namespace-v45-screening-audit-preparation/test_source_grammar.py'
+
+&gt;   ???
+E   FileNotFoundError: [Errno 2] No such file or directory: '/workspace/qualification/native-namespace-v45-screening-audit-preparation/test_source_grammar.py'
+
+&lt;frozen importlib._bootstrap_external&gt;:1190: FileNotFoundError</failure></testcase><testcase classname="qualification.native-namespace-v45-screening-audit-preparation.test_screening_audit_v45" name="test_exact_v45_receipt_identity_remains_joint_binding[runner]" time="0.054"><failure message="FileNotFoundError: [Errno 2] No such file or directory: '/workspace/qualification/native-namespace-v45-screening-audit-preparation/test_source_grammar.py'">change = 'runner'
+
+    @pytest.mark.parametrize('change',('runner','task','candidate'))
+    def test_exact_v45_receipt_identity_remains_joint_binding(change):
+&gt;       m=module();contract={'repository':'fixture/unread','commit':'b'*40,'protocol_binding':'p',
+            'git_tree':'t','tracked_tree_sha256':'s','file_count':2}
+
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:61: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:19: in module
+    spec.loader.exec_module(m)
+&lt;frozen importlib._bootstrap_external&gt;:999: in exec_module
+    ???
+&lt;frozen importlib._bootstrap&gt;:488: in _call_with_frames_removed
+    ???
+qualification/native-namespace-v45-screening-audit-preparation/audit_retained_v45.py:39: in &lt;module&gt;
+    authority_checker=load(HERE/'source_authority.py','_v45_screening_independent_source')
+qualification/native-namespace-v45-screening-audit-preparation/audit_retained_v45.py:33: in load
+    spec.loader.exec_module(module);return module
+&lt;frozen importlib._bootstrap_external&gt;:999: in exec_module
+    ???
+&lt;frozen importlib._bootstrap&gt;:488: in _call_with_frames_removed
+    ???
+qualification/native-namespace-v45-screening-audit-preparation/source_authority.py:43: in &lt;module&gt;
+    _grammar_spec.loader.exec_module(_grammar)
+&lt;frozen importlib._bootstrap_external&gt;:995: in exec_module
+    ???
+&lt;frozen importlib._bootstrap_external&gt;:1132: in get_code
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;_frozen_importlib_external.SourceFileLoader object at 0x7f50e6991610&gt;
+path = '/workspace/qualification/native-namespace-v45-screening-audit-preparation/test_source_grammar.py'
+
+&gt;   ???
+E   FileNotFoundError: [Errno 2] No such file or directory: '/workspace/qualification/native-namespace-v45-screening-audit-preparation/test_source_grammar.py'
+
+&lt;frozen importlib._bootstrap_external&gt;:1190: FileNotFoundError</failure></testcase><testcase classname="qualification.native-namespace-v45-screening-audit-preparation.test_screening_audit_v45" name="test_exact_v45_receipt_identity_remains_joint_binding[task]" time="0.055"><failure message="FileNotFoundError: [Errno 2] No such file or directory: '/workspace/qualification/native-namespace-v45-screening-audit-preparation/test_source_grammar.py'">change = 'task'
+
+    @pytest.mark.parametrize('change',('runner','task','candidate'))
+    def test_exact_v45_receipt_identity_remains_joint_binding(change):
+&gt;       m=module();contract={'repository':'fixture/unread','commit':'b'*40,'protocol_binding':'p',
+            'git_tree':'t','tracked_tree_sha256':'s','file_count':2}
+
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:61: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:19: in module
+    spec.loader.exec_module(m)
+&lt;frozen importlib._bootstrap_external&gt;:999: in exec_module
+    ???
+&lt;frozen importlib._bootstrap&gt;:488: in _call_with_frames_removed
+    ???
+qualification/native-namespace-v45-screening-audit-preparation/audit_retained_v45.py:39: in &lt;module&gt;
+    authority_checker=load(HERE/'source_authority.py','_v45_screening_independent_source')
+qualification/native-namespace-v45-screening-audit-preparation/audit_retained_v45.py:33: in load
+    spec.loader.exec_module(module);return module
+&lt;frozen importlib._bootstrap_external&gt;:999: in exec_module
+    ???
+&lt;frozen importlib._bootstrap&gt;:488: in _call_with_frames_removed
+    ???
+qualification/native-namespace-v45-screening-audit-preparation/source_authority.py:43: in &lt;module&gt;
+    _grammar_spec.loader.exec_module(_grammar)
+&lt;frozen importlib._bootstrap_external&gt;:995: in exec_module
+    ???
+&lt;frozen importlib._bootstrap_external&gt;:1132: in get_code
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;_frozen_importlib_external.SourceFileLoader object at 0x7f50e6992600&gt;
+path = '/workspace/qualification/native-namespace-v45-screening-audit-preparation/test_source_grammar.py'
+
+&gt;   ???
+E   FileNotFoundError: [Errno 2] No such file or directory: '/workspace/qualification/native-namespace-v45-screening-audit-preparation/test_source_grammar.py'
+
+&lt;frozen importlib._bootstrap_external&gt;:1190: FileNotFoundError</failure></testcase><testcase classname="qualification.native-namespace-v45-screening-audit-preparation.test_screening_audit_v45" name="test_exact_v45_receipt_identity_remains_joint_binding[candidate]" time="0.057"><failure message="FileNotFoundError: [Errno 2] No such file or directory: '/workspace/qualification/native-namespace-v45-screening-audit-preparation/test_source_grammar.py'">change = 'candidate'
+
+    @pytest.mark.parametrize('change',('runner','task','candidate'))
+    def test_exact_v45_receipt_identity_remains_joint_binding(change):
+&gt;       m=module();contract={'repository':'fixture/unread','commit':'b'*40,'protocol_binding':'p',
+            'git_tree':'t','tracked_tree_sha256':'s','file_count':2}
+
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:61: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:19: in module
+    spec.loader.exec_module(m)
+&lt;frozen importlib._bootstrap_external&gt;:999: in exec_module
+    ???
+&lt;frozen importlib._bootstrap&gt;:488: in _call_with_frames_removed
+    ???
+qualification/native-namespace-v45-screening-audit-preparation/audit_retained_v45.py:39: in &lt;module&gt;
+    authority_checker=load(HERE/'source_authority.py','_v45_screening_independent_source')
+qualification/native-namespace-v45-screening-audit-preparation/audit_retained_v45.py:33: in load
+    spec.loader.exec_module(module);return module
+&lt;frozen importlib._bootstrap_external&gt;:999: in exec_module
+    ???
+&lt;frozen importlib._bootstrap&gt;:488: in _call_with_frames_removed
+    ???
+qualification/native-namespace-v45-screening-audit-preparation/source_authority.py:43: in &lt;module&gt;
+    _grammar_spec.loader.exec_module(_grammar)
+&lt;frozen importlib._bootstrap_external&gt;:995: in exec_module
+    ???
+&lt;frozen importlib._bootstrap_external&gt;:1132: in get_code
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;_frozen_importlib_external.SourceFileLoader object at 0x7f50e6992510&gt;
+path = '/workspace/qualification/native-namespace-v45-screening-audit-preparation/test_source_grammar.py'
+
+&gt;   ???
+E   FileNotFoundError: [Errno 2] No such file or directory: '/workspace/qualification/native-namespace-v45-screening-audit-preparation/test_source_grammar.py'
+
+&lt;frozen importlib._bootstrap_external&gt;:1190: FileNotFoundError</failure></testcase><testcase classname="qualification.native-namespace-v45-screening-audit-preparation.test_screening_audit_v45" name="test_new_authority_uses_original_typed_git_bytes_and_independent_v45_grammar" time="0.057"><failure message="FileNotFoundError: [Errno 2] No such file or directory: '/workspace/qualification/native-namespace-v45-screening-audit-preparation/test_source_grammar.py'">def test_new_authority_uses_original_typed_git_bytes_and_independent_v45_grammar():
+&gt;       m=module();before={'tests/test_case.py':b'def test_original():\n    assert 1 == 1\n'}
+
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:80: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:19: in module
+    spec.loader.exec_module(m)
+&lt;frozen importlib._bootstrap_external&gt;:999: in exec_module
+    ???
+&lt;frozen importlib._bootstrap&gt;:488: in _call_with_frames_removed
+    ???
+qualification/native-namespace-v45-screening-audit-preparation/audit_retained_v45.py:39: in &lt;module&gt;
+    authority_checker=load(HERE/'source_authority.py','_v45_screening_independent_source')
+qualification/native-namespace-v45-screening-audit-preparation/audit_retained_v45.py:33: in load
+    spec.loader.exec_module(module);return module
+&lt;frozen importlib._bootstrap_external&gt;:999: in exec_module
+    ???
+&lt;frozen importlib._bootstrap&gt;:488: in _call_with_frames_removed
+    ???
+qualification/native-namespace-v45-screening-audit-preparation/source_authority.py:43: in &lt;module&gt;
+    _grammar_spec.loader.exec_module(_grammar)
+&lt;frozen importlib._bootstrap_external&gt;:995: in exec_module
+    ???
+&lt;frozen importlib._bootstrap_external&gt;:1132: in get_code
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;_frozen_importlib_external.SourceFileLoader object at 0x7f50e6a295e0&gt;
+path = '/workspace/qualification/native-namespace-v45-screening-audit-preparation/test_source_grammar.py'
+
+&gt;   ???
+E   FileNotFoundError: [Errno 2] No such file or directory: '/workspace/qualification/native-namespace-v45-screening-audit-preparation/test_source_grammar.py'
+
+&lt;frozen importlib._bootstrap_external&gt;:1190: FileNotFoundError</failure></testcase><testcase classname="qualification.native-namespace-v45-screening-audit-preparation.test_screening_audit_v45" name="test_supplemental_ros_exposure_is_separate_strict_prequery_boundary[already-exposed]" time="0.060"><failure message="FileNotFoundError: [Errno 2] No such file or directory: '/workspace/qualification/native-namespace-v45-screening-audit-preparation/test_source_grammar.py'">change = 'already-exposed'
+
+    @pytest.mark.parametrize('change',('already-exposed','missing-prior','wrong-count'))
+    def test_supplemental_ros_exposure_is_separate_strict_prequery_boundary(change):
+&gt;       m=module();plan={'historically_touched_repository_exclusions':['old/exposed'],
+           'repository_universe_fixed_before_github_queries':['new/unread']}
+
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:93: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:19: in module
+    spec.loader.exec_module(m)
+&lt;frozen importlib._bootstrap_external&gt;:999: in exec_module
+    ???
+&lt;frozen importlib._bootstrap&gt;:488: in _call_with_frames_removed
+    ???
+qualification/native-namespace-v45-screening-audit-preparation/audit_retained_v45.py:39: in &lt;module&gt;
+    authority_checker=load(HERE/'source_authority.py','_v45_screening_independent_source')
+qualification/native-namespace-v45-screening-audit-preparation/audit_retained_v45.py:33: in load
+    spec.loader.exec_module(module);return module
+&lt;frozen importlib._bootstrap_external&gt;:999: in exec_module
+    ???
+&lt;frozen importlib._bootstrap&gt;:488: in _call_with_frames_removed
+    ???
+qualification/native-namespace-v45-screening-audit-preparation/source_authority.py:43: in &lt;module&gt;
+    _grammar_spec.loader.exec_module(_grammar)
+&lt;frozen importlib._bootstrap_external&gt;:995: in exec_module
+    ???
+&lt;frozen importlib._bootstrap_external&gt;:1132: in get_code
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;_frozen_importlib_external.SourceFileLoader object at 0x7f50e6a461b0&gt;
+path = '/workspace/qualification/native-namespace-v45-screening-audit-preparation/test_source_grammar.py'
+
+&gt;   ???
+E   FileNotFoundError: [Errno 2] No such file or directory: '/workspace/qualification/native-namespace-v45-screening-audit-preparation/test_source_grammar.py'
+
+&lt;frozen importlib._bootstrap_external&gt;:1190: FileNotFoundError</failure></testcase><testcase classname="qualification.native-namespace-v45-screening-audit-preparation.test_screening_audit_v45" name="test_supplemental_ros_exposure_is_separate_strict_prequery_boundary[missing-prior]" time="0.059"><failure message="FileNotFoundError: [Errno 2] No such file or directory: '/workspace/qualification/native-namespace-v45-screening-audit-preparation/test_source_grammar.py'">change = 'missing-prior'
+
+    @pytest.mark.parametrize('change',('already-exposed','missing-prior','wrong-count'))
+    def test_supplemental_ros_exposure_is_separate_strict_prequery_boundary(change):
+&gt;       m=module();plan={'historically_touched_repository_exclusions':['old/exposed'],
+           'repository_universe_fixed_before_github_queries':['new/unread']}
+
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:93: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:19: in module
+    spec.loader.exec_module(m)
+&lt;frozen importlib._bootstrap_external&gt;:999: in exec_module
+    ???
+&lt;frozen importlib._bootstrap&gt;:488: in _call_with_frames_removed
+    ???
+qualification/native-namespace-v45-screening-audit-preparation/audit_retained_v45.py:39: in &lt;module&gt;
+    authority_checker=load(HERE/'source_authority.py','_v45_screening_independent_source')
+qualification/native-namespace-v45-screening-audit-preparation/audit_retained_v45.py:33: in load
+    spec.loader.exec_module(module);return module
+&lt;frozen importlib._bootstrap_external&gt;:999: in exec_module
+    ???
+&lt;frozen importlib._bootstrap&gt;:488: in _call_with_frames_removed
+    ???
+qualification/native-namespace-v45-screening-audit-preparation/source_authority.py:43: in &lt;module&gt;
+    _grammar_spec.loader.exec_module(_grammar)
+&lt;frozen importlib._bootstrap_external&gt;:995: in exec_module
+    ???
+&lt;frozen importlib._bootstrap_external&gt;:1132: in get_code
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;_frozen_importlib_external.SourceFileLoader object at 0x7f50e6a4ffb0&gt;
+path = '/workspace/qualification/native-namespace-v45-screening-audit-preparation/test_source_grammar.py'
+
+&gt;   ???
+E   FileNotFoundError: [Errno 2] No such file or directory: '/workspace/qualification/native-namespace-v45-screening-audit-preparation/test_source_grammar.py'
+
+&lt;frozen importlib._bootstrap_external&gt;:1190: FileNotFoundError</failure></testcase><testcase classname="qualification.native-namespace-v45-screening-audit-preparation.test_screening_audit_v45" name="test_supplemental_ros_exposure_is_separate_strict_prequery_boundary[wrong-count]" time="0.057"><failure message="FileNotFoundError: [Errno 2] No such file or directory: '/workspace/qualification/native-namespace-v45-screening-audit-preparation/test_source_grammar.py'">change = 'wrong-count'
+
+    @pytest.mark.parametrize('change',('already-exposed','missing-prior','wrong-count'))
+    def test_supplemental_ros_exposure_is_separate_strict_prequery_boundary(change):
+&gt;       m=module();plan={'historically_touched_repository_exclusions':['old/exposed'],
+           'repository_universe_fixed_before_github_queries':['new/unread']}
+
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:93: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:19: in module
+    spec.loader.exec_module(m)
+&lt;frozen importlib._bootstrap_external&gt;:999: in exec_module
+    ???
+&lt;frozen importlib._bootstrap&gt;:488: in _call_with_frames_removed
+    ???
+qualification/native-namespace-v45-screening-audit-preparation/audit_retained_v45.py:39: in &lt;module&gt;
+    authority_checker=load(HERE/'source_authority.py','_v45_screening_independent_source')
+qualification/native-namespace-v45-screening-audit-preparation/audit_retained_v45.py:33: in load
+    spec.loader.exec_module(module);return module
+&lt;frozen importlib._bootstrap_external&gt;:999: in exec_module
+    ???
+&lt;frozen importlib._bootstrap&gt;:488: in _call_with_frames_removed
+    ???
+qualification/native-namespace-v45-screening-audit-preparation/source_authority.py:43: in &lt;module&gt;
+    _grammar_spec.loader.exec_module(_grammar)
+&lt;frozen importlib._bootstrap_external&gt;:995: in exec_module
+    ???
+&lt;frozen importlib._bootstrap_external&gt;:1132: in get_code
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;_frozen_importlib_external.SourceFileLoader object at 0x7f50e6992c00&gt;
+path = '/workspace/qualification/native-namespace-v45-screening-audit-preparation/test_source_grammar.py'
+
+&gt;   ???
+E   FileNotFoundError: [Errno 2] No such file or directory: '/workspace/qualification/native-namespace-v45-screening-audit-preparation/test_source_grammar.py'
+
+&lt;frozen importlib._bootstrap_external&gt;:1190: FileNotFoundError</failure></testcase><testcase classname="qualification.native-namespace-v45-screening-audit-preparation.test_screening_audit_v45" name="test_independent_expected_outer_code_is_required_even_for_schema_valid_receipt" time="0.055"><failure message="FileNotFoundError: [Errno 2] No such file or directory: '/workspace/qualification/native-namespace-v45-screening-audit-preparation/test_source_grammar.py'">def test_independent_expected_outer_code_is_required_even_for_schema_valid_receipt():
+&gt;       m=module();expected={'required_test_nodes':['tests/t.py::test_x'],
+          'namespace_certificate':{'required_declarations':{'tests/t.py::test_x':{'path':'tests/t.py','source_sha256':'source'}}}}
+
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:105: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:19: in module
+    spec.loader.exec_module(m)
+&lt;frozen importlib._bootstrap_external&gt;:999: in exec_module
+    ???
+&lt;frozen importlib._bootstrap&gt;:488: in _call_with_frames_removed
+    ???
+qualification/native-namespace-v45-screening-audit-preparation/audit_retained_v45.py:39: in &lt;module&gt;
+    authority_checker=load(HERE/'source_authority.py','_v45_screening_independent_source')
+qualification/native-namespace-v45-screening-audit-preparation/audit_retained_v45.py:33: in load
+    spec.loader.exec_module(module);return module
+&lt;frozen importlib._bootstrap_external&gt;:999: in exec_module
+    ???
+&lt;frozen importlib._bootstrap&gt;:488: in _call_with_frames_removed
+    ???
+qualification/native-namespace-v45-screening-audit-preparation/source_authority.py:43: in &lt;module&gt;
+    _grammar_spec.loader.exec_module(_grammar)
+&lt;frozen importlib._bootstrap_external&gt;:995: in exec_module
+    ???
+&lt;frozen importlib._bootstrap_external&gt;:1132: in get_code
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;_frozen_importlib_external.SourceFileLoader object at 0x7f50e6a4d850&gt;
+path = '/workspace/qualification/native-namespace-v45-screening-audit-preparation/test_source_grammar.py'
+
+&gt;   ???
+E   FileNotFoundError: [Errno 2] No such file or directory: '/workspace/qualification/native-namespace-v45-screening-audit-preparation/test_source_grammar.py'
+
+&lt;frozen importlib._bootstrap_external&gt;:1190: FileNotFoundError</failure></testcase><testcase classname="qualification.native-namespace-v45-screening-audit-preparation.test_screening_audit_v45" name="test_final_dossier_requires_all_new_namespace_closures" time="0.057"><failure message="FileNotFoundError: [Errno 2] No such file or directory: '/workspace/qualification/native-namespace-v45-screening-audit-preparation/test_source_grammar.py'">def test_final_dossier_requires_all_new_namespace_closures():
+&gt;       m=module();v={'status':'PASS_RETAINED_SCREENING_BINDINGS','checks':[{'pass':True}],
+                     'namespace_authority_closed':False,'declaration_compilations':[]}
+
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:115: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:19: in module
+    spec.loader.exec_module(m)
+&lt;frozen importlib._bootstrap_external&gt;:999: in exec_module
+    ???
+&lt;frozen importlib._bootstrap&gt;:488: in _call_with_frames_removed
+    ???
+qualification/native-namespace-v45-screening-audit-preparation/audit_retained_v45.py:39: in &lt;module&gt;
+    authority_checker=load(HERE/'source_authority.py','_v45_screening_independent_source')
+qualification/native-namespace-v45-screening-audit-preparation/audit_retained_v45.py:33: in load
+    spec.loader.exec_module(module);return module
+&lt;frozen importlib._bootstrap_external&gt;:999: in exec_module
+    ???
+&lt;frozen importlib._bootstrap&gt;:488: in _call_with_frames_removed
+    ???
+qualification/native-namespace-v45-screening-audit-preparation/source_authority.py:43: in &lt;module&gt;
+    _grammar_spec.loader.exec_module(_grammar)
+&lt;frozen importlib._bootstrap_external&gt;:995: in exec_module
+    ???
+&lt;frozen importlib._bootstrap_external&gt;:1132: in get_code
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;_frozen_importlib_external.SourceFileLoader object at 0x7f50e6a4e330&gt;
+path = '/workspace/qualification/native-namespace-v45-screening-audit-preparation/test_source_grammar.py'
+
+&gt;   ???
+E   FileNotFoundError: [Errno 2] No such file or directory: '/workspace/qualification/native-namespace-v45-screening-audit-preparation/test_source_grammar.py'
+
+&lt;frozen importlib._bootstrap_external&gt;:1190: FileNotFoundError</failure></testcase></testsuite></testsuites>

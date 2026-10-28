@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="4" skipped="0" tests="4" time="0.485" timestamp="2026-10-28T23:18:03.123038+00:00" hostname="bd53dcf47e47"><testcase classname="qualification.native-namespace-v45-screening-audit-preparation.test_screening_audit_v45" name="test_compiler_uses_authenticated_per_case_venv_not_host_profile_path[none]" time="0.111"><failure message="AttributeError: module 'v45_screening_audit' has no attribute 'select_compiler_profile'">tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-26/test_compiler_uses_authenticat0')
+change = 'none'
+
+    @pytest.mark.parametrize('change',('none','native-image','host-image','stale-environment-path'))
+    def test_compiler_uses_authenticated_per_case_venv_not_host_profile_path(tmp_path,change):
+        m=module();host=tmp_path/'host-profile/bin/python';native=tmp_path/'case/source-environment/native/venv/bin/python'
+        for path in (host,native):path.parent.mkdir(parents=True);path.write_bytes(b'fixed interpreter image; source-free data')
+        site=native.parent.parent/'lib/python3.12/site-packages'
+        for name in ('_pytest/__init__.py','pytest/__init__.py'):
+            path=site/name;path.parent.mkdir(parents=True,exist_ok=True);path.write_bytes(b'# authenticated package-source fixture\n')
+        profile={'id':'fixture-profile','python_version':'3.12.14','pytest_version':'8.4.1'}
+        setup={'contract':{'interpreter':str(native)},'selection':{'selected_profile':profile}}
+        environment={'executable':str(native),'executable_sha256':m.sha(native.read_bytes())}
+        runtimes={profile['id']:str(host)}
+        if change=='native-image':native.write_bytes(b'changed native image')
+        elif change=='host-image':host.write_bytes(b'changed selected host image')
+        elif change=='stale-environment-path':environment['executable']=str(host)
+        if change!='none':
+            with pytest.raises(ValueError):m.select_compiler_profile(setup,environment,runtimes)
+        else:
+&gt;           actual=m.select_compiler_profile(setup,environment,runtimes)
+E           AttributeError: module 'v45_screening_audit' has no attribute 'select_compiler_profile'
+
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:184: AttributeError</failure></testcase><testcase classname="qualification.native-namespace-v45-screening-audit-preparation.test_screening_audit_v45" name="test_compiler_uses_authenticated_per_case_venv_not_host_profile_path[native-image]" time="0.099"><failure message="AttributeError: module 'v45_screening_audit' has no attribute 'select_compiler_profile'">tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-26/test_compiler_uses_authenticat1')
+change = 'native-image'
+
+    @pytest.mark.parametrize('change',('none','native-image','host-image','stale-environment-path'))
+    def test_compiler_uses_authenticated_per_case_venv_not_host_profile_path(tmp_path,change):
+        m=module();host=tmp_path/'host-profile/bin/python';native=tmp_path/'case/source-environment/native/venv/bin/python'
+        for path in (host,native):path.parent.mkdir(parents=True);path.write_bytes(b'fixed interpreter image; source-free data')
+        site=native.parent.parent/'lib/python3.12/site-packages'
+        for name in ('_pytest/__init__.py','pytest/__init__.py'):
+            path=site/name;path.parent.mkdir(parents=True,exist_ok=True);path.write_bytes(b'# authenticated package-source fixture\n')
+        profile={'id':'fixture-profile','python_version':'3.12.14','pytest_version':'8.4.1'}
+        setup={'contract':{'interpreter':str(native)},'selection':{'selected_profile':profile}}
+        environment={'executable':str(native),'executable_sha256':m.sha(native.read_bytes())}
+        runtimes={profile['id']:str(host)}
+        if change=='native-image':native.write_bytes(b'changed native image')
+        elif change=='host-image':host.write_bytes(b'changed selected host image')
+        elif change=='stale-environment-path':environment['executable']=str(host)
+        if change!='none':
+&gt;           with pytest.raises(ValueError):m.select_compiler_profile(setup,environment,runtimes)
+E           AttributeError: module 'v45_screening_audit' has no attribute 'select_compiler_profile'
+
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:182: AttributeError</failure></testcase><testcase classname="qualification.native-namespace-v45-screening-audit-preparation.test_screening_audit_v45" name="test_compiler_uses_authenticated_per_case_venv_not_host_profile_path[host-image]" time="0.103"><failure message="AttributeError: module 'v45_screening_audit' has no attribute 'select_compiler_profile'">tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-26/test_compiler_uses_authenticat2')
+change = 'host-image'
+
+    @pytest.mark.parametrize('change',('none','native-image','host-image','stale-environment-path'))
+    def test_compiler_uses_authenticated_per_case_venv_not_host_profile_path(tmp_path,change):
+        m=module();host=tmp_path/'host-profile/bin/python';native=tmp_path/'case/source-environment/native/venv/bin/python'
+        for path in (host,native):path.parent.mkdir(parents=True);path.write_bytes(b'fixed interpreter image; source-free data')
+        site=native.parent.parent/'lib/python3.12/site-packages'
+        for name in ('_pytest/__init__.py','pytest/__init__.py'):
+            path=site/name;path.parent.mkdir(parents=True,exist_ok=True);path.write_bytes(b'# authenticated package-source fixture\n')
+        profile={'id':'fixture-profile','python_version':'3.12.14','pytest_version':'8.4.1'}
+        setup={'contract':{'interpreter':str(native)},'selection':{'selected_profile':profile}}
+        environment={'executable':str(native),'executable_sha256':m.sha(native.read_bytes())}
+        runtimes={profile['id']:str(host)}
+        if change=='native-image':native.write_bytes(b'changed native image')
+        elif change=='host-image':host.write_bytes(b'changed selected host image')
+        elif change=='stale-environment-path':environment['executable']=str(host)
+        if change!='none':
+&gt;           with pytest.raises(ValueError):m.select_compiler_profile(setup,environment,runtimes)
+E           AttributeError: module 'v45_screening_audit' has no attribute 'select_compiler_profile'
+
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:182: AttributeError</failure></testcase><testcase classname="qualification.native-namespace-v45-screening-audit-preparation.test_screening_audit_v45" name="test_compiler_uses_authenticated_per_case_venv_not_host_profile_path[stale-environment-path]" time="0.098"><failure message="AttributeError: module 'v45_screening_audit' has no attribute 'select_compiler_profile'">tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-26/test_compiler_uses_authenticat3')
+change = 'stale-environment-path'
+
+    @pytest.mark.parametrize('change',('none','native-image','host-image','stale-environment-path'))
+    def test_compiler_uses_authenticated_per_case_venv_not_host_profile_path(tmp_path,change):
+        m=module();host=tmp_path/'host-profile/bin/python';native=tmp_path/'case/source-environment/native/venv/bin/python'
+        for path in (host,native):path.parent.mkdir(parents=True);path.write_bytes(b'fixed interpreter image; source-free data')
+        site=native.parent.parent/'lib/python3.12/site-packages'
+        for name in ('_pytest/__init__.py','pytest/__init__.py'):
+            path=site/name;path.parent.mkdir(parents=True,exist_ok=True);path.write_bytes(b'# authenticated package-source fixture\n')
+        profile={'id':'fixture-profile','python_version':'3.12.14','pytest_version':'8.4.1'}
+        setup={'contract':{'interpreter':str(native)},'selection':{'selected_profile':profile}}
+        environment={'executable':str(native),'executable_sha256':m.sha(native.read_bytes())}
+        runtimes={profile['id']:str(host)}
+        if change=='native-image':native.write_bytes(b'changed native image')
+        elif change=='host-image':host.write_bytes(b'changed selected host image')
+        elif change=='stale-environment-path':environment['executable']=str(host)
+        if change!='none':
+&gt;           with pytest.raises(ValueError):m.select_compiler_profile(setup,environment,runtimes)
+E           AttributeError: module 'v45_screening_audit' has no attribute 'select_compiler_profile'
+
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:182: AttributeError</failure></testcase></testsuite></testsuites>

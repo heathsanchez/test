@@ -1,0 +1,34 @@
+{
+  "additional_prior_exposure_sha256": "941fce7f840fac5855bfe27029a833c3dda08729a5d40e9004f702740ee4af9d",
+  "basis": "General-purpose Python library identities selected without new task metadata/source/outcomes; remove documentary prior exposures before querying, never replace them.",
+  "candidate_identity_order": [
+    "chaimleib/intervaltree",
+    "jd/tenacity",
+    "jmespath/jmespath.py",
+    "mahmoud/boltons",
+    "mewwts/addict",
+    "suor/funcy",
+    "tartley/colorama",
+    "tkem/cachetools",
+    "tox-dev/filelock"
+  ],
+  "conservative_prior_count": 156,
+  "declared_universe": [
+    "chaimleib/intervaltree",
+    "mewwts/addict",
+    "suor/funcy",
+    "tox-dev/filelock"
+  ],
+  "excluded_previously_documented_identities": [
+    "jd/tenacity",
+    "jmespath/jmespath.py",
+    "mahmoud/boltons",
+    "tartley/colorama",
+    "tkem/cachetools"
+  ],
+  "native_calls": 0,
+  "replacement_identities_added": false,
+  "schema": "UDM_V45_PREQUERY_IDENTITY_ONLY_UNIVERSE_SCREEN",
+  "target_metadata_queries": 0,
+  "target_source_reads": 0
+}

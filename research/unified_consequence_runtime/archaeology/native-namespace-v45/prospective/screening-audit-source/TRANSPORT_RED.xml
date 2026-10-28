@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="2" time="0.255" timestamp="2026-10-28T23:12:21.986339+00:00" hostname="bd53dcf47e47"><testcase classname="qualification.native-namespace-v45-screening-audit-preparation.test_screening_audit_v45" name="test_complete_typed_git_identity_keeps_original_keyword_defaults" time="0.108"><failure message="TypeError: raw_snapshot() missing 1 required keyword-only argument: 'filesystem'">tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-21/test_complete_typed_git_identi0')
+
+    def test_complete_typed_git_identity_keeps_original_keyword_defaults(tmp_path):
+        m=module()
+        fixtures=m.load(Path(m._raw.HERE)/'test_raw_identity.py','_v45_original_raw_fixture')
+        repo,base,aug,before_files,after_files=fixtures.fixture(tmp_path)
+&gt;       before=m.identity.raw_snapshot(repo,base)
+E       TypeError: raw_snapshot() missing 1 required keyword-only argument: 'filesystem'
+
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:124: TypeError</failure></testcase><testcase classname="qualification.native-namespace-v45-screening-audit-preparation.test_screening_audit_v45" name="test_main_transport_is_closed_before_any_real_inputs" time="0.098"><failure message="AttributeError: module 'v45_screening_audit' has no attribute 'prepare_main_binding'">def test_main_transport_is_closed_before_any_real_inputs():
+&gt;       m=module();prepared=m.prepare_main_binding()
+E       AttributeError: module 'v45_screening_audit' has no attribute 'prepare_main_binding'
+
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:135: AttributeError</failure></testcase></testsuite></testsuites>

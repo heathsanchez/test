@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="6" skipped="0" tests="6" time="0.048" timestamp="2026-10-28T23:14:55.452246+00:00" hostname="bd53dcf47e47"><testcase classname="qualification.native-namespace-v45-screening-audit-preparation.test_ordered_driver_v45" name="test_controller_preparation_never_executes_target_transport" time="0.001"><failure message="AssertionError: versioned original ordered transport missing&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-namespace-v45-screening-audit-preparation/ordered_screening_v45.py').is_file">def test_controller_preparation_never_executes_target_transport():
+&gt;       source=module().prepare_driver_source()
+
+qualification/native-namespace-v45-screening-audit-preparation/test_ordered_driver_v45.py:18: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path=HERE/'ordered_screening_v45.py'
+&gt;       assert path.is_file(), 'versioned original ordered transport missing'
+E       AssertionError: versioned original ordered transport missing
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-namespace-v45-screening-audit-preparation/ordered_screening_v45.py').is_file
+
+qualification/native-namespace-v45-screening-audit-preparation/test_ordered_driver_v45.py:12: AssertionError</failure></testcase><testcase classname="qualification.native-namespace-v45-screening-audit-preparation.test_ordered_driver_v45" name="test_complete_fixed_pool_bound_is_generic_and_predeclared[0-True]" time="0.000"><failure message="AssertionError: versioned original ordered transport missing&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-namespace-v45-screening-audit-preparation/ordered_screening_v45.py').is_file">size = 0, refuse = True
+
+    @pytest.mark.parametrize('size,refuse',[(0,True),(1,False),(3,False),(9,False),(10,True)])
+    def test_complete_fixed_pool_bound_is_generic_and_predeclared(size,refuse):
+&gt;       source=module().prepare_driver_source();tree=ast.parse(source)
+
+qualification/native-namespace-v45-screening-audit-preparation/test_ordered_driver_v45.py:29: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path=HERE/'ordered_screening_v45.py'
+&gt;       assert path.is_file(), 'versioned original ordered transport missing'
+E       AssertionError: versioned original ordered transport missing
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-namespace-v45-screening-audit-preparation/ordered_screening_v45.py').is_file
+
+qualification/native-namespace-v45-screening-audit-preparation/test_ordered_driver_v45.py:12: AssertionError</failure></testcase><testcase classname="qualification.native-namespace-v45-screening-audit-preparation.test_ordered_driver_v45" name="test_complete_fixed_pool_bound_is_generic_and_predeclared[1-False]" time="0.001"><failure message="AssertionError: versioned original ordered transport missing&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-namespace-v45-screening-audit-preparation/ordered_screening_v45.py').is_file">size = 1, refuse = False
+
+    @pytest.mark.parametrize('size,refuse',[(0,True),(1,False),(3,False),(9,False),(10,True)])
+    def test_complete_fixed_pool_bound_is_generic_and_predeclared(size,refuse):
+&gt;       source=module().prepare_driver_source();tree=ast.parse(source)
+
+qualification/native-namespace-v45-screening-audit-preparation/test_ordered_driver_v45.py:29: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path=HERE/'ordered_screening_v45.py'
+&gt;       assert path.is_file(), 'versioned original ordered transport missing'
+E       AssertionError: versioned original ordered transport missing
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-namespace-v45-screening-audit-preparation/ordered_screening_v45.py').is_file
+
+qualification/native-namespace-v45-screening-audit-preparation/test_ordered_driver_v45.py:12: AssertionError</failure></testcase><testcase classname="qualification.native-namespace-v45-screening-audit-preparation.test_ordered_driver_v45" name="test_complete_fixed_pool_bound_is_generic_and_predeclared[3-False]" time="0.000"><failure message="AssertionError: versioned original ordered transport missing&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-namespace-v45-screening-audit-preparation/ordered_screening_v45.py').is_file">size = 3, refuse = False
+
+    @pytest.mark.parametrize('size,refuse',[(0,True),(1,False),(3,False),(9,False),(10,True)])
+    def test_complete_fixed_pool_bound_is_generic_and_predeclared(size,refuse):
+&gt;       source=module().prepare_driver_source();tree=ast.parse(source)
+
+qualification/native-namespace-v45-screening-audit-preparation/test_ordered_driver_v45.py:29: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path=HERE/'ordered_screening_v45.py'
+&gt;       assert path.is_file(), 'versioned original ordered transport missing'
+E       AssertionError: versioned original ordered transport missing
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-namespace-v45-screening-audit-preparation/ordered_screening_v45.py').is_file
+
+qualification/native-namespace-v45-screening-audit-preparation/test_ordered_driver_v45.py:12: AssertionError</failure></testcase><testcase classname="qualification.native-namespace-v45-screening-audit-preparation.test_ordered_driver_v45" name="test_complete_fixed_pool_bound_is_generic_and_predeclared[9-False]" time="0.000"><failure message="AssertionError: versioned original ordered transport missing&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-namespace-v45-screening-audit-preparation/ordered_screening_v45.py').is_file">size = 9, refuse = False
+
+    @pytest.mark.parametrize('size,refuse',[(0,True),(1,False),(3,False),(9,False),(10,True)])
+    def test_complete_fixed_pool_bound_is_generic_and_predeclared(size,refuse):
+&gt;       source=module().prepare_driver_source();tree=ast.parse(source)
+
+qualification/native-namespace-v45-screening-audit-preparation/test_ordered_driver_v45.py:29: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path=HERE/'ordered_screening_v45.py'
+&gt;       assert path.is_file(), 'versioned original ordered transport missing'
+E       AssertionError: versioned original ordered transport missing
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-namespace-v45-screening-audit-preparation/ordered_screening_v45.py').is_file
+
+qualification/native-namespace-v45-screening-audit-preparation/test_ordered_driver_v45.py:12: AssertionError</failure></testcase><testcase classname="qualification.native-namespace-v45-screening-audit-preparation.test_ordered_driver_v45" name="test_complete_fixed_pool_bound_is_generic_and_predeclared[10-True]" time="0.000"><failure message="AssertionError: versioned original ordered transport missing&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-namespace-v45-screening-audit-preparation/ordered_screening_v45.py').is_file">size = 10, refuse = True
+
+    @pytest.mark.parametrize('size,refuse',[(0,True),(1,False),(3,False),(9,False),(10,True)])
+    def test_complete_fixed_pool_bound_is_generic_and_predeclared(size,refuse):
+&gt;       source=module().prepare_driver_source();tree=ast.parse(source)
+
+qualification/native-namespace-v45-screening-audit-preparation/test_ordered_driver_v45.py:29: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path=HERE/'ordered_screening_v45.py'
+&gt;       assert path.is_file(), 'versioned original ordered transport missing'
+E       AssertionError: versioned original ordered transport missing
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-namespace-v45-screening-audit-preparation/ordered_screening_v45.py').is_file
+
+qualification/native-namespace-v45-screening-audit-preparation/test_ordered_driver_v45.py:12: AssertionError</failure></testcase></testsuite></testsuites>

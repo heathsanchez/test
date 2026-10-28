@@ -1,0 +1,83 @@
+.........FFF..                                                           [100%]
+=================================== FAILURES ===================================
+_ test_supplemental_ros_exposure_is_separate_strict_prequery_boundary[already-exposed] _
+
+change = 'already-exposed'
+
+    @pytest.mark.parametrize('change',('already-exposed','missing-prior','wrong-count'))
+    def test_supplemental_ros_exposure_is_separate_strict_prequery_boundary(change):
+        m=module();plan={'historically_touched_repository_exclusions':['old/exposed'],
+           'repository_universe_fixed_before_github_queries':['new/unread']}
+        prior={'repositories':['old/exposed']}
+        addendum={'repositories':['old/exposed','documentary/exposed'],'repository_count':2}
+>       m.validate_supplemental_exposure(plan,prior,addendum)
+
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:97: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+qualification/native-namespace-v45-screening-audit-preparation/audit_retained_v45.py:136: in validate_supplemental_exposure
+    require(names==sorted(set(names)) and addendum['repository_count']==len(names)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+ok = False, reason = 'supplemental prior union omits or duplicates identities'
+
+    def require(ok, reason):
+>       if not ok: raise ValueError(reason)
+E       ValueError: supplemental prior union omits or duplicates identities
+
+qualification/experiment-interface-v43-screening-audit-preparation/audit_retained.py:41: ValueError
+_ test_supplemental_ros_exposure_is_separate_strict_prequery_boundary[missing-prior] _
+
+change = 'missing-prior'
+
+    @pytest.mark.parametrize('change',('already-exposed','missing-prior','wrong-count'))
+    def test_supplemental_ros_exposure_is_separate_strict_prequery_boundary(change):
+        m=module();plan={'historically_touched_repository_exclusions':['old/exposed'],
+           'repository_universe_fixed_before_github_queries':['new/unread']}
+        prior={'repositories':['old/exposed']}
+        addendum={'repositories':['old/exposed','documentary/exposed'],'repository_count':2}
+>       m.validate_supplemental_exposure(plan,prior,addendum)
+
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:97: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+qualification/native-namespace-v45-screening-audit-preparation/audit_retained_v45.py:136: in validate_supplemental_exposure
+    require(names==sorted(set(names)) and addendum['repository_count']==len(names)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+ok = False, reason = 'supplemental prior union omits or duplicates identities'
+
+    def require(ok, reason):
+>       if not ok: raise ValueError(reason)
+E       ValueError: supplemental prior union omits or duplicates identities
+
+qualification/experiment-interface-v43-screening-audit-preparation/audit_retained.py:41: ValueError
+_ test_supplemental_ros_exposure_is_separate_strict_prequery_boundary[wrong-count] _
+
+change = 'wrong-count'
+
+    @pytest.mark.parametrize('change',('already-exposed','missing-prior','wrong-count'))
+    def test_supplemental_ros_exposure_is_separate_strict_prequery_boundary(change):
+        m=module();plan={'historically_touched_repository_exclusions':['old/exposed'],
+           'repository_universe_fixed_before_github_queries':['new/unread']}
+        prior={'repositories':['old/exposed']}
+        addendum={'repositories':['old/exposed','documentary/exposed'],'repository_count':2}
+>       m.validate_supplemental_exposure(plan,prior,addendum)
+
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:97: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+qualification/native-namespace-v45-screening-audit-preparation/audit_retained_v45.py:136: in validate_supplemental_exposure
+    require(names==sorted(set(names)) and addendum['repository_count']==len(names)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+ok = False, reason = 'supplemental prior union omits or duplicates identities'
+
+    def require(ok, reason):
+>       if not ok: raise ValueError(reason)
+E       ValueError: supplemental prior union omits or duplicates identities
+
+qualification/experiment-interface-v43-screening-audit-preparation/audit_retained.py:41: ValueError
+- generated xml file: /workspace/qualification/native-namespace-v45-screening-audit-preparation/GREEN_ATTEMPT2.xml -
+=========================== short test summary info ============================
+FAILED qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py::test_supplemental_ros_exposure_is_separate_strict_prequery_boundary[already-exposed]
+FAILED qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py::test_supplemental_ros_exposure_is_separate_strict_prequery_boundary[missing-prior]
+FAILED qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py::test_supplemental_ros_exposure_is_separate_strict_prequery_boundary[wrong-count]
+3 failed, 11 passed in 1.44s

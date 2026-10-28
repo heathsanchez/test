@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="3" skipped="0" tests="14" time="1.437" timestamp="2026-10-28T23:09:28.091281+00:00" hostname="bd53dcf47e47"><testcase classname="qualification.native-namespace-v45-screening-audit-preparation.test_screening_audit_v45" name="test_actual_pass_fail_keep_identical_public_eligibility" time="0.109" /><testcase classname="qualification.native-namespace-v45-screening-audit-preparation.test_screening_audit_v45" name="test_old_outer_schema_is_not_new_admission[V43]" time="0.090" /><testcase classname="qualification.native-namespace-v45-screening-audit-preparation.test_screening_audit_v45" name="test_old_outer_schema_is_not_new_admission[V44]" time="0.086" /><testcase classname="qualification.native-namespace-v45-screening-audit-preparation.test_screening_audit_v45" name="test_unknown_cannot_be_promoted" time="0.100" /><testcase classname="qualification.native-namespace-v45-screening-audit-preparation.test_screening_audit_v45" name="test_transport_keeps_metadata_and_generated_build_schemas" time="0.091" /><testcase classname="qualification.native-namespace-v45-screening-audit-preparation.test_screening_audit_v45" name="test_exact_v45_receipt_identity_remains_joint_binding[runner]" time="0.099" /><testcase classname="qualification.native-namespace-v45-screening-audit-preparation.test_screening_audit_v45" name="test_exact_v45_receipt_identity_remains_joint_binding[task]" time="0.098" /><testcase classname="qualification.native-namespace-v45-screening-audit-preparation.test_screening_audit_v45" name="test_exact_v45_receipt_identity_remains_joint_binding[candidate]" time="0.095" /><testcase classname="qualification.native-namespace-v45-screening-audit-preparation.test_screening_audit_v45" name="test_new_authority_uses_original_typed_git_bytes_and_independent_v45_grammar" time="0.098" /><testcase classname="qualification.native-namespace-v45-screening-audit-preparation.test_screening_audit_v45" name="test_supplemental_ros_exposure_is_separate_strict_prequery_boundary[already-exposed]" time="0.091"><failure message="ValueError: supplemental prior union omits or duplicates identities">change = 'already-exposed'
+
+    @pytest.mark.parametrize('change',('already-exposed','missing-prior','wrong-count'))
+    def test_supplemental_ros_exposure_is_separate_strict_prequery_boundary(change):
+        m=module();plan={'historically_touched_repository_exclusions':['old/exposed'],
+           'repository_universe_fixed_before_github_queries':['new/unread']}
+        prior={'repositories':['old/exposed']}
+        addendum={'repositories':['old/exposed','documentary/exposed'],'repository_count':2}
+&gt;       m.validate_supplemental_exposure(plan,prior,addendum)
+
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:97: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+qualification/native-namespace-v45-screening-audit-preparation/audit_retained_v45.py:136: in validate_supplemental_exposure
+    require(names==sorted(set(names)) and addendum['repository_count']==len(names)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+ok = False, reason = 'supplemental prior union omits or duplicates identities'
+
+    def require(ok, reason):
+&gt;       if not ok: raise ValueError(reason)
+E       ValueError: supplemental prior union omits or duplicates identities
+
+qualification/experiment-interface-v43-screening-audit-preparation/audit_retained.py:41: ValueError</failure></testcase><testcase classname="qualification.native-namespace-v45-screening-audit-preparation.test_screening_audit_v45" name="test_supplemental_ros_exposure_is_separate_strict_prequery_boundary[missing-prior]" time="0.092"><failure message="ValueError: supplemental prior union omits or duplicates identities">change = 'missing-prior'
+
+    @pytest.mark.parametrize('change',('already-exposed','missing-prior','wrong-count'))
+    def test_supplemental_ros_exposure_is_separate_strict_prequery_boundary(change):
+        m=module();plan={'historically_touched_repository_exclusions':['old/exposed'],
+           'repository_universe_fixed_before_github_queries':['new/unread']}
+        prior={'repositories':['old/exposed']}
+        addendum={'repositories':['old/exposed','documentary/exposed'],'repository_count':2}
+&gt;       m.validate_supplemental_exposure(plan,prior,addendum)
+
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:97: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+qualification/native-namespace-v45-screening-audit-preparation/audit_retained_v45.py:136: in validate_supplemental_exposure
+    require(names==sorted(set(names)) and addendum['repository_count']==len(names)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+ok = False, reason = 'supplemental prior union omits or duplicates identities'
+
+    def require(ok, reason):
+&gt;       if not ok: raise ValueError(reason)
+E       ValueError: supplemental prior union omits or duplicates identities
+
+qualification/experiment-interface-v43-screening-audit-preparation/audit_retained.py:41: ValueError</failure></testcase><testcase classname="qualification.native-namespace-v45-screening-audit-preparation.test_screening_audit_v45" name="test_supplemental_ros_exposure_is_separate_strict_prequery_boundary[wrong-count]" time="0.092"><failure message="ValueError: supplemental prior union omits or duplicates identities">change = 'wrong-count'
+
+    @pytest.mark.parametrize('change',('already-exposed','missing-prior','wrong-count'))
+    def test_supplemental_ros_exposure_is_separate_strict_prequery_boundary(change):
+        m=module();plan={'historically_touched_repository_exclusions':['old/exposed'],
+           'repository_universe_fixed_before_github_queries':['new/unread']}
+        prior={'repositories':['old/exposed']}
+        addendum={'repositories':['old/exposed','documentary/exposed'],'repository_count':2}
+&gt;       m.validate_supplemental_exposure(plan,prior,addendum)
+
+qualification/native-namespace-v45-screening-audit-preparation/test_screening_audit_v45.py:97: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+qualification/native-namespace-v45-screening-audit-preparation/audit_retained_v45.py:136: in validate_supplemental_exposure
+    require(names==sorted(set(names)) and addendum['repository_count']==len(names)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+ok = False, reason = 'supplemental prior union omits or duplicates identities'
+
+    def require(ok, reason):
+&gt;       if not ok: raise ValueError(reason)
+E       ValueError: supplemental prior union omits or duplicates identities
+
+qualification/experiment-interface-v43-screening-audit-preparation/audit_retained.py:41: ValueError</failure></testcase><testcase classname="qualification.native-namespace-v45-screening-audit-preparation.test_screening_audit_v45" name="test_independent_expected_outer_code_is_required_even_for_schema_valid_receipt" time="0.090" /><testcase classname="qualification.native-namespace-v45-screening-audit-preparation.test_screening_audit_v45" name="test_final_dossier_requires_all_new_namespace_closures" time="0.100" /></testsuite></testsuites>
