@@ -15,3 +15,9 @@
   externally, 77.11 seconds setup, zero target collection/native calls.
 - Decision: preserve sh/randomized ordering as UNKNOWN; first minimal extension
   closes production wildcard/declaration authority without changing order policy.
+
+- Preimplementation control freeze committed at `efda0a612de577c066b39baa82c251c6cf64ec1c`; seal SHA256 `48584499e067742a877b0ebf3c662ab96004e4ed628ebdc88a68bb42dbed2cce`.
+- Static V45 stage: 17 new controls + 29 compatible original methods + all32 unchanged V2 controls pass (78 total); raw RED/GREEN and obsolete-interface attempts preserved in static-contracts. Static source/tests committed at `29dac156b25ec1e9a60c489dd4ced775ebc571d1`; native qualification remains pending. A report-only pytest/unittest log-format expectation failure was corrected without rerunning tests or changing source.
+- Review-driven RED→GREEN fixes close exception/match binders, definition-time walrus, class-global collisions, import-control dunders and nonliteral export protocols. Independent read-only closure found no further concrete static bypass.
+- Native review found outer-callable spoofing via `__func__`, callable-object `__code__`, and forged `__class__`; actual executable REDs precede genuine-type checks. Full V45 replay mapping remains pending.
+- Dependency source guards correctly refused concurrent in-development edits. Full suites are now sequenced: static stable source, native worker, runtime/environment, exact committed-source qualification. These refused runs/costs are retained, never promoted.
