@@ -1,0 +1,32 @@
+{
+  "fixture_files": 16,
+  "product_files_exist": [
+    false,
+    false
+  ],
+  "red_controls_failed": 3,
+  "red_native_calls": 0,
+  "red_sealed": {
+    "failed": 3,
+    "files": {
+      "junit.xml": {
+        "bytes": 10821,
+        "sha256": "6e7c346164ce0ae7ba8e4d424ddb14db100162ca1a97b6bcb246ddcd667e6f30"
+      },
+      "pytest.log": {
+        "bytes": 10274,
+        "sha256": "5978a09395d58a184110686d3f9f4cd8f465e85e960d3be98857ab2f048de74d"
+      }
+    },
+    "native_calls": 0,
+    "original_primary_exception": "module 'research.unified_consequence_runtime.native_environment_v45' has no attribute 'record_admission_request'",
+    "outer_masking_exception": "KeyError: bootstrap_attempts",
+    "source_sha256": "1b625414e1227f141f917c2f8187836dba75c6558494458e3e1cd7e7043a689b",
+    "tests": 3
+  },
+  "seal": "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-request-activation-v1/control-freeze/FINAL_SEAL.json",
+  "seal_sha256": "ea1de5102aa0654d714890def4abbd07b63146d2b5525347c60a0fc5060ee3ef",
+  "status": "PREIMPLEMENTATION_ACCEPTANCE_SEALED",
+  "test_count": 15,
+  "test_sha256": "1b625414e1227f141f917c2f8187836dba75c6558494458e3e1cd7e7043a689b"
+}

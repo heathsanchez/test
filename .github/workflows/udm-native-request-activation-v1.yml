@@ -1,0 +1,159 @@
+name: UDM independently qualified native request activation v1
+
+on:
+  push:
+    branches: [research/udm-native-request-activation-v1-20261029]
+  workflow_dispatch:
+    inputs:
+      expected_source_commit:
+        description: Exact committed source on the isolated request-activation branch
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: udm-native-request-activation-v1-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  qualify-native-request-activation:
+    if: github.ref == 'refs/heads/research/udm-native-request-activation-v1-20261029' && (github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[qualify-request-v1]'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      GIT_OPTIONAL_LOCKS: '0'
+      PYTHONDONTWRITEBYTECODE: '1'
+      PYTHONUNBUFFERED: '1'
+      PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
+      PYTHONPATH: /workspace/udm-v54
+      UDM_REPO: /workspace/udm-v54
+      UDM_COMPONENTS: /workspace/components
+      UDM_REQUEST_V1_RUNTIMES: /workspace/qualification/native-request-activation-v1-ci-${{ github.run_id }}-${{ github.run_attempt }}/RUNTIME_PATHS.json
+      UDM_EVIDENCE: /workspace/qualification/native-request-activation-v1-ci-${{ github.run_id }}-${{ github.run_attempt }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.14'
+      - name: Retain checkout index and clone exact source outside staging checkout
+        env:
+          EXPECTED_SOURCE_COMMIT: ${{ inputs.expected_source_commit || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$EXPECTED_SOURCE_COMMIT" = "$GITHUB_SHA"
+          sudo install -d -o "$(id -u)" -g "$(id -g)" /workspace
+          test ! -e "$UDM_REPO"
+          mkdir -p "$UDM_EVIDENCE"
+          python -B - <<'PY'
+          import json,os,subprocess
+          from pathlib import Path
+          from research.unified_consequence_runtime.qualify_experiment_interface_v43 import index_interval,write
+          root=Path(os.environ['GITHUB_WORKSPACE']);out=Path(os.environ['UDM_EVIDENCE'])
+          with index_interval(root,out/'checkout-clone-indexes'):
+              subprocess.run(['git','clone','--no-hardlinks',str(root),os.environ['UDM_REPO']],check=True)
+              subprocess.run(['git','-C',os.environ['UDM_REPO'],'checkout','--detach',os.environ['GITHUB_SHA']],check=True)
+          write(out/'CI_BOUNDARY.json',{'schema':'UDM_NATIVE_REQUEST_ACTIVATION_CI_BOUNDARY_V1',
+              'source_commit':os.environ['GITHUB_SHA'],'run_id':os.environ['GITHUB_RUN_ID'],
+              'scope':'NATIVE_REQUEST_ACTIVATION_QUALIFICATION_ONLY',
+              'prospective_task_sources_accessed':False,'coding_agent_executed':False,
+              'verdicts':{f'G{i}':'UNKNOWN' for i in range(2,7)}})
+          PY
+      - name: Verify independent request-activation control seal before runtime preparation
+        working-directory: /workspace/udm-v54
+        run: |
+          set -euo pipefail
+          python -B - <<'PY'
+          import os
+          from pathlib import Path
+          from research.unified_consequence_runtime.qualify_native_request_activation_v1 import sealed_controls,write
+          write(Path(os.environ['UDM_EVIDENCE'])/'SEALED_CONTROLS.json',sealed_controls())
+          PY
+      - name: Prepare exact controller and original fixed native profiles
+        working-directory: /workspace/udm-v54
+        run: |
+          set -euo pipefail
+          python -B -m venv "$RUNNER_TEMP/request-v1-controller"
+          "$RUNNER_TEMP/request-v1-controller/bin/python" -B -m pip install --disable-pip-version-check --no-input pytest==8.3.5 packaging==26.3 2>&1 | tee "$UDM_EVIDENCE/controller-install.log"
+          "$RUNNER_TEMP/request-v1-controller/bin/python" -B research/unified_consequence_runtime/archaeology/native-environment-v3/bootstrap/prepare_runtimes.py --catalog research/unified_consequence_runtime/archaeology/native-environment-v3/ENVIRONMENT_CATALOG.json --dest-root "$UDM_EVIDENCE/original-runtimes" --out "$UDM_EVIDENCE/BARE_RUNTIME_PATHS.json" 2>&1 | tee "$UDM_EVIDENCE/runtime-bootstrap.log"
+          "$RUNNER_TEMP/request-v1-controller/bin/python" -B research/unified_consequence_runtime/archaeology/native-authority-v41/bootstrap/prepare_profile.py --catalog research/unified_consequence_runtime/archaeology/native-authority-v41/ENVIRONMENT_CATALOG.json --runtimes "$UDM_EVIDENCE/BARE_RUNTIME_PATHS.json" --dest-root "$UDM_EVIDENCE/modern-runtime-final" --runtime-out "$UDM_EVIDENCE/RUNTIME_PATHS.json" --out "$UDM_EVIDENCE/PROFILE_PREPARATION.json" 2>&1 | tee "$UDM_EVIDENCE/profile-bootstrap.log"
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/test
+          ref: c9092fa57c8943e638f95689cd36e6a63310f41e
+          path: ci-stage/components/development
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/metatron
+          ref: b9d1b5cc10477188be6e55617699be60e70f6dad
+          path: ci-stage/components/metatron
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/realitygraph
+          ref: 50c43b14e7272469bc51ff7204dec07682a996d7
+          path: ci-stage/components/flash
+          persist-credentials: false
+      - name: Retain pinned components outside frozen source
+        run: |
+          set -euo pipefail
+          test ! -e "$UDM_COMPONENTS"
+          mv "$GITHUB_WORKSPACE/ci-stage/components" "$UDM_COMPONENTS"
+      - name: Freeze complete committed source, controller, native profiles and actual node inventory
+        working-directory: /workspace/udm-v54
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/request-v1-controller/bin/python" -B -m research.unified_consequence_runtime.qualify_native_request_activation_v1 --write-freeze --repo "$UDM_REPO" --runtimes "$UDM_EVIDENCE/RUNTIME_PATHS.json" --out "$UDM_EVIDENCE/FREEZE.json" 2>&1 | tee "$UDM_EVIDENCE/freeze.log"
+      - name: Execute declared admission controls and independently inspect raw native evidence
+        working-directory: /workspace/udm-v54
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/request-v1-controller/bin/python" -B -m research.unified_consequence_runtime.qualify_native_request_activation_v1 --repo "$UDM_REPO" --components "$UDM_COMPONENTS" --freeze "$UDM_EVIDENCE/FREEZE.json" --out "$UDM_EVIDENCE/run" 2>&1 | tee "$UDM_EVIDENCE/qualification.log"
+      - name: Audit original frozen host runtime bytes after all controls
+        if: always()
+        working-directory: /workspace/udm-v54
+        run: |
+          set -euo pipefail
+          if test -f "$UDM_EVIDENCE/FREEZE.json"; then
+            "$RUNNER_TEMP/request-v1-controller/bin/python" -B research/unified_consequence_runtime/archaeology/native-environment-v3/bootstrap/prepare_runtimes.py --audit-freeze "$UDM_EVIDENCE/FREEZE.json" --out "$UDM_EVIDENCE/POST_CONTROL_RUNTIME_AUDIT.json"
+          fi
+      - name: Archive complete source, pinned components and all raw success or negative evidence
+        if: always()
+        run: |
+          set -euo pipefail
+          archive_repo="$UDM_REPO"
+          if ! test -d "$archive_repo/.git"; then
+            archive_repo="$GITHUB_WORKSPACE"
+          fi
+          if test -x "$RUNNER_TEMP/request-v1-controller/bin/python"; then
+            "$RUNNER_TEMP/request-v1-controller/bin/python" -B -m research.unified_consequence_runtime.qualify_native_request_activation_v1 --archive --repo "$archive_repo" --components "$UDM_COMPONENTS" --freeze "$UDM_EVIDENCE/FREEZE.json" --out "$UDM_EVIDENCE"
+          else
+            python -B -m research.unified_consequence_runtime.qualify_native_request_activation_v1 --archive --repo "$archive_repo" --components "$UDM_COMPONENTS" --freeze "$UDM_EVIDENCE/FREEZE.json" --out "$UDM_EVIDENCE"
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-request-activation-v1-source-${{ github.sha }}-${{ github.run_attempt }}
+          path: /workspace/qualification/native-request-activation-v1-ci-${{ github.run_id }}-${{ github.run_attempt }}/SOURCE.tar.gz
+          retention-days: 90
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-request-activation-v1-evidence-${{ github.sha }}-${{ github.run_attempt }}
+          path: |
+            /workspace/qualification/native-request-activation-v1-ci-${{ github.run_id }}-${{ github.run_attempt }}/NATIVE_REQUEST_ACTIVATION_V1_EVIDENCE.tar.gz
+            /workspace/qualification/native-request-activation-v1-ci-${{ github.run_id }}-${{ github.run_attempt }}/COMPONENT_*_SOURCE.tar.gz
+            /workspace/qualification/native-request-activation-v1-ci-${{ github.run_id }}-${{ github.run_attempt }}/*.json
+            /workspace/qualification/native-request-activation-v1-ci-${{ github.run_id }}-${{ github.run_attempt }}/*.log
+            /workspace/qualification/native-request-activation-v1-ci-${{ github.run_id }}-${{ github.run_attempt }}/original-runtimes/*.json
+            /workspace/qualification/native-request-activation-v1-ci-${{ github.run_id }}-${{ github.run_attempt }}/original-runtimes/*.log
+            /workspace/qualification/native-request-activation-v1-ci-${{ github.run_id }}-${{ github.run_attempt }}/modern-runtime-final/*.json
+            /workspace/qualification/native-request-activation-v1-ci-${{ github.run_id }}-${{ github.run_attempt }}/modern-runtime-final/*.log
+          include-hidden-files: true
+          retention-days: 90
