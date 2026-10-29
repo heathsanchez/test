@@ -1,0 +1,31 @@
+name: Verified Comparative V1 Feedback Causal Audit
+
+on:
+  push:
+    branches:
+      - research/verified-comparative-verifier-leak-audit-v1-20261029
+    paths:
+      - experiments/verified_comparative_quotient_v1/audit_feedback_leak_v1.py
+      - .github/workflows/verified-comparative-feedback-audit-v1.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pinned-source-replay:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Full original-source audit and mutation-negative control
+        run: |
+          python3 -B experiments/verified_comparative_quotient_v1/audit_feedback_leak_v1.py --selftest | tee "${RUNNER_TEMP}/verified_comparative_feedback_audit.log"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: verified-comparative-feedback-causal-audit-v1
+          path: ${{ runner.temp }}/verified_comparative_feedback_audit.log
+          retention-days: 90
