@@ -1,0 +1,22 @@
+name: Future commutation — independent rotating-frame calibration
+
+on:
+  push:
+    branches:
+      - research/future-commutation-frame-calibration-20261029
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bounded-physical-model:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Closed-form Kepler and representation-commutation controls
+        run: python -B -m unittest discover -s research/future_commutation_frame_v0 -p 'test_*.py' -v
