@@ -1,0 +1,75 @@
+name: MathGraph Check TestSuiteBench Hex Ablation
+
+on:
+  push:
+    branches:
+      - mathgraph-check-testsuitebench-hex-ablation-20261029
+    paths:
+      - scripts/mathgraph_testgen_ablation.py
+      - .github/workflows/mathgraph-check-testsuitebench-hex-ablation.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  reference-blind-ablation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Confirm isolated runner and disk
+        run: |
+          uname -m
+          docker version
+          df -h .
+
+      - name: Freeze benchmark source
+        run: |
+          git clone --filter=blob:none --depth=1 https://github.com/eth-sri/testsuitebench.git benchmark
+          git -C benchmark fetch --depth=1 origin 583d2eb1ffa19f3aa0c04b7455fd13d846b4c8d9
+          git -C benchmark checkout --detach 583d2eb1ffa19f3aa0c04b7455fd13d846b4c8d9
+          test "$(git -C benchmark rev-parse HEAD)" = "583d2eb1ffa19f3aa0c04b7455fd13d846b4c8d9"
+
+      - name: Generate frozen equal-budget suites
+        run: |
+          mkdir -p ablation_results
+          python3 -B scripts/mathgraph_testgen_ablation.py --package "$GITHUB_WORKSPACE/ablation_output"
+          sha256sum scripts/mathgraph_testgen_ablation.py > ablation_results/source-hashes.txt
+          find ablation_output -name tests.tar.gz -exec sha256sum {} \; >> ablation_results/source-hashes.txt
+          cat ablation_results/source-hashes.txt
+
+      - name: Install official evaluator
+        run: |
+          python3 -m pip install uv
+          cd benchmark
+          uv sync --no-dev
+
+      - name: Score reference validity and mutation kills
+        run: |
+          set -o pipefail
+          cd benchmark
+          uv run programbench eval-tests \
+            "$GITHUB_WORKSPACE/ablation_output/baseline" \
+            "$GITHUB_WORKSPACE/ablation_output/signature" \
+            --workers 1 --mutant-workers 2 --docker-cpus 2 \
+            --ground-truth-dir hf://eth-sri/tsb-reference_impl \
+            --reference-tests-dir hf://eth-sri/tsb-reference_tests \
+            --mutants-dir hf://eth-sri/tsb-mutants \
+            --output "$GITHUB_WORKSPACE/ablation_results" \
+            2>&1 | tee "$GITHUB_WORKSPACE/ablation_results/evaluation.log"
+
+      - name: Summarize evidence locations
+        if: always()
+        run: |
+          find ablation_results -maxdepth 4 -type f -printf '%p %s bytes\n' | sort
+          df -h .
+
+      - name: Upload bounded evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mathgraph-check-testsuitebench-hex-ablation
+          path: ablation_results/
+          if-no-files-found: warn
