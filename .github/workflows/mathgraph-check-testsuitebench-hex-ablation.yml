@@ -46,6 +46,12 @@ jobs:
           cd benchmark
           uv sync --no-dev
 
+      - name: Build official task evaluation image
+        run: |
+          cd benchmark
+          docker pull programbench/sitkevij_1776_hex.61ae69b:task_cleanroom
+          bash scripts/docker/install_task_patched.sh --task sitkevij__hex.61ae69b
+
       - name: Score reference validity and mutation kills
         run: |
           set -o pipefail
@@ -59,6 +65,10 @@ jobs:
             --mutants-dir hf://eth-sri/tsb-mutants \
             --output "$GITHUB_WORKSPACE/ablation_results" \
             2>&1 | tee "$GITHUB_WORKSPACE/ablation_results/evaluation.log"
+
+      - name: Reject unusable scoring results
+        run: |
+          python3 -B -c 'import json,pathlib; root=pathlib.Path("ablation_results"); task="sitkevij__hex.61ae69b"; cases=[(m,json.loads((root/m/task/(task+".test_eval.json")).read_text())) for m in ("baseline","signature")]; [(print(m,"reference_tests",len(d["binary_results"][0]["test_results"]),"reference_error",d["binary_results"][0]["error_code"]),None if d["binary_results"][0]["error_code"] is None and len(d["binary_results"][0]["test_results"])==48 else (_ for _ in ()).throw(RuntimeError(m+" reference not evaluable"))) for m,d in cases]'
 
       - name: Summarize evidence locations
         if: always()
