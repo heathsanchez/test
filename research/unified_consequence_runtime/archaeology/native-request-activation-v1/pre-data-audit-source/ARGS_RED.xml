@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="0.182" timestamp="2026-10-29T01:02:27.209599+00:00" hostname="bd53dcf47e47"><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_screening_audit_request_v1" name="test_new_auditor_retains_every_original_cli_binding" time="0.138"><failure message="AttributeError: module 'request_v1_screening_audit' has no attribute 'parse_settings'">def test_new_auditor_retains_every_original_cli_binding():
+        m=module();argv=[]
+        for name in ('repo','records','requests','sealed','controller-manifest','attestation','out',
+                     'compiler-runtimes','outer-budget-receipt'):
+            argv+=['--'+name,'/synthetic/'+name]
+        for name in ('authority-sha256','controller-manifest-sha256','attestation-sha256','source-commit',
+                     'prequery-commit','outer-budget-sha256'):
+            argv+=['--'+name,'held-'+name]
+&gt;       args=m.parse_settings(argv)
+E       AttributeError: module 'request_v1_screening_audit' has no attribute 'parse_settings'
+
+qualification/native-request-activation-v1-screening-preparation/test_screening_audit_request_v1.py:78: AttributeError</failure></testcase></testsuite></testsuites>

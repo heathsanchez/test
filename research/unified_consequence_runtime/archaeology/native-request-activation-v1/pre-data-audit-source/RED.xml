@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="12" skipped="0" tests="12" time="0.070" timestamp="2026-10-29T00:42:38.064326+00:00" hostname="bd53dcf47e47"><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_predata_metadata" name="test_reconstructed_exposure_matches_canonical_value_not_nonexistent_old_file" time="0.000"><failure message="AssertionError: versioned pre-data metadata auditor missing&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/predata_metadata.py').is_file">def test_reconstructed_exposure_matches_canonical_value_not_nonexistent_old_file():
+&gt;       m=module();value=exposure()
+
+qualification/native-request-activation-v1-screening-preparation/test_predata_metadata.py:26: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path=HERE/'predata_metadata.py'
+&gt;       assert path.is_file(), 'versioned pre-data metadata auditor missing'
+E       AssertionError: versioned pre-data metadata auditor missing
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/predata_metadata.py').is_file
+
+qualification/native-request-activation-v1-screening-preparation/test_predata_metadata.py:14: AssertionError</failure></testcase><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_predata_metadata" name="test_changed_or_wrongly_hashed_original_exposure_is_refused[pretty-file-hash]" time="0.000"><failure message="AssertionError: versioned pre-data metadata auditor missing&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/predata_metadata.py').is_file">change = 'pretty-file-hash'
+
+    @pytest.mark.parametrize('change',('pretty-file-hash','changed-value','duplicate-repository','wrong-count'))
+    def test_changed_or_wrongly_hashed_original_exposure_is_refused(change):
+&gt;       m=module();value=exposure()
+
+qualification/native-request-activation-v1-screening-preparation/test_predata_metadata.py:37: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path=HERE/'predata_metadata.py'
+&gt;       assert path.is_file(), 'versioned pre-data metadata auditor missing'
+E       AssertionError: versioned pre-data metadata auditor missing
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/predata_metadata.py').is_file
+
+qualification/native-request-activation-v1-screening-preparation/test_predata_metadata.py:14: AssertionError</failure></testcase><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_predata_metadata" name="test_changed_or_wrongly_hashed_original_exposure_is_refused[changed-value]" time="0.000"><failure message="AssertionError: versioned pre-data metadata auditor missing&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/predata_metadata.py').is_file">change = 'changed-value'
+
+    @pytest.mark.parametrize('change',('pretty-file-hash','changed-value','duplicate-repository','wrong-count'))
+    def test_changed_or_wrongly_hashed_original_exposure_is_refused(change):
+&gt;       m=module();value=exposure()
+
+qualification/native-request-activation-v1-screening-preparation/test_predata_metadata.py:37: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path=HERE/'predata_metadata.py'
+&gt;       assert path.is_file(), 'versioned pre-data metadata auditor missing'
+E       AssertionError: versioned pre-data metadata auditor missing
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/predata_metadata.py').is_file
+
+qualification/native-request-activation-v1-screening-preparation/test_predata_metadata.py:14: AssertionError</failure></testcase><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_predata_metadata" name="test_changed_or_wrongly_hashed_original_exposure_is_refused[duplicate-repository]" time="0.001"><failure message="AssertionError: versioned pre-data metadata auditor missing&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/predata_metadata.py').is_file">change = 'duplicate-repository'
+
+    @pytest.mark.parametrize('change',('pretty-file-hash','changed-value','duplicate-repository','wrong-count'))
+    def test_changed_or_wrongly_hashed_original_exposure_is_refused(change):
+&gt;       m=module();value=exposure()
+
+qualification/native-request-activation-v1-screening-preparation/test_predata_metadata.py:37: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path=HERE/'predata_metadata.py'
+&gt;       assert path.is_file(), 'versioned pre-data metadata auditor missing'
+E       AssertionError: versioned pre-data metadata auditor missing
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/predata_metadata.py').is_file
+
+qualification/native-request-activation-v1-screening-preparation/test_predata_metadata.py:14: AssertionError</failure></testcase><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_predata_metadata" name="test_changed_or_wrongly_hashed_original_exposure_is_refused[wrong-count]" time="0.000"><failure message="AssertionError: versioned pre-data metadata auditor missing&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/predata_metadata.py').is_file">change = 'wrong-count'
+
+    @pytest.mark.parametrize('change',('pretty-file-hash','changed-value','duplicate-repository','wrong-count'))
+    def test_changed_or_wrongly_hashed_original_exposure_is_refused(change):
+&gt;       m=module();value=exposure()
+
+qualification/native-request-activation-v1-screening-preparation/test_predata_metadata.py:37: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path=HERE/'predata_metadata.py'
+&gt;       assert path.is_file(), 'versioned pre-data metadata auditor missing'
+E       AssertionError: versioned pre-data metadata auditor missing
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/predata_metadata.py').is_file
+
+qualification/native-request-activation-v1-screening-preparation/test_predata_metadata.py:14: AssertionError</failure></testcase><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_predata_metadata" name="test_original_screening_time_is_not_renewed[25.756850843-7174.243149157]" time="0.000"><failure message="AssertionError: versioned pre-data metadata auditor missing&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/predata_metadata.py').is_file">spent = 25.756850843, expected = 7174.243149157
+
+    @pytest.mark.parametrize('spent,expected',[(25.756850843,7174.243149157),(7200.0,0.0)])
+    def test_original_screening_time_is_not_renewed(spent,expected):
+&gt;       m=module();assert m.remaining_screening_seconds(7200,spent)==pytest.approx(expected)
+
+qualification/native-request-activation-v1-screening-preparation/test_predata_metadata.py:48: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path=HERE/'predata_metadata.py'
+&gt;       assert path.is_file(), 'versioned pre-data metadata auditor missing'
+E       AssertionError: versioned pre-data metadata auditor missing
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/predata_metadata.py').is_file
+
+qualification/native-request-activation-v1-screening-preparation/test_predata_metadata.py:14: AssertionError</failure></testcase><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_predata_metadata" name="test_original_screening_time_is_not_renewed[7200.0-0.0]" time="0.000"><failure message="AssertionError: versioned pre-data metadata auditor missing&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/predata_metadata.py').is_file">spent = 7200.0, expected = 0.0
+
+    @pytest.mark.parametrize('spent,expected',[(25.756850843,7174.243149157),(7200.0,0.0)])
+    def test_original_screening_time_is_not_renewed(spent,expected):
+&gt;       m=module();assert m.remaining_screening_seconds(7200,spent)==pytest.approx(expected)
+
+qualification/native-request-activation-v1-screening-preparation/test_predata_metadata.py:48: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path=HERE/'predata_metadata.py'
+&gt;       assert path.is_file(), 'versioned pre-data metadata auditor missing'
+E       AssertionError: versioned pre-data metadata auditor missing
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/predata_metadata.py').is_file
+
+qualification/native-request-activation-v1-screening-preparation/test_predata_metadata.py:14: AssertionError</failure></testcase><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_predata_metadata" name="test_invalid_or_exhausted_carryover_refuses[-1]" time="0.000"><failure message="AssertionError: versioned pre-data metadata auditor missing&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/predata_metadata.py').is_file">spent = -1
+
+    @pytest.mark.parametrize('spent',[-1,float('nan'),float('inf'),True,7200.1])
+    def test_invalid_or_exhausted_carryover_refuses(spent):
+&gt;       m=module()
+
+qualification/native-request-activation-v1-screening-preparation/test_predata_metadata.py:53: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path=HERE/'predata_metadata.py'
+&gt;       assert path.is_file(), 'versioned pre-data metadata auditor missing'
+E       AssertionError: versioned pre-data metadata auditor missing
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/predata_metadata.py').is_file
+
+qualification/native-request-activation-v1-screening-preparation/test_predata_metadata.py:14: AssertionError</failure></testcase><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_predata_metadata" name="test_invalid_or_exhausted_carryover_refuses[nan]" time="0.000"><failure message="AssertionError: versioned pre-data metadata auditor missing&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/predata_metadata.py').is_file">spent = nan
+
+    @pytest.mark.parametrize('spent',[-1,float('nan'),float('inf'),True,7200.1])
+    def test_invalid_or_exhausted_carryover_refuses(spent):
+&gt;       m=module()
+
+qualification/native-request-activation-v1-screening-preparation/test_predata_metadata.py:53: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path=HERE/'predata_metadata.py'
+&gt;       assert path.is_file(), 'versioned pre-data metadata auditor missing'
+E       AssertionError: versioned pre-data metadata auditor missing
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/predata_metadata.py').is_file
+
+qualification/native-request-activation-v1-screening-preparation/test_predata_metadata.py:14: AssertionError</failure></testcase><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_predata_metadata" name="test_invalid_or_exhausted_carryover_refuses[inf]" time="0.000"><failure message="AssertionError: versioned pre-data metadata auditor missing&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/predata_metadata.py').is_file">spent = inf
+
+    @pytest.mark.parametrize('spent',[-1,float('nan'),float('inf'),True,7200.1])
+    def test_invalid_or_exhausted_carryover_refuses(spent):
+&gt;       m=module()
+
+qualification/native-request-activation-v1-screening-preparation/test_predata_metadata.py:53: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path=HERE/'predata_metadata.py'
+&gt;       assert path.is_file(), 'versioned pre-data metadata auditor missing'
+E       AssertionError: versioned pre-data metadata auditor missing
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/predata_metadata.py').is_file
+
+qualification/native-request-activation-v1-screening-preparation/test_predata_metadata.py:14: AssertionError</failure></testcase><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_predata_metadata" name="test_invalid_or_exhausted_carryover_refuses[True]" time="0.000"><failure message="AssertionError: versioned pre-data metadata auditor missing&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/predata_metadata.py').is_file">spent = True
+
+    @pytest.mark.parametrize('spent',[-1,float('nan'),float('inf'),True,7200.1])
+    def test_invalid_or_exhausted_carryover_refuses(spent):
+&gt;       m=module()
+
+qualification/native-request-activation-v1-screening-preparation/test_predata_metadata.py:53: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path=HERE/'predata_metadata.py'
+&gt;       assert path.is_file(), 'versioned pre-data metadata auditor missing'
+E       AssertionError: versioned pre-data metadata auditor missing
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/predata_metadata.py').is_file
+
+qualification/native-request-activation-v1-screening-preparation/test_predata_metadata.py:14: AssertionError</failure></testcase><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_predata_metadata" name="test_invalid_or_exhausted_carryover_refuses[7200.1]" time="0.001"><failure message="AssertionError: versioned pre-data metadata auditor missing&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/predata_metadata.py').is_file">spent = 7200.1
+
+    @pytest.mark.parametrize('spent',[-1,float('nan'),float('inf'),True,7200.1])
+    def test_invalid_or_exhausted_carryover_refuses(spent):
+&gt;       m=module()
+
+qualification/native-request-activation-v1-screening-preparation/test_predata_metadata.py:53: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path=HERE/'predata_metadata.py'
+&gt;       assert path.is_file(), 'versioned pre-data metadata auditor missing'
+E       AssertionError: versioned pre-data metadata auditor missing
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/predata_metadata.py').is_file
+
+qualification/native-request-activation-v1-screening-preparation/test_predata_metadata.py:14: AssertionError</failure></testcase></testsuite></testsuites>

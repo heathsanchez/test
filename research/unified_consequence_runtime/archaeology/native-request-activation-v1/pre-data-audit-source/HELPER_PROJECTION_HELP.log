@@ -1,0 +1,19 @@
+usage: training_history_projection_v45.py [-h] --arm ARM --authority AUTHORITY
+                                          --authority-sha256 AUTHORITY_SHA256
+                                          --metadata METADATA
+                                          --metadata-sha256 METADATA_SHA256
+                                          --out OUT
+
+Exact V45 training projection, loaded from controller-rooted original source.
+The original V45 input headers, V3 output and training-only observation
+boundary are unchanged. Import and projection never execute native tests or a
+model.
+
+options:
+  -h, --help            show this help message and exit
+  --arm ARM
+  --authority AUTHORITY
+  --authority-sha256 AUTHORITY_SHA256
+  --metadata METADATA
+  --metadata-sha256 METADATA_SHA256
+  --out OUT

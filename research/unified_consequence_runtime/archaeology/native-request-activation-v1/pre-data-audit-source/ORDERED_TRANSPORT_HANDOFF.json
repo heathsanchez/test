@@ -1,0 +1,120 @@
+{
+  "budget": {
+    "declared_remaining_seconds": 7174.243149157,
+    "nested_intervals_not_additive": true,
+    "new_clock": "Linux/proc/self/stat processbirthlowerbound + CLOCK_BOOTTIME, includesPythonstartup; conservativeovercharge<1kerneltick",
+    "prior_conservatively_charged_seconds": 25.756850843,
+    "prior_observed_seconds": 25.756850842999484,
+    "prior_original_path": "/workspace/qualification/native-namespace-v45-prospective-20261028T2335Z/ORDERED_DRIVER_OUTER_COSTS.json",
+    "prior_original_sha256": "6e0104a9c1cb91078a189b349694496038f9ae21003ec883e13decc4bd7b95d1",
+    "remaining_unknown": "FinalreceiptI/O, actor/model/engineering/unobservedlifecyclecosts; returnedreceiptmetadataisnotindependentqualification.",
+    "timeout": "Remaininghorizon afternewwrapperstartupandpreflight, isolatedchildprocessgroup,SIGKILL/waiton timeoutandanyparentexit",
+    "total_seconds": 7200.0
+  },
+  "cli": "UDM_* \"$UDM_CONTROLLER_PYTHON\" -B /workspace/qualification/native-request-activation-v1-screening-preparation/ordered_screening_request_v1.py",
+  "counts": {
+    "DRIVER_GREEN": {
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "tests": 22
+    },
+    "DRIVER_RED": {
+      "errors": 0,
+      "failures": 22,
+      "skipped": 0,
+      "tests": 22
+    },
+    "DRIVER_REVIEW_GREEN": {
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "tests": 30
+    },
+    "DRIVER_REVIEW_RED": {
+      "errors": 0,
+      "failures": 5,
+      "skipped": 0,
+      "tests": 30
+    }
+  },
+  "environment": [
+    "UDM_REPO",
+    "UDM_RECORDS",
+    "UDM_OPERATOR",
+    "UDM_CONTROLLER_PYTHON",
+    "UDM_RUNTIME_PATHS",
+    "UDM_SCREENING_SOURCE_COMMIT",
+    "UDM_PREQUERY_COMMIT",
+    "UDM_SCREENING_AUTHORITY_SHA256",
+    "UDM_SCREENING_ACTOR_IDENTITY"
+  ],
+  "files": {
+    "DRIVER_GREEN.log": {
+      "bytes": 216,
+      "sha256": "5df6f05a12a4d8784dc2e31390f1f6f7046afd46274b3b1786cff271289baf46"
+    },
+    "DRIVER_GREEN.xml": {
+      "bytes": 4829,
+      "sha256": "260d25114ec7ed64acefb2981f99eb9a3b0bdab20f6179b37b48dc43674b3af4"
+    },
+    "DRIVER_RED.log": {
+      "bytes": 28573,
+      "sha256": "3bef2f64b95837423afcc681b90e34ece29d2d6e7fb025316cbe493fc25894e7"
+    },
+    "DRIVER_RED.xml": {
+      "bytes": 34055,
+      "sha256": "e27dea44c19a4a64bdbfe86086279cfdd46e1be678452c1ab23ae37260648cc2"
+    },
+    "DRIVER_REVIEW_GREEN.log": {
+      "bytes": 223,
+      "sha256": "cd6dadc215c356456bb88df346f35512683d9ec946522d647924b75d2b64924a"
+    },
+    "DRIVER_REVIEW_GREEN.xml": {
+      "bytes": 6650,
+      "sha256": "5b90a039854a631ab91ddb64e54b6a7277722bc908d48be5ba0a1830c6ed9def"
+    },
+    "DRIVER_REVIEW_RED.log": {
+      "bytes": 10786,
+      "sha256": "01374e193eceaf5e9ea780ffb2473d4b6d2e3e9c3385992ba06301ba9c6aff5f"
+    },
+    "DRIVER_REVIEW_RED.xml": {
+      "bytes": 16057,
+      "sha256": "d0df2b5265c7caa1d95c15dbeafa519fda25265cf6148760f192b34ece7879e7"
+    },
+    "ordered_screening_request_v1.py": {
+      "bytes": 14844,
+      "sha256": "1a4b5e2164e74011f253a3ffe54a81d3f26bd22fd66f4c0dfd21320a0b2a2dc4"
+    },
+    "test_ordered_screening_request_v1.py": {
+      "bytes": 8136,
+      "sha256": "707589a9f9c2205ac74844520b8424c205b19253a7bd090c3f02e31020bd29a8"
+    }
+  },
+  "model_calls": 0,
+  "native_test_executions": 0,
+  "new_controller_imported": false,
+  "old_freeze": {
+    "all_source_hashes_checked": 47,
+    "path": "/workspace/qualification/native-namespace-v45-screening-audit-preparation/AUDITOR_FREEZE.json",
+    "sha256": "bc0249e2cea713bedeaf5e97217bbead3e7dc0b436502ca4056188177f4f1c8b"
+  },
+  "old_frozen_files_changed": false,
+  "original_controller_sha256": "27a5d944c43e9c28836c53018ba11745b899871abbb14f674c89a8826de7cd3f",
+  "prepared_source_change": "Exactly one original nativecommandmodule research.unified_consequence_runtime.qualify_native_frontier_v45 -> research.unified_consequence_runtime.qualify_native_frontier_request_v1. OriginalV45outer/native schemas, fixedpool1-9, requests, source/index snapshots,processmanifest and actorattestation unchanged.",
+  "qualification_scope": "OUTER_TRANSPORT_COMPLETION_AND_COST_ONLY; noadmission/scientificwarrant",
+  "receipt_path": "$UDM_OPERATOR/SCREENING_OUTER_BUDGET.json",
+  "receipt_schema": "UDM_REQUEST_ACTIVATION_V1_SCREENING_OUTER_BUDGET",
+  "records_path": "$UDM_REPO/research/unified_consequence_runtime/archaeology/native-request-activation-v1/prospective",
+  "schema": "UDM_REQUEST_ACTIVATION_V1_ORDERED_SCREENING_TRANSPORT_PREPARATION",
+  "scientific_verdicts": {
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN"
+  },
+  "status": "SOURCE_FREE_PREPARATION_ONLY",
+  "target_queries": 0,
+  "target_source_reads": 0
+}

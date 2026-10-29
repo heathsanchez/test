@@ -1,0 +1,22 @@
+usage: watch_actual_agent.py [-h] --repo REPO --run RUN --agent-dir AGENT_DIR
+                             --python PYTHON --python-sha256 PYTHON_SHA256
+                             --source-repos SOURCE_REPOS --metadata METADATA
+                             --history-helper HISTORY_HELPER [--model MODEL]
+                             [--publication-timeout-seconds PUBLICATION_TIMEOUT_SECONDS]
+
+Original V45 live-agent watcher with the versioned controller path only. Model
+execution, native-meter evidence, source release and all budgets retain their
+original algorithms. Importing this helper starts no process or model.
+
+options:
+  -h, --help            show this help message and exit
+  --repo REPO
+  --run RUN
+  --agent-dir AGENT_DIR
+  --python PYTHON
+  --python-sha256 PYTHON_SHA256
+  --source-repos SOURCE_REPOS
+  --metadata METADATA
+  --history-helper HISTORY_HELPER
+  --model MODEL
+  --publication-timeout-seconds PUBLICATION_TIMEOUT_SECONDS

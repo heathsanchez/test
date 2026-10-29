@@ -1,0 +1,105 @@
+{
+  "boundary": "Puremetadatafixtureinputs/telemetryunits and helptext only. No actualpreparationofnewauthority, screening, methodselection, modeldispatch or scientificpromotion. Parent mustinstall exactbytesandfreezebeforetargetsourceaccess.",
+  "budgets": {
+    "charged_arm_seconds": 3600,
+    "search_proposals": 8,
+    "total_native_calls": 512,
+    "training_unique_native_calls": 128
+  },
+  "changes": {
+    "prepare_records.py": "Loads originalpinned45helper/sourcebindings; qrequestglobals. Preparation descriptors pointtooriginalA/Bquery/poolfiles withoriginalbytes/SHA; originalcurationdirectoryrequired, oldreceiptsnotcopiedto newroot. Onlynewprotocol/authoritywritten. Requests/finalize/main/build/bootstrapcodeobjects unchanged.",
+    "training_history_projection_v45.py": "Alloriginalpinned45functioncodeobjects unchanged; importedvia q.HERE originalsource, independentofnewhelperlocation. Globals.__file__ identifiesnewfrozenhelper for selfSHA.",
+    "watch_actual_agent.py": "Originalpinned45watcherfunctions; onlycontrollerfilehashcheckpath and nativeCLImodule string change torequest_v1. Model+native telemetryfunctioncodeobject unchanged, budgets unchanged."
+  },
+  "cli": {
+    "finalize": "python -B <NEW_RECORDS>/prepare_records.py finalize-records --authority <NEW_RECORDS>/SCREENING_AUTHORITY.json --independent-audit <ACTUAL_NEW_SCREENING_AUDIT>",
+    "prepare": "python -B <NEW_RECORDS>/prepare_records.py prepare-screening --environment-gate <EXACT_GATES> --curation <ORIGINAL45_RECORDS> --screen-root <NEW_FRESH_SCREEN_ROOT> --components <EXACT_COMPONENTS>",
+    "projection": "SameoriginalCLI flags --arm --authority --authority-sha256 --metadata --metadata-sha256 --out",
+    "requests": "python -B <NEW_RECORDS>/prepare_records.py write-requests --authority <NEW_RECORDS>/SCREENING_AUTHORITY.json --requests <NEW_OPERATOR>/requests",
+    "watcher": "SameoriginalCLI flags --repo --run --agent-dir --python --python-sha256 --source-repos --metadata <NEW_RECORDS>/FRESH_TASK_METADATA.json --history-helper <NEW_RECORDS>/training_history_projection_v45.py; optionalalready-authorized --model unchanged"
+  },
+  "controller": {
+    "path": "/workspace/udm-v54/research/unified_consequence_runtime/qualify_native_frontier_request_v1.py",
+    "sha256": "0c5b9f86e77e82d8429ebf285729206d9a7d7a079662f836bc340e9f39e8db1a"
+  },
+  "counts": {
+    "HELPER_GREEN": {
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "tests": 11
+    },
+    "HELPER_RED": {
+      "errors": 0,
+      "failures": 11,
+      "skipped": 0,
+      "tests": 11
+    }
+  },
+  "destination": "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-request-activation-v1/prospective",
+  "files": {
+    "/workspace/qualification/native-request-activation-v1-screening-preparation/HELPER_GREEN.log": {
+      "bytes": 216,
+      "sha256": "f2eceb2a0d6d72ba7c008ab9f9403491e886c7ebc339e4abf2b5f7032ce79675"
+    },
+    "/workspace/qualification/native-request-activation-v1-screening-preparation/HELPER_GREEN.xml": {
+      "bytes": 2717,
+      "sha256": "74a3ef679235aedfdb90f36718b3a75c64686c482c76198df09492f9253e8995"
+    },
+    "/workspace/qualification/native-request-activation-v1-screening-preparation/HELPER_PREPARE_HELP.log": {
+      "bytes": 512,
+      "sha256": "43c457944a7b946f08ca6b46374e17e0fd958b7c966b6036613fc7b126e93e69"
+    },
+    "/workspace/qualification/native-request-activation-v1-screening-preparation/HELPER_PROJECTION_HELP.log": {
+      "bytes": 793,
+      "sha256": "c762b703875c477e69c43ee47fd2b032c236e9276d594318744a7c4f9c882f94"
+    },
+    "/workspace/qualification/native-request-activation-v1-screening-preparation/HELPER_RED.log": {
+      "bytes": 15197,
+      "sha256": "f699e5c57c87449877a4bd802f632f46b7b3a84cc7a0993be7e1db27b1475183"
+    },
+    "/workspace/qualification/native-request-activation-v1-screening-preparation/HELPER_RED.xml": {
+      "bytes": 18241,
+      "sha256": "35bbd1ae3b412f6ce820134588588e57f27b021ea5b748c890352f61f2a7c511"
+    },
+    "/workspace/qualification/native-request-activation-v1-screening-preparation/HELPER_WATCHER_HELP.log": {
+      "bytes": 953,
+      "sha256": "cf20d3fd8da7312c4c2e90872080d2869e59805eb9db069502bd0bde2b307dfb"
+    },
+    "/workspace/qualification/native-request-activation-v1-screening-preparation/prospective-helpers/prepare_records.py": {
+      "bytes": 3540,
+      "sha256": "2bbf8f5b5e94dd74b99fbc65bdb025a8e4208a1fb785c4463fb4987e8a0dc5fa"
+    },
+    "/workspace/qualification/native-request-activation-v1-screening-preparation/prospective-helpers/test_helper_transport.py": {
+      "bytes": 7650,
+      "sha256": "36c10179dcefbc4b7d08fff6c71962b6a14f2a9d22378c621de10f0afeb3ad8c"
+    },
+    "/workspace/qualification/native-request-activation-v1-screening-preparation/prospective-helpers/training_history_projection_v45.py": {
+      "bytes": 1536,
+      "sha256": "52b867da2a76d76821ab4f31e78c577f71768ec7d73f7c64b74dcdefd94d0dde"
+    },
+    "/workspace/qualification/native-request-activation-v1-screening-preparation/prospective-helpers/watch_actual_agent.py": {
+      "bytes": 2193,
+      "sha256": "58de78c95390db01a2a08a95e79d2a5fd27a080010b0837aef2540289e058f8a"
+    }
+  },
+  "model_calls": 0,
+  "native_test_executions": 0,
+  "new_framework": false,
+  "new_module": "research.unified_consequence_runtime.qualify_native_frontier_request_v1",
+  "new_target_queries": 0,
+  "old47_hashes_unchanged": true,
+  "original_metadata_directory": "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-namespace-v45/prospective",
+  "schema": "UDM_REQUEST_ACTIVATION_V1_PROSPECTIVE_HELPER_TRANSPORT",
+  "schemas": "OriginalV45outer/nativeheaders unchanged; projectionoutput remainsV3",
+  "scientific_verdicts": {
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN"
+  },
+  "source_or_git_writes": false,
+  "status": "SOURCE_FREE_PREPARATION_ONLY",
+  "target_source_reads": 0
+}

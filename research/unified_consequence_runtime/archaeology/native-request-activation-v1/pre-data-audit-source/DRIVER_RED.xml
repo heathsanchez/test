@@ -1,0 +1,394 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="22" skipped="0" tests="22" time="0.122" timestamp="2026-10-29T00:50:44.577316+00:00" hostname="bd53dcf47e47"><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_ordered_screening_request_v1" name="test_reuses_exact_original_factory_with_only_native_command_module_change" time="0.001"><failure message="AssertionError: versioned request ordered transport missing&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/ordered_screening_request_v1.py').is_file">def test_reuses_exact_original_factory_with_only_native_command_module_change():
+&gt;       value = module()
+
+qualification/native-request-activation-v1-screening-preparation/test_ordered_screening_request_v1.py:22: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path = HERE/'ordered_screening_request_v1.py'
+&gt;       assert path.is_file(), 'versioned request ordered transport missing'
+E       AssertionError: versioned request ordered transport missing
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/ordered_screening_request_v1.py').is_file
+
+qualification/native-request-activation-v1-screening-preparation/test_ordered_screening_request_v1.py:14: AssertionError</failure></testcase><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_ordered_screening_request_v1" name="test_preserves_complete_fixed_pool_bounds[0-True]" time="0.001"><failure message="AssertionError: versioned request ordered transport missing&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/ordered_screening_request_v1.py').is_file">size = 0, refuse = True
+
+    @pytest.mark.parametrize('size,refuse', [(0, True), (1, False), (4, False), (9, False), (10, True)])
+    def test_preserves_complete_fixed_pool_bounds(size, refuse):
+&gt;       tree = ast.parse(module().prepare_driver_source())
+
+qualification/native-request-activation-v1-screening-preparation/test_ordered_screening_request_v1.py:36: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path = HERE/'ordered_screening_request_v1.py'
+&gt;       assert path.is_file(), 'versioned request ordered transport missing'
+E       AssertionError: versioned request ordered transport missing
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/ordered_screening_request_v1.py').is_file
+
+qualification/native-request-activation-v1-screening-preparation/test_ordered_screening_request_v1.py:14: AssertionError</failure></testcase><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_ordered_screening_request_v1" name="test_preserves_complete_fixed_pool_bounds[1-False]" time="0.000"><failure message="AssertionError: versioned request ordered transport missing&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/ordered_screening_request_v1.py').is_file">size = 1, refuse = False
+
+    @pytest.mark.parametrize('size,refuse', [(0, True), (1, False), (4, False), (9, False), (10, True)])
+    def test_preserves_complete_fixed_pool_bounds(size, refuse):
+&gt;       tree = ast.parse(module().prepare_driver_source())
+
+qualification/native-request-activation-v1-screening-preparation/test_ordered_screening_request_v1.py:36: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path = HERE/'ordered_screening_request_v1.py'
+&gt;       assert path.is_file(), 'versioned request ordered transport missing'
+E       AssertionError: versioned request ordered transport missing
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/ordered_screening_request_v1.py').is_file
+
+qualification/native-request-activation-v1-screening-preparation/test_ordered_screening_request_v1.py:14: AssertionError</failure></testcase><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_ordered_screening_request_v1" name="test_preserves_complete_fixed_pool_bounds[4-False]" time="0.000"><failure message="AssertionError: versioned request ordered transport missing&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/ordered_screening_request_v1.py').is_file">size = 4, refuse = False
+
+    @pytest.mark.parametrize('size,refuse', [(0, True), (1, False), (4, False), (9, False), (10, True)])
+    def test_preserves_complete_fixed_pool_bounds(size, refuse):
+&gt;       tree = ast.parse(module().prepare_driver_source())
+
+qualification/native-request-activation-v1-screening-preparation/test_ordered_screening_request_v1.py:36: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path = HERE/'ordered_screening_request_v1.py'
+&gt;       assert path.is_file(), 'versioned request ordered transport missing'
+E       AssertionError: versioned request ordered transport missing
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/ordered_screening_request_v1.py').is_file
+
+qualification/native-request-activation-v1-screening-preparation/test_ordered_screening_request_v1.py:14: AssertionError</failure></testcase><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_ordered_screening_request_v1" name="test_preserves_complete_fixed_pool_bounds[9-False]" time="0.000"><failure message="AssertionError: versioned request ordered transport missing&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/ordered_screening_request_v1.py').is_file">size = 9, refuse = False
+
+    @pytest.mark.parametrize('size,refuse', [(0, True), (1, False), (4, False), (9, False), (10, True)])
+    def test_preserves_complete_fixed_pool_bounds(size, refuse):
+&gt;       tree = ast.parse(module().prepare_driver_source())
+
+qualification/native-request-activation-v1-screening-preparation/test_ordered_screening_request_v1.py:36: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path = HERE/'ordered_screening_request_v1.py'
+&gt;       assert path.is_file(), 'versioned request ordered transport missing'
+E       AssertionError: versioned request ordered transport missing
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/ordered_screening_request_v1.py').is_file
+
+qualification/native-request-activation-v1-screening-preparation/test_ordered_screening_request_v1.py:14: AssertionError</failure></testcase><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_ordered_screening_request_v1" name="test_preserves_complete_fixed_pool_bounds[10-True]" time="0.000"><failure message="AssertionError: versioned request ordered transport missing&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/ordered_screening_request_v1.py').is_file">size = 10, refuse = True
+
+    @pytest.mark.parametrize('size,refuse', [(0, True), (1, False), (4, False), (9, False), (10, True)])
+    def test_preserves_complete_fixed_pool_bounds(size, refuse):
+&gt;       tree = ast.parse(module().prepare_driver_source())
+
+qualification/native-request-activation-v1-screening-preparation/test_ordered_screening_request_v1.py:36: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path = HERE/'ordered_screening_request_v1.py'
+&gt;       assert path.is_file(), 'versioned request ordered transport missing'
+E       AssertionError: versioned request ordered transport missing
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/ordered_screening_request_v1.py').is_file
+
+qualification/native-request-activation-v1-screening-preparation/test_ordered_screening_request_v1.py:14: AssertionError</failure></testcase><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_ordered_screening_request_v1" name="test_original_prior_outer_bytes_and_charged_remaining_horizon_are_bound" time="0.000"><failure message="AssertionError: versioned request ordered transport missing&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/ordered_screening_request_v1.py').is_file">def test_original_prior_outer_bytes_and_charged_remaining_horizon_are_bound():
+&gt;       value = module()
+
+qualification/native-request-activation-v1-screening-preparation/test_ordered_screening_request_v1.py:45: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path = HERE/'ordered_screening_request_v1.py'
+&gt;       assert path.is_file(), 'versioned request ordered transport missing'
+E       AssertionError: versioned request ordered transport missing
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/ordered_screening_request_v1.py').is_file
+
+qualification/native-request-activation-v1-screening-preparation/test_ordered_screening_request_v1.py:14: AssertionError</failure></testcase><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_ordered_screening_request_v1" name="test_invalid_outer_elapsed_is_not_a_valid_budget[True]" time="0.000"><failure message="AssertionError: versioned request ordered transport missing&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/ordered_screening_request_v1.py').is_file">elapsed = True
+
+    @pytest.mark.parametrize('elapsed', [True, -1.0, float('nan'), float('inf'), '0'])
+    def test_invalid_outer_elapsed_is_not_a_valid_budget(elapsed):
+        with pytest.raises(ValueError):
+&gt;           module().remaining_seconds(elapsed)
+
+qualification/native-request-activation-v1-screening-preparation/test_ordered_screening_request_v1.py:57: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path = HERE/'ordered_screening_request_v1.py'
+&gt;       assert path.is_file(), 'versioned request ordered transport missing'
+E       AssertionError: versioned request ordered transport missing
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/ordered_screening_request_v1.py').is_file
+
+qualification/native-request-activation-v1-screening-preparation/test_ordered_screening_request_v1.py:14: AssertionError</failure></testcase><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_ordered_screening_request_v1" name="test_invalid_outer_elapsed_is_not_a_valid_budget[-1.0]" time="0.000"><failure message="AssertionError: versioned request ordered transport missing&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/ordered_screening_request_v1.py').is_file">elapsed = -1.0
+
+    @pytest.mark.parametrize('elapsed', [True, -1.0, float('nan'), float('inf'), '0'])
+    def test_invalid_outer_elapsed_is_not_a_valid_budget(elapsed):
+        with pytest.raises(ValueError):
+&gt;           module().remaining_seconds(elapsed)
+
+qualification/native-request-activation-v1-screening-preparation/test_ordered_screening_request_v1.py:57: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path = HERE/'ordered_screening_request_v1.py'
+&gt;       assert path.is_file(), 'versioned request ordered transport missing'
+E       AssertionError: versioned request ordered transport missing
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/ordered_screening_request_v1.py').is_file
+
+qualification/native-request-activation-v1-screening-preparation/test_ordered_screening_request_v1.py:14: AssertionError</failure></testcase><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_ordered_screening_request_v1" name="test_invalid_outer_elapsed_is_not_a_valid_budget[nan]" time="0.001"><failure message="AssertionError: versioned request ordered transport missing&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/ordered_screening_request_v1.py').is_file">elapsed = nan
+
+    @pytest.mark.parametrize('elapsed', [True, -1.0, float('nan'), float('inf'), '0'])
+    def test_invalid_outer_elapsed_is_not_a_valid_budget(elapsed):
+        with pytest.raises(ValueError):
+&gt;           module().remaining_seconds(elapsed)
+
+qualification/native-request-activation-v1-screening-preparation/test_ordered_screening_request_v1.py:57: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path = HERE/'ordered_screening_request_v1.py'
+&gt;       assert path.is_file(), 'versioned request ordered transport missing'
+E       AssertionError: versioned request ordered transport missing
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/ordered_screening_request_v1.py').is_file
+
+qualification/native-request-activation-v1-screening-preparation/test_ordered_screening_request_v1.py:14: AssertionError</failure></testcase><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_ordered_screening_request_v1" name="test_invalid_outer_elapsed_is_not_a_valid_budget[inf]" time="0.000"><failure message="AssertionError: versioned request ordered transport missing&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/ordered_screening_request_v1.py').is_file">elapsed = inf
+
+    @pytest.mark.parametrize('elapsed', [True, -1.0, float('nan'), float('inf'), '0'])
+    def test_invalid_outer_elapsed_is_not_a_valid_budget(elapsed):
+        with pytest.raises(ValueError):
+&gt;           module().remaining_seconds(elapsed)
+
+qualification/native-request-activation-v1-screening-preparation/test_ordered_screening_request_v1.py:57: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path = HERE/'ordered_screening_request_v1.py'
+&gt;       assert path.is_file(), 'versioned request ordered transport missing'
+E       AssertionError: versioned request ordered transport missing
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/ordered_screening_request_v1.py').is_file
+
+qualification/native-request-activation-v1-screening-preparation/test_ordered_screening_request_v1.py:14: AssertionError</failure></testcase><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_ordered_screening_request_v1" name="test_invalid_outer_elapsed_is_not_a_valid_budget[0]" time="0.001"><failure message="AssertionError: versioned request ordered transport missing&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/ordered_screening_request_v1.py').is_file">elapsed = '0'
+
+    @pytest.mark.parametrize('elapsed', [True, -1.0, float('nan'), float('inf'), '0'])
+    def test_invalid_outer_elapsed_is_not_a_valid_budget(elapsed):
+        with pytest.raises(ValueError):
+&gt;           module().remaining_seconds(elapsed)
+
+qualification/native-request-activation-v1-screening-preparation/test_ordered_screening_request_v1.py:57: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path = HERE/'ordered_screening_request_v1.py'
+&gt;       assert path.is_file(), 'versioned request ordered transport missing'
+E       AssertionError: versioned request ordered transport missing
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/ordered_screening_request_v1.py').is_file
+
+qualification/native-request-activation-v1-screening-preparation/test_ordered_screening_request_v1.py:14: AssertionError</failure></testcase><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_ordered_screening_request_v1" name="test_exhausted_prior_plus_outer_budget_refuses_further_child_time" time="0.000"><failure message="AssertionError: versioned request ordered transport missing&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/ordered_screening_request_v1.py').is_file">def test_exhausted_prior_plus_outer_budget_refuses_further_child_time():
+&gt;       value = module()
+
+qualification/native-request-activation-v1-screening-preparation/test_ordered_screening_request_v1.py:61: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path = HERE/'ordered_screening_request_v1.py'
+&gt;       assert path.is_file(), 'versioned request ordered transport missing'
+E       AssertionError: versioned request ordered transport missing
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/ordered_screening_request_v1.py').is_file
+
+qualification/native-request-activation-v1-screening-preparation/test_ordered_screening_request_v1.py:14: AssertionError</failure></testcase><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_ordered_screening_request_v1" name="test_no_budget_qualification_for_failure_timeout_incomplete_or_overrun[changes0]" time="0.000"><failure message="AssertionError: versioned request ordered transport missing&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/ordered_screening_request_v1.py').is_file">changes = {'returncode': 1}
+
+    @pytest.mark.parametrize('changes', [
+        {'returncode': 1}, {'timed_out': True}, {'process_completed': False},
+        {'new_outer_wall_seconds': 7174.243149158}, {'returncode': None},
+        {'returncode': False}, {'process_completed': 1},
+    ])
+    def test_no_budget_qualification_for_failure_timeout_incomplete_or_overrun(changes):
+&gt;       value = module()
+
+qualification/native-request-activation-v1-screening-preparation/test_ordered_screening_request_v1.py:72: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path = HERE/'ordered_screening_request_v1.py'
+&gt;       assert path.is_file(), 'versioned request ordered transport missing'
+E       AssertionError: versioned request ordered transport missing
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/ordered_screening_request_v1.py').is_file
+
+qualification/native-request-activation-v1-screening-preparation/test_ordered_screening_request_v1.py:14: AssertionError</failure></testcase><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_ordered_screening_request_v1" name="test_no_budget_qualification_for_failure_timeout_incomplete_or_overrun[changes1]" time="0.000"><failure message="AssertionError: versioned request ordered transport missing&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/ordered_screening_request_v1.py').is_file">changes = {'timed_out': True}
+
+    @pytest.mark.parametrize('changes', [
+        {'returncode': 1}, {'timed_out': True}, {'process_completed': False},
+        {'new_outer_wall_seconds': 7174.243149158}, {'returncode': None},
+        {'returncode': False}, {'process_completed': 1},
+    ])
+    def test_no_budget_qualification_for_failure_timeout_incomplete_or_overrun(changes):
+&gt;       value = module()
+
+qualification/native-request-activation-v1-screening-preparation/test_ordered_screening_request_v1.py:72: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path = HERE/'ordered_screening_request_v1.py'
+&gt;       assert path.is_file(), 'versioned request ordered transport missing'
+E       AssertionError: versioned request ordered transport missing
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/ordered_screening_request_v1.py').is_file
+
+qualification/native-request-activation-v1-screening-preparation/test_ordered_screening_request_v1.py:14: AssertionError</failure></testcase><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_ordered_screening_request_v1" name="test_no_budget_qualification_for_failure_timeout_incomplete_or_overrun[changes2]" time="0.001"><failure message="AssertionError: versioned request ordered transport missing&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/ordered_screening_request_v1.py').is_file">changes = {'process_completed': False}
+
+    @pytest.mark.parametrize('changes', [
+        {'returncode': 1}, {'timed_out': True}, {'process_completed': False},
+        {'new_outer_wall_seconds': 7174.243149158}, {'returncode': None},
+        {'returncode': False}, {'process_completed': 1},
+    ])
+    def test_no_budget_qualification_for_failure_timeout_incomplete_or_overrun(changes):
+&gt;       value = module()
+
+qualification/native-request-activation-v1-screening-preparation/test_ordered_screening_request_v1.py:72: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path = HERE/'ordered_screening_request_v1.py'
+&gt;       assert path.is_file(), 'versioned request ordered transport missing'
+E       AssertionError: versioned request ordered transport missing
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/ordered_screening_request_v1.py').is_file
+
+qualification/native-request-activation-v1-screening-preparation/test_ordered_screening_request_v1.py:14: AssertionError</failure></testcase><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_ordered_screening_request_v1" name="test_no_budget_qualification_for_failure_timeout_incomplete_or_overrun[changes3]" time="0.000"><failure message="AssertionError: versioned request ordered transport missing&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/ordered_screening_request_v1.py').is_file">changes = {'new_outer_wall_seconds': 7174.243149158}
+
+    @pytest.mark.parametrize('changes', [
+        {'returncode': 1}, {'timed_out': True}, {'process_completed': False},
+        {'new_outer_wall_seconds': 7174.243149158}, {'returncode': None},
+        {'returncode': False}, {'process_completed': 1},
+    ])
+    def test_no_budget_qualification_for_failure_timeout_incomplete_or_overrun(changes):
+&gt;       value = module()
+
+qualification/native-request-activation-v1-screening-preparation/test_ordered_screening_request_v1.py:72: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path = HERE/'ordered_screening_request_v1.py'
+&gt;       assert path.is_file(), 'versioned request ordered transport missing'
+E       AssertionError: versioned request ordered transport missing
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/ordered_screening_request_v1.py').is_file
+
+qualification/native-request-activation-v1-screening-preparation/test_ordered_screening_request_v1.py:14: AssertionError</failure></testcase><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_ordered_screening_request_v1" name="test_no_budget_qualification_for_failure_timeout_incomplete_or_overrun[changes4]" time="0.000"><failure message="AssertionError: versioned request ordered transport missing&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/ordered_screening_request_v1.py').is_file">changes = {'returncode': None}
+
+    @pytest.mark.parametrize('changes', [
+        {'returncode': 1}, {'timed_out': True}, {'process_completed': False},
+        {'new_outer_wall_seconds': 7174.243149158}, {'returncode': None},
+        {'returncode': False}, {'process_completed': 1},
+    ])
+    def test_no_budget_qualification_for_failure_timeout_incomplete_or_overrun(changes):
+&gt;       value = module()
+
+qualification/native-request-activation-v1-screening-preparation/test_ordered_screening_request_v1.py:72: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path = HERE/'ordered_screening_request_v1.py'
+&gt;       assert path.is_file(), 'versioned request ordered transport missing'
+E       AssertionError: versioned request ordered transport missing
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/ordered_screening_request_v1.py').is_file
+
+qualification/native-request-activation-v1-screening-preparation/test_ordered_screening_request_v1.py:14: AssertionError</failure></testcase><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_ordered_screening_request_v1" name="test_no_budget_qualification_for_failure_timeout_incomplete_or_overrun[changes5]" time="0.000"><failure message="AssertionError: versioned request ordered transport missing&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/ordered_screening_request_v1.py').is_file">changes = {'returncode': False}
+
+    @pytest.mark.parametrize('changes', [
+        {'returncode': 1}, {'timed_out': True}, {'process_completed': False},
+        {'new_outer_wall_seconds': 7174.243149158}, {'returncode': None},
+        {'returncode': False}, {'process_completed': 1},
+    ])
+    def test_no_budget_qualification_for_failure_timeout_incomplete_or_overrun(changes):
+&gt;       value = module()
+
+qualification/native-request-activation-v1-screening-preparation/test_ordered_screening_request_v1.py:72: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path = HERE/'ordered_screening_request_v1.py'
+&gt;       assert path.is_file(), 'versioned request ordered transport missing'
+E       AssertionError: versioned request ordered transport missing
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/ordered_screening_request_v1.py').is_file
+
+qualification/native-request-activation-v1-screening-preparation/test_ordered_screening_request_v1.py:14: AssertionError</failure></testcase><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_ordered_screening_request_v1" name="test_no_budget_qualification_for_failure_timeout_incomplete_or_overrun[changes6]" time="0.000"><failure message="AssertionError: versioned request ordered transport missing&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/ordered_screening_request_v1.py').is_file">changes = {'process_completed': 1}
+
+    @pytest.mark.parametrize('changes', [
+        {'returncode': 1}, {'timed_out': True}, {'process_completed': False},
+        {'new_outer_wall_seconds': 7174.243149158}, {'returncode': None},
+        {'returncode': False}, {'process_completed': 1},
+    ])
+    def test_no_budget_qualification_for_failure_timeout_incomplete_or_overrun(changes):
+&gt;       value = module()
+
+qualification/native-request-activation-v1-screening-preparation/test_ordered_screening_request_v1.py:72: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path = HERE/'ordered_screening_request_v1.py'
+&gt;       assert path.is_file(), 'versioned request ordered transport missing'
+E       AssertionError: versioned request ordered transport missing
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/ordered_screening_request_v1.py').is_file
+
+qualification/native-request-activation-v1-screening-preparation/test_ordered_screening_request_v1.py:14: AssertionError</failure></testcase><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_ordered_screening_request_v1" name="test_completed_interval_charges_prior_and_new_without_adding_nested_clocks" time="0.000"><failure message="AssertionError: versioned request ordered transport missing&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/ordered_screening_request_v1.py').is_file">def test_completed_interval_charges_prior_and_new_without_adding_nested_clocks():
+&gt;       result = module().budget_result(new_outer_wall_seconds=10.0, returncode=0,
+                                       timed_out=False, process_completed=True)
+
+qualification/native-request-activation-v1-screening-preparation/test_ordered_screening_request_v1.py:82: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path = HERE/'ordered_screening_request_v1.py'
+&gt;       assert path.is_file(), 'versioned request ordered transport missing'
+E       AssertionError: versioned request ordered transport missing
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/ordered_screening_request_v1.py').is_file
+
+qualification/native-request-activation-v1-screening-preparation/test_ordered_screening_request_v1.py:14: AssertionError</failure></testcase><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_ordered_screening_request_v1" name="test_wrong_records_version_and_missing_actor_fail_before_original_execution" time="0.000"><failure message="AssertionError: versioned request ordered transport missing&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/ordered_screening_request_v1.py').is_file">def test_wrong_records_version_and_missing_actor_fail_before_original_execution():
+&gt;       value = module()
+
+qualification/native-request-activation-v1-screening-preparation/test_ordered_screening_request_v1.py:92: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path = HERE/'ordered_screening_request_v1.py'
+&gt;       assert path.is_file(), 'versioned request ordered transport missing'
+E       AssertionError: versioned request ordered transport missing
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/ordered_screening_request_v1.py').is_file
+
+qualification/native-request-activation-v1-screening-preparation/test_ordered_screening_request_v1.py:14: AssertionError</failure></testcase></testsuite></testsuites>

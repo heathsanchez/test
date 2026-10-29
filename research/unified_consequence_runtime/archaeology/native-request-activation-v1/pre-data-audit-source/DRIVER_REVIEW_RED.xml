@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="5" skipped="0" tests="30" time="0.177" timestamp="2026-10-29T00:53:51.181527+00:00" hostname="bd53dcf47e47"><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_ordered_screening_request_v1" name="test_reuses_exact_original_factory_with_only_native_command_module_change" time="0.013" /><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_ordered_screening_request_v1" name="test_preserves_complete_fixed_pool_bounds[0-True]" time="0.007" /><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_ordered_screening_request_v1" name="test_preserves_complete_fixed_pool_bounds[1-False]" time="0.006" /><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_ordered_screening_request_v1" name="test_preserves_complete_fixed_pool_bounds[4-False]" time="0.006" /><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_ordered_screening_request_v1" name="test_preserves_complete_fixed_pool_bounds[9-False]" time="0.006" /><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_ordered_screening_request_v1" name="test_preserves_complete_fixed_pool_bounds[10-True]" time="0.006" /><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_ordered_screening_request_v1" name="test_original_prior_outer_bytes_and_charged_remaining_horizon_are_bound" time="0.002" /><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_ordered_screening_request_v1" name="test_invalid_outer_elapsed_is_not_a_valid_budget[True]" time="0.002" /><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_ordered_screening_request_v1" name="test_invalid_outer_elapsed_is_not_a_valid_budget[-1.0]" time="0.002" /><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_ordered_screening_request_v1" name="test_invalid_outer_elapsed_is_not_a_valid_budget[nan]" time="0.002" /><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_ordered_screening_request_v1" name="test_invalid_outer_elapsed_is_not_a_valid_budget[inf]" time="0.002" /><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_ordered_screening_request_v1" name="test_invalid_outer_elapsed_is_not_a_valid_budget[0]" time="0.002" /><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_ordered_screening_request_v1" name="test_exhausted_prior_plus_outer_budget_refuses_further_child_time" time="0.002" /><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_ordered_screening_request_v1" name="test_no_budget_qualification_for_failure_timeout_incomplete_or_overrun[changes0]" time="0.002" /><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_ordered_screening_request_v1" name="test_no_budget_qualification_for_failure_timeout_incomplete_or_overrun[changes1]" time="0.002" /><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_ordered_screening_request_v1" name="test_no_budget_qualification_for_failure_timeout_incomplete_or_overrun[changes2]" time="0.002" /><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_ordered_screening_request_v1" name="test_no_budget_qualification_for_failure_timeout_incomplete_or_overrun[changes3]" time="0.002" /><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_ordered_screening_request_v1" name="test_no_budget_qualification_for_failure_timeout_incomplete_or_overrun[changes4]" time="0.002" /><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_ordered_screening_request_v1" name="test_no_budget_qualification_for_failure_timeout_incomplete_or_overrun[changes5]" time="0.005" /><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_ordered_screening_request_v1" name="test_no_budget_qualification_for_failure_timeout_incomplete_or_overrun[changes6]" time="0.003" /><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_ordered_screening_request_v1" name="test_completed_interval_charges_prior_and_new_without_adding_nested_clocks" time="0.005" /><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_ordered_screening_request_v1" name="test_wrong_records_version_and_missing_actor_fail_before_original_execution" time="0.003" /><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_ordered_screening_request_v1" name="test_incorrect_original_completion_metadata_cannot_claim_completed_transport[schema]" time="0.004"><failure message="assert True is False">tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-33/test_incorrect_original_comple0')
+change = 'schema'
+
+    @pytest.mark.parametrize('change', ['schema', 'actor', 'prequery', 'source', 'authority', 'independence'])
+    def test_incorrect_original_completion_metadata_cannot_claim_completed_transport(tmp_path, change):
+        value = module()
+        env = {'UDM_SCREENING_SOURCE_COMMIT': 'a'*40, 'UDM_PREQUERY_COMMIT': 'b'*40,
+               'UDM_SCREENING_AUTHORITY_SHA256': 'c'*64, 'UDM_SCREENING_ACTOR_IDENTITY': 'independent fixture actor'}
+        manifest = {'schema': 'UDM_V45_SCREENING_OPERATOR_PROCESS_COSTS_V1', 'completed': True,
+                    'retries_performed': False, 'no_retry_or_substitution': True,
+                    'source_commit': env['UDM_SCREENING_SOURCE_COMMIT'], 'authority_sha256': env['UDM_SCREENING_AUTHORITY_SHA256']}
+        path = tmp_path/'ORDERED_PROCESS_COSTS.json'
+        path.write_text(json.dumps(manifest))
+        actor = {'schema': 'UDM_V45_SCREENING_ACTOR_ATTESTATION_V1', 'completed_fixed_pool': True,
+                 'source_unchanged': True, 'index_changes': [], 'actor_identity': env['UDM_SCREENING_ACTOR_IDENTITY'],
+                 'controller_manifest_sha256': value.sha(path),
+                 'source_commit': env['UDM_SCREENING_SOURCE_COMMIT'], 'prequery_commit': env['UDM_PREQUERY_COMMIT'],
+                 'authority_sha256': env['UDM_SCREENING_AUTHORITY_SHA256'], 'independent_screener': True,
+                 'search_or_policy_outcomes_accessed': False, 'learner_future_source_accessed': False,
+                 'native_test_reruns_or_case_retries_performed': False}
+        actor_path = tmp_path/'SCREENING_ACTOR_ATTESTATION.json'
+        actor_path.write_text(json.dumps(actor))
+        assert value.completed_process_metadata(tmp_path, env)[0] is True
+        if change == 'schema':
+            actor['schema'] = 'untrusted'
+        elif change == 'actor':
+            actor['actor_identity'] = 'another actor'
+        elif change == 'prequery':
+            actor['prequery_commit'] = 'd'*40
+        elif change == 'source':
+            actor['source_commit'] = 'd'*40
+        elif change == 'authority':
+            actor['authority_sha256'] = 'd'*64
+        else:
+            actor['independent_screener'] = False
+        actor_path.write_text(json.dumps(actor))
+&gt;       assert value.completed_process_metadata(tmp_path, env)[0] is False
+E       assert True is False
+
+qualification/native-request-activation-v1-screening-preparation/test_ordered_screening_request_v1.py:142: AssertionError</failure></testcase><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_ordered_screening_request_v1" name="test_incorrect_original_completion_metadata_cannot_claim_completed_transport[actor]" time="0.003" /><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_ordered_screening_request_v1" name="test_incorrect_original_completion_metadata_cannot_claim_completed_transport[prequery]" time="0.004"><failure message="assert True is False">tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-33/test_incorrect_original_comple2')
+change = 'prequery'
+
+    @pytest.mark.parametrize('change', ['schema', 'actor', 'prequery', 'source', 'authority', 'independence'])
+    def test_incorrect_original_completion_metadata_cannot_claim_completed_transport(tmp_path, change):
+        value = module()
+        env = {'UDM_SCREENING_SOURCE_COMMIT': 'a'*40, 'UDM_PREQUERY_COMMIT': 'b'*40,
+               'UDM_SCREENING_AUTHORITY_SHA256': 'c'*64, 'UDM_SCREENING_ACTOR_IDENTITY': 'independent fixture actor'}
+        manifest = {'schema': 'UDM_V45_SCREENING_OPERATOR_PROCESS_COSTS_V1', 'completed': True,
+                    'retries_performed': False, 'no_retry_or_substitution': True,
+                    'source_commit': env['UDM_SCREENING_SOURCE_COMMIT'], 'authority_sha256': env['UDM_SCREENING_AUTHORITY_SHA256']}
+        path = tmp_path/'ORDERED_PROCESS_COSTS.json'
+        path.write_text(json.dumps(manifest))
+        actor = {'schema': 'UDM_V45_SCREENING_ACTOR_ATTESTATION_V1', 'completed_fixed_pool': True,
+                 'source_unchanged': True, 'index_changes': [], 'actor_identity': env['UDM_SCREENING_ACTOR_IDENTITY'],
+                 'controller_manifest_sha256': value.sha(path),
+                 'source_commit': env['UDM_SCREENING_SOURCE_COMMIT'], 'prequery_commit': env['UDM_PREQUERY_COMMIT'],
+                 'authority_sha256': env['UDM_SCREENING_AUTHORITY_SHA256'], 'independent_screener': True,
+                 'search_or_policy_outcomes_accessed': False, 'learner_future_source_accessed': False,
+                 'native_test_reruns_or_case_retries_performed': False}
+        actor_path = tmp_path/'SCREENING_ACTOR_ATTESTATION.json'
+        actor_path.write_text(json.dumps(actor))
+        assert value.completed_process_metadata(tmp_path, env)[0] is True
+        if change == 'schema':
+            actor['schema'] = 'untrusted'
+        elif change == 'actor':
+            actor['actor_identity'] = 'another actor'
+        elif change == 'prequery':
+            actor['prequery_commit'] = 'd'*40
+        elif change == 'source':
+            actor['source_commit'] = 'd'*40
+        elif change == 'authority':
+            actor['authority_sha256'] = 'd'*64
+        else:
+            actor['independent_screener'] = False
+        actor_path.write_text(json.dumps(actor))
+&gt;       assert value.completed_process_metadata(tmp_path, env)[0] is False
+E       assert True is False
+
+qualification/native-request-activation-v1-screening-preparation/test_ordered_screening_request_v1.py:142: AssertionError</failure></testcase><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_ordered_screening_request_v1" name="test_incorrect_original_completion_metadata_cannot_claim_completed_transport[source]" time="0.003" /><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_ordered_screening_request_v1" name="test_incorrect_original_completion_metadata_cannot_claim_completed_transport[authority]" time="0.002" /><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_ordered_screening_request_v1" name="test_incorrect_original_completion_metadata_cannot_claim_completed_transport[independence]" time="0.005"><failure message="assert True is False">tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-33/test_incorrect_original_comple5')
+change = 'independence'
+
+    @pytest.mark.parametrize('change', ['schema', 'actor', 'prequery', 'source', 'authority', 'independence'])
+    def test_incorrect_original_completion_metadata_cannot_claim_completed_transport(tmp_path, change):
+        value = module()
+        env = {'UDM_SCREENING_SOURCE_COMMIT': 'a'*40, 'UDM_PREQUERY_COMMIT': 'b'*40,
+               'UDM_SCREENING_AUTHORITY_SHA256': 'c'*64, 'UDM_SCREENING_ACTOR_IDENTITY': 'independent fixture actor'}
+        manifest = {'schema': 'UDM_V45_SCREENING_OPERATOR_PROCESS_COSTS_V1', 'completed': True,
+                    'retries_performed': False, 'no_retry_or_substitution': True,
+                    'source_commit': env['UDM_SCREENING_SOURCE_COMMIT'], 'authority_sha256': env['UDM_SCREENING_AUTHORITY_SHA256']}
+        path = tmp_path/'ORDERED_PROCESS_COSTS.json'
+        path.write_text(json.dumps(manifest))
+        actor = {'schema': 'UDM_V45_SCREENING_ACTOR_ATTESTATION_V1', 'completed_fixed_pool': True,
+                 'source_unchanged': True, 'index_changes': [], 'actor_identity': env['UDM_SCREENING_ACTOR_IDENTITY'],
+                 'controller_manifest_sha256': value.sha(path),
+                 'source_commit': env['UDM_SCREENING_SOURCE_COMMIT'], 'prequery_commit': env['UDM_PREQUERY_COMMIT'],
+                 'authority_sha256': env['UDM_SCREENING_AUTHORITY_SHA256'], 'independent_screener': True,
+                 'search_or_policy_outcomes_accessed': False, 'learner_future_source_accessed': False,
+                 'native_test_reruns_or_case_retries_performed': False}
+        actor_path = tmp_path/'SCREENING_ACTOR_ATTESTATION.json'
+        actor_path.write_text(json.dumps(actor))
+        assert value.completed_process_metadata(tmp_path, env)[0] is True
+        if change == 'schema':
+            actor['schema'] = 'untrusted'
+        elif change == 'actor':
+            actor['actor_identity'] = 'another actor'
+        elif change == 'prequery':
+            actor['prequery_commit'] = 'd'*40
+        elif change == 'source':
+            actor['source_commit'] = 'd'*40
+        elif change == 'authority':
+            actor['authority_sha256'] = 'd'*64
+        else:
+            actor['independent_screener'] = False
+        actor_path.write_text(json.dumps(actor))
+&gt;       assert value.completed_process_metadata(tmp_path, env)[0] is False
+E       assert True is False
+
+qualification/native-request-activation-v1-screening-preparation/test_ordered_screening_request_v1.py:142: AssertionError</failure></testcase><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_ordered_screening_request_v1" name="test_live_child_is_stopped_on_any_parent_exit_without_launching_native_code" time="0.002"><failure message="AttributeError: module 'request_ordered_transport' has no attribute 'stop_child'">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x7fa2c0031dc0&gt;
+
+    def test_live_child_is_stopped_on_any_parent_exit_without_launching_native_code(monkeypatch):
+        value = module()
+        calls = []
+        class Child:
+            pid = 1234567
+            def poll(self): return None
+            def wait(self): calls.append('wait'); return -9
+        monkeypatch.setattr(value.os, 'killpg', lambda pid, sig: calls.append((pid, sig)))
+&gt;       assert value.stop_child(Child()) == -9
+E       AttributeError: module 'request_ordered_transport' has no attribute 'stop_child'
+
+qualification/native-request-activation-v1-screening-preparation/test_ordered_screening_request_v1.py:153: AttributeError</failure></testcase><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_ordered_screening_request_v1" name="test_linux_kernel_birth_clock_includes_interpreter_startup_without_native_launch" time="0.002"><failure message="AttributeError: module 'request_ordered_transport' has no attribute 'process_clock'">def test_linux_kernel_birth_clock_includes_interpreter_startup_without_native_launch():
+        value = module()
+        # Fields after the last ')' begin at state(field3); field22 is index19.
+        raw = '7 (name with ) parenthesis) S '+' '.join(['0']*18+['12345']+['0']*5)
+&gt;       clock = value.process_clock(raw=raw, clock_ticks=100)
+E       AttributeError: module 'request_ordered_transport' has no attribute 'process_clock'
+
+qualification/native-request-activation-v1-screening-preparation/test_ordered_screening_request_v1.py:161: AttributeError</failure></testcase></testsuite></testsuites>

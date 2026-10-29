@@ -1,0 +1,12 @@
+usage: finalize_audit_request_v1.py [-h] --dossier DOSSIER --dossier-sha256
+                                    DOSSIER_SHA256 --out OUT
+
+Close a supplied-run offline dossier into the canonical screening audit. No
+target execution or source reads. A PASS refers to retained screening evidence
+only. It does not make UNKNOWN cases eligible and cannot establish G2–G6.
+
+options:
+  -h, --help            show this help message and exit
+  --dossier DOSSIER
+  --dossier-sha256 DOSSIER_SHA256
+  --out OUT

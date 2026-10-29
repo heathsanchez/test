@@ -1,0 +1,13 @@
+usage: prepare_records.py [-h]
+                          {prepare-screening,write-requests,finalize-records}
+                          ...
+
+Original V45 record assembly with new authority and original query lineage.
+The existing curation is read at its original location. No metadata query
+runs, and its receipt/pool are not copied into the versioned output directory.
+
+positional arguments:
+  {prepare-screening,write-requests,finalize-records}
+
+options:
+  -h, --help            show this help message and exit

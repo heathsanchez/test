@@ -1,0 +1,191 @@
+FFFFFFFFF                                                                [100%]
+=================================== FAILURES ===================================
+_________ test_existing_metadata_and_new_authority_paths_are_separate __________
+
+    def test_existing_metadata_and_new_authority_paths_are_separate():
+>       m=module();fn=m.prepare_amended_main_binding()
+
+qualification/native-request-activation-v1-screening-preparation/test_screening_audit_request_v1.py:24: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path=HERE/'audit_retained_request_v1.py'
+>       assert path.is_file(), 'versioned screening auditor missing'
+E       AssertionError: versioned screening auditor missing
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/audit_retained_request_v1.py').is_file
+
+qualification/native-request-activation-v1-screening-preparation/test_screening_audit_request_v1.py:12: AssertionError
+___________ test_original_metadata_and_native_algorithms_are_reused ____________
+
+    def test_original_metadata_and_native_algorithms_are_reused():
+>       m=module()
+
+qualification/native-request-activation-v1-screening-preparation/test_screening_audit_request_v1.py:36: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path=HERE/'audit_retained_request_v1.py'
+>       assert path.is_file(), 'versioned screening auditor missing'
+E       AssertionError: versioned screening auditor missing
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/audit_retained_request_v1.py').is_file
+
+qualification/native-request-activation-v1-screening-preparation/test_screening_audit_request_v1.py:12: AssertionError
+___ test_actual_new_controller_command_has_exact_source_and_authority[none] ____
+
+change = 'none'
+
+    @pytest.mark.parametrize('change',('none','old-module','request-path','authority-path','runtime-path','extra-argument'))
+    def test_actual_new_controller_command_has_exact_source_and_authority(change):
+>       m=module();args=SimpleNamespace(requests=Path('/synthetic/requests'),records=Path('/synthetic/new-records'),
+            compiler_runtimes=Path('/synthetic/runtime-paths.json'),authority_sha256='a'*64)
+
+qualification/native-request-activation-v1-screening-preparation/test_screening_audit_request_v1.py:46: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path=HERE/'audit_retained_request_v1.py'
+>       assert path.is_file(), 'versioned screening auditor missing'
+E       AssertionError: versioned screening auditor missing
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/audit_retained_request_v1.py').is_file
+
+qualification/native-request-activation-v1-screening-preparation/test_screening_audit_request_v1.py:12: AssertionError
+_ test_actual_new_controller_command_has_exact_source_and_authority[old-module] _
+
+change = 'old-module'
+
+    @pytest.mark.parametrize('change',('none','old-module','request-path','authority-path','runtime-path','extra-argument'))
+    def test_actual_new_controller_command_has_exact_source_and_authority(change):
+>       m=module();args=SimpleNamespace(requests=Path('/synthetic/requests'),records=Path('/synthetic/new-records'),
+            compiler_runtimes=Path('/synthetic/runtime-paths.json'),authority_sha256='a'*64)
+
+qualification/native-request-activation-v1-screening-preparation/test_screening_audit_request_v1.py:46: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path=HERE/'audit_retained_request_v1.py'
+>       assert path.is_file(), 'versioned screening auditor missing'
+E       AssertionError: versioned screening auditor missing
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/audit_retained_request_v1.py').is_file
+
+qualification/native-request-activation-v1-screening-preparation/test_screening_audit_request_v1.py:12: AssertionError
+_ test_actual_new_controller_command_has_exact_source_and_authority[request-path] _
+
+change = 'request-path'
+
+    @pytest.mark.parametrize('change',('none','old-module','request-path','authority-path','runtime-path','extra-argument'))
+    def test_actual_new_controller_command_has_exact_source_and_authority(change):
+>       m=module();args=SimpleNamespace(requests=Path('/synthetic/requests'),records=Path('/synthetic/new-records'),
+            compiler_runtimes=Path('/synthetic/runtime-paths.json'),authority_sha256='a'*64)
+
+qualification/native-request-activation-v1-screening-preparation/test_screening_audit_request_v1.py:46: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path=HERE/'audit_retained_request_v1.py'
+>       assert path.is_file(), 'versioned screening auditor missing'
+E       AssertionError: versioned screening auditor missing
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/audit_retained_request_v1.py').is_file
+
+qualification/native-request-activation-v1-screening-preparation/test_screening_audit_request_v1.py:12: AssertionError
+_ test_actual_new_controller_command_has_exact_source_and_authority[authority-path] _
+
+change = 'authority-path'
+
+    @pytest.mark.parametrize('change',('none','old-module','request-path','authority-path','runtime-path','extra-argument'))
+    def test_actual_new_controller_command_has_exact_source_and_authority(change):
+>       m=module();args=SimpleNamespace(requests=Path('/synthetic/requests'),records=Path('/synthetic/new-records'),
+            compiler_runtimes=Path('/synthetic/runtime-paths.json'),authority_sha256='a'*64)
+
+qualification/native-request-activation-v1-screening-preparation/test_screening_audit_request_v1.py:46: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path=HERE/'audit_retained_request_v1.py'
+>       assert path.is_file(), 'versioned screening auditor missing'
+E       AssertionError: versioned screening auditor missing
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/audit_retained_request_v1.py').is_file
+
+qualification/native-request-activation-v1-screening-preparation/test_screening_audit_request_v1.py:12: AssertionError
+_ test_actual_new_controller_command_has_exact_source_and_authority[runtime-path] _
+
+change = 'runtime-path'
+
+    @pytest.mark.parametrize('change',('none','old-module','request-path','authority-path','runtime-path','extra-argument'))
+    def test_actual_new_controller_command_has_exact_source_and_authority(change):
+>       m=module();args=SimpleNamespace(requests=Path('/synthetic/requests'),records=Path('/synthetic/new-records'),
+            compiler_runtimes=Path('/synthetic/runtime-paths.json'),authority_sha256='a'*64)
+
+qualification/native-request-activation-v1-screening-preparation/test_screening_audit_request_v1.py:46: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path=HERE/'audit_retained_request_v1.py'
+>       assert path.is_file(), 'versioned screening auditor missing'
+E       AssertionError: versioned screening auditor missing
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/audit_retained_request_v1.py').is_file
+
+qualification/native-request-activation-v1-screening-preparation/test_screening_audit_request_v1.py:12: AssertionError
+_ test_actual_new_controller_command_has_exact_source_and_authority[extra-argument] _
+
+change = 'extra-argument'
+
+    @pytest.mark.parametrize('change',('none','old-module','request-path','authority-path','runtime-path','extra-argument'))
+    def test_actual_new_controller_command_has_exact_source_and_authority(change):
+>       m=module();args=SimpleNamespace(requests=Path('/synthetic/requests'),records=Path('/synthetic/new-records'),
+            compiler_runtimes=Path('/synthetic/runtime-paths.json'),authority_sha256='a'*64)
+
+qualification/native-request-activation-v1-screening-preparation/test_screening_audit_request_v1.py:46: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path=HERE/'audit_retained_request_v1.py'
+>       assert path.is_file(), 'versioned screening auditor missing'
+E       AssertionError: versioned screening auditor missing
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/audit_retained_request_v1.py').is_file
+
+qualification/native-request-activation-v1-screening-preparation/test_screening_audit_request_v1.py:12: AssertionError
+_ test_original_exposure_record_is_reconstructed_not_loaded_from_old_missing_file _
+
+    def test_original_exposure_record_is_reconstructed_not_loaded_from_old_missing_file():
+>       m=module()
+
+qualification/native-request-activation-v1-screening-preparation/test_screening_audit_request_v1.py:63: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+        path=HERE/'audit_retained_request_v1.py'
+>       assert path.is_file(), 'versioned screening auditor missing'
+E       AssertionError: versioned screening auditor missing
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/audit_retained_request_v1.py').is_file
+
+qualification/native-request-activation-v1-screening-preparation/test_screening_audit_request_v1.py:12: AssertionError
+- generated xml file: /workspace/qualification/native-request-activation-v1-screening-preparation/SCREENING_RED.xml -
+=========================== short test summary info ============================
+FAILED qualification/native-request-activation-v1-screening-preparation/test_screening_audit_request_v1.py::test_existing_metadata_and_new_authority_paths_are_separate
+FAILED qualification/native-request-activation-v1-screening-preparation/test_screening_audit_request_v1.py::test_original_metadata_and_native_algorithms_are_reused
+FAILED qualification/native-request-activation-v1-screening-preparation/test_screening_audit_request_v1.py::test_actual_new_controller_command_has_exact_source_and_authority[none]
+FAILED qualification/native-request-activation-v1-screening-preparation/test_screening_audit_request_v1.py::test_actual_new_controller_command_has_exact_source_and_authority[old-module]
+FAILED qualification/native-request-activation-v1-screening-preparation/test_screening_audit_request_v1.py::test_actual_new_controller_command_has_exact_source_and_authority[request-path]
+FAILED qualification/native-request-activation-v1-screening-preparation/test_screening_audit_request_v1.py::test_actual_new_controller_command_has_exact_source_and_authority[authority-path]
+FAILED qualification/native-request-activation-v1-screening-preparation/test_screening_audit_request_v1.py::test_actual_new_controller_command_has_exact_source_and_authority[runtime-path]
+FAILED qualification/native-request-activation-v1-screening-preparation/test_screening_audit_request_v1.py::test_actual_new_controller_command_has_exact_source_and_authority[extra-argument]
+FAILED qualification/native-request-activation-v1-screening-preparation/test_screening_audit_request_v1.py::test_original_exposure_record_is_reconstructed_not_loaded_from_old_missing_file
+9 failed in 0.08s

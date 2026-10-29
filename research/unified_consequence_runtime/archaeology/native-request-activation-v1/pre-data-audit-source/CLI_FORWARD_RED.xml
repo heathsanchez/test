@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="3" skipped="0" tests="3" time="0.403" timestamp="2026-10-29T01:15:31.201689+00:00" hostname="bd53dcf47e47"><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_screening_audit_request_v1" name="test_original_argument_forwarding_accepts_every_standard_new_flag_form[False]" time="0.134"><failure message="AttributeError: module 'request_v1_screening_audit' has no attribute 'forward_original_arguments'">equals = False
+
+    @pytest.mark.parametrize('equals',(False,True))
+    def test_original_argument_forwarding_accepts_every_standard_new_flag_form(equals):
+        m=module();old=['--repo','/synthetic/repo','--source-commit','held-source']
+        if equals:new=['--outer-budget-receipt=/synthetic/budget.json','--outer-budget-sha256='+'a'*64]
+        else:new=['--outer-budget-receipt','/synthetic/budget.json','--outer-budget-sha256','a'*64]
+&gt;       assert m.forward_original_arguments(old+new)==old
+E       AttributeError: module 'request_v1_screening_audit' has no attribute 'forward_original_arguments'
+
+qualification/native-request-activation-v1-screening-preparation/test_screening_audit_request_v1.py:131: AttributeError</failure></testcase><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_screening_audit_request_v1" name="test_original_argument_forwarding_accepts_every_standard_new_flag_form[True]" time="0.103"><failure message="AttributeError: module 'request_v1_screening_audit' has no attribute 'forward_original_arguments'">equals = True
+
+    @pytest.mark.parametrize('equals',(False,True))
+    def test_original_argument_forwarding_accepts_every_standard_new_flag_form(equals):
+        m=module();old=['--repo','/synthetic/repo','--source-commit','held-source']
+        if equals:new=['--outer-budget-receipt=/synthetic/budget.json','--outer-budget-sha256='+'a'*64]
+        else:new=['--outer-budget-receipt','/synthetic/budget.json','--outer-budget-sha256','a'*64]
+&gt;       assert m.forward_original_arguments(old+new)==old
+E       AttributeError: module 'request_v1_screening_audit' has no attribute 'forward_original_arguments'
+
+qualification/native-request-activation-v1-screening-preparation/test_screening_audit_request_v1.py:131: AttributeError</failure></testcase><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_screening_audit_request_v1" name="test_help_is_source_free_and_lists_the_complete_new_contract" time="0.103"><failure message="assert 2 == 0&#10; +  where 2 = SystemExit(2).code&#10; +    where SystemExit(2) = &lt;ExceptionInfo SystemExit(2) tblen=7&gt;.value">capsys = &lt;_pytest.capture.CaptureFixture object at 0x7f1ed0af96d0&gt;
+
+    def test_help_is_source_free_and_lists_the_complete_new_contract(capsys):
+        m=module()
+        with pytest.raises(SystemExit) as stopped:m.parse_settings(['--help'])
+&gt;       assert stopped.value.code==0
+E       assert 2 == 0
+E        +  where 2 = SystemExit(2).code
+E        +    where SystemExit(2) = &lt;ExceptionInfo SystemExit(2) tblen=7&gt;.value
+
+qualification/native-request-activation-v1-screening-preparation/test_screening_audit_request_v1.py:137: AssertionError</failure></testcase></testsuite></testsuites>

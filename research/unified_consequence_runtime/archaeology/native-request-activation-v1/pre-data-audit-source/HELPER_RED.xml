@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="11" skipped="0" tests="11" time="0.108" timestamp="2026-10-29T01:02:45.080751+00:00" hostname="bd53dcf47e47"><testcase classname="qualification.native-request-activation-v1-screening-preparation.prospective-helpers.test_helper_transport" name="test_record_helper_targets_new_protocol_but_keeps_original_v45_schemas" time="0.001"><failure message="AssertionError: source-preserving prospective helper missing: prepare_records.py&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/prospective-helpers/prepare_records.py').is_file">def test_record_helper_targets_new_protocol_but_keeps_original_v45_schemas():
+&gt;       value = module('prepare_records.py')
+
+qualification/native-request-activation-v1-screening-preparation/prospective-helpers/test_helper_transport.py:32: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'prepare_records.py'
+
+    def module(name):
+        path = HERE/name
+&gt;       assert path.is_file(), 'source-preserving prospective helper missing: '+name
+E       AssertionError: source-preserving prospective helper missing: prepare_records.py
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/prospective-helpers/prepare_records.py').is_file
+
+qualification/native-request-activation-v1-screening-preparation/prospective-helpers/test_helper_transport.py:16: AssertionError</failure></testcase><testcase classname="qualification.native-request-activation-v1-screening-preparation.prospective-helpers.test_helper_transport" name="test_prepare_preserves_old_query_and_pool_descriptors_without_copying_old_query" time="0.001"><failure message="AssertionError: source-preserving prospective helper missing: prepare_records.py&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/prospective-helpers/prepare_records.py').is_file">tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-37/test_prepare_preserves_old_que0')
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x7f9a3b888a10&gt;
+
+    def test_prepare_preserves_old_query_and_pool_descriptors_without_copying_old_query(tmp_path, monkeypatch):
+&gt;       value = module('prepare_records.py')
+
+qualification/native-request-activation-v1-screening-preparation/prospective-helpers/test_helper_transport.py:44: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'prepare_records.py'
+
+    def module(name):
+        path = HERE/name
+&gt;       assert path.is_file(), 'source-preserving prospective helper missing: '+name
+E       AssertionError: source-preserving prospective helper missing: prepare_records.py
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/prospective-helpers/prepare_records.py').is_file
+
+qualification/native-request-activation-v1-screening-preparation/prospective-helpers/test_helper_transport.py:16: AssertionError</failure></testcase><testcase classname="qualification.native-request-activation-v1-screening-preparation.prospective-helpers.test_helper_transport" name="test_preparation_refuses_another_curation_directory_before_new_output" time="0.002"><failure message="AssertionError: source-preserving prospective helper missing: prepare_records.py&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/prospective-helpers/prepare_records.py').is_file">tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-37/test_preparation_refuses_anoth0')
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x7f9a3b906c30&gt;
+
+    def test_preparation_refuses_another_curation_directory_before_new_output(tmp_path, monkeypatch):
+&gt;       value = module('prepare_records.py')
+
+qualification/native-request-activation-v1-screening-preparation/prospective-helpers/test_helper_transport.py:85: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'prepare_records.py'
+
+    def module(name):
+        path = HERE/name
+&gt;       assert path.is_file(), 'source-preserving prospective helper missing: '+name
+E       AssertionError: source-preserving prospective helper missing: prepare_records.py
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/prospective-helpers/prepare_records.py').is_file
+
+qualification/native-request-activation-v1-screening-preparation/prospective-helpers/test_helper_transport.py:16: AssertionError</failure></testcase><testcase classname="qualification.native-request-activation-v1-screening-preparation.prospective-helpers.test_helper_transport" name="test_request_and_finalization_keep_original_code_objects_and_new_q_globals" time="0.000"><failure message="AssertionError: source-preserving prospective helper missing: prepare_records.py&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/prospective-helpers/prepare_records.py').is_file">def test_request_and_finalization_keep_original_code_objects_and_new_q_globals():
+&gt;       value = module('prepare_records.py')
+
+qualification/native-request-activation-v1-screening-preparation/prospective-helpers/test_helper_transport.py:95: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'prepare_records.py'
+
+    def module(name):
+        path = HERE/name
+&gt;       assert path.is_file(), 'source-preserving prospective helper missing: '+name
+E       AssertionError: source-preserving prospective helper missing: prepare_records.py
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/prospective-helpers/prepare_records.py').is_file
+
+qualification/native-request-activation-v1-screening-preparation/prospective-helpers/test_helper_transport.py:16: AssertionError</failure></testcase><testcase classname="qualification.native-request-activation-v1-screening-preparation.prospective-helpers.test_helper_transport" name="test_watcher_uses_exact_new_controller_path_and_native_cli_without_starting_agent" time="0.000"><failure message="AssertionError: source-preserving prospective helper missing: watch_actual_agent.py&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/prospective-helpers/watch_actual_agent.py').is_file">def test_watcher_uses_exact_new_controller_path_and_native_cli_without_starting_agent():
+&gt;       value = module('watch_actual_agent.py')
+
+qualification/native-request-activation-v1-screening-preparation/prospective-helpers/test_helper_transport.py:104: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'watch_actual_agent.py'
+
+    def module(name):
+        path = HERE/name
+&gt;       assert path.is_file(), 'source-preserving prospective helper missing: '+name
+E       AssertionError: source-preserving prospective helper missing: watch_actual_agent.py
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/prospective-helpers/watch_actual_agent.py').is_file
+
+qualification/native-request-activation-v1-screening-preparation/prospective-helpers/test_helper_transport.py:16: AssertionError</failure></testcase><testcase classname="qualification.native-request-activation-v1-screening-preparation.prospective-helpers.test_helper_transport" name="test_actual_agent_requires_observed_model_and_new_native_calls[False-0-False]" time="0.000"><failure message="AssertionError: source-preserving prospective helper missing: watch_actual_agent.py&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/prospective-helpers/watch_actual_agent.py').is_file">model = False, native = 0, expected = False
+
+    @pytest.mark.parametrize('model,native,expected', [(False, 0, False), (True, 0, False),
+                                                     (False, 1, False), (True, 1, True)])
+    def test_actual_agent_requires_observed_model_and_new_native_calls(model, native, expected):
+&gt;       value = module('watch_actual_agent.py')
+
+qualification/native-request-activation-v1-screening-preparation/prospective-helpers/test_helper_transport.py:118: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'watch_actual_agent.py'
+
+    def module(name):
+        path = HERE/name
+&gt;       assert path.is_file(), 'source-preserving prospective helper missing: '+name
+E       AssertionError: source-preserving prospective helper missing: watch_actual_agent.py
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/prospective-helpers/watch_actual_agent.py').is_file
+
+qualification/native-request-activation-v1-screening-preparation/prospective-helpers/test_helper_transport.py:16: AssertionError</failure></testcase><testcase classname="qualification.native-request-activation-v1-screening-preparation.prospective-helpers.test_helper_transport" name="test_actual_agent_requires_observed_model_and_new_native_calls[True-0-False]" time="0.000"><failure message="AssertionError: source-preserving prospective helper missing: watch_actual_agent.py&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/prospective-helpers/watch_actual_agent.py').is_file">model = True, native = 0, expected = False
+
+    @pytest.mark.parametrize('model,native,expected', [(False, 0, False), (True, 0, False),
+                                                     (False, 1, False), (True, 1, True)])
+    def test_actual_agent_requires_observed_model_and_new_native_calls(model, native, expected):
+&gt;       value = module('watch_actual_agent.py')
+
+qualification/native-request-activation-v1-screening-preparation/prospective-helpers/test_helper_transport.py:118: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'watch_actual_agent.py'
+
+    def module(name):
+        path = HERE/name
+&gt;       assert path.is_file(), 'source-preserving prospective helper missing: '+name
+E       AssertionError: source-preserving prospective helper missing: watch_actual_agent.py
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/prospective-helpers/watch_actual_agent.py').is_file
+
+qualification/native-request-activation-v1-screening-preparation/prospective-helpers/test_helper_transport.py:16: AssertionError</failure></testcase><testcase classname="qualification.native-request-activation-v1-screening-preparation.prospective-helpers.test_helper_transport" name="test_actual_agent_requires_observed_model_and_new_native_calls[False-1-False]" time="0.000"><failure message="AssertionError: source-preserving prospective helper missing: watch_actual_agent.py&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/prospective-helpers/watch_actual_agent.py').is_file">model = False, native = 1, expected = False
+
+    @pytest.mark.parametrize('model,native,expected', [(False, 0, False), (True, 0, False),
+                                                     (False, 1, False), (True, 1, True)])
+    def test_actual_agent_requires_observed_model_and_new_native_calls(model, native, expected):
+&gt;       value = module('watch_actual_agent.py')
+
+qualification/native-request-activation-v1-screening-preparation/prospective-helpers/test_helper_transport.py:118: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'watch_actual_agent.py'
+
+    def module(name):
+        path = HERE/name
+&gt;       assert path.is_file(), 'source-preserving prospective helper missing: '+name
+E       AssertionError: source-preserving prospective helper missing: watch_actual_agent.py
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/prospective-helpers/watch_actual_agent.py').is_file
+
+qualification/native-request-activation-v1-screening-preparation/prospective-helpers/test_helper_transport.py:16: AssertionError</failure></testcase><testcase classname="qualification.native-request-activation-v1-screening-preparation.prospective-helpers.test_helper_transport" name="test_actual_agent_requires_observed_model_and_new_native_calls[True-1-True]" time="0.001"><failure message="AssertionError: source-preserving prospective helper missing: watch_actual_agent.py&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/prospective-helpers/watch_actual_agent.py').is_file">model = True, native = 1, expected = True
+
+    @pytest.mark.parametrize('model,native,expected', [(False, 0, False), (True, 0, False),
+                                                     (False, 1, False), (True, 1, True)])
+    def test_actual_agent_requires_observed_model_and_new_native_calls(model, native, expected):
+&gt;       value = module('watch_actual_agent.py')
+
+qualification/native-request-activation-v1-screening-preparation/prospective-helpers/test_helper_transport.py:118: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'watch_actual_agent.py'
+
+    def module(name):
+        path = HERE/name
+&gt;       assert path.is_file(), 'source-preserving prospective helper missing: '+name
+E       AssertionError: source-preserving prospective helper missing: watch_actual_agent.py
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/prospective-helpers/watch_actual_agent.py').is_file
+
+qualification/native-request-activation-v1-screening-preparation/prospective-helpers/test_helper_transport.py:16: AssertionError</failure></testcase><testcase classname="qualification.native-request-activation-v1-screening-preparation.prospective-helpers.test_helper_transport" name="test_training_projection_keeps_same_algorithm_and_v45_input_headers" time="0.000"><failure message="AssertionError: source-preserving prospective helper missing: training_history_projection_v45.py&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/prospective-helpers/training_history_projection_v45.py').is_file">def test_training_projection_keeps_same_algorithm_and_v45_input_headers():
+&gt;       value = module('training_history_projection_v45.py')
+
+qualification/native-request-activation-v1-screening-preparation/prospective-helpers/test_helper_transport.py:126: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'training_history_projection_v45.py'
+
+    def module(name):
+        path = HERE/name
+&gt;       assert path.is_file(), 'source-preserving prospective helper missing: '+name
+E       AssertionError: source-preserving prospective helper missing: training_history_projection_v45.py
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/prospective-helpers/training_history_projection_v45.py').is_file
+
+qualification/native-request-activation-v1-screening-preparation/prospective-helpers/test_helper_transport.py:16: AssertionError</failure></testcase><testcase classname="qualification.native-request-activation-v1-screening-preparation.prospective-helpers.test_helper_transport" name="test_helpers_resolve_original_sources_from_controller_here_outside_repo" time="0.000"><failure message="AssertionError: source-preserving prospective helper missing: prepare_records.py&#10;assert False&#10; +  where False = is_file()&#10; +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/prospective-helpers/prepare_records.py').is_file">def test_helpers_resolve_original_sources_from_controller_here_outside_repo():
+        for name in ('prepare_records.py', 'watch_actual_agent.py', 'training_history_projection_v45.py'):
+&gt;           value = module(name)
+
+qualification/native-request-activation-v1-screening-preparation/prospective-helpers/test_helper_transport.py:137: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'prepare_records.py'
+
+    def module(name):
+        path = HERE/name
+&gt;       assert path.is_file(), 'source-preserving prospective helper missing: '+name
+E       AssertionError: source-preserving prospective helper missing: prepare_records.py
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/workspace/qualification/native-request-activation-v1-screening-preparation/prospective-helpers/prepare_records.py').is_file
+
+qualification/native-request-activation-v1-screening-preparation/prospective-helpers/test_helper_transport.py:16: AssertionError</failure></testcase></testsuite></testsuites>

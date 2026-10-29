@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="6" time="0.720" timestamp="2026-10-29T01:10:21.969940+00:00" hostname="bd53dcf47e47"><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_screening_audit_request_v1" name="test_outer_budget_cannot_replay_actor_authority_or_renew_original_time[none]" time="0.122" /><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_screening_audit_request_v1" name="test_outer_budget_cannot_replay_actor_authority_or_renew_original_time[wrong-actor]" time="0.108"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-41/test_outer_budget_cannot_repla1')
+change = 'wrong-actor'
+
+    @pytest.mark.parametrize('change',('none','wrong-actor','wrong-source','renewed-prior','bad-clock','over-budget'))
+    def test_outer_budget_cannot_replay_actor_authority_or_renew_original_time(tmp_path,change):
+        m=module();controller={'wall_seconds':1.0}
+        manifest=tmp_path/'controller.PARSER_FIXTURE.json';manifest.write_text(json.dumps(controller))
+        actor=tmp_path/'actor.PARSER_FIXTURE.json';actor.write_text(json.dumps({'actor_identity':'/fixture/independent'}))
+        args=SimpleNamespace(source_commit='b'*40,prequery_commit=m.ORIGINAL_PREQUERY_COMMIT,
+            authority_sha256='a'*64,records=Path('/synthetic/new-records'),controller_manifest=manifest,
+            controller_manifest_sha256=m.sha(manifest.read_bytes()),attestation=actor,
+            attestation_sha256=m.sha(actor.read_bytes()))
+        value={'schema':'UDM_REQUEST_ACTIVATION_V1_SCREENING_OUTER_BUDGET',
+          'status':'COMPLETED_WITHIN_ORIGINAL_SCREENING_BUDGET','scope':'OUTER_TRANSPORT_COMPLETION_AND_COST_ONLY',
+          'qualified':True,'returncode':0,'timed_out':False,'process_completed':True,
+          'nested_intervals_not_additive':True,'raw_native_outcomes_accessed':False,'retry_or_pool_substitution':False,
+          'source_commit':args.source_commit,'prequery_commit':args.prequery_commit,'authority_sha256':args.authority_sha256,
+          'records_path':str(args.records),'actor_identity':'/fixture/independent',
+          'total_budget_seconds':7200.0,'prior_charged_outer_wall_seconds':25.756850843,
+          'declared_remaining_seconds':7174.243149157,'new_outer_wall_seconds':2.0,
+          'combined_outer_wall_seconds':27.756850843,
+          'original_completion_artifacts':{'ORDERED_PROCESS_COSTS.json':{'path':str(manifest),'sha256':args.controller_manifest_sha256},
+              'SCREENING_ACTOR_ATTESTATION.json':{'path':str(actor),'sha256':args.attestation_sha256}},
+          'prior_outer':{'path':'/workspace/qualification/native-namespace-v45-prospective-20261028T2335Z/ORDERED_DRIVER_OUTER_COSTS.json',
+              'sha256':'6e0104a9c1cb91078a189b349694496038f9ae21003ec883e13decc4bd7b95d1',
+              'observed_outer_wall_seconds':25.756850842999484,'charged_outer_wall_seconds':25.756850843},
+          'versioned_transport_sha256':m.sha((HERE/'ordered_screening_request_v1.py').read_bytes()),
+          'command':['/synthetic/python','-B',str(HERE/'ordered_screening_request_v1.py'),'--child'],
+          'outer_process_clock':{'clock':'CLOCK_BOOTTIME','clock_ticks_per_second':100,
+              'process_start_ticks':10000,'process_start_lower_bound_seconds':100.0},
+          'finished_clock_boottime_seconds':102.0}
+        if change=='wrong-actor':value['actor_identity']='/fixture/other'
+        elif change=='wrong-source':value['source_commit']='c'*40
+        elif change=='renewed-prior':value['prior_charged_outer_wall_seconds']=0.
+        elif change=='bad-clock':value['outer_process_clock']['process_start_lower_bound_seconds']=99.
+        elif change=='over-budget':value['new_outer_wall_seconds']=7200.;value['combined_outer_wall_seconds']=7225.756850843
+        if change=='none':
+            assert m.validate_outer_budget(m.old.Audit(),value,controller,args)['status']=='PASS_UNRENEWED_ORIGINAL_SCREENING_OUTER_BUDGET'
+        else:
+&gt;           with pytest.raises(ValueError):m.validate_outer_budget(m.old.Audit(),value,controller,args)
+E           Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+qualification/native-request-activation-v1-screening-preparation/test_screening_audit_request_v1.py:123: Failed</failure></testcase><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_screening_audit_request_v1" name="test_outer_budget_cannot_replay_actor_authority_or_renew_original_time[wrong-source]" time="0.105" /><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_screening_audit_request_v1" name="test_outer_budget_cannot_replay_actor_authority_or_renew_original_time[renewed-prior]" time="0.126" /><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_screening_audit_request_v1" name="test_outer_budget_cannot_replay_actor_authority_or_renew_original_time[bad-clock]" time="0.107" /><testcase classname="qualification.native-request-activation-v1-screening-preparation.test_screening_audit_request_v1" name="test_outer_budget_cannot_replay_actor_authority_or_renew_original_time[over-budget]" time="0.102" /></testsuite></testsuites>

@@ -1,0 +1,58 @@
+FFF                                                                      [100%]
+=================================== FAILURES ===================================
+_ test_original_argument_forwarding_accepts_every_standard_new_flag_form[False] _
+
+equals = False
+
+    @pytest.mark.parametrize('equals',(False,True))
+    def test_original_argument_forwarding_accepts_every_standard_new_flag_form(equals):
+        m=module();old=['--repo','/synthetic/repo','--source-commit','held-source']
+        if equals:new=['--outer-budget-receipt=/synthetic/budget.json','--outer-budget-sha256='+'a'*64]
+        else:new=['--outer-budget-receipt','/synthetic/budget.json','--outer-budget-sha256','a'*64]
+>       assert m.forward_original_arguments(old+new)==old
+E       AttributeError: module 'request_v1_screening_audit' has no attribute 'forward_original_arguments'
+
+qualification/native-request-activation-v1-screening-preparation/test_screening_audit_request_v1.py:131: AttributeError
+_ test_original_argument_forwarding_accepts_every_standard_new_flag_form[True] _
+
+equals = True
+
+    @pytest.mark.parametrize('equals',(False,True))
+    def test_original_argument_forwarding_accepts_every_standard_new_flag_form(equals):
+        m=module();old=['--repo','/synthetic/repo','--source-commit','held-source']
+        if equals:new=['--outer-budget-receipt=/synthetic/budget.json','--outer-budget-sha256='+'a'*64]
+        else:new=['--outer-budget-receipt','/synthetic/budget.json','--outer-budget-sha256','a'*64]
+>       assert m.forward_original_arguments(old+new)==old
+E       AttributeError: module 'request_v1_screening_audit' has no attribute 'forward_original_arguments'
+
+qualification/native-request-activation-v1-screening-preparation/test_screening_audit_request_v1.py:131: AttributeError
+_________ test_help_is_source_free_and_lists_the_complete_new_contract _________
+
+capsys = <_pytest.capture.CaptureFixture object at 0x7f1ed0af96d0>
+
+    def test_help_is_source_free_and_lists_the_complete_new_contract(capsys):
+        m=module()
+        with pytest.raises(SystemExit) as stopped:m.parse_settings(['--help'])
+>       assert stopped.value.code==0
+E       assert 2 == 0
+E        +  where 2 = SystemExit(2).code
+E        +    where SystemExit(2) = <ExceptionInfo SystemExit(2) tblen=7>.value
+
+qualification/native-request-activation-v1-screening-preparation/test_screening_audit_request_v1.py:137: AssertionError
+----------------------------- Captured stderr call -----------------------------
+usage: __main__.py --repo REPO --records RECORDS --requests REQUESTS --sealed
+                   SEALED --controller-manifest CONTROLLER_MANIFEST
+                   --attestation ATTESTATION --out OUT --compiler-runtimes
+                   COMPILER_RUNTIMES --outer-budget-receipt
+                   OUTER_BUDGET_RECEIPT --authority-sha256 AUTHORITY_SHA256
+                   --controller-manifest-sha256 CONTROLLER_MANIFEST_SHA256
+                   --attestation-sha256 ATTESTATION_SHA256 --source-commit
+                   SOURCE_COMMIT --prequery-commit PREQUERY_COMMIT
+                   --outer-budget-sha256 OUTER_BUDGET_SHA256
+__main__.py: error: the following arguments are required: --repo, --records, --requests, --sealed, --controller-manifest, --attestation, --out, --compiler-runtimes, --outer-budget-receipt, --authority-sha256, --controller-manifest-sha256, --attestation-sha256, --source-commit, --prequery-commit, --outer-budget-sha256
+- generated xml file: /workspace/qualification/native-request-activation-v1-screening-preparation/CLI_FORWARD_RED.xml -
+=========================== short test summary info ============================
+FAILED qualification/native-request-activation-v1-screening-preparation/test_screening_audit_request_v1.py::test_original_argument_forwarding_accepts_every_standard_new_flag_form[False]
+FAILED qualification/native-request-activation-v1-screening-preparation/test_screening_audit_request_v1.py::test_original_argument_forwarding_accepts_every_standard_new_flag_form[True]
+FAILED qualification/native-request-activation-v1-screening-preparation/test_screening_audit_request_v1.py::test_help_is_source_free_and_lists_the_complete_new_contract
+3 failed, 16 deselected in 0.40s

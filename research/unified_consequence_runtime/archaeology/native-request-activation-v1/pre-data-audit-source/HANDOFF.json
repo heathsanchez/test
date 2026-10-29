@@ -1,0 +1,72 @@
+{
+  "actual_qualification_parent_reported": {
+    "authentication_authority": "Parent actual API/ZIP independent archive review; not this metadata-only receipt",
+    "independent_archive_audit_sha256": "3acb3781567cb6b0d2f3c6e73faf46f805bbceb3469d97d6e0b3d9f286700c75",
+    "independently_replayed_by_this_preparation": false,
+    "run_id": 40798830998,
+    "source_commit": "4ad4a3d9608b9d28b920c881fc78cda658b028da"
+  },
+  "amendment_required_fields": [
+    "Actual qualification source/run/artifact and independently produced receipt descriptors",
+    "Original A/B/preserved cfab negative/old pool and query descriptors unchanged",
+    "New controller/helpers/auditor SHA freeze and new authority sourcecommit binding",
+    "Bounded pre-data no-targetsource/no-nativeoutcome actor attestations",
+    "Old metadata outer65.66069 and screening outer25.756850843 plus all new known costs, unknowns explicit",
+    "Original7200 total with external remaining7174.243149157; unchanged8/128/512/3600 native/searchlimits",
+    "No newquery/resampling; same8universe/4pool; all original results unchanged"
+  ],
+  "auditor_freeze": {
+    "path": "/workspace/qualification/native-request-activation-v1-screening-preparation/AUDITOR_FREEZE.json",
+    "sha256": "b3e55e16a947f5a5101c9fc730ea7f14d0a7a0d614c790dbe6771e7270b371d6"
+  },
+  "controller_source_sha256": "0c5b9f86e77e82d8429ebf285729206d9a7d7a079662f836bc340e9f39e8db1a",
+  "helpers_to_install_before_source": {
+    "prepare_records.py": {
+      "bytes": 3540,
+      "path": "/workspace/qualification/native-request-activation-v1-screening-preparation/prospective-helpers/prepare_records.py",
+      "sha256": "2bbf8f5b5e94dd74b99fbc65bdb025a8e4208a1fb785c4463fb4987e8a0dc5fa"
+    },
+    "training_history_projection_v45.py": {
+      "bytes": 1536,
+      "path": "/workspace/qualification/native-request-activation-v1-screening-preparation/prospective-helpers/training_history_projection_v45.py",
+      "sha256": "52b867da2a76d76821ab4f31e78c577f71768ec7d73f7c64b74dcdefd94d0dde"
+    },
+    "watch_actual_agent.py": {
+      "bytes": 2193,
+      "path": "/workspace/qualification/native-request-activation-v1-screening-preparation/prospective-helpers/watch_actual_agent.py",
+      "sha256": "58de78c95390db01a2a08a95e79d2a5fd27a080010b0837aef2540289e058f8a"
+    }
+  },
+  "model_calls": 0,
+  "native_calls": 0,
+  "new_queries": 0,
+  "new_tests": 72,
+  "operator_root": "/workspace/qualification/native-request-activation-v1-prospective",
+  "original_dependencies_unchanged": 47,
+  "original_metadata_audit": {
+    "exposure_semantic_fingerprint": "943e6af3418a7a16e2bc4fc829b7fa4f605194965ec78e447b67bff15f51a576",
+    "exposure_witness_kind": "NEW_RECONSTRUCTION_FROM_ORIGINAL_A_AND_60_INPUT_BLOBS",
+    "path": "/workspace/qualification/native-request-activation-v1-screening-preparation/actual-old-metadata-audit-001/RESULT.json",
+    "pool": 4,
+    "retained_requests": 157,
+    "sha256": "0d926a7f90d895b47b1008ac46f2c82edb5e75d6f5956b149b86b0a4d20996cf",
+    "supplemental_exclusions": 156,
+    "universe": 8
+  },
+  "preserved_tests": 138,
+  "record_root": "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-request-activation-v1/prospective",
+  "runbook": {
+    "path": "/workspace/qualification/native-request-activation-v1-screening-preparation/RUNBOOK.md",
+    "sha256": "54124fce4a57e4ec74f34c29672144ae27f8f943a5da3836e0e648a30b623dfd"
+  },
+  "schema": "UDM_NATIVE_REQUEST_ACTIVATION_V1_SCREENING_PREPARATION_HANDOFF",
+  "scientific_verdicts": {
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN"
+  },
+  "sourcefree_tests": 210,
+  "status": "PREPARED_SOURCE_FREE_ONLY"
+}

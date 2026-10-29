@@ -1,0 +1,20 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_____________ test_new_auditor_retains_every_original_cli_binding ______________
+
+    def test_new_auditor_retains_every_original_cli_binding():
+        m=module();argv=[]
+        for name in ('repo','records','requests','sealed','controller-manifest','attestation','out',
+                     'compiler-runtimes','outer-budget-receipt'):
+            argv+=['--'+name,'/synthetic/'+name]
+        for name in ('authority-sha256','controller-manifest-sha256','attestation-sha256','source-commit',
+                     'prequery-commit','outer-budget-sha256'):
+            argv+=['--'+name,'held-'+name]
+>       args=m.parse_settings(argv)
+E       AttributeError: module 'request_v1_screening_audit' has no attribute 'parse_settings'
+
+qualification/native-request-activation-v1-screening-preparation/test_screening_audit_request_v1.py:78: AttributeError
+- generated xml file: /workspace/qualification/native-request-activation-v1-screening-preparation/ARGS_RED.xml -
+=========================== short test summary info ============================
+FAILED qualification/native-request-activation-v1-screening-preparation/test_screening_audit_request_v1.py::test_new_auditor_retains_every_original_cli_binding
+1 failed, 9 deselected in 0.18s

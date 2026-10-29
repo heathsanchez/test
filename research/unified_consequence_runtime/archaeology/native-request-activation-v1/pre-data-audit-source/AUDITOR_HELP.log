@@ -1,0 +1,38 @@
+usage: audit_retained_request_v1.py [-h] --repo REPO --records RECORDS
+                                    --requests REQUESTS --sealed SEALED
+                                    --controller-manifest CONTROLLER_MANIFEST
+                                    --attestation ATTESTATION --out OUT
+                                    --compiler-runtimes COMPILER_RUNTIMES
+                                    --outer-budget-receipt
+                                    OUTER_BUDGET_RECEIPT --authority-sha256
+                                    AUTHORITY_SHA256
+                                    --controller-manifest-sha256
+                                    CONTROLLER_MANIFEST_SHA256
+                                    --attestation-sha256 ATTESTATION_SHA256
+                                    --source-commit SOURCE_COMMIT
+                                    --prequery-commit PREQUERY_COMMIT
+                                    --outer-budget-sha256 OUTER_BUDGET_SHA256
+
+Pre-data-amended independent screening audit, preserving original verifiers.
+Original V45 native/typed-source/metadata/build/namespace algorithms are
+reused. Only metadata origin, controller module and external remaining-budget
+bindings change. No original historical file or query is invented by this
+transport.
+
+options:
+  -h, --help            show this help message and exit
+  --repo REPO
+  --records RECORDS
+  --requests REQUESTS
+  --sealed SEALED
+  --controller-manifest CONTROLLER_MANIFEST
+  --attestation ATTESTATION
+  --out OUT
+  --compiler-runtimes COMPILER_RUNTIMES
+  --outer-budget-receipt OUTER_BUDGET_RECEIPT
+  --authority-sha256 AUTHORITY_SHA256
+  --controller-manifest-sha256 CONTROLLER_MANIFEST_SHA256
+  --attestation-sha256 ATTESTATION_SHA256
+  --source-commit SOURCE_COMMIT
+  --prequery-commit PREQUERY_COMMIT
+  --outer-budget-sha256 OUTER_BUDGET_SHA256
