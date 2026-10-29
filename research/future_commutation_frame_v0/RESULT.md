@@ -4,7 +4,7 @@
 
 ## Why this test exists
 
-An earlier private [ANISE/Nyx native audit](https://github.com/nyx-space/nyx/issues/603) established that an event-epoch frame-swap correction could pass **3/3** native tests yet lead to a rotating-frame trajectory which deviated after 600 seconds from inertial truth by **201.19015652244954 km position / 0.713117640 km/s velocity**. That native result belongs to a distinct audit; issue #603 was originally reported by scottshambaugh, and is not claimed as our original issue discovery.
+An earlier private [ANISE/Nyx native audit](https://chatgpt.com/library?file_id=libfile_024ece51277081919d08a24ea67f3767&account_id=personal) established that a separate Nyx `SpacecraftSequence::FrameSwap` event-epoch correction could pass **3/3** native tests yet lead to a rotating-frame trajectory which deviated after 600 seconds from inertial truth by **201.19015652244954 km position / 0.713117640 km/s velocity**. That native frame-swap result was independently found in the private audit, not reproduced by this standalone model. It is **distinct** from upstream [Nyx issue #603](https://github.com/nyx-space/nyx/issues/603), originally reported by scottshambaugh, which concerns ANISE `Almanac::transform` misrotating the Moon position and hence solid tides. Do not attribute the FrameSwap counterexample to the issue reporter or imply our model is a native regression test for issue #603.
 
 We now independently test the **causal physical mechanism** in a standalone constant-spin Earth model. This is not a rerun of the Nyx Rust code.
 
