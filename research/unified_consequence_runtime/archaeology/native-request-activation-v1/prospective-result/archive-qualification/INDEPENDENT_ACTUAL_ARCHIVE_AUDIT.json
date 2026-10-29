@@ -1,0 +1,74 @@
+{
+  "archive_data_executed": false,
+  "artifacts": {
+    "evidence": {
+      "bytes": 4442784,
+      "crc": "PASS_ALL_MEMBERS",
+      "id": 12867309426,
+      "sha256": "f2047bb74c1777ba71a49675810a8628df79f1009668357aef97187e30363a76"
+    },
+    "source": {
+      "bytes": 413044687,
+      "crc": "PASS_ALL_MEMBERS",
+      "id": 12867992134,
+      "sha256": "93f6df6a3a4e079aa7acd92dadbdb9c522b491b10b661ed0ceaba83b2a176068"
+    }
+  },
+  "cas_readbacks": [
+    {
+      "archive_sha256": "c3b42c23affa2d0bf835b7fa22235f5cf1f30738ce2e37d24d4667988dcd7846",
+      "manifest_sha256": "a08c16d599e879eec6bc952c2a198518fbd1a34319f6a10a392bb13583605197",
+      "prefix": "COMPLETED_AMENDED_SCREENING_CAS",
+      "status": "PASS_EXISTING_CAS_DATA_READBACK"
+    },
+    {
+      "archive_sha256": "d28211beb15c9792b34ca9c87e444cf9a2961ea2ea2a91c2c02502c6676838fe",
+      "manifest_sha256": "a1aaa5bbaaffe8464d564b6376b81617458c0f70f49c02b2dc1d80512fbd87f2",
+      "prefix": "ACTUAL_CLI2_SOURCE_AND_TDD_CAS",
+      "status": "PASS_EXISTING_CAS_DATA_READBACK"
+    },
+    {
+      "archive_sha256": "03ab87f6cb872396d0038b8e5813e8317e81f91a29e26d1af42b7ea334052fc3",
+      "manifest_sha256": "84f668827b57dbf40d4864385e1d64e3ed72ab8a1e4242a7c2cabda6564c73ca",
+      "prefix": "ACTUAL_QUALIFICATION_AUDITOR_SOURCE_CAS",
+      "status": "PASS_EXISTING_CAS_DATA_READBACK"
+    },
+    {
+      "archive_sha256": "a671789113d0350cf74102dbde9d8295847ca2696bd170968a78134971e1f1de",
+      "manifest_sha256": "624b1613b8ec70bfa69f0debee6c6a0d0b0c293026295f6c5fec9304f074b0f8",
+      "prefix": "REVIEW_PROVENANCE_CAS",
+      "status": "PASS_EXISTING_CAS_DATA_READBACK"
+    }
+  ],
+  "comparisons": "NOT_STARTED_ADMISSION_GATE_BLOCKED",
+  "complete_source_files": 3636,
+  "every_uploaded_member_bound": true,
+  "first_source_connector_error_retained": "SOURCE_DOWNLOAD_FIRST_ERROR.json",
+  "model_calls": 0,
+  "native_calls": 0,
+  "new_source_queries": 0,
+  "preserved_original_files": 3596,
+  "prospective_native_calls": 0,
+  "publication_pinned_files": 38,
+  "published_tree_files": 39,
+  "readback_seconds": 6.39476950199969,
+  "run_id": 40805302284,
+  "schema": "UDM_REQUEST_V1_INDEPENDENT_CLOSED_ARCHIVE_AUDIT",
+  "scientific_verdicts": {
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN"
+  },
+  "scope": "ARCHIVE_INTEGRITY_ONLY_NO_NATIVE_REPLAY_NO_SCIENTIFIC_PROMOTION",
+  "screening_counts": {
+    "eligible_cases": 0,
+    "screened_cases": 4
+  },
+  "source_artifact_fully_downloaded_and_verified": true,
+  "source_commit": "da4c37728b1f020d9ff6a91130da462067883f88",
+  "source_index_bytes_unchanged": true,
+  "source_transport_single_readonly_retry_succeeded": true,
+  "status": "PASS_INDEPENDENT_CLOSED_ARCHIVE_DATA_AUDIT"
+}

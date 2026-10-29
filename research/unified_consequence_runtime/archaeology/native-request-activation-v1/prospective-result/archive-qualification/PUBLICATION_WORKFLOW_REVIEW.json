@@ -1,0 +1,32 @@
+{
+  "archive_gate": "DATA_INTEGRITY_ONLY_NO_SCIENTIFIC_PROMOTION",
+  "blocking_findings": [],
+  "model_calls": 0,
+  "native_calls": 0,
+  "new_target_queries": 0,
+  "publication_manifest": {
+    "independently_matched_file_pins": 38,
+    "sha256": "1d394164cb316672e746a424d886f8354c92c0cd45e8013d527d43556e3e5406"
+  },
+  "reports_sha256": {
+    "FORMAL_BOUNDARY.md": "d5f7bc20bcfa2329cbe1540244851f162a3d60848efc10634e2ae77b9659ef54",
+    "RESEARCH_REPORT.md": "8f8ee1e69bbddb460d1af9950270482d1fc9f472b9ce4fba7b2198ca82b51ff2",
+    "SCIENTIFIC_ASSESSMENT.json": "19c7c4f6da1e575144ccd9cb8bc370bd58f4531786d30e29eb385a4a72057099"
+  },
+  "reviewed_properties": [
+    "Exact owned branch/publication commit and 3596 baseline files/modes",
+    "Absolute CAS input paths and exact38 public file byte pins",
+    "Existing pinned CAS checker only; no target native/test/learning replay",
+    "Full source archive checks every Git blob and mode; source index byte comparison",
+    "Qualified request activation separate from 0/4 admitted and G2 UNKNOWN",
+    "All comparators NOT_STARTED; no claimed tie or superiority",
+    "ROS synchronization explicitly unconfirmed; pending mutation not treated as saved"
+  ],
+  "schema": "INDEPENDENT_REQUEST_V1_CLOSED_PUBLICATION_REVIEW",
+  "source_or_index_mutations": false,
+  "status": "PASS_READ_ONLY_WORKFLOW_AND_SCOPE_REVIEW",
+  "workflow": {
+    "path": ".github/workflows/udm-request-v1-closed-evidence.yml",
+    "sha256": "22ba144d6cf8a4afe95be14ad4343ec30084972b0e3e338047609f490f030311"
+  }
+}
