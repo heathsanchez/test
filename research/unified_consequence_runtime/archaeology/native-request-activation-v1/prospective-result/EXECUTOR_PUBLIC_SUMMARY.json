@@ -1,0 +1,185 @@
+{
+  "actor_identity": "/root/v45_ordered_screener independent amended request-activation native screener",
+  "all_child_returncodes": [
+    0,
+    0,
+    0,
+    0
+  ],
+  "authority_sha256": "c1c0cbf6afe247e3b2a863b87c1c5b32fac248869ca76cefa0e7813e1678cd18",
+  "case_processes_completed": 4,
+  "child_system_cpu_seconds": 49.862659,
+  "child_user_cpu_seconds": 79.797924,
+  "collection_calls": 0,
+  "combined_known_screening_and_actor_prelaunch_wall_seconds": 162.3912954620009,
+  "combined_outer_wall_seconds": 162.3575934,
+  "completed_fixed_pool": true,
+  "cost_boundary": "New kernel-birth budget interval includes native driver startup/preflight/child/cleanup; original25.756850843s is already charged once. Separate actor prelaunch checks are charged additionally to common lifecycle accounting. Inner process/case/build intervals overlap and must not be added. Full human/model/qualification/engineering costs remain separately UNKNOWN or externally recorded. Transport budget qualification grants no native admission or scientific warrant.",
+  "created_at_unix": 1793238633.5596516,
+  "eligible_public_envelopes": 0,
+  "files": {
+    "EXECUTOR_PRELAUNCH_CHECK.json": {
+      "bytes": 966,
+      "path": "/workspace/qualification/native-request-activation-v1-prospective/EXECUTOR_PRELAUNCH_CHECK.json",
+      "sha256": "aad4c244fb83b8994b4077afe5542ad88d8d03b1f7846f101b6032fc97ac71a6"
+    },
+    "ORDERED_DRIVER.stderr.log": {
+      "bytes": 0,
+      "path": "/workspace/qualification/native-request-activation-v1-prospective/ORDERED_DRIVER.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "ORDERED_DRIVER.stdout.log": {
+      "bytes": 1590,
+      "path": "/workspace/qualification/native-request-activation-v1-prospective/ORDERED_DRIVER.stdout.log",
+      "sha256": "61e70e9e59dd7dd840a889ce69227ea305b7aab248b15e3a1e88ac964b500c2d"
+    },
+    "ORDERED_PROCESS_COSTS.json": {
+      "bytes": 5732,
+      "path": "/workspace/qualification/native-request-activation-v1-prospective/ORDERED_PROCESS_COSTS.json",
+      "sha256": "c84560ae32206980daa4d01a26ba130a12fc85d4239b482d9ab57b7486a791ca"
+    },
+    "SCREENING_ACTOR_ATTESTATION.json": {
+      "bytes": 1559,
+      "path": "/workspace/qualification/native-request-activation-v1-prospective/SCREENING_ACTOR_ATTESTATION.json",
+      "sha256": "5d5aa8cbf0447745b07bb835cd8dfa7172de4fe52f818a08eebfc8ea2579587a"
+    },
+    "SCREENING_OUTER_BUDGET.json": {
+      "bytes": 4379,
+      "path": "/workspace/qualification/native-request-activation-v1-prospective/SCREENING_OUTER_BUDGET.json",
+      "sha256": "362ed06218f796193e0aa3a65415f52ffd176b1fc174ea0711997bb71ccaacba"
+    },
+    "SCREENING_PARENT_PINS.json": {
+      "bytes": 671,
+      "path": "/workspace/qualification/native-request-activation-v1-prospective/SCREENING_PARENT_PINS.json",
+      "sha256": "e2d90e2ee1e36f3b9af938fa2872c80574f116ae722475ca6fa3127da726f69a"
+    },
+    "SCREENING_SOURCE_AFTER.json": {
+      "bytes": 890301,
+      "path": "/workspace/qualification/native-request-activation-v1-prospective/SCREENING_SOURCE_AFTER.json",
+      "sha256": "be0deaff9376b56bd6d0355436708c4752706da22bf0a0f54f3dc0f260986030"
+    },
+    "SCREENING_SOURCE_BEFORE.json": {
+      "bytes": 890301,
+      "path": "/workspace/qualification/native-request-activation-v1-prospective/SCREENING_SOURCE_BEFORE.json",
+      "sha256": "be0deaff9376b56bd6d0355436708c4752706da22bf0a0f54f3dc0f260986030"
+    },
+    "SOURCE_INDEX_SCREENING_AUDIT.json": {
+      "bytes": 1174,
+      "path": "/workspace/qualification/native-request-activation-v1-prospective/SOURCE_INDEX_SCREENING_AUDIT.json",
+      "sha256": "178a8c2568cdc98e993b5305cb7a0b68f07c3fad4049948a332e45a261a554ee"
+    },
+    "screening/SCREENING_METER.json": {
+      "bytes": 1983,
+      "path": "/workspace/qualification/native-request-activation-v1-prospective/screening/SCREENING_METER.json",
+      "sha256": "d01b0df2b59b2bad320f9efaf7df02d82c45cfae99e494572887792045df4be8"
+    },
+    "screening/case-000/SCREENING_ENVELOPE.json": {
+      "bytes": 1293,
+      "path": "/workspace/qualification/native-request-activation-v1-prospective/screening/case-000/SCREENING_ENVELOPE.json",
+      "sha256": "1d6360973d4d07c0ec2b3b18afbcb3982f6495c06370c2aa26e55d33bbb3f614"
+    },
+    "screening/case-001/SCREENING_ENVELOPE.json": {
+      "bytes": 1291,
+      "path": "/workspace/qualification/native-request-activation-v1-prospective/screening/case-001/SCREENING_ENVELOPE.json",
+      "sha256": "75f8d536c9534c70b48e555f30c2d955dc3eb2001e05dcb384a373c09c05d196"
+    },
+    "screening/case-002/SCREENING_ENVELOPE.json": {
+      "bytes": 1291,
+      "path": "/workspace/qualification/native-request-activation-v1-prospective/screening/case-002/SCREENING_ENVELOPE.json",
+      "sha256": "b472ec86073ae101cf0e3224049d949aba6777e0fca292e357fed9c4b85930d6"
+    },
+    "screening/case-003/SCREENING_ENVELOPE.json": {
+      "bytes": 1297,
+      "path": "/workspace/qualification/native-request-activation-v1-prospective/screening/case-003/SCREENING_ENVELOPE.json",
+      "sha256": "71b1420823a38f3218a1cafb7e4d3e7bc5e6b662689d9bb9f6dec0962e4261f9"
+    }
+  },
+  "fixed_pool_count": 4,
+  "index_changes": [],
+  "meter_accounting_complete": true,
+  "meter_pending_present": false,
+  "model_policy_constructor_or_search_execution": false,
+  "native_calls": 0,
+  "new_outer_wall_seconds": 136.600742557,
+  "original_driver_wall_seconds": 134.85971839800004,
+  "parent_system_cpu_seconds": 2.540166,
+  "parent_user_cpu_seconds": 6.806313,
+  "prequery_commit": "b25f18c7fd2cfc3bb1b01dd668535b49254c0604",
+  "prior_charged_outer_wall_seconds": 25.756850843,
+  "private_native_reports_or_target_source_read_by_executor": false,
+  "public_envelopes": [
+    {
+      "build_costs": {
+        "build_calls": 0,
+        "build_seconds": 0.0,
+        "coverage": "V43 builder launches and generated-build verification attempts in this screening interval; parent wall time includes provisioning, host checks and independent oracle work. Original native counters and ceilings are unchanged; build seconds are included in parent wall time.",
+        "inclusive_parent_wall_seconds": 3.146278086000166,
+        "verification_attempts": 0
+      },
+      "collection_calls": 0,
+      "eligible": false,
+      "index": 0,
+      "native_calls": 0,
+      "public_status": "UNKNOWN_ADMISSION_SCREENING"
+    },
+    {
+      "build_costs": {
+        "build_calls": 0,
+        "build_seconds": 0.0,
+        "coverage": "V43 builder launches and generated-build verification attempts in this screening interval; parent wall time includes provisioning, host checks and independent oracle work. Original native counters and ceilings are unchanged; build seconds are included in parent wall time.",
+        "inclusive_parent_wall_seconds": 20.03521078599988,
+        "verification_attempts": 0
+      },
+      "collection_calls": 0,
+      "eligible": false,
+      "index": 1,
+      "native_calls": 0,
+      "public_status": "UNKNOWN_ADMISSION_SCREENING"
+    },
+    {
+      "build_costs": {
+        "build_calls": 0,
+        "build_seconds": 0.0,
+        "coverage": "V43 builder launches and generated-build verification attempts in this screening interval; parent wall time includes provisioning, host checks and independent oracle work. Original native counters and ceilings are unchanged; build seconds are included in parent wall time.",
+        "inclusive_parent_wall_seconds": 3.1750780860002124,
+        "verification_attempts": 0
+      },
+      "collection_calls": 0,
+      "eligible": false,
+      "index": 2,
+      "native_calls": 0,
+      "public_status": "UNKNOWN_ADMISSION_SCREENING"
+    },
+    {
+      "build_costs": {
+        "build_calls": 0,
+        "build_seconds": 0.0,
+        "coverage": "V43 builder launches and generated-build verification attempts in this screening interval; parent wall time includes provisioning, host checks and independent oracle work. Original native counters and ceilings are unchanged; build seconds are included in parent wall time.",
+        "inclusive_parent_wall_seconds": 3.9753745250000065,
+        "verification_attempts": 0
+      },
+      "collection_calls": 0,
+      "eligible": false,
+      "index": 3,
+      "native_calls": 0,
+      "public_status": "UNKNOWN_ADMISSION_SCREENING"
+    }
+  ],
+  "raw_audit_actor": "/root/v45_science_readiness",
+  "restored_any_index": false,
+  "retry_or_pool_substitution": false,
+  "schema": "UDM_REQUEST_ACTIVATION_V1_INDEPENDENT_EXECUTOR_PUBLIC_SUMMARY",
+  "scientific_verdicts": {
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN"
+  },
+  "separate_actor_prelaunch_wall_seconds": 0.033702062000884325,
+  "source_commit": "ab6dc4fd1468d249785d40f5550959a79258cc7e",
+  "source_unchanged": true,
+  "status": "COMPLETE_ORDERED_SCREENING_AWAITING_INDEPENDENT_RAW_AUDIT",
+  "transport_budget_scope": "OUTER_TRANSPORT_COMPLETION_AND_COST_ONLY",
+  "transport_budget_status": "COMPLETED_WITHIN_ORIGINAL_SCREENING_BUDGET"
+}

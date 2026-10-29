@@ -1,0 +1,116 @@
+{
+  "commands": [
+    {
+      "already_executed_data_only": true,
+      "command": [
+        "/workspace/qualification/native-namespace-v45-environment/controller/bin/python",
+        "-I",
+        "-B",
+        "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective-result/ARCHIVE_ONLY_CHECK.py",
+        "pack",
+        "--repo",
+        "/workspace/udm-v54",
+        "--source",
+        "/workspace/qualification/native-request-activation-v1-prospective",
+        "--archive",
+        "/workspace/qualification/native-request-activation-v1-archive-prep/COMPLETED_AMENDED_SCREENING_CAS.tar.gz",
+        "--manifest",
+        "/workspace/qualification/native-request-activation-v1-archive-prep/COMPLETED_AMENDED_SCREENING_CAS.MANIFEST.json",
+        "--readback",
+        "/workspace/qualification/native-request-activation-v1-archive-prep/COMPLETED_AMENDED_SCREENING_CAS.READBACK.json",
+        "--summary",
+        "/workspace/qualification/native-request-activation-v1-archive-prep/COMPLETED_AMENDED_SCREENING_CAS.SUMMARY.json"
+      ],
+      "outputs_refuse_overwrite": true,
+      "source": "/workspace/qualification/native-request-activation-v1-prospective"
+    },
+    {
+      "already_executed_data_only": true,
+      "command": [
+        "/workspace/qualification/native-namespace-v45-environment/controller/bin/python",
+        "-I",
+        "-B",
+        "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective-result/ARCHIVE_ONLY_CHECK.py",
+        "pack",
+        "--repo",
+        "/workspace/udm-v54",
+        "--source",
+        "/workspace/qualification/native-request-activation-v1-screening-audit-cli2",
+        "--archive",
+        "/workspace/qualification/native-request-activation-v1-archive-prep/ACTUAL_CLI2_SOURCE_AND_TDD_CAS.tar.gz",
+        "--manifest",
+        "/workspace/qualification/native-request-activation-v1-archive-prep/ACTUAL_CLI2_SOURCE_AND_TDD_CAS.MANIFEST.json",
+        "--readback",
+        "/workspace/qualification/native-request-activation-v1-archive-prep/ACTUAL_CLI2_SOURCE_AND_TDD_CAS.READBACK.json",
+        "--summary",
+        "/workspace/qualification/native-request-activation-v1-archive-prep/ACTUAL_CLI2_SOURCE_AND_TDD_CAS.SUMMARY.json"
+      ],
+      "outputs_refuse_overwrite": true,
+      "source": "/workspace/qualification/native-request-activation-v1-screening-audit-cli2"
+    },
+    {
+      "already_executed_data_only": true,
+      "command": [
+        "/workspace/qualification/native-namespace-v45-environment/controller/bin/python",
+        "-I",
+        "-B",
+        "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective-result/ARCHIVE_ONLY_CHECK.py",
+        "pack",
+        "--repo",
+        "/workspace/udm-v54",
+        "--source",
+        "/workspace/qualification/native-request-activation-v1-archive-prep/auditor-source-bundle",
+        "--archive",
+        "/workspace/qualification/native-request-activation-v1-archive-prep/ACTUAL_QUALIFICATION_AUDITOR_SOURCE_CAS.tar.gz",
+        "--manifest",
+        "/workspace/qualification/native-request-activation-v1-archive-prep/ACTUAL_QUALIFICATION_AUDITOR_SOURCE_CAS.MANIFEST.json",
+        "--readback",
+        "/workspace/qualification/native-request-activation-v1-archive-prep/ACTUAL_QUALIFICATION_AUDITOR_SOURCE_CAS.READBACK.json",
+        "--summary",
+        "/workspace/qualification/native-request-activation-v1-archive-prep/ACTUAL_QUALIFICATION_AUDITOR_SOURCE_CAS.SUMMARY.json"
+      ],
+      "outputs_refuse_overwrite": true,
+      "source": "/workspace/qualification/native-request-activation-v1-archive-prep/auditor-source-bundle"
+    }
+  ],
+  "existing_builder": {
+    "path": "research/unified_consequence_runtime/archaeology/experiment-interface-v43/prospective-result/archive-verification/build_data_archive.py",
+    "sha256": "98f44e38b0b5e71a168e6ffe30e616ad7f3125dc4f381ef3d9a60f76865150d8"
+  },
+  "existing_wrapper": {
+    "path": "/workspace/udm-v54/research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective-result/ARCHIVE_ONLY_CHECK.py",
+    "sha256": "73c24083f15b145dcc28aac8e6cda67b6682f370e879a234ad3c2beedaaaad11"
+  },
+  "independent_readback": {
+    "path": "research/unified_consequence_runtime/archaeology/experiment-interface-v43/prospective-result/archive-verification/independent_verify_cas.py",
+    "sha256": "05ea4d635494f045ab5c39c1420c2143ffec22110577e6492b9d9d1bfa92a018"
+  },
+  "minimal_new_ci_steps": [
+    "Checkout exact expected publication commit on research/udm-native-request-activation-v1-20261029; contents:read only",
+    "Set GIT_OPTIONAL_LOCKS=0 and PYTHONDONTWRITEBYTECODE=1; use Python standard library, no pytest/target dependencies/components/models",
+    "Verify an externally pinned publication expectation SHA and each retained file byte count/hash",
+    "Load the existing V44 ARCHIVE_ONLY_CHECK.py by exact SHA; call cas_verifier(repo).verify(archive,manifest,None) for each archive; do not call native or its historical hardcoded check()",
+    "Require retained original readback source_lstat_and_bytes_verified=true and exact archive/manifest/source-count/object identities matching fresh archive-only readback",
+    "Retain scientific UNKNOWNs and original negative statuses verbatim; print PASS_ARCHIVE_INTEGRITY_ONLY_NO_NATIVE_REPLAY",
+    "Optionally Git-archive exact publication commit as complete source; upload committed result subtree, CAS files/readbacks and source archive, no native rerun or source selection"
+  ],
+  "model_calls": 0,
+  "native_calls": 0,
+  "new_source_queries": 0,
+  "owned_actions_template": {
+    "path": ".github/workflows/udm-native-frontier-evidence-v44.yml",
+    "reason": "Existing historical workflow is restricted to its original branch and source expectation; do not modify or repurpose that frozen file.",
+    "requires_new_additive_workflow_on_current_owned_branch": true,
+    "sha256": "bd38ee5b27018ae114fc66fbe31e83e8fc541495a015d80b7c4b65c07ca14625"
+  },
+  "root_source_mutations": 0,
+  "schema": "REQUEST_V1_EXISTING_ARCHIVE_OPERATION_HANDOFF",
+  "scientific_verdicts": {
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN"
+  },
+  "scope": "LOSSLESS_DATA_ARCHIVAL_ONLY_NO_NATIVE_REPLAY"
+}

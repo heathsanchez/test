@@ -1,0 +1,96 @@
+{
+  "amended_screening": {
+    "collection_calls": 0,
+    "completed_cases": 4,
+    "completed_without_retries": true,
+    "eligible_cases": 0,
+    "fixed_cases": 4,
+    "independent_audit": {
+      "sha256": "b7272050c3cc41a537fff118efa9df08bafd5b30f0a614d4f1d69c705d4c4198",
+      "status": "PASS_ADMISSION_ONLY_SCREENING_AUDIT"
+    },
+    "index_changes": [],
+    "native_calls": 0,
+    "no_retry_or_substitution": true,
+    "source_commit": "ab6dc4fd1468d249785d40f5550959a79258cc7e",
+    "source_unchanged": true,
+    "summary_sha256": "a245f57becdb1a40c21d988ad5a4b560dd0936f40094ec7f061b4a17015f8078"
+  },
+  "branch": "research/udm-native-request-activation-v1-20261029",
+  "comparators": {
+    "actual_coding_agent": {
+      "measured_effect": null,
+      "native_calls": 0,
+      "status": "NOT_STARTED_ADMISSION_GATE_BLOCKED"
+    },
+    "equally_informed_executable_ledger": {
+      "measured_effect": null,
+      "native_calls": 0,
+      "status": "NOT_STARTED_ADMISSION_GATE_BLOCKED"
+    },
+    "unchanged_method": {
+      "measured_effect": null,
+      "native_calls": 0,
+      "status": "NOT_STARTED_ADMISSION_GATE_BLOCKED"
+    }
+  },
+  "costs_boundary": "Original metadata65.660687051 and combined screening162.3575934 are distinct outer intervals. Actor prelaunch, audit/finalizer/failed launches and qualification/engineering intervals are separately retained; nested child clocks are not added twice. Complete lifecycle and any comparative advantage remain UNKNOWN.",
+  "known_costs": {
+    "combined_old_and_new_screening_outer_wall_seconds": 162.3575934,
+    "complete_lifecycle_cost": "UNKNOWN; additional engineering/auditor/compilation/maintenance/model intervals must not be fabricated or omitted from comparative claims",
+    "nested_intervals_not_additive": true,
+    "original_metadata_outer_wall_seconds": 65.660687051,
+    "request_activation_qualification_wall_seconds": 199.651629845,
+    "separate_actor_prelaunch_wall_seconds": 0.033702062000884325
+  },
+  "original_selector_result": {
+    "message": "screening shortfall; no outcome-selected replacement permitted",
+    "native_calls": 0,
+    "returncode": 1,
+    "status": "REFUSED_SHORTFALL",
+    "wall_seconds": 0.6669465080012742
+  },
+  "original_v45_trial": "UNKNOWN_PRESERVED_AT_cfab3f080cd199f367528e6631bcb93f3ebbc510",
+  "pre_source_commit": "ab6dc4fd1468d249785d40f5550959a79258cc7e",
+  "profile_refusals": [
+    {
+      "index": 0,
+      "reason": "UNKNOWN_NO_COMPATIBLE_PROFILE",
+      "residual": "Modern interpreter is declared compatible, but frozen profile lacks five required distributions; no compatible admitted profile. This does not establish native incompatibility."
+    },
+    {
+      "index": 1,
+      "reason": "UNKNOWN_UNDECLARED_PYTHON_COMPATIBILITY",
+      "residual": "Original metadata has neither versioned Python classifiers nor a requires-python range. Both profiles remain UNKNOWN_UNDECLARED_PYTHON_COMPATIBILITY; no executable compatibility evidence was acquired."
+    },
+    {
+      "index": 2,
+      "reason": "UNKNOWN_NO_COMPATIBLE_PROFILE",
+      "residual": "Both interpreter minors are declared supported, but original pytest exact pins differ from each frozen profile and one required distribution is absent."
+    },
+    {
+      "index": 3,
+      "reason": "UNKNOWN_NO_COMPATIBLE_PROFILE",
+      "residual": "Modern interpreter is declared compatible, but pinned build/test dependencies and pytest version do not satisfy original metadata. Old interpreter is explicitly incompatible."
+    }
+  ],
+  "prospective_boundary": "Fixed four-case pool is closed. Exposed failures are diagnostics only. No fresh tasks, retries, resampling or target-specific winning additions.",
+  "remaining_obstruction": "Complete source-preserving executable environment construction/qualification beyond the two frozen profiles; three dependency/profile mismatches and one undeclared Python compatibility range.",
+  "request_activation_qualification": {
+    "controls": 41,
+    "independent_actual_archive_audit_sha256": "3acb3781567cb6b0d2f3c6e73faf46f805bbceb3469d97d6e0b3d9f286700c75",
+    "run": "https://github.com/heathsanchez/test/actions/runs/40798830998",
+    "source_commit": "4ad4a3d9608b9d28b920c881fc78cda658b028da",
+    "verdict": "WARRANTED_BOUNDED_REQUEST_ACTIVATION_ONLY"
+  },
+  "ros_status": "UNKNOWN_NO_CONFIRMED_CURRENT_READBACK; independent checkpoint fetch returned old snapshot",
+  "schema": "UDM_NATIVE_REQUEST_V1_CLOSED_SCIENTIFIC_ASSESSMENT",
+  "scientific_verdicts": {
+    "G2": "UNKNOWN_NO_ADMITTED_NATIVE_OBLIGATION",
+    "G3": "UNKNOWN_NOT_EXECUTED",
+    "G4": "UNKNOWN_COMPARATORS_NOT_EXECUTED",
+    "G5": "UNKNOWN_PYTHON_REFINEMENT_NOT_CHECKED",
+    "G6": "UNKNOWN_NONBYPASSABLE_ENFORCEMENT_NOT_QUALIFIED"
+  },
+  "state": "CLOSED_UNKNOWN_NO_ADMITTED_NATIVE_OBLIGATION"
+}

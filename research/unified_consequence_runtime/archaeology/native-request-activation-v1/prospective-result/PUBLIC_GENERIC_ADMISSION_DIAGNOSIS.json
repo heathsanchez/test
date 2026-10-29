@@ -1,0 +1,392 @@
+{
+  "audit": {
+    "path": "/workspace/qualification/native-request-activation-v1-prospective/INDEPENDENT_SCREENING_AUDIT.json",
+    "sha256": "b7272050c3cc41a537fff118efa9df08bafd5b30f0a614d4f1d69c705d4c4198"
+  },
+  "cases": [
+    {
+      "accounting_complete": true,
+      "base_source_fetched_and_inventoried": true,
+      "bootstrap_profile_attempts": 0,
+      "build_calls": 0,
+      "candidate_statuses": [
+        {
+          "constraints": [
+            "INCOMPATIBLE_DECLARED_PYTHON",
+            "INCOMPATIBLE_PYTHON_RANGE",
+            "UNKNOWN_DEPENDENCY_UNSATISFIED",
+            "UNKNOWN_EXTRA_DEPENDENCY_METADATA",
+            "UNKNOWN_DEPENDENCY_UNSATISFIED",
+            "UNKNOWN_DEPENDENCY_UNSATISFIED",
+            "UNKNOWN_DEPENDENCY_UNSATISFIED",
+            "UNKNOWN_DEPENDENCY_UNSATISFIED",
+            "UNKNOWN_DEPENDENCY_UNSATISFIED",
+            "UNKNOWN_DEPENDENCY_UNSATISFIED",
+            "UNKNOWN_DEPENDENCY_UNSATISFIED"
+          ],
+          "profile_id": "cpython-3.6.5-pytest-5.4.3-linux-x86_64",
+          "reason": "INCOMPATIBLE_DECLARED_PYTHON",
+          "status": "REJECTED"
+        },
+        {
+          "constraints": [
+            "UNKNOWN_DEPENDENCY_UNSATISFIED",
+            "UNKNOWN_DEPENDENCY_UNSATISFIED",
+            "UNKNOWN_DEPENDENCY_UNSATISFIED",
+            "UNKNOWN_DEPENDENCY_UNSATISFIED",
+            "UNKNOWN_DEPENDENCY_UNSATISFIED"
+          ],
+          "profile_id": "cpython-3.12.14-pytest-8.4.1-linux-x86_64",
+          "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED",
+          "status": "UNKNOWN"
+        }
+      ],
+      "collection_calls": 0,
+      "eligible": false,
+      "evidence": {
+        "admission": {
+          "path": "/workspace/qualification/native-request-activation-v1-prospective/screening/case-000/source-environment/admission-v45.json",
+          "sha256": "b8dcc0a65892c9157ec639206dfbfdbd38235b18c2fbb98eeeb3aa0ecf5e9066"
+        },
+        "case": {
+          "path": "/workspace/qualification/native-request-activation-v1-prospective/screening/case-000/SCREENING_CASE.json",
+          "sha256": "b7009e4a7c99d65b546e77315e8c99ce33121365e2f23427da246f36406a08e1"
+        },
+        "selection": {
+          "path": "/workspace/qualification/native-request-activation-v1-prospective/screening/case-000/source-environment/selection.json",
+          "sha256": "5403a5e2a2cc2e0313a6e6c5ff7d7c47397da6cc160a854499675be117f817b3"
+        }
+      },
+      "exception": null,
+      "index": 0,
+      "metadata_backend_calls": 0,
+      "native_assertion_outcome": "NOT_EXECUTED",
+      "native_calls": 0,
+      "native_controller_subprocess_attempts": 0,
+      "native_environment_provisioned": false,
+      "reason": "UNKNOWN_NO_COMPATIBLE_PROFILE",
+      "refusal_not_exception": true,
+      "runtime_selected": false,
+      "smallest_residual": "Modern interpreter is declared compatible, but frozen profile lacks five required distributions; no compatible admitted profile. This does not establish native incompatibility.",
+      "source_metadata_identity": {
+        "file_count": 77,
+        "git_tree": "ec9e3d217b67f8af13df49f4d8ae5dc83435337d",
+        "tracked_tree_sha256": "c4414cbcb969313b9ac2bec36b1ea6dfed16e31c7030381bf5fb0bd89aec67bc"
+      },
+      "source_metadata_identity_established": true,
+      "stage": "independent metadata/profile selection, before native materialization",
+      "status": "UNKNOWN_ENVIRONMENT_SELECTION"
+    },
+    {
+      "accounting_complete": true,
+      "base_source_fetched_and_inventoried": true,
+      "bootstrap_profile_attempts": 0,
+      "build_calls": 0,
+      "candidate_statuses": [
+        {
+          "constraints": [
+            "UNKNOWN_UNDECLARED_PYTHON_COMPATIBILITY"
+          ],
+          "profile_id": "cpython-3.6.5-pytest-5.4.3-linux-x86_64",
+          "reason": "UNKNOWN_UNDECLARED_PYTHON_COMPATIBILITY",
+          "status": "UNKNOWN"
+        },
+        {
+          "constraints": [
+            "UNKNOWN_UNDECLARED_PYTHON_COMPATIBILITY"
+          ],
+          "profile_id": "cpython-3.12.14-pytest-8.4.1-linux-x86_64",
+          "reason": "UNKNOWN_UNDECLARED_PYTHON_COMPATIBILITY",
+          "status": "UNKNOWN"
+        }
+      ],
+      "collection_calls": 0,
+      "eligible": false,
+      "evidence": {
+        "admission": {
+          "path": "/workspace/qualification/native-request-activation-v1-prospective/screening/case-001/source-environment/admission-v45.json",
+          "sha256": "17d61d9e1e7627eb2e86656088bf72a334b34122c2f917ce7cd4f47e1841eaa1"
+        },
+        "case": {
+          "path": "/workspace/qualification/native-request-activation-v1-prospective/screening/case-001/SCREENING_CASE.json",
+          "sha256": "f8cc8d383938763cef49cb7ab2c41a87ca73faaa7dc5403845151155abd616f3"
+        },
+        "selection": {
+          "path": "/workspace/qualification/native-request-activation-v1-prospective/screening/case-001/source-environment/selection.json",
+          "sha256": "aaf8ec062884717ef95ce8ff508e21aac52df234f8d94b593422a155fdeb7517"
+        }
+      },
+      "exception": null,
+      "index": 1,
+      "metadata_backend_calls": 0,
+      "native_assertion_outcome": "NOT_EXECUTED",
+      "native_calls": 0,
+      "native_controller_subprocess_attempts": 0,
+      "native_environment_provisioned": false,
+      "reason": "UNKNOWN_UNDECLARED_PYTHON_COMPATIBILITY",
+      "refusal_not_exception": true,
+      "runtime_selected": false,
+      "smallest_residual": "Original metadata has neither versioned Python classifiers nor a requires-python range. Both profiles remain UNKNOWN_UNDECLARED_PYTHON_COMPATIBILITY; no executable compatibility evidence was acquired.",
+      "source_metadata_identity": {
+        "file_count": 8,
+        "git_tree": "7d3593274dc4598de4338a38cc3fe8045f8b87a5",
+        "tracked_tree_sha256": "4e5a012c6505090c8107565b89683a774de8e5ca0cba6a526479bd734758c8d2"
+      },
+      "source_metadata_identity_established": true,
+      "stage": "independent metadata/profile selection, before native materialization",
+      "status": "UNKNOWN_ENVIRONMENT_SELECTION"
+    },
+    {
+      "accounting_complete": true,
+      "base_source_fetched_and_inventoried": true,
+      "bootstrap_profile_attempts": 0,
+      "build_calls": 0,
+      "candidate_statuses": [
+        {
+          "constraints": [
+            "UNKNOWN_DEPENDENCY_UNSATISFIED",
+            "UNKNOWN_DEPENDENCY_UNSATISFIED"
+          ],
+          "profile_id": "cpython-3.6.5-pytest-5.4.3-linux-x86_64",
+          "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED",
+          "status": "UNKNOWN"
+        },
+        {
+          "constraints": [
+            "UNKNOWN_DEPENDENCY_UNSATISFIED",
+            "UNKNOWN_DEPENDENCY_UNSATISFIED"
+          ],
+          "profile_id": "cpython-3.12.14-pytest-8.4.1-linux-x86_64",
+          "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED",
+          "status": "UNKNOWN"
+        }
+      ],
+      "collection_calls": 0,
+      "eligible": false,
+      "evidence": {
+        "admission": {
+          "path": "/workspace/qualification/native-request-activation-v1-prospective/screening/case-002/source-environment/admission-v45.json",
+          "sha256": "2c87be0e523641887667a59361d8e0dbd9343bb239ef0f7c758467bf24420deb"
+        },
+        "case": {
+          "path": "/workspace/qualification/native-request-activation-v1-prospective/screening/case-002/SCREENING_CASE.json",
+          "sha256": "bf7e3bf3c4b5462ec25b8becea095952a9a651b9407f6548f29fe04f57202bc0"
+        },
+        "selection": {
+          "path": "/workspace/qualification/native-request-activation-v1-prospective/screening/case-002/source-environment/selection.json",
+          "sha256": "d8a8465652817f34d0b1fcc3901fb93b1c68402795813e8a04f60179e9555b8b"
+        }
+      },
+      "exception": null,
+      "index": 2,
+      "metadata_backend_calls": 0,
+      "native_assertion_outcome": "NOT_EXECUTED",
+      "native_calls": 0,
+      "native_controller_subprocess_attempts": 0,
+      "native_environment_provisioned": false,
+      "reason": "UNKNOWN_NO_COMPATIBLE_PROFILE",
+      "refusal_not_exception": true,
+      "runtime_selected": false,
+      "smallest_residual": "Both interpreter minors are declared supported, but original pytest exact pins differ from each frozen profile and one required distribution is absent.",
+      "source_metadata_identity": {
+        "file_count": 68,
+        "git_tree": "b733c624993b94afa4ba22739514ba331ef2ee00",
+        "tracked_tree_sha256": "df52b1caa1dcd31afc680c934d0dc06c7fd86bf91a6d54a5ff54a43f2ebf5e25"
+      },
+      "source_metadata_identity_established": true,
+      "stage": "independent metadata/profile selection, before native materialization",
+      "status": "UNKNOWN_ENVIRONMENT_SELECTION"
+    },
+    {
+      "accounting_complete": true,
+      "base_source_fetched_and_inventoried": true,
+      "bootstrap_profile_attempts": 0,
+      "build_calls": 0,
+      "candidate_statuses": [
+        {
+          "constraints": [
+            "INCOMPATIBLE_DECLARED_PYTHON",
+            "INCOMPATIBLE_PYTHON_RANGE",
+            "UNKNOWN_DEPENDENCY_UNSATISFIED",
+            "UNKNOWN_DEPENDENCY_UNSATISFIED",
+            "UNKNOWN_DEPENDENCY_UNSATISFIED",
+            "UNKNOWN_DEPENDENCY_UNSATISFIED",
+            "UNKNOWN_DEPENDENCY_UNSATISFIED",
+            "UNKNOWN_DEPENDENCY_UNSATISFIED",
+            "UNKNOWN_DEPENDENCY_UNSATISFIED",
+            "UNKNOWN_DEPENDENCY_UNSATISFIED",
+            "UNKNOWN_DEPENDENCY_UNSATISFIED",
+            "UNKNOWN_DEPENDENCY_UNSATISFIED",
+            "UNKNOWN_DEPENDENCY_UNSATISFIED",
+            "UNKNOWN_DEPENDENCY_UNSATISFIED"
+          ],
+          "profile_id": "cpython-3.6.5-pytest-5.4.3-linux-x86_64",
+          "reason": "INCOMPATIBLE_DECLARED_PYTHON",
+          "status": "REJECTED"
+        },
+        {
+          "constraints": [
+            "UNKNOWN_DEPENDENCY_UNSATISFIED",
+            "UNKNOWN_DEPENDENCY_UNSATISFIED",
+            "UNKNOWN_DEPENDENCY_UNSATISFIED",
+            "UNKNOWN_DEPENDENCY_UNSATISFIED",
+            "UNKNOWN_DEPENDENCY_UNSATISFIED",
+            "UNKNOWN_DEPENDENCY_UNSATISFIED",
+            "UNKNOWN_DEPENDENCY_UNSATISFIED",
+            "UNKNOWN_DEPENDENCY_UNSATISFIED",
+            "UNKNOWN_DEPENDENCY_UNSATISFIED",
+            "UNKNOWN_DEPENDENCY_UNSATISFIED"
+          ],
+          "profile_id": "cpython-3.12.14-pytest-8.4.1-linux-x86_64",
+          "reason": "UNKNOWN_DEPENDENCY_UNSATISFIED",
+          "status": "UNKNOWN"
+        }
+      ],
+      "collection_calls": 0,
+      "eligible": false,
+      "evidence": {
+        "admission": {
+          "path": "/workspace/qualification/native-request-activation-v1-prospective/screening/case-003/source-environment/admission-v45.json",
+          "sha256": "8711fed4c8bafa938636b6aa91de004d527015452d522b5b9a5bafdd43f84c96"
+        },
+        "case": {
+          "path": "/workspace/qualification/native-request-activation-v1-prospective/screening/case-003/SCREENING_CASE.json",
+          "sha256": "6867b9d6b2cd191a2758a9c6f1b64236fb170f1a3c38f6d64309b6910d9560a0"
+        },
+        "selection": {
+          "path": "/workspace/qualification/native-request-activation-v1-prospective/screening/case-003/source-environment/selection.json",
+          "sha256": "a94d029a1555ea46053f3f1a3f7c0ee5217aecf0069d2c3175cf2b2486becf1f"
+        }
+      },
+      "exception": null,
+      "index": 3,
+      "metadata_backend_calls": 0,
+      "native_assertion_outcome": "NOT_EXECUTED",
+      "native_calls": 0,
+      "native_controller_subprocess_attempts": 0,
+      "native_environment_provisioned": false,
+      "reason": "UNKNOWN_NO_COMPATIBLE_PROFILE",
+      "refusal_not_exception": true,
+      "runtime_selected": false,
+      "smallest_residual": "Modern interpreter is declared compatible, but pinned build/test dependencies and pytest version do not satisfy original metadata. Old interpreter is explicitly incompatible.",
+      "source_metadata_identity": {
+        "file_count": 121,
+        "git_tree": "d408e37192201791a7b381b6643c24728658d4fe",
+        "tracked_tree_sha256": "3fac1fc2c5b3665fa5d69f7d3e979a1e2c2dcc772f2de7d21889da1f54a2bc59"
+      },
+      "source_metadata_identity_established": true,
+      "stage": "independent metadata/profile selection, before native materialization",
+      "status": "UNKNOWN_ENVIRONMENT_SELECTION"
+    }
+  ],
+  "costs": {
+    "audit_and_finalizer_processes": [
+      {
+        "evidence": {
+          "path": "/workspace/qualification/native-request-activation-v1-prospective/private-independent-admission-audit-001.AUDIT_PROCESS.json",
+          "sha256": "e7951a93f7a2a84f133f561c0cc7ff7d8454ec2e00ae535bfe427240fd7b3a0a"
+        },
+        "returncode": 2,
+        "system_cpu_seconds": 0.061688999999999994,
+        "user_cpu_seconds": 0.5237229999999999,
+        "wall_seconds": 0.586170761998801
+      },
+      {
+        "evidence": {
+          "path": "/workspace/qualification/native-request-activation-v1-prospective/private-independent-admission-audit-002.AUDIT_PROCESS.json",
+          "sha256": "05de3fdde685f15fc42c49f257fe50e141f050ebf2240286f0c29bc5a9d53c7a"
+        },
+        "returncode": 0,
+        "system_cpu_seconds": 0.795451,
+        "user_cpu_seconds": 2.41807,
+        "wall_seconds": 3.2071197040022525
+      },
+      {
+        "evidence": {
+          "path": "/workspace/qualification/native-request-activation-v1-prospective/private-independent-admission-audit-002.FINALIZER_PROCESS.json",
+          "sha256": "b7e30d61049f7d8800b8d67e8c6508a1858feee3723e7f965faef27bd53de73e"
+        },
+        "returncode": 0,
+        "system_cpu_seconds": 0.024308999999999997,
+        "user_cpu_seconds": 0.17809,
+        "wall_seconds": 0.20273174999965704
+      }
+    ],
+    "combined_screening_seconds": 162.3575934,
+    "comparative_superiority": "NOT_ESTABLISHED",
+    "finalize_records_refusal": {
+      "authority": "Original native_environment_selection_v3.select_screened_roles, retained original deterministic selection",
+      "evidence": {
+        "path": "/workspace/qualification/native-request-activation-v1-prospective/FINALIZE_RECORDS_PROCESS.json",
+        "sha256": "14ced7d18ce790c445c0d41e2b2cf1946e578bea20275d439d18e1e1727effdd"
+      },
+      "exception": "ValueError: screening shortfall; no outcome-selected replacement permitted",
+      "returncode": 1,
+      "wall_seconds": 0.6669465080012742
+    },
+    "full_lifecycle": "UNKNOWN; add all available qualification, source-free controls, integration, metadata audit costs without double-counting. Unmeasured model/operator/maintenance cost remains UNKNOWN.",
+    "known_common_outer_subtotal_excluding_other_qualification_integration": 232.681252124002,
+    "missing_time_launcher": "Preserved exit127 before auditor startup; its duration was not independently measured.",
+    "native_screening_inner_costs": {
+      "build_calls": 0,
+      "build_seconds": 0.0,
+      "collection_calls": 0,
+      "controller_wall_seconds": 134.85971839800004,
+      "metadata_backend_calls": 0,
+      "metadata_backend_seconds": 0,
+      "native_calls": 0,
+      "sum_case_inclusive_wall_seconds": 30.331941483000264,
+      "verification_attempts": 0
+    },
+    "nested_intervals_not_additive": true,
+    "new_screening_outer_seconds": 136.600742557,
+    "original_metadata_outer_seconds": 65.66069,
+    "original_screening_outer_seconds": 25.756850843,
+    "screening_budget_seconds": 7200
+  },
+  "counts": {
+    "build": 0,
+    "collection": 0,
+    "complete_screened": 4,
+    "eligible": 0,
+    "metadata_backend": 0,
+    "native": 0,
+    "protected_assertion_outcomes": 0
+  },
+  "dossier": {
+    "path": "/workspace/qualification/native-request-activation-v1-prospective/private-independent-admission-audit-002/RETAINED_CHECKS.json",
+    "sha256": "10811e7c2a15810fd7b8aa9ea424abb3ed0d51647b24fef8012664d9f2bd5150"
+  },
+  "existing_operation_boundary": {
+    "dependency_resolution": "No claim that a qualified general dependency/profile-construction operation is absent. Existing exact profiles are insufficient; no additional profile was selected or qualified in this frozen test. Search prior source before new implementation.",
+    "diagnosis": "diagnose lines40-60 activates native metadata observation only for supported UNKNOWN_DYNAMIC_METADATA case. All four actual refusals have another reason, so choose lines211-215 correctly retains original selection and never invokes metadata bootstrap.",
+    "native_refusal": "native_environment_v3.py:170 returns UNKNOWN_ENVIRONMENT_SELECTION before profile selection, bound_provision, native collection or native assertion execution.",
+    "request_transport": "Restored record_admission_request was actually executed: all four cases retain admission request and causal ledger support; previous missing-export barrier was passed.",
+    "source": "research/unified_consequence_runtime/native_environment_v44.py",
+    "source_incompatibility": "UNKNOWN; this is finite admitted-profile/metadata insufficiency, not evidence the source cannot run."
+  },
+  "exposure_boundary": "All four original cases are now exposed diagnostics only. This reviewer inspected only retained admission/selection/cost evidence and original generic research implementation; no target test source or protected outcome was inspected. Original admission machine fetched/inventoried base source; no native protected outcomes exist. No retry/resampling/task fixes are licensed.",
+  "independent_actor": "/root/v45_science_readiness",
+  "schema": "UDM_NATIVE_REQUEST_ACTIVATION_V1_PUBLIC_GENERIC_ADMISSION_DIAGNOSIS",
+  "scientific_verdicts": {
+    "G0_G1": "PRESERVED_WARRANTED_BOUNDED",
+    "G2": "UNKNOWN_NO_ADMITTED_NATIVE_OBLIGATION",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN"
+  },
+  "single_remaining_residual": "Independently qualify a source-preserving generic way to establish a complete executable environment from original compatibility/dependency evidence, beyond selection from the two frozen profiles; preserve precise UNKNOWN when compatibility is undeclared. Existing operation recovery precedes new implementation.",
+  "source_commit": "ab6dc4fd1468d249785d40f5550959a79258cc7e",
+  "source_index": {
+    "before_after_snapshot_sha256": "08b3f91aedaf29b825adfac110fe3377b0d94a17b5e11e46f65938fe47294524",
+    "evidence": {
+      "path": "/workspace/qualification/native-request-activation-v1-prospective/private-independent-admission-audit-002.ROOT_INDEX_INTERVAL/AUDIT.json",
+      "sha256": "3cfef004ba49529ba5ab9db3ee9218764d9836f4e0aee58b1c45f4cf1777a0df"
+    },
+    "restoration_performed": false,
+    "status": "CLOSED_UNCHANGED",
+    "worktree_index_sha256": "4e88d02a33f7fa655c3ddf695e04c0037334d4f782041e3bf9ec99717395a74c"
+  },
+  "status": "PASS_INDEPENDENT_REFUSAL_AND_ACCOUNTING_CLOSURE_NO_NATIVE_ADMISSION"
+}

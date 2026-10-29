@@ -1,0 +1,45 @@
+{
+  "amended_four_case_zero_eligible_screening_saved": false,
+  "checked_at_utc": "2026-10-29T01:57:55.424607+00:00",
+  "files": {
+    "FETCH_BY_CANONICAL_URL.json": {
+      "bytes": 10585,
+      "sha256": "c080cdaf515f31a8fdcba3e4c1bf0b6936328b15ae6160c10a3b40b42b8c4c09"
+    },
+    "FETCH_BY_ID.json": {
+      "bytes": 10535,
+      "sha256": "2d07718aeed8b4e854628540dcf252da1c0aee38eee2f1cb7059b7013b0d526f"
+    },
+    "SCOPED_LATEST_RUN_SEARCH.json": {
+      "bytes": 158,
+      "sha256": "e74c600f01371ecf47520b7e44150b478f91b51971866cae837337658795fd80"
+    }
+  },
+  "missing_updates": [
+    "Actual native45GREEN40783387334 and its independent qualification/artifact verdict.",
+    "Actual native-request activationGREEN40798830998 and its independent dual-artifact qualification.",
+    "Amended four-case complete screening, zero eligible admissions, exact refusals/costs and remaining scientific obstruction."
+  ],
+  "native_namespace_green_40783387334_saved": false,
+  "native_namespace_run_id_present": true,
+  "observed_saved_snapshot_state": "Native V45 admission UNKNOWN; run40783387334 still described as undergoing combined qualification; no new universe or task queries started.",
+  "operations": {
+    "canonical_page_fetched": false,
+    "checkpoint_fetches": 2,
+    "git_or_source_writes": false,
+    "notion_writes": 0,
+    "scoped_searches": 1,
+    "task_raw_data_accessed": false
+  },
+  "readback_boundary": "Two fetch forms returned identical historical as-of/last-edit/body. This may be stale connector state; no current remote mutation completion is established. Empty scoped search supports lack of confirmation, not an exhaustive absence proof. Do not claim synchronized from intended or pending writes.",
+  "request_activation_green_40798830998_saved": false,
+  "request_activation_run_id_present": false,
+  "returned_page_last_edited_at": "2026-10-28T23:10:45.792Z",
+  "returned_snapshot_as_of": "2026-10-28T23:10:45.839Z",
+  "returned_text_bytes": 4650,
+  "returned_text_sha256": "cfebdc0e265b4393439d03e8529f4173cc7b4d41bd2673c35704037618dd091f",
+  "schema": "UDM_NATIVE_REQUEST_ACTIVATION_V1_READ_ONLY_ROS_CHECKPOINT_STATUS",
+  "scoped_search_for_40798830998_results": 0,
+  "status": "LATEST_UPDATES_NOT_CONFIRMED_IN_RETURNED_SNAPSHOT",
+  "url": "https://app.notion.com/p/4073e523d7ab81d1b800e089af87ef4e"
+}

@@ -1,0 +1,50 @@
+{
+  "archive_set_sha256": "f5effb59bc414d073b09ba47b4142e1e20ccb482ec4621f42488597d8e9c0e7a",
+  "archives": [
+    {
+      "archive_sha256": "c3b42c23affa2d0bf835b7fa22235f5cf1f30738ce2e37d24d4667988dcd7846",
+      "fresh_source_lstat_verified": false,
+      "manifest_sha256": "a08c16d599e879eec6bc952c2a198518fbd1a34319f6a10a392bb13583605197",
+      "original_source_lstat_verified": true,
+      "prefix": "COMPLETED_AMENDED_SCREENING_CAS",
+      "status": "PASS_EXISTING_CAS_ARCHIVE_ONLY_READBACK"
+    },
+    {
+      "archive_sha256": "d28211beb15c9792b34ca9c87e444cf9a2961ea2ea2a91c2c02502c6676838fe",
+      "fresh_source_lstat_verified": false,
+      "manifest_sha256": "a1aaa5bbaaffe8464d564b6376b81617458c0f70f49c02b2dc1d80512fbd87f2",
+      "original_source_lstat_verified": true,
+      "prefix": "ACTUAL_CLI2_SOURCE_AND_TDD_CAS",
+      "status": "PASS_EXISTING_CAS_ARCHIVE_ONLY_READBACK"
+    },
+    {
+      "archive_sha256": "03ab87f6cb872396d0038b8e5813e8317e81f91a29e26d1af42b7ea334052fc3",
+      "fresh_source_lstat_verified": false,
+      "manifest_sha256": "84f668827b57dbf40d4864385e1d64e3ed72ab8a1e4242a7c2cabda6564c73ca",
+      "original_source_lstat_verified": true,
+      "prefix": "ACTUAL_QUALIFICATION_AUDITOR_SOURCE_CAS",
+      "status": "PASS_EXISTING_CAS_ARCHIVE_ONLY_READBACK"
+    },
+    {
+      "archive_sha256": "a671789113d0350cf74102dbde9d8295847ca2696bd170968a78134971e1f1de",
+      "fresh_source_lstat_verified": false,
+      "manifest_sha256": "624b1613b8ec70bfa69f0debee6c6a0d0b0c293026295f6c5fec9304f074b0f8",
+      "original_source_lstat_verified": true,
+      "prefix": "REVIEW_PROVENANCE_CAS",
+      "status": "PASS_EXISTING_CAS_ARCHIVE_ONLY_READBACK"
+    }
+  ],
+  "boundary": "Fresh archive structure/hash checks only; scientific results and original negative outcomes remain exactly their separately pinned evidence.",
+  "model_calls": 0,
+  "native_calls": 0,
+  "new_source_queries": 0,
+  "schema": "REQUEST_V1_DATA_ONLY_ARCHIVE_SET_READBACK",
+  "scientific_verdicts": {
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN"
+  },
+  "status": "PASS_ARCHIVE_INTEGRITY_ONLY_NO_NATIVE_REPLAY"
+}

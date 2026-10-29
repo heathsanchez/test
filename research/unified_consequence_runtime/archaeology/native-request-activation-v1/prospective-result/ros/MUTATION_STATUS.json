@@ -1,0 +1,41 @@
+{
+  "additional_mutations_attempted": false,
+  "allow_async_requested": true,
+  "boundary": "No new Notion mutation, target query, source/native/model execution or Git mutation performed to record this status. No operation identifier exists to poll. A fresh saved-state readback is necessary before retrying or claiming sync.",
+  "canonical_append_attempted": false,
+  "elapsed_before_interrupt_seconds": 5833.1,
+  "latest_parent_report_only": {
+    "amended_pool_eligible": "0/4",
+    "build_calls": 0,
+    "collection_calls": 0,
+    "native_calls": 0,
+    "no_G2_promotion": true,
+    "no_resampling": true,
+    "request_activation_scope": "WARRANTED_BOUNDED_REQUEST_ACTIVATION_ONLY",
+    "run_id": 40798830998,
+    "source_commit": "4ad4a3d9608b9d28b920c881fc78cda658b028da"
+  },
+  "native_science_verdicts": {
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN"
+  },
+  "new_content_characters": 4355,
+  "position": {
+    "type": "end"
+  },
+  "request_command": "insert_content",
+  "request_file": "/workspace/qualification/native-namespace-v45-ros-reconciliation/sync-20261029-0031/CHECKPOINT_REQUEST.json",
+  "request_sha256": "8fb39bd155bb9e9ba737737b1d13613e7cfb02e2a0fa08a0ee06b019a1d35226",
+  "returned_api_result": null,
+  "returned_operation_id": null,
+  "root_reported_later_readback": "Original23:10UTCsnapshot remains; no40798830998 or new0eligiblefacts. Reported by root in interruption message, not independently refetched by this status writer.",
+  "ros_sync_verdict": "UNVERIFIED_DO_NOT_CLAIM_SYNCHRONIZED",
+  "schema": "UDM_V45_ROS_MUTATION_INTERRUPTION_STATUS",
+  "status": "UNKNOWN_CONNECTOR_MUTATION_EFFECT",
+  "successful_mutation_readback": null,
+  "target_checkpoint_url": "https://app.notion.com/p/4073e523d7ab81d1b800e089af87ef4e",
+  "tool_outcome_literal": "aborted by user after 5833.1s"
+}

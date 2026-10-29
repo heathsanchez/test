@@ -1,0 +1,145 @@
+name: UDM request v1 closed evidence — archive integrity only
+
+on:
+  push:
+    branches: [research/udm-native-request-activation-v1-20261029]
+  workflow_dispatch:
+    inputs:
+      expected_source_commit:
+        description: Exact publication commit; this workflow never runs learning or native tests
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  archive-only:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[archive-request-negative-v1]')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      GIT_OPTIONAL_LOCKS: '0'
+      PYTHONDONTWRITEBYTECODE: '1'
+      EXPECTED_SOURCE_COMMIT: ${{ inputs.expected_source_commit || github.sha }}
+      RECORDS: research/unified_consequence_runtime/archaeology/native-request-activation-v1/prospective-result
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.14'
+      - name: Verify committed negative evidence with the existing CAS verifier
+        run: |
+          set -euo pipefail
+          test "$EXPECTED_SOURCE_COMMIT" = "$GITHUB_SHA"
+          test "$GITHUB_REF" = refs/heads/research/udm-native-request-activation-v1-20261029
+          mkdir -p "$RUNNER_TEMP/closed-request-evidence"
+          python -B - <<'PY'
+          import hashlib, importlib.util, json, os, subprocess, tarfile
+          from pathlib import Path
+          from research.unified_consequence_runtime.audit_index_v4 import snapshot_indexes, compare_indexes
+          repo=Path(os.environ['GITHUB_WORKSPACE']); records=repo/os.environ['RECORDS']
+          out=Path(os.environ['RUNNER_TEMP'])/'closed-request-evidence'
+          before=snapshot_indexes(repo)
+          for i,row in enumerate(before['indexes']):
+              if row['exists']:
+                  raw=Path(row['path']).read_bytes()
+                  assert hashlib.sha256(raw).hexdigest()==row['sha256']
+                  (out/('INDEX_BEFORE_'+str(i)+'.bytes')).write_bytes(raw)
+          (out/'INDEX_BEFORE.json').write_text(json.dumps(before,sort_keys=True)+'\n')
+          publication=records/'PUBLICATION_MANIFEST.json'
+          assert hashlib.sha256(publication.read_bytes()).hexdigest()=='1d394164cb316672e746a424d886f8354c92c0cd45e8013d527d43556e3e5406'
+          value=json.loads(publication.read_bytes())
+          unknown={f'G{i}':'UNKNOWN' for i in range(2,7)}
+          assert value['verdicts']==unknown
+          wrapper=repo/'research/unified_consequence_runtime/archaeology/native-bootstrap-v44/prospective-result/ARCHIVE_ONLY_CHECK.py'
+          assert hashlib.sha256(wrapper.read_bytes()).hexdigest()=='73c24083f15b145dcc28aac8e6cda67b6682f370e879a234ad3c2beedaaaad11'
+          spec=importlib.util.spec_from_file_location('existing_archive_checks',wrapper)
+          existing=importlib.util.module_from_spec(spec);spec.loader.exec_module(existing)
+          for name,pin in value['files'].items():existing.bound(records,name,pin)
+          caller=records/'VERIFY_ARCHIVE_SET.py'
+          assert hashlib.sha256(caller.read_bytes()).hexdigest()=='1f532de941170a42a14475e8b6fa618e004753b698ef4e2e062294a646a61bea'
+          command=['python','-I','-B',str(caller),'--repo',str(repo),'--set',str(records/'ARCHIVE_SET.json'),
+              '--set-sha256','f5effb59bc414d073b09ba47b4142e1e20ccb482ec4621f42488597d8e9c0e7a']
+          result=subprocess.run(command,capture_output=True,text=True)
+          (out/'CAS_READBACK.stdout').write_text(result.stdout)
+          (out/'CAS_READBACK.stderr').write_text(result.stderr)
+          assert result.returncode==0,result.stderr
+          receipt=json.loads(result.stdout)
+          assert receipt['status']=='PASS_ARCHIVE_INTEGRITY_ONLY_NO_NATIVE_REPLAY'
+          assert receipt['scientific_verdicts']==unknown
+          audit=json.loads((records/'INDEPENDENT_SCREENING_AUDIT.json').read_bytes())
+          assert audit['status']=='PASS_ADMISSION_ONLY_SCREENING_AUDIT'
+          assert audit['counts']=={'screened_cases':4,'eligible_cases':0}
+          assessment=json.loads((records/'SCIENTIFIC_ASSESSMENT.json').read_bytes())
+          assert assessment['state']=='CLOSED_UNKNOWN_NO_ADMITTED_NATIVE_OBLIGATION'
+          assert all(x['status']=='NOT_STARTED_ADMISSION_GATE_BLOCKED' for x in assessment['comparators'].values())
+          def tree(revision):
+              raw=subprocess.check_output(['git','--no-replace-objects','ls-tree','-r','-z',revision],cwd=repo)
+              items={}
+              for entry in raw.split(b'\0'):
+                  if entry:
+                      head,name=entry.split(b'\t');mode,kind,oid=head.decode().split()
+                      assert kind=='blob'
+                      items[name.decode()]={'mode':mode,'oid':oid}
+              return items
+          base=tree(value['pre_source_commit']);current=tree(os.environ['GITHUB_SHA'])
+          assert len(base)==3596
+          assert all(current.get(name)==pin for name,pin in base.items())
+          # Exact Git archive and member checks reuse the existing workflow's
+          # byte/mode/OID check. No archived implementation is executed.
+          source=out/'SOURCE.tar.gz'
+          subprocess.run(['git','--no-replace-objects','-c','tar.umask=022','archive','--format=tar.gz',
+              '--output='+str(source),os.environ['GITHUB_SHA']],cwd=repo,check=True)
+          found={}
+          with tarfile.open(source,'r:gz') as packet:
+              for member in packet:
+                  if member.isdir():continue
+                  assert member.name not in found and member.name in current
+                  pin=current[member.name]
+                  if pin['mode']=='120000':
+                      assert member.issym();raw=member.linkname.encode()
+                  else:
+                      assert member.isfile() and '100'+format(member.mode,'03o')==pin['mode']
+                      raw=packet.extractfile(member).read()
+                  assert hashlib.sha1(b'blob '+str(len(raw)).encode()+b'\0'+raw).hexdigest()==pin['oid']
+                  found[member.name]={'sha256':hashlib.sha256(raw).hexdigest(),'bytes':len(raw),**pin}
+          assert set(found)==set(current)
+          after=snapshot_indexes(repo);changes=compare_indexes(before,after)
+          assert not changes
+          (out/'INDEX_AFTER.json').write_text(json.dumps(after,sort_keys=True)+'\n')
+          for i,row in enumerate(after['indexes']):
+              if row['exists']:(out/('INDEX_AFTER_'+str(i)+'.bytes')).write_bytes(Path(row['path']).read_bytes())
+          record={'status':'PASS_ARCHIVE_INTEGRITY_ONLY_NO_NATIVE_REPLAY','source_commit':os.environ['GITHUB_SHA'],
+              'pre_source_commit':value['pre_source_commit'],'preserved_files':len(base),'source_files':len(current),
+              'source_archive_sha256':hashlib.sha256(source.read_bytes()).hexdigest(),'source_archive_bytes':source.stat().st_size,
+              'cas_readback':receipt,'scientific_verdicts':unknown,'screening_counts':audit['counts'],
+              'native_calls':0,'model_calls':0,'new_source_queries':0,'index_changes':changes,
+              'boundary':'Data integrity and exact source preservation only. Four original refusals remain UNKNOWN; no native acquisition, learning, baseline or agent is rerun.'}
+          (out/'CI_ARCHIVE_RESULT.json').write_text(json.dumps(record,sort_keys=True,indent=2)+'\n')
+          (out/'SOURCE_FILES.json').write_text(json.dumps(found,sort_keys=True)+'\n')
+          print(json.dumps({k:record[k] for k in ('status','source_commit','preserved_files','screening_counts','scientific_verdicts')},sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: request-v1-closed-evidence-${{ github.sha }}
+          path: |
+            ${{ env.RECORDS }}/
+            ${{ runner.temp }}/closed-request-evidence/*.json
+            ${{ runner.temp }}/closed-request-evidence/*.bytes
+            ${{ runner.temp }}/closed-request-evidence/*.stdout
+            ${{ runner.temp }}/closed-request-evidence/*.stderr
+          include-hidden-files: true
+          retention-days: 90
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: request-v1-closed-source-${{ github.sha }}
+          path: ${{ runner.temp }}/closed-request-evidence/SOURCE.tar.gz
+          retention-days: 90

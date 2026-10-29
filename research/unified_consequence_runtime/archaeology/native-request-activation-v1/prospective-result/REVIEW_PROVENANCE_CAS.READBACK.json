@@ -1,0 +1,46 @@
+{
+  "boundary": "Lossless raw screening, refusal, scientific-process and audit bytes, with original path, mode and link metadata. No extraction, archived-code execution, native replay or new scientific promotion.",
+  "manifest_schema": "UDM_CONTENT_ADDRESSED_RAW_EVIDENCE_ARCHIVE_V44",
+  "manifest_scope": "RAW_SCREENING_AND_SCIENTIFIC_EVIDENCE_DATA_ONLY_NO_PROMOTION",
+  "original_verdict": {
+    "archive_bytes": 18900,
+    "archive_data_never_extracted_or_executed": true,
+    "archive_members": 8,
+    "archive_path": "/workspace/qualification/native-request-activation-v1-archive-prep/REVIEW_PROVENANCE_CAS.tar.gz",
+    "archive_sha256": "a671789113d0350cf74102dbde9d8295847ca2696bd170968a78134971e1f1de",
+    "every_member_hash_size_mode_verified": true,
+    "every_member_regular": true,
+    "exact_member_inventory_no_extra": true,
+    "external_manifest_bytes": 2005,
+    "external_manifest_identical": true,
+    "external_manifest_path": "/workspace/qualification/native-request-activation-v1-archive-prep/REVIEW_PROVENANCE_CAS.MANIFEST.json",
+    "external_manifest_sha256": "624b1613b8ec70bfa69f0debee6c6a0d0b0c293026295f6c5fec9304f074b0f8",
+    "original_path_map_preserved": true,
+    "raw_tar_bytes": 81920,
+    "schema": "UDM_INDEPENDENT_CAS_READBACK_V43",
+    "single_gzip_stream_no_trailing_bytes": true,
+    "source_counts": {
+      "directory": 1,
+      "file": 7,
+      "symlink": 0
+    },
+    "source_entries": 8,
+    "source_lstat_and_bytes_verified": true,
+    "source_regular_bytes": 67303,
+    "source_symlinks_never_followed": true,
+    "status": "PASS",
+    "strict_raw_tar_headers_and_zero_end_verified": true,
+    "unique_object_bytes": 67303,
+    "unique_objects": 7
+  },
+  "original_verifier_sha256": "05ea4d635494f045ab5c39c1420c2143ffec22110577e6492b9d9d1bfa92a018",
+  "schema": "UDM_V44_DATA_ARCHIVE_READBACK_V1",
+  "status": "PASS_ARCHIVE_READBACK_ONLY",
+  "verdicts": {
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN"
+  }
+}

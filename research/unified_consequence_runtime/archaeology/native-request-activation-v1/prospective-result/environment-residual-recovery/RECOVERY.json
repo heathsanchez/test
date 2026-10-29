@@ -1,0 +1,221 @@
+{
+  "can_legally_activate_before_native_profile_admission": {
+    "MSI_V104": "Generic selection/construction semantics do not supply the missing environment-domain operation/verifier instance.",
+    "V3_bootstrap": "YES for exactly the already-authorized fixed external profiles; cannot add missing deps/pins.",
+    "V41_prepare_profile": "YES for exactly the already-qualified fixed catalog; cannot construct a new catalog or change pytest pin.",
+    "V43_causal_build": "NO as a repair for missing pre-admission packages: _attach_interface returns early unless PREPARED, and _build_requirements checks existing installed packages.",
+    "V44_metadata_observation": "YES only if diagnose selects supported declared dynamic metadata and an existing exact build profile already satisfies build requirements; cannot add pins.",
+    "original_generic_build": "YES given independently established compatible build environment, but no dependency resolution or native warrant.",
+    "pip_resolver": "Executable exists, but generic source-derived candidate-profile/admission bridge is UNQUALIFIED. Existing receipt does not authorize arbitrary queries/installs under the closed frozen experiment."
+  },
+  "coverage": {
+    "current_UDM_sources_read": 11,
+    "global_object_name_enumeration": "One local git rev-list --all --objects name scan was stopped after about45 seconds without result; not used as evidence of absence. No exhaustive coverage claim.",
+    "historical_targeted_git_log": true,
+    "local_MSI_Triskelion_report": "historical-agent/RECOVERY.json",
+    "no_native_or_package_resolution_executed": true,
+    "no_product_ref_or_index_mutations": true,
+    "no_remote_or_metadata_requests": true,
+    "no_target_source_tests_or_outcomes_read": true,
+    "qualified_commits_compared_byte_exact": true
+  },
+  "existing_general_dependency_engine": {
+    "boundary": "Exact source is reusable. Existing UDM callers deliberately disable package resolution. Neither an arbitrary source-derived lock/profile, dynamic plugin license, cost bound nor unknown-Python compatibility trial is independently qualified merely because pip is installed. No resolver invoked in this recovery.",
+    "distribution": "pip==25.0.1",
+    "entrypoints": [
+      "pip install --dry-run --ignore-installed --report <path> <requirements>",
+      "pip._internal.resolution.resolvelib.resolver.Resolver.resolve(root_reqs,check_supported_wheels)"
+    ],
+    "original_catalog_package_artifact_equal": true,
+    "source_members": [
+      {
+        "bytes": 29390,
+        "installed_controller_source_equal": true,
+        "member": "pip/_internal/commands/install.py",
+        "sha256": "af7c87414c6fc6dee00f98fd9facd10ec940bedc7d093ff084bb9025c92da7a3"
+      },
+      {
+        "bytes": 12592,
+        "installed_controller_source_equal": true,
+        "member": "pip/_internal/resolution/resolvelib/resolver.py",
+        "sha256": "9cb24eb15304562da0414549a1414a31901ebb67fb19132318cbcd496cb3d017"
+      },
+      {
+        "bytes": 2818,
+        "installed_controller_source_equal": true,
+        "member": "pip/_internal/models/installation_report.py",
+        "sha256": "cd1559a1acfedafb2b7b38ff1f784b3a131908af5ced36f35a00be8ce6a50f4d"
+      }
+    ],
+    "wheel_bytes": 1841526,
+    "wheel_path": "/workspace/qualification/native-namespace-v45-environment/modern-runtime-final/wheels/pip-25.0.1-py3-none-any.whl",
+    "wheel_sha256": "c46efd13b6aa8279f33f2864459c8ce587ea6a1a59ee20de055868d8f7688f7f"
+  },
+  "historical_v41_assembler": {
+    "actual_historical_boundary": "Metadata-only fixed three seeds mypy/pytest-cov/setuptools-git-versioning and recursively justified closure; preserve 39 old modern pins, exact CPython3.12.14/pytest8.4.1, newest-first stable wheel selection. Existing artifact audit authenticates fixed extension; no generic task-metadata constructor qualification.",
+    "bytes": 15264,
+    "coverage_limitation": "Original absolute path absent in current workspace; no raw builder filename in current tracked Git tree. Source witness is not executable recovery. No exhaustive historical-object absence claimed.",
+    "evidence_paths": [
+      "research/unified_consequence_runtime/archaeology/native-authority-v41/bootstrap/PACKAGE_EXTENSION_RECEIPT.json",
+      "research/unified_consequence_runtime/archaeology/native-authority-v41/bootstrap/INDEPENDENT_PACKAGE_EXTENSION_AUDIT.json",
+      "research/unified_consequence_runtime/archaeology/native-authority-v41/bootstrap/PROFILE_EXTENSION_PROTOCOL.json"
+    ],
+    "original_path": "/workspace/qualification/native-authority-v41-profile-preparation/build_extension.py",
+    "raw_source_recovered": false,
+    "sha256": "316a17e8472e2cf6ca923f445b0ca5695a3fa9379d30a8545509dafa7622f6d1"
+  },
+  "operations": [
+    {
+      "bytes": 11386,
+      "current_bytes_equal": true,
+      "entrypoint": "prepare(catalog_path,destination,output)",
+      "historical_qualification_run": 38872399668,
+      "id": "V3_FIXED_RUNTIME_BOOTSTRAP",
+      "path": "research/unified_consequence_runtime/archaeology/native-environment-v3/bootstrap/prepare_runtimes.py",
+      "qualification_boundary": "Prepares exactly Python3.6.5/3.12.14 and fixed wheel closures; no generic construction or source-derived resolution.",
+      "replayed_in_this_recovery": false,
+      "repository": "heathsanchez/test",
+      "sha256": "55c6acb396b19dda4f3f810828f2d18ed30bc36cf2e9688f3a13babeaeebed6d",
+      "source_commit": "9b05faab72fa36f4304965b65b2564c626314b89"
+    },
+    {
+      "bytes": 4441,
+      "current_bytes_equal": true,
+      "entrypoint": "validate(catalog_path)",
+      "historical_qualification_run": 38872399668,
+      "id": "V3_METADATA_CLOSURE_CHECKER",
+      "path": "research/unified_consequence_runtime/archaeology/native-environment-v3/bootstrap/metadata_receipt.py",
+      "qualification_boundary": "Validates externally supplied exact catalog, artifacts and active Requires-Dist; never chooses versions.",
+      "replayed_in_this_recovery": false,
+      "repository": "heathsanchez/test",
+      "sha256": "9827b2cf9836def2ac73477897267b88a9dfefa14ae36094e71009459dc30a99",
+      "source_commit": "9b05faab72fa36f4304965b65b2564c626314b89"
+    },
+    {
+      "bytes": 16416,
+      "current_bytes_equal": true,
+      "entrypoint": "validate(catalog_path); prepare(catalog_path,runtimes_path,destination,runtime_out,output,wheel_cache=None)",
+      "historical_qualification_run": 38954969411,
+      "id": "V41_FIXED_PROFILE_PREPARATION",
+      "path": "research/unified_consequence_runtime/archaeology/native-authority-v41/bootstrap/prepare_profile.py",
+      "qualification_boundary": "Validates one pre-frozen two-profile extension, exact fixed seeds/old pins/artifacts/plugins; installs offline --no-deps --require-hashes. Not a dependency resolver.",
+      "replayed_in_this_recovery": false,
+      "repository": "heathsanchez/test",
+      "sha256": "f2a5f88a1c15ae22cc8d7741111a121b77fcbacb6a8a28678523a43a1e880896",
+      "source_commit": "4c3f7e276567b4ea8df96c7a8797a889040dc0ac"
+    },
+    {
+      "bytes": 6329,
+      "current_bytes_equal": true,
+      "entrypoint": "derive_constraints(files); inherited select_profile(files,catalog)",
+      "historical_qualification_run": 38954969411,
+      "id": "V41_FINITE_PROFILE_SELECTION",
+      "path": "research/unified_consequence_runtime/native_environment_selection_v41.py",
+      "qualification_boundary": "Source metadata extraction and finite evaluation/selection over an external catalog; catalog remains external authority.",
+      "replayed_in_this_recovery": false,
+      "repository": "heathsanchez/test",
+      "sha256": "951776b61bcb90df29e106e7555d1bcd972f218744b00faa9a17cc9a4827317a",
+      "source_commit": "4c3f7e276567b4ea8df96c7a8797a889040dc0ac"
+    },
+    {
+      "bytes": 7636,
+      "current_bytes_equal": true,
+      "entrypoint": "provision(...); _attach_interface(machine,setup,output)",
+      "historical_qualification_run": 39682460349,
+      "id": "V43_PREPARED_INTERFACE",
+      "path": "research/unified_consequence_runtime/native_environment_v43.py",
+      "qualification_boundary": "Causal generated-import build route activates only after setup.status==PREPARED; cannot construct a missing pre-admission environment.",
+      "replayed_in_this_recovery": false,
+      "repository": "heathsanchez/test",
+      "sha256": "f419eef3079c70ec10f5fcb1f7f7308156d9ea1f4683780643728920afe83a49",
+      "source_commit": "5a449e7d6be3a54d42e2098804904c2e1223ae51"
+    },
+    {
+      "bytes": 31426,
+      "current_bytes_equal": true,
+      "entrypoint": "prepare(contract,authority,policy,output_dir); verify(contract,authority,policy,evidence,output_dir)",
+      "historical_qualification_run": 39682460349,
+      "id": "V43_DECLARED_SOURCE_BUILD",
+      "path": "research/unified_consequence_runtime/native_build_v43.py",
+      "qualification_boundary": "Exact independently prepared contract/environment required; build requirements must already be installed; recognized Hatch-VCS declared generated imports only. No resolution/installation.",
+      "replayed_in_this_recovery": false,
+      "repository": "heathsanchez/test",
+      "sha256": "20f88ce36baa7e01c7e601c7840f72b9423a6ab04d093d35e36217d3049b8460",
+      "source_commit": "5a449e7d6be3a54d42e2098804904c2e1223ae51"
+    },
+    {
+      "bytes": 17672,
+      "current_bytes_equal": true,
+      "entrypoint": "diagnose(files,catalog); build_profile_constraints(files,profile); provision(...)",
+      "historical_qualification_run": 39704649682,
+      "id": "V44_PRE_ADMISSION_METADATA_ROUTE",
+      "path": "research/unified_consequence_runtime/native_environment_v44.py",
+      "qualification_boundary": "Before native admission, only declared dynamic metadata, no setup.py, supported dynamic requires-python/dependencies/classifiers; finite existing build profiles must satisfy original build requirements.",
+      "replayed_in_this_recovery": false,
+      "repository": "heathsanchez/test",
+      "sha256": "93868c7d884e96396f7f594847614502f55b383186633862320be32ea741da2d",
+      "source_commit": "e596d6af124b819197d17d447b247a9007fbbf42"
+    },
+    {
+      "bytes": 18731,
+      "current_bytes_equal": true,
+      "entrypoint": "observe(repo,commit,interpreter,...); verify(repo,commit,interpreter,evidence,...)",
+      "historical_qualification_run": 39704649682,
+      "id": "V44_INDEPENDENT_METADATA_OBSERVER",
+      "path": "research/unified_consequence_runtime/native_metadata_v44.py",
+      "qualification_boundary": "Fresh original wheel build plus independent rebuild matching normalized wheel contents/metadata; exact source/environment binding. Metadata selection authority only, never native outcome or missing dependency authority.",
+      "replayed_in_this_recovery": false,
+      "repository": "heathsanchez/test",
+      "sha256": "63f5c35ba39cfa29a5887fc0e067e2ceed17debd3798e8c1ec14bad9b3722146",
+      "source_commit": "e596d6af124b819197d17d447b247a9007fbbf42"
+    },
+    {
+      "bytes": 8818,
+      "current_bytes_equal": true,
+      "entrypoint": "select_profile(files,catalog,observation=None); validate_selection(...)",
+      "historical_qualification_run": 39704649682,
+      "id": "V44_OBSERVATION_SELECTOR",
+      "path": "research/unified_consequence_runtime/native_environment_selection_v44.py",
+      "qualification_boundary": "Verified original dynamic metadata may refine source constraints; same external catalog, fixed profiles, static/test constraints remain.",
+      "replayed_in_this_recovery": false,
+      "repository": "heathsanchez/test",
+      "sha256": "ddbdc8b4b5dd672277c17150c69a7f60c28007d4dfd74b27cbb43647065114d8",
+      "source_commit": "e596d6af124b819197d17d447b247a9007fbbf42"
+    },
+    {
+      "bytes": 19364,
+      "current_bytes_equal": true,
+      "entrypoint": "request(...); MetadataRuntime.register/admit/execute/preflight",
+      "historical_qualification_run": 39704649682,
+      "id": "V44_RETAINED_BOOTSTRAP_RUNTIME",
+      "path": "research/unified_consequence_runtime/native_bootstrap_runtime_v44.py",
+      "qualification_boundary": "Retained typed metadata instrument and verified invocation, revocation and replay. No package-profile constructor.",
+      "replayed_in_this_recovery": false,
+      "repository": "heathsanchez/test",
+      "sha256": "e8eb2332eb2427f5ad2c6bb37d72e5cf6d1fb9b739c1ba71160bc283980797f7",
+      "source_commit": "e596d6af124b819197d17d447b247a9007fbbf42"
+    },
+    {
+      "bytes": 7667,
+      "current_bytes_equal": true,
+      "entrypoint": "materialize_files(source_files,destination,...,python=...,environment_sha256=...)",
+      "historical_qualification_run": 38856738333,
+      "id": "ORIGINAL_IMMUTABLE_GENERIC_BUILDER",
+      "path": "research/unified_consequence_runtime/generic_build_materialization.py",
+      "qualification_boundary": "Can execute before native test admission if exact prepared build interpreter/backend dependencies already exist; --no-deps --no-build-isolation --no-index. Does not resolve/install dependencies.",
+      "replayed_in_this_recovery": false,
+      "repository": "heathsanchez/test",
+      "sha256": "bf08dae2ef55a8a2aac368f5404a6e6c4777ddcc7f581f967a0e0f5c7693b980",
+      "source_commit": "f8c0b06da1bbaddfd67229ca87cb53a0dab67ae0"
+    }
+  ],
+  "schema": "UDM_ENVIRONMENT_RESIDUAL_SOURCE_RECOVERY_V1",
+  "scope": "READ_ONLY_EXISTING_RESEARCH_SOURCE_NO_TARGET_SOURCE_TESTS_OUTCOMES_QUERIES_OR_NATIVE_EXECUTION",
+  "smallest_residual": {
+    "cyclic_precondition": "Using V43 materialization to establish an environment is circular because it requires PREPARED and installed build deps. V44 removes metadata-ordering blockage only where an already prepared build candidate exists; it cannot bootstrap missing build dependencies from its own unexecuted backend.",
+    "missing_python_declaration": "Current selector deliberately returns UNKNOWN_UNDECLARED_PYTHON_COMPATIBILITY. Missing declarations do not prove incompatibility. A bounded independently verified trial of an external interpreter would be a separately qualified versioned operation; it must not fabricate original metadata or silently erase original UNKNOWN.",
+    "three_dependency_cases": "Finite catalog insufficiency, not native failure or old-language impossibility. Need independently qualified source-metadata-to-exact-candidate-profile operation using existing resolver/closure checker, with separately authorized artifacts/runtime/plugins and full accounting. Closed four-case results remain exposed diagnostics."
+  },
+  "source_snapshot": "ab6dc4fd1468d249785d40f5550959a79258cc7e",
+  "verdict": "NO_QUALIFIED_GENERIC_SOURCE_DERIVED_PRE_ADMISSION_PROFILE_CONSTRUCTOR_IDENTIFIED_IN_INSPECTED_LINEAGE"
+}

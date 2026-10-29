@@ -1,0 +1,90 @@
+{
+  "G2_G6": "UNKNOWN",
+  "complete_cases": 4,
+  "eligible": 0,
+  "evidence": [
+    {
+      "path": "/workspace/qualification/native-request-activation-v1-prospective/INDEPENDENT_SCREENING_AUDIT.json",
+      "sha256": "b7272050c3cc41a537fff118efa9df08bafd5b30f0a614d4f1d69c705d4c4198"
+    },
+    {
+      "path": "/workspace/qualification/native-request-activation-v1-prospective/PUBLIC_GENERIC_ADMISSION_DIAGNOSIS.json",
+      "sha256": "3cd49591ecb650d4022d338a21481138ae736880b504adb7595b8c34636fb9d2"
+    },
+    {
+      "path": "/workspace/qualification/native-request-activation-v1-prospective/private-independent-admission-audit-002/RETAINED_CHECKS.json",
+      "sha256": "10811e7c2a15810fd7b8aa9ea424abb3ed0d51647b24fef8012664d9f2bd5150"
+    },
+    {
+      "path": "/workspace/qualification/native-request-activation-v1-prospective/private-independent-admission-audit-002.ROOT_INDEX_INTERVAL/AUDIT.json",
+      "sha256": "3cfef004ba49529ba5ab9db3ee9218764d9836f4e0aee58b1c45f4cf1777a0df"
+    },
+    {
+      "path": "/workspace/qualification/native-request-activation-v1-prospective/private-independent-admission-audit-002.ROOT_INDEX_INTERVAL/before/SNAPSHOT.json",
+      "sha256": "08b3f91aedaf29b825adfac110fe3377b0d94a17b5e11e46f65938fe47294524"
+    },
+    {
+      "path": "/workspace/qualification/native-request-activation-v1-prospective/private-independent-admission-audit-002.ROOT_INDEX_INTERVAL/after/SNAPSHOT.json",
+      "sha256": "08b3f91aedaf29b825adfac110fe3377b0d94a17b5e11e46f65938fe47294524"
+    },
+    {
+      "path": "/workspace/qualification/native-request-activation-v1-prospective/private-independent-admission-audit-001.AUDIT_PROCESS.json",
+      "sha256": "e7951a93f7a2a84f133f561c0cc7ff7d8454ec2e00ae535bfe427240fd7b3a0a"
+    },
+    {
+      "path": "/workspace/qualification/native-request-activation-v1-prospective/private-independent-admission-audit-002.AUDIT_PROCESS.json",
+      "sha256": "05de3fdde685f15fc42c49f257fe50e141f050ebf2240286f0c29bc5a9d53c7a"
+    },
+    {
+      "path": "/workspace/qualification/native-request-activation-v1-prospective/private-independent-admission-audit-002.FINALIZER_PROCESS.json",
+      "sha256": "b7e30d61049f7d8800b8d67e8c6508a1858feee3723e7f965faef27bd53de73e"
+    },
+    {
+      "path": "/workspace/qualification/native-request-activation-v1-prospective/private-independent-admission-audit-001.PROCESS.stderr",
+      "sha256": "3e737f6a9117cec194b02103b357f8668fae9adb86a8a8cd0bf25efab8948548"
+    },
+    {
+      "path": "/workspace/qualification/native-request-activation-v1-prospective/private-independent-admission-audit-001.AUDIT.stderr",
+      "sha256": "177e380f9646066729e45c3270b480d9f8bb0f9d83ecbc9a9b989c0dc3483df0"
+    },
+    {
+      "path": "/workspace/qualification/native-request-activation-v1-prospective/private-independent-admission-audit-001.ROOT_INDEX_INTERVAL/AUDIT.json",
+      "sha256": "3cfef004ba49529ba5ab9db3ee9218764d9836f4e0aee58b1c45f4cf1777a0df"
+    },
+    {
+      "path": "/workspace/qualification/native-request-activation-v1-screening-audit-cli2/FREEZE.json",
+      "sha256": "808342e9a5c4ceb2bcd0ca5080a42487879d99f19e2ce5bd435be6dc52002b7a"
+    },
+    {
+      "path": "/workspace/qualification/native-request-activation-v1-screening-preparation/AUDITOR_FREEZE.json",
+      "sha256": "b3e55e16a947f5a5101c9fc730ea7f14d0a7a0d614c790dbe6771e7270b371d6"
+    },
+    {
+      "path": "/workspace/qualification/native-request-activation-v1-prospective/private-independent-admission-audit-002/case-000-RAW_MANIFEST.json",
+      "sha256": "603508fdd8380cc23ce8e76961b0c6085987661be4ae401b1015959b7caa3dab"
+    },
+    {
+      "path": "/workspace/qualification/native-request-activation-v1-prospective/private-independent-admission-audit-002/case-001-RAW_MANIFEST.json",
+      "sha256": "f05b5967ac50a07702f42037bf1025012212a647d2fbc8b405d1d3d42554ee78"
+    },
+    {
+      "path": "/workspace/qualification/native-request-activation-v1-prospective/private-independent-admission-audit-002/case-002-RAW_MANIFEST.json",
+      "sha256": "94baee43155f06247540354baf5f8dfeb41f6bad40b4ccae4e32acbd614e67b3"
+    },
+    {
+      "path": "/workspace/qualification/native-request-activation-v1-prospective/private-independent-admission-audit-002/case-003-RAW_MANIFEST.json",
+      "sha256": "0394d03432585990f340d022e368ce1d85fe731086bbcdcad4fea490d75d74e3"
+    }
+  ],
+  "hold_released": true,
+  "independent_actor": "/root/v45_science_readiness",
+  "native_calls": 0,
+  "native_or_source_provision_retries": 0,
+  "protected_outcomes_disclosed": 0,
+  "public_audit": "PASS_ADMISSION_ONLY_SCREENING_AUDIT",
+  "raw_audit": "PASS_RETAINED_SCREENING_BINDINGS",
+  "remaining_scientific_obstruction": "No admitted native obligation: three finite-profile dependency mismatches and one missing original compatibility declaration. This establishes neither source incompatibility nor G2 selection. No outcome-selected replacement permitted.",
+  "root_index_changes": [],
+  "schema": "UDM_NATIVE_REQUEST_ACTIVATION_V1_ACTUAL_INDEPENDENT_ADMISSION_HANDOFF",
+  "status": "CLOSED_NO_FURTHER_NEWOPS_WRITES_BY_THIS_AUDITOR"
+}
