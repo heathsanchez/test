@@ -1,0 +1,96 @@
+name: MathGraph Check SD Preregistered Transfer V1
+
+on:
+  push:
+    branches:
+      - mathgraph-check-sd-transfer-v1-20261029
+    paths:
+      - scripts/mathgraph_sd_transfer_v1.py
+      - .github/workflows/mathgraph-check-sd-transfer-v1.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  frozen-reference-blind-transfer:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Freeze official benchmark source
+        run: |
+          git clone --filter=blob:none --depth=1 https://github.com/eth-sri/testsuitebench.git benchmark
+          git -C benchmark fetch --depth=1 origin 583d2eb1ffa19f3aa0c04b7455fd13d846b4c8d9
+          git -C benchmark checkout --detach 583d2eb1ffa19f3aa0c04b7455fd13d846b4c8d9
+          test "$(git -C benchmark rev-parse HEAD)" = "583d2eb1ffa19f3aa0c04b7455fd13d846b4c8d9"
+
+      - name: Freeze prospective equal-budget tests before any mutant scoring
+        run: |
+          mkdir -p sd_results
+          python3 -B scripts/mathgraph_sd_transfer_v1.py --package "$GITHUB_WORKSPACE/sd_output"
+          sha256sum scripts/mathgraph_sd_transfer_v1.py > sd_results/source-hashes.txt
+          find sd_output -name tests.tar.gz -exec sha256sum {} \; >> sd_results/source-hashes.txt
+
+      - name: Install official evaluator
+        run: |
+          python3 -m pip install uv
+          cd benchmark
+          uv sync --no-dev
+
+      - name: Build task runtime with explicit cleanroom dependency
+        run: |
+          cd benchmark
+          docker pull programbench/chmln_1776_sd.87d1ba5:task_cleanroom
+          bash scripts/docker/install_task_patched.sh --task chmln__sd.87d1ba5
+
+      - name: Evaluate both frozen suites
+        run: |
+          set -o pipefail
+          cd benchmark
+          uv run programbench eval-tests \
+            "$GITHUB_WORKSPACE/sd_output/baseline" \
+            "$GITHUB_WORKSPACE/sd_output/signature" \
+            --workers 1 --mutant-workers 2 --docker-cpus 2 \
+            --ground-truth-dir hf://eth-sri/tsb-reference_impl \
+            --reference-tests-dir hf://eth-sri/tsb-reference_tests \
+            --mutants-dir hf://eth-sri/tsb-mutants \
+            --output "$GITHUB_WORKSPACE/sd_results" \
+            2>&1 | tee "$GITHUB_WORKSPACE/sd_results/evaluation.log"
+
+      - name: Fail closed on invalid reference or binary errors
+        run: |
+          python3 -B - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path('sd_results')
+          task='chmln__sd.87d1ba5'
+          for mode in ('baseline','signature'):
+              doc=json.loads((root/mode/task/(task+'.test_eval.json')).read_text())
+              assert doc['error_code'] is None, (mode,doc['error_code'])
+              bins=doc['binary_results']
+              ground=[x for x in bins if x['role']=='ground_truth']
+              assert len(ground)==1
+              results=ground[0]['test_results']
+              assert ground[0]['error_code'] is None and len(results)==48
+              assert all(x['status']=='passed' for x in results), (mode,[(x['name'],x['status']) for x in results if x['status']!='passed'])
+              assert all(x['error_code'] is None for x in bins), mode
+              mutants=[x for x in bins if x['role']!='ground_truth']
+              killed=[x for x in mutants if any(t['status']!='passed' for t in x['test_results'])]
+              print(f'{mode}: ground_truth 48/48, mutants {len(mutants)}, killed {len(killed)}')
+          PY
+
+      - name: List artifacts for diagnosis
+        if: always()
+        run: |
+          find sd_results -maxdepth 4 -type f -printf '%p %s bytes\n' | sort
+          df -h .
+
+      - name: Upload original scored evidence and failure details
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mathgraph-check-sd-transfer-v1
+          path: sd_results/
+          if-no-files-found: warn
