@@ -1,0 +1,22 @@
+name: FLASH V16b exact-byte cold capability transport
+
+on:
+  push:
+    branches:
+      - research/flash-v16b-cold-transport-20261029
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bounded-transport:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Fresh exhaustive external process and negative controls
+        run: python -B -m unittest discover -s research/flash_v16b_cold_transport -p 'test_*.py' -v
