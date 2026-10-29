@@ -47,9 +47,14 @@ jobs:
         run: |
           python3 -B scripts/mathgraph_check_basis_certificate.py \
             source-results.zip --output certificate/minimal_basis.json
+          python3 -B scripts/mathgraph_check_pairwise_certificate.py \
+            source-results.zip --output certificate/minimal_pairwise_basis.json
           sha256sum scripts/mathgraph_check_basis_certificate.py \
-            certificate/minimal_basis.json > certificate/source-and-certificate-hashes.txt
+            scripts/mathgraph_check_pairwise_certificate.py \
+            certificate/minimal_basis.json \
+            certificate/minimal_pairwise_basis.json > certificate/source-and-certificate-hashes.txt
           python3 -B -m json.tool certificate/minimal_basis.json
+          python3 -B -m json.tool certificate/minimal_pairwise_basis.json
 
       - name: Preserve machine-readable certificate
         uses: actions/upload-artifact@v4
