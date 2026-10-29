@@ -1,0 +1,59 @@
+name: MathGraph Check Exact Basis Certificate V1
+
+on:
+  push:
+    branches:
+      - mathgraph-check-residual-obligations-v1-20261029
+    paths:
+      - scripts/mathgraph_check_basis_certificate.py
+      - .github/workflows/mathgraph-check-basis-certificate-v1.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  bounded-certificate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch frozen scored evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p evidence certificate
+          gh run download 40802435111 \
+            --repo heathsanchez/test \
+            --name mathgraph-check-residual-obligations-v1 \
+            --dir evidence
+
+      - name: Repackage original three JSONs without changing bytes
+        run: |
+          python3 -B - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile, ZIP_DEFLATED
+          root = Path("evidence")
+          task = "sitkevij__hex.61ae69b"
+          with ZipFile("source-results.zip", "w", compression=ZIP_DEFLATED) as z:
+              for mode in ("baseline", "signature", "obligations"):
+                  target = Path(mode) / task / (task + ".test_eval.json")
+                  z.write(root / target, arcname=str(target))
+          PY
+
+      - name: Independently certify minimum observed separation
+        run: |
+          python3 -B scripts/mathgraph_check_basis_certificate.py \
+            source-results.zip --output certificate/minimal_basis.json
+          sha256sum scripts/mathgraph_check_basis_certificate.py \
+            certificate/minimal_basis.json > certificate/source-and-certificate-hashes.txt
+          python3 -B -m json.tool certificate/minimal_basis.json
+
+      - name: Preserve machine-readable certificate
+        uses: actions/upload-artifact@v4
+        with:
+          name: mathgraph-check-minimum-basis-certificate-v1
+          path: certificate/
+          if-no-files-found: error
