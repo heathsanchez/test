@@ -1,0 +1,104 @@
+{
+  "actor_identity": "/root/v45_ordered_screener",
+  "attempted_case_processes": 1,
+  "authority_sha256": "8383491db329d0dd3fc272e84214613ab305fa2294282349ac701868db7e53b3",
+  "closed_meter_cases": 1,
+  "collection_calls": 0,
+  "completed_fixed_pool": false,
+  "cost_boundary": "Outer interval includes driver startup/source inventory and overlaps all inner intervals; never add them. Full engineering/model cost remains UNKNOWN. Public native/collection meter is zero; build/backend costs are retained separately, not equated with native pytest calls.",
+  "created_at_unix": 1793232837.542548,
+  "driver_failure": "ValueError: original screening meter/process incomplete; no retry or resampling permitted",
+  "files": {
+    "ORDERED_DRIVER.stderr.log": {
+      "bytes": 693,
+      "path": "/workspace/qualification/native-namespace-v45-prospective-20261028T2335Z/ORDERED_DRIVER.stderr.log",
+      "sha256": "618db89a5ecf24e29fe144a250227802f60febe7b1aaadbadc2a01a554c31344"
+    },
+    "ORDERED_DRIVER.stdout.log": {
+      "bytes": 1118,
+      "path": "/workspace/qualification/native-namespace-v45-prospective-20261028T2335Z/ORDERED_DRIVER.stdout.log",
+      "sha256": "e3d9cd8b54ce3aec25e3f599093ac169d84122f920dd449c906e865b5f3c3ba2"
+    },
+    "ORDERED_DRIVER_OUTER_COSTS.json": {
+      "bytes": 1500,
+      "path": "/workspace/qualification/native-namespace-v45-prospective-20261028T2335Z/ORDERED_DRIVER_OUTER_COSTS.json",
+      "sha256": "6e0104a9c1cb91078a189b349694496038f9ae21003ec883e13decc4bd7b95d1"
+    },
+    "ORDERED_PROCESS_COSTS.json": {
+      "bytes": 1990,
+      "path": "/workspace/qualification/native-namespace-v45-prospective-20261028T2335Z/ORDERED_PROCESS_COSTS.json",
+      "sha256": "97b7a283c8a298d5f51f1f18aca33843f58a01a20c8eee4325a3b2221e65fac7"
+    },
+    "SCREENER_OUTER_DRIVER.py": {
+      "bytes": 5342,
+      "path": "/workspace/qualification/native-namespace-v45-prospective-20261028T2335Z/SCREENER_OUTER_DRIVER.py",
+      "sha256": "42d0b0fab48e3f3167d22d883631fbeba5274bf0947c2185bd54eb5430a50167"
+    },
+    "SCREENING_ACTOR_ATTESTATION.json": {
+      "bytes": 1580,
+      "path": "/workspace/qualification/native-namespace-v45-prospective-20261028T2335Z/SCREENING_ACTOR_ATTESTATION.json",
+      "sha256": "2dfa301455d25d8d050110311325f3b391fe61d60433c249e4606ad2644cd099"
+    },
+    "SCREENING_PARENT_PINS.json": {
+      "bytes": 685,
+      "path": "/workspace/qualification/native-namespace-v45-prospective-20261028T2335Z/SCREENING_PARENT_PINS.json",
+      "sha256": "8db19bfef5e4521e1e5d074eb6c75c9fd25536aa3da0dba489b33be73748ec92"
+    },
+    "SCREENING_SOURCE_AFTER.json": {
+      "bytes": 851642,
+      "path": "/workspace/qualification/native-namespace-v45-prospective-20261028T2335Z/SCREENING_SOURCE_AFTER.json",
+      "sha256": "47c6da991c2b228a47a2cbc1964b76c4fd0e20ec9f478de0d1d30398f9e0dbf3"
+    },
+    "SCREENING_SOURCE_BEFORE.json": {
+      "bytes": 851642,
+      "path": "/workspace/qualification/native-namespace-v45-prospective-20261028T2335Z/SCREENING_SOURCE_BEFORE.json",
+      "sha256": "47c6da991c2b228a47a2cbc1964b76c4fd0e20ec9f478de0d1d30398f9e0dbf3"
+    },
+    "SOURCE_INDEX_SCREENING_AUDIT.json": {
+      "bytes": 1174,
+      "path": "/workspace/qualification/native-namespace-v45-prospective-20261028T2335Z/SOURCE_INDEX_SCREENING_AUDIT.json",
+      "sha256": "4ede1ad618a86284cde6e387033ef20f0d85028a22603a0f80bc11b5aa3aa667"
+    },
+    "screening/SCREENING_METER.json": {
+      "bytes": 811,
+      "path": "/workspace/qualification/native-namespace-v45-prospective-20261028T2335Z/screening/SCREENING_METER.json",
+      "sha256": "437bd06ccb2cb8544614bd053a34683b0baa6659c8d5eb79a86f37c19bf9f18d"
+    },
+    "screening/case-000/SCREENING_ENVELOPE.json": {
+      "bytes": 1000,
+      "path": "/workspace/qualification/native-namespace-v45-prospective-20261028T2335Z/screening/case-000/SCREENING_ENVELOPE.json",
+      "sha256": "62a31bdc46d37c56e58f8529f9c63fad4a9b83cd3ab6e9faa4552059b5d88849"
+    }
+  },
+  "first_case_wall_seconds": 22.828915464000602,
+  "first_child_returncode": 1,
+  "first_public_envelope_status": "UNKNOWN_ADMISSION_SCREENING",
+  "fixed_pool_count": 4,
+  "independent_private_diagnosis_role": "/root/v45_science_readiness",
+  "index_changes": [],
+  "learner_policy_constructor_or_model_execution": false,
+  "meter_accounting_complete": true,
+  "meter_pending_present": false,
+  "native_calls": 0,
+  "original_driver_wall_seconds": 24.24185222000051,
+  "outer_child_system_cpu_seconds": 10.61273,
+  "outer_child_user_cpu_seconds": 15.456805,
+  "outer_wall_seconds": 25.756850842999484,
+  "prequery_commit": "b25f18c7fd2cfc3bb1b01dd668535b49254c0604",
+  "private_native_reports_or_target_source_read_by_executor": false,
+  "public_eligible_completed_cases": 0,
+  "remaining_case_processes_not_attempted": 3,
+  "restored_any_index": false,
+  "retry_or_resampling": false,
+  "schema": "UDM_V45_INDEPENDENT_ORDERED_SCREENING_EXECUTOR_PUBLIC_SUMMARY",
+  "scientific_verdicts": {
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN"
+  },
+  "source_commit": "d557e509315ed884c26c74ed4a26f5dc51788f3c",
+  "source_unchanged": true,
+  "status": "UNKNOWN_FIRST_CASE_PROCESS_EXIT"
+}

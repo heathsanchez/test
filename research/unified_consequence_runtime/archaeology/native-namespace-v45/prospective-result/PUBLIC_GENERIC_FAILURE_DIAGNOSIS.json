@@ -1,0 +1,119 @@
+{
+  "authority_sha256": "8383491db329d0dd3fc272e84214613ab305fa2294282349ac701868db7e53b3",
+  "costs": {
+    "coding_agent": "NOT_STARTED",
+    "comparators": "NOT_STARTED",
+    "controller_attempts": {
+      "collection_calls": 0,
+      "native_calls": 0,
+      "subprocess_attempts": 0
+    },
+    "known_intervals_additive": false,
+    "metadata_bootstrap_counter": "UNRETAINED: wrapper failed before returning snapshots; provisioning/backend invocation is unreachable in this declared failed call",
+    "native_builder_attempts": {
+      "after": {
+        "builder_attempts": {
+          "build_calls": 0,
+          "build_seconds": 0.0,
+          "records": []
+        },
+        "records": [],
+        "verification_attempts": 0
+      },
+      "before": {
+        "builder_attempts": {
+          "build_calls": 0,
+          "build_seconds": 0.0,
+          "records": []
+        },
+        "records": [],
+        "verification_attempts": 0
+      }
+    },
+    "native_meta_selection": "NOT_STARTED",
+    "ordered_child_system_cpu_seconds": 9.684248,
+    "ordered_child_user_cpu_seconds": 13.468566,
+    "ordered_child_wall_seconds": 22.828915464000602,
+    "ordered_controller_wall_seconds": 24.24185222000051,
+    "outer_process_wall_seconds_parent_supplied": 25.756850843,
+    "report_wall_seconds": 0.21065735816955566
+  },
+  "evidence_pins": {
+    "ORDERED_PROCESS_COSTS.json": "97b7a283c8a298d5f51f1f18aca33843f58a01a20c8eee4325a3b2221e65fac7",
+    "SCREENING_ACTOR_ATTESTATION.json": "2dfa301455d25d8d050110311325f3b391fe61d60433c249e4606ad2644cd099",
+    "screen-000.stderr": "ff0db51cfd2d7f21ed2b14c8b711c1af1211e766062c966e0cc79a2eb8014521",
+    "screen-000.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "screening/SCREENING_METER.json": "437bd06ccb2cb8544614bd053a34683b0baa6659c8d5eb79a86f37c19bf9f18d",
+    "screening/case-000/SCREENING_CASE.json": "21c80dbc8885a628820a828003d9260a151f04bebfa80a980091703838dd5de1",
+    "screening/case-000/SCREENING_ENVELOPE.json": "62a31bdc46d37c56e58f8529f9c63fad4a9b83cd3ab6e9faa4552059b5d88849"
+  },
+  "full_retained_audit": {
+    "canonical_finalization": "ValueError: unclosed audit dossier",
+    "declaration_compilations": 0,
+    "dossier_sha256": "e8c9435b7b8145c4910094d939eb90fc0c4696626fae07676f1964899488a80f",
+    "first_obstruction": "Missing prospective/PRIOR_EXPOSURE.json expected by the frozen prepared auditor; no file fabricated or source changed",
+    "status": "UNKNOWN_RETAINED_SCREENING_BINDINGS"
+  },
+  "index_scopes": {
+    "independent_auditor_changes": [],
+    "independent_auditor_interval_sha256": "590f2f65209940cc237c7f1c580891d795a2aaf1e18f6365189cfc0ce0f9970c",
+    "original_screening": "PASS_AUTHENTICATED_ORIGINAL_SOURCE_INDEX_INTERVAL",
+    "original_screening_closure_sha256": "43f13fdeab8b375ac8b27e2a75f2bc34e268428a06b1e963bcd0ce54e4ce67e9",
+    "restored_any_index": false
+  },
+  "interface_inventory": {
+    "inventory_sha256": "be8a75da5c999df6bba0ef819a5634c1587a9497edf3da0625caabbcdf01bd94",
+    "missing_from_V45": [
+      "record_admission_request"
+    ],
+    "public_research_functions_V44": 18
+  },
+  "native_retries_or_new_queries": false,
+  "native_source_boundary": {
+    "boundary": "Qualified only for the pinned declared controller path and retained artifacts, not a global absence of unrelated host/network reads. Earlier predeclared metadata-only API exposure is retained.",
+    "declared_provisioning_entered": false,
+    "native_project_repositories_created": 0,
+    "protected_native_outcomes_obtained": 0,
+    "source_blob_requests_reachable_in_declared_failed_call": false,
+    "source_environment_directory_exists": false,
+    "source_request_ledger_events": 0
+  },
+  "original_prequery_commit": "b25f18c7fd2cfc3bb1b01dd668535b49254c0604",
+  "original_source_commit": "d557e509315ed884c26c74ed4a26f5dc51788f3c",
+  "pool_state": {
+    "child_process_attempts": 1,
+    "completed_fixed_pool": false,
+    "meter_pending": null,
+    "original_fixed_cases": 4,
+    "original_records_preserved": true,
+    "remaining_cases_executed": false,
+    "retained_meter_case_count": 1,
+    "retries_performed": false
+  },
+  "primary_exception": {
+    "call_site": "research/unified_consequence_runtime/qualify_native_frontier_v43.py:342",
+    "message": "module 'research.unified_consequence_runtime.native_environment_v45' has no attribute 'record_admission_request'",
+    "original_V44_reexport": "research/unified_consequence_runtime/native_environment_v44.py:36",
+    "original_existing_implementation": "research/unified_consequence_runtime/native_environment_v43.py:46",
+    "phase": "original V43-bound admission_only_screen initial obligation recording before source provisioning and before its native try/finally",
+    "type": "AttributeError"
+  },
+  "reusable_operation": "Original source-pinned record_admission_request already exists. The smallest missing mechanism is its explicit V45 public export/consumer binding; it is not a new discovery algorithm.",
+  "schema": "UDM_V45_FROZEN_SCREENING_GENERIC_TRANSPORT_FAILURE_DIAGNOSIS",
+  "scientific_verdicts": {
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN"
+  },
+  "scope": "Generic control flow, process, interfaces and accounting only. No target identity, source contents, protected outcomes or winning methods disclosed.",
+  "secondary_exception": {
+    "call_site": "research/unified_consequence_runtime/qualify_native_frontier_v44.py:228",
+    "message": "bootstrap_attempts",
+    "phase": "public envelope construction after outer interrupted-screening fallback; missing bootstrap snapshots mask the original AttributeError",
+    "type": "KeyError"
+  },
+  "source_or_experiment_changes": false,
+  "status": "UNKNOWN_SCREENING_STOPPED_BEFORE_SOURCE_NATIVE_ADMISSION"
+}
