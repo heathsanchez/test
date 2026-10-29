@@ -1,0 +1,221 @@
+{
+  "base_commit": "cfab3f080cd199f367528e6631bcb93f3ebbc510",
+  "control_count": 15,
+  "control_revision": 2,
+  "files": {
+    "CONTROL_PROTOCOL.json": {
+      "bytes": 3634,
+      "mode": "100644",
+      "sha256": "9adc23b15a83e52cf374a1569a052ec34248d0d76fb1599061e6ee4be7032b6f"
+    },
+    "COST_CORRECTION_EVIDENCE.json": {
+      "bytes": 11418,
+      "mode": "100644",
+      "sha256": "4b4829ffcdcab4303e07202d0aef84c876c2e34239297cf893c6b2863b9d1cb7"
+    },
+    "TEST_INVENTORY.json": {
+      "bytes": 2654,
+      "mode": "100644",
+      "sha256": "56538c9a39692b7abd1db65c4639939267737d715996f69f1b5ac9984e23f45a"
+    },
+    "fixtures/ORIGINAL_V45_ASSERTION_FAILURE/augmented/pytest.ini": {
+      "bytes": 43,
+      "mode": "100644",
+      "sha256": "ca4b82760538130959a0fbe25c21fc5d28cd46fb7a63b1209def6d19e2b40a62"
+    },
+    "fixtures/ORIGINAL_V45_ASSERTION_FAILURE/augmented/subject.py": {
+      "bytes": 26,
+      "mode": "100644",
+      "sha256": "4480052910accecafe6f206dbd8be95b8447320ff6d2332761858fd6399c1255"
+    },
+    "fixtures/ORIGINAL_V45_ASSERTION_FAILURE/augmented/tests/test_native.py": {
+      "bytes": 71,
+      "mode": "100644",
+      "sha256": "9a48e8ad82f75cedd6cb669933f19553f22415331c37f3a85846236fdb7fa057"
+    },
+    "fixtures/ORIGINAL_V45_ASSERTION_FAILURE/baseline/pytest.ini": {
+      "bytes": 43,
+      "mode": "100644",
+      "sha256": "ca4b82760538130959a0fbe25c21fc5d28cd46fb7a63b1209def6d19e2b40a62"
+    },
+    "fixtures/ORIGINAL_V45_ASSERTION_FAILURE/baseline/subject.py": {
+      "bytes": 26,
+      "mode": "100644",
+      "sha256": "4480052910accecafe6f206dbd8be95b8447320ff6d2332761858fd6399c1255"
+    },
+    "fixtures/ORIGINAL_V45_ASSERTION_FAILURE/baseline/tests/test_native.py": {
+      "bytes": 37,
+      "mode": "100644",
+      "sha256": "abf5acd9446b9a19afd9f8b4c1ffe4c42be8237302f94d59c09dce11fd3483cb"
+    },
+    "fixtures/W01_qualified_production_wildcard/augmented/library/__init__.py": {
+      "bytes": 0,
+      "mode": "100644",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "fixtures/W01_qualified_production_wildcard/augmented/library/constants.py": {
+      "bytes": 98,
+      "mode": "100644",
+      "sha256": "d729dec15f5dfd9f3958f64b84cb2f036589932e007fbd2ad02bbe444e4bc264"
+    },
+    "fixtures/W01_qualified_production_wildcard/augmented/pytest.ini": {
+      "bytes": 43,
+      "mode": "100644",
+      "sha256": "ca4b82760538130959a0fbe25c21fc5d28cd46fb7a63b1209def6d19e2b40a62"
+    },
+    "fixtures/W01_qualified_production_wildcard/augmented/tests/test_native.py": {
+      "bytes": 77,
+      "mode": "100644",
+      "sha256": "00373c7dd284ec14cbe740781d8e338735ebfdd66208afada62a8e3c2ad9166a"
+    },
+    "fixtures/W01_qualified_production_wildcard/baseline/library/__init__.py": {
+      "bytes": 0,
+      "mode": "100644",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "fixtures/W01_qualified_production_wildcard/baseline/library/constants.py": {
+      "bytes": 98,
+      "mode": "100644",
+      "sha256": "d729dec15f5dfd9f3958f64b84cb2f036589932e007fbd2ad02bbe444e4bc264"
+    },
+    "fixtures/W01_qualified_production_wildcard/baseline/pytest.ini": {
+      "bytes": 43,
+      "mode": "100644",
+      "sha256": "ca4b82760538130959a0fbe25c21fc5d28cd46fb7a63b1209def6d19e2b40a62"
+    },
+    "fixtures/W01_qualified_production_wildcard/baseline/tests/test_native.py": {
+      "bytes": 77,
+      "mode": "100644",
+      "sha256": "f722679fac3cbcda87831e99172e8b2c884606321a41d1df8eea0ab5fb8381b9"
+    }
+  },
+  "known_engineering_invocations_before_revision2_seal": {
+    "collection_calls": 9,
+    "native_calls": 4,
+    "subprocess_attempts": 13
+  },
+  "model_calls": 0,
+  "native_calls_for_independent_revision2_sealing": 0,
+  "new_target_source_reads": 0,
+  "original_control_seal_sha256": "48584499e067742a877b0ebf3c662ab96004e4ed628ebdc88a68bb42dbed2cce",
+  "original_test_bytes_unchanged": true,
+  "previous_request_control_seal": {
+    "commit": "866a107d111e4b64f753d57323ed2a89098cd046",
+    "files": {
+      "CONTROL_PROTOCOL.json": {
+        "bytes": 2816,
+        "mode": "100644",
+        "sha256": "8f8d2e286214fa65a1d4627e128e76c9a6aa670c032e6e3b4cf866a75d76627b"
+      },
+      "TEST_INVENTORY.json": {
+        "bytes": 2512,
+        "mode": "100644",
+        "sha256": "3794009d585ccd4bc985203e11380603d9ab614fd963051ccd5566421bfc520d"
+      },
+      "fixtures/ORIGINAL_V45_ASSERTION_FAILURE/augmented/pytest.ini": {
+        "bytes": 43,
+        "mode": "100644",
+        "sha256": "ca4b82760538130959a0fbe25c21fc5d28cd46fb7a63b1209def6d19e2b40a62"
+      },
+      "fixtures/ORIGINAL_V45_ASSERTION_FAILURE/augmented/subject.py": {
+        "bytes": 26,
+        "mode": "100644",
+        "sha256": "4480052910accecafe6f206dbd8be95b8447320ff6d2332761858fd6399c1255"
+      },
+      "fixtures/ORIGINAL_V45_ASSERTION_FAILURE/augmented/tests/test_native.py": {
+        "bytes": 71,
+        "mode": "100644",
+        "sha256": "9a48e8ad82f75cedd6cb669933f19553f22415331c37f3a85846236fdb7fa057"
+      },
+      "fixtures/ORIGINAL_V45_ASSERTION_FAILURE/baseline/pytest.ini": {
+        "bytes": 43,
+        "mode": "100644",
+        "sha256": "ca4b82760538130959a0fbe25c21fc5d28cd46fb7a63b1209def6d19e2b40a62"
+      },
+      "fixtures/ORIGINAL_V45_ASSERTION_FAILURE/baseline/subject.py": {
+        "bytes": 26,
+        "mode": "100644",
+        "sha256": "4480052910accecafe6f206dbd8be95b8447320ff6d2332761858fd6399c1255"
+      },
+      "fixtures/ORIGINAL_V45_ASSERTION_FAILURE/baseline/tests/test_native.py": {
+        "bytes": 37,
+        "mode": "100644",
+        "sha256": "abf5acd9446b9a19afd9f8b4c1ffe4c42be8237302f94d59c09dce11fd3483cb"
+      },
+      "fixtures/W01_qualified_production_wildcard/augmented/library/__init__.py": {
+        "bytes": 0,
+        "mode": "100644",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "fixtures/W01_qualified_production_wildcard/augmented/library/constants.py": {
+        "bytes": 98,
+        "mode": "100644",
+        "sha256": "d729dec15f5dfd9f3958f64b84cb2f036589932e007fbd2ad02bbe444e4bc264"
+      },
+      "fixtures/W01_qualified_production_wildcard/augmented/pytest.ini": {
+        "bytes": 43,
+        "mode": "100644",
+        "sha256": "ca4b82760538130959a0fbe25c21fc5d28cd46fb7a63b1209def6d19e2b40a62"
+      },
+      "fixtures/W01_qualified_production_wildcard/augmented/tests/test_native.py": {
+        "bytes": 77,
+        "mode": "100644",
+        "sha256": "00373c7dd284ec14cbe740781d8e338735ebfdd66208afada62a8e3c2ad9166a"
+      },
+      "fixtures/W01_qualified_production_wildcard/baseline/library/__init__.py": {
+        "bytes": 0,
+        "mode": "100644",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "fixtures/W01_qualified_production_wildcard/baseline/library/constants.py": {
+        "bytes": 98,
+        "mode": "100644",
+        "sha256": "d729dec15f5dfd9f3958f64b84cb2f036589932e007fbd2ad02bbe444e4bc264"
+      },
+      "fixtures/W01_qualified_production_wildcard/baseline/pytest.ini": {
+        "bytes": 43,
+        "mode": "100644",
+        "sha256": "ca4b82760538130959a0fbe25c21fc5d28cd46fb7a63b1209def6d19e2b40a62"
+      },
+      "fixtures/W01_qualified_production_wildcard/baseline/tests/test_native.py": {
+        "bytes": 77,
+        "mode": "100644",
+        "sha256": "f722679fac3cbcda87831e99172e8b2c884606321a41d1df8eea0ab5fb8381b9"
+      }
+    },
+    "path": "research/unified_consequence_runtime/archaeology/native-request-activation-v1/control-freeze/FINAL_SEAL.json",
+    "sha256": "ea1de5102aa0654d714890def4abbd07b63146d2b5525347c60a0fc5060ee3ef",
+    "test_file": {
+      "bytes": 17913,
+      "mode": "100644",
+      "path": "research/unified_consequence_runtime/test_native_request_activation_v1.py",
+      "sha256": "1b625414e1227f141f917c2f8187836dba75c6558494458e3e1cd7e7043a689b"
+    }
+  },
+  "product_implementation_exists": true,
+  "qualified_native_source_commit": "8ecdf15598a2e67d39acd7a5a0e0f7c201000bb7",
+  "retained_previous_result": {
+    "corrected_fields_only": [
+      "expected_collection_calls",
+      "expected_subprocess_attempts"
+    ],
+    "failures": 2,
+    "passed": 13,
+    "tests": 15
+  },
+  "revision2_native_execution_started": false,
+  "schema": "UDM_NATIVE_REQUEST_ACTIVATION_CONTROLS_V1_REVISION2",
+  "scope": "REQUEST_TRANSPORT_ENGINEERING_CONTROLS_ONLY_NO_G2",
+  "source_pins_before_revision2_execution": {
+    "native_environment_request_v1.py": "1039e2f9576729eef163c535a43cf2e21c822b41bce7bee49dca67f02d3acce1",
+    "native_execution_v45.py": "27e14f937f64bfa53536c5611dd7e3374bba5bc8c226f13408915622d2038058",
+    "qualify_native_frontier_request_v1.py": "6ed81fb180b39ea3280ad26be06a7bc6f7655fe9cd71c9a59a6de877e409eb27"
+  },
+  "task_queries": 0,
+  "test_file": {
+    "bytes": 18288,
+    "mode": "100644",
+    "path": "research/unified_consequence_runtime/test_native_request_activation_v1_revision2.py",
+    "sha256": "0db75ec80d56c96e2ca47522b9a231dd2556e909be994e9a785eb94361756179"
+  }
+}

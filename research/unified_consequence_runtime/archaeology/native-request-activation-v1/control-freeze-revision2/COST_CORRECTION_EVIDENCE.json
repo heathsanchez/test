@@ -1,0 +1,281 @@
+{
+  "assertion_change": {
+    "after": "assert delta == {'native_calls': 2, 'collection_calls': 4, 'subprocess_attempts': 6}",
+    "before": "assert delta == {'native_calls': 2, 'collection_calls': 2, 'subprocess_attempts': 4}"
+  },
+  "cases": [
+    {
+      "actual_counts": {
+        "collection_calls": 4,
+        "native_calls": 2,
+        "subprocess_attempts": 6
+      },
+      "case": 0,
+      "controller_accounting": {
+        "bytes": 727,
+        "mode": "100644",
+        "path": "pytest/test_actual_main_executes_comp0/CONTROL_ACCOUNTING.json",
+        "sha256": "7d42bd63c99b6d36e1d29c71a353fb0f729d15068e8c8c6f8ca079b6c5432111"
+      },
+      "native_junit": {
+        "errors": 0,
+        "failures": 0,
+        "passed": 1,
+        "skipped": 0,
+        "tests": 1
+      },
+      "native_receipts": [
+        {
+          "bytes": 48488,
+          "mode": "100644",
+          "path": "pytest/test_actual_main_executes_comp0/screening/case-000/baseline/receipt.json",
+          "sha256": "3b5b748e5538c4657abc11d7fa1b9e29f49703716b1fe03cf283f403eaec11c5"
+        },
+        {
+          "bytes": 48502,
+          "mode": "100644",
+          "path": "pytest/test_actual_main_executes_comp0/screening/case-000/independent-baseline/receipt.json",
+          "sha256": "61b8a0985b0513b9322cc294fac1568e492df33be5746c4dcca663a5e76f0eea"
+        }
+      ],
+      "native_status": "PASS_NATIVE",
+      "raw_invocations": [
+        {
+          "costs": {
+            "collection_calls": 0,
+            "horizon_seconds": 20,
+            "native_calls": 1,
+            "seconds": 0.2724573520008562
+          },
+          "mode": "run",
+          "path": "/workspace/qualification/native-request-activation-v1-implementation/attempt-001/pytest/test_actual_main_executes_comp0/screening/case-000/baseline/execution/checked-report.json",
+          "sha256": "0ede8d09c4aad231bd2cbf3aa25ce5371b59eb5827d65a5578c1e7a53aad0018"
+        },
+        {
+          "costs": {
+            "collection_calls": 1,
+            "horizon_seconds": 20,
+            "native_calls": 0,
+            "seconds": 0.31965269099964644
+          },
+          "mode": "collect",
+          "path": "/workspace/qualification/native-request-activation-v1-implementation/attempt-001/pytest/test_actual_main_executes_comp0/screening/case-000/baseline/independent-collection/checked-report.json",
+          "sha256": "70b88a6fbb6c913e7c392f6f47f614d1b95f7ad35f693db83aaaf9de09103106"
+        },
+        {
+          "costs": {
+            "collection_calls": 1,
+            "horizon_seconds": 20,
+            "native_calls": 0,
+            "seconds": 0.26930533400081913
+          },
+          "mode": "collect",
+          "path": "/workspace/qualification/native-request-activation-v1-implementation/attempt-001/pytest/test_actual_main_executes_comp0/screening/case-000/collection/checked-report.json",
+          "sha256": "4048d5e9e1fa6e79d77761a91915629a2117c6e7711d14f38b317e2f506f0ec8"
+        },
+        {
+          "costs": {
+            "collection_calls": 0,
+            "horizon_seconds": 20,
+            "native_calls": 1,
+            "seconds": 0.37382217699996545
+          },
+          "mode": "run",
+          "path": "/workspace/qualification/native-request-activation-v1-implementation/attempt-001/pytest/test_actual_main_executes_comp0/screening/case-000/independent-baseline/execution/checked-report.json",
+          "sha256": "e0d10d5c0f66020321073a8ecc53a08ed61a82b2e035009780a6c895d12a9321"
+        },
+        {
+          "costs": {
+            "collection_calls": 1,
+            "horizon_seconds": 20,
+            "native_calls": 0,
+            "seconds": 0.26917469600084587
+          },
+          "mode": "collect",
+          "path": "/workspace/qualification/native-request-activation-v1-implementation/attempt-001/pytest/test_actual_main_executes_comp0/screening/case-000/independent-baseline/independent-collection/checked-report.json",
+          "sha256": "e7d30bda84029936b2c15f778a8a212ce546edf2f4ed66cfcd284c2246f4ebcb"
+        },
+        {
+          "costs": {
+            "collection_calls": 1,
+            "horizon_seconds": 20,
+            "native_calls": 0,
+            "seconds": 0.3194140800005698
+          },
+          "mode": "collect",
+          "path": "/workspace/qualification/native-request-activation-v1-implementation/attempt-001/pytest/test_actual_main_executes_comp0/screening/case-000/independent-collection/checked-report.json",
+          "sha256": "4887ddbc8d52d8ab81f6c88f421bd71292c2135a8d1ba1e7737ab25e7af6315d"
+        }
+      ],
+      "screening_report": {
+        "bytes": 102309,
+        "mode": "100644",
+        "path": "pytest/test_actual_main_executes_comp0/screening/case-000/SCREENING_CASE.json",
+        "sha256": "e3a7e8e17131f9fccbf600c85fb7d35e19f45793414edf5530cc71892a19979e"
+      }
+    },
+    {
+      "actual_counts": {
+        "collection_calls": 4,
+        "native_calls": 2,
+        "subprocess_attempts": 6
+      },
+      "case": 1,
+      "controller_accounting": {
+        "bytes": 728,
+        "mode": "100644",
+        "path": "pytest/test_actual_main_executes_comp1/CONTROL_ACCOUNTING.json",
+        "sha256": "fbd3712f49a34c633d7d8c71f3f57adf4a432697e5092418cb380121d627a48f"
+      },
+      "native_junit": {
+        "errors": 0,
+        "failures": 1,
+        "passed": 0,
+        "skipped": 0,
+        "tests": 1
+      },
+      "native_receipts": [
+        {
+          "bytes": 48692,
+          "mode": "100644",
+          "path": "pytest/test_actual_main_executes_comp1/screening/case-000/baseline/receipt.json",
+          "sha256": "f07aaea3222c7c6e23dd088acd9c9b7a4f71bc124465503d096c754f4eab962b"
+        },
+        {
+          "bytes": 48713,
+          "mode": "100644",
+          "path": "pytest/test_actual_main_executes_comp1/screening/case-000/independent-baseline/receipt.json",
+          "sha256": "0a34c140b3baa8aca48c65495d2911616c0717135d4e0f26c7daed3b5f7a1931"
+        }
+      ],
+      "native_status": "FAIL_NATIVE",
+      "raw_invocations": [
+        {
+          "costs": {
+            "collection_calls": 0,
+            "horizon_seconds": 20,
+            "native_calls": 1,
+            "seconds": 0.268435590000081
+          },
+          "mode": "run",
+          "path": "/workspace/qualification/native-request-activation-v1-implementation/attempt-001/pytest/test_actual_main_executes_comp1/screening/case-000/baseline/execution/checked-report.json",
+          "sha256": "69c213b5c281c351cdf0e6bade75713fd025edcc9385e7abf6d8e26926aea968"
+        },
+        {
+          "costs": {
+            "collection_calls": 1,
+            "horizon_seconds": 20,
+            "native_calls": 0,
+            "seconds": 0.2688868960012769
+          },
+          "mode": "collect",
+          "path": "/workspace/qualification/native-request-activation-v1-implementation/attempt-001/pytest/test_actual_main_executes_comp1/screening/case-000/baseline/independent-collection/checked-report.json",
+          "sha256": "84c7f1c37b8c04ba6830ce8ddc38627d45ab05d2840c07a07264bbbfa3a3bbdc"
+        },
+        {
+          "costs": {
+            "collection_calls": 1,
+            "horizon_seconds": 20,
+            "native_calls": 0,
+            "seconds": 0.27387125399945944
+          },
+          "mode": "collect",
+          "path": "/workspace/qualification/native-request-activation-v1-implementation/attempt-001/pytest/test_actual_main_executes_comp1/screening/case-000/collection/checked-report.json",
+          "sha256": "6742a85fd84d416117c8a32c192130a5203ac90eef367265c75a597607bc79e4"
+        },
+        {
+          "costs": {
+            "collection_calls": 0,
+            "horizon_seconds": 20,
+            "native_calls": 1,
+            "seconds": 0.26895871499982604
+          },
+          "mode": "run",
+          "path": "/workspace/qualification/native-request-activation-v1-implementation/attempt-001/pytest/test_actual_main_executes_comp1/screening/case-000/independent-baseline/execution/checked-report.json",
+          "sha256": "36763ff1a106a6c62669246a8f5ba38de818ec43452976dab8fa651edca841a3"
+        },
+        {
+          "costs": {
+            "collection_calls": 1,
+            "horizon_seconds": 20,
+            "native_calls": 0,
+            "seconds": 0.2687674890003109
+          },
+          "mode": "collect",
+          "path": "/workspace/qualification/native-request-activation-v1-implementation/attempt-001/pytest/test_actual_main_executes_comp1/screening/case-000/independent-baseline/independent-collection/checked-report.json",
+          "sha256": "8ac6ae78fca1cee061c8d22a2daf816b0fbb088b31f11a2abee6afa486cd946e"
+        },
+        {
+          "costs": {
+            "collection_calls": 1,
+            "horizon_seconds": 20,
+            "native_calls": 0,
+            "seconds": 0.32052017099886143
+          },
+          "mode": "collect",
+          "path": "/workspace/qualification/native-request-activation-v1-implementation/attempt-001/pytest/test_actual_main_executes_comp1/screening/case-000/independent-collection/checked-report.json",
+          "sha256": "c886b2ddfe23743821e38e700e15cfdf137e5732489a000a2b2701b1a8a519fe"
+        }
+      ],
+      "screening_report": {
+        "bytes": 101221,
+        "mode": "100644",
+        "path": "pytest/test_actual_main_executes_comp1/screening/case-000/SCREENING_CASE.json",
+        "sha256": "dca316b22c43036db0847de1fd75aaf149fecb452aaa256de3500ce981fa1031"
+      }
+    }
+  ],
+  "known_prior_engineering_invocations": {
+    "collection_calls": 9,
+    "native_calls": 4,
+    "subprocess_attempts": 13
+  },
+  "model_calls": 0,
+  "native_calls_for_this_independent_data_audit": 0,
+  "native_source_fixture_bytes_changed": false,
+  "native_verification_removed": false,
+  "new_target_source_reads": 0,
+  "original_contract_counts": {
+    "errors": 0,
+    "failures": 2,
+    "passed": 13,
+    "skipped": 0,
+    "tests": 15
+  },
+  "original_contract_junit": {
+    "bytes": 7079,
+    "mode": "100644",
+    "path": "contracts.xml",
+    "sha256": "75a716229638b9939a46a535fd43a7113321417fd2c41e55462a6482589f02ba"
+  },
+  "original_result": "RED_RETAINED_UNCHANGED",
+  "original_seal_sha256": "ea1de5102aa0654d714890def4abbd07b63146d2b5525347c60a0fc5060ee3ef",
+  "original_test_file": {
+    "bytes": 17913,
+    "mode": "100644",
+    "path": "research/unified_consequence_runtime/test_native_request_activation_v1.py",
+    "sha256": "1b625414e1227f141f917c2f8187836dba75c6558494458e3e1cd7e7043a689b"
+  },
+  "schema": "INDEPENDENT_REQUEST_V1_COST_EXPECTATION_CORRECTION",
+  "scientific_verdicts": {
+    "G2": "UNKNOWN",
+    "G3": "UNKNOWN",
+    "G4": "UNKNOWN",
+    "G5": "UNKNOWN",
+    "G6": "UNKNOWN"
+  },
+  "source_explanation": {
+    "operations": [
+      "collect",
+      "validate_certificate with independent recollection",
+      "verify with independent recollection and native execution",
+      "validate_receipt independent=True with independent recollection and native reexecution"
+    ],
+    "original_controller": "research/unified_consequence_runtime/qualify_native_frontier_v3.py::admission_only_screen",
+    "original_worker_source": "research/unified_consequence_runtime/native_execution_v2.py",
+    "unchanged_native45_sha256": "27e14f937f64bfa53536c5611dd7e3374bba5bc8c226f13408915622d2038058",
+    "worker_sha256": "57e2fb40c6ff39f0959764e8f48f05ee99170b97995f9a584aaa8409af8871f1"
+  },
+  "task_queries": 0,
+  "verdict": "WARRANTED_BOUNDED_COUNTER_CORRECTION_ONLY"
+}
