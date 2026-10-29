@@ -1,0 +1,38 @@
+name: Decision-Time Identifiability Protocol Audit
+
+on:
+  push:
+    branches:
+      - research/verified-comparative-verifier-leak-audit-v1-20261029
+    paths:
+      - experiments/verified_comparative_quotient_v1/probe_timing.py
+      - experiments/verified_comparative_quotient_v1/test_probe_timing.py
+      - .github/workflows/decision-time-identifiability-audit-v1.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  temporal-worlds-and-provenance:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: experiments/verified_comparative_quotient_v1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Six finite-world protocol red/green checks
+        run: |
+          python3 -B -m unittest -v test_probe_timing 2>&1 | tee "${RUNNER_TEMP}/decision_time_identifiability.log"
+      - name: Original source-pinned verifier audit remains green
+        run: |
+          python3 -B audit_feedback_leak_v1.py --selftest
+      - uses: actions/upload-artifact@v4
+        with:
+          name: decision-time-identifiability-protocol-v1
+          path: ${{ runner.temp }}/decision_time_identifiability.log
+          retention-days: 90
