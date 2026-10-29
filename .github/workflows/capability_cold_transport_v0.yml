@@ -1,0 +1,54 @@
+name: Pinned capability cold transport and original-verifier archival replay
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [research/capability-cold-transport-replay-v0-20261029]
+    paths:
+      - cold_capability_probe/**
+      - .github/workflows/capability_cold_transport_v0.yml
+
+jobs:
+  independent-archival-replay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Check original exported operator source
+        run: |
+          echo 'e4bf4175331252c2b2d2d192ca80999ee8ba377c9116349ebfbd3bd1de39849c  scripts/webarena_two_capability_composition_v1.py' | sha256sum -c -
+          echo '96e61d23420684ec77d93ed94a8a0e3ba319eac643175206e279daf8e3b5e5df  scripts/webarena_compounding_economics_v1.py' | sha256sum -c -
+          python scripts/webarena_two_capability_composition_v1.py --self-test
+      - name: Fetch pinned official original verifier
+        run: |
+          git clone https://github.com/ServiceNow/webarena-verified.git official_upstream
+          git -C official_upstream checkout 6473f72db5dcefc97b5725b59e734504edc28a21
+          test "$(git -C official_upstream rev-parse HEAD)" = 6473f72db5dcefc97b5725b59e734504edc28a21
+          python -m pip install ./official_upstream
+      - name: Recover three retained original artifacts and check exact provider digests
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api /repos/heathsanchez/test/actions/artifacts/11467591099/zip > e_archive.zip
+          gh api /repos/heathsanchez/test/actions/artifacts/11663621950/zip > f_archive.zip
+          gh api /repos/heathsanchez/test/actions/artifacts/11665265299/zip > composition_archive.zip
+          echo '2ea6a89d4aae5bfdea4df8d31643c5dc016e294e1b1b694f1c86ea3151d5053c  e_archive.zip' | sha256sum -c -
+          echo 'e3d3dac4c096abbfc6020420e700433e603f769155a0424224b470a9d6829562  f_archive.zip' | sha256sum -c -
+          echo 'c07211863fb7e8c006ec94bdbb87121fc6096efbe016c0b1aa6823b047ab5d81  composition_archive.zip' | sha256sum -c -
+          mkdir historical_composition
+          unzip -q composition_archive.zip -d historical_composition
+      - name: Test fresh-process source transport and native requalification
+        run: |
+          python -m unittest discover -s cold_capability_probe -p 'test_*.py' -v
+          python -m cold_capability_probe.qualification --out cold_capability_probe/output
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cold-capability-archived-native-replay-v0
+          path: cold_capability_probe/output
