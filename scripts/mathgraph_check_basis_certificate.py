@@ -1,4 +1,4 @@
-"""Finite minimal separating-basis certificate for three TestSuiteBench suites.
+"""Finite minimum detection-basis certificate for three TestSuiteBench suites.
 
 Input is the unmodified GitHub Actions evaluation artifact ZIP. The output is
 only a certificate about its observed mutant/test matrix, not a general claim
@@ -102,7 +102,7 @@ def calculate(archive: bytes) -> dict:
     actual = set.union(*(killed_by_test[t] for t in selected))
     assert actual == set(mutant_union)
     return {
-        "claim": "MINIMUM_OBSERVED_MUTANT_SEPARATING_BASIS",
+        "claim": "MINIMUM_OBSERVED_MUTANT_DETECTION_BASIS",
         "epistemic_status": "WARRANTED_BOUNDED_EXHAUSTIVE_IN_SAMPLE",
         "task": TASK,
         "benchmark_commit": "583d2eb1ffa19f3aa0c04b7455fd13d846b4c8d9",
