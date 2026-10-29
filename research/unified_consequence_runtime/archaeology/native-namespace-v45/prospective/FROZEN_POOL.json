@@ -1,0 +1,516 @@
+{
+  "metadata_curation_sha256": "4f7a1c837809a328e473baebd338c3005fc18be97cd8d542504308de0423f0a8",
+  "pool": [
+    {
+      "base_commit": "bfecdaad292fb7020d841eab3fcbc67d26cfa6bc",
+      "files": [
+        {
+          "additions": 6,
+          "changes": 7,
+          "deletions": 1,
+          "filename": "src/tablib/formats/_ods.py",
+          "sha": "ba3e05304176487cd661ce097e5750ac383c84e7",
+          "status": "modified"
+        },
+        {
+          "additions": 10,
+          "changes": 10,
+          "deletions": 0,
+          "filename": "tests/test_tablib.py",
+          "sha": "fc2e73e9f9e381f8a9e647646b55d5e8d2a72a45",
+          "status": "modified"
+        }
+      ],
+      "git_metadata_binding": {
+        "base": {
+          "changed_paths": {
+            "src/tablib/formats/_ods.py": {
+              "mode": "100644",
+              "path": "src/tablib/formats/_ods.py",
+              "sha": "92f586788644bc33305b518bf57dde5d144bfa9f",
+              "size": 8573,
+              "type": "blob"
+            },
+            "tests/test_tablib.py": {
+              "mode": "100755",
+              "path": "tests/test_tablib.py",
+              "sha": "26224167c8de2a1a1e4e2fd170db71f4aa695c0a",
+              "size": 72228,
+              "type": "blob"
+            }
+          },
+          "commit_sha": "bfecdaad292fb7020d841eab3fcbc67d26cfa6bc",
+          "parents": [
+            "e9da55b31e57c4585f6a155ee95a4dae2502d3ac"
+          ],
+          "tree_entry_count": 88,
+          "tree_sha": "ec9e3d217b67f8af13df49f4d8ae5dc83435337d",
+          "tree_truncated": false
+        },
+        "head": {
+          "changed_paths": {
+            "src/tablib/formats/_ods.py": {
+              "mode": "100755",
+              "path": "src/tablib/formats/_ods.py",
+              "sha": "ba3e05304176487cd661ce097e5750ac383c84e7",
+              "size": 8793,
+              "type": "blob"
+            },
+            "tests/test_tablib.py": {
+              "mode": "100755",
+              "path": "tests/test_tablib.py",
+              "sha": "fc2e73e9f9e381f8a9e647646b55d5e8d2a72a45",
+              "size": 72593,
+              "type": "blob"
+            }
+          },
+          "commit_sha": "f493f313f9dd32c1fb4528fc6befb7eed54bdebb",
+          "parents": [
+            "738bdf766e7de9d86e36b1940feb9b8d2ae3d172"
+          ],
+          "tree_entry_count": 88,
+          "tree_sha": "aa6b4ffffc273411efc4fd556829382ab41032f3",
+          "tree_truncated": false
+        }
+      },
+      "head_commit": "f493f313f9dd32c1fb4528fc6befb7eed54bdebb",
+      "merge_commit_sha": "163f5e112781dd11c90cadc6dab99b5132274814",
+      "metadata_binding_status": "EXACT_COMMIT_TREE_AND_CHANGED_BLOB_IDS_BOUND_WITHOUT_SOURCE_CONTENTS",
+      "metadata_stats": {
+        "production_additions": 6,
+        "production_deletions": 1,
+        "production_py_files": 1,
+        "test_py_files": 1
+      },
+      "metadata_url": "https://github.com/jazzband/tablib/pull/656",
+      "pr": 656,
+      "repo": "jazzband/tablib",
+      "selection_status": "FROZEN_ORDERED_POOL_CANDIDATE_NOT_AN_ADMITTED_TASK",
+      "tree_query_coverage": [
+        {
+          "endpoint": "repos/jazzband/tablib/git/commits/bfecdaad292fb7020d841eab3fcbc67d26cfa6bc",
+          "projection": "{sha,tree_sha:.tree.sha,parents:[.parents[].sha]}",
+          "requested_at_utc": "2026-10-28T23:38:00.491414+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.6134702400013339
+        },
+        {
+          "endpoint": "repos/jazzband/tablib/git/trees/ec9e3d217b67f8af13df49f4d8ae5dc83435337d?recursive=1",
+          "projection": "{sha,truncated,tree:[.tree[] | {path,mode,type,sha,size}]}",
+          "requested_at_utc": "2026-10-28T23:38:01.105019+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.4281134060001932
+        },
+        {
+          "endpoint": "repos/jazzband/tablib/git/commits/f493f313f9dd32c1fb4528fc6befb7eed54bdebb",
+          "projection": "{sha,tree_sha:.tree.sha,parents:[.parents[].sha]}",
+          "requested_at_utc": "2026-10-28T23:38:01.533336+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.517146498999864
+        },
+        {
+          "endpoint": "repos/jazzband/tablib/git/trees/aa6b4ffffc273411efc4fd556829382ab41032f3?recursive=1",
+          "projection": "{sha,truncated,tree:[.tree[] | {path,mode,type,sha,size}]}",
+          "requested_at_utc": "2026-10-28T23:38:02.050563+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.3948995800001285
+        }
+      ]
+    },
+    {
+      "base_commit": "2540b0ed240643b2fc28e0d9045f8248e97c08e9",
+      "files": [
+        {
+          "additions": 4,
+          "changes": 6,
+          "deletions": 2,
+          "filename": "addict/addict.py",
+          "sha": "678e63477e85cf474ef64e0c789e0f6190cb25e6",
+          "status": "modified"
+        },
+        {
+          "additions": 19,
+          "changes": 19,
+          "deletions": 0,
+          "filename": "test_addict.py",
+          "sha": "cadd0c98d78dde74be5e90f20d0ae5c15a27b531",
+          "status": "modified"
+        }
+      ],
+      "git_metadata_binding": {
+        "base": {
+          "changed_paths": {
+            "addict/addict.py": {
+              "mode": "100644",
+              "path": "addict/addict.py",
+              "sha": "66555db698225db4d98fb051104602b5c61e55bc",
+              "size": 3557,
+              "type": "blob"
+            },
+            "test_addict.py": {
+              "mode": "100644",
+              "path": "test_addict.py",
+              "sha": "4fbac2b6b7fb8d19131516dad961efb1da161c55",
+              "size": 9692,
+              "type": "blob"
+            }
+          },
+          "commit_sha": "2540b0ed240643b2fc28e0d9045f8248e97c08e9",
+          "parents": [
+            "1c8926a2c847c78148083f932751d24c9a22165b",
+            "572b6f5872121a8e34656b157fbef55f6ed33b95"
+          ],
+          "tree_entry_count": 9,
+          "tree_sha": "7d3593274dc4598de4338a38cc3fe8045f8b87a5",
+          "tree_truncated": false
+        },
+        "head": {
+          "changed_paths": {
+            "addict/addict.py": {
+              "mode": "100644",
+              "path": "addict/addict.py",
+              "sha": "678e63477e85cf474ef64e0c789e0f6190cb25e6",
+              "size": 3653,
+              "type": "blob"
+            },
+            "test_addict.py": {
+              "mode": "100644",
+              "path": "test_addict.py",
+              "sha": "cadd0c98d78dde74be5e90f20d0ae5c15a27b531",
+              "size": 10208,
+              "type": "blob"
+            }
+          },
+          "commit_sha": "67454531bc95ee9e8fc1f8afec4844ffd04723a5",
+          "parents": [
+            "2540b0ed240643b2fc28e0d9045f8248e97c08e9"
+          ],
+          "tree_entry_count": 9,
+          "tree_sha": "18467e98c9ea630b29815c49528f05c9680b4593",
+          "tree_truncated": false
+        }
+      },
+      "head_commit": "67454531bc95ee9e8fc1f8afec4844ffd04723a5",
+      "merge_commit_sha": "a7301b5230ee1a515f7e86557a006f460f832842",
+      "metadata_binding_status": "EXACT_COMMIT_TREE_AND_CHANGED_BLOB_IDS_BOUND_WITHOUT_SOURCE_CONTENTS",
+      "metadata_stats": {
+        "production_additions": 4,
+        "production_deletions": 2,
+        "production_py_files": 1,
+        "test_py_files": 1
+      },
+      "metadata_url": "https://github.com/mewwts/addict/pull/89",
+      "pr": 89,
+      "repo": "mewwts/addict",
+      "selection_status": "FROZEN_ORDERED_POOL_CANDIDATE_NOT_AN_ADMITTED_TASK",
+      "tree_query_coverage": [
+        {
+          "endpoint": "repos/mewwts/addict/git/commits/2540b0ed240643b2fc28e0d9045f8248e97c08e9",
+          "projection": "{sha,tree_sha:.tree.sha,parents:[.parents[].sha]}",
+          "requested_at_utc": "2026-10-28T23:38:02.445697+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.593848340000477
+        },
+        {
+          "endpoint": "repos/mewwts/addict/git/trees/7d3593274dc4598de4338a38cc3fe8045f8b87a5?recursive=1",
+          "projection": "{sha,truncated,tree:[.tree[] | {path,mode,type,sha,size}]}",
+          "requested_at_utc": "2026-10-28T23:38:03.039623+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.35356379600125365
+        },
+        {
+          "endpoint": "repos/mewwts/addict/git/commits/67454531bc95ee9e8fc1f8afec4844ffd04723a5",
+          "projection": "{sha,tree_sha:.tree.sha,parents:[.parents[].sha]}",
+          "requested_at_utc": "2026-10-28T23:38:03.393282+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.3709710040002392
+        },
+        {
+          "endpoint": "repos/mewwts/addict/git/trees/18467e98c9ea630b29815c49528f05c9680b4593?recursive=1",
+          "projection": "{sha,truncated,tree:[.tree[] | {path,mode,type,sha,size}]}",
+          "requested_at_utc": "2026-10-28T23:38:03.764330+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.5690913419985009
+        }
+      ]
+    },
+    {
+      "base_commit": "40011cc3b9344d2c4e6ad2e3cff54b41ac7015f7",
+      "files": [
+        {
+          "additions": 3,
+          "changes": 6,
+          "deletions": 3,
+          "filename": "funcy/objects.py",
+          "sha": "385bd750db4921bd0cdd4e68772e29d3ef212c78",
+          "status": "modified"
+        },
+        {
+          "additions": 57,
+          "changes": 57,
+          "deletions": 0,
+          "filename": "tests/test_objects.py",
+          "sha": "cee7542da4d9317f886a91e578ef2172014dfbac",
+          "status": "modified"
+        }
+      ],
+      "git_metadata_binding": {
+        "base": {
+          "changed_paths": {
+            "funcy/objects.py": {
+              "mode": "100644",
+              "path": "funcy/objects.py",
+              "sha": "d0ddefdbc16e717af32275e7c399156f0fbbb439",
+              "size": 3381,
+              "type": "blob"
+            },
+            "tests/test_objects.py": {
+              "mode": "100644",
+              "path": "tests/test_objects.py",
+              "sha": "606690cc42a83badc7ed5e721c7042822303a0ed",
+              "size": 3134,
+              "type": "blob"
+            }
+          },
+          "commit_sha": "40011cc3b9344d2c4e6ad2e3cff54b41ac7015f7",
+          "parents": [
+            "7cfb9465fe7535fac3617475b84987f500d235c0"
+          ],
+          "tree_entry_count": 74,
+          "tree_sha": "b733c624993b94afa4ba22739514ba331ef2ee00",
+          "tree_truncated": false
+        },
+        "head": {
+          "changed_paths": {
+            "funcy/objects.py": {
+              "mode": "100644",
+              "path": "funcy/objects.py",
+              "sha": "385bd750db4921bd0cdd4e68772e29d3ef212c78",
+              "size": 3398,
+              "type": "blob"
+            },
+            "tests/test_objects.py": {
+              "mode": "100644",
+              "path": "tests/test_objects.py",
+              "sha": "cee7542da4d9317f886a91e578ef2172014dfbac",
+              "size": 4455,
+              "type": "blob"
+            }
+          },
+          "commit_sha": "2da8b5e048002a6bef7f608aafdaf5e6c35e8170",
+          "parents": [
+            "40011cc3b9344d2c4e6ad2e3cff54b41ac7015f7"
+          ],
+          "tree_entry_count": 74,
+          "tree_sha": "11bdb9d375fd1079a127b924c1af306df4267727",
+          "tree_truncated": false
+        }
+      },
+      "head_commit": "2da8b5e048002a6bef7f608aafdaf5e6c35e8170",
+      "merge_commit_sha": "e0ecd3a5927051e1a90514eac64763aeeb6b5a35",
+      "metadata_binding_status": "EXACT_COMMIT_TREE_AND_CHANGED_BLOB_IDS_BOUND_WITHOUT_SOURCE_CONTENTS",
+      "metadata_stats": {
+        "production_additions": 3,
+        "production_deletions": 3,
+        "production_py_files": 1,
+        "test_py_files": 1
+      },
+      "metadata_url": "https://github.com/Suor/funcy/pull/197",
+      "pr": 197,
+      "repo": "suor/funcy",
+      "selection_status": "FROZEN_ORDERED_POOL_CANDIDATE_NOT_AN_ADMITTED_TASK",
+      "tree_query_coverage": [
+        {
+          "endpoint": "repos/suor/funcy/git/commits/40011cc3b9344d2c4e6ad2e3cff54b41ac7015f7",
+          "projection": "{sha,tree_sha:.tree.sha,parents:[.parents[].sha]}",
+          "requested_at_utc": "2026-10-28T23:38:04.333607+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.3877268720007123
+        },
+        {
+          "endpoint": "repos/suor/funcy/git/trees/b733c624993b94afa4ba22739514ba331ef2ee00?recursive=1",
+          "projection": "{sha,truncated,tree:[.tree[] | {path,mode,type,sha,size}]}",
+          "requested_at_utc": "2026-10-28T23:38:04.721429+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.36329075200046645
+        },
+        {
+          "endpoint": "repos/suor/funcy/git/commits/2da8b5e048002a6bef7f608aafdaf5e6c35e8170",
+          "projection": "{sha,tree_sha:.tree.sha,parents:[.parents[].sha]}",
+          "requested_at_utc": "2026-10-28T23:38:05.084895+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.5343131789995823
+        },
+        {
+          "endpoint": "repos/suor/funcy/git/trees/11bdb9d375fd1079a127b924c1af306df4267727?recursive=1",
+          "projection": "{sha,truncated,tree:[.tree[] | {path,mode,type,sha,size}]}",
+          "requested_at_utc": "2026-10-28T23:38:05.619289+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.6900822099996731
+        }
+      ]
+    },
+    {
+      "base_commit": "65f5ea039c30ac6a77f09a88c1920503bff10a82",
+      "files": [
+        {
+          "additions": 3,
+          "changes": 3,
+          "deletions": 0,
+          "filename": "docs/changelog/+missing-read-write-module.bugfix.rst",
+          "sha": "97701c08bb8deb5939e76b78305f26412730e87b",
+          "status": "added"
+        },
+        {
+          "additions": 6,
+          "changes": 9,
+          "deletions": 3,
+          "filename": "src/filelock/__init__.py",
+          "sha": "45332e7ce600defe1fcf16d4e6b450a612d95f52",
+          "status": "modified"
+        },
+        {
+          "additions": 43,
+          "changes": 43,
+          "deletions": 0,
+          "filename": "tests/test_lazy_import.py",
+          "sha": "2988109da74221c770b952bb9d6f82cad6c5e6e9",
+          "status": "modified"
+        }
+      ],
+      "git_metadata_binding": {
+        "base": {
+          "changed_paths": {
+            "docs/changelog/+missing-read-write-module.bugfix.rst": null,
+            "src/filelock/__init__.py": {
+              "mode": "100644",
+              "path": "src/filelock/__init__.py",
+              "sha": "15a6a55e2102657d1d2778790fbfd0d592cce3e3",
+              "size": 5693,
+              "type": "blob"
+            },
+            "tests/test_lazy_import.py": {
+              "mode": "100644",
+              "path": "tests/test_lazy_import.py",
+              "sha": "c597ec1acef119bb6eb606fe6dfff36739075d40",
+              "size": 7022,
+              "type": "blob"
+            }
+          },
+          "commit_sha": "65f5ea039c30ac6a77f09a88c1920503bff10a82",
+          "parents": [
+            "eada7382d9166c518206adc22a794ddec2ad86a3"
+          ],
+          "tree_entry_count": 135,
+          "tree_sha": "d408e37192201791a7b381b6643c24728658d4fe",
+          "tree_truncated": false
+        },
+        "head": {
+          "changed_paths": {
+            "docs/changelog/+missing-read-write-module.bugfix.rst": {
+              "mode": "100644",
+              "path": "docs/changelog/+missing-read-write-module.bugfix.rst",
+              "sha": "97701c08bb8deb5939e76b78305f26412730e87b",
+              "size": 282,
+              "type": "blob"
+            },
+            "src/filelock/__init__.py": {
+              "mode": "100644",
+              "path": "src/filelock/__init__.py",
+              "sha": "45332e7ce600defe1fcf16d4e6b450a612d95f52",
+              "size": 6027,
+              "type": "blob"
+            },
+            "tests/test_lazy_import.py": {
+              "mode": "100644",
+              "path": "tests/test_lazy_import.py",
+              "sha": "2988109da74221c770b952bb9d6f82cad6c5e6e9",
+              "size": 8768,
+              "type": "blob"
+            }
+          },
+          "commit_sha": "6627aa88ee2939a91ce87782f1f34e0e799feb65",
+          "parents": [
+            "ce90014d1012e2391909cc7314a08b8a6f51f0b7"
+          ],
+          "tree_entry_count": 132,
+          "tree_sha": "1f0f094a1b3169e1df4def496394ee0658c0990c",
+          "tree_truncated": false
+        }
+      },
+      "head_commit": "6627aa88ee2939a91ce87782f1f34e0e799feb65",
+      "merge_commit_sha": "160141c4733b5320aec3617c0c761b040164445c",
+      "metadata_binding_status": "EXACT_COMMIT_TREE_AND_CHANGED_BLOB_IDS_BOUND_WITHOUT_SOURCE_CONTENTS",
+      "metadata_stats": {
+        "production_additions": 6,
+        "production_deletions": 3,
+        "production_py_files": 1,
+        "test_py_files": 1
+      },
+      "metadata_url": "https://github.com/tox-dev/filelock/pull/880",
+      "pr": 880,
+      "repo": "tox-dev/filelock",
+      "selection_status": "FROZEN_ORDERED_POOL_CANDIDATE_NOT_AN_ADMITTED_TASK",
+      "tree_query_coverage": [
+        {
+          "endpoint": "repos/tox-dev/filelock/git/commits/65f5ea039c30ac6a77f09a88c1920503bff10a82",
+          "projection": "{sha,tree_sha:.tree.sha,parents:[.parents[].sha]}",
+          "requested_at_utc": "2026-10-28T23:38:06.309557+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.3814605899988237
+        },
+        {
+          "endpoint": "repos/tox-dev/filelock/git/trees/d408e37192201791a7b381b6643c24728658d4fe?recursive=1",
+          "projection": "{sha,truncated,tree:[.tree[] | {path,mode,type,sha,size}]}",
+          "requested_at_utc": "2026-10-28T23:38:06.691095+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.5844299820000742
+        },
+        {
+          "endpoint": "repos/tox-dev/filelock/git/commits/6627aa88ee2939a91ce87782f1f34e0e799feb65",
+          "projection": "{sha,tree_sha:.tree.sha,parents:[.parents[].sha]}",
+          "requested_at_utc": "2026-10-28T23:38:07.275784+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.40535892200023227
+        },
+        {
+          "endpoint": "repos/tox-dev/filelock/git/trees/1f0f094a1b3169e1df4def496394ee0658c0990c?recursive=1",
+          "projection": "{sha,truncated,tree:[.tree[] | {path,mode,type,sha,size}]}",
+          "requested_at_utc": "2026-10-28T23:38:07.681240+00:00",
+          "returncode": 0,
+          "status": "OK",
+          "wall_seconds": 0.5760927720002655
+        }
+      ]
+    }
+  ],
+  "prequery_execution_sha256": "a39b9ede47cda1bd10dca7c9403017d72c3b508d5c19bfce5395a0da4eaf7c2d",
+  "requested_roles": 2,
+  "schema": "UDM_ORDERED_NATIVE_ADMISSION_SCREENING_POOL_V45",
+  "screening_budget": {
+    "all_refusals_and_partial_costs_retained": true,
+    "collection_seconds_per_call": 60,
+    "execution_seconds_per_call": 600,
+    "maximum_cases": 9,
+    "maximum_native_executions_per_case": 2,
+    "native_and_independent_verification_costs_charged": true,
+    "total_screening_wall_seconds": 7200
+  },
+  "selection_rule": "First two source-distinct independent native admissions; PASS and FAIL identical; do not replace a passing training task.",
+  "state": "MUST_COMMIT_BEFORE_ADMISSION_SCREENING"
+}
