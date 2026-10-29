@@ -49,6 +49,12 @@ class DecisionTimingTests(unittest.TestCase):
         self.assertFalse(check_admissible_probe(INSTRUMENTS, "oracle_answer", cost=1))
         self.assertFalse(check_admissible_probe(INSTRUMENTS, "diagnostic", cost=0))
 
+    def test_forged_mutable_instrument_registry_bypasses_local_admission(self):
+        """Negative witness: a caller-controlled registry is NOT provenance."""
+        forged_registry = dict(INSTRUMENTS)
+        forged_registry["oracle_answer"] = (0, 0, 1, 1)
+        self.assertTrue(check_admissible_probe(forged_registry, "oracle_answer", cost=1))
+
     def test_same_visible_bits_cannot_prove_feedback_provenance(self):
         """Source readout and optimum-derived oracle can be observationally identical."""
         for world in WORLD_OPT:
