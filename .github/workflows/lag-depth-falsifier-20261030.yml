@@ -1,0 +1,33 @@
+name: Lag-Depth Grammar finite falsifier 2026-10-30
+on:
+  push:
+    branches:
+      - research/lag-depth-grammar-falsifier-20261030
+  workflow_dispatch:
+
+jobs:
+  exact-counterexample:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run deterministic property and SAT verifier tests
+        run: python3 research/lag_depth_falsifier_20261030/falsify_lag_depth.py -v
+      - name: Verify the deliberately false universal claim is rejected
+        run: |
+          if python3 research/lag_depth_falsifier_20261030/falsify_lag_depth.py --negative-control > negative-control.txt 2>&1; then
+            echo 'ERROR: negative control unexpectedly passed'
+            exit 1
+          fi
+          grep -F 'AssertionError: original universal-bound claim falsified' negative-control.txt
+      - name: Build exact evidence artifact
+        run: |
+          python3 research/lag_depth_falsifier_20261030/falsify_lag_depth.py --json > lag-depth-evidence.json
+          sha256sum lag-depth-evidence.json research/lag_depth_falsifier_20261030/falsify_lag_depth.py > SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lag-depth-finite-counterexample
+          path: |
+            lag-depth-evidence.json
+            negative-control.txt
+            SHA256SUMS.txt
