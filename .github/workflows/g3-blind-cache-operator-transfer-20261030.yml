@@ -1,0 +1,121 @@
+name: G3 blind cache source-adaptive operator transfer (bounded falsifier)
+on:
+  push:
+    branches: [research/g3-blind-cache-operator-transfer-20261030]
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  source-blind-native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache: false
+      - name: Freeze exact source without reading GitHub issues or PRs
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone -q --no-checkout https://github.com/patrickmn/go-cache.git "$RUNNER_TEMP/source"
+          git -C "$RUNNER_TEMP/source" checkout -q --detach 46f407853014144407b6c2ec7ccc76bf67958d93
+          test "$(git -C "$RUNNER_TEMP/source" rev-parse HEAD)" = 46f407853014144407b6c2ec7ccc76bf67958d93
+          echo 'SOURCE_PIN=46f407853014144407b6c2ec7ccc76bf67958d93'
+          echo 'HISTORY_BLINDNESS=PARTIAL_HEAD_COMMIT_MESSAGE_EXPOSED_BEFORE_FREEZE'
+      - name: Unit tests for the preregistered AST proposer
+        shell: bash
+        run: |
+          set -euo pipefail
+          go test -v research/g3_blind_cache_v1/source_proposer.go research/g3_blind_cache_v1/source_proposer_test.go | tee g3-cache-ast-tests.log
+      - name: Source AST proposal without README tests issues PR titles or diffs
+        shell: bash
+        run: |
+          set -euo pipefail
+          go run research/g3_blind_cache_v1/source_proposer.go \
+            --source "$RUNNER_TEMP/source" --out "$GITHUB_WORKSPACE/g3-cache-grammar.json"
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('g3-cache-grammar.json').read_text())
+          assert d['status']=='CANDIDATE_SIGNATURE_BRIDGE', d
+          assert d['has_clock'] and d['environmental_actions']==['ELAPSE'], d
+          assert d['constructor'] and d['write_method'] and d['read_method'], d
+          print('SOURCE_ADAPTIVE_GRAMMAR',json.dumps(d,sort_keys=True))
+          PY
+      - name: Generate bounded native probe from AST manifest only
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 research/g3_blind_cache_v1/native_bridge.py \
+            --manifest g3-cache-grammar.json --source-dir "$RUNNER_TEMP/source" \
+            --module github.com/patrickmn/go-cache \
+            --sha 46f407853014144407b6c2ec7ccc76bf67958d93
+          cp research/g3_blind_cache_v1/native_replay.go "$RUNNER_TEMP/source/cmd/mgreplay/native_replay.go"
+          cd "$RUNNER_TEMP/source"
+          go mod init github.com/patrickmn/go-cache
+          gofmt -w cmd/mgprobe/main.go cmd/mgreplay/*.go
+          go test ./... > "$GITHUB_WORKSPACE/g3-cache-original-package-tests.log" 2>&1
+          echo 'PINNED_UPSTREAM_WITH_GENERATED_TEST_HARNESS=GREEN'
+          go run ./cmd/mgprobe > "$GITHUB_WORKSPACE/g3-cache-native.json"
+          go run ./cmd/mgreplay \
+            --manifest "$GITHUB_WORKSPACE/g3-cache-grammar.json" \
+            --report "$GITHUB_WORKSPACE/g3-cache-native.json" \
+            --expect-sha 46f407853014144407b6c2ec7ccc76bf67958d93 \
+            | tee "$GITHUB_WORKSPACE/g3-cache-independent-replay.log"
+      - name: Forged observation and wrong source pin must be rejected
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('g3-cache-native.json').read_text())
+          d['cases'][1]['after']=not d['cases'][1]['after']
+          Path('g3-cache-forged.json').write_text(json.dumps(d,indent=2))
+          PY
+          set +e
+          (cd "$RUNNER_TEMP/source" && go run ./cmd/mgreplay \
+            --manifest "$GITHUB_WORKSPACE/g3-cache-grammar.json" \
+            --report "$GITHUB_WORKSPACE/g3-cache-forged.json" \
+            --expect-sha 46f407853014144407b6c2ec7ccc76bf67958d93) \
+              > g3-cache-forged.log 2>&1
+          forged_code=$?
+          (cd "$RUNNER_TEMP/source" && go run ./cmd/mgreplay \
+            --manifest "$GITHUB_WORKSPACE/g3-cache-grammar.json" \
+            --report "$GITHUB_WORKSPACE/g3-cache-native.json" \
+            --expect-sha 0000000000000000000000000000000000000000) \
+              > g3-cache-wrong-pin.log 2>&1
+          pin_code=$?
+          set -e
+          test "$forged_code" -ne 0
+          test "$pin_code" -ne 0
+          grep -q REPLAY_REJECTED_OBSERVATION g3-cache-forged.log
+          grep -q REPLAY_REJECTED_SOURCE_SHA g3-cache-wrong-pin.log
+          echo 'FORGED_NATIVE_OBSERVATION=REJECTED'
+          echo 'WRONG_SOURCE_IDENTITY=REJECTED'
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('g3-cache-native.json').read_text())
+          cases={c['name']:c for c in d['cases']}
+          assert len(cases)==6 and d['source_sha']=='46f407853014144407b6c2ec7ccc76bf67958d93'
+          a=cases['candidate_ast_clock_derived']; b=cases['B1_manual_time_aware_direct']
+          assert (a['before'],a['after'])==(True,False)
+          assert (b['before'],b['after'])==(True,False)
+          print('RESULT=BOUNDED_SOURCE_ADAPTIVE_CLOCK_OPERATION_TRANSFER')
+          print('FAIR_BASELINE=B1_TIE')
+          print('STRICT_G3=UNKNOWN')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: g3-source-blind-cache-operator-candidate
+          path: |
+            g3-cache-*.json
+            g3-cache-*.log
+          if-no-files-found: warn
