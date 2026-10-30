@@ -1,6 +1,6 @@
 # Two-state Markov counterexample to an overbroad eliminator identity
 
-**CANDIDATE pending CI**, 30 October 2026. Target text: *Recursive Distillation and Eliminative Discovery*, Heath Sanchez, 9 March 2026, §§8–9, especially Definition 8.1, Theorem 8.1 (E1–E5), §§8.3–9.2, plus the three-line §9.5 summary and stationary-distribution statements. The test does not adjudicate claims about physical reality or universality.
+**WARRANTED_BOUNDED finite counterexample**, 30 October 2026; six checks passed in [CI #40996436213](https://github.com/heathsanchez/test/actions/runs/40996436213). Target text: *Recursive Distillation and Eliminative Discovery*, Heath Sanchez, 9 March 2026, §§8–9, especially Definition 8.1, Theorem 8.1 (E1–E5), §§8.3–9.2, plus the three-line §9.5 summary and stationary-distribution statements. The test does not adjudicate claims about physical reality or universality.
 
 For the irreducible two-state continuous-time Markov generator and killing rate
 
@@ -27,3 +27,11 @@ The honest correction is **scoped**: \(h^{-1}L(h\cdot)\) is a conservative Marko
 - `python3 -m unittest discover -s research/doob_two_state_20261030 -p 'test_*.py' -v`: six exact-form numerical checks (12-digit tolerance), independent of random seeds or simulation.
 - `python3 research/doob_two_state_20261030/doob_counterexample.py --assert-original-generator-is-markov`: deliberately exits nonzero on the original proposed identity; CI must reject an unexpected pass.
 - Output is an explicit small witness and corrected control; this is **not** a Lean or proof-assistant formalization.
+
+## Second boundary in the same source: beta balance is not maximum variance
+
+The *Recursive Distillation Manual*, Theorem 12.1 (§12.2), correctly writes the beta fixed-point condition `Var_beta(h)=lambda*beta` for its proposed ODE. But it then identifies that balance as **maximum variance per unit selection strength**, maximal sensitivity and information transmission. For a two-outcome baseline p=(1/2,1/2) and h=(0,1), the exponential tilt has
+
+`Var_beta(h) = 1 / (4*cosh(beta/2)^2)`.
+
+For every beta>0 this strictly decreases (`dVar/dbeta = -Var*tanh(beta/2) < 0`), with its maximum 1/4 at beta=0. At lambda=1 the stable interior balance is beta*=0.2462480927475339, Var(beta*)=0.2462480927475339, below Var(0)=0.25 and below Var(beta*/2)=0.2490549180628229; variance per beta is likewise higher at beta*/2. Thus the equilibrium claim survives, but the claimed variational **maximum does not follow**. This finite example does not adjudicate whether some physical system can be critical for additional reasons. Four extra deterministic tests plus deliberately failing negative control guard this boundary in the same isolated branch.
