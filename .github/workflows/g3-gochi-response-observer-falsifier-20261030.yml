@@ -115,7 +115,7 @@ jobs:
               assert len(r["families"])==3
               assert all(f["prefixes"]>0 and f["reference_classes"]>0 for f in r["families"])
               print("NATIVE_PROTOCOL",kind,"VIOLATING_EQUIVALENCE_CLASSES",r["total_violating_classes"])
-              print("DIRECT_BASELINE",kind,[(f["carrier"],f["direct_mismatches"],f["direct_trace_count"],f["direct_first_mismatch"]) for f in r["families"]])
+              print("DIRECT_BASELINE",kind,[(f["carrier"],f["direct_mismatches"],f["downstream_only_mismatches"],f["direct_trace_count"],f["direct_first_mismatch"]) for f in r["families"]])
               for f in r["families"]:
                   print("NATIVE_PROTOCOL_FAMILY",kind,f["carrier"],f["violating_classes"],f["witnesses"][:1])
           print("HUMAN_DECLARED_GRAMMAR=NOT_AUTONOMOUS_INVENTION")
@@ -158,9 +158,10 @@ jobs:
               assert r["schema"]=="mgcheck.http-writer-protocol-future-quotient.v1"
               assert r["wrapper_mode"]==mode and r["injected_observer"] is False
               data[mode]=r
-              print("INDEPENDENT_TOY",mode,"VIOLATING_CLASSES",r["total_violating_classes"],"DIRECT_BASELINE_MISMATCHES",sum(f["direct_mismatches"] for f in r["families"]))
+              print("INDEPENDENT_TOY",mode,"VIOLATING_CLASSES",r["total_violating_classes"],"DIRECT_BASELINE_MISMATCHES",sum(f["direct_mismatches"] for f in r["families"]),"DOWNSTREAM_ONLY_MISMATCHES",sum(f["downstream_only_mismatches"] for f in r["families"]))
           assert data["toy_good"]["total_violating_classes"]==0,"false-positive on good toy"
           assert sum(f["direct_mismatches"] for f in data["toy_good"]["families"])==0,"false-positive from simple baseline on good toy"
+          assert sum(f["downstream_only_mismatches"] for f in data["toy_good"]["families"])==0,"false-positive downstream on good toy"
           assert data["toy_bad_flush"]["total_violating_classes"]>0,"missed flush bug"
           assert sum(f["direct_mismatches"] for f in data["toy_bad_flush"]["families"])>0,"simple baseline missed flush bug"
           assert data["toy_bad_empty_readerfrom"]["total_violating_classes"]>0,"missed empty-read bug"
@@ -270,7 +271,7 @@ jobs:
               assert len(r["families"])==3
               assert all(f["prefixes"]>0 and f["reference_classes"]>0 for f in r["families"])
               print("FROZEN_C",kind,"VIOLATING_CLASSES",r["total_violating_classes"])
-              print("DIRECT_BASELINE_C",kind,[(f["carrier"],f["direct_mismatches"],f["direct_trace_count"],f["direct_first_mismatch"]) for f in r["families"]])
+              print("DIRECT_BASELINE_C",kind,[(f["carrier"],f["direct_mismatches"],f["downstream_only_mismatches"],f["direct_trace_count"],f["direct_first_mismatch"]) for f in r["families"]])
               for f in r["families"]:
                   print("FROZEN_C_FAMILY",kind,f["carrier"],f["violating_classes"])
                   for w in f["witnesses"][:4]:
