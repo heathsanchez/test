@@ -63,7 +63,7 @@ def create(manifest: dict, module: str, sha: str, source_dir: Path) -> Path:
     call = manifest["call"]
     # AST candidates are assembled from identifiers and a small fixed set of
     # inhabitants. Never allow injected statements to reach generated Go code.
-    if not re.fullmatch(r'[A-Za-z0-9_.,&()\[\]"*+ /-]+', call) or not call.startswith("pkg."):
+    if not re.fullmatch(r'[A-Za-z0-9_.,&(){}\[\]"*+ /-]+', call) or not call.startswith("pkg."):
         raise ValueError("UNKNOWN_UNSAFE_CONSTRUCTOR_EXPRESSION")
     if manifest["has_error_result"]:
         construct = f"instance, constructErr := {call}\n    if constructErr!=nil {{fmt.Fprintln(os.Stderr,\"UNKNOWN_NATIVE_CONSTRUCTOR_ERROR\",constructErr);os.Exit(4)}}\n    object=instance"
