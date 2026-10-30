@@ -1,0 +1,100 @@
+name: G3 untouched AST grammar transfer to second metadata-selected cache
+on:
+  push:
+    branches: [research/g3-blind-cache-operator-transfer-20261030]
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  cold-transfer:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache: false
+      - name: No source-proposer or native-bridge edits since first passing source
+        run: |
+          set -euo pipefail
+          git diff --exit-code a90c77889757bc8ea430a8ab0d5a32b3d107e8b8 HEAD -- \
+            research/g3_blind_cache_v1/source_proposer.go \
+            research/g3_blind_cache_v1/source_proposer_test.go \
+            research/g3_blind_cache_v1/native_bridge.py \
+            research/g3_blind_cache_v1/native_replay.go
+          echo 'TRANSFER_ALGORITHM_UNCHANGED=YES'
+      - name: Clone exact cold target without issue or PR lookup
+        run: |
+          set -euo pipefail
+          git clone -q --no-checkout https://github.com/allegro/bigcache.git "$RUNNER_TEMP/target"
+          git -C "$RUNNER_TEMP/target" checkout -q --detach 6e72b805b2b3f6d7952ac172f6c8f7aefecfc00e
+          test "$(git -C "$RUNNER_TEMP/target" rev-parse HEAD)" = 6e72b805b2b3f6d7952ac172f6c8f7aefecfc00e
+          echo 'COLD_SOURCE_PIN=6e72b805b2b3f6d7952ac172f6c8f7aefecfc00e'
+      - name: Cold source AST inference with frozen proposer
+        run: |
+          set -euo pipefail
+          go test research/g3_blind_cache_v1/source_proposer.go research/g3_blind_cache_v1/source_proposer_test.go
+          go run research/g3_blind_cache_v1/source_proposer.go \
+            --source "$RUNNER_TEMP/target" --out "$GITHUB_WORKSPACE/g3-cold-manifest.json"
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          p=json.loads(Path('g3-cold-manifest.json').read_text())
+          assert p['schema']=='mathgraph.g3.source-adaptive-grammar.v1'
+          assert p['status'] in ('UNKNOWN_ADAPTER','CANDIDATE_SIGNATURE_BRIDGE'),p
+          print('COLD_GRAMMAR',json.dumps(p,sort_keys=True))
+          PY
+      - name: Attempt native source transfer only when frozen grammar admits it
+        shell: bash
+        run: |
+          set -euo pipefail
+          status=$(python3 -c 'import json;print(json.load(open("g3-cold-manifest.json"))["status"])')
+          clock=$(python3 -c 'import json;print(json.load(open("g3-cold-manifest.json"))["has_clock"])')
+          if [ "$status" != CANDIDATE_SIGNATURE_BRIDGE ]; then
+            printf '%s\n' 'UNKNOWN_ADAPTER: no target-specific patch or manual constructor' > g3-cold-native-status.log
+          elif [ "$clock" != True ]; then
+            printf '%s\n' 'UNKNOWN_NO_CLOCK: frozen clock template cannot fire' > g3-cold-native-status.log
+          else
+            module=''
+            if [ -f "$RUNNER_TEMP/target/go.mod" ]; then
+              module=$(awk '$1 == "module" {print $2; exit}' "$RUNNER_TEMP/target/go.mod")
+            fi
+            if [ -z "$module" ]; then
+              printf '%s\n' 'UNKNOWN_MODULE: no target-specific build repair' > g3-cold-native-status.log
+            else
+              set +e
+              (
+                python3 research/g3_blind_cache_v1/native_bridge.py \
+                  --manifest g3-cold-manifest.json --source-dir "$RUNNER_TEMP/target" \
+                  --module "$module" --sha 6e72b805b2b3f6d7952ac172f6c8f7aefecfc00e
+                cp research/g3_blind_cache_v1/native_replay.go "$RUNNER_TEMP/target/cmd/mgreplay/native_replay.go"
+                cd "$RUNNER_TEMP/target"
+                go run ./cmd/mgprobe > "$GITHUB_WORKSPACE/g3-cold-native.json"
+                go run ./cmd/mgreplay \
+                  --manifest "$GITHUB_WORKSPACE/g3-cold-manifest.json" \
+                  --report "$GITHUB_WORKSPACE/g3-cold-native.json" \
+                  --expect-sha 6e72b805b2b3f6d7952ac172f6c8f7aefecfc00e
+              ) > g3-cold-native-execution.log 2>&1
+              code=$?
+              set -e
+              if [ "$code" -eq 0 ]; then
+                printf '%s\n' 'WARRANTED_BOUNDED_NATIVE_TRANSFER_WITH_B1_TIE' > g3-cold-native-status.log
+              else
+                printf '%s\n' 'UNKNOWN_NATIVE_TRANSFER_FAILED: preserve execution log, do not edit proposer' > g3-cold-native-status.log
+              fi
+            fi
+          fi
+          cat g3-cold-native-status.log
+          echo 'STRICT_G3=UNKNOWN'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: g3-cold-unmodified-target-transfer
+          path: |
+            g3-cold-*.json
+            g3-cold-*.log
+          if-no-files-found: warn
