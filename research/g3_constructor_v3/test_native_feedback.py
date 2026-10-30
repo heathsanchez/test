@@ -16,11 +16,23 @@ SYNTHETIC_SHA = "7" * 40
 
 
 class FeedbackNativeTests(unittest.TestCase):
-    def run_case(self, fixture):
+    def run_case(self, fixture, mask_errors=False):
         module = f"example.com/mg-feedback-{fixture}-fixture"
         with tempfile.TemporaryDirectory(prefix="g3-feedback-") as tmp:
             root = Path(tmp) / "source"
             shutil.copytree(HERE / "testdata" / fixture, root)
+            if mask_errors:
+                self.assertEqual(fixture, "hinted")
+                source_path = root / "cache.go"
+                source = source_path.read_text()
+                for original in (
+                    "NumCounters must be at least 10",
+                    "MaxCost cannot be zero",
+                    "BufferItems must be positive",
+                ):
+                    self.assertEqual(source.count(original), 1)
+                    source = source.replace(original, "opaque validation failed")
+                source_path.write_text(source)
             manifest_path = Path(tmp) / "manifest.json"
             subprocess.run(
                 ["go", "run", str(PLANNER), "--source", str(root), "--out", str(manifest_path)],
