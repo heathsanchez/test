@@ -65,3 +65,23 @@ func (s *Store) Get(k string) (interface{}, bool) { return nil, false }
         t.Fatalf("ambiguous role must not be silently selected: %+v", p)
     }
 }
+
+func TestConstructorReachabilityFiltersUnusableReceiver(t *testing.T) {
+    const fixture = `package sample
+import "time"
+type Store struct{ *store }
+type store struct{}
+type unreachableOtherStore struct{}
+func New(a, b time.Duration) *Store { return &Store{} }
+func (c *store) Set(k string, v interface{}, d time.Duration) {}
+func (c *store) Get(k string) (interface{}, bool) { return nil, false }
+func (c *store) Delete(k string) {}
+func (c *unreachableOtherStore) Set(k string, v interface{}, d time.Duration) {}
+func (c *unreachableOtherStore) Get(k string) (interface{}, bool) { return nil, false }
+func (c *unreachableOtherStore) Delete(k string) {}
+`
+    p:=proposalFromFixture(t,fixture)
+    if p.Status!="CANDIDATE_SIGNATURE_BRIDGE" || p.Constructor!="New" || p.WriteMethod!="Set" || p.ReadMethod!="Get" {
+        t.Fatalf("unreachable receiver must not add ambiguity: %+v",p)
+    }
+}
