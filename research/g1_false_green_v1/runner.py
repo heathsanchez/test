@@ -74,7 +74,7 @@ def assess(source: Path) -> dict:
         "output_tail": wrong["output"][-1500:],
     }
     if wrong["exit_code"] != 0 or wrong_count != 0:
-        raise ValueError("UNKNOWN_WRONG_RUNNER_DID_NOT_MISLEAD")
+        raise ValueError(f"UNKNOWN_WRONG_RUNNER_DID_NOT_MISLEAD {result['wrong_runner']}")
 
     # Correct original framework, source and tests, no substitute oracle.
     native = run("-m", "pytest", "-q", "tests/test_itsdangerous", cwd=source)
