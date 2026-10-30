@@ -138,6 +138,31 @@ jobs:
           assert r["total_violating_classes"]>0,r
           print("CORRUPTED_ORACLE_REJECTED=YES")
           PY
+      - name: Independent correct and defective wrappers challenge the same checker
+        shell: bash
+        run: |
+          set -euo pipefail
+          for mode in toy_good toy_bad_flush toy_bad_empty_readerfrom; do
+            (
+              cd "$RUNNER_TEMP/head"
+              go run "$GITHUB_WORKSPACE/research/g3_http_protocol_v1/protocol_probe.go" --wrapper-mode "$mode" --out "$GITHUB_WORKSPACE/g3-gochi-A-${mode}.json"
+            ) > "g3-gochi-A-${mode}.log"
+          done
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          data={}
+          for mode in ("toy_good","toy_bad_flush","toy_bad_empty_readerfrom"):
+              r=json.loads(Path(f"g3-gochi-A-{mode}.json").read_text())
+              assert r["schema"]=="mgcheck.http-writer-protocol-future-quotient.v1"
+              assert r["wrapper_mode"]==mode and r["injected_observer"] is False
+              data[mode]=r
+              print("INDEPENDENT_TOY",mode,"VIOLATING_CLASSES",r["total_violating_classes"])
+          assert data["toy_good"]["total_violating_classes"]==0,"false-positive on good toy"
+          assert data["toy_bad_flush"]["total_violating_classes"]>0,"missed flush bug"
+          assert data["toy_bad_empty_readerfrom"]["total_violating_classes"]>0,"missed empty-read bug"
+          print("SAME_ENGINE_INDEPENDENT_CONTROLS_PASS=YES")
+          PY
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -148,4 +173,6 @@ jobs:
             g3-gochi-A-wrong-sha.json
             g3-gochi-A-protocol-*.json
             g3-gochi-A-protocol-*.log
+            g3-gochi-A-toy_*.json
+            g3-gochi-A-toy_*.log
           if-no-files-found: warn
