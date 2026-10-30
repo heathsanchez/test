@@ -176,3 +176,71 @@ jobs:
             g3-gochi-A-toy_*.json
             g3-gochi-A-toy_*.log
           if-no-files-found: warn
+
+  future-quotient-transfer-C:
+    name: Frozen HTTP protocol grammar transfer to preregistered C
+    needs: native-operator-boundary
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache: false
+      - name: Pin C original and contributor before source-native execution
+        shell: bash
+        run: |
+          set -euo pipefail
+          OLD_SHA=167e1e3bd039d060696b99c8da4e876ae04f42c1
+          HEAD_SHA=0599655dced847a1095e9031c619c772f7a7ef63
+          git clone -q --no-checkout https://github.com/go-chi/chi.git "$RUNNER_TEMP/source-C"
+          git -C "$RUNNER_TEMP/source-C" fetch -q origin refs/pull/1213/head:refs/pull/1213/head
+          test "$(git -C "$RUNNER_TEMP/source-C" rev-parse refs/pull/1213/head)" = "$HEAD_SHA"
+          git -C "$RUNNER_TEMP/source-C" cat-file -e "$OLD_SHA^{commit}"
+          git -C "$RUNNER_TEMP/source-C" worktree add -q --detach "$RUNNER_TEMP/base-C" "$OLD_SHA"
+          git -C "$RUNNER_TEMP/source-C" worktree add -q --detach "$RUNNER_TEMP/head-C" "$HEAD_SHA"
+          test "$(git -C "$RUNNER_TEMP/base-C" rev-parse HEAD)" = "$OLD_SHA"
+          test "$(git -C "$RUNNER_TEMP/head-C" rev-parse HEAD)" = "$HEAD_SHA"
+          echo "PREREG_C_BASE_SHA=$OLD_SHA"
+          echo "PREREG_C_HEAD_SHA=$HEAD_SHA"
+          echo "SOURCE_PATCH_INSPECTION=NOT_PERFORMED"
+      - name: Transfer frozen operation, observers and trace bounds unchanged
+        shell: bash
+        run: |
+          set -euo pipefail
+          (
+            cd "$RUNNER_TEMP/base-C"
+            go run "$GITHUB_WORKSPACE/research/g3_http_protocol_v1/protocol_probe.go" --out "$GITHUB_WORKSPACE/g3-gochi-C-base.json"
+          ) > g3-gochi-C-base.log
+          (
+            cd "$RUNNER_TEMP/head-C"
+            go run "$GITHUB_WORKSPACE/research/g3_http_protocol_v1/protocol_probe.go" --out "$GITHUB_WORKSPACE/g3-gochi-C-head.json"
+          ) > g3-gochi-C-head.log
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          for kind in ("base","head"):
+              r=json.loads(Path(f"g3-gochi-C-{kind}.json").read_text())
+              assert r["schema"]=="mgcheck.http-writer-protocol-future-quotient.v1"
+              assert r["wrapper_mode"]=="native" and r["injected_observer"] is False
+              assert len(r["families"])==3
+              assert all(f["prefixes"]>0 and f["reference_classes"]>0 for f in r["families"])
+              print("FROZEN_C",kind,"VIOLATING_CLASSES",r["total_violating_classes"])
+              for f in r["families"]:
+                  print("FROZEN_C_FAMILY",kind,f["carrier"],f["violating_classes"])
+                  for w in f["witnesses"][:4]:
+                      print("FROZEN_C_WITNESS",kind,f["carrier"],w)
+          print("C_PR_TITLES_KNOWN=YES")
+          print("G3_OPERATION_GRAMMAR_INVENTION=UNKNOWN")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: g3-gochi-C-frozen-protocol-transfer
+          path: |
+            g3-gochi-C-*.json
+            g3-gochi-C-*.log
+          if-no-files-found: warn
