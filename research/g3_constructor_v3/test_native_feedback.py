@@ -64,5 +64,14 @@ class FeedbackNativeTests(unittest.TestCase):
         self.assertIn("UNKNOWN_RUNTIME_HINT_UNMATCHED", result.stderr)
 
 
+    def test_same_source_error_wording_ablation_is_causal(self):
+        original_plan, original_result = self.run_case("hinted")
+        masked_plan, masked_result = self.run_case("hinted", mask_errors=True)
+        self.assertEqual(original_plan["call"], masked_plan["call"])
+        self.assertEqual(original_result.returncode, 0, original_result.stderr)
+        self.assertNotEqual(masked_result.returncode, 0)
+        self.assertIn("UNKNOWN_RUNTIME_HINT_UNMATCHED", masked_result.stderr)
+
+
 if __name__ == "__main__":
     unittest.main()
