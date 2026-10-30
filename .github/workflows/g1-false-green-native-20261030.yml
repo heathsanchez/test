@@ -1,0 +1,38 @@
+name: G1 native false-green and zero-tests control
+
+on:
+  push:
+    branches:
+      - research/g1-false-green-native-20261030
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-falsifier:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Local guard unit tests (red then green)
+        run: python -m unittest discover -s research/g1_false_green_v1 -p 'test_*.py' -v
+      - name: Fetch frozen external original test suite
+        run: |
+          git clone --quiet https://github.com/pallets/itsdangerous.git external/itsdangerous
+          git -C external/itsdangerous checkout --detach 672971d66a2ef9f85151e53283113f33d642dabd
+          test "$(git -C external/itsdangerous rev-parse HEAD)" = 672971d66a2ef9f85151e53283113f33d642dabd
+      - name: Install original tests
+        run: python -m pip install --disable-pip-version-check -q -e ./external/itsdangerous pytest freezegun
+      - name: Independently compare wrong-runner, native runner, and mutation
+        run: python -m research.g1_false_green_v1.runner --source external/itsdangerous --out g1-native-report.json
+      - name: Retain receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g1-native-zero-suite-receipt
+          path: g1-native-report.json
+          if-no-files-found: ignore
