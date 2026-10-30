@@ -12,7 +12,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - name: Run six tests with the corrected conservative control
+      - name: Run ten tests with corrected conservative and beta controls
         run: python3 -m unittest discover -s research/doob_two_state_20261030 -p 'test_*.py' -v 2>&1 | tee doob-tests.log
       - name: Original universal assertion must fail
         shell: bash
@@ -29,6 +29,21 @@ jobs:
           fi
           grep -Fq 'EXPECTED_COUNTEREXAMPLE' doob-original-red.log
           echo 'ORIGINAL_CLAIM_REJECTED_EXPECTED=YES'
+      - name: False criticality maximum assertion must fail
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +e
+          python3 research/doob_two_state_20261030/test_criticality_two_outcome.py \
+            --assert-balance-maximizes-variance > criticality-original-red.log 2>&1
+          observed=$?
+          set -e
+          if [ "$observed" -eq 0 ]; then
+            echo 'FALSE_GREEN: beta balance unexpectedly maximizes variance'
+            exit 1
+          fi
+          grep -Fq 'EXPECTED_CRITICALITY_COUNTEREXAMPLE' criticality-original-red.log
+          echo 'CRITICALITY_MAXIMUM_CLAIM_REJECTED_EXPECTED=YES'
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -36,3 +51,4 @@ jobs:
           path: |
             doob-tests.log
             doob-original-red.log
+            criticality-original-red.log
