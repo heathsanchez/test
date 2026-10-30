@@ -93,6 +93,51 @@ jobs:
           assert data["status"]=="UNKNOWN_SOURCE_IDENTITY",data
           print("WRONG_SOURCE_SHA_RETURNED_UNKNOWN")
           PY
+      - name: Run frozen future-relative protocol quotient on native original and contributor
+        shell: bash
+        run: |
+          set -euo pipefail
+          (
+            cd "$RUNNER_TEMP/base"
+            go run "$GITHUB_WORKSPACE/research/g3_http_protocol_v1/protocol_probe.go" --out "$GITHUB_WORKSPACE/g3-gochi-A-protocol-base.json"
+          ) > g3-gochi-A-protocol-base.log
+          (
+            cd "$RUNNER_TEMP/head"
+            go run "$GITHUB_WORKSPACE/research/g3_http_protocol_v1/protocol_probe.go" --out "$GITHUB_WORKSPACE/g3-gochi-A-protocol-head.json"
+          ) > g3-gochi-A-protocol-head.log
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          for kind in ("base", "head"):
+              r=json.loads(Path(f"g3-gochi-A-protocol-{kind}.json").read_text())
+              assert r["schema"]=="mgcheck.http-writer-protocol-future-quotient.v1"
+              assert r["injected_observer"] is False
+              assert len(r["families"])==3
+              assert all(f["prefixes"]>0 and f["reference_classes"]>0 for f in r["families"])
+              print("NATIVE_PROTOCOL",kind,"VIOLATING_EQUIVALENCE_CLASSES",r["total_violating_classes"])
+              for f in r["families"]:
+                  print("NATIVE_PROTOCOL_FAMILY",kind,f["carrier"],f["violating_classes"],f["witnesses"][:1])
+          print("HUMAN_DECLARED_GRAMMAR=NOT_AUTONOMOUS_INVENTION")
+          print("G3_STRICT=UNKNOWN")
+          PY
+      - name: Deliberately corrupted observer must create quotient violation
+        shell: bash
+        run: |
+          set -euo pipefail
+          (
+            cd "$RUNNER_TEMP/head"
+            go run "$GITHUB_WORKSPACE/research/g3_http_protocol_v1/protocol_probe.go" --inject-bad-observer --out "$GITHUB_WORKSPACE/g3-gochi-A-protocol-control.json"
+          ) > g3-gochi-A-protocol-control.log
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path("g3-gochi-A-protocol-control.json").read_text())
+          assert r["schema"]=="mgcheck.http-writer-protocol-future-quotient.v1"
+          assert r["injected_observer"] is True
+          assert r["status"]=="INJECTED_OBSERVER_NEGATIVE_CONTROL_ONLY"
+          assert r["total_violating_classes"]>0,r
+          print("CORRUPTED_ORACLE_REJECTED=YES")
+          PY
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -101,4 +146,6 @@ jobs:
             g3-gochi-A-result.json
             g3-gochi-A-log.txt
             g3-gochi-A-wrong-sha.json
+            g3-gochi-A-protocol-*.json
+            g3-gochi-A-protocol-*.log
           if-no-files-found: warn
