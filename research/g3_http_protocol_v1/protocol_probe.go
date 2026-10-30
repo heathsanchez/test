@@ -271,6 +271,8 @@ type familyResult struct {
 	DirectTraceCount int      `json:"direct_trace_count"`
 	DirectMismatches int      `json:"direct_mismatches"`
 	DirectFirstMismatch []string `json:"direct_first_mismatch"`
+	DownstreamOnlyMismatches int `json:"downstream_only_mismatches"`
+	DownstreamOnlyFirst []string `json:"downstream_only_first"`
 }
 
 type row struct {
@@ -284,25 +286,32 @@ type row struct {
 // actions and source compilation but does not learn quotient classes or
 // compare two different histories. Its expected wrapper values are fixed
 // directly by the declared HTTP writer contract and its fresh recorder.
-func directBaseline(c carrier, mode string) (int, int, []string, error) {
+func directBaseline(c carrier, mode string) (int, int, []string, int, []string, error) {
 	traces := enumerate(c.Alphabet, 3)
 	mismatches := 0
 	var first []string
+	downstreamMismatches := 0
+	var firstDownstream []string
 	for _, trace := range traces {
 		r, err := execute(c, trace, false, false, mode)
-		if err != nil {return len(traces),mismatches,first,err}
+		if err != nil {return len(traces),mismatches,first,downstreamMismatches,firstDownstream,err}
 		w, err := execute(c, trace, true, false, mode)
-		if err != nil {return len(traces),mismatches,first,err}
+		if err != nil {return len(traces),mismatches,first,downstreamMismatches,firstDownstream,err}
+		downstreamMismatch := w.DownstreamCode != r.DownstreamCode ||
+			w.DownstreamBody != r.DownstreamBody ||
+			w.Flushes != r.Flushes
+		if downstreamMismatch {
+			downstreamMismatches++
+			if firstDownstream == nil {firstDownstream=append([]string{},trace...)}
+		}
 		if w.Status != r.DownstreamCode ||
 			w.BytesWritten != len(r.DownstreamBody) ||
-			w.DownstreamCode != r.DownstreamCode ||
-			w.DownstreamBody != r.DownstreamBody ||
-			w.Flushes != r.Flushes {
+			downstreamMismatch {
 			mismatches++
 			if first == nil {first=append([]string{},trace...)}
 		}
 	}
-	return len(traces),mismatches,first,nil
+	return len(traces),mismatches,first,downstreamMismatches,firstDownstream,nil
 }
 
 func check(c carrier, negativeControl bool, mode string) (familyResult, error) {
@@ -342,11 +351,13 @@ func check(c carrier, negativeControl bool, mode string) (familyResult, error) {
 	result.ReferenceClasses = len(groups)
 	result.ViolatingClasses = len(violating)
 	if !negativeControl {
-		count,mismatches,first,err := directBaseline(c,mode)
+		count,mismatches,first,downstream,firstDownstream,err := directBaseline(c,mode)
 		if err != nil {return result,fmt.Errorf("direct baseline: %w",err)}
 		result.DirectTraceCount=count
 		result.DirectMismatches=mismatches
 		result.DirectFirstMismatch=first
+		result.DownstreamOnlyMismatches=downstream
+		result.DownstreamOnlyFirst=firstDownstream
 	}
 	return result, nil
 }
@@ -374,7 +385,7 @@ func main() {
 		}
 		results = append(results, r)
 		total += r.ViolatingClasses
-		fmt.Printf("CARRIER=%s PREFIXES=%d CLASSES=%d VIOLATIONS=%d DIRECT_MISMATCHES=%d/%d FIRST_DIRECT=%v\n", c.Name, r.Prefixes, r.ReferenceClasses, r.ViolatingClasses,r.DirectMismatches,r.DirectTraceCount,r.DirectFirstMismatch)
+		fmt.Printf("CARRIER=%s PREFIXES=%d CLASSES=%d VIOLATIONS=%d DIRECT_MISMATCHES=%d/%d DOWNSTREAM_ONLY=%d FIRST_DIRECT=%v\n", c.Name, r.Prefixes, r.ReferenceClasses, r.ViolatingClasses,r.DirectMismatches,r.DirectTraceCount,r.DownstreamOnlyMismatches,r.DirectFirstMismatch)
 		for _, w := range r.Witnesses {
 			fmt.Printf("WITNESS %s %v ~ %v REF %d/%d WRAPPER %d/%d\n", c.Name, w.FirstTrace, w.SecondTrace, w.ReferenceFirst.DownstreamCode, w.ReferenceOther.DownstreamCode, w.WrapperFirst.Status, w.WrapperOther.Status)
 		}
