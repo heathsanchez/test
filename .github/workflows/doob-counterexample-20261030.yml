@@ -1,0 +1,38 @@
+name: Mathematical falsifier - bare Doob transform on a finite Markov chain
+on:
+  push:
+    branches: [research/doob-transform-counterexample-20261030]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-finite-witness:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Run six tests with the corrected conservative control
+        run: python3 -m unittest discover -s research/doob_two_state_20261030 -p 'test_*.py' -v 2>&1 | tee doob-tests.log
+      - name: Original universal assertion must fail
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +e
+          python3 research/doob_two_state_20261030/doob_counterexample.py \
+            --assert-original-generator-is-markov > doob-original-red.log 2>&1
+          observed=$?
+          set -e
+          if [ "$observed" -eq 0 ]; then
+            echo 'FALSE_GREEN: original nonconservative transform was accepted'
+            exit 1
+          fi
+          grep -Fq 'EXPECTED_COUNTEREXAMPLE' doob-original-red.log
+          echo 'ORIGINAL_CLAIM_REJECTED_EXPECTED=YES'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: doob-two-state-eigenfunction-counterexample
+          path: |
+            doob-tests.log
+            doob-original-red.log
