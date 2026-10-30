@@ -1,0 +1,31 @@
+name: G3 typed constructor input inhabitation V2 — red/green and cold transfer
+on:
+  push:
+    branches: [research/g3-constructor-inhabitation-v2-20261030]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  typed-constructor:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache: false
+      - name: Fixture tests (intentionally red before V2 implementation)
+        shell: bash
+        run: |
+          set -euo pipefail
+          go test -v research/g3_constructor_v2/constructor_planner.go \
+            research/g3_constructor_v2/constructor_planner_test.go | tee g3-v2-fixture-tests.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: g3-constructor-inhabitation-v2-fixture-results
+          path: g3-v2-*.log
+          if-no-files-found: warn
