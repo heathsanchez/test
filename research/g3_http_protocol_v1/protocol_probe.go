@@ -268,6 +268,9 @@ type familyResult struct {
 	ReferenceClasses int      `json:"reference_classes"`
 	ViolatingClasses int      `json:"violating_classes"`
 	Witnesses       []witness `json:"witnesses"`
+	DirectTraceCount int      `json:"direct_trace_count"`
+	DirectMismatches int      `json:"direct_mismatches"`
+	DirectFirstMismatch []string `json:"direct_first_mismatch"`
 }
 
 type row struct {
@@ -275,6 +278,31 @@ type row struct {
 	Subject   string
 	Reference []observation
 	Wrapped   []observation
+}
+
+// The deliberately simpler full-reference oracle baseline uses the same
+// actions and source compilation but does not learn quotient classes or
+// compare two different histories. Its expected wrapper values are fixed
+// directly by the declared HTTP writer contract and its fresh recorder.
+func directBaseline(c carrier, mode string) (int, int, []string, error) {
+	traces := enumerate(c.Alphabet, 3)
+	mismatches := 0
+	var first []string
+	for _, trace := range traces {
+		r, err := execute(c, trace, false, false, mode)
+		if err != nil {return len(traces),mismatches,first,err}
+		w, err := execute(c, trace, true, false, mode)
+		if err != nil {return len(traces),mismatches,first,err}
+		if w.Status != r.DownstreamCode ||
+			w.BytesWritten != len(r.DownstreamBody) ||
+			w.DownstreamCode != r.DownstreamCode ||
+			w.DownstreamBody != r.DownstreamBody ||
+			w.Flushes != r.Flushes {
+			mismatches++
+			if first == nil {first=append([]string{},trace...)}
+		}
+	}
+	return len(traces),mismatches,first,nil
 }
 
 func check(c carrier, negativeControl bool, mode string) (familyResult, error) {
@@ -313,6 +341,13 @@ func check(c carrier, negativeControl bool, mode string) (familyResult, error) {
 	}
 	result.ReferenceClasses = len(groups)
 	result.ViolatingClasses = len(violating)
+	if !negativeControl {
+		count,mismatches,first,err := directBaseline(c,mode)
+		if err != nil {return result,fmt.Errorf("direct baseline: %w",err)}
+		result.DirectTraceCount=count
+		result.DirectMismatches=mismatches
+		result.DirectFirstMismatch=first
+	}
 	return result, nil
 }
 
@@ -339,7 +374,7 @@ func main() {
 		}
 		results = append(results, r)
 		total += r.ViolatingClasses
-		fmt.Printf("CARRIER=%s PREFIXES=%d CLASSES=%d VIOLATIONS=%d\n", c.Name, r.Prefixes, r.ReferenceClasses, r.ViolatingClasses)
+		fmt.Printf("CARRIER=%s PREFIXES=%d CLASSES=%d VIOLATIONS=%d DIRECT_MISMATCHES=%d/%d FIRST_DIRECT=%v\n", c.Name, r.Prefixes, r.ReferenceClasses, r.ViolatingClasses,r.DirectMismatches,r.DirectTraceCount,r.DirectFirstMismatch)
 		for _, w := range r.Witnesses {
 			fmt.Printf("WITNESS %s %v ~ %v REF %d/%d WRAPPER %d/%d\n", c.Name, w.FirstTrace, w.SecondTrace, w.ReferenceFirst.DownstreamCode, w.ReferenceOther.DownstreamCode, w.WrapperFirst.Status, w.WrapperOther.Status)
 		}
