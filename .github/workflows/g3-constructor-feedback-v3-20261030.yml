@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - research/g3-runtime-feedback-v3-20261030
+      - research/g3-feedback-message-ablation-20261030
   workflow_dispatch:
 jobs:
   native-fixtures:
