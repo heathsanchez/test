@@ -1,0 +1,20 @@
+name: G3 V3 native feedback constructor fixtures
+on:
+  push:
+    branches:
+      - research/g3-runtime-feedback-v3-20261030
+  workflow_dispatch:
+jobs:
+  native-fixtures:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.0'
+      - name: V2 control fixtures
+        run: python3 -m unittest discover -s research/g3_constructor_v2 -p 'test_*.py' -v
+      - name: V3 native error-hint fixtures
+        run: python3 -m unittest discover -s research/g3_constructor_v3 -p 'test_*.py' -v
