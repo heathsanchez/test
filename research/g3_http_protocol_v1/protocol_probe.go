@@ -94,6 +94,63 @@ type observation struct {
 	Flushes        int    `json:"flushes"`
 }
 
+type traceObserver interface {
+	Status() int
+	BytesWritten() int
+}
+
+// Independent synthetic controls, deliberately not using go-chi internals.
+// The good variant forwards output effects while preserving status and bytes.
+// Each bad variant violates one single reference-observable invariant.
+type toyWriter struct {
+	http.ResponseWriter
+	status int
+	bytes int
+	sent bool
+	mode string
+}
+
+func (t *toyWriter) Status() int { return t.status }
+func (t *toyWriter) BytesWritten() int { return t.bytes }
+func (t *toyWriter) WriteHeader(code int) {
+	if !t.sent {
+		t.sent = true
+		t.status = code
+		t.ResponseWriter.WriteHeader(code)
+	}
+}
+func (t *toyWriter) Write(b []byte) (int, error) {
+	if !t.sent {
+		t.WriteHeader(http.StatusOK)
+	}
+	n, err := t.ResponseWriter.Write(b)
+	t.bytes += n
+	return n, err
+}
+func (t *toyWriter) Flush() {
+	if !t.sent {
+		if t.mode == "toy_bad_flush" {
+			t.sent = true
+		} else {
+			t.WriteHeader(http.StatusOK)
+		}
+	}
+	t.ResponseWriter.(http.Flusher).Flush()
+}
+func (t *toyWriter) ReadFrom(r io.Reader) (int64, error) {
+	if t.mode == "toy_bad_empty_readerfrom" {
+		payload, err := io.ReadAll(r)
+		if err != nil {
+			return 0, err
+		}
+		if len(payload) == 0 && !t.sent {
+			t.WriteHeader(http.StatusOK)
+		}
+		return io.Copy(t, bytes.NewReader(payload))
+	}
+	return io.Copy(t, r)
+}
+
 func apply(w http.ResponseWriter, op string) error {
 	switch op {
 	case "H200":
@@ -131,11 +188,15 @@ func apply(w http.ResponseWriter, op string) error {
 	return nil
 }
 
-func execute(c carrier, trace []string, wrapped, negativeControl bool) (observation, error) {
+func execute(c carrier, trace []string, wrapped, negativeControl bool, mode string) (observation, error) {
 	base, r := newCarrier(c)
 	w := base
 	if wrapped {
-		w = middleware.NewWrapResponseWriter(base, c.ProtoMajor)
+		if mode == "native" {
+			w = middleware.NewWrapResponseWriter(base, c.ProtoMajor)
+		} else {
+			w = &toyWriter{ResponseWriter: base, mode: mode}
+		}
 	}
 	for _, op := range trace {
 		if err := apply(w, op); err != nil {
@@ -147,7 +208,7 @@ func execute(c carrier, trace []string, wrapped, negativeControl bool) (observat
 		DownstreamBody: r.Body.String(), Flushes: r.flushes,
 	}
 	if wrapped {
-		wrappedWriter, ok := w.(middleware.WrapResponseWriter)
+		wrappedWriter, ok := w.(traceObserver)
 		if !ok {
 			return observation{}, errors.New("constructor did not return declared wrapper")
 		}
@@ -178,11 +239,11 @@ func enumerate(alphabet []string, maxLen int) [][]string {
 	return all
 }
 
-func signature(c carrier, prefix []string, suffixes [][]string, wrapped, negativeControl bool) (string, []observation, error) {
+func signature(c carrier, prefix []string, suffixes [][]string, wrapped, negativeControl bool, mode string) (string, []observation, error) {
 	observations := make([]observation, 0, len(suffixes))
 	for _, suffix := range suffixes {
 		trace := append(append([]string{}, prefix...), suffix...)
-		o, err := execute(c, trace, wrapped, negativeControl)
+		o, err := execute(c, trace, wrapped, negativeControl, mode)
 		if err != nil {
 			return "", nil, fmt.Errorf("trace %v: %w", trace, err)
 		}
@@ -216,7 +277,7 @@ type row struct {
 	Wrapped   []observation
 }
 
-func check(c carrier, negativeControl bool) (familyResult, error) {
+func check(c carrier, negativeControl bool, mode string) (familyResult, error) {
 	// All prefixes of length <= 2, all continuations of length <= 1;
 	// the longest native trace has three actions. This is a bounded
 	// future-relative quotient, not unbounded trace equivalence.
@@ -226,11 +287,11 @@ func check(c carrier, negativeControl bool) (familyResult, error) {
 	violating := make(map[string]bool)
 	result := familyResult{Carrier: c.Name, Prefixes: len(prefixes), Witnesses: []witness{}}
 	for _, prefix := range prefixes {
-		refKey, refObs, err := signature(c, prefix, suffixes, false, false)
+		refKey, refObs, err := signature(c, prefix, suffixes, false, false, mode)
 		if err != nil {
 			return result, fmt.Errorf("reference: %w", err)
 		}
-		subjectKey, subjectObs, err := signature(c, prefix, suffixes, true, negativeControl)
+		subjectKey, subjectObs, err := signature(c, prefix, suffixes, true, negativeControl, mode)
 		if err != nil {
 			return result, fmt.Errorf("native wrapper: %w", err)
 		}
@@ -258,15 +319,20 @@ func check(c carrier, negativeControl bool) (familyResult, error) {
 func main() {
 	output := flag.String("out", "", "JSON result path")
 	negativeControl := flag.Bool("inject-bad-observer", false, "test checker sensitivity, never a native claim")
+	mode := flag.String("wrapper-mode", "native", "native|toy_good|toy_bad_flush|toy_bad_empty_readerfrom")
 	flag.Parse()
 	if *output == "" {
 		fmt.Fprintln(os.Stderr, "--out required")
 		os.Exit(2)
 	}
+	if *mode != "native" && *mode != "toy_good" && *mode != "toy_bad_flush" && *mode != "toy_bad_empty_readerfrom" {
+		fmt.Fprintln(os.Stderr, "unrecognized predeclared wrapper mode")
+		os.Exit(2)
+	}
 	results := []familyResult{}
 	total := 0
 	for _, c := range carriers() {
-		r, err := check(c, *negativeControl)
+		r, err := check(c, *negativeControl, *mode)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(3)
@@ -289,12 +355,13 @@ func main() {
 		Schema    string         `json:"schema"`
 		Status    string         `json:"status"`
 		Injected  bool           `json:"injected_observer"`
+		Mode      string         `json:"wrapper_mode"`
 		Total     int            `json:"total_violating_classes"`
 		Families  []familyResult `json:"families"`
 		Boundary  string         `json:"boundary"`
 	}{
 		Schema: "mgcheck.http-writer-protocol-future-quotient.v1",
-		Status: status, Injected: *negativeControl,
+		Status: status, Injected: *negativeControl, Mode: *mode,
 		Total: total, Families: results,
 		Boundary: "human-declared actions; native pinned module; prefix<=2 suffix<=1; no autonomous grammar invention or global correctness claim",
 	}
