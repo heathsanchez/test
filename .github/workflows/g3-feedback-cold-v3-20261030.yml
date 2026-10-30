@@ -1,0 +1,53 @@
+name: G3 V3 sealed cold multi-module constructor feedback transfer
+on:
+  push:
+    branches:
+      - research/g3-runtime-feedback-v3-20261030
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  sealed-v3-cold:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.0'
+          cache: false
+      - name: Verify unchanged source-independent V2 and V3 algorithms
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --exit-code 8f0cb5a059048ff705d3f84e59ac9fea60986641 HEAD -- \
+            research/g3_constructor_v2/constructor_planner.go \
+            research/g3_constructor_v2/native_constructor_bridge.py \
+            research/g3_constructor_v3/native_feedback_bridge.py \
+            research/g3_constructor_v3/test_native_feedback.py \
+            research/g3_constructor_v3/testdata
+          echo 'V3_PROPOSER_AND_NATIVE_FIXTURES_UNCHANGED=YES'
+      - name: Reproduce fixture contract before cold transfer
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s research/g3_constructor_v2 -p test_native_bridge.py -v 2>&1 | tee g3-v3-v2-control.log
+          python3 -m unittest discover -s research/g3_constructor_v3 -p test_native_feedback.py -v 2>&1 | tee g3-v3-synthetic-fixtures.log
+      - name: Execute post-hoc rank-3 control and three untouched cold modules
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 research/g3_constructor_v3/execute_cold.py \
+            --targets research/g3_constructor_v3/COLD_TARGETS.json \
+            --output g3-v3-sample | tee g3-v3-sample.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: g3-v3-cold-sample-and-posthoc-control
+          path: |
+            g3-v3-sample/**
+            g3-v3-*.log
+          if-no-files-found: warn
