@@ -1,0 +1,104 @@
+name: G3 go-chi native operation-grammar falsifier (preregistered 2026-10-30)
+on:
+  push:
+    branches: [research/g3-gochi-response-observer-falsifier-20261030]
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  native-operator-boundary:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache: false
+      - name: Freeze and verify source identities before native inspection
+        shell: bash
+        run: |
+          set -euo pipefail
+          OLD_SHA=ae6be7469132cf471ca099d8c7bda4010c4ff7b2
+          HEAD_SHA=562e4d80c1b198e95418fd1598949a0fe478a2a1
+          git clone -q --no-checkout https://github.com/go-chi/chi.git "$RUNNER_TEMP/source"
+          git -C "$RUNNER_TEMP/source" fetch -q origin refs/pull/1174/head:refs/pull/1174/head
+          test "$(git -C "$RUNNER_TEMP/source" rev-parse refs/pull/1174/head)" = "$HEAD_SHA"
+          git -C "$RUNNER_TEMP/source" cat-file -e "$OLD_SHA^{commit}"
+          git -C "$RUNNER_TEMP/source" worktree add -q --detach "$RUNNER_TEMP/base" "$OLD_SHA"
+          git -C "$RUNNER_TEMP/source" worktree add -q --detach "$RUNNER_TEMP/head" "$HEAD_SHA"
+          test "$(git -C "$RUNNER_TEMP/base" rev-parse HEAD)" = "$OLD_SHA"
+          test "$(git -C "$RUNNER_TEMP/head" rev-parse HEAD)" = "$HEAD_SHA"
+          echo "PINNED_ORIGINAL_A=$OLD_SHA"
+          echo "PINNED_CONTRIBUTOR_A=$HEAD_SHA"
+      - name: Run unchanged preexisting typed Go source method
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +e
+          go run research/mgcheck_nonregex_20261015/nonregex_method.go \
+            --old "$RUNNER_TEMP/base" --head "$RUNNER_TEMP/head" \
+            --old-sha ae6be7469132cf471ca099d8c7bda4010c4ff7b2 \
+            --head-sha 562e4d80c1b198e95418fd1598949a0fe478a2a1 \
+            --out g3-gochi-A-result.json > g3-gochi-A-log.txt
+          code=$?
+          set -e
+          echo "FROZEN_OLD_OPERATION_EXIT=$code"
+          test -f g3-gochi-A-result.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          data=json.loads(Path("g3-gochi-A-result.json").read_text())
+          assert data["schema"]=="mgcheck.nonregex-source-program-synthesis.v1"
+          assert data["source_identity"]=="EXACT_NATIVE_GIT_HEAD_CHECKED"
+          assert data["old_sha"]=="ae6be7469132cf471ca099d8c7bda4010c4ff7b2"
+          assert data["head_sha"]=="562e4d80c1b198e95418fd1598949a0fe478a2a1"
+          assert data["L7"]=="UNKNOWN_METHOD_LANGUAGE_NOT_INVENTED"
+          accepted={
+              "REJECTED_NO_CHANGED_SOURCE_FUNCTION",
+              "UNKNOWN_NO_NATIVE_SEPARATOR",
+              "WARRANTED_BOUNDED_NONREGEX_NATIVE_DIVERGENCE",
+          }
+          assert data["status"] in accepted, data["status"]
+          if data["status"]=="REJECTED_NO_CHANGED_SOURCE_FUNCTION":
+              assert data["changed_string_input_functions"]==0
+              assert data["native_function_executions"]==0
+          print("FROZEN_OLD_METHOD_STATUS="+data["status"])
+          print("CHANGED_ELIGIBLE_FUNCTIONS=",data.get("changed_string_input_functions"))
+          print("CANDIDATE_PROGRAMS=",data.get("attempted_programs"))
+          print("NATIVE_FUNCTION_EXECUTIONS=",data.get("native_function_executions"))
+          print("NEW_OPERATION_INVENTION=UNKNOWN_NOT_ATTEMPTED")
+          print("PROSPECTIVE_G3=UNKNOWN_NOT_ESTABLISHED")
+          PY
+      - name: Wrong source pin refuses admission
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +e
+          go run research/mgcheck_nonregex_20261015/nonregex_method.go \
+            --old "$RUNNER_TEMP/base" --head "$RUNNER_TEMP/head" \
+            --old-sha ae6be7469132cf471ca099d8c7bda4010c4ff7b2 \
+            --head-sha 0000000000000000000000000000000000000000 \
+            --out g3-gochi-A-wrong-sha.json > /dev/null
+          code=$?
+          set -e
+          test "$code" -ne 0
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          data=json.loads(Path("g3-gochi-A-wrong-sha.json").read_text())
+          assert data["status"]=="UNKNOWN_SOURCE_IDENTITY",data
+          print("WRONG_SOURCE_SHA_RETURNED_UNKNOWN")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: g3-gochi-A-frozen-old-grammar-falsifier
+          path: |
+            g3-gochi-A-result.json
+            g3-gochi-A-log.txt
+            g3-gochi-A-wrong-sha.json
+          if-no-files-found: warn
