@@ -33,6 +33,7 @@ type Proposal struct {
 	WriteMethod          string   `json:"write_method,omitempty"`
 	ReadMethod           string   `json:"read_method,omitempty"`
 	DeleteMethod         string   `json:"delete_method,omitempty"`
+	ReachableReceivers   []string `json:"reachable_receivers"`
 	EnvironmentPrimitive string  `json:"environment_primitive,omitempty"`
 	EnvironmentalActions []string `json:"environmental_actions"`
 	Ambiguities          []string `json:"ambiguities"`
@@ -71,13 +72,47 @@ func exactlyOne(xs []string, role string, p *Proposal) string {
 	return xs[0]
 }
 
+// We inspect only receiver types reachable from a public constructor's
+// returned type via anonymous same-package struct embeddings. Merely finding
+// a matching signature elsewhere in the package is not evidence that callers
+// can execute that method on the constructed object.
+func localType(expr ast.Expr) string {
+	switch v:=expr.(type) {
+	case *ast.Ident: return v.Name
+	case *ast.StarExpr: return localType(v.X)
+	default: return ""
+	}
+}
+
+type candidateMethod struct {
+	name string
+	receiver string
+	params []string
+	results []string
+}
+
 func proposeFiles(files map[string]*parsedFile) Proposal {
 	p:=Proposal{Schema:"mathgraph.g3.source-adaptive-grammar.v1",Status:"UNKNOWN_ADAPTER",SourceFileCount:len(files),
-		EnvironmentalActions:[]string{},Ambiguities:[]string{},GenerationBoundary:"PREPROGRAMMED_AST_SIGNATURE_AND_CLOCK_TEMPLATE_ONLY"}
+		EnvironmentalActions:[]string{},Ambiguities:[]string{},ReachableReceivers:[]string{},GenerationBoundary:"POST_FAILURE_PUBLIC_CONSTRUCTOR_EMBEDDING_REACHABILITY_PLUS_PREPROGRAMMED_CLOCK_TEMPLATE"}
 	var ctor, write, read, del []string
+	ctorReturns:=map[string]string{}
+	embeddings:=map[string][]string{}
+	var methods []candidateMethod
 	for _, entry := range files {
 		f:=entry.File
 		if p.Package=="" { p.Package=f.Name.Name }
+		for _,decl:=range f.Decls {
+			gen,ok:=decl.(*ast.GenDecl);if !ok {continue}
+			for _,spec:=range gen.Specs {
+				ts,ok:=spec.(*ast.TypeSpec);if !ok {continue}
+				st,ok:=ts.Type.(*ast.StructType);if !ok {continue}
+				for _,field:=range st.Fields.List {
+					if len(field.Names)==0 {
+						if emb:=localType(field.Type);emb!="" {embeddings[ts.Name.Name]=append(embeddings[ts.Name.Name],emb)}
+					}
+				}
+			}
+		}
 		timeAliases:=map[string]bool{}
 		for _, im:=range f.Imports {
 			path,err:=strconv.Unquote(im.Path.Value)
@@ -100,16 +135,34 @@ func proposeFiles(files map[string]*parsedFile) Proposal {
 			if fn.Recv==nil {
 				if matches(params,"time.Duration","time.Duration") && len(results)==1 && strings.HasPrefix(results[0],"*") {
 					ctor=append(ctor,fn.Name.Name)
+					ctorReturns[fn.Name.Name]=localType(fn.Type.Results.List[0].Type)
 				}
 				continue
 			}
 			p.ExportedMethodCount++
-			if matches(params,"string","interface{}","time.Duration") && len(results)==0 {write=append(write,fn.Name.Name)}
-			if matches(params,"string") && matches(results,"interface{}","bool") {read=append(read,fn.Name.Name)}
-			if matches(params,"string") && len(results)==0 {del=append(del,fn.Name.Name)}
+			receiver:=localType(fn.Recv.List[0].Type)
+			methods=append(methods,candidateMethod{name:fn.Name.Name,receiver:receiver,params:params,results:results})
 		}
 	}
 	p.Constructor=exactlyOne(ctor,"constructor",&p)
+	if p.Constructor!="" {
+		reachable:=map[string]bool{}
+		var visit func(string)
+		visit=func(typ string){
+			if typ=="" || reachable[typ] {return}
+			reachable[typ]=true
+			for _,embedded:=range embeddings[typ] {visit(embedded)}
+		}
+		visit(ctorReturns[p.Constructor])
+		for k:=range reachable {p.ReachableReceivers=append(p.ReachableReceivers,k)}
+		sort.Strings(p.ReachableReceivers)
+		for _,m:=range methods {
+			if !reachable[m.receiver] {continue}
+			if matches(m.params,"string","interface{}","time.Duration") && len(m.results)==0 {write=append(write,m.name)}
+			if matches(m.params,"string") && matches(m.results,"interface{}","bool") {read=append(read,m.name)}
+			if matches(m.params,"string") && len(m.results)==0 {del=append(del,m.name)}
+		}
+	}
 	p.WriteMethod=exactlyOne(write,"write",&p)
 	p.ReadMethod=exactlyOne(read,"read",&p)
 	// Delete is optional: ambiguity must not admit one, but does not block the
