@@ -34,6 +34,26 @@ jobs:
           test "$(git -C "$RUNNER_TEMP/head" rev-parse HEAD)" = "$HEAD_SHA"
           echo "PINNED_ORIGINAL_A=$OLD_SHA"
           echo "PINNED_CONTRIBUTOR_A=$HEAD_SHA"
+      - name: Price native upstream package and repository test coverage at A pins
+        shell: bash
+        run: |
+          set -euo pipefail
+          for kind in base head; do
+            for scope in middleware all; do
+              target=./middleware
+              if [ "$scope" = "all" ]; then target=./...; fi
+              set +e
+              (
+                cd "$RUNNER_TEMP/$kind"
+                go test "$target"
+              ) > "g3-gochi-A-upstream-${kind}-${scope}.log" 2>&1
+              result=$?
+              set -e
+              echo "UPSTREAM_A_${kind}_${scope}_EXIT=$result"
+              tail -n 6 "g3-gochi-A-upstream-${kind}-${scope}.log"
+            done
+          done
+          echo "BOUNDARY=package_and_repo_go_test_only_NO_GREEN_ASSUMPTION"
       - name: Run unchanged preexisting typed Go source method
         shell: bash
         run: |
@@ -217,6 +237,7 @@ jobs:
             g3-gochi-A-replay-*.log
             g3-gochi-A-forged-witness.json
             g3-gochi-A-forged-replay.log
+            g3-gochi-A-upstream-*.log
           if-no-files-found: warn
 
   future-quotient-transfer-C:
@@ -249,6 +270,26 @@ jobs:
           echo "PREREG_C_BASE_SHA=$OLD_SHA"
           echo "PREREG_C_HEAD_SHA=$HEAD_SHA"
           echo "SOURCE_PATCH_INSPECTION=NOT_PERFORMED"
+      - name: Price native upstream package and repository test coverage at C pins
+        shell: bash
+        run: |
+          set -euo pipefail
+          for kind in base head; do
+            for scope in middleware all; do
+              target=./middleware
+              if [ "$scope" = "all" ]; then target=./...; fi
+              set +e
+              (
+                cd "$RUNNER_TEMP/${kind}-C"
+                go test "$target"
+              ) > "g3-gochi-C-upstream-${kind}-${scope}.log" 2>&1
+              result=$?
+              set -e
+              echo "UPSTREAM_C_${kind}_${scope}_EXIT=$result"
+              tail -n 6 "g3-gochi-C-upstream-${kind}-${scope}.log"
+            done
+          done
+          echo "BOUNDARY=package_and_repo_go_test_only_NO_GREEN_ASSUMPTION"
       - name: Transfer frozen operation, observers and trace bounds unchanged
         shell: bash
         run: |
