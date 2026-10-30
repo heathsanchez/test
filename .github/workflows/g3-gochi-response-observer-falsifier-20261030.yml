@@ -163,6 +163,40 @@ jobs:
           assert data["toy_bad_empty_readerfrom"]["total_violating_classes"]>0,"missed empty-read bug"
           print("SAME_ENGINE_INDEPENDENT_CONTROLS_PASS=YES")
           PY
+      - name: Independent native witness replay and forged-witness rejection
+        shell: bash
+        run: |
+          set -euo pipefail
+          for kind in base head; do
+            (
+              cd "$RUNNER_TEMP/$kind"
+              go run "$GITHUB_WORKSPACE/research/g3_http_protocol_v1/protocol_replay.go" --input "$GITHUB_WORKSPACE/g3-gochi-A-protocol-${kind}.json"
+            ) > "g3-gochi-A-replay-${kind}.log"
+            sed -n '1,3p' "g3-gochi-A-replay-${kind}.log"
+          done
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          data=json.loads(Path("g3-gochi-A-protocol-base.json").read_text())
+          for fam in data["families"]:
+              if fam["witnesses"]:
+                  w=fam["witnesses"][0]
+                  w["second_trace"]=w["first_trace"]
+                  break
+          else:
+              raise AssertionError("no genuine original witness")
+          Path("g3-gochi-A-forged-witness.json").write_text(json.dumps(data))
+          PY
+          set +e
+          (
+            cd "$RUNNER_TEMP/base"
+            go run "$GITHUB_WORKSPACE/research/g3_http_protocol_v1/protocol_replay.go" --input "$GITHUB_WORKSPACE/g3-gochi-A-forged-witness.json"
+          ) > g3-gochi-A-forged-replay.log 2>&1
+          code=$?
+          set -e
+          test "$code" -ne 0
+          grep -q FORGED_ g3-gochi-A-forged-replay.log
+          echo "FORGED_WITNESS_REJECTED=YES"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -175,6 +209,9 @@ jobs:
             g3-gochi-A-protocol-*.log
             g3-gochi-A-toy_*.json
             g3-gochi-A-toy_*.log
+            g3-gochi-A-replay-*.log
+            g3-gochi-A-forged-witness.json
+            g3-gochi-A-forged-replay.log
           if-no-files-found: warn
 
   future-quotient-transfer-C:
@@ -236,6 +273,17 @@ jobs:
           print("C_PR_TITLES_KNOWN=YES")
           print("G3_OPERATION_GRAMMAR_INVENTION=UNKNOWN")
           PY
+      - name: Independent native replay of C original witness and C contributor
+        shell: bash
+        run: |
+          set -euo pipefail
+          for kind in base head; do
+            (
+              cd "$RUNNER_TEMP/${kind}-C"
+              go run "$GITHUB_WORKSPACE/research/g3_http_protocol_v1/protocol_replay.go" --input "$GITHUB_WORKSPACE/g3-gochi-C-${kind}.json"
+            ) > "g3-gochi-C-replay-${kind}.log"
+            sed -n '1,3p' "g3-gochi-C-replay-${kind}.log"
+          done
       - uses: actions/upload-artifact@v4
         if: always()
         with:
