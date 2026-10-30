@@ -13,6 +13,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          fetch-depth: 0
       - uses: actions/setup-go@v5
         with:
           go-version: '1.24'
@@ -29,9 +30,91 @@ jobs:
           set -euo pipefail
           python3 -m unittest discover -s research/g3_constructor_v2 \
             -p test_native_bridge.py -v 2>&1 | tee g3-v2-native-fixtures.log
+      - name: Verify V2 algorithm remains byte-for-byte sealed
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --exit-code 2aeaa1c75ae46a29472f7df3c6981b768686dc1d HEAD -- \
+            research/g3_constructor_v2/constructor_planner.go \
+            research/g3_constructor_v2/constructor_planner_test.go \
+            research/g3_constructor_v2/native_constructor_bridge.py \
+            research/g3_constructor_v2/test_native_bridge.py \
+            research/g3_constructor_v2/testdata
+          echo 'CONSTRUCTOR_SYNTHESIS_AND_FIXTURES_UNCHANGED=YES'
+      - name: Read cold source at metadata-pinned SHA only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone -q --no-checkout https://github.com/dgraph-io/ristretto.git "$RUNNER_TEMP/ristretto"
+          git -C "$RUNNER_TEMP/ristretto" checkout -q --detach a56a38ebeec716a0da3d20a46b417ca2ab7c81f4
+          test "$(git -C "$RUNNER_TEMP/ristretto" rev-parse HEAD)" = a56a38ebeec716a0da3d20a46b417ca2ab7c81f4
+          echo 'SOURCE_PIN=a56a38ebeec716a0da3d20a46b417ca2ab7c81f4'
+      - name: Type-directed cold constructor proposal and native admission
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +e
+          go run research/g3_constructor_v2/constructor_planner.go \
+            --source "$RUNNER_TEMP/ristretto" --out "$GITHUB_WORKSPACE/g3-v2-cold-plan.json" \
+            > g3-v2-cold-parser.log 2>&1
+          parse_code=$?
+          set -e
+          if [ "$parse_code" -ne 0 ]; then
+            printf '%s\n' 'UNKNOWN_PARSER_FAILURE: cannot admit source' > g3-v2-cold-status.log
+          else
+            python3 - <<'PY'
+          import json
+          from pathlib import Path
+          p=json.loads(Path('g3-v2-cold-plan.json').read_text())
+          assert p['schema']=='mathgraph.g3.typed-constructor.v2'
+          print('COLD_TYPE_PLAN',json.dumps(p,sort_keys=True))
+          PY
+            status=$(python3 -c 'import json;print(json.load(open("g3-v2-cold-plan.json"))["status"])')
+            if [ "$status" != CANDIDATE_CONSTRUCTOR ]; then
+              printf '%s\n' "${status}: no manual constructor adapter" > g3-v2-cold-status.log
+            else
+              module=''
+              if [ -f "$RUNNER_TEMP/ristretto/go.mod" ]; then
+                module=$(awk '$1 == "module" {print $2;exit}' "$RUNNER_TEMP/ristretto/go.mod")
+              fi
+              if [ -z "$module" ]; then
+                printf '%s\n' 'UNKNOWN_MODULE_ROOT: no source-specific build repair' > g3-v2-cold-status.log
+              else
+                set +e
+                (
+                  python3 research/g3_constructor_v2/native_constructor_bridge.py \
+                    --manifest g3-v2-cold-plan.json --source-dir "$RUNNER_TEMP/ristretto" \
+                    --module "$module" --sha a56a38ebeec716a0da3d20a46b417ca2ab7c81f4
+                  cd "$RUNNER_TEMP/ristretto"
+                  go run ./cmd/mgconstructor > "$GITHUB_WORKSPACE/g3-v2-cold-native.json"
+                ) > g3-v2-cold-native.log 2>&1
+                native_code=$?
+                set -e
+                if [ "$native_code" -eq 0 ]; then
+                  python3 - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('g3-v2-cold-native.json').read_text())
+          assert d['schema']=='mathgraph.g3.constructor-native.v2'
+          assert d['status']=='CONSTRUCTED_NONNIL'
+          assert d['source_sha']=='a56a38ebeec716a0da3d20a46b417ca2ab7c81f4'
+          print('COLD_NATIVE_CONSTRUCTED',d['constructed_type'])
+          PY
+                  printf '%s\n' 'WARRANTED_BOUNDED_NONNIL_NATIVE_CONSTRUCTION_ONLY' > g3-v2-cold-status.log
+                else
+                  printf '%s\n' 'UNKNOWN_NATIVE_CONSTRUCTION: compiler/runtime rejection preserved' > g3-v2-cold-status.log
+                fi
+              fi
+            fi
+          fi
+          cat g3-v2-cold-status.log
+          echo 'B1_FAIR_MANUAL_RECIPE=NOT_TESTED_NO_SUPERIORITY_CLAIM'
+          echo 'STRICT_G3=UNKNOWN'
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: g3-constructor-inhabitation-v2-fixture-results
-          path: g3-v2-*.log
+          path: |
+            g3-v2-*.log
+            g3-v2-*.json
           if-no-files-found: warn
