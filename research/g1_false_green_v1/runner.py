@@ -65,7 +65,7 @@ def assess(source: Path) -> dict:
 
     # This is a deliberately wrong runner for the *actual* pytest tests.
     wrong = run("-m", "unittest", "discover",
-                "-s", "tests/test_itsdangerous", "-p", "test_*.py", cwd=source)
+                "-s", "tests", "-p", "test_*.py", cwd=source)
     wrong_count = count(r"Ran (\d+) tests? in", wrong["output"])
     result["wrong_runner"] = {
         "exit_code": wrong["exit_code"],
