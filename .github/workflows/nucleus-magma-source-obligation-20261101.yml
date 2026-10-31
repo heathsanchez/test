@@ -22,7 +22,16 @@ jobs:
           test "$(git rev-parse HEAD:metatron-kernel)" = "5e7d65b1b6abc3f6380bc7a37ffb153284d7faf1"
           git rev-parse HEAD > /tmp/nucleus-evidence/commit.txt
           git rev-parse HEAD:metatron-kernel > /tmp/nucleus-evidence/source-tree.txt
-          cargo test --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml >/tmp/nucleus-evidence/native-tests.log 2>&1 || { tail -100 /tmp/nucleus-evidence/native-tests.log; exit 1; }
+          # The source-pinned incumbent has one recorded red proof-irrelevance positive.
+          # Preserve it as RED; do not silently classify the full suite green.
+          set +e
+          cargo test --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml --test checked_relevance_signature distinct_proof_arguments_of_same_checked_proposition_are_convertible >/tmp/nucleus-evidence/known-red-proof-irrelevance.log 2>&1
+          incumbent_rc=$?
+          set -e
+          test "$incumbent_rc" -ne 0
+          grep -F "rigid-value-constructor-mismatch" /tmp/nucleus-evidence/known-red-proof-irrelevance.log
+          printf 'KNOWN_RED_PROOF_IRRELEVANCE=true\n' >/tmp/nucleus-evidence/verification-boundary.txt
+          cargo test --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml -- --skip distinct_proof_arguments_of_same_checked_proposition_are_convertible >/tmp/nucleus-evidence/native-tests.log 2>&1 || { tail -100 /tmp/nucleus-evidence/native-tests.log; exit 1; }
           cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
           sha256sum metatron-kernel/target/release/metatron-kernel >/tmp/nucleus-evidence/binary-sha256.txt
       - name: Retrieve exact original Arena fixtures and witness application boundary
@@ -68,7 +77,7 @@ jobs:
               with path.open("rb") as fd:
                   p=subprocess.run([binary],stdin=fd,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=40,env=env)
               assert p.returncode in (1,2),("UNSAFE_ACCEPT",name,p.returncode)
-          report=dict(source_tree="5e7d65b1b6abc3f6380bc7a37ffb153284d7faf1",manifest_sha256=hashlib.sha256(manifest.read_bytes()).hexdigest(),cases=reports,all_verdicts_preserved=True,semantic_rule_added=False,proof_of_missing_rule=False)
+          report=dict(source_tree="5e7d65b1b6abc3f6380bc7a37ffb153284d7faf1",manifest_sha256=hashlib.sha256(manifest.read_bytes()).hexdigest(),cases=reports,all_verdicts_preserved=True,semantic_rule_added=False,proof_of_missing_rule=False,incumbent_native_suite_fully_green=False)
           (out/"magma-application-source-obligations.json").write_text(json.dumps(report,indent=2)+"\n")
           PY
       - uses: actions/upload-artifact@v4
