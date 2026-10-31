@@ -1,0 +1,99 @@
+name: Nucleus Magma n7 source-typed separator
+
+on:
+  push:
+    branches:
+      - candidate/nucleus-magma-n7-source-diagnostic-20261101
+    paths:
+      - .github/workflows/nucleus-magma-n7-source-diagnostic.yml
+      - metatron-kernel/src/**
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  magma-n7:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 65
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build exact independently qualified Nucleus source
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cargo test --locked --release --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          cargo build --locked --release --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          mkdir -p /tmp/nucleus-evidence
+          sha256sum metatron-kernel/target/release/metatron-kernel > /tmp/nucleus-evidence/checker-binary.sha256
+          printf 'checker_sha=%s\n' "$GITHUB_SHA" > /tmp/nucleus-evidence/provenance.txt
+          git rev-parse HEAD:metatron-kernel >> /tmp/nucleus-evidence/provenance.txt
+
+      - name: Recover exact immutable Arena corpus
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p /tmp/nucleus-source /tmp/nucleus-evidence/archive
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/11272848230/zip > /tmp/nucleus-evidence/archive.zip
+          unzip -q /tmp/nucleus-evidence/archive.zip -d /tmp/nucleus-evidence/archive
+          tar --no-same-owner -xzf /tmp/nucleus-evidence/archive/lean-arena-tests.tar.gz -C /tmp/nucleus-source
+          sha256sum /tmp/nucleus-evidence/archive.zip >> /tmp/nucleus-evidence/provenance.txt
+
+      - name: Capture original Pi obligation without changing verdict
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib, subprocess, sys
+          root=pathlib.Path('/tmp/nucleus-source')
+          binary=str(pathlib.Path('metatron-kernel/target/release/metatron-kernel').resolve())
+          manifest=json.loads(pathlib.Path('metatron-kernel/evidence/performance/owned-environment-2026-10-13/nucleus-owned-environment-frozen196.json').read_text())
+          expected={row['case']:row for row in manifest['modes']['origin']['rows']}
+          target='good/perf/magma-list-pair-n7.ndjson'
+          p=root/target
+          actual_sha=hashlib.sha256(p.read_bytes()).hexdigest()
+          assert actual_sha=='abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35'
+          assert expected[target]['sha256']==actual_sha
+          flags='RELEVANCE CONTEXT_BINDER TYPED_LINEAGE SUBSTITUTION_RECLOSURE TYPED_VALUE_NORMALIZATION PROJECTION_CONTEXT PROJECTION_CROSSFRAME_512 TYPED_RECEIVER SOURCE_PAIR_DEPTH8 POLYMORPHIC_PROP_IRREL PROP_SINGLETON_2P1F EXPECTED_LAMBDA'.split()
+          base={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+          base.update({'NUCLEUS_EXPERIMENTAL_'+flag:'1' for flag in flags})
+          base['NUCLEUS_TRACE_DOWNSTREAM']='1'
+          def replay(path,env):
+            with path.open('rb') as src:
+              return subprocess.run([binary],stdin=src,stdout=subprocess.PIPE,stderr=subprocess.PIPE,env=env,timeout=180)
+          plain=replay(p,base)
+          traced_env=base|{'NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE':'1'}
+          traced=replay(p,traced_env)
+          lines=traced.stderr.decode(errors='replace').splitlines()
+          observed=[line for line in lines if line.startswith('NUCLEUS_APPLICATION_FUNCTION_TYPE:')]
+          target_observed=[line for line in observed if 'ExprId(8835)' in line]
+          result={
+            'authority':'frozen196-original-export',
+            'source_case':target,'input_sha256':actual_sha,
+            'baseline_exit':plain.returncode,'diagnostic_exit':traced.returncode,
+            'baseline_tail':plain.stderr.decode(errors='replace')[-1500:],
+            'diagnostic_tail':traced.stderr.decode(errors='replace')[-1500:],
+            'observations_total':len(observed),
+            'target_expr_8835_count':len(target_observed),
+            'target_observations':target_observed[:12],
+            'sample_observations':observed[:12],
+            'status':'OBSERVATION_ONLY_NOT_SEMANTIC_PROOF',
+          }
+          out=pathlib.Path('/tmp/nucleus-evidence/magma-n7.json')
+          out.write_text(json.dumps(result,indent=2)+'\n')
+          print(json.dumps({k:v for k,v in result.items() if k not in ('target_observations','sample_observations','baseline_tail','diagnostic_tail')}),flush=True)
+          assert plain.returncode==2, 'frozen baseline changed'
+          assert traced.returncode==plain.returncode, 'observer changed verdict'
+          assert observed, 'no source-typed application observation'
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-magma-n7-typed-obligation-${{ github.sha }}
+          path: /tmp/nucleus-evidence/
+          if-no-files-found: warn
