@@ -2,6 +2,12 @@
 """Bounded, unsuppressed two-process TypeLookup replay; records raw outcomes."""
 import argparse, hashlib, json, os, pathlib, re, signal, subprocess, time
 
+def has_target_race(logs):
+    """Require the race warning and target stack in the same TSan report."""
+    return any('WARNING: ThreadSanitizer: data race' in report and
+               'TypeLookupManager' in report
+               for report in re.split(r'(?m)^={10,}\s*$', logs))
+
 p = argparse.ArgumentParser()
 p.add_argument('--executable', required=True)
 p.add_argument('--library-dir', required=True)
@@ -9,7 +15,11 @@ p.add_argument('--out', required=True)
 p.add_argument('--label', required=True)
 p.add_argument('--repetitions', type=int, default=5)
 a = p.parse_args()
+if a.repetitions <= 0:
+    p.error('--repetitions must be positive')
 out = pathlib.Path(a.out).resolve(); out.mkdir(parents=True, exist_ok=True)
+if any(out.iterdir()):
+    p.error('--out must be empty to exclude stale reports')
 lib = pathlib.Path(a.library_dir).resolve()
 exe = pathlib.Path(a.executable).resolve()
 records = []
@@ -55,7 +65,7 @@ for trial in range(a.repetitions):
               'exits': {role:c.returncode for role,c in children}, 'timeout': timed_out,
               'writers': int(match[1]) if match else None, 'resolved_types': int(match[2]) if match else None,
               'tsan_warnings': logs.count('WARNING: ThreadSanitizer:'),
-              'typelookup_race': 'WARNING: ThreadSanitizer: data race' in logs and 'TypeLookupManager' in logs,
+              'typelookup_race': has_target_race(logs),
               'mapped_libraries': mappings, 'mapped_ok': mapped_ok}
     records.append(record)
     (out / 'results.json').write_text(json.dumps(records, indent=2)+'\n')
