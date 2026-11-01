@@ -1,0 +1,43 @@
+name: ROS Jazzy truncated CDR independent probe
+on:
+  push:
+    branches:
+      - research/ros-fastrtps-cdr-20261101
+    paths:
+      - .github/workflows/ros-fastrtps-cdr-20261101.yml
+      - research/ros-fastrtps-cdr-20261101/probe.py
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Record experiment commit and container
+        run: |
+          mkdir -p evidence
+          printf '%s\n' "$GITHUB_SHA" > evidence/experiment-commit.txt
+          docker pull ros:jazzy-ros-base
+          docker inspect --format '{{.Id}}' ros:jazzy-ros-base > evidence/container-image-id.txt
+      - name: Exercise real ROS 2 Jazzy deserializers in isolated processes
+        run: |
+          docker run --rm --ulimit core=0 \
+            -v "$PWD/research/ros-fastrtps-cdr-20261101:/study:ro" \
+            -v "$PWD/evidence:/evidence" \
+            ros:jazzy-ros-base bash -eo pipefail -c '
+              export DEBIAN_FRONTEND=noninteractive
+              apt-get update -qq
+              apt-get install -y -qq ros-jazzy-test-msgs ros-jazzy-rmw-fastrtps-cpp ros-jazzy-rmw-cyclonedds-cpp
+              dpkg-query -W ros-jazzy-rmw-fastrtps-cpp ros-jazzy-rmw-cyclonedds-cpp ros-jazzy-test-msgs ros-jazzy-rclpy > /evidence/ros-package-versions.txt
+              source /opt/ros/jazzy/setup.bash
+              /usr/bin/python3 /study/probe.py > /evidence/matrix.jsonl 2> /evidence/probe.stderr
+            '
+          tail -n 16 evidence/matrix.jsonl
+      - name: Upload source-native evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ros-jazzy-cdr-boundary-evidence
+          path: evidence/
