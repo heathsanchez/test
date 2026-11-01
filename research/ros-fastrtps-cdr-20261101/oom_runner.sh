@@ -81,6 +81,14 @@ assert paths and all(x.startswith(os.environ["EXPECTED_LIB_DIR"]) for x in paths
   /usr/bin/python3 /study/oom_probe.py > "/evidence/census-$arm.jsonl" \
     2> "/evidence/census-$arm.stderr"
   cp /evidence/residual-results.json "/evidence/results-$arm.json"
+  /usr/bin/python3 /study/populated_controls.py \
+    > "/evidence/populated-$arm.jsonl" 2> "/evidence/populated-$arm.stderr"
+  if test "$arm" = patched || test "$arm" = preflight; then
+    /usr/bin/python3 /study/probe.py > "/evidence/legacy-matrix-$arm.jsonl" \
+      2> "/evidence/legacy-matrix-$arm.stderr"
+    cp /evidence/results.json "/evidence/legacy-results-$arm.json"
+  fi
 done
 
 /usr/bin/python3 /study/oom_compare.py | tee /evidence/comparison.txt
+/usr/bin/python3 /study/legacy_compare.py | tee /evidence/legacy-comparison.txt
