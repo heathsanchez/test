@@ -7,7 +7,7 @@ import sys
 
 TYPES = ["Arrays", "Strings", "BoundedSequences", "UnboundedSequences", "MultiNested", "WStrings", "BasicTypes"]
 RMW = ["rmw_fastrtps_cpp", "rmw_cyclonedds_cpp"]
-CASES = ["valid", "empty", "header_1", "header_2", "header_3", "header_only", "valid_minus_1", "valid_minus_half"]
+CASES = ["valid", "empty", "header_1", "header_2", "header_3", "header_only", "valid_header", "valid_minus_1", "valid_minus_half"]
 
 def child(type_name, case):
     from rclpy.serialization import deserialize_message, serialize_message
@@ -18,10 +18,12 @@ def child(type_name, case):
         data = valid
     elif case == "empty":
         data = b""
-    elif case.startswith("header_"):
-        data = b"\x00\x00\x00\x01"[:int(case.split("_")[1])]
     elif case == "header_only":
         data = b"\x00\x00\x00\x01"
+    elif case.startswith("header_"):
+        data = b"\x00\x00\x00\x01"[:int(case.split("_")[1])]
+    elif case == "valid_header":
+        data = valid[:4]
     elif case == "valid_minus_1":
         data = valid[:-1]
     elif case == "valid_minus_half":
@@ -45,7 +47,7 @@ def matrix():
                 env = dict(os.environ, RMW_IMPLEMENTATION=backend)
                 try:
                     p = subprocess.run([sys.executable, __file__, "child", typename, case],
-                                       env=env, text=True, capture_output=True, timeout=20)
+                                       env=env, text=True, capture_output=True, timeout=6)
                     if p.returncode < 0:
                         outcome, detail = "signal", f"signal {-p.returncode}"
                     elif p.returncode > 0:
@@ -57,7 +59,7 @@ def matrix():
                         except (ValueError, IndexError, KeyError):
                             outcome, detail = "invalid_record", (p.stdout + p.stderr)[-600:]
                 except subprocess.TimeoutExpired:
-                    outcome, detail = "timeout", "child exceeded 20s"
+                    outcome, detail = "timeout", "child exceeded 6s"
                 row = {"backend": backend, "type": typename, "case": case,
                        "outcome": outcome, "detail": detail}
                 rows.append(row)
