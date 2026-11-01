@@ -26,7 +26,7 @@ jobs:
         shell: bash
         run: |
           set -euxo pipefail
-          cargo test --locked --release --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          NUCLEUS_EXPERIMENTAL_RELEVANCE=1 NUCLEUS_EXPERIMENTAL_EXPECTED_LAMBDA=1 cargo test --locked --release --features diagnostics --manifest-path metatron-kernel/Cargo.toml
           cargo build --locked --release --features diagnostics --manifest-path metatron-kernel/Cargo.toml
           mkdir -p /tmp/nucleus-evidence
           sha256sum metatron-kernel/target/release/metatron-kernel > /tmp/nucleus-evidence/checker-binary.sha256
