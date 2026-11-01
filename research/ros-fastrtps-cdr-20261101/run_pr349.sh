@@ -6,7 +6,9 @@ export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq
 apt-get install -y -qq git cmake ninja-build g++ ros-jazzy-test-msgs \
   ros-jazzy-rmw-fastrtps-cpp ros-jazzy-rmw-cyclonedds-cpp ros-jazzy-fastcdr
+set +u
 source /opt/ros/jazzy/setup.bash
+set -u
 dpkg-query -W ros-jazzy-fastcdr ros-jazzy-rmw-fastrtps-cpp \
   ros-jazzy-rmw-cyclonedds-cpp ros-jazzy-rclpy ros-jazzy-test-msgs \
   > /evidence/package-versions.txt
