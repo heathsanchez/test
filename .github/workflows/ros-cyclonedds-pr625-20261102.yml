@@ -1,0 +1,38 @@
+name: Cyclone DDS PR625 Jazzy native differential
+on:
+  push:
+    branches:
+      - research/ros-cyclonedds-pr625-20261102
+    paths:
+      - .github/workflows/ros-cyclonedds-pr625-20261102.yml
+      - research/ros-fastrtps-cdr-20261101/run_pr625.sh
+      - research/ros-fastrtps-cdr-20261101/check_pr625.py
+      - research/ros-fastrtps-cdr-20261101/probe.py
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-compare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pin source and ROS container
+        run: |
+          mkdir -p evidence
+          printf '%s\n' "$GITHUB_SHA" > evidence/experiment-commit.txt
+          docker pull ros:jazzy-ros-base
+          docker inspect --format '{{.Id}}' ros:jazzy-ros-base > evidence/container-image-id.txt
+      - name: Build the source-identical Jazzy baseline and patch then test both
+        run: |
+          docker run --rm --ulimit core=0 \
+            -v "$PWD/research/ros-fastrtps-cdr-20261101:/study:ro" \
+            -v "$PWD/evidence:/evidence" \
+            ros:jazzy-ros-base bash /study/run_pr625.sh
+          cat evidence/comparison.txt
+      - name: Archive all evidence including failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ros-cyclonedds-pr625-native-comparison
+          path: evidence/
