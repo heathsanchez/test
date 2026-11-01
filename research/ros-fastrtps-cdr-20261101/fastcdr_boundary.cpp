@@ -10,7 +10,7 @@ static bool check(const char* name, unsigned char last, bool expected_jump)
     char payload[4] = {0, 0, 0, static_cast<char>(last)};
     eprosima::fastcdr::FastBuffer buffer(payload, sizeof(payload));
     eprosima::fastcdr::Cdr cdr(
-      buffer, eprosima::fastcdr::Cdr::DEFAULT_ENDIAN);
+      buffer, eprosima::fastcdr::Cdr::DEFAULT_ENDIAN, eprosima::fastcdr::CdrVersion::DDS_CDR);
     try
     {
         cdr.read_encapsulation();
