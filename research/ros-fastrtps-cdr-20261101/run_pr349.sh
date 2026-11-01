@@ -60,10 +60,12 @@ git -C "$SRC" checkout --quiet --detach "$PR_HEAD"
 git -C "$SRC" rev-parse HEAD > /evidence/pr349-head-source-sha.txt
 build_arm prhead
 
+# Retain the ROS environment library paths, including Cyclone DDS dependencies.
+ros_library_path="$LD_LIBRARY_PATH"
 # Verify mapped library selection in a native Python ROS process.
 for arm in baseline patched; do
   prefix="/tmp/fastcdr-arm-$arm"
-  export LD_LIBRARY_PATH="$prefix/lib:/opt/ros/jazzy/lib"
+  export LD_LIBRARY_PATH="$prefix/lib:$ros_library_path"
   export EXPECTED_LIB_DIR="$prefix/lib"
   export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
   python3 -c '
