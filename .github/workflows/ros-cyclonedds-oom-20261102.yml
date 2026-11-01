@@ -8,6 +8,9 @@ on:
       - research/ros-fastrtps-cdr-20261101/oom_probe.py
       - research/ros-fastrtps-cdr-20261101/oom_runner.sh
       - research/ros-fastrtps-cdr-20261101/oom_compare.py
+      - research/ros-fastrtps-cdr-20261101/populated_controls.py
+      - research/ros-fastrtps-cdr-20261101/legacy_compare.py
+      - research/ros-fastrtps-cdr-20261101/probe.py
   workflow_dispatch:
 permissions:
   contents: read
