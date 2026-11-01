@@ -30,12 +30,19 @@ jobs:
             ros:jazzy-ros-base bash -eo pipefail -c '
               export DEBIAN_FRONTEND=noninteractive
               apt-get update -qq
-              apt-get install -y -qq ros-jazzy-test-msgs ros-jazzy-rmw-fastrtps-cpp ros-jazzy-rmw-cyclonedds-cpp g++ libfastcdr-dev
+              apt-get install -y -qq ros-jazzy-test-msgs ros-jazzy-rmw-fastrtps-cpp ros-jazzy-rmw-cyclonedds-cpp ros-jazzy-fastcdr g++
               dpkg-query -W ros-jazzy-rmw-fastrtps-cpp ros-jazzy-rmw-cyclonedds-cpp ros-jazzy-test-msgs ros-jazzy-rclpy > /evidence/ros-package-versions.txt
               source /opt/ros/jazzy/setup.bash
               /usr/bin/python3 /study/probe.py > /evidence/matrix.jsonl 2> /evidence/probe.stderr
-              dpkg-query -W libfastcdr-dev > /evidence/fastcdr-version.txt
-              g++ -std=c++17 -O0 /study/fastcdr_boundary.cpp -o /evidence/fastcdr-boundary -lfastcdr
+              dpkg-query -W ros-jazzy-fastcdr > /evidence/fastcdr-version.txt
+              header=$(find /opt/ros/jazzy/include -path "*/fastcdr/Cdr.h" -print -quit)
+              lib=$(find /opt/ros/jazzy -name "libfastcdr.so" -print -quit)
+              test -n "$header" && test -n "$lib"
+              include_dir=$(dirname "$(dirname "$header")")
+              lib_dir=$(dirname "$lib")
+              printf "header=%s\nlibrary=%s\n" "$header" "$lib" > /evidence/fastcdr-paths.txt
+              g++ -std=c++17 -O0 -I"$include_dir" /study/fastcdr_boundary.cpp -L"$lib_dir" -Wl,-rpath,"$lib_dir" -o /evidence/fastcdr-boundary -lfastcdr
+              ldd /evidence/fastcdr-boundary > /evidence/fastcdr-binary-linkage.txt
               /evidence/fastcdr-boundary > /evidence/fastcdr-boundary.txt
             '
           tail -n 16 evidence/matrix.jsonl
