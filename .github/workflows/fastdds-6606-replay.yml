@@ -1,0 +1,88 @@
+name: Fast DDS 6606 source-pinned TSan replay
+on:
+  push:
+    branches: [research/fastdds-6606-tsan-replay-20261102]
+    paths:
+      - .github/workflows/fastdds-6606-replay.yml
+      - research/fastdds-6606-replay/**
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  replay:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        arm: [baseline, candidate]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y ninja-build libasio-dev libtinyxml2-dev libfoonathan-memory-dev libssl-dev libsqlite3-dev
+      - name: Pin source and protocol
+        env:
+          ARM: ${{ matrix.arm }}
+        run: |
+          mkdir -p evidence
+          git clone https://github.com/eProsima/Fast-CDR.git fastcdr
+          git -C fastcdr checkout --detach d7219391608ae8cd7971e761206dc020098bacb3
+          git clone https://github.com/metalogiclabs/Fast-DDS.git fastdds
+          if [ "$ARM" = baseline ]; then
+            git -C fastdds checkout --detach b9e087308b4ef02f2c8c8982abaf8286166f8457
+          else
+            git -C fastdds checkout --detach 2352189bb628adff80b86e52ec4257b2ea003318
+          fi
+          git -C fastdds show 2352189bb628adff80b86e52ec4257b2ea003318:test/dds/xtypes/TypeLookupConcurrencyReproducer.cpp > regression.cpp
+          git -C fastdds diff b9e087308b4ef02f2c8c8982abaf8286166f8457 2352189bb628adff80b86e52ec4257b2ea003318 > evidence/submitted.patch
+          {
+            git -C fastdds rev-parse HEAD HEAD^{tree}
+            git -C fastcdr rev-parse HEAD HEAD^{tree}
+            gcc --version
+            cmake --version
+            uname -a
+            dpkg-query -W libasio-dev libtinyxml2-dev libfoonathan-memory-dev libssl-dev libsqlite3-dev
+            sha256sum regression.cpp research/fastdds-6606-replay/replay.py
+          } > evidence/source-and-environment.txt
+          cp regression.cpp evidence/
+          cp research/fastdds-6606-replay/replay.py evidence/
+      - name: Build pinned libraries and identical workload
+        run: |
+          cmake -S fastcdr -B build-cdr -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX="$PWD/install" -DBUILD_TESTING=OFF -DCMAKE_CXX_FLAGS_DEBUG='-O0 -g1' 2>&1 | tee evidence/cdr-configure.log
+          cmake --build build-cdr -j 3 2>&1 | tee evidence/cdr-build.log
+          cmake --install build-cdr 2>&1 | tee evidence/cdr-install.log
+          cmake -S fastdds -B build-dds -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH="$PWD/install" -DCMAKE_CXX_FLAGS_DEBUG='-O0 -g1' -DCMAKE_C_FLAGS_DEBUG='-O0 -g1' -DSANITIZER=THREAD -DBUILD_TESTING=OFF -DCOMPILE_EXAMPLES=OFF -DCOMPILE_TOOLS=OFF -DSECURITY=OFF 2>&1 | tee evidence/dds-configure.log
+          cmake --build build-dds --target fastdds -j 3 2>&1 | tee evidence/dds-build.log
+          g++ -std=c++14 -O0 -g1 -fsanitize=thread -fno-omit-frame-pointer -DFASTDDS_DYN_LINK -DFASTCDR_DYN_LINK -I fastdds/include -I build-dds/include -I install/include regression.cpp -L build-dds/src/cpp -L install/lib -Wl,-rpath,"$PWD/build-dds/src/cpp:$PWD/install/lib" -lfastdds -lfastcdr -lfoonathan_memory -o regression 2>&1 | tee evidence/workload-build.log
+          cp build-dds/CMakeCache.txt evidence/
+          sha256sum build-dds/src/cpp/libfastdds.so* install/lib/libfastcdr.so* regression > evidence/library-and-executable-sha256.txt
+          ldd regression > evidence/workload-ldd.txt
+      - name: Five bounded replay trials
+        env:
+          ARM: ${{ matrix.arm }}
+        run: |
+          export LD_LIBRARY_PATH="$PWD/install/lib"
+          python3 research/fastdds-6606-replay/replay.py --executable "$PWD/regression" --library-dir "$PWD/build-dds/src/cpp" --out "evidence/$ARM" --label "$ARM" --repetitions 5 | tee evidence/replay-console.txt
+      - name: Negative resolution-oracle control
+        if: matrix.arm == 'candidate'
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          source = Path('regression.cpp').read_text()
+          needle = 'info.type_information.type_information.complete().typeid_with_size().type_id(),'
+          assert source.count(needle) == 1
+          Path('negative.cpp').write_text(source.replace(needle, 'xtypes::TypeIdentifier{},'))
+          PY
+          g++ -std=c++14 -O0 -g1 -fsanitize=thread -fno-omit-frame-pointer -DFASTDDS_DYN_LINK -DFASTCDR_DYN_LINK -I fastdds/include -I build-dds/include -I install/include negative.cpp -L build-dds/src/cpp -L install/lib -Wl,-rpath,"$PWD/build-dds/src/cpp:$PWD/install/lib" -lfastdds -lfastcdr -lfoonathan_memory -o negative
+          cp negative.cpp evidence/
+          export LD_LIBRARY_PATH="$PWD/install/lib"
+          python3 research/fastdds-6606-replay/replay.py --executable "$PWD/negative" --library-dir "$PWD/build-dds/src/cpp" --out evidence/negative-control --label negative-control --repetitions 1 | tee evidence/negative-console.txt
+      - name: Upload raw evidence even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fastdds-6606-${{ matrix.arm }}-evidence
+          path: evidence/
+          retention-days: 90
