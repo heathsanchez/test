@@ -6,6 +6,7 @@ on:
     paths:
       - .github/workflows/ros-fastrtps-cdr-20261101.yml
       - research/ros-fastrtps-cdr-20261101/probe.py
+      - research/ros-fastrtps-cdr-20261101/fastcdr_boundary.cpp
   workflow_dispatch:
 permissions:
   contents: read
@@ -29,10 +30,13 @@ jobs:
             ros:jazzy-ros-base bash -eo pipefail -c '
               export DEBIAN_FRONTEND=noninteractive
               apt-get update -qq
-              apt-get install -y -qq ros-jazzy-test-msgs ros-jazzy-rmw-fastrtps-cpp ros-jazzy-rmw-cyclonedds-cpp
+              apt-get install -y -qq ros-jazzy-test-msgs ros-jazzy-rmw-fastrtps-cpp ros-jazzy-rmw-cyclonedds-cpp g++ libfastcdr-dev
               dpkg-query -W ros-jazzy-rmw-fastrtps-cpp ros-jazzy-rmw-cyclonedds-cpp ros-jazzy-test-msgs ros-jazzy-rclpy > /evidence/ros-package-versions.txt
               source /opt/ros/jazzy/setup.bash
               /usr/bin/python3 /study/probe.py > /evidence/matrix.jsonl 2> /evidence/probe.stderr
+              dpkg-query -W libfastcdr-dev > /evidence/fastcdr-version.txt
+              g++ -std=c++17 -O0 /study/fastcdr_boundary.cpp -o /evidence/fastcdr-boundary -lfastcdr
+              /evidence/fastcdr-boundary > /evidence/fastcdr-boundary.txt
             '
           tail -n 16 evidence/matrix.jsonl
       - name: Upload source-native evidence
