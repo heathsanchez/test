@@ -1,0 +1,39 @@
+name: Cyclone DDS Kilted PR625 plus sequence preflight native control
+on:
+  push:
+    branches:
+      - research/ros-cyclonedds-oom-20261102
+    paths:
+      - .github/workflows/ros-cyclonedds-kilted-sequences-20261102.yml
+      - research/ros-fastrtps-cdr-20261101/kilted_runner.sh
+      - research/ros-fastrtps-cdr-20261101/oom_probe.py
+      - research/ros-fastrtps-cdr-20261101/oom_compare.py
+      - research/ros-fastrtps-cdr-20261101/populated_controls.py
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  kilted-abi-check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Source pin and container image identity
+        run: |
+          mkdir -p evidence
+          printf '%s\n' "$GITHUB_SHA" > evidence/experiment-commit.txt
+          docker pull ros:kilted-ros-base
+          docker inspect --format '{{.Id}}' ros:kilted-ros-base > evidence/container-image-id.txt
+      - name: Compare baseline, PR625, and sequence preflight in native ROS Kilted
+        run: |
+          docker run --rm --memory=1200m --memory-swap=1200m --pids-limit=512 --ulimit core=0 \
+            -v "$PWD/research/ros-fastrtps-cdr-20261101:/study:ro" \
+            -v "$PWD/evidence:/evidence" \
+            ros:kilted-ros-base bash /study/kilted_runner.sh
+          cat evidence/comparison.txt
+      - name: Preserve success, negative results, and failed cases
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cyclone-kilted-sequence-preflight-evidence
+          path: evidence/
