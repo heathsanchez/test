@@ -46,8 +46,24 @@ git -C "$SRC" apply /evidence/pr625.patch
 test "$(git -C "$SRC" diff --numstat -- rmw_cyclonedds_cpp/src/serdes.cpp | awk '{print $1 " " $2}')" = "6 0"
 build_arm patched
 
+# Apply only the independent additional sequence-count preflight, sourced
+# from the dedicated clean Metalogic Labs fork contribution branch.
+NEW_SHA=aa3aba9982264b1c56e484e48e1d3e5f51c88393
+git -C "$SRC" fetch --quiet origin \
+  fix/jazzy-cdr-sequence-length-preflight:refs/heads/length-preflight
+test "$(git -C "$SRC" rev-parse length-preflight)" = "$NEW_SHA"
+git -C "$SRC" show --format= "$NEW_SHA" -- \
+  rmw_cyclonedds_cpp/src/TypeSupport_impl.hpp > /evidence/sequence-preflight.patch
+test -s /evidence/sequence-preflight.patch
+sha256sum /evidence/sequence-preflight.patch > /evidence/sequence-preflight-patch.sha256
+git -C "$SRC" apply --check /evidence/sequence-preflight.patch
+git -C "$SRC" apply /evidence/sequence-preflight.patch
+git -C "$SRC" diff --check
+printf '%s\n' "$NEW_SHA" > /evidence/sequence-preflight-source.txt
+build_arm preflight
+
 ros_library_path="$LD_LIBRARY_PATH"
-for arm in baseline patched; do
+for arm in baseline patched preflight; do
   prefix="/tmp/cyclone-oom-$arm"
   export LD_LIBRARY_PATH="$prefix/lib:$ros_library_path"
   export EXPECTED_LIB_DIR="$prefix/lib"
