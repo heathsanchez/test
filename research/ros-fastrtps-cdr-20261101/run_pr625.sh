@@ -33,11 +33,11 @@ printf "%s\n" "$PR_PARENT" > /evidence/pr625-parent-sha.txt
 build_arm() {
   local arm="$1"
   local prefix="/tmp/cyclone-arm-$arm"
-  colcon build --merge-install --base-paths "$SRC/rmw_cyclonedds_cpp" \
+  colcon --log-base "/tmp/cyclone-logs-$arm" build \
+      --merge-install --base-paths "$SRC/rmw_cyclonedds_cpp" \
       --packages-select rmw_cyclonedds_cpp \
       --build-base "/tmp/cyclone-build-$arm" \
       --install-base "$prefix" \
-      --log-base "/tmp/cyclone-logs-$arm" \
       --event-handlers console_cohesion+ \
       --cmake-args -DBUILD_TESTING=OFF \
       > "/evidence/$arm-build.log" 2>&1
