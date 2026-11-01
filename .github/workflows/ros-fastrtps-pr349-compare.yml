@@ -1,0 +1,38 @@
+name: Fast-CDR PR349 exact-head build and ROS Jazzy backport differential
+on:
+  push:
+    branches:
+      - research/ros-fastrtps-cdr-20261101
+    paths:
+      - .github/workflows/ros-fastrtps-pr349-compare.yml
+      - research/ros-fastrtps-cdr-20261101/run_pr349.sh
+      - research/ros-fastrtps-cdr-20261101/check_pr349.py
+      - research/ros-fastrtps-cdr-20261101/probe.py
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-source-compare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pin experiment source and container
+        run: |
+          mkdir -p evidence
+          printf '%s\n' "$GITHUB_SHA" > evidence/experiment-commit.txt
+          docker pull ros:jazzy-ros-base
+          docker inspect --format '{{.Id}}' ros:jazzy-ros-base > evidence/container-image-id.txt
+      - name: Build exact PR head, source-identical backport, and native ROS matrix
+        run: |
+          docker run --rm --ulimit core=0 \
+            -v "$PWD/research/ros-fastrtps-cdr-20261101:/study:ro" \
+            -v "$PWD/evidence:/evidence" \
+            ros:jazzy-ros-base bash /study/run_pr349.sh
+          cat evidence/comparison.txt
+      - name: Archive all experimental data even if negative
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fastcdr-pr349-ros-jazzy-source-pinned-comparison
+          path: evidence/
