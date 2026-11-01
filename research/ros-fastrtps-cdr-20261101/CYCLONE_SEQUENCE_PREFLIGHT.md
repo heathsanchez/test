@@ -47,3 +47,17 @@ The source file is byte-identical on upstream Humble, Jazzy and Kilted as checke
 - Three-arm reduction test: https://github.com/heathsanchez/test/actions/runs/41343843901
 - Expanded populated-controls and full malformed-input regression: https://github.com/heathsanchez/test/actions/runs/41344170691
 - Next useful action: Propose upstream pre-allocation validation as a separate scoped contribution, include CI artifact and request maintainer guidance on target branch/backports. Do not claim memory OOM was reproduced: the bounds protected the runner, and the observed outcome was a defined error after memory growth.
+
+## Kilted native verification and upstream-ready branch
+
+- Kilted baseline upstream commit: `789417d28d275800ad28fe9bd11dd358406b3cce`.
+- Kilted clean contribution branch: https://github.com/metalogiclabs/rmw_cyclonedds/tree/fix/kilted-cdr-sequence-length-preflight
+- Kilted contribution commit: `b660b4f5896a9090d26a286c6b97941804fa5a7c`.
+- The Kilted patch produces the *same* `TypeSupport_impl.hpp` blob `86e882abb71f31c08e58dcf7365d3707030f4364` as the Jazzy tested patch.
+- Native Kilted CI: https://github.com/heathsanchez/test/actions/runs/41344827278 — SUCCESS.
+- Kilted artifact: https://github.com/heathsanchez/test/actions/runs/41344827278/artifacts/13098503184 — SHA-256 `723af3aab829ae65d327f8360b8bd7f0ac802f08e504f6e12a3df709f2f17a7f`.
+- Three native arms (Kilted baseline, PR625 alone, PR625 + our preflight). All eight default-message controls passed in each arm. All 70 malformed cases returned defined errors in each arm.
+- Kilted bounded WStrings (1,048,576 claim): peak RSS changed **109,768 -> 52,028 KiB**, saving 57,740 KiB.
+- Kilted unbounded WStrings: **109,576 -> 52,340 KiB**, saving 57,236 KiB.
+- PR-ready branch has **one production source file modified, one commit, and no internal collaboration notes or research-only workflows**.
+- Upstream PR creation was attempted but refused by GitHub integration (HTTP 403). No upstream PR was created; external publication and maintainer review remain UNKNOWN.
