@@ -53,6 +53,7 @@ build_arm patched
 # Independently compile the exact upstream PR head (Fast-CDR 2.4.0).
 # Do not inject this ABI into ROS Jazzy: the comparative ROS test must
 # change only the 2.2.8 implementation, not the ABI.
+git -C "$SRC" reset --quiet --hard HEAD
 git -C "$SRC" checkout --quiet --detach "$PR_HEAD"
 git -C "$SRC" rev-parse HEAD > /evidence/pr349-head-source-sha.txt
 build_arm prhead
