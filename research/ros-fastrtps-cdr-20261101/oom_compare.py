@@ -9,13 +9,14 @@ def read(arm):
 
 b=read("baseline")
 p=read("patched")
-assert set(b)==set(p)
+n=read("preflight")
+assert set(b)==set(p)==set(n)
 controls=[k for k in b if k[1]=="control"]
 assert len(controls)==8
 for k in controls:
-    assert b[k]["outcome"]=="accepted" and p[k]["outcome"]=="accepted",(k,b[k],p[k])
+    assert all(arm[k]["outcome"]=="accepted" for arm in (b,p,n)), (k,b[k],p[k],n[k])
 
-for arm,results in (("baseline",b),("patched",p)):
+for arm,results in (("baseline",b),("patched",p),("preflight",n)):
     c=collections.Counter(x["outcome"] for x in results.values())
     print(arm,"OUTCOMES",dict(c))
     for key in sorted(results, key=lambda x:str(x)):
@@ -33,3 +34,22 @@ patched_nonerror=[x for k,x in p.items()
 print("RESIDUAL_NONERROR_COUNT",len(patched_nonerror))
 print("CONTROL_GATE_PASS",len(controls),"/",len(controls))
 print("EPIS_FAILURES_NEED_ANALYSIS: experiment is bounded to available test_msgs layouts and virtual-memory caps.")
+
+# Source preflight must retain rejection of malformed inputs without
+# requiring large allocations for one million missing wide strings.
+for variant in ("wstring_bounded","wstring_unbounded"):
+    key=("WStrings",variant,512,1<<20)
+    old=p[key]
+    new=n[key]
+    assert old["outcome"]=="error" and new["outcome"]=="error",(old,new)
+    oldrss=old.get("maxrss_kib",0)
+    newrss=new.get("maxrss_kib",0)
+    improvement=oldrss-newrss
+    print("WSTRING_ALLOCATION",variant,
+          "before_kib",oldrss,"after_kib",newrss,
+          "saved_kib",improvement)
+    assert improvement>25000, ("no decisive allocation reduction",key,old,new)
+assert all(x["outcome"]=="error" for k,x in n.items() if k[1]!="control"), \
+    "Unexpected non-error on the new sequence preflight arm"
+print("PREFLIGHT_BOUNDARY_PASS: no new process faults; all valid controls "
+      "preserved and wide-string memory amplification reduced.")
