@@ -7,7 +7,7 @@ import sys
 
 TYPES = ["Arrays", "Strings", "BoundedSequences", "UnboundedSequences", "MultiNested", "WStrings", "BasicTypes"]
 RMW = ["rmw_fastrtps_cpp", "rmw_cyclonedds_cpp"]
-CASES = ["valid", "empty", "header_1", "header_2", "header_3", "header_only", "valid_header", "valid_minus_1", "valid_minus_half"]
+CASES = ["valid", "empty", "header_1", "header_2", "header_3", "header_only", "valid_header", "be_zero", "be_one", "be_two", "le_zero", "le_one", "le_two", "invalid_header", "valid_minus_1", "valid_minus_half"]
 
 def child(type_name, case):
     from rclpy.serialization import deserialize_message, serialize_message
@@ -24,6 +24,16 @@ def child(type_name, case):
         data = b"\x00\x00\x00\x01"[:int(case.split("_")[1])]
     elif case == "valid_header":
         data = valid[:4]
+    elif case in ("be_zero", "be_one", "be_two", "le_zero", "le_one", "le_two", "invalid_header"):
+        data = {
+            "be_zero": b"\x00\x00\x00\x00",
+            "be_one": b"\x00\x00\x00\x01",
+            "be_two": b"\x00\x00\x00\x02",
+            "le_zero": b"\x00\x01\x00\x00",
+            "le_one": b"\x00\x01\x00\x01",
+            "le_two": b"\x00\x01\x00\x02",
+            "invalid_header": b"\xff\xff\x00\x00",
+        }[case]
     elif case == "valid_minus_1":
         data = valid[:-1]
     elif case == "valid_minus_half":
@@ -34,10 +44,10 @@ def child(type_name, case):
         value = deserialize_message(data, cls)
     except Exception as exc:
         print(json.dumps({"outcome": "error", "exception": type(exc).__name__,
-                          "length": len(data), "valid_length": len(valid)}))
+                          "length": len(data), "valid_length": len(valid), "native_prefix": valid[:4].hex()}))
     else:
         print(json.dumps({"outcome": "accepted", "returned_type": type(value).__name__,
-                          "length": len(data), "valid_length": len(valid)}))
+                          "length": len(data), "valid_length": len(valid), "native_prefix": valid[:4].hex()}))
 
 def matrix():
     rows = []
