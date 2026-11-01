@@ -1,0 +1,121 @@
+name: Nucleus research - nano-lean hot-definition A/B
+
+on:
+  push:
+    branches: [research/nucleus-nanolean-hot-rules-ab-20261102]
+    paths: [.github/workflows/nucleus-nanolean-hot-rules-ab-20261102.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bounded-external-ab:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.97.1
+      - uses: cachix/install-nix-action@v31
+
+      - name: Build exact nano-lean pre/post hot-definition derivation
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git clone -q https://github.com/sdiehl/nano-lean /tmp/nl-repo
+          git -C /tmp/nl-repo worktree add --detach /tmp/nl-parent 6df34495e43bcc65387cf5360d3d5ff7496fc6ab
+          git -C /tmp/nl-repo worktree add --detach /tmp/nl-hot c251061da8e1e93c56d40d9c7988453c0c36935a
+          for arm in parent hot; do
+            (cd /tmp/nl-$arm && RUSTFLAGS="-C target-cpu=x86-64-v3" cargo build --release --locked --bin nl-fast)
+          done
+          sha256sum /tmp/nl-parent/target/release/nl-fast /tmp/nl-hot/target/release/nl-fast | tee /tmp/nl-binaries.sha256
+          git -C /tmp/nl-parent rev-parse HEAD >/tmp/nl-parent-source.txt
+          git -C /tmp/nl-hot rev-parse HEAD >/tmp/nl-hot-source.txt
+
+      - name: Acquire exact upstream workloads
+        shell: bash
+        timeout-minutes: 60
+        run: |
+          set -euxo pipefail
+          git clone -q https://github.com/leanprover/lean-kernel-arena /tmp/nl-arena
+          git -C /tmp/nl-arena checkout -q 7e8cc90a3bc1ca827f616d038df13592020c6bf0
+          cd /tmp/nl-arena
+          for case in perf/magma-list-pair-n7 perf/magma-list-deep-n21 perf/grind-ring-5 perf/fueled-chain; do
+            nix develop -c ./lka.py build-test "$case"
+            test -s "_build/tests/$case.ndjson"
+          done
+          sha256sum _build/tests/perf/magma-list-pair-n7.ndjson _build/tests/perf/magma-list-deep-n21.ndjson _build/tests/perf/grind-ring-5.ndjson _build/tests/perf/fueled-chain.ndjson tests/other/inductive-undeclared-universe.ndjson > /tmp/nl-inputs.sha256
+
+      - name: Exact-verdict and paired CPU screen
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib, json, pathlib, statistics, subprocess, time
+          root=pathlib.Path('/tmp/nl-arena')
+          files=[root/'_build/tests'/f'{s}.ndjson' for s in [
+              'perf/magma-list-pair-n7','perf/magma-list-deep-n21',
+              'perf/grind-ring-5','perf/fueled-chain']]
+          neg=root/'tests/other/inductive-undeclared-universe.ndjson'
+          binaries={a:pathlib.Path(f'/tmp/nl-{a}/target/release/nl-fast') for a in ['parent','hot']}
+          records=[]
+          def trial(case, arm, expected):
+              output=pathlib.Path('/tmp/nl-time.txt')
+              with case.open('rb') as source:
+                  start=time.monotonic()
+                  try:
+                      result=subprocess.run(['/usr/bin/time','-f','%U %M','-o',str(output),
+                          str(binaries[arm]),'-q','-j','1',str(case)],
+                          stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=180)
+                      rc=result.returncode
+                  except subprocess.TimeoutExpired:
+                      rc=124
+                      result=None
+                  elapsed=time.monotonic()-start
+              time_text=output.read_text().strip() if output.exists() else ''
+              try:
+                  cpu,rss=(float(x) for x in time_text.split()[:2])
+              except (ValueError,TypeError):
+                  cpu=rss=None
+              record={'case':case.name,'arm':arm,'expected_rc':expected,'rc':rc,
+                  'wall_s':elapsed,'user_cpu_s':cpu,'rss_kb':rss,
+                  'sha256':hashlib.sha256(case.read_bytes()).hexdigest(),
+                  'stderr_tail':result.stderr.decode(errors='replace')[-500:] if result else 'TIMEOUT'}
+              records.append(record)
+              print(json.dumps({k:v for k,v in record.items() if k!='stderr_tail'}),flush=True)
+              return rc==expected
+          ok=True
+          for case in files:
+              # Burn in both arms, then compare with ABBA order twice.
+              for arm in ['parent','hot']:
+                  ok=trial(case,arm,0) and ok
+              for arm in ['parent','hot','hot','parent']*2:
+                  ok=trial(case,arm,0) and ok
+          for arm in ['parent','hot']:
+              ok=trial(neg,arm,1) and ok
+          summary={'experimental':'bounded_before_after_no_pgo_no_arena_guest_instructions',
+              'parent_sha':'6df34495e43bcc65387cf5360d3d5ff7496fc6ab',
+              'hot_sha':'c251061da8e1e93c56d40d9c7988453c0c36935a',
+              'arena_sha':'7e8cc90a3bc1ca827f616d038df13592020c6bf0',
+              'correctness_ok':ok,'cases':{}}
+          for case in files:
+              cohort={a:[r['user_cpu_s'] for r in records if r['case']==case.name
+                and r['arm']==a and r['user_cpu_s'] is not None][1:] for a in binaries}
+              summary['cases'][case.name]={'cpu_s_median':{a:statistics.median(v) if v else None for a,v in cohort.items()},
+                  'sample_counts':{a:len(v) for a,v in cohort.items()}}
+          pathlib.Path('/tmp/nl-hot-ab-evidence.json').write_text(json.dumps({'summary':summary,'records':records},indent=2)+'\n')
+          print(json.dumps(summary,indent=2))
+          if not ok: raise SystemExit('verdict mismatch or timeout')
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-nanolean-hot-definition-ab
+          path: |
+            /tmp/nl-parent-source.txt
+            /tmp/nl-hot-source.txt
+            /tmp/nl-binaries.sha256
+            /tmp/nl-inputs.sha256
+            /tmp/nl-hot-ab-evidence.json
+          if-no-files-found: warn
