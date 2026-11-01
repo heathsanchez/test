@@ -1,0 +1,38 @@
+name: Cyclone DDS post-625 bounded allocation residual
+on:
+  push:
+    branches:
+      - research/ros-cyclonedds-oom-20261102
+    paths:
+      - .github/workflows/ros-cyclonedds-oom-20261102.yml
+      - research/ros-fastrtps-cdr-20261101/oom_probe.py
+      - research/ros-fastrtps-cdr-20261101/oom_runner.sh
+      - research/ros-fastrtps-cdr-20261101/oom_compare.py
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  bounded-native-replay:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pin experiment and native ROS image
+        run: |
+          mkdir -p evidence
+          printf '%s\n' "$GITHUB_SHA" > evidence/experiment-commit.txt
+          docker pull ros:jazzy-ros-base
+          docker inspect --format '{{.Id}}' ros:jazzy-ros-base > evidence/container-image-id.txt
+      - name: Native baseline vs patched memory-limited challenge
+        run: |
+          docker run --rm --memory=1200m --memory-swap=1200m --pids-limit=512 --ulimit core=0 \
+            -v "$PWD/research/ros-fastrtps-cdr-20261101:/study:ro" \
+            -v "$PWD/evidence:/evidence" \
+            ros:jazzy-ros-base bash /study/oom_runner.sh
+          tail -n 18 evidence/comparison.txt
+      - name: Preserve evidence, including unknowns or failed controls
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cyclone-cdr-oom-residual-bounded-evidence
+          path: evidence/
