@@ -1672,6 +1672,24 @@ fn compare_values(
                     let mut reduced = None;
                     for (is_left, candidate) in [(false, right), (true, left)] {
                         if available < 128 { break; }
+                        if std::env::var_os("NUCLEUS_EXPERIMENTAL_SKIP_RIGID_RECURSOR_TRIAL").is_some() {
+                            let classifier_budget=available.min(64);
+                            let rigid=checker.qualified_recursor_has_rigid_local_major(
+                                candidate,classifier_budget,
+                            );
+                            available=available.saturating_sub(classifier_budget);
+                            if rigid {
+                                #[cfg(feature="diagnostics")]
+                                if std::env::var_os("NUCLEUS_TRACE_RIGID_MAJOR_SKIP").is_some() {
+                                    use std::sync::atomic::{AtomicUsize,Ordering};
+                                    static LOGGED:AtomicUsize=AtomicUsize::new(0);
+                                    if LOGGED.fetch_add(1,Ordering::Relaxed)<24 {
+                                        eprintln!("NUCLEUS_RIGID_MAJOR_SKIP:head={:?}:remaining={available}:depth={depth}",candidate.head);
+                                    }
+                                }
+                                continue;
+                            }
+                        }
                         let probe = available / 2;
                         available -= probe;
                         if let Judgment::Proven { value, .. } = checker.machine()
