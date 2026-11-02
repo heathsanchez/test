@@ -1,0 +1,40 @@
+name: Nucleus eight argument relevance red test
+on:
+  push:
+    branches: [research/nucleus-getelem-typed-codomain-20261102]
+    paths: [".github/workflows/nucleus-eight-relevance-red.yml"]
+permissions:
+  contents: read
+jobs:
+  red:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 50a34f406df0ad55e7d8900ea274d119157a4573
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Execute exact source red test and all five controls
+        env:
+          NUCLEUS_EXPERIMENTAL_RELEVANCE: "1"
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/relevance-red
+          git show 94f341201995db29632d8ee9b445ab07cc2490f4:metatron-kernel/tests/checked_eight_argument_relevance.rs > metatron-kernel/tests/checked_eight_argument_relevance.rs
+          git rev-parse HEAD > /tmp/relevance-red/source-sha.txt
+          python3 - <<'PY'
+          import subprocess,pathlib,re,json
+          p=subprocess.run(["cargo","test","--release","--locked","--manifest-path","metatron-kernel/Cargo.toml","--test","checked_eight_argument_relevance","--","--nocapture"],capture_output=True)
+          raw=p.stdout+p.stderr
+          pathlib.Path("/tmp/relevance-red/native-red.log").write_bytes(raw)
+          print(raw.decode(errors="replace"),flush=True)
+          failed=re.findall(r"^test (\S+) \.\.\. FAILED$",raw.decode(errors="replace"),re.M)
+          report=dict(rc=p.returncode,failed=failed,expected_missing_capability="eight_argument_applications_preserve_checked_proof_irrelevance")
+          pathlib.Path("/tmp/relevance-red/report.json").write_text(json.dumps(report,indent=2))
+          assert p.returncode!=0 and failed==["eight_argument_applications_preserve_checked_proof_irrelevance"],report
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-eight-relevance-red
+          path: /tmp/relevance-red
