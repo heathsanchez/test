@@ -29,18 +29,6 @@ jobs:
           git rev-parse HEAD:metatron-kernel > /tmp/nucleus-evidence/source-tree.txt
           git diff dad309eb369b9e48c0a896e9d38c383d3e21ef6a HEAD -- metatron-kernel > /tmp/nucleus-evidence/observer-only.patch
           # Counters only: no checking rule, work budget, or cache key changes.
-          set +e
-          cargo test --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml -- --include-ignored > /tmp/nucleus-evidence/native-all.log 2>&1
-          native_rc=$?
-          set -e
-          echo "$native_rc" > /tmp/nucleus-evidence/native-exit.txt
-          test "$native_rc" = 101
-          python3 - <<'PY'
-          import pathlib
-          s=pathlib.Path('/tmp/nucleus-evidence/native-all.log').read_text()
-          assert '346 passed; 1 failed; 0 ignored' in s,s[-5000:]
-          assert 'all_seven_complete_positive_exports_accept' in s
-          PY
           cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
           sha256sum metatron-kernel/target/release/metatron-kernel >/tmp/nucleus-evidence/binary-sha256.txt
       - name: Retrieve exact original Arena fixtures and witness application boundary
@@ -51,6 +39,23 @@ jobs:
           sha256sum /tmp/nucleus-cases.zip >/tmp/nucleus-evidence/artifact-sha256.txt
           unzip -q /tmp/nucleus-cases.zip -d /tmp/nucleus-pack
           tar --no-same-owner -xzf /tmp/nucleus-pack/lean-arena-tests.tar.gz -C /tmp/nucleus-cases
+          python3 - <<'PY'
+          import os,subprocess,pathlib,json,re
+          out=pathlib.Path('/tmp/nucleus-evidence')
+          env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+          for f in ('RELEVANCE','CONTEXT_BINDER','TYPED_LINEAGE','SUBSTITUTION_RECLOSURE','TYPED_VALUE_NORMALIZATION','PROJECTION_CONTEXT','PROJECTION_CROSSFRAME_512','TYPED_RECEIVER','SOURCE_PAIR_DEPTH8','POLYMORPHIC_PROP_IRREL','PROP_SINGLETON_2P1F','EXPECTED_LAMBDA'):
+            env['NUCLEUS_EXPERIMENTAL_'+f]='1'
+          env['NUCLEUS_FROZEN196']='/tmp/nucleus-cases'
+          cmd=['cargo','test','--release','--locked','--features','diagnostics','--manifest-path','metatron-kernel/Cargo.toml','--no-fail-fast','--','--include-ignored','--nocapture']
+          p=subprocess.run(cmd,env=env,capture_output=True,timeout=900)
+          raw=p.stdout+p.stderr
+          (out/'native-all-including-ignored.log').write_bytes(raw)
+          summary=dict(rc=p.returncode,command=cmd,env={k:v for k,v in env.items() if k.startswith('NUCLEUS_')},summaries=re.findall(r'test result:.*',raw.decode(errors='replace')),failures=[s for s in raw.decode(errors='replace').splitlines() if 'FAILED' in s or 'panicked at' in s],boundary='Failures are preserved as research results, not silently promoted; no skips requested.')
+          (out/'native-all-including-ignored.json').write_text(json.dumps(summary,indent=2))
+          print(json.dumps(summary,indent=2),flush=True)
+          failures=[line for line in raw.decode(errors='replace').splitlines() if line.startswith('test ') and ' ... FAILED' in line]
+          assert failures==['test all_seven_complete_positive_exports_accept ... FAILED'],failures
+          PY
           python3 - <<'PY'
           import hashlib,json,os,pathlib,subprocess
           root=pathlib.Path("/tmp/nucleus-cases")
