@@ -1,0 +1,42 @@
+name: G3 V5 retrospective direct B1 on rank11
+on:
+  push:
+    branches: [research/g3-v5-source-generic-20261103]
+    paths:
+      - 'research/g3_v5_cold/direct_rank11.go'
+      - '.github/workflows/g3-v5-b1-r11.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  direct:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: code
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: Code-Hex/go-generics-cache
+          ref: f567a8625646b7c3e8828091d4cfa604056fad71
+          path: source
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.0'
+      - name: Independent simple direct source-native comparator
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C source rev-parse HEAD)" = "f567a8625646b7c3e8828091d4cfa604056fad71"
+          mkdir -p qualification
+          (cd source && go run "$GITHUB_WORKSPACE/code/research/g3_v5_cold/direct_rank11.go") | tee qualification/direct.log
+          grep -q '^DIRECT_TRACE_PASS;source_calls=7;semantic_comparator=TIE$' qualification/direct.log
+          test -z "$(git -C source status --porcelain)"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: g3-v5-rank11-direct-posthoc
+          path: qualification
