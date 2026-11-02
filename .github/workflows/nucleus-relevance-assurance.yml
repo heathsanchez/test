@@ -1,0 +1,100 @@
+name: Nucleus identical-source relevance assurance
+on:
+  push:
+    branches: [research/nucleus-relevance-assurance-20261102]
+    paths: [.github/workflows/nucleus-relevance-assurance.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  relevance:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Pin source and compile once
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/nucleus-assurance
+          test "$(git rev-parse HEAD:metatron-kernel)" = 5e7d65b1b6abc3f6380bc7a37ffb153284d7faf1
+          git rev-parse HEAD > /tmp/nucleus-assurance/workflow-source.txt
+          git rev-parse HEAD:metatron-kernel > /tmp/nucleus-assurance/kernel-tree.txt
+          cargo test --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml --no-run > /tmp/nucleus-assurance/build.log 2>&1
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml >> /tmp/nucleus-assurance/build.log 2>&1
+          sha256sum metatron-kernel/target/release/metatron-kernel > /tmp/nucleus-assurance/binary.sha256
+      - name: Identical-source native OFF ON matrix with explicit failures
+        run: |
+          python3 - <<'PY'
+          import os,json,pathlib,subprocess,time
+          out=pathlib.Path('/tmp/nucleus-assurance')
+          tests=['distinct_proof_arguments_of_same_checked_proposition_are_convertible','mismatched_data_arguments_stay_distinct','an_ill_typed_proposition_argument_does_not_count_as_a_proof']
+          rows=[]
+          for enabled in (False,True):
+            env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+            if enabled:env['NUCLEUS_EXPERIMENTAL_RELEVANCE']='1'
+            for test in tests+['COMPLETE_NATIVE_SUITE']:
+              cmd=['cargo','test','--release','--locked','--features','diagnostics','--manifest-path','metatron-kernel/Cargo.toml']
+              if test!='COMPLETE_NATIVE_SUITE':cmd+=['--test','checked_relevance_signature',test,'--','--exact','--nocapture']
+              t=time.monotonic()
+              p=subprocess.run(cmd,env=env,capture_output=True,timeout=600)
+              name=('on' if enabled else 'off')+'-'+test
+              (out/(name+'.log')).write_bytes(p.stdout+p.stderr)
+              row=dict(relevance=enabled,test=test,rc=p.returncode,wall=time.monotonic()-t)
+              rows.append(row);print(json.dumps(row),flush=True)
+          (out/'native-matrix.json').write_text(json.dumps(rows,indent=2)+'\n')
+          # Test failures are scientific observations, never hidden as a green suite.
+          assert all(r['rc']==0 for r in rows if r['test'] in tests[1:]),'NEGATIVE_CONTROL_FAILURE'
+          PY
+      - name: Original immutable corpus source hashes and complete export OFF ON
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/nucleus-pack /tmp/nucleus-inputs
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/11272848230/zip > /tmp/nucleus-frozen.zip
+          sha256sum /tmp/nucleus-frozen.zip > /tmp/nucleus-assurance/archive.sha256
+          unzip -q /tmp/nucleus-frozen.zip -d /tmp/nucleus-pack
+          tar --no-same-owner -xzf /tmp/nucleus-pack/lean-arena-tests.tar.gz -C /tmp/nucleus-inputs
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib,subprocess,time
+          out=pathlib.Path('/tmp/nucleus-assurance')
+          root=pathlib.Path('/tmp/nucleus-inputs')
+          manifest=pathlib.Path('metatron-kernel/evidence/performance/owned-environment-2026-10-13/nucleus-owned-environment-frozen196.json')
+          expected={r['case']:r for r in json.loads(manifest.read_text())['modes']['origin']['rows']}
+          assert len(expected)==196
+          (out/'manifest.sha256').write_text(hashlib.sha256(manifest.read_bytes()).hexdigest()+'\n')
+          binary=str(pathlib.Path('metatron-kernel/target/release/metatron-kernel').resolve())
+          rows=[]
+          for enabled in (False,True):
+            env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+            for f in ('CONTEXT_BINDER','TYPED_LINEAGE','SUBSTITUTION_RECLOSURE','TYPED_VALUE_NORMALIZATION','PROJECTION_CONTEXT','PROJECTION_CROSSFRAME_512','TYPED_RECEIVER','SOURCE_PAIR_DEPTH8','POLYMORPHIC_PROP_IRREL','PROP_SINGLETON_2P1F','EXPECTED_LAMBDA'):
+              env['NUCLEUS_EXPERIMENTAL_'+f]='1'
+            if enabled:env['NUCLEUS_EXPERIMENTAL_RELEVANCE']='1'
+            for case,baseline in sorted(expected.items()):
+              path=root/case
+              digest=hashlib.sha256(path.read_bytes()).hexdigest()
+              assert digest==baseline['sha256'],case
+              tag=('on-' if enabled else 'off-')+case.replace('/','__')
+              with path.open('rb') as fd:
+                try:
+                  p=subprocess.run(['/usr/bin/time','-v','-o',str(out/(tag+'.time')),binary],stdin=fd,env=env,capture_output=True,timeout=180)
+                  rc=p.returncode
+                  (out/(tag+'.stdout')).write_bytes(p.stdout)
+                  (out/(tag+'.stderr')).write_bytes(p.stderr)
+                except subprocess.TimeoutExpired:rc=124
+              wanted=0 if case.startswith('good/') else 1
+              row=dict(relevance=enabled,case=case,sha256=digest,rc=rc,expected=wanted,baseline_rc=baseline['rc'])
+              rows.append(row);print(json.dumps(row),flush=True)
+              (out/'frozen196-matrix.json').write_text(json.dumps(rows,indent=2)+'\n')
+          wrong=[r for r in rows if r['rc'] in (0,1) and r['rc']!=r['expected']]
+          errors=[r for r in rows if r['rc'] not in (0,1,2)]
+          assert not wrong,wrong
+          assert not errors,errors
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-relevance-assurance-${{ github.sha }}
+          path: /tmp/nucleus-assurance
+          if-no-files-found: error
