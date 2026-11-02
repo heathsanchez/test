@@ -334,6 +334,23 @@ fn check_export_with_policy(
                 value,
                 preferred_for_reduction,
             } => {
+                #[cfg(feature="diagnostics")]
+                if std::env::var_os("NUCLEUS_ASSURANCE_SOURCE_OWNED_PROBE").is_some()
+                    && trace_name(&export,name)=="countermodel"
+                    && matches!(export.exprs.get(ExprId(8835)),Some(Expr::App{fun:ExprId(8805),arg:ExprId(8834)}))
+                {
+                    // Isolated observation in the actual admitted owner's
+                    // environment. No witness, cache, or result is retained below.
+                    let probe=TypeChecker::with_level_substitution(
+                        &export.exprs,&export.levels,&environment,parameter_substitution(&level_params),
+                    ).with_delta_policy(delta_policy);
+                    let actual_type=probe.infer(ExprId(8799),limits.judgment_steps);
+                    let expected_type=probe.infer(ExprId(624),limits.judgment_steps);
+                    let actual=TypeValue::Term(probe.closure(ExprId(8799),EnvFrame::empty()));
+                    let expected=TypeValue::Term(probe.closure(ExprId(624),EnvFrame::empty()));
+                    let relation=probe.convert(&actual,&expected,limits.judgment_steps);
+                    eprintln!("NUCLEUS_ASSURANCE_UNRESOLVED:owner={}:declaration_index={declaration_index}:context_depth=0:actual_type={actual_type:?}:expected_type={expected_type:?}:relation={relation:?}",trace_name(&export,name));
+                }
                 let checker = TypeChecker::with_level_substitution(
                     &export.exprs,
                     &export.levels,
