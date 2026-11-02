@@ -52,6 +52,50 @@ pub fn check_export(export: ResolvedExport, limits: Limits) -> Verdict {
     }
 }
 
+/// Inspect only the source expression and universe DAGs of this signature.
+/// We do not enter a referenced constant's declaration: it owns different
+/// binders. This is a necessary scope condition, never an acceptance rule.
+fn source_signature_has_unbound_universe(
+    export: &ResolvedExport,
+    root: ExprId,
+    declared: &[NameId],
+) -> bool {
+    let mut expressions=vec![root];
+    let mut universes=Vec::new();
+    let mut seen_expressions=HashSet::new();
+    let mut seen_universes=HashSet::new();
+    while let Some(expression)=expressions.pop() {
+        if !seen_expressions.insert(expression) { continue }
+        match export.exprs.get(expression) {
+            Some(Expr::Sort(level)) => universes.push(*level),
+            Some(Expr::Const { levels, .. }) => universes.extend(levels.iter().copied()),
+            Some(Expr::App { fun, arg }) => {
+                expressions.push(*fun); expressions.push(*arg);
+            }
+            Some(Expr::Lam { domain, body } | Expr::Pi { domain, body }) => {
+                expressions.push(*domain); expressions.push(*body);
+            }
+            Some(Expr::Let { ty, value, body }) => {
+                expressions.push(*ty); expressions.push(*value); expressions.push(*body);
+            }
+            Some(Expr::Proj { structure, .. }) => expressions.push(*structure),
+            Some(Expr::BVar(_) | Expr::NatLit(_) | Expr::StrLit(_)) | None => {}
+        }
+    }
+    while let Some(level)=universes.pop() {
+        if !seen_universes.insert(level) { continue }
+        match export.levels.get(level) {
+            Some(Level::Param(name)) if !declared.contains(name) => return true,
+            Some(Level::Succ(inner)) => universes.push(*inner),
+            Some(Level::Max(left,right) | Level::IMax(left,right)) => {
+                universes.push(*left); universes.push(*right);
+            }
+            Some(Level::Zero | Level::Param(_)) | None => {}
+        }
+    }
+    false
+}
+
 fn trace_direct_reject(stage: &str) -> Verdict {
     if std::env::var_os("NUCLEUS_TRACE_DOWNSTREAM").is_some() {
         eprintln!("NUCLEUS_DOWNSTREAM:name=<direct>:stage={stage}:verdict=Reject");
@@ -215,6 +259,19 @@ fn check_export_with_policy(
             if proof_dependent_result_sort_is_definitely_malformed(&export, block))
     }) {
         return trace_direct_reject("preflight-proof-dependent-result-sort");
+    }
+
+    // Universe parameters belong to the individual imported signature.
+    // A later declaration, another mutual member, or a constant mentioned by
+    // the signature cannot supply an undeclared binder to this owner.
+    if export.declarations.iter().any(|declaration| {
+        let Declaration::Inductive(block) = declaration else { return false };
+        block.types.iter().any(|member|
+            source_signature_has_unbound_universe(&export,member.ty,&member.level_params))
+            || block.constructors.iter().any(|member|
+                source_signature_has_unbound_universe(&export,member.ty,&member.level_params))
+    }) {
+        return trace_direct_reject("inductive-signature-unbound-universe");
     }
 
     let mut environment = Environment::empty();
