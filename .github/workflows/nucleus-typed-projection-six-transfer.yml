@@ -1,0 +1,64 @@
+name: Nucleus typed projection six original residual transfer
+on:
+  push:
+    branches: [research/nucleus-typed-projection-spine-20261102]
+    paths: [".github/workflows/nucleus-typed-projection-six-transfer.yml"]
+permissions:
+  contents: read
+jobs:
+  transfer:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 25fb80ff42658ba2e4d21cb4388d092dd9baaa92
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Compile and recover immutable original export corpus
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/transfer/evidence /tmp/transfer/pack /tmp/transfer/inputs
+          git rev-parse HEAD > /tmp/transfer/evidence/source-sha.txt
+          git rev-parse HEAD:metatron-kernel > /tmp/transfer/evidence/kernel-tree.txt
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          sha256sum metatron-kernel/target/release/metatron-kernel > /tmp/transfer/evidence/binary.sha256
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/11272848230/zip > /tmp/transfer/frozen.zip
+          sha256sum /tmp/transfer/frozen.zip > /tmp/transfer/evidence/frozen-archive.sha256
+          unzip -q /tmp/transfer/frozen.zip -d /tmp/transfer/pack
+          tar --no-same-owner -xzf /tmp/transfer/pack/lean-arena-tests.tar.gz -C /tmp/transfer/inputs
+      - name: Identical-binary six-case first-owner and resource comparison
+        run: |
+          python3 - <<'PY'
+          import pathlib,json,os,hashlib,subprocess,re
+          out=pathlib.Path("/tmp/transfer/evidence")
+          old=json.loads(pathlib.Path("metatron-kernel/evidence/performance/owned-environment-2026-10-13/nucleus-owned-environment-frozen196.json").read_text())["modes"]["origin"]["rows"]
+          selected=[r for r in old if r["rc"]==2]
+          assert len(selected)==6,selected
+          flags=("RELEVANCE","CONTEXT_BINDER","TYPED_LINEAGE","SUBSTITUTION_RECLOSURE","TYPED_VALUE_NORMALIZATION","PROJECTION_CONTEXT","PROJECTION_CROSSFRAME_512","TYPED_RECEIVER","SOURCE_PAIR_DEPTH8","POLYMORPHIC_PROP_IRREL","PROP_SINGLETON_2P1F","EXPECTED_LAMBDA","FORMED_PROP_DOMAIN_RETRY","TYPED_DATA_CONGRUENCE")
+          env={k:v for k,v in os.environ.items()if not k.startswith("NUCLEUS_")}|{"NUCLEUS_EXPERIMENTAL_"+f:"1"for f in flags}|{"NUCLEUS_TRACE_DOWNSTREAM":"1"}
+          results=[]
+          for row in selected:
+           path=pathlib.Path("/tmp/transfer/inputs")/row["case"]
+           digest=hashlib.sha256(path.read_bytes()).hexdigest();assert digest==row["sha256"]
+           for on in (False,True):
+            active=env.copy()
+            if on:active["NUCLEUS_EXPERIMENTAL_TYPED_PROJECTION_SPINE"]="1"
+            tag=row["case"].replace("/","__")+"-"+("on"if on else"off")
+            with path.open("rb")as fd:
+             p=subprocess.run(["/usr/bin/time","-f","wall=%e user=%U system=%S rss_kb=%M","-o",str(out/(tag+".time")),"metatron-kernel/target/release/metatron-kernel"],stdin=fd,env=active,capture_output=True,timeout=300)
+            (out/(tag+".stderr")).write_bytes(p.stderr)
+            owners=[l for l in p.stderr.decode(errors="replace").splitlines()if l.startswith("NUCLEUS_DOWNSTREAM:")]
+            r=dict(case=row["case"],sha256=digest,typed_projection=on,rc=p.returncode,first_owner=owners[0]if owners else None,metrics=(out/(tag+".time")).read_text())
+            results.append(r);print(json.dumps(r),flush=True)
+            (out/"verdicts.json").write_text(json.dumps(results,indent=2))
+            assert p.returncode in(0,2),r
+          assert len(results)==12
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-six-original-typed-projection-transfer
+          path: /tmp/transfer/evidence
+          if-no-files-found: error
