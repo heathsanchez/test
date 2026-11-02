@@ -277,6 +277,38 @@ fn check_export_with_policy(
                 value,
                 preferred_for_reduction,
             } => {
+                #[cfg(feature = "diagnostics")]
+                if std::env::var_os("NUCLEUS_ASSURANCE_SOURCE_OWNED_PROBE").is_some()
+                    && trace_name(&export, name) == "countermodel"
+                    && matches!(export.exprs.get(ExprId(8835)), Some(Expr::App { fun: ExprId(8805), arg: ExprId(8834) }))
+                {
+                    // Observation only. Every call starts with a fresh checker
+                    // over the actual progressively checked environment and this
+                    // source declaration's universe parameters. Never reuse its
+                    // caches, ledgers, judgments or synthetic certificates below.
+                    for id in [8750, 8751, 8752, 8753, 8804, 8805, 8833, 8834, 8835] {
+                        let probe = TypeChecker::with_level_substitution(
+                            &export.exprs, &export.levels, &environment,
+                            parameter_substitution(&level_params),
+                        ).with_delta_policy(delta_policy);
+                        let inferred = probe.infer(ExprId(id), limits.judgment_steps);
+                        eprintln!("NUCLEUS_ASSURANCE_SOURCE:owner={}:declaration_index={declaration_index}:context_depth=0:expr={id}:syntax={:?}:inferred={inferred:?}",trace_name(&export,name),export.exprs.get(ExprId(id)));
+                    }
+                    for (label, actual, expected) in [
+                        ("original-argument-at-NotQ", 8834, 8752),
+                        ("proposition-is-not-a-proof", 8751, 8752),
+                        ("unrelated-proof", 8804, 8752),
+                        ("function-is-not-a-proof", 8805, 8752),
+                    ] {
+                        let probe = TypeChecker::with_level_substitution(
+                            &export.exprs, &export.levels, &environment,
+                            parameter_substitution(&level_params),
+                        ).with_delta_policy(delta_policy);
+                        let expected = TypeValue::Term(probe.closure(ExprId(expected),EnvFrame::empty()));
+                        let judgment=probe.check_formed(ExprId(actual),&expected,limits.judgment_steps);
+                        eprintln!("NUCLEUS_ASSURANCE_CHECK:label={label}:actual={actual}:expected={expected:?}:judgment={judgment:?}");
+                    }
+                }
                 let checker = TypeChecker::with_level_substitution(
                     &export.exprs,
                     &export.levels,
