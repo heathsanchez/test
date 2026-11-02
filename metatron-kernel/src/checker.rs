@@ -294,7 +294,7 @@ fn check_export_with_policy(
                         let inferred = probe.infer(ExprId(id), limits.judgment_steps);
                         eprintln!("NUCLEUS_ASSURANCE_SOURCE:owner={}:declaration_index={declaration_index}:context_depth=0:expr={id}:syntax={:?}:inferred={inferred:?}",trace_name(&export,name),export.exprs.get(ExprId(id)));
                     }
-                    for replay_budget in [4096usize,16384,65536,262144] {
+                    for replay_budget in [1048576usize,4194304,16777216] {
                         let probe = TypeChecker::with_level_substitution(
                             &export.exprs,&export.levels,&environment,parameter_substitution(&level_params),
                         ).with_delta_policy(delta_policy);
