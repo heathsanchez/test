@@ -294,6 +294,17 @@ fn check_export_with_policy(
                         let inferred = probe.infer(ExprId(id), limits.judgment_steps);
                         eprintln!("NUCLEUS_ASSURANCE_SOURCE:owner={}:declaration_index={declaration_index}:context_depth=0:expr={id}:syntax={:?}:inferred={inferred:?}",trace_name(&export,name),export.exprs.get(ExprId(id)));
                     }
+                    for replay_budget in [4096usize,16384,65536,262144] {
+                        let probe = TypeChecker::with_level_substitution(
+                            &export.exprs,&export.levels,&environment,parameter_substitution(&level_params),
+                        ).with_delta_policy(delta_policy);
+                        let initial=probe.machine().expose(probe.closure(ExprId(8799),EnvFrame::empty()),Transparency::Full,limits.judgment_steps);
+                        if let Some(Value::Neutral(neutral))=initial.proven_value() {
+                            let start=std::time::Instant::now();
+                            let replay=probe.machine().qualified_nested_recursor_result(neutral,replay_budget);
+                            eprintln!("NUCLEUS_ASSURANCE_LOCAL_BUDGET:budget={replay_budget}:wall_us={}:result={replay:?}",start.elapsed().as_micros());
+                        }
+                    }
                     for transparency in [Transparency::Reducible,Transparency::Full] {
                         let probe = TypeChecker::with_level_substitution(
                             &export.exprs,&export.levels,&environment,parameter_substitution(&level_params),
