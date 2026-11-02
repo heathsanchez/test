@@ -1,0 +1,30 @@
+name: Nucleus quotient source ownership red
+on:
+  push:
+    branches: [research/nucleus-quotient-source-ownership-20261102]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  red:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Preserve source-owned quotient rejection RED
+        run: |
+          mkdir -p /tmp/quotient-red
+          git rev-parse HEAD > /tmp/quotient-red/source-sha.txt
+          set +e
+          cargo test --test quotient_source_ownership --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml -- --nocapture > /tmp/quotient-red/red.log 2>&1
+          rc=$?
+          set -e
+          echo "$rc" > /tmp/quotient-red/exit.txt
+          cat /tmp/quotient-red/red.log
+          test "$rc" = 101
+          python3 -c "import pathlib; s=pathlib.Path('/tmp/quotient-red/red.log').read_text(); assert '0 passed; 2 failed; 0 ignored' in s and 'Unknown' in s"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-quotient-ownership-red-${{ github.sha }}
+          path: /tmp/quotient-red
