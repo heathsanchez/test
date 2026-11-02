@@ -1,0 +1,64 @@
+name: Nucleus preserve exact qualified current208 input corpus
+on:
+  push:
+    branches: [research/nucleus-typed-projection-spine-20261102]
+    paths: [".github/workflows/nucleus-preserve-current208.yml"]
+permissions:
+  contents: read
+jobs:
+  inputs:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 25fb80ff42658ba2e4d21cb4388d092dd9baaa92
+      - uses: cachix/install-nix-action@v31
+      - name: Restore pinned official corpus and qualified exact input manifest
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/input-pack/official /tmp/input-pack/qualified /tmp/input-pack/out/inputs
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/13084137079/zip > /tmp/input-pack/official.zip
+          printf '%s  %s\n' c4c4a4c7a8692274f7b0c1be1246672677e8868e38c33d1de29561d984c2dfff /tmp/input-pack/official.zip | sha256sum -c -
+          unzip -q /tmp/input-pack/official.zip -d /tmp/input-pack/official
+          tar --no-same-owner -xzf /tmp/input-pack/official/lean-arena-tests.tar.gz -C /tmp/input-pack/official
+          gh api repos/heathsanchez/test/actions/artifacts/13125382382/zip > /tmp/input-pack/qualified.zip
+          printf '%s  %s\n' aec67c5f314f5da10ee8e54c2f2eabb1e5c055a20bcc8de7a3d39809cc17b3c4 /tmp/input-pack/qualified.zip | sha256sum -c -
+          unzip -q /tmp/input-pack/qualified.zip -d /tmp/input-pack/qualified
+      - name: Build only two portable cases absent from official CI tarball
+        run: |
+          set -euo pipefail
+          git clone -q https://github.com/leanprover/lean-kernel-arena /tmp/input-pack/arena
+          git -C /tmp/input-pack/arena checkout -q d7f74a9e67459e2c251d608f524dc5efc6dc223c
+          cd /tmp/input-pack/arena
+          nix develop -c ./lka.py build-test '*magma-string*' > /tmp/input-pack/out/two-case-build.log 2>&1
+      - name: Bind every export to prior qualified hashes and preserve raw bytes
+        run: |
+          python3 - <<'PY'
+          import pathlib,json,hashlib,shutil
+          root=pathlib.Path("/tmp/input-pack");out=root/"out"
+          expected=json.loads((root/"qualified/mandatory-verdicts.json").read_text())
+          generated={}
+          for stats in (root/"arena/_build/tests").rglob("*.stats.json"):
+           r=json.loads(stats.read_text());generated[r["name"]]=stats.with_name(stats.name.replace(".stats.json",".ndjson"))
+          rows=[];rebuilt=[]
+          for r in expected:
+           rel=("good/"if r["expected"]==0 else"bad/")+r["case"]+".ndjson"
+           p=root/"official"/rel
+           if not p.exists():p=generated[r["case"]];rebuilt.append(r["case"])
+           digest=hashlib.sha256(p.read_bytes()).hexdigest();assert digest==r["sha256"],(r["case"],digest,r["sha256"])
+           dest=out/"inputs"/rel;dest.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(p,dest)
+           rows.append(dict(case=r["case"],expected=r["expected"],sha256=digest,relative_path=rel))
+          assert len(rows)==208 and set(rebuilt)=={"perf/magma-string-n4","perf/magma-string-pair-n9"},rebuilt
+          (out/"inputs-manifest.json").write_text(json.dumps(rows,indent=2))
+          (out/"provenance.json").write_text(json.dumps(dict(arena_sha="d7f74a9e67459e2c251d608f524dc5efc6dc223c",qualified_source="25fb80ff42658ba2e4d21cb4388d092dd9baaa92",qualified_run=41409367767,official_run=41308279557,official_artifact=13084137079,restored=206,rebuilt=rebuilt,changed_hashes=0),indent=2))
+          print("208 exact qualified input hashes matched; all raw exports retained",flush=True)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-exact-current208-d7f74a9
+          path: /tmp/input-pack/out
+          if-no-files-found: error
