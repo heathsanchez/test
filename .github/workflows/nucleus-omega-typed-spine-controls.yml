@@ -1,0 +1,108 @@
+name: Nucleus Omega typed application controls with official Lean authority
+on:
+  push:
+    branches: [research/nucleus-omega-typed-spine-20261102]
+    paths: [".github/workflows/nucleus-omega-typed-spine-controls.yml"]
+permissions:
+  contents: read
+jobs:
+  reference:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 4198b5edabaec0e18c29bb4a8b896c789a123ffb
+      - name: Recover immutable source control artifact
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/reference/input /tmp/reference/evidence
+          gh api repos/heathsanchez/test/actions/artifacts/13117977692/zip > /tmp/reference/input.zip
+          printf '%s  %s\n' 4db9db78908aa22a1d193050f44d3eebe1d4549f80f6a08d0ab8edf4c9b026ea /tmp/reference/input.zip | sha256sum -c -
+          unzip -q /tmp/reference/input.zip -d /tmp/reference/input
+      - name: Build pinned official Lean verifier
+        run: |
+          set -euo pipefail
+          curl -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -o /tmp/elan-init.sh
+          sh /tmp/elan-init.sh -y --default-toolchain leanprover/lean4:v4.34.1
+          git init -q /tmp/reference/arena
+          git -C /tmp/reference/arena remote add origin https://github.com/leanprover/lean-kernel-arena
+          git -C /tmp/reference/arena fetch -q --depth=1 origin cd2dd0244b9ed5e704463a26fbbe5fc67ba16108
+          git -C /tmp/reference/arena checkout -q --detach FETCH_HEAD
+          (cd /tmp/reference/arena/checkers/official && "$HOME/.elan/bin/lake" build)
+          "$HOME/.elan/bin/lean" --version > /tmp/reference/evidence/lean-version.txt
+          sha256sum /tmp/reference/arena/checkers/official/.lake/build/bin/kernel > /tmp/reference/evidence/verifier.sha256
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Compile exact candidate and build source-local mutations
+        run: |
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          git rev-parse HEAD > /tmp/reference/evidence/candidate-sha.txt
+          git rev-parse HEAD:metatron-kernel > /tmp/reference/evidence/kernel-tree.txt
+          python3 - <<'PY'
+          import pathlib,json,hashlib,copy
+          raw=pathlib.Path("/tmp/reference/input/getelem/evidence/grind-original.ndjson").read_bytes()
+          assert hashlib.sha256(raw).hexdigest()=="e9c394e0ff311fd10f60dee2433a530f16e82354c32d6588a8775baa06fd221f"
+          names={0:""};rows=[]
+          for line in raw.splitlines():
+           r=json.loads(line);rows.append(r)
+           if"in"in r:
+            v=r.get("str")or r.get("num");names[r["in"]]=names[v["pre"]]+("."if v["pre"]else"")+str(v.get("str",v.get("i")))
+           if"thm"in r and names.get(r["thm"]["name"])=="Lean.Omega.IntList.dot_set_left":break
+          out=pathlib.Path("/tmp/reference/evidence/inputs");out.mkdir()
+          (out/"original-full.ndjson").write_bytes(raw)
+          def save(label,rs): (out/(label+".ndjson")).write_text("\\n".join(json.dumps(r,separators=(",",":"))for r in rs)+"\\n")
+          save("original-omega",rows)
+          expr={r["ie"]:r for r in rows if"ie"in r};base=max(expr)+1
+          one_level=next(r["il"]for r in rows if r.get("succ")==0)
+          nat=next(i for i,r in expr.items()if names.get(r.get("const",{}).get("name"))=="Nat")
+          add=next(i for i,n in names.items()if n=="HAdd.hAdd")
+          for label in ("original-clone","wrong-data","ill-typed-argument","wrong-universe","wrong-owner","wrong-carrier","forged-proof","unrelated-proposition"):
+           changed=copy.deepcopy(rows);es={r["ie"]:r for r in changed if"ie"in r}
+           if label in ("original-clone","wrong-universe","wrong-owner","wrong-carrier"):
+            originals=[5628,16661,16662,16663,16667,69566];mapping={old:base+i for i,old in enumerate(originals)};clones=[]
+            for old in originals:
+             c=copy.deepcopy(es[old]);c["ie"]=mapping[old]
+             if"app"in c:c["app"]["fn"]=mapping.get(c["app"]["fn"],c["app"]["fn"])
+             clones.append(c)
+            if label=="wrong-universe":clones[0]["const"]["us"][0]=one_level
+            if label=="wrong-owner":clones[0]["const"]["name"]=add
+            if label=="wrong-carrier":clones[1]["app"]["arg"]=nat
+            es[69568]["app"]["fn"]=mapping[69566]
+            at=next(i for i,r in enumerate(changed)if r.get("ie")==69568);changed[at:at]=clones
+           if label=="wrong-data":es[69568]["app"]["arg"]=3091
+           if label=="ill-typed-argument":es[69568]["app"]["arg"]=2137
+           if label=="forged-proof":changed[-1]["thm"]["value"]=2137
+           if label=="unrelated-proposition":changed[-1]["thm"]["type"]=9728
+           save(label,changed)
+          PY
+      - name: Official authority and identical-candidate OFF ON controls
+        run: |
+          python3 - <<'PY'
+          import pathlib,json,subprocess,hashlib,os
+          out=pathlib.Path("/tmp/reference/evidence");rows=[]
+          official="/tmp/reference/arena/checkers/official/.lake/build/bin/kernel"
+          candidate="metatron-kernel/target/release/metatron-kernel"
+          flags=("RELEVANCE","CONTEXT_BINDER","TYPED_LINEAGE","SUBSTITUTION_RECLOSURE","TYPED_VALUE_NORMALIZATION","PROJECTION_CONTEXT","PROJECTION_CROSSFRAME_512","TYPED_RECEIVER","SOURCE_PAIR_DEPTH8","POLYMORPHIC_PROP_IRREL","PROP_SINGLETON_2P1F","EXPECTED_LAMBDA","FORMED_PROP_DOMAIN_RETRY")
+          env={k:v for k,v in os.environ.items()if not k.startswith("NUCLEUS_")}|{"NUCLEUS_EXPERIMENTAL_"+f:"1"for f in flags}
+          for path in sorted((out/"inputs").glob("*.ndjson")):
+           wanted=0 if path.name.startswith("original-")else 1
+           for label in ("official","candidate-off","candidate-on"):
+            active=env.copy()
+            if label=="candidate-on":active["NUCLEUS_EXPERIMENTAL_TYPED_DATA_CONGRUENCE"]="1"
+            cmd=[official,str(path)]if label=="official"else[candidate]
+            p=subprocess.run(cmd,input=None if label=="official"else path.read_bytes(),capture_output=True,env=active,timeout=300)
+            (out/(path.stem+"-"+label+".stderr")).write_bytes(p.stderr)
+            r=dict(case=path.name,verifier=label,sha256=hashlib.sha256(path.read_bytes()).hexdigest(),expected=wanted,rc=p.returncode);rows.append(r);print(json.dumps(r),flush=True)
+            (out/"verdicts.json").write_text(json.dumps(rows,indent=2))
+          assert len(rows)==30
+          assert all(r["rc"]==r["expected"]for r in rows if r["verifier"]=="official"),rows
+          assert all(r["rc"]in(1,2)for r in rows if r["expected"]==1 and r["verifier"]!="official"),rows
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-omega-source-controls-official-and-candidate
+          path: /tmp/reference/evidence
+          if-no-files-found: error
