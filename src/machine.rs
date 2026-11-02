@@ -115,6 +115,7 @@ impl<T> std::hash::Hash for ImmutableMapWitness<T> {
 struct CompletedReplayKey {
     authority:AuthorityId,
     demand_major:bool,
+    replay_projection_major:bool,
     rules:ImmutableMapWitness<HashMap<NameId,RecursorReduction>>,
     definitions:ImmutableMapWitness<HashMap<NameId,DefinitionBody>>,
     projections:ImmutableMapWitness<HashMap<NameId,ProjectionSpec>>,
@@ -277,6 +278,7 @@ impl Drop for ExposureFuelScope<'_> {
 pub struct Machine<'a> {
     authority: AuthorityId,
     demand_major: bool,
+    replay_projection_major: bool,
     exposure_fuel: Cell<Option<usize>>,
     exposure_depth: Cell<usize>,
     #[cfg(test)]
@@ -305,6 +307,7 @@ impl<'a> Machine<'a> {
         Self {
             authority,
             demand_major: std::env::var_os("NUCLEUS_EXPERIMENTAL_DEMAND_MAJOR").is_some(),
+            replay_projection_major: std::env::var_os("NUCLEUS_EXPERIMENTAL_REPLAY_PROJECTION_MAJOR").is_some(),
             exposure_fuel: Cell::new(None),
             exposure_depth: Cell::new(0),
             #[cfg(test)]
@@ -852,7 +855,7 @@ impl<'a> Machine<'a> {
         if !self.reserve_replay_key(levels,spine,certificate) {return None;}
         #[cfg(test)]
         self.replay_key_builds.set(self.replay_key_builds.get()+1);
-        let exact=CompletedReplayKey{authority:self.authority,demand_major:self.demand_major,
+        let exact=CompletedReplayKey{authority:self.authority,demand_major:self.demand_major,replay_projection_major:self.replay_projection_major,
             rules:ImmutableMapWitness(self.recursor_reductions.clone()),
             definitions:ImmutableMapWitness(self.definitions.clone()),projections:ImmutableMapWitness(self.projection_specs.clone()),
             singletons:ImmutableMapWitness(self.singleton_recursor_reductions.clone()),nullary:ImmutableMapWitness(self.nullary_minor_reductions.clone()),
@@ -2212,7 +2215,7 @@ impl<'a> Machine<'a> {
             if neutral.spine.len() < required {
                 return Judgment::unknown("nested-recursor-iota-arity");
             }
-            let major_value=if let Some(value)=established_major.take() { value } else {
+            let mut major_value=if let Some(value)=established_major.take() { value } else {
                 let Some(candidate)=self.completed_replay_key(*name,levels,&neutral.spine) else {return Judgment::unknown("nested-replay-key-work");};
                 let mut key=candidate;
                 if let Some(bucket)=entered.get(&key.digest) {
@@ -2241,8 +2244,13 @@ impl<'a> Machine<'a> {
                 if !active.insert(identity) {return Judgment::unknown("nested-recursor-iota-cycle");}
                 entered.entry(key.digest).or_default().push(key.clone());
                 parents.push(Continuation::Finish(key));
-                let major_result=self.expose(neutral.spine[required-1].clone(),
-                    Transparency::Full,self.exposure_fuel.get().unwrap_or(0).min(512));
+                let major_result=if self.replay_projection_major {
+                    self.expose_for_conversion(neutral.spine[required-1].clone(),
+                        Transparency::Full,self.exposure_fuel.get().unwrap_or(0).min(512))
+                } else {
+                    self.expose(neutral.spine[required-1].clone(),
+                        Transparency::Full,self.exposure_fuel.get().unwrap_or(0).min(512))
+                };
                 let Some(value)=major_result.proven_value() else {
                     #[cfg(feature="diagnostics")]
                     if std::env::var_os("NUCLEUS_TRACE_NESTED_RECURSOR_IOTA_FAILURE").is_some() {
@@ -2259,6 +2267,37 @@ impl<'a> Machine<'a> {
                 }
                 value.clone()
             };
+            if self.replay_projection_major {
+                // Preserve the actual source projection while demanding a
+                // constructor. Select only a registered field of the actual
+                // source constructor; no desired result chooses a rule.
+                // Recursive exposures and replays share this work owner's fuel.
+                for _ in 0..16 {
+                    if !spend(){return Judgment::unknown("projection-major-replay-budget");}
+                    let next=match &major_value {
+                        Value::StuckProjection{type_name,index,structure,spine}=>{
+                            self.projection_value_for_conversion(
+                                structure.clone(),*type_name,*index,spine,
+                                self.exposure_fuel.get().unwrap_or(0),
+                            )
+                        }
+                        Value::Neutral(nested) if matches!(&nested.head,
+                            NeutralHead::Const{name,..}if self.recursor_reductions.contains_key(name))=>{
+                            parents.push(Continuation::Major(current.clone(),current_is_requested));
+                            current=nested.clone();current_is_requested=false;
+                            continue 'evaluate;
+                        }
+                        _=>break,
+                    };
+                    let Some(value)=next.proven_value()else {
+                        return Judgment::unknown("projection-major-source-field-unavailable");
+                    };
+                    if value==&major_value {
+                        return Judgment::unknown("projection-major-source-nonprogress");
+                    }
+                    major_value=value.clone();
+                }
+            }
             let (constructor, constructor_levels, constructor_args) = match major_value {
                 Value::Neutral(Neutral { head: NeutralHead::Const { name, levels }, spine }) => (name,levels,spine),
                 Value::NatLit(number) => {
