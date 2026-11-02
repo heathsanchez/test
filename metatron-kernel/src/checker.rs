@@ -294,8 +294,25 @@ fn check_export_with_policy(
                         let inferred = probe.infer(ExprId(id), limits.judgment_steps);
                         eprintln!("NUCLEUS_ASSURANCE_SOURCE:owner={}:declaration_index={declaration_index}:context_depth=0:expr={id}:syntax={:?}:inferred={inferred:?}",trace_name(&export,name),export.exprs.get(ExprId(id)));
                     }
+                    for transparency in [Transparency::Reducible,Transparency::Full] {
+                        let probe = TypeChecker::with_level_substitution(
+                            &export.exprs,&export.levels,&environment,parameter_substitution(&level_params),
+                        ).with_delta_policy(delta_policy);
+                        let exposed=probe.machine().expose(probe.closure(ExprId(8799),EnvFrame::empty()),transparency,limits.judgment_steps);
+                        eprintln!("NUCLEUS_ASSURANCE_DECIDE_EXPOSE:transparency={transparency:?}:result={exposed:?}");
+                    }
+                    {
+                        let probe = TypeChecker::with_level_substitution(
+                            &export.exprs,&export.levels,&environment,parameter_substitution(&level_params),
+                        ).with_delta_policy(delta_policy);
+                        let actual=TypeValue::Term(probe.closure(ExprId(8799),EnvFrame::empty()));
+                        let expected=TypeValue::Term(probe.closure(ExprId(624),EnvFrame::empty()));
+                        let relation=probe.convert(&actual,&expected,limits.judgment_steps);
+                        eprintln!("NUCLEUS_ASSURANCE_DECIDE_CONVERSION:result={relation:?}");
+                    }
                     for (label, actual, expected) in [
                         ("original-argument-at-NotQ", 8834, 8752),
+                        ("boolean-reflexivity-at-decide-equality", 1477, 8801),
                         ("proposition-is-not-a-proof", 8751, 8752),
                         ("unrelated-proof", 8804, 8752),
                         ("function-is-not-a-proof", 8805, 8752),
