@@ -1,0 +1,139 @@
+name: Nucleus existing constructor demand identical binary causal replay
+on:
+  push:
+    branches: [research/nucleus-constructor-demand-20261102]
+    paths: [".github/workflows/nucleus-constructor-demand-causal.yml"]
+permissions:
+  contents: read
+jobs:
+  causal:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 25fb80ff42658ba2e4d21cb4388d092dd9baaa92
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Bind candidate and restore original inputs and exact qualified baseline binary
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/causal/evidence /tmp/causal/restored
+          git rev-parse HEAD > /tmp/causal/evidence/candidate-sha.txt
+          git rev-parse HEAD:metatron-kernel > /tmp/causal/evidence/candidate-kernel-tree.txt
+          git diff 50a34f406df0ad55e7d8900ea274d119157a4573 HEAD -- metatron-kernel > /tmp/causal/evidence/candidate.patch
+          gh api repos/heathsanchez/test/actions/artifacts/13117977692/zip > /tmp/causal/base.zip
+          printf '%s  %s\n' 4db9db78908aa22a1d193050f44d3eebe1d4549f80f6a08d0ab8edf4c9b026ea /tmp/causal/base.zip | sha256sum -c -
+          unzip -q /tmp/causal/base.zip -d /tmp/causal/restored
+          cp /tmp/causal/restored/nucleus-plain /tmp/causal/baseline
+          chmod +x /tmp/causal/baseline
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/causal/candidate
+          cp /tmp/causal/candidate /tmp/causal/baseline
+          sha256sum /tmp/causal/{baseline,candidate} > /tmp/causal/evidence/binaries.sha256
+          rustc -Vv > /tmp/causal/evidence/rustc.txt
+      - name: Exact source prefix and full Grind with owner index universe and proof controls
+        run: |
+          python3 - <<'PY'
+          import pathlib,json,subprocess,os,hashlib,copy
+          out=pathlib.Path("/tmp/causal/evidence");out.mkdir(parents=True,exist_ok=True)
+          raw=pathlib.Path("/tmp/causal/restored/getelem/evidence/grind-original.ndjson").read_bytes()
+          assert hashlib.sha256(raw).hexdigest()=="e9c394e0ff311fd10f60dee2433a530f16e82354c32d6588a8775baa06fd221f"
+          lines=raw.splitlines(keepends=True);names={0:""}
+          for i,line in enumerate(lines):
+           r=json.loads(line)
+           if "in" in r:
+            v=r.get("str")or r.get("num");names[r["in"]]=names[v["pre"]]+("."if v["pre"]else"")+str(v.get("str",v.get("i")))
+           if "thm"in r and names.get(r["thm"]["name"])=="List.getElem?_eq_getElem":cut=i+1;break
+          prefix=b"".join(lines[:cut]);(out/"original-prefix.ndjson").write_bytes(prefix)
+          (out/"original-full.ndjson").write_bytes(raw)
+          flags=("RELEVANCE","CONTEXT_BINDER","TYPED_LINEAGE","SUBSTITUTION_RECLOSURE","TYPED_VALUE_NORMALIZATION","PROJECTION_CONTEXT","PROJECTION_CROSSFRAME_512","TYPED_RECEIVER","SOURCE_PAIR_DEPTH8","POLYMORPHIC_PROP_IRREL","PROP_SINGLETON_2P1F","EXPECTED_LAMBDA","FORMED_PROP_DOMAIN_RETRY","TYPED_DATA_CONGRUENCE","TYPED_PROJECTION_SPINE","DEMAND_MAJOR")
+          env={k:v for k,v in os.environ.items() if not k.startswith("NUCLEUS_")}|{"NUCLEUS_EXPERIMENTAL_"+f:"1" for f in flags}
+          reports=[]
+          allnames={0:""}
+          for i,line in enumerate(lines):
+           row=json.loads(line)
+           if "in" in row:
+            v=row.get("str")or row.get("num");allnames[row["in"]]=allnames[v["pre"]]+("."if v["pre"]else"")+str(v.get("str",v.get("i")))
+           if "thm"in row and allnames.get(row["thm"]["name"])=="Lean.Omega.IntList.dot_set_left":omega_cut=i+1;break
+          omega_prefix=b"".join(lines[:omega_cut]);(out/"omega-prefix.ndjson").write_bytes(omega_prefix)
+          fullnames={0:""}
+          for i,line in enumerate(lines):
+           row=json.loads(line)
+           if "in"in row:
+            v=row.get("str")or row.get("num");fullnames[row["in"]]=fullnames[v["pre"]]+("."if v["pre"]else"")+str(v.get("str",v.get("i")))
+           if "thm"in row and fullnames.get(row["thm"]["name"])=="Lean.Omega.LinearCombo.add_eval":linear_cut=i+1;break
+          linear_prefix=b"".join(lines[:linear_cut]);(out/"linear-prefix.ndjson").write_bytes(linear_prefix)
+          ringnames={0:""}
+          for i,line in enumerate(lines):
+           row=json.loads(line)
+           if "in"in row:
+            v=row.get("str")or row.get("num");ringnames[row["in"]]=ringnames[v["pre"]]+("."if v["pre"]else"")+str(v.get("str",v.get("i")))
+           if "thm"in row and ringnames.get(row["thm"]["name"])=="_private.Init.Grind.Ring.Basic.0.Lean.Grind.Ring.intCast_add._proof_1_3":ring_cut=i+1;break
+          ring_prefix=b"".join(lines[:ring_cut]);(out/"ring-prefix.ndjson").write_bytes(ring_prefix)
+          for name,data in (("ring-prefix",ring_prefix),("whole",raw)):
+           for label,binary in (("baseline","/tmp/causal/baseline"),("candidate","/tmp/causal/candidate")):
+            tag=name+"-"+label
+            active=env|{"NUCLEUS_TRACE_DOWNSTREAM":"1","NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE":"1","NUCLEUS_TRACE_FORMED_PROP_DOMAIN_RETRY":"1"}
+            if label=="baseline":active.pop("NUCLEUS_EXPERIMENTAL_DEMAND_MAJOR",None)
+            active["NUCLEUS_TRACE_TYPED_PROJECTION_SPINE"]="1"
+            p=subprocess.run(["/usr/bin/time","-f","wall=%e user=%U system=%S rss_kb=%M","-o",str(out/(tag+".time")),binary],input=data,env=active,capture_output=True,timeout=240)
+            (out/(tag+".stderr")).write_bytes(p.stderr)
+            row=dict(case=name,verifier=label,rc=p.returncode,input_sha256=hashlib.sha256(data).hexdigest(),env={k:v for k,v in active.items()if k.startswith("NUCLEUS_")})
+            reports.append(row);print(json.dumps(row),flush=True)
+            print(p.stderr.decode(errors="replace")[-5000:],flush=True)
+            assert p.returncode in (0,2)
+          (out/"verdicts.json").write_text(json.dumps(reports,indent=2))
+          rows=[json.loads(l)for l in prefix.splitlines()]
+          expr={r["ie"]:r for r in rows if "ie"in r}
+          const_names={i:names.get(r["const"]["name"])for i,r in expr.items()if "const"in r}
+          zero=next(i for i,n in const_names.items()if n=="Nat.zero")
+          def mutate(label):
+           changed=copy.deepcopy(rows);e={r["ie"]:r for r in changed if "ie"in r}
+           if label=="wrong-receiver":e[68295]["app"]["arg"]=68175
+           if label=="wrong-index":e[68292]["app"]["arg"]=zero
+           if label=="ill-typed-argument":e[68293]["app"]["arg"]=3371
+           if label=="unrelated-proposition":e[68308]["lam"]["type"]=0
+           if label=="forged-proof":e[68308]["lam"]["body"]=3371
+           if label=="wrong-universe":
+            head=68293
+            while "app"in e[head]:head=e[head]["app"]["fn"]
+            assert const_names[head]=="GetElem.getElem";assert e[head]["const"]["us"][0]!=0
+            e[head]["const"]["us"][0]=0
+           if label=="wrong-owner":
+            # Retain a valid source projection syntax but change its registered family.
+            declarations=[r["def"]for r in changed if"def"in r and names.get(r["def"]["name"])=="GetElem.getElem"]
+            todo=[declarations[0]["value"]];seen=set()
+            while todo:
+             i=todo.pop()
+             if i in seen:continue
+             seen.add(i);r=e[i]
+             if "proj"in r:
+              proj=r["proj"];print("OWNER_CONTROL_ORIGINAL",json.dumps(proj),flush=True)
+              key="typeName"if"typeName"in proj else"type"
+              assert key in proj,proj
+              proj[key]=next(k for k,v in names.items()if v=="GetElem?")
+              break
+             for field in ("lam","forallE"):
+              if field in r:todo.append(r[field]["body"])
+            else:raise AssertionError("no source projection")
+           return ("\n".join(json.dumps(r,separators=(",",":"))for r in changed)+"\n").encode()
+          controls=[]
+          for label in ("wrong-receiver","wrong-index","ill-typed-argument","unrelated-proposition","forged-proof","wrong-universe","wrong-owner"):
+           data=mutate(label);(out/(label+".ndjson")).write_bytes(data)
+           p=subprocess.run(["/tmp/causal/candidate"],input=data,env=env,capture_output=True,timeout=240)
+           (out/(label+".stderr")).write_bytes(p.stderr)
+           r=dict(control=label,rc=p.returncode,sha256=hashlib.sha256(data).hexdigest())
+           controls.append(r);print(json.dumps(r),flush=True)
+           assert p.returncode in (1,2),r
+          (out/"control-verdicts.json").write_text(json.dumps(controls,indent=2))
+          
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-constructor-demand-causal
+          path: /tmp/causal/evidence
+          if-no-files-found: error
