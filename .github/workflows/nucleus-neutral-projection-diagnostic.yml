@@ -72,7 +72,12 @@ jobs:
           assert v.count(marker)==1
           v=v.replace(marker,"                    if *name==NameId(512) && constructor==NameId(593){\n                        DIAGNOSTIC_BEQ_ARGUMENTS.with(|x|{let mut x=x.borrow_mut();if x.len()<8{x.extend(constructor_args.iter().cloned());}});\n                    }\n"+marker)
           m.write_text(v)
-          s=p.read_text().replace("self.machine().qualified_nested_recursor_result(&n,cap)","self.machine().diagnostic_projection_major_result(&n,cap)");p.write_text(s)
+          s=p.read_text().replace("self.machine().qualified_nested_recursor_result(&n,cap)","self.machine().diagnostic_projection_major_result(&n,cap)")
+          marker="                                                            eprintln!(\"NUCLEUS_RING_QUALIFIED_REPLAY:side={side}:cap={cap}:one={one:?}:completed={full:?}\");"
+          assert s.count(marker)==1
+          s=s.replace(marker,marker+"\n                                                            for (slot,arg) in crate::machine::diagnostic_take_beq_arguments().into_iter().enumerate(){\n                                                                let mut f=8192;\n                                                                let ty=self.infer_exact_closure_in_context(&arg,context,&mut f,0);\n                                                                for b in [8192,32768]{\n                                                                    let v=self.machine().expose_for_conversion(arg.clone(),Transparency::Full,b);\n                                                                    let replay=if let Some(Value::Neutral(n))=v.proven_value(){Some(self.machine().diagnostic_projection_major_result(n,b))}else{None};\n                                                                    eprintln!(\"NUCLEUS_TYPED_BEQ_OPERAND:side={side}:cap={cap}:slot={slot}:budget={b}:source={arg:?}:type={ty:?}:value={v:?}:replay={replay:?}\");\n                                                                }\n                                                            }\n")
+          assert 'diagnostic_take_beq_arguments().into_iter()' in s
+          p.write_text(s)
           PY
           git diff -- metatron-kernel/src > /tmp/omega/evidence/diagnostic.patch
           cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
