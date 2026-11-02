@@ -1,0 +1,130 @@
+name: Nucleus exact captured alias observer
+concurrency:
+  group: nucleus-exact-alias-observer
+  cancel-in-progress: true
+on:
+  push:
+    branches: [research/nucleus-exact-alias-observer-20261102]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-obligation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Verify immutable independent checker and build
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/nucleus-evidence /tmp/nucleus-cases /tmp/nucleus-pack
+          test "$(git diff --name-only dad309eb369b9e48c0a896e9d38c383d3e21ef6a HEAD -- metatron-kernel | tr '\n' ' ')" = "metatron-kernel/src/checker.rs metatron-kernel/src/machine.rs "
+          git rev-parse HEAD > /tmp/nucleus-evidence/commit.txt
+          git rev-parse HEAD:metatron-kernel > /tmp/nucleus-evidence/source-tree.txt
+          git diff dad309eb369b9e48c0a896e9d38c383d3e21ef6a HEAD -- metatron-kernel > /tmp/nucleus-evidence/observer-only.patch
+          # Counters only: no checking rule, work budget, or cache key changes.
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          sha256sum metatron-kernel/target/release/metatron-kernel >/tmp/nucleus-evidence/binary-sha256.txt
+      - name: Retrieve exact original Arena fixtures and witness application boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/11272848230/zip >/tmp/nucleus-cases.zip
+          sha256sum /tmp/nucleus-cases.zip >/tmp/nucleus-evidence/artifact-sha256.txt
+          unzip -q /tmp/nucleus-cases.zip -d /tmp/nucleus-pack
+          tar --no-same-owner -xzf /tmp/nucleus-pack/lean-arena-tests.tar.gz -C /tmp/nucleus-cases
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib,subprocess
+          root=pathlib.Path("/tmp/nucleus-cases")
+          out=pathlib.Path("/tmp/nucleus-evidence")
+          manifest=pathlib.Path("metatron-kernel/evidence/performance/owned-environment-2026-10-13/nucleus-owned-environment-frozen196.json")
+          rows={r["case"]:r for r in json.loads(manifest.read_text())["modes"]["origin"]["rows"]}
+          env={k:v for k,v in os.environ.items() if not k.startswith("NUCLEUS_")}
+          for f in ("RELEVANCE","CONTEXT_BINDER","TYPED_LINEAGE","SUBSTITUTION_RECLOSURE","TYPED_VALUE_NORMALIZATION","PROJECTION_CONTEXT","PROJECTION_CROSSFRAME_512","TYPED_RECEIVER","SOURCE_PAIR_DEPTH8","POLYMORPHIC_PROP_IRREL","PROP_SINGLETON_2P1F","EXPECTED_LAMBDA"):
+              env["NUCLEUS_EXPERIMENTAL_"+f]="1"
+          env["NUCLEUS_ASSURANCE_SOURCE_OWNED_PROBE"]="1"
+          env["NUCLEUS_ASSURANCE_REPLAY_PROFILE"]="1"
+          env["NUCLEUS_ASSURANCE_ALIAS_PROFILE"]="1"
+          for f in ():
+              env["NUCLEUS_TRACE_"+f]="1"
+          binary=str(pathlib.Path("metatron-kernel/target/release/metatron-kernel").resolve())
+          reports=[]
+          for case in ("good/init-prelude.ndjson","good/perf/magma-list-pair-n7.ndjson"):
+              path=root/case
+              digest=hashlib.sha256(path.read_bytes()).hexdigest()
+              assert digest==rows[case]["sha256"],("SOURCE_SHA_MISMATCH",case)
+              with path.open("rb") as fd:
+                  p=subprocess.run([binary],stdin=fd,stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=180,env=env)
+              assert p.returncode==rows[case]["rc"],("VERDICT_REGRESSION",case,p.returncode)
+              raw=p.stderr.decode(errors="replace")
+              markers=("NUCLEUS_ASSURANCE_ALIAS:","NUCLEUS_ASSURANCE_PROFILE:","NUCLEUS_APPLICATION_FUNCTION_TYPE:","NUCLEUS_FIRST_TYPED_CONTINUATION:","NUCLEUS_DOWNSTREAM:","NUCLEUS_APP_DOMAIN_OBLIGATION:","NUCLEUS_ASSURANCE_SOURCE:","NUCLEUS_ASSURANCE_CHECK:","NUCLEUS_ASSURANCE_FORMATION:","NUCLEUS_ASSURANCE_DECIDE_EXPOSE:","NUCLEUS_ASSURANCE_DECIDE_CONVERSION:","NUCLEUS_ASSURANCE_DECIDE_MAJOR:","NUCLEUS_ASSURANCE_DECIDE_MAJOR_CHAIN:","NUCLEUS_ASSURANCE_DECIDE_CHECKED_REPLAY:","NUCLEUS_ASSURANCE_LOCAL_BUDGET:")
+              events=[line for line in raw.splitlines() if line.startswith(markers)]
+              counts={mark:sum(line.startswith(mark) for line in events) for mark in markers}
+              # Never infer the causal first missing rule from a truncated terminal trace.
+              report=dict(case=case,sha256=digest,verdict=p.returncode,expected=rows[case]["rc"],stderr_bytes=len(p.stderr),counts=counts,first_events=events[:15],last_events=events[-25:],diagnostic_status="OBSERVATION_ONLY_UNPROVED_CAUSE")
+              for line in events:
+                  if line.startswith(("NUCLEUS_ASSURANCE_ALIAS:","NUCLEUS_ASSURANCE_PROFILE:","NUCLEUS_ASSURANCE_SOURCE:","NUCLEUS_ASSURANCE_CHECK:","NUCLEUS_ASSURANCE_FORMATION:","NUCLEUS_ASSURANCE_DECIDE_EXPOSE:","NUCLEUS_ASSURANCE_DECIDE_CONVERSION:","NUCLEUS_ASSURANCE_DECIDE_MAJOR:","NUCLEUS_ASSURANCE_DECIDE_MAJOR_CHAIN:","NUCLEUS_ASSURANCE_DECIDE_CHECKED_REPLAY:","NUCLEUS_ASSURANCE_LOCAL_BUDGET:")):print(line,flush=True)
+              (out/(case.replace("/","__")+".stderr")).write_bytes(p.stderr)
+              reports.append(report)
+              print("SOURCE_TYPED_REPLAY="+json.dumps({k:report[k] for k in ("case","sha256","verdict","counts","diagnostic_status")}),flush=True)
+              if case.endswith("magma-list-pair-n7.ndjson"):
+                  assert counts["NUCLEUS_ASSURANCE_PROFILE:"]==3, "MISSING_PROFILE_TRACE"
+          for name in ("protected-false-index.ndjson","protected-eta-ctor-alias.ndjson"):
+              path=pathlib.Path("metatron-kernel/tests/fixtures")/name
+              with path.open("rb") as fd:
+                  p=subprocess.run([binary],stdin=fd,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=40,env=env)
+              assert p.returncode in (1,2),("UNSAFE_ACCEPT",name,p.returncode)
+          report=dict(qualified_base_sha="dad309eb369b9e48c0a896e9d38c383d3e21ef6a",observed_kernel_tree=(out/"source-tree.txt").read_text().strip(),manifest_sha256=hashlib.sha256(manifest.read_bytes()).hexdigest(),cases=reports,all_verdicts_preserved=True,semantic_rule_added=False,proof_of_missing_rule=False,native_suite="no semantic change; base profile full native evidence in 41383277606; compile plus exact controls here")
+          (out/"magma-application-source-obligations.json").write_text(json.dumps(report,indent=2)+"\n")
+          PY
+      - name: Exact-source application mutations and raw records
+        run: |
+          python3 - <<'PY'
+          import json,pathlib,subprocess,hashlib,os
+          source=pathlib.Path('/tmp/nucleus-cases/good/perf/magma-list-pair-n7.ndjson')
+          out=pathlib.Path('/tmp/nucleus-evidence')
+          original=[json.loads(s) for s in source.read_text().splitlines()]
+          expr={r['ie']:r for r in original if 'ie' in r}
+          (out/'original-application-records.json').write_text(json.dumps({k:expr[k] for k in (8750,8751,8752,8753,8804,8805,8833,8834,8835)},indent=2))
+          env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+          for f in ('RELEVANCE','CONTEXT_BINDER','TYPED_LINEAGE','SUBSTITUTION_RECLOSURE','TYPED_VALUE_NORMALIZATION','PROJECTION_CONTEXT','PROJECTION_CROSSFRAME_512','TYPED_RECEIVER','SOURCE_PAIR_DEPTH8','POLYMORPHIC_PROP_IRREL','PROP_SINGLETON_2P1F','EXPECTED_LAMBDA'):
+            env['NUCLEUS_EXPERIMENTAL_'+f]='1'
+          env['NUCLEUS_TRACE_DOWNSTREAM']='1'
+          def change(label):
+            rows=json.loads(json.dumps(original));e={r['ie']:r for r in rows if 'ie' in r}
+            if label=='wrong-owner':e[8835]['app']['fn']=8753
+            if label=='wrong-index':e[8833].clear();e[8833].update(ie=8833,bvar=999)
+            if label=='wrong-universe':e[8750]['app']['fn']=e[8750]['app']['fn'] # replace exact And.intro constant below
+            if label=='ill-typed-argument':e[8835]['app']['arg']=8751
+            if label=='unrelated-proposition':e[8834]['lam']['type']=8752
+            if label=='forged-proof':e[8834]['lam']['body']=8751
+            if label=='wrong-universe':
+              cursor=8750
+              while 'app' in e[cursor]:cursor=e[cursor]['app']['fn']
+              assert 'const' in e[cursor]
+              e[cursor]['const']['us']=[0]
+            return rows
+          results=[]
+          for label in ('wrong-owner','wrong-index','wrong-universe','ill-typed-argument','unrelated-proposition','forged-proof'):
+            rows=change(label)
+            data=('\n'.join(json.dumps(r,separators=(',',':')) for r in rows)+'\n').encode()
+            (out/(label+'.ndjson')).write_bytes(data)
+            p=subprocess.run(['metatron-kernel/target/release/metatron-kernel'],input=data,env=env,capture_output=True,timeout=180)
+            (out/(label+'.stderr')).write_bytes(p.stderr)
+            row=dict(control=label,rc=p.returncode,sha256=hashlib.sha256(data).hexdigest(),boundary='whole export non-ACCEPT only; UNKNOWN is not a strict refutation')
+            results.append(row);print(json.dumps(row),flush=True)
+          (out/'source-mutation-controls.json').write_text(json.dumps(results,indent=2))
+          assert all(r['rc'] in (1,2) for r in results),'UNSAFE_ACCEPT_OR_EXECUTION_ERROR'
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-exact-alias-observer-${{ github.sha }}
+          path: /tmp/nucleus-evidence
+          if-no-files-found: warn
