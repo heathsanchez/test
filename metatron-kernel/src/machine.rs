@@ -1,3 +1,17 @@
+#[cfg(feature="diagnostics")]
+thread_local! {
+    static ASSURANCE_ALIAS: std::cell::RefCell<(HashSet<CompletedReplayKey>,HashSet<CompletedReplayKey>,[usize;6])>
+        = std::cell::RefCell::new((HashSet::new(),HashSet::new(),[0;6]));
+}
+#[cfg(feature="diagnostics")]
+pub fn assurance_alias_reset() {
+    ASSURANCE_ALIAS.with(|cell|*cell.borrow_mut()=(HashSet::new(),HashSet::new(),[0;6]));
+}
+#[cfg(feature="diagnostics")]
+pub fn assurance_alias_snapshot() -> [usize;6] {
+    ASSURANCE_ALIAS.with(|cell|cell.borrow().2)
+}
+
 // Observation-only counters. No counter participates in checking or cache authority.
 #[cfg(feature="diagnostics")]
 static ASSURANCE_PROFILE: [std::sync::atomic::AtomicUsize; 14] =
@@ -883,6 +897,29 @@ impl<'a> Machine<'a> {
             nested:ImmutableMapWitness(self.closed_nested_minor_reductions.clone()),certificate:certificate.clone(),
             name,levels:levels.to_vec(),spine:spine.to_vec(),nat:self.nat_primitives.clone(),
             bools:self.bool_primitives.clone(),quot:self.quot_primitives.as_ref().map(|q|(q.type_name,q.mk,q.lift,q.ind))};
+        #[cfg(feature="diagnostics")]
+        if std::env::var_os("NUCLEUS_ASSURANCE_ALIAS_PROFILE").is_some() {
+            // Shadow diagnostic keys never enter a checking cache. Dereference
+            // only real captured BVar->Closure aliases, retaining the capture's
+            // own universe map. Do not normalize lambdas or discard frames.
+            let mut shadow=exact.clone();
+            let mut steps=0; let mut exhausted=0;
+            for closure in &mut shadow.spine {
+                for hop in 0..64 {
+                    let Some(Expr::BVar(index))=self.expressions.get(closure.expr) else {break;};
+                    let Some(EnvBinding::Closure(captured))=closure.env.lookup_binding_ref(*index) else {break;};
+                    *closure=captured.clone(); steps+=1;
+                    if hop==63 {exhausted+=1;}
+                }
+            }
+            ASSURANCE_ALIAS.with(|cell| {
+                let mut state=cell.borrow_mut();
+                state.2[0]+=1;
+                if state.0.len()<32768 && state.0.insert(exact.clone()) {state.2[1]+=1;}
+                if state.1.len()<32768 && state.1.insert(shadow) {state.2[2]+=1;} else {state.2[3]+=1;}
+                state.2[4]+=steps;state.2[5]+=exhausted;
+            });
+        }
         use std::hash::{Hash,Hasher};
         let mut hash=std::collections::hash_map::DefaultHasher::new();
         exact.hash(&mut hash);
