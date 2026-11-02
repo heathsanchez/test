@@ -55,15 +55,17 @@ jobs:
           original=[json.loads(s) for s in fixture.decode().splitlines()]
           variants={'official-original':fixture}
           changed=json.loads(json.dumps(original));i=next(i for i,r in enumerate(changed) if 'quot' in r);q=changed.pop(i);changed.insert(i+2,q)
-          variants['ordinary-definitions-before-induction']=('\\n'.join(json.dumps(r,ensure_ascii=False,sort_keys=True,separators=(',',':')) for r in changed)+'\\n').encode()
+          variants['ordinary-definitions-before-induction']=('\n'.join(json.dumps(r,ensure_ascii=False,sort_keys=True,separators=(',',':')) for r in changed)+'\n').encode()
           changed=json.loads(json.dumps(original))
           next(r['quot'] for r in changed if 'quot' in r)['kind']='lift'
-          variants['wrong-primitive-role']=('\\n'.join(json.dumps(r,ensure_ascii=False,sort_keys=True,separators=(',',':')) for r in changed)+'\\n').encode()
+          variants['wrong-primitive-role']=('\n'.join(json.dumps(r,ensure_ascii=False,sort_keys=True,separators=(',',':')) for r in changed)+'\n').encode()
           changed=json.loads(json.dumps(original))
           next(r['str'] for r in changed if r.get('in')==31)['str']='NotQuot'
-          variants['wrong-primitive-owner']=('\\n'.join(json.dumps(r,ensure_ascii=False,sort_keys=True,separators=(',',':')) for r in changed)+'\\n').encode()
+          variants['wrong-primitive-owner']=('\n'.join(json.dumps(r,ensure_ascii=False,sort_keys=True,separators=(',',':')) for r in changed)+'\n').encode()
           quotient_rows=[]
           for name,data in variants.items():
+              parsed=[json.loads(line) for line in data.decode().splitlines()]
+              assert len(parsed)==len(original),('MALFORMED_CONTROL_INPUT',name)
               path=out/(name+'.ndjson');path.write_bytes(data)
               p=subprocess.run(['/usr/bin/time','-f','wall=%e user=%U system=%S rss_kb=%M','-o',str(out/(name+'.time')),'metatron-kernel/target/debug/metatron-kernel'],input=data,env=base,capture_output=True,timeout=60)
               (out/(name+'.stdout')).write_bytes(p.stdout);(out/(name+'.stderr')).write_bytes(p.stderr)
