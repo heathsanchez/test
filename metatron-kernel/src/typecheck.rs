@@ -3341,7 +3341,7 @@ impl<'a> TypeChecker<'a> {
     ) -> bool {
         if std::env::var_os("NUCLEUS_EXPERIMENTAL_RELEVANCE").is_none()
             || depth != context.len() || budget < 512
-            || left.spine.is_empty() || left.spine.len() > 6
+            || left.spine.is_empty() || left.spine.len() > 8
             || left.spine.len() != right.spine.len()
         {
             return false;
