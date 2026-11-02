@@ -49,6 +49,27 @@ jobs:
           cmd=['cargo','test','--locked','--features','diagnostics','--manifest-path','metatron-kernel/Cargo.toml','--test','quotient_source_ownership','--','--nocapture']
           p=subprocess.run(cmd,env=base,capture_output=True,timeout=600);(out/'default-quotient-controls.log').write_bytes(p.stdout+p.stderr)
           assert p.returncode==0,(p.stdout+p.stderr).decode()[-3000:]
+          build=subprocess.run(['cargo','build','--locked','--features','diagnostics','--manifest-path','metatron-kernel/Cargo.toml'],env=base,capture_output=True,timeout=600)
+          (out/'default-cli-build.log').write_bytes(build.stdout+build.stderr);assert build.returncode==0
+          fixture=pathlib.Path('metatron-kernel/tests/fixtures/arena-forged-quot-ind-d7f74a9.ndjson').read_bytes()
+          original=[json.loads(s) for s in fixture.decode().splitlines()]
+          variants={'official-original':fixture}
+          changed=json.loads(json.dumps(original));i=next(i for i,r in enumerate(changed) if 'quot' in r);q=changed.pop(i);changed.insert(i+2,q)
+          variants['ordinary-definitions-before-induction']=('\\n'.join(json.dumps(r,ensure_ascii=False,sort_keys=True,separators=(',',':')) for r in changed)+'\\n').encode()
+          changed=json.loads(json.dumps(original))
+          next(r['quot'] for r in changed if 'quot' in r)['kind']='lift'
+          variants['wrong-primitive-role']=('\\n'.join(json.dumps(r,ensure_ascii=False,sort_keys=True,separators=(',',':')) for r in changed)+'\\n').encode()
+          changed=json.loads(json.dumps(original))
+          next(r['str'] for r in changed if r.get('in')==31)['str']='NotQuot'
+          variants['wrong-primitive-owner']=('\\n'.join(json.dumps(r,ensure_ascii=False,sort_keys=True,separators=(',',':')) for r in changed)+'\\n').encode()
+          quotient_rows=[]
+          for name,data in variants.items():
+              path=out/(name+'.ndjson');path.write_bytes(data)
+              p=subprocess.run(['/usr/bin/time','-f','wall=%e user=%U system=%S rss_kb=%M','-o',str(out/(name+'.time')),'metatron-kernel/target/debug/metatron-kernel'],input=data,env=base,capture_output=True,timeout=60)
+              (out/(name+'.stdout')).write_bytes(p.stdout);(out/(name+'.stderr')).write_bytes(p.stderr)
+              row=dict(control=name,sha256=hashlib.sha256(data).hexdigest(),rc=p.returncode,expected_rc=1,resource=(out/(name+'.time')).read_text())
+              quotient_rows.append(row);print(json.dumps(row),flush=True);assert p.returncode==1,row
+          (out/'quotient-primitive-cli-controls.json').write_text(json.dumps(quotient_rows,indent=2))
           (out/'identical-source-controls.json').write_text(json.dumps(dict(source_sha=source,kernel_tree=tree,relevance=rows,default_quotient_control_rc=p.returncode),indent=2))
           PY
       - uses: actions/upload-artifact@v4
