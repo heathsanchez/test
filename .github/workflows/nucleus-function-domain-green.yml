@@ -1,0 +1,43 @@
+name: Nucleus function domain regression RED
+on:
+  push:
+    branches: [research/nucleus-function-domain-retry-20261103]
+    paths: [".github/workflows/nucleus-function-domain-green.yml"]
+permissions:
+  contents: read
+jobs:
+  red:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 6a9a91b685ebcf9f50a27a4d529330a02722786d
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Execute real source typing regression before implementation
+        run: |
+          mkdir -p /tmp/function-domain-green
+          git rev-parse HEAD > /tmp/function-domain-green/source-sha.txt
+          git rev-parse HEAD:metatron-kernel > /tmp/function-domain-green/kernel-tree.txt
+          python3 - <<'PY'
+          import subprocess,pathlib,json,os
+          out=pathlib.Path("/tmp/function-domain-green")
+          env={k:v for k,v in os.environ.items()if not k.startswith("NUCLEUS_")}
+          cmd=["cargo","test","--release","--locked","--features","diagnostics","--manifest-path","metatron-kernel/Cargo.toml","--lib","checked_function_argument_through_long_source_aliases_preserves_separators","--","--include-ignored","--nocapture"]
+          rows=[]
+          for on in [False,True]:
+           active=env.copy()
+           if on:active["NUCLEUS_EXPERIMENTAL_FUNCTION_DOMAIN_RETRY"]="1"
+           p=subprocess.run(cmd,env=active,capture_output=True,timeout=600)
+           log=p.stdout+p.stderr;tag="on"if on else"off";(out/(tag+".log")).write_bytes(log)
+           row={"enabled":on,"rc":p.returncode,"command":cmd};rows.append(row)
+           print(log.decode(errors="replace"),flush=True)
+           if on:assert p.returncode==0 and b"1 passed; 0 failed; 0 ignored"in log
+           else:assert p.returncode==101 and b"0 passed; 1 failed; 0 ignored"in log and b"source-typed identity over aliases must check"in log
+          (out/"verdicts.json").write_text(json.dumps(rows,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-function-domain-green
+          path: /tmp/function-domain-green
