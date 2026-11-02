@@ -351,6 +351,18 @@ fn convert_in_context_with_congruence(
                     let probe_budget = remaining;
                     let opaque_left = machine.expose(left.clone(), Transparency::Opaque, probe_budget);
                     let opaque_right = machine.expose(right.clone(), Transparency::Opaque, probe_budget);
+                    // Try source-typed dependent congruence before delta erases
+                    // the checked constant telescope behind a projection.
+                    // Both sides' argument typing, proposition formation and
+                    // every data conversion remain independent premises.
+                    if let (Some(Value::Neutral(lhs)), Some(Value::Neutral(rhs))) =
+                        (opaque_left.proven_value(), opaque_right.proven_value())
+                        && checker.certified_relevance_spine_congruence(
+                            lhs, rhs, context, probe_budget, depth,
+                        )
+                    {
+                        continue;
+                    }
                     if let (Some(Value::Neutral(lhs)), Some(Value::Neutral(rhs))) =
                         (opaque_left.proven_value(), opaque_right.proven_value())
                         && let (
