@@ -1342,6 +1342,12 @@ fn compare_values(
                     }
                     return Judgment::proven((), "certified-projection-congruence");
                 }
+                if checker.certified_applied_projection_congruence(
+                    *left_type,*left_index,left_structure,right_structure,
+                    left_spine,right_spine,context,current_budget,depth,
+                ) {
+                    return Judgment::proven((),"source-typed-projection-application-congruence");
+                }
                 // Experimental: preserve the actual checked lexical context
                 // for projection receiver/spine congruence. The context-free
                 // fast path remains the production baseline. The new path is
