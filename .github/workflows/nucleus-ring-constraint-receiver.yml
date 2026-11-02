@@ -53,46 +53,15 @@ jobs:
           v=v.replace("            if self.replay_projection_major {","            #[cfg(feature=\"diagnostics\")]\n            if _diagnostic_trace {eprintln!(\"NUCLEUS_F_MAJOR_INITIAL:head={name:?}:major={major_value:?}:fuel={:?}\",self.exposure_fuel.get());}\n            if self.replay_projection_major {")
           v=v.replace("                    let Some(value)=next.proven_value()else {","                    #[cfg(feature=\"diagnostics\")]\n                    if _diagnostic_trace {eprintln!(\"NUCLEUS_F_MAJOR_FIELD:head={name:?}:result={next:?}:fuel={:?}\",self.exposure_fuel.get());}\n                    let Some(value)=next.proven_value()else {")
           v=v.replace("            let (constructor, constructor_levels, constructor_args) = match major_value {","            #[cfg(feature=\"diagnostics\")]\n            if _diagnostic_trace {eprintln!(\"NUCLEUS_F_MAJOR_FINAL:head={name:?}:major={major_value:?}:fuel={:?}\",self.exposure_fuel.get());}\n            let (constructor, constructor_levels, constructor_args) = match major_value {")
-          v=v.replace("use std::cell::{Cell, RefCell};",'''use std::cell::{Cell, RefCell};
-#[cfg(feature="diagnostics")]
-thread_local! { static DIAGNOSTIC_CONSTRAINT_RECEIVERS: RefCell<Vec<Closure>> = const { RefCell::new(Vec::new()) }; }
-#[cfg(feature="diagnostics")]
-pub(crate) fn diagnostic_take_constraint_receivers()->Vec<Closure>{
-    DIAGNOSTIC_CONSTRAINT_RECEIVERS.with(|xs|std::mem::take(&mut *xs.borrow_mut()))
-}
-''')
-          needle='''        let field = self.projection_field_for_conversion(structure.clone(), type_name, index, budget);'''
+          v=v.replace("use std::cell::{Cell, RefCell};","use std::cell::{Cell, RefCell};\n#[cfg(feature=\"diagnostics\")]\nthread_local! { static DIAGNOSTIC_CONSTRAINT_RECEIVERS: RefCell<Vec<Closure>> = const { RefCell::new(Vec::new()) }; }\n#[cfg(feature=\"diagnostics\")]\npub(crate) fn diagnostic_take_constraint_receivers()->Vec<Closure>{\n    DIAGNOSTIC_CONSTRAINT_RECEIVERS.with(|xs|std::mem::take(&mut *xs.borrow_mut()))\n}\n")
+          needle="        let field = self.projection_field_for_conversion(structure.clone(), type_name, index, budget);"
           assert v.count(needle)==1
-          v=v.replace(needle,'''        #[cfg(feature="diagnostics")]
-        if type_name==NameId(4100) && index==0 && std::env::var_os("NUCLEUS_TRACE_OMEGA_SOURCE_PAIR").is_some(){
-            DIAGNOSTIC_CONSTRAINT_RECEIVERS.with(|xs|{let mut xs=xs.borrow_mut();if xs.len()<16{xs.push(structure.clone());}});
-        }
-'''+needle)
+          v=v.replace(needle,"        #[cfg(feature=\"diagnostics\")]\n        if type_name==NameId(4100) && index==0 && std::env::var_os(\"NUCLEUS_TRACE_OMEGA_SOURCE_PAIR\").is_some(){\n            DIAGNOSTIC_CONSTRAINT_RECEIVERS.with(|xs|{let mut xs=xs.borrow_mut();if xs.len()<16{xs.push(structure.clone());}});\n        }\n"+needle)
           m.write_text(v)
           s=p.read_text().replace("self.machine().qualified_nested_recursor_result(&n,cap)","self.machine().diagnostic_projection_major_result(&n,cap)")
-          marker='''                                                            eprintln!("NUCLEUS_RING_QUALIFIED_REPLAY:side={side}:cap={cap}:one={one:?}:completed={full:?}");'''
+          marker="                                                            eprintln!(\"NUCLEUS_RING_QUALIFIED_REPLAY:side={side}:cap={cap}:one={one:?}:completed={full:?}\");"
           assert s.count(marker)==1
-          s=s.replace(marker,marker+'''
-                                                            for (slot,receiver) in crate::machine::diagnostic_take_constraint_receivers().into_iter().take(8).enumerate(){
-                                                                let mut allowance=8192;
-                                                                let inferred=self.infer_exact_closure_in_context(&receiver,context,&mut allowance,0);
-                                                                let full=self.machine().expose_for_conversion(receiver.clone(),Transparency::Full,8192);
-                                                                let cheap=self.machine().expose_for_conversion(receiver.clone(),Transparency::Reducible,8192);
-                                                                eprintln!("NUCLEUS_CONSTRAINT_RECEIVER:side={side}:cap={cap}:slot={slot}:receiver={receiver:?}:inferred={inferred:?}:remaining={allowance}:full={full:?}:cheap={cheap:?}");
-                                                                let mut c=receiver.clone();
-                                                                for depth in 0..12 {
-                                                                    let expression=self.expressions.get(c.expr);
-                                                                    eprintln!("NUCLEUS_CONSTRAINT_RECEIVER_SOURCE:depth={depth}:closure={c:?}:syntax={expression:?}");
-                                                                    match expression{
-                                                                        Some(Expr::BVar(i))=>match c.env.lookup(*i){
-                                                                            Some(crate::value::EnvBinding::Closure(b))=>c=b,
-                                                                            other=>{eprintln!("NUCLEUS_CONSTRAINT_RECEIVER_BINDING:depth={depth}:binding={other:?}");break}
-                                                                        },
-                                                                        _=>break
-                                                                    }
-                                                                }
-                                                            }
-''')
+          s=s.replace(marker,marker+"\n                                                            for (slot,receiver) in crate::machine::diagnostic_take_constraint_receivers().into_iter().take(8).enumerate(){\n                                                                let mut allowance=8192;\n                                                                let inferred=self.infer_exact_closure_in_context(&receiver,context,&mut allowance,0);\n                                                                let full=self.machine().expose_for_conversion(receiver.clone(),Transparency::Full,8192);\n                                                                let cheap=self.machine().expose_for_conversion(receiver.clone(),Transparency::Reducible,8192);\n                                                                eprintln!(\"NUCLEUS_CONSTRAINT_RECEIVER:side={side}:cap={cap}:slot={slot}:receiver={receiver:?}:inferred={inferred:?}:remaining={allowance}:full={full:?}:cheap={cheap:?}\");\n                                                                let mut c=receiver.clone();\n                                                                for depth in 0..12 {\n                                                                    let expression=self.expressions.get(c.expr);\n                                                                    eprintln!(\"NUCLEUS_CONSTRAINT_RECEIVER_SOURCE:depth={depth}:closure={c:?}:syntax={expression:?}\");\n                                                                    match expression{\n                                                                        Some(Expr::BVar(i))=>match c.env.lookup(*i){\n                                                                            Some(crate::value::EnvBinding::Closure(b))=>c=b,\n                                                                            other=>{eprintln!(\"NUCLEUS_CONSTRAINT_RECEIVER_BINDING:depth={depth}:binding={other:?}\");break}\n                                                                        },\n                                                                        _=>break\n                                                                    }\n                                                                }\n                                                            }\n")
           p.write_text(s)
           PY
           git diff -- metatron-kernel/src > /tmp/omega/evidence/diagnostic.patch
