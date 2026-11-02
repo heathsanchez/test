@@ -1,0 +1,80 @@
+name: G2 original-author native source cohort 3
+on:
+  push:
+    branches: [research/udm-g2-authentic-native-20261103]
+    paths:
+      - '.github/workflows/g2-native-fixed-three.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  frozen-three:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 22
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - pr: 814
+            base: 56591163bce358abdb860d3dad599d3ab440621a
+            head: 849bb822a22ca86bb6354b912c9c59f415f3d5b7
+            test_file: hlog/internal/mutil/writer_proxy_test.go
+          - pr: 811
+            base: 5eb5f3a76c09eeadc1f2464baf4a4e3f1037c830
+            head: 7256558c748b0cadd81deffdd80e1809cb12707a
+            test_file: log_test.go
+          - pr: 790
+            base: 13073f1efa1d502bafc780de02dc480fb0831751
+            head: 3b5225e96b579044965c10e2d7c662084f72d7f7
+            test_file: log_test.go
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: code
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: rs/zerolog
+          ref: ${{ matrix.base }}
+          fetch-depth: 0
+          path: source
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.0'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Exact source identity and independent test signature
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd source
+          git fetch --no-tags origin "refs/pull/${{ matrix.pr }}/head:refs/remotes/origin/pr-${{ matrix.pr }}-head"
+          test "$(git rev-parse "refs/remotes/origin/pr-${{ matrix.pr }}-head")" = '${{ matrix.head }}'
+          test "$(git rev-parse HEAD)" = '${{ matrix.base }}'
+          test -z "$(git status --porcelain)"
+      - name: Generic native regression qualifier
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p qualification
+          python code/research/g2_native_residual/qualify.py \
+            --repo source \
+            --base '${{ matrix.base }}' \
+            --head '${{ matrix.head }}' \
+            --test-file '${{ matrix.test_file }}' \
+            --output qualification | tee qualification/stdout.txt
+          python - <<'PY'
+          import json
+          r=json.load(open('qualification/qualification.json'))
+          assert r['schema']=='mathgraph.g2.author-native-redgreen.v1'
+          print('SCIENTIFIC_NATIVE_STATUS',r['status'])
+          print('AUTHOR_ASSERTIONS',len(r.get('matched_failed_tests',[])))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: g2-author-native-rs-${{ matrix.pr }}
+          path: qualification
+          retention-days: 60
