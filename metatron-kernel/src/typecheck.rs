@@ -3355,6 +3355,131 @@ impl<'a> TypeChecker<'a> {
     /// sides and checks every data argument. It never assumes that
     /// convertible *types* imply equality of non-proof data terms. Unknown
     /// premises return false, leaving the original conversion authoritative.
+    pub(crate) fn certified_data_spine_congruence(
+        &self,
+        left: &Neutral,
+        right: &Neutral,
+        context: &[TypeValue],
+        budget: usize,
+        depth: usize,
+    ) -> bool {
+        if std::env::var_os("NUCLEUS_EXPERIMENTAL_TYPED_DATA_CONGRUENCE").is_none()
+            || depth != context.len() || budget < 512
+            || left.spine.is_empty() || left.spine.len() > 6
+            || left.spine.len() != right.spine.len()
+        {
+            return false;
+        }
+        // No potential saving exists if every captured argument closure is
+        // already byte-identical, so avoid expensive dependent inference.
+        if left.spine.iter().zip(&right.spine).all(|(a,b)|a==b) {
+            return false;
+        }
+        let (
+            NeutralHead::Const { name: lname, levels: llevels },
+            NeutralHead::Const { name: rname, levels: rlevels },
+        ) = (&left.head, &right.head) else { return false };
+        if lname != rname || llevels.len() != rlevels.len() {
+            return false;
+        }
+        if !llevels.iter().zip(rlevels).all(|(a,b)|
+            crate::level::level_equal(a.clone(), b.clone(), budget.min(256)).is_proven()
+        ) { return false; }
+        let Some(decl) = self.environment.get(*lname) else { return false };
+        if decl.level_params.len() != llevels.len() { return false; }
+        let ty_for = |levels: &Vec<LevelTerm>| TypeValue::Term(
+            Closure::with_levels(
+                decl.ty, EnvFrame::empty(), LevelSubstitution::new(
+                    decl.level_params.iter().copied().zip(levels.iter().cloned()).collect()
+                )
+            )
+        );
+        let mut lhs_type=ty_for(llevels);
+        let mut rhs_type=ty_for(rlevels);
+        let probe=budget.min(2048);
+        // Nested inference/conversion cannot recursively spend another full
+        // telescope trial. Declining a trial conveys no equality or inequality.
+        thread_local! { static ACTIVE: std::cell::Cell<bool> = const { std::cell::Cell::new(false) }; }
+        if ACTIVE.with(|active| active.replace(true)) { return false; }
+        struct TrialGuard;
+        impl Drop for TrialGuard {
+            fn drop(&mut self) { ACTIVE.with(|active| active.set(false)); }
+        }
+        let _guard=TrialGuard;
+        for (larg,rarg) in left.spine.iter().zip(&right.spine) {
+            let Some((ldom,lbody))=self.pi_view(
+                Judgment::proven(lhs_type,"relevance-typed-function"),probe,
+            ) else { return false };
+            let Some((rdom,rbody))=self.pi_view(
+                Judgment::proven(rhs_type,"relevance-typed-function"),probe,
+            ) else { return false };
+            if !crate::convert::convert_with_policy_in_context(
+                self,&ldom,&rdom,probe.min(512),
+                crate::convert::DeltaPolicy::PreferredOnly,depth,context,
+            ).is_proven() {return false}
+            let mut lf=probe;
+            let Some(larg_ty)=self.infer_exact_closure_in_context(
+                larg,context,&mut lf,0,
+            ) else {return false};
+            let mut rf=probe;
+            let Some(rarg_ty)=self.infer_exact_closure_in_context(
+                rarg,context,&mut rf,0,
+            ) else {return false};
+            let check_ty=|actual:&TypeValue,expected:&TypeValue| {
+                crate::convert::convert_with_policy_in_context(
+                    self,actual,expected,probe.min(512),
+                    crate::convert::DeltaPolicy::PreferredOnly,depth,context,
+                ).is_proven()
+            };
+            if !check_ty(&larg_ty,&ldom) || !check_ty(&rarg_ty,&rdom) {
+                return false;
+            }
+            let data_domain=|dom:&TypeValue| {
+                let TypeValue::Term(c)=dom else {return false};
+                let mut f=probe;
+                let Some(ty)=self.infer_exact_closure_in_context(c,context,&mut f,0)
+                else {return false};
+                matches!(
+                    self.sort_level(
+                        Judgment::proven(ty,"checked-relevance-domain"),f.min(1024)
+                    ),
+                    Judgment::Proven {value:LevelTerm::Succ(_),..}
+                )
+            };
+            // Data-only rule: every value pair must itself convert.
+            // A proposition domain is declined; this path never erases proofs.
+            if !data_domain(&ldom) || !data_domain(&rdom) { return false; }
+            if !crate::convert::convert_with_policy_in_context(
+                self,&TypeValue::Term(larg.clone()),&TypeValue::Term(rarg.clone()),
+                probe.min(512),crate::convert::DeltaPolicy::PreferredOnly,depth,context,
+            ).is_proven() { return false; }
+            let next = |body:PiBody,arg:&Closure| -> Option<TypeValue> {
+                match body {
+                    PiBody::Fixed(binder,ty) => {
+                        let mut f=probe;
+                        self.instantiate_fixed_pi_body(&ty,binder,arg,&mut f)
+                    }
+                    PiBody::Closure(body) => Some(TypeValue::Term(
+                        Closure::with_levels(body.expr,body.env.extend(arg.clone()),body.levels)
+                    )),
+                }
+            };
+            let Some(lty)=next(lbody,larg) else {return false};
+            let Some(rty)=next(rbody,rarg) else {return false};
+            lhs_type=lty;
+            rhs_type=rty;
+        }
+        #[cfg(feature="diagnostics")]
+        if std::env::var_os("NUCLEUS_TRACE_TYPED_DATA_CONGRUENCE").is_some() {
+            use std::sync::atomic::{AtomicUsize,Ordering};
+            static COUNT:AtomicUsize=AtomicUsize::new(0);
+            if COUNT.fetch_add(1,Ordering::Relaxed)<40 {
+                eprintln!("NUCLEUS_TYPED_DATA_CONGRUENCE:head={lname:?}:spine={}:depth={depth}:budget={budget}",left.spine.len());
+            }
+        }
+        true
+    }
+
     pub(crate) fn certified_relevance_spine_congruence(
         &self,
         left: &Neutral,
