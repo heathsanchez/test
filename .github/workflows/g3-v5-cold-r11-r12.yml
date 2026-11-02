@@ -1,0 +1,115 @@
+name: G3 V5 prospective pinned Go-source trials
+on:
+  push:
+    branches: [research/g3-v5-source-generic-20261103]
+    paths:
+      - 'research/g3_v5_cold/**'
+      - '.github/workflows/g3-v5-cold-r11-r12.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  rank11:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: code
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: Code-Hex/go-generics-cache
+          ref: f567a8625646b7c3e8828091d4cfa604056fad71
+          path: source
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.0'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Qualify fail-closed original-suite classifier
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s code/research/g3_v5_cold -p 'test_*.py' -v 2>&1 | tee /tmp/harness.log
+          grep -q 'Ran 4 tests' /tmp/harness.log
+          grep -q '^OK$' /tmp/harness.log
+      - name: Execute original suite at exact immutable source
+        shell: bash
+        run: |
+          set -uo pipefail
+          mkdir -p qualification
+          if [ -f source/go.mod ]; then
+            (cd source && go test -json ./...) > qualification/native-tests.json 2> qualification/native-tests.stderr
+            rc=$?
+          else
+            (cd source && GO111MODULE=off go test -json ./...) > qualification/native-tests.json 2> qualification/native-tests.stderr
+            rc=$?
+          fi
+          echo "$rc" > qualification/native-tests.rc
+          exit 0
+      - name: Execute unchanged V5 against native source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C source rev-parse HEAD)" = "f567a8625646b7c3e8828091d4cfa604056fad71"
+          python code/research/g3_v5_cold/qualify.py --source source --repo Code-Hex/go-generics-cache --sha f567a8625646b7c3e8828091d4cfa604056fad71 --native-events qualification/native-tests.json --native-exit "$(cat qualification/native-tests.rc)" --output qualification/rank11
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: g3-v5-rank11-source-native
+          path: qualification
+  rank12:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: code
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: coocood/freecache
+          ref: 8ef3347cf70b0b67dd5517731841f9ecc48314dd
+          path: source
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.0'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Qualify fail-closed original-suite classifier
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s code/research/g3_v5_cold -p 'test_*.py' -v 2>&1 | tee /tmp/harness.log
+          grep -q 'Ran 4 tests' /tmp/harness.log
+          grep -q '^OK$' /tmp/harness.log
+      - name: Execute original suite at exact immutable source
+        shell: bash
+        run: |
+          set -uo pipefail
+          mkdir -p qualification
+          if [ -f source/go.mod ]; then
+            (cd source && go test -json ./...) > qualification/native-tests.json 2> qualification/native-tests.stderr
+            rc=$?
+          else
+            (cd source && GO111MODULE=off go test -json ./...) > qualification/native-tests.json 2> qualification/native-tests.stderr
+            rc=$?
+          fi
+          echo "$rc" > qualification/native-tests.rc
+          exit 0
+      - name: Execute unchanged V5 against native source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C source rev-parse HEAD)" = "8ef3347cf70b0b67dd5517731841f9ecc48314dd"
+          python code/research/g3_v5_cold/qualify.py --source source --repo coocood/freecache --sha 8ef3347cf70b0b67dd5517731841f9ecc48314dd --native-events qualification/native-tests.json --native-exit "$(cat qualification/native-tests.rc)" --output qualification/rank12
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: g3-v5-rank12-source-native
+          path: qualification
