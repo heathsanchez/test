@@ -1,0 +1,84 @@
+name: Nucleus typed projection source relevance and domain capability A-B
+on:
+  push:
+    branches: [research/nucleus-typed-projection-spine-20261102]
+    paths: [".github/workflows/nucleus-projection-relevance-domain-ab.yml"]
+permissions:
+  contents: read
+jobs:
+  ab:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 25fb80ff42658ba2e4d21cb4388d092dd9baaa92
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Bind candidate source and immutable prefix
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/ab/evidence /tmp/ab/restored
+          git rev-parse HEAD > /tmp/ab/evidence/source-sha.txt
+          git rev-parse HEAD:metatron-kernel > /tmp/ab/evidence/kernel-tree.txt
+          gh api repos/heathsanchez/test/actions/artifacts/13119990199/zip > /tmp/ab/input.zip
+          printf '%s  %s\n' 1c55ab15fe06356e652c6597d8d14029119b725c43a3b791c51a3649974104f0 /tmp/ab/input.zip | sha256sum -c -
+          unzip -q /tmp/ab/input.zip -d /tmp/ab/restored
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+      - name: Identical source controls and identical binary prefix ablation
+        run: |
+          python3 - <<'PY'
+          import pathlib,json,subprocess,os,hashlib
+          out=pathlib.Path("/tmp/ab/evidence")
+          base={k:v for k,v in os.environ.items()if not k.startswith("NUCLEUS_")}
+          flags=("RELEVANCE","CONTEXT_BINDER","TYPED_LINEAGE","SUBSTITUTION_RECLOSURE","TYPED_VALUE_NORMALIZATION","PROJECTION_CONTEXT","PROJECTION_CROSSFRAME_512","TYPED_RECEIVER","SOURCE_PAIR_DEPTH8","POLYMORPHIC_PROP_IRREL","PROP_SINGLETON_2P1F","EXPECTED_LAMBDA","TYPED_DATA_CONGRUENCE","TYPED_PROJECTION_SPINE")
+          origin=base|{"NUCLEUS_EXPERIMENTAL_"+f:"1"for f in flags}
+          tests=("distinct_proof_arguments_of_same_checked_proposition_are_convertible","mismatched_data_arguments_stay_distinct","an_ill_typed_proposition_argument_does_not_count_as_a_proof")
+          native=[]
+          for on in (False,True):
+           env=origin|{"NUCLEUS_EXPERIMENTAL_FORMED_PROP_DOMAIN_RETRY":"1"}
+           if not on:env.pop("NUCLEUS_EXPERIMENTAL_RELEVANCE",None)
+           for test in tests:
+            cmd=["cargo","test","--release","--locked","--features","diagnostics","--manifest-path","metatron-kernel/Cargo.toml","--test","checked_relevance_signature",test,"--","--exact","--nocapture"]
+            p=subprocess.run(cmd,env=env,capture_output=True,timeout=240)
+            tag=("relevance-on-"if on else"relevance-off-")+test
+            (out/(tag+".log")).write_bytes(p.stdout+p.stderr)
+            wanted=0 if on or test!=tests[0] else 101
+            row=dict(relevance=on,test=test,rc=p.returncode,expected=wanted);native.append(row);print(json.dumps(row),flush=True)
+            assert p.returncode==wanted,row
+          (out/"native-same-source-relevance-ab.json").write_text(json.dumps(native,indent=2))
+          source=pathlib.Path("/tmp/ab/restored/original-prefix.ndjson").read_bytes()
+          assert hashlib.sha256(source).hexdigest()=="c5e1b22096bc286753377096f2efe01ef13507aede36b626d5d92e03b4bab33f"
+          rows=[]
+          binary=str(pathlib.Path("metatron-kernel/target/release/metatron-kernel").resolve())
+          for on in (False,True):
+           env=origin.copy()
+           if on:env["NUCLEUS_EXPERIMENTAL_FORMED_PROP_DOMAIN_RETRY"]="1"
+           tag="domain-on"if on else"domain-off"
+           p=subprocess.run(["/usr/bin/time","-f","wall=%e user=%U system=%S rss_kb=%M","-o",str(out/(tag+".time")),binary],input=source,env=env,capture_output=True,timeout=180)
+           (out/(tag+".stderr")).write_bytes(p.stderr)
+           row=dict(formed_prop_retry=on,rc=p.returncode,expected=0 if on else 2,sha256=hashlib.sha256(source).hexdigest(),binary_sha256=hashlib.sha256(pathlib.Path(binary).read_bytes()).hexdigest())
+           rows.append(row);print(json.dumps(row),flush=True)
+           assert row["rc"]==row["expected"],row
+          (out/"getelem-same-binary-domain-ab.json").write_text(json.dumps(rows,indent=2))
+          probe=subprocess.run(["perf","stat","-e","instructions","--","true"],capture_output=True)
+          (out/"perf-instructions-support.txt").write_bytes(probe.stdout+probe.stderr)
+          (out/"perf-support.json").write_text(json.dumps(dict(supported=probe.returncode==0,rc=probe.returncode,measured_getelem_instructions=False)))
+          if probe.returncode==0:
+           for on in (False,True):
+            env=origin.copy()
+            if on:env["NUCLEUS_EXPERIMENTAL_FORMED_PROP_DOMAIN_RETRY"]="1"
+            tag="instructions-on"if on else"instructions-off"
+            p=subprocess.run(["perf","stat","-x,","-e","instructions","-o",str(out/(tag+".perf")),binary],input=source,env=env,capture_output=True,timeout=240)
+            (out/(tag+".stderr")).write_bytes(p.stderr)
+            assert p.returncode==(0 if on else 2)
+           (out/"perf-support.json").write_text(json.dumps(dict(supported=True,measured_getelem_instructions=True)))
+          
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-projection-source-identical-relevance-and-domain-ab
+          path: /tmp/ab/evidence
+          if-no-files-found: error
