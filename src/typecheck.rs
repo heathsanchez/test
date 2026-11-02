@@ -3355,6 +3355,74 @@ impl<'a> TypeChecker<'a> {
     /// sides and checks every data argument. It never assumes that
     /// convertible *types* imply equality of non-proof data terms. Unknown
     /// premises return false, leaving the original conversion authoritative.
+
+    // Projection congruence requires source-owned family, selected constructor
+    // field, actual dependent application typing, and every argument equality.
+    // It never erases an argument or synthesizes a field for a neutral receiver.
+    pub(crate) fn certified_applied_projection_congruence(
+        &self, owner:NameId,index:usize,left:&Closure,right:&Closure,
+        left_args:&[Closure],right_args:&[Closure],context:&[TypeValue],
+        budget:usize,depth:usize,
+    )->bool {
+        if std::env::var_os("NUCLEUS_EXPERIMENTAL_TYPED_PROJECTION_SPINE").is_none()
+            || depth!=context.len() || budget<512 || left_args.is_empty()
+            || left_args.len()>6 || left_args.len()!=right_args.len() {return false}
+        thread_local!{static ACTIVE:std::cell::Cell<usize>=const{std::cell::Cell::new(0)};}
+        if !ACTIVE.with(|n|if n.get()<3{n.set(n.get()+1);true}else{false}) {return false}
+        struct TrialGuard;
+        impl Drop for TrialGuard{fn drop(&mut self){ACTIVE.with(|n|n.set(n.get()-1));}}
+        let _guard=TrialGuard;
+        let probe=budget.min(2048);
+        let Some(spec)=self.environment.projection_specs().get(&owner)else{return false};
+        if spec.field_types.get(index).is_none(){return false}
+        let family=|receiver:&Closure| {
+            let mut fuel=probe;
+            let Some(TypeValue::Term(ty))=self.infer_exact_closure_in_context(receiver,context,&mut fuel,0)else{return false};
+            let v=self.machine().expose_for_conversion(ty,Transparency::Reducible,probe);
+            let Some(Value::Neutral(n))=v.proven_value()else{return false};
+            let NeutralHead::Const{name,levels}=&n.head else{return false};
+            *name==owner && n.spine.len()>=spec.num_params
+                && self.environment.get(owner).is_some_and(|d|d.level_params.len()==levels.len())
+        };
+        if !family(left)||!family(right)
+            ||!self.checked_source_conversion(left,right,context,probe).is_proven(){return false}
+        let machine=self.machine();
+        let a=machine.projection_field_for_conversion(left.clone(),owner,index,probe);
+        let b=machine.projection_field_for_conversion(right.clone(),owner,index,probe);
+        let (Some(a),Some(b))=(a.proven_value(),b.proven_value())else{return false};
+        let mut af=probe;let Some(mut at)=self.infer_exact_closure_in_context(a,context,&mut af,0)else{return false};
+        let mut bf=probe;let Some(mut bt)=self.infer_exact_closure_in_context(b,context,&mut bf,0)else{return false};
+        let cv=|a:&TypeValue,b:&TypeValue|crate::convert::convert_with_policy_in_context(
+            self,a,b,probe,crate::convert::DeltaPolicy::PreferredOnly,depth,context
+        ).is_proven();
+        // Source constructor fields may have different closed implementations;
+        // equality of checked receivers authorizes selecting the same field.
+        if !cv(&at,&bt){return false}
+        for (x,y)in left_args.iter().zip(right_args) {
+            let Some((ad,ab))=self.pi_view(Judgment::proven(at,"typed-projection-function"),probe)else{return false};
+            let Some((bd,bb))=self.pi_view(Judgment::proven(bt,"typed-projection-function"),probe)else{return false};
+            if !cv(&ad,&bd){return false}
+            let mut af=probe;let Some(ax)=self.infer_exact_closure_in_context(x,context,&mut af,0)else{return false};
+            let mut bf=probe;let Some(by)=self.infer_exact_closure_in_context(y,context,&mut bf,0)else{return false};
+            if !cv(&ax,&ad)||!cv(&by,&bd)
+                ||!cv(&TypeValue::Term(x.clone()),&TypeValue::Term(y.clone())){return false}
+            let next=|body:PiBody,arg:&Closure|match body {
+                PiBody::Fixed(binder,t)=>{let mut fuel=probe;self.instantiate_fixed_pi_body(&t,binder,arg,&mut fuel)},
+                PiBody::Closure(c)=>Some(TypeValue::Term(Closure::with_levels(c.expr,c.env.extend(arg.clone()),c.levels)))
+            };
+            let Some(a)=next(ab,x)else{return false};let Some(b)=next(bb,y)else{return false};at=a;bt=b;
+        }
+        #[cfg(feature="diagnostics")]
+        if std::env::var_os("NUCLEUS_TRACE_TYPED_PROJECTION_SPINE").is_some(){
+            use std::sync::atomic::{AtomicUsize,Ordering};
+            static COUNT:AtomicUsize=AtomicUsize::new(0);
+            if COUNT.fetch_add(1,Ordering::Relaxed)<40 {
+                eprintln!("NUCLEUS_TYPED_PROJECTION_SPINE:owner={owner:?}:index={index}:args={}:depth={depth}:budget={budget}",left_args.len());
+            }
+        }
+        true
+    }
+
     pub(crate) fn certified_data_spine_congruence(
         &self,
         left: &Neutral,
