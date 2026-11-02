@@ -1,0 +1,46 @@
+name: Nucleus source context identity controls
+on:
+  push:
+    branches: [research/nucleus-source-owned-context-20261103]
+    paths: [".github/workflows/nucleus-source-context-controls.yml"]
+permissions:
+  contents: read
+jobs:
+  controls:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: e4ec9a5cd1b936e65c2be67dd604b77b25de84fe
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Execute exact source capture and typing controls
+        run: |
+          mkdir -p /tmp/owner-controls
+          git rev-parse HEAD > /tmp/owner-controls/source-sha.txt
+          git rev-parse HEAD:metatron-kernel > /tmp/owner-controls/kernel-tree.txt
+          python3 - <<'PY'
+          import json,subprocess,os,pathlib,re,hashlib
+          out=pathlib.Path("/tmp/owner-controls")
+          src=pathlib.Path("metatron-kernel/src/typecheck.rs").read_bytes()
+          (out/"typecheck.rs").write_bytes(src)
+          flags=["RELEVANCE","CONTEXT_BINDER","TYPED_LINEAGE","SUBSTITUTION_RECLOSURE","TYPED_VALUE_NORMALIZATION","PROJECTION_CONTEXT","PROJECTION_CROSSFRAME_512","TYPED_RECEIVER","SOURCE_PAIR_DEPTH8","POLYMORPHIC_PROP_IRREL","PROP_SINGLETON_2P1F","EXPECTED_LAMBDA","FORMED_PROP_DOMAIN_RETRY","TYPED_DATA_CONGRUENCE","TYPED_PROJECTION_SPINE","REPLAY_PROJECTION_MAJOR","REPLAY_NEUTRAL_PROJECTION"]
+          env={k:v for k,v in os.environ.items()if not k.startswith("NUCLEUS_")}|{"NUCLEUS_EXPERIMENTAL_"+f:"1"for f in flags}
+          names=["actual_source_captured_free_zero_overrules_unrelated_latest_context_entry","source_captured_free_one_retains_different_data_type","checked_pi_elimination_registers_its_actual_typed_substitution","captured_typed_substitution_uses_validated_source_domain_without_reinfer","fixed_pi_substitution_refuses_actual_captured_by_unrelated_inner_binder","fixed_pi_substitution_preserves_shadowing_and_refuses_unsupported_or_low_fuel","exact_captured_pi_substitution_reuses_only_completed_same_scope_bindings","captured_pi_frame_key_preserves_own_codomain_levels_domain_and_quarantine","formed_fixed_pi_checking_does_not_bypass_capture_safe_reopening","root_source_alias_uses_the_captured_lambda_and_its_own_level_map","captured_source_inference_cannot_type_an_ambient_local_by_opening_a_binder","paired_support_preserves_binder_capture_constructor_and_level_distinctions","every_annotation_value_projection_and_external_capture_is_accounted_for"]
+          rows=[]
+          for name in names:
+           cmd=["cargo","test","--release","--locked","--features","diagnostics","--manifest-path","metatron-kernel/Cargo.toml","--lib",name,"--","--nocapture"]
+           p=subprocess.run(cmd,env=env,capture_output=True,timeout=300)
+           log=p.stdout+p.stderr;(out/(name+".log")).write_bytes(log)
+           counts=re.findall(rb"test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored",log)
+           row={"test":name,"rc":p.returncode,"counts":[[int(v)for v in c]for c in counts],"env":{k:v for k,v in env.items()if k.startswith("NUCLEUS_")}}
+           rows.append(row);print(json.dumps(row),flush=True)
+           (out/"verdicts.json").write_text(json.dumps(rows,indent=2))
+           assert p.returncode==0 and counts==[(b"1",b"0",b"0")],row
+          (out/"source.sha256").write_text(hashlib.sha256(src).hexdigest())
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-source-context-controls
+          path: /tmp/owner-controls
