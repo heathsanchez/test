@@ -1,0 +1,90 @@
+name: Nucleus quotient ownership current recovery
+on:
+  push:
+    branches: [research/nucleus-quotient-current-recovery-20261102]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  current-recovery:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 80
+    env:
+      GH_TOKEN: ${{ github.token }}
+      ARENA_SHA: d7f74a9e67459e2c251d608f524dc5efc6dc223c
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Free unused preinstalled SDK space on this disposable runner
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/nucleus-current-recovery-evidence
+          df -h > /tmp/nucleus-current-recovery-evidence/disk-before.txt
+          # These are disposable runner SDKs, unrelated to this Rust/Lean job.
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc
+          df -h > /tmp/nucleus-current-recovery-evidence/disk-after.txt
+      - uses: cachix/install-nix-action@v31
+      - name: Compile the identical kernel source whose native and original gates already executed
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD > /tmp/nucleus-current-recovery-evidence/workflow-sha.txt
+          git rev-parse HEAD:metatron-kernel > /tmp/nucleus-current-recovery-evidence/kernel-tree.txt
+          test "$(cat /tmp/nucleus-current-recovery-evidence/kernel-tree.txt)" = "2a693fffd8b7d0f5fe873130419da683da672217"
+          test -z "$(git diff 50a34f406df0ad55e7d8900ea274d119157a4573 HEAD -- metatron-kernel)"
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          sha256sum metatron-kernel/target/release/metatron-kernel > /tmp/nucleus-current-recovery-evidence/binary.sha256
+          echo "Native/original196 evidence: run 41385784174, exact kernel tree above; current fixture build ran out of runner disk before checker execution." > /tmp/nucleus-current-recovery-evidence/recovery-boundary.txt
+      - name: Build all current mandatory portable Arena inputs
+        run: |
+          set -euo pipefail
+          git clone -q https://github.com/leanprover/lean-kernel-arena.git /tmp/current-arena
+          git -C /tmp/current-arena checkout -q "$ARENA_SHA"
+          export NIX_CONFIG="$(printf 'http-connections = 4\nmax-substitution-jobs = 4\nconnect-timeout = 30\n')"
+          cd /tmp/current-arena
+          nix develop -c ./lka.py build-test --skip-ci > /tmp/nucleus-current-recovery-evidence/fixture-build.log 2>&1
+      - name: Classify current mandatory tests with zero incorrect verdict gate
+        run: |
+          python3 - <<'PY'
+          import pathlib,os,json,subprocess,hashlib,collections
+          root=pathlib.Path('/tmp/current-arena/_build/tests')
+          out=pathlib.Path('/tmp/nucleus-current-recovery-evidence')
+          env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+          for f in ('RELEVANCE','CONTEXT_BINDER','TYPED_LINEAGE','SUBSTITUTION_RECLOSURE','TYPED_VALUE_NORMALIZATION','PROJECTION_CONTEXT','PROJECTION_CROSSFRAME_512','TYPED_RECEIVER','SOURCE_PAIR_DEPTH8','POLYMORPHIC_PROP_IRREL','PROP_SINGLETON_2P1F','EXPECTED_LAMBDA'):
+            env['NUCLEUS_EXPERIMENTAL_'+f]='1'
+          binary=str(pathlib.Path('metatron-kernel/target/release/metatron-kernel').resolve())
+          rows=[]
+          for stats in sorted(root.rglob('*.stats.json')):
+            spec=json.loads(stats.read_text())
+            if spec.get('outcome') not in ('accept','reject'):continue
+            name=spec['name']
+            if name=='perf/magma-list-pair-n21':continue
+            path=stats.with_name(stats.name.replace('.stats.json','.ndjson'))
+            assert path.exists(),name
+            tag=name.replace('/','__')
+            with path.open('rb') as fd:
+              try:
+                p=subprocess.run(['/usr/bin/time','-f','wall=%e user=%U system=%S rss_kb=%M','-o',str(out/(tag+'.time')),binary],stdin=fd,capture_output=True,env=env,timeout=min(int(spec.get('timeout',180)),240))
+                rc=p.returncode
+                (out/(tag+'.stdout')).write_bytes(p.stdout);(out/(tag+'.stderr')).write_bytes(p.stderr)
+              except subprocess.TimeoutExpired:rc=124
+            wanted=0 if spec['outcome']=='accept' else 1
+            row=dict(case=name,expected=wanted,rc=rc,sha256=hashlib.file_digest(path.open('rb'),'sha256').hexdigest())
+            rows.append(row);print(json.dumps(row),flush=True)
+            (out/'mandatory-verdicts.json').write_text(json.dumps(rows,indent=2))
+          counts=collections.Counter(r['rc'] for r in rows)
+          wrong=[r for r in rows if r['rc'] in (0,1) and r['rc']!=r['expected']]
+          errors=[r for r in rows if r['rc'] not in (0,1,2)]
+          summary=dict(arena_sha=os.environ['ARENA_SHA'],count=len(rows),counts=dict(counts),wrong=wrong,execution_errors=errors,unknown=[r for r in rows if r['rc']==2],excluded_heavy='pair-n21 independently replayed in frozen196')
+          (out/'current-summary.json').write_text(json.dumps(summary,indent=2))
+          print(json.dumps(summary,indent=2),flush=True)
+          assert len(rows)==208 and not wrong and not errors,'CURRENT_MANDATORY_QUALIFICATION_RED'
+          assert next(r['rc'] for r in rows if r['case']=='other/inductive-undeclared-universe')==1,'SCOPE_REPAIR_NOT_CLOSED'
+          assert next(r['rc'] for r in rows if r['case']=='bugs/forged-quot-ind')==1,'QUOTIENT_OWNERSHIP_REPAIR_NOT_CLOSED'
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-quotient-current-recovery-${{ github.sha }}
+          path: /tmp/nucleus-current-recovery-evidence
