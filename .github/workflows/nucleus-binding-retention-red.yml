@@ -1,0 +1,30 @@
+name: Nucleus exact binding retention red
+on:
+  push:
+    branches: [research/nucleus-exact-binding-retention-20261102]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  red:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Preserve exact-source failing retention regression
+        run: |
+          mkdir -p /tmp/retention-red
+          git rev-parse HEAD > /tmp/retention-red/source-sha.txt
+          set +e
+          cargo test --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml exact_binding_retention_survives_the_old_8192_entry_boundary -- --exact machine::bounded_checked_replay_tests::exact_binding_retention_survives_the_old_8192_entry_boundary --nocapture > /tmp/retention-red/red.log 2>&1
+          rc=$?
+          set -e
+          echo "$rc" > /tmp/retention-red/exit.txt
+          cat /tmp/retention-red/red.log
+          test "$rc" = 101
+          rg 'exact_binding_retention_survives_the_old_8192_entry_boundary.*FAILED' /tmp/retention-red/red.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-binding-retention-red-${{ github.sha }}
+          path: /tmp/retention-red
