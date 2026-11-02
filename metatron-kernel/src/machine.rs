@@ -116,6 +116,7 @@ struct CompletedReplayKey {
     authority:AuthorityId,
     demand_major:bool,
     replay_projection_major:bool,
+    replay_neutral_projection:bool,
     rules:ImmutableMapWitness<HashMap<NameId,RecursorReduction>>,
     definitions:ImmutableMapWitness<HashMap<NameId,DefinitionBody>>,
     projections:ImmutableMapWitness<HashMap<NameId,ProjectionSpec>>,
@@ -267,6 +268,9 @@ impl Drop for ReplayWorkTrace<'_>{fn drop(&mut self){
 #[derive(Clone,Copy,Eq,PartialEq)]
 enum CheckedReplayGoal { Completed, OneStep }
 
+struct NeutralProjectionDepthScope<'a> { depth: &'a Cell<usize> }
+impl Drop for NeutralProjectionDepthScope<'_> { fn drop(&mut self) {self.depth.set(self.depth.get().saturating_sub(1));} }
+
 struct ConstructorFuelScope<'a> { fuel: &'a Cell<Option<usize>> }
 impl Drop for ConstructorFuelScope<'_> { fn drop(&mut self) { self.fuel.set(None); } }
 
@@ -279,6 +283,8 @@ pub struct Machine<'a> {
     authority: AuthorityId,
     demand_major: bool,
     replay_projection_major: bool,
+    replay_neutral_projection: bool,
+    neutral_projection_depth: Cell<usize>,
     exposure_fuel: Cell<Option<usize>>,
     exposure_depth: Cell<usize>,
     #[cfg(test)]
@@ -308,6 +314,8 @@ impl<'a> Machine<'a> {
             authority,
             demand_major: std::env::var_os("NUCLEUS_EXPERIMENTAL_DEMAND_MAJOR").is_some(),
             replay_projection_major: std::env::var_os("NUCLEUS_EXPERIMENTAL_REPLAY_PROJECTION_MAJOR").is_some(),
+            replay_neutral_projection: std::env::var_os("NUCLEUS_EXPERIMENTAL_REPLAY_NEUTRAL_PROJECTION").is_some(),
+            neutral_projection_depth: Cell::new(0),
             exposure_fuel: Cell::new(None),
             exposure_depth: Cell::new(0),
             #[cfg(test)]
@@ -855,7 +863,7 @@ impl<'a> Machine<'a> {
         if !self.reserve_replay_key(levels,spine,certificate) {return None;}
         #[cfg(test)]
         self.replay_key_builds.set(self.replay_key_builds.get()+1);
-        let exact=CompletedReplayKey{authority:self.authority,demand_major:self.demand_major,replay_projection_major:self.replay_projection_major,
+        let exact=CompletedReplayKey{authority:self.authority,demand_major:self.demand_major,replay_projection_major:self.replay_projection_major,replay_neutral_projection:self.replay_neutral_projection,
             rules:ImmutableMapWitness(self.recursor_reductions.clone()),
             definitions:ImmutableMapWitness(self.definitions.clone()),projections:ImmutableMapWitness(self.projection_specs.clone()),
             singletons:ImmutableMapWitness(self.singleton_recursor_reductions.clone()),nullary:ImmutableMapWitness(self.nullary_minor_reductions.clone()),
@@ -2138,6 +2146,42 @@ impl<'a> Machine<'a> {
         self.qualified_recursor_result(neutral,budget,CheckedReplayGoal::Completed)
     }
 
+    fn checked_neutral_projection_result(&self,neutral:&Neutral,budget:usize)->Judgment<Value>{
+        // This operation selects only an actual field of the actual result
+        // of an independently registered source recursor. Neither a desired
+        // constructor nor the surrounding equality chooses a branch.
+        let NeutralHead::Projection{type_name,index,structure}=&neutral.head else {
+            return Judgment::unknown("neutral-projection-head");
+        };
+        let Some(spec)=self.projection_specs.get(type_name)else{
+            return Judgment::unknown("neutral-projection-owner");
+        };
+        if *index>=spec.field_types.len(){return Judgment::unknown("neutral-projection-index");}
+        if !matches!(&structure.head,NeutralHead::Const{name,..}if self.recursor_reductions.contains_key(name)){
+            return Judgment::unknown("neutral-projection-receiver-not-qualified-recursor");
+        }
+        if self.neutral_projection_depth.get()>=8{return Judgment::unknown("neutral-projection-depth");}
+        let Some(fuel)=self.exposure_fuel.get()else{return Judgment::unknown("neutral-projection-no-work-owner");};
+        if fuel==0{return Judgment::unknown("neutral-projection-budget");}
+        self.exposure_fuel.set(Some(fuel-1));
+        self.neutral_projection_depth.set(self.neutral_projection_depth.get()+1);
+        let _scope=NeutralProjectionDepthScope{depth:&self.neutral_projection_depth};
+        // Qualified replay checks source rule, universe instances and actual
+        // constructor arity. It shares this same work allowance recursively.
+        let replay=self.qualified_nested_recursor_result(structure,budget.min(fuel-1));
+        let Some(Value::Neutral(actual))=replay.proven_value()else{return Judgment::unknown("neutral-projection-receiver-replay");};
+        let NeutralHead::Const{name,..}=&actual.head else{return Judgment::unknown("neutral-projection-receiver-nonconstructor");};
+        if *name!=spec.constructor || actual.spine.len()!=spec.num_params+spec.field_types.len(){
+            return Judgment::unknown("neutral-projection-receiver-owner-or-arity");
+        }
+        let field=actual.spine[spec.num_params+*index].clone();
+        let pending:Vec<Closure>=neutral.spine.iter().rev().cloned().collect();
+        let allowance=self.exposure_fuel.get().unwrap_or(0).min(budget);
+        let cheap=self.expose_internal_with_pending(field.clone(),Transparency::Reducible,allowance,false,true,pending.clone()).map(|x|x.value);
+        if cheap.is_proven(){return cheap}
+        self.expose_internal_with_pending(field,Transparency::Full,self.exposure_fuel.get().unwrap_or(0).min(budget),false,true,pending).map(|x|x.value)
+    }
+
     fn qualified_recursor_result(
         &self,neutral:&Neutral,budget:usize,goal:CheckedReplayGoal,
     ) -> Judgment<Value> {
@@ -2280,6 +2324,9 @@ impl<'a> Machine<'a> {
                                 structure.clone(),*type_name,*index,spine,
                                 self.exposure_fuel.get().unwrap_or(0),
                             )
+                        }
+                        Value::Neutral(nested) if self.replay_neutral_projection && matches!(&nested.head,NeutralHead::Projection{..})=>{
+                            self.checked_neutral_projection_result(nested,self.exposure_fuel.get().unwrap_or(0))
                         }
                         Value::Neutral(nested) if matches!(&nested.head,
                             NeutralHead::Const{name,..}if self.recursor_reductions.contains_key(name))=>{
