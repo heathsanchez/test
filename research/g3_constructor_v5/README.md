@@ -1,42 +1,50 @@
-# V4: typed cache-operation bridge
+# G3 V5 — typed, source-bound cache-operation qualification
 
-This experimental adapter tests a **finite native state transition**, rather
-than merely checking that a constructor returned nonnil.
+This isolated research adapter tests a **bounded native state trace** on a pinned
+Go package. It is not a self-improving agent and does not prove G2 observation
+invention, O1→O2→O3 compounding, owner permission, or economic superiority.
 
-## Bounds
+## Scope
 
-- Go modules with a root-level exported `New` and a constructed or
-  `Build()`-derived object supporting exported `Set`, `Get`, and
-  `Remove`/`Delete`.
-- Constructor arguments are inhabited by a fixed small grammar:
-  primitive values, `time.Duration=0`, empty variadic tail, and
-  `string` for `any`/`comparable` generic parameters.
-- Source-native reflection performs initial miss, Set, Get, overwrite,
-  Get, remove, and final miss with independently chosen witness values.
-- Execution checks the **exact source commit** and clean tree. It performs
-  a builder or type-parameter ablation followed by native restoration.
-- A pass means `WARRANTED_BOUNDED_NATIVE_CACHE_TRACE_ONLY`; it does not
-  establish autonomous invention, better-than-baseline performance, or
-  strict G3 closure.
+- Source identity: exact Git commit, clean original checkout. No target-specific
+  repair or source mutation is permitted during a frozen trial.
+- Constructor admission: one exported `New`, pointer result or `(*T,error)`,
+  simple numeric/string/duration arguments, finite `any`/`comparable` generic
+  witnesses, omitted variadic options. Any unsupported form yields `UNKNOWN`.
+- Legacy packages without `go.mod`: stage an **untracked, temporary module copy**
+  using the explicitly declared repository identity; never write into the
+  original source checkout.
+- Operation admission: constructed object (or `Build()` result) must expose
+  compatible `Set`/`Add`, `Get`, and `Delete`/`Remove` methods.
+- Native witness: initial miss, Set/Add, readback, overwrite, second readback,
+  Delete/Remove and final miss, with fresh literal key/value witnesses.
+- Controls: builder withdrawal, generic-argument compile rejection or explicit
+  mutator-disabled observation, then restoration. A mutator-disabled observer
+  is **not** proof of independent learned-operator ablation.
+- Independent original-package suites and their **nonzero recognized test count**
+  are checked by a separate prospective harness, not by this constructor planner.
 
-Unsupported API shapes, unsafe/ambiguous native execution, absent ablation,
-and source drift become an explicit UNKNOWN. The V45 reserve is not used.
+A qualified receipt means `WARRANTED_BOUNDED_NATIVE_CACHE_TRACE_ONLY` at the
+named source/test boundary. A green GitHub Actions job can still contain a
+scientific `UNKNOWN`. A fresh external owner grant is not implied.
 
-## Reproduce local fixture tests
+## Reproduce local fixtures
 
-From this directory with Go 1.25+ on `PATH`:
+Use Go 1.23+ and Python 3.12+:
 
 ```sh
-go test -count=1 ./...
+go test ./... -count=1
 go vet ./...
 python3 -B -m unittest discover -s . -p 'test_*.py' -v
 ```
 
-To replay an exact local Git checkout, call
-`execute.run_target(Path(repo_root), commit_sha, Path(output_directory))`
-from Python with this directory in `PYTHONPATH`.
+The stand-alone call is `execute.run_target(Path(source_checkout), source_sha,
+Path(output_directory), repo_name="owner/repo")`. `repo_name` is necessary for
+legacy modules, and repository SHA/clean-tree checks run before native execution.
+The CLI accepts a separately frozen JSON target manifest with schema
+`mathgraph.g3.v5.cold.v1`.
 
-The CLI `execute.py --targets manifest.json --output output/` can clone
-configured repositories, but do not run unfamiliar target code with elevated
-credentials or privileges. Prefer a restricted clone step and source-native
-execution inside a sandbox.
+Do not run arbitrary fetched source with elevated privileges or secrets. The
+prospective GitHub workflows pin external repositories to exact SHAs and use
+read-only workflow permissions. Preserve untouched source pools (including V45)
+and keep private collaboration records out of public GitHub.
