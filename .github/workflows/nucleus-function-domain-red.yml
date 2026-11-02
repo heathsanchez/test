@@ -1,0 +1,37 @@
+name: Nucleus function domain regression RED
+on:
+  push:
+    branches: [research/nucleus-function-domain-retry-20261103]
+    paths: [".github/workflows/nucleus-function-domain-red.yml"]
+permissions:
+  contents: read
+jobs:
+  red:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 01a7d1a4974d2f81a190808e4db9f9e4eaffb28c
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Execute real source typing regression before implementation
+        run: |
+          mkdir -p /tmp/function-domain-red
+          git rev-parse HEAD > /tmp/function-domain-red/source-sha.txt
+          git rev-parse HEAD:metatron-kernel > /tmp/function-domain-red/kernel-tree.txt
+          python3 - <<'PY'
+          import subprocess,pathlib,json,os
+          out=pathlib.Path("/tmp/function-domain-red")
+          env={k:v for k,v in os.environ.items()if not k.startswith("NUCLEUS_")}
+          cmd=["cargo","test","--release","--locked","--features","diagnostics","--manifest-path","metatron-kernel/Cargo.toml","--lib","checked_function_argument_through_long_source_aliases_preserves_separators","--","--include-ignored","--nocapture"]
+          p=subprocess.run(cmd,env=env,capture_output=True,timeout=600)
+          log=p.stdout+p.stderr;(out/"test.log").write_bytes(log);print(log.decode(errors="replace"),flush=True)
+          row={"rc":p.returncode,"expected":"one real assertion failure before implementation","command":cmd}
+          (out/"verdict.json").write_text(json.dumps(row,indent=2))
+          assert p.returncode==101 and b"0 passed; 1 failed; 0 ignored"in log and b"source-typed identity over aliases must check"in log
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-function-domain-red
+          path: /tmp/function-domain-red
