@@ -1,0 +1,46 @@
+name: Independent Nucleus stalled recursor cache experiment
+on:
+  push:
+    branches: [research/nucleus-stuck-recursor-cache-assurance-20261102]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Exact original input and native positive
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/cache-evidence /tmp/cache-pack /tmp/cache-inputs
+          git rev-parse HEAD > /tmp/cache-evidence/source.txt
+          git rev-parse HEAD:metatron-kernel > /tmp/cache-evidence/kernel-tree.txt
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/11272848230/zip > /tmp/cache-corpus.zip
+          sha256sum /tmp/cache-corpus.zip > /tmp/cache-evidence/archive.sha256
+          unzip -q /tmp/cache-corpus.zip -d /tmp/cache-pack
+          tar --no-same-owner -xzf /tmp/cache-pack/lean-arena-tests.tar.gz -C /tmp/cache-inputs
+          printf 'abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35  /tmp/cache-inputs/good/perf/magma-list-pair-n7.ndjson\n' | sha256sum -c -
+          python3 - <<'PY'
+          import pathlib,json,os,subprocess
+          out=pathlib.Path('/tmp/cache-evidence')
+          env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+          for f in ('RELEVANCE','CONTEXT_BINDER','TYPED_LINEAGE','SUBSTITUTION_RECLOSURE','TYPED_VALUE_NORMALIZATION','PROJECTION_CONTEXT','PROJECTION_CROSSFRAME_512','TYPED_RECEIVER','SOURCE_PAIR_DEPTH8','POLYMORPHIC_PROP_IRREL','PROP_SINGLETON_2P1F','EXPECTED_LAMBDA'):
+            env['NUCLEUS_EXPERIMENTAL_'+f]='1'
+          env['NUCLEUS_FROZEN196']='/tmp/cache-inputs'
+          cmd=['cargo','test','--release','--locked','--features','diagnostics','--manifest-path','metatron-kernel/Cargo.toml','--test','stuck_recursor_cache','--','--nocapture']
+          p=subprocess.run(cmd,env=env,capture_output=True,timeout=600)
+          (out/'native.log').write_bytes(p.stdout+p.stderr)
+          print((p.stdout+p.stderr).decode(errors='replace'))
+          (out/'result.json').write_text(json.dumps(dict(rc=p.returncode,environment={k:v for k,v in env.items() if k.startswith('NUCLEUS_')},command=cmd),indent=2))
+          raise SystemExit(p.returncode)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-stalled-cache-${{ github.sha }}
+          path: /tmp/cache-evidence
