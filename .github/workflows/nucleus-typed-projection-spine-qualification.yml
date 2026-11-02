@@ -26,7 +26,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p /tmp/nucleus-typed-projection-qualified /tmp/frozen-pack /tmp/frozen-inputs
-          # Candidate is source50 plus a proposition-formed captured argument conversion retry.
+          # Corrected metadata lifetime; candidate is source50 plus a proposition-formed captured argument conversion retry.
           git diff 50a34f406df0ad55e7d8900ea274d119157a4573 HEAD -- metatron-kernel > /tmp/nucleus-typed-projection-qualified/candidate-source-delta.patch
           git rev-parse HEAD:metatron-kernel/src > /tmp/nucleus-typed-projection-qualified/checker-source-tree.txt
           git rev-parse HEAD > /tmp/nucleus-typed-projection-qualified/workflow-sha.txt
