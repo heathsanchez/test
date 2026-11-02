@@ -1,0 +1,58 @@
+name: Nucleus final identical source relevance controls
+on:
+  push:
+    branches: [research/nucleus-final-relevance-controls-20261102]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  controls:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Exact-source proof irrelevance off on and default rejection controls
+        run: |
+          python3 - <<'PY'
+          import os,pathlib,subprocess,hashlib,json,re
+          out=pathlib.Path('/tmp/final-controls');out.mkdir()
+          source=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          tree=subprocess.check_output(['git','rev-parse','HEAD:metatron-kernel'],text=True).strip()
+          assert not subprocess.check_output(['git','diff','50a34f406df0ad55e7d8900ea274d119157a4573','HEAD','--','metatron-kernel'])
+          base={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+          flags=('CONTEXT_BINDER','TYPED_LINEAGE','SUBSTITUTION_RECLOSURE','TYPED_VALUE_NORMALIZATION','PROJECTION_CONTEXT','PROJECTION_CROSSFRAME_512','TYPED_RECEIVER','SOURCE_PAIR_DEPTH8','POLYMORPHIC_PROP_IRREL','PROP_SINGLETON_2P1F','EXPECTED_LAMBDA')
+          rows=[]
+          binary_hash=None
+          for mode in ('off','on'):
+              env=base.copy()
+              for f in flags:env['NUCLEUS_EXPERIMENTAL_'+f]='1'
+              if mode=='on':env['NUCLEUS_EXPERIMENTAL_RELEVANCE']='1'
+              cmd=['cargo','test','--locked','--features','diagnostics','--manifest-path','metatron-kernel/Cargo.toml','--test','checked_relevance_signature','--','--nocapture']
+              p=subprocess.run(cmd,env=env,capture_output=True,timeout=600);raw=p.stdout+p.stderr
+              (out/(mode+'.log')).write_bytes(raw)
+              binaries=[p for p in pathlib.Path('metatron-kernel/target/debug/deps').glob('checked_relevance_signature-*') if p.is_file() and os.access(p,os.X_OK)]
+              assert len(binaries)==1,binaries
+              digest=hashlib.sha256(binaries[0].read_bytes()).hexdigest()
+              if binary_hash is not None:assert digest==binary_hash,'NONIDENTICAL_BINARY'
+              binary_hash=digest
+              text=raw.decode(errors='replace')
+              fails=[line for line in text.splitlines() if line.startswith('test ') and ' ... FAILED' in line]
+              if mode=='off':
+                  assert p.returncode==101 and fails==['test distinct_proof_arguments_of_same_checked_proposition_are_convertible ... FAILED'],text[-3000:]
+                  assert '2 passed; 1 failed; 0 ignored' in text
+              else:assert p.returncode==0 and '3 passed; 0 failed; 0 ignored' in text,text[-3000:]
+              row=dict(mode=mode,rc=p.returncode,source_sha=source,kernel_tree=tree,binary_sha256=digest,env={k:v for k,v in env.items() if k.startswith('NUCLEUS_')},failures=fails)
+              rows.append(row);print(json.dumps(row),flush=True)
+          cmd=['cargo','test','--locked','--features','diagnostics','--manifest-path','metatron-kernel/Cargo.toml','--test','quotient_source_ownership','--','--nocapture']
+          p=subprocess.run(cmd,env=base,capture_output=True,timeout=600);(out/'default-quotient-controls.log').write_bytes(p.stdout+p.stderr)
+          assert p.returncode==0,(p.stdout+p.stderr).decode()[-3000:]
+          (out/'identical-source-controls.json').write_text(json.dumps(dict(source_sha=source,kernel_tree=tree,relevance=rows,default_quotient_control_rc=p.returncode),indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-final-source-controls-${{ github.sha }}
+          path: /tmp/final-controls
