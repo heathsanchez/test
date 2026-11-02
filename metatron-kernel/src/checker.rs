@@ -334,6 +334,28 @@ fn check_export_with_policy(
                 value,
                 preferred_for_reduction,
             } => {
+                #[cfg(feature="diagnostics")]
+                if std::env::var_os("NUCLEUS_ASSURANCE_SOURCE_OWNED_PROBE").is_some()
+                    && trace_name(&export,name)=="countermodel"
+                    && matches!(export.exprs.get(ExprId(8835)),Some(Expr::App{fun:ExprId(8805),arg:ExprId(8834)}))
+                {
+                    // Fresh observers use the actual source owner's admitted environment.
+                    // Their caches and results never enter the live checker below.
+                    for replay_budget in [65536usize,1048576,4194304] {
+                        let probe=TypeChecker::with_level_substitution(
+                            &export.exprs,&export.levels,&environment,parameter_substitution(&level_params),
+                        ).with_delta_policy(delta_policy);
+                        let initial=probe.machine().expose(probe.closure(ExprId(8799),EnvFrame::empty()),Transparency::Full,limits.judgment_steps);
+                        if let Some(Value::Neutral(neutral))=initial.proven_value() {
+                            let before=crate::machine::assurance_replay_profile();
+                            let start=std::time::Instant::now();
+                            let replay=probe.machine().qualified_nested_recursor_result(neutral,replay_budget);
+                            let after=crate::machine::assurance_replay_profile();
+                            let counters:Vec<usize>=after.iter().zip(before).map(|(a,b)|a.saturating_sub(b)).collect();
+                            eprintln!("NUCLEUS_ASSURANCE_PROFILE:budget={replay_budget}:wall_us={}:counters={counters:?}:result={replay:?}",start.elapsed().as_micros());
+                        }
+                    }
+                }
                 let checker = TypeChecker::with_level_substitution(
                     &export.exprs,
                     &export.levels,
