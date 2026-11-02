@@ -1,3 +1,18 @@
+// Observation-only counters. No counter participates in checking or cache authority.
+#[cfg(feature="diagnostics")]
+static ASSURANCE_PROFILE: [std::sync::atomic::AtomicUsize; 14] =
+    [const { std::sync::atomic::AtomicUsize::new(0) }; 14];
+#[cfg(feature="diagnostics")]
+fn assurance_count(index:usize, amount:usize) {
+    if std::env::var_os("NUCLEUS_ASSURANCE_REPLAY_PROFILE").is_some() {
+        ASSURANCE_PROFILE[index].fetch_add(amount,std::sync::atomic::Ordering::Relaxed);
+    }
+}
+#[cfg(feature="diagnostics")]
+pub fn assurance_replay_profile() -> [usize;14] {
+    std::array::from_fn(|i|ASSURANCE_PROFILE[i].load(std::sync::atomic::Ordering::Relaxed))
+}
+
 use std::cell::{Cell, RefCell};
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
@@ -711,18 +726,21 @@ impl<'a> Machine<'a> {
     // Hash-cons only an exact source evaluator binding. This does not open
     // typed locals or create/transfer any checked typing witness.
     fn bind_captured_argument(&self, binder: &Closure, argument: Closure) -> EnvFrame {
-        let Some(cache)=self.exposure_cache.as_ref() else {return binder.env.extend(argument);};
+        #[cfg(feature="diagnostics")] assurance_count(0,1);
+                let Some(cache)=self.exposure_cache.as_ref() else {return binder.env.extend(argument);};
         if !matches!(self.expressions.get(binder.expr),Some(Expr::Lam{..}|Expr::Let{..})) {
             return binder.env.extend(argument);
         }
         let key=(self.authority,binder.clone(),argument.clone());
-        if let Some(frame)=cache.borrow().bindings.get(&key).cloned() {return frame;}
+        if let Some(frame)=cache.borrow().bindings.get(&key).cloned() { #[cfg(feature="diagnostics")] assurance_count(1,1);
+        return frame;}
         let frame=binder.env.extend(argument);
         let mut entries=cache.borrow_mut();
         // Retained source frames are keys of completed replay evidence.
         // Preserve them at capacity; overflow bindings remain ordinary fresh
         // evaluator frames, with no source or typing equality transferred.
-        if entries.bindings.len()<8192 {entries.bindings.insert(key,frame.clone());}
+        if entries.bindings.len()<8192 {entries.bindings.insert(key,frame.clone());} else { #[cfg(feature="diagnostics")] assurance_count(2,1);
+        }
         #[cfg(feature="diagnostics")]
         if entries.bindings.len()>=8192 && std::env::var_os("NUCLEUS_TRACE_REPLAY_CACHE").is_some() {
             use std::sync::atomic::{AtomicUsize,Ordering};
@@ -769,6 +787,8 @@ impl<'a> Machine<'a> {
     }
 
     fn reserve_replay_work(&self,cost:usize)->bool {
+        #[cfg(feature="diagnostics")] assurance_count(3,cost);
+        
         let Some(remaining)=self.exposure_fuel.get().and_then(|f|f.checked_sub(cost)) else {return false;};
         self.exposure_fuel.set(Some(remaining));true
     }
@@ -802,6 +822,8 @@ impl<'a> Machine<'a> {
         #[cfg(feature="diagnostics")]
         let before=self.exposure_fuel.get();
         let result=self.reserve_replay_key_inner(levels,spine,certificate);
+        #[cfg(feature="diagnostics")] assurance_count(4,before.unwrap_or(0).saturating_sub(self.exposure_fuel.get().unwrap_or(0)));
+        
         #[cfg(feature="diagnostics")]
         if std::env::var_os("NUCLEUS_TRACE_REPLAY_CACHE").is_some() {
             let used=before.unwrap_or(0).saturating_sub(self.exposure_fuel.get().unwrap_or(0));
@@ -845,6 +867,8 @@ impl<'a> Machine<'a> {
     }
 
     fn completed_replay_key(&self,name:NameId,levels:&[crate::level::LevelTerm],spine:&[Closure])->Option<Rc<ReplayKey>> {
+        #[cfg(feature="diagnostics")] assurance_count(5,1);
+        
         let certificate=self.recursor_reductions.get(&name)?;
         let required=certificate.num_params.checked_add(1)?.checked_add(certificate.rules.len())?
             .checked_add(certificate.num_indices)?.checked_add(1)?;
@@ -866,6 +890,8 @@ impl<'a> Machine<'a> {
     }
 
     fn replay_keys_equal(&self,left:&Rc<ReplayKey>,right:&Rc<ReplayKey>)->Option<bool> {
+        #[cfg(feature="diagnostics")] assurance_count(6,1);
+        
         if Rc::ptr_eq(left,right) {return Some(true);}
         if left.digest!=right.digest {return Some(false);}
         let key=&left.exact;
@@ -881,7 +907,8 @@ impl<'a> Machine<'a> {
                 let Some(equal)=self.replay_keys_equal(key,saved) else {return Judgment::unknown("nested-replay-comparison-work");};
                 if equal {
                     if !self.reserve_replay_value_clone(value) {return Judgment::unknown("nested-replay-cache-work");}
-                    return Judgment::proven(Some(value.clone()),"exact-completed-replay");
+                    #[cfg(feature="diagnostics")] assurance_count(7,1);
+        return Judgment::proven(Some(value.clone()),"exact-completed-replay");
                 }
             }
         }
@@ -2192,7 +2219,8 @@ impl<'a> Machine<'a> {
             }}
         }
         'evaluate: loop {
-            if !spend() { return Judgment::unknown("nested-recursor-iota-budget"); }
+            #[cfg(feature="diagnostics")] assurance_count(8,1);
+        if !spend() { return Judgment::unknown("nested-recursor-iota-budget"); }
             let neutral=&current;
             #[cfg(feature="diagnostics")]
             let depth=parents.len();
@@ -2222,7 +2250,8 @@ impl<'a> Machine<'a> {
                     }
                 }
                 let identity=ReplayKey::identity(&key);
-                if let Some(value)=resolved.remove(&identity) {finish!('evaluate,value);}
+                if let Some(value)=resolved.remove(&identity) {#[cfg(feature="diagnostics")] assurance_count(9,1);
+        finish!('evaluate,value);}
                 // Interface checks above precede every lookup. A completed
                 // value is actual source RHS, never a desired constructor.
                 match self.lookup_completed_replay(&key) {
@@ -2241,7 +2270,8 @@ impl<'a> Machine<'a> {
                 if !active.insert(identity) {return Judgment::unknown("nested-recursor-iota-cycle");}
                 entered.entry(key.digest).or_default().push(key.clone());
                 parents.push(Continuation::Finish(key));
-                let major_result=self.expose(neutral.spine[required-1].clone(),
+                #[cfg(feature="diagnostics")] assurance_count(10,1);
+        let major_result=self.expose(neutral.spine[required-1].clone(),
                     Transparency::Full,self.exposure_fuel.get().unwrap_or(0).min(512));
                 let Some(value)=major_result.proven_value() else {
                     #[cfg(feature="diagnostics")]
@@ -2294,7 +2324,8 @@ impl<'a> Machine<'a> {
                     return Judgment::unknown("nested-recursor-iota-constructor-level-mismatch");
                 }
             }
-            let substitution = reduction.level_params.iter().copied()
+            #[cfg(feature="diagnostics")] assurance_count(11,1);
+        let substitution = reduction.level_params.iter().copied()
                 .zip(levels.iter().cloned()).collect::<Vec<_>>();
             let mut result = Closure::with_levels(
                 rule.rhs, EnvFrame::empty(), LevelSubstitution::new(substitution),
@@ -2306,7 +2337,8 @@ impl<'a> Machine<'a> {
             // The RHS is the independently checked recursor rule. Consume
             // exactly its declared binders. Unknown shapes do not grant iota.
             for arg in arguments {
-                if !spend() { return Judgment::unknown("nested-recursor-iota-budget"); }
+                #[cfg(feature="diagnostics")] assurance_count(12,1);
+        if !spend() { return Judgment::unknown("nested-recursor-iota-budget"); }
                 let mut lets = 0usize;
                 loop {
                     match self.expressions.get(result.expr) {
@@ -2335,7 +2367,8 @@ impl<'a> Machine<'a> {
                     );
                 }
             }
-            let exposed=self.expose_internal_with_pending(
+            #[cfg(feature="diagnostics")] assurance_count(13,1);
+        let exposed=self.expose_internal_with_pending(
                 result, Transparency::Full, self.exposure_fuel.get().unwrap_or(0).min(512),
                 false, true, neutral.spine[required..].iter().rev().cloned().collect(),
             ).map(|exposure| exposure.value);
