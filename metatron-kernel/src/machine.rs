@@ -29,6 +29,9 @@ use crate::value::{
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct AuthorityId(pub u64);
 
+// Research intervention: retain more exact binding identities, with no equality relaxation.
+const CAPTURE_BINDING_CAPACITY: usize = 65536;
+
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum Transparency {
     Opaque,
@@ -739,10 +742,10 @@ impl<'a> Machine<'a> {
         // Retained source frames are keys of completed replay evidence.
         // Preserve them at capacity; overflow bindings remain ordinary fresh
         // evaluator frames, with no source or typing equality transferred.
-        if entries.bindings.len()<8192 {entries.bindings.insert(key,frame.clone());} else { #[cfg(feature="diagnostics")] assurance_count(2,1);
+        if entries.bindings.len()<CAPTURE_BINDING_CAPACITY {entries.bindings.insert(key,frame.clone());} else { #[cfg(feature="diagnostics")] assurance_count(2,1);
         }
         #[cfg(feature="diagnostics")]
-        if entries.bindings.len()>=8192 && std::env::var_os("NUCLEUS_TRACE_REPLAY_CACHE").is_some() {
+        if entries.bindings.len()>=CAPTURE_BINDING_CAPACITY && std::env::var_os("NUCLEUS_TRACE_REPLAY_CACHE").is_some() {
             use std::sync::atomic::{AtomicUsize,Ordering};
             static PRINTED:AtomicUsize=AtomicUsize::new(0);
             if PRINTED.fetch_add(1,Ordering::Relaxed)<32 {eprintln!("NUCLEUS_BETA_BINDING_CACHE:capacity:source={:?}",binder.expr);}
@@ -2834,7 +2837,7 @@ mod bounded_checked_replay_tests {
         }
         // Saturation keeps previously completed progress instead of
         // clearing the table and repeating the first expensive component.
-        for index in 0..8193 {
+        for index in 0..(CAPTURE_BINDING_CAPACITY as u64 + 1) {
             let mut distinct=inner.clone();
             distinct.spine[0]=Closure::new(ExprId(0),EnvFrame::empty().extend_free(FreeId(1000+index)));
             assert!(machine.qualified_nested_recursor_result(&distinct,64).is_proven());
@@ -3182,7 +3185,7 @@ mod captured_beta_frame_tests {
         assert_ne!(first.id(),machine.bind_captured_argument(&changed_binder,argument.clone()).id());
         let changed_argument=Closure::with_levels(argument.expr,argument.env.clone(),changed_levels);
         assert_ne!(first.id(),machine.bind_captured_argument(&binder,changed_argument).id());
-        for i in 0..8192 {
+        for i in 0..CAPTURE_BINDING_CAPACITY as u64 {
             let distinct=Closure::new(argument.expr,EnvFrame::empty().extend_free(FreeId(i)));
             machine.bind_captured_argument(&binder,distinct);
         }
