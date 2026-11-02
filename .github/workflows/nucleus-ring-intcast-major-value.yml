@@ -1,0 +1,80 @@
+name: Nucleus Ring intCast actual nested major values
+on:
+  push:
+    branches: [research/nucleus-typed-projection-spine-20261102]
+    paths: [".github/workflows/nucleus-ring-intcast-major-value.yml"]
+permissions:
+  contents: read
+jobs:
+  source:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 25fb80ff42658ba2e4d21cb4388d092dd9baaa92
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Bind and compile exact source with closed GetElem prefix
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/omega/evidence /tmp/omega/restored
+          git rev-parse HEAD > /tmp/omega/evidence/source-sha.txt
+          git rev-parse HEAD:metatron-kernel > /tmp/omega/evidence/kernel-tree.txt
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/omega/plain
+          gh api repos/heathsanchez/test/actions/artifacts/13117977692/zip > /tmp/omega/input.zip
+          printf '%s  %s\n' 4db9db78908aa22a1d193050f44d3eebe1d4549f80f6a08d0ab8edf4c9b026ea /tmp/omega/input.zip | sha256sum -c -
+          unzip -q /tmp/omega/input.zip -d /tmp/omega/restored
+      - name: Observe actual first source-owned dependent type mismatch
+        run: |
+          python3 - <<'PY'
+          import pathlib
+          p=pathlib.Path("metatron-kernel/src/typecheck.rs");s=p.read_text()
+          needle='''                #[cfg(feature = "diagnostics")]
+                          if std::env::var_os("NUCLEUS_TRACE_FAILED_RECEIVER_CONVERSION").is_some()'''
+          needle=needle.replace("                          if","                if")
+          assert s.count(needle)==1
+          p.write_text(s.replace(needle,"                #[cfg(feature=\"diagnostics\")]\n                if std::env::var_os(\"NUCLEUS_TRACE_OMEGA_SOURCE_PAIR\").is_some()\n                    && (73420..=73610).contains(&expression.0) && context.len()==6 && !conversion.is_proven()\n                {\n                    use std::sync::atomic::{AtomicUsize,Ordering};\n                    static COUNT:AtomicUsize=AtomicUsize::new(0);\n                    if COUNT.fetch_add(1,Ordering::Relaxed)<3 {\n                        let view=|ty:&TypeValue|match ty {TypeValue::Term(c)=>Some(self.machine().expose_for_conversion(c.clone(),Transparency::Full,4096)),_=>None};\n                        let av=view(&value);let bv=view(expected);\n                        eprintln!(\"NUCLEUS_OMEGA_SOURCE_PAIR:expression={expression:?}:frame={}:remaining={remaining}:actual={value:?}:expected={expected:?}:context={context:?}:conversion={conversion:?}:left_value={av:?}:right_value={bv:?}\",frame.id());\n                        if let (Some(a),Some(b))=(av.as_ref(),bv.as_ref()) {\n                            if let (Some(Value::Neutral(x)),Some(Value::Neutral(y)))=(a.proven_value(),b.proven_value()) {\n                                for (index,(aa,bb)) in x.spine.iter().zip(&y.spine).enumerate() {\n                                    let av=self.machine().expose_for_conversion(aa.clone(),Transparency::Full,8192);\n                                    let bv=self.machine().expose_for_conversion(bb.clone(),Transparency::Full,8192);\n                                    let relation=crate::convert::convert_with_policy_in_context(self,&TypeValue::Term(aa.clone()),&TypeValue::Term(bb.clone()),8192,crate::convert::DeltaPolicy::GuardedSemanticFallback,context.len(),context);\n                                    let typed=self.checked_source_conversion(aa,bb,context,8192);\n                                    if index==1 {\n                                        for (side,observed) in [(\"left\",&av),(\"right\",&bv)] {\n                                            let mut current=observed.proven_value().cloned();\n                                            for step in 0..6 {\n                                                let Some(value)=current.take()else{break};\n                                                match value {\n                                                    Value::StuckProjection {type_name,index,structure,spine}=>{\n                                                        let next=self.machine().projection_value_for_conversion(structure,type_name,index,&spine,16384);\n                                                        eprintln!(\"NUCLEUS_OMEGA_REDUCTION:side={side}:step={step}:next={next:?}\");\n                                                        current=next.proven_value().cloned();\n                                                    }\n                                                    Value::Neutral(n)=>{\n                                                        let mut cursor=n.clone();\n                                                        for hop in 0..6 {\n                                                            if cursor.spine.len()!=4 {break}\n                                                            let c=cursor.spine[3].clone();\n                                                            let ordinary=self.machine().expose(c.clone(),Transparency::Full,512);\n                                                            let kept=self.machine().expose_for_conversion(c.clone(),Transparency::Full,512);\n                                                            eprintln!(\"NUCLEUS_RING_ACTUAL_MAJOR:side={side}:hop={hop}:source={c:?}:ordinary={ordinary:?}:preserved={kept:?}\");\n                                                            match kept.proven_value() {\n                                                                Some(Value::Neutral(next)) if matches!(&next.head,NeutralHead::Const{name,..}if self.has_qualified_recursor(*name))=>{cursor=next.clone();}\n                                                                Some(Value::StuckProjection{type_name,index,structure,spine})=>{\n                                                                    let field=self.machine().projection_field_for_conversion(structure.clone(),*type_name,*index,8192);\n                                                                    let value=self.machine().projection_value_for_conversion(structure.clone(),*type_name,*index,spine,8192);\n                                                                    eprintln!(\"NUCLEUS_RING_MAJOR_PROJECTION:side={side}:hop={hop}:field={field:?}:value={value:?}\");\n                                                                    break;\n                                                                }\n                                                                _=>break,\n                                                            }\n                                                        }\n                                                        for cap in [512,2048,4096,8192,32768] {\n                                                            let one=self.machine().qualified_one_step_recursor_result(&n,cap);\n                                                            let full=self.machine().qualified_nested_recursor_result(&n,cap);\n                                                            eprintln!(\"NUCLEUS_RING_QUALIFIED_REPLAY:side={side}:cap={cap}:one={one:?}:completed={full:?}\");\n                                                        }\n                                                        eprintln!(\"NUCLEUS_OMEGA_NEUTRAL:side={side}:value={n:?}:major_chain={}\",self.diagnostic_captured_recursor_major_chain(&n,4096));\n                                                        for (slot,c) in n.spine.iter().enumerate() {\n                                                            let v=self.machine().expose_for_conversion(c.clone(),Transparency::Full,8192);\n                                                            eprintln!(\"NUCLEUS_OMEGA_NEUTRAL_ARG:side={side}:slot={slot}:source={c:?}:value={v:?}\");\n                                                        }\n                                                        break;\n                                                    }\n                                                    v=>{eprintln!(\"NUCLEUS_OMEGA_VALUE:side={side}:value={v:?}\");break}\n                                                }\n                                            }\n                                        }\n                                        if let (Some(Value::StuckProjection{spine:a,..}),Some(Value::StuckProjection{spine:b,..}))=(av.proven_value(),bv.proven_value()) {\n                                            for (slot,(xx,yy))in a.iter().zip(b).enumerate() {\n                                                let xv=self.machine().expose_for_conversion(xx.clone(),Transparency::Full,8192);\n                                                let yv=self.machine().expose_for_conversion(yy.clone(),Transparency::Full,8192);\n                                                let r=crate::convert::convert_with_policy_in_context(self,&TypeValue::Term(xx.clone()),&TypeValue::Term(yy.clone()),8192,crate::convert::DeltaPolicy::GuardedSemanticFallback,context.len(),context);\n                                                eprintln!(\"NUCLEUS_OMEGA_SUB_OPERAND:slot={slot}:left={xx:?}:right={yy:?}:conversion={r:?}:left_value={xv:?}:right_value={yv:?}\");\n                                            }\n                                        }\n                                    }\n                                    eprintln!(\"NUCLEUS_OMEGA_TYPE_ARG:index={index}:left={aa:?}:right={bb:?}:relation={relation:?}:typed={typed:?}:left_value={av:?}:right_value={bv:?}\");\n                                }\n                            }\n                        }\n                    }\n                }\n"+needle))
+          s=p.read_text()
+          marker='    pub(crate) fn certified_relevance_spine_congruence('
+          assert s.count(marker)==1
+          s=s.replace(marker,"\n    #[cfg(feature=\"diagnostics\")]\n    fn diagnostic_omega_telescope(&self,left:&Closure,right:&Closure,context:&[TypeValue]) {\n        let av=self.machine().expose_for_conversion(left.clone(),Transparency::Opaque,8192);\n        let bv=self.machine().expose_for_conversion(right.clone(),Transparency::Opaque,8192);\n        eprintln!(\"NUCLEUS_OMEGA_OPAQUE:left={av:?}:right={bv:?}\");\n        let (Some(Value::Neutral(a)),Some(Value::Neutral(b)))=(av.proven_value(),bv.proven_value()) else {return};\n        let (NeutralHead::Const{name:an,levels:al},NeutralHead::Const{name:bn,levels:bl})=(&a.head,&b.head) else{return};\n        if an!=bn || a.spine.len()!=b.spine.len(){return}\n        let Some(decl)=self.environment.get(*an)else{return};\n        let ty=|ls:&Vec<LevelTerm>|TypeValue::Term(Closure::with_levels(decl.ty,EnvFrame::empty(),LevelSubstitution::new(decl.level_params.iter().copied().zip(ls.iter().cloned()).collect())));\n        let mut at=ty(al);let mut bt=ty(bl);\n        for (i,(x,y)) in a.spine.iter().zip(&b.spine).enumerate(){\n            let Some((ad,ab))=self.pi_view(Judgment::proven(at,\"diagnostic-only\"),8192)else{eprintln!(\"NUCLEUS_OMEGA_TELESCOPE_STOP:slot={i}:left-pi\");return};\n            let Some((bd,bb))=self.pi_view(Judgment::proven(bt,\"diagnostic-only\"),8192)else{eprintln!(\"NUCLEUS_OMEGA_TELESCOPE_STOP:slot={i}:right-pi\");return};\n            let mut af=8192;let ax=self.infer_exact_closure_in_context(x,context,&mut af,0);\n            let mut bf=8192;let by=self.infer_exact_closure_in_context(y,context,&mut bf,0);\n            for budget in [512,2048,8192] {\n                let cv=|l:&TypeValue,r:&TypeValue|crate::convert::convert_with_policy_in_context(self,l,r,budget,crate::convert::DeltaPolicy::PreferredOnly,context.len(),context);\n                let domains=cv(&ad,&bd);\n                let ac=ax.as_ref().map(|t|cv(t,&ad));let bc=by.as_ref().map(|t|cv(t,&bd));\n                let args=cv(&TypeValue::Term(x.clone()),&TypeValue::Term(y.clone()));\n                eprintln!(\"NUCLEUS_OMEGA_TELESCOPE:slot={i}:budget={budget}:left={x:?}:right={y:?}:left_type={ax:?}:right_type={by:?}:left_domain={ad:?}:right_domain={bd:?}:domains={domains:?}:left_check={ac:?}:right_check={bc:?}:arguments={args:?}\");\n            }\n            let next=|body:PiBody,arg:&Closure|match body{\n                PiBody::Fixed(binder,t)=>{let mut f=8192;self.instantiate_fixed_pi_body(&t,binder,arg,&mut f)},\n                PiBody::Closure(c)=>Some(TypeValue::Term(Closure::with_levels(c.expr,c.env.extend(arg.clone()),c.levels)))\n            };\n            let Some(nat)=next(ab,x)else{return};let Some(nbt)=next(bb,y)else{return};at=nat;bt=nbt;\n        }\n    }\n"+"\n"+marker)
+          marker='                                    if index==1 {'
+          assert s.count(marker)==1
+          s=s.replace(marker,marker+'\n                                        self.diagnostic_omega_telescope(aa,bb,context);')
+          p.write_text(s)
+          PY
+          git diff -- metatron-kernel/src > /tmp/omega/evidence/diagnostic.patch
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/omega/diagnostic
+          sha256sum /tmp/omega/{plain,diagnostic} > /tmp/omega/evidence/binaries.sha256
+          python3 - <<'PY'
+          import json,subprocess,pathlib,hashlib,os
+          out=pathlib.Path("/tmp/omega/evidence")
+          source=pathlib.Path("/tmp/omega/restored/getelem/evidence/grind-original.ndjson").read_bytes()
+          assert hashlib.sha256(source).hexdigest()=="e9c394e0ff311fd10f60dee2433a530f16e82354c32d6588a8775baa06fd221f"
+          flags=("RELEVANCE","CONTEXT_BINDER","TYPED_LINEAGE","SUBSTITUTION_RECLOSURE","TYPED_VALUE_NORMALIZATION","PROJECTION_CONTEXT","PROJECTION_CROSSFRAME_512","TYPED_RECEIVER","SOURCE_PAIR_DEPTH8","POLYMORPHIC_PROP_IRREL","PROP_SINGLETON_2P1F","EXPECTED_LAMBDA","FORMED_PROP_DOMAIN_RETRY","TYPED_DATA_CONGRUENCE","TYPED_PROJECTION_SPINE")
+          env={k:v for k,v in os.environ.items() if not k.startswith("NUCLEUS_")}|{"NUCLEUS_EXPERIMENTAL_"+f:"1"for f in flags}
+          rows=[]
+          for binary,traced in (("/tmp/omega/plain",False),("/tmp/omega/diagnostic",True)):
+           active=env.copy()
+           if traced:active.update(NUCLEUS_TRACE_OMEGA_SOURCE_PAIR="1",NUCLEUS_TRACE_DOWNSTREAM="1",NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE="1")
+           p=subprocess.run([binary],input=source,capture_output=True,env=active,timeout=240)
+           tag="traced"if traced else"plain";(out/(tag+".stderr")).write_bytes(p.stderr)
+           row=dict(rc=p.returncode,traced=traced,sha256=hashlib.sha256(source).hexdigest(),env={k:v for k,v in active.items()if k.startswith("NUCLEUS_")})
+           rows.append(row);print(json.dumps(row),flush=True)
+           for line in p.stderr.decode(errors="replace").splitlines():
+            if line.startswith(("NUCLEUS_OMEGA","NUCLEUS_DOWNSTREAM")):print(line,flush=True)
+           assert p.returncode in (0,2),row
+          (out/"verdicts.json").write_text(json.dumps(rows,indent=2))
+          assert rows[0]["rc"]==rows[1]["rc"]
+          
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-ring-intcast-actual-major
+          path: /tmp/omega/evidence
+          if-no-files-found: error
