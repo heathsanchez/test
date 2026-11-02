@@ -1,0 +1,118 @@
+name: Independent Nucleus source projection major full qualification
+on:
+  push:
+    branches: [research/nucleus-projection-major-replay-20261102]
+    paths: [".github/workflows/nucleus-projection-major-qualification.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  current:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 110
+    env:
+      GH_TOKEN: ${{ github.token }}
+      ARENA_SHA: d7f74a9e67459e2c251d608f524dc5efc6dc223c
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Exact original independent source compile and fixture retrieval
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/nucleus-projection-major-qualified /tmp/frozen-pack /tmp/frozen-inputs
+          # Corrected metadata lifetime; candidate is source50 plus a proposition-formed captured argument conversion retry.
+          git diff 50a34f406df0ad55e7d8900ea274d119157a4573 HEAD -- metatron-kernel > /tmp/nucleus-projection-major-qualified/candidate-source-delta.patch
+          git rev-parse HEAD:metatron-kernel/src > /tmp/nucleus-projection-major-qualified/checker-source-tree.txt
+          git rev-parse HEAD > /tmp/nucleus-projection-major-qualified/workflow-sha.txt
+          git rev-parse HEAD:metatron-kernel > /tmp/nucleus-projection-major-qualified/kernel-tree.txt
+          sha256sum metatron-kernel/tests/fixtures/arena-forged-quot-ind-d7f74a9.ndjson > /tmp/nucleus-projection-major-qualified/official-forged-input.sha256
+          cp metatron-kernel/tests/fixtures/arena-forged-quot-ind-d7f74a9.ndjson /tmp/nucleus-projection-major-qualified/official-forged-quot-ind.ndjson
+          cp /tmp/nucleus-projection-major-qualified/kernel-tree.txt /tmp/nucleus-projection-major-qualified/source-tree.txt
+          git diff dad309eb369b9e48c0a896e9d38c383d3e21ef6a HEAD -- metatron-kernel > /tmp/nucleus-projection-major-qualified/source-delta.patch
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          sha256sum metatron-kernel/target/release/metatron-kernel > /tmp/nucleus-projection-major-qualified/binary.sha256
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/11272848230/zip > /tmp/frozen.zip
+          sha256sum /tmp/frozen.zip > /tmp/nucleus-projection-major-qualified/archive.sha256
+          unzip -q /tmp/frozen.zip -d /tmp/frozen-pack
+          tar --no-same-owner -xzf /tmp/frozen-pack/lean-arena-tests.tar.gz -C /tmp/frozen-inputs
+      - name: Complete native suite and explicitly accounted incumbent closure failure
+        run: |
+          python3 - <<'PY'
+          import os,subprocess,pathlib,json,re
+          out=pathlib.Path('/tmp/nucleus-projection-major-qualified')
+          env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+          for f in ('RELEVANCE','CONTEXT_BINDER','TYPED_LINEAGE','SUBSTITUTION_RECLOSURE','TYPED_VALUE_NORMALIZATION','PROJECTION_CONTEXT','PROJECTION_CROSSFRAME_512','TYPED_RECEIVER','SOURCE_PAIR_DEPTH8','POLYMORPHIC_PROP_IRREL','PROP_SINGLETON_2P1F','EXPECTED_LAMBDA','FORMED_PROP_DOMAIN_RETRY','TYPED_DATA_CONGRUENCE','TYPED_PROJECTION_SPINE','REPLAY_PROJECTION_MAJOR'):
+            env['NUCLEUS_EXPERIMENTAL_'+f]='1'
+          env['NUCLEUS_FROZEN196']='/tmp/frozen-inputs'
+          cmd=['cargo','test','--release','--locked','--features','diagnostics','--manifest-path','metatron-kernel/Cargo.toml','--no-fail-fast','--','--include-ignored','--nocapture']
+          p=subprocess.run(cmd,env=env,capture_output=True,timeout=900)
+          raw=p.stdout+p.stderr
+          (out/'native-all-including-ignored.log').write_bytes(raw)
+          summary=dict(rc=p.returncode,command=cmd,env={k:v for k,v in env.items() if k.startswith('NUCLEUS_')},summaries=re.findall(r'test result:.*',raw.decode(errors='replace')),failures=[s for s in raw.decode(errors='replace').splitlines() if 'FAILED' in s or 'panicked at' in s],boundary='Failures are preserved as research results, not silently promoted; no skips requested.')
+          (out/'native-all-including-ignored.json').write_text(json.dumps(summary,indent=2))
+          print(json.dumps(summary,indent=2),flush=True)
+          failures=[line for line in raw.decode(errors='replace').splitlines() if line.startswith('test ') and ' ... FAILED' in line]
+          assert failures in ([],['test all_seven_complete_positive_exports_accept ... FAILED']),failures
+          PY
+      - name: Replay every original frozen input with source hashes
+        run: |
+          python3 - <<'PY'
+          import pathlib,json,os,hashlib,subprocess,collections
+          out=pathlib.Path('/tmp/nucleus-projection-major-qualified')
+          root=pathlib.Path('/tmp/frozen-inputs')
+          manifest=pathlib.Path('metatron-kernel/evidence/performance/owned-environment-2026-10-13/nucleus-owned-environment-frozen196.json')
+          expected=json.loads(manifest.read_text())['modes']['origin']['rows']
+          env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+          for f in ('RELEVANCE','CONTEXT_BINDER','TYPED_LINEAGE','SUBSTITUTION_RECLOSURE','TYPED_VALUE_NORMALIZATION','PROJECTION_CONTEXT','PROJECTION_CROSSFRAME_512','TYPED_RECEIVER','SOURCE_PAIR_DEPTH8','POLYMORPHIC_PROP_IRREL','PROP_SINGLETON_2P1F','EXPECTED_LAMBDA','FORMED_PROP_DOMAIN_RETRY','TYPED_DATA_CONGRUENCE','TYPED_PROJECTION_SPINE','REPLAY_PROJECTION_MAJOR'):
+            env['NUCLEUS_EXPERIMENTAL_'+f]='1'
+          rows=[]
+          for old in expected:
+            path=root/old['case'];digest=hashlib.file_digest(path.open('rb'),'sha256').hexdigest()
+            assert digest==old['sha256']
+            tag='frozen-'+old['case'].replace('/','__')
+            with path.open('rb') as fd:
+              p=subprocess.run(['/usr/bin/time','-f','wall=%e user=%U system=%S rss_kb=%M','-o',str(out/(tag+'.time')),'metatron-kernel/target/release/metatron-kernel'],stdin=fd,capture_output=True,env=env,timeout=180)
+            wanted=0 if old['case'].startswith('good/') else 1
+            row=dict(case=old['case'],sha256=digest,rc=p.returncode,expected=wanted,baseline_rc=old['rc'])
+            rows.append(row);print(json.dumps(row),flush=True)
+            (out/(tag+'.stderr')).write_bytes(p.stderr)
+          (out/'frozen196-verdicts.json').write_text(json.dumps(rows,indent=2))
+          assert len(rows)==196 and all(r['rc'] in (0,1,2) and (r['rc']==2 or r['rc']==r['expected']) for r in rows),'ORIGINAL_INCORRECT_OR_ERROR'
+          PY
+      - name: Restore preserved current208 exact export bytes
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/current208/inputs /tmp/nucleus-projection-major-qualified/current208
+          gh api repos/heathsanchez/test/actions/artifacts/13126161718/zip > /tmp/current208/input.zip
+          printf '%s  %s\n' 462e31e21379054490570b465b46ece4fff878490d9ad7de6bbc73149d587f4c /tmp/current208/input.zip | sha256sum -c -
+          unzip -q /tmp/current208/input.zip -d /tmp/current208/inputs
+      - name: Replay all208 with immutable hashes and zero incorrect gate
+        run: |
+          python3 - <<'PY'
+          import os,pathlib,json,hashlib,subprocess,collections
+          root=pathlib.Path("/tmp/current208/inputs");out=pathlib.Path("/tmp/nucleus-projection-major-qualified/current208")
+          manifest=json.loads((root/"inputs-manifest.json").read_text());assert len(manifest)==208
+          flags=("RELEVANCE","CONTEXT_BINDER","TYPED_LINEAGE","SUBSTITUTION_RECLOSURE","TYPED_VALUE_NORMALIZATION","PROJECTION_CONTEXT","PROJECTION_CROSSFRAME_512","TYPED_RECEIVER","SOURCE_PAIR_DEPTH8","POLYMORPHIC_PROP_IRREL","PROP_SINGLETON_2P1F","EXPECTED_LAMBDA","FORMED_PROP_DOMAIN_RETRY","TYPED_DATA_CONGRUENCE","TYPED_PROJECTION_SPINE","REPLAY_PROJECTION_MAJOR")
+          env={k:v for k,v in os.environ.items()if not k.startswith("NUCLEUS_")}|{"NUCLEUS_EXPERIMENTAL_"+f:"1"for f in flags}
+          (out/"configuration.json").write_text(json.dumps({k:v for k,v in env.items()if k.startswith("NUCLEUS_")},indent=2))
+          rows=[]
+          for old in manifest:
+           p=root/"inputs"/old["relative_path"];digest=hashlib.sha256(p.read_bytes()).hexdigest();assert digest==old["sha256"]
+           tag=old["case"].replace("/","__")
+           with p.open("rb")as fd:
+            r=subprocess.run(["/usr/bin/time","-f","wall=%e user=%U system=%S rss_kb=%M","-o",str(out/(tag+".time")),"metatron-kernel/target/release/metatron-kernel"],stdin=fd,env=env,capture_output=True,timeout=240)
+           (out/(tag+".stderr")).write_bytes(r.stderr);(out/(tag+".stdout")).write_bytes(r.stdout)
+           row=dict(case=old["case"],sha256=digest,expected=old["expected"],rc=r.returncode);rows.append(row);print(json.dumps(row),flush=True)
+           (out/"verdicts.json").write_text(json.dumps(rows,indent=2))
+          summary=dict(count=len(rows),counts=dict(collections.Counter(r["rc"]for r in rows)),wrong=[r for r in rows if r["rc"]in(0,1)and r["rc"]!=r["expected"]],errors=[r for r in rows if r["rc"]not in(0,1,2)],unknown=[r for r in rows if r["rc"]==2])
+          (out/"summary.json").write_text(json.dumps(summary,indent=2));print(json.dumps(summary),flush=True)
+          assert summary["count"]==208 and not summary["wrong"]and not summary["errors"],summary
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-proof-domain-candidate-${{ github.sha }}
+          path: /tmp/nucleus-projection-major-qualified
+          if-no-files-found: error
