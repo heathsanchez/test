@@ -301,6 +301,8 @@ fn check_export_with_policy(
                         let exposed=probe.machine().expose(probe.closure(ExprId(8799),EnvFrame::empty()),transparency,limits.judgment_steps);
                         eprintln!("NUCLEUS_ASSURANCE_DECIDE_EXPOSE:transparency={transparency:?}:result={exposed:?}");
                         if let Some(Value::Neutral(neutral))=exposed.proven_value() {
+                            let replay=probe.machine().qualified_nested_recursor_result(neutral,limits.judgment_steps);
+                            eprintln!("NUCLEUS_ASSURANCE_DECIDE_CHECKED_REPLAY:transparency={transparency:?}:result={replay:?}");
                             let chain=probe.diagnostic_captured_recursor_major_chain(neutral,limits.judgment_steps);
                             eprintln!("NUCLEUS_ASSURANCE_DECIDE_MAJOR_CHAIN:transparency={transparency:?}:chain={chain}");
                             if let Some(major)=neutral.spine.last() {
