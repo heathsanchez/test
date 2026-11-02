@@ -2488,6 +2488,16 @@ fn compare_neutral_heads(
                     );
                 }
             }
+            // A retained registered recursor is a potentially reducible
+            // source computation. Failed bounded replay does not establish
+            // that its head is rigid. Preserve UNKNOWN after the caller's
+            // existing checked-iota attempts; grant no equality or admission.
+            if [left,right].iter().any(|neutral| {
+                !neutral.spine.is_empty()
+                    && matches!(&neutral.head,NeutralHead::Const{name,..} if checker.has_qualified_recursor(*name))
+            }) {
+                return Judgment::unknown("unresolved-qualified-recursor-heads");
+            }
             Judgment::refuted("distinct-neutral-heads")
         }
     }
