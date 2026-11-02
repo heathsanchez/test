@@ -1,0 +1,35 @@
+name: Independent Nucleus inductive scope red green qualification
+on:
+  push:
+    branches: [research/nucleus-inductive-scope-assurance-20261102]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  gate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Compile exact source and execute source-owned scope tests
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/scope-evidence
+          git rev-parse HEAD > /tmp/scope-evidence/source.txt
+          git rev-parse HEAD:metatron-kernel > /tmp/scope-evidence/kernel-tree.txt
+          set +e
+          cargo test --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml --test inductive_universe_scope > /tmp/scope-evidence/scope-tests.log 2>&1
+          rc=$?
+          set -e
+          cat /tmp/scope-evidence/scope-tests.log
+          printf '%s\n' "$rc" > /tmp/scope-evidence/test-exit.txt
+          exit "$rc"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-scope-red-green-${{ github.sha }}
+          path: /tmp/scope-evidence
+          if-no-files-found: error
