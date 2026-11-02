@@ -821,10 +821,6 @@ fn prod_broader_neighbors_preserve_unknown() {
             "\"name\":1,\"numIndices\":0,\"numNested\":0,\"numParams\":2",
             "\"name\":1,\"numIndices\":0,\"numNested\":0,\"numParams\":3",
         ),
-        (
-            "\"forallE\":{\"binderInfo\":\"default\",\"body\":2,\"name\":5,\"type\":1},\"ie\":3",
-            "\"forallE\":{\"binderInfo\":\"default\",\"body\":2,\"name\":5,\"type\":19},\"ie\":3",
-        ),
     ];
 
     for (from, to) in cases {
@@ -993,11 +989,6 @@ fn pprod_broader_neighbors_preserve_unknown() {
             "broader parameter count",
             "\"name\":1,\"numIndices\":0,\"numNested\":0,\"numParams\":2",
             "\"name\":1,\"numIndices\":0,\"numNested\":0,\"numParams\":3",
-        ),
-        (
-            "dependent parameter",
-            "\"forallE\":{\"binderInfo\":\"default\",\"body\":2,\"name\":5,\"type\":1},\"ie\":3",
-            "\"forallE\":{\"binderInfo\":\"default\",\"body\":2,\"name\":5,\"type\":19},\"ie\":3",
         ),
         (
             "dependent field",
@@ -1676,4 +1667,23 @@ fn nat_pred_follows_its_checked_definition_instead_of_its_name() {
     assert_eq!(run_fixture("pred-custom-incompatible.ndjson"), Verdict::Reject);
     assert_eq!(run_fixture("pred-standard-valid.ndjson"), Verdict::Accept);
     assert_eq!(run_fixture("pred-standard-incompatible.ndjson"), Verdict::Reject);
+}
+
+#[test]
+fn product_parameter_cannot_capture_the_recursors_private_universe() {
+    // Source ie19 includes Sort u_1 (il6, NameId10). The recursor declares
+    // u_1, but the Prod inductive/constructor signatures declare only u,v.
+    // This malformed neighbor used to be conservatively UNKNOWN.
+    assert_eq!(run_g13_perturbations(&[(
+        "\"forallE\":{\"binderInfo\":\"default\",\"body\":2,\"name\":5,\"type\":1},\"ie\":3",
+        "\"forallE\":{\"binderInfo\":\"default\",\"body\":2,\"name\":5,\"type\":19},\"ie\":3",
+    )]),Verdict::Reject);
+}
+
+#[test]
+fn pproduct_parameter_cannot_capture_the_recursors_private_universe() {
+    assert_eq!(run_g14_perturbations(&[(
+        "\"forallE\":{\"binderInfo\":\"default\",\"body\":2,\"name\":5,\"type\":1},\"ie\":3",
+        "\"forallE\":{\"binderInfo\":\"default\",\"body\":2,\"name\":5,\"type\":19},\"ie\":3",
+    )]),Verdict::Reject);
 }
