@@ -358,7 +358,9 @@ fn convert_in_context_with_congruence(
                             NeutralHead::Const { name: right_name, .. },
                         ) = (&lhs.head, &rhs.head)
                         && left_name == right_name
-                        && definition_arguments_used(checker, *left_name, lhs.spine.len())
+                        && (checker.certified_data_spine_congruence(
+                            lhs,rhs,context,probe_budget,depth,
+                        ) || (definition_arguments_used(checker, *left_name, lhs.spine.len())
                         && !lhs.spine.is_empty()
                         && lhs.spine.len() == rhs.spine.len()
                         && compare_neutral_heads(checker, lhs, rhs, probe_budget, depth, context).is_proven()
@@ -375,6 +377,7 @@ fn convert_in_context_with_congruence(
                                 congruence_attempts,
                             ).is_proven()
                         })
+                        ))
                     {
                         continue;
                     }
