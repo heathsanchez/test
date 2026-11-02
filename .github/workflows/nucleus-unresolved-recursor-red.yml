@@ -1,0 +1,30 @@
+name: Nucleus unresolved recursor classification red
+on:
+  push:
+    branches: [research/nucleus-unresolved-recursor-assurance-20261102]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  red:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Preserve exact-source failing retention regression
+        run: |
+          mkdir -p /tmp/recursor-red
+          git rev-parse HEAD > /tmp/recursor-red/source-sha.txt
+          set +e
+          cargo test --lib --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml unresolved_registered_recursor_is_unknown_while_distinct_bool_data_is_refuted -- --nocapture > /tmp/recursor-red/red.log 2>&1
+          rc=$?
+          set -e
+          echo "$rc" > /tmp/recursor-red/exit.txt
+          cat /tmp/recursor-red/red.log
+          test "$rc" = 101
+          python3 -c "import pathlib; s=pathlib.Path('/tmp/recursor-red/red.log').read_text(); assert '0 passed; 1 failed; 0 ignored' in s and 'unresolved source computation is not a refutation' in s"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-unresolved-recursor-red-${{ github.sha }}
+          path: /tmp/recursor-red
