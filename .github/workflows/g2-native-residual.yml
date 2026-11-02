@@ -1,0 +1,75 @@
+name: G2 independently qualified author-native residual
+on:
+  push:
+    branches: [research/udm-g2-authentic-native-20261103]
+    paths:
+      - 'research/g2_native_residual/**'
+      - '.github/workflows/g2-native-residual.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-residual:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: code
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: rs/zerolog
+          ref: b9019914778e22f1f362f12277f9e09af2d6cf0d
+          fetch-depth: 0
+          path: source
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.0'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify six fail-closed apparatus controls (not zero tests)
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd code/research/g2_native_residual
+          python -m unittest discover -s . -p 'test_*.py' -v 2>&1 | tee /tmp/apparatus.log
+          grep -q 'Ran 6 tests' /tmp/apparatus.log
+          grep -q '^OK$' /tmp/apparatus.log
+      - name: Obtain contributor Git object without reading PR title or author patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd source
+          git fetch --no-tags origin 'refs/pull/817/head:refs/remotes/origin/pr-817-head'
+          test "$(git rev-parse 'refs/remotes/origin/pr-817-head')" = '4b60a19db02c76ab8cc0fa7ead773def38a52504'
+          test "$(git rev-parse HEAD)" = 'b9019914778e22f1f362f12277f9e09af2d6cf0d'
+          test -z "$(git status --porcelain)"
+      - name: Qualify original independent test failure against exact Git parents
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p qualification
+          python code/research/g2_native_residual/qualify.py \
+            --repo source \
+            --base b9019914778e22f1f362f12277f9e09af2d6cf0d \
+            --head 4b60a19db02c76ab8cc0fa7ead773def38a52504 \
+            --test-file sampler_test.go \
+            --output qualification | tee qualification/stdout.txt
+          python - <<'PY'
+          import json
+          r=json.load(open('qualification/qualification.json'))
+          assert r['schema']=='mathgraph.g2.author-native-redgreen.v1'
+          print('SCIENTIFIC_NATIVE_STATUS',r['status'])
+          print('SCIENTIFIC_G2',r.get('scientific_g2'))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: g2-author-native-residual-rs817
+          path: |
+            qualification
+            /tmp/apparatus.log
+          retention-days: 60
