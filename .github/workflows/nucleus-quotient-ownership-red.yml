@@ -1,7 +1,5 @@
 name: Nucleus quotient source ownership red
 on:
-  push:
-    branches: [research/nucleus-quotient-source-ownership-20261102]
   workflow_dispatch:
 permissions:
   contents: read
