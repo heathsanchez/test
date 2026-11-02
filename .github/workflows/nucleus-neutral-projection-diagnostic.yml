@@ -61,6 +61,12 @@ jobs:
           marker='        let replay=self.qualified_nested_recursor_result(structure,budget.min(fuel-1));'
           assert v.count(marker)==1
           v=v.replace(marker,marker+"\n        #[cfg(feature=\"diagnostics\")]\n        if DIAGNOSTIC_NEUTRAL_ACTIVE.with(|x|x.get()){\n            use std::sync::atomic::{AtomicUsize,Ordering};static COUNT:AtomicUsize=AtomicUsize::new(0);\n            if COUNT.fetch_add(1,Ordering::Relaxed)<96{eprintln!(\"NUCLEUS_NEUTRAL_ACTUAL_REPLAY:result={replay:?}:depth={}:fuel={:?}:source={structure:?}\",self.neutral_projection_depth.get(),self.exposure_fuel.get());}\n        }\n")
+          marker='                return Judgment::unknown("nested-recursor-iota-unmatched-rule");'
+          assert v.count(marker)==1
+          v=v.replace(marker,"                #[cfg(feature=\"diagnostics\")]\n                if DIAGNOSTIC_NEUTRAL_ACTIVE.with(|x|x.get()){\n                    eprintln!(\"NUCLEUS_ACTUAL_UNMATCHED_RULE:recursor={name:?}:levels={levels:?}:constructor={constructor:?}:constructor_levels={constructor_levels:?}:constructor_args={constructor_args:?}:rules={:?}:source={neutral:?}:fuel={:?}\",reduction.rules,self.exposure_fuel.get());\n                }\n"+marker)
+          marker='            let (constructor, constructor_levels, constructor_args) = match major_value {'
+          assert v.count(marker)==1
+          v=v.replace(marker,"            #[cfg(feature=\"diagnostics\")]\n            if DIAGNOSTIC_NEUTRAL_ACTIVE.with(|x|x.get()){\n                eprintln!(\"NUCLEUS_ACTUAL_MAJOR_BEFORE_RULE:recursor={name:?}:major={major_value:?}:fuel={:?}\",self.exposure_fuel.get());\n            }\n"+marker)
           m.write_text(v)
           s=p.read_text().replace("self.machine().qualified_nested_recursor_result(&n,cap)","self.machine().diagnostic_projection_major_result(&n,cap)");p.write_text(s)
           PY
