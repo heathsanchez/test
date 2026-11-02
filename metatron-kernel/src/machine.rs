@@ -687,9 +687,10 @@ impl<'a> Machine<'a> {
         );
         if let Some(established) = result.proven_value()
             // A certified recursor stopped because its major did not expose.
-            // This is not a budget-independent normal form; permit a later
-            // constructor demand to evaluate the same exact lexical closure.
-            && !(self.demand_major && matches!(&established.value,
+            // This is not a budget-independent normal form in either major
+            // evaluation policy. Do not let a bounded failed constructor
+            // demand become permanent authority in the normal-form cache.
+            && !(matches!(&established.value,
                 Value::Neutral(Neutral { head: NeutralHead::Const {name,..}, .. })
                     if self.recursor_reductions.contains_key(name))
                 && !self.recursor_has_immutable_local_major(&established.value))
