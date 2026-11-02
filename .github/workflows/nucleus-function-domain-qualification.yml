@@ -1,4 +1,4 @@
-name: Independent Nucleus source projection major full qualification
+name: Independent Nucleus checked function domain full qualification
 on:
   push:
     branches: [research/nucleus-function-domain-retry-20261103]
@@ -12,6 +12,7 @@ jobs:
     timeout-minutes: 110
     env:
       GH_TOKEN: ${{ github.token }}
+      # Current Arena236ab changes only checker configurations; all fixture paths are unchanged.
       ARENA_SHA: d7f74a9e67459e2c251d608f524dc5efc6dc223c
     steps:
       - uses: actions/checkout@v4
@@ -22,7 +23,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p /tmp/nucleus-function-domain-qualified /tmp/frozen-pack /tmp/frozen-inputs
-          # Corrected metadata lifetime; candidate is source50 plus a proposition-formed captured argument conversion retry.
+          # Preferred E checkpoint plus bounded, source-inferred function-domain retry.
           git diff 50a34f406df0ad55e7d8900ea274d119157a4573 HEAD -- metatron-kernel > /tmp/nucleus-function-domain-qualified/candidate-source-delta.patch
           git rev-parse HEAD:metatron-kernel/src > /tmp/nucleus-function-domain-qualified/checker-source-tree.txt
           git rev-parse HEAD > /tmp/nucleus-function-domain-qualified/workflow-sha.txt
