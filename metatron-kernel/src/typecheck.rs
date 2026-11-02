@@ -654,11 +654,35 @@ impl<'a> TypeChecker<'a> {
                 let argument_ty = self.infer_exact_closure_in_context(
                     &argument, context, remaining, depth + 1,
                 )?;
-                let domain_check = crate::convert::convert_with_policy_in_context(
+                let mut domain_check = crate::convert::convert_with_policy_in_context(
                     self, &argument_ty, &domain, (*remaining).min(512),
                     crate::convert::DeltaPolicy::PreferredOnly,
                     context.len(), context,
                 );
+                // A captured proof argument may require source iota inside
+                // its proposition type. Retry only after BOTH proposition
+                // formations are independently checked in this exact Gamma.
+                // The converter still must prove actual type equality; no
+                // value equality or proof irrelevance follows from formation.
+                if domain_check.is_unknown() && *remaining > 512
+                    && std::env::var_os("NUCLEUS_EXPERIMENTAL_FORMED_PROP_DOMAIN_RETRY").is_some()
+                    && let (TypeValue::Term(actual), TypeValue::Term(required)) = (&argument_ty, &domain)
+                    && self.checked_captured_prop_type_in_context(actual,context,512).is_proven()
+                    && self.checked_captured_prop_type_in_context(required,context,512).is_proven()
+                {
+                    domain_check = crate::convert::convert_with_policy_in_context(
+                        self,&argument_ty,&domain,(*remaining).min(2048),
+                        crate::convert::DeltaPolicy::PreferredOnly,context.len(),context,
+                    );
+                    #[cfg(feature="diagnostics")]
+                    if std::env::var_os("NUCLEUS_TRACE_FORMED_PROP_DOMAIN_RETRY").is_some() {
+                        use std::sync::atomic::{AtomicUsize,Ordering};
+                        static REPORTED:AtomicUsize=AtomicUsize::new(0);
+                        if REPORTED.fetch_add(1,Ordering::Relaxed)<24 {
+                            eprintln!("NUCLEUS_FORMED_PROP_DOMAIN_RETRY:source={term:?}:context={}:remaining={remaining}:actual={argument_ty:?}:required={domain:?}:result={domain_check:?}",context.len());
+                        }
+                    }
+                }
                 if !domain_check.is_proven() {
                     #[cfg(feature = "diagnostics")]
                     self.record_capture_source_failure(term, context, *remaining, depth, &format!("argument-domain-relation:{domain_check:?}"));
