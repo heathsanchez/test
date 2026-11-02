@@ -28,7 +28,7 @@ jobs:
           python - <<'PY'
           import json
           rows=[json.loads(s) for s in open('/tmp/v5-go.json')]
-          n=sum(r.get('Action')=='pass' and r.get('Test') for r in rows)
+          n=sum(r.get('Action')=='pass' and bool(r.get('Test')) for r in rows)
           assert n==16, f'UNKNOWN_RECOGNIZED_GO_TEST_COUNT:{n}'
           print('GO_TEST_COUNT=',n)
           PY
