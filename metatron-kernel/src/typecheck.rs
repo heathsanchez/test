@@ -4983,6 +4983,26 @@ impl<'a> TypeChecker<'a> {
         self.environment.is_certified_constructor(name)
     }
 
+    /// A bare source local cannot supply a constructor witness for the
+    /// constructor-only replay trial. This classification licenses no
+    /// conversion; callers retain their ordinary congruence obligations.
+    pub(crate) fn qualified_recursor_has_rigid_local_major(
+        &self, neutral: &Neutral, budget: usize,
+    ) -> bool {
+        let NeutralHead::Const {name,..}=&neutral.head else {return false};
+        let Some(rule)=self.environment.recursor_reduction(*name) else {return false};
+        if rule.k {return false}
+        let Some(index)=rule.num_params.checked_add(1)
+            .and_then(|n|n.checked_add(rule.rules.len()))
+            .and_then(|n|n.checked_add(rule.num_indices))
+        else {return false};
+        let Some(major)=neutral.spine.get(index) else {return false};
+        matches!(self.machine().expose(major.clone(),Transparency::Opaque,budget)
+            .proven_value(),
+            Some(Value::Neutral(Neutral {head:NeutralHead::Free(_),spine}))
+                if spine.is_empty())
+    }
+
     pub(crate) fn has_qualified_recursor(&self, name: NameId) -> bool {
         self.environment.recursor_reduction(name).is_some()
     }
