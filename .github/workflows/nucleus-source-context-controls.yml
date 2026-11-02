@@ -29,7 +29,7 @@ jobs:
           names=["actual_source_captured_free_zero_overrules_unrelated_latest_context_entry","source_captured_free_one_retains_different_data_type","checked_pi_elimination_registers_its_actual_typed_substitution","captured_typed_substitution_uses_validated_source_domain_without_reinfer","fixed_pi_substitution_refuses_actual_captured_by_unrelated_inner_binder","fixed_pi_substitution_preserves_shadowing_and_refuses_unsupported_or_low_fuel","exact_captured_pi_substitution_reuses_only_completed_same_scope_bindings","captured_pi_frame_key_preserves_own_codomain_levels_domain_and_quarantine","formed_fixed_pi_checking_does_not_bypass_capture_safe_reopening","root_source_alias_uses_the_captured_lambda_and_its_own_level_map","captured_source_inference_cannot_type_an_ambient_local_by_opening_a_binder","paired_support_preserves_binder_capture_constructor_and_level_distinctions","every_annotation_value_projection_and_external_capture_is_accounted_for"]
           rows=[]
           for name in names:
-           cmd=["cargo","test","--release","--locked","--features","diagnostics","--manifest-path","metatron-kernel/Cargo.toml","--lib",name,"--","--nocapture"]
+           cmd=["cargo","test","--release","--locked","--features","diagnostics","--manifest-path","metatron-kernel/Cargo.toml","--lib",name,"--","--include-ignored","--nocapture"]
            p=subprocess.run(cmd,env=env,capture_output=True,timeout=300)
            log=p.stdout+p.stderr;(out/(name+".log")).write_bytes(log)
            counts=re.findall(rb"test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored",log)
