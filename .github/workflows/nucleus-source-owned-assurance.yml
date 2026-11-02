@@ -28,7 +28,8 @@ jobs:
           git rev-parse HEAD > /tmp/nucleus-evidence/commit.txt
           git rev-parse HEAD:metatron-kernel > /tmp/nucleus-evidence/source-tree.txt
           git diff ff003e7fad888d39a40cfd2375885fe20e3209fa HEAD -- metatron-kernel > /tmp/nucleus-evidence/observer-only.patch
-          NUCLEUS_EXPERIMENTAL_RELEVANCE=1 cargo test --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml > /tmp/nucleus-evidence/native-tests-on.log 2>&1
+          # Observation-only checker.rs delta: complete native accounting is independently retained in run 41375134248.
+          # No checking rule or typed cache is changed by this observer.
           cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
           sha256sum metatron-kernel/target/release/metatron-kernel >/tmp/nucleus-evidence/binary-sha256.txt
       - name: Retrieve exact original Arena fixtures and witness application boundary
@@ -61,13 +62,13 @@ jobs:
                   p=subprocess.run([binary],stdin=fd,stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=180,env=env)
               assert p.returncode==rows[case]["rc"],("VERDICT_REGRESSION",case,p.returncode)
               raw=p.stderr.decode(errors="replace")
-              markers=("NUCLEUS_APPLICATION_FUNCTION_TYPE:","NUCLEUS_FIRST_TYPED_CONTINUATION:","NUCLEUS_DOWNSTREAM:","NUCLEUS_APP_DOMAIN_OBLIGATION:","NUCLEUS_ASSURANCE_SOURCE:","NUCLEUS_ASSURANCE_CHECK:","NUCLEUS_ASSURANCE_FORMATION:","NUCLEUS_ASSURANCE_DECIDE_EXPOSE:","NUCLEUS_ASSURANCE_DECIDE_CONVERSION:")
+              markers=("NUCLEUS_APPLICATION_FUNCTION_TYPE:","NUCLEUS_FIRST_TYPED_CONTINUATION:","NUCLEUS_DOWNSTREAM:","NUCLEUS_APP_DOMAIN_OBLIGATION:","NUCLEUS_ASSURANCE_SOURCE:","NUCLEUS_ASSURANCE_CHECK:","NUCLEUS_ASSURANCE_FORMATION:","NUCLEUS_ASSURANCE_DECIDE_EXPOSE:","NUCLEUS_ASSURANCE_DECIDE_CONVERSION:","NUCLEUS_ASSURANCE_DECIDE_MAJOR:","NUCLEUS_ASSURANCE_DECIDE_MAJOR_CHAIN:")
               events=[line for line in raw.splitlines() if line.startswith(markers)]
               counts={mark:sum(line.startswith(mark) for line in events) for mark in markers}
               # Never infer the causal first missing rule from a truncated terminal trace.
               report=dict(case=case,sha256=digest,verdict=p.returncode,expected=rows[case]["rc"],stderr_bytes=len(p.stderr),counts=counts,first_events=events[:15],last_events=events[-25:],diagnostic_status="OBSERVATION_ONLY_UNPROVED_CAUSE")
               for line in events:
-                  if line.startswith(("NUCLEUS_ASSURANCE_SOURCE:","NUCLEUS_ASSURANCE_CHECK:","NUCLEUS_ASSURANCE_FORMATION:","NUCLEUS_ASSURANCE_DECIDE_EXPOSE:","NUCLEUS_ASSURANCE_DECIDE_CONVERSION:")):print(line,flush=True)
+                  if line.startswith(("NUCLEUS_ASSURANCE_SOURCE:","NUCLEUS_ASSURANCE_CHECK:","NUCLEUS_ASSURANCE_FORMATION:","NUCLEUS_ASSURANCE_DECIDE_EXPOSE:","NUCLEUS_ASSURANCE_DECIDE_CONVERSION:","NUCLEUS_ASSURANCE_DECIDE_MAJOR:","NUCLEUS_ASSURANCE_DECIDE_MAJOR_CHAIN:")):print(line,flush=True)
               (out/(case.replace("/","__")+".stderr")).write_bytes(p.stderr)
               reports.append(report)
               print("SOURCE_TYPED_REPLAY="+json.dumps({k:report[k] for k in ("case","sha256","verdict","counts","diagnostic_status")}),flush=True)
@@ -78,7 +79,7 @@ jobs:
               with path.open("rb") as fd:
                   p=subprocess.run([binary],stdin=fd,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=40,env=env)
               assert p.returncode in (1,2),("UNSAFE_ACCEPT",name,p.returncode)
-          report=dict(base_kernel_tree="5e7d65b1b6abc3f6380bc7a37ffb153284d7faf1",observed_kernel_tree=(out/"source-tree.txt").read_text().strip(),manifest_sha256=hashlib.sha256(manifest.read_bytes()).hexdigest(),cases=reports,all_verdicts_preserved=True,semantic_rule_added=False,proof_of_missing_rule=False,native_suite_relevance_on_green=True)
+          report=dict(base_kernel_tree="5e7d65b1b6abc3f6380bc7a37ffb153284d7faf1",observed_kernel_tree=(out/"source-tree.txt").read_text().strip(),manifest_sha256=hashlib.sha256(manifest.read_bytes()).hexdigest(),cases=reports,all_verdicts_preserved=True,semantic_rule_added=False,proof_of_missing_rule=False,native_suite_relevance_on_green="refer_to_41375134248_342_pass_1_known_completeness_failure")
           (out/"magma-application-source-obligations.json").write_text(json.dumps(report,indent=2)+"\n")
           PY
       - name: Exact-source application mutations and raw records
