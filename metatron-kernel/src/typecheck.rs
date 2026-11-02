@@ -3373,7 +3373,7 @@ impl<'a> TypeChecker<'a> {
         impl Drop for TrialGuard{fn drop(&mut self){ACTIVE.with(|n|n.set(n.get()-1));}}
         let _guard=TrialGuard;
         let probe=budget.min(2048);
-        let Some(spec)=self.environment.projection_specs().get(&owner)else{return false};
+        let Some(spec)=self.environment.projection_specs().get(&owner).cloned()else{return false};
         if spec.field_types.get(index).is_none(){return false}
         let family=|receiver:&Closure| {
             let mut fuel=probe;
