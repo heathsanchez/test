@@ -123,11 +123,42 @@ fn qualified_string_literal_type(export:&ResolvedExport,block:&InductiveBlock)->
     Some(result)
 }
 
+/// A quotient declaration claims a special primitive role, not an ordinary
+/// constant with a matching name/type. Necessary source ownership and order
+/// are decidable independently of earlier unsupported typing judgments.
+/// Passing this audit grants no primitive: ordinary admission still checks
+/// every signature in the progressively established environment below.
+fn quotient_source_ownership_is_well_ordered(export:&ResolvedExport)->bool {
+    let mut roles:HashMap<NameId,QuotKind>=HashMap::new();
+    for declaration in &export.declarations {
+        let Declaration::Quot{name,kind,..}=declaration else {continue;};
+        match kind {
+            QuotKind::Type => {
+                if !name_is_root_str(export,*name,"Quot") {return false;}
+            }
+            QuotKind::Ctor|QuotKind::Lift|QuotKind::Ind => {
+                let suffix=match kind {QuotKind::Ctor=>"mk",QuotKind::Lift=>"lift",QuotKind::Ind=>"ind",_=>unreachable!()};
+                let Some(parent)=quotient_parent(export,*name,suffix) else {return false;};
+                if !matches!(roles.get(&parent),Some(QuotKind::Type)) {return false;}
+                if *kind==QuotKind::Ind {
+                    let Some(mk)=quotient_child(export,parent,"mk") else {return false;};
+                    if !matches!(roles.get(&mk),Some(QuotKind::Ctor)) {return false;}
+                }
+            }
+        }
+        if roles.insert(*name,*kind).is_some() {return false;}
+    }
+    true
+}
+
 fn check_export_with_policy(
     export: ResolvedExport,
     limits: Limits,
     delta_policy: DeltaPolicy,
 ) -> Verdict {
+    if !quotient_source_ownership_is_well_ordered(&export) {
+        return trace_direct_reject("preflight-quotient-source-ownership");
+    }
     if let Some(verdict) = crate::capability::execute(&export) {
         return verdict;
     }
