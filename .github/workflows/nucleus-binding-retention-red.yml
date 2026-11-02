@@ -1,7 +1,5 @@
 name: Nucleus exact binding retention red
 on:
-  push:
-    branches: [research/nucleus-exact-binding-retention-20261102]
   workflow_dispatch:
 permissions:
   contents: read
@@ -22,7 +20,7 @@ jobs:
           echo "$rc" > /tmp/retention-red/exit.txt
           cat /tmp/retention-red/red.log
           test "$rc" = 101
-          rg 'exact_binding_retention_survives_the_old_8192_entry_boundary.*FAILED' /tmp/retention-red/red.log
+          python3 -c "import pathlib; s=pathlib.Path('/tmp/retention-red/red.log').read_text(); assert '0 passed; 1 failed; 0 ignored' in s and 'exact same captured binding after old capacity must remain reusable' in s"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
