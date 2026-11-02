@@ -6592,3 +6592,63 @@ mod lambda_role_sharing_tests {
     }
 
 }
+
+#[cfg(test)]
+mod function_domain_retry_controls {
+    use super::*;
+    use crate::environment::ConstantDecl;
+    use crate::syntax::Level;
+
+    #[test]
+    #[ignore = "explicit function-domain completeness capability qualification"]
+    fn checked_function_argument_through_long_source_aliases_preserves_separators() {
+        let mut expressions=IdTable::default();
+        let mut levels=IdTable::default();
+        levels.insert(LevelId(0),Level::Zero).unwrap();
+        levels.insert(LevelId(1),Level::Succ(LevelId(0))).unwrap();
+        for (id,node) in [
+            (0,Expr::Sort(LevelId(1))),
+            (1,Expr::Const{name:NameId(1),levels:vec![]}),
+            (2,Expr::BVar(0)),(3,Expr::BVar(1)),
+            (4,Expr::Pi{domain:ExprId(1),body:ExprId(1)}),
+            (5,Expr::Pi{domain:ExprId(4),body:ExprId(1)}),
+            (6,Expr::Const{name:NameId(2),levels:vec![]}),
+            (7,Expr::Const{name:NameId(3),levels:vec![]}),
+        ]{expressions.insert(ExprId(id),node).unwrap();}
+        let mut environment=Environment::empty()
+            .extend(NameId(1),ConstantDecl::axiom(vec![],ExprId(0))).unwrap()
+            .extend(NameId(2),ConstantDecl::axiom(vec![],ExprId(5))).unwrap()
+            .extend(NameId(3),ConstantDecl::axiom(vec![],ExprId(0))).unwrap();
+        let mut previous=ExprId(1);
+        for i in 0..640u64{
+            let name=NameId(100+i);let expr=ExprId(100+i);
+            expressions.insert(expr,Expr::Const{name,levels:vec![]}).unwrap();
+            environment=environment.extend(name,ConstantDecl::definition(vec![],ExprId(0),previous,true)).unwrap();
+            previous=expr;
+        }
+        for(id,node)in [
+            (800,Expr::Lam{domain:previous,body:ExprId(2)}),
+            (801,Expr::App{fun:ExprId(6),arg:ExprId(800)}),
+            (802,Expr::Lam{domain:ExprId(7),body:ExprId(2)}),
+            (803,Expr::App{fun:ExprId(6),arg:ExprId(802)}),
+            (804,Expr::Lam{domain:previous,body:ExprId(3)}),
+            (805,Expr::App{fun:ExprId(6),arg:ExprId(804)}),
+            (806,Expr::Lam{domain:previous,body:ExprId(6)}),
+            (807,Expr::App{fun:ExprId(6),arg:ExprId(806)}),
+            (808,Expr::Const{name:NameId(739),levels:vec![LevelId(1)]}),
+            (809,Expr::Lam{domain:ExprId(808),body:ExprId(2)}),
+            (810,Expr::App{fun:ExprId(6),arg:ExprId(809)}),
+        ]{expressions.insert(ExprId(id),node).unwrap();}
+        let checker=TypeChecker::new(&expressions,&levels,&environment);
+        let infer=|id,frame|checker.infer_exact_closure_in_context(
+            &Closure::new(ExprId(id),frame),&[],&mut 8192,0);
+        assert!(infer(801,EnvFrame::empty()).is_some(),
+            "source-typed identity over aliases must check against the original function domain");
+        assert!(infer(803,EnvFrame::empty()).is_none(),"unrelated data owner stays distinct");
+        assert!(infer(805,EnvFrame::empty()).is_none(),"wrong binder index stays untyped");
+        assert!(infer(807,EnvFrame::empty()).is_none(),"ill-typed body cannot acquire the required function type");
+        assert!(infer(810,EnvFrame::empty()).is_none(),"wrong source universe arity stays untyped");
+        let forged=EnvFrame::empty().extend_free(FreeId(0));
+        assert!(infer(805,forged).is_none(),"ambient Free0 cannot masquerade as the new binder");
+    }
+}
