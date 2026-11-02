@@ -62,13 +62,13 @@ jobs:
                   p=subprocess.run([binary],stdin=fd,stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=180,env=env)
               assert p.returncode==rows[case]["rc"],("VERDICT_REGRESSION",case,p.returncode)
               raw=p.stderr.decode(errors="replace")
-              markers=("NUCLEUS_APPLICATION_FUNCTION_TYPE:","NUCLEUS_FIRST_TYPED_CONTINUATION:","NUCLEUS_DOWNSTREAM:","NUCLEUS_APP_DOMAIN_OBLIGATION:","NUCLEUS_ASSURANCE_SOURCE:","NUCLEUS_ASSURANCE_CHECK:","NUCLEUS_ASSURANCE_FORMATION:","NUCLEUS_ASSURANCE_DECIDE_EXPOSE:","NUCLEUS_ASSURANCE_DECIDE_CONVERSION:","NUCLEUS_ASSURANCE_DECIDE_MAJOR:","NUCLEUS_ASSURANCE_DECIDE_MAJOR_CHAIN:")
+              markers=("NUCLEUS_APPLICATION_FUNCTION_TYPE:","NUCLEUS_FIRST_TYPED_CONTINUATION:","NUCLEUS_DOWNSTREAM:","NUCLEUS_APP_DOMAIN_OBLIGATION:","NUCLEUS_ASSURANCE_SOURCE:","NUCLEUS_ASSURANCE_CHECK:","NUCLEUS_ASSURANCE_FORMATION:","NUCLEUS_ASSURANCE_DECIDE_EXPOSE:","NUCLEUS_ASSURANCE_DECIDE_CONVERSION:","NUCLEUS_ASSURANCE_DECIDE_MAJOR:","NUCLEUS_ASSURANCE_DECIDE_MAJOR_CHAIN:","NUCLEUS_ASSURANCE_DECIDE_CHECKED_REPLAY:")
               events=[line for line in raw.splitlines() if line.startswith(markers)]
               counts={mark:sum(line.startswith(mark) for line in events) for mark in markers}
               # Never infer the causal first missing rule from a truncated terminal trace.
               report=dict(case=case,sha256=digest,verdict=p.returncode,expected=rows[case]["rc"],stderr_bytes=len(p.stderr),counts=counts,first_events=events[:15],last_events=events[-25:],diagnostic_status="OBSERVATION_ONLY_UNPROVED_CAUSE")
               for line in events:
-                  if line.startswith(("NUCLEUS_ASSURANCE_SOURCE:","NUCLEUS_ASSURANCE_CHECK:","NUCLEUS_ASSURANCE_FORMATION:","NUCLEUS_ASSURANCE_DECIDE_EXPOSE:","NUCLEUS_ASSURANCE_DECIDE_CONVERSION:","NUCLEUS_ASSURANCE_DECIDE_MAJOR:","NUCLEUS_ASSURANCE_DECIDE_MAJOR_CHAIN:")):print(line,flush=True)
+                  if line.startswith(("NUCLEUS_ASSURANCE_SOURCE:","NUCLEUS_ASSURANCE_CHECK:","NUCLEUS_ASSURANCE_FORMATION:","NUCLEUS_ASSURANCE_DECIDE_EXPOSE:","NUCLEUS_ASSURANCE_DECIDE_CONVERSION:","NUCLEUS_ASSURANCE_DECIDE_MAJOR:","NUCLEUS_ASSURANCE_DECIDE_MAJOR_CHAIN:","NUCLEUS_ASSURANCE_DECIDE_CHECKED_REPLAY:")):print(line,flush=True)
               (out/(case.replace("/","__")+".stderr")).write_bytes(p.stderr)
               reports.append(report)
               print("SOURCE_TYPED_REPLAY="+json.dumps({k:report[k] for k in ("case","sha256","verdict","counts","diagnostic_status")}),flush=True)
