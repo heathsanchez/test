@@ -2680,6 +2680,22 @@ mod captured_recursor_spine_tests {
 #[cfg(test)]
 mod bounded_checked_replay_tests {
     use super::*;
+    #[test]
+    fn exact_binding_retention_survives_the_old_8192_entry_boundary() {
+        let mut expressions=IdTable::default(); let levels=IdTable::default();
+        expressions.insert(ExprId(0),Expr::BVar(0)).unwrap();
+        expressions.insert(ExprId(1),Expr::Lam{domain:ExprId(0),body:ExprId(0)}).unwrap();
+        let machine=Machine::new(AuthorityId(1),&expressions,&levels,HashMap::new()).with_exposure_cache(new_exposure_cache());
+        let binder=Closure::new(ExprId(1),EnvFrame::empty());
+        for i in 0..8192 {
+            machine.bind_captured_argument(&binder,Closure::new(ExprId(0),EnvFrame::empty().extend_free(FreeId(i))));
+        }
+        let argument=Closure::new(ExprId(0),EnvFrame::empty().extend_free(FreeId(9000)));
+        let first=machine.bind_captured_argument(&binder,argument.clone());
+        let second=machine.bind_captured_argument(&binder,argument);
+        assert_eq!(first.id(),second.id(),"exact same captured binding after old capacity must remain reusable");
+    }
+
 
     fn assert_no_completed_replay(machine:&Machine<'_>,neutral:&Neutral) {
         machine.exposure_fuel.set(Some(4096));
