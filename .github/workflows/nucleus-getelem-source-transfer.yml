@@ -1,0 +1,89 @@
+name: Nucleus checked proposition domain independent source transfer
+on:
+  push:
+    branches: [research/nucleus-getelem-proof-domain-20261102]
+    paths: [".github/workflows/nucleus-getelem-source-transfer.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  reproduce:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 9159c99df9cccb6d6afe1e66824a3e4067f64fe6
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Bind unchanged qualified source and build verifier
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/getelem/evidence /tmp/getelem/source /tmp/getelem/mutants
+          git rev-parse HEAD > /tmp/getelem/evidence/source-sha.txt
+          git rev-parse HEAD:metatron-kernel > /tmp/getelem/evidence/kernel-tree.txt
+          test "$(cat /tmp/getelem/evidence/kernel-tree.txt)" = 8bf7f45400bc0d577281e600b8476ef0bc571c67
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus-plain
+      - name: Restore exact authentic source and independently falsified mutations
+        run: |
+          set -euo pipefail
+          gh api repos/heathsanchez/test/actions/artifacts/12722408982/zip > /tmp/getelem/source.zip
+          gh api repos/heathsanchez/test/actions/artifacts/12766696440/zip > /tmp/getelem/mutants.zip
+          printf '%s  %s\n' 8f3fe62d60740fae640ed716b58ce1671a558fd88dd14723d758934e49197b31 /tmp/getelem/source.zip | sha256sum -c -
+          printf '%s  %s\n' 94f78d49378c5cf5a8ecb229eb70fa8dd9b02a090112974b12d40af13fac397a /tmp/getelem/mutants.zip | sha256sum -c -
+          unzip -q /tmp/getelem/source.zip -d /tmp/getelem/source
+          unzip -q /tmp/getelem/mutants.zip -d /tmp/getelem/mutants
+      - name: Preserve identical diagnostic binary for source transfer replay
+        run: |
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus-diagnostic
+          sha256sum /tmp/nucleus-plain /tmp/nucleus-diagnostic > /tmp/getelem/evidence/binaries.sha256
+      - name: Replay exact prefix controls and whole source with diagnostic verdict parity
+        run: |
+          python3 - <<'PY'
+          import os,pathlib,subprocess,json,hashlib,copy
+          out=pathlib.Path("/tmp/getelem/evidence");out.mkdir(parents=True,exist_ok=True)
+          data=pathlib.Path("/tmp/getelem/source/path_reachable.ndjson").read_bytes()
+          assert hashlib.sha256(data).hexdigest()=="96918fb408e535b34b50780d6b8fcbae51e5340659ec5a782d0cded926eae479"
+          original=b"".join(data.splitlines(keepends=True)[:95635])
+          samples={"authentic":(original,"fa21f2a48d84f66aeffc252e988d370634db1ad0706ebc717efdd7d5d379b71a",0),"wrong-receiver":(pathlib.Path("/tmp/getelem/mutants/forged-dependent-motive.ndjson").read_bytes(),"4883556bc4956db44688d560a472940837a3defa40cdad77d3b6caeda7773332",1),"wrong-index":(pathlib.Path("/tmp/getelem/mutants/forged-dependent-index.ndjson").read_bytes(),"3653b131393012eb60b6b749ebc3c652b79a3b7601981cbacaff0106919e9263",1)}
+          flags=("RELEVANCE","CONTEXT_BINDER","TYPED_LINEAGE","SUBSTITUTION_RECLOSURE","TYPED_VALUE_NORMALIZATION","PROJECTION_CONTEXT","PROJECTION_CROSSFRAME_512","TYPED_RECEIVER","SOURCE_PAIR_DEPTH8","POLYMORPHIC_PROP_IRREL","PROP_SINGLETON_2P1F","EXPECTED_LAMBDA","FORMED_PROP_DOMAIN_RETRY")
+          base={k:v for k,v in os.environ.items() if not k.startswith("NUCLEUS_")}
+          origin=base|{"NUCLEUS_EXPERIMENTAL_"+f:"1" for f in flags}
+          source=origin|{"NUCLEUS_EXPERIMENTAL_"+f:"1" for f in ("CERTIFIED_QUOT_IOTA","SOURCE_PROOF_IRREL","NEUTRAL_PAIR_PROOF_IRREL")}
+          rows=[]
+          for label,(raw,pin,wanted) in samples.items():
+           assert hashlib.sha256(raw).hexdigest()==pin,label
+           path=out/(label+".ndjson");path.write_bytes(raw)
+           for mode,env in (("origin",origin),("origin-source-proof",source)):
+            for binary,trace in (("/tmp/nucleus-plain",False),("/tmp/nucleus-diagnostic",True)):
+             active=env.copy()
+             if trace:
+              active.update({"NUCLEUS_TRACE_"+f:"1" for f in ("DOWNSTREAM","APPLICATION_FUNCTION_TYPE","GETELEM_EQ_TRANSPORT","GETELEM_RECEIVER_LEDGER","FAILED_RECEIVER_CONVERSION","APP_DOMAIN_OBLIGATION")})
+             tag=label+"-"+mode+("-traced" if trace else "-plain")
+             cmd=["/usr/bin/time","-f","wall=%e user=%U system=%S rss_kb=%M","-o",str(out/(tag+".time")),binary]
+             p=subprocess.run(cmd,input=raw,env=active,capture_output=True,timeout=240)
+             (out/(tag+".stderr")).write_bytes(p.stderr)
+             row=dict(case=label,mode=mode,traced=trace,rc=p.returncode,expected=wanted,sha256=pin,env={k:v for k,v in active.items() if k.startswith("NUCLEUS_")})
+             rows.append(row);print(json.dumps(row),flush=True)
+             for line in p.stderr.decode(errors="replace").splitlines():
+              if line.startswith(("NUCLEUS_GETELEM","NUCLEUS_RECEIVER_LEDGER","NUCLEUS_DOWNSTREAM")):print(line[:14000],flush=True)
+             assert p.returncode in (wanted,2),row
+            assert rows[-1]["rc"]==rows[-2]["rc"],("DIAGNOSTIC_VERDICT_CHANGED",rows[-2:])
+          (out/"prefix-verdicts.json").write_text(json.dumps(rows,indent=2))
+          # Full source remains an independent transfer test; a prefix gain alone is insufficient.
+          p=subprocess.run(["/usr/bin/time","-f","wall=%e user=%U system=%S rss_kb=%M","-o",str(out/"whole-path.time"),"/tmp/nucleus-plain"],input=data,env=source,capture_output=True,timeout=300)
+          (out/"whole-path.stderr").write_bytes(p.stderr)
+          (out/"whole-path.json").write_text(json.dumps(dict(rc=p.returncode,sha256=hashlib.sha256(data).hexdigest(),configuration="origin-source-proof"),indent=2))
+          assert p.returncode in (0,2)
+          
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-getelem-prop-domain-source-transfer
+          path: /tmp/getelem/evidence
+          if-no-files-found: error
