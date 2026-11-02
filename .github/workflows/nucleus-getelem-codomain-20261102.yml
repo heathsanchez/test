@@ -124,14 +124,14 @@ jobs:
           for mode,active in (("origin",origin),):
            for binary,trace in (("/tmp/nucleus-plain",False),("/tmp/nucleus-diagnostic",True)):
             env=active.copy()
-            if trace:env.update({"NUCLEUS_TRACE_"+f:"1" for f in ("DOWNSTREAM","APPLICATION_FUNCTION_TYPE","GETELEM_EQ_TRANSPORT","GETELEM_RECEIVER_LEDGER","FAILED_RECEIVER_CONVERSION","APP_DOMAIN_OBLIGATION","DEPENDENCY_GAP")})
+            if trace:env.update({"NUCLEUS_TRACE_"+f:"1" for f in ("DOWNSTREAM","APPLICATION_FUNCTION_TYPE","GETELEM_SOURCE_PAIR")})
             tag="grind-"+mode+("-traced" if trace else "-plain")
             p=subprocess.run(["/usr/bin/time","-f","wall=%e user=%U system=%S rss_kb=%M","-o",str(out/(tag+".time")),binary],input=raw,env=env,capture_output=True,timeout=240)
             (out/(tag+".stderr")).write_bytes(p.stderr)
             print("CURRENT_GRIND",tag,p.returncode,flush=True)
             assert p.returncode in (0,2)
             for line in p.stderr.decode(errors="replace").splitlines():
-             if line.startswith(("NUCLEUS_GETELEM","NUCLEUS_DOWNSTREAM","NUCLEUS_APPLICATION_FUNCTION_TYPE","NUCLEUS_APP_DOMAIN_OBLIGATION")):print(line[:18000],flush=True)
+             if line.startswith(("NUCLEUS_GETELEM","NUCLEUS_DOWNSTREAM")):print(line[:18000],flush=True)
           
           PY
       - uses: actions/upload-artifact@v4
