@@ -1,0 +1,69 @@
+name: Nucleus exact original six source census
+on:
+  push:
+    branches: [research/nucleus-residual-source-census-20261102]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  census:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build exact candidate source without new checking changes
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/source-census /tmp/census-pack /tmp/census-inputs
+          test -z "$(git diff 50a34f406df0ad55e7d8900ea274d119157a4573 HEAD -- metatron-kernel)"
+          git rev-parse HEAD > /tmp/source-census/workflow-sha.txt
+          git rev-parse HEAD:metatron-kernel > /tmp/source-census/kernel-tree.txt
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          sha256sum metatron-kernel/target/release/metatron-kernel > /tmp/source-census/binary.sha256
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/11272848230/zip > /tmp/census.zip
+          sha256sum /tmp/census.zip > /tmp/source-census/archive.sha256
+          unzip -q /tmp/census.zip -d /tmp/census-pack
+          tar --no-same-owner -xzf /tmp/census-pack/lean-arena-tests.tar.gz -C /tmp/census-inputs
+      - name: Source-owned observations of all six complete original residuals
+        run: |
+          python3 - <<'PY'
+          import os,pathlib,subprocess,hashlib,json
+          root=pathlib.Path('/tmp/census-inputs');out=pathlib.Path('/tmp/source-census')
+          manifest=pathlib.Path('metatron-kernel/evidence/performance/owned-environment-2026-10-13/nucleus-owned-environment-frozen196.json')
+          original={r['case']:r for r in json.loads(manifest.read_text())['modes']['origin']['rows']}
+          env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+          for flag in ('RELEVANCE','CONTEXT_BINDER','TYPED_LINEAGE','SUBSTITUTION_RECLOSURE','TYPED_VALUE_NORMALIZATION','PROJECTION_CONTEXT','PROJECTION_CROSSFRAME_512','TYPED_RECEIVER','SOURCE_PAIR_DEPTH8','POLYMORPHIC_PROP_IRREL','PROP_SINGLETON_2P1F','EXPECTED_LAMBDA'):
+              env['NUCLEUS_EXPERIMENTAL_'+flag]='1'
+          for flag in ('DOWNSTREAM','DECLARATION_PROGRESS','APPLICATION_FUNCTION_TYPE','FIRST_TYPED_CONTINUATION','APP_DOMAIN_OBLIGATION'):
+              env['NUCLEUS_TRACE_'+flag]='1'
+          cases=('good/init-prelude.ndjson','good/perf/fueled-chain.ndjson','good/perf/grind-ring-5.ndjson','good/perf/magma-list-deep-n21.ndjson','good/perf/magma-list-deep-n36.ndjson','good/perf/magma-list-pair-n21.ndjson','good/perf/magma-list-pair-n7.ndjson')
+          reports=[]
+          for case in cases:
+              path=root/case;tag=case.replace('/','__')
+              digest=hashlib.sha256(path.read_bytes()).hexdigest();assert digest==original[case]['sha256']
+              with path.open('rb') as fd:
+                  p=subprocess.run(['/usr/bin/time','-f','wall=%e user=%U system=%S rss_kb=%M','-o',str(out/(tag+'.time')),'metatron-kernel/target/release/metatron-kernel'],stdin=fd,env=env,capture_output=True,timeout=240)
+              (out/(tag+'.stdout')).write_bytes(p.stdout);(out/(tag+'.stderr')).write_bytes(p.stderr)
+              lines=p.stderr.decode(errors='replace').splitlines()
+              boundaries=[s for s in lines if s.startswith('NUCLEUS_DOWNSTREAM:') or s.startswith('NUCLEUS_DOWNSTREAM_DETAIL:')]
+              obligations=[s for s in lines if s.startswith(('NUCLEUS_APPLICATION_FUNCTION_TYPE:','NUCLEUS_FIRST_TYPED_CONTINUATION:','NUCLEUS_APP_DOMAIN_OBLIGATION:'))]
+              declarations=[s for s in lines if s.startswith('NUCLEUS_DECLARATION:')]
+              row=dict(case=case,sha256=digest,rc=p.returncode,baseline_rc=original[case]['rc'],boundaries=boundaries,first_typed_events=obligations[:8],last_typed_events=obligations[-8:],typed_event_count=len(obligations),admitted_source_progress=declarations[-3:],resource=(out/(tag+'.time')).read_text(),classification='SOURCE_OBSERVATION_NOT_A_CAUSAL_PROOF')
+              reports.append(row);print(json.dumps(row),flush=True)
+              (out/'residual-source-census.json').write_text(json.dumps(reports,indent=2))
+              assert p.returncode==original[case]['rc'],'ORIGINAL_VERDICT_REGRESSION'
+          for name in ('protected-false-index.ndjson','protected-eta-ctor-alias.ndjson'):
+              data=pathlib.Path('metatron-kernel/tests/fixtures')/name
+              p=subprocess.run(['metatron-kernel/target/release/metatron-kernel'],input=data.read_bytes(),env=env,capture_output=True,timeout=60)
+              assert p.returncode in (1,2),('UNSAFE_CONTROL',name,p.returncode)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-original-six-source-census-${{ github.sha }}
+          path: /tmp/source-census
