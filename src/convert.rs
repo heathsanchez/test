@@ -2776,3 +2776,42 @@ fn source_opening_avoids_capture_uncached(
     }
     true
 }
+
+#[cfg(test)]
+mod unresolved_registered_recursor_controls {
+    use super::*;
+    use crate::environment::{Environment,ConstantDecl,BoolPrimitives};
+    use crate::id::{IdTable,LevelId,NameId};
+    use crate::machine::{RecursorReduction,RecursorRule};
+    use crate::syntax::Level;
+    use crate::value::EnvFrame;
+
+    #[test]
+    fn unresolved_registered_recursor_is_unknown_while_distinct_bool_data_is_refuted() {
+        // Isolate judgment classification using admitted machine fixtures.
+        // This grants no new source admission or successful conversion rule.
+        let mut expressions=IdTable::default();let mut levels=IdTable::default();
+        levels.insert(LevelId(0),Level::Zero).unwrap();
+        levels.insert(LevelId(1),Level::Succ(LevelId(0))).unwrap();
+        expressions.insert(ExprId(0),Expr::Sort(LevelId(1))).unwrap();
+        expressions.insert(ExprId(1),Expr::BVar(0)).unwrap();
+        let mut environment=Environment::empty();
+        for name in [NameId(1),NameId(2),NameId(3)] {
+            environment=environment.extend(name,ConstantDecl::axiom(vec![],ExprId(0))).unwrap();
+        }
+        environment=environment.install_bool_primitives(BoolPrimitives{false_ctor:NameId(2),true_ctor:NameId(3)}).unwrap();
+        environment=environment.install_recursor_reduction(NameId(1),RecursorReduction{
+            k:false,num_params:1,num_indices:0,level_params:vec![],
+            rules:vec![RecursorRule{constructor:NameId(2),constructor_level_params:vec![],num_params:0,num_fields:0,rhs:ExprId(0)},
+                RecursorRule{constructor:NameId(3),constructor_level_params:vec![],num_params:0,num_fields:0,rhs:ExprId(0)}],
+        }).unwrap();
+        let checker=TypeChecker::new(&expressions,&levels,&environment);
+        let constructor=|name|Value::Neutral(Neutral{head:NeutralHead::Const{name:NameId(name),levels:vec![]},spine:vec![]});
+        let unknown=Value::Neutral(Neutral{head:NeutralHead::Const{name:NameId(1),levels:vec![]},
+            spine:vec![Closure::new(ExprId(1),EnvFrame::empty());5]});
+        let relation=compare_values(&checker,&constructor(3),&unknown,256,0,&[],&mut vec![],&mut HashMap::new());
+        assert!(relation.is_unknown(),"unresolved source computation is not a refutation: {relation:?}");
+        let data=compare_values(&checker,&constructor(2),&constructor(3),256,0,&[],&mut vec![],&mut HashMap::new());
+        assert!(data.is_refuted(),"distinct certified Bool data must remain refuted: {data:?}");
+    }
+}
