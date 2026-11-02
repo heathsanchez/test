@@ -1,0 +1,60 @@
+name: Nucleus original Grind source-control reference verification
+on:
+  push:
+    branches: [research/nucleus-getelem-typed-codomain-20261102]
+    paths: [".github/workflows/nucleus-getelem-reference-controls.yml"]
+permissions:
+  contents: read
+jobs:
+  reference:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 4775cf4d2c8bed5358b7ae4a27a326c558101571
+      - name: Recover immutable source control artifact
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/reference/input /tmp/reference/evidence
+          gh api repos/heathsanchez/test/actions/artifacts/13119300464/zip > /tmp/reference/input.zip
+          printf '%s  %s\n' 6b003b6f80d9bc7e340736092a68683d26fd71d4bc62f10a3672db387e81c28c /tmp/reference/input.zip | sha256sum -c -
+          unzip -q /tmp/reference/input.zip -d /tmp/reference/input
+      - name: Build pinned official Lean verifier
+        run: |
+          set -euo pipefail
+          curl -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -o /tmp/elan-init.sh
+          sh /tmp/elan-init.sh -y --default-toolchain leanprover/lean4:v4.34.1
+          git init -q /tmp/reference/arena
+          git -C /tmp/reference/arena remote add origin https://github.com/leanprover/lean-kernel-arena
+          git -C /tmp/reference/arena fetch -q --depth=1 origin cd2dd0244b9ed5e704463a26fbbe5fc67ba16108
+          git -C /tmp/reference/arena checkout -q --detach FETCH_HEAD
+          (cd /tmp/reference/arena/checkers/official && "$HOME/.elan/bin/lake" build)
+          "$HOME/.elan/bin/lean" --version > /tmp/reference/evidence/lean-version.txt
+          sha256sum /tmp/reference/arena/checkers/official/.lake/build/bin/kernel > /tmp/reference/evidence/verifier.sha256
+      - name: Independently classify exact original and seven source mutations
+        run: |
+          python3 - <<'PY'
+          import pathlib,hashlib,json,subprocess
+          root=pathlib.Path("/tmp/reference/input")
+          out=pathlib.Path("/tmp/reference/evidence")
+          exe="/tmp/reference/arena/checkers/official/.lake/build/bin/kernel"
+          rows=[]
+          for path in sorted(root.glob("*.ndjson")):
+              wanted=0 if path.name.startswith("original-") else 1
+              p=subprocess.run([exe,str(path)],capture_output=True,timeout=180)
+              (out/(path.name+".stderr")).write_bytes(p.stderr)
+              row=dict(case=path.name,sha256=hashlib.sha256(path.read_bytes()).hexdigest(),expected=wanted,actual=p.returncode)
+              rows.append(row);print(json.dumps(row),flush=True)
+              (out/"reference-verdicts.json").write_text(json.dumps(rows,indent=2))
+          assert len(rows)==9,rows
+          assert all(r["actual"]==r["expected"]for r in rows),rows
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-original-grind-source-controls-official
+          path: /tmp/reference/evidence
+          if-no-files-found: error
