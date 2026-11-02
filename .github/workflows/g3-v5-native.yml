@@ -1,0 +1,48 @@
+name: G3 V5 bounded fixture qualification
+on:
+  push:
+    branches: [research/g3-v5-source-generic-20261103]
+    paths:
+      - 'research/g3_constructor_v5/**'
+      - '.github/workflows/g3-v5-native.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-fixtures:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.0'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Native Go suite with real test-count gate
+        run: |
+          set -euo pipefail
+          cd research/g3_constructor_v5
+          go test -json planner.go planner_test.go probe.go probe_test.go | tee /tmp/v5-go.json
+          python - <<'PY'
+          import json
+          rows=[json.loads(s) for s in open('/tmp/v5-go.json')]
+          n=sum(r.get('Action')=='pass' and r.get('Test') for r in rows)
+          assert n==16, f'UNKNOWN_RECOGNIZED_GO_TEST_COUNT:{n}'
+          print('GO_TEST_COUNT=',n)
+          PY
+          go vet planner.go probe.go
+      - name: Source-pinned native fixtures and direct baselines
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s research/g3_constructor_v5 -p 'test_*.py' -v 2>&1 | tee /tmp/v5-python.log
+          grep -q 'Ran 16 tests' /tmp/v5-python.log || { echo 'UNKNOWN_PYTHON_TEST_COUNT'; exit 1; }
+          grep -q '^OK$' /tmp/v5-python.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: g3-v5-fixture-evidence
+          path: |
+            /tmp/v5-go.json
+            /tmp/v5-python.log
