@@ -14,7 +14,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 96008841fd6e457afa81b51ab45e140e31be4d8a
+          ref: 25fb80ff42658ba2e4d21cb4388d092dd9baaa92
           fetch-depth: 0
       - uses: dtolnay/rust-toolchain@stable
       - name: Bind candidate and restore original inputs and exact qualified baseline binary
