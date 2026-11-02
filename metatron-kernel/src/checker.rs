@@ -286,7 +286,7 @@ fn check_export_with_policy(
                     // over the actual progressively checked environment and this
                     // source declaration's universe parameters. Never reuse its
                     // caches, ledgers, judgments or synthetic certificates below.
-                    for id in [8750, 8751, 8752, 8753, 8804, 8805, 8833, 8834, 8835] {
+                    for id in [6104, 8749, 8750, 8751, 8752, 8753, 8754, 8796, 8797, 8799, 8800, 8801, 8802, 8803, 8804, 8805, 8834, 8835] {
                         let probe = TypeChecker::with_level_substitution(
                             &export.exprs, &export.levels, &environment,
                             parameter_substitution(&level_params),
@@ -304,8 +304,10 @@ fn check_export_with_policy(
                             &export.exprs, &export.levels, &environment,
                             parameter_substitution(&level_params),
                         ).with_delta_policy(delta_policy);
+                        let formation=probe.is_type(ExprId(expected),limits.judgment_steps);
                         let expected = TypeValue::Term(probe.closure(ExprId(expected),EnvFrame::empty()));
                         let judgment=probe.check_formed(ExprId(actual),&expected,limits.judgment_steps);
+                        eprintln!("NUCLEUS_ASSURANCE_FORMATION:label={label}:formation={formation:?}");
                         eprintln!("NUCLEUS_ASSURANCE_CHECK:label={label}:actual={actual}:expected={expected:?}:judgment={judgment:?}");
                     }
                 }
