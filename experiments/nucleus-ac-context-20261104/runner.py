@@ -40,7 +40,8 @@ def patch_source(kernel: Path, arm: Path):
     # inhabits Sort (u+1). Derive that relationship from the SOURCE universe,
     # never from the recursor's untrusted universe claims.
     replacement = (
-        "    let source_sort_parameter = matches!(export.exprs.get(parameters[0]),\n"
+        "    let source_sort_parameter = inductive.num_params == 1\n"
+        "        && matches!(export.exprs.get(parameters[0]),\n"
         "        Some(Expr::Sort(level)) if matches!(export.levels.get(*level),\n"
         "            Some(Level::Param(name)) if *name == inductive.level_params[0]));\n"
         "    (is_sort_succ_parameter(export,parameters[0],inductive.level_params[0])\n"
