@@ -1,0 +1,30 @@
+--- a/metatron-kernel/src/environment.rs
++++ b/metatron-kernel/src/environment.rs
+@@ -641,6 +641,27 @@
+ #[cfg(test)]
+ mod owned_append_tests {
+     use super::*;
++    fn checked_constant_root(env:&Environment)->*const HashMap<NameId,ConstantDecl> {
++        Rc::as_ptr(&env.constants)
++    }
++    #[test]
++    fn staged_branch_reuses_checked_constant_root_after_snapshot_drop() {
++        let base=Environment::empty().extend_owned(NameId(1),ConstantDecl::axiom(vec![],ExprId(1))).unwrap();
++        let checked_root=checked_constant_root(&base);
++        let staged=base.extend(NameId(2),ConstantDecl::axiom(vec![],ExprId(2))).unwrap();
++        assert!(base.get(NameId(2)).is_none());
++        assert_eq!(staged.get(NameId(2)).unwrap().ty,ExprId(2));
++        let sibling=staged.extend(NameId(3),ConstantDecl::axiom(vec![],ExprId(3))).unwrap();
++        assert!(staged.get(NameId(3)).is_none());
++        assert_eq!(sibling.authority(),AuthorityId(3));
++        drop(staged);drop(base);
++        let committed=sibling.extend_owned(NameId(4),ConstantDecl::axiom(vec![],ExprId(4))).unwrap();
++        assert_eq!(checked_constant_root(&committed),checked_root,"staged signature fork should reuse the checked root after snapshots drop");
++        for i in 1..=4 {assert_eq!(committed.get(NameId(i)).unwrap().ty,ExprId(i));}
++        assert_eq!(committed.authority(),AuthorityId(4));
++        assert_eq!(committed.clone().extend_owned(NameId(3),ConstantDecl::axiom(vec![],ExprId(99))).unwrap_err(),EnvironmentError::DuplicateConstant(NameId(3)));
++    }
++
+     #[test]
+     fn unique_owned_append_preserves_both_map_allocations_across_many_definitions() {
+         let mut env=Environment::empty();let constants=Rc::as_ptr(&env.constants);let definitions=Rc::as_ptr(&env.definitions);
