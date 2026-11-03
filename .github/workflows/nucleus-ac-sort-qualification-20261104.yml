@@ -1,7 +1,7 @@
-name: Nucleus Sort parameter record protected qualification
+name: Nucleus p1 Sort parameter record, canonical K protected qualification
 on:
   push:
-    branches: [research/nucleus-ac-sort-carrier-20261104]
+    branches: [research/nucleus-ac-sort-p1-canonical-20261104]
     paths:
       - '.github/workflows/nucleus-ac-sort-qualification-20261104.yml'
       - 'experiments/nucleus-ac-sort-20261104/**'
@@ -87,7 +87,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: nucleus-ac-sort-protected-${{ github.sha }}
+          name: nucleus-ac-sort-p1-protected-${{ github.sha }}
           path: |
             /tmp/nucleus-ac-sort-qualified/*.json
             /tmp/nucleus-ac-sort-qualified/candidate/*.json
