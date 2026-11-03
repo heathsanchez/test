@@ -7,6 +7,7 @@ cache, named-declaration whitelist, or preaccepted theorem is installed.
 """
 
 import importlib.util
+import difflib
 import json
 from pathlib import Path
 import subprocess
@@ -23,6 +24,53 @@ SOURCE_SHA = 'e7daddaf05fa799dc248bb3f10a502fd5ab5569561a4502d9f48de63256f3113'
 PRIOR_BIN_SHA = '582dd0ac17d664202a39ee7daa69b640f33916374fc44dbefdc96a37e8bcb238'
 PRIOR_PATCH_SHA = 'c25db576b5b52ed6e76711b9e83e66731bd40c68b7aa6627d45ad751c769ba69'
 PRIOR_ZIP_SHA = 'a891c75dbcabd6fddfbbcc5b9ea6826a68b53cf51ae1fbc6e50fdae5d23c104e'
+
+
+def extend_max_one_source(kernel, arm):
+    """Select source max(1,u) records without changing the signature verifier."""
+    path = kernel / 'src/checker.rs'
+    before = path.read_text()
+    helper = '''// Exact source universe form for records in Sort (max 1 u).
+// Constructor, recursor and field obligations remain fully checked below.
+fn is_sort_max_one_parameter(export:&ResolvedExport,expression:ExprId,parameter:NameId)->bool {
+    let Some(Expr::Sort(level))=export.exprs.get(expression) else{return false;};
+    let Some(Level::Max(one,carrier))=export.levels.get(*level) else{return false;};
+    matches!(export.levels.get(*one),Some(Level::Succ(zero)) if matches!(export.levels.get(*zero),Some(Level::Zero)))
+        && matches!(export.levels.get(*carrier),Some(Level::Param(name)) if *name==parameter)
+}
+
+'''
+    scope_start = 'fn parameter_record_scope(export:&ResolvedExport,block:&InductiveBlock)->bool {'
+    candidate_start = 'fn parameter_record_candidate(export:&ResolvedExport,block:&InductiveBlock)->bool {'
+    assert before.count(scope_start) == before.count(candidate_start) == 1
+    start, stop = before.index(scope_start), before.index(candidate_start)
+    scope = before[start:stop]
+    old_scope = '        && is_sort_succ_parameter(export,result,inductive.level_params[0])'
+    assert scope.count(old_scope) == 1
+    scope = scope.replace(old_scope,
+        '        && (is_sort_succ_parameter(export,result,inductive.level_params[0])\n'
+        '            || (inductive.num_params==1 && is_sort_parameter(export,parameters[0],inductive.level_params[0])\n'
+        '                && is_sort_max_one_parameter(export,result,inductive.level_params[0])))', 1)
+    after = before[:start] + helper + scope + before[stop:]
+    candidate = after.index(candidate_start)
+    candidate_end = after.find('\nfn ', candidate + 1)
+    assert candidate_end > candidate
+    section = after[candidate:candidate_end]
+    old_candidate = 'is_sort_succ_parameter(export,result,universe)'
+    assert section.count(old_candidate) == 1
+    section = section.replace(old_candidate,
+        '(is_sort_succ_parameter(export,result,universe)\n'
+        '            || (p==1 && is_sort_parameter(export,parameters[0],universe)\n'
+        '                && is_sort_max_one_parameter(export,result,universe)))', 1)
+    after = after[:candidate] + section + after[candidate_end:]
+    assert before != after
+    path.write_text(after)
+    diff = ''.join(difflib.unified_diff(before.splitlines(True), after.splitlines(True),
+        fromfile='a/metatron-kernel/src/checker.rs',
+        tofile='b/metatron-kernel/src/checker.rs'))
+    (arm / 'max-one-source.patch').write_text(diff)
+    with (arm / 'source.patch').open('a') as stream:
+        stream.write(diff)
 
 
 def new_gate(binary, env):
@@ -71,9 +119,10 @@ def main():
     OUT.mkdir(exist_ok=True)
     C.OUT = OUT
     source_patch = ROOT.parent / 'nucleus-ac-sort-20261104/sort-carrier.patch'
-    # Apply in two fail-closed patch invocations: the second diff is defined
-    # against the already-extended one-parameter source tree.
-    C.main(additional_patch=[source_patch, ROOT / 'max1.patch'],
+    # Apply p1's previously qualified source diff, then derive one extra
+    # patch with exact anchors in that already patched source. Mismatched
+    # anchors abort before any checker is built or a verdict is issued.
+    C.main(additional_patch=[source_patch, extend_max_one_source],
            additional_gate=new_gate)
     protected = json.loads((OUT / 'qualification.json').read_text())['candidate']
     full = json.loads((OUT / 'full.json').read_text())
