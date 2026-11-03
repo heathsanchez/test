@@ -49,9 +49,16 @@ def main():
     ROOT.mkdir(parents=True, exist_ok=True)
     actual = {str(p): digest(p) for p in EXPECTED}
     assert all(actual[str(p)] == expected for p, expected in EXPECTED.items()), actual
-    base = checked_run("qualified", [str(BASE)], use_stdin=True)
+    qualified = json.loads((ARTIFACT / "qualification.json").read_text())["candidate"]
+    assert qualified["qualified"] and qualified["binary_sha"] == actual[str(BASE)]
+    configuration = qualified["configuration"]
+    assert configuration and all(key.startswith("NUCLEUS_EXPERIMENTAL_") and val == "1"
+                                 for key, val in configuration.items())
+    qualified_env = os.environ.copy()
+    qualified_env.update(configuration)
+    base = checked_run("qualified", [str(BASE)], use_stdin=True, env=qualified_env)
     reference = checked_run("official", [str(REFERENCE), str(SOURCE)])
-    trace_env = os.environ.copy()
+    trace_env = qualified_env.copy()
     trace_env.update({"NUCLEUS_TRACE_DOWNSTREAM": "1",
                       "NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE": "1",
                       "METATRON_KERNEL_DIAGNOSTICS": "1"})
@@ -68,7 +75,8 @@ def main():
             fields[key] = match.group(1) if match else None
         fields["diagnostic_prefix"] = line[:1600]
         applications.append(fields)
-    summary = {"status": "DIAGNOSTIC_ONLY", "source_sha256": actual[str(SOURCE)],
+    summary = {"status": "DIAGNOSTIC_ONLY", "configuration": configuration,
+               "source_sha256": actual[str(SOURCE)],
                "candidate_sha256": actual[str(BASE)], "official_sha256": actual[str(REFERENCE)],
                "diagnostic_sha256": digest(TRACE),
                "baseline": base, "official": reference, "diagnostic": diagnostic,
