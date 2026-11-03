@@ -1,0 +1,91 @@
+name: Nucleus full export versus exact first-failure prefix matched cost
+on:
+  push:
+    branches: [research/nucleus-tail-cost-20261104]
+    paths: ['.github/workflows/nucleus-tail-cost-20261104.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-tail-cost:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore immutable qualified binary and matching exact Nat prefix
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/nucleus-tail-cost
+          gh api repos/heathsanchez/test/actions/artifacts/13248500779/zip > /tmp/nucleus-tail-cost/qualified.zip
+          printf '%s  %s\n' decd3ad80437eb5b47a7b66effb2594a9b6dd69cca8ff3360226bc3aa95a6b89 /tmp/nucleus-tail-cost/qualified.zip | sha256sum -c -
+          unzip -p /tmp/nucleus-tail-cost/qualified.zip next-frontier.ndjson.zst | zstd -dc -o /tmp/nucleus-tail-cost/prefix.ndjson
+          printf '%s  %s\n' 7767e7f90b3e24b30ecb5324f1117d6858b5f40653b31011ad1948eed747e8ea /tmp/nucleus-tail-cost/prefix.ndjson | sha256sum -c -
+          unzip -jo /tmp/nucleus-tail-cost/qualified.zip candidate/nucleus -d /tmp/nucleus-tail-cost
+          chmod +x /tmp/nucleus-tail-cost/nucleus
+          printf '%s  %s\n' 43ee22db5c6be1e1fddaec210322b02cfab30dabd5c10637ab21b3667d2ad98e /tmp/nucleus-tail-cost/nucleus | sha256sum -c -
+      - name: Restore complete source-pinned Mathlib
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/nucleus-tail-cost/full-source
+          gh api repos/heathsanchez/test/actions/artifacts/13231986845/zip > /tmp/nucleus-tail-cost/full.zip
+          printf '%s  %s\n' 3dd3fbb522816bdaa9d9cd2808196e075bfa27e3d6c82648731140594f87ce2b /tmp/nucleus-tail-cost/full.zip | sha256sum -c -
+          unzip -q /tmp/nucleus-tail-cost/full.zip -d /tmp/nucleus-tail-cost/full-source
+          zstd -d /tmp/nucleus-tail-cost/full-source/mathlib.ndjson.zst -o /tmp/nucleus-tail-cost/full.ndjson
+          printf '%s  %s\n' 22c5de83469408950005589a3bc5ef5157c65549b5a802f85d567c29151306a6 /tmp/nucleus-tail-cost/full.ndjson | sha256sum -c -
+          rm /tmp/nucleus-tail-cost/full.zip /tmp/nucleus-tail-cost/full-source/mathlib.ndjson.zst
+      - name: Three matched full-versus-prefix pairs with identical checker and rule set
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib,json,math,os,subprocess,time
+          from pathlib import Path
+          root=Path('/tmp/nucleus-tail-cost')
+          binary=root/'nucleus'
+          flags=('RELEVANCE','CONTEXT_BINDER','TYPED_LINEAGE','SUBSTITUTION_RECLOSURE',
+                 'TYPED_VALUE_NORMALIZATION','PROJECTION_CONTEXT','PROJECTION_CROSSFRAME_512',
+                 'TYPED_RECEIVER','SOURCE_PAIR_DEPTH8','POLYMORPHIC_PROP_IRREL','PROP_SINGLETON_2P1F',
+                 'EXPECTED_LAMBDA','FORMED_PROP_DOMAIN_RETRY','TYPED_DATA_CONGRUENCE',
+                 'TYPED_PROJECTION_SPINE','REPLAY_PROJECTION_MAJOR','REPLAY_NEUTRAL_PROJECTION',
+                 'CERTIFIED_QUOT_IOTA','SOURCE_PROOF_IRREL')
+          env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+          env.update({'NUCLEUS_EXPERIMENTAL_'+flag:'1' for flag in flags})
+          env['NUCLEUS_TRACE_DOWNSTREAM']='1'
+          inputs={'prefix':root/'prefix.ndjson','full':root/'full.ndjson'}
+          pairs=[]
+          for pair,order in enumerate((('prefix','full'),('full','prefix'),('prefix','full'))):
+              arms={}
+              for label in order:
+                  path=root/f'{pair}-{label}';path.mkdir()
+                  start=time.monotonic()
+                  with inputs[label].open('rb') as input_file,(path/'stderr').open('wb') as stderr:
+                      proc=subprocess.run(['/usr/bin/time','-f','wall=%e\nuser=%U\nsystem=%S\nrss_kb=%M','-o',str(path/'time.txt'),str(binary)],
+                                          stdin=input_file,stdout=subprocess.DEVNULL,stderr=stderr,env=env,timeout=600)
+                  metrics={'rc':proc.returncode,'observed_wall':round(time.monotonic()-start,4)}
+                  for line in (path/'time.txt').read_text().splitlines():
+                      if '=' in line:
+                          key,val=line.split('=',1);metrics[key]=float(val)
+                  trace=[x for x in (path/'stderr').read_text().splitlines() if x.startswith('NUCLEUS_DOWNSTREAM:')]
+                  metrics['terminal']=trace[-1] if trace else ''
+                  assert metrics['rc']==2 and '_private.Init.Data.Nat.Lemmas.0.Nat.right_eq_add._proof_1_1' in metrics['terminal']
+                  arms[label]=metrics
+                  print('TAIL_MEASUREMENT',label,pair,json.dumps(metrics),flush=True)
+              pairs.append(arms)
+          ratio=[pair['prefix']['user']/pair['full']['user'] for pair in pairs]
+          report={'binary_sha256':'43ee22db5c6be1e1fddaec210322b02cfab30dabd5c10637ab21b3667d2ad98e',
+              'prefix_sha256':'7767e7f90b3e24b30ecb5324f1117d6858b5f40653b31011ad1948eed747e8ea',
+              'full_sha256':'22c5de83469408950005589a3bc5ef5157c65549b5a802f85d567c29151306a6',
+              'pairs':pairs,'prefix_over_full_cpu':ratio,'geomean_ratio':math.prod(ratio)**(1/len(ratio)),
+              'interpretation':'Suffix parse/resolve/preflight/allocator overhead, NOT a complete-Mathlib speedup; both stop at same UNKNOWN'}
+          (root/'matched-tail-cost.json').write_text(json.dumps(report,indent=2)+'\n')
+          print('TAIL_SUMMARY',json.dumps(dict(ratios=ratio,geomean=report['geomean_ratio'])),flush=True)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-tail-cost-${{ github.sha }}
+          path: |
+            /tmp/nucleus-tail-cost/matched-tail-cost.json
+            /tmp/nucleus-tail-cost/*-*/time.txt
+            /tmp/nucleus-tail-cost/*-*/stderr
