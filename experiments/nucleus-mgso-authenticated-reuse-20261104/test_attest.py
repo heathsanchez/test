@@ -10,6 +10,7 @@ from unittest.mock import patch
 from zipfile import ZipFile, ZIP_DEFLATED
 
 import attest
+import native_controls
 
 
 COMMIT = "a" * 40
@@ -127,6 +128,15 @@ class HistoricalReuseTests(unittest.TestCase):
     def test_modified_zip_requires_new_external_github_digest(self):
         metadata, pin, archive = fixture()
         self.assertIsNotNone(attest.validate_metadata(metadata, pin, archive + b"x"))
+
+    def test_forged_digest_targets_named_producer_even_if_reader_artifact_comes_first(self):
+        metadata, pin, archive = fixture()
+        reader_artifact = {"id": 4001, "name": "reader-evidence", "digest": "sha256:" + "f" * 64}
+        metadata["artifacts"].insert(0, reader_artifact)
+        forged = native_controls.forge_producer_artifact_digest(metadata)
+        self.assertEqual(forged["artifacts"][0], reader_artifact)
+        self.assertEqual(attest.validate_metadata(forged, pin, archive),
+                         "PRODUCER_ARTIFACT_DIGEST_OR_PROVENANCE_MISMATCH")
 
     def test_artifact_download_uses_github_cli_authenticated_redirect(self):
         metadata, _, archive = fixture()
