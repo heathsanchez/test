@@ -1,0 +1,47 @@
+--- a/metatron-kernel/src/checker.rs
++++ b/metatron-kernel/src/checker.rs
+@@ -2907,11 +2907,10 @@
+ 
+ fn parameter_record_scope(export:&ResolvedExport,block:&InductiveBlock)->bool {
+     let ([inductive],[constructor],[_])=(block.types.as_slice(),block.constructors.as_slice(),block.recursors.as_slice()) else{return false;};
+-    if inductive.level_params.len()!=1 || !(1..=64).contains(&inductive.num_params)
++    if inductive.level_params.is_empty() || inductive.level_params.len()>64 || !(1..=64).contains(&inductive.num_params)
+         || !(2..=64).contains(&constructor.num_fields) {return false;}
+     let Some((parameters,result))=pi_spine(export,inductive.ty,inductive.num_params as usize) else{return false;};
+-    (is_sort_succ_parameter(export,parameters[0],inductive.level_params[0])
+-            || is_sort_parameter(export,parameters[0],inductive.level_params[0]))
++    matches!(export.exprs.get(parameters[0]),Some(Expr::Sort(_)))
+         && matches!(export.exprs.get(result), Some(Expr::Sort(level))
+             if exported_level_is_definitely_nonzero(export,*level,128))
+ }
+@@ -2919,14 +2918,13 @@
+ fn parameter_record_candidate(export:&ResolvedExport,block:&InductiveBlock)->bool {
+     if !parameter_record_scope(export,block) {return false;}
+     let inductive=&block.types[0];let constructor=&block.constructors[0];let recursor=&block.recursors[0];
+-    let universe=inductive.level_params[0];let p=inductive.num_params as usize;
++    let p=inductive.num_params as usize;
+     if constructor.num_params!=inductive.num_params {return false;}
+     let mut roots=vec![inductive.ty,constructor.ty,recursor.ty];roots.extend(recursor.rules.iter().map(|rule|rule.rhs));
+     if !bounded_record_source(export,&roots,None) {return false;}
+     let Some((parameters,result))=pi_spine(export,inductive.ty,p) else{return false;};
+     let Some((fields,_))=pi_spine(export,constructor.ty,p+constructor.num_fields as usize) else{return false;};
+-    (is_sort_succ_parameter(export,parameters[0],universe)
+-            || is_sort_parameter(export,parameters[0],universe)) && matches!(export.exprs.get(result), Some(Expr::Sort(level))
++    matches!(export.exprs.get(parameters[0]),Some(Expr::Sort(_))) && matches!(export.exprs.get(result), Some(Expr::Sort(level))
+             if exported_level_is_definitely_nonzero(export,*level,128))
+         && parameters.iter().zip(&fields[..p]).all(|(a,b)|expr_eq_with_bvar_shift(export,*a,*b,0,0))
+         && bounded_record_source(export,&fields[p..],Some(inductive.name))
+@@ -2936,11 +2934,9 @@
+     if !parameter_record_candidate(export,block) {return false;}
+     let inductive=&block.types[0];let constructor=&block.constructors[0];let recursor=&block.recursors[0];
+     let p=inductive.num_params as usize;let count=constructor.num_fields as usize;
+-    // Arena replays and compares regenerated recursor metadata. With one
+-    // owner universe, Lean's fresh elimination name is u, or u_1 if u is used.
++    // Regenerate the first unused motive name from all owner universes.
+     let Some(motive)=recursor.level_params.first() else{return false;};
+-    let expected=if name_is_root_str(export,inductive.level_params[0],"u") {"u_1"} else {"u"};
+-    if !name_is_root_str(export,*motive,expected) {return false;}
++    if !source_motive_level_matches(export,&inductive.level_params,*motive) {return false;}
+     let Some((parameters,result))=pi_spine(export,inductive.ty,p) else{return false;};
+     let Some(Expr::Sort(level))=export.exprs.get(result) else{return false;};
+     let substitution=parameter_substitution(&inductive.level_params);

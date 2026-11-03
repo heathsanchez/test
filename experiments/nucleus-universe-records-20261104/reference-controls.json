@@ -1,0 +1,120 @@
+[
+  {
+    "case": "original",
+    "file": "original.ndjson",
+    "sha256": "f37e9434b2cee5f9623a2218fb6418c58d43dbe5ac3582cadd9cc844dfa215b4",
+    "expect_reference": 0,
+    "reference_rc": 0,
+    "parse_rc": 0,
+    "reference_binary": "ae92c625e612fff1c90e329344d22e3c3c330383cb335ce28fd41435be3b3b94"
+  },
+  {
+    "case": "fresh-w",
+    "file": "fresh-w.ndjson",
+    "sha256": "e73e19fae63a7e2997a2321b66e996388ee026e029e0063e514e3e778d2a7f8c",
+    "expect_reference": 1,
+    "reference_rc": 1,
+    "parse_rc": 0,
+    "reference_binary": "ae92c625e612fff1c90e329344d22e3c3c330383cb335ce28fd41435be3b3b94"
+  },
+  {
+    "case": "fresh-u3",
+    "file": "fresh-u3.ndjson",
+    "sha256": "0f13ada3e326ee5b628348104bbbd2db4c17080ef7a6097a61343af6dc5745d3",
+    "expect_reference": 1,
+    "reference_rc": 1,
+    "parse_rc": 0,
+    "reference_binary": "ae92c625e612fff1c90e329344d22e3c3c330383cb335ce28fd41435be3b3b94"
+  },
+  {
+    "case": "hierarchical",
+    "file": "hierarchical.ndjson",
+    "sha256": "b409ba3e4d3acac07c1f543e3a2d61066c056dd1816d4b68df6d4eacfdb096ce",
+    "expect_reference": 1,
+    "reference_rc": 1,
+    "parse_rc": 0,
+    "reference_binary": "ae92c625e612fff1c90e329344d22e3c3c330383cb335ce28fd41435be3b3b94"
+  },
+  {
+    "case": "owner-wx",
+    "file": "owner-wx.ndjson",
+    "sha256": "96330727719d6546d91eabf497eef968567e1d67c9d5f61b7aa2d34efab48a6a",
+    "expect_reference": 0,
+    "reference_rc": 0,
+    "parse_rc": 0,
+    "reference_binary": "ae92c625e612fff1c90e329344d22e3c3c330383cb335ce28fd41435be3b3b94"
+  },
+  {
+    "case": "owner-u-u1",
+    "file": "owner-u-u1.ndjson",
+    "sha256": "c8f04b76ffd91644480c7739706ca0b5a03a2343719d46d85b3bb527b4c711e7",
+    "expect_reference": 0,
+    "reference_rc": 0,
+    "parse_rc": 0,
+    "reference_binary": "ae92c625e612fff1c90e329344d22e3c3c330383cb335ce28fd41435be3b3b94"
+  },
+  {
+    "case": "forged-k-on",
+    "file": "forged-k-on.ndjson",
+    "sha256": "7da85de9220534cd10bf4b39a991f53bae6bd34b121f3f2f1140f81323ec352c",
+    "expect_reference": 1,
+    "reference_rc": 1,
+    "parse_rc": 0,
+    "reference_binary": "ae92c625e612fff1c90e329344d22e3c3c330383cb335ce28fd41435be3b3b94"
+  },
+  {
+    "case": "forged-extra-field",
+    "file": "forged-extra-field.ndjson",
+    "sha256": "55df62d10e8d6c063529ce0a79f43889e2ade75a7ca8df5cdc776fd62bc813e1",
+    "expect_reference": 1,
+    "reference_rc": 1,
+    "parse_rc": 0,
+    "reference_binary": "ae92c625e612fff1c90e329344d22e3c3c330383cb335ce28fd41435be3b3b94"
+  },
+  {
+    "case": "forged-recursor-level",
+    "file": "forged-recursor-level.ndjson",
+    "sha256": "2fd698e4e76a8876af3237a5bf92ef769d2b8833ce84461429428de4b55b5ff0",
+    "expect_reference": 1,
+    "reference_rc": 1,
+    "parse_rc": 0,
+    "reference_binary": "ae92c625e612fff1c90e329344d22e3c3c330383cb335ce28fd41435be3b3b94"
+  },
+  {
+    "case": "forged-rule-count",
+    "file": "forged-rule-count.ndjson",
+    "sha256": "8e89366fb9b8bd8910f767530def36d4fbefd32e58921fedf976f057335e664e",
+    "expect_reference": 1,
+    "reference_rc": 1,
+    "parse_rc": 0,
+    "reference_binary": "ae92c625e612fff1c90e329344d22e3c3c330383cb335ce28fd41435be3b3b94"
+  },
+  {
+    "case": "forged-carrier-prop",
+    "file": "forged-carrier-prop.ndjson",
+    "sha256": "822080144e7a974d6fa5a2aded1367c49b1b06ef345f4eac5d09a80bf61b74e8",
+    "expect_reference": 1,
+    "reference_rc": 1,
+    "parse_rc": 0,
+    "reference_binary": "ae92c625e612fff1c90e329344d22e3c3c330383cb335ce28fd41435be3b3b94"
+  },
+  {
+    "case": "forged-carrier-overflow",
+    "file": "forged-carrier-overflow.ndjson",
+    "sha256": "c4615c2432ed0ecab7a59947efa80fc0c139ee2c572c0693005a53b1b537e7e4",
+    "expect_reference": 1,
+    "reference_rc": 1,
+    "parse_rc": 0,
+    "reference_binary": "ae92c625e612fff1c90e329344d22e3c3c330383cb335ce28fd41435be3b3b94"
+  },
+  {
+    "case": "bounded-shared-max-dag",
+    "file": "bounded-shared-max-dag.ndjson",
+    "sha256": "d3eb2117937ba687f7be45a01f11865de0380600c556e9f35835fad063b0bd73",
+    "expect_reference": 0,
+    "expect_nucleus": 2,
+    "reference_rc": 0,
+    "parse_rc": 0,
+    "reference_binary": "ae92c625e612fff1c90e329344d22e3c3c330383cb335ce28fd41435be3b3b94"
+  }
+]
