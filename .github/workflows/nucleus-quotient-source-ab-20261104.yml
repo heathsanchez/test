@@ -1,0 +1,89 @@
+name: Nucleus Quotient historical-source A/B
+on:
+  push:
+    branches: [research/nucleus-quotient-reuse-ab-20261104]
+    paths: ['.github/workflows/nucleus-quotient-source-ab-20261104.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  compare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: '1.99.1'
+      - name: Restore exact new Mathlib prefix and current qualified checker
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/nucleus-ab
+          gh api repos/heathsanchez/test/actions/artifacts/13242616719/zip > /tmp/nucleus-ab/frontier.zip
+          printf '%s  %s\n' 78183d5b00480e3b3a6bec2346eb07ca99fb268c312d457ebf06df1c8d8722cd /tmp/nucleus-ab/frontier.zip | sha256sum -c -
+          unzip -p /tmp/nucleus-ab/frontier.zip next-frontier.ndjson.zst | zstd -dc -o /tmp/nucleus-ab/frontier.ndjson
+          printf '%s  %s\n' 4883dc9889b546a1117c25c266bae05a344b6609db5cbbfd846a8d7abc92a907 /tmp/nucleus-ab/frontier.ndjson | sha256sum -c -
+          gh api repos/heathsanchez/test/actions/artifacts/13242401296/zip > /tmp/nucleus-ab/candidate.zip
+          printf '%s  %s\n' 94e80c675907498430bea6f5ce89bfe8eeb40922adf4222f906e3b7267217349 /tmp/nucleus-ab/candidate.zip | sha256sum -c -
+          unzip -jo /tmp/nucleus-ab/candidate.zip candidate/nucleus -d /tmp/nucleus-ab
+          mv /tmp/nucleus-ab/nucleus /tmp/nucleus-ab/current
+          chmod +x /tmp/nucleus-ab/current
+          printf '%s  %s\n' dc552cef582d4007ad5b8865a7a0fb32b9034af2b2a8943a9efc1bea8c568ac7 /tmp/nucleus-ab/current | sha256sum -c -
+      - name: Build immutable historical quotient-capable source
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/nucleus-ab/legacy
+          git archive 1a2e50777c596e20a7d2dd2fa0e591c1ab8ecfc4 metatron-kernel | tar -x -C /tmp/nucleus-ab/legacy
+          cargo build --release --locked --manifest-path /tmp/nucleus-ab/legacy/metatron-kernel/Cargo.toml > /tmp/nucleus-ab/legacy-build.log 2>&1
+          cp /tmp/nucleus-ab/legacy/metatron-kernel/target/release/metatron-kernel /tmp/nucleus-ab/legacy-checker
+          sha256sum /tmp/nucleus-ab/legacy-checker /tmp/nucleus-ab/current > /tmp/nucleus-ab/binaries.sha256
+          printf '%s\n' 'legacy_source=1a2e50777c596e20a7d2dd2fa0e591c1ab8ecfc4' 'current_base=a2578e77079719ff2064f910bd82fd01d8e120b6' 'current_harness=ca80dd18c73fc65e19b7d199c6d8e15058e47ab7' 'input_sha=4883dc9889b546a1117c25c266bae05a344b6609db5cbbfd846a8d7abc92a907' > /tmp/nucleus-ab/provenance.txt
+      - name: Exact same-input flag ablations, preserving negative outcomes
+        run: |
+          set -euo pipefail
+          legacy_flags=()
+          for flag in RELEVANCE CONTEXT_BINDER TYPED_LINEAGE SUBSTITUTION_RECLOSURE TYPED_VALUE_NORMALIZATION PROJECTION_CONTEXT PROJECTION_CROSSFRAME_512 TYPED_RECEIVER SOURCE_PAIR_DEPTH8 POLYMORPHIC_PROP_IRREL PROP_SINGLETON_2P1F EXPECTED_LAMBDA; do
+            legacy_flags+=("NUCLEUS_EXPERIMENTAL_${flag}=1")
+          done
+          current_flags=()
+          for flag in CONTEXT_BINDER EXPECTED_LAMBDA FORMED_PROP_DOMAIN_RETRY POLYMORPHIC_PROP_IRREL PROJECTION_CONTEXT PROJECTION_CROSSFRAME_512 PROP_SINGLETON_2P1F RELEVANCE REPLAY_NEUTRAL_PROJECTION REPLAY_PROJECTION_MAJOR SOURCE_PAIR_DEPTH8 SUBSTITUTION_RECLOSURE TYPED_DATA_CONGRUENCE TYPED_LINEAGE TYPED_PROJECTION_SPINE TYPED_RECEIVER TYPED_VALUE_NORMALIZATION; do
+            current_flags+=("NUCLEUS_EXPERIMENTAL_${flag}=1")
+          done
+          quotient_flags=(NUCLEUS_EXPERIMENTAL_CERTIFIED_QUOT_IOTA=1 NUCLEUS_EXPERIMENTAL_SOURCE_PROOF_IRREL=1)
+          exact_flag=(NUCLEUS_EXPERIMENTAL_EXACT_PROOF_NEUTRALS=1)
+          run_case() {
+            local label="$1" binary="$2"
+            shift 2
+            set +e
+            env -i PATH="$PATH" NUCLEUS_TRACE_DOWNSTREAM=1 "$@" "$binary" < /tmp/nucleus-ab/frontier.ndjson > "/tmp/nucleus-ab/${label}.stdout" 2> "/tmp/nucleus-ab/${label}.stderr"
+            local rc=$?
+            set -e
+            printf '%s\t%s\n' "$label" "$rc" | tee -a /tmp/nucleus-ab/verdicts.tsv
+            if (( rc < 0 || rc > 2 )); then
+              echo "infrastructure or execution error: ${label}" >&2
+              return 1
+            fi
+          }
+          printf 'arm\texit_code\n' > /tmp/nucleus-ab/verdicts.tsv
+          run_case legacy-default /tmp/nucleus-ab/legacy-checker
+          run_case legacy-origin /tmp/nucleus-ab/legacy-checker "${legacy_flags[@]}"
+          run_case legacy-origin-exact /tmp/nucleus-ab/legacy-checker "${legacy_flags[@]}" "${exact_flag[@]}"
+          run_case legacy-origin-quotient /tmp/nucleus-ab/legacy-checker "${legacy_flags[@]}" "${quotient_flags[@]}"
+          run_case legacy-origin-all /tmp/nucleus-ab/legacy-checker "${legacy_flags[@]}" "${exact_flag[@]}" "${quotient_flags[@]}"
+          run_case current-pinned /tmp/nucleus-ab/current "${current_flags[@]}"
+          run_case current-all-old-flags /tmp/nucleus-ab/current "${current_flags[@]}" "${exact_flag[@]}" "${quotient_flags[@]}"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-quotient-old-vs-new-${{ github.sha }}
+          path: |
+            /tmp/nucleus-ab/verdicts.tsv
+            /tmp/nucleus-ab/provenance.txt
+            /tmp/nucleus-ab/binaries.sha256
+            /tmp/nucleus-ab/legacy-build.log
+            /tmp/nucleus-ab/*.stderr
+            /tmp/nucleus-ab/*.stdout
