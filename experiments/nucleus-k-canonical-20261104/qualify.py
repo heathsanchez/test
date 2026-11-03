@@ -47,6 +47,9 @@ def main(additional_patch=None, additional_gate=None):
         if additional_patch is not None:
             patches = [additional_patch] if isinstance(additional_patch, Path) else list(additional_patch)
             for index, patch in enumerate(patches):
+                if callable(patch):
+                    patch(kernel, arm)
+                    continue
                 result = Q.t.run_group(['patch','--batch','--fuzz=0','-p1','-i',str(patch)], cwd=arm, capture_output=True, timeout=30)
                 (arm / f'additional-{index}.patch.log').write_bytes(result.stdout + result.stderr)
                 assert result.returncode == 0, (result.stdout, result.stderr)
