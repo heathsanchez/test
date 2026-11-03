@@ -75,6 +75,13 @@ jobs:
             /tmp/mgso-inputs.zip | sha256sum --check -
           unzip -q /tmp/mgso-inputs.zip -d /tmp/mgso-inputs
           sha256sum /tmp/mgso-inputs.zip > /tmp/mgso-evidence/corpus-artifact.sha256
+          gh api repos/heathsanchez/test/actions/artifacts/13230652851/zip > /tmp/mgso-baseline.zip
+          printf '%s  %s\n' \
+            90b932f6a5862df01b33939c26acdba9e0d092021a64b58db773a49d256640ac \
+            /tmp/mgso-baseline.zip | sha256sum --check -
+          unzip -p /tmp/mgso-baseline.zip verdicts.json > /tmp/mgso-evidence/baseline-verdicts.json
+          sha256sum /tmp/mgso-baseline.zip > /tmp/mgso-evidence/baseline-artifact.sha256
+          printf '%s\n' 'Original source a2578e7 and successful baseline c7ded9c have identical metatron-kernel/src Git tree 3652c51058cb8cb63a9997cc105d1125831c5717' > /tmp/mgso-evidence/baseline-lineage.txt
       - name: Matched cold, first shadow, and cross-process shadow on all 208
         run: |
           python3 - <<'PY'
@@ -119,31 +126,47 @@ jobs:
 
           manifest=json.loads((inputs/'inputs-manifest.json').read_text())
           assert len(manifest)==208,len(manifest)
+          prior_rows=json.loads((evidence/'baseline-verdicts.json').read_text())
+          assert len(prior_rows)==208,len(prior_rows)
+          baseline={row['case']:row for row in prior_rows}
+          assert len(baseline)==208,'duplicate baseline case identifiers'
           rows=[]
           for index,entry in enumerate(manifest):
               path=inputs/'inputs'/entry['relative_path']
               assert digest(path)==entry['sha256'],entry['case']
+              prior=baseline[entry['case']]
+              assert prior['sha256']==entry['sha256'],entry['case']
+              assert int(prior['expected'])==int(entry['expected']),entry['case']
               store=cache/f'{index:03d}'
               arms={
                   'ordinary':invoke(path,[],index,'ordinary'),
                   'shadow_first':invoke(path,['--mgso-shadow-dir',str(store)],index,'shadow_first'),
                   'shadow_restart':invoke(path,['--mgso-shadow-dir',str(store)],index,'shadow_restart'),
               }
-              expected=int(entry['expected'])
+              # Use the exact checked baseline verdict, not the test-author
+              # expectation. Eight historical UNKNOWNs differ from the
+              # manifest label but were already present in qualified Nucleus.
+              expected=int(prior['rc'])
               for arm,data in arms.items():
                   assert data['rc']==expected,(entry['case'],arm,expected,data['rc'])
                   assert data['stdout_sha256']==arms['ordinary']['stdout_sha256'],(entry['case'],arm,'stdout changed')
               if expected!=0:
                   assert not (store/'root.json').exists(),(entry['case'],'root for non-ACCEPT')
               rows.append(dict(case=entry['case'],sha256=entry['sha256'],
-                               expected=expected,arms=arms,root_exists=(store/'root.json').exists()))
+                               declared_expectation=int(entry['expected']),
+                               baseline_verdict=expected,arms=arms,
+                               root_exists=(store/'root.json').exists()))
               (evidence/'verdicts.json').write_text(json.dumps(rows,indent=2))
               if (index+1)%20==0: print('qualified',index+1,'of',len(manifest),flush=True)
 
-          counts=dict(collections.Counter(row['expected'] for row in rows))
+          counts=dict(collections.Counter(row['baseline_verdict'] for row in rows))
           candidates=sum(row['arms']['shadow_restart']['shadow_candidate'] for row in rows)
-          accepted_with_root=sum(row['expected']==0 and row['root_exists'] for row in rows)
+          accepted_with_root=sum(row['baseline_verdict']==0 and row['root_exists'] for row in rows)
+          declared_disagreements=[row['case'] for row in rows if row['baseline_verdict']!=row['declared_expectation']]
           summary=dict(count=len(rows),counts=counts,accepted_with_root=accepted_with_root,
+                       declared_disagreements=declared_disagreements,
+                       original_baseline_run=41636598495,
+                       original_baseline_commit='c7ded9c01c441d8e0d1e9dfa9f96452dc2333908',
                        shadow_candidate_matches=candidates,
                        total_cold_seconds=sum(row['arms']['ordinary']['time_sec'] for row in rows),
                        total_shadow_first_seconds=sum(row['arms']['shadow_first']['time_sec'] for row in rows),
@@ -154,6 +177,7 @@ jobs:
           (evidence/'summary.json').write_text(json.dumps(summary,indent=2))
           print(json.dumps(summary),flush=True)
           assert counts=={0:121,1:79,2:8},summary
+          assert len(declared_disagreements)==8,'changed baseline/manifest disagreement count'
           assert accepted_with_root>0,'no accepted receipts persisted'
           PY
       - uses: actions/upload-artifact@v4
