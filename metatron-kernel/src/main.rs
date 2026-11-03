@@ -4,6 +4,7 @@ use std::path::PathBuf;
 use std::process::ExitCode;
 
 use metatron_kernel::receipt::VerificationConfig;
+use metatron_kernel::receipt_store::ShadowResult;
 use sha2::{Digest, Sha256};
 
 fn main() -> ExitCode {
@@ -23,13 +24,21 @@ fn check_input() -> ExitCode {
     let mut args = std::env::args_os().skip(1);
     match (args.next(), args.next(), args.next()) {
         (None, None, None) => {}
-        (Some(flag), Some(directory), None) if flag == "--mgso-shadow-dir" => {
+        (Some(flag), Some(directory), None)
+            if flag == "--mgso-shadow-dir" || flag == "--mgso-inspect-dir" =>
+        {
+            let inspection_only = flag == "--mgso-inspect-dir";
             let build_id = match binary_build_id() {
                 Ok(id) => id,
                 Err(error) => {
                     eprintln!(
                         "NUCLEUS_MGSO_SHADOW:status=unknown;reason=build-id-unavailable:{error};authority=none"
                     );
+                    if inspection_only {
+                        // Inspection never falls through to a proof-checking
+                        // verdict or claims a historical ACCEPT.
+                        return ExitCode::from(2);
+                    }
                     let verdict = metatron_kernel::run(BufReader::new(io::stdin().lock()));
                     return ExitCode::from(verdict.exit_code() as u8);
                 }
@@ -51,6 +60,26 @@ fn check_input() -> ExitCode {
                     })
                     .collect(),
             };
+            if inspection_only {
+                let result = metatron_kernel::inspect_shadow(
+                    BufReader::new(io::stdin().lock()),
+                    &PathBuf::from(directory),
+                    &build_id,
+                    &config,
+                );
+                match result {
+                    ShadowResult::CandidateMatch { declarations, .. } => eprintln!(
+                        "NUCLEUS_MGSO_INSPECT:status=candidate-match;authority=none;fresh-check=false;declarations={declarations}"
+                    ),
+                    ShadowResult::Stale(reason) => eprintln!(
+                        "NUCLEUS_MGSO_INSPECT:status=stale;authority=none;fresh-check=false;reason={reason}"
+                    ),
+                    ShadowResult::Unknown(reason) => eprintln!(
+                        "NUCLEUS_MGSO_INSPECT:status=unknown;authority=none;fresh-check=false;reason={reason}"
+                    ),
+                }
+                return ExitCode::from(2);
+            }
             let verdict = metatron_kernel::run_shadow(
                 BufReader::new(io::stdin().lock()),
                 &PathBuf::from(directory),
@@ -60,7 +89,7 @@ fn check_input() -> ExitCode {
             return ExitCode::from(verdict.exit_code() as u8);
         }
         _ => {
-            eprintln!("Usage: metatron-kernel [--mgso-shadow-dir PATH]");
+            eprintln!("Usage: metatron-kernel [--mgso-shadow-dir PATH|--mgso-inspect-dir PATH]");
             return ExitCode::from(3);
         }
     }
