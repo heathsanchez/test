@@ -23,13 +23,13 @@ jobs:
       - name: Materialize exact qualified source and test-only allocation witness
         run: |
           set -euo pipefail
-          mkdir -p /tmp/ac-qualified /tmp/envfork-baseline
+          mkdir -p /tmp/ac-qualified /tmp/dense-qualified
           gh api repos/heathsanchez/test/actions/artifacts/13276242300/zip > /tmp/ac-qualified.zip
           printf '%s  %s\n' a891c75dbcabd6fddfbbcc5b9ea6826a68b53cf51ae1fbc6e50fdae5d23c104e /tmp/ac-qualified.zip | sha256sum -c -
           unzip -q /tmp/ac-qualified.zip -d /tmp/ac-qualified
-          git archive a2578e77079719ff2064f910bd82fd01d8e120b6 metatron-kernel | tar -x -C /tmp/envfork-baseline
-          patch --batch --fuzz=0 -d /tmp/envfork-baseline -p1 -i /tmp/ac-qualified/candidate/source.patch
-          patch --batch --fuzz=0 -d /tmp/envfork-baseline -p1 -i "$GITHUB_WORKSPACE/experiments/nucleus-environment-forks-20261104/red-test.patch"
+          gh api repos/heathsanchez/test/actions/artifacts/13269133385/zip > /tmp/dense-qualified.zip
+          printf '%s  %s\n' 689749feedc5025f0672dd7e7b091944f700f5b15c9a8105753341db38575d22 /tmp/dense-qualified.zip | sha256sum -c -
+          unzip -q /tmp/dense-qualified.zip -d /tmp/dense-qualified
       - name: Verify actual allocation assertion failure
         run: python3 experiments/nucleus-environment-forks-20261104/red.py
       - uses: actions/upload-artifact@v4
