@@ -7,7 +7,7 @@ import subprocess
 import tempfile
 import unittest
 from pathlib import Path
-from qualify_v2 import qualify,decode_go_events
+from qualify_v2 import qualify,decode_go_events,classify_transplant
 
 
 def call(cwd, *args):
@@ -25,6 +25,15 @@ class NativeAuthorAdmissionV2Tests(unittest.TestCase):
 
     def test_empty_new_test_file_is_not_eligible(self):
         self.assertEqual(decode_go_events('',1)['status'],'UNKNOWN_ZERO_RECOGNIZED_TESTS')
+
+    def test_compiler_failure_is_not_a_no-failure_result(self):
+        self.assertEqual(
+            classify_transplant("UNKNOWN_SETUP_COMPILATION_OR_INFRASTRUCTURE"),
+            "UNKNOWN_TRANSPLANT_SETUP_COMPILATION_OR_INFRASTRUCTURE",
+        )
+        self.assertEqual(classify_transplant("PASS_NONEMPTY"),"UNKNOWN_NO_NATIVE_FAILING_ASSERTION")
+        self.assertEqual(classify_transplant("FAIL_NATIVE_ASSERTIONS"),"READY_FOR_WITNESS")
+        self.assertEqual(classify_transplant("UNKNOWN_ZERO_RECOGNIZED_TESTS"),"UNKNOWN_TRANSPLANT_ZERO_RECOGNIZED_TESTS")
 
     def test_new_file_native_assertion_boundary(self):
         with tempfile.TemporaryDirectory() as d:
