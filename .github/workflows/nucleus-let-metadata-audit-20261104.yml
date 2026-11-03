@@ -1,0 +1,38 @@
+name: Nucleus erased let metadata independent oracle audit
+on:
+  push:
+    branches: [research/nucleus-reuse-tournaments-20261104]
+    paths: ['.github/workflows/nucleus-let-metadata-audit-20261104.yml', 'experiments/nucleus-let-metadata-audit-20261104/**']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  reference:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build independent pinned Lean kernel reference
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/nat-reference
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -o /tmp/elan-init.sh
+          sh /tmp/elan-init.sh -y --default-toolchain leanprover/lean4:v4.34.1
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          git init -q /tmp/arena-reference
+          git -C /tmp/arena-reference remote add origin https://github.com/leanprover/lean-kernel-arena
+          git -C /tmp/arena-reference fetch -q --depth=1 origin cd2dd0244b9ed5e704463a26fbbe5fc67ba16108
+          git -C /tmp/arena-reference checkout -q --detach FETCH_HEAD
+          git -C /tmp/arena-reference rev-parse HEAD > /tmp/nat-reference/source-commit.txt
+          cd /tmp/arena-reference/checkers/official
+          "$HOME/.elan/bin/lean" --version > /tmp/nat-reference/version.txt
+          "$HOME/.elan/bin/lake" build > /tmp/nat-reference/build.log 2>&1
+      - name: Independent parse and original proof checking
+        run: |
+          cp experiments/nucleus-let-metadata-audit-20261104/fixtures/manifest.json /tmp/nat-reference/inputs.json
+          python3 experiments/nucleus-let-metadata-audit-20261104/reference.py --checker /tmp/arena-reference/checkers/official/.lake/build/bin/kernel --fixtures experiments/nucleus-let-metadata-audit-20261104/fixtures --out /tmp/nat-reference
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-let-metadata-reference-${{ github.sha }}
+          path: /tmp/nat-reference
