@@ -44,6 +44,16 @@ def test_oracle_reply_must_bind_source_verifier_and_complete_cases():
     for forged in [dict(good,candidate_sha256='other'),dict(good,binding={}),dict(good,passed=0),dict(good,cases={})]:
         with pytest.raises(ValueError):m.check_reply(forged,'z',binding)
 
+def test_selfconsistent_truncated_oracle_map_is_refused():
+    # The source-authoritative expected test set contains two cases.
+    # A child process must not make a one-case green report authoritative.
+    m=module()
+    binding={'protocol':'x','verifier':'y','native_case_ids':['1','2']}
+    partial={'status':'PASS_NATIVE','passed':1,'tests':1,'cases':{'1':True},
+             'candidate_sha256':'z','binding':binding}
+    with pytest.raises(ValueError,match='case|coverage|test'):
+        m.check_reply(partial,'z',binding)
+
 def test_arm_order_counterbalances_positions():
     m=module();rows=[m.arm_order(i) for i in range(4)]
     assert all(set(r)==set('ABCD') for r in rows)
