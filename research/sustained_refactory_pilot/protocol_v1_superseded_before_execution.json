@@ -1,0 +1,95 @@
+{
+  "arms": {
+    "A": "Reset after every episode, original candidate order.",
+    "B": "Full ordinary transcript; recompute original retention by scanning all past checked rows.",
+    "C": "Executable ledger of all observed candidate programs and evidence; index source support.",
+    "D": "Existing UDM Machine with source-bound typed capabilities; use only live independently checked source supports. Fresh native verification is always required for future candidate consequences."
+  },
+  "budget": {
+    "candidates_per_episode": 32,
+    "model_calls": 0,
+    "native_candidate_calls_cap": 3300,
+    "native_candidate_process_timeout_seconds": 8,
+    "native_test_timeout_seconds": 0.1,
+    "retained_prefix_max": 16,
+    "wall_cap_seconds": 5400
+  },
+  "causal": "On any D gain over A, remove all relevant live signature support, rerun exact future, fresh-reverify original source support and restore; test irrelevant support removal and changed source hash. If no gain, causal capability-growth claim remains unestablished.",
+  "checkpoint_isolation": "Evaluation shards disjoint 3 at each checkpoint. Evaluation outputs never enter memory, training or protocol revisions. Scores across shards are not same-task paired learning slopes.",
+  "data_zip_sha256": "83ad73f288a372583e7a19d090ae133bf126d967534bae68bdf403f9a2cc80d7",
+  "eval": [
+    "data/question_1/code/wrong/wrong_1_004.py",
+    "data/question_2/code/wrong/wrong_2_004.py",
+    "data/question_3/code/wrong/wrong_3_004.py",
+    "data/question_4/code/wrong/wrong_4_004.py",
+    "data/question_1/code/wrong/wrong_1_005.py",
+    "data/question_2/code/wrong/wrong_2_005.py",
+    "data/question_3/code/wrong/wrong_3_005.py",
+    "data/question_4/code/wrong/wrong_4_005.py",
+    "data/question_1/code/wrong/wrong_1_006.py",
+    "data/question_2/code/wrong/wrong_2_006.py",
+    "data/question_3/code/wrong/wrong_3_006.py",
+    "data/question_4/code/wrong/wrong_4_006.py"
+  ],
+  "eval_shards": {
+    "0": [
+      "data/question_1/code/wrong/wrong_1_004.py",
+      "data/question_2/code/wrong/wrong_2_004.py",
+      "data/question_3/code/wrong/wrong_3_004.py"
+    ],
+    "12": [
+      "data/question_2/code/wrong/wrong_2_006.py",
+      "data/question_3/code/wrong/wrong_3_006.py",
+      "data/question_4/code/wrong/wrong_4_006.py"
+    ],
+    "4": [
+      "data/question_4/code/wrong/wrong_4_004.py",
+      "data/question_1/code/wrong/wrong_1_005.py",
+      "data/question_2/code/wrong/wrong_2_005.py"
+    ],
+    "8": [
+      "data/question_3/code/wrong/wrong_3_005.py",
+      "data/question_4/code/wrong/wrong_4_005.py",
+      "data/question_1/code/wrong/wrong_1_006.py"
+    ]
+  },
+  "generator_source": {
+    "commit": "426c54f7c774560e0fabe7213c5ef333b1327c71",
+    "path": "experiments/METALOGIC_V104_GENERIC_CONSTRUCTOR_SYNTHESIS.py",
+    "repository": "heathsanchez/triskelion",
+    "sha256": "d00301852efd278be8ac22b848e0c9e56ced7c574980753b2ebc2ef0a3b7cce9"
+  },
+  "initial_capabilities": "Supplied V104 75 selector/builder pairs, no retained signatures; original UDM Machine/Metatron/FLASH for D. Prior QuixBugs-derived signatures not loaded.",
+  "model": "No LLM calls: common fixed original V104 enumerative constructor in every arm. This pilot does not test a general-purpose LLM agent.",
+  "retention": "Unchanged V104 support >=2 distinct source programs; shortest repr then strongest support then frozen hash top2. No claim of independent repository support.",
+  "schema": "udm.sustained.refactory.pilot.protocol.v1",
+  "seeds": [
+    "V104_GENERIC_CONSTRUCTOR_SYNTHESIS_2026-08-14"
+  ],
+  "selection": "Four questions 1..4, first six lexically named wrong Python files per family; first three training, next three evaluation; interleave by file rank then question. Metadata-only selection. No replacement on parse/admission/scientific failure. Encounter chronology; original submission dates unavailable.",
+  "source_commit": "f05583a56c2e3c50aa8cc0327645283f27df3a68",
+  "source_repository": "githubhuyang/refactory",
+  "state": "PREREGISTERED_NOT_EXECUTED",
+  "stopping": "Stop on false warrant, original verifier mismatch, leakage, budget cap, source or protocol drift. No scale-up without meaningful heldout gain and causal controls.",
+  "success": "Any acquired-signature-dependent future full native PASS beyond A under fixed candidate count; compare B/C/D on exact same tasks. D vs competent C ties valid; no economics claim without costs.",
+  "train": [
+    "data/question_1/code/wrong/wrong_1_001.py",
+    "data/question_2/code/wrong/wrong_2_001.py",
+    "data/question_3/code/wrong/wrong_3_001.py",
+    "data/question_4/code/wrong/wrong_4_001.py",
+    "data/question_1/code/wrong/wrong_1_002.py",
+    "data/question_2/code/wrong/wrong_2_002.py",
+    "data/question_3/code/wrong/wrong_3_002.py",
+    "data/question_4/code/wrong/wrong_4_002.py",
+    "data/question_1/code/wrong/wrong_1_003.py",
+    "data/question_2/code/wrong/wrong_2_003.py",
+    "data/question_3/code/wrong/wrong_3_003.py",
+    "data/question_4/code/wrong/wrong_4_003.py"
+  ],
+  "unknowns": [
+    "Public-corpus pretraining exposure not excluded (no LLM used here).",
+    "This is unfamiliar source-program repair under four repeated exercise requirements, not new-domain semantics.",
+    "G2 novel observation language, prospective O1\u2192O2\u2192O3, G5 refinement and G6 authority not tested."
+  ],
+  "verification": "Exact original Refactory Tester.tv_code, nonempty complete original test IDs; no reference implementation exposed to generator; isolated verifier process. False program and missing-test controls. Full native PASS requires all original cases, fresh second-process confirmation. Partial score improvements can support search signatures but are not full correctness."
+}

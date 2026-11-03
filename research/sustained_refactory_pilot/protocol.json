@@ -8,14 +8,17 @@
   "budget": {
     "candidates_per_episode": 32,
     "model_calls": 0,
-    "native_candidate_calls_cap": 3300,
+    "native_calls_cap_per_arm": 2400,
+    "native_candidate_calls_cap": 9700,
     "native_candidate_process_timeout_seconds": 8,
     "native_test_timeout_seconds": 0.1,
     "retained_prefix_max": 16,
     "wall_cap_seconds": 5400
   },
+  "budgets_are_matched": "Every arm gets 32 search candidates/task and 2400 total native calls. Extra UDM admission, cold recovery and ablation calls are charged to D; no extra search. Rotate arm positions ABCD/BCDA/CDAB/DABC by encountered task group. Common controls charged separately.",
   "causal": "On any D gain over A, remove all relevant live signature support, rerun exact future, fresh-reverify original source support and restore; test irrelevant support removal and changed source hash. If no gain, causal capability-growth claim remains unestablished.",
   "checkpoint_isolation": "Evaluation shards disjoint 3 at each checkpoint. Evaluation outputs never enter memory, training or protocol revisions. Scores across shards are not same-task paired learning slopes.",
+  "cost_boundary": "Start wall clock before domain controls/graph initialization. Record preprocessing (downloads/install) separately from measured campaign; unmeasured historical engineering remains UNKNOWN, so do not claim all-in G4 superiority from this pilot.",
   "data_zip_sha256": "83ad73f288a372583e7a19d090ae133bf126d967534bae68bdf403f9a2cc80d7",
   "eval": [
     "data/question_1/code/wrong/wrong_1_004.py",
@@ -61,8 +64,9 @@
   },
   "initial_capabilities": "Supplied V104 75 selector/builder pairs, no retained signatures; original UDM Machine/Metatron/FLASH for D. Prior QuixBugs-derived signatures not loaded.",
   "model": "No LLM calls: common fixed original V104 enumerative constructor in every arm. This pilot does not test a general-purpose LLM agent.",
+  "qualification_profile": "NEW research-only Refactory/V104 profile over original Machine; original UDM qualification does not qualify this profile. Fresh external native scores, exact source/test/runtime/runner binding, complete nonempty test maps, source-distinct support and cold read required. No external effect authority.",
   "retention": "Unchanged V104 support >=2 distinct source programs; shortest repr then strongest support then frozen hash top2. No claim of independent repository support.",
-  "schema": "udm.sustained.refactory.pilot.protocol.v1",
+  "schema": "udm.sustained.refactory.pilot.protocol.v2",
   "seeds": [
     "V104_GENERIC_CONSTRUCTOR_SYNTHESIS_2026-08-14"
   ],
@@ -72,6 +76,12 @@
   "state": "PREREGISTERED_NOT_EXECUTED",
   "stopping": "Stop on false warrant, original verifier mismatch, leakage, budget cap, source or protocol drift. No scale-up without meaningful heldout gain and causal controls.",
   "success": "Any acquired-signature-dependent future full native PASS beyond A under fixed candidate count; compare B/C/D on exact same tasks. D vs competent C ties valid; no economics claim without costs.",
+  "supersedes_before_task_access": {
+    "candidate_native_executions": 0,
+    "protocol_sha256": "b52fce12044cb9a39a5b5bce746162f4419c24af0705427ac6fff634e04af2ad",
+    "reason": "Fresh pre-run review: match arm budgets, cache competent ledger, counterbalance positions, bind original oracle, require actual cold process and causal controls; task identities and generator/test boundaries unchanged.",
+    "task_source_bodies_opened": false
+  },
   "train": [
     "data/question_1/code/wrong/wrong_1_001.py",
     "data/question_2/code/wrong/wrong_2_001.py",
