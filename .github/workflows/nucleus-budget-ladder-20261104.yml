@@ -1,0 +1,83 @@
+name: Nucleus Nat.beq_refl causal budget ladder
+on:
+  push:
+    branches: [research/nucleus-budget-ladder-20261104]
+    paths:
+      - '.github/workflows/nucleus-budget-ladder-20261104.yml'
+      - 'experiments/nucleus-budget-ladder-20261104/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  nat-prefix-budget-ladder:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 1}
+      - name: Fetch the exact independently qualified kernel source base
+        run: git fetch --no-tags --depth=1 origin a2578e77079719ff2064f910bd82fd01d8e120b6
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Test the fail-closed one-line budget patcher
+        run: PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s experiments/nucleus-budget-ladder-20261104 -p 'test_*.py' -v
+      - name: Restore the exact already checked budget4x binary and source patch
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/budget-ladder/baseline /tmp/budget-ladder/origin
+          gh api repos/heathsanchez/test/actions/artifacts/13266857833/zip > /tmp/budget-ladder-binary.zip
+          printf '%s  %s\n' 2d16ba78be1f181ee99ad618f60a9d1f1d394d75d6aa54eaf2686f90b749da46 /tmp/budget-ladder-binary.zip | sha256sum -c -
+          unzip -q /tmp/budget-ladder-binary.zip 'budget4x/nucleus' 'budget4x/source.patch' -d /tmp/budget-ladder/origin
+          cp /tmp/budget-ladder/origin/budget4x/nucleus /tmp/budget-ladder/baseline/nucleus
+          cp /tmp/budget-ladder/origin/budget4x/source.patch /tmp/budget-ladder/baseline/source.patch
+          printf '%s  %s\n' 659d68f956fefac853e3b4b9c6a402a317de362588f3ddc7962e950cfce8161a /tmp/budget-ladder/baseline/nucleus | sha256sum -c -
+          printf '%s  %s\n' 203de44b272d3f0d524e6dff8a25aaddee06d291ca565a0123d2694ca0bdd719 /tmp/budget-ladder/baseline/source.patch | sha256sum -c -
+          chmod +x /tmp/budget-ladder/baseline/nucleus
+          rm /tmp/budget-ladder-binary.zip
+      - name: Restore source-pinned next real Mathlib frontier Nat.beq_refl
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/budget-ladder/frontier
+          gh api repos/heathsanchez/test/actions/artifacts/13268491638/zip > /tmp/budget-ladder-frontier.zip
+          printf '%s  %s\n' 05aaac9028d0b9124036356d50f0906d9a0bc8aeedcfbc64e5a9e64c514286cc /tmp/budget-ladder-frontier.zip | sha256sum -c -
+          unzip -q /tmp/budget-ladder-frontier.zip 'full/next-frontier.ndjson.zst' -d /tmp/budget-ladder/frontier
+          zstd -d /tmp/budget-ladder/frontier/full/next-frontier.ndjson.zst -o /tmp/budget-ladder/nat-prefix.ndjson
+          printf '%s  %s\n' d1c35f6a0de8644817b404e225a16de460e897e0b34c129fcb2a37483e630738 /tmp/budget-ladder/nat-prefix.ndjson | sha256sum -c -
+          rm /tmp/budget-ladder-frontier.zip /tmp/budget-ladder/frontier/full/next-frontier.ndjson.zst
+      - name: Recreate pinned native fixture inputs for the original kernel lineage
+        run: |
+          set -euo pipefail
+          python3 experiments/nucleus-nat-closure-20261104/generate_fixtures.py --out /tmp/nat-fixtures
+          python3 experiments/nucleus-parameter-telescope-20261104/prepare.py
+          python3 experiments/nucleus-nullary-enum-20261104/prepare.py
+      - name: Execute baseline plus 8x/16x source-native paired budget arms
+        run: python3 experiments/nucleus-budget-ladder-20261104/runner.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-nat-beq-budget-ladder-${{ github.sha }}
+          compression-level: 0
+          path: |
+            /tmp/budget-ladder/evidence/screen.json
+            /tmp/budget-ladder/evidence/baseline-4x/result.json
+            /tmp/budget-ladder/evidence/baseline-4x/time.txt
+            /tmp/budget-ladder/evidence/baseline-4x/stderr
+            /tmp/budget-ladder/evidence/budget8x/build.log
+            /tmp/budget-ladder/evidence/budget8x/native-lib.log
+            /tmp/budget-ladder/evidence/budget8x/nucleus
+            /tmp/budget-ladder/evidence/budget8x/source.patch
+            /tmp/budget-ladder/evidence/budget8x/candidate.patch
+            /tmp/budget-ladder/evidence/budget8x/result.json
+            /tmp/budget-ladder/evidence/budget8x/time.txt
+            /tmp/budget-ladder/evidence/budget8x/stderr
+            /tmp/budget-ladder/evidence/budget16x/build.log
+            /tmp/budget-ladder/evidence/budget16x/native-lib.log
+            /tmp/budget-ladder/evidence/budget16x/nucleus
+            /tmp/budget-ladder/evidence/budget16x/source.patch
+            /tmp/budget-ladder/evidence/budget16x/candidate.patch
+            /tmp/budget-ladder/evidence/budget16x/result.json
+            /tmp/budget-ladder/evidence/budget16x/time.txt
+            /tmp/budget-ladder/evidence/budget16x/stderr
