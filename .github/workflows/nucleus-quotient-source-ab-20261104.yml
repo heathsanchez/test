@@ -42,6 +42,25 @@ jobs:
           cp /tmp/nucleus-ab/legacy/metatron-kernel/target/release/metatron-kernel /tmp/nucleus-ab/legacy-checker
           sha256sum /tmp/nucleus-ab/legacy-checker /tmp/nucleus-ab/current > /tmp/nucleus-ab/binaries.sha256
           printf '%s\n' 'legacy_source=1a2e50777c596e20a7d2dd2fa0e591c1ab8ecfc4' 'current_base=a2578e77079719ff2064f910bd82fd01d8e120b6' 'current_harness=ca80dd18c73fc65e19b7d199c6d8e15058e47ab7' 'input_sha=4883dc9889b546a1117c25c266bae05a344b6609db5cbbfd846a8d7abc92a907' > /tmp/nucleus-ab/provenance.txt
+      - name: Generate exact-source forged final declaration controls
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path('/tmp/nucleus-ab')
+          data=(root/'frontier.ndjson').read_bytes()
+          head, last=data.rsplit(b'\n',2)[0:2] if data.endswith(b'\n') else data.rsplit(b'\n',1)
+          record=json.loads(last)
+          assert record['thm']['name']==1911
+          assert record['thm']['type']==16786
+          assert record['thm']['value']==16842
+          for field in ('type','value'):
+              forged=json.loads(last)
+              forged['thm'][field]=0
+              (root/f'forged-{field}.ndjson').write_bytes(head+b'\n'+json.dumps(forged,separators=(',',':')).encode()+b'\n')
+          PY
+          sha256sum /tmp/nucleus-ab/forged-*.ndjson > /tmp/nucleus-ab/forgeries.sha256
       - name: Exact same-input flag ablations, preserving negative outcomes
         run: |
           set -euo pipefail
@@ -56,10 +75,10 @@ jobs:
           quotient_flags=(NUCLEUS_EXPERIMENTAL_CERTIFIED_QUOT_IOTA=1 NUCLEUS_EXPERIMENTAL_SOURCE_PROOF_IRREL=1)
           exact_flag=(NUCLEUS_EXPERIMENTAL_EXACT_PROOF_NEUTRALS=1)
           run_case() {
-            local label="$1" binary="$2"
-            shift 2
+            local label="$1" binary="$2" input="$3"
+            shift 3
             set +e
-            env -i PATH="$PATH" NUCLEUS_TRACE_DOWNSTREAM=1 "$@" "$binary" < /tmp/nucleus-ab/frontier.ndjson > "/tmp/nucleus-ab/${label}.stdout" 2> "/tmp/nucleus-ab/${label}.stderr"
+            env -i PATH="$PATH" NUCLEUS_TRACE_DOWNSTREAM=1 "$@" "$binary" < "$input" > "/tmp/nucleus-ab/${label}.stdout" 2> "/tmp/nucleus-ab/${label}.stderr"
             local rc=$?
             set -e
             printf '%s\t%s\n' "$label" "$rc" | tee -a /tmp/nucleus-ab/verdicts.tsv
@@ -67,19 +86,31 @@ jobs:
               echo "infrastructure or execution error: ${label}" >&2
               return 1
             fi
+            if [[ "$label" == *forged* && "$rc" -eq 0 ]]; then
+              echo "forged source unexpectedly ACCEPTED: ${label}" >&2
+              return 1
+            fi
+            if [[ "$label" == "legacy-origin-all" && "$rc" -ne 0 ]]; then
+              echo "historical source no longer accepts authentic frontier" >&2
+              return 1
+            fi
           }
           printf 'arm\texit_code\n' > /tmp/nucleus-ab/verdicts.tsv
-          run_case legacy-default /tmp/nucleus-ab/legacy-checker
-          run_case legacy-origin /tmp/nucleus-ab/legacy-checker "${legacy_flags[@]}"
-          run_case legacy-origin-exact /tmp/nucleus-ab/legacy-checker "${legacy_flags[@]}" "${exact_flag[@]}"
-          run_case legacy-origin-iota /tmp/nucleus-ab/legacy-checker "${legacy_flags[@]}" NUCLEUS_EXPERIMENTAL_CERTIFIED_QUOT_IOTA=1
-          run_case legacy-origin-irrel /tmp/nucleus-ab/legacy-checker "${legacy_flags[@]}" NUCLEUS_EXPERIMENTAL_SOURCE_PROOF_IRREL=1
-          run_case legacy-origin-exact-iota /tmp/nucleus-ab/legacy-checker "${legacy_flags[@]}" "${exact_flag[@]}" NUCLEUS_EXPERIMENTAL_CERTIFIED_QUOT_IOTA=1
-          run_case legacy-origin-exact-irrel /tmp/nucleus-ab/legacy-checker "${legacy_flags[@]}" "${exact_flag[@]}" NUCLEUS_EXPERIMENTAL_SOURCE_PROOF_IRREL=1
-          run_case legacy-origin-quotient /tmp/nucleus-ab/legacy-checker "${legacy_flags[@]}" "${quotient_flags[@]}"
-          run_case legacy-origin-all /tmp/nucleus-ab/legacy-checker "${legacy_flags[@]}" "${exact_flag[@]}" "${quotient_flags[@]}"
-          run_case current-pinned /tmp/nucleus-ab/current "${current_flags[@]}"
-          run_case current-all-old-flags /tmp/nucleus-ab/current "${current_flags[@]}" "${exact_flag[@]}" "${quotient_flags[@]}"
+          run_case legacy-default /tmp/nucleus-ab/legacy-checker /tmp/nucleus-ab/frontier.ndjson
+          run_case legacy-origin /tmp/nucleus-ab/legacy-checker /tmp/nucleus-ab/frontier.ndjson "${legacy_flags[@]}"
+          run_case legacy-origin-exact /tmp/nucleus-ab/legacy-checker /tmp/nucleus-ab/frontier.ndjson "${legacy_flags[@]}" "${exact_flag[@]}"
+          run_case legacy-origin-iota /tmp/nucleus-ab/legacy-checker /tmp/nucleus-ab/frontier.ndjson "${legacy_flags[@]}" NUCLEUS_EXPERIMENTAL_CERTIFIED_QUOT_IOTA=1
+          run_case legacy-origin-irrel /tmp/nucleus-ab/legacy-checker /tmp/nucleus-ab/frontier.ndjson "${legacy_flags[@]}" NUCLEUS_EXPERIMENTAL_SOURCE_PROOF_IRREL=1
+          run_case legacy-origin-exact-iota /tmp/nucleus-ab/legacy-checker /tmp/nucleus-ab/frontier.ndjson "${legacy_flags[@]}" "${exact_flag[@]}" NUCLEUS_EXPERIMENTAL_CERTIFIED_QUOT_IOTA=1
+          run_case legacy-origin-exact-irrel /tmp/nucleus-ab/legacy-checker /tmp/nucleus-ab/frontier.ndjson "${legacy_flags[@]}" "${exact_flag[@]}" NUCLEUS_EXPERIMENTAL_SOURCE_PROOF_IRREL=1
+          run_case legacy-origin-quotient /tmp/nucleus-ab/legacy-checker /tmp/nucleus-ab/frontier.ndjson "${legacy_flags[@]}" "${quotient_flags[@]}"
+          run_case legacy-origin-all /tmp/nucleus-ab/legacy-checker /tmp/nucleus-ab/frontier.ndjson "${legacy_flags[@]}" "${exact_flag[@]}" "${quotient_flags[@]}"
+          run_case current-pinned /tmp/nucleus-ab/current /tmp/nucleus-ab/frontier.ndjson "${current_flags[@]}"
+          run_case current-all-old-flags /tmp/nucleus-ab/current /tmp/nucleus-ab/frontier.ndjson "${current_flags[@]}" "${exact_flag[@]}" "${quotient_flags[@]}"
+          run_case legacy-all-forged-type /tmp/nucleus-ab/legacy-checker /tmp/nucleus-ab/forged-type.ndjson "${legacy_flags[@]}" "${exact_flag[@]}" "${quotient_flags[@]}"
+          run_case legacy-all-forged-value /tmp/nucleus-ab/legacy-checker /tmp/nucleus-ab/forged-value.ndjson "${legacy_flags[@]}" "${exact_flag[@]}" "${quotient_flags[@]}"
+          run_case current-forged-type /tmp/nucleus-ab/current /tmp/nucleus-ab/forged-type.ndjson "${current_flags[@]}"
+          run_case current-forged-value /tmp/nucleus-ab/current /tmp/nucleus-ab/forged-value.ndjson "${current_flags[@]}"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -89,5 +120,6 @@ jobs:
             /tmp/nucleus-ab/provenance.txt
             /tmp/nucleus-ab/binaries.sha256
             /tmp/nucleus-ab/legacy-build.log
+            /tmp/nucleus-ab/forgeries.sha256
             /tmp/nucleus-ab/*.stderr
             /tmp/nucleus-ab/*.stdout
