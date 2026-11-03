@@ -1,0 +1,61 @@
+name: Nucleus MGSO source-stable candidate inventory qualification
+
+on:
+  push:
+    branches: [research/nucleus-mgso-semantic-inventory-20261104]
+    paths:
+      - '.github/workflows/nucleus-mgso-dependency-inventory-20261104.yml'
+      - 'experiments/nucleus-mgso-dependency-inventory-20261104/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  semantic-inventory:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Preserve independent native MGSO and kernel regression
+        run: |
+          set -euo pipefail
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml \
+            --test mgso_golden --test mgso_graph --test mgso_shadow --test mgso_process
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+      - name: Test all source observations and native adversarial variants
+        env:
+          NUCLEUS_DEPENDENCY_BINARY: ${{ github.workspace }}/metatron-kernel/target/release/metatron-kernel
+        run: |
+          set -euo pipefail
+          PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover \
+            -s experiments/nucleus-mgso-dependency-inventory-20261104 -p 'test_*.py' -v
+      - name: Preserve independently reproducible native evidence
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/nucleus-mgso-dependency-inventory
+          git rev-parse HEAD > /tmp/nucleus-mgso-dependency-inventory/commit.txt
+          git rev-parse HEAD:metatron-kernel/src > /tmp/nucleus-mgso-dependency-inventory/kernel-source-tree.txt
+          sha256sum metatron-kernel/target/release/metatron-kernel \
+            metatron-kernel/tests/fixtures/good-theorem-use.ndjson \
+            > /tmp/nucleus-mgso-dependency-inventory/native-source-pins.txt
+          PYTHONDONTWRITEBYTECODE=1 python3 \
+            experiments/nucleus-mgso-dependency-inventory-20261104/qualification.py \
+            --binary metatron-kernel/target/release/metatron-kernel \
+            --fixture metatron-kernel/tests/fixtures/good-theorem-use.ndjson \
+            --work /tmp/nucleus-mgso-dependency-inventory/live-store \
+            --output /tmp/nucleus-mgso-dependency-inventory/qualification.json
+          PYTHONDONTWRITEBYTECODE=1 python3 \
+            experiments/nucleus-mgso-dependency-inventory-20261104/corpus_inventory.py \
+            --fixtures metatron-kernel/tests/fixtures \
+            --binary metatron-kernel/target/release/metatron-kernel \
+            --output /tmp/nucleus-mgso-dependency-inventory/fixture-corpus.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-mgso-dependency-source-evidence-${{ github.sha }}
+          path: /tmp/nucleus-mgso-dependency-inventory/
+          if-no-files-found: warn
+          retention-days: 30
