@@ -43,3 +43,11 @@ for label,depth,dag in [('excessive-depth',600,False),('expanded-dag',20,True)]:
 
 # Isolate universe containment from later dependent-field typing failures.
 rows=generate(2,3,False);ns=nodes(rows);b=rows[-1]['inductive'];c=telescope(ns,b['ctors'][0]['type'],'forallE',5);c[2]['type']=next(x['ie']for x in rows if x.get('sort')==2);save('field-too-large',rows)
+
+# Concrete official-oracle separators: universe alpha-renaming changes the
+# regenerated recursor metadata even when the recursor's type remains formed.
+for label,motive in [('motive-v','v'),('motive-u2','u_2'),('motive-hierarchical','x.u_1')]:
+ save(label,generate(2,3,False,'u',motive))
+# Lean Expr.eqv ignores binder display names and BinderInfo.
+for label,attribute,value in [('binder-name','name',1),('binder-info','binderInfo','implicit')]:
+ rows=generate(2,3,False);ns=nodes(rows);b=rows[-1]['inductive'];ns[b['recs'][0]['type']]['forallE'][attribute]=value;save(label,rows)

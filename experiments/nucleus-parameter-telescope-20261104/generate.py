@@ -1,13 +1,13 @@
 import json,pathlib
 out=pathlib.Path(__file__).parent/'fixtures';out.mkdir(exist_ok=True)
-def generate(p=2,f=2,dependent=False):
+def generate(p=2,f=2,dependent=False,owner='u',motive='u_1'):
  rows=[{'meta':{'exporter':{'name':'lean4export','version':'3.1.0'},'format':{'version':'3.1.0'},'lean':{'version':'4.34.1','githash':'5045d0056413266e57c625dcd7c365b10e377c52'}}}]; names={}; exprs={}
  def name(s):
   if s not in names:
    pre,_,leaf=s.rpartition('.'); parent=name(pre) if pre else 0
    names[s]=len(names)+1;rows.append({'in':names[s],'str':{'pre':parent,'str':leaf}})
   return names[s]
- u=name('u');v=name('u_1');R=name('ReusableRecord');mk=name('ReusableRecord.mk');rec=name('ReusableRecord.rec')
+ u=name(owner);v=name(motive);R=name('ReusableRecord');mk=name('ReusableRecord.mk');rec=name('ReusableRecord.rec')
  rows.extend([{'il':1,'param':u},{'il':2,'succ':1},{'il':3,'param':v}])
  def emit(obj):
   k=json.dumps(obj,sort_keys=True)
@@ -43,3 +43,6 @@ def generate(p=2,f=2,dependent=False):
  return rows
 for label,p,f,d in [('two',2,3,False),('dependent',3,3,True),('boundary',64,64,False)]:
  (out/(label+'.ndjson')).write_text(''.join(json.dumps(x,separators=(',',':'))+'\n' for x in generate(p,f,d)))
+
+for label,owner,motive in [('owner-u1','u_1','u'),('owner-w','w','u')]:
+ (out/(label+'.ndjson')).write_text(''.join(json.dumps(x,separators=(',',':'))+'\n' for x in generate(2,3,False,owner,motive)))

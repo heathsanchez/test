@@ -12,7 +12,7 @@
      if generated_mutual_nested_family_candidate(export, block) {
          return check_generated_mutual_nested_family(
              export,
-@@ -2846,41 +2851,79 @@
+@@ -2846,41 +2851,84 @@
          && is_bvar(export,fields[2],1) && is_bvar(export,fields[3],1)
  }
  
@@ -75,6 +75,11 @@
 +    if !parameter_record_candidate(export,block) {return false;}
 +    let inductive=&block.types[0];let constructor=&block.constructors[0];let recursor=&block.recursors[0];
 +    let p=inductive.num_params as usize;let count=constructor.num_fields as usize;
++    // Arena replays and compares regenerated recursor metadata. With one
++    // owner universe, Lean's fresh elimination name is u, or u_1 if u is used.
++    let Some(motive)=recursor.level_params.first() else{return false;};
++    let expected=if name_is_root_str(export,inductive.level_params[0],"u") {"u_1"} else {"u"};
++    if !name_is_root_str(export,*motive,expected) {return false;}
 +    let Some((parameters,result))=pi_spine(export,inductive.ty,p) else{return false;};
      let Some(Expr::Sort(level))=export.exprs.get(result) else{return false;};
      let substitution=parameter_substitution(&inductive.level_params);
@@ -114,7 +119,7 @@
              expr_eq_with_bvar_shift(export,*a,*b,k as u64,2)
                  || expr_eq_with_bvar_shift(export,checked_erased_closed_field(export,environment,*a),*b,k as u64,2))
  }
-@@ -2897,6 +2940,11 @@
+@@ -2897,6 +2945,11 @@
  }
  
  fn generic_nonrecursive_type_candidate(export: &ResolvedExport, block: &InductiveBlock) -> bool {
@@ -126,7 +131,7 @@
      let ([inductive], [constructor], [recursor]) = (
          block.types.as_slice(),
          block.constructors.as_slice(),
-@@ -4209,7 +4257,7 @@
+@@ -4209,7 +4262,7 @@
          return Err(Verdict::Unknown);
      }
      if same_universe_pair_candidate(export,block) && !same_universe_pair_obligations(export,block) {return Err(Verdict::Unknown);}
