@@ -4,6 +4,9 @@ on:
     branches: [research/nucleus-reuse-tournaments-20261104]
     paths: ['.github/workflows/nucleus-parameter-telescope-20261104.yml', 'experiments/nucleus-parameter-telescope-20261104/**']
   workflow_dispatch:
+concurrency:
+  group: nucleus-parameter-${{ github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
@@ -47,7 +50,9 @@ jobs:
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
-        with: {fetch-depth: 0}
+        with: {fetch-depth: 1}
+      - name: Fetch only the exact reusable base object
+        run: git fetch --no-tags --depth=1 origin a2578e77079719ff2064f910bd82fd01d8e120b6
       - name: Generate exact original and forged Nat source controls
         run: python3 experiments/nucleus-nat-closure-20261104/generate_fixtures.py --out /tmp/nat-fixtures
       - name: Prepare exact record prefix and structural controls
@@ -88,7 +93,9 @@ jobs:
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
-        with: {fetch-depth: 0}
+        with: {fetch-depth: 1}
+      - name: Fetch only the exact reusable base object
+        run: git fetch --no-tags --depth=1 origin a2578e77079719ff2064f910bd82fd01d8e120b6
       - name: Generate exact original and forged Nat source controls
         run: python3 experiments/nucleus-nat-closure-20261104/generate_fixtures.py --out /tmp/nat-fixtures
       - name: Prepare exact record prefix and structural controls

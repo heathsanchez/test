@@ -2,6 +2,19 @@ import copy,json,pathlib
 from generate import generate
 out=pathlib.Path(__file__).parent/'controls';out.mkdir(exist_ok=True)
 def save(label,rows):
+ # Preserve stream-valid declaration dependencies after structural mutations.
+ ns={r['ie']:r for r in rows if 'ie'in r};ordered=[];seen=set()
+ def visit(i):
+  if i in seen:return
+  seen.add(i);r=ns[i]
+  if 'app'in r:children=[r['app']['fn'],r['app']['arg']]
+  elif 'forallE'in r or 'lam'in r:
+   b=r.get('forallE',r.get('lam'));children=[b['type'],b['body']]
+  else:children=[]
+  for child in children:visit(child)
+  ordered.append(r)
+ for i in ns:visit(i)
+ rows=[r for r in rows if 'ie'not in r and 'inductive'not in r]+ordered+[r for r in rows if 'inductive'in r]
  (out/(label+'.ndjson')).write_text(''.join(json.dumps(r,separators=(',',':'))+'\n' for r in rows))
 def nodes(rows):return {r['ie']:r for r in rows if 'ie'in r}
 def telescope(ns,root,tag,n):
@@ -27,3 +40,6 @@ for label,depth,dag in [('excessive-depth',600,False),('expanded-dag',20,True)]:
   else:new={'ie':next_id,'forallE':{'name':1,'binderInfo':'default','type':c[4]['type'],'body':node}}
   rows.insert(-1,new);node=next_id;next_id+=1
  c[4]['type']=node;save(label,rows)
+
+# Isolate universe containment from later dependent-field typing failures.
+rows=generate(2,3,False);ns=nodes(rows);b=rows[-1]['inductive'];c=telescope(ns,b['ctors'][0]['type'],'forallE',5);c[2]['type']=next(x['ie']for x in rows if x.get('sort')==2);save('field-too-large',rows)
