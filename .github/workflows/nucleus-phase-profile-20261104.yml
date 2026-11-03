@@ -95,6 +95,17 @@ jobs:
               ') -> Verdict {\n    let preflight_start=std::time::Instant::now();\n    if !quotient_source_ownership_is_well_ordered(&export) {')
           replace_exact('    let mut environment = Environment::empty();\n\n    // Preserve the immutable source catalogue',
               '    if std::env::var_os("NUCLEUS_TRACE_PHASES").is_some() { eprintln!("NUCLEUS_CHECK_DETAIL:global_preflight_ms={:.3}",preflight_start.elapsed().as_secs_f64()*1000.0); }\n    let mut environment = Environment::empty();\n\n    // Preserve the immutable source catalogue')
+          replace_exact('    let preflight_start=std::time::Instant::now();\n    if !quotient_source_ownership_is_well_ordered(&export) {',
+              '    let preflight_start=std::time::Instant::now();\n    let mut stage_start=std::time::Instant::now();\n    if !quotient_source_ownership_is_well_ordered(&export) {')
+          def stage(label,anchor):
+              stamp='    if std::env::var_os("NUCLEUS_TRACE_PHASES").is_some() { eprintln!("NUCLEUS_PREFLIGHT_STAGE:stage='+label+':elapsed_ms={:.3}",stage_start.elapsed().as_secs_f64()*1000.0); }\n    stage_start=std::time::Instant::now();\n'
+              replace_exact(anchor,stamp+anchor)
+          stage('quotient_source_ownership','    if let Some(verdict) = crate::capability::execute(&export) {')
+          stage('capability','    if let Some((owner, recursor, constructor)) = export.declarations.iter().find_map(|declaration| {')
+          stage('external_recursor_constructor','    if export.declarations.iter().any(|declaration| {\n        matches!(declaration, Declaration::Inductive(block)\n            if recursor_rule_drops_required_minor_argument(&export, block))')
+          stage('required_minor','    if export.declarations.iter().any(|declaration| {\n        matches!(declaration, Declaration::Inductive(block)\n            if proof_dependent_result_sort_is_definitely_malformed(&export, block))')
+          stage('proof_dependent_sort','    // Universe parameters belong to the individual imported signature.')
+          stage('unbound_universe','    if std::env::var_os("NUCLEUS_TRACE_PHASES").is_some() { eprintln!("NUCLEUS_CHECK_DETAIL:global_preflight_ms={:.3}",preflight_start.elapsed().as_secs_f64()*1000.0); }')
           checker_source.write_text(checker_changed)
           (out/'check-phases.patch').write_text(''.join(difflib.unified_diff(checker_original.splitlines(True),checker_changed.splitlines(True),fromfile='a/metatron-kernel/src/checker.rs',tofile='b/metatron-kernel/src/checker.rs')))
           sys.path.insert(0,str(Path('experiments/nucleus-reuse-20261104').resolve()))
@@ -129,7 +140,9 @@ jobs:
               steps={name:float(value) for name,value in re.findall(r'(parse_ms|resolve_ms|check_ms|total_ms)=([\d.]+)',phases[0])}
               detail={name:float(value) for name,value in re.findall(r'(string_prelude_ms|policy_ms|global_preflight_ms)=([\d.]+)',log)}
               assert set(detail)=={'string_prelude_ms','policy_ms','global_preflight_ms'},detail
-              rows[kind]=dict(measured=metrics,phases=steps,check_detail=detail,boundary=boundary)
+              stages={name:float(value) for name,value in re.findall(r'NUCLEUS_PREFLIGHT_STAGE:stage=([a-z_]+):elapsed_ms=([\d.]+)',log)}
+              assert len(stages)==6,stages
+              rows[kind]=dict(measured=metrics,phases=steps,check_detail=detail,preflight_stages=stages,boundary=boundary)
               print('PHASE_PROFILE',kind,json.dumps(rows[kind]),flush=True)
           summary=dict(source_binary_sha=t.digest(root/'candidate/nucleus'),rows=rows,
                        semantic_note='No proof rule changed, full Mathlib remains UNKNOWN')
