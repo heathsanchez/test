@@ -74,19 +74,46 @@ def tree_hash(root):
     root=Path(root)
     return sha(canonical({str(p.relative_to(root)):sha(p.read_bytes()) for p in sorted(root.rglob('*')) if p.is_file() and '__pycache__' not in p.parts}).encode())
 
+def fixture_case_ids(question):
+    """Independently enumerate source-native input/output case IDs.
+
+    Original Refactory Tester.get_tc_id_list uses input_<id> fixture names.
+    A partial self-reported oracle map is never an authority for the full set.
+    Empty or mismatched fixture inventories cannot yield PASS.
+    """
+    folder=Path(question)/'ans'
+    if not folder.is_dir():return []
+    groups={'input':{},'output':{}}
+    for entry in sorted(folder.rglob('*')):
+        if not entry.is_file():continue
+        if entry.is_symlink():raise ValueError('native test fixture symlink refused')
+        label=entry.name.split('_')[0]
+        if label not in groups:continue
+        ident=entry.name[len(label)+1:].split('.')[0]
+        if not ident or ident in groups[label]:
+            raise ValueError('duplicate or missing native test fixture ID')
+        groups[label][ident]=entry.relative_to(folder).as_posix()
+    if not groups['input'] or set(groups['input'])!=set(groups['output']):return []
+    return sorted(groups['input'])
+
 def context(external,question):
     external=Path(external);question=Path(question)
     files=subprocess.check_output(['git','-C',str(external),'ls-files','-z']).decode().split('\0')
     source=sha(canonical({n:sha((external/n).read_bytes()) for n in files if n and n.endswith('.py')}).encode())
     return {'protocol':PROTOCOL_SHA,'verifier_tree':source,'tests':tree_hash(question),
+            'native_case_ids':fixture_case_ids(question),
             'runner':sha(Path(__file__).read_bytes()),'python_executable':sha(Path(sys.executable).read_bytes()),
             'python_version':platform.python_version(),'environment':sha((WORK/'qualification/refactory_environment.txt').read_bytes())}
 
 def check_reply(value,code_hash,binding):
     if not isinstance(value,dict) or value.get('candidate_sha256')!=code_hash or value.get('binding')!=binding:
         raise ValueError('oracle source/verifier/protocol binding differs')
-    ids=list(value.get('cases',{}))
-    checked=classify(value.get('cases'),ids)
+    ids=binding.get('native_case_ids')
+    if (type(ids) is not list or not ids or any(type(x) is not str or not x for x in ids)
+            or len(set(ids))!=len(ids) or type(value.get('cases')) is not dict
+            or set(value['cases'])!=set(ids)):
+        raise ValueError('oracle case coverage differs from independent native test fixture IDs')
+    checked=classify(value['cases'],ids)
     if value.get('status')!=checked['status'] or value.get('passed')!=checked['passed'] or value.get('tests')!=checked['tests']:
         raise ValueError('oracle case map/status/count disagrees')
     return value
@@ -101,6 +128,8 @@ def oracle(request):
     t=time.perf_counter();before=context(request['external_repo'],request['question_dir'])
     if before!=request['binding']:raise ValueError('oracle pre-source drift')
     tester=Tester(request['question_dir']);ids=tester.get_tc_id_list()
+    if ids!=before['native_case_ids']:
+        raise ValueError('oracle original Tester IDs disagree with independent fixture coverage')
     code=read_source(request['candidate_file'])
     result=tester.tv_code(code,timeout=0.10)
     value=classify(result,ids)
