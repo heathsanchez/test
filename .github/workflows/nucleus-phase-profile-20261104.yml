@@ -114,6 +114,18 @@ jobs:
           capability_new='    for capability in CAPABILITIES {\n        let stage_start=std::time::Instant::now();\n        let decision=(capability.apply)(export);\n        if std::env::var_os("NUCLEUS_TRACE_PHASES").is_some() { eprintln!("NUCLEUS_CAPABILITY_STAGE:id={}:elapsed_ms={:.3}",capability.id,stage_start.elapsed().as_secs_f64()*1000.0); }\n        if let Some(verdict) = decision {\n'
           assert capability_original.count(capability_old)==1
           capability_changed=capability_original.replace(capability_old,capability_new,1)
+          def capability_replace(old,new):
+              global capability_changed
+              assert capability_changed.count(old)==1,(old[:90],capability_changed.count(old))
+              capability_changed=capability_changed.replace(old,new,1)
+          capability_replace('fn prop_projection_safety(export: &ResolvedExport) -> Option<Verdict> {',
+              'fn prop_projection_safety(export: &ResolvedExport) -> Option<Verdict> {\n    let prop_start=std::time::Instant::now();')
+          capability_replace('    if projection_types.is_empty() {\n        return None;\n    }',
+              '    if std::env::var_os("NUCLEUS_TRACE_PHASES").is_some() {eprintln!("NUCLEUS_PROP_STAGE:phase=projection_scan:ms={:.3}",prop_start.elapsed().as_secs_f64()*1000.0);}\n    let target_start=std::time::Instant::now();\n    if projection_types.is_empty() {\n        return None;\n    }')
+          capability_replace('    if target_names.is_empty() {\n        return None;\n    }',
+              '    if std::env::var_os("NUCLEUS_TRACE_PHASES").is_some() {eprintln!("NUCLEUS_PROP_STAGE:phase=target_discovery:ms={:.3}",target_start.elapsed().as_secs_f64()*1000.0);}\n    let traverse_start=std::time::Instant::now();\n    if target_names.is_empty() {\n        return None;\n    }')
+          capability_replace('    None\n}\n\nfn expression_may_contain_target_projection(',
+              '    if std::env::var_os("NUCLEUS_TRACE_PHASES").is_some() {eprintln!("NUCLEUS_PROP_STAGE:phase=recursive_traversal:ms={:.3}",traverse_start.elapsed().as_secs_f64()*1000.0);}\n    None\n}\n\nfn expression_may_contain_target_projection(')
           capability_source.write_text(capability_changed)
           (out/'capability-phases.patch').write_text(''.join(difflib.unified_diff(capability_original.splitlines(True),capability_changed.splitlines(True),fromfile='a/metatron-kernel/src/capability.rs',tofile='b/metatron-kernel/src/capability.rs')))
           sys.path.insert(0,str(Path('experiments/nucleus-reuse-20261104').resolve()))
@@ -152,7 +164,9 @@ jobs:
               assert len(stages)==6,stages
               capability_stages={name:float(value) for name,value in re.findall(r'NUCLEUS_CAPABILITY_STAGE:id=([^:\s]+):elapsed_ms=([\d.]+)',log)}
               assert len(capability_stages)==6,capability_stages
-              rows[kind]=dict(measured=metrics,phases=steps,check_detail=detail,preflight_stages=stages,capability_stages=capability_stages,boundary=boundary)
+              prop_stages={name:float(value) for name,value in re.findall(r'NUCLEUS_PROP_STAGE:phase=([^:\s]+):ms=([\d.]+)',log)}
+              assert 'projection_scan' in prop_stages,prop_stages
+              rows[kind]=dict(measured=metrics,phases=steps,check_detail=detail,preflight_stages=stages,capability_stages=capability_stages,prop_stages=prop_stages,boundary=boundary)
               print('PHASE_PROFILE',kind,json.dumps(rows[kind]),flush=True)
           summary=dict(source_binary_sha=t.digest(root/'candidate/nucleus'),rows=rows,
                        semantic_note='No proof rule changed, full Mathlib remains UNKNOWN')
