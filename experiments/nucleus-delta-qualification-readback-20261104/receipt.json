@@ -1,0 +1,44 @@
+{
+  "status": "WARRANTED_BOUNDED_READBACK",
+  "qualification_run": 41721756472,
+  "qualification_commit": "751599fc396d1e8ddf72bc739d6977cbd57482e7",
+  "artifact_id": 13271488438,
+  "artifact_zip_sha256": "92c000926197c7e961ebf470aa7ed1b40d7584c48cc8fc2bfe8512fcd3471663",
+  "candidate_binary_sha256": "33e039f3a2fdd9e18b223a428531ca689583a2c9bfb4f8143123f13dc532eaa4",
+  "candidate_source_patch_sha256": "a788f92fd0471f1dc20cce9f42f8c94f9e3309ea1becb1da1ecd88aa5a9b58a6",
+  "native_target_count": 42,
+  "native_counts": [
+    402,
+    1,
+    0,
+    0,
+    0
+  ],
+  "known_native_failure": "all_seven_complete_positive_exports_accept",
+  "protected_control_count": 61,
+  "protected208_outcomes": {
+    "1": 79,
+    "2": 8,
+    "0": 121
+  },
+  "extra_unchanged": true,
+  "complete_mathlib_accept": false,
+  "full_mathlib_sha256": "22c5de83469408950005589a3bc5ef5157c65549b5a802f85d567c29151306a6",
+  "next_frontier": "Std.LeftIdentity",
+  "next_frontier_sha256": "282a7cf85e897f1e246fc25bc0cf6a6b69afdce72856f2fb500299504b8488ef",
+  "next_frontier_bytes": 6745925,
+  "independent_reference": {
+    "binary_sha256": "ae92c625e612fff1c90e329344d22e3c3c330383cb335ce28fd41435be3b3b94",
+    "source_commit": "cd2dd0244b9ed5e704463a26fbbe5fc67ba16108",
+    "lean_version": "4.34.1",
+    "bundle_artifact": 13267462207,
+    "command": [
+      "bundle/kernel",
+      "next-frontier.ndjson"
+    ],
+    "exit_code": 0,
+    "stdout": "Accepted 2229 declarations.\n",
+    "stderr": ""
+  },
+  "boundary": "Full regression qualification and complete-input replay completed; full Mathlib remains UNKNOWN. Same delta patch, integrated into compact dense 4x stack; no Arena rank or full-input speed ratio claimed."
+}
