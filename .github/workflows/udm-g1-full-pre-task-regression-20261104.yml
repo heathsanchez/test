@@ -1,7 +1,7 @@
 name: UDM G1 complete pre-task pilot regression
 on:
   push:
-    branches: [research/udm-g1-native-case-coverage-20261104]
+    branches: [research/udm-g1-native-case-coverage-20261104, research/udm-casebound-successor-20261104]
     paths:
       - '.github/workflows/udm-g1-full-pre-task-regression-20261104.yml'
   workflow_dispatch:
@@ -15,6 +15,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          fetch-depth: 0
       - uses: actions/checkout@v4
         with:
           repository: heathsanchez/triskelion
@@ -27,6 +28,22 @@ jobs:
           python-version: '3.12'
       - name: Install fixed unit-test dependencies
         run: python -m pip install --disable-pip-version-check pytest==8.3.5 packaging==26.3
+      - name: Historical frozen runner remains independently verifiable
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import subprocess,hashlib,importlib.util
+          from pathlib import Path
+          p='research/sustained_refactory_pilot/pilot.py'
+          old=subprocess.check_output(['git','show','f917955b2f83d3f21d598a81634aeeb60a7c0af5:'+p])
+          successor=Path(p).read_bytes()
+          assert old!=successor,'SUCCESSOR_MUST_NOT_REWRITE_ORIGINAL_RUNNER'
+          spec=importlib.util.spec_from_file_location('historical_audit','research/sustained_refactory_pilot/audit.py')
+          audit=importlib.util.module_from_spec(spec);spec.loader.exec_module(audit)
+          assert audit.sha(old)==hashlib.sha256(old).hexdigest()
+          print('HISTORICAL_FROZEN_RUNNER_SEPARATE_FROM_SUCCESSOR')
+          PY
       - name: Native V104 and protected fixture-ID controls without opening task bodies
         shell: bash
         env:
