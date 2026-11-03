@@ -9,6 +9,7 @@ const INDEP:&str=include_str!("fixtures/let-metadata/canonical-independent-let.n
   assert!(!bits.is_empty());assert!(bits.iter().all(|b|*b==expected));
  }
  let legacy="{\"ie\":0,\"sort\":0}\n{\"ie\":1,\"letE\":{\"type\":0,\"value\":0,\"body\":0}}\n";
+ let legacy=format!("{}\n{legacy}",DEP.lines().next().unwrap());
  let parsed=parser::parse(Cursor::new(legacy)).unwrap().resolve().unwrap();
  assert!(parsed.exprs.values().any(|e|matches!(e,Expr::Let{nondep:false,..})));
  println!("Expr size {}",std::mem::size_of::<Expr>());
