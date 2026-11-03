@@ -1,0 +1,41 @@
+name: Nucleus materialized fast source native build and guards
+on:
+  push:
+    branches: [research/nucleus-indexed-dense-source-20261104]
+    paths:
+      - 'metatron-kernel/src/capability.rs'
+      - '.github/workflows/nucleus-indexed-dense-source-20261104.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-source:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Verify exact tested source transformation and no foreign verdict cache
+        run: |
+          set -euo pipefail
+          printf '%s  %s\n' e5bd1f7e2acedfca03be8f6f070b996abcea9828d4988f02e3f73ef4002b0535 metatron-kernel/src/capability.rs | sha256sum -c -
+          rg -q 'struct RelevanceMemo' metatron-kernel/src/capability.rs
+          rg -q 'source_owner_index' metatron-kernel/src/capability.rs
+      - name: Compile and run direct checked-in Rust native unit tests
+        run: |
+          set -euo pipefail
+          cargo test --locked --manifest-path metatron-kernel/Cargo.toml --lib
+      - name: Produce release binary directly from checked-in source
+        run: |
+          set -euo pipefail
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          sha256sum metatron-kernel/target/release/metatron-kernel > source-release.sha256
+          sha256sum metatron-kernel/src/capability.rs > source-capability.sha256
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-fast-source-identity-${{ github.sha }}
+          path: |
+            source-release.sha256
+            source-capability.sha256
