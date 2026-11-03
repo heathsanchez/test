@@ -114,6 +114,55 @@ fn mgso_graph_source_context_and_order_each_change_object_identity() {
 }
 
 #[test]
+fn mgso_graph_large_accepted_export_uses_bounded_pages() {
+    // Previous v1 shadow stores stopped at 10,000 objects or 1 MiB of JSON
+    // root IDs. Authentic Mathlib has far more declarations; this is a
+    // structural store test, not a simulated kernel ACCEPT.
+    let scratch = ScratchDir::new();
+    let accepted = (0..12_001)
+        .map(|index| CheckedDecl {
+            index,
+            name: format!("source.theorem_{index}"),
+            kind: "theorem",
+        })
+        .collect::<Vec<_>>();
+    let objects = build_receipts(&accepted, &identity()).unwrap();
+    let manifest = RootManifest::from_receipts(&identity(), &objects).unwrap();
+    let store = ReceiptStore::new(scratch.0.clone());
+    store.write_accepted(&objects, &manifest).unwrap();
+    let root_bytes = fs::read(store.manifest_path()).unwrap();
+    let root: serde_json::Value = serde_json::from_slice(&root_bytes).unwrap();
+    assert_eq!(root["schema_version"], 2);
+    assert_eq!(root["declarations"], 12_001);
+    let pages = root["page_ids"].as_array().unwrap();
+    assert!(pages.len() > 1 && pages.len() < 128, "pages={}", pages.len());
+    assert!(root_bytes.len() < 1024 * 1024);
+    assert_eq!(
+        fs::read_dir(scratch.0.join("objects")).unwrap().count(),
+        pages.len(),
+        "paged graph must not write one file per declaration"
+    );
+    assert!(matches!(
+        store.read_shadow(&identity()),
+        ShadowResult::CandidateMatch {
+            declarations: 12_001,
+            ..
+        }
+    ));
+
+    // Exact source/configuration changes invalidate the whole conservative
+    // graph. No result from this test authorizes cached acceptance.
+    let mut changed = identity();
+    changed.export_sha256 = "f".repeat(64);
+    assert!(matches!(store.read_shadow(&changed), ShadowResult::Stale(_)));
+
+    // Each page, not just the manifest, must be rehashed and decoded.
+    let first_id = pages[0].as_str().unwrap();
+    fs::write(store.object_path(first_id).unwrap(), b"forged:ACCEPT").unwrap();
+    assert!(matches!(store.read_shadow(&identity()), ShadowResult::Unknown(_)));
+}
+
+#[test]
 fn mgso_graph_configuration_digest_is_deterministic_and_sensitive_to_policy() {
     let baseline = VerificationConfig {
         export_format: "3.1.0".into(),
