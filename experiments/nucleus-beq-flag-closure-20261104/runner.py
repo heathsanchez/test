@@ -74,10 +74,13 @@ def main():
                     for field in ("type", "value"))
         result = {"mask": mask, "features": selected, "observations": rows,
                   "candidate_for_full_qualification":
-                  rows[0]["rc"] == 0 and all(x["rc"] != 0 for x in rows[1:])}
+                  bool(mask & 1) and rows[0]["rc"] == 0
+                  and all(x["rc"] != 0 for x in rows[1:])}
         data.append(result)
         print("MODE_SCREEN", json.dumps(result, sort_keys=True), flush=True)
-    baseline = data[0]
+    # The independently qualified source baseline already requires the
+    # source-major demand mode. Mask 0 is a causal ablation, not the baseline.
+    baseline = data[1]
     assert baseline["observations"][0]["rc"] == 2
     assert "Nat.beq_refl" in baseline["observations"][0]["terminal"]
     report = {"status": "CANDIDATE_ABLATION_ONLY",
