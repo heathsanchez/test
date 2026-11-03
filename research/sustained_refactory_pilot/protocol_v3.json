@@ -1,0 +1,119 @@
+{
+  "arms": {
+    "A": "Reset after every episode, original candidate order.",
+    "B": "Full ordinary transcript; recompute original retention by scanning all past checked rows.",
+    "C": "Executable ledger of all observed candidate programs and evidence; index source support.",
+    "D": "Existing UDM Machine with source-bound typed capabilities; use only live independently checked source supports. Fresh native verification is always required for future candidate consequences."
+  },
+  "budget": {
+    "candidates_per_episode": 32,
+    "model_calls": 0,
+    "native_calls_cap_per_arm": 2400,
+    "native_candidate_calls_cap": 9700,
+    "native_candidate_process_timeout_seconds": 8,
+    "native_test_timeout_seconds": 0.1,
+    "retained_prefix_max": 16,
+    "wall_cap_seconds": 5400
+  },
+  "budgets_are_matched": "Every arm gets 32 search candidates/task and 2400 total native calls. Extra UDM admission, cold recovery and ablation calls are charged to D; no extra search. Rotate arm positions ABCD/BCDA/CDAB/DABC by encountered task group. Common controls charged separately.",
+  "causal": "On any D gain over A, remove all relevant live signature support, rerun exact future, fresh-reverify original source support and restore; test irrelevant support removal and changed source hash. If no gain, causal capability-growth claim remains unestablished.",
+  "checkpoint_isolation": "Evaluation shards disjoint 3 at each checkpoint. Evaluation outputs never enter memory, training or protocol revisions. Scores across shards are not same-task paired learning slopes.",
+  "cost_boundary": "Start wall clock before domain controls/graph initialization. Record preprocessing (downloads/install) separately from measured campaign; unmeasured historical engineering remains UNKNOWN, so do not claim all-in G4 superiority from this pilot.",
+  "data_zip_sha256": "83ad73f288a372583e7a19d090ae133bf126d967534bae68bdf403f9a2cc80d7",
+  "eval": [
+    "data/question_1/code/wrong/wrong_1_010.py",
+    "data/question_2/code/wrong/wrong_2_010.py",
+    "data/question_3/code/wrong/wrong_3_010.py",
+    "data/question_4/code/wrong/wrong_4_010.py",
+    "data/question_1/code/wrong/wrong_1_011.py",
+    "data/question_2/code/wrong/wrong_2_011.py",
+    "data/question_3/code/wrong/wrong_3_011.py",
+    "data/question_4/code/wrong/wrong_4_011.py",
+    "data/question_1/code/wrong/wrong_1_012.py",
+    "data/question_2/code/wrong/wrong_2_012.py",
+    "data/question_3/code/wrong/wrong_3_012.py",
+    "data/question_4/code/wrong/wrong_4_012.py"
+  ],
+  "eval_shards": {
+    "0": [
+      "data/question_1/code/wrong/wrong_1_010.py",
+      "data/question_2/code/wrong/wrong_2_010.py",
+      "data/question_3/code/wrong/wrong_3_010.py"
+    ],
+    "12": [
+      "data/question_2/code/wrong/wrong_2_012.py",
+      "data/question_3/code/wrong/wrong_3_012.py",
+      "data/question_4/code/wrong/wrong_4_012.py"
+    ],
+    "4": [
+      "data/question_4/code/wrong/wrong_4_010.py",
+      "data/question_1/code/wrong/wrong_1_011.py",
+      "data/question_2/code/wrong/wrong_2_011.py"
+    ],
+    "8": [
+      "data/question_3/code/wrong/wrong_3_011.py",
+      "data/question_4/code/wrong/wrong_4_011.py",
+      "data/question_1/code/wrong/wrong_1_012.py"
+    ]
+  },
+  "generator_source": {
+    "balancer": "experiments/METALOGIC_V100_BALANCED_K_CROSS_SOURCE_ORGANS.py",
+    "base": "experiments/METALOGIC_V98_RICH_K_PROTECTED_DYNAMIC_RANKING.py",
+    "commit": "426c54f7c774560e0fabe7213c5ef333b1327c71",
+    "repository": "heathsanchez/triskelion",
+    "retention": "Original V104 MDL/support/hash selection statements rebound only to the declared existing base-family alphabet; NOT the original V104 qualification profile."
+  },
+  "initial_capabilities": "Nine existing supplied V98/V100 AST mutation families; no learned family priorities. Original UDM/Metatron/FLASH reused. No target patch, reference implementation or prior learned search priority loaded.",
+  "model": "No LLM: same original V100 family-balanced source generator in all four arms. This does not benchmark an actual general-purpose LLM agent.",
+  "operator_menu": [
+    "BIN_OP",
+    "BOOL_OP",
+    "CALL_ARG_NAME",
+    "CALL_ARG_SWAP",
+    "CMP_OP",
+    "CONST_SUB",
+    "NAME_SUB",
+    "NEGATE_GUARD",
+    "STATE_UPDATE_INSERT"
+  ],
+  "qualification_profile": "New research-only V100-family selection profile over original Machine; fresh source-native partial improvement supports candidate ordering only. Every full repair needs independent original native tests and confirmation. Fresh original-source baseline requalification is charged to D before admitting any improvement; stored baseline transcript must match native disk evidence.",
+  "retention": "Original V104 selection statements with MIN_SUPPORT=2 distinct source programs, shortest repr, strongest support, deterministic hash top2; signatures denote the declared existing V100 family, not a newly invented operator language.",
+  "schema": "udm.sustained.refactory.pilot.protocol.v3",
+  "seeds": [
+    "V104_GENERIC_CONSTRUCTOR_SYNTHESIS_2026-08-14"
+  ],
+  "selection": "Questions1..4, lexically named wrong source ranks7..9 training,10..12 evaluation; interleave rank then question; no replacement. Encounter chronology, not original submission timestamps.",
+  "source_commit": "f05583a56c2e3c50aa8cc0327645283f27df3a68",
+  "source_repository": "githubhuyang/refactory",
+  "source_selection_repair": "NEW pool, ranks 7..12 per question, before source-body access. Original constructor-only negative is preserved. First exposed source diagnosis: original V100 base first candidate passed 11/11; no novel winning operation supplied.",
+  "state": "PREREGISTERED_NOT_EXECUTED",
+  "stopping": "Stop on false warrant, original verifier mismatch, leakage, budget cap, source or protocol drift. No scale-up without meaningful heldout gain and causal controls.",
+  "success": "Any acquired-signature-dependent future full native PASS beyond A under fixed candidate count; compare B/C/D on exact same tasks. D vs competent C ties valid; no economics claim without costs.",
+  "supersedes_before_task_access": {
+    "new_training_or_eval_bodies_opened": false,
+    "posthoc_diagnostic_commit": "857857c98e55582b5196a1a3d799f89ca9912d9b",
+    "previous_pilot_protocol_sha256": "4ad23a6440d6fb7f85e01cb276a563320d569f68d04f48aede2991cbb809b94f",
+    "previous_pilot_status": "COMPLETED_CONSTRUCTOR_ONLY_NEGATIVE",
+    "reason": "Restore existing omitted base operations; preserve prior failure rather than changing its frozen test."
+  },
+  "train": [
+    "data/question_1/code/wrong/wrong_1_007.py",
+    "data/question_2/code/wrong/wrong_2_007.py",
+    "data/question_3/code/wrong/wrong_3_007.py",
+    "data/question_4/code/wrong/wrong_4_007.py",
+    "data/question_1/code/wrong/wrong_1_008.py",
+    "data/question_2/code/wrong/wrong_2_008.py",
+    "data/question_3/code/wrong/wrong_3_008.py",
+    "data/question_4/code/wrong/wrong_4_008.py",
+    "data/question_1/code/wrong/wrong_1_009.py",
+    "data/question_2/code/wrong/wrong_2_009.py",
+    "data/question_3/code/wrong/wrong_3_009.py",
+    "data/question_4/code/wrong/wrong_4_009.py"
+  ],
+  "unknowns": [
+    "Public-corpus pretraining exposure not excluded (no LLM used here).",
+    "This is unfamiliar source-program repair under four repeated exercise requirements, not new-domain semantics.",
+    "G2 novel observation language, prospective O1\u2192O2\u2192O3, G5 refinement and G6 authority not tested."
+  ],
+  "verification": "Exact original Refactory Tester.tv_code, nonempty complete original test IDs; no reference implementation exposed to generator; isolated verifier process. False program and missing-test controls. Full native PASS requires all original cases, fresh second-process confirmation. Partial score improvements can support search signatures but are not full correctness."
+}
