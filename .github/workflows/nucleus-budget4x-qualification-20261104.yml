@@ -1,0 +1,73 @@
+name: Nucleus 4x judgment budget protected Mathlib qualification
+on:
+  push:
+    branches: [research/nucleus-budget4x-qualification-20261104]
+    paths:
+      - '.github/workflows/nucleus-budget4x-qualification-20261104.yml'
+      - 'experiments/nucleus-budget4x-qualification-20261104/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  qualify-source-and-full-mathlib:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 80
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 1}
+      - run: git fetch --no-tags --depth=1 origin a2578e77079719ff2064f910bd82fd01d8e120b6
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Restore exact qualified dense stack, protected corpus and independent source receipt
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/dense-qualified /tmp/current208 /tmp/source-receipt
+          gh api repos/heathsanchez/test/actions/artifacts/13268111683/zip > /tmp/dense.zip
+          printf '%s  %s\n' 826a94548f9b95b1c18a173bbaa625d2ed96771b1c1d78fb3e4a9e8431ba77e4 /tmp/dense.zip | sha256sum -c -
+          unzip -q /tmp/dense.zip -d /tmp/dense-qualified
+          gh api repos/heathsanchez/test/actions/artifacts/13126161718/zip > /tmp/inputs.zip
+          printf '%s  %s\n' 462e31e21379054490570b465b46ece4fff878490d9ad7de6bbc73149d587f4c /tmp/inputs.zip | sha256sum -c -
+          unzip -q /tmp/inputs.zip -d /tmp/current208
+          gh api repos/heathsanchez/test/actions/artifacts/13264820032/zip > /tmp/source-receipt.zip
+          printf '%s  %s\n' 9fc805f01dc7525e14d7905c3bbaf9361e947eed420295e5e7e9d9a50155d7b9 /tmp/source-receipt.zip | sha256sum -c -
+          unzip -q /tmp/source-receipt.zip -d /tmp/source-receipt
+          grep -F 'Accepted 2004 declarations.' /tmp/source-receipt/reference-kernel.stdout
+      - name: Restore exact Range first-UNKNOWN prefix and original complete Mathlib export
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/range-source /tmp/mathlib-source
+          gh api repos/heathsanchez/test/actions/artifacts/13259246241/zip > /tmp/range.zip
+          printf '%s  %s\n' 8d757fba8ce67f41163281c095e43099eff209cd7d31c902838bc5d8273e405c /tmp/range.zip | sha256sum -c -
+          unzip -q /tmp/range.zip -d /tmp/range-source
+          zstd -d /tmp/range-source/next-frontier.ndjson.zst -o /tmp/range-prefix.ndjson
+          printf '%s  %s\n' d9d7b1fe7267a0806f65200abc64a9c7114fb8097a9da1f3687f2560a2568bb9 /tmp/range-prefix.ndjson | sha256sum -c -
+          gh api repos/heathsanchez/test/actions/artifacts/13231986845/zip > /tmp/mathlib.zip
+          printf '%s  %s\n' 3dd3fbb522816bdaa9d9cd2808196e075bfa27e3d6c82648731140594f87ce2b /tmp/mathlib.zip | sha256sum -c -
+          unzip -q /tmp/mathlib.zip -d /tmp/mathlib-source
+          zstd -d /tmp/mathlib-source/mathlib.ndjson.zst -o /tmp/mathlib.ndjson
+          printf '%s  %s\n' 22c5de83469408950005589a3bc5ef5157c65549b5a802f85d567c29151306a6 /tmp/mathlib.ndjson | sha256sum -c -
+          rm /tmp/mathlib.zip /tmp/mathlib-source/mathlib.ndjson.zst
+      - name: Generate unchanged native source controls
+        run: |
+          python3 experiments/nucleus-nat-closure-20261104/generate_fixtures.py --out /tmp/nat-fixtures
+          python3 experiments/nucleus-parameter-telescope-20261104/prepare.py
+          python3 experiments/nucleus-nullary-enum-20261104/prepare.py
+      - name: Baseline RED; budget GREEN; protected regressions; full Mathlib
+        run: python3 experiments/nucleus-budget4x-qualification-20261104/runner.py --out /tmp/nucleus-budget4x
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-budget4x-qualified-${{ github.sha }}
+          path: |
+            /tmp/nucleus-budget4x/*.json
+            /tmp/nucleus-budget4x/candidate/*.json
+            /tmp/nucleus-budget4x/candidate/*.log
+            /tmp/nucleus-budget4x/candidate/*.patch
+            /tmp/nucleus-budget4x/candidate/nucleus
+            /tmp/nucleus-budget4x/red/*.json
+            /tmp/nucleus-budget4x/red/stderr
+            /tmp/nucleus-budget4x/full/time.txt
+            /tmp/nucleus-budget4x/full/stderr
+            /tmp/nucleus-budget4x/next-frontier.ndjson.zst
