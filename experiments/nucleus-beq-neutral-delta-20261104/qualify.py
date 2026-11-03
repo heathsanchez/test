@@ -66,6 +66,10 @@ def main():
     assert len(baseline["native"]["targets"]) == 42
     assert len(baseline["controls"]) == 61
     assert all(x["pass_"] for x in baseline["controls"])
+    assert baseline["extra_unchanged"]
+    original_extra = json.loads(
+        (Path("/tmp/base-dense") / "qualification.json").read_text()
+    )["candidate"]["extra"]
     original = prior / "candidate/nucleus"
     assert t.digest(original) == BASE_SHA
     original.chmod(0o755)
@@ -88,7 +92,7 @@ def main():
     subprocess.run(["zstd", "-dq", "-f",
         str(ROOT.parent / "nucleus-coverage-evidence-20261104/inputs/magma-list-pair-n21.ndjson.zst"),
         "-o", str(extra)], check=True)
-    assert t.digest(extra) == baseline["extra"]["input_sha"]
+    assert t.digest(extra) == original_extra["input_sha"]
     native = t.native_suite(kernel, build_env | qualified_env |
                             {"NUCLEUS_FROZEN196": str(inputs / "inputs")}, arm)
     controls = L.controls(candidate, qualified_env)
@@ -110,7 +114,7 @@ def main():
     with extra.open("rb") as stream:
         extra_result = t.run_group([str(candidate)], stdin=stream,
             capture_output=True, env=qualified_env, timeout=180)
-    extra_ok = extra_result.returncode == baseline["extra"]["rc"]
+    extra_ok = extra_result.returncode == original_extra["rc"]
     admissible = (native_ok and controls_ok and not changes and extra_ok and
                   all(row["pass_"] for row in controls) and len(proof_rows) == 3)
     report = {"status":"WARRANTED_BOUNDED" if admissible else "CANDIDATE",
