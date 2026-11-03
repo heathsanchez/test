@@ -12,13 +12,14 @@ import attest
 
 
 def main() -> int:
-    if len(sys.argv) != 4:
-        raise SystemExit("usage: native_controls.py RUN_ID SHA SOURCE")
+    if len(sys.argv) not in (4, 5) or (len(sys.argv) == 5 and sys.argv[4] != "--completed"):
+        raise SystemExit("usage: native_controls.py RUN_ID SHA SOURCE [--completed]")
     run_id, commit, source_path = int(sys.argv[1]), sys.argv[2], Path(sys.argv[3])
+    completed = len(sys.argv) == 5
     token = os.environ["GITHUB_TOKEN"]
     metadata = attest.github_metadata(run_id, token)
     archive = attest.github_archive(metadata, token)
-    pin = {"run_id": run_id, "commit": commit, "attempt": 1, "completed": False}
+    pin = {"run_id": run_id, "commit": commit, "attempt": 1, "completed": completed}
     source = source_path.read_bytes()
     current_env = dict(os.environ)
     checks = {}
@@ -57,7 +58,8 @@ def main() -> int:
                   for key, value in checks.items()) else "UNKNOWN",
               "cases": checks, "count": len(checks),
               "no_fresh_kernel_invocation": True,
-              "proof_authority": "PINNED_PREVIOUS_SOURCE_NATIVE_GITHUB_JOB"}
+              "proof_authority": "PINNED_COMPLETED_GITHUB_RUN" if completed
+              else "PINNED_SAME_RUN_COMPLETED_GITHUB_JOB"}
     Path("/tmp/nucleus-mgso-reader-summary.json").write_text(
         json.dumps(result, sort_keys=True, indent=2) + "\n")
     print(json.dumps(result, sort_keys=True))
