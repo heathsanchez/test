@@ -1,0 +1,52 @@
+name: Nucleus Nat.beq_refl bounded next-budget diagnostic
+on:
+  push:
+    branches: [research/nucleus-budget4x-qualification-20261104]
+    paths:
+      - '.github/workflows/nucleus-beq-budget-screen-20261104.yml'
+      - 'experiments/nucleus-beq-budget-screen-20261104/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-pinned-beq:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 1}
+      - run: git fetch --no-tags --depth=1 origin a2578e77079719ff2064f910bd82fd01d8e120b6
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Restore SHA-pinned 4x candidate, next source prefix, and independent Lean reference
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/beq-budget4x /tmp/beq-source /tmp/beq-oracle
+          gh api repos/heathsanchez/test/actions/artifacts/13266857833/zip > /tmp/budget4x.zip
+          printf '%s  %s\n' 2d16ba78be1f181ee99ad618f60a9d1f1d394d75d6aa54eaf2686f90b749da46 /tmp/budget4x.zip | sha256sum -c -
+          unzip -q /tmp/budget4x.zip -d /tmp/beq-budget4x
+          gh api repos/heathsanchez/test/actions/artifacts/13268572042/zip > /tmp/beq-source.zip
+          printf '%s  %s\n' 00ce34eb4e8bb6e9b5fd8d5223bb07ef613364e8ece1f4fcc6cddb24804118b2 /tmp/beq-source.zip | sha256sum -c -
+          unzip -q /tmp/beq-source.zip -d /tmp/beq-source
+          zstd -d /tmp/beq-source/next-frontier.ndjson.zst -o /tmp/beq-prefix.ndjson
+          printf '%s  %s\n' d1c35f6a0de8644817b404e225a16de460e897e0b34c129fcb2a37483e630738 /tmp/beq-prefix.ndjson | sha256sum -c -
+          gh api repos/heathsanchez/test/actions/artifacts/13267462207/zip > /tmp/beq-oracle.zip
+          printf '%s  %s\n' 9dfaff0a6cb272e6950e301aab75cf99e09a440f5ad881e2e1790019b4add1dd /tmp/beq-oracle.zip | sha256sum -c -
+          unzip -q /tmp/beq-oracle.zip -d /tmp/beq-oracle
+      - name: Official authentic and forged; reproduce 4x RED; test minimal larger budgets
+        run: python3 experiments/nucleus-beq-budget-screen-20261104/runner.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-beq-budget-screen-${{ github.sha }}
+          path: |
+            /tmp/nucleus-beq-screen/*.json
+            /tmp/nucleus-beq-screen/budget*/*.log
+            /tmp/nucleus-beq-screen/budget*/*.patch
+            /tmp/nucleus-beq-screen/budget*/nucleus
+            /tmp/nucleus-beq-screen/budget*/proof/stderr
+            /tmp/nucleus-beq-screen/budget*/proof/time.txt
+            /tmp/nucleus-beq-screen/red/stderr
+            /tmp/nucleus-beq-screen/red/time.txt
