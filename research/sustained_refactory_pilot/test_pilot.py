@@ -103,6 +103,27 @@ def test_graph_refuses_changed_generator_before_any_task_access():
     g.machine=types.SimpleNamespace(mt=types.SimpleNamespace(live_ids=lambda log:['c']),log=[],flash_live_ids=lambda:{'c'},descriptor=lambda key:cap,get=lambda key:{'generator':{}})
     with pytest.raises(ValueError,match='generator'):g.signatures()
 
+def test_future_runner_is_identified_by_exact_committed_source():
+    m=module()
+    evidence=m.runner_identity()
+    assert len(evidence['runner_source_commit'])==40
+    assert evidence['runner_sha256']==m.sha(P.read_bytes())
+
+
+def test_historical_audit_refuses_wrong_successor_pin():
+    import importlib.util
+    p=Path(__file__).with_name('audit.py')
+    spec=importlib.util.spec_from_file_location('frozen_audit',p)
+    a=importlib.util.module_from_spec(spec);spec.loader.exec_module(a)
+    old=a.LEGACY_FROZEN_RUNNER
+    assert a.authorize_audit_runner({},old,'0'*64)==old
+    fresh=module().runner_identity()
+    assert a.authorize_audit_runner(fresh,fresh['runner_source_commit'],fresh['runner_sha256'])==fresh['runner_source_commit']
+    with pytest.raises(ValueError,match='runner'):
+        a.authorize_audit_runner(fresh,old,'0'*64)
+    with pytest.raises(ValueError,match='runner'):
+        a.authorize_audit_runner(fresh,fresh['runner_source_commit'],'f'*64)
+
 def test_raw_source_hash_preserves_crlf_bytes(tmp_path):
     m=module();path=tmp_path/'source.py';raw=b'def f():\r\n    return 1\r\n';path.write_bytes(raw)
     assert m.read_source(path).encode()==raw
