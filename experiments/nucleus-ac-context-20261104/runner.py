@@ -49,6 +49,23 @@ def patch_source(kernel: Path, arm: Path):
         "        && is_sort_succ_parameter(export,result,inductive.level_params[0])"
     )
     after = before[:start] + section.replace(anchor, replacement, 1) + before[stop:]
+    # A separate gate chooses whether to invoke the existing *full* record
+    # derivation. Extending scope without this matching candidate predicate
+    # would still decline the authentic declaration before checking it.
+    old_candidate = (
+        "    is_sort_succ_parameter(export,parameters[0],universe) && "
+        "is_sort_succ_parameter(export,result,universe)"
+    )
+    assert after.count(old_candidate) == 1
+    new_candidate = (
+        "    let source_sort_parameter = p == 1\n"
+        "        && matches!(export.exprs.get(parameters[0]),\n"
+        "            Some(Expr::Sort(level)) if matches!(export.levels.get(*level),\n"
+        "                Some(Level::Param(name)) if *name == universe));\n"
+        "    (is_sort_succ_parameter(export,parameters[0],universe) || source_sort_parameter)\n"
+        "        && is_sort_succ_parameter(export,result,universe)"
+    )
+    after = after.replace(old_candidate, new_candidate, 1)
     path.write_text(after)
     diff = "".join(difflib.unified_diff(before.splitlines(True), after.splitlines(True),
         fromfile="a/metatron-kernel/src/checker.rs", tofile="b/metatron-kernel/src/checker.rs"))
