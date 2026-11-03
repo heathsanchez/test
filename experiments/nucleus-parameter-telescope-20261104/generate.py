@@ -7,7 +7,7 @@ def generate(p=2,f=2,dependent=False):
    pre,_,leaf=s.rpartition('.'); parent=name(pre) if pre else 0
    names[s]=len(names)+1;rows.append({'in':names[s],'str':{'pre':parent,'str':leaf}})
   return names[s]
- u=name('u');v=name('v');R=name('ReusableRecord');mk=name('ReusableRecord.mk');rec=name('ReusableRecord.rec')
+ u=name('u');v=name('u_1');R=name('ReusableRecord');mk=name('ReusableRecord.mk');rec=name('ReusableRecord.rec')
  rows.extend([{'il':1,'param':u},{'il':2,'succ':1},{'il':3,'param':v}])
  def emit(obj):
   k=json.dumps(obj,sort_keys=True)

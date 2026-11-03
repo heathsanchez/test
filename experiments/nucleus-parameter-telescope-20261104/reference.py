@@ -10,5 +10,7 @@ for row in json.loads((root/'manifest.json').read_text()):
  entry=dict(row)
  for label,args in [('parse',['--parse-only']),('kernel',[])]:
   r=subprocess.run([a.checker,*args,str(source)],capture_output=True,timeout=240);entry[label]=dict(rc=r.returncode,stdout=r.stdout.decode(errors='replace'),stderr=r.stderr.decode(errors='replace'));(out/(row['file']+'.'+label+'.stdout')).write_bytes(r.stdout);(out/(row['file']+'.'+label+'.stderr')).write_bytes(r.stderr)
- report['rows'].append(entry);(out/'reference.json').write_text(json.dumps(report,indent=2)+'\n');assert entry['parse']['rc']==0,entry;assert entry['kernel']['rc']==row['expected'],entry
+ report['rows'].append(entry);(out/'reference.json').write_text(json.dumps(report,indent=2)+'\n')
 print(json.dumps(report),flush=True)
+
+assert all(e['parse']['rc']==0 and e['kernel']['rc']==e['expected'] for e in report['rows']), report

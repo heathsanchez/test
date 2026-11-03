@@ -24,6 +24,6 @@ for label,depth,dag in [('excessive-depth',600,False),('expanded-dag',20,True)]:
  rows=generate(4,3,False);ns=nodes(rows);b=rows[-1]['inductive'];c=telescope(ns,b['ctors'][0]['type'],'forallE',7);node=c[4]['type'];next_id=max(ns)+1
  for i in range(depth):
   if dag:new={'ie':next_id,'app':{'fn':node,'arg':node}}
-  else:new={'ie':next_id,'forallE':{'name':1,'binderInfo':'default','type':node,'body':node}}
+  else:new={'ie':next_id,'forallE':{'name':1,'binderInfo':'default','type':c[4]['type'],'body':node}}
   rows.insert(-1,new);node=next_id;next_id+=1
  c[4]['type']=node;save(label,rows)
