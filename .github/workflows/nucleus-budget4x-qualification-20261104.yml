@@ -23,7 +23,7 @@ jobs:
       - name: Restore exact qualified dense stack, protected corpus and independent source receipt
         run: |
           set -euo pipefail
-          mkdir -p /tmp/dense-qualified /tmp/current208 /tmp/source-receipt
+          mkdir -p /tmp/dense-qualified /tmp/current208 /tmp/source-receipt /tmp/let-oracle
           gh api repos/heathsanchez/test/actions/artifacts/13268111683/zip > /tmp/dense.zip
           printf '%s  %s\n' 826a94548f9b95b1c18a173bbaa625d2ed96771b1c1d78fb3e4a9e8431ba77e4 /tmp/dense.zip | sha256sum -c -
           unzip -q /tmp/dense.zip -d /tmp/dense-qualified
@@ -34,6 +34,10 @@ jobs:
           printf '%s  %s\n' 9fc805f01dc7525e14d7905c3bbaf9361e947eed420295e5e7e9d9a50155d7b9 /tmp/source-receipt.zip | sha256sum -c -
           unzip -q /tmp/source-receipt.zip -d /tmp/source-receipt
           grep -F 'Accepted 2004 declarations.' /tmp/source-receipt/reference-kernel.stdout
+          gh api repos/heathsanchez/test/actions/artifacts/13261917242/zip > /tmp/let-oracle.zip
+          printf '%s  %s\n' bde62a227167517215d6a011f48cbf211447dba5c476c8eddbc4aff345183d05 /tmp/let-oracle.zip | sha256sum -c -
+          unzip -q /tmp/let-oracle.zip -d /tmp/let-oracle
+          test -f /tmp/let-oracle/reference.json
       - name: Restore exact Range first-UNKNOWN prefix and original complete Mathlib export
         run: |
           set -euo pipefail
