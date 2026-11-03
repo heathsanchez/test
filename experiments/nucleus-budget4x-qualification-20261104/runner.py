@@ -31,8 +31,11 @@ EXPECTED_FAILURE = (
 
 
 def signature(row):
-    return tuple((key, row.get(key)) for key in
-                 ("file", "case", "sha256", "expected", "native_expected", "rc"))
+    # Mixed missing/string fields are legal in source-control receipts;
+    # compare canonical JSON strings rather than ordering heterogeneous tuples.
+    return json.dumps({key: row.get(key) for key in
+                       ("file", "case", "sha256", "expected", "native_expected", "rc")},
+                      sort_keys=True)
 
 
 def verify_red(binary, source, env, out):
