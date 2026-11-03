@@ -156,6 +156,23 @@ fn mgso_graph_large_accepted_export_uses_bounded_pages() {
     changed.export_sha256 = "f".repeat(64);
     assert!(matches!(store.read_shadow(&changed), ShadowResult::Stale(_)));
 
+    // Reordering complete, content-addressed pages is not a legitimate
+    // dependency rewrite even when each individual page remains unmodified.
+    let mut reordered = root.clone();
+    reordered["page_ids"].as_array_mut().unwrap().swap(0, 1);
+    fs::write(store.manifest_path(), serde_json::to_vec(&reordered).unwrap()).unwrap();
+    assert!(matches!(store.read_shadow(&identity()), ShadowResult::Unknown(_)));
+    fs::write(store.manifest_path(), &root_bytes).unwrap();
+
+    let second_page = store.object_path(pages[1].as_str().unwrap()).unwrap();
+    let missing_path = scratch.0.join("quarantined-page");
+    fs::rename(&second_page, &missing_path).unwrap();
+    assert!(matches!(store.read_shadow(&identity()), ShadowResult::Unknown(_)));
+    fs::rename(&missing_path, &second_page).unwrap();
+    assert!(matches!(
+        store.read_shadow(&identity()), ShadowResult::CandidateMatch { .. }
+    ));
+
     // Each page, not just the manifest, must be rehashed and decoded.
     let first_id = pages[0].as_str().unwrap();
     fs::write(store.object_path(first_id).unwrap(), b"forged:ACCEPT").unwrap();
