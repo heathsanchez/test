@@ -1,0 +1,165 @@
+name: Nucleus independent MGSO shadow qualification
+
+on:
+  push:
+    branches: [research/nucleus-mgso-shadow-20261104]
+    paths:
+      - '.github/workflows/nucleus-mgso-shadow-20261104.yml'
+      - 'metatron-kernel/**'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Qualify MGSO golden, graph, source observation, and process boundaries
+        run: |
+          set -euo pipefail
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml \
+            --test mgso_golden --test mgso_graph --test mgso_shadow --test mgso_process
+      - name: Preserve full native suite outcome, including pre-existing residual
+        run: |
+          mkdir -p /tmp/mgso-native
+          git rev-parse HEAD > /tmp/mgso-native/commit.txt
+          set +e
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml \
+            --no-fail-fast > /tmp/mgso-native/suite.log 2>&1
+          result=$?
+          set -e
+          echo "exit_code=${result}" > /tmp/mgso-native/status.txt
+          if [ "$result" -ne 0 ]; then
+            python3 - <<'PY'
+          import pathlib,re
+          log=pathlib.Path('/tmp/mgso-native/suite.log').read_text()
+          assert log.count(' --- FAILED')==1,'Unexpected extra failed native tests'
+          assert 'distinct_proof_arguments_of_same_checked_proposition_are_convertible --- FAILED' in log
+          assert 'rigid-value-constructor-mismatch' in log
+          assert re.search(r'^error: 1 target failed:\n    `--test checked_relevance_signature`$',log,re.M), 'Unexpected failed test target'
+          print('Only the pre-existing proof-irrelevance test failed; full native suite is not green.')
+          PY
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-mgso-native-${{ github.sha }}
+          path: /tmp/mgso-native
+          if-no-files-found: warn
+
+  corpus:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Verify exact pinned original 208-case corpus and build independent Nucleus
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/mgso-evidence /tmp/mgso-inputs /tmp/mgso-cache
+          git rev-parse HEAD > /tmp/mgso-evidence/commit.txt
+          git rev-parse HEAD:metatron-kernel/src > /tmp/mgso-evidence/source-tree.txt
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          gh api repos/heathsanchez/test/actions/artifacts/13126161718/zip > /tmp/mgso-inputs.zip
+          printf '%s  %s\n' \
+            462e31e21379054490570b465b46ece4fff878490d9ad7de6bbc73149d587f4c \
+            /tmp/mgso-inputs.zip | sha256sum --check -
+          unzip -q /tmp/mgso-inputs.zip -d /tmp/mgso-inputs
+          sha256sum /tmp/mgso-inputs.zip > /tmp/mgso-evidence/corpus-artifact.sha256
+      - name: Matched cold, first shadow, and cross-process shadow on all 208
+        run: |
+          python3 - <<'PY'
+          import collections,hashlib,json,os,pathlib,subprocess,time
+
+          evidence=pathlib.Path('/tmp/mgso-evidence')
+          inputs=pathlib.Path('/tmp/mgso-inputs')
+          cache=pathlib.Path('/tmp/mgso-cache')
+          executable='metatron-kernel/target/release/metatron-kernel'
+          flags=('RELEVANCE','CONTEXT_BINDER','TYPED_LINEAGE','SUBSTITUTION_RECLOSURE',
+                 'TYPED_VALUE_NORMALIZATION','PROJECTION_CONTEXT','PROJECTION_CROSSFRAME_512',
+                 'TYPED_RECEIVER','SOURCE_PAIR_DEPTH8','POLYMORPHIC_PROP_IRREL',
+                 'PROP_SINGLETON_2P1F','EXPECTED_LAMBDA','FORMED_PROP_DOMAIN_RETRY',
+                 'TYPED_DATA_CONGRUENCE','TYPED_PROJECTION_SPINE','REPLAY_PROJECTION_MAJOR',
+                 'REPLAY_NEUTRAL_PROJECTION')
+          env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+          env.update({'NUCLEUS_EXPERIMENTAL_'+flag:'1' for flag in flags})
+          (evidence/'configuration.json').write_text(json.dumps(
+              {k:v for k,v in env.items() if k.startswith('NUCLEUS_')},indent=2))
+
+          def digest(path):
+              h=hashlib.sha256()
+              with path.open('rb') as source:
+                  for chunk in iter(lambda: source.read(1024*1024),b''):
+                      h.update(chunk)
+              return h.hexdigest()
+
+          def invoke(path,args,case_index,arm):
+              start=time.perf_counter()
+              with path.open('rb') as source:
+                  try:
+                      result=subprocess.run([executable,*args],stdin=source,
+                                            capture_output=True,env=env,timeout=240)
+                      rc=result.returncode; stdout=result.stdout; stderr=result.stderr
+                  except subprocess.TimeoutExpired as error:
+                      rc=124; stdout=error.stdout or b''; stderr=error.stderr or b''
+              (evidence/f'{case_index:03d}-{arm}.stderr').write_bytes(stderr)
+              return dict(rc=rc,stdout_sha256=hashlib.sha256(stdout).hexdigest(),
+                          time_sec=round(time.perf_counter()-start,4),
+                          stderr_sha256=hashlib.sha256(stderr).hexdigest(),
+                          shadow_candidate=b'status=candidate-match' in stderr)
+
+          manifest=json.loads((inputs/'inputs-manifest.json').read_text())
+          assert len(manifest)==208,len(manifest)
+          rows=[]
+          for index,entry in enumerate(manifest):
+              path=inputs/'inputs'/entry['relative_path']
+              assert digest(path)==entry['sha256'],entry['case']
+              store=cache/f'{index:03d}'
+              arms={
+                  'ordinary':invoke(path,[],index,'ordinary'),
+                  'shadow_first':invoke(path,['--mgso-shadow-dir',str(store)],index,'shadow_first'),
+                  'shadow_restart':invoke(path,['--mgso-shadow-dir',str(store)],index,'shadow_restart'),
+              }
+              expected=int(entry['expected'])
+              for arm,data in arms.items():
+                  assert data['rc']==expected,(entry['case'],arm,expected,data['rc'])
+                  assert data['stdout_sha256']==arms['ordinary']['stdout_sha256'],(entry['case'],arm,'stdout changed')
+              if expected!=0:
+                  assert not (store/'root.json').exists(),(entry['case'],'root for non-ACCEPT')
+              rows.append(dict(case=entry['case'],sha256=entry['sha256'],
+                               expected=expected,arms=arms,root_exists=(store/'root.json').exists()))
+              (evidence/'verdicts.json').write_text(json.dumps(rows,indent=2))
+              if (index+1)%20==0: print('qualified',index+1,'of',len(manifest),flush=True)
+
+          counts=dict(collections.Counter(row['expected'] for row in rows))
+          candidates=sum(row['arms']['shadow_restart']['shadow_candidate'] for row in rows)
+          accepted_with_root=sum(row['expected']==0 and row['root_exists'] for row in rows)
+          summary=dict(count=len(rows),counts=counts,accepted_with_root=accepted_with_root,
+                       shadow_candidate_matches=candidates,
+                       total_cold_seconds=sum(row['arms']['ordinary']['time_sec'] for row in rows),
+                       total_shadow_first_seconds=sum(row['arms']['shadow_first']['time_sec'] for row in rows),
+                       total_shadow_restart_seconds=sum(row['arms']['shadow_restart']['time_sec'] for row in rows),
+                       success_is_verdict_parity_not_speed=True,
+                       full_mathlib_acceptance='UNKNOWN',
+                       shadow_cache_authority='NONE')
+          (evidence/'summary.json').write_text(json.dumps(summary,indent=2))
+          print(json.dumps(summary),flush=True)
+          assert counts=={0:121,1:79,2:8},summary
+          assert accepted_with_root>0,'no accepted receipts persisted'
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-mgso-shadow-208-${{ github.sha }}
+          path: /tmp/mgso-evidence
+          retention-days: 30
+          if-no-files-found: warn

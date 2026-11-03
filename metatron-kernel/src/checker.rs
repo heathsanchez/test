@@ -12,6 +12,7 @@ use crate::level::LevelTerm;
 use crate::machine::{
     ProjectionFieldType, ProjectionSpec, RecursorReduction, RecursorRule, Transparency,
 };
+use crate::observation::CheckedDecl;
 use crate::parser::ResolvedExport;
 use crate::syntax::{
     Constructor, Declaration, Expr, InductiveBlock, Level, Name, QuotKind, Recursor,
@@ -41,6 +42,42 @@ pub fn check_export(export: ResolvedExport, limits: Limits) -> Verdict {
     let qualified_string_source=export.declarations.iter().any(|d|matches!(d,Declaration::Inductive(b) if qualified_string_literal_type(&export,b).is_some()));
     let verdict = check_export_with_policy(export, limits, DeltaPolicy::GuardedSemanticFallback);
     if has_unqualified_string_literal && !qualified_string_source && matches!(verdict, Verdict::Accept | Verdict::Reject) {
+        if std::env::var_os("NUCLEUS_TRACE_DOWNSTREAM").is_some() {
+            eprintln!(
+                "NUCLEUS_DOWNSTREAM:name=<string-literal-guard>:stage=string-literal-guard:inner={verdict:?}:verdict=Unknown"
+            );
+        }
+        Verdict::Unknown
+    } else {
+        verdict
+    }
+}
+
+/// Observe admissions only after the ordinary kernel checks complete. These
+/// events are candidates: callers must discard the entire prefix unless the
+/// final wrapped export verdict, including outer guards, is ACCEPT.
+pub fn check_export_observed(
+    export: ResolvedExport,
+    limits: Limits,
+    observer: &mut dyn FnMut(CheckedDecl),
+) -> Verdict {
+    let has_unqualified_string_literal = export
+        .exprs
+        .values()
+        .any(|expression| matches!(expression, Expr::StrLit(_)));
+    let qualified_string_source = export.declarations.iter().any(|declaration| {
+        matches!(declaration, Declaration::Inductive(block) if qualified_string_literal_type(&export,block).is_some())
+    });
+    let verdict = check_export_with_policy_observed(
+        export,
+        limits,
+        DeltaPolicy::GuardedSemanticFallback,
+        Some(observer),
+    );
+    if has_unqualified_string_literal
+        && !qualified_string_source
+        && matches!(verdict, Verdict::Accept | Verdict::Reject)
+    {
         if std::env::var_os("NUCLEUS_TRACE_DOWNSTREAM").is_some() {
             eprintln!(
                 "NUCLEUS_DOWNSTREAM:name=<string-literal-guard>:stage=string-literal-guard:inner={verdict:?}:verdict=Unknown"
@@ -155,6 +192,15 @@ fn check_export_with_policy(
     export: ResolvedExport,
     limits: Limits,
     delta_policy: DeltaPolicy,
+) -> Verdict {
+    check_export_with_policy_observed(export, limits, delta_policy, None)
+}
+
+fn check_export_with_policy_observed(
+    export: ResolvedExport,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+    mut observer: Option<&mut dyn FnMut(CheckedDecl)>,
 ) -> Verdict {
     if !quotient_source_ownership_is_well_ordered(&export) {
         return trace_direct_reject("preflight-quotient-source-ownership");
@@ -312,6 +358,15 @@ fn check_export_with_policy(
     // authority; retaining future source records does not admit them.
     for declaration_index in 0..export.declarations.len() {
         let declaration = export.declarations[declaration_index].clone();
+        let declaration_kind = observer.is_some().then(|| match &declaration {
+            Declaration::Axiom { .. } => "axiom",
+            Declaration::Definition { .. } => "definition",
+            Declaration::Opaque { .. } => "opaque",
+            Declaration::Theorem { .. } => "theorem",
+            Declaration::Quot { .. } => "quot",
+            Declaration::Inductive(_) => "inductive",
+            Declaration::Unsupported { .. } => "unsupported",
+        });
         #[cfg(feature="diagnostics")]
         if std::env::var_os("NUCLEUS_TRACE_DECLARATION_PROGRESS").is_some() {
             let name=match &declaration {
@@ -475,6 +530,13 @@ fn check_export_with_policy(
                 ) {
                     Ok(extended) => {
                         environment = extended;
+                        if let Some(callback) = observer.as_deref_mut() {
+                            callback(CheckedDecl {
+                                index: declaration_index,
+                                name: trace_name(&export, name),
+                                kind: declaration_kind.expect("observed declaration kind"),
+                            });
+                        }
                         continue;
                     }
                     Err(verdict) => {
@@ -495,6 +557,15 @@ fn check_export_with_policy(
                         if let Some(ty)=qualified_string_literal_type(&export,&block) {
                             let Ok(extended)=environment.install_string_literal_type(ty) else{return Verdict::Reject;};
                             environment=extended;
+                        }
+                        if let Some(callback) = observer.as_deref_mut() {
+                            callback(CheckedDecl {
+                                index: declaration_index,
+                                name: block.types.first()
+                                    .map(|ty| trace_name(&export, ty.name))
+                                    .unwrap_or_else(|| "<empty-inductive-block>".to_string()),
+                                kind: declaration_kind.expect("observed declaration kind"),
+                            });
                         }
                         continue;
                     }
@@ -587,6 +658,13 @@ fn check_export_with_policy(
                 };
                 environment = extended;
             }
+        }
+        if let Some(callback) = observer.as_deref_mut() {
+            callback(CheckedDecl {
+                index: declaration_index,
+                name: trace_name(&export, name),
+                kind: declaration_kind.expect("observed declaration kind"),
+            });
         }
     }
 
