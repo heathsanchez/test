@@ -73,6 +73,15 @@ def decode_go_events(raw: str, code: int) -> dict[str, Any]:
             "passed_names":sorted(passed),"malformed_lines":malformed}
 
 
+def classify_transplant(native_status: str) -> str:
+    """Classification must not turn an unevaluated compiler/setup result into a scientific negative."""
+    if native_status == "FAIL_NATIVE_ASSERTIONS":
+        return "READY_FOR_WITNESS"
+    if native_status == "PASS_NONEMPTY":
+        return "UNKNOWN_NO_NATIVE_FAILING_ASSERTION"
+    return "UNKNOWN_TRANSPLANT_" + native_status.removeprefix("UNKNOWN_")
+
+
 def identity(repo: Path, sha: str) -> bool:
     if not SHA.fullmatch(sha):
         return False
@@ -145,8 +154,9 @@ def qualify(repo: Path, base: str, head: str, test_file: str, outdir: Path) -> d
         a.parent.mkdir(parents=True, exist_ok=True)
         a.write_bytes(contributed)
         receipt["base_transplant"]=run_suite(source,outdir,"author-test-on-base")
-        if receipt["base_transplant"]["status"]!="FAIL_NATIVE_ASSERTIONS":
-            receipt["status"]="UNKNOWN_NO_NATIVE_FAILING_ASSERTION"
+        transplant_verdict=classify_transplant(receipt["base_transplant"]["status"])
+        if transplant_verdict!="READY_FOR_WITNESS":
+            receipt["status"]=transplant_verdict
             return receipt
         witness=set(receipt["base_transplant"]["failed_names"]) & set(receipt["head_contributor"]["passed_names"])
         if not witness:
