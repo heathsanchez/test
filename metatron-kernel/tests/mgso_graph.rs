@@ -180,6 +180,51 @@ fn mgso_graph_large_accepted_export_uses_bounded_pages() {
 }
 
 #[test]
+fn mgso_graph_mathlib_scale_paging_is_idempotent_and_bounded() {
+    // This is *synthetic accepted event data*: it validates storage scaling,
+    // not acceptance of the corresponding real Mathlib export.
+    let scratch = ScratchDir::new();
+    let accepted = (0..130_001)
+        .map(|index| CheckedDecl {
+            index,
+            name: format!("Mathlib.synthetic.namespace.theorem_{index}"),
+            kind: "theorem",
+        })
+        .collect::<Vec<_>>();
+    let objects = build_receipts(&accepted, &identity()).unwrap();
+    let manifest = RootManifest::from_receipts(&identity(), &objects).unwrap();
+    let store = ReceiptStore::new(scratch.0.clone());
+    let begin = std::time::Instant::now();
+    store.write_accepted(&objects, &manifest).unwrap();
+    let write_seconds = begin.elapsed().as_secs_f64();
+    let bytes = fs::read(store.manifest_path()).unwrap();
+    let manifest_doc: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    let pages = manifest_doc["page_ids"].as_array().unwrap().len();
+    assert_eq!(manifest_doc["declarations"], 130_001);
+    assert!(pages > 10 && pages < 512, "pages={pages}");
+    assert!(bytes.len() < 1024 * 1024);
+    let root_before = bytes;
+    let read_begin = std::time::Instant::now();
+    assert!(matches!(
+        store.read_shadow(&identity()),
+        ShadowResult::CandidateMatch { declarations: 130_001, .. }
+    ));
+    let read_seconds = read_begin.elapsed().as_secs_f64();
+    let disk_bytes = fs::read_dir(scratch.0.join("objects"))
+        .unwrap()
+        .map(|entry| entry.unwrap().metadata().unwrap().len())
+        .sum::<u64>();
+    let repeat = std::time::Instant::now();
+    store.write_accepted(&objects, &manifest).unwrap();
+    let rewrite_seconds = repeat.elapsed().as_secs_f64();
+    assert_eq!(fs::read(store.manifest_path()).unwrap(), root_before);
+    assert_eq!(fs::read_dir(scratch.0.join("objects")).unwrap().count(), pages);
+    println!(
+        "NUCLEUS_MGSO_STRESS:declarations=130001;pages={pages};disk_bytes={disk_bytes};write_seconds={write_seconds:.3};read_seconds={read_seconds:.3};idempotent_write_seconds={rewrite_seconds:.3};accept_authority=none"
+    );
+}
+
+#[test]
 fn mgso_graph_configuration_digest_is_deterministic_and_sensitive_to_policy() {
     let baseline = VerificationConfig {
         export_format: "3.1.0".into(),

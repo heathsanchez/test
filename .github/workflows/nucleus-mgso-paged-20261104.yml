@@ -25,7 +25,7 @@ jobs:
           git rev-parse HEAD > /tmp/mgso-pages/commit.txt
           cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml \
             --test mgso_golden --test mgso_graph --test mgso_shadow \
-            --test mgso_process > /tmp/mgso-pages/native.log 2>&1 || {
+            --test mgso_process -- --nocapture > /tmp/mgso-pages/native.log 2>&1 || {
               tail -100 /tmp/mgso-pages/native.log
               exit 1
             }
