@@ -266,11 +266,17 @@ def github_archive(metadata: dict, token: str) -> bytes:
     matches = [x for x in metadata["artifacts"] if x.get("name") == ARTIFACT_NAME]
     if len(matches) != 1 or type(matches[0].get("id")) is not int:
         raise ValueError("ARTIFACT_MISSING_OR_AMBIGUOUS")
-    url = f"https://api.github.com/repos/{REPO}/actions/artifacts/{matches[0]['id']}/zip"
-    request = Request(url, headers={"Authorization": "Bearer " + token,
-                                   "Accept": "application/vnd.github+json"})
-    with urlopen(request, timeout=40) as connection:
-        raw = connection.read(MAX_ZIP + 1)
+    if not token:
+        raise ValueError("MISSING_GITHUB_READ_TOKEN")
+    # GitHub's ZIP endpoint redirects to a separate signed storage origin.
+    # gh handles the cross-origin auth redirect correctly; urllib can forward
+    # an API Authorization header to the signed URL and receive HTTP 401.
+    path = f"repos/{REPO}/actions/artifacts/{matches[0]['id']}/zip"
+    downloaded = subprocess.run(["gh", "api", path], capture_output=True,
+                                env={**os.environ, "GH_TOKEN": token}, timeout=60)
+    if downloaded.returncode != 0:
+        raise ValueError("GITHUB_ARTIFACT_DOWNLOAD_FAILED")
+    raw = downloaded.stdout
     if len(raw) > MAX_ZIP:
         raise ValueError("ARCHIVE_TOO_LARGE")
     return raw
