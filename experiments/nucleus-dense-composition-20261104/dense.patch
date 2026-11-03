@@ -1,0 +1,92 @@
+--- a/metatron-kernel/src/capability.rs
++++ b/metatron-kernel/src/capability.rs
+@@ -306,6 +306,56 @@
+ /// only when those facts are definite from the export.  It never grants
+ /// projection authority; every uncertain case remains on the ordinary UNKNOWN
+ /// path.
++/// Exact per-export memo for the Boolean relevance predicate.
++/// 0 = absent, 1 = false, 2 = true. Sparse/extreme IDs remain sparse.
++struct RelevanceMemo {
++    dense: Vec<u8>,
++    sparse: HashMap<ExprId, bool>,
++}
++impl RelevanceMemo {
++    fn new(export: &ResolvedExport) -> Self {
++        let max_id = export.exprs.iter_raw().map(|(id,_)| id).max().unwrap_or(0);
++        let source_bound = export.exprs.len().saturating_mul(2).min(128_000_000);
++        let max_bound = usize::try_from(max_id).unwrap_or(usize::MAX).saturating_add(1);
++        let dense_len = max_bound.min(source_bound);
++        Self { dense: vec![0u8; dense_len], sparse: HashMap::new() }
++    }
++    fn get(&self, expression: ExprId) -> Option<bool> {
++        if let Ok(index) = usize::try_from(expression.0) {
++            match self.dense.get(index).copied() {
++                Some(1) => return Some(false),
++                Some(2) => return Some(true),
++                _ => {}
++            }
++        }
++        self.sparse.get(&expression).copied()
++    }
++    fn insert(&mut self, expression: ExprId, value: bool) {
++        if let Ok(index) = usize::try_from(expression.0) {
++            if let Some(slot) = self.dense.get_mut(index) {
++                *slot = if value { 2 } else { 1 };
++                return;
++            }
++        }
++        self.sparse.insert(expression, value);
++    }
++}
++#[cfg(test)]
++mod dense_relevance_guards {
++    use super::*;
++    #[test] fn absent_false_true_overwrite_and_extreme_sparse() {
++        let mut memo=RelevanceMemo { dense: vec![0; 3], sparse: HashMap::new() };
++        assert_eq!(memo.get(ExprId(0)),None);
++        memo.insert(ExprId(0),false); memo.insert(ExprId(1),true);
++        assert_eq!(memo.get(ExprId(0)),Some(false));
++        assert_eq!(memo.get(ExprId(1)),Some(true));
++        memo.insert(ExprId(0),true); memo.insert(ExprId(u64::MAX),false);
++        assert_eq!(memo.get(ExprId(0)),Some(true));
++        assert_eq!(memo.get(ExprId(2)),None);
++        assert_eq!(memo.get(ExprId(u64::MAX)),Some(false));
++    }
++}
++
+ fn prop_projection_safety(export: &ResolvedExport) -> Option<Verdict> {
+     let projection_types: HashSet<NameId> = export
+         .exprs
+@@ -337,7 +387,7 @@
+         return None;
+     }
+ 
+-    let mut relevance = HashMap::<ExprId, bool>::new();
++    let mut relevance = RelevanceMemo::new(export);
+     for declaration in &export.declarations {
+         let mut roots = Vec::new();
+         match declaration {
+@@ -383,11 +433,11 @@
+     export: &ResolvedExport,
+     expression: ExprId,
+     target_names: &HashMap<NameId, PropProjectionTarget>,
+-    memo: &mut HashMap<ExprId, bool>,
++    memo: &mut RelevanceMemo,
+     depth: usize,
+ ) -> bool {
+-    if let Some(cached) = memo.get(&expression) {
+-        return *cached;
++    if let Some(cached) = memo.get(expression) {
++        return cached;
+     }
+     if depth > 4096 {
+         return true;
+@@ -459,7 +509,7 @@
+     export: &ResolvedExport,
+     expression: ExprId,
+     target_names: &HashMap<NameId, PropProjectionTarget>,
+-    relevance: &mut HashMap<ExprId, bool>,
++    relevance: &mut RelevanceMemo,
+     context: &mut Vec<ExprId>,
+     depth: usize,
+ ) -> bool {
