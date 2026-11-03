@@ -12,6 +12,7 @@ impl SharedType{
  }
 }
 impl std::ops::Deref for SharedType{type Target=TypeValue;fn deref(&self)->&TypeValue{&self.0.value}}
+impl AsRef<TypeValue> for SharedType{fn as_ref(&self)->&TypeValue{&self.0.value}}
 impl PartialEq for SharedType{fn eq(&self,other:&Self)->bool{Rc::ptr_eq(&self.0,&other.0)||(self.0.fingerprint==other.0.fingerprint&&self.0.value==other.0.value)}}
 impl Eq for SharedType{}
 impl std::hash::Hash for SharedType{fn hash<H:std::hash::Hasher>(&self,h:&mut H){std::hash::Hash::hash(&self.0.fingerprint,h)}}

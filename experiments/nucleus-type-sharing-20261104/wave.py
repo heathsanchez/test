@@ -37,11 +37,12 @@ def main(args):
    arm=out/name;k=materialize(arm,pi,ctx);binary,benv=t.build(k,arm)
    state[name]=dict(built=binary is not None,source_patch_sha=t.digest(arm/'source.patch'))
    t.write_json(out/'state.json',state)
-   if binary is None:raise RuntimeError('build failed: '+name)
+   if binary is None and name=='baseline':raise RuntimeError('baseline build failed')
   cohort=[r for r in manifest if r['case'] in {'init-prelude','perf/app-lam','perf/beta-ladder','perf/let-ladder'}];assert len(cohort)==4
   perf=t.probe_perf(out);rows=[]
   for roundno in range(3):
-   arms=ARMS if roundno%2==0 else list(reversed(ARMS))
+   viable=[a for a in ARMS if state[a[0]]['built']]
+   arms=viable if roundno%2==0 else list(reversed(viable))
    for name,_,_ in arms:
     for r in cohort:
      p=root/'inputs'/r['relative_path'];assert t.digest(p)==r['sha256'];assert r['expected']==0
@@ -52,11 +53,13 @@ def main(args):
   baseline={(r['case'],r['round']):r for r in rows if r['arm']=='baseline'};summary={}
   for name,_,_ in ARMS:
    rs=[r for r in rows if r['arm']==name]
+   if not rs:continue
    summary[name]=dict(wall_ratio=t.geometric([r['wall_observed']/baseline[r['case'],r['round']]['wall_observed'] for r in rs]),per_case={case:dict(wall_ratio=t.geometric([r['wall_observed']/baseline[r['case'],r['round']]['wall_observed'] for r in rs if r['case']==case]),rss_kb=max(r['rss_kb'] for r in rs if r['case']==case)) for case in {r['case'] for r in rs}})
   t.write_json(out/'summary.json',dict(arms=summary,qualification='CANDIDATE_MICROBENCHMARK_PENDING_NATIVE_AND_208',base=t.BASE,harness=os.environ.get('GITHUB_SHA')))
  else:
   state=json.loads((out/'state.json').read_text());native=None;baseline=None
   for name,_,_ in ARMS:
+   if not state[name]['built']:continue
    arm=out/name;k=arm/'metatron-kernel';benv=dict(os.environ,CARGO_TARGET_DIR=str(arm/'target'))|env
    nr=t.native_suite(k,benv,arm)
    rows=t.replay(arm/'nucleus',manifest,root,env,arm/'verdicts.json')
