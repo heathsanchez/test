@@ -108,12 +108,20 @@ jobs:
           stage('unbound_universe','    if std::env::var_os("NUCLEUS_TRACE_PHASES").is_some() { eprintln!("NUCLEUS_CHECK_DETAIL:global_preflight_ms={:.3}",preflight_start.elapsed().as_secs_f64()*1000.0); }')
           checker_source.write_text(checker_changed)
           (out/'check-phases.patch').write_text(''.join(difflib.unified_diff(checker_original.splitlines(True),checker_changed.splitlines(True),fromfile='a/metatron-kernel/src/checker.rs',tofile='b/metatron-kernel/src/checker.rs')))
+          capability_source=kernel/'src/capability.rs'
+          capability_original=capability_source.read_text()
+          capability_old='    for capability in CAPABILITIES {\n        if let Some(verdict) = (capability.apply)(export) {\n'
+          capability_new='    for capability in CAPABILITIES {\n        let stage_start=std::time::Instant::now();\n        let decision=(capability.apply)(export);\n        if std::env::var_os("NUCLEUS_TRACE_PHASES").is_some() { eprintln!("NUCLEUS_CAPABILITY_STAGE:id={}:elapsed_ms={:.3}",capability.id,stage_start.elapsed().as_secs_f64()*1000.0); }\n        if let Some(verdict) = decision {\n'
+          assert capability_original.count(capability_old)==1
+          capability_changed=capability_original.replace(capability_old,capability_new,1)
+          capability_source.write_text(capability_changed)
+          (out/'capability-phases.patch').write_text(''.join(difflib.unified_diff(capability_original.splitlines(True),capability_changed.splitlines(True),fromfile='a/metatron-kernel/src/capability.rs',tofile='b/metatron-kernel/src/capability.rs')))
           sys.path.insert(0,str(Path('experiments/nucleus-reuse-20261104').resolve()))
           import tournament
           binary,_=tournament.build(kernel,out)
           assert binary is not None,(out/'build.log').read_text()[-6000:]
           PY
-          sha256sum /tmp/nucleus-phase/candidate/{source.patch,quotient-port.patch,phases.patch,check-phases.patch,nucleus} > /tmp/nucleus-phase/provenance.sha256
+          sha256sum /tmp/nucleus-phase/candidate/{source.patch,quotient-port.patch,phases.patch,check-phases.patch,capability-phases.patch,nucleus} > /tmp/nucleus-phase/provenance.sha256
       - name: Verify exact same first obstruction and capture parse resolve check times
         run: |
           set -euo pipefail
@@ -142,7 +150,9 @@ jobs:
               assert set(detail)=={'string_prelude_ms','policy_ms','global_preflight_ms'},detail
               stages={name:float(value) for name,value in re.findall(r'NUCLEUS_PREFLIGHT_STAGE:stage=([a-z_]+):elapsed_ms=([\d.]+)',log)}
               assert len(stages)==6,stages
-              rows[kind]=dict(measured=metrics,phases=steps,check_detail=detail,preflight_stages=stages,boundary=boundary)
+              capability_stages={name:float(value) for name,value in re.findall(r'NUCLEUS_CAPABILITY_STAGE:id=([^:\s]+):elapsed_ms=([\d.]+)',log)}
+              assert len(capability_stages)==6,capability_stages
+              rows[kind]=dict(measured=metrics,phases=steps,check_detail=detail,preflight_stages=stages,capability_stages=capability_stages,boundary=boundary)
               print('PHASE_PROFILE',kind,json.dumps(rows[kind]),flush=True)
           summary=dict(source_binary_sha=t.digest(root/'candidate/nucleus'),rows=rows,
                        semantic_note='No proof rule changed, full Mathlib remains UNKNOWN')
