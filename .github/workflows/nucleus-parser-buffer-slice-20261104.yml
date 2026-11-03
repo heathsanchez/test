@@ -1,0 +1,254 @@
+name: Nucleus zero-copy buffered parser prospective tournament
+on:
+  push:
+    branches: [research/nucleus-parser-buffer-slice-20261104]
+    paths: ['.github/workflows/nucleus-parser-buffer-slice-20261104.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  qualify-buffered-parser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 110
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Restore exact frozen inputs and previously qualified source reference
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/current208
+          gh api repos/heathsanchez/test/actions/artifacts/13126161718/zip > /tmp/ref-inputs.zip
+          printf '%s  %s\n' 462e31e21379054490570b465b46ece4fff878490d9ad7de6bbc73149d587f4c /tmp/ref-inputs.zip | sha256sum -c -
+          unzip -q /tmp/ref-inputs.zip -d /tmp/current208
+          gh api repos/heathsanchez/test/actions/artifacts/13242401296/zip > /tmp/reference-qualified.zip
+          printf '%s  %s\n' 94e80c675907498430bea6f5ce89bfe8eeb40922adf4222f906e3b7267217349 /tmp/reference-qualified.zip | sha256sum -c -
+          gh api repos/heathsanchez/test/actions/artifacts/13242616719/zip > /tmp/quotient-frontier.zip
+          printf '%s  %s\n' 78183d5b00480e3b3a6bec2346eb07ca99fb268c312d457ebf06df1c8d8722cd /tmp/quotient-frontier.zip | sha256sum -c -
+          unzip -p /tmp/quotient-frontier.zip next-frontier.ndjson.zst | zstd -dc -o /tmp/quotient-prefix.ndjson
+          printf '%s  %s\n' 4883dc9889b546a1117c25c266bae05a344b6609db5cbbfd846a8d7abc92a907 /tmp/quotient-prefix.ndjson | sha256sum -c -
+          gh api repos/heathsanchez/test/actions/artifacts/13257357912/zip > /tmp/stacked-qualified.zip
+          printf '%s  %s\n' 9719c62e60c8acc8c44d2651c2348a3a78bd2adb41a88d909efcb224b920a07f /tmp/stacked-qualified.zip | sha256sum -c -
+          unzip -p /tmp/stacked-qualified.zip candidate/nucleus > /tmp/nucleus-stacked-baseline
+          chmod +x /tmp/nucleus-stacked-baseline
+      - name: Restore exactly the same complete 6.18GB Mathlib input
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/mathlib-source
+          gh api repos/heathsanchez/test/actions/artifacts/13231986845/zip > /tmp/full-mathlib.zip
+          printf '%s  %s\n' 3dd3fbb522816bdaa9d9cd2808196e075bfa27e3d6c82648731140594f87ce2b /tmp/full-mathlib.zip | sha256sum -c -
+          unzip -q /tmp/full-mathlib.zip -d /tmp/mathlib-source
+          zstd -d /tmp/mathlib-source/mathlib.ndjson.zst -o /tmp/mathlib.ndjson
+          printf '%s  %s\n' 22c5de83469408950005589a3bc5ef5157c65549b5a802f85d567c29151306a6 /tmp/mathlib.ndjson | sha256sum -c -
+          rm /tmp/full-mathlib.zip /tmp/mathlib-source/mathlib.ndjson.zst
+      - name: Prospectively qualify buffered slice parser over exact winning stack
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import difflib,json,sys
+          from pathlib import Path
+          sys.path.insert(0,str(Path('experiments/nucleus-quotient-reuse-20261104').resolve()))
+          import qualify
+          original_materialize=qualify.runner.materialize
+          def dense_materialize(out,semantic=True):
+              kernel=original_materialize(out,semantic=semantic)
+              source=kernel/'src/capability.rs'
+              original=source.read_text()
+              revised=original
+              def swap(old,new,n=1):
+                  nonlocal revised
+                  assert revised.count(old)==n,(old[:100],revised.count(old),n)
+                  revised=revised.replace(old,new)
+              dense_impl='\n'.join([
+                  '/// Exact per-export memo for the Boolean relevance predicate.',
+                  '/// 0 = absent, 1 = false, 2 = true. Sparse/extreme IDs remain sparse.',
+                  'struct RelevanceMemo {',
+                  '    dense: Vec<u8>,',
+                  '    sparse: HashMap<ExprId, bool>,',
+                  '}',
+                  'impl RelevanceMemo {',
+                  '    fn new(export: &ResolvedExport) -> Self {',
+                  '        let max_id = export.exprs.iter_raw().map(|(id,_)| id).max().unwrap_or(0);',
+                  '        let source_bound = export.exprs.len().saturating_mul(2).min(128_000_000);',
+                  '        let max_bound = usize::try_from(max_id).unwrap_or(usize::MAX).saturating_add(1);',
+                  '        let dense_len = max_bound.min(source_bound);',
+                  '        Self { dense: vec![0u8; dense_len], sparse: HashMap::new() }',
+                  '    }',
+                  '    fn get(&self, expression: ExprId) -> Option<bool> {',
+                  '        if let Ok(index) = usize::try_from(expression.0) {',
+                  '            match self.dense.get(index).copied() {',
+                  '                Some(1) => return Some(false),',
+                  '                Some(2) => return Some(true),',
+                  '                _ => {}',
+                  '            }',
+                  '        }',
+                  '        self.sparse.get(&expression).copied()',
+                  '    }',
+                  '    fn insert(&mut self, expression: ExprId, value: bool) {',
+                  '        if let Ok(index) = usize::try_from(expression.0) {',
+                  '            if let Some(slot) = self.dense.get_mut(index) {',
+                  '                *slot = if value { 2 } else { 1 };',
+                  '                return;',
+                  '            }',
+                  '        }',
+                  '        self.sparse.insert(expression, value);',
+                  '    }',
+                  '}',
+                  '#[cfg(test)]',
+                  'mod dense_relevance_guards {',
+                  '    use super::*;',
+                  '    #[test] fn absent_false_true_overwrite_and_extreme_sparse() {',
+                  '        let mut memo=RelevanceMemo { dense: vec![0; 3], sparse: HashMap::new() };',
+                  '        assert_eq!(memo.get(ExprId(0)),None);',
+                  '        memo.insert(ExprId(0),false); memo.insert(ExprId(1),true);',
+                  '        assert_eq!(memo.get(ExprId(0)),Some(false));',
+                  '        assert_eq!(memo.get(ExprId(1)),Some(true));',
+                  '        memo.insert(ExprId(0),true); memo.insert(ExprId(u64::MAX),false);',
+                  '        assert_eq!(memo.get(ExprId(0)),Some(true));',
+                  '        assert_eq!(memo.get(ExprId(2)),None);',
+                  '        assert_eq!(memo.get(ExprId(u64::MAX)),Some(false));',
+                  '    }',
+                  '}',
+                  '',
+                  ''])
+              swap('fn prop_projection_safety(export: &ResolvedExport) -> Option<Verdict> {',
+                   dense_impl+'fn prop_projection_safety(export: &ResolvedExport) -> Option<Verdict> {')
+              swap('    let mut relevance = HashMap::<ExprId, bool>::new();',
+                   '    let mut relevance = RelevanceMemo::new(export);')
+              swap('    memo: &mut HashMap<ExprId, bool>,','    memo: &mut RelevanceMemo,')
+              swap('    relevance: &mut HashMap<ExprId, bool>,','    relevance: &mut RelevanceMemo,')
+              swap('    if let Some(cached) = memo.get(&expression) {\n        return *cached;\n    }',
+                   '    if let Some(cached) = memo.get(expression) {\n        return cached;\n    }')
+              swap('    let target_names: HashSet<NameId> = projection_types\n        .into_iter()\n        .filter(|type_name| prop_projection_target(export, *type_name).is_some())\n        .collect();',
+                   '    // A source-local immutable target memo: no cached verdict.\n    let target_names: HashMap<NameId, PropProjectionTarget> = projection_types\n        .into_iter()\n        .filter_map(|type_name| prop_projection_target(export, type_name).map(|target| (type_name, target)))\n        .collect();')
+              swap('    target_names: &HashSet<NameId>,','    target_names: &HashMap<NameId, PropProjectionTarget>,',n=2)
+              swap('target_names.contains(type_name)','target_names.contains_key(type_name)',n=2)
+              swap('projection_is_definitely_invalid(export, *type_name, *index, structure_ty)',
+                   'projection_is_definitely_invalid(export, *type_name, *index, structure_ty, target_names)')
+              swap('    structure_ty: ExprId,\n) -> bool {\n    let Some(target) = prop_projection_target(export, type_name) else {',
+                   '    structure_ty: ExprId,\n    target_names: &HashMap<NameId, PropProjectionTarget>,\n) -> bool {\n    let Some(target) = target_names.get(&type_name) else {')
+              swap('    let target_names: HashMap<NameId, PropProjectionTarget> = projection_types',
+                   '    // Index exact declaration ownership once per source; no foreign memo.\n    let mut source_owner_index=HashMap::<NameId,Vec<usize>>::new();\n    for (declaration_index,declaration) in export.declarations.iter().enumerate() {\n        if let Declaration::Inductive(block)=declaration {\n            for inductive in &block.types {\n                source_owner_index.entry(inductive.name).or_default().push(declaration_index);\n            }\n        }\n    }\n    let target_names: HashMap<NameId, PropProjectionTarget> = projection_types')
+              swap('prop_projection_target(export, type_name).map(|target|',
+                   'prop_projection_target(export, type_name, &source_owner_index).map(|target|')
+              swap('    type_name: NameId,\n) -> Option<PropProjectionTarget> {\n    for declaration in &export.declarations {',
+                   '    type_name: NameId,\n    source_owner_index: &HashMap<NameId,Vec<usize>>,\n) -> Option<PropProjectionTarget> {\n    for declaration_index in source_owner_index.get(&type_name)? {\n        let Some(declaration)=export.declarations.get(*declaration_index) else {continue;};')
+              source.write_text(revised)
+              (out/'stacked-index-dense.patch').write_text(''.join(difflib.unified_diff(original.splitlines(True),revised.splitlines(True),fromfile='a/metatron-kernel/src/capability.rs',tofile='b/metatron-kernel/src/capability.rs')))
+              parser=kernel/'src/parser.rs'
+              parser_before=parser.read_text()
+              begin=parser_before.index(' loop{line.clear();line_number+=1;')
+              finish=parser_before.index(' if std::env::var_os("NUCLEUS_TRACE_IMPORT")',begin)
+              old_loop=parser_before[begin:finish]
+              assert 'reader.read_line(&mut line)' in old_loop and 'hot_hits+=1' in old_loop
+              new_loop=''' loop{
+          let next_line=line_number+1;
+          let buffer=reader.fill_buf().map_err(|e|ParseError::Io{line:next_line,message:e.to_string()})?;
+          if buffer.is_empty(){break;}
+          if let Some(end)=buffer.iter().position(|&b|b==b'\\n'){
+           let raw=&buffer[..end];
+           let raw=raw.strip_suffix(b"\\r").unwrap_or(raw);
+           if let Ok(record_line)=std::str::from_utf8(raw){
+            line_number=next_line;records+=1;
+            if let Some(record)=hot_record(record_line){hot_hits+=1;apply_hot(&mut export,record)?;}else{parse_record(&mut export,parse_json(record_line,line_number)?,line_number)?;}
+            reader.consume(end+1);
+            continue;
+           }
+          }
+          // Chunk boundary or invalid UTF-8: the original reader retains authority.
+          line.clear();line_number=next_line;
+          let n=reader.read_line(&mut line).map_err(|e|ParseError::Io{line:line_number,message:e.to_string()})?;
+          if n==0{break;}
+          strip_line_ending(&mut line);records+=1;
+          if let Some(record)=hot_record(&line){hot_hits+=1;apply_hot(&mut export,record)?;}else{parse_record(&mut export,parse_json(&line,line_number)?,line_number)?;}
+          }
+          '''
+              parser_after=parser_before[:begin]+new_loop+parser_before[finish:]
+              test_anchor=' #[test]fn every_recognized_byte_mutation_is_valid_reference_json(){'
+              assert parser_after.count(test_anchor)==1
+              boundary_test=r''' #[test]fn buffered_chunk_boundaries_and_malformed_utf8_match_reference(){
+           let input=b"{\"meta\":{\"format\":{\"version\":\"3.1.0\"}}}\n{\"ie\":1,\"bvar\":0}\n{\"ie\":2,\"app\":{\"fn\":1,\"arg\":1}}\n";
+           let invalid=b"{\"meta\":{\"format\":{\"version\":\"3.1.0\"}}}\n{\"ie\":3,\"natVal\":\"\xff\"}\n";
+           for capacity in [1usize,2,3,7,16,64,512]{
+            let a=parse(std::io::BufReader::with_capacity(capacity,std::io::Cursor::new(&input[..])));
+            let b=parse_reference(std::io::Cursor::new(&input[..]));
+            match(a,b){(Ok(a),Ok(b))=>same(&a,&b),_=>panic!("valid buffered parser disagrees")}
+            let a=parse(std::io::BufReader::with_capacity(capacity,std::io::Cursor::new(&invalid[..])));
+            let b=parse_reference(std::io::Cursor::new(&invalid[..]));
+            match(a,b){(Err(a),Err(b))=>assert_eq!(a,b),_=>panic!("malformed UTF-8 disagreement")}
+           }
+          }
+          '''
+              parser_after=parser_after.replace(test_anchor,boundary_test+test_anchor)
+              parser.write_text(parser_after)
+              (out/'parser-buffer-slice.patch').write_text(''.join(difflib.unified_diff(parser_before.splitlines(True),parser_after.splitlines(True),fromfile='a/metatron-kernel/src/parser.rs',tofile='b/metatron-kernel/src/parser.rs')))
+              return kernel
+          qualify.runner.materialize=dense_materialize
+          drop={"PROJECTION_CONTEXT","PROJECTION_CROSSFRAME_512","TYPED_RECEIVER","SOURCE_PAIR_DEPTH8","PROP_SINGLETON_2P1F","EXPECTED_LAMBDA","TYPED_DATA_CONGRUENCE","REPLAY_PROJECTION_MAJOR","REPLAY_NEUTRAL_PROJECTION"}
+          original=qualify.t.FLAGS
+          assert drop.issubset(original)
+          qualify.t.FLAGS=tuple(f for f in original if f not in drop)
+          out=Path('/tmp/nucleus-parser-buffer-slice')
+          qualify.do_qualification(out,Path('/tmp/mathlib.ndjson'),include_exact=False)
+          (out/'prune-plan.json').write_text(json.dumps(dict(disabled=sorted(drop),original=original,enabled=qualify.t.FLAGS),indent=2)+'\n')
+          PY
+      - name: Paired cold full-input ABBAAB against qualified stacked baseline, same flags
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,math,os,sys
+          from pathlib import Path
+          root=Path('/tmp/nucleus-parser-buffer-slice')
+          sys.path.insert(0,str(Path('experiments/nucleus-reuse-20261104').resolve()))
+          import tournament as t
+          from pathlib import Path
+          source=Path('/tmp/mathlib.ndjson')
+          assert t.digest(source)==t.INPUT_SHA
+          baseline_binary=Path('/tmp/nucleus-stacked-baseline')
+          candidate_binary=root/'candidate/nucleus'
+          assert baseline_binary.is_file() and candidate_binary.is_file()
+          drop={"PROJECTION_CONTEXT","PROJECTION_CROSSFRAME_512","TYPED_RECEIVER","SOURCE_PAIR_DEPTH8","PROP_SINGLETON_2P1F","EXPECTED_LAMBDA","TYPED_DATA_CONGRUENCE","REPLAY_PROJECTION_MAJOR","REPLAY_NEUTRAL_PROJECTION"}
+          env={k:v for k,v in t.run_env().items() if k not in {'NUCLEUS_EXPERIMENTAL_'+f for f in drop}}
+          env.update(NUCLEUS_EXPERIMENTAL_CERTIFIED_QUOT_IOTA='1',NUCLEUS_EXPERIMENTAL_SOURCE_PROOF_IRREL='1',NUCLEUS_TRACE_DOWNSTREAM='1')
+          binaries={'baseline':baseline_binary,'candidate':candidate_binary}
+          pairs=[]
+          for pair,order in enumerate((('baseline','candidate'),('candidate','baseline'),('baseline','candidate'))):
+              observations={}
+              for arm in order:
+                  directory=root/'matched'/f'{pair}-{arm}'
+                  measurement=t.measure(binaries[arm],source,env,directory,timeout=600,perf=False)
+                  traces=[line for line in (directory/'stderr').read_text().splitlines() if line.startswith('NUCLEUS_DOWNSTREAM:')]
+                  terminal=traces[-1] if traces else ''
+                  row=dict(arm=arm,pair=pair,measurement=measurement,terminal=terminal)
+                  observations[arm]=row
+                  print('MATCHED_FULL',json.dumps(row),flush=True)
+                  assert measurement['rc']==2 and '_private.Init.Data.Nat.Lemmas.0.Nat.right_eq_add._proof_1_1' in terminal
+              pairs.append(observations)
+          ratios=[]
+          for pair in pairs:
+              a=pair['baseline']['measurement'];b=pair['candidate']['measurement']
+              ratios.append(b['user']/a['user'])
+          report=dict(pairs=pairs,ratios=ratios,geomean_ratio=math.prod(ratios)**(1/len(ratios)),
+              screen_won=all(x<1 for x in ratios) and math.prod(ratios)**(1/len(ratios))<=.98,
+              note='Only parser input line buffering changed on top of source-qualified indexed dense checker; same full Mathlib source and flags, same first Nat UNKNOWN. No Arena ranking claim')
+          (root/'matched-timing.json').write_text(json.dumps(report,indent=2)+'\n')
+          print('MATCHED_SUMMARY',json.dumps(dict(ratios=ratios,geomean=report['geomean_ratio'],screen_won=report['screen_won'])),flush=True)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-parser-buffer-slice-${{ github.sha }}
+          path: |
+            /tmp/nucleus-parser-buffer-slice/*.json
+            /tmp/nucleus-parser-buffer-slice/*.patch
+            /tmp/nucleus-parser-buffer-slice/candidate/*.json
+            /tmp/nucleus-parser-buffer-slice/candidate/*.log
+            /tmp/nucleus-parser-buffer-slice/candidate/*.patch
+            /tmp/nucleus-parser-buffer-slice/candidate/nucleus
+            /tmp/nucleus-parser-buffer-slice/controls/*.stderr
+            /tmp/nucleus-parser-buffer-slice/mathlib
+            /tmp/nucleus-parser-buffer-slice/matched/*/time.txt
+            /tmp/nucleus-parser-buffer-slice/matched/*/stderr
