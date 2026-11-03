@@ -138,6 +138,16 @@ class HistoricalReuseTests(unittest.TestCase):
         self.assertEqual(attest.validate_metadata(forged, pin, archive),
                          "PRODUCER_ARTIFACT_DIGEST_OR_PROVENANCE_MISMATCH")
 
+    def test_forged_job_targets_named_producer_even_if_history_job_comes_first(self):
+        metadata, pin, archive = fixture()
+        history = {"id": 701, "name": "historical-reader", "run_id": 501,
+                   "status": "completed", "conclusion": "success"}
+        metadata["jobs"].insert(0, history)
+        forged = native_controls.forge_producer_job_failure(metadata)
+        self.assertEqual(forged["jobs"][0], history)
+        self.assertEqual(attest.validate_metadata(forged, pin, archive),
+                         "PRODUCER_JOB_NOT_AUTHENTICATED")
+
     def test_artifact_download_uses_github_cli_authenticated_redirect(self):
         metadata, _, archive = fixture()
         class Result:
