@@ -1,0 +1,67 @@
+name: Nucleus Nat.beq_refl exact unknown observation
+on:
+  push:
+    branches: [research/nucleus-budget4x-qualification-20261104]
+    paths: ['.github/workflows/nucleus-beq-diagnostic-20261104.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  trace-source-proof:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 1}
+      - name: Restore fixed authentic 4x checker and Nat.beq_refl frontier
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/beq-trace /tmp/beq-trace/source /tmp/beq-trace/bin
+          gh api repos/heathsanchez/test/actions/artifacts/13266857833/zip > /tmp/beq-trace/binary.zip
+          printf '%s  %s\n' 2d16ba78be1f181ee99ad618f60a9d1f1d394d75d6aa54eaf2686f90b749da46 /tmp/beq-trace/binary.zip | sha256sum -c -
+          unzip -q /tmp/beq-trace/binary.zip -d /tmp/beq-trace/bin
+          printf '%s  %s\n' 659d68f956fefac853e3b4b9c6a402a317de362588f3ddc7962e950cfce8161a /tmp/beq-trace/bin/budget4x/nucleus | sha256sum -c -
+          chmod +x /tmp/beq-trace/bin/budget4x/nucleus
+          gh api repos/heathsanchez/test/actions/artifacts/13268572042/zip > /tmp/beq-trace/source.zip
+          printf '%s  %s\n' 00ce34eb4e8bb6e9b5fd8d5223bb07ef613364e8ece1f4fcc6cddb24804118b2 /tmp/beq-trace/source.zip | sha256sum -c -
+          unzip -q /tmp/beq-trace/source.zip -d /tmp/beq-trace/source
+          zstd -d /tmp/beq-trace/source/next-frontier.ndjson.zst -o /tmp/beq-trace/first-beq.ndjson
+          printf '%s  %s\n' d1c35f6a0de8644817b404e225a16de460e897e0b34c129fcb2a37483e630738 /tmp/beq-trace/first-beq.ndjson | sha256sum -c -
+      - name: Trace original failed application-type premise without code change
+        run: |
+          python3 - <<'PY'
+          import collections,hashlib,importlib.util,json,os,re,subprocess
+          from pathlib import Path
+          root=Path('/tmp/beq-trace');binary=root/'bin/budget4x/nucleus';source=root/'first-beq.ndjson'
+          spec=importlib.util.spec_from_file_location('let_wave','experiments/nucleus-let-preservation-20261104/runner.py')
+          L=importlib.util.module_from_spec(spec);spec.loader.exec_module(L)
+          env=L.R.N.runtime(True)
+          for flag in ('DOWNSTREAM','APPLICATION_FUNCTION_TYPE','NAT_NONHEAD'):
+           env['NUCLEUS_TRACE_'+flag]='1'
+          with source.open('rb') as stream:
+           p=subprocess.run([str(binary)],stdin=stream,capture_output=True,env=env,timeout=300)
+          (root/'trace.stderr').write_bytes(p.stderr)
+          lines=p.stderr.decode(errors='replace').splitlines()
+          apps=[s for s in lines if s.startswith('NUCLEUS_APPLICATION_FUNCTION_TYPE:')]
+          downstream=[s for s in lines if s.startswith('NUCLEUS_DOWNSTREAM:')]
+          nat=[s for s in lines if s.startswith('NUCLEUS_NAT_NONHEAD:')]
+          reasons=collections.Counter(re.findall(r'ResidualId\("([^"]+)"\)', '\n'.join(apps)))
+          report=dict(rc=p.returncode,input_sha=hashlib.sha256(source.read_bytes()).hexdigest(),
+                      binary_sha=hashlib.sha256(binary.read_bytes()).hexdigest(),
+                      application_type_traces=len(apps),nat_nonhead_traces=len(nat),
+                      reasons=dict(reasons),first_application_type=apps[:12],
+                      last_application_type=apps[-24:],last_nat=nat[-12:],
+                      downstream=downstream[-5:],scope='observation-only no change')
+          (root/'diagnostic.json').write_text(json.dumps(report,indent=2)+'\n')
+          print('BEQ_DIAG',json.dumps(report),flush=True)
+          assert p.returncode==2 and any('Nat.beq_refl' in s for s in downstream)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-beq-exact-diagnostic-${{ github.sha }}
+          path: |
+            /tmp/beq-trace/diagnostic.json
+            /tmp/beq-trace/trace.stderr
