@@ -1,0 +1,52 @@
+{
+  "source": "1c50d1ce64cbe9173b08f778fbcd81bd180fa7d2",
+  "binary_sha": "106ab4ceb5c6f82bc1d170fe25f32542b8198e98c2c0d2249f60eb2385a6fbde",
+  "qualification_artifact": 13251622498,
+  "extra_input_artifact": 13170390689,
+  "unique_cases": 209,
+  "counts": {
+    "0": 121,
+    "1": 79,
+    "2": 9
+  },
+  "wrong": [],
+  "historical_joins": {
+    "default": {
+      "joined": 196,
+      "selected_runtime_counts": {
+        "0": 119,
+        "1": 71,
+        "2": 6
+      },
+      "changes": [
+        {
+          "case": "init-prelude",
+          "before": 2,
+          "after": 0
+        }
+      ],
+      "regressions": []
+    },
+    "origin": {
+      "joined": 196,
+      "selected_runtime_counts": {
+        "0": 119,
+        "1": 71,
+        "2": 6
+      },
+      "changes": [],
+      "regressions": []
+    },
+    "demand": {
+      "joined": 196,
+      "selected_runtime_counts": {
+        "0": 119,
+        "1": 71,
+        "2": 6
+      },
+      "changes": [],
+      "regressions": []
+    }
+  },
+  "scope": "One current selected runtime,209 unique inputs;joins are not three fresh mode executions."
+}
