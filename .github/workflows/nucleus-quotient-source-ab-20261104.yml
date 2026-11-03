@@ -72,6 +72,10 @@ jobs:
           run_case legacy-default /tmp/nucleus-ab/legacy-checker
           run_case legacy-origin /tmp/nucleus-ab/legacy-checker "${legacy_flags[@]}"
           run_case legacy-origin-exact /tmp/nucleus-ab/legacy-checker "${legacy_flags[@]}" "${exact_flag[@]}"
+          run_case legacy-origin-iota /tmp/nucleus-ab/legacy-checker "${legacy_flags[@]}" NUCLEUS_EXPERIMENTAL_CERTIFIED_QUOT_IOTA=1
+          run_case legacy-origin-irrel /tmp/nucleus-ab/legacy-checker "${legacy_flags[@]}" NUCLEUS_EXPERIMENTAL_SOURCE_PROOF_IRREL=1
+          run_case legacy-origin-exact-iota /tmp/nucleus-ab/legacy-checker "${legacy_flags[@]}" "${exact_flag[@]}" NUCLEUS_EXPERIMENTAL_CERTIFIED_QUOT_IOTA=1
+          run_case legacy-origin-exact-irrel /tmp/nucleus-ab/legacy-checker "${legacy_flags[@]}" "${exact_flag[@]}" NUCLEUS_EXPERIMENTAL_SOURCE_PROOF_IRREL=1
           run_case legacy-origin-quotient /tmp/nucleus-ab/legacy-checker "${legacy_flags[@]}" "${quotient_flags[@]}"
           run_case legacy-origin-all /tmp/nucleus-ab/legacy-checker "${legacy_flags[@]}" "${exact_flag[@]}" "${quotient_flags[@]}"
           run_case current-pinned /tmp/nucleus-ab/current "${current_flags[@]}"
