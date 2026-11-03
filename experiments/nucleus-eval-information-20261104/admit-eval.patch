@@ -1,0 +1,36 @@
+diff --git a/metatron-kernel/src/checker.rs b/metatron-kernel/src/checker.rs
+index cc67d0e..36b1fdf 100644
+--- a/metatron-kernel/src/checker.rs
++++ b/metatron-kernel/src/checker.rs
+@@ -2969,6 +2969,23 @@ fn generic_nonrecursive_type_candidate(export: &ResolvedExport, block: &Inductiv
+             })
+         });
+ 
++    // This shape is ONLY a selector for the existing independently checked
++    // type, constructor, recursor, and reduction-signature derivations.
++    // It does not grant an unchecked verdict.
++    let two_parameter_three_field_record = inductive.num_params == 2
++        && constructor.num_params == 2
++        && constructor.num_fields == 3
++        && recursor.num_params == 2
++        && recursor.num_indices == 0
++        && recursor.num_minors == 1
++        && recursor.num_motives == 1
++        && pi_spine(export, inductive.ty, 2).is_some_and(|(params, _)|
++            pi_spine(export, constructor.ty, 5).is_some_and(|(domains, _)|
++                params.iter().zip(&domains[..2]).all(|(p, d)|
++                    expr_eq_with_bvar_shift(export, *p, *d, 0, 0))
++                && domains[2..].iter().all(|field|
++                    !expression_contains_constant(export, *field, inductive.name))));
++
+     let relation_proof_structure = generic_relation_proof_record_candidate(export, block);
+     let closed_pair_structure = closed_pair_record_candidate(export, block);
+     let closed_record = inductive.num_params == 0 && constructor.num_params == 0
+@@ -2984,6 +3001,7 @@ fn generic_nonrecursive_type_candidate(export: &ResolvedExport, block: &Inductiv
+         && !decidable_dependent_intro
+         && !closed_dependent_pair
+         && !four_parameter_three_field_record
++        && !two_parameter_three_field_record
+         && !relation_proof_structure
+         && !closed_pair_structure
+         && !closed_record
