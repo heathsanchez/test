@@ -67,3 +67,30 @@ jobs:
           path: |
             /tmp/nucleus-mgso-reader-summary.json
             /tmp/nucleus-mgso-reader-report.json
+  historical-reader:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reauthenticate a separately completed successful prior run without kernel execution
+        run: |
+          set -euo pipefail
+          PYTHONDONTWRITEBYTECODE=1 python3 \
+            experiments/nucleus-mgso-authenticated-reuse-20261104/native_controls.py \
+            '41724544141' '9648b2307ddf24874cd8c8634e91524b89a05d0e' \
+            metatron-kernel/tests/fixtures/good-theorem-use.ndjson --completed
+          PYTHONDONTWRITEBYTECODE=1 python3 \
+            experiments/nucleus-mgso-authenticated-reuse-20261104/attest.py consume \
+            --completed --run-id '41724544141' \
+            --commit '9648b2307ddf24874cd8c8634e91524b89a05d0e' \
+            --source metatron-kernel/tests/fixtures/good-theorem-use.ndjson \
+            --output /tmp/nucleus-mgso-reader-report.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-mgso-completed-cross-run-evidence-${{ github.sha }}
+          path: |
+            /tmp/nucleus-mgso-reader-summary.json
+            /tmp/nucleus-mgso-reader-report.json
