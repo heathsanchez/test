@@ -31,7 +31,7 @@ jobs:
           set -euo pipefail
           python -m pip install --disable-pip-version-check --no-input \
             'astunparse==1.6.3' 'autopep8==1.4.4' 'psutil==7.2.2' \
-            'zss==1.2.0' 'fastcache==1.1.0' 'python-Levenshtein==0.27.3'
+            'zss==1.2.0' 'fastcache==1.1.0' 'python-Levenshtein==0.27.3' 'numpy==2.3.3'
       - name: Independently compare real original Tester outcomes with parent fixture completeness
         shell: bash
         run: |
