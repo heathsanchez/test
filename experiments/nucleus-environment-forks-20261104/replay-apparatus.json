@@ -5,5 +5,13 @@
   "status": "APPARATUS_FAILURE",
   "native_test_executed": false,
   "missing_generated_file": "metatron-kernel/tests/let_metadata.rs",
-  "replacement": "original_materializer_plus_actual_binary_identity_and_complete_source_bundle"
+  "replacement": "original_materializer_plus_actual_binary_identity_and_complete_source_bundle",
+  "second_attempt": {
+    "run_id": 41734718638,
+    "commit": "747cdf030891f1c06cab087d656da80c57aafc6f",
+    "status": "APPARATUS_FAILURE",
+    "native_test_executed": false,
+    "missing_generated_fixture": "tests/fixtures/native-source-replay/nat-original.ndjson",
+    "replacement": "restore all three existing fixture-preparation steps"
+  }
 }
