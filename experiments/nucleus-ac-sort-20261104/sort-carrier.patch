@@ -1,0 +1,22 @@
+--- a/metatron-kernel/src/checker.rs
++++ b/metatron-kernel/src/checker.rs
+@@ -2892,7 +2892,8 @@
+     if inductive.level_params.len()!=1 || !(1..=64).contains(&inductive.num_params)
+         || !(2..=64).contains(&constructor.num_fields) {return false;}
+     let Some((parameters,result))=pi_spine(export,inductive.ty,inductive.num_params as usize) else{return false;};
+-    is_sort_succ_parameter(export,parameters[0],inductive.level_params[0])
++    (is_sort_succ_parameter(export,parameters[0],inductive.level_params[0])
++            || is_sort_parameter(export,parameters[0],inductive.level_params[0]))
+         && is_sort_succ_parameter(export,result,inductive.level_params[0])
+ }
+ 
+@@ -2905,7 +2906,8 @@
+     if !bounded_record_source(export,&roots,None) {return false;}
+     let Some((parameters,result))=pi_spine(export,inductive.ty,p) else{return false;};
+     let Some((fields,_))=pi_spine(export,constructor.ty,p+constructor.num_fields as usize) else{return false;};
+-    is_sort_succ_parameter(export,parameters[0],universe) && is_sort_succ_parameter(export,result,universe)
++    (is_sort_succ_parameter(export,parameters[0],universe)
++            || is_sort_parameter(export,parameters[0],universe)) && is_sort_succ_parameter(export,result,universe)
+         && parameters.iter().zip(&fields[..p]).all(|(a,b)|expr_eq_with_bvar_shift(export,*a,*b,0,0))
+         && bounded_record_source(export,&fields[p..],Some(inductive.name))
+ }

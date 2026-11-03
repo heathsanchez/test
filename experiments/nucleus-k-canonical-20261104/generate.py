@@ -1,16 +1,17 @@
 import argparse,json,copy,hashlib
 from pathlib import Path
-p=argparse.ArgumentParser();p.add_argument('--closed',action='store_true');p.add_argument('--source',required=True);p.add_argument('--out',required=True);a=p.parse_args();data=Path(a.source).read_bytes();assert hashlib.sha256(data).hexdigest()=='282a7cf85e897f1e246fc25bc0cf6a6b69afdce72856f2fb500299504b8488ef';rows=[json.loads(l)for l in data.splitlines()];
+p=argparse.ArgumentParser();p.add_argument('--record',action='store_true');p.add_argument('--closed',action='store_true');p.add_argument('--source',required=True);p.add_argument('--out',required=True);a=p.parse_args();data=Path(a.source).read_bytes();assert hashlib.sha256(data).hexdigest()==('e08afe0a4ce9c0cd64308ee6eef52d0952316784d72175c843846762e2eb4d0b'if a.record else '282a7cf85e897f1e246fc25bc0cf6a6b69afdce72856f2fb500299504b8488ef');rows=[json.loads(l)for l in data.splitlines()];
 if a.closed:
  index=next(i for i,r in enumerate(rows)if 'inductive'in r and r['inductive']['types'][0]['name']==435)
  rows=rows[:index+1];data=b''.join(data.splitlines(keepends=True)[:index+1])
-original=rows[-1]['inductive'];assert original['types'][0]['name']==(435 if a.closed else 12829)
+original=rows[-1]['inductive'];assert original['types'][0]['name']==(12862 if a.record else 435 if a.closed else 12829)
 N={r['in']:r for r in rows if'in'in r};L={r['il']:r for r in rows if'il'in r};E={r['ie']:r for r in rows if'ie'in r};out=Path(a.out);out.mkdir(parents=True,exist_ok=True);manifest=[]
 def fullname(n):
  if n==0:return ''
  r=N[n];v=r.get('str',r.get('num'));return (fullname(v['pre'])+'.'+str(v.get('str',v.get('num')))).strip('.')
 print('ORIGINAL',[(i,fullname(i))for i in original['recs'][0]['levelParams']])
 cases=[('closed-original',None,None),('closed-fresh-w',None,'w')]if a.closed else [('original',None,None),('fresh-w',None,'w'),('fresh-u3',None,'u_3'),('hierarchical',None,'probe.u'),('owner-wx',['w','x'],'u'),('owner-u-v',['u','v'],'u_1')]
+if a.record:cases=[('original',None,None),('fresh-w',None,'w'),('fresh-u3',None,'u_3'),('hierarchical',None,'probe.u'),('owner-v',['v'],'u')]
 for label,owners,motive in cases:
  extra=[];names={fullname(i):i for i in N};ni=[max(N)+1];li=[max(L)+1];ei=[max(E)+1]
  def name(s):
@@ -50,9 +51,9 @@ for label,owners,motive in cases:
  for t in b['types']+b['ctors']+b['recs']:t['type']=expr(t['type'])
  for rec in b['recs']:
   for rule in rec['rules']:rule['rhs']=expr(rule['rhs'])
- result=b''.join(data.splitlines(keepends=True)[:-1])+b''.join((json.dumps(x,separators=(',',':'))+'\n').encode()for x in extra+[{'inductive':b}]);target=out/(label+'.ndjson');target.write_bytes(result);manifest.append(dict(case=label,file=target.name,sha256=hashlib.sha256(result).hexdigest(),expect_reference=0 if label in ['original','closed-original','owner-wx','owner-u-v']else 1))
+ result=b''.join(data.splitlines(keepends=True)[:-1])+b''.join((json.dumps(x,separators=(',',':'))+'\n').encode()for x in extra+[{'inductive':b}]);target=out/(label+'.ndjson');target.write_bytes(result);manifest.append(dict(case=label,file=target.name,sha256=hashlib.sha256(result).hexdigest(),expect_reference=0 if label in ['original','closed-original','owner-v','owner-wx','owner-u-v']else 1))
 for label,change in ([] if a.closed else [
- ('forged-k-off',lambda b:b['recs'][0].__setitem__('k',False)),
+ ('forged-k-on'if a.record else 'forged-k-off',lambda b:b['recs'][0].__setitem__('k',a.record)),
  ('forged-extra-field',lambda b:b['ctors'][0].__setitem__('numFields',1)),
  ('forged-recursor-level',lambda b:b['recs'][0]['levelParams'].__setitem__(1,326)),
  ('forged-rule-count',lambda b:b['recs'][0]['rules'][0].__setitem__('nfields',1))]):

@@ -1,82 +1,127 @@
-[
-  {
-    "case": "original",
-    "input_sha": "282a7cf85e897f1e246fc25bc0cf6a6b69afdce72856f2fb500299504b8488ef",
-    "reference_rc": 0,
-    "reference_parse_rc": 0,
-    "candidate_rc": 0,
-    "wrong_accept": false
+{
+  "reference_binary_sha": "ae92c625e612fff1c90e329344d22e3c3c330383cb335ce28fd41435be3b3b94",
+  "reference_arena_source": "cd2dd0244b9ed5e704463a26fbbe5fc67ba16108",
+  "reference_lean": "v4.34.1",
+  "candidate_binary_sha": "7417b6f935df16191d848e5e272d87ac9034a7a982f8e8ebdb883dbf5131d13e",
+  "candidate_source_patch_sha": "60b65d341f589b502a89620451c0e92fc505ebd501fb032952a05b93d86a461f",
+  "runtime_configuration": {
+    "NUCLEUS_EXPERIMENTAL_CERTIFIED_QUOT_IOTA": "1",
+    "NUCLEUS_EXPERIMENTAL_CONTEXT_BINDER": "1",
+    "NUCLEUS_EXPERIMENTAL_DEMAND_MAJOR": "1",
+    "NUCLEUS_EXPERIMENTAL_EXPECTED_LAMBDA": "1",
+    "NUCLEUS_EXPERIMENTAL_FORMED_PROP_DOMAIN_RETRY": "1",
+    "NUCLEUS_EXPERIMENTAL_POLYMORPHIC_PROP_IRREL": "1",
+    "NUCLEUS_EXPERIMENTAL_PROJECTION_CONTEXT": "1",
+    "NUCLEUS_EXPERIMENTAL_PROJECTION_CROSSFRAME_512": "1",
+    "NUCLEUS_EXPERIMENTAL_PROP_SINGLETON_2P1F": "1",
+    "NUCLEUS_EXPERIMENTAL_RELEVANCE": "1",
+    "NUCLEUS_EXPERIMENTAL_REPLAY_NEUTRAL_PROJECTION": "1",
+    "NUCLEUS_EXPERIMENTAL_REPLAY_PROJECTION_MAJOR": "1",
+    "NUCLEUS_EXPERIMENTAL_SOURCE_PAIR_DEPTH8": "1",
+    "NUCLEUS_EXPERIMENTAL_SOURCE_PROOF_IRREL": "1",
+    "NUCLEUS_EXPERIMENTAL_SUBSTITUTION_RECLOSURE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_DATA_CONGRUENCE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_LINEAGE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_PROJECTION_SPINE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_RECEIVER": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_VALUE_NORMALIZATION": "1"
   },
-  {
-    "case": "fresh-w",
-    "input_sha": "a32d82df12d08a482f58c85366518c15d6e4a46bec2e22462919447c789e56da",
-    "reference_rc": 1,
-    "reference_parse_rc": 0,
-    "candidate_rc": 0,
-    "wrong_accept": true
-  },
-  {
-    "case": "fresh-u3",
-    "input_sha": "4fb4ca99e173d78895d3d677371087355565a7e62904f6f5114b7ff1f11b608f",
-    "reference_rc": 1,
-    "reference_parse_rc": 0,
-    "candidate_rc": 0,
-    "wrong_accept": true
-  },
-  {
-    "case": "hierarchical",
-    "input_sha": "3aa76bde4177c5e88d870a2fd114990f01126743026ab52b0d6edea07068bdfd",
-    "reference_rc": 1,
-    "reference_parse_rc": 0,
-    "candidate_rc": 0,
-    "wrong_accept": true
-  },
-  {
-    "case": "owner-wx",
-    "input_sha": "49c0c041704b7ea015fb2fd87a134902bcf3609e38390ae3d4ea9cfc73cd98d2",
-    "reference_rc": 0,
-    "reference_parse_rc": 0,
-    "candidate_rc": 0,
-    "wrong_accept": false
-  },
-  {
-    "case": "owner-u-v",
-    "input_sha": "c4064d2bbcde0990e5cbc53cafd5e6e6d136a07d04c9e301d3b225e82fcf5e74",
-    "reference_rc": 0,
-    "reference_parse_rc": 0,
-    "candidate_rc": 0,
-    "wrong_accept": false
-  },
-  {
-    "case": "forged-k-off",
-    "input_sha": "c5153ad41808c5422b6b5307d033922106c0bc385a8df92fdab87d066c07f2a3",
-    "reference_rc": 1,
-    "reference_parse_rc": 0,
-    "candidate_rc": 2,
-    "wrong_accept": false
-  },
-  {
-    "case": "forged-extra-field",
-    "input_sha": "98d3492519e1dc08f66a67035001a634c707355bf0785c90be83f535ecd4f677",
-    "reference_rc": 1,
-    "reference_parse_rc": 0,
-    "candidate_rc": 2,
-    "wrong_accept": false
-  },
-  {
-    "case": "forged-recursor-level",
-    "input_sha": "d040bba7611664aa05a7d5f24f163d90f6fed03e9b446016ec3564138b98e122",
-    "reference_rc": 1,
-    "reference_parse_rc": 0,
-    "candidate_rc": 2,
-    "wrong_accept": false
-  },
-  {
-    "case": "forged-rule-count",
-    "input_sha": "f3510d53e09a4c71fdad51eecf95d91c37b78accabeb16d6138121536af4b335",
-    "reference_rc": 1,
-    "reference_parse_rc": 0,
-    "candidate_rc": 2,
-    "wrong_accept": false
-  }
-]
+  "rows": [
+    {
+      "case": "original",
+      "input_sha": "282a7cf85e897f1e246fc25bc0cf6a6b69afdce72856f2fb500299504b8488ef",
+      "reference_rc": 0,
+      "reference_parse_rc": 0,
+      "candidate_rc": 0,
+      "wrong_accept": false
+    },
+    {
+      "case": "fresh-w",
+      "input_sha": "a32d82df12d08a482f58c85366518c15d6e4a46bec2e22462919447c789e56da",
+      "reference_rc": 1,
+      "reference_parse_rc": 0,
+      "candidate_rc": 0,
+      "wrong_accept": true
+    },
+    {
+      "case": "fresh-u3",
+      "input_sha": "4fb4ca99e173d78895d3d677371087355565a7e62904f6f5114b7ff1f11b608f",
+      "reference_rc": 1,
+      "reference_parse_rc": 0,
+      "candidate_rc": 0,
+      "wrong_accept": true
+    },
+    {
+      "case": "hierarchical",
+      "input_sha": "3aa76bde4177c5e88d870a2fd114990f01126743026ab52b0d6edea07068bdfd",
+      "reference_rc": 1,
+      "reference_parse_rc": 0,
+      "candidate_rc": 0,
+      "wrong_accept": true
+    },
+    {
+      "case": "owner-wx",
+      "input_sha": "49c0c041704b7ea015fb2fd87a134902bcf3609e38390ae3d4ea9cfc73cd98d2",
+      "reference_rc": 0,
+      "reference_parse_rc": 0,
+      "candidate_rc": 0,
+      "wrong_accept": false
+    },
+    {
+      "case": "owner-u-v",
+      "input_sha": "c4064d2bbcde0990e5cbc53cafd5e6e6d136a07d04c9e301d3b225e82fcf5e74",
+      "reference_rc": 0,
+      "reference_parse_rc": 0,
+      "candidate_rc": 0,
+      "wrong_accept": false
+    },
+    {
+      "case": "forged-k-off",
+      "input_sha": "c5153ad41808c5422b6b5307d033922106c0bc385a8df92fdab87d066c07f2a3",
+      "reference_rc": 1,
+      "reference_parse_rc": 0,
+      "candidate_rc": 2,
+      "wrong_accept": false
+    },
+    {
+      "case": "forged-extra-field",
+      "input_sha": "98d3492519e1dc08f66a67035001a634c707355bf0785c90be83f535ecd4f677",
+      "reference_rc": 1,
+      "reference_parse_rc": 0,
+      "candidate_rc": 2,
+      "wrong_accept": false
+    },
+    {
+      "case": "forged-recursor-level",
+      "input_sha": "d040bba7611664aa05a7d5f24f163d90f6fed03e9b446016ec3564138b98e122",
+      "reference_rc": 1,
+      "reference_parse_rc": 0,
+      "candidate_rc": 2,
+      "wrong_accept": false
+    },
+    {
+      "case": "forged-rule-count",
+      "input_sha": "f3510d53e09a4c71fdad51eecf95d91c37b78accabeb16d6138121536af4b335",
+      "reference_rc": 1,
+      "reference_parse_rc": 0,
+      "candidate_rc": 2,
+      "wrong_accept": false
+    },
+    {
+      "case": "closed-original",
+      "input_sha": "e5728e89f81afebb93d73fb38a3a3611a074ee6ebcd7df70b285fdc9aa842168",
+      "reference_rc": 0,
+      "reference_parse_rc": 0,
+      "candidate_rc": 0,
+      "wrong_accept": false
+    },
+    {
+      "case": "closed-fresh-w",
+      "input_sha": "cbe265d9084fda709a20e962652184d1b7387fe8eff2acf97c7260e67178da47",
+      "reference_rc": 1,
+      "reference_parse_rc": 0,
+      "candidate_rc": 0,
+      "wrong_accept": true
+    }
+  ]
+}

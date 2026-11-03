@@ -20,7 +20,7 @@ def captured(command, target, timeout=180, **kwargs):
     target.with_suffix('.stderr').write_bytes(result.stderr)
     return result.returncode
 
-def main():
+def main(additional_patch=None, additional_gate=None):
     OUT.mkdir(exist_ok=True)
     Q.OUT = OUT
     prior = json.loads(Path('/tmp/delta-qualified/qualification.json').read_text())['candidate']
@@ -44,12 +44,21 @@ def main():
         (arm / 'k-canonical.patch').write_text(patch.read_text())
         with (arm / 'source.patch').open('a') as stream:
             stream.write(patch.read_text())
+        if additional_patch is not None:
+            result = Q.t.run_group(['patch','--batch','--fuzz=0','-p1','-i',str(additional_patch)], cwd=arm, capture_output=True, timeout=30)
+            (arm / 'additional.patch.log').write_bytes(result.stdout + result.stderr)
+            assert result.returncode == 0, (result.stdout, result.stderr)
+            (arm / 'additional.patch').write_text(additional_patch.read_text())
+            with (arm / 'source.patch').open('a') as stream:
+                stream.write(additional_patch.read_text())
 
     def build_and_protect(baseline):
         kernel, binary, build_env, arm = original_build(baseline)
         env = Q.R.N.runtime(True)
         assert {k:v for k,v in env.items() if k.startswith('NUCLEUS_')} == prior['configuration']
         env['NUCLEUS_TRACE_DOWNSTREAM'] = '1'
+        if additional_gate is not None:
+            additional_gate(binary, env)
         cases = OUT / 'differential-inputs'
         subprocess.run(['python3', str(ROOT / 'generate.py'), '--source','/tmp/std-prefix.ndjson','--out',str(cases)], check=True)
         manifest = json.loads((cases / 'inputs.json').read_text())

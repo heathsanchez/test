@@ -1,0 +1,74 @@
+[
+  {
+    "case": "original",
+    "file": "original.ndjson",
+    "sha256": "e08afe0a4ce9c0cd64308ee6eef52d0952316784d72175c843846762e2eb4d0b",
+    "expect_reference": 0,
+    "reference_rc": 0,
+    "parse_rc": 0
+  },
+  {
+    "case": "fresh-w",
+    "file": "fresh-w.ndjson",
+    "sha256": "e12449c8938ecb890740ff07fa6382db7780459d0061dbbbe01e9ce444aa2d89",
+    "expect_reference": 1,
+    "reference_rc": 1,
+    "parse_rc": 0
+  },
+  {
+    "case": "fresh-u3",
+    "file": "fresh-u3.ndjson",
+    "sha256": "d94706126c4ff7c6718dfb1607f049c2c9ff9e09170364111d6518b7e265e732",
+    "expect_reference": 1,
+    "reference_rc": 1,
+    "parse_rc": 0
+  },
+  {
+    "case": "hierarchical",
+    "file": "hierarchical.ndjson",
+    "sha256": "97e8e93dbe2baa6196210caa2382596e726a6cc4e7403580dffb6bc96c9fbba1",
+    "expect_reference": 1,
+    "reference_rc": 1,
+    "parse_rc": 0
+  },
+  {
+    "case": "owner-v",
+    "file": "owner-v.ndjson",
+    "sha256": "a171446c0df3179757a4227b68c4e50d2e095e374f591cb6b97bb14fe1e01cfd",
+    "expect_reference": 0,
+    "reference_rc": 0,
+    "parse_rc": 0
+  },
+  {
+    "case": "forged-k-on",
+    "file": "forged-k-on.ndjson",
+    "sha256": "06cd86ab15a352ee93042d30f564b58105c95a28d84afd606d1a895f67ad6d6e",
+    "expect_reference": 1,
+    "reference_rc": 1,
+    "parse_rc": 0
+  },
+  {
+    "case": "forged-extra-field",
+    "file": "forged-extra-field.ndjson",
+    "sha256": "255287a0957ae85a259284c7b2beb7e25ebad6d21f3c631bf15a5897f084249d",
+    "expect_reference": 1,
+    "reference_rc": 1,
+    "parse_rc": 0
+  },
+  {
+    "case": "forged-recursor-level",
+    "file": "forged-recursor-level.ndjson",
+    "sha256": "bc5205b2231f397e49ff01b54210fef605e4a7e63f9ed51ceb3322c677800479",
+    "expect_reference": 1,
+    "reference_rc": 1,
+    "parse_rc": 0
+  },
+  {
+    "case": "forged-rule-count",
+    "file": "forged-rule-count.ndjson",
+    "sha256": "42d9daedf96b6cfd4e8918f9bb57eb32cc33f2b06951d2043754aa01e05354cc",
+    "expect_reference": 1,
+    "reference_rc": 1,
+    "parse_rc": 0
+  }
+]
