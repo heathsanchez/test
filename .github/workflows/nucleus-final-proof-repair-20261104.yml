@@ -12,14 +12,14 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
-      - uses: leanprover/lean-action@v1
-        with:
-          lake-package-directory: experiments/nucleus-final-proof-spine-20261104/lean-reference
-          auto-config: 'false'
-          build: 'false'
-          test: 'false'
-          lint: 'false'
-          use-mathlib-cache: 'false'
+      - name: Install pinned Lean and initialize dependency-free package
+        working-directory: experiments/nucleus-final-proof-spine-20261104/lean-reference
+        run: |
+          set -euo pipefail
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -o /tmp/elan-init.sh
+          sh /tmp/elan-init.sh -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          "$HOME/.elan/bin/lake" update
       - name: Independent Lean kernel positive and forged controls
         working-directory: experiments/nucleus-final-proof-spine-20261104/lean-reference
         run: |
