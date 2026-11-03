@@ -1,0 +1,70 @@
+name: Nucleus MGSO read-only exact source inspection
+on:
+  push:
+    branches: [research/nucleus-mgso-readonly-inspect-20261104]
+    paths:
+      - '.github/workflows/nucleus-mgso-inspect-20261104.yml'
+      - 'metatron-kernel/src/lib.rs'
+      - 'metatron-kernel/src/main.rs'
+      - 'metatron-kernel/tests/mgso_process.rs'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  native-inspection:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Native MGSO source-inspect, transport, graph, process and adversarial tests
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/nucleus-mgso-inspect
+          git rev-parse HEAD > /tmp/nucleus-mgso-inspect/commit.txt
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml \
+            --test mgso_golden --test mgso_graph --test mgso_shadow \
+            --test mgso_process -- --nocapture > /tmp/nucleus-mgso-inspect/native.log 2>&1 || {
+              tail -100 /tmp/nucleus-mgso-inspect/native.log
+              exit 1
+            }
+          tail -35 /tmp/nucleus-mgso-inspect/native.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-mgso-inspect-native-${{ github.sha }}
+          path: /tmp/nucleus-mgso-inspect
+  protected-208:
+    needs: native-inspection
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Restore immutable protected corpus and baseline verdicts
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/mgso-pages/inputs /tmp/mgso-pages/evidence
+          gh api repos/heathsanchez/test/actions/artifacts/13126161718/zip > /tmp/mgso-inspect-inputs.zip
+          printf '%s  %s\n' 462e31e21379054490570b465b46ece4fff878490d9ad7de6bbc73149d587f4c /tmp/mgso-inspect-inputs.zip | sha256sum -c -
+          unzip -q /tmp/mgso-inspect-inputs.zip -d /tmp/mgso-pages/inputs
+          gh api repos/heathsanchez/test/actions/artifacts/13230652851/zip > /tmp/mgso-inspect-baseline.zip
+          printf '%s  %s\n' 90b932f6a5862df01b33939c26acdba9e0d092021a64b58db773a49d256640ac /tmp/mgso-inspect-baseline.zip | sha256sum -c -
+          unzip -p /tmp/mgso-inspect-baseline.zip verdicts.json > /tmp/mgso-pages/evidence/baseline-verdicts.json
+      - name: Build unchanged independently checking Nucleus kernel with opt-in inspector
+        run: cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+      - name: Recheck original 208 three-arm verdicts with no new acceptance authority
+        run: PYTHONDONTWRITEBYTECODE=1 python3 experiments/nucleus-mgso-paged-20261104/qualify.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-mgso-inspect-208-${{ github.sha }}
+          path: |
+            /tmp/mgso-pages/evidence/summary.json
+            /tmp/mgso-pages/evidence/verdicts.json
+            /tmp/mgso-pages/evidence/baseline-verdicts.json
