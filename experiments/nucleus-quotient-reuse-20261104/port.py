@@ -43,15 +43,15 @@ def legacy_source(repo: Path, filename: str) -> str:
     )
 
 
-def port(repo: Path, kernel: Path, patch_path: Path) -> None:
+def port(repo: Path, kernel: Path, patch_path: Path, include_exact: bool = True) -> None:
     old = {name: legacy_source(repo, name) for name in ("typecheck.rs", "convert.rs", "machine.rs")}
     target = {name: (kernel / "src" / name).read_text() for name in old}
     updated = dict(target)
 
-    for method in (
-        "pub(crate) fn certified_distinct_source_proofs(",
-        "pub(crate) fn certified_neutral_lambda_proof_irrelevance(",
-    ):
+    methods = ["pub(crate) fn certified_neutral_lambda_proof_irrelevance("]
+    if include_exact:
+        methods.append("pub(crate) fn certified_distinct_source_proofs(")
+    for method in methods:
         body = extract_method(old["typecheck.rs"], method)
         assert method not in updated["typecheck.rs"]
         anchor = "    pub(crate) fn checked_captured_prop_type_in_context("
@@ -92,14 +92,15 @@ def port(repo: Path, kernel: Path, patch_path: Path) -> None:
         updated["convert.rs"], end, quot_block + end, "certified Quot.iota replay",
     )
 
-    start = "                if checker.certified_distinct_source_proofs(\n"
-    end = "                if certified_structure_eta(\n"
-    assert old_convert.count(start) == 1 and old_convert.count(end) == 1
-    distinct_block = old_convert[old_convert.index(start) : old_convert.index(end)]
-    updated["convert.rs"] = once(
-        updated["convert.rs"], end, distinct_block + end,
-        "source-typed distinct proof neutrals",
-    )
+    if include_exact:
+        start = "                if checker.certified_distinct_source_proofs(\n"
+        end = "                if certified_structure_eta(\n"
+        assert old_convert.count(start) == 1 and old_convert.count(end) == 1
+        distinct_block = old_convert[old_convert.index(start) : old_convert.index(end)]
+        updated["convert.rs"] = once(
+            updated["convert.rs"], end, distinct_block + end,
+            "source-typed distinct proof neutrals",
+        )
 
     start = "            (Value::Neutral(neutral), Value::Lam { domain, body })\n"
     old_pos = old_convert.index("checker.certified_neutral_lambda_proof_irrelevance(")
