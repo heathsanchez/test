@@ -80,12 +80,29 @@ jobs:
           changed=original[:start]+updated+original[end:]
           source.write_text(changed)
           (out/'phases.patch').write_text(''.join(difflib.unified_diff(original.splitlines(True),changed.splitlines(True),fromfile='a/metatron-kernel/src/lib.rs',tofile='b/metatron-kernel/src/lib.rs')))
+          checker_source=kernel/'src/checker.rs'
+          checker_original=checker_source.read_text()
+          checker_changed=checker_original
+          def replace_exact(old,new):
+              global checker_changed
+              assert checker_changed.count(old)==1,(old,checker_changed.count(old))
+              checker_changed=checker_changed.replace(old,new,1)
+          replace_exact('pub fn check_export(export: ResolvedExport, limits: Limits) -> Verdict {\n',
+              'pub fn check_export(export: ResolvedExport, limits: Limits) -> Verdict {\n    let check_start=std::time::Instant::now();\n')
+          replace_exact('    let verdict = check_export_with_policy(export, limits, DeltaPolicy::GuardedSemanticFallback);\n',
+              '    let string_prelude=check_start.elapsed();\n    let verdict = check_export_with_policy(export, limits, DeltaPolicy::GuardedSemanticFallback);\n    if std::env::var_os("NUCLEUS_TRACE_PHASES").is_some() { eprintln!("NUCLEUS_CHECK_DETAIL:string_prelude_ms={:.3}:policy_ms={:.3}", string_prelude.as_secs_f64()*1000.0,(check_start.elapsed()-string_prelude).as_secs_f64()*1000.0); }\n')
+          replace_exact(') -> Verdict {\n    if !quotient_source_ownership_is_well_ordered(&export) {',
+              ') -> Verdict {\n    let preflight_start=std::time::Instant::now();\n    if !quotient_source_ownership_is_well_ordered(&export) {')
+          replace_exact('    let mut environment = Environment::empty();\n\n    // Preserve the immutable source catalogue',
+              '    if std::env::var_os("NUCLEUS_TRACE_PHASES").is_some() { eprintln!("NUCLEUS_CHECK_DETAIL:global_preflight_ms={:.3}",preflight_start.elapsed().as_secs_f64()*1000.0); }\n    let mut environment = Environment::empty();\n\n    // Preserve the immutable source catalogue')
+          checker_source.write_text(checker_changed)
+          (out/'check-phases.patch').write_text(''.join(difflib.unified_diff(checker_original.splitlines(True),checker_changed.splitlines(True),fromfile='a/metatron-kernel/src/checker.rs',tofile='b/metatron-kernel/src/checker.rs')))
           sys.path.insert(0,str(Path('experiments/nucleus-reuse-20261104').resolve()))
           import tournament
           binary,_=tournament.build(kernel,out)
           assert binary is not None,(out/'build.log').read_text()[-6000:]
           PY
-          sha256sum /tmp/nucleus-phase/candidate/{source.patch,quotient-port.patch,phases.patch,nucleus} > /tmp/nucleus-phase/provenance.sha256
+          sha256sum /tmp/nucleus-phase/candidate/{source.patch,quotient-port.patch,phases.patch,check-phases.patch,nucleus} > /tmp/nucleus-phase/provenance.sha256
       - name: Verify exact same first obstruction and capture parse resolve check times
         run: |
           set -euo pipefail
@@ -110,7 +127,9 @@ jobs:
               assert len(phases)==1 and metrics['rc']==2
               assert '_private.Init.Data.Nat.Lemmas.0.Nat.right_eq_add._proof_1_1' in boundary
               steps={name:float(value) for name,value in re.findall(r'(parse_ms|resolve_ms|check_ms|total_ms)=([\d.]+)',phases[0])}
-              rows[kind]=dict(measured=metrics,phases=steps,boundary=boundary)
+              detail={name:float(value) for name,value in re.findall(r'(string_prelude_ms|policy_ms|global_preflight_ms)=([\d.]+)',log)}
+              assert set(detail)=={'string_prelude_ms','policy_ms','global_preflight_ms'},detail
+              rows[kind]=dict(measured=metrics,phases=steps,check_detail=detail,boundary=boundary)
               print('PHASE_PROFILE',kind,json.dumps(rows[kind]),flush=True)
           summary=dict(source_binary_sha=t.digest(root/'candidate/nucleus'),rows=rows,
                        semantic_note='No proof rule changed, full Mathlib remains UNKNOWN')
