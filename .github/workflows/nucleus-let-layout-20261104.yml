@@ -1,0 +1,27 @@
+name: Nucleus expression metadata layout tournament
+on:
+  push:
+    branches: [research/nucleus-reuse-tournaments-20261104]
+    paths: ['.github/workflows/nucleus-let-layout-20261104.yml','experiments/nucleus-let-layout-20261104/**']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  compare-representations:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Compare exact variant payload layouts on the pinned compiler
+        run: |
+          mkdir -p /tmp/expr-layout
+          rustc --version > /tmp/expr-layout/compiler.txt
+          rustc -O experiments/nucleus-let-layout-20261104/layout.rs -o /tmp/expr-layout/compare
+          /tmp/expr-layout/compare > /tmp/expr-layout/layout.txt
+          cat /tmp/expr-layout/layout.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-let-layout-${{ github.sha }}
+          path: /tmp/expr-layout/*.txt
