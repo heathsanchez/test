@@ -33,6 +33,19 @@ def main():
     binary.chmod(0o755)
     historical = {x['case']:x for x in json.loads((PRIOR / 'candidate/verdicts.json').read_text())}
     assert len(historical) == 208
+    full = json.loads((PRIOR / 'full.json').read_text())
+    assert full['binary_sha']==prior['binary_sha']
+    historical['mathlib']=dict(sha256=full['source_sha'],expected=0,rc=full['result']['rc'])
+    previous=Path('/tmp/prior-census')
+    previous_summary=json.loads((previous/'summary.json').read_text())
+    assert previous_summary['binary_sha256']==prior['binary_sha']
+    assert previous_summary['configuration']==prior['configuration']
+    for row in json.loads((previous/'rows.json').read_text()):
+        if row['expected'] in (0,1) and row['rc'] in (0,1,2):
+            old=historical.get(row['case'])
+            if old and old['sha256']==row['sha256']:
+                assert old['expected']==row['expected'] and old['rc']==row['rc']
+            historical[row['case']]=row
     raw = download('results.json',32_000_000)
     data = json.loads(raw)
     tests = {x['name']:x for x in data['tests']}

@@ -23,6 +23,10 @@ jobs:
           gh api repos/heathsanchez/test/actions/artifacts/13274413134/zip > /tmp/k-qualified.zip
           printf '%s  %s\n' e21106aa8a76e7d094d9f69ba2a1d6409de9c11493161fbf7a4a7039a728aef7 /tmp/k-qualified.zip | sha256sum -c -
           unzip -q /tmp/k-qualified.zip -d /tmp/k-qualified
+          mkdir -p /tmp/prior-census
+          gh api repos/heathsanchez/test/actions/artifacts/13276400289/zip > /tmp/prior-census.zip
+          printf '%s  %s\n' a9582eadc0d9893cbe39e6bcfccd79bfaec2032838851b8a487c35df16096763 /tmp/prior-census.zip | sha256sum -c -
+          unzip -q /tmp/prior-census.zip -d /tmp/prior-census
       - name: Bind published source bytes and replay only new or changed subjects
         run: python3 experiments/nucleus-current-census-20261104/census.py
       - uses: actions/upload-artifact@v4
