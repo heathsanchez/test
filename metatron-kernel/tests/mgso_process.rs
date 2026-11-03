@@ -56,6 +56,57 @@ fn invoke(input: &str, shadow: Option<&Path>) -> Output {
     child.wait_with_output().unwrap()
 }
 
+fn inspect(input: &str, store: &Path, flag: Option<(&str, &str)>) -> Output {
+    let mut command = Command::new(env!("CARGO_BIN_EXE_metatron-kernel"));
+    command.arg("--mgso-inspect-dir").arg(store);
+    if let Some((key, value)) = flag {
+        command.env(key, value);
+    }
+    let mut child = command
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    child.stdin.take().unwrap().write_all(input.as_bytes()).unwrap();
+    child.wait_with_output().unwrap()
+}
+
+#[test]
+fn mgso_process_inspection_remains_unverified_even_for_an_exact_reopened_candidate() {
+    let dir = ScratchDir::new();
+    assert_eq!(invoke(VALID, Some(&dir.0)).status.code(), Some(0));
+    let root_before = fs::read(dir.0.join("root.json")).unwrap();
+    let examined = inspect(VALID, &dir.0, None);
+    assert_eq!(examined.status.code(), Some(2), "inspection cannot grant ACCEPT");
+    assert!(examined.stdout.is_empty());
+    assert!(String::from_utf8_lossy(&examined.stderr).contains(
+        "NUCLEUS_MGSO_INSPECT:status=candidate-match;authority=none;fresh-check=false"
+    ));
+    assert_eq!(root_before, fs::read(dir.0.join("root.json")).unwrap());
+}
+
+#[test]
+fn mgso_process_inspection_source_config_and_forgery_mutations_all_fail_closed() {
+    let dir = ScratchDir::new();
+    assert_eq!(invoke(VALID, Some(&dir.0)).status.code(), Some(0));
+    for changed in [VALID.replace('\n', "\r\n"), FORGED.to_owned(), "{not json}\n".into()] {
+        let result = inspect(&changed, &dir.0, None);
+        assert_eq!(result.status.code(), Some(2));
+        assert!(String::from_utf8_lossy(&result.stderr).contains("status=stale"));
+    }
+    let changed_flag = inspect(VALID, &dir.0, Some(("NUCLEUS_INFERENCE_BOUNDARY", "drift")));
+    assert_eq!(changed_flag.status.code(), Some(2));
+    assert!(String::from_utf8_lossy(&changed_flag.stderr).contains("status=stale"));
+
+    let manifest = RootManifest::from_bytes(&fs::read(dir.0.join("root.json")).unwrap()).unwrap();
+    let store = ReceiptStore::new(dir.0.clone());
+    fs::write(store.object_path(&manifest.object_ids[0]).unwrap(), b"forged ACCEPT").unwrap();
+    let tampered = inspect(VALID, &dir.0, None);
+    assert_eq!(tampered.status.code(), Some(2));
+    assert!(String::from_utf8_lossy(&tampered.stderr).contains("status=unknown"));
+}
+
 fn compare_outputs(original: &Output, shadow: &Output) {
     assert_eq!(shadow.status.code(), original.status.code());
     assert_eq!(shadow.stdout, original.stdout);
