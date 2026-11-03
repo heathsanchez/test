@@ -38,6 +38,9 @@ jobs:
         run: |
           set -euo pipefail
           cd /tmp/nucleus-source
+          # Historical materializer adds this file before the tagged-let patch.
+          # It is not in the pinned a2578e source archive.
+          cp "$GITHUB_WORKSPACE/experiments/nucleus-let-preservation-20261104/let_metadata.rs" metatron-kernel/tests/let_metadata.rs
           patch --batch --fuzz=0 -p1 -i /tmp/nucleus-eval-artifact/candidate/source.patch
           cargo build --release --features diagnostics --manifest-path metatron-kernel/Cargo.toml
       - name: Locate first failed application without altering verdict
