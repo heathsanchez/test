@@ -6,10 +6,17 @@ sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'nucleus-reuse-2026110
 
 import tournament as t
 
-ARMS=[('baseline',False,False),('prefix-sharing',True,False)]
+ARMS=[('baseline',False,False),('prefix-sharing',True,False),('dense-parser',False,True),('stack',True,True)]
 def materialize(out,pi,context):
  from patch import prefix_patch
  k=t.materialize(Path.cwd(),out)
+ if context:
+  for relative in ['src/id.rs','src/parser.rs']:
+   p=k/relative;old=p.read_text()
+   if relative=='src/id.rs':new=t.hybrid_table(old)
+   else:new=t.replace_once(old,'pub fn parse<R: BufRead>','#[cfg(test)]\nfn parse_reference<R: BufRead>')+'\n'+(Path(__file__).resolve().parents[1]/'nucleus-structural-import-20261104/hot_parser.rs').read_text()
+   p.write_text(new)
+   with (out/'source.patch').open('a') as f:f.write(''.join(difflib.unified_diff(old.splitlines(True),new.splitlines(True),fromfile='a/metatron-kernel/'+relative,tofile='b/metatron-kernel/'+relative)))
  if pi:
   p=k/'src/typecheck.rs';old=p.read_text();new=prefix_patch(old);p.write_text(new)
   with (out/'source.patch').open('a') as f:f.write(''.join(difflib.unified_diff(old.splitlines(True),new.splitlines(True),fromfile='a/metatron-kernel/src/typecheck.rs',tofile='b/metatron-kernel/src/typecheck.rs')))
@@ -47,6 +54,8 @@ def main(args):
   for name,_,_ in ARMS:
    if not state[name]['built']:continue
    arm=out/name;k=arm/'metatron-kernel';benv=dict(os.environ,CARGO_TARGET_DIR=str(arm/'target'))|env
+   benv['NUCLEUS_FROZEN196']=str(root/'inputs')
+   state[name]['external_native_fixture_boundary']='current208 artifact13126161718; archived196 is unavailable'
    nr=t.native_suite(k,benv,arm)
    rows=t.replay(arm/'nucleus',manifest,root,env,arm/'verdicts.json')
    if name=='baseline':t.validate_baseline(rows);baseline=rows;native=nr
