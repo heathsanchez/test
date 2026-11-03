@@ -1,8 +1,8 @@
-name: Nucleus dependent parameter record qualification
+name: Nucleus dependent record and nullary enum source qualification
 on:
   push:
     branches: [research/nucleus-reuse-tournaments-20261104]
-    paths: ['.github/workflows/nucleus-parameter-telescope-20261104.yml', 'experiments/nucleus-parameter-telescope-20261104/**']
+    paths: ['.github/workflows/nucleus-parameter-telescope-20261104.yml', 'experiments/nucleus-parameter-telescope-20261104/**','experiments/nucleus-nullary-enum-20261104/**']
   workflow_dispatch:
 concurrency:
   group: nucleus-parameter-${{ github.ref }}
@@ -18,7 +18,9 @@ jobs:
       - name: Generate exact original and forged Nat source controls
         run: python3 experiments/nucleus-nat-closure-20261104/generate_fixtures.py --out /tmp/nat-fixtures
       - name: Prepare exact record prefix and structural controls
-        run: python3 experiments/nucleus-parameter-telescope-20261104/prepare.py
+        run: |
+          python3 experiments/nucleus-parameter-telescope-20261104/prepare.py
+          python3 experiments/nucleus-nullary-enum-20261104/prepare.py
       - name: Build independent pinned Lean kernel reference
         run: |
           set -euo pipefail
@@ -38,11 +40,14 @@ jobs:
         run: |
           cp /tmp/record-fixtures/manifest.json /tmp/nat-reference/inputs.json
           python3 experiments/nucleus-parameter-telescope-20261104/reference.py --checker /tmp/arena-reference/checkers/official/.lake/build/bin/kernel --fixtures /tmp/record-fixtures --out /tmp/nat-reference
+          python3 experiments/nucleus-nullary-enum-20261104/reference.py --checker /tmp/arena-reference/checkers/official/.lake/build/bin/kernel --fixtures /tmp/enum-fixtures --out /tmp/enum-reference
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: nucleus-parameter-reference-${{ github.sha }}
-          path: /tmp/nat-reference
+          path: |
+            /tmp/nat-reference
+            /tmp/enum-reference
   qualify:
     runs-on: ubuntu-24.04
     timeout-minutes: 50
@@ -56,7 +61,9 @@ jobs:
       - name: Generate exact original and forged Nat source controls
         run: python3 experiments/nucleus-nat-closure-20261104/generate_fixtures.py --out /tmp/nat-fixtures
       - name: Prepare exact record prefix and structural controls
-        run: python3 experiments/nucleus-parameter-telescope-20261104/prepare.py
+        run: |
+          python3 experiments/nucleus-parameter-telescope-20261104/prepare.py
+          python3 experiments/nucleus-nullary-enum-20261104/prepare.py
       - uses: dtolnay/rust-toolchain@stable
         with: {toolchain: '1.99.1'}
       - name: Preserve reusable exact source snapshot
@@ -99,7 +106,9 @@ jobs:
       - name: Generate exact original and forged Nat source controls
         run: python3 experiments/nucleus-nat-closure-20261104/generate_fixtures.py --out /tmp/nat-fixtures
       - name: Prepare exact record prefix and structural controls
-        run: python3 experiments/nucleus-parameter-telescope-20261104/prepare.py
+        run: |
+          python3 experiments/nucleus-parameter-telescope-20261104/prepare.py
+          python3 experiments/nucleus-nullary-enum-20261104/prepare.py
       - uses: dtolnay/rust-toolchain@stable
         with: {toolchain: '1.99.1'}
       - name: Reuse the exact complete Mathlib input

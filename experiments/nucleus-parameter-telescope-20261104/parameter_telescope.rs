@@ -13,3 +13,5 @@ fn run(source:&str)->Verdict{metatron_kernel::run(Cursor::new(source))}
 #[test]fn regenerated_motive_universe_name_is_mandatory(){for s in [include_str!("fixtures/parameter-telescope/motive-v.ndjson"),include_str!("fixtures/parameter-telescope/motive-u2.ndjson"),include_str!("fixtures/parameter-telescope/motive-hierarchical.ndjson")]{assert_ne!(run(s),Verdict::Accept);}}
 #[test]fn fresh_motive_respects_the_actual_owner_name(){for s in [include_str!("fixtures/parameter-telescope/owner-u1.ndjson"),include_str!("fixtures/parameter-telescope/owner-w.ndjson")]{assert_eq!(run(s),Verdict::Accept);}}
 #[test]fn binder_display_metadata_preserves_expr_alpha_equivalence(){for s in [include_str!("fixtures/parameter-telescope/binder-name.ndjson"),include_str!("fixtures/parameter-telescope/binder-info.ndjson")]{assert_eq!(run(s),Verdict::Accept);}}
+
+#[test]fn original_noncanonical_legacy_fixtures_do_not_grant_authority(){for s in [include_str!("fixtures/parameter-telescope/legacy-parameter-record.ndjson"),include_str!("fixtures/parameter-telescope/legacy-homogeneous-pair.ndjson")]{assert_ne!(run(s),Verdict::Accept);}}

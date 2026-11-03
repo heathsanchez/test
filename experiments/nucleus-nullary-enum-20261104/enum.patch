@@ -1,0 +1,51 @@
+--- a/metatron-kernel/src/checker.rs
++++ b/metatron-kernel/src/checker.rs
+@@ -2470,8 +2470,9 @@
+     limits: Limits,
+     delta_policy: DeltaPolicy,
+ ) -> Result<Environment, Verdict> {
+-    if parameter_record_scope(export,block) {
+-        let mut roots=vec![block.types[0].ty,block.constructors[0].ty,block.recursors[0].ty];
++    if parameter_record_scope(export,block) || nullary_enum_scope(block) {
++        let mut roots=vec![block.types[0].ty,block.recursors[0].ty];
++        roots.extend(block.constructors.iter().map(|constructor|constructor.ty));
+         roots.extend(block.recursors[0].rules.iter().map(|rule|rule.rhs));
+         if !bounded_record_source(export,&roots,None) {return Err(Verdict::Unknown);}
+     }
+@@ -2780,6 +2781,15 @@
+     }
+ }
+ 
++// The new envelope is closed, monomorphic, and contains only 3..=16
++// nullary alternatives. Binary enums retain their qualified primitive path.
++fn nullary_enum_scope(block:&InductiveBlock)->bool {
++    let ([inductive],constructors,[_])=(block.types.as_slice(),block.constructors.as_slice(),block.recursors.as_slice()) else{return false;};
++    inductive.num_params==0 && inductive.level_params.is_empty()
++        && (3..=16).contains(&constructors.len())
++        && constructors.iter().all(|constructor|constructor.num_fields==0)
++}
++
+ fn closed_field_enum_candidate(
+     export: &ResolvedExport,
+     block: &InductiveBlock,
+@@ -2790,7 +2800,7 @@
+         block.recursors.as_slice(),
+     ) else {return false};
+     if constructors.len() < 2 || constructors.len() > 16
+-        || constructors.iter().all(|c| c.num_fields == 0) || inductive.num_params!=0
++        || (constructors.len()==2 && constructors.iter().all(|c| c.num_fields == 0)) || inductive.num_params!=0
+         || inductive.num_indices!=0
+         || inductive.num_nested!=0
+         || inductive.is_recursive
+@@ -3301,6 +3311,11 @@
+     export: &ResolvedExport, environment: &Environment, block: &InductiveBlock,
+     limits: Limits, delta_policy: DeltaPolicy,
+ ) -> bool {
++    if nullary_enum_scope(block) {
++        let [motive]=block.recursors[0].level_params.as_slice() else{return false;};
++        // No owner universes: the kernel's regenerated elimination name is u.
++        if !name_is_root_str(export,*motive,"u") {return false;}
++    }
+     let ([inductive], constructors, [recursor]) = (
+         block.types.as_slice(), block.constructors.as_slice(), block.recursors.as_slice(),
+     ) else { return false; };

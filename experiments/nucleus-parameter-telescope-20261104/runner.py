@@ -12,6 +12,17 @@ def materialize(out,candidate):
  for p in Path('/tmp/record-fixtures').glob('*.ndjson'):
   if p.stem!='original':shutil.copy2(p,dst/p.name)
  shutil.copy2(ROOT/'parameter_telescope.rs',k/'tests/parameter_telescope.rs')
+ for label in ['parameter-record','homogeneous-pair']:
+  shutil.copy2(Path('/tmp/record-fixtures')/('canonical-'+label+'.ndjson'),k/'tests/fixtures'/('good-'+label+'.ndjson'))
+ ENUM=ROOT.parent/'nucleus-nullary-enum-20261104'
+ if candidate:
+  patch=ENUM/'enum.patch';r=t.run_group(['patch','--batch','--fuzz=0','-p1','-i',str(patch)],cwd=out,capture_output=True,timeout=30);(out/'enum-patch.log').write_bytes(r.stdout+r.stderr);assert r.returncode==0
+  with(out/'source.patch').open('a')as f:f.write(patch.read_text())
+ dst=k/'tests/fixtures/nullary-enum';dst.mkdir(parents=True,exist_ok=True)
+ for p in Path('/tmp/enum-fixtures').glob('*.ndjson'):
+  if p.stem!='original':shutil.copy2(p,dst/p.name)
+ shutil.copy2(ENUM/'nullary_enum.rs',k/'tests/nullary_enum.rs')
+ with(k/'src/checker.rs').open('a')as f:f.write((ENUM/'enum_reductions.rs').read_text())
  return k
 def controls(binary,env):
  rows=[]
@@ -19,6 +30,11 @@ def controls(binary,env):
   p=Path('/tmp/record-fixtures')/row['file'];assert t.digest(p)==row['sha256']
   with p.open('rb')as f:r=t.run_group([str(binary)],stdin=f,capture_output=True,env=env,timeout=180)
   rows.append(dict(**row,rc=r.returncode,pass_=r.returncode==0 if row['expected']==0 else r.returncode in(1,2),stderr=r.stderr.decode(errors='replace')))
+ for row in json.loads(Path('/tmp/enum-fixtures/manifest.json').read_text()):
+  p=Path('/tmp/enum-fixtures')/row['file'];assert t.digest(p)==row['sha256']
+  with p.open('rb')as f:r=t.run_group([str(binary)],stdin=f,capture_output=True,env=env,timeout=180)
+  expected=row['native_expected'];passed=r.returncode==expected if expected in(0,2)else r.returncode in(1,2)
+  rows.append(dict(**row,rc=r.returncode,pass_=passed,stderr=r.stderr.decode(errors='replace')))
  # Retain all existing Nat and final proof-spine explicit controls.
  for folder,manifest in [(Path('/tmp/nat-fixtures'),json.loads(Path('/tmp/nat-fixtures/manifest.json').read_text())),(N.FINAL/'controls',[dict(file=p.name,expected=0 if p.stem in {'same','proof_last','dependent_proof_last','long_prefix_valid'}else 1)for p in (N.FINAL/'controls').glob('*.ndjson')])]:
   for row in manifest:
