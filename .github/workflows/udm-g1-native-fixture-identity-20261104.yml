@@ -1,7 +1,7 @@
 name: UDM G1 original Refactory fixture identity qualification
 on:
   push:
-    branches: [research/udm-g1-native-case-coverage-20261104]
+    branches: [research/udm-g1-native-case-coverage-20261104, research/udm-casebound-successor-20261104]
     paths:
       - '.github/workflows/udm-g1-native-fixture-identity-20261104.yml'
   workflow_dispatch:
