@@ -26,7 +26,7 @@ class NativeAuthorAdmissionV2Tests(unittest.TestCase):
     def test_empty_new_test_file_is_not_eligible(self):
         self.assertEqual(decode_go_events('',1)['status'],'UNKNOWN_ZERO_RECOGNIZED_TESTS')
 
-    def test_compiler_failure_is_not_a_no-failure_result(self):
+    def test_compiler_failure_is_not_a_no_failure_result(self):
         self.assertEqual(
             classify_transplant("UNKNOWN_SETUP_COMPILATION_OR_INFRASTRUCTURE"),
             "UNKNOWN_TRANSPLANT_SETUP_COMPILATION_OR_INFRASTRUCTURE",
