@@ -53,11 +53,22 @@ pub(crate) fn diagnostic_scope_active()->bool{TRACE_DECL_ACTIVE.with(|value|valu
                                                     for (side,initial) in [("left",l),("right",r)] {
                                                         let mut subject=initial.clone();
                                                         for layer in 0..8 {
-                                                            let answer=self.machine().expose(subject.clone(),Transparency::Full,65536);
+                                                            let answer=self.machine().expose_for_conversion(subject.clone(),Transparency::Full,65536);
                                                             eprintln!("NUCLEUS_SAT_RECEIVER:slot={slot}:side={side}:layer={layer}:subject={subject:?}:shape={:?}:answer={answer:?}",self.expressions.get(subject.expr));
                                                             match answer.proven_value() {
-                                                                Some(Value::StuckProjection{structure,..}) if structure!=&subject=>subject=structure.clone(),
-                                                                Some(Value::Neutral(n))=>{eprintln!("NUCLEUS_SAT_MAJOR:slot={slot}:side={side}:{}",self.diagnostic_captured_recursor_major_chain(n,65536));break},
+                                                                Some(Value::StuckProjection{type_name,index,structure,..}) if structure!=&subject=>{
+                                                                    let field=self.machine().projection_field_for_conversion(structure.clone(),*type_name,*index,65536);
+                                                                    eprintln!("NUCLEUS_SAT_FIELD:slot={slot}:side={side}:layer={layer}:field={field:?}");
+                                                                    subject=structure.clone();
+                                                                },
+                                                                Some(Value::Neutral(n))=>{
+                                                                    eprintln!("NUCLEUS_SAT_MAJOR:slot={slot}:side={side}:{}",self.diagnostic_captured_recursor_major_chain(n,65536));
+                                                                    if let NeutralHead::Const{name,..}=&n.head && self.has_qualified_recursor(*name) {
+                                                                        let replay=self.machine().qualified_nested_recursor_result(n,65536);
+                                                                        eprintln!("NUCLEUS_SAT_REPLAY:slot={slot}:side={side}:replay={replay:?}");
+                                                                    }
+                                                                    break
+                                                                },
                                                                 _=>break,
                                                             }
                                                         }
