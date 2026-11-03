@@ -50,33 +50,33 @@ jobs:
           start=original.index('/// Check one Arena export stream.\n')
           end=original.index('/// Run with deterministic operation counters.',start)
           updated='''/// Check one Arena export stream; optional timing only observes phases.
-pub fn run<R: BufRead>(reader: R) -> Verdict {
-    let start = std::time::Instant::now();
-    let parsed = parse(reader);
-    let parse_done = start.elapsed();
-    let resolved = parsed.and_then(|export| export.resolve());
-    let resolve_done = start.elapsed();
-    let verdict = match resolved {
-        Ok(export) => check_export(export, Limits::default()),
-        Err(error) => {
-            if std::env::var_os("NUCLEUS_TRACE_PARSE_ERROR").is_some() {
-                eprintln!("NUCLEUS_PARSE_ERROR: {error}");
-            }
-            Verdict::Error
-        }
-    };
-    let check_done = start.elapsed();
-    if std::env::var_os("NUCLEUS_TRACE_PHASES").is_some() {
-        eprintln!("NUCLEUS_PHASES:parse_ms={:.3}:resolve_ms={:.3}:check_ms={:.3}:total_ms={:.3}",
-            parse_done.as_secs_f64()*1000.0,
-            (resolve_done-parse_done).as_secs_f64()*1000.0,
-            (check_done-resolve_done).as_secs_f64()*1000.0,
-            check_done.as_secs_f64()*1000.0);
-    }
-    verdict
-}
+          pub fn run<R: BufRead>(reader: R) -> Verdict {
+              let start = std::time::Instant::now();
+              let parsed = parse(reader);
+              let parse_done = start.elapsed();
+              let resolved = parsed.and_then(|export| export.resolve());
+              let resolve_done = start.elapsed();
+              let verdict = match resolved {
+                  Ok(export) => check_export(export, Limits::default()),
+                  Err(error) => {
+                      if std::env::var_os("NUCLEUS_TRACE_PARSE_ERROR").is_some() {
+                          eprintln!("NUCLEUS_PARSE_ERROR: {error}");
+                      }
+                      Verdict::Error
+                  }
+              };
+              let check_done = start.elapsed();
+              if std::env::var_os("NUCLEUS_TRACE_PHASES").is_some() {
+                  eprintln!("NUCLEUS_PHASES:parse_ms={:.3}:resolve_ms={:.3}:check_ms={:.3}:total_ms={:.3}",
+                      parse_done.as_secs_f64()*1000.0,
+                      (resolve_done-parse_done).as_secs_f64()*1000.0,
+                      (check_done-resolve_done).as_secs_f64()*1000.0,
+                      check_done.as_secs_f64()*1000.0);
+              }
+              verdict
+          }
 
-'''
+          '''
           changed=original[:start]+updated+original[end:]
           source.write_text(changed)
           (out/'phases.patch').write_text(''.join(difflib.unified_diff(original.splitlines(True),changed.splitlines(True),fromfile='a/metatron-kernel/src/lib.rs',tofile='b/metatron-kernel/src/lib.rs')))
