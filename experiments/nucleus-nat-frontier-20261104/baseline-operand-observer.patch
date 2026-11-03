@@ -1,0 +1,20 @@
+--- a/metatron-kernel/src/convert.rs
++++ b/metatron-kernel/src/convert.rs
+@@ -2167,6 +2167,17 @@
+     work: &mut Vec<(TypeValue, TypeValue, usize, Vec<TypeValue>)>,
+     proof_function_frees: &mut HashMap<FreeId, (crate::id::NameId, Vec<crate::level::LevelTerm>)>,
+ ) -> Judgment<()> {
++    #[cfg(feature="diagnostics")]
++    if std::env::var_os("NUCLEUS_TRACE_NAT_LITERAL_CONTEXT").is_some() && depth==5 && budget>2000 {
++        eprintln!("NUCLEUS_NAT_LITERAL_CONTEXT:depth={depth}:budget={budget}:literal={literal:?}:neutral={neutral:?}");
++        let probe=checker.machine().with_exposure_cache(crate::machine::new_exposure_cache());
++        for argument in &neutral.spine {
++            let plain=probe.expose(argument.clone(),Transparency::Full,budget.min(32768));
++            let conversion=probe.expose_for_conversion(argument.clone(),Transparency::Full,budget.min(32768));
++            eprintln!("NUCLEUS_NAT_LITERAL_OPERAND:registered_pred={:?}:argument={argument:?}:binding={:?}:plain={plain:?}:conversion={conversion:?}",checker.nat_primitives().and_then(|n|n.pred),argument.env.lookup(0));
++        }
++
++    }
+     let Some(primitives) = checker.nat_primitives() else {
+         return Judgment::unknown("Nat-literal-conversion-without-authority");
+     };

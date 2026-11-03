@@ -1,0 +1,14 @@
+[
+  {
+    "case": "nat-authentic",
+    "sha": "7767e7f90b3e24b30ecb5324f1117d6858b5f40653b31011ad1948eed747e8ea",
+    "rc": 0,
+    "stderr": ""
+  },
+  {
+    "case": "nat-forged",
+    "sha": "2afceac58ff5ed51d2795a295de5a037f424fe219f83bac85eb75fd251febca2",
+    "rc": 2,
+    "stderr": "NUCLEUS_DOWNSTREAM:name=_private.Init.Data.Nat.Lemmas.0.Nat.right_eq_add._proof_1_1:stage=theorem.value:verdict=UNKNOWN:reason=rigid-type-constructor-mismatch\n"
+  }
+]

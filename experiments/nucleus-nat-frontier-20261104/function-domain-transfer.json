@@ -1,0 +1,19 @@
+{
+  "input_sha": "7767e7f90b3e24b30ecb5324f1117d6858b5f40653b31011ad1948eed747e8ea",
+  "binary_sha": "e85b9e295eae87fa3a4a25f687dbf586745ae99fd4f8f9926e3a1403ce59ec29",
+  "patch_sha": "c550b33095993031ff13498fd58c27c1e083f0c2c5ec630602e0ffc30e801dd4",
+  "rows": [
+    {
+      "arm": "off",
+      "rc": 2,
+      "seconds": 20.530239305997384,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=_private.Init.Data.Nat.Lemmas.0.Nat.right_eq_add._proof_1_1:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type\n"
+    },
+    {
+      "arm": "on",
+      "rc": 2,
+      "seconds": 25.40290247699886,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=_private.Init.Data.Nat.Lemmas.0.Nat.right_eq_add._proof_1_1:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type\n"
+    }
+  ]
+}

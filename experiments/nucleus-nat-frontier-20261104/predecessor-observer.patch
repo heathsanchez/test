@@ -1,0 +1,34 @@
+--- a/metatron-kernel/src/machine.rs
++++ b/metatron-kernel/src/machine.rs
+@@ -2184,7 +2184,10 @@
+         let Some(fuel)=self.exposure_fuel.get().filter(|n|*n>0)else{return Judgment::unknown("native-predecessor-work");};
+         self.exposure_fuel.set(Some(fuel-1));
+         let mut pending=neutral.spine.iter().rev().cloned().collect();
+-        let Some(value)=self.try_native_nat_reduction(*name,&[],&mut pending,Transparency::Full,(budget-1).min(fuel-1))else{return Judgment::unknown("native-predecessor-operand-unresolved");};
++        let replay=self.try_native_nat_reduction(*name,&[],&mut pending,Transparency::Full,(budget-1).min(fuel-1));
++        #[cfg(feature="diagnostics")]
++        if std::env::var_os("NUCLEUS_TRACE_PREDECESSOR_REPLAY").is_some(){eprintln!("NUCLEUS_PREDECESSOR_REPLAY:budget={budget}:fuel_before={fuel}:fuel_after={:?}:input={neutral:?}:result={replay:?}",self.exposure_fuel.get());}
++        let Some(value)=replay else{return Judgment::unknown("native-predecessor-operand-unresolved");};
+         if !pending.is_empty()||value==Value::Neutral(neutral.clone()){return Judgment::unknown("native-predecessor-no-progress");}
+         // Publish only a completed numeral. A changed but still suspended
+         // predecessor must not recursively license its own comparison.
+--- a/metatron-kernel/src/convert.rs
++++ b/metatron-kernel/src/convert.rs
+@@ -2174,7 +2174,16 @@
+         return Judgment::refuted("Nat-literal-neutral-head");
+     };
+     if primitives.pred==Some(*name) && budget>=32 {
+-        return match checker.machine().qualified_nat_predecessor_result(neutral,budget) {
++        let replay=checker.machine().qualified_nat_predecessor_result(neutral,budget);
++        #[cfg(feature="diagnostics")]
++        if std::env::var_os("NUCLEUS_TRACE_PREDECESSOR_REPLAY").is_some(){
++            eprintln!("NUCLEUS_PREDECESSOR_COMPARISON:depth={depth}:budget={budget}:result={replay:?}");
++            if depth==5 {
++                let cold=checker.machine().with_exposure_cache(crate::machine::new_exposure_cache()).qualified_nat_predecessor_result(neutral,budget);
++                eprintln!("NUCLEUS_PREDECESSOR_CACHE_COMPARE:depth={depth}:budget={budget}:cached={replay:?}:cold={cold:?}");
++            }
++        }
++        return match replay {
+             Judgment::Proven{value,..}=>compare_values(checker,&Value::NatLit(literal.clone()),&value,budget-1,depth,context,work,proof_function_frees),
+             _=>Judgment::unknown("native-predecessor-conversion-unresolved"),
+         };

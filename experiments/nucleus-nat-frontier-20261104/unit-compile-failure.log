@@ -1,0 +1,38 @@
+   Compiling metatron-kernel v0.1.0 (/workspace/scratch/38cabe96376f/nucleus-tournaments/native-thunk-wave/metatron-kernel)
+warning: unnecessary parentheses around `if` condition
+    --> src/convert.rs:2474:20
+     |
+2474 |                 if ((l=="Free(FreeId(6))" && r=="Free(FreeId(5))") ||
+     |                    ^
+2475 |                     (l=="Free(FreeId(5))" && r=="Free(FreeId(6))"))
+     |                                                                   ^
+     |
+     = note: `#[warn(unused_parens)]` (part of `#[warn(unused)]`) on by default
+help: remove these parentheses
+     |
+2474 ~                 if (l=="Free(FreeId(6))" && r=="Free(FreeId(5))") ||
+2475 ~                     (l=="Free(FreeId(5))" && r=="Free(FreeId(6))")
+     |
+
+error[E0308]: mismatched types
+    --> src/machine.rs:1036:47
+     |
+1035 | ...                   if probe>0 && let Some(value)=self.try_native_nat_reduction(
+     |                                                          ------------------------ arguments to this method are incorrect
+1036 | ...                       *name,levels,&mut arguments,transparency,probe,
+     |                                 ^^^^^^ expected `&[LevelId]`, found `&Vec<LevelTerm>`
+     |
+     = note: expected reference `&[id::LevelId]`
+                found reference `&Vec<level::LevelTerm>`
+note: method defined here
+    --> src/machine.rs:1668:8
+     |
+1668 |     fn try_native_nat_reduction(
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^
+...
+1671 |         levels: &[LevelId],
+     |         ------------------
+
+For more information about this error, try `rustc --explain E0308`.
+warning: `metatron-kernel` (lib test) generated 1 warning
+error: could not compile `metatron-kernel` (lib test) due to 1 previous error; 1 warning emitted

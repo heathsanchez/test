@@ -1,0 +1,25 @@
+--- a/metatron-kernel/src/typecheck.rs
++++ b/metatron-kernel/src/typecheck.rs
+@@ -685,6 +685,22 @@
+                             eprintln!("NUCLEUS_FORMED_PROP_DOMAIN_RETRY:source={term:?}:context={}:remaining={remaining}:actual={argument_ty:?}:required={domain:?}:result={domain_check:?}",context.len());
+                         }
+                     }
++                }
++                // Both the actual function argument and the applied
++                // function's dependent Pi telescope were reconstructed from
++                // their exact source closures above. Retry only their type
++                // comparison; Pi shape grants no equality and no argument
++                // typing, binder freshness, universe or capture check is skipped.
++                if domain_check.is_unknown() && *remaining>512
++                    && std::env::var_os("NUCLEUS_EXPERIMENTAL_FUNCTION_DOMAIN_RETRY").is_some()
++                    && matches!(&argument_ty,TypeValue::Pi{..})
++                    && self.pi_view(Judgment::proven(domain.clone(),"source-checked-required-function-domain"),
++                        (*remaining).min(512)).is_some()
++                {
++                    domain_check=crate::convert::convert_with_policy_in_context(
++                        self,&argument_ty,&domain,(*remaining).min(2048),
++                        crate::convert::DeltaPolicy::PreferredOnly,context.len(),context,
++                    );
+                 }
+                 if !domain_check.is_proven() {
+                     #[cfg(feature = "diagnostics")]

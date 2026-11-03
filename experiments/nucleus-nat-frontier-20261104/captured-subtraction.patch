@@ -1,0 +1,71 @@
+--- a/metatron-kernel/src/machine.rs
++++ b/metatron-kernel/src/machine.rs
+@@ -633,6 +633,16 @@
+         ).map(|exposure| exposure.value)
+     }
+ 
++    // These registered applications can be suspended computations rather
++    // than budget-independent normal forms. Never publish/reuse them as
++    // completed exposure evidence solely because they have a neutral head.
++    fn unfinished_native_capture(&self,value:&Value)->bool {
++        let Some(nat)=self.nat_primitives.as_ref()else{return false;};
++        matches!(value,Value::Neutral(Neutral{head:NeutralHead::Const{name,levels},spine})
++            if levels.is_empty() && ((nat.sub==Some(*name) && spine.len()==2)
++                || (nat.pred==Some(*name) && spine.len()==1)))
++    }
++
+     fn expose_internal(
+         &self,
+         closure: Closure,
+@@ -678,8 +688,9 @@
+             self.authority, closure.clone(), transparency,
+             preserve_stuck_projection, pending.clone(),
+         )));
+-        let cached = cache.borrow_mut().values.get_mut(&key).map(|entry|{
+-            entry.referenced=true;entry.value.clone()
++        let cached = cache.borrow_mut().values.get_mut(&key).and_then(|entry|{
++            if self.unfinished_native_capture(&entry.value){return None;}
++            entry.referenced=true;Some(entry.value.clone())
+         });
+         if let Some(value) = cached {
+             if let Some(fuel) = self.exposure_fuel.get() { self.exposure_fuel.set(Some(fuel.saturating_sub(1))); }
+@@ -697,6 +708,7 @@
+             preserve_stuck_projection, pending,
+         );
+         if let Some(established) = result.proven_value()
++            && !self.unfinished_native_capture(&established.value)
+             // A certified recursor stopped because its major did not expose.
+             // This is not a budget-independent normal form; permit a later
+             // constructor demand to evaluate the same exact lexical closure.
+@@ -1002,6 +1014,31 @@
+                                 return exposed(Value::NatLit(number), transitions);
+                             }
+                             EnvBinding::Neutral(mut neutral) => {
++                                // Resume only an exactly saturated, registered
++                                // source subtraction, using its actual closures.
++                                // No expected conversion result participates.
++                                if pending.is_empty() && budget>1 && self.exposure_depth.get()<64
++                                    && let NeutralHead::Const{name,levels}=&neutral.head
++                                    && levels.is_empty() && neutral.spine.len()==2
++                                    && self.nat_primitives.as_ref().is_some_and(|nat|nat.sub==Some(*name))
++                                {
++                                    let allowance=budget-1;
++                                    let _owner=if self.exposure_fuel.get().is_none(){
++                                        self.exposure_fuel.set(Some(allowance));
++                                        Some(ConstructorFuelScope{fuel:&self.exposure_fuel})
++                                    }else{
++                                        if let Some(fuel)=self.exposure_fuel.get(){self.exposure_fuel.set(Some(fuel.saturating_sub(1)));}
++                                        None
++                                    };
++                                    let probe=allowance.min(self.exposure_fuel.get().unwrap_or(0));
++                                    let mut arguments=neutral.spine.iter().rev().cloned().collect();
++                                    if probe>0 && let Some(value)=self.try_native_nat_reduction(
++                                        *name,&[],&mut arguments,transparency,probe,
++                                    ) && value!=Value::Neutral(neutral.clone()) {
++                                        record_transition(&mut transitions,record_witnesses,TransitionWitness::NatExtension);
++                                        return exposed(value,transitions);
++                                    }
++                                }
+                                 append_pending(&mut neutral.spine, &mut pending);
+                                 record_transition(
+                                     &mut transitions,

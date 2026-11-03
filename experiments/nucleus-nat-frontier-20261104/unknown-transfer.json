@@ -1,0 +1,50 @@
+[
+  {
+    "case": "bugs/eta-ctor-alias",
+    "rc": 2,
+    "seconds": 0.0031863499971223064,
+    "stderr": "NUCLEUS_DOWNSTREAM:name=etaCtorAlias:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads\n"
+  },
+  {
+    "case": "perf/fueled-chain",
+    "rc": 2,
+    "seconds": 3.666426756004512,
+    "stderr": "NUCLEUS_DOWNSTREAM:name=chain6_datF:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type\n"
+  },
+  {
+    "case": "perf/grind-ring-5",
+    "rc": 2,
+    "seconds": 15.749057629996969,
+    "stderr": "NUCLEUS_DOWNSTREAM:name=_private.Init.Grind.Ring.Basic.0.Lean.Grind.Ring.intCast_add._proof_1_3:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type\n"
+  },
+  {
+    "case": "perf/magma-list-deep-n21",
+    "rc": 2,
+    "seconds": 1.1336579199996777,
+    "stderr": "NUCLEUS_DOWNSTREAM:name=countermodel:stage=definition.value:verdict=UNKNOWN:reason=unresolved-qualified-recursor-heads\n"
+  },
+  {
+    "case": "perf/magma-list-deep-n36",
+    "rc": 2,
+    "seconds": 1.3803791149985045,
+    "stderr": "NUCLEUS_DOWNSTREAM:name=countermodel:stage=definition.value:verdict=UNKNOWN:reason=application-function-type\n"
+  },
+  {
+    "case": "perf/magma-list-pair-n7",
+    "rc": 2,
+    "seconds": 0.675296494999202,
+    "stderr": "NUCLEUS_DOWNSTREAM:name=countermodel:stage=definition.value:verdict=UNKNOWN:reason=application-function-type\n"
+  },
+  {
+    "case": "perf/magma-string-n4",
+    "rc": 2,
+    "seconds": 0.7100515199999791,
+    "stderr": "NUCLEUS_DOWNSTREAM:name=ByteArray.utf8DecodeChar?.FirstByte:stage=inductive:verdict=Unknown\n"
+  },
+  {
+    "case": "perf/magma-string-pair-n9",
+    "rc": 2,
+    "seconds": 0.6705617979969247,
+    "stderr": "NUCLEUS_DOWNSTREAM:name=ByteArray.utf8DecodeChar?.FirstByte:stage=inductive:verdict=Unknown\n"
+  }
+]

@@ -1,0 +1,30 @@
+{
+  "rc": 2,
+  "seconds": 21.155135380999127,
+  "binary_sha": "6754d328278aec8b6740729d256993243a3d644ca46106d69ce8b30c6dc3b2b6",
+  "input_sha": "7767e7f90b3e24b30ecb5324f1117d6858b5f40653b31011ad1948eed747e8ea",
+  "configuration": {
+    "NUCLEUS_EXPERIMENTAL_RELEVANCE": "1",
+    "NUCLEUS_EXPERIMENTAL_CONTEXT_BINDER": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_LINEAGE": "1",
+    "NUCLEUS_EXPERIMENTAL_SUBSTITUTION_RECLOSURE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_VALUE_NORMALIZATION": "1",
+    "NUCLEUS_EXPERIMENTAL_PROJECTION_CONTEXT": "1",
+    "NUCLEUS_EXPERIMENTAL_PROJECTION_CROSSFRAME_512": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_RECEIVER": "1",
+    "NUCLEUS_EXPERIMENTAL_SOURCE_PAIR_DEPTH8": "1",
+    "NUCLEUS_EXPERIMENTAL_POLYMORPHIC_PROP_IRREL": "1",
+    "NUCLEUS_EXPERIMENTAL_PROP_SINGLETON_2P1F": "1",
+    "NUCLEUS_EXPERIMENTAL_EXPECTED_LAMBDA": "1",
+    "NUCLEUS_EXPERIMENTAL_FORMED_PROP_DOMAIN_RETRY": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_DATA_CONGRUENCE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_PROJECTION_SPINE": "1",
+    "NUCLEUS_EXPERIMENTAL_REPLAY_PROJECTION_MAJOR": "1",
+    "NUCLEUS_EXPERIMENTAL_REPLAY_NEUTRAL_PROJECTION": "1",
+    "NUCLEUS_TRACE_DOWNSTREAM": "1",
+    "NUCLEUS_TRACE_NAT_LITERAL_CONTEXT": "1",
+    "NUCLEUS_EXPERIMENTAL_CERTIFIED_QUOT_IOTA": "1",
+    "NUCLEUS_EXPERIMENTAL_SOURCE_PROOF_IRREL": "1"
+  },
+  "stderr": "NUCLEUS_NAT_LITERAL_CONTEXT:depth=5:budget=3921:literal=BigNat([]):neutral=Neutral { head: Const { name: NameId(2), levels: [] }, spine: [] }\nNUCLEUS_NAT_LITERAL_CONTEXT:depth=5:budget=3921:literal=BigNat([]):neutral=Neutral { head: Const { name: NameId(2), levels: [] }, spine: [] }\nNUCLEUS_NAT_LITERAL_CONTEXT:depth=5:budget=3921:literal=BigNat([]):neutral=Neutral { head: Const { name: NameId(2), levels: [] }, spine: [] }\nNUCLEUS_NAT_LITERAL_CONTEXT:depth=5:budget=3830:literal=BigNat([]):neutral=Neutral { head: Const { name: NameId(2), levels: [] }, spine: [] }\nNUCLEUS_NAT_LITERAL_CONTEXT:depth=5:budget=3921:literal=BigNat([]):neutral=Neutral { head: Const { name: NameId(2), levels: [] }, spine: [] }\nNUCLEUS_NAT_LITERAL_CONTEXT:depth=5:budget=3921:literal=BigNat([]):neutral=Neutral { head: Const { name: NameId(2), levels: [] }, spine: [] }\nNUCLEUS_NAT_LITERAL_CONTEXT:depth=5:budget=3921:literal=BigNat([]):neutral=Neutral { head: Const { name: NameId(2), levels: [] }, spine: [] }\nNUCLEUS_NAT_LITERAL_CONTEXT:depth=5:budget=3900:literal=BigNat([]):neutral=Neutral { head: Const { name: NameId(2), levels: [] }, spine: [] }\nNUCLEUS_NAT_LITERAL_CONTEXT:depth=5:budget=3921:literal=BigNat([]):neutral=Neutral { head: Const { name: NameId(2), levels: [] }, spine: [] }\nNUCLEUS_NAT_LITERAL_CONTEXT:depth=5:budget=3870:literal=BigNat([]):neutral=Neutral { head: Const { name: NameId(2), levels: [] }, spine: [] }\nNUCLEUS_NAT_LITERAL_CONTEXT:depth=5:budget=32603:literal=BigNat([]):neutral=Neutral { head: Const { name: NameId(3246), levels: [] }, spine: [Closure { expr: ExprId(5), env: EnvFrame { id: 2234516, .. }, levels: LevelSubstitution([]) }] }\nNUCLEUS_NAT_LITERAL_OPERAND:registered_pred=Some(NameId(3246)):argument=Closure { expr: ExprId(5), env: EnvFrame { id: 2234516, .. }, levels: LevelSubstitution([]) }:binding=Some(Neutral(Neutral { head: Const { name: NameId(3655), levels: [] }, spine: [Closure { expr: ExprId(12), env: EnvFrame { id: 2234513, .. }, levels: LevelSubstitution([(NameId(32), Zero)]) }, Closure { expr: ExprId(5), env: EnvFrame { id: 2233504, .. }, levels: LevelSubstitution([]) }] })):plain=Proven { value: Neutral(Neutral { head: Const { name: NameId(3655), levels: [] }, spine: [Closure { expr: ExprId(12), env: EnvFrame { id: 2234513, .. }, levels: LevelSubstitution([(NameId(32), Zero)]) }, Closure { expr: ExprId(5), env: EnvFrame { id: 2233504, .. }, levels: LevelSubstitution([]) }] }), warrant: WarrantId(\"explicit-closure-machine\") }:conversion=Proven { value: Neutral(Neutral { head: Const { name: NameId(3655), levels: [] }, spine: [Closure { expr: ExprId(12), env: EnvFrame { id: 2234513, .. }, levels: LevelSubstitution([(NameId(32), Zero)]) }, Closure { expr: ExprId(5), env: EnvFrame { id: 2233504, .. }, levels: LevelSubstitution([]) }] }), warrant: WarrantId(\"explicit-closure-machine\") }\nNUCLEUS_NAT_LITERAL_CONTEXT:depth=5:budget=32603:literal=BigNat([]):neutral=Neutral { head: Const { name: NameId(3246), levels: [] }, spine: [Closure { expr: ExprId(5), env: EnvFrame { id: 2234516, .. }, levels: LevelSubstitution([]) }] }\nNUCLEUS_NAT_LITERAL_OPERAND:registered_pred=Some(NameId(3246)):argument=Closure { expr: ExprId(5), env: EnvFrame { id: 2234516, .. }, levels: LevelSubstitution([]) }:binding=Some(Neutral(Neutral { head: Const { name: NameId(3655), levels: [] }, spine: [Closure { expr: ExprId(12), env: EnvFrame { id: 2234513, .. }, levels: LevelSubstitution([(NameId(32), Zero)]) }, Closure { expr: ExprId(5), env: EnvFrame { id: 2233504, .. }, levels: LevelSubstitution([]) }] })):plain=Proven { value: Neutral(Neutral { head: Const { name: NameId(3655), levels: [] }, spine: [Closure { expr: ExprId(12), env: EnvFrame { id: 2234513, .. }, levels: LevelSubstitution([(NameId(32), Zero)]) }, Closure { expr: ExprId(5), env: EnvFrame { id: 2233504, .. }, levels: LevelSubstitution([]) }] }), warrant: WarrantId(\"explicit-closure-machine\") }:conversion=Proven { value: Neutral(Neutral { head: Const { name: NameId(3655), levels: [] }, spine: [Closure { expr: ExprId(12), env: EnvFrame { id: 2234513, .. }, levels: LevelSubstitution([(NameId(32), Zero)]) }, Closure { expr: ExprId(5), env: EnvFrame { id: 2233504, .. }, levels: LevelSubstitution([]) }] }), warrant: WarrantId(\"explicit-closure-machine\") }\nNUCLEUS_DOWNSTREAM:name=_private.Init.Data.Nat.Lemmas.0.Nat.right_eq_add._proof_1_1:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type\n"
+}
