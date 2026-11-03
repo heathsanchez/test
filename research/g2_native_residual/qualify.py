@@ -122,10 +122,16 @@ def qualify(repo: Path, base: str, head: str, test_file: str, outdir: Path) -> d
             receipt["status"]="UNKNOWN_SOURCE_SHA_MISMATCH"
             return receipt
         a,b=source/test_file,fixed/test_file
-        if not a.is_file() or not b.is_file():
-            receipt["status"]="UNKNOWN_ORIGINAL_TEST_FILE_MISSING"
+        if not b.is_file():
+            receipt["status"]="UNKNOWN_CONTRIBUTOR_TEST_FILE_MISSING"
             return receipt
-        original=a.read_bytes(); contributed=b.read_bytes()
+        if a.exists() and not a.is_file():
+            receipt["status"]="UNKNOWN_BASE_TEST_NOT_REGULAR"
+            return receipt
+        base_test_exists=a.is_file()
+        original=a.read_bytes() if base_test_exists else b""
+        contributed=b.read_bytes()
+        receipt["base_test_existed"]=base_test_exists
         receipt["base_test_sha256"]=hashlib.sha256(original).hexdigest()
         receipt["head_test_sha256"]=hashlib.sha256(contributed).hexdigest()
         if original == contributed:
@@ -137,7 +143,9 @@ def qualify(repo: Path, base: str, head: str, test_file: str, outdir: Path) -> d
         if receipt["original_base"]["status"]!="PASS_NONEMPTY" or receipt["head_contributor"]["status"]!="PASS_NONEMPTY":
             receipt["status"]="UNKNOWN_ORIGINAL_SOURCE_SUITE"
             return receipt
-        # Only author test-file replacement; implementation remains byte-exact base.
+        # Only author test-file replacement, including a newly added test file.
+        # Never modify implementation or install a target-specific adapter.
+        a.parent.mkdir(parents=True, exist_ok=True)
         a.write_bytes(contributed)
         receipt["base_transplant"]=run_suite(source,outdir,"author-test-on-base")
         if receipt["base_transplant"]["status"]!="FAIL_NATIVE_ASSERTIONS":
