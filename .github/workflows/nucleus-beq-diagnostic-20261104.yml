@@ -87,6 +87,7 @@ jobs:
           nat=[s for s in lines if s.startswith('NUCLEUS_NAT_NONHEAD:')]
           mismatches=[s for s in lines if s.startswith('NUCLEUS_NEUTRAL_HEAD_MISMATCH:')]
           local_mismatches=[s for s in mismatches if 'context_len=1:' in s]
+          context_counts=collections.Counter(re.findall(r'context_len=(\d+)', '\n'.join(mismatches)))
           reasons=collections.Counter(re.findall(r'ResidualId\("([^"]+)"\)', '\n'.join(apps)))
           report=dict(rc=p.returncode,input_sha=hashlib.sha256(source.read_bytes()).hexdigest(),
                       binary_sha=hashlib.sha256(binary.read_bytes()).hexdigest(),
@@ -94,6 +95,7 @@ jobs:
                       reasons=dict(reasons),first_application_type=apps[:12],
                       last_application_type=apps[-24:],last_nat=nat[-12:],
                       mismatch_count=len(mismatches),local_mismatch_count=len(local_mismatches),
+                      mismatch_contexts=dict(context_counts),last_mismatches=mismatches[-32:],
                       last_local_mismatches=local_mismatches[-24:],
                       downstream=downstream[-5:],scope='observation-only no change')
           (root/'diagnostic.json').write_text(json.dumps(report,indent=2)+'\n')
