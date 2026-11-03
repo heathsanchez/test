@@ -1,0 +1,64 @@
+name: Nucleus suspended projection cache causal tournament
+on:
+  push:
+    branches: [research/nucleus-reuse-tournaments-20261104]
+    paths: ['.github/workflows/nucleus-range-cache-20261104.yml','experiments/nucleus-range-cache-20261104/**']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-proof-diagnostic:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 1}
+      - run: git fetch --no-tags --depth=1 origin a2578e77079719ff2064f910bd82fd01d8e120b6
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Restore exact original source frontier
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/range-source /tmp/range-cache
+          gh api repos/heathsanchez/test/actions/artifacts/13259246241/zip > /tmp/frontier.zip
+          printf '%s  %s\n' 8d757fba8ce67f41163281c095e43099eff209cd7d31c902838bc5d8273e405c /tmp/frontier.zip | sha256sum -c -
+          unzip -q /tmp/frontier.zip -d /tmp/range-source
+          zstd -d /tmp/range-source/next-frontier.ndjson.zst -o /tmp/range-prefix.ndjson
+          printf '%s  %s\n' d9d7b1fe7267a0806f65200abc64a9c7114fb8097a9da1f3687f2560a2568bb9 /tmp/range-prefix.ndjson | sha256sum -c -
+      - name: Reuse exact qualified current binary and independent source receipt
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/scoped-qualified /tmp/scoped-reference
+          gh api repos/heathsanchez/test/actions/artifacts/13264581883/zip > /tmp/qualified.zip
+          printf '%s  %s\n' d244bcd7c860b995a231281550b3bee49613be6d4df77556ece89d6058531915 /tmp/qualified.zip | sha256sum -c -
+          unzip -q /tmp/qualified.zip -d /tmp/scoped-qualified
+          gh api repos/heathsanchez/test/actions/artifacts/13264820032/zip > /tmp/reference.zip
+          printf '%s  %s\n' 9fc805f01dc7525e14d7905c3bbaf9361e947eed420295e5e7e9d9a50155d7b9 /tmp/reference.zip | sha256sum -c -
+          unzip -q /tmp/reference.zip -d /tmp/scoped-reference
+          grep 'Accepted 2004 declarations.' /tmp/scoped-reference/reference-kernel.stdout
+          cp /tmp/scoped-reference/reference-* /tmp/range-cache/
+      - name: Prepare exact source inputs for current stack
+        run: |
+          python3 experiments/nucleus-nat-closure-20261104/generate_fixtures.py --out /tmp/nat-fixtures
+          python3 experiments/nucleus-parameter-telescope-20261104/prepare.py
+          python3 experiments/nucleus-nullary-enum-20261104/prepare.py
+      - name: Screen exposure memo, replay memo and resource budget independently
+        run: python3 experiments/nucleus-range-cache-20261104/runner.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-range-cache-${{ github.sha }}
+          path: |
+            /tmp/range-cache/*.json
+            /tmp/range-cache/*.log
+            /tmp/range-cache/*.stderr
+            /tmp/range-cache/*.stdout
+            /tmp/range-cache/*.sha256
+            /tmp/range-cache/*/source.patch
+            /tmp/range-cache/*/candidate.patch
+            /tmp/range-cache/*/*.log
+            /tmp/range-cache/*/nucleus
+            /tmp/range-cache/*/time.txt
+            /tmp/range-cache/*/stderr

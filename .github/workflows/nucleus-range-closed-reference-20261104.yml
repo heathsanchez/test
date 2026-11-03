@@ -1,0 +1,58 @@
+name: Nucleus closed tidy oracle and reusable reference bundle
+on:
+  push:
+    branches: [research/nucleus-reuse-tournaments-20261104]
+    paths: ['.github/workflows/nucleus-range-closed-reference-20261104.yml','experiments/nucleus-range-closed-reference-20261104/**']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-proof-diagnostic:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 1}
+      - run: git fetch --no-tags --depth=1 origin a2578e77079719ff2064f910bd82fd01d8e120b6
+      - name: Restore exact original source frontier
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/range-source /tmp/range-closed-reference
+          gh api repos/heathsanchez/test/actions/artifacts/13259246241/zip > /tmp/frontier.zip
+          printf '%s  %s\n' 8d757fba8ce67f41163281c095e43099eff209cd7d31c902838bc5d8273e405c /tmp/frontier.zip | sha256sum -c -
+          unzip -q /tmp/frontier.zip -d /tmp/range-source
+          zstd -d /tmp/range-source/next-frontier.ndjson.zst -o /tmp/range-prefix.ndjson
+          printf '%s  %s\n' d9d7b1fe7267a0806f65200abc64a9c7114fb8097a9da1f3687f2560a2568bb9 /tmp/range-prefix.ndjson | sha256sum -c -
+      - name: Independently replay original source in the pinned official Lean kernel
+        run: |
+          set -euo pipefail
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -o /tmp/elan-init.sh
+          sh /tmp/elan-init.sh -y --default-toolchain leanprover/lean4:v4.34.1
+          git init -q /tmp/arena-reference
+          git -C /tmp/arena-reference remote add origin https://github.com/leanprover/lean-kernel-arena
+          git -C /tmp/arena-reference fetch -q --depth=1 origin cd2dd0244b9ed5e704463a26fbbe5fc67ba16108
+          git -C /tmp/arena-reference checkout -q --detach FETCH_HEAD
+          cd /tmp/arena-reference/checkers/official
+          "$HOME/.elan/bin/lake" build > /tmp/range-closed-reference/reference-build.log 2>&1
+          sha256sum .lake/build/bin/kernel > /tmp/range-closed-reference/reference-binary.sha256
+          .lake/build/bin/kernel --parse-only /tmp/range-prefix.ndjson > /tmp/range-closed-reference/reference-parse.stdout 2> /tmp/range-closed-reference/reference-parse.stderr
+          .lake/build/bin/kernel /tmp/range-prefix.ndjson > /tmp/range-closed-reference/reference-kernel.stdout 2> /tmp/range-closed-reference/reference-kernel.stderr
+      - name: Independently check source-closed tidy and false equality probes
+        run: |
+          python3 experiments/nucleus-range-closed-reference-20261104/generate.py --source /tmp/range-prefix.ndjson --out /tmp/range-closed-reference/inputs
+          python3 experiments/nucleus-range-closed-reference-20261104/verify.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-range-closed-reference-${{ github.sha }}
+          path: |
+            /tmp/range-closed-reference/*.json
+            /tmp/range-closed-reference/*.log
+            /tmp/range-closed-reference/*.stderr
+            /tmp/range-closed-reference/*.stdout
+            /tmp/range-closed-reference/*.sha256
+            /tmp/range-closed-reference/ldd.txt
+            /tmp/range-closed-reference/inputs/inputs.json
+            /tmp/range-closed-reference/bundle/
