@@ -11,6 +11,16 @@ import sys
 import attest
 
 
+def forge_producer_artifact_digest(metadata: dict) -> dict:
+    """Mutate the *named producer*, never another run's reader artifact."""
+    forged = copy.deepcopy(metadata)
+    target = [artifact for artifact in forged["artifacts"]
+              if artifact.get("name") == attest.ARTIFACT_NAME]
+    assert len(target) == 1
+    target[0]["digest"] = "sha256:" + "0" * 64
+    return forged
+
+
 def main() -> int:
     if len(sys.argv) not in (4, 5) or (len(sys.argv) == 5 and sys.argv[4] != "--completed"):
         raise SystemExit("usage: native_controls.py RUN_ID SHA SOURCE [--completed]")
@@ -39,8 +49,9 @@ def main() -> int:
     forged["jobs"][0]["conclusion"] = "failure"
     record("forged_successful_job", attest.evaluate(forged, pin, archive, source,
                                                     current_env), "UNKNOWN")
-    forged = copy.deepcopy(metadata)
-    forged["artifacts"][0]["digest"] = "sha256:" + "0" * 64
+    forged = forge_producer_artifact_digest(metadata)
+    assert (attest.validate_metadata(forged, pin, archive)
+            == "PRODUCER_ARTIFACT_DIGEST_OR_PROVENANCE_MISMATCH")
     record("forged_artifact_digest", attest.evaluate(forged, pin, archive, source,
                                                      current_env), "UNKNOWN")
 
