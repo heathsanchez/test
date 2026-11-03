@@ -1,0 +1,55 @@
+name: Nucleus application-function-type diagnostic, source pinned
+on:
+  push:
+    branches: [research/nucleus-app-frontier-20261104]
+    paths:
+      - '.github/workflows/nucleus-app-frontier-20261104.yml'
+      - 'experiments/nucleus-app-frontier-20261104/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  diagnostic:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Restore exact independently qualified source and two checkers
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --depth=1 origin a2578e77079719ff2064f910bd82fd01d8e120b6
+          mkdir -p /tmp/nucleus-source /tmp/nucleus-eval-artifact /tmp/reference /tmp/nucleus-app-frontier
+          git archive a2578e77079719ff2064f910bd82fd01d8e120b6 | tar -xf - -C /tmp/nucleus-source
+          gh api repos/heathsanchez/test/actions/artifacts/13281925554/zip > /tmp/eval-artifact.zip
+          printf '%s  %s\n' 42d9ad0e3e65abd8223f95cd96f6ff2c08caf085b703016c490c8de48c39dd63 /tmp/eval-artifact.zip | sha256sum -c -
+          unzip -q /tmp/eval-artifact.zip -d /tmp/nucleus-eval-artifact
+          printf '%s  %s\n' ffbb9636623f9c4a56e32b89749fea996cb6097912eb83f80f1a54a99e0393e1 /tmp/nucleus-eval-artifact/candidate/source.patch | sha256sum -c -
+          zstd -dq /tmp/nucleus-eval-artifact/next-frontier.ndjson.zst -o /tmp/nucleus-app-frontier/next-frontier.ndjson
+          printf '%s  %s\n' 5b7a6b7ad11f5683937e8258322d47f09a9daf6d254bd921e6d23b0d1ee3b494 /tmp/nucleus-app-frontier/next-frontier.ndjson | sha256sum -c -
+          gh api repos/heathsanchez/test/actions/artifacts/13267462207/zip > /tmp/ref-artifact.zip
+          printf '%s  %s\n' 9dfaff0a6cb272e6950e301aab75cf99e09a440f5ad881e2e1790019b4add1dd /tmp/ref-artifact.zip | sha256sum -c -
+          unzip -q /tmp/ref-artifact.zip -d /tmp/reference
+          chmod +x /tmp/reference/bundle/kernel /tmp/nucleus-eval-artifact/candidate/nucleus
+      - name: Reconstruct exact qualified Rust source and compile diagnostics
+        run: |
+          set -euo pipefail
+          cd /tmp/nucleus-source
+          patch --batch --fuzz=0 -p1 -i /tmp/nucleus-eval-artifact/candidate/source.patch
+          cargo build --release --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+      - name: Locate first failed application without altering verdict
+        run: python3 experiments/nucleus-app-frontier-20261104/trace.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-app-frontier-${{ github.sha }}
+          path: |
+            /tmp/nucleus-app-frontier/summary.json
+            /tmp/nucleus-app-frontier/qualified.stderr
+            /tmp/nucleus-app-frontier/official.stdout
+            /tmp/nucleus-app-frontier/official.stderr
+            /tmp/nucleus-app-frontier/diagnostic.stderr
+            /tmp/nucleus-app-frontier/diagnostic.stdout
