@@ -21,6 +21,16 @@ def forge_producer_artifact_digest(metadata: dict) -> dict:
     return forged
 
 
+def forge_producer_job_failure(metadata: dict) -> dict:
+    """Invalidate only the completed proof producer, not a reader job."""
+    forged = copy.deepcopy(metadata)
+    target = [job for job in forged["jobs"]
+              if job.get("name") == attest.PRODUCER_JOB]
+    assert len(target) == 1
+    target[0]["conclusion"] = "failure"
+    return forged
+
+
 def main() -> int:
     if len(sys.argv) not in (4, 5) or (len(sys.argv) == 5 and sys.argv[4] != "--completed"):
         raise SystemExit("usage: native_controls.py RUN_ID SHA SOURCE [--completed]")
@@ -45,8 +55,8 @@ def main() -> int:
     record("config_flag_mutation", attest.evaluate(metadata, pin, archive, source,
                                                    current_env | {"NUCLEUS_PROVENANCE_DRIFT": "1"}),
            "UNKNOWN")
-    forged = copy.deepcopy(metadata)
-    forged["jobs"][0]["conclusion"] = "failure"
+    forged = forge_producer_job_failure(metadata)
+    assert attest.validate_metadata(forged, pin, archive) == "PRODUCER_JOB_NOT_AUTHENTICATED"
     record("forged_successful_job", attest.evaluate(forged, pin, archive, source,
                                                     current_env), "UNKNOWN")
     forged = forge_producer_artifact_digest(metadata)
