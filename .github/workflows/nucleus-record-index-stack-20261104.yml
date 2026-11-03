@@ -1,0 +1,62 @@
+name: Nucleus qualified record and owner index stack tournament
+on:
+  push:
+    branches: [research/nucleus-reuse-tournaments-20261104]
+    paths: ['.github/workflows/nucleus-record-index-stack-20261104.yml','experiments/nucleus-record-index-stack-20261104/**']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: nucleus-record-index-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  qualify-and-tournament:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 1}
+      - name: Fetch exact source base without replaying repository history
+        run: git fetch --no-tags --depth=1 origin a2578e77079719ff2064f910bd82fd01d8e120b6
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Reuse qualified baseline binary and exact verification receipts
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/record-baseline /tmp/current208
+          gh api repos/heathsanchez/test/actions/artifacts/13255951206/zip > /tmp/baseline.zip
+          printf '%s  %s\n' fb87e4188fc3a2cd027a8ef8ab5edad8d314716487a2e8dd904f627f1f5d557b /tmp/baseline.zip | sha256sum -c -
+          unzip -q /tmp/baseline.zip -d /tmp/record-baseline
+          gh api repos/heathsanchez/test/actions/artifacts/13126161718/zip > /tmp/inputs.zip
+          printf '%s  %s\n' 462e31e21379054490570b465b46ece4fff878490d9ad7de6bbc73149d587f4c /tmp/inputs.zip | sha256sum -c -
+          unzip -q /tmp/inputs.zip -d /tmp/current208
+      - name: Prepare all inherited and original source controls
+        run: |
+          python3 experiments/nucleus-nat-closure-20261104/generate_fixtures.py --out /tmp/nat-fixtures
+          python3 experiments/nucleus-parameter-telescope-20261104/prepare.py
+      - name: Reuse exact complete source
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/mathlib-source
+          gh api repos/heathsanchez/test/actions/artifacts/13231986845/zip > /tmp/input.zip
+          printf '%s  %s\n' 3dd3fbb522816bdaa9d9cd2808196e075bfa27e3d6c82648731140594f87ce2b /tmp/input.zip | sha256sum -c -
+          unzip -q /tmp/input.zip -d /tmp/mathlib-source
+          zstd -d /tmp/mathlib-source/mathlib.ndjson.zst -o /tmp/mathlib.ndjson
+          printf '%s  %s\n' 22c5de83469408950005589a3bc5ef5157c65549b5a802f85d567c29151306a6 /tmp/mathlib.ndjson | sha256sum -c -
+          rm /tmp/input.zip /tmp/mathlib-source/mathlib.ndjson.zst
+      - name: Fresh candidate qualification then matched ABBAAB
+        run: python3 experiments/nucleus-record-index-stack-20261104/runner.py --out /tmp/stack-tournament
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-record-index-stack-${{ github.sha }}
+          path: |
+            /tmp/stack-tournament/*.json
+            /tmp/stack-tournament/candidate/*.json
+            /tmp/stack-tournament/candidate/*.log
+            /tmp/stack-tournament/candidate/source.patch
+            /tmp/stack-tournament/candidate/nucleus
+            /tmp/stack-tournament/matched/*/time.txt
+            /tmp/stack-tournament/matched/*/stderr
