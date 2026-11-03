@@ -78,9 +78,9 @@ def main():
                   and all(x["rc"] != 0 for x in rows[1:])}
         data.append(result)
         print("MODE_SCREEN", json.dumps(result, sort_keys=True), flush=True)
-    # The independently qualified source baseline already requires the
-    # source-major demand mode. Mask 0 is a causal ablation, not the baseline.
-    baseline = data[1]
+    # The independently qualified source baseline already uses all three
+    # source replay flags. Other masks are ablations, not the baseline.
+    baseline = data[7]
     assert baseline["observations"][0]["rc"] == 2
     assert "Nat.beq_refl" in baseline["observations"][0]["terminal"]
     report = {"status": "CANDIDATE_ABLATION_ONLY",
