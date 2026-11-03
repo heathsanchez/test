@@ -1,0 +1,289 @@
+--- a/metatron-kernel/src/machine.rs
++++ b/metatron-kernel/src/machine.rs
+@@ -1127,7 +1127,7 @@
+                         return exposed(native, transitions);
+                     }
+ 
+-                    if let Some(next) = self.try_quot_reduction(*name, levels, &mut pending) {
++                    if let Some(next) = self.try_quot_reduction(*name, levels, &mut pending, budget) {
+                         record_transition(
+                             &mut transitions,
+                             record_witnesses,
+@@ -1456,11 +1456,73 @@
+         }
+     }
+ 
++    pub(crate) fn qualified_quotient_neutral_result(
++        &self,
++        neutral: &Neutral,
++        budget: usize,
++    ) -> Judgment<Value> {
++        if budget < 128 {
++            return Judgment::unknown("quotient-neutral-insufficient-fuel");
++        }
++        let Some(registered) = self.quot_primitives.as_ref() else {
++            return Judgment::unknown("quotient-neutral-no-source-package");
++        };
++        let NeutralHead::Const { name, levels } = &neutral.head else {
++            return Judgment::unknown("quotient-neutral-not-registered");
++        };
++        if *name != registered.lift || levels.len() != 2 || neutral.spine.len() != 6 {
++            return Judgment::unknown("quotient-neutral-not-lift");
++        }
++        let Some(major) = neutral.spine.last() else {
++            return Judgment::unknown("quotient-neutral-no-major");
++        };
++        let normalized = self.expose_internal(
++            major.clone(), Transparency::Full, budget.min(1024), false, false,
++        );
++        let Some(Exposure {
++            value: Value::Neutral(Neutral {
++                head: NeutralHead::Const {
++                    name: constructor,
++                    levels: constructor_levels,
++                },
++                spine: constructor_arguments,
++            }),
++            ..
++        }) = normalized.proven_value() else {
++            return Judgment::unknown("quotient-neutral-major-not-constructor");
++        };
++        if *constructor != registered.mk
++            || constructor_levels.len() != 1
++            || constructor_arguments.len() != 3
++            || !crate::level::level_equal(
++                levels[0].clone(), constructor_levels[0].clone(), budget.min(256),
++            ).is_proven()
++        {
++            return Judgment::unknown("quotient-neutral-major-not-matching-mk");
++        }
++        let function = neutral.spine[3].clone();
++        let value = constructor_arguments[2].clone();
++        let reduced = self.expose_internal_with_pending(
++            function,
++            Transparency::Full,
++            budget.min(2048),
++            false,
++            false,
++            vec![value],
++        ).map(|out| out.value);
++        #[cfg(feature = "diagnostics")]
++        if std::env::var_os("NUCLEUS_TRACE_CERTIFIED_QUOT_IOTA").is_some() {
++            eprintln!("NUCLEUS_QUOTIENT_NEUTRAL_IOTA:head={name:?}:result={reduced:?}");
++        }
++        reduced
++    }
++
+     fn try_quot_reduction(
+         &self,
+         name: NameId,
+         levels: &[LevelId],
+         pending: &mut Vec<Closure>,
++        budget: usize,
+     ) -> Option<Closure> {
+         let primitives = self.quot_primitives.as_ref()?;
+ 
+@@ -1478,10 +1540,45 @@
+         let offset = pending.len() - required;
+         let arguments = pending[offset..].iter().rev().cloned().collect::<Vec<_>>();
+         let target = arguments.get(target_index)?;
+-        let (constructor, constructor_arguments) = self.constructor_application(target)?;
+-        if constructor != primitives.mk || constructor_arguments.len() != 3 {
++        let source_constructor = self.constructor_application(target);
++        // A quotient major may be a bound closure whose original syntax is
++        // not a constructor, but whose separately evaluated source value is.
++        // Only an independently exposed, registered Quot.mk authorizes iota.
++        let certified_constructor = source_constructor.or_else(|| {
++            if std::env::var_os("NUCLEUS_EXPERIMENTAL_CERTIFIED_QUOT_IOTA").is_none()
++                || budget < 32
++            {
++                return None;
++            }
++            let exposure = self.expose_internal(
++                target.clone(), Transparency::Full, budget.min(1024), false, false,
++            );
++            let Some(Exposure {
++                value: Value::Neutral(Neutral {
++                    head: NeutralHead::Const { name: ctor, levels: ctor_levels },
++                    spine: ctor_args,
++                }),
++                ..
++            }) = exposure.proven_value()
++            else {
++                return None;
++            };
++            if *ctor != primitives.mk || ctor_levels.len() != 1 || ctor_args.len() != 3 {
++                return None;
++            }
++            #[cfg(feature = "diagnostics")]
++            if std::env::var_os("NUCLEUS_TRACE_CERTIFIED_QUOT_IOTA").is_some() {
++                eprintln!(
++                    "NUCLEUS_CERTIFIED_QUOT_IOTA:constructor={ctor:?}:source_major={target:?}:arguments={}:budget={budget}",
++                    ctor_args.len(),
++                );
++            }
++            Some((*ctor, ctor_args.clone()))
++        })?;
++        if certified_constructor.0 != primitives.mk || certified_constructor.1.len() != 3 {
+             return None;
+         }
++        let constructor_arguments = certified_constructor.1;
+ 
+         let function = arguments.get(function_index)?.clone();
+         let value = constructor_arguments[2].clone();
+--- a/metatron-kernel/src/typecheck.rs
++++ b/metatron-kernel/src/typecheck.rs
+@@ -3549,6 +3549,101 @@
+             }
+         }
+         true
++    }
++
++    pub(crate) fn certified_neutral_lambda_proof_irrelevance(
++        &self,
++        neutral: &Neutral,
++        lambda_domain: &Closure,
++        lambda_body: &Closure,
++        context: &[TypeValue],
++        budget: usize,
++    ) -> bool {
++        if std::env::var_os("NUCLEUS_EXPERIMENTAL_SOURCE_PROOF_IRREL").is_none()
++            || budget < 2048 || context.len() > 24
++            || lambda_domain.env != lambda_body.env
++            || lambda_domain.levels != lambda_body.levels
++        { return false; }
++        std::thread_local! {
++            static IN_FLIGHT: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
++        }
++        IN_FLIGHT.with(|guard| {
++            if guard.replace(true) { return false; }
++            let success = (|| {
++                let NeutralHead::Const { name, levels } = &neutral.head else {
++                    return false;
++                };
++                let Some(decl) = self.environment.get(*name) else { return false; };
++                if decl.level_params.len() != levels.len() { return false; }
++                let substitutions = decl.level_params.iter().copied()
++                    .zip(levels.iter().cloned()).collect::<Vec<_>>();
++                let mut current = TypeValue::Term(Closure::with_levels(
++                    decl.ty, EnvFrame::empty(), LevelSubstitution::new(substitutions),
++                ));
++                for argument in &neutral.spine {
++                    let Some((domain, body)) = self.pi_view(
++                        Judgment::proven(current, "certified-neutral-proof-Pi"),
++                        budget.min(1024),
++                    ) else { return false; };
++                    let mut remaining = budget.min(2048);
++                    let Some(argument_type) = self.infer_exact_closure_in_context(
++                        argument, context, &mut remaining, 0,
++                    ) else { return false; };
++                    if !crate::convert::convert_with_policy_in_context(
++                        self, &argument_type, &domain, remaining.min(512),
++                        crate::convert::DeltaPolicy::PreferredOnly,
++                        context.len(), context,
++                    ).is_proven() { return false; }
++                    current = match body {
++                        PiBody::Fixed(binder, body) => {
++                            let mut remaining = budget.min(512);
++                            let Some(next) = self.instantiate_fixed_pi_body(
++                                &body, binder, argument, &mut remaining,
++                            ) else { return false; };
++                            next
++                        },
++                        PiBody::Closure(body) => TypeValue::Term(Closure::with_levels(
++                            body.expr, body.env.extend(argument.clone()), body.levels,
++                        )),
++                    };
++                }
++                let TypeValue::Term(proposition) = &current else { return false; };
++                if !self.checked_captured_prop_type_in_context(
++                    proposition, context, budget.min(2048),
++                ).is_proven() { return false; }
++
++                let matches = self.expressions.iter_raw().filter_map(|(raw, term)| {
++                    match term {
++                        Expr::Lam { domain, body, .. }
++                            if *domain == lambda_domain.expr && *body == lambda_body.expr
++                            => Some(ExprId(raw)),
++                        _ => None,
++                    }
++                }).collect::<Vec<_>>();
++                let [lambda_expr] = matches.as_slice() else { return false; };
++                let source_lambda = Closure::with_levels(
++                    *lambda_expr, lambda_domain.env.clone(), lambda_domain.levels.clone(),
++                );
++                let mut remaining = budget.min(2048);
++                let Some(lambda_type) = self.infer_exact_closure_in_context(
++                    &source_lambda, context, &mut remaining, 0,
++                ) else { return false; };
++                crate::convert::convert_with_policy_in_context(
++                    self, &current, &lambda_type, remaining.min(512),
++                    crate::convert::DeltaPolicy::PreferredOnly,
++                    context.len(), context,
++                ).is_proven()
++            })();
++            guard.set(false);
++            #[cfg(feature = "diagnostics")]
++            if std::env::var_os("NUCLEUS_TRACE_SOURCE_PROOF_IRREL").is_some() {
++                eprintln!(
++                    "NUCLEUS_SOURCE_PROOF_IRREL:context={}:spine={}:certified={success}",
++                    context.len(), neutral.spine.len(),
++                );
++            }
++            success
++        })
+     }
+ 
+     pub(crate) fn certified_relevance_spine_congruence(
+--- a/metatron-kernel/src/convert.rs
++++ b/metatron-kernel/src/convert.rs
+@@ -1669,6 +1669,33 @@
+                 continue;
+             }
+             (Value::Neutral(left), Value::Neutral(right)) => {
++                // The original closure machine can leave a registered
++                // Quot.lift neutral after cheap exposure, even though its
++                // exact source major evaluates to Quot.mk. Replay that
++                // registered iota step before comparing rigid heads.
++                if std::env::var_os("NUCLEUS_EXPERIMENTAL_CERTIFIED_QUOT_IOTA").is_some()
++                    && current_budget >= 256
++                {
++                    let machine = checker.machine();
++                    let mut replayed = None;
++                    for (is_left, candidate) in [(true, left), (false, right)] {
++                        if let Judgment::Proven { value, .. } =
++                            machine.qualified_quotient_neutral_result(
++                                candidate, current_budget.min(2048),
++                            )
++                            && !matches!(&value, Value::Neutral(n) if n == candidate)
++                        {
++                            replayed = Some((is_left, value));
++                            break;
++                        }
++                    }
++                    if let Some((is_left, value)) = replayed {
++                        if is_left { current_left = value; }
++                        else { current_right = value; }
++                        current_budget = current_budget.saturating_sub(128);
++                        continue;
++                    }
++                }
+                 // A registered recursor with an actual constructor major is
+                 // reducible even when both applications retain the same head.
+                 // Replay source iota before treating its arguments as rigid.
+@@ -1948,6 +1975,15 @@
+                     work,
+                     context,
+                 ) => {}
++            (Value::Neutral(neutral), Value::Lam { domain, body })
++            | (Value::Lam { domain, body }, Value::Neutral(neutral))
++                if checker.certified_neutral_lambda_proof_irrelevance(
++                    neutral, domain, body, context, current_budget,
++                ) => {
++                    return Judgment::proven(
++                        (), "independently-typed-source-proposition-proof-irrelevance",
++                    );
++                }
+             _ => {
+                 if std::env::var_os("NUCLEUS_TRACE_VALUE_MISMATCH").is_some() {
+                     eprintln!(
