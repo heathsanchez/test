@@ -1,0 +1,97 @@
+name: UDM G3 source-distinct Go native admission
+on:
+  push:
+    branches: [research/udm-g3-source-distinct-native-20261103]
+    paths:
+      - 'research/g2_native_residual/**'
+      - '.github/workflows/udm-g3-source-distinct-native-20261103.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  apparatus:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify nine exact apparatus tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd research/g2_native_residual
+          python -m unittest -v test_qualify 2>&1 | tee /tmp/apparatus.txt
+          grep -q 'Ran 9 tests' /tmp/apparatus.txt
+          grep -q '^OK$' /tmp/apparatus.txt
+  native-source:
+    needs: [apparatus]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 28
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - repo: cenkalti/backoff
+            pr: 197
+            base: 6f228bfdb51209aa375869feb27dcede4fa0db06
+            head: 6ec253533f5445d618a94f4b4d1c45b6ff317518
+            test_file: ticker_test.go
+            label: rank1-backoff
+          - repo: buger/jsonparser
+            pr: 287
+            base: f26958f942dcc5d42b7df8aca007beda60116314
+            head: 858e2cdd7d7063cb0c4389eeaa606be61150ee06
+            test_file: bytes_test.go
+            label: rank3-jsonparser
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: code
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ matrix.repo }}
+          ref: ${{ matrix.base }}
+          path: source
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.0'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify frozen source refs without reading PR body
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C source rev-parse HEAD)" = '${{ matrix.base }}'
+          git -C source fetch --no-tags origin 'refs/pull/${{ matrix.pr }}/head:refs/remotes/origin/mgpr-${{ matrix.pr }}'
+          test "$(git -C source rev-parse refs/remotes/origin/mgpr-${{ matrix.pr }})" = '${{ matrix.head }}'
+      - name: Execute source-native author-test transplant
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p qualification
+          python code/research/g2_native_residual/qualify.py \
+            --repo source --base '${{ matrix.base }}' --head '${{ matrix.head }}' \
+            --test-file '${{ matrix.test_file }}' --output qualification
+          python - <<'PY'
+          import json
+          x=json.load(open('qualification/qualification.json'))
+          assert x['schema']=='mathgraph.g2.author-native-redgreen.v1'
+          assert x['base_sha']=='${{ matrix.base }}' and x['head_sha']=='${{ matrix.head }}'
+          print('NATIVE_SCIENCE_VERDICT:',x['status'])
+          print('NATIVE_WITNESS_COUNT:',len(x.get('matched_failed_tests',[])))
+          for arm in ('original_base','head_contributor','base_transplant'):
+              y=x.get(arm,{})
+              print('ARM',arm,y.get('status','NOT_EXECUTED'),y.get('ran_count',0),y.get('failed_count',0))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: g3-native-${{ matrix.label }}
+          path: qualification
+          retention-days: 60
