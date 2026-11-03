@@ -1,0 +1,96 @@
+name: UDM G1 original Refactory fixture identity qualification
+on:
+  push:
+    branches: [research/udm-g1-native-case-coverage-20261104]
+    paths:
+      - '.github/workflows/udm-g1-native-fixture-identity-20261104.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-native-fixture-metadata:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: code
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: githubhuyang/refactory
+          ref: f05583a56c2e3c50aa8cc0327645283f27df3a68
+          path: source
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Independently match all original Refactory fixture IDs without opening task bodies
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C source rev-parse HEAD)" = f05583a56c2e3c50aa8cc0327645283f27df3a68
+          mkdir -p evidence
+          python - <<'PY'
+          import hashlib,importlib.util,json,tempfile,zipfile
+          from pathlib import Path
+          code=Path('code/research/sustained_refactory_pilot/pilot.py')
+          spec=importlib.util.spec_from_file_location('pilot',code)
+          pilot=importlib.util.module_from_spec(spec);spec.loader.exec_module(pilot)
+          data=Path('source/data.zip')
+          digest=hashlib.sha256(data.read_bytes()).hexdigest()
+          assert digest=='83ad73f288a372583e7a19d090ae133bf126d967534bae68bdf403f9a2cc80d7',('WRONG_SOURCE_ARCHIVE',digest)
+          report=[]
+          with zipfile.ZipFile(data) as archive, tempfile.TemporaryDirectory(prefix='refactory-metadata-only-') as td:
+              names=archive.namelist()
+              for i in range(1,5):
+                  rel='data/question_'+str(i)+'/ans/'
+                  selected=[x for x in names if x.startswith(rel) and not x.endswith('/')]
+                  assert selected,('MISSING_CASE_METADATA',i)
+                  # Match the published original Tester's filename parsing algorithm,
+                  # without reading a single reference program, test value or task body.
+                  inp=set();out=set()
+                  folder=Path(td)/('question_'+str(i))/'ans'
+                  for name in selected:
+                      sub=name[len(rel):]
+                      p=folder/sub;p.parent.mkdir(parents=True,exist_ok=True);p.touch()
+                      filename=p.name
+                      kind=filename.split('_')[0]
+                      key=filename[len(kind)+1:].split('.')[0]
+                      if kind=='input':
+                          assert key and key not in inp,('DUPLICATE_INPUT_CASE',i,key)
+                          inp.add(key)
+                      elif kind=='output':
+                          assert key and key not in out,('DUPLICATE_OUTPUT_CASE',i,key)
+                          out.add(key)
+                  assert inp and inp==out,('ORIGINAL_CASE_INVENTORY_MISMATCH',i,len(inp),len(out))
+                  independent=pilot.fixture_case_ids(folder.parent)
+                  assert independent==sorted(inp),('PARENT_TEST_SET_MISMATCH',i)
+                  binding={'protocol':'dummy','verifier':'dummy','native_case_ids':independent}
+                  complete={'status':'PASS_NATIVE','passed':len(independent),'tests':len(independent),
+                            'cases':{k:True for k in independent},'candidate_sha256':'fixture','binding':binding}
+                  assert pilot.check_reply(complete,'fixture',binding)==complete
+                  shortened=independent[:-1]
+                  forged={'status':'PASS_NATIVE','passed':len(shortened),'tests':len(shortened),
+                          'cases':{k:True for k in shortened},'candidate_sha256':'fixture','binding':binding}
+                  try:pilot.check_reply(forged,'fixture',binding)
+                  except ValueError: pass
+                  else:raise AssertionError(('FALSE_GREEN_PARTIAL_MAP',i))
+                  report.append({'question':i,'recognized_test_ids':len(inp),'complete':True,
+                                 'truncated_map_rejected':True})
+          obj={'schema':'mathgraph.udm.original-refactory-native-case-coverage.v1',
+               'source_commit':'f05583a56c2e3c50aa8cc0327645283f27df3a68',
+               'source_data_sha256':digest,'verification':'WARRANTED_BOUNDED_FIXTURE_COVERAGE_ONLY',
+               'task_bodies_opened':False,'test_cases':report,
+               'strict_g2':'UNKNOWN','strict_g3':'UNKNOWN','external_effect_permission':'NONE'}
+          p=Path('evidence/case-coverage.json');p.write_text(json.dumps(obj,indent=2)+'\n')
+          read=json.loads(p.read_text());assert len(read['test_cases'])==4 and all(x['truncated_map_rejected'] for x in read['test_cases'])
+          print('ORIGINAL_REFATORY_METADATA_ONLY_COVERAGE',[(x['question'],x['recognized_test_ids']) for x in report])
+          print('QUALIFIED_BOUNDED_FIXTURE_COVERAGE_ONLY;G1_FULL_CLOSURE=UNKNOWN')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: udm-g1-original-refactory-fixture-coverage
+          path: evidence
+          retention-days: 60

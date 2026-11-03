@@ -38,11 +38,44 @@ def test_all_arms_receive_same_initial_search():
         assert m.candidates(src,[],arm)==m.candidates(src,[],'A')
 
 def test_oracle_reply_must_bind_source_verifier_and_complete_cases():
-    m=module();binding={'protocol':'x','verifier':'y'}
+    m=module();binding={'protocol':'x','verifier':'y','native_case_ids':['1']}
     good={'status':'PASS_NATIVE','passed':1,'tests':1,'cases':{'1':True},'candidate_sha256':'z','binding':binding}
     assert m.check_reply(good,'z',binding)['status']=='PASS_NATIVE'
     for forged in [dict(good,candidate_sha256='other'),dict(good,binding={}),dict(good,passed=0),dict(good,cases={})]:
         with pytest.raises(ValueError):m.check_reply(forged,'z',binding)
+
+def test_selfconsistent_truncated_oracle_map_is_refused():
+    # The source-authoritative expected test set contains two cases.
+    # A child process must not make a one-case green report authoritative.
+    m=module()
+    binding={'protocol':'x','verifier':'y','native_case_ids':['1','2']}
+    partial={'status':'PASS_NATIVE','passed':1,'tests':1,'cases':{'1':True},
+             'candidate_sha256':'z','binding':binding}
+    with pytest.raises(ValueError,match='case|coverage|test'):
+        m.check_reply(partial,'z',binding)
+
+def test_native_fixture_inventory_is_independently_enumerated(tmp_path):
+    m=module();folder=tmp_path/'ans';folder.mkdir()
+    for k in ('1','2'):
+        (folder/('input_'+k+'.txt')).write_text('input')
+        (folder/('output_'+k+'.txt')).write_text('output')
+    assert m.fixture_case_ids(tmp_path)==['1','2']
+    (folder/'output_2.txt').unlink()
+    assert m.fixture_case_ids(tmp_path)==[]
+    (folder/'output_2.txt').write_text('output')
+    (folder/'nested').mkdir()
+    (folder/'nested'/'input_1.txt').write_text('duplicate')
+    with pytest.raises(ValueError,match='duplicate'):
+        m.fixture_case_ids(tmp_path)
+
+
+def test_parent_refuses_missing_expected_ids_even_when_self_consistent():
+    m=module()
+    binding={'protocol':'x','verifier':'y'}
+    one={'status':'PASS_NATIVE','passed':1,'tests':1,'cases':{'1':True},
+         'candidate_sha256':'z','binding':binding}
+    with pytest.raises(ValueError,match='coverage'):
+        m.check_reply(one,'z',binding)
 
 def test_arm_order_counterbalances_positions():
     m=module();rows=[m.arm_order(i) for i in range(4)]

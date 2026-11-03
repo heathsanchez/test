@@ -1,0 +1,36 @@
+name: UDM G1 independently bound native test coverage
+on:
+  push:
+    branches: [research/udm-g1-native-case-coverage-20261104]
+    paths:
+      - 'research/sustained_refactory_pilot/pilot.py'
+      - 'research/sustained_refactory_pilot/test_pilot.py'
+      - '.github/workflows/udm-g1-case-coverage-20261104.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  case-coverage:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pinned test runner
+        run: python -m pip install --disable-pip-version-check pytest==8.3.5 packaging==26.3
+      - name: Run source-independent native test-map negative controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -B -m pytest -q --import-mode=importlib research/sustained_refactory_pilot/test_pilot.py -k 'truncated_oracle_map or oracle_reply_must_bind or raw_source_hash or fixture_inventory or missing_expected_ids' 2>&1 | tee /tmp/udm-g1.log
+          grep -q '5 passed' /tmp/udm-g1.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: udm-g1-source-coverage-evidence
+          path: /tmp/udm-g1.log
+          retention-days: 60

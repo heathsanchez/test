@@ -1,0 +1,45 @@
+name: UDM G1 complete pre-task pilot regression
+on:
+  push:
+    branches: [research/udm-g1-native-case-coverage-20261104]
+    paths:
+      - '.github/workflows/udm-g1-full-pre-task-regression-20261104.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  complete-unopened-pilot-unit-suite:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/triskelion
+          ref: 426c54f7c774560e0fabe7213c5ef333b1327c71
+          path: components/triskelion
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install fixed unit-test dependencies
+        run: python -m pip install --disable-pip-version-check pytest==8.3.5 packaging==26.3
+      - name: Native V104 and protected fixture-ID controls without opening task bodies
+        shell: bash
+        env:
+          UDM_V104_SOURCE: ${{ github.workspace }}/components/triskelion
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: |
+          set -euo pipefail
+          test "$(git -C components/triskelion rev-parse HEAD)" = 426c54f7c774560e0fabe7213c5ef333b1327c71
+          python -B -m pytest -q --import-mode=importlib research/sustained_refactory_pilot/test_pilot.py 2>&1 | tee /tmp/all-pilot-unit-tests.log
+          grep -q '14 passed' /tmp/all-pilot-unit-tests.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: udm-g1-full-pilot-pre-task-unit-test-evidence
+          path: /tmp/all-pilot-unit-tests.log
+          retention-days: 60
