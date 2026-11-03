@@ -1,0 +1,35 @@
+name: Nucleus staged environment isolated module GREEN
+on:
+  push:
+    branches: [research/nucleus-environment-forks-20261104]
+    paths:
+      - '.github/workflows/nucleus-environment-fork-green-20261104.yml'
+      - 'experiments/nucleus-environment-forks-20261104/green.py'
+      - 'experiments/nucleus-environment-forks-20261104/forked-constants.patch'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  module-green:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Restore exact source bundle and genuine allocation RED
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/envfork-red
+          gh api repos/heathsanchez/test/actions/artifacts/13276679250/zip > /tmp/envfork-red.zip
+          printf '%s  %s\n' bdcd077fd16fe7a3d3da40df1bda9fda99c52cd3e0cb8ffff551fd1914a180d5 /tmp/envfork-red.zip | sha256sum -c -
+          unzip -q /tmp/envfork-red.zip -d /tmp/envfork-red
+      - name: Preserve snapshots, duplicates, authority and checked-root sharing
+        run: python3 experiments/nucleus-environment-forks-20261104/green.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-environment-fork-green-${{ github.sha }}
+          path: /tmp/nucleus-environment-fork-green

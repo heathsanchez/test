@@ -1,0 +1,163 @@
+--- a/metatron-kernel/src/environment.rs
++++ b/metatron-kernel/src/environment.rs
+@@ -104,10 +104,42 @@
+     pub ind: NameId,
+ }
+ 
++// A staged derivation shares the checked prefix and owns only its delta.
++// The prefix is mutated only after every older snapshot has been dropped.
++#[derive(Clone, Debug)]
++struct ForkedConstants {
++    base: Rc<HashMap<NameId, ConstantDecl>>,
++    delta: HashMap<NameId, ConstantDecl>,
++}
++impl ForkedConstants {
++    fn new() -> Self {
++        Self {base:Rc::new(HashMap::new()),delta:HashMap::new()}
++    }
++    fn get(&self,name:&NameId)->Option<&ConstantDecl> {
++        self.delta.get(name).or_else(||self.base.get(name))
++    }
++    fn contains_key(&self,name:&NameId)->bool {self.get(name).is_some()}
++    fn insert(&mut self,name:NameId,declaration:ConstantDecl) {
++        if let Some(base)=Rc::get_mut(&mut self.base) {
++            base.extend(self.delta.drain());
++            base.insert(name,declaration);
++        } else {
++            self.delta.insert(name,declaration);
++        }
++    }
++    fn compact(&mut self) {
++        if let Some(base)=Rc::get_mut(&mut self.base) {
++            base.extend(self.delta.drain());
++        }
++    }
++    #[cfg(test)]
++    fn len(&self)->usize {self.base.len()+self.delta.len()}
++}
++
+ #[derive(Clone, Debug)]
+ pub struct Environment {
+     authority: AuthorityId,
+-    constants: Rc<HashMap<NameId, ConstantDecl>>,
++    constants: ForkedConstants,
+     definitions: Rc<HashMap<NameId, DefinitionBody>>,
+     singleton_recursor_reductions: Rc<HashSet<NameId>>,
+     nullary_minor_reductions: Rc<HashMap<NameId,Vec<NullaryMinorReduction>>>,
+@@ -125,7 +157,7 @@
+     pub fn empty() -> Self {
+         Self {
+             authority: AuthorityId(0),
+-            constants: Rc::new(HashMap::new()),
++            constants: ForkedConstants::new(),
+             definitions: Rc::new(HashMap::new()),
+             singleton_recursor_reductions: Rc::new(HashSet::new()),
+             nullary_minor_reductions: Rc::new(HashMap::new()),
+@@ -148,6 +180,12 @@
+         result.string_literal_type=Some(ty);Ok(result)
+     }
+ 
++    // Physical compaction changes no declarations or logical authority.
++    pub(crate) fn compact_owned(mut self)->Self {
++        self.constants.compact();
++        self
++    }
++
+     pub fn authority(&self) -> AuthorityId {
+         self.authority
+     }
+@@ -178,7 +216,7 @@
+                 level_params:declaration.level_params.clone(),
+             });
+         }
+-        Rc::make_mut(&mut self.constants).insert(name,declaration);
++        self.constants.insert(name,declaration);
+         self.authority=authority;
+         Ok(self)
+     }
+@@ -641,10 +679,31 @@
+ #[cfg(test)]
+ mod owned_append_tests {
+     use super::*;
++    fn checked_constant_root(env:&Environment)->*const HashMap<NameId,ConstantDecl> {
++        Rc::as_ptr(&env.constants.base)
++    }
++    #[test]
++    fn staged_branch_reuses_checked_constant_root_after_snapshot_drop() {
++        let base=Environment::empty().extend_owned(NameId(1),ConstantDecl::axiom(vec![],ExprId(1))).unwrap();
++        let checked_root=checked_constant_root(&base);
++        let staged=base.extend(NameId(2),ConstantDecl::axiom(vec![],ExprId(2))).unwrap();
++        assert!(base.get(NameId(2)).is_none());
++        assert_eq!(staged.get(NameId(2)).unwrap().ty,ExprId(2));
++        let sibling=staged.extend(NameId(3),ConstantDecl::axiom(vec![],ExprId(3))).unwrap();
++        assert!(staged.get(NameId(3)).is_none());
++        assert_eq!(sibling.authority(),AuthorityId(3));
++        drop(staged);drop(base);
++        let committed=sibling.extend_owned(NameId(4),ConstantDecl::axiom(vec![],ExprId(4))).unwrap();
++        assert_eq!(checked_constant_root(&committed),checked_root,"staged signature fork should reuse the checked root after snapshots drop");
++        for i in 1..=4 {assert_eq!(committed.get(NameId(i)).unwrap().ty,ExprId(i));}
++        assert_eq!(committed.authority(),AuthorityId(4));
++        assert_eq!(committed.clone().extend_owned(NameId(3),ConstantDecl::axiom(vec![],ExprId(99))).unwrap_err(),EnvironmentError::DuplicateConstant(NameId(3)));
++    }
++
+     #[test]
+     fn unique_owned_append_preserves_both_map_allocations_across_many_definitions() {
+-        let mut env=Environment::empty();let constants=Rc::as_ptr(&env.constants);let definitions=Rc::as_ptr(&env.definitions);
+-        for i in 0..2048 {env=env.extend_owned(NameId(i),ConstantDecl::definition(vec![],ExprId(0),ExprId(i),true)).unwrap();assert_eq!(Rc::as_ptr(&env.constants),constants,"unique owned publication must avoid cloning all prior signatures");assert_eq!(Rc::as_ptr(&env.definitions),definitions,"unique owned publication must avoid cloning all prior bodies");}
++        let mut env=Environment::empty();let constants=Rc::as_ptr(&env.constants.base);let definitions=Rc::as_ptr(&env.definitions);
++        for i in 0..2048 {env=env.extend_owned(NameId(i),ConstantDecl::definition(vec![],ExprId(0),ExprId(i),true)).unwrap();assert_eq!(Rc::as_ptr(&env.constants.base),constants,"unique owned publication must avoid cloning all prior signatures");assert_eq!(Rc::as_ptr(&env.definitions),definitions,"unique owned publication must avoid cloning all prior bodies");}
+         assert_eq!(env.authority(),AuthorityId(2048));assert_eq!(env.constants.len(),2048);assert_eq!(env.definitions.len(),2048);
+     }
+     #[test]
+@@ -661,9 +720,9 @@
+     }
+     #[test]
+     fn validation_errors_do_not_modify_shared_snapshots_and_siblings_remain_distinct() {
+-        let env=Environment::empty().extend_owned(NameId(1),ConstantDecl::axiom(vec![],ExprId(1))).unwrap();let snapshot=env.clone();let constants=env.constants.clone();
++        let env=Environment::empty().extend_owned(NameId(1),ConstantDecl::axiom(vec![],ExprId(1))).unwrap();let snapshot=env.clone();let constants=env.constants.base.clone();
+         assert_eq!(env.extend_owned(NameId(1),ConstantDecl::definition(vec![],ExprId(2),ExprId(3),true)).unwrap_err(),EnvironmentError::DuplicateConstant(NameId(1)));
+-        assert_eq!(snapshot.get(NameId(1)).unwrap().ty,ExprId(1));assert!(snapshot.definition_bodies().is_empty());assert!(Rc::ptr_eq(&constants,&snapshot.constants));
++        assert_eq!(snapshot.get(NameId(1)).unwrap().ty,ExprId(1));assert!(snapshot.definition_bodies().is_empty());assert!(Rc::ptr_eq(&constants,&snapshot.constants.base));
+         let mut exhausted=snapshot.clone();exhausted.authority=AuthorityId(u64::MAX);let exhausted_snapshot=exhausted.clone();
+         assert_eq!(exhausted.extend_owned(NameId(2),ConstantDecl::definition(vec![],ExprId(2),ExprId(3),true)).unwrap_err(),EnvironmentError::AuthorityOverflow);
+         assert!(exhausted_snapshot.get(NameId(2)).is_none());assert!(exhausted_snapshot.definition_bodies().is_empty());
+@@ -684,4 +743,20 @@
+         assert!(matches!(old.expose(term.clone(),Transparency::Full,32).proven_value(),Some(Value::Neutral(_))));
+     }
+ 
+-}
++    #[test]
++    fn pending_delta_errors_preserve_shared_views_and_definition_authority() {
++        let base=Environment::empty().extend_owned(NameId(1),ConstantDecl::axiom(vec![],ExprId(1))).unwrap();
++        let staged=base.extend(NameId(2),ConstantDecl::axiom(vec![],ExprId(2))).unwrap();
++        let retained=staged.clone();
++        assert_eq!(staged.extend_owned(NameId(2),ConstantDecl::definition(vec![],ExprId(9),ExprId(99),true)).unwrap_err(),EnvironmentError::DuplicateConstant(NameId(2)));
++        assert_eq!(retained.get(NameId(2)).unwrap().ty,ExprId(2));
++        assert!(retained.definition_bodies().is_empty());
++        assert!(base.get(NameId(2)).is_none());
++        let mut exhausted=retained.clone();exhausted.authority=AuthorityId(u64::MAX);
++        let snapshot=exhausted.clone();
++        assert_eq!(exhausted.extend_owned(NameId(3),ConstantDecl::definition(vec![],ExprId(3),ExprId(33),true)).unwrap_err(),EnvironmentError::AuthorityOverflow);
++        assert!(snapshot.get(NameId(3)).is_none());
++        assert_eq!(snapshot.get(NameId(2)).unwrap().ty,ExprId(2));
++        assert!(snapshot.definition_bodies().is_empty());
++    }
++}
+--- a/metatron-kernel/src/checker.rs
++++ b/metatron-kernel/src/checker.rs
+@@ -475,6 +475,7 @@
+                 ) {
+                     Ok(extended) => {
+                         environment = extended;
++                        environment = environment.compact_owned();
+                         continue;
+                     }
+                     Err(verdict) => {
+@@ -492,6 +493,7 @@
+                 match check_inductive(&export, &environment, &block, limits, delta_policy) {
+                     Ok(extended) => {
+                         environment = extended;
++                        environment = environment.compact_owned();
+                         if let Some(ty)=qualified_string_literal_type(&export,&block) {
+                             let Ok(extended)=environment.install_string_literal_type(ty) else{return Verdict::Reject;};
+                             environment=extended;
