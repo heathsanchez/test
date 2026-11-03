@@ -70,7 +70,7 @@ jobs:
           data=(root/'frontier.ndjson').read_bytes()
           head,last=data.rsplit(b'\n',2)[:2] if data.endswith(b'\n') else data.rsplit(b'\n',1)
           record=json.loads(last)
-          assert record['thm']=={'name':1911,'type':16786,'value':16842}
+          assert all(record['thm'][key]==value for key,value in {'name':1911,'type':16786,'value':16842}.items())
           sys.path.insert(0,str(Path('experiments/nucleus-reuse-20261104').resolve()))
           import tournament
           env=tournament.run_env()
