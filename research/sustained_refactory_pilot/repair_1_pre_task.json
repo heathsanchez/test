@@ -1,0 +1,13 @@
+{
+  "evaluation_programs_accessed": 0,
+  "evidence_preservation": "Original STOP and traceback retained; future stdout/stderr written before receipt validation.",
+  "native_calls_before_repair": 1,
+  "original_attempt": "STOPPED_UNKNOWN_ORACLE_SOURCE_BINDING",
+  "previous_source_commit": "f06f8034f02408040fd46cc361fb04ba183f5ed8",
+  "protocol_changed": false,
+  "reference_control_diagnostic_replay_calls": 1,
+  "regression": "CRLF-preservation test RED (missing raw loader) then 11/11 GREEN. Caller/source identity checks not weakened.",
+  "root_cause": "Path.read_text performs universal-newline conversion; original Refactory reference has CRLF bytes, so raw candidate SHA differed from a normalized string SHA. Worker now decodes read_bytes without newline substitution. Original native Tester behavior unchanged.",
+  "status": "INFRASTRUCTURE_REPAIR_BEFORE_TRAINING_OR_HOLDOUT_ACCESS",
+  "training_programs_accessed": 0
+}

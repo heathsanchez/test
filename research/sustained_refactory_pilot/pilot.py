@@ -91,6 +91,9 @@ def check_reply(value,code_hash,binding):
         raise ValueError('oracle case map/status/count disagrees')
     return value
 
+def read_source(path):
+    return Path(path).read_bytes().decode('utf-8')
+
 def oracle(request):
     """Separate process. Only original external Tester supplies truth values."""
     sys.path.insert(0,request['external_repo'])
@@ -98,7 +101,7 @@ def oracle(request):
     t=time.perf_counter();before=context(request['external_repo'],request['question_dir'])
     if before!=request['binding']:raise ValueError('oracle pre-source drift')
     tester=Tester(request['question_dir']);ids=tester.get_tc_id_list()
-    code=Path(request['candidate_file']).read_text()
+    code=read_source(request['candidate_file'])
     result=tester.tv_code(code,timeout=0.10)
     value=classify(result,ids)
     after=context(request['external_repo'],request['question_dir'])
@@ -144,6 +147,7 @@ class Native:
             run=subprocess.run([sys.executable,str(Path(__file__).resolve()),'--oracle',str(folder/'request.json')],
                 capture_output=True,text=True,timeout=8,env={**os.environ,'PYTHONDONTWRITEBYTECODE':'1'})
             stdout,stderr,exit=run.stdout,run.stderr,run.returncode
+            (folder/'stdout.log').write_text(stdout);(folder/'stderr.log').write_text(stderr)
             markers=[line[len('UDM_ORACLE_RESULT='):] for line in stdout.splitlines() if line.startswith('UDM_ORACLE_RESULT=')]
             value=check_reply(json.loads(markers[0]),sha(source.encode()),binding) if exit==0 and len(markers)==1 else {'status':'UNKNOWN_ORACLE_EXECUTION','passed':0,'tests':0,'cases':{}}
             if context(self.external,question_dir)!=binding:raise ValueError('native post-source drift')

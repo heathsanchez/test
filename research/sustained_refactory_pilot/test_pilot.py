@@ -69,3 +69,7 @@ def test_graph_refuses_changed_generator_before_any_task_access():
     cap=types.SimpleNamespace(operation='refactory.v104.retained_search',source=m.protocol()['generator_source'],scope=scope,program='p')
     g.machine=types.SimpleNamespace(mt=types.SimpleNamespace(live_ids=lambda log:['c']),log=[],flash_live_ids=lambda:{'c'},descriptor=lambda key:cap,get=lambda key:{'generator':{}})
     with pytest.raises(ValueError,match='generator'):g.signatures()
+
+def test_raw_source_hash_preserves_crlf_bytes(tmp_path):
+    m=module();path=tmp_path/'source.py';raw=b'def f():\r\n    return 1\r\n';path.write_bytes(raw)
+    assert m.read_source(path).encode()==raw
