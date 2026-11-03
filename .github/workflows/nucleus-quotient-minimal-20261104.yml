@@ -1,0 +1,57 @@
+name: Nucleus quotient minimal two-rule qualification
+on:
+  push:
+    branches: [research/nucleus-quotient-minimal-20261104]
+    paths: ['.github/workflows/nucleus-quotient-minimal-20261104.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  qualify-minimal:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 110
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Source-pin frozen208 and independently qualified baseline
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/current208
+          gh api repos/heathsanchez/test/actions/artifacts/13126161718/zip > /tmp/ref-inputs.zip
+          printf '%s  %s\n' 462e31e21379054490570b465b46ece4fff878490d9ad7de6bbc73149d587f4c /tmp/ref-inputs.zip | sha256sum -c -
+          unzip -q /tmp/ref-inputs.zip -d /tmp/current208
+          gh api repos/heathsanchez/test/actions/artifacts/13242401296/zip > /tmp/reference-qualified.zip
+          printf '%s  %s\n' 94e80c675907498430bea6f5ce89bfe8eeb40922adf4222f906e3b7267217349 /tmp/reference-qualified.zip | sha256sum -c -
+      - name: Source-pin next obstruction and complete Mathlib
+        run: |
+          set -euo pipefail
+          gh api repos/heathsanchez/test/actions/artifacts/13242616719/zip > /tmp/quotient-frontier.zip
+          printf '%s  %s\n' 78183d5b00480e3b3a6bec2346eb07ca99fb268c312d457ebf06df1c8d8722cd /tmp/quotient-frontier.zip | sha256sum -c -
+          unzip -p /tmp/quotient-frontier.zip next-frontier.ndjson.zst | zstd -dc -o /tmp/quotient-prefix.ndjson
+          printf '%s  %s\n' 4883dc9889b546a1117c25c266bae05a344b6609db5cbbfd846a8d7abc92a907 /tmp/quotient-prefix.ndjson | sha256sum -c -
+          mkdir -p /tmp/mathlib-source
+          gh api repos/heathsanchez/test/actions/artifacts/13231986845/zip > /tmp/full-mathlib.zip
+          printf '%s  %s\n' 3dd3fbb522816bdaa9d9cd2808196e075bfa27e3d6c82648731140594f87ce2b /tmp/full-mathlib.zip | sha256sum -c -
+          unzip -q /tmp/full-mathlib.zip -d /tmp/mathlib-source
+          zstd -d /tmp/mathlib-source/mathlib.ndjson.zst -o /tmp/mathlib.ndjson
+          printf '%s  %s\n' 22c5de83469408950005589a3bc5ef5157c65549b5a802f85d567c29151306a6 /tmp/mathlib.ndjson | sha256sum -c -
+          rm /tmp/full-mathlib.zip /tmp/mathlib-source/mathlib.ndjson.zst
+      - name: Remove third rule and repeat every protected gate
+        run: python3 experiments/nucleus-quotient-reuse-20261104/qualify.py --without-exact --out /tmp/nucleus-quot-minimal --mathlib /tmp/mathlib.ndjson
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-quotient-minimal-${{ github.sha }}
+          path: |
+            /tmp/nucleus-quot-minimal/*.json
+            /tmp/nucleus-quot-minimal/*.zst
+            /tmp/nucleus-quot-minimal/candidate/*.json
+            /tmp/nucleus-quot-minimal/candidate/*.log
+            /tmp/nucleus-quot-minimal/candidate/*.patch
+            /tmp/nucleus-quot-minimal/candidate/nucleus
+            /tmp/nucleus-quot-minimal/controls/*.stderr
+            /tmp/nucleus-quot-minimal/mathlib
