@@ -1,0 +1,72 @@
+{
+  "target": "LocallyFiniteOrder",
+  "tag": "inductive",
+  "record": 119100,
+  "declaration": {
+    "ctors": [
+      {
+        "cidx": 0,
+        "induct": 11611,
+        "isUnsafe": false,
+        "levelParams": [
+          32
+        ],
+        "name": 11620,
+        "numFields": 8,
+        "numParams": 2,
+        "type": 105547
+      }
+    ],
+    "recs": [
+      {
+        "all": [
+          11611
+        ],
+        "isUnsafe": false,
+        "k": false,
+        "levelParams": [
+          6,
+          32
+        ],
+        "name": 11629,
+        "numIndices": 0,
+        "numMinors": 1,
+        "numMotives": 1,
+        "numParams": 2,
+        "rules": [
+          {
+            "ctor": 11620,
+            "nfields": 8,
+            "rhs": 105695
+          }
+        ],
+        "type": 105631
+      }
+    ],
+    "types": [
+      {
+        "all": [
+          11611
+        ],
+        "ctors": [
+          11620
+        ],
+        "isRec": false,
+        "isReflexive": false,
+        "isUnsafe": false,
+        "levelParams": [
+          32
+        ],
+        "name": 11611,
+        "numIndices": 0,
+        "numNested": 0,
+        "numParams": 2,
+        "type": 105419
+      }
+    ]
+  },
+  "bytes": 6119388,
+  "sha256": "2833a44b446524b25c8053006a3684d0fdab5779d76ef17695cbd4763ec9a0cd",
+  "name_records_parsed": 11629,
+  "original_input_sha256": "22c5de83469408950005589a3bc5ef5157c65549b5a802f85d567c29151306a6"
+}

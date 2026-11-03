@@ -1,0 +1,137 @@
+--- a/metatron-kernel/src/checker.rs
++++ b/metatron-kernel/src/checker.rs
+@@ -2470,6 +2470,11 @@
+     limits: Limits,
+     delta_policy: DeltaPolicy,
+ ) -> Result<Environment, Verdict> {
++    if parameter_record_scope(export,block) {
++        let mut roots=vec![block.types[0].ty,block.constructors[0].ty,block.recursors[0].ty];
++        roots.extend(block.recursors[0].rules.iter().map(|rule|rule.rhs));
++        if !bounded_record_source(export,&roots,None) {return Err(Verdict::Unknown);}
++    }
+     if generated_mutual_nested_family_candidate(export, block) {
+         return check_generated_mutual_nested_family(
+             export,
+@@ -2846,41 +2851,79 @@
+         && is_bvar(export,fields[2],1) && is_bvar(export,fields[3],1)
+ }
+ 
+-fn parameter_record_candidate(export:&ResolvedExport,block:&InductiveBlock)->bool {
++// Bound expanded source work, including annotations and let/projection children.
++// Missing nodes, deep terms, and exhausted work decline this admission path.
++fn bounded_record_source(export:&ResolvedExport, roots:&[ExprId], forbidden:Option<NameId>)->bool {
++    let mut pending=roots.iter().map(|root|(*root,0usize)).collect::<Vec<_>>();
++    let mut remaining=131_072usize;
++    while let Some((node,depth))=pending.pop() {
++        if remaining==0 || depth>512 {return false;}
++        remaining-=1;
++        match export.exprs.get(node) {
++            Some(Expr::Const{name,..})=>if Some(*name)==forbidden {return false;},
++            Some(Expr::App{fun,arg})=>{pending.push((*fun,depth+1));pending.push((*arg,depth+1));},
++            Some(Expr::Lam{domain,body}|Expr::Pi{domain,body})=>{pending.push((*domain,depth+1));pending.push((*body,depth+1));},
++            Some(Expr::Let{ty,value,body})=>{pending.push((*ty,depth+1));pending.push((*value,depth+1));pending.push((*body,depth+1));},
++            Some(Expr::Proj{type_name,structure,..})=>{if Some(*type_name)==forbidden {return false;}pending.push((*structure,depth+1));},
++            Some(Expr::BVar(_)|Expr::NatLit(_)|Expr::StrLit(_)|Expr::Sort(_))=>{},
++            None=>return false,
++        }
++    }
++    true
++}
++
++fn parameter_record_scope(export:&ResolvedExport,block:&InductiveBlock)->bool {
+     let ([inductive],[constructor],[_])=(block.types.as_slice(),block.constructors.as_slice(),block.recursors.as_slice()) else{return false;};
+-    let [universe]=inductive.level_params.as_slice() else{return false;};
+-    if inductive.num_params!=1 || constructor.num_params!=1 || !(2..=64).contains(&constructor.num_fields) {return false;}
+-    let Some((parameters,result))=pi_spine(export,inductive.ty,1) else{return false;};
+-    let Some((fields,_))=pi_spine(export,constructor.ty,1+constructor.num_fields as usize) else{return false;};
+-    is_sort_succ_parameter(export,parameters[0],*universe) && is_sort_succ_parameter(export,result,*universe)
+-        && expr_eq_with_bvar_shift(export,parameters[0],fields[0],0,0)
+-        && fields[1..].iter().all(|field|!expression_contains_constant(export,*field,inductive.name))
++    if inductive.level_params.len()!=1 || !(1..=64).contains(&inductive.num_params)
++        || !(2..=64).contains(&constructor.num_fields) {return false;}
++    let Some((parameters,result))=pi_spine(export,inductive.ty,inductive.num_params as usize) else{return false;};
++    is_sort_succ_parameter(export,parameters[0],inductive.level_params[0])
++        && is_sort_succ_parameter(export,result,inductive.level_params[0])
++}
++
++fn parameter_record_candidate(export:&ResolvedExport,block:&InductiveBlock)->bool {
++    if !parameter_record_scope(export,block) {return false;}
++    let inductive=&block.types[0];let constructor=&block.constructors[0];let recursor=&block.recursors[0];
++    let universe=inductive.level_params[0];let p=inductive.num_params as usize;
++    if constructor.num_params!=inductive.num_params {return false;}
++    let mut roots=vec![inductive.ty,constructor.ty,recursor.ty];roots.extend(recursor.rules.iter().map(|rule|rule.rhs));
++    if !bounded_record_source(export,&roots,None) {return false;}
++    let Some((parameters,result))=pi_spine(export,inductive.ty,p) else{return false;};
++    let Some((fields,_))=pi_spine(export,constructor.ty,p+constructor.num_fields as usize) else{return false;};
++    is_sort_succ_parameter(export,parameters[0],universe) && is_sort_succ_parameter(export,result,universe)
++        && parameters.iter().zip(&fields[..p]).all(|(a,b)|expr_eq_with_bvar_shift(export,*a,*b,0,0))
++        && bounded_record_source(export,&fields[p..],Some(inductive.name))
+ }
+ 
+ fn parameter_record_obligations(export:&ResolvedExport,environment:&Environment,block:&InductiveBlock,limits:Limits,policy:DeltaPolicy)->bool {
+-    let ([inductive],[constructor],[recursor])=(block.types.as_slice(),block.constructors.as_slice(),block.recursors.as_slice()) else{return false;};
+-    let count=constructor.num_fields as usize;
+-    let Some((parameters,result))=pi_spine(export,inductive.ty,1) else{return false;};
++    if !parameter_record_candidate(export,block) {return false;}
++    let inductive=&block.types[0];let constructor=&block.constructors[0];let recursor=&block.recursors[0];
++    let p=inductive.num_params as usize;let count=constructor.num_fields as usize;
++    let Some((parameters,result))=pi_spine(export,inductive.ty,p) else{return false;};
+     let Some(Expr::Sort(level))=export.exprs.get(result) else{return false;};
+     let substitution=parameter_substitution(&inductive.level_params);
+     let Ok(carrier)=crate::level::instantiate_level(&export.levels,*level,&substitution,limits.judgment_steps) else{return false;};
+     let checker=TypeChecker::with_level_substitution(&export.exprs,&export.levels,environment,substitution).with_delta_policy(policy);
+-    let Some((fields,_))=pi_spine(export,constructor.ty,count+1) else{return false;};
+-    let mut frame=EnvFrame::empty().extend_free(FreeId(0));
+-    let mut context=vec![TypeValue::Term(checker.closure(parameters[0],EnvFrame::empty()))];
+-    for (k,field) in fields[1..].iter().enumerate() {
++    let Some((fields,_))=pi_spine(export,constructor.ty,count+p) else{return false;};
++    let mut frame=EnvFrame::empty();let mut context=Vec::new();
++    // Parameter domains may exceed the carrier universe. Each is formed in
++    // its own preceding telescope; fields must fit the declared carrier.
++    for parameter in &parameters {
++        if !checker.infer_sort_in_context(*parameter,&context,&frame,limits.judgment_steps).is_proven() {return false;}
++        context.push(TypeValue::Term(checker.closure(*parameter,frame.clone())));
++        frame=frame.extend_free(FreeId((context.len()-1) as u64));
++    }
++    for field in &fields[p..] {
+         let Judgment::Proven{value:sort,..}=checker.infer_sort_in_context(*field,&context,&frame,limits.judgment_steps) else{return false;};
+-        // Field universes must fit the declared carrier, including proof
+-        // fields. Merely checking the constructor telescope is insufficient.
+         if !crate::level::level_equal(crate::level::max(sort,carrier.clone()),carrier.clone(),limits.judgment_steps).is_proven() {return false;}
+         context.push(TypeValue::Term(checker.closure(*field,frame.clone())));
+-        frame=frame.extend_free(FreeId((k+1) as u64));
++        frame=frame.extend_free(FreeId((context.len()-1) as u64));
+     }
+-    let Some((rec_domains,_))=pi_spine(export,recursor.ty,4) else{return false;};
++    let Some((rec_domains,_))=pi_spine(export,recursor.ty,p+3) else{return false;};
+     let [rule]=recursor.rules.as_slice() else{return false;};
+-    let Some((annotations,_))=lam_spine(export,rule.rhs,count+3) else{return false;};
+-    rec_domains[..3].iter().zip(&annotations[..3]).all(|(a,b)|expr_eq_with_bvar_shift(export,*a,*b,0,0))
+-        && fields[1..].iter().zip(&annotations[3..]).enumerate().all(|(k,(a,b))|
++    let Some((annotations,_))=lam_spine(export,rule.rhs,count+p+2) else{return false;};
++    rec_domains[..p+2].iter().zip(&annotations[..p+2]).all(|(a,b)|expr_eq_with_bvar_shift(export,*a,*b,0,0))
++        && fields[p..].iter().zip(&annotations[p+2..]).enumerate().all(|(k,(a,b))|
+             expr_eq_with_bvar_shift(export,*a,*b,k as u64,2)
+                 || expr_eq_with_bvar_shift(export,checked_erased_closed_field(export,environment,*a),*b,k as u64,2))
+ }
+@@ -2897,6 +2940,11 @@
+ }
+ 
+ fn generic_nonrecursive_type_candidate(export: &ResolvedExport, block: &InductiveBlock) -> bool {
++    if parameter_record_scope(export,block) {
++        let mut roots=vec![block.types[0].ty,block.constructors[0].ty,block.recursors[0].ty];
++        roots.extend(block.recursors[0].rules.iter().map(|rule|rule.rhs));
++        if !bounded_record_source(export,&roots,None) {return false;}
++    }
+     let ([inductive], [constructor], [recursor]) = (
+         block.types.as_slice(),
+         block.constructors.as_slice(),
+@@ -4209,7 +4257,7 @@
+         return Err(Verdict::Unknown);
+     }
+     if same_universe_pair_candidate(export,block) && !same_universe_pair_obligations(export,block) {return Err(Verdict::Unknown);}
+-    if parameter_record_candidate(export,block) && !parameter_record_obligations(export,environment,block,limits,delta_policy) {return Err(Verdict::Unknown);}
++    if parameter_record_scope(export,block) && !parameter_record_obligations(export,environment,block,limits,delta_policy) {return Err(Verdict::Unknown);}
+     if parametric_field_enum_candidate(export, block)
+         && !parametric_field_enum_obligations(export, environment, block, limits, delta_policy) { return Err(Verdict::Unknown); }
+     if closed_pair_record_candidate(export, block)
