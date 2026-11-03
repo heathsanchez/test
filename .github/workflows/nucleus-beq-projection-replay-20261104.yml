@@ -1,0 +1,53 @@
+name: Nucleus checked projection source replay Nat.beq_refl RED GREEN
+on:
+  push:
+    branches: [research/nucleus-budget4x-qualification-20261104]
+    paths:
+      - '.github/workflows/nucleus-beq-projection-replay-20261104.yml'
+      - 'experiments/nucleus-beq-projection-replay-20261104/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-exact-screen:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 1}
+      - run: git fetch --no-tags --depth=1 origin a2578e77079719ff2064f910bd82fd01d8e120b6
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Restore source pinned authentic original and 4x baseline
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/beq-budget4x /tmp/beq-source
+          gh api repos/heathsanchez/test/actions/artifacts/13266857833/zip > /tmp/budget4x.zip
+          printf '%s  %s\n' 2d16ba78be1f181ee99ad618f60a9d1f1d394d75d6aa54eaf2686f90b749da46 /tmp/budget4x.zip | sha256sum -c -
+          unzip -q /tmp/budget4x.zip -d /tmp/beq-budget4x
+          gh api repos/heathsanchez/test/actions/artifacts/13268572042/zip > /tmp/beq-source.zip
+          printf '%s  %s\n' 00ce34eb4e8bb6e9b5fd8d5223bb07ef613364e8ece1f4fcc6cddb24804118b2 /tmp/beq-source.zip | sha256sum -c -
+          unzip -q /tmp/beq-source.zip -d /tmp/beq-source
+          zstd -d /tmp/beq-source/next-frontier.ndjson.zst -o /tmp/beq-prefix.ndjson
+          printf '%s  %s\n' d1c35f6a0de8644817b404e225a16de460e897e0b34c129fcb2a37483e630738 /tmp/beq-prefix.ndjson | sha256sum -c -
+      - name: Prepare standard source controls
+        run: |
+          python3 experiments/nucleus-nat-closure-20261104/generate_fixtures.py --out /tmp/nat-fixtures
+          python3 experiments/nucleus-parameter-telescope-20261104/prepare.py
+          python3 experiments/nucleus-nullary-enum-20261104/prepare.py
+      - name: Red baseline, one source-checked projection replay candidate, forged and native
+        run: python3 experiments/nucleus-beq-projection-replay-20261104/runner.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-beq-projection-replay-${{ github.sha }}
+          path: |
+            /tmp/nucleus-beq-projection/*.json
+            /tmp/nucleus-beq-projection/*.log
+            /tmp/nucleus-beq-projection/source/*.patch
+            /tmp/nucleus-beq-projection/source/*.log
+            /tmp/nucleus-beq-projection/source/nucleus
+            /tmp/nucleus-beq-projection/red/stderr
+            /tmp/nucleus-beq-projection/green/stderr
