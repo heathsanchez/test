@@ -1,0 +1,82 @@
+name: G2 V2 frozen source-distinct native cohort
+on:
+  push:
+    branches: [research/g2-native-new-test-admission-v2-20261103]
+    paths: ['.github/workflows/g2-v2-cold-cohort.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  original-native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {rank: 1, repo: 'cenkalti/backoff', pr: 197, base: '6f228bfdb51209aa375869feb27dcede4fa0db06', head: '6ec253533f5445d618a94f4b4d1c45b6ff317518', testfile: 'ticker_test.go'}
+          - {rank: 2, repo: 'cenkalti/backoff', pr: 195, base: 'b1a30d947ca896d37518610255281904b439c619', head: '2523cd51b294ee1c3f66142350d9b6f15443380e', testfile: 'retry_test.go'}
+          - {rank: 3, repo: 'joho/godotenv', pr: 262, base: 'a2be92d182fc04da33b365bf47c17fe0f4808aea', head: 'b724238db6209280ed96a4e04aa2af38063763d9', testfile: 'godotenv_test.go'}
+          - {rank: 4, repo: 'samber/lo', pr: 993, base: '92663432d4f44300b3daf77a2641cd0b00d0b5d2', head: '5b4c3c162309bd4544ea51997980d1e98a22682a', testfile: 'find_test.go'}
+          - {rank: 5, repo: 'samber/lo', pr: 980, base: '92663432d4f44300b3daf77a2641cd0b00d0b5d2', head: '02c8dd96c36eb2b9a5b149d107fb2b41fb961baf', testfile: 'slice_test.go'}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: tooling
+          ref: a39b021e93d6033971dd32432b216e27ac83b7c2
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ matrix.repo }}
+          ref: ${{ matrix.base }}
+          fetch-depth: 0
+          path: source
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.0'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Exact source and PR metadata identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C source rev-parse HEAD)" = '${{ matrix.base }}'
+          git -C source fetch --no-tags origin 'refs/pull/${{ matrix.pr }}/head:refs/remotes/origin/pr-${{ matrix.pr }}'
+          test "$(git -C source rev-parse refs/remotes/origin/pr-${{ matrix.pr }})" = '${{ matrix.head }}'
+          test -z "$(git -C source status --porcelain)"
+      - name: Native author assertion admission on pristine source
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p qualification
+          python tooling/research/g2_native_residual/qualify_v2.py \
+            --repo source --base '${{ matrix.base }}' \
+            --head '${{ matrix.head }}' --test-file '${{ matrix.testfile }}' --output qualification
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('qualification/qualification.json').read_text())
+          assert d['schema']=='mathgraph.g2.author-native-redgreen.v1'
+          statuses = { 'WARRANTED_BOUNDED_AUTHENTIC_AUTHOR_NATIVE_RED_GREEN',
+                      'UNKNOWN_NO_NATIVE_FAILING_ASSERTION','UNKNOWN_NO_SAME_TEST_HEAD_PASS',
+                      'UNKNOWN_ORIGINAL_SOURCE_SUITE','UNKNOWN_WORKTREE_CHECKOUT',
+                      'UNKNOWN_SOURCE_SHA_MISMATCH','UNKNOWN_SOURCE_OBJECT_MISSING',
+                      'UNKNOWN_HEAD_TEST_FILE_MISSING','UNKNOWN_NO_AUTHOR_TEST_CHANGE',
+                      'UNKNOWN_UNHANDLED_APPARATUS_EXCEPTION' }
+          assert d['status'] in statuses, d
+          if d['status'].startswith('WARRANTED_'):
+             assert d['original_base']['status']=='PASS_NONEMPTY'
+             assert d['head_contributor']['status']=='PASS_NONEMPTY'
+             assert d['base_transplant']['status']=='FAIL_NATIVE_ASSERTIONS'
+             assert d['matched_failed_tests']
+          print('SCIENTIFIC_NATIVE_VERDICT', d['status'])
+          print('SCI_G2',d.get('scientific_g2','UNKNOWN'),'SCI_G3',d.get('scientific_g3','UNKNOWN'))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: g2-v2-prospective-native-rank-${{ matrix.rank }}
+          path: qualification
+          retention-days: 60
