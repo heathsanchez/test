@@ -71,11 +71,10 @@ def main():
     OUT.mkdir(exist_ok=True)
     C.OUT = OUT
     source_patch = ROOT.parent / 'nucleus-ac-sort-20261104/sort-carrier.patch'
-    # The second diff is defined against the tree after the first source patch.
-    # Its exact output digest becomes the source qualification identity.
-    combined = ROOT / 'combined.patch'
-    combined.write_text(source_patch.read_text() + (ROOT / 'max1.patch').read_text())
-    C.main(additional_patch=combined, additional_gate=new_gate)
+    # Apply in two fail-closed patch invocations: the second diff is defined
+    # against the already-extended one-parameter source tree.
+    C.main(additional_patch=[source_patch, ROOT / 'max1.patch'],
+           additional_gate=new_gate)
     protected = json.loads((OUT / 'qualification.json').read_text())['candidate']
     full = json.loads((OUT / 'full.json').read_text())
     source = json.loads((OUT / 'max1_gate.json').read_text())
