@@ -1,6 +1,6 @@
 """Read-only, independently recomputed audit of frozen native pilot evidence."""
 from __future__ import annotations
-import argparse, collections, hashlib, json
+import argparse, collections, hashlib, json, re
 from pathlib import Path
 import subprocess, zipfile
 
@@ -9,7 +9,20 @@ def require(ok,why):
     if not ok:raise ValueError(why)
 def canonical(x):return json.dumps(x,sort_keys=True,separators=(',',':'),allow_nan=False)
 
-def audit(root,repo,archive):
+LEGACY_FROZEN_RUNNER='f917955b2f83d3f21d598a81634aeeb60a7c0af5'
+
+def authorize_audit_runner(summary,source_commit,runner_sha256):
+    require(bool(re.fullmatch(r'[0-9a-f]{40}',source_commit)),'invalid runner commit')
+    if 'runner_source_commit' not in summary:
+        # Old 96-row native pilot is immutable. Do not silently use its runner
+        # for a successor that emits no independently bound source identity.
+        require(source_commit==LEGACY_FROZEN_RUNNER,'unbound legacy runner')
+    else:
+        require(summary['runner_source_commit']==source_commit,'wrong producer runner commit')
+        require(summary.get('runner_sha256')==runner_sha256,'wrong producer runner bytes')
+    return source_commit
+
+def audit(root,repo,archive,source_commit=LEGACY_FROZEN_RUNNER):
     root,repo,archive=map(Path,(root,repo,archive))
     protocol=json.loads((repo/'research/sustained_refactory_pilot/protocol.json').read_text())
     ph=sha((repo/'research/sustained_refactory_pilot/protocol.json').read_bytes())
@@ -18,8 +31,9 @@ def audit(root,repo,archive):
     rows=json.loads((root/'rows.json').read_text());summary=json.loads((root/'summary.json').read_text())
     require(summary['status']=='EXECUTED_BOUNDED_PILOT','pilot incomplete')
     require(not (root/'STOP.json').exists(),'pilot stopped')
-    source_pin='f917955b2f83d3f21d598a81634aeeb60a7c0af5'
+    source_pin=source_commit
     runner=subprocess.check_output(['git','-C',str(repo),'show',source_pin+':research/sustained_refactory_pilot/pilot.py'])
+    authorize_audit_runner(summary,source_pin,sha(runner))
     # Historical receipts bind the original runner through each native source
     # context below. Do not compare against this successor's changed pilot.py:
     # an independent verifier must audit the old run without rewriting it.
@@ -90,5 +104,5 @@ def audit(root,repo,archive):
       'strict_G2':'UNKNOWN','strict_G3':'UNKNOWN','G5':'UNKNOWN','G6':'UNKNOWN','model_calls':0}
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser();p.add_argument('--root',required=True);p.add_argument('--repo',required=True);p.add_argument('--archive',required=True);p.add_argument('--out',required=True);a=p.parse_args()
-    result=audit(a.root,a.repo,a.archive);Path(a.out).write_text(json.dumps(result,sort_keys=True,indent=2)+'\n');print(result['status'])
+    p=argparse.ArgumentParser();p.add_argument('--root',required=True);p.add_argument('--repo',required=True);p.add_argument('--archive',required=True);p.add_argument('--out',required=True);p.add_argument('--source-commit',default=LEGACY_FROZEN_RUNNER);a=p.parse_args()
+    result=audit(a.root,a.repo,a.archive,a.source_commit);Path(a.out).write_text(json.dumps(result,sort_keys=True,indent=2)+'\n');print(result['status'])
