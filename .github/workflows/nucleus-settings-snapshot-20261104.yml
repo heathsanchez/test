@@ -39,7 +39,22 @@ jobs:
           fi
           rm /tmp/input.zip
       - name: Scoped settings controls and paired structural experiment
-        run: python3 experiments/nucleus-settings-snapshot-20261104/wave.py ${{ matrix.phase }} --out /tmp/structural --inputs /tmp/current208
+        run: |
+          phase='${{ matrix.phase }}'
+          if [ "$phase" = full ]; then phase=fullfirst; fi
+          python3 experiments/nucleus-settings-snapshot-20261104/wave.py "$phase" --out /tmp/structural --inputs /tmp/current208
+      - uses: actions/upload-artifact@v4
+        if: matrix.phase == 'full'
+        with:
+          name: nucleus-settings-first-round-${{ github.sha }}
+          path: |
+            /tmp/structural/*.json
+            /tmp/structural/*/*.json
+            /tmp/structural/*/*.log
+            /tmp/structural/*/round-*
+      - name: Repeat paired full-input observations
+        if: matrix.phase == 'full'
+        run: python3 experiments/nucleus-settings-snapshot-20261104/wave.py fullrest --out /tmp/structural
       - uses: actions/upload-artifact@v4
         if: always()
         with:
