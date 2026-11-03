@@ -1,0 +1,30 @@
+--- a/metatron-kernel/src/checker.rs
++++ b/metatron-kernel/src/checker.rs
+@@ -2888,3 +2888,12 @@
+ }
+ 
++// Exact source universe form for records in Sort (max 1 u).
++// Recursor/constructor signatures are still fully derived and checked.
++fn is_sort_max_one_parameter(export:&ResolvedExport,expression:ExprId,parameter:NameId)->bool {
++    let Some(Expr::Sort(level))=export.exprs.get(expression) else{return false;};
++    let Some(Level::Max(one,carrier))=export.levels.get(*level) else{return false;};
++    matches!(export.levels.get(*one),Some(Level::Succ(zero)) if matches!(export.levels.get(*zero),Some(Level::Zero)))
++        && matches!(export.levels.get(*carrier),Some(Level::Param(name)) if *name==parameter)
++}
++
+ fn parameter_record_scope(export:&ResolvedExport,block:&InductiveBlock)->bool {
+@@ -2895,5 +2904,6 @@
+     let Some((parameters,result))=pi_spine(export,inductive.ty,inductive.num_params as usize) else{return false;};
+     (is_sort_succ_parameter(export,parameters[0],inductive.level_params[0])
+             || (inductive.num_params == 1 && is_sort_parameter(export,parameters[0],inductive.level_params[0])))
+-        && is_sort_succ_parameter(export,result,inductive.level_params[0])
++        && (is_sort_succ_parameter(export,result,inductive.level_params[0])
++            || (inductive.num_params==1 && is_sort_parameter(export,parameters[0],inductive.level_params[0]) && is_sort_max_one_parameter(export,result,inductive.level_params[0])))
+ }
+@@ -2909,4 +2919,5 @@
+     let Some((fields,_))=pi_spine(export,constructor.ty,p+constructor.num_fields as usize) else{return false;};
+     (is_sort_succ_parameter(export,parameters[0],universe)
+-            || (p == 1 && is_sort_parameter(export,parameters[0],universe))) && is_sort_succ_parameter(export,result,universe)
++            || (p == 1 && is_sort_parameter(export,parameters[0],universe))) && (is_sort_succ_parameter(export,result,universe)
++            || (p==1 && is_sort_parameter(export,parameters[0],universe) && is_sort_max_one_parameter(export,result,universe)))
+         && parameters.iter().zip(&fields[..p]).all(|(a,b)|expr_eq_with_bvar_shift(export,*a,*b,0,0))
