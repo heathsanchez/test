@@ -1,0 +1,103 @@
+name: Nucleus budget4x exact full Mathlib and protected replay
+on:
+  push:
+    branches: [research/nucleus-budget4x-full-20261104]
+    paths:
+      - '.github/workflows/nucleus-budget4x-full-20261104.yml'
+      - 'experiments/nucleus-budget4x-full-20261104/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  full-mathlib:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 110
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Unit tests for fail-closed replay classification and frontier extraction
+        run: PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s experiments/nucleus-budget4x-full-20261104 -p 'test_*.py' -v
+      - name: Restore exact budget4x tournament candidate and causal one-line delta
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/budget4x/source /tmp/budget4x/full
+          gh api repos/heathsanchez/test/actions/artifacts/13266857833/zip > /tmp/budget4x-candidate.zip
+          printf '%s  %s\n' 2d16ba78be1f181ee99ad618f60a9d1f1d394d75d6aa54eaf2686f90b749da46 /tmp/budget4x-candidate.zip | sha256sum -c -
+          unzip -q /tmp/budget4x-candidate.zip 'budget4x/nucleus' 'budget4x/source.patch' 'budget4x/candidate.patch' -d /tmp/budget4x/source
+          printf '%s  %s\n' 659d68f956fefac853e3b4b9c6a402a317de362588f3ddc7962e950cfce8161a /tmp/budget4x/source/budget4x/nucleus | sha256sum -c -
+          printf '%s  %s\n' 203de44b272d3f0d524e6dff8a25aaddee06d291ca565a0123d2694ca0bdd719 /tmp/budget4x/source/budget4x/source.patch | sha256sum -c -
+          printf '%s  %s\n' 5c5fec980a9e155a23857b42ef371d77a790465cc3ceea03ed9ced370f267260 /tmp/budget4x/source/budget4x/candidate.patch | sha256sum -c -
+          grep -q '^[-]            judgment_steps: 65_536,' /tmp/budget4x/source/budget4x/candidate.patch
+          grep -q '^[+]            judgment_steps: 262_144,' /tmp/budget4x/source/budget4x/candidate.patch
+          chmod +x /tmp/budget4x/source/budget4x/nucleus
+          rm /tmp/budget4x-candidate.zip
+      - name: Restore and byte-verify entire 6.18GB source export
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/budget4x/input
+          gh api repos/heathsanchez/test/actions/artifacts/13231986845/zip > /tmp/budget4x-input.zip
+          printf '%s  %s\n' 3dd3fbb522816bdaa9d9cd2808196e075bfa27e3d6c82648731140594f87ce2b /tmp/budget4x-input.zip | sha256sum -c -
+          unzip -q /tmp/budget4x-input.zip -d /tmp/budget4x/input
+          zstd -d /tmp/budget4x/input/mathlib.ndjson.zst -o /tmp/budget4x/mathlib.ndjson
+          printf '%s  %s\n' 22c5de83469408950005589a3bc5ef5157c65549b5a802f85d567c29151306a6 /tmp/budget4x/mathlib.ndjson | sha256sum -c -
+          test "$(stat -c %s /tmp/budget4x/mathlib.ndjson)" -eq 6184415052
+          rm /tmp/budget4x-input.zip /tmp/budget4x/input/mathlib.ndjson.zst
+      - name: Run actual kernel through complete input, retain exact next UNKNOWN
+        run: |
+          python3 experiments/nucleus-budget4x-full-20261104/runner.py full \
+            --binary /tmp/budget4x/source/budget4x/nucleus \
+            --source-patch /tmp/budget4x/source/budget4x/source.patch \
+            --source /tmp/budget4x/mathlib.ndjson \
+            --timeout 5400 --out /tmp/budget4x/full
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-budget4x-full-${{ github.sha }}
+          compression-level: 0
+          path: |
+            /tmp/budget4x/full/summary.json
+            /tmp/budget4x/full/next-frontier.ndjson.zst
+            /tmp/budget4x/full/full-input/result.json
+            /tmp/budget4x/full/full-input/time.txt
+            /tmp/budget4x/full/full-input/stdout
+            /tmp/budget4x/full/full-input/stderr
+            /tmp/budget4x/source/budget4x/candidate.patch
+  protected-208:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore byte-verified exact candidate
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/budget4x/source /tmp/budget4x/corpus /tmp/current208
+          gh api repos/heathsanchez/test/actions/artifacts/13266857833/zip > /tmp/budget4x-candidate.zip
+          printf '%s  %s\n' 2d16ba78be1f181ee99ad618f60a9d1f1d394d75d6aa54eaf2686f90b749da46 /tmp/budget4x-candidate.zip | sha256sum -c -
+          unzip -q /tmp/budget4x-candidate.zip 'budget4x/nucleus' 'budget4x/source.patch' -d /tmp/budget4x/source
+          chmod +x /tmp/budget4x/source/budget4x/nucleus
+          rm /tmp/budget4x-candidate.zip
+      - name: Restore exact protected 208-case verdict corpus
+        run: |
+          set -euo pipefail
+          gh api repos/heathsanchez/test/actions/artifacts/13126161718/zip > /tmp/budget4x-protected.zip
+          printf '%s  %s\n' 462e31e21379054490570b465b46ece4fff878490d9ad7de6bbc73149d587f4c /tmp/budget4x-protected.zip | sha256sum -c -
+          unzip -q /tmp/budget4x-protected.zip -d /tmp/current208
+          rm /tmp/budget4x-protected.zip
+      - name: Replay protected outcomes with fresh kernel execution
+        run: |
+          python3 experiments/nucleus-budget4x-full-20261104/runner.py corpus \
+            --binary /tmp/budget4x/source/budget4x/nucleus \
+            --source-patch /tmp/budget4x/source/budget4x/source.patch \
+            --inputs /tmp/current208 --out /tmp/budget4x/corpus
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-budget4x-protected-${{ github.sha }}
+          compression-level: 0
+          path: |
+            /tmp/budget4x/corpus/summary.json
+            /tmp/budget4x/corpus/verdicts.json
