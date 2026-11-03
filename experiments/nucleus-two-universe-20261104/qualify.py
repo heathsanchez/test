@@ -42,44 +42,51 @@ fn is_two_owner_record_carrier(export:&ResolvedExport,expression:ExprId,u:NameId
 fn two_owner_record_candidate(export:&ResolvedExport,block:&InductiveBlock)->bool {
     let ([inductive],[constructor],[recursor])=(block.types.as_slice(),block.constructors.as_slice(),block.recursors.as_slice()) else {return false;};
     let [u,v]=inductive.level_params.as_slice() else {return false;};
+    let trace=std::env::var_os("NUCLEUS_TRACE_TWO_OWNER").is_some() && inductive.num_params==2 && constructor.num_fields==3;
     if inductive.num_params!=2 || constructor.num_params!=2 || !(2..=16).contains(&constructor.num_fields)
         || inductive.num_indices!=0 || inductive.num_nested!=0 || inductive.is_recursive
         || inductive.is_reflexive || inductive.is_unsafe || constructor.is_unsafe || recursor.is_unsafe
         || recursor.k || recursor.num_params!=2 || recursor.num_indices!=0
         || recursor.num_minors!=1 || recursor.num_motives!=1 || recursor.level_params.len()!=3
-        || recursor.rules.len()!=1 {return false;}
-    let Some((params,result))=pi_spine(export,inductive.ty,2) else {return false;};
+        || recursor.rules.len()!=1 {if trace {eprintln!("NUCLEUS_TWO:metadata_fail");} return false;}
+    let Some((params,result))=pi_spine(export,inductive.ty,2) else {if trace {eprintln!("NUCLEUS_TWO:inductive_telescope_fail");} return false;};
     if !is_sort_parameter(export,params[0],*u) || !is_sort_parameter(export,params[1],*v)
-        || !is_two_owner_record_carrier(export,result,*u,*v) {return false;}
-    let Some((domains,_))=pi_spine(export,constructor.ty,2+constructor.num_fields as usize) else {return false;};
-    params.iter().zip(&domains[..2]).all(|(p,c)|expr_eq_with_bvar_shift(export,*p,*c,0,0))
-        && domains[2..].iter().all(|field|!expression_contains_constant(export,*field,inductive.name))
+        || !is_two_owner_record_carrier(export,result,*u,*v) {if trace {eprintln!("NUCLEUS_TWO:carrier_or_owner_fail");} return false;}
+    let Some((domains,_))=pi_spine(export,constructor.ty,2+constructor.num_fields as usize) else {if trace {eprintln!("NUCLEUS_TWO:ctor_telescope_fail");} return false;};
+    let same=params.iter().zip(&domains[..2]).all(|(p,c)|expr_eq_with_bvar_shift(export,*p,*c,0,0));
+    let no_self=domains[2..].iter().all(|field|!expression_contains_constant(export,*field,inductive.name));
+    if trace {eprintln!("NUCLEUS_TWO:candidate_params={same}:no_self={no_self}");}
+    same && no_self
 }
 
 fn two_owner_record_obligations(export:&ResolvedExport,environment:&Environment,block:&InductiveBlock,limits:Limits,policy:DeltaPolicy)->bool {
     let ([inductive],[constructor],[recursor])=(block.types.as_slice(),block.constructors.as_slice(),block.recursors.as_slice()) else {return false;};
+    let trace=std::env::var_os("NUCLEUS_TRACE_TWO_OWNER").is_some();
+    if trace {eprintln!("NUCLEUS_TWO:obligations_enter");}
     let p=2usize; let count=constructor.num_fields as usize;
-    let Some((_,result))=pi_spine(export,inductive.ty,p) else {return false;};
-    let Some(Expr::Sort(level))=export.exprs.get(result) else {return false;};
+    let Some((_,result))=pi_spine(export,inductive.ty,p) else {if trace {eprintln!("NUCLEUS_TWO:induct_type_missing");}return false;};
+    let Some(Expr::Sort(level))=export.exprs.get(result) else {if trace {eprintln!("NUCLEUS_TWO:sort_missing");}return false;};
     let substitution=parameter_substitution(&inductive.level_params);
-    let Ok(carrier)=crate::level::instantiate_level(&export.levels,*level,&substitution,limits.judgment_steps) else {return false;};
+    let Ok(carrier)=crate::level::instantiate_level(&export.levels,*level,&substitution,limits.judgment_steps) else {if trace {eprintln!("NUCLEUS_TWO:carrier_instantiate_fail");}return false;};
     let checker=TypeChecker::with_level_substitution(&export.exprs,&export.levels,environment,substitution).with_delta_policy(policy);
-    let Some((domains,_))=pi_spine(export,constructor.ty,p+count) else {return false;};
+    let Some((domains,_))=pi_spine(export,constructor.ty,p+count) else {if trace {eprintln!("NUCLEUS_TWO:ctor_spine_fail");}return false;};
     let mut frame=EnvFrame::empty(); let mut context=Vec::new();
     for (i,domain) in domains.iter().enumerate() {
-        let Judgment::Proven{value:field_sort,..}=checker.infer_sort_in_context(*domain,&context,&frame,limits.judgment_steps) else {return false;};
-        if i>=p && !crate::level::level_equal(crate::level::max(field_sort,carrier.clone()),carrier.clone(),limits.judgment_steps).is_proven() {return false;}
+        let Judgment::Proven{value:field_sort,..}=checker.infer_sort_in_context(*domain,&context,&frame,limits.judgment_steps) else {if trace {eprintln!("NUCLEUS_TWO:infer_sort_fail:i={i}");}return false;};
+        if i>=p && !crate::level::level_equal(crate::level::max(field_sort,carrier.clone()),carrier.clone(),limits.judgment_steps).is_proven() {if trace {eprintln!("NUCLEUS_TWO:field_level_fail:i={i}");}return false;}
         context.push(TypeValue::Term(checker.closure(*domain,frame.clone())));
         frame=frame.extend_free(FreeId(i as u64));
     }
     let prefix=p+2;
-    let Some((rec_domains,_))=pi_spine(export,recursor.ty,prefix+1) else {return false;};
+    let Some((rec_domains,_))=pi_spine(export,recursor.ty,prefix+1) else {if trace {eprintln!("NUCLEUS_TWO:rec_spine_fail");}return false;};
     let [rule]=recursor.rules.as_slice() else {return false;};
-    let Some((annotations,_))=lam_spine(export,rule.rhs,prefix+count) else {return false;};
-    rec_domains[..prefix].iter().zip(&annotations[..prefix]).all(|(a,b)|expr_eq_with_bvar_shift(export,*a,*b,0,0))
-        && domains[p..].iter().zip(&annotations[prefix..]).enumerate().all(|(k,(a,b))|
+    let Some((annotations,_))=lam_spine(export,rule.rhs,prefix+count) else {if trace {eprintln!("NUCLEUS_TWO:rule_lambda_fail");}return false;};
+    let prefix_ok=rec_domains[..prefix].iter().zip(&annotations[..prefix]).all(|(a,b)|expr_eq_with_bvar_shift(export,*a,*b,0,0));
+    let fields_ok=domains[p..].iter().zip(&annotations[prefix..]).enumerate().all(|(k,(a,b))|
             expr_eq_with_bvar_shift(export,*a,*b,k as u64,2)
-                || expr_eq_with_bvar_shift(export,checked_erased_closed_field(export,environment,*a),*b,k as u64,2))
+                || expr_eq_with_bvar_shift(export,checked_erased_closed_field(export,environment,*a),*b,k as u64,2));
+    if trace {eprintln!("NUCLEUS_TWO:rec_prefix_ok={prefix_ok}:rec_fields_ok={fields_ok}");}
+    prefix_ok && fields_ok
 }
 
 '''
@@ -132,7 +139,7 @@ def new_gate(binary,env):
         parse=C.captured([str(reference),'--parse-only',str(fixture)],stem/'parse')
         official=C.captured([str(reference),str(fixture)],stem/'reference')
         with fixture.open('rb') as source_file:
-            candidate=C.captured([str(binary)],stem/'nucleus',env=env,stdin=source_file)
+            candidate=C.captured([str(binary)],stem/'nucleus',env=env|{'NUCLEUS_TRACE_TWO_OWNER':'1'},stdin=source_file)
         passed=parse==0 and official==case['expect_reference'] and (candidate==0 if official==0 else candidate in (1,2))
         rows.append(dict(case,reference_parse_rc=parse,reference_rc=official,
                          nucleus_rc=candidate,pass_=passed))
