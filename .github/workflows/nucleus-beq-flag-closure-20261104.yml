@@ -1,0 +1,38 @@
+name: Nucleus Nat.beq_refl existing recursor mode closure screen
+on:
+  push:
+    branches: [research/nucleus-budget4x-qualification-20261104]
+    paths:
+      - '.github/workflows/nucleus-beq-flag-closure-20261104.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-exact-closure:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore exact qualified 4x binary and authentic Nat.beq_refl source
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/beq-qualified /tmp/beq-source
+          gh api repos/heathsanchez/test/actions/artifacts/13269133385/zip > /tmp/qualified.zip
+          printf '%s  %s\n' 689749feedc5025f0672dd7e7b091944f700f5b15c9a8105753341db38575d22 /tmp/qualified.zip | sha256sum -c -
+          unzip -q /tmp/qualified.zip -d /tmp/beq-qualified
+          printf '%s  %s\n' 7897fdf50b447ec1bb38dd4a409d3a3bc690eeac7868d58848f6046b099684a6 /tmp/beq-qualified/candidate/nucleus | sha256sum -c -
+          chmod +x /tmp/beq-qualified/candidate/nucleus
+          gh api repos/heathsanchez/test/actions/artifacts/13268572042/zip > /tmp/source.zip
+          printf '%s  %s\n' 00ce34eb4e8bb6e9b5fd8d5223bb07ef613364e8ece1f4fcc6cddb24804118b2 /tmp/source.zip | sha256sum -c -
+          unzip -q /tmp/source.zip -d /tmp/beq-source
+          zstd -d /tmp/beq-source/next-frontier.ndjson.zst -o /tmp/beq-prefix.ndjson
+          printf '%s  %s\n' d1c35f6a0de8644817b404e225a16de460e897e0b34c129fcb2a37483e630738 /tmp/beq-prefix.ndjson | sha256sum -c -
+      - name: Run factorial closure screen with source-exact negative controls
+        run: python3 experiments/nucleus-beq-flag-closure-20261104/runner.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-beq-flag-closure-${{ github.sha }}
+          path: /tmp/nucleus-beq-flag-closure/results.json
