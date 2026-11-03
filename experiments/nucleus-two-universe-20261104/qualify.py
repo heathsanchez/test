@@ -92,7 +92,9 @@ fn two_owner_record_obligations(export:&ResolvedExport,environment:&Environment,
     guard='        && !unary_type_constructor_operations\n'
     assert changed.count(guard)==1
     changed=changed.replace(guard,guard+'        && !two_owner_record\n',1)
-    obligation='    if parameter_record_candidate(export,block) && !parameter_record_obligations(export,environment,block,limits,delta_policy) {return Err(Verdict::Unknown);}'
+    # Canonical-K's source hardening routes the obligation through the
+    # separately checked `scope` predicate. Anchor the actual qualified tree.
+    obligation='    if parameter_record_scope(export,block) && !parameter_record_obligations(export,environment,block,limits,delta_policy) {return Err(Verdict::Unknown);}'
     assert changed.count(obligation)==1
     changed=changed.replace(obligation,obligation+'\n    if two_owner_record_candidate(export,block) && !two_owner_record_obligations(export,environment,block,limits,delta_policy) {return Err(Verdict::Unknown);}',1)
     assert changed!=before
