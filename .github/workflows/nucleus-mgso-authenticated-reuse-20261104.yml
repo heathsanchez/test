@@ -1,0 +1,69 @@
+name: Nucleus MGSO authenticated prior proof reuse
+on:
+  push:
+    branches: [research/nucleus-mgso-authenticated-reuse-20261104]
+    paths:
+      - '.github/workflows/nucleus-mgso-authenticated-reuse-20261104.yml'
+      - 'experiments/nucleus-mgso-authenticated-reuse-20261104/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  producer:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Independent non-cache-backed native regression
+        run: |
+          set -euo pipefail
+          PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover \
+            -s experiments/nucleus-mgso-authenticated-reuse-20261104 -p 'test_*.py' -v
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml \
+            --test mgso_golden --test mgso_graph --test mgso_shadow \
+            --test mgso_process
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+      - name: Fresh Nucleus kernel ACCEPT produces content-addressed graph
+        run: |
+          set -euo pipefail
+          PYTHONDONTWRITEBYTECODE=1 python3 \
+            experiments/nucleus-mgso-authenticated-reuse-20261104/attest.py produce \
+            --binary "$PWD/metatron-kernel/target/release/metatron-kernel" \
+            --source metatron-kernel/tests/fixtures/good-theorem-use.ndjson \
+            --output /tmp/nucleus-mgso-producer-artifact
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-mgso-verified-history
+          path: /tmp/nucleus-mgso-producer-artifact/
+          if-no-files-found: error
+          retention-days: 14
+  reader:
+    needs: producer
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Independent GitHub producer/run/artifact authentication and actual Nucleus inspector
+        run: |
+          set -euo pipefail
+          PYTHONDONTWRITEBYTECODE=1 python3 \
+            experiments/nucleus-mgso-authenticated-reuse-20261104/native_controls.py \
+            '${{ github.run_id }}' '${{ github.sha }}' \
+            metatron-kernel/tests/fixtures/good-theorem-use.ndjson
+          PYTHONDONTWRITEBYTECODE=1 python3 \
+            experiments/nucleus-mgso-authenticated-reuse-20261104/attest.py consume \
+            --run-id '${{ github.run_id }}' --commit '${{ github.sha }}' \
+            --source metatron-kernel/tests/fixtures/good-theorem-use.ndjson \
+            --output /tmp/nucleus-mgso-reader-report.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-mgso-reader-evidence-${{ github.sha }}
+          path: |
+            /tmp/nucleus-mgso-reader-summary.json
+            /tmp/nucleus-mgso-reader-report.json
