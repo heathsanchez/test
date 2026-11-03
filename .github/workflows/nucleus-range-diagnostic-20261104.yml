@@ -1,0 +1,62 @@
+name: Nucleus original list range proof diagnostic
+on:
+  push:
+    branches: [research/nucleus-reuse-tournaments-20261104]
+    paths: ['.github/workflows/nucleus-range-diagnostic-20261104.yml','experiments/nucleus-range-diagnostic-20261104/**']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-proof-diagnostic:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 1}
+      - run: git fetch --no-tags --depth=1 origin a2578e77079719ff2064f910bd82fd01d8e120b6
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Restore exact original source frontier
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/range-source /tmp/range-diagnostic
+          gh api repos/heathsanchez/test/actions/artifacts/13259246241/zip > /tmp/frontier.zip
+          printf '%s  %s\n' 8d757fba8ce67f41163281c095e43099eff209cd7d31c902838bc5d8273e405c /tmp/frontier.zip | sha256sum -c -
+          unzip -q /tmp/frontier.zip -d /tmp/range-source
+          zstd -d /tmp/range-source/next-frontier.ndjson.zst -o /tmp/range-prefix.ndjson
+          printf '%s  %s\n' d9d7b1fe7267a0806f65200abc64a9c7114fb8097a9da1f3687f2560a2568bb9 /tmp/range-prefix.ndjson | sha256sum -c -
+      - name: Independently replay original source in the pinned official Lean kernel
+        run: |
+          set -euo pipefail
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -o /tmp/elan-init.sh
+          sh /tmp/elan-init.sh -y --default-toolchain leanprover/lean4:v4.34.1
+          git init -q /tmp/arena-reference
+          git -C /tmp/arena-reference remote add origin https://github.com/leanprover/lean-kernel-arena
+          git -C /tmp/arena-reference fetch -q --depth=1 origin cd2dd0244b9ed5e704463a26fbbe5fc67ba16108
+          git -C /tmp/arena-reference checkout -q --detach FETCH_HEAD
+          cd /tmp/arena-reference/checkers/official
+          "$HOME/.elan/bin/lake" build > /tmp/range-diagnostic/reference-build.log 2>&1
+          sha256sum .lake/build/bin/kernel > /tmp/range-diagnostic/reference-binary.sha256
+          .lake/build/bin/kernel --parse-only /tmp/range-prefix.ndjson > /tmp/range-diagnostic/reference-parse.stdout 2> /tmp/range-diagnostic/reference-parse.stderr
+          .lake/build/bin/kernel /tmp/range-prefix.ndjson > /tmp/range-diagnostic/reference-kernel.stdout 2> /tmp/range-diagnostic/reference-kernel.stderr
+      - name: Prepare reproducible pre-let-repair source stack
+        run: |
+          python3 experiments/nucleus-nat-closure-20261104/generate_fixtures.py --out /tmp/nat-fixtures
+          python3 experiments/nucleus-parameter-telescope-20261104/prepare.py
+          python3 experiments/nucleus-nullary-enum-20261104/prepare.py
+      - name: Paired plain and diagnostic replay on exact old production source
+        run: python3 experiments/nucleus-range-diagnostic-20261104/runner.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-range-diagnostic-${{ github.sha }}
+          path: |
+            /tmp/range-diagnostic/*.json
+            /tmp/range-diagnostic/*.log
+            /tmp/range-diagnostic/*.stderr
+            /tmp/range-diagnostic/*.stdout
+            /tmp/range-diagnostic/*.sha256
+            /tmp/range-diagnostic/source/source.patch
+            /tmp/range-diagnostic/source/build.log
