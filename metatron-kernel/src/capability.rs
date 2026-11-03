@@ -306,6 +306,56 @@ struct PropProjectionTarget {
 /// only when those facts are definite from the export.  It never grants
 /// projection authority; every uncertain case remains on the ordinary UNKNOWN
 /// path.
+/// Exact per-export memo for the Boolean relevance predicate.
+/// 0 = absent, 1 = false, 2 = true. Sparse/extreme IDs remain sparse.
+struct RelevanceMemo {
+    dense: Vec<u8>,
+    sparse: HashMap<ExprId, bool>,
+}
+impl RelevanceMemo {
+    fn new(export: &ResolvedExport) -> Self {
+        let max_id = export.exprs.iter_raw().map(|(id,_)| id).max().unwrap_or(0);
+        let source_bound = export.exprs.len().saturating_mul(2).min(128_000_000);
+        let max_bound = usize::try_from(max_id).unwrap_or(usize::MAX).saturating_add(1);
+        let dense_len = max_bound.min(source_bound);
+        Self { dense: vec![0u8; dense_len], sparse: HashMap::new() }
+    }
+    fn get(&self, expression: ExprId) -> Option<bool> {
+        if let Ok(index) = usize::try_from(expression.0) {
+            match self.dense.get(index).copied() {
+                Some(1) => return Some(false),
+                Some(2) => return Some(true),
+                _ => {}
+            }
+        }
+        self.sparse.get(&expression).copied()
+    }
+    fn insert(&mut self, expression: ExprId, value: bool) {
+        if let Ok(index) = usize::try_from(expression.0) {
+            if let Some(slot) = self.dense.get_mut(index) {
+                *slot = if value { 2 } else { 1 };
+                return;
+            }
+        }
+        self.sparse.insert(expression, value);
+    }
+}
+#[cfg(test)]
+mod dense_relevance_guards {
+    use super::*;
+    #[test] fn absent_false_true_overwrite_and_extreme_sparse() {
+        let mut memo=RelevanceMemo { dense: vec![0; 3], sparse: HashMap::new() };
+        assert_eq!(memo.get(ExprId(0)),None);
+        memo.insert(ExprId(0),false); memo.insert(ExprId(1),true);
+        assert_eq!(memo.get(ExprId(0)),Some(false));
+        assert_eq!(memo.get(ExprId(1)),Some(true));
+        memo.insert(ExprId(0),true); memo.insert(ExprId(u64::MAX),false);
+        assert_eq!(memo.get(ExprId(0)),Some(true));
+        assert_eq!(memo.get(ExprId(2)),None);
+        assert_eq!(memo.get(ExprId(u64::MAX)),Some(false));
+    }
+}
+
 fn prop_projection_safety(export: &ResolvedExport) -> Option<Verdict> {
     let projection_types: HashSet<NameId> = export
         .exprs
@@ -319,15 +369,25 @@ fn prop_projection_safety(export: &ResolvedExport) -> Option<Verdict> {
         return None;
     }
 
-    let target_names: HashSet<NameId> = projection_types
+    // A source-local immutable target memo: no cached verdict.
+    // Index exact declaration ownership once per source; no foreign memo.
+    let mut source_owner_index=HashMap::<NameId,Vec<usize>>::new();
+    for (declaration_index,declaration) in export.declarations.iter().enumerate() {
+        if let Declaration::Inductive(block)=declaration {
+            for inductive in &block.types {
+                source_owner_index.entry(inductive.name).or_default().push(declaration_index);
+            }
+        }
+    }
+    let target_names: HashMap<NameId, PropProjectionTarget> = projection_types
         .into_iter()
-        .filter(|type_name| prop_projection_target(export, *type_name).is_some())
+        .filter_map(|type_name| prop_projection_target(export, type_name, &source_owner_index).map(|target| (type_name, target)))
         .collect();
     if target_names.is_empty() {
         return None;
     }
 
-    let mut relevance = HashMap::<ExprId, bool>::new();
+    let mut relevance = RelevanceMemo::new(export);
     for declaration in &export.declarations {
         let mut roots = Vec::new();
         match declaration {
@@ -372,12 +432,12 @@ fn prop_projection_safety(export: &ResolvedExport) -> Option<Verdict> {
 fn expression_may_contain_target_projection(
     export: &ResolvedExport,
     expression: ExprId,
-    target_names: &HashSet<NameId>,
-    memo: &mut HashMap<ExprId, bool>,
+    target_names: &HashMap<NameId, PropProjectionTarget>,
+    memo: &mut RelevanceMemo,
     depth: usize,
 ) -> bool {
-    if let Some(cached) = memo.get(&expression) {
-        return *cached;
+    if let Some(cached) = memo.get(expression) {
+        return cached;
     }
     if depth > 4096 {
         return true;
@@ -391,7 +451,7 @@ fn expression_may_contain_target_projection(
             structure,
             ..
         } => {
-            target_names.contains(type_name)
+            target_names.contains_key(type_name)
                 || expression_may_contain_target_projection(
                     export,
                     *structure,
@@ -448,8 +508,8 @@ fn expression_may_contain_target_projection(
 fn expression_contains_invalid_prop_projection(
     export: &ResolvedExport,
     expression: ExprId,
-    target_names: &HashSet<NameId>,
-    relevance: &mut HashMap<ExprId, bool>,
+    target_names: &HashMap<NameId, PropProjectionTarget>,
+    relevance: &mut RelevanceMemo,
     context: &mut Vec<ExprId>,
     depth: usize,
 ) -> bool {
@@ -469,11 +529,11 @@ fn expression_contains_invalid_prop_projection(
             index,
             structure,
         } => {
-            if target_names.contains(type_name)
+            if target_names.contains_key(type_name)
                 && let Some(Expr::BVar(bvar)) = export.exprs.get(*structure)
                 && let Ok(bvar) = usize::try_from(*bvar)
                 && let Some(structure_ty) = context.get(bvar).copied()
-                && projection_is_definitely_invalid(export, *type_name, *index, structure_ty)
+                && projection_is_definitely_invalid(export, *type_name, *index, structure_ty, target_names)
             {
                 return true;
             }
@@ -567,8 +627,9 @@ fn projection_is_definitely_invalid(
     type_name: NameId,
     index: u64,
     structure_ty: ExprId,
+    target_names: &HashMap<NameId, PropProjectionTarget>,
 ) -> bool {
-    let Some(target) = prop_projection_target(export, type_name) else {
+    let Some(target) = target_names.get(&type_name) else {
         return false;
     };
     let Ok(index) = usize::try_from(index) else {
@@ -632,8 +693,10 @@ fn projection_is_definitely_invalid(
 fn prop_projection_target(
     export: &ResolvedExport,
     type_name: NameId,
+    source_owner_index: &HashMap<NameId,Vec<usize>>,
 ) -> Option<PropProjectionTarget> {
-    for declaration in &export.declarations {
+    for declaration_index in source_owner_index.get(&type_name)? {
+        let Some(declaration)=export.declarations.get(*declaration_index) else {continue;};
         let Declaration::Inductive(block) = declaration else {
             continue;
         };
