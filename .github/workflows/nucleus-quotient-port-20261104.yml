@@ -1,0 +1,109 @@
+name: Nucleus Quotient source-minimal port
+on:
+  push:
+    branches: [research/nucleus-quotient-reuse-ab-20261104]
+    paths:
+      - '.github/workflows/nucleus-quotient-port-20261104.yml'
+      - 'experiments/nucleus-quotient-reuse-20261104/port.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  port-and-falsify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: '1.99.1'
+      - name: Restore pinned post-ListPerm Mathlib frontier
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/nucleus-quot-port
+          gh api repos/heathsanchez/test/actions/artifacts/13242616719/zip > /tmp/nucleus-quot-port/frontier.zip
+          printf '%s  %s\n' 78183d5b00480e3b3a6bec2346eb07ca99fb268c312d457ebf06df1c8d8722cd /tmp/nucleus-quot-port/frontier.zip | sha256sum -c -
+          unzip -p /tmp/nucleus-quot-port/frontier.zip next-frontier.ndjson.zst | zstd -dc -o /tmp/nucleus-quot-port/frontier.ndjson
+          printf '%s  %s\n' 4883dc9889b546a1117c25c266bae05a344b6609db5cbbfd846a8d7abc92a907 /tmp/nucleus-quot-port/frontier.ndjson | sha256sum -c -
+      - name: Generate candidate from optimized and semantically repaired source
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import sys
+          from pathlib import Path
+          sys.path.insert(0,str(Path('experiments/nucleus-final-proof-spine-20261104').resolve()))
+          import runner
+          sys.path.insert(0,str(Path('experiments/nucleus-quotient-reuse-20261104').resolve()))
+          from port import port
+          out=Path('/tmp/nucleus-quot-port/candidate')
+          out.mkdir(parents=True,exist_ok=True)
+          kernel=runner.materialize(out,semantic=True)
+          port(Path.cwd(),kernel,out/'quotient-port.patch')
+          print('source-port-bytes', (out/'quotient-port.patch').stat().st_size)
+          PY
+          sha256sum /tmp/nucleus-quot-port/candidate/{source.patch,quotient-port.patch} > /tmp/nucleus-quot-port/source.sha256
+      - name: Compile current Nucleus plus only ported source rules
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import sys
+          from pathlib import Path
+          sys.path.insert(0,str(Path('experiments/nucleus-reuse-20261104').resolve()))
+          import tournament
+          out=Path('/tmp/nucleus-quot-port/candidate')
+          binary,env=tournament.build(out/'metatron-kernel',out)
+          assert binary, (out/'build.log').read_text()[-8000:]
+          print('candidate-binary',binary)
+          PY
+          sha256sum /tmp/nucleus-quot-port/candidate/nucleus > /tmp/nucleus-quot-port/binary.sha256
+      - name: Red-green exact-source theorem and forged controls
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib,json,os,subprocess,sys
+          from pathlib import Path
+          root=Path('/tmp/nucleus-quot-port')
+          data=(root/'frontier.ndjson').read_bytes()
+          head,last=data.rsplit(b'\n',2)[:2] if data.endswith(b'\n') else data.rsplit(b'\n',1)
+          record=json.loads(last)
+          assert record['thm']=={'name':1911,'type':16786,'value':16842}
+          sys.path.insert(0,str(Path('experiments/nucleus-reuse-20261104').resolve()))
+          import tournament
+          env=tournament.run_env()
+          for flag in ('EXACT_PROOF_NEUTRALS','CERTIFIED_QUOT_IOTA','SOURCE_PROOF_IRREL'):
+              env['NUCLEUS_EXPERIMENTAL_'+flag]='1'
+          env['NUCLEUS_TRACE_DOWNSTREAM']='1'
+          results=[]
+          for label,field in [('authentic',None),('forged-type','type'),('forged-value','value')]:
+              contents=data
+              if field:
+                  bad=json.loads(last)
+                  bad['thm'][field]=0
+                  contents=head+b'\n'+json.dumps(bad,separators=(',',':')).encode()+b'\n'
+              file=root/(label+'.ndjson');file.write_bytes(contents)
+              with file.open('rb') as src:
+                  result=subprocess.run([str(root/'candidate/nucleus')],stdin=src,capture_output=True,env=env,timeout=240)
+              (root/(label+'.stderr')).write_bytes(result.stderr)
+              results.append({'case':label,'sha256':hashlib.sha256(contents).hexdigest(),'exit_code':result.returncode,'stderr_tail':result.stderr[-300:].decode(errors='replace')})
+              print(label,result.returncode,flush=True)
+          (root/'verdicts.json').write_text(json.dumps(results,indent=2)+'\n')
+          assert results[0]['exit_code']==0,'transplant did not recover exact authentic theorem'
+          assert all(x['exit_code'] in (1,2) for x in results[1:]),'forged theorem ACCEPTED or unexpected error'
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-quotient-source-port-${{ github.sha }}
+          path: |
+            /tmp/nucleus-quot-port/source.sha256
+            /tmp/nucleus-quot-port/binary.sha256
+            /tmp/nucleus-quot-port/verdicts.json
+            /tmp/nucleus-quot-port/*.stderr
+            /tmp/nucleus-quot-port/candidate/source.patch
+            /tmp/nucleus-quot-port/candidate/quotient-port.patch
+            /tmp/nucleus-quot-port/candidate/build.log
+            /tmp/nucleus-quot-port/candidate/patch.log
