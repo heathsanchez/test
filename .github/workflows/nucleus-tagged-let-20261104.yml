@@ -1,0 +1,65 @@
+name: Nucleus compact let metadata protected tournament
+on:
+  push:
+    branches: [research/nucleus-reuse-tournaments-20261104]
+    paths: ['.github/workflows/nucleus-tagged-let-20261104.yml','experiments/nucleus-tagged-let-20261104/**']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: nucleus-tagged-let-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  qualify-and-compare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 1}
+      - run: git fetch --no-tags --depth=1 origin a2578e77079719ff2064f910bd82fd01d8e120b6
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Reuse protected indexed baseline, independent source truth and exact corpus
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/tagged-baseline /tmp/let-oracle /tmp/current208
+          gh api repos/heathsanchez/test/actions/artifacts/13264581883/zip > /tmp/baseline.zip
+          printf '%s  %s\n' d244bcd7c860b995a231281550b3bee49613be6d4df77556ece89d6058531915 /tmp/baseline.zip | sha256sum -c -
+          unzip -q /tmp/baseline.zip -d /tmp/tagged-baseline
+          gh api repos/heathsanchez/test/actions/artifacts/13261917242/zip > /tmp/oracle.zip
+          printf '%s  %s\n' bde62a227167517215d6a011f48cbf211447dba5c476c8eddbc4aff345183d05 /tmp/oracle.zip | sha256sum -c -
+          unzip -q /tmp/oracle.zip -d /tmp/let-oracle
+          gh api repos/heathsanchez/test/actions/artifacts/13126161718/zip > /tmp/inputs.zip
+          printf '%s  %s\n' 462e31e21379054490570b465b46ece4fff878490d9ad7de6bbc73149d587f4c /tmp/inputs.zip | sha256sum -c -
+          unzip -q /tmp/inputs.zip -d /tmp/current208
+      - name: Prepare unchanged source controls
+        run: |
+          python3 experiments/nucleus-nat-closure-20261104/generate_fixtures.py --out /tmp/nat-fixtures
+          python3 experiments/nucleus-parameter-telescope-20261104/prepare.py
+          python3 experiments/nucleus-nullary-enum-20261104/prepare.py
+      - name: Reuse exact complete Mathlib input
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/mathlib-source
+          gh api repos/heathsanchez/test/actions/artifacts/13231986845/zip > /tmp/input.zip
+          printf '%s  %s\n' 3dd3fbb522816bdaa9d9cd2808196e075bfa27e3d6c82648731140594f87ce2b /tmp/input.zip | sha256sum -c -
+          unzip -q /tmp/input.zip -d /tmp/mathlib-source
+          zstd -d /tmp/mathlib-source/mathlib.ndjson.zst -o /tmp/mathlib.ndjson
+          printf '%s  %s\n' 22c5de83469408950005589a3bc5ef5157c65549b5a802f85d567c29151306a6 /tmp/mathlib.ndjson | sha256sum -c -
+          rm /tmp/input.zip /tmp/mathlib-source/mathlib.ndjson.zst
+      - name: Fresh compact candidate qualification then matched ABBAAB
+        run: python3 experiments/nucleus-tagged-let-20261104/runner.py --out /tmp/tagged-let
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-tagged-let-${{ github.sha }}
+          path: |
+            /tmp/tagged-let/*.json
+            /tmp/tagged-let/candidate/*.json
+            /tmp/tagged-let/candidate/*.log
+            /tmp/tagged-let/candidate/source.patch
+            /tmp/tagged-let/candidate/nucleus
+            /tmp/tagged-let/matched/*/time.txt
+            /tmp/tagged-let/matched/*/stderr
