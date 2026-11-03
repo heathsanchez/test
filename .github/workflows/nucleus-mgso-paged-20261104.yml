@@ -1,0 +1,37 @@
+name: Nucleus MGSO paged persistent graph qualification
+on:
+  push:
+    branches: [research/nucleus-mgso-dependency-20261104]
+    paths:
+      - '.github/workflows/nucleus-mgso-paged-20261104.yml'
+      - 'metatron-kernel/src/receipt.rs'
+      - 'metatron-kernel/src/receipt_store.rs'
+      - 'metatron-kernel/tests/mgso_graph.rs'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-paged-graph:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Run source-native MGSO transport, graph and forgery guards
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/mgso-pages
+          git rev-parse HEAD > /tmp/mgso-pages/commit.txt
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml \
+            --test mgso_golden --test mgso_graph --test mgso_shadow \
+            --test mgso_process > /tmp/mgso-pages/native.log 2>&1 || {
+              tail -100 /tmp/mgso-pages/native.log
+              exit 1
+            }
+          tail -25 /tmp/mgso-pages/native.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-mgso-pages-native-${{ github.sha }}
+          path: /tmp/mgso-pages
