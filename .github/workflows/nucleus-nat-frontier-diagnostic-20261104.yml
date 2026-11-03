@@ -39,6 +39,14 @@ jobs:
           out.mkdir(parents=True,exist_ok=True)
           k=runner.materialize(out,semantic=True)
           port(Path.cwd(),k,out/'quotient-port.patch')
+          # Observation-only instrumentation of the first source-local
+          # numerator/neutral obstruction, without promoting any conversion.
+          src=k/'src/convert.rs'
+          source=src.read_text()
+          anchor='    Judgment::refuted("Nat-literal-non-Nat-head")'
+          assert source.count(anchor)==1
+          trace='    #[cfg(feature = "diagnostics")]\n    if std::env::var_os("NUCLEUS_TRACE_NAT_NONHEAD").is_some() {\n        eprintln!("NUCLEUS_NAT_NONHEAD:literal={literal:?}:head={:?}:levels={levels:?}:spine={:?}:depth={depth}:budget={budget}",neutral.head,neutral.spine);\n    }\n'
+          src.write_text(source.replace(anchor,trace+anchor,1))
           PY
           CARGO_TARGET_DIR=/tmp/nucleus-nat-diagnostic/candidate/target cargo build --release --locked --features diagnostics --manifest-path /tmp/nucleus-nat-diagnostic/candidate/metatron-kernel/Cargo.toml > /tmp/nucleus-nat-diagnostic/build.log 2>&1
           sha256sum /tmp/nucleus-nat-diagnostic/candidate/{source.patch,quotient-port.patch} > /tmp/nucleus-nat-diagnostic/source.sha256
@@ -55,13 +63,14 @@ jobs:
           env=tournament.run_env()
           for flag in ('EXACT_PROOF_NEUTRALS','CERTIFIED_QUOT_IOTA','SOURCE_PROOF_IRREL'):
               env['NUCLEUS_EXPERIMENTAL_'+flag]='1'
-          for flag in ('APPLICATION_FUNCTION_TYPE','DOWNSTREAM'):
+          for flag in ('APPLICATION_FUNCTION_TYPE','NAT_NONHEAD','DOWNSTREAM'):
               env['NUCLEUS_TRACE_'+flag]='1'
           with (root/'frontier.ndjson').open('rb') as source:
               result=subprocess.run([str(root/'candidate/target/release/metatron-kernel')],stdin=source,capture_output=True,env=env,timeout=420)
           (root/'trace.stderr').write_bytes(result.stderr)
           traces=[line for line in result.stderr.decode(errors='replace').splitlines() if line.startswith('NUCLEUS_APPLICATION_FUNCTION_TYPE:')]
-          report=dict(rc=result.returncode,trace_count=len(traces),first_traces=traces[:4],last_traces=traces[-4:])
+          nat=[line for line in result.stderr.decode(errors='replace').splitlines() if line.startswith('NUCLEUS_NAT_NONHEAD:')]
+          report=dict(rc=result.returncode,trace_count=len(traces),nat_obstruction_count=len(nat),first_traces=traces[:4],last_traces=traces[-4:],last_nat_obstructions=nat[-8:])
           (root/'diagnostic.json').write_text(json.dumps(report,indent=2)+'\n')
           print(json.dumps(report),flush=True)
           assert result.returncode in (0,1,2)
