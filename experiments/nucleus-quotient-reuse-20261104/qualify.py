@@ -25,13 +25,12 @@ import tournament as t
 from port import port
 
 
-def enabled_env():
+def enabled_env(include_exact=True):
     env = t.run_env()
-    for rule in (
-        "EXACT_PROOF_NEUTRALS",
-        "CERTIFIED_QUOT_IOTA",
-        "SOURCE_PROOF_IRREL",
-    ):
+    rules = ["CERTIFIED_QUOT_IOTA", "SOURCE_PROOF_IRREL"]
+    if include_exact:
+        rules.append("EXACT_PROOF_NEUTRALS")
+    for rule in rules:
         env["NUCLEUS_EXPERIMENTAL_" + rule] = "1"
     return env
 
@@ -56,7 +55,7 @@ def run_source(binary: Path, input_file: Path, env: dict, directory: Path, label
     return result.returncode
 
 
-def do_qualification(out: Path, full_input: Path):
+def do_qualification(out: Path, full_input: Path, include_exact=True):
     out.mkdir(parents=True, exist_ok=True)
     reference, reference_rows = read_reference(Path("/tmp/reference-qualified.zip"))
     corpus = Path("/tmp/current208")
@@ -68,10 +67,10 @@ def do_qualification(out: Path, full_input: Path):
         for item, prior in zip(manifest, reference_rows)
     )
     kernel = runner.materialize(out / "candidate", semantic=True)
-    port(Path.cwd(), kernel, out / "candidate/quotient-port.patch")
+    port(Path.cwd(), kernel, out / "candidate/quotient-port.patch", include_exact=include_exact)
     binary, _ = t.build(kernel, out / "candidate")
     assert binary is not None, (out / "candidate/build.log").read_text()[-5000:]
-    env = enabled_env()
+    env = enabled_env(include_exact=include_exact)
     env["NUCLEUS_FROZEN196"] = str(corpus / "inputs")
     baseline = dict(
         previous_binary_sha=reference["binary_sha"],
@@ -163,5 +162,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--mathlib", type=Path, required=True)
+    parser.add_argument("--without-exact", action="store_true", help="Omit nonessential exact-source proof-neutral rule")
     args = parser.parse_args()
-    do_qualification(args.out.resolve(), args.mathlib.resolve())
+    do_qualification(args.out.resolve(), args.mathlib.resolve(), include_exact=not args.without_exact)
