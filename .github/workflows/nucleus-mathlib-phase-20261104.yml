@@ -1,0 +1,46 @@
+name: Nucleus full Mathlib source-phase observations
+on:
+  push:
+    branches: [research/nucleus-reuse-tournaments-20261104]
+    paths: ['.github/workflows/nucleus-mathlib-phase-20261104.yml', 'experiments/nucleus-mathlib-phase-20261104/**']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  phase:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 65
+    strategy:
+      fail-fast: false
+      matrix:
+        arm: [dense, facts, dense-facts]
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Reuse the already generated exact full Mathlib input
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/input
+          gh api repos/heathsanchez/test/actions/artifacts/13231986845/zip > /tmp/input.zip
+          printf '%s  %s\n' 3dd3fbb522816bdaa9d9cd2808196e075bfa27e3d6c82648731140594f87ce2b /tmp/input.zip | sha256sum -c -
+          unzip -q /tmp/input.zip -d /tmp/input
+          zstd -d /tmp/input/mathlib.ndjson.zst -o /tmp/mathlib.ndjson
+          printf '%s  %s\n' 22c5de83469408950005589a3bc5ef5157c65549b5a802f85d567c29151306a6 /tmp/mathlib.ndjson | sha256sum -c -
+          rm /tmp/input.zip /tmp/input/mathlib.ndjson.zst
+      - name: Observe complete-input import and first checking boundary
+        run: python3 experiments/nucleus-mathlib-phase-20261104/phase.py ${{ matrix.arm }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-mathlib-phase-${{ matrix.arm }}-${{ github.sha }}
+          path: |
+            /tmp/phase-evidence/summary.json
+            /tmp/phase-evidence/build.log
+            /tmp/phase-evidence/perf-probe.txt
+            /tmp/phase-evidence/full-input
+            /tmp/phase-evidence/source/source.patch
+          if-no-files-found: error
