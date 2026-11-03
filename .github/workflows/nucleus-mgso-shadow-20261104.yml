@@ -39,10 +39,13 @@ jobs:
             python3 - <<'PY'
           import pathlib,re
           log=pathlib.Path('/tmp/mgso-native/suite.log').read_text()
-          assert log.count(' --- FAILED')==1,'Unexpected extra failed native tests'
-          assert 'distinct_proof_arguments_of_same_checked_proposition_are_convertible --- FAILED' in log
-          assert 'rigid-value-constructor-mismatch' in log
-          assert re.search(r'^error: 1 target failed:\n    `--test checked_relevance_signature`$',log,re.M), 'Unexpected failed test target'
+          # Cargo's colored release log prints `test NAME ... FAILED`,
+          # not `NAME --- FAILED`; remove ANSI styling before matching.
+          plain=re.sub(r'\x1b\[[0-9;]*m','',log)
+          failures=re.findall(r'^test (\S+) \.\.\. FAILED$',plain,re.M)
+          assert failures==['distinct_proof_arguments_of_same_checked_proposition_are_convertible'],f'Unexpected failed native tests: {failures}'
+          assert 'rigid-value-constructor-mismatch' in plain
+          assert re.search(r'^error: 1 target failed:\n    `--test checked_relevance_signature`$',plain,re.M), 'Unexpected failed test target'
           print('Only the pre-existing proof-irrelevance test failed; full native suite is not green.')
           PY
           fi
