@@ -1,0 +1,88 @@
+--- a/metatron-kernel/src/capability.rs
++++ b/metatron-kernel/src/capability.rs
+@@ -319,9 +319,19 @@
+         return None;
+     }
+ 
+-    let target_names: HashSet<NameId> = projection_types
++    // A source-local immutable owner index: no cached verdict or foreign authority.
++    // Index exact source declaration ownership once; never cache a verdict.
++    let mut source_owner_index=HashMap::<NameId,Vec<usize>>::new();
++    for (declaration_index,declaration) in export.declarations.iter().enumerate() {
++        if let Declaration::Inductive(block)=declaration {
++            for inductive in &block.types {
++                source_owner_index.entry(inductive.name).or_default().push(declaration_index);
++            }
++        }
++    }
++    let target_names: HashMap<NameId, PropProjectionTarget> = projection_types
+         .into_iter()
+-        .filter(|type_name| prop_projection_target(export, *type_name).is_some())
++        .filter_map(|type_name| prop_projection_target(export, type_name, &source_owner_index).map(|target| (type_name, target)))
+         .collect();
+     if target_names.is_empty() {
+         return None;
+@@ -372,7 +382,7 @@
+ fn expression_may_contain_target_projection(
+     export: &ResolvedExport,
+     expression: ExprId,
+-    target_names: &HashSet<NameId>,
++    target_names: &HashMap<NameId, PropProjectionTarget>,
+     memo: &mut HashMap<ExprId, bool>,
+     depth: usize,
+ ) -> bool {
+@@ -391,7 +401,7 @@
+             structure,
+             ..
+         } => {
+-            target_names.contains(type_name)
++            target_names.contains_key(type_name)
+                 || expression_may_contain_target_projection(
+                     export,
+                     *structure,
+@@ -448,7 +458,7 @@
+ fn expression_contains_invalid_prop_projection(
+     export: &ResolvedExport,
+     expression: ExprId,
+-    target_names: &HashSet<NameId>,
++    target_names: &HashMap<NameId, PropProjectionTarget>,
+     relevance: &mut HashMap<ExprId, bool>,
+     context: &mut Vec<ExprId>,
+     depth: usize,
+@@ -469,11 +479,11 @@
+             index,
+             structure,
+         } => {
+-            if target_names.contains(type_name)
++            if target_names.contains_key(type_name)
+                 && let Some(Expr::BVar(bvar)) = export.exprs.get(*structure)
+                 && let Ok(bvar) = usize::try_from(*bvar)
+                 && let Some(structure_ty) = context.get(bvar).copied()
+-                && projection_is_definitely_invalid(export, *type_name, *index, structure_ty)
++                && projection_is_definitely_invalid(export, *type_name, *index, structure_ty, target_names)
+             {
+                 return true;
+             }
+@@ -567,8 +577,9 @@
+     type_name: NameId,
+     index: u64,
+     structure_ty: ExprId,
++    target_names: &HashMap<NameId, PropProjectionTarget>,
+ ) -> bool {
+-    let Some(target) = prop_projection_target(export, type_name) else {
++    let Some(target) = target_names.get(&type_name) else {
+         return false;
+     };
+     let Ok(index) = usize::try_from(index) else {
+@@ -632,8 +643,10 @@
+ fn prop_projection_target(
+     export: &ResolvedExport,
+     type_name: NameId,
++    source_owner_index: &HashMap<NameId,Vec<usize>>,
+ ) -> Option<PropProjectionTarget> {
+-    for declaration in &export.declarations {
++    for declaration_index in source_owner_index.get(&type_name)? {
++        let Some(declaration)=export.declarations.get(*declaration_index) else {continue;};
+         let Declaration::Inductive(block) = declaration else {
+             continue;
+         };

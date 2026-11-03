@@ -1,0 +1,385 @@
+--- a/metatron-kernel/src/capability.rs
++++ b/metatron-kernel/src/capability.rs
+@@ -420,7 +420,7 @@
+                     depth + 1,
+                 )
+         }
+-        Expr::Let { ty, value, body } => {
++        Expr::Let { ty, value, body, .. } => {
+             expression_may_contain_target_projection(export, *ty, target_names, memo, depth + 1)
+                 || expression_may_contain_target_projection(
+                     export,
+@@ -526,7 +526,7 @@
+             context.remove(0);
+             result
+         }
+-        Expr::Let { ty, value, body } => {
++        Expr::Let { ty, value, body, .. } => {
+             if expression_contains_invalid_prop_projection(
+                 export,
+                 *ty,
+@@ -849,7 +849,7 @@
+                     depth + 1,
+                 )
+         }
+-        Expr::Let { ty, value, body } => {
++        Expr::Let { ty, value, body, .. } => {
+             expression_has_loose_bvars(export, *ty, binder_depth, depth + 1)
+                 || expression_has_loose_bvars(export, *value, binder_depth, depth + 1)
+                 || expression_has_loose_bvars(
+--- a/metatron-kernel/src/checker.rs
++++ b/metatron-kernel/src/checker.rs
+@@ -75,7 +75,7 @@
+             Some(Expr::Lam { domain, body } | Expr::Pi { domain, body }) => {
+                 expressions.push(*domain); expressions.push(*body);
+             }
+-            Some(Expr::Let { ty, value, body }) => {
++            Some(Expr::Let { ty, value, body, .. }) => {
+                 expressions.push(*ty); expressions.push(*value); expressions.push(*body);
+             }
+             Some(Expr::Proj { structure, .. }) => expressions.push(*structure),
+@@ -669,7 +669,7 @@
+                 local_depth + 1,
+             )
+         }
+-        Some(Expr::Let { ty, value, body }) => {
++        Some(Expr::Let { ty, value, body, .. }) => {
+             expression_has_definite_projection_owner_mismatch(
+                 export,
+                 *ty,
+@@ -2873,7 +2873,7 @@
+             Some(Expr::Const{name,..})=>if Some(*name)==forbidden {return false;},
+             Some(Expr::App{fun,arg})=>{pending.push((*fun,depth+1));pending.push((*arg,depth+1));},
+             Some(Expr::Lam{domain,body}|Expr::Pi{domain,body})=>{pending.push((*domain,depth+1));pending.push((*body,depth+1));},
+-            Some(Expr::Let{ty,value,body})=>{pending.push((*ty,depth+1));pending.push((*value,depth+1));pending.push((*body,depth+1));},
++            Some(Expr::Let{ty,value,body, .. })=>{pending.push((*ty,depth+1));pending.push((*value,depth+1));pending.push((*body,depth+1));},
+             Some(Expr::Proj{type_name,structure,..})=>{if Some(*type_name)==forbidden {return false;}pending.push((*structure,depth+1));},
+             Some(Expr::BVar(_)|Expr::NatLit(_)|Expr::StrLit(_)|Expr::Sort(_))=>{},
+             None=>return false,
+@@ -3489,7 +3489,7 @@
+         | (Some(Expr::Pi{domain:ad,body:ab}),Some(Expr::Pi{domain:bd,body:bb})) =>
+             expr_eq_with_bvar_shift(export,*ad,*bd,cutoff,shift)
+                 && expr_eq_with_bvar_shift(export,*ab,*bb,cutoff.saturating_add(1),shift),
+-        (Some(Expr::Let{ty:at,value:av,body:ab}),Some(Expr::Let{ty:bt,value:bv,body:bb})) =>
++        (Some(Expr::Let{ty:at,value:av,body:ab, .. }),Some(Expr::Let{ty:bt,value:bv,body:bb, .. })) =>
+             expr_eq_with_bvar_shift(export,*at,*bt,cutoff,shift)
+                 && expr_eq_with_bvar_shift(export,*av,*bv,cutoff,shift)
+                 && expr_eq_with_bvar_shift(export,*ab,*bb,cutoff.saturating_add(1),shift),
+@@ -5347,13 +5347,11 @@
+             Expr::Let {
+                 ty: left_ty,
+                 value: left_value,
+-                body: left_body,
+-            },
++                body: left_body, .. },
+             Expr::Let {
+                 ty: right_ty,
+                 value: right_value,
+-                body: right_body,
+-            },
++                body: right_body, .. },
+         ) => {
+             expression_matches_binder_lift(export, *left_ty, *right_ty, cutoff, amount)
+                 && expression_matches_binder_lift(export, *left_value, *right_value, cutoff, amount)
+@@ -7493,7 +7491,7 @@
+             expression_has_definite_negative_occurrence(export, *domain, target, positive)
+                 || expression_has_definite_negative_occurrence(export, *body, target, positive)
+         }
+-        Some(Expr::Let { ty, value, body }) => {
++        Some(Expr::Let { ty, value, body, .. }) => {
+             expression_has_definite_negative_occurrence(export, *ty, target, positive)
+                 || expression_has_definite_negative_occurrence(export, *value, target, positive)
+                 || expression_has_definite_negative_occurrence(export, *body, target, positive)
+@@ -7617,7 +7615,7 @@
+             expression_contains_bvar(export, *domain, target)
+                 || expression_contains_bvar(export, *body, target.saturating_add(1))
+         }
+-        Some(Expr::Let { ty, value, body }) => {
++        Some(Expr::Let { ty, value, body, .. }) => {
+             expression_contains_bvar(export, *ty, target)
+                 || expression_contains_bvar(export, *value, target)
+                 || expression_contains_bvar(export, *body, target.saturating_add(1))
+@@ -7644,7 +7642,7 @@
+             expression_contains_constant(export, *domain, target)
+                 || expression_contains_constant(export, *body, target)
+         }
+-        Some(Expr::Let { ty, value, body }) => {
++        Some(Expr::Let { ty, value, body, .. }) => {
+             expression_contains_constant(export, *ty, target)
+                 || expression_contains_constant(export, *value, target)
+                 || expression_contains_constant(export, *body, target)
+--- a/metatron-kernel/src/convert.rs
++++ b/metatron-kernel/src/convert.rs
+@@ -1010,7 +1010,7 @@
+             expression_uses_bvar(checker, *domain, target, next)
+                 || expression_uses_bvar(checker, *body, target.saturating_add(1), next)
+         }
+-        Expr::Let { ty, value, body } => {
++        Expr::Let { ty, value, body, .. } => {
+             expression_uses_bvar(checker, *ty, target, next)
+                 || expression_uses_bvar(checker, *value, target, next)
+                 || expression_uses_bvar(checker, *body, target.saturating_add(1), next)
+--- a/metatron-kernel/src/machine.rs
++++ b/metatron-kernel/src/machine.rs
+@@ -2981,9 +2981,9 @@
+             (3,Expr::Const{name:NameId(3),levels:vec![]})]
+         {expressions.insert(ExprId(id),expr).unwrap();}
+         let mut body=ExprId(3);
+-        for id in 10..32 {expressions.insert(ExprId(id),Expr::Let{ty:ExprId(0),value:ExprId(3),body}).unwrap();body=ExprId(id);}
++        for id in 10..32 {expressions.insert(ExprId(id),Expr::Let{ty:ExprId(0),value:ExprId(3),body, nondep: false }).unwrap();body=ExprId(id);}
+         let mut cheap=ExprId(3);let mut expensive=body;
+-        for id in 50..60 {expressions.insert(ExprId(id),Expr::Let{ty:ExprId(0),value:ExprId(3),body:cheap}).unwrap();cheap=ExprId(id);}
++        for id in 50..60 {expressions.insert(ExprId(id),Expr::Let{ty:ExprId(0),value:ExprId(3),body:cheap, nondep: false }).unwrap();cheap=ExprId(id);}
+         for id in 110..113 {expressions.insert(ExprId(id),Expr::Lam{domain:ExprId(0),body:cheap}).unwrap();cheap=ExprId(id);}
+         for id in 113..116 {expressions.insert(ExprId(id),Expr::Lam{domain:ExprId(0),body:expensive}).unwrap();expensive=ExprId(id);}
+         let reduction=RecursorReduction{k:false,num_params:0,num_indices:0,level_params:vec![],rules:vec![
+--- a/metatron-kernel/src/parser.rs
++++ b/metatron-kernel/src/parser.rs
+@@ -346,7 +346,11 @@
+                 ty: ExprId(nested_number(value, "type", line)?),
+                 value: ExprId(nested_number(value, "value", line)?),
+                 body: ExprId(nested_number(value, "body", line)?),
+-            }
++                nondep: match value.get("nondep") {
++                    None => false, // Preserve legacy semantic-only input forms.
++                    Some(Value::Bool(flag)) => *flag,
++                    Some(_) => return Err(malformed(line,"letE.nondep must be boolean")),
++                } }
+         }
+         "proj" => {
+             let value = object.get("proj").expect("tag checked");
+@@ -525,7 +529,7 @@
+             require_expr(&export.exprs, *domain)?;
+             require_expr(&export.exprs, *body)
+         }
+-        Expr::Let { ty, value, body } => {
++        Expr::Let { ty, value, body, .. } => {
+             require_expr(&export.exprs, *ty)?;
+             require_expr(&export.exprs, *value)?;
+             require_expr(&export.exprs, *body)
+@@ -774,7 +778,7 @@
+   b"natVal"=>Expr::NatLit(crate::nat::BigNat::parse_decimal(std::str::from_utf8(c.quoted()?).ok()?)?),
+   b"app"=>{let [f,a]=c.fields([b"fn".as_slice(),b"arg".as_slice()])?;Expr::App{fun:ExprId(f),arg:ExprId(a)}},
+   b"lam"|b"forallE"=>{let (d,b)=c.binder()?;if tag==b"lam"{Expr::Lam{domain:ExprId(d),body:ExprId(b)}}else{Expr::Pi{domain:ExprId(d),body:ExprId(b)}}},
+-  b"letE"=>{let [t,v,b]=c.fields([b"type".as_slice(),b"value".as_slice(),b"body".as_slice()])?;Expr::Let{ty:ExprId(t),value:ExprId(v),body:ExprId(b)}},
++  b"letE"=>{let [t,v,b]=c.fields([b"type".as_slice(),b"value".as_slice(),b"body".as_slice()])?;Expr::Let{ty:ExprId(t),value:ExprId(v),body:ExprId(b), nondep: false }},
+   b"proj"=>{let [t,i,s]=c.fields([b"typeName".as_slice(),b"idx".as_slice(),b"struct".as_slice()])?;Expr::Proj{type_name:NameId(t),index:i,structure:ExprId(s)}},
+   _=>return None,
+  })}else{HotRecord::Level(id,match tag{
+--- a/metatron-kernel/src/syntax.rs
++++ b/metatron-kernel/src/syntax.rs
+@@ -42,6 +42,7 @@
+         ty: ExprId,
+         value: ExprId,
+         body: ExprId,
++        nondep: bool,
+     },
+     Proj {
+         type_name: NameId,
+--- a/metatron-kernel/src/typecheck.rs
++++ b/metatron-kernel/src/typecheck.rs
+@@ -720,7 +720,7 @@
+                 term.expr, context, &term.env, remaining,
+                 &mut HashMap::new(),
+             ).proven_value().cloned(),
+-            Expr::Let { ty, value, body } => {
++            Expr::Let { ty, value, body, .. } => {
+                 let declared = term.sibling(*ty, term.env.clone());
+                 let declared_sort = self.infer_exact_closure_in_context(
+                     &declared, context, remaining, depth + 1,
+@@ -993,7 +993,7 @@
+                         pending.push((Closure::with_levels(*body, term.env.clone(), term.levels.clone()), local_depth + 1));
+                         pending.push((Closure::with_levels(*domain, term.env, term.levels), local_depth));
+                     }
+-                    Some(Expr::Let { ty, value, body }) => {
++                    Some(Expr::Let { ty, value, body, .. }) => {
+                         pending.push((Closure::with_levels(*body, term.env.clone(), term.levels.clone()), local_depth + 1));
+                         pending.push((Closure::with_levels(*value, term.env.clone(), term.levels.clone()), local_depth));
+                         pending.push((Closure::with_levels(*ty, term.env, term.levels), local_depth));
+@@ -1237,7 +1237,7 @@
+                     Expr::Lam { domain, body } | Expr::Pi { domain, body } => {
+                         pending.push((*body, false)); pending.push((*domain, false));
+                     }
+-                    Expr::Let { ty, value, body } => {
++                    Expr::Let { ty, value, body, .. } => {
+                         pending.push((*body, false)); pending.push((*value, false)); pending.push((*ty, false));
+                     }
+                     Expr::Proj { structure, .. } => pending.push((*structure, false)),
+@@ -1262,7 +1262,7 @@
+                     Expr::Lam { domain, body } | Expr::Pi { domain, body } => {
+                         add(*domain, false)?; add(*body, true)?;
+                     }
+-                    Expr::Let { ty, value, body } => {
++                    Expr::Let { ty, value, body, .. } => {
+                         add(*ty, false)?; add(*value, false)?; add(*body, true)?;
+                     }
+                     Expr::Proj { structure, .. } => { add(*structure, false)?; }
+@@ -1333,7 +1333,7 @@
+                     | (Expr::Pi { domain: x, body: u }, Expr::Pi { domain: y, body: v }) => {
+                         pending.push(((*u, *v), false)); pending.push(((*x, *y), false));
+                     }
+-                    (Expr::Let { ty: x, value: u, body: m }, Expr::Let { ty: y, value: v, body: n }) => {
++                    (Expr::Let { ty: x, value: u, body: m, .. }, Expr::Let { ty: y, value: v, body: n, .. }) => {
+                         pending.push(((*m, *n), false)); pending.push(((*u, *v), false)); pending.push(((*x, *y), false));
+                     }
+                     (Expr::Proj { type_name: x, index: i, structure: u }, Expr::Proj { type_name: y, index: j, structure: v }) if x == y && i == j => {
+@@ -1362,7 +1362,7 @@
+                     (Expr::App { fun: x, arg: u }, Expr::App { fun: y, arg: v }) => { add((*x, *y), false)?; add((*u, *v), false)?; }
+                     (Expr::Lam { domain: x, body: u }, Expr::Lam { domain: y, body: v })
+                     | (Expr::Pi { domain: x, body: u }, Expr::Pi { domain: y, body: v }) => { add((*x, *y), false)?; add((*u, *v), true)?; }
+-                    (Expr::Let { ty: x, value: u, body: m }, Expr::Let { ty: y, value: v, body: n }) => { add((*x, *y), false)?; add((*u, *v), false)?; add((*m, *n), true)?; }
++                    (Expr::Let { ty: x, value: u, body: m, .. }, Expr::Let { ty: y, value: v, body: n, .. }) => { add((*x, *y), false)?; add((*u, *v), false)?; add((*m, *n), true)?; }
+                     (Expr::Proj { structure: x, .. }, Expr::Proj { structure: y, .. }) => { add((*x, *y), false)?; }
+                     _ => {}
+                 }
+@@ -2069,7 +2069,7 @@
+                     "qualified-structure-projection",
+                 )
+             }
+-            Expr::Let { ty, value, body } => {
++            Expr::Let { ty, value, body, .. } => {
+                 let annotation_type = self.infer_in(*ty, context, frame, remaining, cache);
+                 match self.sort_level(annotation_type, *remaining) {
+                     Judgment::Proven { .. } => {}
+@@ -3073,7 +3073,7 @@
+                         self.expr(*domain, frame, depth)?
+                             || self.expr(*body, frame, depth.checked_add(1)?)?
+                     }
+-                    Expr::Let { ty, value, body } => {
++                    Expr::Let { ty, value, body, .. } => {
+                         self.expr(*ty, frame, depth)?
+                             || self.expr(*value, frame, depth)?
+                             || self.expr(*body, frame, depth.checked_add(1)?)?
+@@ -6302,7 +6302,7 @@
+             (63, Expr::Lam { domain: ExprId(0), body: ExprId(4) }),
+             (64, Expr::Pi { domain: ExprId(4), body: ExprId(0) }),
+             (65, Expr::Pi { domain: ExprId(0), body: ExprId(4) }),
+-            (66, Expr::Let { ty: ExprId(1), value: ExprId(1), body: ExprId(0) }),
++            (66, Expr::Let { ty: ExprId(1), value: ExprId(1), body: ExprId(0), nondep: false }),
+             (67, Expr::Pi { domain: ExprId(0), body: ExprId(66) }),
+             (68, Expr::Lam { domain: ExprId(2), body: ExprId(4) }),
+             (69, Expr::App { fun: ExprId(68), arg: ExprId(60) }),
+@@ -6353,8 +6353,8 @@
+             expressions.insert(ExprId(id), Expr::App { fun: ExprId(3), arg: body }).unwrap();
+             body = ExprId(id);
+         }
+-        expressions.insert(ExprId(125), Expr::Let { ty: ExprId(1), value: ExprId(5), body }).unwrap();
+-        expressions.insert(ExprId(126), Expr::Let { ty: ExprId(1), value: ExprId(1), body }).unwrap();
++        expressions.insert(ExprId(125), Expr::Let { ty: ExprId(1), value: ExprId(5), body, nondep: false }).unwrap();
++        expressions.insert(ExprId(126), Expr::Let { ty: ExprId(1), value: ExprId(1), body, nondep: false }).unwrap();
+         let mut checker = TypeChecker::new(&expressions, &levels, &environment);
+         checker.strict_origin_probe = true;
+         let a = TypeValue::Term(checker.closure(ExprId(1), EnvFrame::empty()));
+@@ -6497,8 +6497,8 @@
+             (8, Expr::Const { name: NameId(2), levels: vec![LevelId(0)] }),
+             (9, Expr::Pi { domain: ExprId(1), body: ExprId(1) }),
+             (10, Expr::Pi { domain: ExprId(2), body: ExprId(1) }),
+-            (11, Expr::Let { ty: ExprId(0), value: ExprId(1), body: ExprId(1) }),
+-            (12, Expr::Let { ty: ExprId(0), value: ExprId(2), body: ExprId(1) }),
++            (11, Expr::Let { ty: ExprId(0), value: ExprId(1), body: ExprId(1), nondep: false }),
++            (12, Expr::Let { ty: ExprId(0), value: ExprId(2), body: ExprId(1), nondep: false }),
+             (13, Expr::Proj { type_name: NameId(1), index: 0, structure: ExprId(1) }),
+             (14, Expr::Proj { type_name: NameId(1), index: 0, structure: ExprId(2) }),
+             (15, Expr::Proj { type_name: NameId(1), index: 1, structure: ExprId(2) }),
+@@ -6534,8 +6534,8 @@
+             (3, Expr::Lam { domain: ExprId(0), body: ExprId(1) }),
+             (4, Expr::Lam { domain: ExprId(1), body: ExprId(1) }),
+             (5, Expr::Pi { domain: ExprId(0), body: ExprId(2) }),
+-            (6, Expr::Let { ty: ExprId(1), value: ExprId(0), body: ExprId(0) }),
+-            (7, Expr::Let { ty: ExprId(0), value: ExprId(1), body: ExprId(0) }),
++            (6, Expr::Let { ty: ExprId(1), value: ExprId(0), body: ExprId(0), nondep: false }),
++            (7, Expr::Let { ty: ExprId(0), value: ExprId(1), body: ExprId(0), nondep: false }),
+             (8, Expr::Proj { type_name: NameId(1), index: 0, structure: ExprId(1) }),
+             (9, Expr::Lam { domain: ExprId(0), body: ExprId(9) }),
+         ] { expressions.insert(ExprId(id), node).unwrap(); }
+--- a/metatron-kernel/tests/convert.rs
++++ b/metatron-kernel/tests/convert.rs
+@@ -284,8 +284,7 @@
+                 Expr::Let {
+                     ty: ExprId(0),
+                     value: ExprId(0),
+-                    body: ExprId(1),
+-                },
++                    body: ExprId(1), nondep: false },
+             )
+             .unwrap();
+         expressions
+@@ -721,7 +720,7 @@
+     // The source major is an actual constructor, hidden behind exact let and
+     // lambda captures beyond the ordinary 128-step major exposure allowance.
+     let mut hidden = major;
+-    for _ in 0..140 { hidden = add(Expr::Let { ty: ExprId(36), value: major, body: hidden }); }
++    for _ in 0..140 { hidden = add(Expr::Let { ty: ExprId(36), value: major, body: hidden, nondep: false }); }
+     let wrapped = add(Expr::Lam { domain: ExprId(36), body: bound });
+     hidden = add(Expr::App { fun: wrapped, arg: hidden });
+     let mut application = add(Expr::Const { name: NameId(15), levels: vec![LevelId(1)] });
+@@ -1046,7 +1045,7 @@
+     ] { expressions.insert(ExprId(id), node).unwrap(); }
+     for i in 100..180 {
+         expressions.insert(ExprId(i), Expr::Let { ty: ExprId(1), value: ExprId(0),
+-            body: ExprId(if i == 179 { 0 } else { i + 1 }) }).unwrap();
++            body: ExprId(if i == 179 { 0 } else { i + 1 }), nondep: false }).unwrap();
+     }
+     let environment = Environment::empty()
+         .extend(NameId(40), ConstantDecl::definition(vec![], ExprId(4), ExprId(180), true)).unwrap()
+@@ -1086,7 +1085,7 @@
+     ] { expressions.insert(ExprId(id), node).unwrap(); }
+     for i in 100..180 {
+         expressions.insert(ExprId(i), Expr::Let { ty: ExprId(1), value: ExprId(0),
+-            body: ExprId(if i == 179 { 0 } else { i + 1 }) }).unwrap();
++            body: ExprId(if i == 179 { 0 } else { i + 1 }), nondep: false }).unwrap();
+     }
+     let environment = Environment::empty()
+         .extend(NameId(50), ConstantDecl::definition(vec![], ExprId(3), ExprId(180), true)).unwrap()
+@@ -1182,7 +1181,7 @@
+     ] { expressions.insert(ExprId(id), node).unwrap(); }
+     for i in 100..180 {
+         expressions.insert(ExprId(i), Expr::Let { ty: ExprId(1), value: ExprId(2),
+-            body: ExprId(if i == 179 { 2 } else { i + 1 }) }).unwrap();
++            body: ExprId(if i == 179 { 2 } else { i + 1 }), nondep: false }).unwrap();
+     }
+     let environment = Environment::empty()
+         .extend(NameId(60), ConstantDecl::axiom(vec![], ExprId(0))).unwrap()
+--- a/metatron-kernel/tests/machine.rs
++++ b/metatron-kernel/tests/machine.rs
+@@ -176,8 +176,7 @@
+             Expr::Let {
+                 ty: ExprId(0),
+                 value: ExprId(0),
+-                body: ExprId(1),
+-            },
++                body: ExprId(1), nondep: false },
+         )
+         .unwrap();
+     let levels = zero_levels();
+--- a/metatron-kernel/tests/typecheck.rs
++++ b/metatron-kernel/tests/typecheck.rs
+@@ -63,8 +63,7 @@
+                 Expr::Let {
+                     ty: ExprId(0),
+                     value: ExprId(4),
+-                    body: ExprId(1),
+-                },
++                    body: ExprId(1), nondep: false },
+             )
+             .unwrap();
+         expressions.insert(ExprId(7), Expr::BVar(0)).unwrap();
+@@ -206,8 +205,7 @@
+     }).unwrap();
+     // (let ignored : Prop := A; fun P : Prop => fun proof : P => proof).
+     fixture.expressions.insert(ExprId(13), Expr::Let {
+-        ty: ExprId(0), value: ExprId(4), body: ExprId(12),
+-    }).unwrap();
++        ty: ExprId(0), value: ExprId(4), body: ExprId(12), nondep: false }).unwrap();
+     // The result of applying the let-wrapped lambda to A is a function A -> A.
+     fixture.expressions.insert(ExprId(14), Expr::App {
+         fun: ExprId(13), arg: ExprId(4),
+@@ -333,7 +331,7 @@
+         (15, Expr::Lam { domain: ExprId(0), body: ExprId(14) }),
+         (16, Expr::Pi { domain: ExprId(1), body: ExprId(1) }),
+         (17, Expr::Pi { domain: ExprId(0), body: ExprId(16) }),
+-        (18, Expr::Let { ty: ExprId(17), value: ExprId(12), body: ExprId(15) }),
++        (18, Expr::Let { ty: ExprId(17), value: ExprId(12), body: ExprId(15), nondep: false }),
+     ] { fixture.expressions.insert(ExprId(id), expr).unwrap(); }
+     // The stored f opens its nested proof binder at FreeId(1). The later
+     // Q : Prop also opens at FreeId(1); substitution must decline rather

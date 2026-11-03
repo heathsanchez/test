@@ -1,0 +1,30 @@
+--- a/metatron-kernel/src/checker.rs
++++ b/metatron-kernel/src/checker.rs
+@@ -3489,8 +3489,8 @@
+         | (Some(Expr::Pi{domain:ad,body:ab}),Some(Expr::Pi{domain:bd,body:bb})) =>
+             expr_eq_with_bvar_shift(export,*ad,*bd,cutoff,shift)
+                 && expr_eq_with_bvar_shift(export,*ab,*bb,cutoff.saturating_add(1),shift),
+-        (Some(Expr::Let{ty:at,value:av,body:ab, .. }),Some(Expr::Let{ty:bt,value:bv,body:bb, .. })) =>
+-            expr_eq_with_bvar_shift(export,*at,*bt,cutoff,shift)
++        (Some(Expr::Let{ty:at,value:av,body:ab,nondep:an}),Some(Expr::Let{ty:bt,value:bv,body:bb,nondep:bn})) =>
++            an==bn && expr_eq_with_bvar_shift(export,*at,*bt,cutoff,shift)
+                 && expr_eq_with_bvar_shift(export,*av,*bv,cutoff,shift)
+                 && expr_eq_with_bvar_shift(export,*ab,*bb,cutoff.saturating_add(1),shift),
+         (Some(Expr::Proj{type_name:at,index:ai,structure:as_}),
+@@ -5347,13 +5347,13 @@
+             Expr::Let {
+                 ty: left_ty,
+                 value: left_value,
+-                body: left_body, .. },
++                body: left_body, nondep: left_nondep },
+             Expr::Let {
+                 ty: right_ty,
+                 value: right_value,
+-                body: right_body, .. },
++                body: right_body, nondep: right_nondep },
+         ) => {
+-            expression_matches_binder_lift(export, *left_ty, *right_ty, cutoff, amount)
++            left_nondep == right_nondep && expression_matches_binder_lift(export, *left_ty, *right_ty, cutoff, amount)
+                 && expression_matches_binder_lift(export, *left_value, *right_value, cutoff, amount)
+                 && expression_matches_binder_lift(
+                     export,
