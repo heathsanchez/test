@@ -45,12 +45,14 @@ def main(additional_patch=None, additional_gate=None):
         with (arm / 'source.patch').open('a') as stream:
             stream.write(patch.read_text())
         if additional_patch is not None:
-            result = Q.t.run_group(['patch','--batch','--fuzz=0','-p1','-i',str(additional_patch)], cwd=arm, capture_output=True, timeout=30)
-            (arm / 'additional.patch.log').write_bytes(result.stdout + result.stderr)
-            assert result.returncode == 0, (result.stdout, result.stderr)
-            (arm / 'additional.patch').write_text(additional_patch.read_text())
-            with (arm / 'source.patch').open('a') as stream:
-                stream.write(additional_patch.read_text())
+            patches = [additional_patch] if isinstance(additional_patch, Path) else list(additional_patch)
+            for index, patch in enumerate(patches):
+                result = Q.t.run_group(['patch','--batch','--fuzz=0','-p1','-i',str(patch)], cwd=arm, capture_output=True, timeout=30)
+                (arm / f'additional-{index}.patch.log').write_bytes(result.stdout + result.stderr)
+                assert result.returncode == 0, (result.stdout, result.stderr)
+                (arm / f'additional-{index}.patch').write_text(patch.read_text())
+                with (arm / 'source.patch').open('a') as stream:
+                    stream.write(patch.read_text())
 
     def build_and_protect(baseline):
         kernel, binary, build_env, arm = original_build(baseline)
