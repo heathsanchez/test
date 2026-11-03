@@ -1,0 +1,75 @@
+{
+  "base": "a2578e77079719ff2064f910bd82fd01d8e120b6",
+  "source_recipe": "e51b50bd088c7417b598727ea9810f5aca930e48 default build; diagnostic-only correction ca9914d9058d9ffef1b4bef50b545a95bf42cb02",
+  "compiler": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
+  "input": {
+    "case": "perf/app-lam",
+    "expected": 0,
+    "sha256": "552d6e8398f579fcf59ab9abd8187fc7a8a037697da66c129aacb4cc1b9dd414",
+    "relative_path": "good/perf/app-lam.ndjson"
+  },
+  "measurements": [
+    {
+      "arm": "baseline",
+      "round": 0,
+      "rc": 0,
+      "wall": 5.526640443997167,
+      "user": 4.6106,
+      "system": 0.9098449999999999,
+      "rss_kb": 1799892
+    },
+    {
+      "arm": "prefix",
+      "round": 0,
+      "rc": 0,
+      "wall": 4.2805760510018445,
+      "user": 4.041116,
+      "system": 0.22725499999999998,
+      "rss_kb": 309672
+    },
+    {
+      "arm": "prefix",
+      "round": 1,
+      "rc": 0,
+      "wall": 4.013627115004056,
+      "user": 3.878204,
+      "system": 0.125683,
+      "rss_kb": 309600
+    },
+    {
+      "arm": "baseline",
+      "round": 1,
+      "rc": 0,
+      "wall": 5.724773257003108,
+      "user": 4.91252,
+      "system": 0.7912319999999999,
+      "rss_kb": 1799880
+    },
+    {
+      "arm": "baseline",
+      "round": 2,
+      "rc": 0,
+      "wall": 5.224231617998157,
+      "user": 4.541944,
+      "system": 0.676176,
+      "rss_kb": 1799972
+    },
+    {
+      "arm": "prefix",
+      "round": 2,
+      "rc": 0,
+      "wall": 4.3112171109969495,
+      "user": 4.125976,
+      "system": 0.16986199999999999,
+      "rss_kb": 309692
+    }
+  ],
+  "baseline_binary_sha": "562dd8a49b3df782aaac814413ef0c5cade3fe17a97d1f2f7d8509477df62df2",
+  "candidate_binary_sha": "b36e8aae191828a75fc0472b726a1f997e5591d692aa84f6d37d061e589c2658",
+  "corpus_counts": {
+    "ACCEPT": 121,
+    "REJECT": 79,
+    "UNKNOWN": 8
+  },
+  "qualification": "BOUNDED_LOCAL_MEASUREMENT; remote complete native qualification pending; no full Mathlib speed warrant"
+}
