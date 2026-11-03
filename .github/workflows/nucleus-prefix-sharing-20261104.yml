@@ -1,0 +1,50 @@
+name: Nucleus checked context prefix sharing tournament
+on:
+  push:
+    branches: [research/nucleus-reuse-tournaments-20261104]
+    paths: ['.github/workflows/nucleus-prefix-sharing-20261104.yml', 'experiments/nucleus-prefix-sharing-20261104/**']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  tournament:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 70
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Reuse pinned corpus
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/current208
+          gh api repos/heathsanchez/test/actions/artifacts/13126161718/zip > /tmp/inputs.zip
+          printf '%s  %s\n' 462e31e21379054490570b465b46ece4fff878490d9ad7de6bbc73149d587f4c /tmp/inputs.zip | sha256sum -c -
+          unzip -q /tmp/inputs.zip -d /tmp/current208
+          rm /tmp/inputs.zip
+      - name: Paired accepted-input time and memory experiment
+        run: python3 experiments/nucleus-prefix-sharing-20261104/wave.py spike --out /tmp/prefix-sharing --inputs /tmp/current208
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-prefix-sharing-spike-${{ github.sha }}
+          path: |
+            /tmp/prefix-sharing/*.json
+            /tmp/prefix-sharing/*/build.log
+            /tmp/prefix-sharing/*/source.patch
+            /tmp/prefix-sharing/*/spike-*
+      - name: Independent native and exact 208 qualification
+        run: python3 experiments/nucleus-prefix-sharing-20261104/wave.py qualify --out /tmp/prefix-sharing --inputs /tmp/current208
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-prefix-sharing-qualified-${{ github.sha }}
+          path: |
+            /tmp/prefix-sharing/*.json
+            /tmp/prefix-sharing/*/*.json
+            /tmp/prefix-sharing/*/*.log
+            /tmp/prefix-sharing/*/source.patch
+            /tmp/prefix-sharing/*/nucleus
