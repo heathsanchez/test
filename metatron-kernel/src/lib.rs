@@ -128,6 +128,39 @@ pub fn run_shadow<R: BufRead>(
     verdict
 }
 
+/// Inspect a stored candidate after independently hashing the exact current
+/// source bytes, without parsing or checking a theorem.
+///
+/// This is strictly a transport/integrity operation. Even a matching root
+/// proves nothing by itself: its alleged prior kernel verdict must be
+/// authenticated through an independent trusted provenance boundary, and the
+/// command-line interface always returns UNKNOWN rather than ACCEPT.
+pub fn inspect_shadow<R: io::Read>(
+    reader: R,
+    store_dir: &Path,
+    verifier_build_id: &str,
+    config: &receipt::VerificationConfig,
+) -> receipt_store::ShadowResult {
+    use receipt::ExportIdentity;
+    use receipt_store::{ReceiptStore, ShadowResult};
+
+    let mut hashed = observation::Sha256Read::new(reader);
+    if let Err(error) = io::copy(&mut hashed, &mut io::sink()) {
+        return ShadowResult::Unknown(format!("source-byte-measurement-failed:{error}"));
+    }
+    let source_sha256 = hashed.finish();
+    let identity = ExportIdentity {
+        export_sha256: source_sha256.iter().map(|byte| format!("{byte:02x}")).collect(),
+        export_format: config.export_format.clone(),
+        verifier_build_id: verifier_build_id.to_string(),
+        verification_config_sha256: config.sha256(),
+    };
+    if let Err(error) = identity.validate() {
+        return ShadowResult::Unknown(format!("invalid-inspection-identity:{error}"));
+    }
+    ReceiptStore::new(store_dir.to_path_buf()).read_shadow(&identity)
+}
+
 /// Run with deterministic operation counters. The feature is diagnostic-only:
 /// the verdict is produced by the same checker entry point as a normal build.
 #[cfg(feature = "diagnostics")]
