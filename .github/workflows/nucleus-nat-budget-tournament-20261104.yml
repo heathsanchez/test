@@ -1,0 +1,96 @@
+name: Nucleus exact Nat frontier budget tournament
+on:
+  push:
+    branches: [research/nucleus-nat-budget-20261104]
+    paths: ['.github/workflows/nucleus-nat-budget-tournament-20261104.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-source-budget:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Pin and restore the qualified two-rule baseline and source
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/nucleus-nat-budget
+          gh api repos/heathsanchez/test/actions/artifacts/13248500779/zip > /tmp/nucleus-nat-budget/minimal-qualified.zip
+          printf '%s  %s\n' decd3ad80437eb5b47a7b66effb2594a9b6dd69cca8ff3360226bc3aa95a6b89 /tmp/nucleus-nat-budget/minimal-qualified.zip | sha256sum -c -
+          unzip -p /tmp/nucleus-nat-budget/minimal-qualified.zip next-frontier.ndjson.zst | zstd -dc -o /tmp/nucleus-nat-budget/frontier.ndjson
+          printf '%s  %s\n' 7767e7f90b3e24b30ecb5324f1117d6858b5f40653b31011ad1948eed747e8ea /tmp/nucleus-nat-budget/frontier.ndjson | sha256sum -c -
+          unzip -jo /tmp/nucleus-nat-budget/minimal-qualified.zip candidate/nucleus -d /tmp/nucleus-nat-budget
+          mv /tmp/nucleus-nat-budget/nucleus /tmp/nucleus-nat-budget/baseline
+          chmod +x /tmp/nucleus-nat-budget/baseline
+          printf '%s  %s\n' 43ee22db5c6be1e1fddaec210322b02cfab30dabd5c10637ab21b3667d2ad98e /tmp/nucleus-nat-budget/baseline | sha256sum -c -
+      - name: Build source-exact variants with 2x, 4x, and 8x judgment budgets
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib,json,os,subprocess,sys
+          from pathlib import Path
+          root=Path('/tmp/nucleus-nat-budget')
+          sys.path.insert(0,str(Path('experiments/nucleus-final-proof-spine-20261104').resolve()))
+          import runner
+          sys.path.insert(0,str(Path('experiments/nucleus-quotient-reuse-20261104').resolve()))
+          from port import port
+          sys.path.insert(0,str(Path('experiments/nucleus-reuse-20261104').resolve()))
+          import tournament
+          out=root/'candidate';out.mkdir(exist_ok=True)
+          kernel=runner.materialize(out,semantic=True)
+          port(Path.cwd(),kernel,out/'quotient-port.patch',include_exact=False)
+          source=kernel/'src/checker.rs'
+          original=source.read_text()
+          assert original.count('judgment_steps: 65_536,')==1
+          binaries={}
+          for limit in (131072,262144,524288):
+              source.write_text(original.replace('judgment_steps: 65_536,',f'judgment_steps: {limit},',1))
+              binary,_=tournament.build(kernel,out)
+              assert binary is not None, (out/'build.log').read_text()[-5000:]
+              path=root/f'nucleus-{limit}'
+              path.write_bytes(binary.read_bytes());path.chmod(0o755)
+              binaries[str(limit)]={'sha256':hashlib.sha256(path.read_bytes()).hexdigest()}
+              print(f'BUILT budget={limit} sha={binaries[str(limit)]["sha256"]}',flush=True)
+          (root/'builds.json').write_text(json.dumps(binaries,indent=2)+'\n')
+          source.write_text(original)
+          PY
+      - name: Run unchanged authentic Nat proof with strict resource caps
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib,json,os,subprocess,sys,time
+          from pathlib import Path
+          root=Path('/tmp/nucleus-nat-budget');raw=(root/'frontier.ndjson').read_bytes()
+          sys.path.insert(0,str(Path('experiments/nucleus-reuse-20261104').resolve()))
+          import tournament
+          env=tournament.run_env()
+          for flag in ('CERTIFIED_QUOT_IOTA','SOURCE_PROOF_IRREL'):
+              env['NUCLEUS_EXPERIMENTAL_'+flag]='1'
+          env['NUCLEUS_TRACE_DOWNSTREAM']='1'
+          rows=[]
+          for label,binary in [('65536',root/'baseline')]+[(str(x),root/f'nucleus-{x}') for x in (131072,262144,524288)]:
+              start=time.monotonic()
+              try:
+                  proc=subprocess.run([str(binary)],input=raw,capture_output=True,env=env,timeout=180)
+                  rc=proc.returncode;tail=proc.stderr[-1200:].decode(errors='replace')
+              except subprocess.TimeoutExpired:
+                  rc=124;tail='TIMEOUT'
+              row={'budget':int(label),'rc':rc,'wall_seconds':round(time.monotonic()-start,4),'stderr_tail':tail}
+              rows.append(row);print(json.dumps(row),flush=True)
+              assert rc in (0,1,2,124)
+          (root/'budget-verdicts.json').write_text(json.dumps({'source_sha256':hashlib.sha256(raw).hexdigest(),'rows':rows},indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-nat-budget-${{ github.sha }}
+          path: |
+            /tmp/nucleus-nat-budget/*.json
+            /tmp/nucleus-nat-budget/candidate/*.patch
+            /tmp/nucleus-nat-budget/candidate/build.log
