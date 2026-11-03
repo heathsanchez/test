@@ -3,6 +3,9 @@ on:
   push:
     branches: [research/udm-g1-native-case-coverage-20261104, research/udm-casebound-successor-20261104]
     paths:
+      - 'research/sustained_refactory_pilot/pilot.py'
+      - 'research/sustained_refactory_pilot/audit.py'
+      - 'research/sustained_refactory_pilot/test_pilot.py'
       - '.github/workflows/udm-g1-full-pre-task-regression-20261104.yml'
   workflow_dispatch:
 permissions:
@@ -53,7 +56,7 @@ jobs:
           set -euo pipefail
           test "$(git -C components/triskelion rev-parse HEAD)" = 426c54f7c774560e0fabe7213c5ef333b1327c71
           python -B -m pytest -q --import-mode=importlib research/sustained_refactory_pilot/test_pilot.py 2>&1 | tee /tmp/all-pilot-unit-tests.log
-          grep -q '14 passed' /tmp/all-pilot-unit-tests.log
+          grep -q '16 passed' /tmp/all-pilot-unit-tests.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
