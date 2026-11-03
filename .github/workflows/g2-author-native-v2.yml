@@ -1,0 +1,64 @@
+name: G2 native author-test admission V2
+on:
+  push:
+    branches: [research/g2-native-new-test-admission-v2-20261103]
+    paths: ['research/g2_native_residual/qualify_v2.py','research/g2_native_residual/test_qualify_v2.py','.github/workflows/g2-author-native-v2.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  controlled-added-regression:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with: {go-version: '1.25.0'}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Four native fixture and malformed-test controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s research/g2_native_residual -p test_qualify_v2.py -v 2>&1 | tee /tmp/v2-unit.log
+          grep -q 'Ran 4 tests' /tmp/v2-unit.log
+          grep -q '^OK$' /tmp/v2-unit.log
+  prior-failure-posthoc:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with: {path: tooling, persist-credentials: false}
+      - uses: actions/checkout@v4
+        with:
+          repository: rs/zerolog
+          ref: 56591163bce358abdb860d3dad599d3ab440621a
+          path: source
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with: {go-version: '1.25.0'}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Qualify previously exposed #814 (not a blind discovery)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p qualification
+          git -C source fetch --no-tags origin 'refs/pull/814/head:refs/remotes/origin/pr814'
+          test "$(git -C source rev-parse refs/remotes/origin/pr814)" = '849bb822a22ca86bb6354b912c9c59f415f3d5b7'
+          python tooling/research/g2_native_residual/qualify_v2.py --repo source --base 56591163bce358abdb860d3dad599d3ab440621a --head 849bb822a22ca86bb6354b912c9c59f415f3d5b7 --test-file hlog/internal/mutil/writer_proxy_test.go --output qualification
+          python - <<'PY'
+          import json
+          p=json.load(open('qualification/qualification.json'))
+          assert p['schema']=='mathgraph.g2.author-native-redgreen.v1'
+          print('POSTHOC_814',p['status'],'BASE_TEST_EXISTS',p.get('base_test_exists'))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: g2-new-author-test-v2-posthoc814
+          path: qualification
+          retention-days: 60
