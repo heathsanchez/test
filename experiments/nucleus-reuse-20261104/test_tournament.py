@@ -1,5 +1,7 @@
 import unittest
-from tournament import qualifies, select_winner, INPUT_SHA
+import sys,time,tempfile
+from pathlib import Path
+from tournament import qualifies, select_winner, INPUT_SHA, validate_baseline, native_target_valid, run_group
 
 class AdmissionTests(unittest.TestCase):
     def row(self, **changes):
@@ -24,5 +26,26 @@ class AdmissionTests(unittest.TestCase):
         self.assertEqual(select_winner([fast,valid])['name'],'candidate')
     def test_preserves_unknown_when_none_qualify(self):
         self.assertIsNone(select_winner([self.row(mathlib_rc=2)]))
+
+class BoundaryTests(unittest.TestCase):
+    def test_opposing_wrong_verdicts_cannot_preserve_qualified_baseline(self):
+        rows=[dict(case='valid',expected=0,rc=1),dict(case='invalid',expected=1,rc=0)]
+        with self.assertRaises(ValueError):validate_baseline(rows,expected_count=2,expected_unknown=set())
+    def test_changed_unknown_membership_cannot_pass_by_histogram(self):
+        rows=[dict(case='a',expected=0,rc=0),dict(case='b',expected=0,rc=2)]
+        with self.assertRaises(ValueError):validate_baseline(rows,expected_count=2,expected_unknown={'a'})
+    def test_native_crash_is_not_a_failed_test(self):
+        self.assertFalse(native_target_valid(-9,'test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s'))
+    def test_native_summary_must_account_for_all_tests(self):
+        self.assertFalse(native_target_valid(0,'running 2 tests\ntest a ... ok\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s'))
+    def test_timeout_kills_descendants(self):
+        with tempfile.TemporaryDirectory() as d:
+            marker=Path(d)/'survived'
+            child="import time,pathlib;time.sleep(.4);pathlib.Path("+repr(str(marker))+").write_text('bad')"
+            parent="import subprocess,sys,time;subprocess.Popen([sys.executable,'-c',"+repr(child)+"]);time.sleep(5)"
+            result=run_group([sys.executable,'-c',parent],timeout=.15,capture_output=True)
+            self.assertEqual(result.returncode,124)
+            time.sleep(.5)
+            self.assertFalse(marker.exists())
 
 if __name__=='__main__':unittest.main()

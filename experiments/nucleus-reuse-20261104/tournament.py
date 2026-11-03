@@ -8,6 +8,7 @@ import math
 import os
 from pathlib import Path
 import re
+import signal
 import shutil
 import statistics
 import subprocess
@@ -17,6 +18,78 @@ import time
 BASE='a2578e77079719ff2064f910bd82fd01d8e120b6'
 INPUT_SHA='22c5de83469408950005589a3bc5ef5157c65549b5a802f85d567c29151306a6'
 FLAGS=('RELEVANCE','CONTEXT_BINDER','TYPED_LINEAGE','SUBSTITUTION_RECLOSURE','TYPED_VALUE_NORMALIZATION','PROJECTION_CONTEXT','PROJECTION_CROSSFRAME_512','TYPED_RECEIVER','SOURCE_PAIR_DEPTH8','POLYMORPHIC_PROP_IRREL','PROP_SINGLETON_2P1F','EXPECTED_LAMBDA','FORMED_PROP_DOMAIN_RETRY','TYPED_DATA_CONGRUENCE','TYPED_PROJECTION_SPINE','REPLAY_PROJECTION_MAJOR','REPLAY_NEUTRAL_PROJECTION')
+EXPECTED_UNKNOWN={'bugs/eta-ctor-alias','perf/fueled-chain','perf/grind-ring-5','perf/magma-list-deep-n21','perf/magma-list-deep-n36','perf/magma-list-pair-n7','perf/magma-string-n4','perf/magma-string-pair-n9'}
+
+def validate_baseline(rows,expected_count=208,expected_unknown=None):
+    expected_unknown=EXPECTED_UNKNOWN if expected_unknown is None else expected_unknown
+    if len(rows)!=expected_count or len({r['case'] for r in rows})!=expected_count:
+        raise ValueError('missing or duplicate baseline cases')
+    if any(r['expected'] not in (0,1) or r['rc'] not in (r['expected'],2) for r in rows):
+        raise ValueError('wrong baseline verdict or execution error')
+    if {r['case'] for r in rows if r['rc']==2}!=expected_unknown:
+        raise ValueError('baseline UNKNOWN membership changed')
+
+def run_group(cmd,timeout,**kwargs):
+    capture=kwargs.pop('capture_output',False)
+    if capture:kwargs.update(stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+    p=subprocess.Popen(cmd,start_new_session=True,**kwargs)
+    try:
+        stdout,stderr=p.communicate(timeout=timeout)
+        return subprocess.CompletedProcess(cmd,p.returncode,stdout,stderr)
+    except subprocess.TimeoutExpired:
+        try:os.killpg(p.pid,signal.SIGKILL)
+        except ProcessLookupError:pass
+        stdout,stderr=p.communicate()
+        return subprocess.CompletedProcess(cmd,124,stdout,stderr)
+
+SUMMARY=r'test result: (?:ok|FAILED)\. (\d+) passed; (\d+) failed; (\d+) ignored; (\d+) measured; (\d+) filtered out;'
+def native_target_valid(rc,stdout):
+    matches=re.findall(SUMMARY,stdout)
+    running=re.findall(r'^running (\d+) tests?$',stdout,re.M)
+    if len(matches)!=1 or len(running)!=1:return False
+    passed,failed,ignored,measured,filtered=map(int,matches[0])
+    if int(running[0])!=passed+failed+ignored+measured:return False
+    if len(failures(stdout))!=failed:return False
+    return (rc==0 and failed==0) or (rc==101 and failed>0)
+
+def native_suite(kernel,env,out):
+    cmd=['cargo','test','--release','--locked','--manifest-path',str(kernel/'Cargo.toml'),'--no-run','--message-format=json']
+    built=run_group(cmd,timeout=600,env=env,capture_output=True)
+    (out/'native-build.log').write_bytes(built.stdout+built.stderr)
+    if built.returncode:return dict(compiled=False,targets={})
+    targets={}
+    for line in built.stdout.decode(errors='replace').splitlines():
+        try:d=json.loads(line)
+        except json.JSONDecodeError:continue
+        if d.get('reason')=='compiler-artifact' and d.get('executable') and d.get('profile',{}).get('test'):
+            key=d['target']['name']+'|'+','.join(d['target']['kind'])
+            targets[key]=d['executable']
+    if not targets:return dict(compiled=False,targets={})
+    report={}
+    for key,exe in sorted(targets.items()):
+        r=run_group([exe,'--include-ignored'],timeout=900,env=env,capture_output=True)
+        raw=(r.stdout+r.stderr).decode(errors='replace')
+        (out/('native-'+key.replace('|','-')+'.log')).write_text(raw)
+        counts=re.findall(SUMMARY,raw)
+        report[key]=dict(rc=r.returncode,complete=native_target_valid(r.returncode,raw),failures=failures(raw),counts=list(map(int,counts[0])) if len(counts)==1 else None)
+    # Rustdoc is not a test executable produced by --no-run; account for it separately.
+    doc=run_group(['cargo','test','--release','--locked','--manifest-path',str(kernel/'Cargo.toml'),'--doc','--','--include-ignored'],timeout=600,env=env,capture_output=True)
+    raw=(doc.stdout+doc.stderr).decode(errors='replace');(out/'native-rustdoc.log').write_text(raw)
+    counts=re.findall(SUMMARY,raw)
+    report['rustdoc']=dict(rc=doc.returncode,complete=native_target_valid(doc.returncode,raw),failures=failures(raw),counts=list(map(int,counts[0])) if len(counts)==1 else None)
+    result=dict(compiled=True,targets=report)
+    write_json(out/'native-targets.json',result)
+    return result
+
+def native_reports_match(candidate,reference):
+    if not candidate['compiled'] or not reference['compiled']:return False
+    a=candidate['targets'];b=reference['targets']
+    if set(a)!=set(b):return False
+    for key in a:
+        x,y=a[key],b[key]
+        if not x['complete'] or not y['complete'] or x['rc']!=y['rc'] or x['failures']!=y['failures']:return False
+        if sum(x['counts'][:4])<sum(y['counts'][:4]):return False
+    return True
 
 def geometric(xs):
     return math.exp(sum(math.log(x) for x in xs)/len(xs))
@@ -211,8 +284,7 @@ def replay(binary,manifest,root,env,out):
     for old in manifest:
         p=root/'inputs'/old['relative_path'];assert digest(p)==old['sha256']
         with p.open('rb') as f:
-            try:r=subprocess.run([str(binary)],stdin=f,capture_output=True,env=env,timeout=240);rc=r.returncode;tail=r.stderr[-800:].decode(errors='replace')
-            except subprocess.TimeoutExpired:rc=124;tail='TIMEOUT'
+            r=run_group([str(binary)],stdin=f,capture_output=True,env=env,timeout=240);rc=r.returncode;tail=r.stderr[-800:].decode(errors='replace')
         rows.append(dict(case=old['case'],expected=old['expected'],rc=rc,sha256=old['sha256'],terminal=tail))
         write_json(out,rows)
     return rows
@@ -226,8 +298,7 @@ def measure(binary,source,env,directory,timeout=1800,perf=False):
     if perf:cmd=['perf','stat','-x,','-e','instructions','-o',str(directory/'perf.csv'),'--']+cmd
     start=time.monotonic()
     with open(source,'rb') as src,(directory/'stdout').open('wb') as stdout,(directory/'stderr').open('wb') as stderr:
-        try:r=subprocess.run(cmd,stdin=src,stdout=stdout,stderr=stderr,env=env,timeout=timeout);rc=r.returncode
-        except subprocess.TimeoutExpired:rc=124
+        r=run_group(cmd,stdin=src,stdout=stdout,stderr=stderr,env=env,timeout=timeout);rc=r.returncode
     row=dict(rc=rc,wall_observed=time.monotonic()-start)
     if (directory/'time.txt').exists():
         for line in (directory/'time.txt').read_text().splitlines():
@@ -262,13 +333,12 @@ def corpus(args):
         info=dict(name=name,built=binary is not None,profile='standard',source_patch_sha=digest(arm/'source.patch'))
         if binary is None:state[name]=info;write_json(out/'state.json',state);continue
         native_env=build_env|env
-        r=subprocess.run(['cargo','test','--release','--locked','--manifest-path',str(kernel/'Cargo.toml'),'--no-fail-fast','--','--include-ignored'],env=native_env,capture_output=True,timeout=900)
-        raw=(r.stdout+r.stderr).decode(errors='replace');(arm/'native.log').write_text(raw)
-        fs=failures(raw);info.update(native_rc=r.returncode,native_failures=fs,binary_sha=digest(binary))
-        if name=='baseline':native_baseline=fs
-        info['native_parity']=fs==native_baseline and r.returncode in (0,101) and 'test result:' in raw and 'could not compile' not in raw
+        nr=native_suite(kernel,native_env,arm)
+        info.update(native_targets=nr,binary_sha=digest(binary))
+        if name=='baseline':native_baseline=nr
+        info['native_parity']=native_reports_match(nr,native_baseline)
         rows=replay(binary,manifest,root,env,arm/'verdicts.json')
-        if name=='baseline':baseline=rows
+        if name=='baseline':validate_baseline(rows);baseline=rows
         diffs=[dict(case=a['case'],baseline=a['rc'],candidate=b['rc']) for a,b in zip(baseline,rows) if a['rc']!=b['rc']]
         info.update(parity=not diffs,differences=diffs,counts={str(k):sum(r['rc']==k for r in rows) for k in (0,1,2)})
         if name=='baseline':assert info['counts']=={'0':121,'1':79,'2':8},info
@@ -298,6 +368,8 @@ def mathlib(args):
     measurements=[];eligible=[n for n,s in state.items() if s.get('parity') and s.get('native_parity')]
     for roundno in range(3):
         for name in eligible if roundno%2==0 else list(reversed(eligible)):
+            if roundno and (any(r['rc']!=0 for r in measurements if r['arm']==name)
+                or any(r['rc']!=0 for r in measurements if r['arm']=='baseline')):continue
             r=measure(previous/name/'nucleus',source,env,out/name/f'round-{roundno}',timeout=1800,perf=perf)
             measurements.append(dict(arm=name,round=roundno,**r));write_json(out/'measurements.json',measurements)
             print('MATHLIB '+json.dumps(measurements[-1]),flush=True)
