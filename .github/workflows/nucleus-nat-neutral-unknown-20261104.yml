@@ -1,0 +1,111 @@
+name: Nucleus Nat nonconstructor conservative UNKNOWN A/B
+on:
+  push:
+    branches: [research/nucleus-nat-neutral-unknown-20261104]
+    paths: ['.github/workflows/nucleus-nat-neutral-unknown-20261104.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-source-ab:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Restore minimal qualified binary and the exact Nat frontier
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/nucleus-nat-ab
+          gh api repos/heathsanchez/test/actions/artifacts/13248500779/zip > /tmp/nucleus-nat-ab/minimal-qualified.zip
+          printf '%s  %s\n' decd3ad80437eb5b47a7b66effb2594a9b6dd69cca8ff3360226bc3aa95a6b89 /tmp/nucleus-nat-ab/minimal-qualified.zip | sha256sum -c -
+          unzip -p /tmp/nucleus-nat-ab/minimal-qualified.zip next-frontier.ndjson.zst | zstd -dc -o /tmp/nucleus-nat-ab/nat-frontier.ndjson
+          printf '%s  %s\n' 7767e7f90b3e24b30ecb5324f1117d6858b5f40653b31011ad1948eed747e8ea /tmp/nucleus-nat-ab/nat-frontier.ndjson | sha256sum -c -
+          unzip -jo /tmp/nucleus-nat-ab/minimal-qualified.zip candidate/nucleus -d /tmp/nucleus-nat-ab
+          mv /tmp/nucleus-nat-ab/nucleus /tmp/nucleus-nat-ab/minimal-baseline
+          chmod +x /tmp/nucleus-nat-ab/minimal-baseline
+          printf '%s  %s\n' 43ee22db5c6be1e1fddaec210322b02cfab30dabd5c10637ab21b3667d2ad98e /tmp/nucleus-nat-ab/minimal-baseline | sha256sum -c -
+          gh api repos/heathsanchez/test/actions/artifacts/13242616719/zip > /tmp/nucleus-nat-ab/quot-frontier.zip
+          printf '%s  %s\n' 78183d5b00480e3b3a6bec2346eb07ca99fb268c312d457ebf06df1c8d8722cd /tmp/nucleus-nat-ab/quot-frontier.zip | sha256sum -c -
+          unzip -p /tmp/nucleus-nat-ab/quot-frontier.zip next-frontier.ndjson.zst | zstd -dc -o /tmp/nucleus-nat-ab/quot-frontier.ndjson
+          printf '%s  %s\n' 4883dc9889b546a1117c25c266bae05a344b6609db5cbbfd846a8d7abc92a907 /tmp/nucleus-nat-ab/quot-frontier.ndjson | sha256sum -c -
+      - name: Materialize qualified two-rule source and weaken only the failed refutation
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import difflib,sys
+          from pathlib import Path
+          sys.path.insert(0,str(Path('experiments/nucleus-final-proof-spine-20261104').resolve()))
+          import runner
+          sys.path.insert(0,str(Path('experiments/nucleus-quotient-reuse-20261104').resolve()))
+          from port import port
+          out=Path('/tmp/nucleus-nat-ab/candidate')
+          out.mkdir(parents=True,exist_ok=True)
+          kernel=runner.materialize(out,semantic=True)
+          port(Path.cwd(),kernel,out/'quotient-port.patch',include_exact=False)
+          source=kernel/'src/convert.rs'
+          original=source.read_text()
+          old='Judgment::refuted("Nat-literal-non-Nat-head")'
+          new='Judgment::unknown("Nat-literal-non-Nat-head")'
+          assert original.count(old)==1
+          changed=original.replace(old,new,1)
+          source.write_text(changed)
+          (out/'nat-unknown.patch').write_text(''.join(difflib.unified_diff(original.splitlines(True),changed.splitlines(True),fromfile='a/metatron-kernel/src/convert.rs',tofile='b/metatron-kernel/src/convert.rs')))
+          PY
+          python3 - <<'PY'
+          import sys
+          from pathlib import Path
+          sys.path.insert(0,str(Path('experiments/nucleus-reuse-20261104').resolve()))
+          import tournament
+          out=Path('/tmp/nucleus-nat-ab/candidate')
+          binary,_=tournament.build(out/'metatron-kernel',out)
+          assert binary, (out/'build.log').read_text()[-5000:]
+          PY
+          sha256sum /tmp/nucleus-nat-ab/candidate/{quotient-port.patch,nat-unknown.patch,nucleus} > /tmp/nucleus-nat-ab/modified.sha256
+      - name: Matched authentic and forged Nat/Quotient verdicts
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib,json,subprocess,sys
+          from pathlib import Path
+          root=Path('/tmp/nucleus-nat-ab')
+          sys.path.insert(0,str(Path('experiments/nucleus-reuse-20261104').resolve()))
+          import tournament
+          env=tournament.run_env()
+          for flag in ('CERTIFIED_QUOT_IOTA','SOURCE_PROOF_IRREL'):
+              env['NUCLEUS_EXPERIMENTAL_'+flag]='1'
+          env['NUCLEUS_TRACE_DOWNSTREAM']='1'
+          binary={'baseline':root/'minimal-baseline','candidate':root/'candidate/nucleus'}
+          rows=[]
+          for name,prefix in [('quotient',root/'quot-frontier.ndjson'),('nat',root/'nat-frontier.ndjson')]:
+              raw=prefix.read_bytes()
+              source_head,source_last=(raw.rsplit(b'\n',2)[:2] if raw.endswith(b'\n') else raw.rsplit(b'\n',1))
+              rec=json.loads(source_last)
+              assert 'thm' in rec
+              variants={'authentic':raw}
+              for field in ('type','value'):
+                  modified=json.loads(source_last)
+                  modified['thm'][field]=0
+                  variants['forged-'+field]=source_head+b'\n'+json.dumps(modified,separators=(',',':')).encode()+b'\n'
+              for arm,exe in binary.items():
+                  for label,blob in variants.items():
+                      result=subprocess.run([str(exe)],input=blob,capture_output=True,env=env,timeout=300)
+                      rows.append(dict(input=name,arm=arm,label=label,rc=result.returncode,sha256=hashlib.sha256(blob).hexdigest(),tail=result.stderr[-300:].decode(errors='replace')))
+                      print(name,arm,label,result.returncode,flush=True)
+                      assert result.returncode in (0,1,2)
+                      if label.startswith('forged-'): assert result.returncode != 0
+          (root/'verdicts.json').write_text(json.dumps(rows,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-nat-unknown-ab-${{ github.sha }}
+          path: |
+            /tmp/nucleus-nat-ab/*.json
+            /tmp/nucleus-nat-ab/*.sha256
+            /tmp/nucleus-nat-ab/candidate/*.patch
+            /tmp/nucleus-nat-ab/candidate/build.log
