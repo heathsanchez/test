@@ -20,8 +20,6 @@ jobs:
         run: |
           set -euo pipefail
           printf '%s  %s\n' e5bd1f7e2acedfca03be8f6f070b996abcea9828d4988f02e3f73ef4002b0535 metatron-kernel/src/capability.rs | sha256sum -c -
-          rg -q 'struct RelevanceMemo' metatron-kernel/src/capability.rs
-          rg -q 'source_owner_index' metatron-kernel/src/capability.rs
       - name: Compile and run direct checked-in Rust native unit tests
         run: |
           set -euo pipefail
