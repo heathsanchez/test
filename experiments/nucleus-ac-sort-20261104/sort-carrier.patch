@@ -6,7 +6,7 @@
      let Some((parameters,result))=pi_spine(export,inductive.ty,inductive.num_params as usize) else{return false;};
 -    is_sort_succ_parameter(export,parameters[0],inductive.level_params[0])
 +    (is_sort_succ_parameter(export,parameters[0],inductive.level_params[0])
-+            || is_sort_parameter(export,parameters[0],inductive.level_params[0]))
++            || (inductive.num_params == 1 && is_sort_parameter(export,parameters[0],inductive.level_params[0])))
          && is_sort_succ_parameter(export,result,inductive.level_params[0])
  }
  
@@ -16,7 +16,7 @@
      let Some((fields,_))=pi_spine(export,constructor.ty,p+constructor.num_fields as usize) else{return false;};
 -    is_sort_succ_parameter(export,parameters[0],universe) && is_sort_succ_parameter(export,result,universe)
 +    (is_sort_succ_parameter(export,parameters[0],universe)
-+            || is_sort_parameter(export,parameters[0],universe)) && is_sort_succ_parameter(export,result,universe)
++            || (p == 1 && is_sort_parameter(export,parameters[0],universe))) && is_sort_succ_parameter(export,result,universe)
          && parameters.iter().zip(&fields[..p]).all(|(a,b)|expr_eq_with_bvar_shift(export,*a,*b,0,0))
          && bounded_record_source(export,&fields[p..],Some(inductive.name))
  }
