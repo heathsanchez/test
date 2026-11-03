@@ -26,8 +26,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python -B -m pytest -q --import-mode=importlib research/sustained_refactory_pilot/test_pilot.py -k 'truncated_oracle_map or oracle_reply_must_bind or raw_source_hash' 2>&1 | tee /tmp/udm-g1.log
-          grep -Eq '3 passed|[1-9][0-9]* passed' /tmp/udm-g1.log
+          python -B -m pytest -q --import-mode=importlib research/sustained_refactory_pilot/test_pilot.py -k 'truncated_oracle_map or oracle_reply_must_bind or raw_source_hash or fixture_inventory or missing_expected_ids' 2>&1 | tee /tmp/udm-g1.log
+          grep -q '5 passed' /tmp/udm-g1.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
