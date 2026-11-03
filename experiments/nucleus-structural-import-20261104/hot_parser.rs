@@ -44,7 +44,7 @@ fn hot_record(line:&str)->Option<HotRecord>{
   b"succ"=>Level::Succ(LevelId(c.num()?)),b"param"=>Level::Param(NameId(c.num()?)),
   b"max"|b"imax"=>{let(a,b)=c.pair()?;if tag==b"max"{Level::Max(LevelId(a),LevelId(b))}else{Level::IMax(LevelId(a),LevelId(b))}},_=>return None,
  })};
- if id_second{c.eat(b',')?;if c.key()?!=table{return None;}let id=c.num()?;match &mut record{HotRecord::Expr(i,_)|HotRecord::Level(i,_)=>*i=id;}}
+ if id_second{c.eat(b',')?;if c.key()?!=table{return None;}let id=c.num()?;match &mut record{HotRecord::Expr(i,_)|HotRecord::Level(i,_)=>{*i=id;}}}
  c.eat(b'}')?;c.ws();if c.i!=c.b.len(){return None;}Some(record)
 }
 fn apply_hot(export:&mut ParsedExport,r:HotRecord)->Result<(),ParseError>{match r{HotRecord::Expr(i,e)=>export.exprs.insert(ExprId(i),e)?,HotRecord::Level(i,l)=>export.levels.insert(LevelId(i),l)?};Ok(())}
