@@ -1,0 +1,41 @@
+name: Nucleus exact qualified software CPU cost atlas
+on:
+  push:
+    branches: [research/nucleus-environment-forks-20261104]
+    paths:
+      - '.github/workflows/nucleus-cost-profile-20261104.yml'
+      - 'experiments/nucleus-environment-forks-20261104/profile.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  profile:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install software sampling tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq linux-tools-generic
+      - name: Restore exact qualified executable and both input boundaries
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/nonzero-qualified /tmp/mathlib-source
+          gh api repos/heathsanchez/test/actions/artifacts/13276734778/zip > /tmp/nonzero.zip
+          printf '%s  %s\n' 609aa7c3d4b7629d79d51486989c39e9bc5609bc17fbe35f6b117c78c72226b7 /tmp/nonzero.zip | sha256sum -c -
+          unzip -q /tmp/nonzero.zip -d /tmp/nonzero-qualified
+          zstd -dq /tmp/nonzero-qualified/next-frontier.ndjson.zst -o /tmp/profile-prefix.ndjson
+          gh api repos/heathsanchez/test/actions/artifacts/13231986845/zip > /tmp/mathlib.zip
+          printf '%s  %s\n' 3dd3fbb522816bdaa9d9cd2808196e075bfa27e3d6c82648731140594f87ce2b /tmp/mathlib.zip | sha256sum -c -
+          unzip -q /tmp/mathlib.zip -d /tmp/mathlib-source
+          zstd -dq /tmp/mathlib-source/mathlib.ndjson.zst -o /tmp/mathlib.ndjson
+      - name: Sample user CPU without changing checker bytes or rules
+        run: python3 experiments/nucleus-environment-forks-20261104/profile.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-qualified-cost-atlas-${{ github.sha }}
+          path: /tmp/nucleus-cost-profile

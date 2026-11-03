@@ -33,20 +33,7 @@ def gate(binary, env):
     assert len(manifest) == 9
     reference = Path('/tmp/k-reference/bundle/kernel')
     assert Q.t.digest(reference) == C.REF_SHA
-    rows = []
-    for case in manifest:
-        fixture = cases / case['file']
-        assert Q.t.digest(fixture) == case['sha256']
-        stem = C.OUT / 'ac-differential' / case['case']
-        parse = C.captured([str(reference),'--parse-only',str(fixture)], stem / 'parse')
-        ref_rc = C.captured([str(reference),str(fixture)], stem / 'reference')
-        with fixture.open('rb') as stream:
-            rc = C.captured([str(binary)], stem / 'nucleus', env=env, stdin=stream)
-        passed = parse == 0 and ref_rc == case['expect_reference'] and (rc == 0 if ref_rc == 0 else rc in (1,2))
-        rows.append(dict(case, reference_parse_rc=parse, reference_rc=ref_rc, nucleus_rc=rc, pass_=passed))
-        Q.t.write_json(C.OUT / 'ac_gate.json', dict(baseline_pins=pins, candidate_binary=Q.t.digest(binary), red=red, rows=rows))
-        print('AC_SORT_CONTROL',json.dumps(rows[-1]),flush=True)
-        assert passed, 'Do not continue without source-derived AC control'
+    C.check_controls(binary,manifest,cases,env,'ac_gate.json','ac-differential',dict(baseline_pins=pins,red=red))
 
 if __name__ == '__main__':
     C.main(additional_patch=ROOT / 'sort-carrier.patch', additional_gate=gate)

@@ -3,6 +3,7 @@ import importlib.util
 import json
 from pathlib import Path
 import subprocess
+from concurrent.futures import ThreadPoolExecutor
 
 ROOT = Path(__file__).resolve().parent
 spec = importlib.util.spec_from_file_location('qualified_delta', ROOT.parent / 'nucleus-beq-neutral-delta-20261104/qualify.py')
@@ -19,6 +20,37 @@ def captured(command, target, timeout=180, **kwargs):
     target.with_suffix('.stdout').write_bytes(result.stdout)
     target.with_suffix('.stderr').write_bytes(result.stderr)
     return result.returncode
+
+CONTROL_WORKERS=2
+
+def check_controls(binary,manifest,cases,env,filename,directory,extra=None):
+    reference=Path('/tmp/k-reference/bundle/kernel')
+    assert Q.t.digest(reference)==REF_SHA
+    def one(case):
+        source=cases/case['file']
+        assert Q.t.digest(source)==case['sha256']
+        stem=OUT/directory/case['case']
+        parse=captured([str(reference),'--parse-only',str(source)],stem/'parse')
+        ref_rc=captured([str(reference),str(source)],stem/'reference')
+        with source.open('rb')as stream:
+            rc=captured([str(binary)],stem/'nucleus',env=env,stdin=stream)
+        native_ok=(rc==case['expect_nucleus']if 'expect_nucleus'in case else rc==0 if ref_rc==0 else rc in(1,2))
+        passed=parse==0 and ref_rc==case['expect_reference']and native_ok
+        return dict(case,reference_parse_rc=parse,reference_rc=ref_rc,nucleus_rc=rc,pass_=passed)
+    rows=[]
+    def retain(row):
+        rows.append(row)
+        Q.t.write_json(OUT/filename,dict(reference_binary=REF_SHA,candidate_binary=Q.t.digest(binary),workers=CONTROL_WORKERS,rows=rows,**(extra or{})))
+        print('SOURCE_DIFFERENTIAL',json.dumps(row),flush=True)
+        assert row['pass_'],'Source differential gate failed'
+    # Prove the authentic subject before starting the independent controls.
+    retain(one(manifest[0]))
+    pool=ThreadPoolExecutor(max_workers=CONTROL_WORKERS)
+    try:
+        for row in pool.map(one,manifest[1:]):retain(row)
+    finally:
+        pool.shutdown(wait=True,cancel_futures=True)
+    return rows
 
 def main(additional_patch=None, additional_gate=None):
     OUT.mkdir(exist_ok=True)
@@ -71,20 +103,7 @@ def main(additional_patch=None, additional_gate=None):
         assert len(manifest) == 12
         red = Q.t.measure(old, Path('/tmp/std-prefix.ndjson'), env, OUT / 'red-std', timeout=180, perf=False)
         assert red['rc'] == 2 and 'Std.LeftIdentity' in (OUT / 'red-std/stderr').read_text()
-        rows = []
-        for case in manifest:
-            source = cases / case['file']
-            assert Q.t.digest(source) == case['sha256']
-            stem = OUT / 'differential' / case['case']
-            parse = captured([str(reference),'--parse-only',str(source)], stem / 'parse')
-            ref_rc = captured([str(reference),str(source)], stem / 'reference')
-            with source.open('rb') as stream:
-                rc = captured([str(binary)], stem / 'nucleus', env=env, stdin=stream)
-            passed = parse == 0 and ref_rc == case['expect_reference'] and (rc == 0 if ref_rc == 0 else rc in (1,2))
-            rows.append(dict(case, reference_parse_rc=parse, reference_rc=ref_rc, nucleus_rc=rc, pass_=passed))
-            Q.t.write_json(OUT / 'differential.json', dict(reference_binary=REF_SHA, candidate_binary=Q.t.digest(binary), rows=rows))
-            print('K_CANONICAL_CONTROL', json.dumps(rows[-1]), flush=True)
-        assert all(row['pass_'] for row in rows), 'Blocked: source differential controls failed'
+        check_controls(binary,manifest,cases,env,'differential.json','differential')
         return kernel, binary, build_env, arm
 
     Q.D.patch_source, Q.source_qualified_candidate = composite, build_and_protect
