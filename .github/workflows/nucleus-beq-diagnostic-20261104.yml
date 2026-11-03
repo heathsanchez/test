@@ -29,6 +29,44 @@ jobs:
           unzip -q /tmp/beq-trace/source.zip -d /tmp/beq-trace/source
           zstd -d /tmp/beq-trace/source/next-frontier.ndjson.zst -o /tmp/beq-trace/first-beq.ndjson
           printf '%s  %s\n' d1c35f6a0de8644817b404e225a16de460e897e0b34c129fcb2a37483e630738 /tmp/beq-trace/first-beq.ndjson | sha256sum -c -
+      - name: Decode exact failing exported expression nodes and constant names
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path('/tmp/beq-trace');expressions={};names={}
+          with (root/'first-beq.ndjson').open() as stream:
+           for line in stream:
+            r=json.loads(line)
+            if 'ie' in r:expressions[r['ie']]={k:v for k,v in r.items() if k!='ie'}
+            if 'in' in r:names[r['in']]={k:v for k,v in r.items() if k!='in'}
+          def resolve_name(n):
+           if n==0:return ''
+           r=names.get(n,{})
+           if 'str' in r:
+            o=r['str'];return resolve_name(o['pre'])+'.'+o['str']
+           if 'num' in r:
+            o=r['num'];return resolve_name(o['pre'])+'.#'+str(o.get('num'))
+           return '?'+str(n)
+          def describe(eid,depth=4):
+           r=expressions.get(eid,{})
+           result={'id':eid,'node':r}
+           if 'const' in r:result['const_name']=resolve_name(r['const']['name'])
+           if depth<=0:return result
+           for key in ('app','lam','forallE','letE','proj'):
+            value=r.get(key)
+            if isinstance(value,dict):
+             for part in ('fn','arg','type','body','value','struct','major'):
+              if isinstance(value.get(part),int):
+               result[key+'.'+part]=describe(value[part],depth-1)
+           return result
+          wanted=(5,114476,114507,114508,114509)
+          report=dict(expr_count=len(expressions),name_count=len(names),
+                      nodes={str(x):describe(x) for x in wanted},
+                      theorem_record=json.loads((root/'first-beq.ndjson').read_bytes().splitlines()[-1]))
+          (root/'heads.json').write_text(json.dumps(report,indent=2)+'\n')
+          print('EXPORTED_HEADS',json.dumps({'node_summary':{str(x):expressions.get(x) for x in wanted},'counts':[len(expressions),len(names)]}),flush=True)
+          PY
       - name: Trace original failed application-type premise without code change
         run: |
           python3 - <<'PY'
@@ -64,4 +102,5 @@ jobs:
           name: nucleus-beq-exact-diagnostic-${{ github.sha }}
           path: |
             /tmp/beq-trace/diagnostic.json
+            /tmp/beq-trace/heads.json
             /tmp/beq-trace/trace.stderr
