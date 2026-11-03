@@ -1,0 +1,11 @@
+--- a/metatron-kernel/src/checker.rs
++++ b/metatron-kernel/src/checker.rs
+@@ -28,7 +28,7 @@
+ impl Default for Limits {
+     fn default() -> Self {
+         Self {
+-            judgment_steps: 65_536,
++            judgment_steps: 262_144,
+         }
+     }
+ }

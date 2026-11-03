@@ -1,0 +1,14 @@
+uncaught exception: while replaying declaration '«NucleusCapturedTidyfalse-constraint»':
+(kernel) declaration type mismatch, '«NucleusCapturedTidyfalse-constraint»' has type
+  Nat →
+    Nat →
+      Nat →
+        Nat →
+          Nat →
+            Nat →
+              Nat →
+                Nat →
+                  @Eq Lean.Omega.Constraint (Lean.Omega.Constraint.mk (@Option.some Int 0) (@Option.some Int 1))
+                    (Lean.Omega.Constraint.mk (@Option.some Int 0) (@Option.some Int 1))
+but it is expected to have type
+  failed to pretty print expression (use 'set_option pp.rawOnError true' for raw representation)
