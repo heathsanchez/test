@@ -1,0 +1,69 @@
+name: Nucleus AC Context exact source-universe record screen
+on:
+  push:
+    branches: [research/nucleus-ac-context-20261104]
+    paths:
+      - '.github/workflows/nucleus-ac-context-screen-20261104.yml'
+      - 'experiments/nucleus-ac-context-20261104/runner.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  causal-screen:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: git fetch --no-tags --depth=1 origin a2578e77079719ff2064f910bd82fd01d8e120b6
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Restore immutable qualified binary, exact source prefixes and oracles
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/dense-qualified /tmp/k-qualified /tmp/delta-qualified /tmp/beq-source /tmp/source-receipt /tmp/let-oracle
+          gh api repos/heathsanchez/test/actions/artifacts/13269133385/zip > /tmp/prior.zip
+          printf '%s  %s\n' 689749feedc5025f0672dd7e7b091944f700f5b15c9a8105753341db38575d22 /tmp/prior.zip | sha256sum -c -
+          unzip -q /tmp/prior.zip -d /tmp/dense-qualified
+          gh api repos/heathsanchez/test/actions/artifacts/13274121542/zip > /tmp/k.zip
+          printf '%s  %s\n' 05936b878a5132e2aabb515351526f6d0a922590c21c78393bbd2d6a81c245e1 /tmp/k.zip | sha256sum -c -
+          unzip -q /tmp/k.zip -d /tmp/k-qualified
+          zstd -dq /tmp/k-qualified/next-frontier.ndjson.zst -o /tmp/ac-prefix.ndjson
+          printf '%s  %s\n' e08afe0a4ce9c0cd64308ee6eef52d0952316784d72175c843846762e2eb4d0b /tmp/ac-prefix.ndjson | sha256sum -c -
+          gh api repos/heathsanchez/test/actions/artifacts/13271488438/zip > /tmp/delta.zip
+          printf '%s  %s\n' 92c000926197c7e961ebf470aa7ed1b40d7584c48cc8fc2bfe8512fcd3471663 /tmp/delta.zip | sha256sum -c -
+          unzip -q /tmp/delta.zip -d /tmp/delta-qualified
+          zstd -dq /tmp/delta-qualified/next-frontier.ndjson.zst -o /tmp/std-prefix.ndjson
+          printf '%s  %s\n' 282a7cf85e897f1e246fc25bc0cf6a6b69afdce72856f2fb500299504b8488ef /tmp/std-prefix.ndjson | sha256sum -c -
+          gh api repos/heathsanchez/test/actions/artifacts/13268572042/zip > /tmp/beq.zip
+          printf '%s  %s\n' 00ce34eb4e8bb6e9b5fd8d5223bb07ef613364e8ece1f4fcc6cddb24804118b2 /tmp/beq.zip | sha256sum -c -
+          unzip -q /tmp/beq.zip -d /tmp/beq-source
+          zstd -dq /tmp/beq-source/next-frontier.ndjson.zst -o /tmp/beq-prefix.ndjson
+          printf '%s  %s\n' d1c35f6a0de8644817b404e225a16de460e897e0b34c129fcb2a37483e630738 /tmp/beq-prefix.ndjson | sha256sum -c -
+          gh api repos/heathsanchez/test/actions/artifacts/13264820032/zip > /tmp/source-receipt.zip
+          printf '%s  %s\n' 9fc805f01dc7525e14d7905c3bbaf9361e947eed420295e5e7e9d9a50155d7b9 /tmp/source-receipt.zip | sha256sum -c -
+          unzip -q /tmp/source-receipt.zip -d /tmp/source-receipt
+          gh api repos/heathsanchez/test/actions/artifacts/13261917242/zip > /tmp/let-oracle.zip
+          printf '%s  %s\n' bde62a227167517215d6a011f48cbf211447dba5c476c8eddbc4aff345183d05 /tmp/let-oracle.zip | sha256sum -c -
+          unzip -q /tmp/let-oracle.zip -d /tmp/let-oracle
+          test -f /tmp/let-oracle/reference.json
+      - name: Prepare native source fixtures
+        run: |
+          python3 -m py_compile experiments/nucleus-ac-context-20261104/runner.py
+          python3 experiments/nucleus-nat-closure-20261104/generate_fixtures.py --out /tmp/nat-fixtures
+          python3 experiments/nucleus-parameter-telescope-20261104/prepare.py
+          python3 experiments/nucleus-nullary-enum-20261104/prepare.py
+      - name: Matched type-source RED GREEN with five forged controls
+        run: python3 experiments/nucleus-ac-context-20261104/runner.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-ac-context-causal-${{ github.sha }}
+          path: |
+            /tmp/nucleus-ac-context/report.json
+            /tmp/nucleus-ac-context/*/stderr
+            /tmp/nucleus-beq-neutral-delta-qualified/candidate/sort-parameter.patch
+            /tmp/nucleus-beq-neutral-delta-qualified/candidate/source.patch
+            /tmp/nucleus-beq-neutral-delta-qualified/candidate/nucleus
+            /tmp/nucleus-beq-neutral-delta-qualified/candidate/build.log
