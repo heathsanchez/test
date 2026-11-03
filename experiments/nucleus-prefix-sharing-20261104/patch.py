@@ -7,6 +7,8 @@ def prefix_patch(s):
  s,n=re.subn(r'(checked_binding_lineage:\s*Rc::)',r'context_arena: RefCell::new(ContextArena::default()),\n            \1',s);assert n==5,n
  s=s.replace('protected_prefix:protected_context.to_vec()','protected_prefix:self.context_arena.borrow_mut().capture(protected_context)')
  s=s.replace('context.starts_with(&proof.protected_prefix)','proof.protected_prefix.is_prefix_of(context)')
- s=s.replace('recovered_context=record.protected_prefix;','recovered_context=record.protected_prefix.to_vec();').replace('recovered_context.starts_with(&record.protected_prefix)','record.protected_prefix.is_prefix_of(&recovered_context)')
+ # Legacy diagnostic recovery routines consume vector views; keep their logic exact.
+ marker='let caller_depth=context.len();';assert s.count(marker)==1
+ head,tail=s.split(marker,1);s=head+marker+tail.replace('.protected_prefix','.protected_prefix.to_vec()')
  s+='\n'+(Path(__file__).resolve().parent/'prefix.rs').read_text()
  return s
