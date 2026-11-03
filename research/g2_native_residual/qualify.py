@@ -22,6 +22,19 @@ TEST_FILE = re.compile(r"(?:[a-zA-Z0-9_.-]+/)*[a-zA-Z0-9_.-]+_test\.go\Z")
 MAX_SECONDS = 360
 
 
+def safe_test_path(value: str) -> bool:
+    return bool(TEST_FILE.fullmatch(value)) and all(part not in ("", ".", "..") for part in value.split("/"))
+
+
+def transplant_author_test(path: Path, new_bytes: bytes) -> None:
+    # A test is an untrusted file. Never follow a symlink or overwrite a
+    # directory; this operation must affect only the designated test path.
+    if path.is_symlink() or (path.exists() and not path.is_file()):
+        raise ValueError("unsafe_test_target")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(new_bytes)
+
+
 def cmd(args: list[str], cwd: Path, *, timeout: int = MAX_SECONDS) -> dict[str, Any]:
     t = time.monotonic()
     try:
@@ -97,7 +110,7 @@ def qualify(repo: Path, base: str, head: str, test_file: str, outdir: Path) -> d
     receipt: dict[str, Any]={"schema":"mathgraph.g2.author-native-redgreen.v1",
       "base_sha":base,"head_sha":head,"test_file":test_file,
       "status":"UNKNOWN_PRECONDITION","scientific_g2":"UNKNOWN","scientific_g3":"UNKNOWN"}
-    if not SHA.fullmatch(base) or not SHA.fullmatch(head) or not TEST_FILE.fullmatch(test_file):
+    if not SHA.fullmatch(base) or not SHA.fullmatch(head) or not safe_test_path(test_file):
         receipt["status"]="UNKNOWN_INVALID_MANIFEST"
         return receipt
     if not (repo/".git").exists():
@@ -122,10 +135,10 @@ def qualify(repo: Path, base: str, head: str, test_file: str, outdir: Path) -> d
             receipt["status"]="UNKNOWN_SOURCE_SHA_MISMATCH"
             return receipt
         a,b=source/test_file,fixed/test_file
-        if not b.is_file():
+        if b.is_symlink() or not b.is_file():
             receipt["status"]="UNKNOWN_CONTRIBUTOR_TEST_FILE_MISSING"
             return receipt
-        if a.exists() and not a.is_file():
+        if a.is_symlink() or (a.exists() and not a.is_file()):
             receipt["status"]="UNKNOWN_BASE_TEST_NOT_REGULAR"
             return receipt
         base_test_exists=a.is_file()
@@ -145,8 +158,7 @@ def qualify(repo: Path, base: str, head: str, test_file: str, outdir: Path) -> d
             return receipt
         # Only author test-file replacement, including a newly added test file.
         # Never modify implementation or install a target-specific adapter.
-        a.parent.mkdir(parents=True, exist_ok=True)
-        a.write_bytes(contributed)
+        transplant_author_test(a, contributed)
         receipt["base_transplant"]=run_suite(source,outdir,"author-test-on-base")
         if receipt["base_transplant"]["status"]!="FAIL_NATIVE_ASSERTIONS":
             receipt["status"]="UNKNOWN_NO_NATIVE_FAILING_ASSERTION"
