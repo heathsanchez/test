@@ -125,7 +125,11 @@ jobs:
           capability_replace('    if target_names.is_empty() {\n        return None;\n    }',
               '    if std::env::var_os("NUCLEUS_TRACE_PHASES").is_some() {eprintln!("NUCLEUS_PROP_STAGE:phase=target_discovery:ms={:.3}",target_start.elapsed().as_secs_f64()*1000.0);}\n    let traverse_start=std::time::Instant::now();\n    if target_names.is_empty() {\n        return None;\n    }')
           capability_replace('    None\n}\n\nfn expression_may_contain_target_projection(',
-              '    if std::env::var_os("NUCLEUS_TRACE_PHASES").is_some() {eprintln!("NUCLEUS_PROP_STAGE:phase=recursive_traversal:ms={:.3}",traverse_start.elapsed().as_secs_f64()*1000.0);}\n    None\n}\n\nfn expression_may_contain_target_projection(')
+              '    if std::env::var_os("NUCLEUS_TRACE_PHASES").is_some() {eprintln!("NUCLEUS_PROP_STAGE:phase=recursive_traversal:ms={:.3}",traverse_start.elapsed().as_secs_f64()*1000.0); eprintln!("NUCLEUS_PROP_RELEVANCE:memo_entries={}",relevance.len()); eprintln!("NUCLEUS_SOURCE_LOOKUPS:count={}:ms={:.3}",SOURCE_DECL_LOOKUP_COUNT.load(std::sync::atomic::Ordering::Relaxed),SOURCE_DECL_LOOKUP_NS.load(std::sync::atomic::Ordering::Relaxed) as f64/1_000_000.0);}\n    None\n}\n\nfn expression_may_contain_target_projection(')
+          capability_replace('fn proposition_status(\n',
+              'static SOURCE_DECL_LOOKUP_COUNT: std::sync::atomic::AtomicU64=std::sync::atomic::AtomicU64::new(0);\nstatic SOURCE_DECL_LOOKUP_NS: std::sync::atomic::AtomicU64=std::sync::atomic::AtomicU64::new(0);\nfn proposition_status(\n')
+          capability_replace('    let (level_params, declaration_ty) = declaration_type(export, *name)?;',
+              '    let lookup_start=std::time::Instant::now();\n    let found=declaration_type(export,*name);\n    SOURCE_DECL_LOOKUP_COUNT.fetch_add(1,std::sync::atomic::Ordering::Relaxed);\n    SOURCE_DECL_LOOKUP_NS.fetch_add(lookup_start.elapsed().as_nanos() as u64,std::sync::atomic::Ordering::Relaxed);\n    let (level_params,declaration_ty)=found?;')
           capability_source.write_text(capability_changed)
           (out/'capability-phases.patch').write_text(''.join(difflib.unified_diff(capability_original.splitlines(True),capability_changed.splitlines(True),fromfile='a/metatron-kernel/src/capability.rs',tofile='b/metatron-kernel/src/capability.rs')))
           sys.path.insert(0,str(Path('experiments/nucleus-reuse-20261104').resolve()))
@@ -166,7 +170,9 @@ jobs:
               assert len(capability_stages)==6,capability_stages
               prop_stages={name:float(value) for name,value in re.findall(r'NUCLEUS_PROP_STAGE:phase=([^:\s]+):ms=([\d.]+)',log)}
               assert 'projection_scan' in prop_stages,prop_stages
-              rows[kind]=dict(measured=metrics,phases=steps,check_detail=detail,preflight_stages=stages,capability_stages=capability_stages,prop_stages=prop_stages,boundary=boundary)
+              source_lookup=[(int(count),float(ms)) for count,ms in re.findall(r'NUCLEUS_SOURCE_LOOKUPS:count=(\d+):ms=([\d.]+)',log)]
+              relevance=[int(n) for n in re.findall(r'NUCLEUS_PROP_RELEVANCE:memo_entries=(\d+)',log)]
+              rows[kind]=dict(measured=metrics,phases=steps,check_detail=detail,preflight_stages=stages,capability_stages=capability_stages,prop_stages=prop_stages,source_lookup=source_lookup,relevance=relevance,boundary=boundary)
               print('PHASE_PROFILE',kind,json.dumps(rows[kind]),flush=True)
           summary=dict(source_binary_sha=t.digest(root/'candidate/nucleus'),rows=rows,
                        semantic_note='No proof rule changed, full Mathlib remains UNKNOWN')
