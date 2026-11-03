@@ -35,3 +35,34 @@ jobs:
         with:
           name: nucleus-mgso-pages-native-${{ github.sha }}
           path: /tmp/mgso-pages
+  protected-208:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Restore immutable baseline receipts and 208 source identities
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/mgso-pages/inputs /tmp/mgso-pages/evidence
+          gh api repos/heathsanchez/test/actions/artifacts/13126161718/zip > /tmp/mgso-pages-inputs.zip
+          printf '%s  %s\n' 462e31e21379054490570b465b46ece4fff878490d9ad7de6bbc73149d587f4c /tmp/mgso-pages-inputs.zip | sha256sum -c -
+          unzip -q /tmp/mgso-pages-inputs.zip -d /tmp/mgso-pages/inputs
+          gh api repos/heathsanchez/test/actions/artifacts/13230652851/zip > /tmp/mgso-pages-baseline.zip
+          printf '%s  %s\n' 90b932f6a5862df01b33939c26acdba9e0d092021a64b58db773a49d256640ac /tmp/mgso-pages-baseline.zip | sha256sum -c -
+          unzip -p /tmp/mgso-pages-baseline.zip verdicts.json > /tmp/mgso-pages/evidence/baseline-verdicts.json
+      - name: Build independent Nucleus; no Flash fallback
+        run: cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+      - name: Replay original 208 cold, first shadow and cross-process restart
+        run: PYTHONDONTWRITEBYTECODE=1 python3 experiments/nucleus-mgso-paged-20261104/qualify.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-mgso-pages-208-${{ github.sha }}
+          path: |
+            /tmp/mgso-pages/evidence/summary.json
+            /tmp/mgso-pages/evidence/verdicts.json
+            /tmp/mgso-pages/evidence/baseline-verdicts.json
