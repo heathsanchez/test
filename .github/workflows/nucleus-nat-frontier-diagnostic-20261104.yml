@@ -1,0 +1,77 @@
+name: Nucleus next Nat frontier source diagnostic
+on:
+  push:
+    branches: [research/nucleus-quotient-reuse-ab-20261104]
+    paths: ['.github/workflows/nucleus-nat-frontier-diagnostic-20261104.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-frontier:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Restore source-verified first subsequent obstruction
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/nucleus-nat-diagnostic
+          gh api repos/heathsanchez/test/actions/artifacts/13247025729/zip > /tmp/nucleus-nat-diagnostic/qualified.zip
+          printf '%s  %s\n' b86bf5f112e0b659a2769e04db193e6bfcd73622cc9b1fd41e752dab5acaa720 /tmp/nucleus-nat-diagnostic/qualified.zip | sha256sum -c -
+          unzip -p /tmp/nucleus-nat-diagnostic/qualified.zip next-frontier.ndjson.zst | zstd -dc -o /tmp/nucleus-nat-diagnostic/frontier.ndjson
+          printf '%s  %s\n' 7767e7f90b3e24b30ecb5324f1117d6858b5f40653b31011ad1948eed747e8ea /tmp/nucleus-nat-diagnostic/frontier.ndjson | sha256sum -c -
+      - name: Build identical semantic rules with diagnostics enabled
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import sys
+          from pathlib import Path
+          sys.path.insert(0,str(Path('experiments/nucleus-final-proof-spine-20261104').resolve()))
+          import runner
+          sys.path.insert(0,str(Path('experiments/nucleus-quotient-reuse-20261104').resolve()))
+          from port import port
+          out=Path('/tmp/nucleus-nat-diagnostic/candidate')
+          out.mkdir(parents=True,exist_ok=True)
+          k=runner.materialize(out,semantic=True)
+          port(Path.cwd(),k,out/'quotient-port.patch')
+          PY
+          CARGO_TARGET_DIR=/tmp/nucleus-nat-diagnostic/candidate/target cargo build --release --locked --features diagnostics --manifest-path /tmp/nucleus-nat-diagnostic/candidate/metatron-kernel/Cargo.toml > /tmp/nucleus-nat-diagnostic/build.log 2>&1
+          sha256sum /tmp/nucleus-nat-diagnostic/candidate/{source.patch,quotient-port.patch} > /tmp/nucleus-nat-diagnostic/source.sha256
+          sha256sum /tmp/nucleus-nat-diagnostic/candidate/target/release/metatron-kernel > /tmp/nucleus-nat-diagnostic/binary.sha256
+      - name: Trace actual failed premise at exact declaration boundary
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,subprocess,sys
+          from pathlib import Path
+          root=Path('/tmp/nucleus-nat-diagnostic')
+          sys.path.insert(0,str(Path('experiments/nucleus-reuse-20261104').resolve()))
+          import tournament
+          env=tournament.run_env()
+          for flag in ('EXACT_PROOF_NEUTRALS','CERTIFIED_QUOT_IOTA','SOURCE_PROOF_IRREL'):
+              env['NUCLEUS_EXPERIMENTAL_'+flag]='1'
+          for flag in ('APPLICATION_FUNCTION_TYPE','DOWNSTREAM'):
+              env['NUCLEUS_TRACE_'+flag]='1'
+          with (root/'frontier.ndjson').open('rb') as source:
+              result=subprocess.run([str(root/'candidate/target/release/metatron-kernel')],stdin=source,capture_output=True,env=env,timeout=420)
+          (root/'trace.stderr').write_bytes(result.stderr)
+          traces=[line for line in result.stderr.decode(errors='replace').splitlines() if line.startswith('NUCLEUS_APPLICATION_FUNCTION_TYPE:')]
+          report=dict(rc=result.returncode,trace_count=len(traces),first_traces=traces[:4],last_traces=traces[-4:])
+          (root/'diagnostic.json').write_text(json.dumps(report,indent=2)+'\n')
+          print(json.dumps(report),flush=True)
+          assert result.returncode in (0,1,2)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-nat-frontier-diagnostic-${{ github.sha }}
+          path: |
+            /tmp/nucleus-nat-diagnostic/*.json
+            /tmp/nucleus-nat-diagnostic/*.stderr
+            /tmp/nucleus-nat-diagnostic/*.sha256
+            /tmp/nucleus-nat-diagnostic/build.log
