@@ -1,0 +1,110 @@
+name: Nucleus reusable-input and baseline qualification
+on:
+  push:
+    branches: [research/nucleus-reuse-tournaments-20261104]
+    paths: ['.github/workflows/nucleus-reuse-baseline-20261104.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  corpus:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Build original independent source and recover exact inputs
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/evidence /tmp/current208
+          git rev-parse HEAD > /tmp/evidence/harness-source.txt
+          git rev-parse HEAD:metatron-kernel/src > /tmp/evidence/kernel-source-tree.txt
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          gh api repos/heathsanchez/test/actions/artifacts/13126161718/zip > /tmp/inputs.zip
+          printf '%s  %s\n' 462e31e21379054490570b465b46ece4fff878490d9ad7de6bbc73149d587f4c /tmp/inputs.zip | sha256sum -c -
+          unzip -q /tmp/inputs.zip -d /tmp/current208
+      - name: Record immutable baseline and raw native failure accounting
+        run: |
+          python3 - <<'PY'
+          import os,pathlib,json,hashlib,subprocess,collections
+          out=pathlib.Path('/tmp/evidence');root=pathlib.Path('/tmp/current208')
+          flags=('RELEVANCE','CONTEXT_BINDER','TYPED_LINEAGE','SUBSTITUTION_RECLOSURE','TYPED_VALUE_NORMALIZATION','PROJECTION_CONTEXT','PROJECTION_CROSSFRAME_512','TYPED_RECEIVER','SOURCE_PAIR_DEPTH8','POLYMORPHIC_PROP_IRREL','PROP_SINGLETON_2P1F','EXPECTED_LAMBDA','FORMED_PROP_DOMAIN_RETRY','TYPED_DATA_CONGRUENCE','TYPED_PROJECTION_SPINE','REPLAY_PROJECTION_MAJOR','REPLAY_NEUTRAL_PROJECTION')
+          env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+          env.update({'NUCLEUS_EXPERIMENTAL_'+f:'1' for f in flags})
+          (out/'configuration.json').write_text(json.dumps({k:v for k,v in env.items() if k.startswith('NUCLEUS_')},indent=2))
+          t=subprocess.run(['cargo','test','--release','--locked','--manifest-path','metatron-kernel/Cargo.toml','--no-fail-fast','--','--include-ignored'],env=env,capture_output=True,timeout=900)
+          (out/'native.log').write_bytes(t.stdout+t.stderr)
+          (out/'native-status.json').write_text(json.dumps({'rc':t.returncode,'all_output':'native.log'}))
+          manifest=json.loads((root/'inputs-manifest.json').read_text());assert len(manifest)==208
+          rows=[]
+          for old in manifest:
+            p=root/'inputs'/old['relative_path'];digest=hashlib.sha256(p.read_bytes()).hexdigest();assert digest==old['sha256']
+            try:
+              with p.open('rb') as f:r=subprocess.run(['metatron-kernel/target/release/metatron-kernel'],stdin=f,capture_output=True,env=env,timeout=240)
+              rc=r.returncode;tail=r.stderr.decode(errors='replace')[-1000:]
+            except subprocess.TimeoutExpired:rc=124;tail='TIMEOUT'
+            row=dict(case=old['case'],sha256=digest,expected=old['expected'],rc=rc,terminal=tail);rows.append(row)
+            (out/'verdicts.json').write_text(json.dumps(rows,indent=2))
+          summary=dict(count=len(rows),counts=dict(collections.Counter(r['rc'] for r in rows)),wrong=[r for r in rows if r['rc'] in (0,1) and r['rc']!=r['expected']],errors=[r for r in rows if r['rc'] not in (0,1,2)])
+          (out/'summary.json').write_text(json.dumps(summary,indent=2));print(json.dumps(summary),flush=True)
+          assert summary['counts']=={0:121,1:79,2:8} and not summary['wrong'] and not summary['errors'],summary
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-tournament-baseline-${{ github.sha }}
+          path: /tmp/evidence
+          if-no-files-found: error
+  mathlib:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v31
+      - name: Build the exact reusable Mathlib export once
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/mathlib-evidence /tmp/mathlib-input
+          git clone -q https://github.com/leanprover/lean-kernel-arena /tmp/arena
+          git -C /tmp/arena checkout -q d7f74a9e67459e2c251d608f524dc5efc6dc223c
+          cd /tmp/arena
+          nix develop -c ./lka.py build-test mathlib
+          printf '%s  %s\n' 22c5de83469408950005589a3bc5ef5157c65549b5a802f85d567c29151306a6 _build/tests/mathlib.ndjson | sha256sum -c -
+          test "$(stat -c %s _build/tests/mathlib.ndjson)" = 6184415052
+          sha256sum _build/tests/mathlib.ndjson > /tmp/mathlib-evidence/mathlib.sha256
+          zstd -T2 -3 _build/tests/mathlib.ndjson -o /tmp/mathlib-input/mathlib.ndjson.zst
+          sha256sum /tmp/mathlib-input/mathlib.ndjson.zst > /tmp/mathlib-input/archive.sha256
+          cp /tmp/mathlib-evidence/mathlib.sha256 /tmp/mathlib-input/source.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-reusable-mathlib-4341
+          path: /tmp/mathlib-input
+          compression-level: 0
+          retention-days: 30
+          if-no-files-found: error
+      - name: Run independent baseline on the full pinned input
+        run: |
+          set -euo pipefail
+          cargo build --release --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          python3 - <<'PY'
+          import os,subprocess,pathlib,json
+          out=pathlib.Path('/tmp/mathlib-evidence')
+          flags=('RELEVANCE','CONTEXT_BINDER','TYPED_LINEAGE','SUBSTITUTION_RECLOSURE','TYPED_VALUE_NORMALIZATION','PROJECTION_CONTEXT','PROJECTION_CROSSFRAME_512','TYPED_RECEIVER','SOURCE_PAIR_DEPTH8','POLYMORPHIC_PROP_IRREL','PROP_SINGLETON_2P1F','EXPECTED_LAMBDA','FORMED_PROP_DOMAIN_RETRY','TYPED_DATA_CONGRUENCE','TYPED_PROJECTION_SPINE','REPLAY_PROJECTION_MAJOR','REPLAY_NEUTRAL_PROJECTION')
+          env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}|{'NUCLEUS_EXPERIMENTAL_'+f:'1' for f in flags}
+          env['NUCLEUS_TRACE_DOWNSTREAM']='1'
+          with open('/tmp/arena/_build/tests/mathlib.ndjson','rb') as src, (out/'stdout.txt').open('wb') as stdout,(out/'stderr.txt').open('wb') as stderr:
+            try:
+              r=subprocess.run(['/usr/bin/time','-v','-o',str(out/'time.txt'),'metatron-kernel/target/release/metatron-kernel'],stdin=src,stdout=stdout,stderr=stderr,env=env,timeout=1800);rc=r.returncode
+            except subprocess.TimeoutExpired:rc=124
+          (out/'summary.json').write_text(json.dumps({'rc':rc,'accepted_complete_mathlib':rc==0,'source':'a2578e77079719ff2064f910bd82fd01d8e120b6','input_sha256':'22c5de83469408950005589a3bc5ef5157c65549b5a802f85d567c29151306a6'},indent=2))
+          print((out/'summary.json').read_text(),flush=True)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-full-mathlib-baseline-${{ github.sha }}
+          path: /tmp/mathlib-evidence
+          if-no-files-found: error
