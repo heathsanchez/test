@@ -1,0 +1,84 @@
+name: UDM G2 next frozen two-source native admission
+on:
+  push:
+    branches: [research/udm-g2-next-cold-native-20261103]
+    paths: ['.github/workflows/udm-g2-next-cold-native-20261103.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-author-qualification:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 26
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - rank: 1
+            repo: stretchr/testify
+            pr: 1938
+            base: c627960a7323bfc7a58835e9ef5540f306fc7fac
+            head: 3294f443c8abfa579c9ff39e5110ca130c8192df
+            source_file: mock/mock.go
+            test_file: mock/mock_test.go
+          - rank: 2
+            repo: go-playground/validator
+            pr: 1664
+            base: df91dfdd9abdbb838739d13a70550efb7f730d3e
+            head: a37c290428207fcaf419d295cde1fc432fa37c9e
+            source_file: postcode_regexes.go
+            test_file: validator_test.go
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/test
+          ref: a39b021e93d6033971dd32432b216e27ac83b7c2
+          path: tooling
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ matrix.repo }}
+          ref: ${{ matrix.base }}
+          fetch-depth: 0
+          path: source
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.0'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Original source and contributor Git object identities
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C source rev-parse HEAD)" = '${{ matrix.base }}'
+          git -C source fetch --no-tags origin 'refs/pull/${{ matrix.pr }}/head:refs/remotes/origin/frozen-g2-head'
+          test "$(git -C source rev-parse refs/remotes/origin/frozen-g2-head)" = '${{ matrix.head }}'
+          test -z "$(git -C source status --porcelain)"
+      - name: Independently qualify original author regression and fail closed
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p qualification
+          python tooling/research/g2_native_residual/qualify_v2.py --repo source \
+            --base '${{ matrix.base }}' --head '${{ matrix.head }}' \
+            --test-file '${{ matrix.test_file }}' --output qualification
+          python - <<'PY'
+          import json, pathlib
+          x=json.loads(pathlib.Path('qualification/qualification.json').read_text())
+          assert x['schema']=='mathgraph.g2.author-native-redgreen.v1'
+          assert x['base_sha']=='${{ matrix.base }}' and x['head_sha']=='${{ matrix.head }}'
+          print('SCIENTIFIC_NATIVE_VERDICT',x['status'])
+          print('MATCHED_AUTHOR_ASSERTIONS',len(x.get('matched_failed_tests',[])))
+          for arm in ['original_base','head_contributor','base_transplant']:
+              y=x.get(arm,{})
+              print('ARM',arm,y.get('status','NOT_EXECUTED'),'NAMED',y.get('ran_count',0),'FAILED',y.get('failed_count',0))
+          print('STRICT_G2_UNKNOWN;STRICT_G3_UNKNOWN')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: udm-g2-new-cold-rank-${{ matrix.rank }}
+          path: qualification
+          retention-days: 60
