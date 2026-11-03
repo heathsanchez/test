@@ -11,6 +11,7 @@ import json
 import os
 from pathlib import Path
 import resource
+import re
 import shutil
 import platform
 import sysconfig
@@ -31,6 +32,17 @@ def canonical(x):return json.dumps(x,sort_keys=True,separators=(',',':'),allow_n
 def write(path,x):
     path=Path(path);path.parent.mkdir(parents=True,exist_ok=True)
     path.write_text(json.dumps(x,sort_keys=True,indent=2)+'\n')
+def runner_identity():
+    """Pin producer code to committed bytes before native task access."""
+    head=subprocess.check_output(['git','-C',str(REPO),'rev-parse','HEAD'],text=True).strip()
+    if not re.fullmatch(r'[0-9a-f]{40}',head):
+        raise ValueError('runner source commit is invalid')
+    tracked=subprocess.check_output(['git','-C',str(REPO),'show',head+':research/sustained_refactory_pilot/pilot.py'])
+    current=Path(__file__).read_bytes()
+    if tracked!=current:
+        raise ValueError('runner does not match its exact committed source bytes')
+    return {'runner_source_commit':head,'runner_sha256':sha(current)}
+
 def protocol():
     raw=(HERE/'protocol.json').read_bytes()
     if sha(raw)!=PROTOCOL_SHA:raise ValueError('frozen protocol changed')
@@ -384,6 +396,8 @@ def campaign(out,external,archive_path):
     if subprocess.check_output(['git','-C',str(external),'rev-parse','HEAD'],text=True).strip()!=p['source_commit']:
         raise ValueError('external verifier source changed')
     subprocess.run(['git','-C',str(external),'diff','--exit-code','HEAD'],check=True)
+    source_runner=runner_identity()
+    write(out/'runner-identity.json',source_runner)
     archive=zipfile.ZipFile(archive_path)
     start=time.perf_counter();native=setup(out,external,archive);graph=Graph(out/'D-graph');histories={a:[] for a in 'ABC'}
     results=[];costs=[];ledger_signatures=[];group=0
@@ -435,7 +449,7 @@ def campaign(out,external,archive_path):
     write(out/'summary.json',{'status':'EXECUTED_BOUNDED_PILOT','protocol_sha256':PROTOCOL_SHA,'costs':costs,
         'learning_curve':{str(n):{a:sum(r['status']=='WARRANTED_BOUNDED_REPAIR' for r in results if r.get('checkpoint')==n and r['arm']==a) for a in 'ABCD'} for n in [0,4,8,12]},
         'model_calls':0,'strict_g2':'UNKNOWN','strict_g3':'UNKNOWN','G4':'UNKNOWN_PENDING_ALL_COST_ANALYSIS',
-        'transfer':'NOT_STARTED','ablation':'REQUIRED_IF_ANY_D_GAIN_OVER_A','source_commit':p['source_commit']})
+        'transfer':'NOT_STARTED','ablation':'REQUIRED_IF_ANY_D_GAIN_OVER_A','source_commit':p['source_commit'],**source_runner})
 
 def main():
     a=argparse.ArgumentParser();a.add_argument('--oracle');a.add_argument('--cold-read');a.add_argument('--out');a.add_argument('--external');a.add_argument('--archive');args=a.parse_args()
