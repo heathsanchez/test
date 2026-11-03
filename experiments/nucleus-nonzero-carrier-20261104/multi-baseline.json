@@ -1,0 +1,16 @@
+[
+  {
+    "case": "multi-shared-max-dag",
+    "source_sha": "32ee91c60b7cdb25c5e3af4500d067282257f0ebde7aa456ec453e8520689c25",
+    "binary_sha": "582dd0ac17d664202a39ee7daa69b640f33916374fc44dbefdc96a37e8bcb238",
+    "rc": 0,
+    "terminal": ""
+  },
+  {
+    "case": "multi-imax-nonzero",
+    "source_sha": "52a20075142136f8ee95774642fbb7aa8205ea6d74f9a297d5ca08657cdbb3ff",
+    "binary_sha": "582dd0ac17d664202a39ee7daa69b640f33916374fc44dbefdc96a37e8bcb238",
+    "rc": 1,
+    "terminal": "NUCLEUS_DOWNSTREAM:name=Option:stage=inductive:verdict=Reject\n"
+  }
+]

@@ -1,0 +1,131 @@
+[
+  {
+    "case": "original",
+    "file": "original.ndjson",
+    "sha256": "e7daddaf05fa799dc248bb3f10a502fd5ab5569561a4502d9f48de63256f3113",
+    "expect_reference": 0,
+    "reference_rc": 0,
+    "parse_rc": 0,
+    "reference_binary": "ae92c625e612fff1c90e329344d22e3c3c330383cb335ce28fd41435be3b3b94"
+  },
+  {
+    "case": "fresh-w",
+    "file": "fresh-w.ndjson",
+    "sha256": "23b0c1644ce9a4b4606c9208bc0d7e1e80a7cf21844862a4a4b9cde3a8539331",
+    "expect_reference": 1,
+    "reference_rc": 1,
+    "parse_rc": 0,
+    "reference_binary": "ae92c625e612fff1c90e329344d22e3c3c330383cb335ce28fd41435be3b3b94"
+  },
+  {
+    "case": "fresh-u3",
+    "file": "fresh-u3.ndjson",
+    "sha256": "601b63d4ecb0d056966ac188c8aad34ecf21b139dcd5cce5bc69c4aa4af6148e",
+    "expect_reference": 1,
+    "reference_rc": 1,
+    "parse_rc": 0,
+    "reference_binary": "ae92c625e612fff1c90e329344d22e3c3c330383cb335ce28fd41435be3b3b94"
+  },
+  {
+    "case": "hierarchical",
+    "file": "hierarchical.ndjson",
+    "sha256": "7d3d531f524d303d48726d1e697ed770b38ce14b623c7a39f913ac1a841f6a09",
+    "expect_reference": 1,
+    "reference_rc": 1,
+    "parse_rc": 0,
+    "reference_binary": "ae92c625e612fff1c90e329344d22e3c3c330383cb335ce28fd41435be3b3b94"
+  },
+  {
+    "case": "owner-v",
+    "file": "owner-v.ndjson",
+    "sha256": "37a75ce6384d0e0d02cdd49b0b610691ea195aedf82c351cb61db6122470833b",
+    "expect_reference": 0,
+    "reference_rc": 0,
+    "parse_rc": 0,
+    "reference_binary": "ae92c625e612fff1c90e329344d22e3c3c330383cb335ce28fd41435be3b3b94"
+  },
+  {
+    "case": "forged-k-on",
+    "file": "forged-k-on.ndjson",
+    "sha256": "0c9ea89949b5608d478abf5cb8890479b473c80326ed30cef95b9fe3d4279440",
+    "expect_reference": 1,
+    "reference_rc": 1,
+    "parse_rc": 0,
+    "reference_binary": "ae92c625e612fff1c90e329344d22e3c3c330383cb335ce28fd41435be3b3b94"
+  },
+  {
+    "case": "forged-extra-field",
+    "file": "forged-extra-field.ndjson",
+    "sha256": "f8599906870f346fcd6ddbc2ba9c93b66a292679f5815dcf463afd664ecfa594",
+    "expect_reference": 1,
+    "reference_rc": 1,
+    "parse_rc": 0,
+    "reference_binary": "ae92c625e612fff1c90e329344d22e3c3c330383cb335ce28fd41435be3b3b94"
+  },
+  {
+    "case": "forged-recursor-level",
+    "file": "forged-recursor-level.ndjson",
+    "sha256": "7d69bd7c329050c1cb16d1fc2da7a3b582210784199d6b6b2c8f10a92ab8dd14",
+    "expect_reference": 1,
+    "reference_rc": 1,
+    "parse_rc": 0,
+    "reference_binary": "ae92c625e612fff1c90e329344d22e3c3c330383cb335ce28fd41435be3b3b94"
+  },
+  {
+    "case": "forged-rule-count",
+    "file": "forged-rule-count.ndjson",
+    "sha256": "c8031004ef4efe3a0c759c58315ae7f9c93826adbb5a13d5b49d70c8fd1a217b",
+    "expect_reference": 1,
+    "reference_rc": 1,
+    "parse_rc": 0,
+    "reference_binary": "ae92c625e612fff1c90e329344d22e3c3c330383cb335ce28fd41435be3b3b94"
+  },
+  {
+    "case": "forged-carrier-prop",
+    "file": "forged-carrier-prop.ndjson",
+    "sha256": "264bcca2d6f8bb0990636978ef4f6de266989a2fcc9555a25b14f49382219634",
+    "expect_reference": 1,
+    "reference_rc": 1,
+    "parse_rc": 0,
+    "reference_binary": "ae92c625e612fff1c90e329344d22e3c3c330383cb335ce28fd41435be3b3b94"
+  },
+  {
+    "case": "forged-carrier-overflow",
+    "file": "forged-carrier-overflow.ndjson",
+    "sha256": "483194bda01bb41f404d7bf3d874697941245e8fb8bcca1a0f7e6808235a4bcf",
+    "expect_reference": 1,
+    "reference_rc": 1,
+    "parse_rc": 0,
+    "reference_binary": "ae92c625e612fff1c90e329344d22e3c3c330383cb335ce28fd41435be3b3b94"
+  },
+  {
+    "case": "bounded-shared-max-dag",
+    "file": "bounded-shared-max-dag.ndjson",
+    "sha256": "ca7fcc35c675d099ab49cfc69a897c73bf3b39041bece15c5af0931b62d06b46",
+    "expect_reference": 0,
+    "expect_nucleus": 2,
+    "reference_rc": 0,
+    "parse_rc": 0,
+    "reference_binary": "ae92c625e612fff1c90e329344d22e3c3c330383cb335ce28fd41435be3b3b94"
+  },
+  {
+    "case": "multi-shared-max-dag",
+    "file": "multi-shared-max-dag.ndjson",
+    "sha256": "32ee91c60b7cdb25c5e3af4500d067282257f0ebde7aa456ec453e8520689c25",
+    "expect_reference": 0,
+    "expect_nucleus": 2,
+    "reference_rc": 0,
+    "parse_rc": 0,
+    "reference_binary": "ae92c625e612fff1c90e329344d22e3c3c330383cb335ce28fd41435be3b3b94"
+  },
+  {
+    "case": "multi-imax-nonzero",
+    "file": "multi-imax-nonzero.ndjson",
+    "sha256": "52a20075142136f8ee95774642fbb7aa8205ea6d74f9a297d5ca08657cdbb3ff",
+    "expect_reference": 0,
+    "expect_nucleus": 0,
+    "reference_rc": 0,
+    "parse_rc": 0,
+    "reference_binary": "ae92c625e612fff1c90e329344d22e3c3c330383cb335ce28fd41435be3b3b94"
+  }
+]
