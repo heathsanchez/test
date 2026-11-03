@@ -4,6 +4,7 @@ on:
     branches: [research/nucleus-budget4x-qualification-20261104]
     paths:
       - '.github/workflows/nucleus-beq-flag-closure-20261104.yml'
+      - 'experiments/nucleus-beq-flag-closure-20261104/runner.py'
   workflow_dispatch:
 permissions:
   contents: read
