@@ -1,0 +1,84 @@
+name: UDM G1 original Tester native two-arm successor smoke
+on:
+  push:
+    branches: [research/udm-casebound-successor-20261104]
+    paths: ['.github/workflows/udm-g1-original-native-smoke-20261104.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  original-author-native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with: {path: code, fetch-depth: 0, persist-credentials: false}
+      - uses: actions/checkout@v4
+        with:
+          repository: githubhuyang/refactory
+          ref: f05583a56c2e3c50aa8cc0327645283f27df3a68
+          path: source
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Install original native Tester's interpreter prerequisites
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check --no-input \
+            'astunparse==1.6.3' 'autopep8==1.4.4' 'psutil==7.2.2' \
+            'zss==1.2.0' 'fastcache==1.1.0' 'python-Levenshtein==0.27.3'
+      - name: Independently compare real original Tester outcomes with parent fixture completeness
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p qualification
+          python - <<'PY'
+          import hashlib,importlib.util,json,subprocess,sys,zipfile
+          from pathlib import Path
+          repo=Path('code').resolve();upstream=Path('source').resolve()
+          sys.path.insert(0,str(repo))
+          spec=importlib.util.spec_from_file_location('pilot',repo/'research/sustained_refactory_pilot/pilot.py')
+          pilot=importlib.util.module_from_spec(spec);spec.loader.exec_module(pilot)
+          assert subprocess.check_output(['git','-C',str(upstream),'rev-parse','HEAD'],text=True).strip()=='f05583a56c2e3c50aa8cc0327645283f27df3a68'
+          raw=(upstream/'data.zip').read_bytes()
+          assert hashlib.sha256(raw).hexdigest()=='83ad73f288a372583e7a19d090ae133bf126d967534bae68bdf403f9a2cc80d7'
+          (repo.parent/'qualification').mkdir(exist_ok=True)
+          (repo.parent/'qualification/refactory_environment.txt').write_text(subprocess.check_output([sys.executable,'-m','pip','freeze'],text=True))
+          report={'schema':'udm.g1.refactory-original-tester-source-native.v1',
+                  'status':'UNKNOWN_RUNNING','external_source':'f05583a56c2e3c50aa8cc0327645283f27df3a68',
+                  'runner':pilot.runner_identity(),'task_bodies_accessed':False,
+                  'strict_g2':'UNKNOWN','strict_g3':'UNKNOWN'}
+          with zipfile.ZipFile(upstream/'data.zip') as archive:
+              native=pilot.Native(Path('qualification').resolve(),upstream,archive)
+              question='question_1'
+              reference=archive.read('data/question_1/code/reference/reference.py').decode('utf8')
+              good=native.verify(reference,question,'original-reference-positive-control')
+              bad=native.verify('def __udm_absent_function__():\n    return None\n',question,'missing-function-negative-control')
+              expected=pilot.fixture_case_ids(native.domain/question)
+              assert len(expected)==11,('WRONG_EXPECTED_CASE_COUNT',expected)
+              assert good['status']=='PASS_NATIVE' and good['tests']==11 and set(good['cases'])==set(expected),('REFERENCE_CONTROL_NOT_GREEN',good['status'])
+              assert bad['status']=='FAIL_NATIVE' and bad['tests']==11 and set(bad['cases'])==set(expected),('NEGATIVE_CONTROL_NOT_RED',bad['status'])
+              forged={'status':'PASS_NATIVE','passed':1,'tests':1,
+                      'cases':{expected[0]:True},'candidate_sha256':good['candidate_sha256'],
+                      'binding':good['binding']}
+              try:pilot.check_reply(forged,good['candidate_sha256'],good['binding'])
+              except ValueError:pass
+              else:raise AssertionError('FALSE_GREEN_PARTIAL_MAP')
+              report.update(status='WARRANTED_BOUNDED_ORIGINAL_TESTER_NATIVE_COMPLETENESS',
+                            original_test_id_count=len(expected),positive=good['status'],
+                            negative=bad['status'],truncated_green_rejected=True)
+          path=Path('qualification/summary.json');path.write_text(json.dumps(report,indent=2)+'\n')
+          reread=json.loads(path.read_text());assert reread['status']==report['status']
+          print('G1_ORIGINAL_TESTER_NATIVE',report['status'],report['original_test_id_count'])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: udm-g1-native-original-refactory-smoke
+          path: qualification
+          retention-days: 60
