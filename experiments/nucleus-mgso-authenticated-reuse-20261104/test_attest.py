@@ -6,6 +6,7 @@ import io
 import json
 from pathlib import Path
 import unittest
+from unittest.mock import patch
 from zipfile import ZipFile, ZIP_DEFLATED
 
 import attest
@@ -126,6 +127,19 @@ class HistoricalReuseTests(unittest.TestCase):
     def test_modified_zip_requires_new_external_github_digest(self):
         metadata, pin, archive = fixture()
         self.assertIsNotNone(attest.validate_metadata(metadata, pin, archive + b"x"))
+
+    def test_artifact_download_uses_github_cli_authenticated_redirect(self):
+        metadata, _, archive = fixture()
+        class Result:
+            returncode = 0
+            stdout = archive
+            stderr = b""
+        with patch("attest.subprocess.run", return_value=Result()) as run:
+            raw = attest.github_archive(metadata, "read-token")
+        self.assertEqual(raw, archive)
+        self.assertEqual(run.call_args.args[0],
+                         ["gh", "api", "repos/heathsanchez/test/actions/artifacts/1001/zip"])
+        self.assertEqual(run.call_args.kwargs["env"]["GH_TOKEN"], "read-token")
 
 
 if __name__ == "__main__":
