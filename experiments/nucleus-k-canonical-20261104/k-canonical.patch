@@ -1,0 +1,53 @@
+--- a/metatron-kernel/src/checker.rs
++++ b/metatron-kernel/src/checker.rs
+@@ -2470,7 +2470,12 @@
+     limits: Limits,
+     delta_policy: DeltaPolicy,
+ ) -> Result<Environment, Verdict> {
+-    if parameter_record_scope(export,block) || nullary_enum_scope(block) {
++    let nullary_prop = block.constructors.len()==1 && block.constructors[0].num_fields==0
++        && generic_prop_singleton_large_elim_candidate(export,block);
++    if nullary_prop && !block.recursors[0].level_params.first().is_some_and(|motive|
++        source_motive_level_matches(export,&block.types[0].level_params,*motive))
++    {return Err(Verdict::Unknown);}
++    if parameter_record_scope(export,block) || nullary_enum_scope(block) || nullary_prop {
+         let mut roots=vec![block.types[0].ty,block.recursors[0].ty];
+         roots.extend(block.constructors.iter().map(|constructor|constructor.ty));
+         roots.extend(block.recursors[0].rules.iter().map(|rule|rule.rhs));
+@@ -3730,6 +3735,19 @@
+     true
+ }
+ 
++// Lean 4.34.1 init_elim_level chooses the first root u, u_1, ...
++// absent from this inductive's owner universe parameters. This is strict
++// regenerated-metadata identity, independently of semantic alpha-equivalence.
++fn source_motive_level_matches(export:&ResolvedExport, owners:&[NameId], actual:NameId)->bool {
++    if owners.len()>64 {return false;}
++    for index in 0..=owners.len() {
++        let expected=if index==0 {"u".to_owned()} else {format!("u_{index}")};
++        if owners.iter().any(|owner|name_is_root_str(export,*owner,&expected)) {continue;}
++        return name_is_root_str(export,actual,&expected);
++    }
++    false
++}
++
+ fn check_generic_prop_singleton_large_elim(
+     export: &ResolvedExport,
+     environment: &Environment,
+@@ -3782,12 +3800,15 @@
+             constructor,
+         )
+         && !constructor_has_definite_negative_recursive_field(export, inductive, constructor);
++    // init_K_target: one nullary constructor and a Prop result. The entry
++    // candidate and full constructor telescope checks establish those facts.
++    let source_warrants_k = field_count==0;
+     let recursor_metadata_ok = recursor_metadata_admissible(
+         export,
+         inductive,
+         &block.constructors,
+         recursor,
+-        false,
++        source_warrants_k,
+         recursor.level_params.len() == inductive.level_params.len().saturating_add(1)
+             && recursor.level_params.get(1..) == Some(inductive.level_params.as_slice()),
+     );

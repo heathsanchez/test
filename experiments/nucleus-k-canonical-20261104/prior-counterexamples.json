@@ -1,0 +1,82 @@
+[
+  {
+    "case": "original",
+    "input_sha": "282a7cf85e897f1e246fc25bc0cf6a6b69afdce72856f2fb500299504b8488ef",
+    "reference_rc": 0,
+    "reference_parse_rc": 0,
+    "candidate_rc": 0,
+    "wrong_accept": false
+  },
+  {
+    "case": "fresh-w",
+    "input_sha": "a32d82df12d08a482f58c85366518c15d6e4a46bec2e22462919447c789e56da",
+    "reference_rc": 1,
+    "reference_parse_rc": 0,
+    "candidate_rc": 0,
+    "wrong_accept": true
+  },
+  {
+    "case": "fresh-u3",
+    "input_sha": "4fb4ca99e173d78895d3d677371087355565a7e62904f6f5114b7ff1f11b608f",
+    "reference_rc": 1,
+    "reference_parse_rc": 0,
+    "candidate_rc": 0,
+    "wrong_accept": true
+  },
+  {
+    "case": "hierarchical",
+    "input_sha": "3aa76bde4177c5e88d870a2fd114990f01126743026ab52b0d6edea07068bdfd",
+    "reference_rc": 1,
+    "reference_parse_rc": 0,
+    "candidate_rc": 0,
+    "wrong_accept": true
+  },
+  {
+    "case": "owner-wx",
+    "input_sha": "49c0c041704b7ea015fb2fd87a134902bcf3609e38390ae3d4ea9cfc73cd98d2",
+    "reference_rc": 0,
+    "reference_parse_rc": 0,
+    "candidate_rc": 0,
+    "wrong_accept": false
+  },
+  {
+    "case": "owner-u-v",
+    "input_sha": "c4064d2bbcde0990e5cbc53cafd5e6e6d136a07d04c9e301d3b225e82fcf5e74",
+    "reference_rc": 0,
+    "reference_parse_rc": 0,
+    "candidate_rc": 0,
+    "wrong_accept": false
+  },
+  {
+    "case": "forged-k-off",
+    "input_sha": "c5153ad41808c5422b6b5307d033922106c0bc385a8df92fdab87d066c07f2a3",
+    "reference_rc": 1,
+    "reference_parse_rc": 0,
+    "candidate_rc": 2,
+    "wrong_accept": false
+  },
+  {
+    "case": "forged-extra-field",
+    "input_sha": "98d3492519e1dc08f66a67035001a634c707355bf0785c90be83f535ecd4f677",
+    "reference_rc": 1,
+    "reference_parse_rc": 0,
+    "candidate_rc": 2,
+    "wrong_accept": false
+  },
+  {
+    "case": "forged-recursor-level",
+    "input_sha": "d040bba7611664aa05a7d5f24f163d90f6fed03e9b446016ec3564138b98e122",
+    "reference_rc": 1,
+    "reference_parse_rc": 0,
+    "candidate_rc": 2,
+    "wrong_accept": false
+  },
+  {
+    "case": "forged-rule-count",
+    "input_sha": "f3510d53e09a4c71fdad51eecf95d91c37b78accabeb16d6138121536af4b335",
+    "reference_rc": 1,
+    "reference_parse_rc": 0,
+    "candidate_rc": 2,
+    "wrong_accept": false
+  }
+]
