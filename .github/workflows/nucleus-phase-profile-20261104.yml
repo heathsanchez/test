@@ -1,0 +1,131 @@
+name: Nucleus source-pinned parser resolve checker phase profile
+on:
+  push:
+    branches: [research/nucleus-phase-profile-20261104]
+    paths: ['.github/workflows/nucleus-phase-profile-20261104.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  actual-phases:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Restore source-pinned exact failure-ending prefix and entire Mathlib
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/nucleus-phase
+          gh api repos/heathsanchez/test/actions/artifacts/13248500779/zip > /tmp/nucleus-phase/qualified.zip
+          printf '%s  %s\n' decd3ad80437eb5b47a7b66effb2594a9b6dd69cca8ff3360226bc3aa95a6b89 /tmp/nucleus-phase/qualified.zip | sha256sum -c -
+          unzip -p /tmp/nucleus-phase/qualified.zip next-frontier.ndjson.zst | zstd -dc -o /tmp/nucleus-phase/prefix.ndjson
+          printf '%s  %s\n' 7767e7f90b3e24b30ecb5324f1117d6858b5f40653b31011ad1948eed747e8ea /tmp/nucleus-phase/prefix.ndjson | sha256sum -c -
+          mkdir -p /tmp/nucleus-phase/full-source
+          gh api repos/heathsanchez/test/actions/artifacts/13231986845/zip > /tmp/nucleus-phase/full.zip
+          printf '%s  %s\n' 3dd3fbb522816bdaa9d9cd2808196e075bfa27e3d6c82648731140594f87ce2b /tmp/nucleus-phase/full.zip | sha256sum -c -
+          unzip -q /tmp/nucleus-phase/full.zip -d /tmp/nucleus-phase/full-source
+          zstd -d /tmp/nucleus-phase/full-source/mathlib.ndjson.zst -o /tmp/nucleus-phase/full.ndjson
+          printf '%s  %s\n' 22c5de83469408950005589a3bc5ef5157c65549b5a802f85d567c29151306a6 /tmp/nucleus-phase/full.ndjson | sha256sum -c -
+          rm /tmp/nucleus-phase/full.zip /tmp/nucleus-phase/full-source/mathlib.ndjson.zst
+      - name: Compile identical semantic rules with observation-only three-phase clocks
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import difflib,sys
+          from pathlib import Path
+          sys.path.insert(0,str(Path('experiments/nucleus-final-proof-spine-20261104').resolve()))
+          import runner
+          sys.path.insert(0,str(Path('experiments/nucleus-quotient-reuse-20261104').resolve()))
+          from port import port
+          out=Path('/tmp/nucleus-phase/candidate');out.mkdir(exist_ok=True)
+          kernel=runner.materialize(out,semantic=True)
+          port(Path.cwd(),kernel,out/'quotient-port.patch',include_exact=False)
+          source=kernel/'src/lib.rs'
+          original=source.read_text()
+          start=original.index('/// Check one Arena export stream.\n')
+          end=original.index('/// Run with deterministic operation counters.',start)
+          updated='''/// Check one Arena export stream; optional timing only observes phases.
+pub fn run<R: BufRead>(reader: R) -> Verdict {
+    let start = std::time::Instant::now();
+    let parsed = parse(reader);
+    let parse_done = start.elapsed();
+    let resolved = parsed.and_then(|export| export.resolve());
+    let resolve_done = start.elapsed();
+    let verdict = match resolved {
+        Ok(export) => check_export(export, Limits::default()),
+        Err(error) => {
+            if std::env::var_os("NUCLEUS_TRACE_PARSE_ERROR").is_some() {
+                eprintln!("NUCLEUS_PARSE_ERROR: {error}");
+            }
+            Verdict::Error
+        }
+    };
+    let check_done = start.elapsed();
+    if std::env::var_os("NUCLEUS_TRACE_PHASES").is_some() {
+        eprintln!("NUCLEUS_PHASES:parse_ms={:.3}:resolve_ms={:.3}:check_ms={:.3}:total_ms={:.3}",
+            parse_done.as_secs_f64()*1000.0,
+            (resolve_done-parse_done).as_secs_f64()*1000.0,
+            (check_done-resolve_done).as_secs_f64()*1000.0,
+            check_done.as_secs_f64()*1000.0);
+    }
+    verdict
+}
+
+'''
+          changed=original[:start]+updated+original[end:]
+          source.write_text(changed)
+          (out/'phases.patch').write_text(''.join(difflib.unified_diff(original.splitlines(True),changed.splitlines(True),fromfile='a/metatron-kernel/src/lib.rs',tofile='b/metatron-kernel/src/lib.rs')))
+          sys.path.insert(0,str(Path('experiments/nucleus-reuse-20261104').resolve()))
+          import tournament
+          binary,_=tournament.build(kernel,out)
+          assert binary is not None,(out/'build.log').read_text()[-6000:]
+          PY
+          sha256sum /tmp/nucleus-phase/candidate/{source.patch,quotient-port.patch,phases.patch,nucleus} > /tmp/nucleus-phase/provenance.sha256
+      - name: Verify exact same first obstruction and capture parse resolve check times
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,re,sys
+          from pathlib import Path
+          root=Path('/tmp/nucleus-phase')
+          sys.path.insert(0,str(Path('experiments/nucleus-reuse-20261104').resolve()))
+          import tournament as t
+          env=t.run_env()
+          for flag in ('CERTIFIED_QUOT_IOTA','SOURCE_PROOF_IRREL'):
+              env['NUCLEUS_EXPERIMENTAL_'+flag]='1'
+          env['NUCLEUS_TRACE_DOWNSTREAM']='1'
+          env['NUCLEUS_TRACE_PHASES']='1'
+          rows={}
+          for kind in ('prefix','full'):
+              path=root/kind
+              metrics=t.measure(root/'candidate/nucleus',root/f'{kind}.ndjson',env,path,timeout=600,perf=False)
+              log=(path/'stderr').read_text()
+              boundary=[line for line in log.splitlines() if line.startswith('NUCLEUS_DOWNSTREAM:')][-1]
+              phases=[line for line in log.splitlines() if line.startswith('NUCLEUS_PHASES:')]
+              assert len(phases)==1 and metrics['rc']==2
+              assert '_private.Init.Data.Nat.Lemmas.0.Nat.right_eq_add._proof_1_1' in boundary
+              steps={name:float(value) for name,value in re.findall(r'(parse_ms|resolve_ms|check_ms|total_ms)=([\d.]+)',phases[0])}
+              rows[kind]=dict(measured=metrics,phases=steps,boundary=boundary)
+              print('PHASE_PROFILE',kind,json.dumps(rows[kind]),flush=True)
+          summary=dict(source_binary_sha=t.digest(root/'candidate/nucleus'),rows=rows,
+                       semantic_note='No proof rule changed, full Mathlib remains UNKNOWN')
+          (root/'phase-summary.json').write_text(json.dumps(summary,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-phase-profile-${{ github.sha }}
+          path: |
+            /tmp/nucleus-phase/phase-summary.json
+            /tmp/nucleus-phase/provenance.sha256
+            /tmp/nucleus-phase/candidate/*.patch
+            /tmp/nucleus-phase/candidate/build.log
+            /tmp/nucleus-phase/prefix/stderr
+            /tmp/nucleus-phase/prefix/time.txt
+            /tmp/nucleus-phase/full/stderr
+            /tmp/nucleus-phase/full/time.txt
