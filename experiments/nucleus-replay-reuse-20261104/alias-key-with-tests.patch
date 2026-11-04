@@ -1,6 +1,39 @@
 --- a/metatron-kernel/src/machine.rs
 +++ b/metatron-kernel/src/machine.rs
-@@ -892,12 +892,45 @@
+@@ -253,6 +253,12 @@
+ 
+ #[cfg(feature="diagnostics")]
+ static REPLAY_KEY_WORK:std::sync::atomic::AtomicUsize=std::sync::atomic::AtomicUsize::new(0);
++#[cfg(feature="diagnostics")]
++struct ReplayKeyBuildWork<'a>{fuel:&'a Cell<Option<usize>>,start:usize}
++#[cfg(feature="diagnostics")]
++impl Drop for ReplayKeyBuildWork<'_>{fn drop(&mut self){
++    REPLAY_KEY_WORK.fetch_add(self.start.saturating_sub(self.fuel.get().unwrap_or(0)),std::sync::atomic::Ordering::Relaxed);
++}}
+ #[cfg(feature="diagnostics")]
+ struct ReplayWorkTrace<'a>{fuel:&'a Cell<Option<usize>>,start:usize,key_start:usize,head:&'a NeutralHead}
+ #[cfg(feature="diagnostics")]
+@@ -849,7 +855,7 @@
+     fn reserve_replay_key(&self,levels:&[crate::level::LevelTerm],spine:&[Closure],certificate:&RecursorReduction)->bool {
+         #[cfg(feature="diagnostics")]
+         let before=self.exposure_fuel.get();
+-        let result=self.reserve_replay_key_inner(levels,spine,certificate);
++        let result=self.reserve_replay_key_inner(levels,spine,certificate,false);
+         #[cfg(feature="diagnostics")]
+         if std::env::var_os("NUCLEUS_TRACE_REPLAY_CACHE").is_some() {
+             let used=before.unwrap_or(0).saturating_sub(self.exposure_fuel.get().unwrap_or(0));
+@@ -857,8 +863,8 @@
+         }
+         result
+     }
+-    fn reserve_replay_key_inner(&self,levels:&[crate::level::LevelTerm],spine:&[Closure],certificate:&RecursorReduction)->bool {
+-        let Some(base)=spine.len().checked_add(certificate.rules.len()).and_then(|n|n.checked_add(certificate.level_params.len())).and_then(|n|n.checked_add(4)) else {return false;};
++    fn reserve_replay_key_inner(&self,levels:&[crate::level::LevelTerm],spine:&[Closure],certificate:&RecursorReduction,spine_prepaid:bool)->bool {
++        let Some(base)=(if spine_prepaid {0}else{spine.len()}).checked_add(certificate.rules.len()).and_then(|n|n.checked_add(certificate.level_params.len())).and_then(|n|n.checked_add(4)) else {return false;};
+         if !self.reserve_replay_work(base) {return false;}
+         for rule in &certificate.rules {if !self.reserve_replay_work(rule.constructor_level_params.len()) {return false;}}
+         for level in levels {if !self.reserve_replay_levels(level) {return false;}}
+@@ -892,12 +898,50 @@
          }
      }
  
@@ -40,14 +73,19 @@
 -        if !self.reserve_replay_key(levels,spine,certificate) {return None;}
 +        // Pay before allocating the bounded canonical key vector. Each
 +        // alias lookup pays its actual linked-frame distance before walking.
++        #[cfg(feature="diagnostics")]
++        let _key_work=std::env::var_os("NUCLEUS_TRACE_REPLAY_CACHE").map(|_|ReplayKeyBuildWork{fuel:&self.exposure_fuel,start:self.exposure_fuel.get().unwrap_or(0)});
 +        if !self.reserve_replay_work(spine.len()) {return None;}
 +        let mut canonical=Vec::with_capacity(spine.len());
 +        for closure in spine {canonical.push(self.replay_source_alias(closure)?);}
-+        if !self.reserve_replay_key(levels,&canonical,certificate) {return None;}
++        // The vector length was paid before allocation; do not bill it twice.
++        // Full shape/universe traversal remains charged. Equality separately
++        // pays the original full fee because it traverses a retained key.
++        if !self.reserve_replay_key_inner(levels,&canonical,certificate,true) {return None;}
          #[cfg(test)]
          self.replay_key_builds.set(self.replay_key_builds.get()+1);
          let exact=CompletedReplayKey{authority:self.authority,demand_major:self.demand_major,replay_projection_major:self.replay_projection_major,replay_neutral_projection:self.replay_neutral_projection,
-@@ -905,7 +938,7 @@
+@@ -905,7 +949,7 @@
              definitions:ImmutableMapWitness(self.definitions.clone()),projections:ImmutableMapWitness(self.projection_specs.clone()),
              singletons:ImmutableMapWitness(self.singleton_recursor_reductions.clone()),nullary:ImmutableMapWitness(self.nullary_minor_reductions.clone()),
              nested:ImmutableMapWitness(self.closed_nested_minor_reductions.clone()),certificate:certificate.clone(),
@@ -56,9 +94,37 @@
              bools:self.bool_primitives.clone(),quot:self.quot_primitives.as_ref().map(|q|(q.type_name,q.mk,q.lift,q.ind))};
          use std::hash::{Hash,Hasher};
          let mut hash=std::collections::hash_map::DefaultHasher::new();
---- a/metatron-kernel/src/machine.rs
-+++ b/metatron-kernel/src/machine.rs
-@@ -3638,3 +3638,63 @@
+@@ -3034,11 +3078,16 @@
+         assert_eq!(machine.qualified_nested_recursor_result(&outer,64).proven_value(),
+             Some(&Value::Neutral(Neutral{head:NeutralHead::Const{name:NameId(3),levels:vec![]},spine:vec![]})),
+             "same outer allowance should finish after completed inner proof survives");
++        // Actual BVar->Closure aliasing is now an earned positive boundary.
++        let mut equivalent=inner.clone();
++        equivalent.spine[3]=Closure::new(ExprId(1),EnvFrame::empty().extend(closed(2)));
++        assert_eq!(machine.qualified_nested_recursor_result(&equivalent,64).proven_value(),
++            Some(&Value::Neutral(Neutral{head:NeutralHead::Const{name:NameId(3),levels:vec![]},spine:vec![]})));
+         for variant in [0,1,2,3] {
+             let mut different=inner.clone();
+             match variant {
+                 0=>different.spine[1]=closed(3),
+-                1=>different.spine[3]=Closure::new(ExprId(1),EnvFrame::empty().extend(closed(2))),
++                1=>different.spine[3]=Closure::new(ExprId(1),EnvFrame::empty().extend(closed(3))),
+                 2=>different.head=NeutralHead::Const{name:NameId(1),levels:vec![crate::level::LevelTerm::Zero]},
+                 _=>different.spine.truncate(3),
+             }
+@@ -3051,9 +3100,10 @@
+         // clearing the table and repeating the first expensive component.
+         for index in 0..8193 {
+             let mut distinct=inner.clone();
+-            distinct.spine[0]=Closure::new(ExprId(0),EnvFrame::empty().extend_free(FreeId(1000+index)));
++            distinct.spine[0]=Closure::new(ExprId(1),EnvFrame::empty().extend_free(FreeId(1000+index)));
+             assert!(machine.qualified_nested_recursor_result(&distinct,64).is_proven());
+         }
++        assert_eq!(cache.borrow().completed_replay_count,8192,"saturation must contain actually distinct source-local inputs");
+         machine.exposure_fuel.set(Some(32));
+         assert!(machine.qualified_nested_recursor_result(&inner,48).is_proven());
+         machine.exposure_fuel.set(None);
+@@ -3605,3 +3655,63 @@
    for id in [0,26]{let n=Neutral{head:NeutralHead::Const{name:NameId(6),levels:vec![]},spine:vec![Closure::new(ExprId(id),EnvFrame::empty().extend_free(FreeId(99)))]};assert!(m.qualified_nat_predecessor_result(&n,256).is_unknown());}
   }
  }

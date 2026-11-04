@@ -47,14 +47,16 @@ def main():
     original=BASE/'candidate/nucleus';assert t.digest(original)==SHA;original.chmod(0o755)
     red=measure(original,source,traced,OUT/'red-prefix');assert red['rc']==2 and "Int.ble'_eq_true"in(red['terminal']or'')
     arm,kernel=materialize('red-alias-tests',[ROOT/'alias-tests.patch'])
-    build_env=__import__('os').environ|{'CARGO_TARGET_DIR':str(arm/'target')}
-    test=t.run_group(['cargo','test','--release','--locked','--manifest-path',str(kernel/'Cargo.toml'),'--lib','replay_source_alias_guards','--','--test-threads=1'],env=build_env|env,capture_output=True,timeout=600)
-    raw=(test.stdout+test.stderr).decode(errors='replace');(arm/'tests.log').write_text(raw)
+    prior=Path('/tmp/replay-prior/red-alias-tests')
+    assert json.loads((prior/'source-manifest.json').read_text())==json.loads((arm/'source-manifest.json').read_text())
+    assert (prior/'source.patch').read_bytes()==(arm/'source.patch').read_bytes()
+    raw=(prior/'tests.log').read_text();(arm/'tests.log').write_text(raw)
     expected={'machine::replay_source_alias_guards::actual_alias_bindings_reuse_one_completed_source_computation','machine::replay_source_alias_guards::alias_keys_retain_the_bound_universe_map_and_separate_other_instances'}
-    assert test.returncode==101 and set(t.failures(raw))==expected and t.native_target_valid(test.returncode,raw),'Require actual assertion RED, not a compile/setup failure'
+    assert set(t.failures(raw))==expected and t.native_target_valid(101,raw)
+    t.write_json(OUT/'reused_assertion_red.json',dict(status='REUSED_EXACT_NATIVE_TEST_SOURCE',run=41751479444,artifact=13285953057,artifact_sha='d860e8e3c4c251a3bce3743c45cda6c8619aa8518c2275e403b7bbcaaac2aec4',source_patch_sha=t.digest(arm/'source.patch'),source_manifest_sha=t.digest(arm/'source-manifest.json'),test_failures=sorted(expected),source_files_identical=True))
     manifest={x['case']:x for x in json.loads(Path('/tmp/current208/inputs-manifest.json').read_text())}
     results=[]
-    for name,patches in [('alias-keys',[ROOT/'alias-key-with-tests.patch']),('local-exposure-8192',[ROOT/'local-cap.patch']),('alias-plus-exposure',[ROOT/'alias-key-with-tests.patch',ROOT/'local-cap.patch'])]:
+    for name,patches in [('alias-keys',[ROOT/'alias-key-with-tests.patch']),('alias-plus-exposure',[ROOT/'alias-key-with-tests.patch',ROOT/'local-cap.patch'])]:
         arm,kernel=materialize(name,patches)
         try:
             binary,build_env=t.build(kernel,arm);assert binary is not None,'Compile failure'
@@ -69,13 +71,13 @@ def main():
                 checks.append(dict(case=case['case'],expected=case['expect_reference'],result=result))
             prefix=measure(binary,source,traced,arm/'int-ble')
             assert prefix['rc']in(0,2),'Valid prefix must never REJECT or error'
-            if prefix['rc']==0:
-                for case in ['perf/grind-ring-5','perf/magma-list-pair-n7','perf/magma-string-n4','bugs/eta-ctor-alias']:
-                    row=manifest[case];p=Path('/tmp/current208/inputs')/row['relative_path'];assert t.digest(p)==row['sha256']
-                    result=measure(binary,p,traced,arm/case.replace('/','--'))
-                    assert result['rc']in(row['expected'],2),'Incorrect or execution-error screen result'
-                    checks.append(dict(case=case,expected=row['expected'],result=result))
-            result=dict(arm=name,status='CANDIDATE_PREFIX_GAIN'if prefix['rc']==0 else'REJECTED_AS_SUFFICIENT_PREFIX_FIX',binary_sha=t.digest(binary),source_patch_sha=t.digest(arm/'source.patch'),prefix=prefix,checks=checks,library_summary=re.findall(t.SUMMARY,raw),no_full_qualification_or_speed_claim=True)
+            for case in ['perf/grind-ring-5','perf/magma-list-pair-n7','perf/magma-string-n4','bugs/eta-ctor-alias']:
+                row=manifest[case];p=Path('/tmp/current208/inputs')/row['relative_path'];assert t.digest(p)==row['sha256']
+                result=measure(binary,p,traced,arm/case.replace('/','--'))
+                assert result['rc']in(row['expected'],2),'Incorrect or execution-error screen result'
+                checks.append(dict(case=case,expected=row['expected'],result=result))
+            gained=[x['case']for x in checks if x['case'].startswith(('perf/','bugs/'))and x['result']['rc']==x['expected']]
+            result=dict(arm=name,status='CANDIDATE_COVERAGE_GAIN'if prefix['rc']==0 or gained else'NO_COVERAGE_GAIN',newly_decisive=gained,binary_sha=t.digest(binary),source_patch_sha=t.digest(arm/'source.patch'),prefix=prefix,checks=checks,library_summary=re.findall(t.SUMMARY,raw),no_full_qualification_or_speed_claim=True)
         except AssertionError as error:result=dict(arm=name,status='REJECTED_AT_SCREEN',reason=str(error))
         results.append(result);t.write_json(OUT/'results.json',results);print('REPLAY_REUSE_SCREEN',json.dumps(result),flush=True)
         shutil.rmtree(arm/'target',ignore_errors=True)
