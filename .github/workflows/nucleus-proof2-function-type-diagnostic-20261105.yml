@@ -37,7 +37,7 @@ jobs:
           chmod +x qualified/candidate/nucleus
           mapfile -t flags < <(jq -r '.candidate.configuration | to_entries[] | select(.key|test("^NUCLEUS_EXPERIMENTAL_[A-Z0-9_]+$")) | "\(.key)=\(.value)"' qualified/qualification.json)
           set +e
-          env "${flags[@]}" timeout 180 qualified/candidate/nucleus < next-frontier.ndjson > control.stdout 2> control.stderr
+          env "${flags[@]}" NUCLEUS_TRACE_DOWNSTREAM=1 timeout 180 qualified/candidate/nucleus < next-frontier.ndjson > control.stdout 2> control.stderr
           status=$?
           set -e
           printf 'CONTROL_RC=%s\n' "$status"
@@ -54,7 +54,7 @@ jobs:
           set -euo pipefail
           mapfile -t flags < <(jq -r '.candidate.configuration | to_entries[] | select(.key|test("^NUCLEUS_EXPERIMENTAL_[A-Z0-9_]+$")) | "\(.key)=\(.value)"' qualified/qualification.json)
           set +e
-          env "${flags[@]}" NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE=1 timeout 220 metatron-kernel/target/release/metatron-kernel < next-frontier.ndjson > diagnostic.stdout 2> diagnostic.stderr
+          env "${flags[@]}" NUCLEUS_TRACE_DOWNSTREAM=1 NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE=1 timeout 220 metatron-kernel/target/release/metatron-kernel < next-frontier.ndjson > diagnostic.stdout 2> diagnostic.stderr
           status=$?
           set -e
           printf 'DIAGNOSTIC_RC=%s\n' "$status"
@@ -73,6 +73,6 @@ jobs:
             control.stderr
             diagnostic.stderr.zst
             diagnostic.stdout
-            next-frontier.ndjson.zst
+            qualified/next-frontier.ndjson.zst
           retention-days: 60
           if-no-files-found: warn
