@@ -1,0 +1,167 @@
+name: UDM Refactory v3 prospective original-native execution
+on:
+  push:
+    branches:
+      - research/udm-refactory-v3-native-run-20261104
+    paths:
+      - .github/workflows/udm-refactory-v3-native-run-20261104.yml
+permissions:
+  contents: read
+jobs:
+  frozen-native-trial:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 105
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      PYTHONUNBUFFERED: '1'
+      PIP_DISABLE_PIP_VERSION_CHECK: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: code
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: githubhuyang/refactory
+          ref: f05583a56c2e3c50aa8cc0327645283f27df3a68
+          path: external-refactory
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/triskelion
+          ref: 426c54f7c774560e0fabe7213c5ef333b1327c71
+          path: components/triskelion
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/test
+          ref: c9092fa57c8943e638f95689cd36e6a63310f41e
+          path: components/development
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/metatron
+          ref: b9d1b5cc10477188be6e55617699be60e70f6dad
+          path: components/metatron
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/realitygraph
+          ref: 50c43b14e7272469bc51ff7204dec07682a996d7
+          path: components/flash
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.14'
+      - name: Prove frozen runner and protocol unchanged before opening prospective tasks
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C code rev-parse c4cc55d79a7ebc879491475276531959799d37cd)" = c4cc55d79a7ebc879491475276531959799d37cd
+          git -C code diff --exit-code c4cc55d79a7ebc879491475276531959799d37cd HEAD -- research/sustained_refactory_pilot
+          test "$(git -C external-refactory rev-parse HEAD)" = f05583a56c2e3c50aa8cc0327645283f27df3a68
+          test "$(git -C components/triskelion rev-parse HEAD)" = 426c54f7c774560e0fabe7213c5ef333b1327c71
+          test "$(sha256sum code/research/sustained_refactory_pilot/protocol_v3.json | cut -d ' ' -f 1)" = 347baa0a3b84997f77475ecf2bcde20a031f6b097768f3826c1869bf45bbe865
+          test "$(sha256sum external-refactory/data.zip | cut -d ' ' -f 1)" = 83ad73f288a372583e7a19d090ae133bf126d967534bae68bdf403f9a2cc80d7
+          cp external-refactory/data.zip refactory_data_sealed.zip
+          mkdir -p qualification
+          sha256sum code/research/sustained_refactory_pilot/pilot_v3.py code/research/sustained_refactory_pilot/protocol_v3.json external-refactory/data.zip
+      - name: Install original source-native dependencies and freeze exact environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --no-input --requirement code/research/sustained_refactory_pilot/runtime_packages.txt
+          python -m pip freeze > qualification/refactory_environment.txt
+      - name: Pre-access apparatus and existing-base regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PYTHONPATH="$GITHUB_WORKSPACE/code"
+          export UDM_V104_SOURCE="$GITHUB_WORKSPACE/components/triskelion"
+          python -B -m pytest -q code/research/sustained_refactory_pilot/test_pilot_v3.py
+      - name: Execute unchanged 12+12 prospectively frozen native pilot
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PYTHONPATH="$GITHUB_WORKSPACE/code"
+          export UDM_V104_SOURCE="$GITHUB_WORKSPACE/components/triskelion"
+          python -B code/research/sustained_refactory_pilot/pilot_v3.py --out qualification/v3-native --external external-refactory --archive refactory_data_sealed.zip
+      - name: Independently audit complete original test-ID coverage and matched arms
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PYTHONPATH="$GITHUB_WORKSPACE/external-refactory:$GITHUB_WORKSPACE/code"
+          python - <<'PY'
+          from collections import Counter
+          from pathlib import Path
+          import json
+          from basic_framework.core_testing import Tester
+          out=Path('qualification/v3-native')
+          rows=json.loads((out/'rows.json').read_text())
+          calls=json.loads((out/'native-calls.json').read_text())
+          summary=json.loads((out/'summary.json').read_text())
+          assert summary['status']=='EXECUTED_BOUNDED_PILOT'
+          assert len(rows)==96, ('ROWS',len(rows))
+          train=[r for r in rows if r['split']=='train']
+          evaluation=[r for r in rows if r['split']=='eval']
+          assert len(train)==48 and len(evaluation)==48
+          assert {a:sum(r['arm']==a for r in train) for a in 'ABCD'}==dict.fromkeys('ABCD',12)
+          assert {a:sum(r['arm']==a for r in evaluation) for a in 'ABCD'}==dict.fromkeys('ABCD',12)
+          for split,group in [('train',train),('eval',evaluation)]:
+              by_source={}
+              for row in group:
+                  assert len(row['candidates'])<=32
+                  by_source.setdefault(row['source'],[]).append(row['arm'])
+              assert len(by_source)==12
+              assert all(sorted(arms)==list('ABCD') for arms in by_source.values())
+          assert len(calls)==len(list((out/'native').glob('*/receipt.json')))
+          original_case_ids={}
+          for q in range(1,5):
+              name=f'question_{q}'
+              folder=out/'domain'/name
+              ids=set(Tester(str(folder)).get_tc_id_list())
+              assert len(ids)>0
+              original_case_ids[name]=ids
+          checked=0; unknown=0
+          for path in sorted((out/'native').glob('*/receipt.json')):
+              receipt=json.loads(path.read_text())
+              request=json.loads((path.parent/'request.json').read_text())
+              question=Path(request['question_dir']).name
+              status=receipt['status']
+              if status in ('PASS_NATIVE','FAIL_NATIVE'):
+                  ids=original_case_ids[question]
+                  assert set(receipt['cases'])==ids, ('INCOMPLETE_NATIVE_TEST_IDS',str(path),question)
+                  assert receipt['tests']==len(ids)
+                  assert all(type(v) is bool for v in receipt['cases'].values())
+                  assert receipt['passed']==sum(receipt['cases'].values())
+                  assert (status=='PASS_NATIVE')==all(receipt['cases'].values())
+                  checked+=1
+              else:
+                  assert status.startswith('UNKNOWN_'), ('INVALID_STATUS',status)
+                  unknown+=1
+          assert checked+unknown==len(calls)
+          audit={'status':'INDEPENDENT_NATIVE_RECEIPT_COVERAGE_PASS',
+                 'source':'c4cc55d79a7ebc879491475276531959799d37cd',
+                 'rows':len(rows),'train':len(train),'eval':len(evaluation),
+                 'native_calls':len(calls),'fully_covered_native_receipts':checked,
+                 'unknown_receipts':unknown,
+                 'case_count_by_question':{k:len(v) for k,v in original_case_ids.items()},
+                 'G2':'UNKNOWN_PENDING_CAUSAL_READBACK','G3':'UNKNOWN','G4':'UNKNOWN_PENDING_FAIR_COST_COMPARISON'}
+          (out/'independent_audit.json').write_text(json.dumps(audit,indent=2)+'\n')
+          print('UDM_V3_INDEPENDENT_AUDIT='+json.dumps(audit,sort_keys=True))
+          print('UDM_V3_LEARNING_CURVE='+json.dumps(summary['learning_curve'],sort_keys=True))
+          print('UDM_V3_NATIVE_COSTS='+json.dumps(summary['costs'],sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: udm-refactory-v3-native-evidence
+          path: qualification
+          retention-days: 90
+          include-hidden-files: true
