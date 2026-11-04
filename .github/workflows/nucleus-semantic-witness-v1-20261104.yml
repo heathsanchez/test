@@ -27,3 +27,29 @@ jobs:
             --manifest-path metatron-kernel/Cargo.toml \
             --test semantic_witness --test mgso_shadow --test quotient_source_ownership
           cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --features semantic-witness \
+            --manifest-path metatron-kernel/Cargo.toml
+      - name: Source-pinned seven-arm and 55-fixture native qualification
+        run: |
+          set -euo pipefail
+          PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover \
+            -s experiments/nucleus-semantic-witness-v1-20261104 -p 'test_*.py' -v
+          mkdir -p /tmp/nucleus-semantic-read-witness-v1
+          git rev-parse HEAD > /tmp/nucleus-semantic-read-witness-v1/commit.txt
+          git rev-parse HEAD:metatron-kernel/src > /tmp/nucleus-semantic-read-witness-v1/kernel-source-tree.txt
+          sha256sum metatron-kernel/target/release/metatron-kernel \
+            metatron-kernel/tests/fixtures/good-theorem-use.ndjson \
+            > /tmp/nucleus-semantic-read-witness-v1/native-source-pins.txt
+          PYTHONDONTWRITEBYTECODE=1 python3 \
+            experiments/nucleus-semantic-witness-v1-20261104/witness_qualification.py \
+            --binary metatron-kernel/target/release/metatron-kernel \
+            --fixture metatron-kernel/tests/fixtures/good-theorem-use.ndjson \
+            --fixtures metatron-kernel/tests/fixtures \
+            --output /tmp/nucleus-semantic-read-witness-v1/qualification.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-semantic-read-witness-v1-${{ github.sha }}
+          path: /tmp/nucleus-semantic-read-witness-v1/
+          if-no-files-found: warn
+          retention-days: 30
