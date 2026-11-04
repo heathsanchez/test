@@ -57,7 +57,7 @@ jobs:
           assert got=='ca6ba58a99ca074dc45d975ab982fd119193fa05a6d12e20f08c53cb7dd786f2',got
           print('EXACT_FRONTIER_SHA256',got,flush=True)
           PY
-      - name: Apply diagnostic-only Finsupp bound-variable capture probe
+      - name: Apply diagnostic-only Finsupp full capture-chain probe
         shell: bash
         run: |
           set -euo pipefail
