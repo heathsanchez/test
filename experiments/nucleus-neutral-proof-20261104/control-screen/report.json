@@ -1,0 +1,50 @@
+{
+  "binary_sha": "04ff0a1098e2d2ac1650a14893aaf8b9467ca0e1bd77d9e6bb419eb8862f94e6",
+  "rows": [
+    {
+      "case": "authentic-neutral-proof",
+      "file": "authentic-neutral-proof.ndjson",
+      "sha256": "7e6ba86a5259f507fb2f080d1f297d6b5c2d6f0acdecf7855a861aea73f1f1e3",
+      "expect_reference": 0,
+      "parse_rc": 0,
+      "reference_rc": 0,
+      "candidate_rc": 0
+    },
+    {
+      "case": "neutral-wrong-proposition",
+      "file": "neutral-wrong-proposition.ndjson",
+      "sha256": "e90906d1c494c776be097a8f83d0d969c17c025f0db2fddd239dd8b548756c45",
+      "expect_reference": 1,
+      "parse_rc": 0,
+      "reference_rc": 1,
+      "candidate_rc": 1
+    },
+    {
+      "case": "neutral-data-identity",
+      "file": "neutral-data-identity.ndjson",
+      "sha256": "c0b1736a00f0278f33a96c7473261fad9162548b73fe5bab17b94da29815b4d9",
+      "expect_reference": 1,
+      "parse_rc": 0,
+      "reference_rc": 1,
+      "candidate_rc": 2
+    },
+    {
+      "case": "neutral-wrong-proof-argument",
+      "file": "neutral-wrong-proof-argument.ndjson",
+      "sha256": "c66e1671bb3a10cfaf79508273890aff049e0d36d9213b0c8484a52ee516019c",
+      "expect_reference": 1,
+      "parse_rc": 0,
+      "reference_rc": 1,
+      "candidate_rc": 1
+    },
+    {
+      "case": "neutral-invalid-universe",
+      "file": "neutral-invalid-universe.ndjson",
+      "sha256": "3a34e09c2a55a5a4397640b4035873c39a0fced1d7f1579fff2c650665625d17",
+      "expect_reference": 1,
+      "parse_rc": 0,
+      "reference_rc": 1,
+      "candidate_rc": 1
+    }
+  ]
+}
