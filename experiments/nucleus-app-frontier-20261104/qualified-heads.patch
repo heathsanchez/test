@@ -79,7 +79,7 @@ diff --git a/metatron-kernel/src/machine.rs b/metatron-kernel/src/machine.rs
 +                #[cfg(feature="diagnostics")]
 +                if std::env::var_os("NUCLEUS_TRACE_IOTA_UNMATCHED").is_some() && crate::convert::target_conversion_trace_active() {
 +                    eprintln!(
-+                        "NUCLEUS_TARGET_IOTA_UNMATCHED:recursor={name:?}:actual={constructor:?}:universes={constructor_levels:?}:arity={}:registered={:?}:remaining_fuel={:?}",
++                        "NUCLEUS_TARGET_IOTA_UNMATCHED:recursor={name:?}:actual={constructor:?}:universes={constructor_levels:?}:arity={}:arguments={constructor_args:?}:registered={:?}:remaining_fuel={:?}",
 +                        constructor_args.len(),
 +                        reduction.rules.iter().map(|r|(r.constructor,r.num_params,r.num_fields)).collect::<Vec<_>>(),
 +                        self.exposure_fuel.get(),
