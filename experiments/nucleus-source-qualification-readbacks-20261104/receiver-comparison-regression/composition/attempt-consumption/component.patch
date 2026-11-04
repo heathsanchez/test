@@ -1,0 +1,92 @@
+--- a/src/checker.rs
++++ b/src/checker.rs
+@@ -313,6 +313,8 @@
+     // authority; retaining future source records does not admit them.
+     for declaration_index in 0..export.declarations.len() {
+         let declaration = export.declarations[declaration_index].clone();
++        #[cfg(feature="diagnostics")]
++        crate::diagnostics::application_trace_target(matches!(&declaration,Declaration::Theorem{..}));
+         #[cfg(feature="diagnostics")]
+         if crate::run_flags::present(crate::run_flags::Flag::TraceDeclarationProgress) {
+             let name=match &declaration {
+--- a/src/convert.rs
++++ b/src/convert.rs
+@@ -146,6 +146,8 @@
+     #[cfg(feature = "diagnostics")]
+     crate::diagnostics::conversion();
+ 
++    #[cfg(feature="diagnostics")]
++    let trace_call={use std::sync::atomic::{AtomicUsize,Ordering};static CALL:AtomicUsize=AtomicUsize::new(0);CALL.fetch_add(1,Ordering::Relaxed)};
+     let mut remaining = budget;
+     let mut work = vec![(left.clone(), right.clone(), initial_depth, context.to_vec())];
+     let mut visited = ConversionVisitSet::new();
+@@ -183,9 +185,16 @@
+                 (Some(Expr::Lam{..}),Some(Expr::Lam{..})));
+             let allowance = if direct_lambdas { remaining.min(1024) } else { (remaining / 4).min(1024) };
+             let mut trial = allowance;
++            #[cfg(feature="diagnostics")]
++            let trace_before=*congruence_attempts+1;
+             let identical = checker.exact_source_capture_identity(lhs,rhs,&mut trial)
+                 || checker.instantiated_source_capture_congruence(lhs,rhs,&mut trial);
+             remaining -= allowance.saturating_sub(trial);
++            #[cfg(feature="diagnostics")]
++            if crate::diagnostics::application_trace_target_active(){
++                eprintln!("ATTEMPT_CONSUMPTION:call={trace_call}:scope={}:depth={depth}:cd={congruence_depth}:budget={budget}:remaining={remaining}:kind=source:before={trace_before}:after={}:cost={}:success={identical}:left={lhs:?}:right={rhs:?}",context.len(),*congruence_attempts,allowance.saturating_sub(trial));
++            }
++
+             if identical { continue; }
+         }
+ 
+@@ -355,8 +364,16 @@
+                 if congruence_depth < 16 && *congruence_attempts > 0 {
+                     *congruence_attempts -= 1;
+                     let probe_budget = remaining;
++                    #[cfg(feature="diagnostics")]
++                    if crate::diagnostics::application_trace_target_active(){eprintln!("ATTEMPT_CONSUMPTION:call={trace_call}:scope={}:depth={depth}:cd={congruence_depth}:budget={budget}:remaining={remaining}:kind=generic:before={}:after={}:left={left:?}:right={right:?}",context.len(),*congruence_attempts+1,*congruence_attempts);}
++
+                     let opaque_left = machine.expose(left.clone(), Transparency::Opaque, probe_budget);
+                     let opaque_right = machine.expose(right.clone(), Transparency::Opaque, probe_budget);
++                    #[cfg(feature="diagnostics")]
++                    if crate::diagnostics::application_trace_target_active() && probe_budget>8192{
++                        use std::sync::atomic::{AtomicUsize,Ordering};static HEADS:AtomicUsize=AtomicUsize::new(0);
++                        if HEADS.fetch_add(1,Ordering::Relaxed)<128{let label=|v:&Judgment<Value>|match v.proven_value(){Some(Value::Neutral(n))=>format!("head={:?},args={}",n.head,n.spine.len()),Some(v)=>format!("kind={:?}",std::mem::discriminant(v)),None=>"UNPROVEN".to_owned()};eprintln!("POSITIVE_APPLICATION_TRACE:phase=head:scope={}:depth={depth}:budget={probe_budget}:attempts={}:policy={delta_policy:?}:left={}:right={}",context.len(),*congruence_attempts,label(&opaque_left),label(&opaque_right));}
++                    }
+                     if let (Some(Value::Neutral(lhs)), Some(Value::Neutral(rhs))) =
+                         (opaque_left.proven_value(), opaque_right.proven_value())
+                         && let (
+@@ -370,8 +387,8 @@
+                         && !lhs.spine.is_empty()
+                         && lhs.spine.len() == rhs.spine.len()
+                         && compare_neutral_heads(checker, lhs, rhs, probe_budget, depth, context).is_proven()
+-                        && lhs.spine.iter().zip(&rhs.spine).rev().all(|(left_arg, right_arg)| {
+-                            convert_in_context_with_congruence(
++                        && lhs.spine.iter().zip(&rhs.spine).enumerate().rev().all(|(argument_index,(left_arg, right_arg))| {
++                            let result=convert_in_context_with_congruence(
+                                 checker,
+                                 &TypeValue::Term(left_arg.clone()),
+                                 &TypeValue::Term(right_arg.clone()),
+@@ -381,7 +398,13 @@
+                                 context,
+                                 congruence_depth + 1,
+                                 congruence_attempts,
+-                            ).is_proven()
++                            );
++                            #[cfg(feature="diagnostics")]
++                            if crate::diagnostics::application_trace_target_active() && probe_budget>8192{
++                                use std::sync::atomic::{AtomicUsize,Ordering};static ARGS:AtomicUsize=AtomicUsize::new(0);
++                                if ARGS.fetch_add(1,Ordering::Relaxed)<128{eprintln!("POSITIVE_APPLICATION_TRACE:phase=argument:head={left_name:?}:scope={}:depth={depth}:congruence_depth={congruence_depth}:argument={argument_index}:arity={}:budget={}:attempts_after={}:left={:?}:right={:?}:result={result:?}",context.len(),lhs.spine.len(),probe_budget/lhs.spine.len(),*congruence_attempts,left_arg.expr,right_arg.expr);}
++                            }
++                            result.is_proven()
+                         })
+                         ))
+                     {
+--- a/src/diagnostics.rs
++++ b/src/diagnostics.rs
+@@ -60,3 +60,7 @@
+         conversions: CONVERSIONS.get(),
+     }
+ }
++
++thread_local!{static APPLICATION_TRACE_TARGET:Cell<bool>=const{Cell::new(false)};}
++pub(crate)fn application_trace_target(active:bool){APPLICATION_TRACE_TARGET.set(active)}
++pub(crate)fn application_trace_target_active()->bool{APPLICATION_TRACE_TARGET.get()}

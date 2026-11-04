@@ -1,0 +1,124 @@
+   Compiling zmij v1.0.23
+   Compiling serde_core v1.0.229
+   Compiling serde_json v1.0.151
+   Compiling itoa v1.0.18
+   Compiling memchr v2.8.3
+   Compiling metatron-kernel v0.1.0 (/tmp/nucleus-pretrial-completed-replay/source)
+warning: unnecessary parentheses around `if` condition
+    --> src/convert.rs:2643:20
+     |
+2643 |                 if ((l=="Free(FreeId(6))" && r=="Free(FreeId(5))") ||
+     |                    ^
+2644 |                     (l=="Free(FreeId(5))" && r=="Free(FreeId(6))"))
+     |                                                                   ^
+     |
+     = note: `#[warn(unused_parens)]` (part of `#[warn(unused)]`) on by default
+help: remove these parentheses
+     |
+2643 ~                 if (l=="Free(FreeId(6))" && r=="Free(FreeId(5))") ||
+2644 ~                     (l=="Free(FreeId(5))" && r=="Free(FreeId(6))")
+     |
+
+warning: unnecessary parentheses around `if` condition
+    --> src/typecheck.rs:6875:12
+     |
+6875 |         if (!crate::run_flags::present(crate::run_flags::Flag::ExperimentalExpectedLambda)) { return; }
+     |            ^                                                                              ^
+     |
+help: remove these parentheses
+     |
+6875 -         if (!crate::run_flags::present(crate::run_flags::Flag::ExperimentalExpectedLambda)) { return; }
+6875 +         if !crate::run_flags::present(crate::run_flags::Flag::ExperimentalExpectedLambda) { return; }
+     |
+
+warning: unused variable: `c`
+    --> src/convert.rs:3103:91
+     |
+3103 | ...(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let n=Neutral{head:NeutralHead::Const{name:NameId(4),levels:vec![c...
+     |                                  ^ help: if this is intentional, prefix it with an underscore: `_c`
+     |
+     = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: value assigned to `source_work` is never read
+    --> src/typecheck.rs:5844:55
+     |
+5844 |                     if source_work<cost{return false;}source_work-=cost;
+     |                                                       ^^^^^^^^^^^^^^^^^
+     |
+     = help: maybe it is overwritten before being read?
+     = note: `#[warn(unused_assignments)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `definition_arguments_used` is never used
+    --> src/convert.rs:1077:4
+     |
+1077 | fn definition_arguments_used(
+     |    ^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: method `qualified_quotient_neutral_result` is never used
+    --> src/machine.rs:1616:19
+     |
+ 319 | impl<'a> Machine<'a> {
+     | -------------------- method in this implementation
+...
+1616 |     pub(crate) fn qualified_quotient_neutral_result(
+     |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: method `diagnostic_captured_recursor_major_chain` is never used
+    --> src/typecheck.rs:1107:19
+     |
+ 143 | impl<'a> TypeChecker<'a> {
+     | ------------------------ method in this implementation
+...
+1107 |     pub(crate) fn diagnostic_captured_recursor_major_chain(
+     |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: method `strong_owners` is never used
+   --> src/value.rs:130:18
+    |
+ 50 | impl EnvFrame {
+    | ------------- method in this implementation
+...
+130 |     pub(crate)fn strong_owners(&self)->usize{Rc::strong_count(&self.0)}
+    |                  ^^^^^^^^^^^^^
+
+warning: methods `strong_owners` and `is_empty_instance` are never used
+   --> src/value.rs:214:18
+    |
+199 | impl LevelSubstitution {
+    | ---------------------- methods in this implementation
+...
+214 |     pub(crate)fn strong_owners(&self)->usize{Rc::strong_count(&self.0)}
+    |                  ^^^^^^^^^^^^^
+215 |     pub(crate)fn is_empty_instance(&self)->bool{self.0.entries.is_empty()}
+    |                  ^^^^^^^^^^^^^^^^^
+
+warning: `metatron-kernel` (lib test) generated 9 warnings (run `cargo fix --lib -p metatron-kernel --tests` to apply 3 suggestions)
+    Finished `release` profile [optimized] target(s) in 45.82s
+     Running unittests src/lib.rs (/tmp/nucleus-pretrial-completed-replay/target/release/deps/metatron_kernel-258b3b0aea2bca17)
+
+running 5 tests
+test convert::completed_congruence_replay_controls::a_metadata_miss_preserves_the_existing_fallback_work ... ok
+test convert::completed_congruence_replay_controls::an_uncached_pair_starts_no_new_speculative_search ... ok
+test convert::completed_congruence_replay_controls::completed_identity_remains_reusable_after_speculative_attempts_are_spent ... ok
+test convert::completed_congruence_replay_controls::zero_caller_work_never_replays_a_completed_identity ... ok
+test convert::completed_congruence_replay_controls::completed_identity_does_not_spend_a_speculative_attempt ... FAILED
+
+failures:
+
+---- convert::completed_congruence_replay_controls::completed_identity_does_not_spend_a_speculative_attempt stdout ----
+
+thread 'convert::completed_congruence_replay_controls::completed_identity_does_not_spend_a_speculative_attempt' (174) panicked at src/convert.rs:3121:3:
+assertion failed: convert_in_context_with_congruence(&c, &TypeValue::Term(a),
+        &TypeValue::Term(b), 1, DeltaPolicy::GuardedSemanticFallback, 0, &[],
+        0, &mut attempts).is_proven()
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    convert::completed_congruence_replay_controls::completed_identity_does_not_spend_a_speculative_attempt
+
+test result: FAILED. 4 passed; 1 failed; 0 ignored; 0 measured; 217 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--lib`
