@@ -1,0 +1,155 @@
+{
+  "status": "VERIFIED_PROMOTABLE_SOURCE_AND_SEALED_PERFORMANCE",
+  "source_commit": "d1e3ea7b3746a1daabb26651399f8a2c1e9366c2",
+  "run_id": 41864459278,
+  "artifact_id": 13344004717,
+  "zip_sha256": "a63110abcccf930aa74d18a9dbe895a1d2b00b7d078232e2a90fa882806b7c48",
+  "binary_sha256": "26244e47fb94c1ffa47a09531bc8fb9d8205bba176c459bcf31d431e9f4aea89",
+  "source_tar_sha256": "1b25f9ea47c1d6f430228a473a547490d2c3fa1cf70867c4f0c02c697ce10e23",
+  "source_manifest_sha256": "06dcf66dc5191b19be16a4490f0b4e87612c94ebc3675413bf55ffc1499d094b",
+  "cumulative_patch_sha256": "11d10dfb06ac48226eb279c84bba75b30c64db6552d03f4d139e2b2ca1852122",
+  "component_patch_sha256": "fc0a7dbcaf7df441dabd959ab78060535f0d92636e5a7666f46646d3531270f3",
+  "parent_readback_commit": "f89c42cdf408542e6032a66e6b0fe26736cd1b48",
+  "parent_manifest_sha256": "936355c12c9422121cd0e884cd4467fffe15f4b429976d25844c7b6a9ee9a3ee",
+  "archive_matches": 368,
+  "reconstructed_matches": 368,
+  "source_controls": 119,
+  "protected_controls": 61,
+  "native_targets": 42,
+  "native_counts": [
+    506,
+    1,
+    0,
+    0,
+    0
+  ],
+  "frozen_verdicts_unchanged": 208,
+  "known_native_failures": {
+    "residual_closure|test": [
+      "all_seven_complete_positive_exports_accept"
+    ]
+  },
+  "configuration": {
+    "NUCLEUS_EXPERIMENTAL_CERTIFIED_QUOT_IOTA": "1",
+    "NUCLEUS_EXPERIMENTAL_CONTEXT_BINDER": "1",
+    "NUCLEUS_EXPERIMENTAL_DEMAND_MAJOR": "1",
+    "NUCLEUS_EXPERIMENTAL_EXPECTED_LAMBDA": "1",
+    "NUCLEUS_EXPERIMENTAL_FORMED_PROP_DOMAIN_RETRY": "1",
+    "NUCLEUS_EXPERIMENTAL_POLYMORPHIC_PROP_IRREL": "1",
+    "NUCLEUS_EXPERIMENTAL_PROJECTION_CONTEXT": "1",
+    "NUCLEUS_EXPERIMENTAL_PROJECTION_CROSSFRAME_512": "1",
+    "NUCLEUS_EXPERIMENTAL_PROP_SINGLETON_2P1F": "1",
+    "NUCLEUS_EXPERIMENTAL_RELEVANCE": "1",
+    "NUCLEUS_EXPERIMENTAL_REPLAY_NEUTRAL_PROJECTION": "1",
+    "NUCLEUS_EXPERIMENTAL_REPLAY_PROJECTION_MAJOR": "1",
+    "NUCLEUS_EXPERIMENTAL_SOURCE_PAIR_DEPTH8": "1",
+    "NUCLEUS_EXPERIMENTAL_SOURCE_PROOF_IRREL": "1",
+    "NUCLEUS_EXPERIMENTAL_SUBSTITUTION_RECLOSURE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_DATA_CONGRUENCE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_LINEAGE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_PROJECTION_SPINE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_RECEIVER": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_VALUE_NORMALIZATION": "1"
+  },
+  "paired_timing": {
+    "median_cpu_ratio": 0.6735927786766583,
+    "no_rank_claim": true,
+    "preset": "every candidate CPU sample beats every parent sample by more than1percent",
+    "rows": [
+      {
+        "arm": "candidate",
+        "binary_sha": "26244e47fb94c1ffa47a09531bc8fb9d8205bba176c459bcf31d431e9f4aea89",
+        "input_sha": "8428d5d4282a608eb77e48ff62adace23212d9487ff9e86dc2e57af7c573d5f1",
+        "rc": 0,
+        "rss_kb": 250232.0,
+        "system": 0.27,
+        "user": 78.89,
+        "wall": 79.17,
+        "wall_observed": 79.18439191800007
+      },
+      {
+        "arm": "parent",
+        "binary_sha": "173ff543e6fe368d501fe2c0682e98673fd4b259a6ddc1745fcbee76ff99fb1e",
+        "input_sha": "8428d5d4282a608eb77e48ff62adace23212d9487ff9e86dc2e57af7c573d5f1",
+        "rc": 0,
+        "rss_kb": 874872.0,
+        "system": 0.85,
+        "user": 116.53,
+        "wall": 117.4,
+        "wall_observed": 117.42427269000018
+      },
+      {
+        "arm": "parent",
+        "binary_sha": "173ff543e6fe368d501fe2c0682e98673fd4b259a6ddc1745fcbee76ff99fb1e",
+        "input_sha": "8428d5d4282a608eb77e48ff62adace23212d9487ff9e86dc2e57af7c573d5f1",
+        "rc": 0,
+        "rss_kb": 874692.0,
+        "system": 0.86,
+        "user": 116.62,
+        "wall": 117.5,
+        "wall_observed": 117.52257614400014
+      },
+      {
+        "arm": "candidate",
+        "binary_sha": "26244e47fb94c1ffa47a09531bc8fb9d8205bba176c459bcf31d431e9f4aea89",
+        "input_sha": "8428d5d4282a608eb77e48ff62adace23212d9487ff9e86dc2e57af7c573d5f1",
+        "rc": 0,
+        "rss_kb": 250356.0,
+        "system": 0.29,
+        "user": 78.75,
+        "wall": 79.05,
+        "wall_observed": 79.09367520400019
+      }
+    ],
+    "speed_win": true,
+    "status": "COMPLETE"
+  },
+  "paired_memory_ratio": 0.28612157085993994,
+  "full": {
+    "binary_sha": "26244e47fb94c1ffa47a09531bc8fb9d8205bba176c459bcf31d431e9f4aea89",
+    "complete_mathlib_accept": false,
+    "frontier_official_reference": {
+      "binary_sha": "ae92c625e612fff1c90e329344d22e3c3c330383cb335ce28fd41435be3b3b94",
+      "parse_rc": 0,
+      "rc": 0,
+      "source_sha": "ca6ba58a99ca074dc45d975ab982fd119193fa05a6d12e20f08c53cb7dd786f2"
+    },
+    "next_frontier": {
+      "bytes": 15901003,
+      "declaration": {
+        "all": [
+          26089
+        ],
+        "levelParams": [
+          32,
+          326
+        ],
+        "name": 26089,
+        "type": 271653,
+        "value": 272480
+      },
+      "name_records_parsed": 26094,
+      "record": 302649,
+      "sha256": "ca6ba58a99ca074dc45d975ab982fd119193fa05a6d12e20f08c53cb7dd786f2",
+      "tag": "thm",
+      "target": "AddMonoidAlgebra.nonUnitalNonAssocSemiring._proof_1"
+    },
+    "no_official_arena_score": true,
+    "qualified": true,
+    "result": {
+      "rc": 2,
+      "rss_kb": 3907316.0,
+      "system": 3.37,
+      "user": 118.27,
+      "wall": 121.65,
+      "wall_observed": 121.68231980400014
+    },
+    "source_sha": "22c5de83469408950005589a3bc5ef5157c65549b5a802f85d567c29151306a6",
+    "status": "WARRANTED_BOUNDED_FIRST_FRONTIER",
+    "terminal": "NUCLEUS_DOWNSTREAM:name=AddMonoidAlgebra.nonUnitalNonAssocSemiring._proof_1:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type"
+  },
+  "complete_mathlib_accept": false,
+  "no_rank_claim": true,
+  "archive_exact_file_set": true,
+  "reconstructed_exact_file_set": true
+}
