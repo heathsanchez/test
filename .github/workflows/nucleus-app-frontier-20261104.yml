@@ -44,7 +44,7 @@ jobs:
           patch --batch --fuzz=0 -p1 -i /tmp/nucleus-eval-artifact/candidate/source.patch
           # Instrumentation only; neither the qualified candidate nor any
           # logical judgment is modified. Assert the diagnostic patch identity.
-          printf '%s  %s\n' c7aee800e6e8debc30fcfb8851bfcb60d895ce209fbba000b26dc0b982815e5f "$GITHUB_WORKSPACE/experiments/nucleus-app-frontier-20261104/qualified-heads.patch" | sha256sum -c -
+          printf '%s  %s\n' b16975e4f805c7958770a37d1626ef3df684430f49ada9e917274d0c2d92d253 "$GITHUB_WORKSPACE/experiments/nucleus-app-frontier-20261104/qualified-heads.patch" | sha256sum -c -
           patch --batch --fuzz=0 -p1 -i "$GITHUB_WORKSPACE/experiments/nucleus-app-frontier-20261104/qualified-heads.patch"
           cargo build --release --features diagnostics --manifest-path metatron-kernel/Cargo.toml
       - name: Locate first failed application without altering verdict

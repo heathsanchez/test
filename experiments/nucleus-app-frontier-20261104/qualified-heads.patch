@@ -38,7 +38,7 @@ diff --git a/metatron-kernel/src/convert.rs b/metatron-kernel/src/convert.rs
                  return Judgment::unknown("unresolved-qualified-recursor-heads");
              }
              Judgment::refuted("distinct-neutral-heads")
-@@ -2513,4 +2524,28 @@
+@@ -2513,4 +2524,33 @@
  }
  
 +#[cfg(feature = "diagnostics")]
@@ -65,6 +65,11 @@ diff --git a/metatron-kernel/src/convert.rs b/metatron-kernel/src/convert.rs
 +    TargetConversionTraceScope(Some(previous))
 +}
 +
++#[cfg(feature = "diagnostics")]
++pub(crate) fn target_conversion_trace_active() -> bool {
++    TRACE_TARGET_CONVERSION.with(|flag| flag.get())
++}
++
  /// Proof irrelevance is permitted only after checking BOTH proposition
  /// judgments and checking conversion of their exact dependent types in
 diff --git a/metatron-kernel/src/machine.rs b/metatron-kernel/src/machine.rs
@@ -72,7 +77,7 @@ diff --git a/metatron-kernel/src/machine.rs b/metatron-kernel/src/machine.rs
 +++ b/metatron-kernel/src/machine.rs
 @@ -2368,1 +2368,10 @@
 +                #[cfg(feature="diagnostics")]
-+                if std::env::var_os("NUCLEUS_TRACE_IOTA_UNMATCHED").is_some() && name.0 == 2005 {
++                if std::env::var_os("NUCLEUS_TRACE_IOTA_UNMATCHED").is_some() && crate::convert::target_conversion_trace_active() {
 +                    eprintln!(
 +                        "NUCLEUS_TARGET_IOTA_UNMATCHED:recursor={name:?}:actual={constructor:?}:universes={constructor_levels:?}:arity={}:registered={:?}:remaining_fuel={:?}",
 +                        constructor_args.len(),
