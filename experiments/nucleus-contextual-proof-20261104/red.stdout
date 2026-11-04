@@ -1,0 +1,20 @@
+
+running 3 tests
+test typecheck::contextual_negation_proof_tests::four_argument_negation_proof_and_actual_local_convert_in_nineteen_binders ... FAILED
+test typecheck::contextual_negation_proof_tests::nonproof_data_with_a_four_argument_head_keeps_its_identity ... ok
+test typecheck::contextual_negation_proof_tests::proof_of_a_different_proposition_cannot_be_erased_as_the_same_proof ... ok
+
+failures:
+
+---- typecheck::contextual_negation_proof_tests::four_argument_negation_proof_and_actual_local_convert_in_nineteen_binders stdout ----
+
+thread 'typecheck::contextual_negation_proof_tests::four_argument_negation_proof_and_actual_local_convert_in_nineteen_binders' (174) panicked at src/typecheck.rs:6801:3:
+both independently checked terms prove the same negation: Refuted { obstruction: ObstructionId("distinct-neutral-heads") }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    typecheck::contextual_negation_proof_tests::four_argument_negation_proof_and_actual_local_convert_in_nineteen_binders
+
+test result: FAILED. 2 passed; 1 failed; 0 ignored; 0 measured; 118 filtered out; finished in 0.00s
+

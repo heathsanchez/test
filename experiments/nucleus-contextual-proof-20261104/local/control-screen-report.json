@@ -1,0 +1,50 @@
+{
+  "binary_sha": "a79904b710f134d451599b01dabdfe1ffa63ebc8d9b778aeb63c0dd4b1065ffa",
+  "rows": [
+    {
+      "case": "authentic-contextual-proof",
+      "file": "authentic-contextual-proof.ndjson",
+      "sha256": "a64f00606b17cbe9cea2bda790f1e4f1499e7aa63eedb9328858691df45e357a",
+      "expect_reference": 0,
+      "parse_rc": 0,
+      "reference_rc": 0,
+      "candidate_rc": 0
+    },
+    {
+      "case": "contextual-wrong-proposition",
+      "file": "contextual-wrong-proposition.ndjson",
+      "sha256": "8118315dbb296b87e13fb207d70454c550fd7984fdfe0d796c26e25a154d76c0",
+      "expect_reference": 1,
+      "parse_rc": 0,
+      "reference_rc": 1,
+      "candidate_rc": 1
+    },
+    {
+      "case": "contextual-data-identity",
+      "file": "contextual-data-identity.ndjson",
+      "sha256": "708c8c9ee8d8df1f98841d1ff5dc6fb29ce84075b62e199026e688bae5106527",
+      "expect_reference": 1,
+      "parse_rc": 0,
+      "reference_rc": 1,
+      "candidate_rc": 2
+    },
+    {
+      "case": "contextual-wrong-proof-argument",
+      "file": "contextual-wrong-proof-argument.ndjson",
+      "sha256": "149aaaf3352bd2dff6c7c4a6008e332e313d886e454b944cb845207238d8bc73",
+      "expect_reference": 1,
+      "parse_rc": 0,
+      "reference_rc": 1,
+      "candidate_rc": 1
+    },
+    {
+      "case": "contextual-invalid-universe",
+      "file": "contextual-invalid-universe.ndjson",
+      "sha256": "1f2b177de69490187368ed950f1c050240bd26d809e31adbdc7c2573f59d29d6",
+      "expect_reference": 1,
+      "parse_rc": 0,
+      "reference_rc": 1,
+      "candidate_rc": 1
+    }
+  ]
+}
