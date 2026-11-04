@@ -1,0 +1,40 @@
+
+running 5 tests
+test machine::quotient_caller_work_tests::existing_owner_is_preserved_and_debited_once ... FAILED
+test machine::quotient_caller_work_tests::failed_actual_major_consumes_caller_work ... FAILED
+test machine::quotient_caller_work_tests::failed_nested_lift_charges_its_extra_work ... FAILED
+test machine::quotient_caller_work_tests::failed_projection_is_charged_without_a_constructor_witness ... FAILED
+test machine::quotient_caller_work_tests::zero_caller_work_never_borrows_a_fresh_parent_allowance ... ok
+
+failures:
+
+---- machine::quotient_caller_work_tests::existing_owner_is_preserved_and_debited_once stdout ----
+
+thread 'machine::quotient_caller_work_tests::existing_owner_is_preserved_and_debited_once' (171) panicked at src/machine.rs:3808:257:
+assertion failed: spent > 0
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- machine::quotient_caller_work_tests::failed_actual_major_consumes_caller_work stdout ----
+
+thread 'machine::quotient_caller_work_tests::failed_actual_major_consumes_caller_work' (172) panicked at src/machine.rs:3805:203:
+failed actual exposure must be charged: 512
+
+---- machine::quotient_caller_work_tests::failed_nested_lift_charges_its_extra_work stdout ----
+
+thread 'machine::quotient_caller_work_tests::failed_nested_lift_charges_its_extra_work' (173) panicked at src/machine.rs:3806:318:
+nested=512,direct=512
+
+---- machine::quotient_caller_work_tests::failed_projection_is_charged_without_a_constructor_witness stdout ----
+
+thread 'machine::quotient_caller_work_tests::failed_projection_is_charged_without_a_constructor_witness' (174) panicked at src/machine.rs:3807:221:
+assertion failed: work < 512
+
+
+failures:
+    machine::quotient_caller_work_tests::existing_owner_is_preserved_and_debited_once
+    machine::quotient_caller_work_tests::failed_actual_major_consumes_caller_work
+    machine::quotient_caller_work_tests::failed_nested_lift_charges_its_extra_work
+    machine::quotient_caller_work_tests::failed_projection_is_charged_without_a_constructor_witness
+
+test result: FAILED. 1 passed; 4 failed; 0 ignored; 0 measured; 150 filtered out; finished in 0.01s
+
