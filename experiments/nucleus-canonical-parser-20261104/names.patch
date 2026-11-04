@@ -1,0 +1,200 @@
+--- a/metatron-kernel/src/parser.rs
++++ b/metatron-kernel/src/parser.rs
+@@ -742,7 +742,7 @@
+ 
+ // Conservative recognizer avoids temporary JSON DOM allocations.
+ // Anything outside this exact JSON subset uses the original parser.
+-enum HotRecord { Expr(u64,Expr), Level(u64,Level) }
++enum HotRecord { Expr(u64,Expr), Level(u64,Level), Name(u64,Name) }
+ struct HotCursor<'a> { b:&'a [u8], i:usize }
+ impl<'a> HotCursor<'a> {
+  fn ws(&mut self){while self.i<self.b.len() && matches!(self.b[self.i],b' '|b'\t'|b'\r'|b'\n'){self.i+=1;}}
+@@ -767,6 +767,124 @@
+  fn fields<const N:usize>(&mut self,keys:[&[u8];N])->Option<[u64;N]>{self.eat(b'{')?;let mut a=[0u64;N];let mut seen=[false;N];for j in 0..N {if j>0{self.eat(b',')?;}let k=self.key()?;let i=keys.iter().position(|x|*x==k)?;if seen[i]{return None;}seen[i]=true;a[i]=self.num()?;}self.eat(b'}')?;if seen.iter().all(|x|*x){Some(a)}else{None}}
+  fn pair(&mut self)->Option<(u64,u64)>{self.eat(b'[')?;let a=self.num()?;self.eat(b',')?;let b=self.num()?;self.eat(b']')?;Some((a,b))}
+ }
++const CANONICAL_NUMERIC:bool=false;
++const CANONICAL_NAMES:bool=true;
++// Exact canonical-export recognizer. Every mismatch falls back to the
++// existing parser. It admits no alternate keys, whitespace, escaped strings,
++// duplicate fields, numeric overflow or trailing data through this path.
++struct CanonicalCursor<'a>{text:&'a str,i:usize}
++impl<'a> CanonicalCursor<'a>{
++    #[inline]
++    fn take(&mut self,token:&[u8])->bool {
++        if self.text.as_bytes()[self.i..].starts_with(token){self.i+=token.len();true}else{false}
++    }
++    #[inline]
++    fn exact(&mut self,token:&[u8])->Option<()> {self.take(token).then_some(())}
++    #[inline]
++    fn number(&mut self)->Option<u64>{
++        let bytes=self.text.as_bytes();let start=self.i;let mut at=start;let mut n=0u64;let mut digits=0usize;
++        while let Some(&c)=bytes.get(at){
++            if !c.is_ascii_digit(){break;}
++            let digit=(c-b'0')as u64;
++            // At most 19 decimal digits always fit u64. Only a twentieth
++            // digit needs checked arithmetic; a longer spelling declines.
++            n=if digits<19 {n*10+digit}else if digits==19 {n.checked_mul(10)?.checked_add(digit)?}else{return None;};
++            at+=1;digits+=1;
++        }
++        if digits==0 || (digits>1&&bytes[start]==b'0'){return None;}
++        self.i=at;Some(n)
++    }
++    #[inline]
++    fn plain_string(&mut self)->Option<&'a str>{
++        self.exact(b"\"")?;let start=self.i;
++        while let Some(&c)=self.text.as_bytes().get(self.i){
++            if c==b'"'{let end=self.i;self.i+=1;return Some(&self.text[start..end]);}
++            if c==b'\\'||c<32{return None;}
++            self.i+=1;
++        }
++        None
++    }
++    #[inline]
++    fn binder(&mut self)->Option<(u64,u64)>{
++        self.exact(b"{\"binderInfo\":")?;
++        if !self.take(b"\"default\""){self.plain_string()?;}
++        self.exact(b",\"body\":")?;let body=self.number()?;
++        self.exact(b",\"name\":")?;self.number()?;
++        self.exact(b",\"type\":")?;let domain=self.number()?;
++        self.exact(b"}")?;Some((domain,body))
++    }
++    #[inline]
++    fn finish(&mut self)->Option<()> {self.exact(b"}")?;(self.i==self.text.len()).then_some(())}
++}
++
++#[inline]
++fn canonical_record(line:&str,numeric:bool,names:bool)->Option<HotRecord>{
++    let b=line.as_bytes();if b.get(0)!=Some(&b'{')||b.get(1)!=Some(&b'"'){return None;}
++    let mut c=CanonicalCursor{text:line,i:0};
++    let record=match *b.get(2)?{
++        b'a' if numeric=>{
++            c.exact(b"{\"app\":{\"arg\":")?;let arg=c.number()?;
++            c.exact(b",\"fn\":")?;let fun=c.number()?;
++            c.exact(b"},\"ie\":")?;let id=c.number()?;
++            HotRecord::Expr(id,Expr::App{fun:ExprId(fun),arg:ExprId(arg)})
++        }
++        b'b' if numeric=>{
++            c.exact(b"{\"bvar\":")?;let value=c.number()?;c.exact(b",\"ie\":")?;
++            HotRecord::Expr(c.number()?,Expr::BVar(value))
++        }
++        b'c' if numeric=>{
++            c.exact(b"{\"const\":{\"name\":")?;let name=NameId(c.number()?);
++            c.exact(b",\"us\":[")?;let mut levels=Vec::new();
++            if !c.take(b"]"){loop{levels.push(LevelId(c.number()?));if c.take(b"]"){break;}c.exact(b",")?;}}
++            c.exact(b"},\"ie\":")?;HotRecord::Expr(c.number()?,Expr::Const{name,levels})
++        }
++        b'f' if numeric=>{
++            c.exact(b"{\"forallE\":")?;let(domain,body)=c.binder()?;
++            c.exact(b",\"ie\":")?;HotRecord::Expr(c.number()?,Expr::Pi{domain:ExprId(domain),body:ExprId(body)})
++        }
++        b'i'=>match *b.get(3)?{
++            b'e' if numeric=>{
++                c.exact(b"{\"ie\":")?;let id=c.number()?;
++                let expression=if c.take(b",\"sort\":") {Expr::Sort(LevelId(c.number()?))}
++                else if c.take(b",\"lam\":") {let(domain,body)=c.binder()?;Expr::Lam{domain:ExprId(domain),body:ExprId(body)}}
++                else if c.take(b",\"letE\":{\"body\":") {
++                    let body=ExprId(c.number()?);c.exact(b",\"type\":")?;let ty=ExprId(c.number()?);
++                    c.exact(b",\"value\":")?;let value=ExprId(c.number()?);c.exact(b"}")?;Expr::Let{ty,value,body}
++                }else if c.take(b",\"proj\":{\"idx\":") {
++                    let index=c.number()?;c.exact(b",\"struct\":")?;let structure=ExprId(c.number()?);
++                    c.exact(b",\"typeName\":")?;let type_name=NameId(c.number()?);c.exact(b"}")?;Expr::Proj{type_name,index,structure}
++                }else{return None;};
++                HotRecord::Expr(id,expression)
++            }
++            b'l' if numeric=>{
++                c.exact(b"{\"il\":")?;let id=c.number()?;
++                let level=if c.take(b",\"succ\":"){Level::Succ(LevelId(c.number()?))}
++                else if c.take(b",\"param\":"){Level::Param(NameId(c.number()?))}
++                else {
++                    let imax=if c.take(b",\"imax\":["){true}else{c.exact(b",\"max\":[")?;false};
++                    let a=LevelId(c.number()?);c.exact(b",")?;let z=LevelId(c.number()?);c.exact(b"]")?;
++                    if imax{Level::IMax(a,z)}else{Level::Max(a,z)}
++                };
++                HotRecord::Level(id,level)
++            }
++            b'n' if names=>{
++                c.exact(b"{\"in\":")?;let id=c.number()?;
++                let name=if c.take(b",\"str\":{\"pre\":") {
++                    let prefix=NameId(c.number()?);c.exact(b",\"str\":")?;let value=c.plain_string()?.to_owned();
++                    c.exact(b"}")?;Name::Str{prefix,value}
++                }else{
++                    c.exact(b",\"num\":{\"i\":")?;let value=c.number()?;
++                    c.exact(b",\"pre\":")?;let prefix=NameId(c.number()?);c.exact(b"}")?;Name::Num{prefix,value}
++                };
++                HotRecord::Name(id,name)
++            }
++            _=>return None,
++        },
++        _=>return None,
++    };
++    c.finish()?;Some(record)
++}
++
+ fn hot_record(line:&str)->Option<HotRecord>{
+  let mut c=HotCursor{b:line.as_bytes(),i:0};c.eat(b'{')?;
+  let first=c.key()?;let id_second=first!=b"ie"&&first!=b"il";
+@@ -786,10 +904,10 @@
+   b"succ"=>Level::Succ(LevelId(c.num()?)),b"param"=>Level::Param(NameId(c.num()?)),
+   b"max"|b"imax"=>{let(a,b)=c.pair()?;if tag==b"max"{Level::Max(LevelId(a),LevelId(b))}else{Level::IMax(LevelId(a),LevelId(b))}},_=>return None,
+  })};
+- if id_second{c.eat(b',')?;if c.key()?!=table{return None;}let id=c.num()?;match &mut record{HotRecord::Expr(i,_)|HotRecord::Level(i,_)=>{*i=id;}}}
++ if id_second{c.eat(b',')?;if c.key()?!=table{return None;}let id=c.num()?;match &mut record{HotRecord::Expr(i,_)|HotRecord::Level(i,_)|HotRecord::Name(i,_)=>{*i=id;}}}
+  c.eat(b'}')?;c.ws();if c.i!=c.b.len(){return None;}Some(record)
+ }
+-fn apply_hot(export:&mut ParsedExport,r:HotRecord)->Result<(),ParseError>{match r{HotRecord::Expr(i,e)=>export.exprs.insert(ExprId(i),e)?,HotRecord::Level(i,l)=>export.levels.insert(LevelId(i),l)?};Ok(())}
++fn apply_hot(export:&mut ParsedExport,r:HotRecord)->Result<(),ParseError>{match r{HotRecord::Expr(i,e)=>export.exprs.insert(ExprId(i),e)?,HotRecord::Level(i,l)=>export.levels.insert(LevelId(i),l)?,HotRecord::Name(i,n)=>export.names.insert(NameId(i),n)?};Ok(())}
+ 
+ fn strip_line_ending(line:&mut String){if line.ends_with('\n'){line.pop();if line.ends_with('\r'){line.pop();}}}
+ 
+@@ -802,7 +920,7 @@
+  export.levels.insert(LevelId(0),Level::Zero)?;
+  let mut line_number=1;let mut hot_hits=0u64;let mut records=0u64;
+  loop{line.clear();line_number+=1;let n=reader.read_line(&mut line).map_err(|e|ParseError::Io{line:line_number,message:e.to_string()})?;if n==0{break;}strip_line_ending(&mut line);records+=1;
+-  if let Some(record)=hot_record(&line){hot_hits+=1;apply_hot(&mut export,record)?;}else{parse_record(&mut export,parse_json(&line,line_number)?,line_number)?;}
++  if let Some(record)=canonical_record(&line,CANONICAL_NUMERIC,CANONICAL_NAMES).or_else(||hot_record(&line)){hot_hits+=1;apply_hot(&mut export,record)?;}else{parse_record(&mut export,parse_json(&line,line_number)?,line_number)?;}
+  }
+  if crate::run_flags::present(crate::run_flags::Flag::TraceImport){eprintln!("IMPORT_RECORDS {records} HOT_RECORDS {hot_hits}");}
+  Ok(export)
+@@ -811,6 +929,41 @@
+ #[cfg(test)]
+ mod hot_differential_tests {
+  use super::*;
++
++ #[test]
++ fn canonical_export_records_and_numeric_boundaries_match_reference(){
++  let seeds=[r#"{"app":{"arg":29,"fn":23},"ie":17}"#,r#"{"bvar":29,"ie":17}"#,r#"{"const":{"name":3,"us":[1,2]},"ie":17}"#,r#"{"const":{"name":3,"us":[]},"ie":17}"#,r#"{"forallE":{"binderInfo":"default","body":1,"name":2,"type":3},"ie":4}"#,r#"{"ie":17,"lam":{"binderInfo":"implicit","body":1,"name":2,"type":3}}"#,r#"{"ie":17,"letE":{"body":1,"type":2,"value":3}}"#,r#"{"ie":17,"proj":{"idx":1,"struct":2,"typeName":3}}"#,r#"{"ie":17,"sort":3}"#,r#"{"il":17,"imax":[1,2]}"#,r#"{"il":17,"max":[1,2]}"#,r#"{"il":17,"param":3}"#,r#"{"il":17,"succ":3}"#,r#"{"in":17,"str":{"pre":3,"str":"alpha"}}"#,r#"{"in":17,"str":{"pre":3,"str":"α🔬"}}"#,r#"{"in":17,"num":{"i":29,"pre":3}}"#];
++  for seed in seeds {
++   assert!(canonical_record(seed,true,true).is_some(),"{seed}");compare(seed);
++   compare(&(seed.to_owned()+" trailing"));compare(&seed.replace(':',": ").replace(',',",\t"));
++   compare(&seed.replacen("17","18446744073709551616",1));
++  }
++  for n in ["0","1","9999999999999999999","18446744073709551615","18446744073709551616","000","-0","1e2","1.0"]{
++   for seed in [format!("{{\"bvar\":{n},\"ie\":17}}"),format!("{{\"in\":17,\"num\":{{\"i\":{n},\"pre\":3}}}}"),format!("{{\"il\":17,\"max\":[{n},2]}}")]{compare(&seed);}
++  }
++  for seed in [r#"{"in":17,"str":{"pre":3,"str":"a\u0062"}}"#,r#"{"in":17,"str":{"pre":3,"str":"a\"b"}}"#,r#"{"in":17,"str":{"pre":3,"str":"alpha","pre":4}}"#,r#"{"in":17,"num":{"i":29,"pre":3},"in":18}"#,r#"{"app":{"arg":29,"fn":23,"arg":31},"ie":17}"#,r#"{"forallE":{"binderInfo":"default","body":1,"name":2,"type":3,"body":4},"ie":17}"#]{compare(seed);}
++ }
++ #[test]
++ fn every_canonical_recognized_byte_mutation_matches_original_parser(){
++  for seed in [r#"{"app":{"arg":29,"fn":23},"ie":17}"#,r#"{"const":{"name":3,"us":[1,2]},"ie":17}"#,r#"{"forallE":{"binderInfo":"default","body":1,"name":2,"type":3},"ie":4}"#,r#"{"in":17,"str":{"pre":3,"str":"alpha"}}"#,r#"{"in":17,"num":{"i":29,"pre":3}}"#,r#"{"ie":17,"letE":{"body":1,"type":2,"value":3}}"#]{
++   for at in 0..seed.len(){for byte in 0..=127u8{let mut bytes=seed.as_bytes().to_vec();bytes[at]=byte;if let Ok(text)=String::from_utf8(bytes){if canonical_record(&text,true,true).is_some(){compare(&text);}}}}
++  }
++ }
++ #[test]
++ #[ignore="requires pinned NUCLEUS_FROZEN196 corpus and its manifest"]
++ fn every_frozen_source_ast_or_parse_error_matches_original_parser(){
++  let root=std::path::PathBuf::from(std::env::var("NUCLEUS_FROZEN196").expect("pinned corpus path"));
++  let manifest:serde_json::Value=serde_json::from_reader(std::fs::File::open(root.parent().unwrap().join("inputs-manifest.json")).unwrap()).unwrap();
++  let rows=manifest.as_array().unwrap();assert_eq!(rows.len(),208);
++  let mut paths=rows.iter().map(|row|root.join(row["relative_path"].as_str().unwrap())).collect::<Vec<_>>();
++  let extra=root.join("good/perf/magma-list-pair-n21.ndjson");if extra.exists(){paths.push(extra);}
++  for path in paths {
++   let a=parse(std::io::BufReader::new(std::fs::File::open(&path).unwrap()));
++   let b=parse_reference(std::io::BufReader::new(std::fs::File::open(&path).unwrap()));
++   match(a,b){(Ok(a),Ok(b))=>same(&a,&b),(Err(a),Err(b))=>assert_eq!(a,b,"{}",path.display()),_=>panic!("parser disagreement at {}",path.display())}
++  }
++ }
++
+  fn blank()->ParsedExport {parse_reference(std::io::Cursor::new("{\"meta\":{\"format\":{\"version\":\"3.1.0\"}}}\n")).unwrap()}
+  fn same(a:&ParsedExport,b:&ParsedExport){assert_eq!(a.meta.raw,b.meta.raw);assert_eq!(a.names.len(),b.names.len());for(i,v)in a.names.iter_raw(){assert_eq!(Some(v),b.names.get(NameId(i)));}assert_eq!(a.levels.len(),b.levels.len());for(i,v)in a.levels.iter_raw(){assert_eq!(Some(v),b.levels.get(LevelId(i)));}assert_eq!(a.exprs.len(),b.exprs.len());for(i,v)in a.exprs.iter_raw(){assert_eq!(Some(v),b.exprs.get(ExprId(i)));}assert_eq!(a.declarations,b.declarations);}
+  fn compare(s:&str){let input=format!("{{\"meta\":{{\"format\":{{\"version\":\"3.1.0\"}}}}}}\n{s}");let a=parse(std::io::Cursor::new(&input));let b=parse_reference(std::io::Cursor::new(&input));match(a,b){(Ok(a),Ok(b))=>same(&a,&b),(Err(a),Err(b))=>assert_eq!(a,b,"{s}"),_=>panic!("parser disagreement: {s}")}}
