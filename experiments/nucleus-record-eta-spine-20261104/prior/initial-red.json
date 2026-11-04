@@ -1,0 +1,32 @@
+{
+  "binary_sha": "5c3b3c11e656ec9dc8ece3355b7273d54df2c30c735e7717965249c891882bfa",
+  "rows": [
+    {
+      "case": "authentic-record-eta-application",
+      "file": "authentic-record-eta-application.ndjson",
+      "sha256": "103cbfa898af8fe536b18e5cbf1ec2377d023ef60eeffe541a65ca30bee655bb",
+      "expect_reference": 0,
+      "parse_rc": 0,
+      "reference_rc": 0,
+      "candidate_rc": 2
+    },
+    {
+      "case": "record-eta-application-wrong-field",
+      "file": "record-eta-application-wrong-field.ndjson",
+      "sha256": "13e3e003dc3aa42979c5d332fe3bde165fbb54090044aa0e217f7b41eedb55b2",
+      "expect_reference": 1,
+      "parse_rc": 0,
+      "reference_rc": 1,
+      "candidate_rc": 2
+    },
+    {
+      "case": "record-eta-application-wrong-argument",
+      "file": "record-eta-application-wrong-argument.ndjson",
+      "sha256": "9ce8ab6a14e81ac5b68e5f91376fcda649579a5c4731e00733c77487ed7a2720",
+      "expect_reference": 1,
+      "parse_rc": 0,
+      "reference_rc": 1,
+      "candidate_rc": 1
+    }
+  ]
+}

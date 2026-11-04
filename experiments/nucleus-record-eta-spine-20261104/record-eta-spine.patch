@@ -1,0 +1,37 @@
+--- a/metatron-kernel/src/typecheck.rs
++++ b/metatron-kernel/src/typecheck.rs
+@@ -5031,7 +5031,7 @@
+         let params=rule.num_params;let fields=rule.num_fields;
+         if params>8{return None;}
+         let prefix=params.checked_add(2)?;let required=prefix.checked_add(1)?;
+-        if neutral.spine.len()!=required{return None;}
++        if neutral.spine.len()<required || neutral.spine.len()>required+4{return None;}
+         thread_local!{static ACTIVE:std::cell::Cell<bool>=const{std::cell::Cell::new(false)};}
+         if ACTIVE.with(|active|active.replace(true)){return None;}
+         struct Scope;impl Drop for Scope{fn drop(&mut self){ACTIVE.with(|a|a.set(false));}}
+@@ -5043,7 +5043,7 @@
+         fn reserve(fuel:&mut usize,cap:usize)->Option<usize>{
+             let grant=(*fuel).min(cap);if grant==0{return None;}*fuel-=grant;Some(grant)
+         }
+-        let major=neutral.spine.last()?;
++        let major=neutral.spine.get(required-1)?;
+         // Restrict this earned rule to actual lexical locals. Follow the
+         // source capture chain by borrow, charging frame traversal before
+         // lookup; never clone an arbitrary captured neutral to inspect it.
+@@ -5120,6 +5120,16 @@
+                     _=>return None,
+                 }
+             }
++        }
++        // Extra source arguments remain after the original major premise.
++        // Continue only through an actually exposed source lambda; no new
++        // application syntax, function eta or arbitrary neutral is invented.
++        for argument in &neutral.spine[required..]{
++            let grant=reserve(&mut fuel,512)?;
++            let exposed=self.machine().expose_for_conversion(result,Transparency::Reducible,grant);
++            let Judgment::Proven{value:Value::Lam{body,..},..}=exposed else{return None};
++            if !take_step(&mut fuel){return None;}
++            result=body.sibling(body.expr,body.env.extend(argument.clone()));
+         }
+         Some(result)
+     }

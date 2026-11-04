@@ -1,0 +1,242 @@
+--- a/metatron-kernel/src/typecheck.rs
++++ b/metatron-kernel/src/typecheck.rs
+@@ -5015,6 +5015,115 @@
+         )
+     }
+ 
++
++    /// Typed eta followed by the original admitted recursor's source RHS.
++    /// This is reduction evidence only, never a typing certificate for a
++    /// motive or minor. Their source arguments remain checked by inference.
++    pub(crate) fn checked_record_recursor_eta(
++        &self, neutral:&Neutral, context:&[TypeValue], budget:&mut usize,
++    )->Option<Closure>{
++        if *budget<1024 || context.len()>32{return None;}
++        let NeutralHead::Const{name,levels}=&neutral.head else{return None};
++        let reduction=self.environment.recursor_reduction(*name)?;
++        let [rule]=reduction.rules.as_slice()else{return None};
++        if reduction.k || reduction.num_indices!=0 || reduction.level_params.len()!=levels.len()
++            || rule.num_params!=reduction.num_params || rule.num_fields>8{return None;}
++        let params=rule.num_params;let fields=rule.num_fields;
++        if params>8{return None;}
++        let prefix=params.checked_add(2)?;let required=prefix.checked_add(1)?;
++        if neutral.spine.len()!=required{return None;}
++        thread_local!{static ACTIVE:std::cell::Cell<bool>=const{std::cell::Cell::new(false)};}
++        if ACTIVE.with(|active|active.replace(true)){return None;}
++        struct Scope;impl Drop for Scope{fn drop(&mut self){ACTIVE.with(|a|a.set(false));}}
++        let _scope=Scope;
++        let allowance=(*budget/2).min(8192);*budget-=allowance;
++        let mut fuel=allowance;
++        // Reserve each nested trial from this one allowance before entry.
++        // Unused child allowance is deliberately not refunded.
++        fn reserve(fuel:&mut usize,cap:usize)->Option<usize>{
++            let grant=(*fuel).min(cap);if grant==0{return None;}*fuel-=grant;Some(grant)
++        }
++        let major=neutral.spine.last()?;
++        // Restrict this earned rule to actual lexical locals. Follow the
++        // source capture chain by borrow, charging frame traversal before
++        // lookup; never clone an arbitrary captured neutral to inspect it.
++        let mut captured=major.clone();
++        let free=loop{
++            if !take_step(&mut fuel){return None;}
++            let Expr::BVar(index)=self.expression(captured.expr)? else{return None};
++            let cost=usize::try_from(*index).ok()?.checked_add(1)?;
++            if fuel<cost{return None;}fuel-=cost;
++            match captured.env.lookup_binding_ref(*index)?{
++                EnvBinding::Free(free)=>break *free,
++                EnvBinding::Neutral(Neutral{head:NeutralHead::Free(free),spine})if spine.is_empty()=>break *free,
++                EnvBinding::Closure(next)=>captured=next.clone(),
++                _=>return None,
++            }
++        };
++        if !matches!(context.get(usize::try_from(free.0).ok()?),Some(TypeValue::Term(_))){return None;}
++        let actual=Neutral{head:NeutralHead::Free(free),spine:vec![]};
++        let mut major_fuel=reserve(&mut fuel,2048)?;
++        let TypeValue::Term(major_type)=self.infer_exact_closure_in_context(major,context,&mut major_fuel,0)? else{return None};
++        let mut formation_fuel=reserve(&mut fuel,1024)?;
++        let formed=self.infer_exact_closure_in_context(&major_type,context,&mut formation_fuel,0)?;
++        let formation=self.sort_level(Judgment::proven(formed,"record-eta-owner-formation"),reserve(&mut fuel,256)?);
++        let Judgment::Proven{value:sort,..}=formation else{return None};
++        fn nonzero(l:&LevelTerm,depth:usize,fuel:&mut usize)->bool{
++            if depth>=32 || !take_step(fuel){return false;}match l{LevelTerm::Succ(_)=>true,LevelTerm::Max(a,b)=>nonzero(a,depth+1,fuel)||nonzero(b,depth+1,fuel),LevelTerm::IMax(_,b)=>nonzero(b,depth+1,fuel),_=>false}
++        }
++        if !nonzero(&sort,0,&mut fuel){return None;}
++        let exposed=self.machine().expose_for_conversion(major_type,Transparency::Full,reserve(&mut fuel,512)?);
++        let Some(Value::Neutral(owner_type))=exposed.proven_value()else{return None};
++        let NeutralHead::Const{name:actual_owner,levels:owner_levels}=&owner_type.head else{return None};
++        let owner=*actual_owner;
++        let spec=self.environment.projection_spec(owner)?;
++        if !spec.eta_expandable || spec.constructor!=rule.constructor || spec.num_params!=params || spec.field_types.len()!=fields
++            || owner_type.spine.len()!=params || owner_levels.len()!=rule.constructor_level_params.len(){return None;}
++        fn charge_level(level:&LevelTerm,fuel:&mut usize,depth:usize)->bool{
++            if depth>=64 || !take_step(fuel){return false;}
++            match level{
++                LevelTerm::Succ(x)=>charge_level(x,fuel,depth+1),
++                LevelTerm::Max(a,b)|LevelTerm::IMax(a,b)=>charge_level(a,fuel,depth+1)&&charge_level(b,fuel,depth+1),
++                _=>true,
++            }
++        }
++        for(parameter,actual)in rule.constructor_level_params.iter().zip(owner_levels){
++            if !take_step(&mut fuel){return None;}
++            let i=reduction.level_params.iter().position(|p|p==parameter)?;
++            if !charge_level(&levels[i],&mut fuel,0)||!charge_level(actual,&mut fuel,0){return None;}
++            if !crate::level::level_equal(levels[i].clone(),actual.clone(),reserve(&mut fuel,64)?).is_proven(){return None;}
++        }
++        for(actual,expected)in owner_type.spine.iter().zip(&neutral.spine[..params]){
++            if !take_step(&mut fuel){return None;}
++            if !crate::convert::convert_with_policy_in_context(self,&TypeValue::Term(actual.clone()),&TypeValue::Term(expected.clone()),reserve(&mut fuel,256)?,crate::convert::DeltaPolicy::GuardedSemanticFallback,context.len(),context).is_proven(){return None;}
++        }
++        // A bounded search finds a real BVar(0) source carrier. It supplies
++        // no authority: its captured value is the typed actual projection.
++        let mut carrier=None;
++        for i in 0..256{if !take_step(&mut fuel){return None;}if matches!(self.expression(ExprId(i)),Some(Expr::BVar(0))){carrier=Some(ExprId(i));break;}}
++        let carrier=carrier?;
++        let mut arguments=neutral.spine[..prefix].to_vec();
++        for index in 0..fields{
++            if !take_step(&mut fuel){return None;}
++            arguments.push(Closure::new(carrier,EnvFrame::empty().extend_neutral(Neutral{head:NeutralHead::Projection{type_name:owner,index,structure:Box::new(actual.clone())},spine:vec![]})));
++        }
++        for level in levels{if !charge_level(level,&mut fuel,0){return None;}}
++        let substitution=reduction.level_params.iter().copied().zip(levels.iter().cloned()).collect();
++        let mut result=Closure::with_levels(rule.rhs,EnvFrame::empty(),LevelSubstitution::new(substitution));
++        for arg in arguments{
++            let mut lets=0;
++            loop{
++                if !take_step(&mut fuel){return None;}
++                match self.expression(result.expr){
++                    Some(Expr::Lam{body,..})=>{result=result.sibling(*body,result.env.extend(arg));break;},
++                    Some(Expr::Let{value,body,..}|Expr::LetNondep{value,body,..})if lets<16=>{let v=result.sibling(*value,result.env.clone());result=result.sibling(*body,result.env.extend(v));lets+=1;},
++                    _=>return None,
++                }
++            }
++        }
++        Some(result)
++    }
++
+     pub(crate) fn rule_k_reduce_neutral(
+         &self,
+         neutral: &Neutral,
+@@ -6896,3 +7005,41 @@
+  }
+ 
+ }
++
++#[cfg(test)]
++mod record_recursor_eta_tests {
++ use super::*;
++ use crate::environment::ConstantDecl;
++ use crate::machine::{ProjectionSpec,RecursorReduction,RecursorRule};
++ fn tables()->(IdTable<ExprId,Expr>,IdTable<LevelId,Level>){
++  let mut e=IdTable::default();let mut l=IdTable::default();l.insert(LevelId(0),Level::Zero).unwrap();l.insert(LevelId(1),Level::Succ(LevelId(0))).unwrap();
++  for(id,node)in[(0,Expr::Sort(LevelId(0))),(1,Expr::Sort(LevelId(1))),(2,Expr::Const{name:NameId(900),levels:vec![]}),(3,Expr::BVar(0)),(4,Expr::Lam{domain:ExprId(0),body:ExprId(3)}),(5,Expr::Lam{domain:ExprId(0),body:ExprId(4)}),(6,Expr::Const{name:NameId(903),levels:vec![]})]{e.insert(ExprId(id),node).unwrap();}(e,l)
++ }
++ // The unit fixture supplies a trusted layout directly. In particular its
++ // Prop case deliberately overstates eta metadata to test the independent
++ // instantiated-sort guard; source admission is tested by source controls.
++ fn environment(prop:bool)->Environment{
++  Environment::empty().extend(NameId(900),ConstantDecl::axiom(vec![],ExprId(if prop{0}else{1}))).unwrap()
++   .extend(NameId(903),ConstantDecl::axiom(vec![],ExprId(1))).unwrap()
++   .extend(NameId(902),ConstantDecl::axiom(vec![],ExprId(2))).unwrap()
++   .extend(NameId(901),ConstantDecl::recursor(vec![],ExprId(0))).unwrap()
++   .install_projection_spec(NameId(900),ProjectionSpec{constructor:NameId(902),num_params:0,field_types:vec![],eta_expandable:true}).unwrap()
++   .install_recursor_reduction(NameId(901),RecursorReduction{k:false,num_params:0,num_indices:0,level_params:vec![],rules:vec![RecursorRule{constructor:NameId(902),constructor_level_params:vec![],num_params:0,num_fields:0,rhs:ExprId(5)}]}).unwrap()
++ }
++ fn subject()->Neutral{
++  Neutral{head:NeutralHead::Const{name:NameId(901),levels:vec![]},spine:vec![Closure::new(ExprId(0),EnvFrame::empty()),Closure::new(ExprId(0),EnvFrame::empty()),Closure::new(ExprId(3),EnvFrame::empty().extend_free(FreeId(0)))]}
++ }
++ #[test]fn admitted_record_eta_reserves_its_prerequisites_from_the_caller(){
++  let(e,l)=tables();let env=environment(false);let checker=TypeChecker::new(&e,&l,&env);let ctx=vec![TypeValue::Term(Closure::new(ExprId(2),EnvFrame::empty()))];let mut budget=16384;
++  assert!(checker.checked_record_recursor_eta(&subject(),&ctx,&mut budget).is_some());assert_eq!(budget,8192);
++ }
++ #[test]fn proposition_owner_cannot_gain_data_eta_from_layout_metadata(){
++  let(e,l)=tables();let env=environment(true);let checker=TypeChecker::new(&e,&l,&env);let ctx=vec![TypeValue::Term(Closure::new(ExprId(2),EnvFrame::empty()))];let mut budget=16384;
++  assert!(checker.checked_record_recursor_eta(&subject(),&ctx,&mut budget).is_none());assert_eq!(budget,8192);
++ }
++ #[test]fn record_eta_checks_the_actual_owner_and_restores_its_trial_scope(){
++  let(e,l)=tables();let env=environment(false);let checker=TypeChecker::new(&e,&l,&env);let mut budget=32768;
++  assert!(checker.checked_record_recursor_eta(&subject(),&[TypeValue::Term(Closure::new(ExprId(6),EnvFrame::empty()))],&mut budget).is_none());
++  assert!(checker.checked_record_recursor_eta(&subject(),&[TypeValue::Term(Closure::new(ExprId(2),EnvFrame::empty()))],&mut budget).is_some());
++ }
++}
+--- a/metatron-kernel/src/convert.rs
++++ b/metatron-kernel/src/convert.rs
+@@ -1199,7 +1199,7 @@
+     let mut current_left = left.clone();
+     let mut current_right = right.clone();
+     let mut current_budget = budget;
+-    loop {
++    'compare: loop {
+         match (&current_left, &current_right) {
+             (Value::NatLit(left), Value::NatLit(right)) => {
+                 if left != right {
+@@ -1784,6 +1784,20 @@
+                 if distinct_non_eta_structure_locals(checker, left, right, context, current_budget)
+                 {
+                     return Judgment::refuted("non-eta-structure-mismatch");
++                }
++                let mut eta_result=None;
++                for (subject,subject_is_left) in [(left,true),(right,false)] {
++                    if let Some(rhs)=checker.checked_record_recursor_eta(subject,context,&mut current_budget){
++                        let exposed=checker.machine().expose_for_conversion(rhs,Transparency::Reducible,current_budget.saturating_sub(1));
++                        let Judgment::Proven{value:reduced,..}=exposed else{return Judgment::unknown("record-recursor-eta-exposure")};
++                        eta_result=Some((subject_is_left,reduced));break;
++                    }
++                }
++                if let Some((subject_is_left,reduced))=eta_result{
++                    // Move the owned result; neither operand is deep-cloned.
++                    if subject_is_left{current_left=reduced;}else{current_right=reduced;}
++                    current_budget=current_budget.saturating_sub(1);
++                    continue 'compare;
+                 }
+                 match checker.rule_k_reduce_neutral(left, context, current_budget) {
+                     RuleKAttempt::Reduced(closure) => {
+--- a/metatron-kernel/src/environment.rs
++++ b/metatron-kernel/src/environment.rs
+@@ -348,6 +348,10 @@
+         })
+     }
+ 
++    pub(crate) fn projection_spec(&self, owner:NameId)->Option<&ProjectionSpec>{
++        self.projection_specs.get(&owner)
++    }
++
+     pub fn projection_specs(&self) -> HashMap<NameId, ProjectionSpec> {
+         self.projection_specs.as_ref().clone()
+     }
+--- a/metatron-kernel/src/typecheck.rs
++++ b/metatron-kernel/src/typecheck.rs
+@@ -5031,7 +5031,7 @@
+         let params=rule.num_params;let fields=rule.num_fields;
+         if params>8{return None;}
+         let prefix=params.checked_add(2)?;let required=prefix.checked_add(1)?;
+-        if neutral.spine.len()!=required{return None;}
++        if neutral.spine.len()<required || neutral.spine.len()>required+4{return None;}
+         thread_local!{static ACTIVE:std::cell::Cell<bool>=const{std::cell::Cell::new(false)};}
+         if ACTIVE.with(|active|active.replace(true)){return None;}
+         struct Scope;impl Drop for Scope{fn drop(&mut self){ACTIVE.with(|a|a.set(false));}}
+@@ -5043,7 +5043,7 @@
+         fn reserve(fuel:&mut usize,cap:usize)->Option<usize>{
+             let grant=(*fuel).min(cap);if grant==0{return None;}*fuel-=grant;Some(grant)
+         }
+-        let major=neutral.spine.last()?;
++        let major=neutral.spine.get(required-1)?;
+         // Restrict this earned rule to actual lexical locals. Follow the
+         // source capture chain by borrow, charging frame traversal before
+         // lookup; never clone an arbitrary captured neutral to inspect it.
+@@ -5120,6 +5120,16 @@
+                     _=>return None,
+                 }
+             }
++        }
++        // Extra source arguments remain after the original major premise.
++        // Continue only through an actually exposed source lambda; no new
++        // application syntax, function eta or arbitrary neutral is invented.
++        for argument in &neutral.spine[required..]{
++            let grant=reserve(&mut fuel,512)?;
++            let exposed=self.machine().expose_for_conversion(result,Transparency::Reducible,grant);
++            let Judgment::Proven{value:Value::Lam{body,..},..}=exposed else{return None};
++            if !take_step(&mut fuel){return None;}
++            result=body.sibling(body.expr,body.env.extend(argument.clone()));
+         }
+         Some(result)
+     }
