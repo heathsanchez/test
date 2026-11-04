@@ -21,7 +21,7 @@
                  return Judgment::unknown("neutral-projection-receiver-congruence");
              }
              let argument_budget = probe / left_structure.spine.len().max(1);
-@@ -2549,4 +2733,16 @@
+@@ -2549,3 +2733,15 @@
                      argument_budget, DeltaPolicy::GuardedSemanticFallback, depth, context,
                  );
                  if !argument_result.is_proven() {
@@ -37,4 +37,3 @@
 +                            );
 +                        }
 +                    }
-                     // A distinct capture-frame allocation is not evidence of
