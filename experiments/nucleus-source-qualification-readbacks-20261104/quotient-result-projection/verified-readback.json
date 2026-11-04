@@ -1,0 +1,72 @@
+{
+  "status": "VERIFIED_SEALED_QUALIFICATION_AND_COMPLETE_TRANSITIVE_SOURCE_RECONSTRUCTION",
+  "source_commit": "59cc9234dc6d1a35820debc5d4ce264df58a3e08",
+  "run_id": 41841710394,
+  "artifact_id": 13332531103,
+  "zip_sha": "9d0ffa1d7ef5c09121477e7543c5abf1b35ec56391dd53fc89d755d737e43e73",
+  "binary_sha": "173ff543e6fe368d501fe2c0682e98673fd4b259a6ddc1745fcbee76ff99fb1e",
+  "source_tar_sha": "6775ef883d28b9f6efcd9d18d16c02ef1a5cd23ae9810ea6591b31e2ddbb5b46",
+  "source_manifest_sha": "936355c12c9422121cd0e884cd4467fffe15f4b429976d25844c7b6a9ee9a3ee",
+  "cumulative_patch_sha": "c3aade9fc0c892d8158097fe78c61ce39d9da8530b0515fa269f6e0ad972c754",
+  "parent_canonical_recipe_commit": "3bf4268285f40b50cb183d0f31989dd7932e5a8a",
+  "parent_manifest_sha": "9ad90728aad6a76098399b9b759b6e52221992ef0e3a6b7b1ae47618ab9b0c65",
+  "component_patch_sha": "7fe08412e93652d60bdba0dc3fc499cebb34e7f344fe3d8db254c1cf8775d650",
+  "archive_source_matches": 368,
+  "reconstructed_source_matches": 368,
+  "source_controls": 119,
+  "protected_controls": 61,
+  "native_targets": 42,
+  "native_counts": [
+    489,
+    1,
+    0,
+    0,
+    0
+  ],
+  "verdict_changes": [],
+  "full": {
+    "binary_sha": "173ff543e6fe368d501fe2c0682e98673fd4b259a6ddc1745fcbee76ff99fb1e",
+    "complete_mathlib_accept": false,
+    "frontier_official_reference": {
+      "binary_sha": "ae92c625e612fff1c90e329344d22e3c3c330383cb335ce28fd41435be3b3b94",
+      "parse_rc": 0,
+      "rc": 0,
+      "source_sha": "ca6ba58a99ca074dc45d975ab982fd119193fa05a6d12e20f08c53cb7dd786f2"
+    },
+    "next_frontier": {
+      "bytes": 15901003,
+      "declaration": {
+        "all": [
+          26089
+        ],
+        "levelParams": [
+          32,
+          326
+        ],
+        "name": 26089,
+        "type": 271653,
+        "value": 272480
+      },
+      "name_records_parsed": 26094,
+      "record": 302649,
+      "sha256": "ca6ba58a99ca074dc45d975ab982fd119193fa05a6d12e20f08c53cb7dd786f2",
+      "tag": "thm",
+      "target": "AddMonoidAlgebra.nonUnitalNonAssocSemiring._proof_1"
+    },
+    "no_official_arena_score": true,
+    "qualified": true,
+    "result": {
+      "rc": 2,
+      "rss_kb": 4532060.0,
+      "system": 3.17,
+      "user": 188.28,
+      "wall": 191.47,
+      "wall_observed": 191.51239213400004
+    },
+    "source_sha": "22c5de83469408950005589a3bc5ef5157c65549b5a802f85d567c29151306a6",
+    "status": "WARRANTED_BOUNDED_FIRST_FRONTIER",
+    "terminal": "NUCLEUS_DOWNSTREAM:name=AddMonoidAlgebra.nonUnitalNonAssocSemiring._proof_1:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type"
+  },
+  "no_speed_ratio_different_frontiers": true,
+  "no_rank_claim": true
+}
