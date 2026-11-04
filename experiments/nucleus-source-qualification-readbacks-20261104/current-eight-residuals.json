@@ -1,0 +1,114 @@
+{
+  "status": "BOUNDED_RESIDUAL_DIAGNOSTIC",
+  "binary_sha": "013e742dc3bf541301235b6e6d37615b62c9800b923b7c9506b254cffdbfe61e",
+  "configuration": {
+    "NUCLEUS_EXPERIMENTAL_CERTIFIED_QUOT_IOTA": "1",
+    "NUCLEUS_EXPERIMENTAL_CONTEXT_BINDER": "1",
+    "NUCLEUS_EXPERIMENTAL_DEMAND_MAJOR": "1",
+    "NUCLEUS_EXPERIMENTAL_EXPECTED_LAMBDA": "1",
+    "NUCLEUS_EXPERIMENTAL_FORMED_PROP_DOMAIN_RETRY": "1",
+    "NUCLEUS_EXPERIMENTAL_POLYMORPHIC_PROP_IRREL": "1",
+    "NUCLEUS_EXPERIMENTAL_PROJECTION_CONTEXT": "1",
+    "NUCLEUS_EXPERIMENTAL_PROJECTION_CROSSFRAME_512": "1",
+    "NUCLEUS_EXPERIMENTAL_PROP_SINGLETON_2P1F": "1",
+    "NUCLEUS_EXPERIMENTAL_RELEVANCE": "1",
+    "NUCLEUS_EXPERIMENTAL_REPLAY_NEUTRAL_PROJECTION": "1",
+    "NUCLEUS_EXPERIMENTAL_REPLAY_PROJECTION_MAJOR": "1",
+    "NUCLEUS_EXPERIMENTAL_SOURCE_PAIR_DEPTH8": "1",
+    "NUCLEUS_EXPERIMENTAL_SOURCE_PROOF_IRREL": "1",
+    "NUCLEUS_EXPERIMENTAL_SUBSTITUTION_RECLOSURE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_DATA_CONGRUENCE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_LINEAGE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_PROJECTION_SPINE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_RECEIVER": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_VALUE_NORMALIZATION": "1"
+  },
+  "diagnostic_flags": {
+    "NUCLEUS_TRACE_DOWNSTREAM": "1"
+  },
+  "timeout_seconds": 120,
+  "rows": [
+    {
+      "case": "bugs/eta-ctor-alias",
+      "expected": 1,
+      "source_sha": "fd1a643c6c52efe34ec0cc0c22e53cdae32561ff80fb533b3bee7064dbd85ea3",
+      "rc": 2,
+      "timed_out": false,
+      "terminal": [
+        "NUCLEUS_DOWNSTREAM:name=etaCtorAlias:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads"
+      ]
+    },
+    {
+      "case": "perf/fueled-chain",
+      "expected": 0,
+      "source_sha": "e5ca34489fc7b8ee13b1e7f09f76247ab7b01dd1a752a13cc8b796c569e1401a",
+      "rc": 2,
+      "timed_out": false,
+      "terminal": [
+        "NUCLEUS_DOWNSTREAM:name=chain6_datF:stage=theorem.value:verdict=UNKNOWN:reason=neutral-projection-receiver-congruence"
+      ]
+    },
+    {
+      "case": "perf/magma-list-deep-n21",
+      "expected": 0,
+      "source_sha": "b7a211699ab32a5d2397319702e2d5552f5796a6bdac990efa69fb186039f526",
+      "rc": 2,
+      "timed_out": false,
+      "terminal": [
+        "NUCLEUS_DOWNSTREAM:name=countermodel:stage=definition.value:verdict=UNKNOWN:reason=unresolved-qualified-recursor-heads"
+      ]
+    },
+    {
+      "case": "perf/magma-list-deep-n36",
+      "expected": 0,
+      "source_sha": "6669cee92ad330dada351ac9e63656f7e9e848dd70376f17030d64677f8c81ac",
+      "rc": 2,
+      "timed_out": false,
+      "terminal": [
+        "NUCLEUS_DOWNSTREAM:name=countermodel:stage=definition.value:verdict=UNKNOWN:reason=application-function-type"
+      ]
+    },
+    {
+      "case": "perf/magma-list-pair-n7",
+      "expected": 0,
+      "source_sha": "abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35",
+      "rc": 2,
+      "timed_out": false,
+      "terminal": [
+        "NUCLEUS_DOWNSTREAM:name=countermodel:stage=definition.value:verdict=UNKNOWN:reason=application-function-type"
+      ]
+    },
+    {
+      "case": "perf/grind-ring-5",
+      "expected": 0,
+      "source_sha": "e9c394e0ff311fd10f60dee2433a530f16e82354c32d6588a8775baa06fd221f",
+      "rc": 2,
+      "timed_out": false,
+      "terminal": [
+        "NUCLEUS_DOWNSTREAM:name=_private.Init.Grind.Ring.Basic.0.Lean.Grind.Ring.intCast_nat_sub._proof_1_2:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type"
+      ]
+    },
+    {
+      "case": "perf/magma-string-n4",
+      "expected": 0,
+      "source_sha": "158b54b527a3171cfff366e525d1f3ad78147f024e7946ec04fa6f20ef97bc5a",
+      "rc": 2,
+      "timed_out": false,
+      "terminal": [
+        "NUCLEUS_DOWNSTREAM:name=Nat.Internal.Linear.Poly.denote_reverse:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type"
+      ]
+    },
+    {
+      "case": "perf/magma-string-pair-n9",
+      "expected": 0,
+      "source_sha": "deeeea5010e88e313dcf3d1b9642a5f9de8fb711066dd0256cec3b35d38c05ae",
+      "rc": 2,
+      "timed_out": false,
+      "terminal": [
+        "NUCLEUS_DOWNSTREAM:name=Nat.Internal.Linear.Poly.denote_reverse:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type"
+      ]
+    }
+  ],
+  "source_artifact": 13126161718,
+  "source_artifact_sha256": "462e31e21379054490570b465b46ece4fff878490d9ad7de6bbc73149d587f4c"
+}
