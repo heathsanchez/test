@@ -1,0 +1,177 @@
+{
+  "additional_verified_original_prefixes": {
+    "foldlm_cons": "7a5a71599fb8240c88553967ae3d3146d1d26d176ef3cd2388608c25c4a2da29",
+    "foldrm_cons": "8fbfa485711e12b989548753fb35fd077e7bb71c9a7b5d53a91e3c4db93d87d4"
+  },
+  "binary_sha": "2003c831c32a8249e8524349bc169f3e491e9c84fb71b5fc8db9bce2a8583d01",
+  "complete_mathlib_accept": false,
+  "coverage_win": true,
+  "full": {
+    "binary_sha": "2003c831c32a8249e8524349bc169f3e491e9c84fb71b5fc8db9bce2a8583d01",
+    "complete_mathlib_accept": false,
+    "frontier_official_reference": {
+      "binary_sha": "ae92c625e612fff1c90e329344d22e3c3c330383cb335ce28fd41435be3b3b94",
+      "parse_rc": 0,
+      "rc": 0,
+      "source_sha": "61b130d9e864c99afd4111b662f884827be98a87f27277c42a5949b025fc0d6b"
+    },
+    "next_frontier": {
+      "bytes": 15949259,
+      "declaration": {
+        "all": [
+          26127
+        ],
+        "levelParams": [
+          32,
+          326
+        ],
+        "name": 26127,
+        "type": 272766,
+        "value": 273354
+      },
+      "name_records_parsed": 26127,
+      "record": 303563,
+      "sha256": "61b130d9e864c99afd4111b662f884827be98a87f27277c42a5949b025fc0d6b",
+      "tag": "thm",
+      "target": "AddMonoidAlgebra.nonUnitalNonAssocSemiring._proof_2"
+    },
+    "no_official_arena_score": true,
+    "qualified": true,
+    "result": {
+      "rc": 2,
+      "rss_kb": 3779964.0,
+      "system": 3.14,
+      "user": 60.8,
+      "wall": 63.94,
+      "wall_observed": 63.97794179300013
+    },
+    "source_sha": "22c5de83469408950005589a3bc5ef5157c65549b5a802f85d567c29151306a6",
+    "status": "WARRANTED_BOUNDED_FIRST_FRONTIER",
+    "terminal": "NUCLEUS_DOWNSTREAM:name=AddMonoidAlgebra.nonUnitalNonAssocSemiring._proof_2:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type"
+  },
+  "known_native_failures": {
+    "residual_closure|test": [
+      "all_seven_complete_positive_exports_accept"
+    ]
+  },
+  "matched_regressions": [
+    {
+      "candidate_binary": "2003c831c32a8249e8524349bc169f3e491e9c84fb71b5fc8db9bce2a8583d01",
+      "case": "original-first-frontier",
+      "green": {
+        "rc": 0,
+        "rss_kb": 104420.0,
+        "system": 0.1,
+        "user": 41.25,
+        "wall": 41.35,
+        "wall_observed": 41.369712658000026
+      },
+      "input_sha": "ca6ba58a99ca074dc45d975ab982fd119193fa05a6d12e20f08c53cb7dd786f2",
+      "parent_binary": "82ebbce2278e54f82667e4d12793034acdf72f329b989e4605cf65473c9de715",
+      "red": {
+        "rc": 2,
+        "rss_kb": 173824.0,
+        "system": 0.22,
+        "user": 57.24,
+        "wall": 57.47,
+        "wall_observed": 57.511698416999934
+      }
+    },
+    {
+      "candidate_binary": "2003c831c32a8249e8524349bc169f3e491e9c84fb71b5fc8db9bce2a8583d01",
+      "case": "compact-substitution-regression",
+      "green": {
+        "rc": 0,
+        "rss_kb": 88868.0,
+        "system": 0.08,
+        "user": 10.14,
+        "wall": 10.23,
+        "wall_observed": 10.239783074999877
+      },
+      "input_sha": "ef5df79ed54b93ec8597131304c9ed76358dd4a60c5bf7275fb0033a9fe9e431",
+      "parent_binary": "82ebbce2278e54f82667e4d12793034acdf72f329b989e4605cf65473c9de715",
+      "red": {
+        "rc": 2,
+        "rss_kb": 261424.0,
+        "system": 0.27,
+        "user": 24.37,
+        "wall": 24.64,
+        "wall_observed": 24.67675493700017
+      }
+    }
+  ],
+  "native_counts": [
+    552,
+    1,
+    0,
+    0,
+    0
+  ],
+  "native_targets": 42,
+  "no_official_rank_claim": true,
+  "no_performance_claim_different_frontier": true,
+  "parent_binary": "82ebbce2278e54f82667e4d12793034acdf72f329b989e4605cf65473c9de715",
+  "promotion_basis": "actual-default original coverage gain; speed warrant separate",
+  "protected_controls": 61,
+  "qualified": true,
+  "singleton_add_prefix_accept": true,
+  "singleton_add_prefix_sha": "231655af734415d00fcc7dc83cffe7d96f97406d1d3cd93554ff49aa6de8e521",
+  "source_controls": 119,
+  "source_parent_binary": "c43b174abbad341e5b308d93cd66a28e42db9d9425796ed33b16c644e142ae8e",
+  "source_patch_sha": "a151dea2d61ac005f20c75f47aa42f7b1757592ef2143721e1a6c584c128c2a6",
+  "source_qualified": true,
+  "status": "PROMOTABLE_SUBSTITUTION_CERTIFICATE_COVERAGE",
+  "timing": {
+    "median_cpu_ratio": 0.7373564622526264,
+    "no_rank_claim": true,
+    "preset": "every candidate CPU sample beats every parent sample by more than1percent",
+    "rows": [
+      {
+        "arm": "candidate",
+        "binary_sha": "2003c831c32a8249e8524349bc169f3e491e9c84fb71b5fc8db9bce2a8583d01",
+        "input_sha": "8428d5d4282a608eb77e48ff62adace23212d9487ff9e86dc2e57af7c573d5f1",
+        "rc": 0,
+        "rss_kb": 102352.0,
+        "system": 0.08,
+        "user": 30.26,
+        "wall": 30.35,
+        "wall_observed": 30.382948949000138
+      },
+      {
+        "arm": "parent",
+        "binary_sha": "82ebbce2278e54f82667e4d12793034acdf72f329b989e4605cf65473c9de715",
+        "input_sha": "8428d5d4282a608eb77e48ff62adace23212d9487ff9e86dc2e57af7c573d5f1",
+        "rc": 0,
+        "rss_kb": 146308.0,
+        "system": 0.18,
+        "user": 40.82,
+        "wall": 41.01,
+        "wall_observed": 41.058758803000046
+      },
+      {
+        "arm": "parent",
+        "binary_sha": "82ebbce2278e54f82667e4d12793034acdf72f329b989e4605cf65473c9de715",
+        "input_sha": "8428d5d4282a608eb77e48ff62adace23212d9487ff9e86dc2e57af7c573d5f1",
+        "rc": 0,
+        "rss_kb": 146280.0,
+        "system": 0.15,
+        "user": 40.71,
+        "wall": 40.87,
+        "wall_observed": 40.911597050999944
+      },
+      {
+        "arm": "candidate",
+        "binary_sha": "2003c831c32a8249e8524349bc169f3e491e9c84fb71b5fc8db9bce2a8583d01",
+        "input_sha": "8428d5d4282a608eb77e48ff62adace23212d9487ff9e86dc2e57af7c573d5f1",
+        "rc": 0,
+        "rss_kb": 101688.0,
+        "system": 0.11,
+        "user": 29.91,
+        "wall": 30.03,
+        "wall_observed": 30.03634467400002
+      }
+    ],
+    "speed_win": true,
+    "status": "COMPLETE"
+  }
+}
