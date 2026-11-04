@@ -1,0 +1,603 @@
+NUCLEUS_SAMPLE:tag=conversion:n=4096:backtrace=   0: metatron_kernel::diagnostics::pulse
+   1: metatron_kernel::convert::convert_in_context_with_congruence
+   2: <metatron_kernel::typecheck::TypeChecker>::certified_data_spine_congruence
+   3: metatron_kernel::convert::convert_in_context_with_congruence
+   4: <metatron_kernel::typecheck::TypeChecker>::check_with_formation
+   5: <metatron_kernel::typecheck::TypeChecker>::infer_uncached
+   6: <metatron_kernel::typecheck::TypeChecker>::infer_in
+   7: <metatron_kernel::typecheck::TypeChecker>::check_with_formation
+   8: <metatron_kernel::typecheck::TypeChecker>::infer_uncached
+   9: <metatron_kernel::typecheck::TypeChecker>::infer_in
+  10: <metatron_kernel::typecheck::TypeChecker>::infer_uncached
+  11: <metatron_kernel::typecheck::TypeChecker>::infer_in
+  12: <metatron_kernel::typecheck::TypeChecker>::check_with_formation
+  13: <metatron_kernel::typecheck::TypeChecker>::infer_uncached
+  14: <metatron_kernel::typecheck::TypeChecker>::infer_in
+  15: <metatron_kernel::typecheck::TypeChecker>::check_with_formation
+  16: <metatron_kernel::typecheck::TypeChecker>::check_expected_lambda_in
+  17: <metatron_kernel::typecheck::TypeChecker>::check_with_formation
+  18: <metatron_kernel::typecheck::TypeChecker>::check_expected_lambda_in
+  19: <metatron_kernel::typecheck::TypeChecker>::check_with_formation
+  20: <metatron_kernel::typecheck::TypeChecker>::check_expected_lambda_in
+  21: <metatron_kernel::typecheck::TypeChecker>::check_with_formation
+  22: <metatron_kernel::typecheck::TypeChecker>::check_formed
+  23: metatron_kernel::checker::check_export_with_policy
+  24: metatron_kernel::checker::check_export
+  25: metatron_kernel::run::<alloc::io::buffered::bufreader::BufReader<std::io::stdio::StdinLock>>
+  26: std::sys::backtrace::__rust_begin_short_backtrace::<metatron_kernel::check_input, std::process::ExitCode>
+  27: <std::thread::lifecycle::spawn_unchecked<metatron_kernel::check_input, std::process::ExitCode>::{closure#1} as core::ops::function::FnOnce<()>>::call_once::{shim:vtable#0}
+  28: <std::sys::thread::unix::Thread>::new::thread_start
+  29: <unknown>
+  30: <unknown>
+
+NUCLEUS_SAMPLE:tag=machine-step:n=7262208:backtrace=   0: metatron_kernel::diagnostics::pulse
+   1: <metatron_kernel::machine::Machine>::expose_uncached_internal_with_pending
+   2: <metatron_kernel::machine::Machine>::expose_internal_with_pending
+   3: <metatron_kernel::typecheck::TypeChecker>::proof_terms_same_proposition
+   4: metatron_kernel::convert::convert_in_context_with_congruence
+   5: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+   6: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+   7: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+   8: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+   9: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+  10: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+  11: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+  12: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+  13: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+  14: <metatron_kernel::typecheck::TypeChecker>::certified_relevance_spine_congruence
+  15: metatron_kernel::convert::compare_values
+  16: metatron_kernel::convert::convert_in_context_with_congruence
+  17: <metatron_kernel::typecheck::TypeChecker>::checked_source_conversion
+  18: metatron_kernel::convert::compare_values
+  19: metatron_kernel::convert::convert_in_context_with_congruence
+  20: <metatron_kernel::typecheck::TypeChecker>::checked_source_conversion
+  21: metatron_kernel::convert::compare_values
+  22: metatron_kernel::convert::convert_in_context_with_congruence
+  23: <core::iter::adapters::zip::Zip<core::slice::iter::Iter<metatron_kernel::value::Closure>, core::slice::iter::Iter<metatron_kernel::value::Closure>> as core::iter::traits::double_ended::DoubleEndedIterator>::try_rfold::<(), core::iter::traits::iterator::Iterator::all::check<(&metatron_kernel::value::Closure, &metatron_kernel::value::Closure), metatron_kernel::convert::convert_in_context_with_congruence::{closure#0}>::{closure#0}, core::ops::control_flow::ControlFlow<()>>
+  24: metatron_kernel::convert::convert_in_context_with_congruence
+  25: metatron_kernel::convert::convert_in_context_with_congruence
+  26: <metatron_kernel::typecheck::TypeChecker>::checked_source_conversion
+  27: metatron_kernel::convert::compare_values
+  28: metatron_kernel::convert::convert_in_context_with_congruence
+  29: <core::iter::adapters::zip::Zip<core::slice::iter::Iter<metatron_kernel::value::Closure>, core::slice::iter::Iter<metatron_kernel::value::Closure>> as core::iter::traits::double_ended::DoubleEndedIterator>::try_rfold::<(), core::iter::traits::iterator::Iterator::all::check<(&metatron_kernel::value::Closure, &metatron_kernel::value::Closure), metatron_kernel::convert::convert_in_context_with_congruence::{closure#0}>::{closure#0}, core::ops::control_flow::ControlFlow<()>>
+  30: metatron_kernel::convert::convert_in_context_with_congruence
+  31: <core::iter::adapters::zip::Zip<core::slice::iter::Iter<metatron_kernel::value::Closure>, core::slice::iter::Iter<metatron_kernel::value::Closure>> as core::iter::traits::double_ended::DoubleEndedIterator>::try_rfold::<(), core::iter::traits::iterator::Iterator::all::check<(&metatron_kernel::value::Closure, &metatron_kernel::value::Closure), metatron_kernel::convert::convert_in_context_with_congruence::{closure#0}>::{closure#0}, core::ops::control_flow::ControlFlow<()>>
+  32: metatron_kernel::convert::convert_in_context_with_congruence
+  33: <metatron_kernel::typecheck::TypeChecker>::checked_source_conversion
+  34: metatron_kernel::convert::compare_values
+  35: metatron_kernel::convert::convert_in_context_with_congruence
+  36: <core::iter::adapters::zip::Zip<core::slice::iter::Iter<metatron_kernel::value::Closure>, core::slice::iter::Iter<metatron_kernel::value::Closure>> as core::iter::traits::iterator::Iterator>::try_fold::<(), core::iter::traits::iterator::Iterator::all::check<(&metatron_kernel::value::Closure, &metatron_kernel::value::Closure), metatron_kernel::convert::compare_values::{closure#0}>::{closure#0}, core::ops::control_flow::ControlFlow<()>>
+  37: metatron_kernel::convert::compare_values
+  38: metatron_kernel::convert::convert_in_context_with_congruence
+  39: <core::iter::adapters::zip::Zip<core::slice::iter::Iter<metatron_kernel::value::Closure>, core::slice::iter::Iter<metatron_kernel::value::Closure>> as core::iter::traits::double_ended::DoubleEndedIterator>::try_rfold::<(), core::iter::traits::iterator::Iterator::all::check<(&metatron_kernel::value::Closure, &metatron_kernel::value::Closure), metatron_kernel::convert::convert_in_context_with_congruence::{closure#0}>::{closure#0}, core::ops::control_flow::ControlFlow<()>>
+  40: metatron_kernel::convert::convert_in_context_with_congruence
+  41: <metatron_kernel::typecheck::TypeChecker>::certified_data_spine_congruence
+  42: metatron_kernel::convert::convert_in_context_with_congruence
+  43: <metatron_kernel::typecheck::TypeChecker>::check_with_formation
+  44: <metatron_kernel::typecheck::TypeChecker>::check_expected_lambda_in
+  45: <metatron_kernel::typecheck::TypeChecker>::check_with_formation
+  46: <metatron_kernel::typecheck::TypeChecker>::check_expected_lambda_in
+  47: <metatron_kernel::typecheck::TypeChecker>::check_with_formation
+  48: <metatron_kernel::typecheck::TypeChecker>::check_expected_lambda_in
+  49: <metatron_kernel::typecheck::TypeChecker>::check_with_formation
+  50: <metatron_kernel::typecheck::TypeChecker>::check_formed
+  51: metatron_kernel::checker::check_export_with_policy
+  52: metatron_kernel::checker::check_export
+  53: metatron_kernel::run::<alloc::io::buffered::bufreader::BufReader<std::io::stdio::StdinLock>>
+  54: std::sys::backtrace::__rust_begin_short_backtrace::<metatron_kernel::check_input, std::process::ExitCode>
+  55: <std::thread::lifecycle::spawn_unchecked<metatron_kernel::check_input, std::process::ExitCode>::{closure#1} as core::ops::function::FnOnce<()>>::call_once::{shim:vtable#0}
+  56: <std::sys::thread::unix::Thread>::new::thread_start
+  57: <unknown>
+  58: <unknown>
+
+NUCLEUS_SAMPLE:tag=machine-step:n=13185024:backtrace=   0: metatron_kernel::diagnostics::pulse
+   1: <metatron_kernel::machine::Machine>::expose_uncached_internal_with_pending
+   2: <metatron_kernel::machine::Machine>::expose_internal_with_pending
+   3: <metatron_kernel::typecheck::TypeChecker>::proof_terms_same_proposition
+   4: metatron_kernel::convert::convert_in_context_with_congruence
+   5: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+   6: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+   7: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+   8: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+   9: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+  10: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+  11: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+  12: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+  13: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+  14: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+  15: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+  16: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+  17: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+  18: <metatron_kernel::typecheck::TypeChecker>::certified_relevance_spine_congruence
+  19: metatron_kernel::convert::compare_values
+  20: metatron_kernel::convert::convert_in_context_with_congruence
+  21: <core::iter::adapters::zip::Zip<core::slice::iter::Iter<metatron_kernel::value::Closure>, core::slice::iter::Iter<metatron_kernel::value::Closure>> as core::iter::traits::double_ended::DoubleEndedIterator>::try_rfold::<(), core::iter::traits::iterator::Iterator::all::check<(&metatron_kernel::value::Closure, &metatron_kernel::value::Closure), metatron_kernel::convert::convert_in_context_with_congruence::{closure#0}>::{closure#0}, core::ops::control_flow::ControlFlow<()>>
+  22: metatron_kernel::convert::convert_in_context_with_congruence
+  23: <metatron_kernel::typecheck::TypeChecker>::checked_source_conversion
+  24: metatron_kernel::convert::compare_values
+  25: metatron_kernel::convert::convert_in_context_with_congruence
+  26: <metatron_kernel::typecheck::TypeChecker>::checked_source_conversion
+  27: metatron_kernel::convert::compare_values
+  28: metatron_kernel::convert::convert_in_context_with_congruence
+  29: metatron_kernel::convert::convert_in_context_with_congruence
+  30: <metatron_kernel::typecheck::TypeChecker>::checked_source_conversion
+  31: metatron_kernel::convert::compare_values
+  32: metatron_kernel::convert::convert_in_context_with_congruence
+  33: metatron_kernel::convert::compare_values
+  34: metatron_kernel::convert::convert_in_context_with_congruence
+  35: <core::iter::adapters::zip::Zip<core::slice::iter::Iter<metatron_kernel::value::Closure>, core::slice::iter::Iter<metatron_kernel::value::Closure>> as core::iter::traits::double_ended::DoubleEndedIterator>::try_rfold::<(), core::iter::traits::iterator::Iterator::all::check<(&metatron_kernel::value::Closure, &metatron_kernel::value::Closure), metatron_kernel::convert::convert_in_context_with_congruence::{closure#0}>::{closure#0}, core::ops::control_flow::ControlFlow<()>>
+  36: metatron_kernel::convert::convert_in_context_with_congruence
+  37: <metatron_kernel::typecheck::TypeChecker>::checked_source_conversion
+  38: metatron_kernel::convert::compare_values
+  39: metatron_kernel::convert::convert_in_context_with_congruence
+  40: <core::iter::adapters::zip::Zip<core::slice::iter::Iter<metatron_kernel::value::Closure>, core::slice::iter::Iter<metatron_kernel::value::Closure>> as core::iter::traits::iterator::Iterator>::try_fold::<(), core::iter::traits::iterator::Iterator::all::check<(&metatron_kernel::value::Closure, &metatron_kernel::value::Closure), metatron_kernel::convert::compare_values::{closure#0}>::{closure#0}, core::ops::control_flow::ControlFlow<()>>
+  41: metatron_kernel::convert::compare_values
+  42: metatron_kernel::convert::convert_in_context_with_congruence
+  43: <core::iter::adapters::zip::Zip<core::slice::iter::Iter<metatron_kernel::value::Closure>, core::slice::iter::Iter<metatron_kernel::value::Closure>> as core::iter::traits::double_ended::DoubleEndedIterator>::try_rfold::<(), core::iter::traits::iterator::Iterator::all::check<(&metatron_kernel::value::Closure, &metatron_kernel::value::Closure), metatron_kernel::convert::convert_in_context_with_congruence::{closure#0}>::{closure#0}, core::ops::control_flow::ControlFlow<()>>
+  44: metatron_kernel::convert::convert_in_context_with_congruence
+  45: <metatron_kernel::typecheck::TypeChecker>::certified_data_spine_congruence
+  46: metatron_kernel::convert::convert_in_context_with_congruence
+  47: <metatron_kernel::typecheck::TypeChecker>::check_with_formation
+  48: <metatron_kernel::typecheck::TypeChecker>::check_expected_lambda_in
+  49: <metatron_kernel::typecheck::TypeChecker>::check_with_formation
+  50: <metatron_kernel::typecheck::TypeChecker>::check_expected_lambda_in
+  51: <metatron_kernel::typecheck::TypeChecker>::check_with_formation
+  52: <metatron_kernel::typecheck::TypeChecker>::check_expected_lambda_in
+  53: <metatron_kernel::typecheck::TypeChecker>::check_with_formation
+  54: <metatron_kernel::typecheck::TypeChecker>::check_formed
+  55: metatron_kernel::checker::check_export_with_policy
+  56: metatron_kernel::checker::check_export
+  57: metatron_kernel::run::<alloc::io::buffered::bufreader::BufReader<std::io::stdio::StdinLock>>
+  58: std::sys::backtrace::__rust_begin_short_backtrace::<metatron_kernel::check_input, std::process::ExitCode>
+  59: <std::thread::lifecycle::spawn_unchecked<metatron_kernel::check_input, std::process::ExitCode>::{closure#1} as core::ops::function::FnOnce<()>>::call_once::{shim:vtable#0}
+  60: <std::sys::thread::unix::Thread>::new::thread_start
+  61: <unknown>
+  62: <unknown>
+
+NUCLEUS_SAMPLE:tag=type-step:n=19419136:backtrace=   0: metatron_kernel::diagnostics::pulse
+   1: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+   2: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+   3: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+   4: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+   5: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+   6: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+   7: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+   8: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+   9: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+  10: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+  11: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+  12: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+  13: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+  14: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+  15: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+  16: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+  17: <metatron_kernel::typecheck::TypeChecker>::certified_relevance_spine_congruence
+  18: metatron_kernel::convert::compare_values
+  19: metatron_kernel::convert::convert_in_context_with_congruence
+  20: <metatron_kernel::typecheck::TypeChecker>::checked_source_conversion
+  21: metatron_kernel::convert::compare_values
+  22: metatron_kernel::convert::convert_in_context_with_congruence
+  23: metatron_kernel::convert::compare_values
+  24: metatron_kernel::convert::convert_in_context_with_congruence
+  25: <metatron_kernel::typecheck::TypeChecker>::certified_relevance_spine_congruence
+  26: metatron_kernel::convert::compare_values
+  27: metatron_kernel::convert::convert_in_context_with_congruence
+  28: <metatron_kernel::typecheck::TypeChecker>::checked_source_conversion
+  29: metatron_kernel::convert::compare_values
+  30: metatron_kernel::convert::convert_in_context_with_congruence
+  31: metatron_kernel::convert::convert_in_context_with_congruence
+  32: <metatron_kernel::typecheck::TypeChecker>::checked_source_conversion
+  33: metatron_kernel::convert::compare_values
+  34: metatron_kernel::convert::convert_in_context_with_congruence
+  35: <metatron_kernel::typecheck::TypeChecker>::certified_relevance_spine_congruence
+  36: metatron_kernel::convert::compare_values
+  37: metatron_kernel::convert::convert_in_context_with_congruence
+  38: <metatron_kernel::typecheck::TypeChecker>::checked_source_conversion
+  39: metatron_kernel::convert::compare_values
+  40: metatron_kernel::convert::convert_in_context_with_congruence
+  41: <core::iter::adapters::zip::Zip<core::slice::iter::Iter<metatron_kernel::value::Closure>, core::slice::iter::Iter<metatron_kernel::value::Closure>> as core::iter::traits::double_ended::DoubleEndedIterator>::try_rfold::<(), core::iter::traits::iterator::Iterator::all::check<(&metatron_kernel::value::Closure, &metatron_kernel::value::Closure), metatron_kernel::convert::convert_in_context_with_congruence::{closure#0}>::{closure#0}, core::ops::control_flow::ControlFlow<()>>
+  42: metatron_kernel::convert::convert_in_context_with_congruence
+  43: <metatron_kernel::typecheck::TypeChecker>::checked_source_conversion
+  44: metatron_kernel::convert::compare_values
+  45: metatron_kernel::convert::convert_in_context_with_congruence
+  46: <core::iter::adapters::zip::Zip<core::slice::iter::Iter<metatron_kernel::value::Closure>, core::slice::iter::Iter<metatron_kernel::value::Closure>> as core::iter::traits::iterator::Iterator>::try_fold::<(), core::iter::traits::iterator::Iterator::all::check<(&metatron_kernel::value::Closure, &metatron_kernel::value::Closure), metatron_kernel::convert::compare_values::{closure#0}>::{closure#0}, core::ops::control_flow::ControlFlow<()>>
+  47: metatron_kernel::convert::compare_values
+  48: metatron_kernel::convert::convert_in_context_with_congruence
+  49: <core::iter::adapters::zip::Zip<core::slice::iter::Iter<metatron_kernel::value::Closure>, core::slice::iter::Iter<metatron_kernel::value::Closure>> as core::iter::traits::double_ended::DoubleEndedIterator>::try_rfold::<(), core::iter::traits::iterator::Iterator::all::check<(&metatron_kernel::value::Closure, &metatron_kernel::value::Closure), metatron_kernel::convert::convert_in_context_with_congruence::{closure#0}>::{closure#0}, core::ops::control_flow::ControlFlow<()>>
+  50: metatron_kernel::convert::convert_in_context_with_congruence
+  51: <metatron_kernel::typecheck::TypeChecker>::certified_data_spine_congruence
+  52: metatron_kernel::convert::convert_in_context_with_congruence
+  53: <metatron_kernel::typecheck::TypeChecker>::check_with_formation
+  54: <metatron_kernel::typecheck::TypeChecker>::check_expected_lambda_in
+  55: <metatron_kernel::typecheck::TypeChecker>::check_with_formation
+  56: <metatron_kernel::typecheck::TypeChecker>::check_expected_lambda_in
+  57: <metatron_kernel::typecheck::TypeChecker>::check_with_formation
+  58: <metatron_kernel::typecheck::TypeChecker>::check_expected_lambda_in
+  59: <metatron_kernel::typecheck::TypeChecker>::check_with_formation
+  60: <metatron_kernel::typecheck::TypeChecker>::check_formed
+  61: metatron_kernel::checker::check_export_with_policy
+  62: metatron_kernel::checker::check_export
+  63: metatron_kernel::run::<alloc::io::buffered::bufreader::BufReader<std::io::stdio::StdinLock>>
+  64: std::sys::backtrace::__rust_begin_short_backtrace::<metatron_kernel::check_input, std::process::ExitCode>
+  65: <std::thread::lifecycle::spawn_unchecked<metatron_kernel::check_input, std::process::ExitCode>::{closure#1} as core::ops::function::FnOnce<()>>::call_once::{shim:vtable#0}
+  66: <std::sys::thread::unix::Thread>::new::thread_start
+  67: <unknown>
+  68: <unknown>
+
+NUCLEUS_SAMPLE:tag=type-step:n=25939968:backtrace=   0: metatron_kernel::diagnostics::pulse
+   1: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+   2: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+   3: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+   4: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+   5: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+   6: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+   7: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+   8: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+   9: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+  10: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+  11: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+  12: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+  13: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+  14: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+  15: <metatron_kernel::typecheck::TypeChecker>::certified_relevance_spine_congruence
+  16: metatron_kernel::convert::compare_values
+  17: metatron_kernel::convert::convert_in_context_with_congruence
+  18: <metatron_kernel::typecheck::TypeChecker>::checked_source_conversion
+  19: metatron_kernel::convert::compare_values
+  20: metatron_kernel::convert::convert_in_context_with_congruence
+  21: <metatron_kernel::typecheck::TypeChecker>::checked_source_conversion
+  22: metatron_kernel::convert::compare_values
+  23: metatron_kernel::convert::convert_in_context_with_congruence
+  24: metatron_kernel::convert::compare_values
+  25: metatron_kernel::convert::convert_in_context_with_congruence
+  26: metatron_kernel::convert::convert_in_context_with_congruence
+  27: <metatron_kernel::typecheck::TypeChecker>::checked_source_conversion
+  28: metatron_kernel::convert::compare_values
+  29: metatron_kernel::convert::convert_in_context_with_congruence
+  30: <metatron_kernel::typecheck::TypeChecker>::certified_relevance_spine_congruence
+  31: metatron_kernel::convert::compare_values
+  32: metatron_kernel::convert::convert_in_context_with_congruence
+  33: <metatron_kernel::typecheck::TypeChecker>::checked_source_conversion
+  34: metatron_kernel::convert::compare_values
+  35: metatron_kernel::convert::convert_in_context_with_congruence
+  36: <core::iter::adapters::zip::Zip<core::slice::iter::Iter<metatron_kernel::value::Closure>, core::slice::iter::Iter<metatron_kernel::value::Closure>> as core::iter::traits::double_ended::DoubleEndedIterator>::try_rfold::<(), core::iter::traits::iterator::Iterator::all::check<(&metatron_kernel::value::Closure, &metatron_kernel::value::Closure), metatron_kernel::convert::convert_in_context_with_congruence::{closure#0}>::{closure#0}, core::ops::control_flow::ControlFlow<()>>
+  37: metatron_kernel::convert::convert_in_context_with_congruence
+  38: <metatron_kernel::typecheck::TypeChecker>::checked_source_conversion
+  39: metatron_kernel::convert::compare_values
+  40: metatron_kernel::convert::convert_in_context_with_congruence
+  41: <core::iter::adapters::zip::Zip<core::slice::iter::Iter<metatron_kernel::value::Closure>, core::slice::iter::Iter<metatron_kernel::value::Closure>> as core::iter::traits::iterator::Iterator>::try_fold::<(), core::iter::traits::iterator::Iterator::all::check<(&metatron_kernel::value::Closure, &metatron_kernel::value::Closure), metatron_kernel::convert::compare_values::{closure#0}>::{closure#0}, core::ops::control_flow::ControlFlow<()>>
+  42: metatron_kernel::convert::compare_values
+  43: metatron_kernel::convert::convert_in_context_with_congruence
+  44: <core::iter::adapters::zip::Zip<core::slice::iter::Iter<metatron_kernel::value::Closure>, core::slice::iter::Iter<metatron_kernel::value::Closure>> as core::iter::traits::double_ended::DoubleEndedIterator>::try_rfold::<(), core::iter::traits::iterator::Iterator::all::check<(&metatron_kernel::value::Closure, &metatron_kernel::value::Closure), metatron_kernel::convert::convert_in_context_with_congruence::{closure#0}>::{closure#0}, core::ops::control_flow::ControlFlow<()>>
+  45: metatron_kernel::convert::convert_in_context_with_congruence
+  46: <metatron_kernel::typecheck::TypeChecker>::certified_data_spine_congruence
+  47: metatron_kernel::convert::convert_in_context_with_congruence
+  48: <metatron_kernel::typecheck::TypeChecker>::check_with_formation
+  49: <metatron_kernel::typecheck::TypeChecker>::check_expected_lambda_in
+  50: <metatron_kernel::typecheck::TypeChecker>::check_with_formation
+  51: <metatron_kernel::typecheck::TypeChecker>::check_expected_lambda_in
+  52: <metatron_kernel::typecheck::TypeChecker>::check_with_formation
+  53: <metatron_kernel::typecheck::TypeChecker>::check_expected_lambda_in
+  54: <metatron_kernel::typecheck::TypeChecker>::check_with_formation
+  55: <metatron_kernel::typecheck::TypeChecker>::check_formed
+  56: metatron_kernel::checker::check_export_with_policy
+  57: metatron_kernel::checker::check_export
+  58: metatron_kernel::run::<alloc::io::buffered::bufreader::BufReader<std::io::stdio::StdinLock>>
+  59: std::sys::backtrace::__rust_begin_short_backtrace::<metatron_kernel::check_input, std::process::ExitCode>
+  60: <std::thread::lifecycle::spawn_unchecked<metatron_kernel::check_input, std::process::ExitCode>::{closure#1} as core::ops::function::FnOnce<()>>::call_once::{shim:vtable#0}
+  61: <std::sys::thread::unix::Thread>::new::thread_start
+  62: <unknown>
+  63: <unknown>
+
+NUCLEUS_SAMPLE:tag=type-step:n=32428032:backtrace=   0: metatron_kernel::diagnostics::pulse
+   1: <metatron_kernel::typecheck::TypeChecker>::exact_source_capture_identity::root_source
+   2: <metatron_kernel::typecheck::TypeChecker>::exact_source_capture_identity
+   3: metatron_kernel::convert::convert_in_context_with_congruence
+   4: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+   5: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+   6: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+   7: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+   8: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+   9: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+  10: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+  11: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+  12: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+  13: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+  14: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+  15: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+  16: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+  17: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+  18: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+  19: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+  20: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+  21: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+  22: metatron_kernel::convert::convert_in_context_with_congruence
+  23: <metatron_kernel::typecheck::TypeChecker>::checked_source_conversion
+  24: metatron_kernel::convert::compare_values
+  25: metatron_kernel::convert::convert_in_context_with_congruence
+  26: <metatron_kernel::typecheck::TypeChecker>::certified_relevance_spine_congruence
+  27: metatron_kernel::convert::compare_values
+  28: metatron_kernel::convert::convert_in_context_with_congruence
+  29: <metatron_kernel::typecheck::TypeChecker>::checked_source_conversion
+  30: metatron_kernel::convert::compare_values
+  31: metatron_kernel::convert::convert_in_context_with_congruence
+  32: <metatron_kernel::typecheck::TypeChecker>::checked_source_conversion
+  33: metatron_kernel::convert::compare_values
+  34: metatron_kernel::convert::convert_in_context_with_congruence
+  35: <core::iter::adapters::zip::Zip<core::slice::iter::Iter<metatron_kernel::value::Closure>, core::slice::iter::Iter<metatron_kernel::value::Closure>> as core::iter::traits::double_ended::DoubleEndedIterator>::try_rfold::<(), core::iter::traits::iterator::Iterator::all::check<(&metatron_kernel::value::Closure, &metatron_kernel::value::Closure), metatron_kernel::convert::convert_in_context_with_congruence::{closure#0}>::{closure#0}, core::ops::control_flow::ControlFlow<()>>
+  36: metatron_kernel::convert::convert_in_context_with_congruence
+  37: <metatron_kernel::typecheck::TypeChecker>::checked_source_conversion
+  38: metatron_kernel::convert::compare_values
+  39: metatron_kernel::convert::convert_in_context_with_congruence
+  40: <core::iter::adapters::zip::Zip<core::slice::iter::Iter<metatron_kernel::value::Closure>, core::slice::iter::Iter<metatron_kernel::value::Closure>> as core::iter::traits::iterator::Iterator>::try_fold::<(), core::iter::traits::iterator::Iterator::all::check<(&metatron_kernel::value::Closure, &metatron_kernel::value::Closure), metatron_kernel::convert::compare_values::{closure#0}>::{closure#0}, core::ops::control_flow::ControlFlow<()>>
+  41: metatron_kernel::convert::compare_values
+  42: metatron_kernel::convert::convert_in_context_with_congruence
+  43: <core::iter::adapters::zip::Zip<core::slice::iter::Iter<metatron_kernel::value::Closure>, core::slice::iter::Iter<metatron_kernel::value::Closure>> as core::iter::traits::double_ended::DoubleEndedIterator>::try_rfold::<(), core::iter::traits::iterator::Iterator::all::check<(&metatron_kernel::value::Closure, &metatron_kernel::value::Closure), metatron_kernel::convert::convert_in_context_with_congruence::{closure#0}>::{closure#0}, core::ops::control_flow::ControlFlow<()>>
+  44: metatron_kernel::convert::convert_in_context_with_congruence
+  45: <metatron_kernel::typecheck::TypeChecker>::certified_data_spine_congruence
+  46: metatron_kernel::convert::convert_in_context_with_congruence
+  47: <metatron_kernel::typecheck::TypeChecker>::check_with_formation
+  48: <metatron_kernel::typecheck::TypeChecker>::check_expected_lambda_in
+  49: <metatron_kernel::typecheck::TypeChecker>::check_with_formation
+  50: <metatron_kernel::typecheck::TypeChecker>::check_expected_lambda_in
+  51: <metatron_kernel::typecheck::TypeChecker>::check_with_formation
+  52: <metatron_kernel::typecheck::TypeChecker>::check_expected_lambda_in
+  53: <metatron_kernel::typecheck::TypeChecker>::check_with_formation
+  54: <metatron_kernel::typecheck::TypeChecker>::check_formed
+  55: metatron_kernel::checker::check_export_with_policy
+  56: metatron_kernel::checker::check_export
+  57: metatron_kernel::run::<alloc::io::buffered::bufreader::BufReader<std::io::stdio::StdinLock>>
+  58: std::sys::backtrace::__rust_begin_short_backtrace::<metatron_kernel::check_input, std::process::ExitCode>
+  59: <std::thread::lifecycle::spawn_unchecked<metatron_kernel::check_input, std::process::ExitCode>::{closure#1} as core::ops::function::FnOnce<()>>::call_once::{shim:vtable#0}
+  60: <std::sys::thread::unix::Thread>::new::thread_start
+  61: <unknown>
+  62: <unknown>
+
+NUCLEUS_SAMPLE:tag=conversion:n=38404096:backtrace=   0: metatron_kernel::diagnostics::pulse
+   1: metatron_kernel::convert::convert_in_context_with_congruence
+   2: <core::iter::adapters::zip::Zip<core::slice::iter::Iter<metatron_kernel::value::Closure>, core::slice::iter::Iter<metatron_kernel::value::Closure>> as core::iter::traits::double_ended::DoubleEndedIterator>::try_rfold::<(), core::iter::traits::iterator::Iterator::all::check<(&metatron_kernel::value::Closure, &metatron_kernel::value::Closure), metatron_kernel::convert::convert_in_context_with_congruence::{closure#0}>::{closure#0}, core::ops::control_flow::ControlFlow<()>>
+   3: metatron_kernel::convert::convert_in_context_with_congruence
+   4: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+   5: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+   6: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+   7: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+   8: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+   9: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+  10: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+  11: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+  12: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+  13: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+  14: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+  15: <metatron_kernel::typecheck::TypeChecker>::certified_relevance_spine_congruence
+  16: metatron_kernel::convert::compare_values
+  17: metatron_kernel::convert::convert_in_context_with_congruence
+  18: <metatron_kernel::typecheck::TypeChecker>::checked_source_conversion
+  19: metatron_kernel::convert::compare_values
+  20: metatron_kernel::convert::convert_in_context_with_congruence
+  21: <metatron_kernel::typecheck::TypeChecker>::checked_source_conversion
+  22: metatron_kernel::convert::compare_values
+  23: metatron_kernel::convert::convert_in_context_with_congruence
+  24: <metatron_kernel::typecheck::TypeChecker>::checked_source_conversion
+  25: metatron_kernel::convert::compare_values
+  26: metatron_kernel::convert::convert_in_context_with_congruence
+  27: metatron_kernel::convert::convert_in_context_with_congruence
+  28: <metatron_kernel::typecheck::TypeChecker>::checked_source_conversion
+  29: metatron_kernel::convert::compare_values
+  30: metatron_kernel::convert::convert_in_context_with_congruence
+  31: <metatron_kernel::typecheck::TypeChecker>::checked_source_conversion
+  32: metatron_kernel::convert::compare_values
+  33: metatron_kernel::convert::convert_in_context_with_congruence
+  34: <core::iter::adapters::zip::Zip<core::slice::iter::Iter<metatron_kernel::value::Closure>, core::slice::iter::Iter<metatron_kernel::value::Closure>> as core::iter::traits::double_ended::DoubleEndedIterator>::try_rfold::<(), core::iter::traits::iterator::Iterator::all::check<(&metatron_kernel::value::Closure, &metatron_kernel::value::Closure), metatron_kernel::convert::convert_in_context_with_congruence::{closure#0}>::{closure#0}, core::ops::control_flow::ControlFlow<()>>
+  35: metatron_kernel::convert::convert_in_context_with_congruence
+  36: <metatron_kernel::typecheck::TypeChecker>::checked_source_conversion
+  37: metatron_kernel::convert::compare_values
+  38: metatron_kernel::convert::convert_in_context_with_congruence
+  39: <core::iter::adapters::zip::Zip<core::slice::iter::Iter<metatron_kernel::value::Closure>, core::slice::iter::Iter<metatron_kernel::value::Closure>> as core::iter::traits::iterator::Iterator>::try_fold::<(), core::iter::traits::iterator::Iterator::all::check<(&metatron_kernel::value::Closure, &metatron_kernel::value::Closure), metatron_kernel::convert::compare_values::{closure#0}>::{closure#0}, core::ops::control_flow::ControlFlow<()>>
+  40: metatron_kernel::convert::compare_values
+  41: metatron_kernel::convert::convert_in_context_with_congruence
+  42: <core::iter::adapters::zip::Zip<core::slice::iter::Iter<metatron_kernel::value::Closure>, core::slice::iter::Iter<metatron_kernel::value::Closure>> as core::iter::traits::double_ended::DoubleEndedIterator>::try_rfold::<(), core::iter::traits::iterator::Iterator::all::check<(&metatron_kernel::value::Closure, &metatron_kernel::value::Closure), metatron_kernel::convert::convert_in_context_with_congruence::{closure#0}>::{closure#0}, core::ops::control_flow::ControlFlow<()>>
+  43: metatron_kernel::convert::convert_in_context_with_congruence
+  44: <metatron_kernel::typecheck::TypeChecker>::certified_data_spine_congruence
+  45: metatron_kernel::convert::convert_in_context_with_congruence
+  46: <metatron_kernel::typecheck::TypeChecker>::check_with_formation
+  47: <metatron_kernel::typecheck::TypeChecker>::check_expected_lambda_in
+  48: <metatron_kernel::typecheck::TypeChecker>::check_with_formation
+  49: <metatron_kernel::typecheck::TypeChecker>::check_expected_lambda_in
+  50: <metatron_kernel::typecheck::TypeChecker>::check_with_formation
+  51: <metatron_kernel::typecheck::TypeChecker>::check_expected_lambda_in
+  52: <metatron_kernel::typecheck::TypeChecker>::check_with_formation
+  53: <metatron_kernel::typecheck::TypeChecker>::check_formed
+  54: metatron_kernel::checker::check_export_with_policy
+  55: metatron_kernel::checker::check_export
+  56: metatron_kernel::run::<alloc::io::buffered::bufreader::BufReader<std::io::stdio::StdinLock>>
+  57: std::sys::backtrace::__rust_begin_short_backtrace::<metatron_kernel::check_input, std::process::ExitCode>
+  58: <std::thread::lifecycle::spawn_unchecked<metatron_kernel::check_input, std::process::ExitCode>::{closure#1} as core::ops::function::FnOnce<()>>::call_once::{shim:vtable#0}
+  59: <std::sys::thread::unix::Thread>::new::thread_start
+  60: <unknown>
+  61: <unknown>
+
+NUCLEUS_SAMPLE:tag=type-step:n=45002752:backtrace=   0: metatron_kernel::diagnostics::pulse
+   1: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+   2: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+   3: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+   4: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+   5: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+   6: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+   7: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+   8: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+   9: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+  10: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+  11: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+  12: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+  13: <metatron_kernel::typecheck::TypeChecker>::certified_relevance_spine_congruence
+  14: metatron_kernel::convert::compare_values
+  15: metatron_kernel::convert::convert_in_context_with_congruence
+  16: <metatron_kernel::typecheck::TypeChecker>::checked_source_conversion
+  17: metatron_kernel::convert::compare_values
+  18: metatron_kernel::convert::convert_in_context_with_congruence
+  19: <core::iter::adapters::zip::Zip<core::slice::iter::Iter<metatron_kernel::value::Closure>, core::slice::iter::Iter<metatron_kernel::value::Closure>> as core::iter::traits::double_ended::DoubleEndedIterator>::try_rfold::<(), core::iter::traits::iterator::Iterator::all::check<(&metatron_kernel::value::Closure, &metatron_kernel::value::Closure), metatron_kernel::convert::convert_in_context_with_congruence::{closure#0}>::{closure#0}, core::ops::control_flow::ControlFlow<()>>
+  20: metatron_kernel::convert::convert_in_context_with_congruence
+  21: <metatron_kernel::typecheck::TypeChecker>::checked_source_conversion
+  22: metatron_kernel::convert::compare_values
+  23: metatron_kernel::convert::convert_in_context_with_congruence
+  24: metatron_kernel::convert::convert_in_context_with_congruence
+  25: <metatron_kernel::typecheck::TypeChecker>::checked_source_conversion
+  26: metatron_kernel::convert::compare_values
+  27: metatron_kernel::convert::convert_in_context_with_congruence
+  28: <metatron_kernel::typecheck::TypeChecker>::certified_relevance_spine_congruence
+  29: metatron_kernel::convert::compare_values
+  30: metatron_kernel::convert::convert_in_context_with_congruence
+  31: <metatron_kernel::typecheck::TypeChecker>::checked_source_conversion
+  32: metatron_kernel::convert::compare_values
+  33: metatron_kernel::convert::convert_in_context_with_congruence
+  34: <core::iter::adapters::zip::Zip<core::slice::iter::Iter<metatron_kernel::value::Closure>, core::slice::iter::Iter<metatron_kernel::value::Closure>> as core::iter::traits::double_ended::DoubleEndedIterator>::try_rfold::<(), core::iter::traits::iterator::Iterator::all::check<(&metatron_kernel::value::Closure, &metatron_kernel::value::Closure), metatron_kernel::convert::convert_in_context_with_congruence::{closure#0}>::{closure#0}, core::ops::control_flow::ControlFlow<()>>
+  35: metatron_kernel::convert::convert_in_context_with_congruence
+  36: <metatron_kernel::typecheck::TypeChecker>::checked_source_conversion
+  37: metatron_kernel::convert::compare_values
+  38: metatron_kernel::convert::convert_in_context_with_congruence
+  39: <core::iter::adapters::zip::Zip<core::slice::iter::Iter<metatron_kernel::value::Closure>, core::slice::iter::Iter<metatron_kernel::value::Closure>> as core::iter::traits::iterator::Iterator>::try_fold::<(), core::iter::traits::iterator::Iterator::all::check<(&metatron_kernel::value::Closure, &metatron_kernel::value::Closure), metatron_kernel::convert::compare_values::{closure#0}>::{closure#0}, core::ops::control_flow::ControlFlow<()>>
+  40: metatron_kernel::convert::compare_values
+  41: metatron_kernel::convert::convert_in_context_with_congruence
+  42: <core::iter::adapters::zip::Zip<core::slice::iter::Iter<metatron_kernel::value::Closure>, core::slice::iter::Iter<metatron_kernel::value::Closure>> as core::iter::traits::double_ended::DoubleEndedIterator>::try_rfold::<(), core::iter::traits::iterator::Iterator::all::check<(&metatron_kernel::value::Closure, &metatron_kernel::value::Closure), metatron_kernel::convert::convert_in_context_with_congruence::{closure#0}>::{closure#0}, core::ops::control_flow::ControlFlow<()>>
+  43: metatron_kernel::convert::convert_in_context_with_congruence
+  44: <metatron_kernel::typecheck::TypeChecker>::certified_data_spine_congruence
+  45: metatron_kernel::convert::convert_in_context_with_congruence
+  46: <metatron_kernel::typecheck::TypeChecker>::check_with_formation
+  47: <metatron_kernel::typecheck::TypeChecker>::check_expected_lambda_in
+  48: <metatron_kernel::typecheck::TypeChecker>::check_with_formation
+  49: <metatron_kernel::typecheck::TypeChecker>::check_expected_lambda_in
+  50: <metatron_kernel::typecheck::TypeChecker>::check_with_formation
+  51: <metatron_kernel::typecheck::TypeChecker>::check_expected_lambda_in
+  52: <metatron_kernel::typecheck::TypeChecker>::check_with_formation
+  53: <metatron_kernel::typecheck::TypeChecker>::check_formed
+  54: metatron_kernel::checker::check_export_with_policy
+  55: metatron_kernel::checker::check_export
+  56: metatron_kernel::run::<alloc::io::buffered::bufreader::BufReader<std::io::stdio::StdinLock>>
+  57: std::sys::backtrace::__rust_begin_short_backtrace::<metatron_kernel::check_input, std::process::ExitCode>
+  58: <std::thread::lifecycle::spawn_unchecked<metatron_kernel::check_input, std::process::ExitCode>::{closure#1} as core::ops::function::FnOnce<()>>::call_once::{shim:vtable#0}
+  59: <std::sys::thread::unix::Thread>::new::thread_start
+  60: <unknown>
+  61: <unknown>
+
+NUCLEUS_SAMPLE:tag=machine-step:n=51576832:backtrace=   0: metatron_kernel::diagnostics::pulse
+   1: <metatron_kernel::machine::Machine>::expose_uncached_internal_with_pending
+   2: <metatron_kernel::machine::Machine>::expose_internal_with_pending
+   3: <metatron_kernel::typecheck::TypeChecker>::proof_terms_same_proposition
+   4: metatron_kernel::convert::convert_in_context_with_congruence
+   5: <core::iter::adapters::zip::Zip<core::slice::iter::Iter<metatron_kernel::value::Closure>, core::slice::iter::Iter<metatron_kernel::value::Closure>> as core::iter::traits::double_ended::DoubleEndedIterator>::try_rfold::<(), core::iter::traits::iterator::Iterator::all::check<(&metatron_kernel::value::Closure, &metatron_kernel::value::Closure), metatron_kernel::convert::convert_in_context_with_congruence::{closure#0}>::{closure#0}, core::ops::control_flow::ControlFlow<()>>
+   6: metatron_kernel::convert::convert_in_context_with_congruence
+   7: <core::iter::adapters::zip::Zip<core::slice::iter::Iter<metatron_kernel::value::Closure>, core::slice::iter::Iter<metatron_kernel::value::Closure>> as core::iter::traits::double_ended::DoubleEndedIterator>::try_rfold::<(), core::iter::traits::iterator::Iterator::all::check<(&metatron_kernel::value::Closure, &metatron_kernel::value::Closure), metatron_kernel::convert::convert_in_context_with_congruence::{closure#0}>::{closure#0}, core::ops::control_flow::ControlFlow<()>>
+   8: metatron_kernel::convert::convert_in_context_with_congruence
+   9: <core::iter::adapters::zip::Zip<core::slice::iter::Iter<metatron_kernel::value::Closure>, core::slice::iter::Iter<metatron_kernel::value::Closure>> as core::iter::traits::double_ended::DoubleEndedIterator>::try_rfold::<(), core::iter::traits::iterator::Iterator::all::check<(&metatron_kernel::value::Closure, &metatron_kernel::value::Closure), metatron_kernel::convert::convert_in_context_with_congruence::{closure#0}>::{closure#0}, core::ops::control_flow::ControlFlow<()>>
+  10: metatron_kernel::convert::convert_in_context_with_congruence
+  11: <core::iter::adapters::zip::Zip<core::slice::iter::Iter<metatron_kernel::value::Closure>, core::slice::iter::Iter<metatron_kernel::value::Closure>> as core::iter::traits::double_ended::DoubleEndedIterator>::try_rfold::<(), core::iter::traits::iterator::Iterator::all::check<(&metatron_kernel::value::Closure, &metatron_kernel::value::Closure), metatron_kernel::convert::convert_in_context_with_congruence::{closure#0}>::{closure#0}, core::ops::control_flow::ControlFlow<()>>
+  12: metatron_kernel::convert::convert_in_context_with_congruence
+  13: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+  14: <metatron_kernel::typecheck::TypeChecker>::certified_relevance_spine_congruence
+  15: metatron_kernel::convert::compare_values
+  16: metatron_kernel::convert::convert_in_context_with_congruence
+  17: <metatron_kernel::typecheck::TypeChecker>::checked_source_conversion
+  18: metatron_kernel::convert::compare_values
+  19: metatron_kernel::convert::convert_in_context_with_congruence
+  20: <core::iter::adapters::zip::Zip<core::slice::iter::Iter<metatron_kernel::value::Closure>, core::slice::iter::Iter<metatron_kernel::value::Closure>> as core::iter::traits::double_ended::DoubleEndedIterator>::try_rfold::<(), core::iter::traits::iterator::Iterator::all::check<(&metatron_kernel::value::Closure, &metatron_kernel::value::Closure), metatron_kernel::convert::convert_in_context_with_congruence::{closure#0}>::{closure#0}, core::ops::control_flow::ControlFlow<()>>
+  21: metatron_kernel::convert::convert_in_context_with_congruence
+  22: metatron_kernel::convert::compare_values
+  23: metatron_kernel::convert::convert_in_context_with_congruence
+  24: metatron_kernel::convert::convert_in_context_with_congruence
+  25: <metatron_kernel::typecheck::TypeChecker>::checked_source_conversion
+  26: metatron_kernel::convert::compare_values
+  27: metatron_kernel::convert::convert_in_context_with_congruence
+  28: <metatron_kernel::typecheck::TypeChecker>::certified_relevance_spine_congruence
+  29: metatron_kernel::convert::compare_values
+  30: metatron_kernel::convert::convert_in_context_with_congruence
+  31: <metatron_kernel::typecheck::TypeChecker>::checked_source_conversion
+  32: metatron_kernel::convert::compare_values
+  33: metatron_kernel::convert::convert_in_context_with_congruence
+  34: <core::iter::adapters::zip::Zip<core::slice::iter::Iter<metatron_kernel::value::Closure>, core::slice::iter::Iter<metatron_kernel::value::Closure>> as core::iter::traits::double_ended::DoubleEndedIterator>::try_rfold::<(), core::iter::traits::iterator::Iterator::all::check<(&metatron_kernel::value::Closure, &metatron_kernel::value::Closure), metatron_kernel::convert::convert_in_context_with_congruence::{closure#0}>::{closure#0}, core::ops::control_flow::ControlFlow<()>>
+  35: metatron_kernel::convert::convert_in_context_with_congruence
+  36: <metatron_kernel::typecheck::TypeChecker>::checked_source_conversion
+  37: metatron_kernel::convert::compare_values
+  38: metatron_kernel::convert::convert_in_context_with_congruence
+  39: <core::iter::adapters::zip::Zip<core::slice::iter::Iter<metatron_kernel::value::Closure>, core::slice::iter::Iter<metatron_kernel::value::Closure>> as core::iter::traits::iterator::Iterator>::try_fold::<(), core::iter::traits::iterator::Iterator::all::check<(&metatron_kernel::value::Closure, &metatron_kernel::value::Closure), metatron_kernel::convert::compare_values::{closure#0}>::{closure#0}, core::ops::control_flow::ControlFlow<()>>
+  40: metatron_kernel::convert::compare_values
+  41: metatron_kernel::convert::convert_in_context_with_congruence
+  42: <core::iter::adapters::zip::Zip<core::slice::iter::Iter<metatron_kernel::value::Closure>, core::slice::iter::Iter<metatron_kernel::value::Closure>> as core::iter::traits::double_ended::DoubleEndedIterator>::try_rfold::<(), core::iter::traits::iterator::Iterator::all::check<(&metatron_kernel::value::Closure, &metatron_kernel::value::Closure), metatron_kernel::convert::convert_in_context_with_congruence::{closure#0}>::{closure#0}, core::ops::control_flow::ControlFlow<()>>
+  43: metatron_kernel::convert::convert_in_context_with_congruence
+  44: <metatron_kernel::typecheck::TypeChecker>::certified_data_spine_congruence
+  45: metatron_kernel::convert::convert_in_context_with_congruence
+  46: <metatron_kernel::typecheck::TypeChecker>::check_with_formation
+  47: <metatron_kernel::typecheck::TypeChecker>::check_expected_lambda_in
+  48: <metatron_kernel::typecheck::TypeChecker>::check_with_formation
+  49: <metatron_kernel::typecheck::TypeChecker>::check_expected_lambda_in
+  50: <metatron_kernel::typecheck::TypeChecker>::check_with_formation
+  51: <metatron_kernel::typecheck::TypeChecker>::check_expected_lambda_in
+  52: <metatron_kernel::typecheck::TypeChecker>::check_with_formation
+  53: <metatron_kernel::typecheck::TypeChecker>::check_formed
+  54: metatron_kernel::checker::check_export_with_policy
+  55: metatron_kernel::checker::check_export
+  56: metatron_kernel::run::<alloc::io::buffered::bufreader::BufReader<std::io::stdio::StdinLock>>
+  57: std::sys::backtrace::__rust_begin_short_backtrace::<metatron_kernel::check_input, std::process::ExitCode>
+  58: <std::thread::lifecycle::spawn_unchecked<metatron_kernel::check_input, std::process::ExitCode>::{closure#1} as core::ops::function::FnOnce<()>>::call_once::{shim:vtable#0}
+  59: <std::sys::thread::unix::Thread>::new::thread_start
+  60: <unknown>
+  61: <unknown>
+
+NUCLEUS_SAMPLE:tag=machine-step:n=57933824:backtrace=   0: metatron_kernel::diagnostics::pulse
+   1: <metatron_kernel::machine::Machine>::expose_uncached_internal_with_pending
+   2: <metatron_kernel::machine::Machine>::expose_internal_with_pending
+   3: <metatron_kernel::machine::Machine>::expose_uncached_internal_with_pending
+   4: <metatron_kernel::machine::Machine>::expose_internal_with_pending
+   5: <metatron_kernel::typecheck::TypeChecker>::proof_terms_same_proposition
+   6: metatron_kernel::convert::convert_in_context_with_congruence
+   7: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+   8: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+   9: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+  10: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+  11: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+  12: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+  13: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+  14: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+  15: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+  16: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+  17: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+  18: <metatron_kernel::typecheck::TypeChecker>::infer_exact_closure_in_context
+  19: <metatron_kernel::typecheck::TypeChecker>::checked_proof_vs_local_in_context::{closure#3}
+  20: metatron_kernel::convert::convert_in_context_with_congruence
+  21: <metatron_kernel::typecheck::TypeChecker>::checked_source_conversion
+  22: metatron_kernel::convert::compare_values
+  23: metatron_kernel::convert::convert_in_context_with_congruence
+  24: <metatron_kernel::typecheck::TypeChecker>::certified_relevance_spine_congruence
+  25: metatron_kernel::convert::compare_values
+  26: metatron_kernel::convert::convert_in_context_with_congruence
+  27: <metatron_kernel::typecheck::TypeChecker>::checked_source_conversion
+  28: metatron_kernel::convert::compare_values
+  29: metatron_kernel::convert::convert_in_context_with_congruence
+  30: <core::iter::adapters::zip::Zip<core::slice::iter::Iter<metatron_kernel::value::Closure>, core::slice::iter::Iter<metatron_kernel::value::Closure>> as core::iter::traits::double_ended::DoubleEndedIterator>::try_rfold::<(), core::iter::traits::iterator::Iterator::all::check<(&metatron_kernel::value::Closure, &metatron_kernel::value::Closure), metatron_kernel::convert::convert_in_context_with_congruence::{closure#0}>::{closure#0}, core::ops::control_flow::ControlFlow<()>>
+  31: metatron_kernel::convert::convert_in_context_with_congruence
+  32: <metatron_kernel::typecheck::TypeChecker>::checked_source_conversion
+  33: metatron_kernel::convert::compare_values
+  34: metatron_kernel::convert::convert_in_context_with_congruence
+  35: <core::iter::adapters::zip::Zip<core::slice::iter::Iter<metatron_kernel::value::Closure>, core::slice::iter::Iter<metatron_kernel::value::Closure>> as core::iter::traits::iterator::Iterator>::try_fold::<(), core::iter::traits::iterator::Iterator::all::check<(&metatron_kernel::value::Closure, &metatron_kernel::value::Closure), metatron_kernel::convert::compare_values::{closure#0}>::{closure#0}, core::ops::control_flow::ControlFlow<()>>
+  36: metatron_kernel::convert::compare_values
+  37: metatron_kernel::convert::convert_in_context_with_congruence
+  38: <core::iter::adapters::zip::Zip<core::slice::iter::Iter<metatron_kernel::value::Closure>, core::slice::iter::Iter<metatron_kernel::value::Closure>> as core::iter::traits::double_ended::DoubleEndedIterator>::try_rfold::<(), core::iter::traits::iterator::Iterator::all::check<(&metatron_kernel::value::Closure, &metatron_kernel::value::Closure), metatron_kernel::convert::convert_in_context_with_congruence::{closure#0}>::{closure#0}, core::ops::control_flow::ControlFlow<()>>
+  39: metatron_kernel::convert::convert_in_context_with_congruence
+  40: <metatron_kernel::typecheck::TypeChecker>::certified_data_spine_congruence
+  41: metatron_kernel::convert::convert_in_context_with_congruence
+  42: <metatron_kernel::typecheck::TypeChecker>::check_with_formation
+  43: <metatron_kernel::typecheck::TypeChecker>::check_expected_lambda_in
+  44: <metatron_kernel::typecheck::TypeChecker>::check_with_formation
+  45: <metatron_kernel::typecheck::TypeChecker>::check_expected_lambda_in
+  46: <metatron_kernel::typecheck::TypeChecker>::check_with_formation
+  47: <metatron_kernel::typecheck::TypeChecker>::check_expected_lambda_in
+  48: <metatron_kernel::typecheck::TypeChecker>::check_with_formation
+  49: <metatron_kernel::typecheck::TypeChecker>::check_formed
+  50: metatron_kernel::checker::check_export_with_policy
+  51: metatron_kernel::checker::check_export
+  52: metatron_kernel::run::<alloc::io::buffered::bufreader::BufReader<std::io::stdio::StdinLock>>
+  53: std::sys::backtrace::__rust_begin_short_backtrace::<metatron_kernel::check_input, std::process::ExitCode>
+  54: <std::thread::lifecycle::spawn_unchecked<metatron_kernel::check_input, std::process::ExitCode>::{closure#1} as core::ops::function::FnOnce<()>>::call_once::{shim:vtable#0}
+  55: <std::sys::thread::unix::Thread>::new::thread_start
+  56: <unknown>
+  57: <unknown>
+

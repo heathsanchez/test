@@ -1,0 +1,23 @@
+{
+  "status": "PROGRESS_ONLY_NOT_KERNEL_COMPLETION",
+  "rc": -9,
+  "wall": 120.31336114600708,
+  "stop": [
+    "DIAGNOSTIC_TIME_CUTOFF"
+  ],
+  "binary_sha": "ebc0340743fe6587743ec02a3e095707cf1eb6f8fa45421fb3a1bb44ab959d61",
+  "tail": [
+    "  47: <metatron_kernel::typecheck::TypeChecker>::check_expected_lambda_in",
+    "  48: <metatron_kernel::typecheck::TypeChecker>::check_with_formation",
+    "  49: <metatron_kernel::typecheck::TypeChecker>::check_formed",
+    "  50: metatron_kernel::checker::check_export_with_policy",
+    "  51: metatron_kernel::checker::check_export",
+    "  52: metatron_kernel::run::<alloc::io::buffered::bufreader::BufReader<std::io::stdio::StdinLock>>",
+    "  53: std::sys::backtrace::__rust_begin_short_backtrace::<metatron_kernel::check_input, std::process::ExitCode>",
+    "  54: <std::thread::lifecycle::spawn_unchecked<metatron_kernel::check_input, std::process::ExitCode>::{closure#1} as core::ops::function::FnOnce<()>>::call_once::{shim:vtable#0}",
+    "  55: <std::sys::thread::unix::Thread>::new::thread_start",
+    "  56: <unknown>",
+    "  57: <unknown>",
+    ""
+  ]
+}

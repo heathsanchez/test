@@ -1,0 +1,46 @@
+{
+  "status": "CANDIDATE_PENDING_QUALIFICATION",
+  "source_commit": "afb7921b476d490e660a65aa7a65bf362bd0cfc7",
+  "source_tree": "25d8fa3ccdc4ebeb818aa2a2e6c68d8b2bc977c6",
+  "qualification_run": 41806198062,
+  "binary_sha": "9579d9067687f8464e9d90c047a752341dbc3b5ef8b2470b40820063efaf8187",
+  "library_pass": 150,
+  "named_integration_outcomes_preserved": 307,
+  "known_integration_failures": [
+    "residual_closure::all_seven_complete_positive_exports_accept"
+  ],
+  "code_review": {
+    "critical": 0,
+    "important": 0
+  },
+  "full": [
+    {
+      "case": "full",
+      "rc": 2,
+      "user": 176.260744,
+      "system": 2.767578,
+      "wall": 179.40225339800236,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=Multiset.nodup_singleton:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads",
+      "source_sha": "22c5de83469408950005589a3bc5ef5157c65549b5a802f85d567c29151306a6",
+      "binary_sha": "9579d9067687f8464e9d90c047a752341dbc3b5ef8b2470b40820063efaf8187"
+    }
+  ],
+  "oracle": {
+    "input_sha": "67f330e56e94c29578eb6375167b15483277c151edc0ee2dabae9898b4dc4318",
+    "reference_binary_sha": "ae92c625e612fff1c90e329344d22e3c3c330383cb335ce28fd41435be3b3b94",
+    "rows": [
+      {
+        "case": "parse",
+        "rc": 0,
+        "wall": 0.8270781220053323
+      },
+      {
+        "case": "reference",
+        "rc": 0,
+        "wall": 1.4343392169976141
+      }
+    ]
+  },
+  "qualified_default_unchanged": true,
+  "official_rank": "UNKNOWN"
+}

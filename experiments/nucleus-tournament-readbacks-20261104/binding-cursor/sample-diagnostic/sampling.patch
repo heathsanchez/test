@@ -1,0 +1,73 @@
+--- a/metatron-kernel/src/diagnostics.rs
++++ b/metatron-kernel/src/diagnostics.rs
+@@ -49,6 +49,7 @@
+ }
+ 
+ pub(crate) fn conversion() {
++    pulse("conversion");
+     CONVERSIONS.set(CONVERSIONS.get().saturating_add(1));
+ }
+ 
+@@ -60,3 +61,20 @@
+         conversions: CONVERSIONS.get(),
+     }
+ }
++
++// Diagnostic sampling only; never contributes a judgment or changes fuel.
++pub(crate) fn pulse(tag: &str) {
++    if DECLARATIONS.get() != 3106 {return;}
++    thread_local! {
++        static N:Cell<u64>=const{Cell::new(0)};
++        static LAST:std::cell::RefCell<Option<std::time::Instant>>=const{std::cell::RefCell::new(None)};
++    }
++    let n=N.get()+1;N.set(n);if n%4096!=0{return;}
++    LAST.with(|last|{
++        let mut last=last.borrow_mut();
++        if last.is_none_or(|t|t.elapsed().as_secs()>=5){
++            *last=Some(std::time::Instant::now());
++            eprintln!("NUCLEUS_SAMPLE:tag={tag}:n={n}:backtrace={}",std::backtrace::Backtrace::force_capture());
++        }
++    });
++}
+--- a/metatron-kernel/src/typecheck.rs
++++ b/metatron-kernel/src/typecheck.rs
+@@ -3662,6 +3662,10 @@
+                     proposition, context, budget.min(2048),
+                 ).is_proven() { return false; }
+ 
++                #[cfg(feature = "diagnostics")]
++                if crate::run_flags::present(crate::run_flags::Flag::TraceSourceProofIrrel) {
++                    eprintln!("NUCLEUS_LAMBDA_SCAN_BEGIN:domain={:?}:body={:?}:context={}", lambda_domain.expr, lambda_body.expr, context.len());
++                }
+                 let matches = self.expressions.iter_raw().filter_map(|(raw, term)| {
+                     match term {
+                         Expr::Lam { domain, body, .. }
+@@ -3670,6 +3674,10 @@
+                         _ => None,
+                     }
+                 }).collect::<Vec<_>>();
++                #[cfg(feature = "diagnostics")]
++                if crate::run_flags::present(crate::run_flags::Flag::TraceSourceProofIrrel) {
++                    eprintln!("NUCLEUS_LAMBDA_SCAN_END:matches={}", matches.len());
++                }
+                 let [lambda_expr] = matches.as_slice() else { return false; };
+                 let source_lambda = Closure::with_levels(
+                     *lambda_expr, lambda_domain.env.clone(), lambda_domain.levels.clone(),
+@@ -5929,6 +5937,7 @@
+ }
+ 
+ fn take_step(remaining: &mut usize) -> bool {
++    #[cfg(feature="diagnostics")] crate::diagnostics::pulse("type-step");
+     if *remaining == 0 {
+         false
+     } else {
+--- a/metatron-kernel/src/machine.rs
++++ b/metatron-kernel/src/machine.rs
+@@ -1050,6 +1050,7 @@
+         let mut transitions = Vec::new();
+ 
+         loop {
++            #[cfg(feature="diagnostics")] crate::diagnostics::pulse("machine-step");
+             if budget == 0 || self.exposure_fuel.get() == Some(0) {
+                 return Judgment::unknown("reduction-budget-exhausted");
+             }
