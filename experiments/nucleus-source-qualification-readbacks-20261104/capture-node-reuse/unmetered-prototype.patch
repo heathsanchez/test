@@ -1,0 +1,159 @@
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -124,6 +124,9 @@
+     // Owning closures pin every frame and level allocation used by the key.
+     source_capture_proofs:RefCell<HashMap<(ExprId,u64,usize,ExprId,u64,usize),(Closure,Closure)>>,
+     source_opening_proofs: RefCell<HashMap<(ExprId,u64,usize,FreeId),Closure>>,
++    // Completed absence facts for actual captures (zero virtual binders).
++    // Kept separately so inner nodes never displace outer opening proofs.
++    source_capture_absence_proofs: RefCell<HashMap<(ExprId,u64,usize,FreeId),Closure>>,
+     // Closed source types admitted by this checker's actual formation judgment.
+     formed_expected: RefCell<std::collections::HashSet<Closure>>,
+     lambda_trials: RefCell<LambdaTrialState>,
+@@ -181,6 +184,7 @@
+             paired_source_support: RefCell::new(HashMap::new()),
+             checked_frames: RefCell::new(HashMap::new()),
+             source_opening_proofs:RefCell::new(HashMap::new()),
++            source_capture_absence_proofs:RefCell::new(HashMap::new()),
+             source_capture_proofs:RefCell::new(HashMap::new()),
+             formed_expected: RefCell::new(std::collections::HashSet::new()),
+             lambda_trials: RefCell::new(LambdaTrialState::default()),
+@@ -210,6 +214,7 @@
+             paired_source_support: RefCell::new(HashMap::new()),
+             checked_frames: RefCell::new(HashMap::new()),
+             source_opening_proofs:RefCell::new(HashMap::new()),
++            source_capture_absence_proofs:RefCell::new(HashMap::new()),
+             source_capture_proofs:RefCell::new(HashMap::new()),
+             formed_expected: RefCell::new(std::collections::HashSet::new()),
+             lambda_trials: RefCell::new(LambdaTrialState::default()),
+@@ -4598,6 +4603,7 @@
+             paired_source_support: RefCell::new(HashMap::new()),
+             checked_frames: RefCell::new(HashMap::new()),
+             source_opening_proofs:RefCell::new(HashMap::new()),
++            source_capture_absence_proofs:RefCell::new(HashMap::new()),
+             source_capture_proofs:RefCell::new(HashMap::new()),
+             formed_expected: RefCell::new(std::collections::HashSet::new()),
+             lambda_trials: RefCell::new(LambdaTrialState::default()),
+@@ -4766,6 +4772,7 @@
+             paired_source_support: RefCell::new(HashMap::new()),
+             checked_frames: RefCell::new(HashMap::new()),
+             source_opening_proofs:RefCell::new(HashMap::new()),
++            source_capture_absence_proofs:RefCell::new(HashMap::new()),
+             source_capture_proofs:RefCell::new(HashMap::new()),
+             formed_expected: RefCell::new(std::collections::HashSet::new()),
+             lambda_trials: RefCell::new(LambdaTrialState::default()),
+@@ -4819,6 +4826,7 @@
+             paired_source_support: RefCell::new(HashMap::new()),
+             checked_frames: RefCell::new(HashMap::new()),
+             source_opening_proofs:RefCell::new(HashMap::new()),
++            source_capture_absence_proofs:RefCell::new(HashMap::new()),
+             source_capture_proofs:RefCell::new(HashMap::new()),
+             formed_expected: RefCell::new(std::collections::HashSet::new()),
+             lambda_trials: RefCell::new(LambdaTrialState::default()),
+@@ -5890,6 +5898,17 @@
+         instantiate_level(self.levels, level, &self.level_substitution, budget).map_err(|_| ())
+     }
+ 
++    pub(crate) fn has_source_capture_absence_proof(&self,body:&Closure,free:FreeId)->bool {
++        self.source_capture_absence_proofs.borrow().contains_key(&(body.expr,body.env.id(),body.levels.identity(),free))
++    }
++
++    pub(crate) fn retain_source_capture_absence_proof(&self,body:&Closure,free:FreeId) {
++        let mut proofs=self.source_capture_absence_proofs.borrow_mut();
++        if proofs.len()<8192 {
++            proofs.entry((body.expr,body.env.id(),body.levels.identity(),free)).or_insert_with(||body.clone());
++        }
++    }
++
+     pub(crate) fn has_source_opening_proof(&self,body:&Closure,free:FreeId)->bool {
+         self.source_opening_proofs.borrow().contains_key(&(body.expr,body.env.id(),body.levels.identity(),free))
+     }
+--- a/src/convert.rs
++++ b/src/convert.rs
+@@ -2954,16 +2954,26 @@
+ fn source_avoids_capture_uncached(
+     checker:&TypeChecker<'_>,body:&Closure,virtual_slots:u64,free:FreeId,budget:&mut usize,
+ )->bool {
+-    let mut pending = vec![(body.clone(), virtual_slots)];
++    let mut pending = vec![(body.clone(), virtual_slots, false)];
+     let mut visited = HashSet::new();
+     let mut prepaid_root=true;
+-    while let Some((source, virtual_slots)) = pending.pop() {
++    while let Some((source, virtual_slots, finish)) = pending.pop() {
++        if finish {
++            // A finish marker is reached only after every actual used child
++            // has completed. Any failure returns before this retention point.
++            if virtual_slots==0 {checker.retain_source_capture_absence_proof(&source,free);}
++            continue;
++        }
+         if prepaid_root {prepaid_root=false;}
+         else {
+             if *budget == 0 { return false; }
+             *budget -= 1;
+         }
++        // This hit uses the node step already paid above. A miss follows
++        // the original support and environment walk with identical charges.
++        if virtual_slots==0 && checker.has_source_capture_absence_proof(&source,free){continue;}
+         if !visited.insert((source.expr, source.env.id(), virtual_slots)) { continue; }
++        pending.push((source.clone(),virtual_slots,true));
+         let Some(support) = checker.complete_source_support(source.expr, budget) else { return false; };
+         // Completed support is sorted and unique. Share the already read
+         // environment prefix across its actual used indices, rather than
+@@ -2985,7 +2995,7 @@
+             let Some(binding)=binding else{return false;};
+             match binding {
+                 EnvBinding::Free(actual) => { if *actual == free { return false; } }
+-                EnvBinding::Closure(captured) => pending.push((captured.clone(), 0)),
++                EnvBinding::Closure(captured) => pending.push((captured.clone(), 0, false)),
+                 EnvBinding::NatLit(_) => {}
+                 EnvBinding::Neutral(neutral) => {
+                     let mut neutrals = vec![neutral];
+@@ -2999,7 +3009,7 @@
+                         }
+                         if *budget < value.spine.len() { return false; }
+                         *budget -= value.spine.len();
+-                        pending.extend(value.spine.iter().map(|c| (c.clone(), 0)));
++                        pending.extend(value.spine.iter().map(|c| (c.clone(), 0, false)));
+                     }
+                 }
+             }
+@@ -3094,3 +3104,39 @@
+     #[test]fn universe_pair_walk_prepays_a_long_initial_list(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let n=Neutral{head:NeutralHead::Const{name:NameId(4),levels:vec![crate::level::LevelTerm::Zero;1000]},spine:vec![]};let mut fuel=8;assert!(!neutral_eta_goals(&n,&n,0,&mut fuel,0,&[],&mut vec![]));assert!(fuel<=8);}
+     #[test]fn an_exhausted_eta_trial_never_claims_equality(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);assert!(!relation(&c,projection(0,0),Closure::new(ExprId(6),EnvFrame::empty().extend_free(FreeId(0))),1,0).is_proven());}
+ }
++
++#[cfg(test)]
++mod capture_node_reuse_controls {
++ use super::*;
++ use crate::{environment::Environment,id::{IdTable,LevelId},syntax::Level,value::EnvFrame};
++ fn fixture()->(IdTable<ExprId,Expr>,IdTable<LevelId,Level>,Environment){
++  let mut e=IdTable::default();let mut l=IdTable::default();l.insert(LevelId(0),Level::Zero).unwrap();
++  e.insert(ExprId(0),Expr::Sort(LevelId(0))).unwrap();e.insert(ExprId(1),Expr::BVar(1)).unwrap();e.insert(ExprId(2),Expr::BVar(0)).unwrap();(e,l,Environment::empty())
++ }
++ #[test]fn completed_inner_capture_fact_serves_a_distinct_opening_root(){
++  let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);
++  let captured=Closure::new(ExprId(2),EnvFrame::empty().extend_free(FreeId(9)));
++  let a=Closure::new(ExprId(1),EnvFrame::empty().extend(captured.clone()));
++  let b=Closure::new(ExprId(1),EnvFrame::empty().extend(captured));assert_ne!(a.env.id(),b.env.id());
++  assert!(!source_opening_avoids_capture(&c,&b,FreeId(0),&mut 5));
++  assert!(source_opening_avoids_capture(&c,&a,FreeId(0),&mut 128));
++  let mut work=5;assert!(source_opening_avoids_capture(&c,&b,FreeId(0),&mut work),"reuse the completed shared inner fact, not the different outer opening");assert_eq!(work,0);
++ }
++ #[test]fn opening_virtual_binder_fact_never_becomes_an_inner_capture_fact(){
++  let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);
++  let inner=Closure::new(ExprId(2),EnvFrame::empty().extend_free(FreeId(0)));
++  assert!(source_opening_avoids_capture(&c,&inner,FreeId(0),&mut 128));
++  let outer=Closure::new(ExprId(1),EnvFrame::empty().extend(inner));
++  assert!(!source_opening_avoids_capture(&c,&outer,FreeId(0),&mut 128));
++ }
++ #[test]fn completed_inner_fact_does_not_cross_free_identity(){
++  let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);
++  let inner=Closure::new(ExprId(2),EnvFrame::empty().extend_free(FreeId(9)));
++  for free in[0,9]{let outer=Closure::new(ExprId(1),EnvFrame::empty().extend(inner.clone()));assert_eq!(source_opening_avoids_capture(&c,&outer,FreeId(free),&mut 128),free==0);}
++ }
++ #[test]fn incomplete_inner_walk_never_produces_a_positive_fact(){
++  let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);
++  let inner=Closure::new(ExprId(2),EnvFrame::empty().extend_free(FreeId(0)));
++  for _ in 0..3{let outer=Closure::new(ExprId(1),EnvFrame::empty().extend(inner.clone()));assert!(!source_opening_avoids_capture(&c,&outer,FreeId(0),&mut 128));}
++ }
++}

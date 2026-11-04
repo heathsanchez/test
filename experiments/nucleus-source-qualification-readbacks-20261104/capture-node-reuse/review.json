@@ -1,0 +1,10 @@
+{
+  "status": "NO_FURTHER_CONCRETE_CRITICAL_OR_IMPORTANT_FINDING",
+  "important_issue": "Direct slot-zero entries did not prepay their root step; warm hits could return true at zero budget",
+  "fix": "Direct slot-zero root hits require and debit one step from the support-root lookup a miss would pay; nested hits keep their original node debit; miss charges unchanged",
+  "regressions": {
+    "before": "4 PASS +2 FAIL",
+    "after": "208 configured library PASS"
+  },
+  "no_coverage_or_promotion_authority": true
+}

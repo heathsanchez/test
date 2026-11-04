@@ -1,0 +1,118 @@
+   Compiling metatron-kernel v0.1.0 (/tmp/nucleus-capture-node-reuse/source)
+warning: unnecessary parentheses around `if` condition
+    --> src/convert.rs:2634:20
+     |
+2634 |                 if ((l=="Free(FreeId(6))" && r=="Free(FreeId(5))") ||
+     |                    ^
+2635 |                     (l=="Free(FreeId(5))" && r=="Free(FreeId(6))"))
+     |                                                                   ^
+     |
+     = note: `#[warn(unused_parens)]` (part of `#[warn(unused)]`) on by default
+help: remove these parentheses
+     |
+2634 ~                 if (l=="Free(FreeId(6))" && r=="Free(FreeId(5))") ||
+2635 ~                     (l=="Free(FreeId(5))" && r=="Free(FreeId(6))")
+     |
+
+warning: unnecessary parentheses around `if` condition
+    --> src/typecheck.rs:6734:12
+     |
+6734 |         if (!crate::run_flags::present(crate::run_flags::Flag::ExperimentalExpectedLambda)) { return; }
+     |            ^                                                                              ^
+     |
+help: remove these parentheses
+     |
+6734 -         if (!crate::run_flags::present(crate::run_flags::Flag::ExperimentalExpectedLambda)) { return; }
+6734 +         if !crate::run_flags::present(crate::run_flags::Flag::ExperimentalExpectedLambda) { return; }
+     |
+
+warning: unused variable: `c`
+    --> src/convert.rs:3104:91
+     |
+3104 | ...(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let n=Neutral{head:NeutralHead::Const{name:NameId(4),levels:vec![c...
+     |                                  ^ help: if this is intentional, prefix it with an underscore: `_c`
+     |
+     = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: value assigned to `source_work` is never read
+    --> src/typecheck.rs:5692:55
+     |
+5692 |                     if source_work<cost{return false;}source_work-=cost;
+     |                                                       ^^^^^^^^^^^^^^^^^
+     |
+     = help: maybe it is overwritten before being read?
+     = note: `#[warn(unused_assignments)]` (part of `#[warn(unused)]`) on by default
+
+warning: method `qualified_quotient_neutral_result` is never used
+    --> src/machine.rs:1616:19
+     |
+ 319 | impl<'a> Machine<'a> {
+     | -------------------- method in this implementation
+...
+1616 |     pub(crate) fn qualified_quotient_neutral_result(
+     |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: method `diagnostic_captured_recursor_major_chain` is never used
+    --> src/typecheck.rs:1106:19
+     |
+ 142 | impl<'a> TypeChecker<'a> {
+     | ------------------------ method in this implementation
+...
+1106 |     pub(crate) fn diagnostic_captured_recursor_major_chain(
+     |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: method `strong_owners` is never used
+   --> src/value.rs:130:18
+    |
+ 50 | impl EnvFrame {
+    | ------------- method in this implementation
+...
+130 |     pub(crate)fn strong_owners(&self)->usize{Rc::strong_count(&self.0)}
+    |                  ^^^^^^^^^^^^^
+
+warning: methods `strong_owners` and `is_empty_instance` are never used
+   --> src/value.rs:214:18
+    |
+199 | impl LevelSubstitution {
+    | ---------------------- methods in this implementation
+...
+214 |     pub(crate)fn strong_owners(&self)->usize{Rc::strong_count(&self.0)}
+    |                  ^^^^^^^^^^^^^
+215 |     pub(crate)fn is_empty_instance(&self)->bool{self.0.entries.is_empty()}
+    |                  ^^^^^^^^^^^^^^^^^
+
+warning: `metatron-kernel` (lib test) generated 8 warnings (run `cargo fix --lib -p metatron-kernel --tests` to apply 3 suggestions)
+    Finished `release` profile [optimized] target(s) in 43.17s
+     Running unittests src/lib.rs (/tmp/nucleus-frontier-investigation/target/release/deps/metatron_kernel-258b3b0aea2bca17)
+
+running 6 tests
+test convert::capture_node_reuse_controls::completed_inner_capture_fact_serves_a_distinct_opening_root ... ok
+test convert::capture_node_reuse_controls::warm_direct_capture_lookup_cannot_succeed_at_zero_budget ... FAILED
+test convert::capture_node_reuse_controls::incomplete_inner_walk_never_produces_a_positive_fact ... ok
+test convert::capture_node_reuse_controls::completed_inner_fact_does_not_cross_free_identity ... ok
+test convert::capture_node_reuse_controls::warm_neutral_spine_still_pays_for_every_actual_argument ... FAILED
+test convert::capture_node_reuse_controls::opening_virtual_binder_fact_never_becomes_an_inner_capture_fact ... ok
+
+failures:
+
+---- convert::capture_node_reuse_controls::warm_direct_capture_lookup_cannot_succeed_at_zero_budget stdout ----
+
+thread 'convert::capture_node_reuse_controls::warm_direct_capture_lookup_cannot_succeed_at_zero_budget' (65) panicked at src/convert.rs:3146:3:
+direct entries have not prepaid their root lookup
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- convert::capture_node_reuse_controls::warm_neutral_spine_still_pays_for_every_actual_argument stdout ----
+
+thread 'convert::capture_node_reuse_controls::warm_neutral_spine_still_pays_for_every_actual_argument' (66) panicked at src/convert.rs:3153:3:
+assertion failed: !neutral_avoids_free(&c, &n, FreeId(0), &mut 3)
+
+
+failures:
+    convert::capture_node_reuse_controls::warm_direct_capture_lookup_cannot_succeed_at_zero_budget
+    convert::capture_node_reuse_controls::warm_neutral_spine_still_pays_for_every_actual_argument
+
+test result: FAILED. 4 passed; 2 failed; 0 ignored; 0 measured; 200 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--lib`
