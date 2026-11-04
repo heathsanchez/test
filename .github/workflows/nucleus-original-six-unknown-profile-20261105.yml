@@ -113,7 +113,7 @@ jobs:
               reasons=[s[:1900] for s in errorlines if s.startswith(('NUCLEUS_DOWNSTREAM:','NUCLEUS_APPLICATION_FUNCTION_TYPE:','NUCLEUS_DEPENDENCY_GAP:'))]
               rows.append(dict(case=name,sha256=hashlib.sha256(source.read_bytes()).hexdigest(),rc=p.returncode,wall_seconds=round(elapsed,3),stderr_bytes=len(p.stderr),causal_count=len(reasons),causal_first=reasons[:4],causal_last=reasons[-6:],stderr_tail=errorlines[-4:]))
           report=dict(source_sha=os.environ['GITHUB_SHA'],qualified_input_source='leanprover/lean-kernel-arena artifact11272848230',cases=rows)
-          (out/'report.json').write_text(json.dumps(report,indent=2)+'\\n')
+          (out/'report.json').write_text(json.dumps(report,indent=2))
           print('SIX_CAUSAL_PROFILE',json.dumps(report,sort_keys=True)[:15000],flush=True)
           assert all(row['rc'] in (0,2) for row in rows), 'Wrong verdict or crash on valid case'
           PY
