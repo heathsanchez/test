@@ -1,4 +1,4 @@
-name: Nucleus dependent whole-spine counterfactual
+name: Nucleus dependent whole-spine argument diagnosis
 
 on:
   push:
@@ -77,7 +77,7 @@ jobs:
           print('DIAGNOSTIC_BUILD_QUALIFIED_CONFIG',sorted(config),flush=True)
           print('TEST_GATE_REUSED_FROM_EXACT_SOURCE_RUN',41908748112,flush=True)
           PY
-      - name: Test one real RED Mathlib prefix and collect verdict
+      - name: Diagnose failed Pi arguments in real RED Mathlib prefix
         shell: bash
         run: |
           set -euo pipefail
