@@ -1,6 +1,6 @@
 --- a/src/typecheck.rs
 +++ b/src/typecheck.rs
-@@ -2579,6 +2579,53 @@
+@@ -2579,6 +2579,68 @@
                      };
                      eprintln!("NUCLEUS_FAILED_RECEIVER_CONVERSION:expression={expression:?}:context_len={}:source_frame={}:remaining={}:actual={value:?}:expected={expected:?}:context={context:?}:actual_exposed={:?}:expected_exposed={:?}",
                          context.len(), frame.id(), *remaining, expose(&value), expose(expected));
@@ -43,6 +43,21 @@
 +                                                        context.len(), context,
 +                                                    );
 +                                                    eprintln!("NUCLEUS_PROOF2_QUOT_LIFT_ARG:position={j}:lhs={lhs:?}:rhs={rhs:?}:result={result:?}");
++                                                    if j == 5 {
++                                                        let left_exposed = self.machine().expose_for_conversion(
++                                                            lhs.clone(), Transparency::Full, 16384,
++                                                        );
++                                                        let right_exposed = self.machine().expose_for_conversion(
++                                                            rhs.clone(), Transparency::Full, 16384,
++                                                        );
++                                                        let larger = crate::convert::convert_with_policy_in_context(
++                                                            self, &TypeValue::Term(lhs.clone()),
++                                                            &TypeValue::Term(rhs.clone()), 16384,
++                                                            crate::convert::DeltaPolicy::GuardedSemanticFallback,
++                                                            context.len(), context,
++                                                        );
++                                                        eprintln!("NUCLEUS_PROOF2_LAST_QUOT_ARG:left_exposed={left_exposed:?}:right_exposed={right_exposed:?}:budget16384={larger:?}");
++                                                    }
 +                                                }
 +                                            }
 +                                        }
