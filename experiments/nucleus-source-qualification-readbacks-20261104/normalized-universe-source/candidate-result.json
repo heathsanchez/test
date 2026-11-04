@@ -1,0 +1,57 @@
+{
+  "status": "COMPLETE_SAME_FIRST_UNKNOWN",
+  "candidate_only": true,
+  "no_promotion": true,
+  "no_speed_claim": true,
+  "binary_sha256": "9cc9f363e3731e46632d3e677ebb1cd86b6509ea75fd2e6bb79ba8caa5b5f97f",
+  "configuration": {
+    "NUCLEUS_EXPERIMENTAL_CERTIFIED_QUOT_IOTA": "1",
+    "NUCLEUS_EXPERIMENTAL_CONTEXT_BINDER": "1",
+    "NUCLEUS_EXPERIMENTAL_DEMAND_MAJOR": "1",
+    "NUCLEUS_EXPERIMENTAL_EXPECTED_LAMBDA": "1",
+    "NUCLEUS_EXPERIMENTAL_FORMED_PROP_DOMAIN_RETRY": "1",
+    "NUCLEUS_EXPERIMENTAL_POLYMORPHIC_PROP_IRREL": "1",
+    "NUCLEUS_EXPERIMENTAL_PROJECTION_CONTEXT": "1",
+    "NUCLEUS_EXPERIMENTAL_PROJECTION_CROSSFRAME_512": "1",
+    "NUCLEUS_EXPERIMENTAL_PROP_SINGLETON_2P1F": "1",
+    "NUCLEUS_EXPERIMENTAL_RELEVANCE": "1",
+    "NUCLEUS_EXPERIMENTAL_REPLAY_NEUTRAL_PROJECTION": "1",
+    "NUCLEUS_EXPERIMENTAL_REPLAY_PROJECTION_MAJOR": "1",
+    "NUCLEUS_EXPERIMENTAL_SOURCE_PAIR_DEPTH8": "1",
+    "NUCLEUS_EXPERIMENTAL_SOURCE_PROOF_IRREL": "1",
+    "NUCLEUS_EXPERIMENTAL_SUBSTITUTION_RECLOSURE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_DATA_CONGRUENCE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_LINEAGE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_PROJECTION_SPINE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_RECEIVER": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_VALUE_NORMALIZATION": "1",
+    "NUCLEUS_TRACE_DOWNSTREAM": "1"
+  },
+  "rows": [
+    {
+      "input": "signature",
+      "input_sha256": "1022e5dc308231b91a2d8833a26006d1d082339785d61a09fc7427b30d8c0bdf",
+      "rc": 2,
+      "wall": 22.06997272800072,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=AddMonoidAlgebra.nonUnitalNonAssocSemiring._proof_1:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type\n"
+    },
+    {
+      "input": "original",
+      "input_sha256": "ca6ba58a99ca074dc45d975ab982fd119193fa05a6d12e20f08c53cb7dd786f2",
+      "rc": 2,
+      "wall": 92.30361905300015,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=AddMonoidAlgebra.nonUnitalNonAssocSemiring._proof_1:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type\n"
+    }
+  ],
+  "source_parent_binary": "82ebbce2278e54f82667e4d12793034acdf72f329b989e4605cf65473c9de715",
+  "source_parent_commit": "a1d6ba062615ddb209bb5e0c9644d456a5e79084",
+  "final_component_sha256": "1e7da434d8732ed2b0957454fa97679fd7289600896b36e2ac54cc610c73a6bb",
+  "replay_component_sha256": "0003bd01c17acfb90bd7268c5b36f78158b19c768452e2f0ae19003aa0869419",
+  "replay_source_library_tests": 211,
+  "final_library_tests": 213,
+  "subsequent_source_edits": "two cfg(test)-only caller-budget controls in level.rs",
+  "review": "no Critical or Important findings",
+  "qualified": false,
+  "complete_mathlib_accept": false,
+  "no_rank_claim": true
+}
