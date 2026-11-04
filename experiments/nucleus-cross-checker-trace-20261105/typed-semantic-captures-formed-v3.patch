@@ -1,0 +1,210 @@
+--- a/metatron-kernel/src/typecheck.rs
++++ b/metatron-kernel/src/typecheck.rs
+@@ -1607,6 +1658,75 @@
+         self.source_capture_relation::<true>(left,right,remaining)
+     }
+ 
++    /// Positive-only congruence of captured *values*, including different
++    /// source expressions already independently convertible in the SAME real
++    /// context. Identical source syntax is substituted only after every used
++    /// free capture and every referenced universe level has been accounted for.
++    ///
++    /// Unlike `source_capture_relation`, this can discharge a captured pair
++    /// by a checked, typed definitional-equality proof instead of requiring
++    /// identical source trees. Failed or unfinished subproofs never succeed.
++    pub(crate) fn checked_semantic_capture_congruence(
++        &self, left: &Closure, right: &Closure, context: &[TypeValue], budget: usize,
++    ) -> Judgment<()> {
++        let mut remaining=budget.min(16384);
++        type Key=(ExprId,u64,usize,ExprId,u64,usize);
++        let key=|a:&Closure,b:&Closure|->Key{
++            (a.expr,a.env.id(),a.levels.identity(),b.expr,b.env.id(),b.levels.identity())
++        };
++        let mut pending=vec![(left.clone(),right.clone(),false)];
++        let mut active=std::collections::HashSet::<Key>::new();
++        let mut complete=std::collections::HashSet::<Key>::new();
++        while let Some((a,b,finish))=pending.pop(){
++            if !take_step(&mut remaining) {
++                return Judgment::unknown("semantic-capture-work-budget");
++            }
++            if a==b {continue}
++            let pair=key(&a,&b);
++            if finish {
++                active.remove(&pair);
++                complete.insert(pair);
++                continue;
++            }
++            if complete.contains(&pair) {continue}
++            if !active.insert(pair) {
++                return Judgment::unknown("semantic-capture-active-cycle");
++            }
++            if let Some(support)=self.instantiated_source_support(&a,&b,&mut remaining) {
++                pending.push((a.clone(),b.clone(),true));
++                for (li,ri) in support {
++                    if !take_step(&mut remaining){
++                        return Judgment::unknown("semantic-capture-support-budget");
++                    }
++                    match (a.env.lookup_binding_ref(li),b.env.lookup_binding_ref(ri)) {
++                        (Some(EnvBinding::Free(x)),Some(EnvBinding::Free(y))) if x==y=>{},
++                        (Some(EnvBinding::Neutral(x)),Some(EnvBinding::Neutral(y))) if x==y=>{},
++                        (Some(EnvBinding::Neutral(Neutral{head:NeutralHead::Free(x),spine})),Some(EnvBinding::Free(y)))
++                            if spine.is_empty() && x==y=>{},
++                        (Some(EnvBinding::Free(x)),Some(EnvBinding::Neutral(Neutral{head:NeutralHead::Free(y),spine})))
++                            if spine.is_empty() && x==y=>{},
++                        (Some(EnvBinding::NatLit(x)),Some(EnvBinding::NatLit(y))) if x==y=>{},
++                        (Some(EnvBinding::Closure(x)),Some(EnvBinding::Closure(y)))=>
++                            pending.push((x.clone(),y.clone(),false)),
++                        _=>return Judgment::unknown("semantic-capture-unmatched-binding"),
++                    }
++                }
++                continue;
++            }
++            // Only a positive independently typed conversion permits
++            // crossing a real source-shape boundary. Budget is fully reserved
++            // and consumed even if the inner checker happens to be cheaper.
++            let grant=remaining.min(4096);
++            remaining-=grant;
++            if grant<32 || !self.checked_source_conversion(&a,&b,context,grant).is_proven(){
++                return Judgment::unknown("semantic-capture-leaf-not-proven");
++            }
++            active.remove(&pair);
++            complete.insert(pair);
++        }
++        Judgment::proven((),"typed-semantic-capture-congruence")
++    }
++
+     fn source_capture_relation<const PARAMETRIC:bool>(
+         &self,left:&Closure,right:&Closure,remaining:&mut usize,
+     )->bool{
+@@ -6884,6 +7006,40 @@
+     use super::*;
+ 
+     #[test]
++    fn typed_semantic_captures_preserve_value_equality_and_reject_changed_data() {
++        let mut expressions=IdTable::default();
++        let mut levels=IdTable::default();
++        levels.insert(LevelId(0),crate::syntax::Level::Zero).unwrap();
++        levels.insert(LevelId(1),crate::syntax::Level::Succ(LevelId(0))).unwrap();
++        for (id,node) in [
++            (0,Expr::Sort(LevelId(0))),
++            (1,Expr::Sort(LevelId(1))),
++            (2,Expr::BVar(0)),
++            (3,Expr::Let{ty:ExprId(1),value:ExprId(0),body:ExprId(2)}),
++        ]{expressions.insert(ExprId(id),node).unwrap();}
++        let environment=Environment::empty();
++        let checker=TypeChecker::new(&expressions,&levels,&environment);
++        let cap=|id|Closure::new(ExprId(id),EnvFrame::empty());
++        let used=|captured:Closure|Closure::new(ExprId(2),EnvFrame::empty().extend(captured));
++        let a=used(cap(0));
++        let b=used(cap(3));
++        let forged=used(cap(1));
++        assert!(!checker.exact_source_capture_identity(&a,&b,&mut 4096));
++        assert!(checker.checked_semantic_capture_congruence(&a,&b,&[],8192).is_proven(),
++            "a proven beta/let captured equality can be reused under identical source syntax");
++        assert!(!checker.checked_semantic_capture_congruence(&a,&forged,&[],8192).is_proven(),
++            "different actual values must not become equal by frame congruence");
++        let same_type_context=vec![TypeValue::Term(cap(1)),TypeValue::Term(cap(1))];
++        let local0=Closure::new(ExprId(2),EnvFrame::empty().extend_free(FreeId(0)));
++        let local1=Closure::new(ExprId(2),EnvFrame::empty().extend_free(FreeId(1)));
++        assert!(!checker.checked_semantic_capture_congruence(
++            &local0,&local1,&same_type_context,8192,
++        ).is_proven(),"distinct opaque data variables of the SAME type are not equal");
++        assert!(!checker.checked_semantic_capture_congruence(&a,&b,&[],0).is_proven(),
++            "no speculative or exhausted subproof may pass");
++    }
++
++    #[test]
+     fn root_source_alias_uses_the_captured_lambda_and_its_own_level_map() {
+         let mut expressions = IdTable::default();
+         let mut levels = IdTable::default();
+
+--- a/metatron-kernel/src/convert.rs
++++ b/metatron-kernel/src/convert.rs
+@@ -1590,6 +1686,54 @@
+                     }
+                     return Judgment::proven((),"checked-source-paired-projection");
+                 }
++                // Research-only positive congruence for two stuck projections:
++                // the source receiver's entire used-capture support is proved
++                // equal in the REAL Gamma, and every pending spine argument
++                // independently converts. Never infer receiver equality from
++                // a matching projection name or a matching source ExprId.
++                #[cfg(feature="diagnostics")]
++                if std::env::var_os("NUCLEUS_PROBE_TYPED_CAPTURE_CONGRUENCE").is_some()
++                    && left_type==right_type && left_index==right_index
++                    && depth==context.len() && current_budget>=2048
++                {
++                    use std::sync::atomic::{AtomicUsize,Ordering};
++                    static STUCK_TRIALS:AtomicUsize=AtomicUsize::new(0);
++                    static STUCK_WINS:AtomicUsize=AtomicUsize::new(0);
++                    let grant=current_budget.min(8192);
++                    current_budget-=grant;
++                    // Source formation is an independent premise, not an
++                    // inference from same syntax/capture shape. Charge both
++                    // certificates before attempting semantic substitution.
++                    let left_formed=grant>=1536 && checker.checked_source_conversion(
++                        left_structure,left_structure,context,512,
++                    ).is_proven();
++                    let right_formed=left_formed && checker.checked_source_conversion(
++                        right_structure,right_structure,context,512,
++                    ).is_proven();
++                    let receiver=if right_formed {
++                        checker.checked_semantic_capture_congruence(
++                            left_structure,right_structure,context,grant-1024,
++                        )
++                    }else{Judgment::unknown("semantic-capture-receiver-not-formed")};
++                    let mut spine=false;
++                    let spine_charge=left_spine.len().saturating_mul(512);
++                    if receiver.is_proven() && left_spine.len()==right_spine.len()
++                        && current_budget>=spine_charge {
++                        current_budget-=spine_charge;
++                        spine=same_closure_spine_congruence_in_context(
++                            checker,left_spine,right_spine,512,depth,context,512,
++                        );
++                    }
++                    if receiver.is_proven() && spine {
++                        if STUCK_WINS.fetch_add(1,Ordering::Relaxed)<24 {
++                            eprintln!("NUCLEUS_TYPED_STUCK_RECEIVER_SUCCESS:depth={depth}:grant={grant}:owner={left_type:?}:index={left_index}:left={:?}:right={:?}",left_structure.expr,right_structure.expr);
++                        }
++                        return Judgment::proven((),"typed-semantic-stuck-projection-congruence");
++                    }
++                    if STUCK_TRIALS.fetch_add(1,Ordering::Relaxed)<32 {
++                        eprintln!("NUCLEUS_TYPED_STUCK_RECEIVER_UNPROVEN:depth={depth}:grant={grant}:owner={left_type:?}:index={left_index}:formed={right_formed}:receiver={receiver:?}:spine={spine}:left={:?}:right={:?}",left_structure.expr,right_structure.expr);
++                    }
++                }
+                 if same_rigid_application_congruence(
+                     checker,
+                     left_structure,
+@@ -2549,6 +2719,31 @@
+                     argument_budget, DeltaPolicy::GuardedSemanticFallback, depth, context,
+                 );
+                 if !argument_result.is_proven() {
++                    // A distinct capture-frame allocation is not evidence of
++                    // unequal values. Trial a positive-only substitution
++                    // congruence using the complete source support and typed
++                    // conversion of every non-structural captured leaf.
++                    #[cfg(feature="diagnostics")]
++                    if std::env::var_os("NUCLEUS_PROBE_TYPED_CAPTURE_CONGRUENCE").is_some()
++                        && matches!(&argument_result,Judgment::Unknown{..})
++                        && depth==context.len()
++                        && argument_budget>=64
++                    {
++                        use std::sync::atomic::{AtomicUsize,Ordering};
++                        static TRIALS:AtomicUsize=AtomicUsize::new(0);
++                        static SUCCESSES:AtomicUsize=AtomicUsize::new(0);
++                        let status=checker.checked_semantic_capture_congruence(
++                            lhs,rhs,context,argument_budget.min(8192),
++                        );
++                        if status.is_proven() {
++                            if SUCCESSES.fetch_add(1,Ordering::Relaxed)<24 {
++                                eprintln!("NUCLEUS_TYPED_CAPTURE_SUCCESS:depth={depth}:budget={argument_budget}:lhs={:?}:rhs={:?}:owner={left_type:?}",lhs.expr,rhs.expr);
++                            }
++                            continue;
++                        } else if TRIALS.fetch_add(1,Ordering::Relaxed)<12 {
++                            eprintln!("NUCLEUS_TYPED_CAPTURE_UNPROVEN:depth={depth}:budget={argument_budget}:lhs={:?}:rhs={:?}:reason={status:?}",lhs.expr,rhs.expr);
++                        }
++                    }
+                     #[cfg(feature = "diagnostics")]
+                     if crate::run_flags::present(crate::run_flags::Flag::TraceFailedReceiverCaptures)
+                         && matches!(lhs.expr.0, 600 | 1214)
+
