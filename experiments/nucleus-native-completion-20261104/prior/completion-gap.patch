@@ -1,0 +1,17 @@
+--- a/metatron-kernel/src/machine.rs
++++ b/metatron-kernel/src/machine.rs
+@@ -3685,4 +3685,13 @@
+   for n in[valid,universe,short,long]{let term=Closure::new(ExprId(5),EnvFrame::empty().extend_neutral(n.clone()));assert_eq!(m.expose(term,Transparency::Full,1024).proven_value(),Some(&Value::Neutral(n)));}
+  }
+ 
+-}
++ #[test]fn completed_recursor_replay_finishes_a_concrete_native_subtraction_rhs(){
++  let(mut e,b)=source();
++  for(id,expr)in[(1010,Expr::Const{name:b.constructors[0].name,levels:vec![]}),(1011,Expr::Const{name:b.constructors[1].name,levels:vec![]}),(1012,Expr::App{fun:ExprId(1011),arg:ExprId(1010)}),(1013,Expr::Const{name:NameId(9002),levels:vec![]}),(1014,Expr::NatLit(BigNat::parse_decimal("1").unwrap())),(1015,Expr::App{fun:ExprId(1013),arg:ExprId(1014)}),(1016,Expr::App{fun:ExprId(1015),arg:ExprId(1012)})]{e.exprs.insert(ExprId(id),expr).unwrap();}
++  let m=machine(&e,&b,true);let mut nat=m.nat_primitives.clone().unwrap();nat.sub=Some(NameId(9002));let m=m.with_nat_primitives(Some(nat));
++  let mut n=replay(&b,predecessor(closure(1002)));n.spine[1]=closure(1016);n.spine[3]=closure(1000);
++  let result=m.qualified_nested_recursor_result(&n,4096);
++  assert_eq!(result.proven_value(),Some(&Value::NatLit(BigNat::parse_decimal("0").unwrap())),"Nat.rec on zero selects the actual RHS 1-(succ 0)=0: {result:?}");
++ }
++
++}

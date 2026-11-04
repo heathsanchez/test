@@ -1,0 +1,319 @@
+{
+  "status": "REJECTED_AS_SUFFICIENT_COVERAGE_FIX",
+  "parent_binary": "da7917a52bcb88683b5122fa25116de549c4446483c0e0955aa7387f0e409956",
+  "major_only": {
+    "native_pass": 111,
+    "native_fail": 0,
+    "patch_sha": "5ffa7dc47e138d7b2025ef62e419ce9c0e5b43fa79fd66fcc24ded7880ca4a25",
+    "screen": [
+      {
+        "case": "int-ble",
+        "rc": 2,
+        "user": 19.779244,
+        "system": 0.035857,
+        "wall": 19.828935883997474,
+        "terminal": "NUCLEUS_DOWNSTREAM:name=_private.Init.Data.Int.LemmasAux.0.Int.ble'_eq_true._proof_1_2:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type",
+        "source_sha": "5b7a6b7ad11f5683937e8258322d47f09a9daf6d254bd921e6d23b0d1ee3b494",
+        "binary_sha": "c6a40dd3bf643a731989034694d222720477fef4700f5bee255f9f59c74b7bbf"
+      },
+      {
+        "case": "renamed-pprod-forged-fields",
+        "rc": 1,
+        "user": 0.001509,
+        "system": 0.0,
+        "wall": 0.0027978550060652196,
+        "terminal": "NUCLEUS_DOWNSTREAM:name=PProd2:stage=inductive:verdict=Reject",
+        "source_sha": "33993418d305e980e224d6102be2fc61ee9c02be1c8c23ccce00a406616ba6d6",
+        "binary_sha": "c6a40dd3bf643a731989034694d222720477fef4700f5bee255f9f59c74b7bbf"
+      },
+      {
+        "case": "renamed-pprod-forged-motive",
+        "rc": 2,
+        "user": 0.001506,
+        "system": 0.0,
+        "wall": 0.002258106993394904,
+        "terminal": "NUCLEUS_DOWNSTREAM:name=PProd2:stage=inductive:verdict=Unknown",
+        "source_sha": "2eb5034aa01b1591cc99577bacc50095e3d8e80709172175f569e1f481f680de",
+        "binary_sha": "c6a40dd3bf643a731989034694d222720477fef4700f5bee255f9f59c74b7bbf"
+      },
+      {
+        "case": "renamed-pprod",
+        "rc": 0,
+        "user": 0.001353,
+        "system": 0.0,
+        "wall": 0.0024270050053019077,
+        "terminal": null,
+        "source_sha": "72349b3f424b4370e6aed5b55d9ee8aa4a026d02c7f3a2e4c5875053948d9184",
+        "binary_sha": "c6a40dd3bf643a731989034694d222720477fef4700f5bee255f9f59c74b7bbf"
+      }
+    ]
+  },
+  "captured_pred": {
+    "native_pass": 112,
+    "native_fail": 0,
+    "patch_sha": "4016de9733417c2cca5bfb85113dd46974b7ce661c70be02584409a6f52fd547",
+    "screen": [
+      {
+        "case": "int-ble",
+        "rc": 2,
+        "user": 20.052407,
+        "system": 0.037855,
+        "wall": 20.09612354100682,
+        "terminal": "NUCLEUS_DOWNSTREAM:name=_private.Init.Data.Int.LemmasAux.0.Int.ble'_eq_true._proof_1_2:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type",
+        "source_sha": "5b7a6b7ad11f5683937e8258322d47f09a9daf6d254bd921e6d23b0d1ee3b494",
+        "binary_sha": "483cd22a927e4f00d143e4a15e596fc951bc84027d7ba2193816c64910df9c7a"
+      },
+      {
+        "case": "renamed-pprod-forged-fields",
+        "rc": 1,
+        "user": 0.001194,
+        "system": 0.0,
+        "wall": 0.0019519289926392958,
+        "terminal": "NUCLEUS_DOWNSTREAM:name=PProd2:stage=inductive:verdict=Reject",
+        "source_sha": "33993418d305e980e224d6102be2fc61ee9c02be1c8c23ccce00a406616ba6d6",
+        "binary_sha": "483cd22a927e4f00d143e4a15e596fc951bc84027d7ba2193816c64910df9c7a"
+      },
+      {
+        "case": "renamed-pprod-forged-motive",
+        "rc": 2,
+        "user": 0.001437,
+        "system": 0.0,
+        "wall": 0.0021157540031708777,
+        "terminal": "NUCLEUS_DOWNSTREAM:name=PProd2:stage=inductive:verdict=Unknown",
+        "source_sha": "2eb5034aa01b1591cc99577bacc50095e3d8e80709172175f569e1f481f680de",
+        "binary_sha": "483cd22a927e4f00d143e4a15e596fc951bc84027d7ba2193816c64910df9c7a"
+      },
+      {
+        "case": "renamed-pprod",
+        "rc": 0,
+        "user": 0.0019619999999999998,
+        "system": 0.0,
+        "wall": 0.003088992991251871,
+        "terminal": null,
+        "source_sha": "72349b3f424b4370e6aed5b55d9ee8aa4a026d02c7f3a2e4c5875053948d9184",
+        "binary_sha": "483cd22a927e4f00d143e4a15e596fc951bc84027d7ba2193816c64910df9c7a"
+      }
+    ],
+    "declines": [
+      {
+        "case": "bugs--eta-ctor-alias",
+        "rc": 2,
+        "user": 0.002905,
+        "system": 0.0,
+        "wall": 0.005209561000810936,
+        "terminal": "NUCLEUS_DOWNSTREAM:name=etaCtorAlias:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads",
+        "source_sha": "fd1a643c6c52efe34ec0cc0c22e53cdae32561ff80fb533b3bee7064dbd85ea3",
+        "binary_sha": "483cd22a927e4f00d143e4a15e596fc951bc84027d7ba2193816c64910df9c7a"
+      },
+      {
+        "case": "perf--fueled-chain",
+        "rc": 2,
+        "user": 7.630059,
+        "system": 0.130305,
+        "wall": 7.775320400003693,
+        "terminal": "NUCLEUS_DOWNSTREAM:name=chain6_datF:stage=theorem.value:verdict=UNKNOWN:reason=neutral-projection-receiver-congruence",
+        "source_sha": "e5ca34489fc7b8ee13b1e7f09f76247ab7b01dd1a752a13cc8b796c569e1401a",
+        "binary_sha": "483cd22a927e4f00d143e4a15e596fc951bc84027d7ba2193816c64910df9c7a"
+      },
+      {
+        "case": "perf--grind-ring-5",
+        "rc": 2,
+        "user": 11.257866,
+        "system": 0.031596,
+        "wall": 11.293447690011817,
+        "terminal": "NUCLEUS_DOWNSTREAM:name=_private.Init.Grind.Ring.Basic.0.Lean.Grind.Ring.intCast_nat_sub._proof_1_2:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type",
+        "source_sha": "e9c394e0ff311fd10f60dee2433a530f16e82354c32d6588a8775baa06fd221f",
+        "binary_sha": "483cd22a927e4f00d143e4a15e596fc951bc84027d7ba2193816c64910df9c7a"
+      },
+      {
+        "case": "perf--magma-list-deep-n21",
+        "rc": 2,
+        "user": 0.8518549999999999,
+        "system": 0.02421,
+        "wall": 0.8854134800058091,
+        "terminal": "NUCLEUS_DOWNSTREAM:name=countermodel:stage=definition.value:verdict=UNKNOWN:reason=unresolved-qualified-recursor-heads",
+        "source_sha": "b7a211699ab32a5d2397319702e2d5552f5796a6bdac990efa69fb186039f526",
+        "binary_sha": "483cd22a927e4f00d143e4a15e596fc951bc84027d7ba2193816c64910df9c7a"
+      },
+      {
+        "case": "perf--magma-list-deep-n36",
+        "rc": 2,
+        "user": 0.7110759999999999,
+        "system": 0.008154,
+        "wall": 0.7223048209998524,
+        "terminal": "NUCLEUS_DOWNSTREAM:name=countermodel:stage=definition.value:verdict=UNKNOWN:reason=application-function-type",
+        "source_sha": "6669cee92ad330dada351ac9e63656f7e9e848dd70376f17030d64677f8c81ac",
+        "binary_sha": "483cd22a927e4f00d143e4a15e596fc951bc84027d7ba2193816c64910df9c7a"
+      },
+      {
+        "case": "perf--magma-list-pair-n7",
+        "rc": 2,
+        "user": 0.471935,
+        "system": 0.032521,
+        "wall": 0.5098241039959248,
+        "terminal": "NUCLEUS_DOWNSTREAM:name=countermodel:stage=definition.value:verdict=UNKNOWN:reason=application-function-type",
+        "source_sha": "abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35",
+        "binary_sha": "483cd22a927e4f00d143e4a15e596fc951bc84027d7ba2193816c64910df9c7a"
+      },
+      {
+        "case": "perf--magma-string-n4",
+        "rc": 2,
+        "user": 6.224093,
+        "system": 0.036911,
+        "wall": 6.265184153991868,
+        "terminal": "NUCLEUS_DOWNSTREAM:name=Nat.Internal.Linear.Poly.denote_reverse:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type",
+        "source_sha": "158b54b527a3171cfff366e525d1f3ad78147f024e7946ec04fa6f20ef97bc5a",
+        "binary_sha": "483cd22a927e4f00d143e4a15e596fc951bc84027d7ba2193816c64910df9c7a"
+      },
+      {
+        "case": "perf--magma-string-pair-n9",
+        "rc": 2,
+        "user": 6.642604,
+        "system": 0.036889,
+        "wall": 6.736638735994347,
+        "terminal": "NUCLEUS_DOWNSTREAM:name=Nat.Internal.Linear.Poly.denote_reverse:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type",
+        "source_sha": "deeeea5010e88e313dcf3d1b9642a5f9de8fb711066dd0256cec3b35d38c05ae",
+        "binary_sha": "483cd22a927e4f00d143e4a15e596fc951bc84027d7ba2193816c64910df9c7a"
+      }
+    ]
+  },
+  "captured_pred_beq": {
+    "native_pass": 115,
+    "native_fail": 0,
+    "patch_sha": "01779004bfe191850739e028097619db03a58e430ad88d4fc14e44ae7bbf3403",
+    "screen": [
+      {
+        "case": "int-ble",
+        "rc": 2,
+        "user": 20.534269,
+        "system": 0.037995999999999995,
+        "wall": 20.590182216008543,
+        "terminal": "NUCLEUS_DOWNSTREAM:name=_private.Init.Data.Int.LemmasAux.0.Int.ble'_eq_true._proof_1_2:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type",
+        "source_sha": "5b7a6b7ad11f5683937e8258322d47f09a9daf6d254bd921e6d23b0d1ee3b494",
+        "binary_sha": "6ee428a3209fc1e7167be54d50bde0e0a480ab0769c501c5957fabd8ef75e7a3"
+      },
+      {
+        "case": "renamed-pprod-forged-fields",
+        "rc": 1,
+        "user": 0.001318,
+        "system": 0.0,
+        "wall": 0.0021603350032819435,
+        "terminal": "NUCLEUS_DOWNSTREAM:name=PProd2:stage=inductive:verdict=Reject",
+        "source_sha": "33993418d305e980e224d6102be2fc61ee9c02be1c8c23ccce00a406616ba6d6",
+        "binary_sha": "6ee428a3209fc1e7167be54d50bde0e0a480ab0769c501c5957fabd8ef75e7a3"
+      },
+      {
+        "case": "renamed-pprod-forged-motive",
+        "rc": 2,
+        "user": 0.0017029999999999999,
+        "system": 0.0,
+        "wall": 0.0023574950027978048,
+        "terminal": "NUCLEUS_DOWNSTREAM:name=PProd2:stage=inductive:verdict=Unknown",
+        "source_sha": "2eb5034aa01b1591cc99577bacc50095e3d8e80709172175f569e1f481f680de",
+        "binary_sha": "6ee428a3209fc1e7167be54d50bde0e0a480ab0769c501c5957fabd8ef75e7a3"
+      },
+      {
+        "case": "renamed-pprod",
+        "rc": 0,
+        "user": 0.001284,
+        "system": 0.0,
+        "wall": 0.0021186730009503663,
+        "terminal": null,
+        "source_sha": "72349b3f424b4370e6aed5b55d9ee8aa4a026d02c7f3a2e4c5875053948d9184",
+        "binary_sha": "6ee428a3209fc1e7167be54d50bde0e0a480ab0769c501c5957fabd8ef75e7a3"
+      }
+    ],
+    "declines": [
+      {
+        "case": "bugs--eta-ctor-alias",
+        "rc": 2,
+        "user": 0.001099,
+        "system": 0.0,
+        "wall": 0.0028783160087186843,
+        "terminal": "NUCLEUS_DOWNSTREAM:name=etaCtorAlias:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads",
+        "source_sha": "fd1a643c6c52efe34ec0cc0c22e53cdae32561ff80fb533b3bee7064dbd85ea3",
+        "binary_sha": "6ee428a3209fc1e7167be54d50bde0e0a480ab0769c501c5957fabd8ef75e7a3"
+      },
+      {
+        "case": "perf--fueled-chain",
+        "rc": 2,
+        "user": 7.690028,
+        "system": 0.192823,
+        "wall": 7.888135251007043,
+        "terminal": "NUCLEUS_DOWNSTREAM:name=chain6_datF:stage=theorem.value:verdict=UNKNOWN:reason=neutral-projection-receiver-congruence",
+        "source_sha": "e5ca34489fc7b8ee13b1e7f09f76247ab7b01dd1a752a13cc8b796c569e1401a",
+        "binary_sha": "6ee428a3209fc1e7167be54d50bde0e0a480ab0769c501c5957fabd8ef75e7a3"
+      },
+      {
+        "case": "perf--grind-ring-5",
+        "rc": 2,
+        "user": 9.30577,
+        "system": 0.040234,
+        "wall": 9.35024409199832,
+        "terminal": "NUCLEUS_DOWNSTREAM:name=_private.Init.Grind.Ring.Basic.0.Lean.Grind.Ring.intCast_nat_sub._proof_1_2:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type",
+        "source_sha": "e9c394e0ff311fd10f60dee2433a530f16e82354c32d6588a8775baa06fd221f",
+        "binary_sha": "6ee428a3209fc1e7167be54d50bde0e0a480ab0769c501c5957fabd8ef75e7a3"
+      },
+      {
+        "case": "perf--magma-list-deep-n21",
+        "rc": 2,
+        "user": 0.7295419999999999,
+        "system": 0.034054,
+        "wall": 0.765693471999839,
+        "terminal": "NUCLEUS_DOWNSTREAM:name=countermodel:stage=definition.value:verdict=UNKNOWN:reason=unresolved-qualified-recursor-heads",
+        "source_sha": "b7a211699ab32a5d2397319702e2d5552f5796a6bdac990efa69fb186039f526",
+        "binary_sha": "6ee428a3209fc1e7167be54d50bde0e0a480ab0769c501c5957fabd8ef75e7a3"
+      },
+      {
+        "case": "perf--magma-list-deep-n36",
+        "rc": 2,
+        "user": 0.576544,
+        "system": 0.004256,
+        "wall": 0.5835613349918276,
+        "terminal": "NUCLEUS_DOWNSTREAM:name=countermodel:stage=definition.value:verdict=UNKNOWN:reason=application-function-type",
+        "source_sha": "6669cee92ad330dada351ac9e63656f7e9e848dd70376f17030d64677f8c81ac",
+        "binary_sha": "6ee428a3209fc1e7167be54d50bde0e0a480ab0769c501c5957fabd8ef75e7a3"
+      },
+      {
+        "case": "perf--magma-list-pair-n7",
+        "rc": 2,
+        "user": 0.46662699999999996,
+        "system": 0.004601,
+        "wall": 0.47528541898645926,
+        "terminal": "NUCLEUS_DOWNSTREAM:name=countermodel:stage=definition.value:verdict=UNKNOWN:reason=application-function-type",
+        "source_sha": "abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35",
+        "binary_sha": "6ee428a3209fc1e7167be54d50bde0e0a480ab0769c501c5957fabd8ef75e7a3"
+      },
+      {
+        "case": "perf--magma-string-n4",
+        "rc": 2,
+        "user": 5.641961,
+        "system": 0.068371,
+        "wall": 5.718885840004077,
+        "terminal": "NUCLEUS_DOWNSTREAM:name=Nat.Internal.Linear.Poly.denote_reverse:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type",
+        "source_sha": "158b54b527a3171cfff366e525d1f3ad78147f024e7946ec04fa6f20ef97bc5a",
+        "binary_sha": "6ee428a3209fc1e7167be54d50bde0e0a480ab0769c501c5957fabd8ef75e7a3"
+      },
+      {
+        "case": "perf--magma-string-pair-n9",
+        "rc": 2,
+        "user": 5.3028,
+        "system": 0.052954999999999995,
+        "wall": 5.360205043005408,
+        "terminal": "NUCLEUS_DOWNSTREAM:name=Nat.Internal.Linear.Poly.denote_reverse:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type",
+        "source_sha": "deeeea5010e88e313dcf3d1b9642a5f9de8fb711066dd0256cec3b35d38c05ae",
+        "binary_sha": "6ee428a3209fc1e7167be54d50bde0e0a480ab0769c501c5957fabd8ef75e7a3"
+      }
+    ]
+  },
+  "parent_completion_gap": {
+    "rc": 101,
+    "stdout": "\nrunning 1 test\ntest machine::predecessor_major_replay_tests::completed_recursor_replay_finishes_a_concrete_native_subtraction_rhs ... FAILED\n\nfailures:\n\n---- machine::predecessor_major_replay_tests::completed_recursor_replay_finishes_a_concrete_native_subtraction_rhs stdout ----\n\nthread 'machine::predecessor_major_replay_tests::completed_recursor_replay_finishes_a_concrete_native_subtraction_rhs' (59) panicked at src/machine.rs:3691:3:\nassertion `left == right` failed: Nat.rec on zero selects the actual RHS 1-(succ 0)=0: Proven { value: Neutral(Neutral { head: Const { name: NameId(9000), levels: [] }, spine: [Closure { expr: ExprId(5), env: EnvFrame { id: 5, .. }, levels: LevelSubstitution([]) }] }), warrant: WarrantId(\"checked-source-recursor-worklist\") }\n  left: Some(Neutral(Neutral { head: Const { name: NameId(9000), levels: [] }, spine: [Closure { expr: ExprId(5), env: EnvFrame { id: 5, .. }, levels: LevelSubstitution([]) }] }))\n right: Some(NatLit(BigNat([])))\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n\n\nfailures:\n    machine::predecessor_major_replay_tests::completed_recursor_replay_finishes_a_concrete_native_subtraction_rhs\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 115 filtered out; finished in 0.00s\n\n"
+  },
+  "prototype_completion_gap": {
+    "rc": 101,
+    "stdout": "\nrunning 1 test\ntest machine::predecessor_major_replay_tests::completed_recursor_replay_finishes_a_concrete_native_subtraction_rhs ... FAILED\n\nfailures:\n\n---- machine::predecessor_major_replay_tests::completed_recursor_replay_finishes_a_concrete_native_subtraction_rhs stdout ----\n\nthread 'machine::predecessor_major_replay_tests::completed_recursor_replay_finishes_a_concrete_native_subtraction_rhs' (59) panicked at src/machine.rs:3694:3:\nassertion `left == right` failed: Nat.rec on zero selects the actual RHS 1-(succ 0)=0: Proven { value: Neutral(Neutral { head: Const { name: NameId(9000), levels: [] }, spine: [Closure { expr: ExprId(5), env: EnvFrame { id: 5, .. }, levels: LevelSubstitution([]) }] }), warrant: WarrantId(\"checked-source-recursor-worklist\") }\n  left: Some(Neutral(Neutral { head: Const { name: NameId(9000), levels: [] }, spine: [Closure { expr: ExprId(5), env: EnvFrame { id: 5, .. }, levels: LevelSubstitution([]) }] }))\n right: Some(NatLit(BigNat([])))\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n\n\nfailures:\n    machine::predecessor_major_replay_tests::completed_recursor_replay_finishes_a_concrete_native_subtraction_rhs\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 115 filtered out; finished in 0.00s\n\n"
+  },
+  "full_qualification_not_run": true,
+  "stacked": false
+}

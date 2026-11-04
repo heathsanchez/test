@@ -1,0 +1,77 @@
+
+running 10 tests
+test machine::predecessor_major_replay_tests::cached_suspended_equality_cannot_block_a_larger_actual_operand_replay ... FAILED
+test machine::predecessor_major_replay_tests::captured_equality_retains_wrong_levels_arity_and_missing_boolean_authority ... ok
+test machine::predecessor_major_replay_tests::captured_equality_uses_actual_registered_nat_operands_and_bool_constructors ... FAILED
+test machine::predecessor_major_replay_tests::captured_predecessor_application_resumes_through_its_actual_source_binding ... FAILED
+test machine::predecessor_major_replay_tests::completed_recursor_replay_finishes_a_concrete_native_subtraction_rhs ... FAILED
+test machine::predecessor_major_replay_tests::completed_rhs_finishes_actual_nested_sub_pred_equality_operands ... FAILED
+test machine::predecessor_major_replay_tests::predecessor_major_declines_missing_authority_universes_arity_and_symbolic_operand ... ok
+test machine::predecessor_major_replay_tests::predecessor_major_does_not_reset_existing_work_owner ... ok
+test machine::predecessor_major_replay_tests::retained_predecessor_major_uses_existing_checked_numeral_resume ... FAILED
+test machine::predecessor_major_replay_tests::warm_completed_result_cannot_replace_the_requested_principal_one_step_rhs ... FAILED
+
+failures:
+
+---- machine::predecessor_major_replay_tests::cached_suspended_equality_cannot_block_a_larger_actual_operand_replay stdout ----
+
+thread 'machine::predecessor_major_replay_tests::cached_suspended_equality_cannot_block_a_larger_actual_operand_replay' (173) panicked at src/machine.rs:3675:3:
+assertion `left == right` failed
+  left: Some(Neutral(Neutral { head: Const { name: NameId(9001), levels: [] }, spine: [Closure { expr: ExprId(1002), env: EnvFrame { id: 0, .. }, levels: LevelSubstitution([]) }, Closure { expr: ExprId(1002), env: EnvFrame { id: 0, .. }, levels: LevelSubstitution([]) }] }))
+ right: Some(Neutral(Neutral { head: Const { name: NameId(9011), levels: [] }, spine: [] }))
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- machine::predecessor_major_replay_tests::captured_equality_uses_actual_registered_nat_operands_and_bool_constructors stdout ----
+
+thread 'machine::predecessor_major_replay_tests::captured_equality_uses_actual_registered_nat_operands_and_bool_constructors' (175) panicked at src/machine.rs:3665:4:
+assertion `left == right` failed
+  left: Some(Neutral(Neutral { head: Const { name: NameId(9001), levels: [] }, spine: [Closure { expr: ExprId(1002), env: EnvFrame { id: 0, .. }, levels: LevelSubstitution([]) }, Closure { expr: ExprId(1002), env: EnvFrame { id: 0, .. }, levels: LevelSubstitution([]) }] }))
+ right: Some(Neutral(Neutral { head: Const { name: NameId(9011), levels: [] }, spine: [] }))
+
+---- machine::predecessor_major_replay_tests::captured_predecessor_application_resumes_through_its_actual_source_binding stdout ----
+
+thread 'machine::predecessor_major_replay_tests::captured_predecessor_application_resumes_through_its_actual_source_binding' (176) panicked at src/machine.rs:3656:3:
+assertion `left == right` failed
+  left: Some(Neutral(Neutral { head: Const { name: NameId(9000), levels: [] }, spine: [Closure { expr: ExprId(1002), env: EnvFrame { id: 0, .. }, levels: LevelSubstitution([]) }] }))
+ right: Some(NatLit(BigNat([6])))
+
+---- machine::predecessor_major_replay_tests::completed_recursor_replay_finishes_a_concrete_native_subtraction_rhs stdout ----
+
+thread 'machine::predecessor_major_replay_tests::completed_recursor_replay_finishes_a_concrete_native_subtraction_rhs' (177) panicked at src/machine.rs:3691:3:
+assertion `left == right` failed: Nat.rec on zero selects the actual RHS 1-(succ 0)=0: Proven { value: Neutral(Neutral { head: Const { name: NameId(9000), levels: [] }, spine: [Closure { expr: ExprId(5), env: EnvFrame { id: 12, .. }, levels: LevelSubstitution([]) }] }), warrant: WarrantId("checked-source-recursor-worklist") }
+  left: Some(Neutral(Neutral { head: Const { name: NameId(9000), levels: [] }, spine: [Closure { expr: ExprId(5), env: EnvFrame { id: 12, .. }, levels: LevelSubstitution([]) }] }))
+ right: Some(NatLit(BigNat([])))
+
+---- machine::predecessor_major_replay_tests::completed_rhs_finishes_actual_nested_sub_pred_equality_operands stdout ----
+
+thread 'machine::predecessor_major_replay_tests::completed_rhs_finishes_actual_nested_sub_pred_equality_operands' (178) panicked at src/machine.rs:3704:3:
+assertion `left == right` failed: the actual equation (1-(succ0))=0 is true: Proven { value: Neutral(Neutral { head: Const { name: NameId(9001), levels: [] }, spine: [Closure { expr: ExprId(1016), env: EnvFrame { id: 0, .. }, levels: LevelSubstitution([]) }, Closure { expr: ExprId(1000), env: EnvFrame { id: 0, .. }, levels: LevelSubstitution([]) }] }), warrant: WarrantId("checked-source-recursor-worklist") }
+  left: Some(Neutral(Neutral { head: Const { name: NameId(9001), levels: [] }, spine: [Closure { expr: ExprId(1016), env: EnvFrame { id: 0, .. }, levels: LevelSubstitution([]) }, Closure { expr: ExprId(1000), env: EnvFrame { id: 0, .. }, levels: LevelSubstitution([]) }] }))
+ right: Some(Neutral(Neutral { head: Const { name: NameId(9011), levels: [] }, spine: [] }))
+
+---- machine::predecessor_major_replay_tests::retained_predecessor_major_uses_existing_checked_numeral_resume stdout ----
+
+thread 'machine::predecessor_major_replay_tests::retained_predecessor_major_uses_existing_checked_numeral_resume' (181) panicked at src/machine.rs:3637:3:
+assertion `left == right` failed: Unknown { residual: ResidualId("nested-recursor-iota-unmatched-rule") }
+  left: None
+ right: Some(NatLit(BigNat([5])))
+
+---- machine::predecessor_major_replay_tests::warm_completed_result_cannot_replace_the_requested_principal_one_step_rhs stdout ----
+
+thread 'machine::predecessor_major_replay_tests::warm_completed_result_cannot_replace_the_requested_principal_one_step_rhs' (182) panicked at src/machine.rs:3711:3:
+assertion `left == right` failed
+  left: Some(Neutral(Neutral { head: Const { name: NameId(9000), levels: [] }, spine: [Closure { expr: ExprId(5), env: EnvFrame { id: 32, .. }, levels: LevelSubstitution([]) }] }))
+ right: Some(NatLit(BigNat([])))
+
+
+failures:
+    machine::predecessor_major_replay_tests::cached_suspended_equality_cannot_block_a_larger_actual_operand_replay
+    machine::predecessor_major_replay_tests::captured_equality_uses_actual_registered_nat_operands_and_bool_constructors
+    machine::predecessor_major_replay_tests::captured_predecessor_application_resumes_through_its_actual_source_binding
+    machine::predecessor_major_replay_tests::completed_recursor_replay_finishes_a_concrete_native_subtraction_rhs
+    machine::predecessor_major_replay_tests::completed_rhs_finishes_actual_nested_sub_pred_equality_operands
+    machine::predecessor_major_replay_tests::retained_predecessor_major_uses_existing_checked_numeral_resume
+    machine::predecessor_major_replay_tests::warm_completed_result_cannot_replace_the_requested_principal_one_step_rhs
+
+test result: FAILED. 3 passed; 7 failed; 0 ignored; 0 measured; 108 filtered out; finished in 0.00s
+

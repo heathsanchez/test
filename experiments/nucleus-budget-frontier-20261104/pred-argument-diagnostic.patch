@@ -1,0 +1,28 @@
+--- a/metatron-kernel/src/machine.rs
++++ b/metatron-kernel/src/machine.rs
+@@ -2545,6 +2545,25 @@
+                 #[cfg(feature="diagnostics")]
+                 if budget>=8192 && crate::run_flags::present(crate::run_flags::Flag::TraceReplayCache) {
+                     eprintln!("NUCLEUS_ROOT_RULE_MISMATCH:budget={budget}:recursor={name:?}:actual={constructor:?}:actual_levels={constructor_levels:?}:actual_arity={}:expected={:?}",constructor_args.len(),reduction.rules.iter().map(|r|(r.constructor,r.num_params+r.num_fields)).collect::<Vec<_>>());
++                    if self.nat_primitives.as_ref().is_some_and(|nat|nat.pred==Some(constructor)) {
++                        let mut pending=constructor_args.clone();let mut seen=HashSet::new();
++                        for _ in 0..48 {
++                            let Some(term)=pending.pop()else{break;};
++                            if !seen.insert((term.expr,term.env.id())){continue;}
++                            let expression=self.expressions.get(term.expr);
++                            eprintln!("NUCLEUS_PRED_ARGUMENT_GRAPH:expr={:?}:frame={}:syntax={}",term.expr,term.env.id(),format!("{expression:?}").chars().take(180).collect::<String>());
++                            match expression {
++                                Some(Expr::App{fun,arg})=>{pending.push(term.sibling(*arg,term.env.clone()));pending.push(term.sibling(*fun,term.env.clone()));}
++                                Some(Expr::BVar(index))if *index<=64=>match term.env.lookup(*index){
++                                    Some(EnvBinding::Closure(bound))=>pending.push(bound),
++                                    Some(EnvBinding::Neutral(n))=>{eprintln!("NUCLEUS_PRED_ARGUMENT_BINDING:head={:?}:spine={}",n.head,n.spine.len());pending.extend(n.spine);}
++                                    other=>eprintln!("NUCLEUS_PRED_ARGUMENT_BINDING:{other:?}"),
++                                },
++                                _=>{},
++                            }
++                        }
++                    }
++
+                 }
+ 
+                 return { #[cfg(feature="diagnostics")] if budget>=8192 && crate::run_flags::present(crate::run_flags::Flag::TraceReplayCache) { eprintln!("NUCLEUS_ROOT_REPLAY_DECLINE:budget={budget}:head={:?}:reason=nested-recursor-iota-unmatched-rule",neutral.head); } Judgment::unknown("nested-recursor-iota-unmatched-rule") };

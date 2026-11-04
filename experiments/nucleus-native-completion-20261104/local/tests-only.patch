@@ -1,0 +1,115 @@
+--- a/metatron-kernel/src/machine.rs
++++ b/metatron-kernel/src/machine.rs
+@@ -3605,3 +3605,112 @@
+   for id in [0,26]{let n=Neutral{head:NeutralHead::Const{name:NameId(6),levels:vec![]},spine:vec![Closure::new(ExprId(id),EnvFrame::empty().extend_free(FreeId(99)))]};assert!(m.qualified_nat_predecessor_result(&n,256).is_unknown());}
+  }
+ }
++
++#[cfg(test)]
++mod predecessor_major_replay_tests {
++ use super::*;
++ use crate::parser::parse;
++ use crate::syntax::Declaration;
++ use crate::nat::BigNat;
++ use std::io::Cursor;
++ fn source()->(crate::parser::ResolvedExport,crate::syntax::InductiveBlock){
++  let mut e=parse(Cursor::new(include_bytes!("../tests/fixtures/good-parameter-tree.ndjson"))).unwrap().resolve().unwrap();
++  let Declaration::Inductive(block)=e.declarations[0].clone()else{panic!("Nat block")};
++  for(id,value)in[(1000,"0"),(1002,"7"),(1007,"99")]{e.exprs.insert(ExprId(id),Expr::NatLit(BigNat::parse_decimal(value).unwrap())).unwrap();}
++  for(id,expr)in[(1003,Expr::BVar(1)),(1004,Expr::Lam{domain:ExprId(1),body:ExprId(1003)}),(1005,Expr::Lam{domain:ExprId(1),body:ExprId(1004)}),(1006,Expr::Lam{domain:ExprId(1),body:ExprId(1)})]{e.exprs.insert(ExprId(id),expr).unwrap();}
++  (e,block)
++ }
++ fn machine<'a>(e:&'a crate::parser::ResolvedExport,b:&crate::syntax::InductiveBlock,pred:bool)->Machine<'a>{
++  let rec=&b.recursors[0];
++  let reduction=RecursorReduction{k:false,num_params:0,num_indices:0,level_params:rec.level_params.clone(),rules:rec.rules.iter().map(|r|RecursorRule{constructor:r.constructor,constructor_level_params:vec![],num_params:0,num_fields:r.num_fields as usize,rhs:r.rhs}).collect()};
++  let nat=NatPrimitives{type_name:b.types[0].name,type_expr:ExprId(1),zero:b.constructors[0].name,succ:b.constructors[1].name,recursor:rec.name,add:None,mul:None,pow:None,land:None,shift_right:None,div:None,modulo:None,sub:None,pred:pred.then_some(NameId(9000)),virtual_bvar_zero:Some(ExprId(5)),ble:None,beq:None};
++  Machine::new(AuthorityId(1),&e.exprs,&e.levels,HashMap::new()).with_nat_primitives(Some(nat)).with_recursor_reductions(HashMap::from([(rec.name,reduction)])).with_exposure_cache(new_exposure_cache())
++ }
++ fn closure(id:u64)->Closure{Closure::new(ExprId(id),EnvFrame::empty())}
++ fn predecessor(arg:Closure)->Neutral{Neutral{head:NeutralHead::Const{name:NameId(9000),levels:vec![]},spine:vec![arg]}}
++ fn replay(b:&crate::syntax::InductiveBlock,major:Neutral)->Neutral{
++  Neutral{head:NeutralHead::Const{name:b.recursors[0].name,levels:vec![crate::level::succ(crate::level::LevelTerm::Zero)]},spine:vec![closure(1006),closure(1007),closure(1005),Closure::new(ExprId(5),EnvFrame::empty().extend_neutral(major))]}
++ }
++ #[test]fn retained_predecessor_major_uses_existing_checked_numeral_resume(){
++  let(e,b)=source();let m=machine(&e,&b,true);let n=replay(&b,predecessor(closure(1002)));
++  let result=m.qualified_nested_recursor_result(&n,1024);
++  assert_eq!(result.proven_value(),Some(&Value::NatLit(BigNat::parse_decimal("5").unwrap())),"{result:?}");
++  let zero=replay(&b,predecessor(closure(1000)));assert_eq!(m.qualified_nested_recursor_result(&zero,1024).proven_value(),Some(&Value::NatLit(BigNat::parse_decimal("99").unwrap())));
++ }
++ #[test]fn predecessor_major_declines_missing_authority_universes_arity_and_symbolic_operand(){
++  let(e,b)=source();let m=machine(&e,&b,true);let valid=predecessor(closure(1002));
++  let mut wrong=valid.clone();wrong.head=NeutralHead::Const{name:NameId(9001),levels:vec![]};
++  let mut universe=valid.clone();universe.head=NeutralHead::Const{name:NameId(9000),levels:vec![crate::level::LevelTerm::Zero]};
++  let mut short=valid.clone();short.spine.clear();let mut long=valid.clone();long.spine.push(closure(1002));
++  let symbolic=predecessor(Closure::new(ExprId(5),EnvFrame::empty().extend_free(FreeId(99))));
++  for major in[wrong,universe,short,long,symbolic]{assert!(m.qualified_nested_recursor_result(&replay(&b,major),1024).is_unknown());}
++  assert!(machine(&e,&b,false).qualified_nested_recursor_result(&replay(&b,valid),1024).is_unknown());
++ }
++ #[test]fn predecessor_major_does_not_reset_existing_work_owner(){
++  let(e,b)=source();let m=machine(&e,&b,true);let n=replay(&b,predecessor(closure(1002)));
++  m.exposure_fuel.set(Some(1));assert!(m.qualified_nested_recursor_result(&n,1024).is_unknown());assert_eq!(m.exposure_fuel.get(),Some(0));
++ }
++ #[test]fn captured_predecessor_application_resumes_through_its_actual_source_binding(){
++  let(e,b)=source();let m=machine(&e,&b,true);
++  let term=Closure::new(ExprId(5),EnvFrame::empty().extend_neutral(predecessor(closure(1002))));
++  assert_eq!(m.expose(term,Transparency::Full,1024).proven_value(),Some(&Value::NatLit(BigNat::parse_decimal("6").unwrap())));
++ }
++
++ #[test]fn captured_equality_uses_actual_registered_nat_operands_and_bool_constructors(){
++  let(e,b)=source();let m=machine(&e,&b,true);let mut nat=m.nat_primitives.clone().unwrap();nat.beq=Some(NameId(9001));
++  let m=m.with_nat_primitives(Some(nat)).with_bool_primitives(Some(BoolPrimitives{false_ctor:NameId(9010),true_ctor:NameId(9011)}));
++  for(other,want)in[(1002,9011),(1000,9010)]{
++   let n=Neutral{head:NeutralHead::Const{name:NameId(9001),levels:vec![]},spine:vec![closure(1002),closure(other)]};
++   let term=Closure::new(ExprId(5),EnvFrame::empty().extend_neutral(n));
++   assert_eq!(m.expose(term,Transparency::Full,1024).proven_value(),Some(&Value::Neutral(Neutral{head:NeutralHead::Const{name:NameId(want),levels:vec![]},spine:vec![]})));
++  }
++ }
++
++ #[test]fn cached_suspended_equality_cannot_block_a_larger_actual_operand_replay(){
++  let(e,b)=source();let m=machine(&e,&b,true);let mut nat=m.nat_primitives.clone().unwrap();nat.beq=Some(NameId(9001));
++  let m=m.with_nat_primitives(Some(nat)).with_bool_primitives(Some(BoolPrimitives{false_ctor:NameId(9010),true_ctor:NameId(9011)}));
++  let n=Neutral{head:NeutralHead::Const{name:NameId(9001),levels:vec![]},spine:vec![closure(1002),closure(1002)]};
++  let term=Closure::new(ExprId(5),EnvFrame::empty().extend_neutral(n));
++  assert!(matches!(m.expose(term.clone(),Transparency::Full,2).proven_value(),Some(Value::Neutral(_))));
++  assert_eq!(m.expose(term,Transparency::Full,1024).proven_value(),Some(&Value::Neutral(Neutral{head:NeutralHead::Const{name:NameId(9011),levels:vec![]},spine:vec![]})));
++ }
++ #[test]fn captured_equality_retains_wrong_levels_arity_and_missing_boolean_authority(){
++  let(e,b)=source();let m=machine(&e,&b,true);let mut nat=m.nat_primitives.clone().unwrap();nat.beq=Some(NameId(9001));let m=m.with_nat_primitives(Some(nat));
++  let valid=Neutral{head:NeutralHead::Const{name:NameId(9001),levels:vec![]},spine:vec![closure(1002),closure(1002)]};
++  let mut universe=valid.clone();universe.head=NeutralHead::Const{name:NameId(9001),levels:vec![crate::level::LevelTerm::Zero]};
++  let mut short=valid.clone();short.spine.pop();let mut long=valid.clone();long.spine.push(closure(1002));
++  for n in[valid,universe,short,long]{let term=Closure::new(ExprId(5),EnvFrame::empty().extend_neutral(n.clone()));assert_eq!(m.expose(term,Transparency::Full,1024).proven_value(),Some(&Value::Neutral(n)));}
++ }
++
++ #[test]fn completed_recursor_replay_finishes_a_concrete_native_subtraction_rhs(){
++  let(mut e,b)=source();
++  for(id,expr)in[(1010,Expr::Const{name:b.constructors[0].name,levels:vec![]}),(1011,Expr::Const{name:b.constructors[1].name,levels:vec![]}),(1012,Expr::App{fun:ExprId(1011),arg:ExprId(1010)}),(1013,Expr::Const{name:NameId(9002),levels:vec![]}),(1014,Expr::NatLit(BigNat::parse_decimal("1").unwrap())),(1015,Expr::App{fun:ExprId(1013),arg:ExprId(1014)}),(1016,Expr::App{fun:ExprId(1015),arg:ExprId(1012)})]{e.exprs.insert(ExprId(id),expr).unwrap();}
++  let m=machine(&e,&b,true);let mut nat=m.nat_primitives.clone().unwrap();nat.sub=Some(NameId(9002));let m=m.with_nat_primitives(Some(nat));
++  let mut n=replay(&b,predecessor(closure(1002)));n.spine[1]=closure(1016);n.spine[3]=closure(1000);
++  let result=m.qualified_nested_recursor_result(&n,4096);
++  assert_eq!(result.proven_value(),Some(&Value::NatLit(BigNat::parse_decimal("0").unwrap())),"Nat.rec on zero selects the actual RHS 1-(succ 0)=0: {result:?}");
++ }
++
++ fn nested_source()->(crate::parser::ResolvedExport,crate::syntax::InductiveBlock){
++  let(mut e,b)=source();
++  for(id,expr)in[(1010,Expr::Const{name:b.constructors[0].name,levels:vec![]}),(1011,Expr::Const{name:b.constructors[1].name,levels:vec![]}),(1012,Expr::App{fun:ExprId(1011),arg:ExprId(1010)}),(1013,Expr::Const{name:NameId(9002),levels:vec![]}),(1014,Expr::NatLit(BigNat::parse_decimal("1").unwrap())),(1015,Expr::App{fun:ExprId(1013),arg:ExprId(1014)}),(1016,Expr::App{fun:ExprId(1015),arg:ExprId(1012)}),(1017,Expr::Const{name:NameId(9001),levels:vec![]}),(1018,Expr::App{fun:ExprId(1017),arg:ExprId(1016)}),(1019,Expr::App{fun:ExprId(1018),arg:ExprId(1000)}),(1020,Expr::Const{name:NameId(9020),levels:vec![]}),(1021,Expr::Const{name:NameId(9010),levels:vec![]}),(1022,Expr::Lam{domain:ExprId(1020),body:ExprId(1021)}),(1023,Expr::Lam{domain:ExprId(1),body:ExprId(1022)}),(1024,Expr::Lam{domain:ExprId(1),body:ExprId(1020)})]{e.exprs.insert(ExprId(id),expr).unwrap();}
++  (e,b)
++ }
++ #[test]fn completed_rhs_finishes_actual_nested_sub_pred_equality_operands(){
++  let(e,b)=nested_source();let m=machine(&e,&b,true);let mut nat=m.nat_primitives.clone().unwrap();nat.sub=Some(NameId(9002));nat.beq=Some(NameId(9001));
++  let m=m.with_nat_primitives(Some(nat)).with_bool_primitives(Some(BoolPrimitives{false_ctor:NameId(9010),true_ctor:NameId(9011)}));
++  let mut n=replay(&b,predecessor(closure(1002)));n.spine=vec![closure(1024),closure(1019),closure(1023),closure(1000)];
++  let result=m.qualified_nested_recursor_result(&n,4096);
++  assert_eq!(result.proven_value(),Some(&Value::Neutral(Neutral{head:NeutralHead::Const{name:NameId(9011),levels:vec![]},spine:vec![]})),"the actual equation (1-(succ0))=0 is true: {result:?}");
++ }
++ #[test]fn warm_completed_result_cannot_replace_the_requested_principal_one_step_rhs(){
++  let(e,b)=nested_source();let m=machine(&e,&b,true);let mut nat=m.nat_primitives.clone().unwrap();nat.sub=Some(NameId(9002));let m=m.with_nat_primitives(Some(nat));
++  let mut n=replay(&b,predecessor(closure(1002)));n.spine[1]=closure(1016);n.spine[3]=closure(1000);
++  let cold=m.qualified_one_step_recursor_result(&n,4096);
++  assert!(matches!(cold.proven_value(),Some(Value::Neutral(v))if v.head==NeutralHead::Const{name:NameId(9000),levels:vec![]}));
++  assert_eq!(m.qualified_nested_recursor_result(&n,4096).proven_value(),Some(&Value::NatLit(BigNat::parse_decimal("0").unwrap())));
++  let warm=m.qualified_one_step_recursor_result(&n,4096);
++  assert!(matches!(warm.proven_value(),Some(Value::Neutral(v))if v.head==NeutralHead::Const{name:NameId(9000),levels:vec![]}),"completed memo must not cross the principal one-step boundary: {warm:?}");
++ }
++
++}

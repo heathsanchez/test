@@ -14,7 +14,7 @@ C,Q,t=U.C,U.Q,U.Q.t
 OUT=Path('/tmp/nucleus-qualified-stack')
 BASE=Path('/tmp/universe-qualified')
 
-def qualify_and_pair(selected,baseline_directory,output):
+def qualify_candidate(selected,baseline_directory,output,additional_gate=None):
     BASE=Path(baseline_directory);OUT=Path(output);OUT.mkdir(parents=True,exist_ok=True)
     kernel,binary,build_env,arm=selected
     baseline=json.loads((BASE/'qualification.json').read_text())['candidate']
@@ -45,6 +45,7 @@ def qualify_and_pair(selected,baseline_directory,output):
                 return rc
         return original_capture(command,target,**kwargs)
     def gate(binary,env):
+        if additional_gate is not None:additional_gate(binary,env)
         C.check_controls(binary,json.loads((ROOT.parent/'nucleus-universe-reconcile-20261104/inputs/manifest.json').read_text()),ROOT.parent/'nucleus-universe-reconcile-20261104/inputs',env,'renamed_record_gate.json','renamed-record-differential')
         original_gate(binary,env)
     C.OUT=OUT;C.captured=captured;Q.source_qualified_candidate=lambda unused:(kernel,binary,build_env,arm);U.new_gate=gate
@@ -52,6 +53,13 @@ def qualify_and_pair(selected,baseline_directory,output):
     finally:C.captured=original_capture;Q.source_qualified_candidate=original_builder;U.new_gate=original_gate
     q=json.loads((OUT/'qualification.json').read_text())['candidate']
     assert q['qualified']and Q.R.N.Q.native_nonregression(q['native'],baseline['native'])
+    return q,baseline
+
+def qualify_and_pair(selected,baseline_directory,output):
+    BASE=Path(baseline_directory);OUT=Path(output)
+    kernel,binary,build_env,arm=selected
+    q,baseline=qualify_candidate(selected,BASE,OUT)
+    env=Q.R.N.runtime(True)
     full=json.loads((OUT/'full.json').read_text());base_full=json.loads((BASE/'full.json').read_text())
     expected=(base_full['result']['rc'],base_full['terminal']);assert(full['result']['rc'],full['terminal'])==expected
     original=BASE/'candidate/nucleus';assert t.digest(original)==baseline['binary_sha'];original.chmod(0o755)
