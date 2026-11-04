@@ -1,0 +1,33 @@
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -2579,6 +2579,30 @@
+                     };
+                     eprintln!("NUCLEUS_FAILED_RECEIVER_CONVERSION:expression={expression:?}:context_len={}:source_frame={}:remaining={}:actual={value:?}:expected={expected:?}:context={context:?}:actual_exposed={:?}:expected_exposed={:?}",
+                         context.len(), frame.id(), *remaining, expose(&value), expose(expected));
++                    // Exact first-frontier diagnosis only. No production verdict or
++                    // cached premise is changed: each Eq child is independently
++                    // tested under the same source-checked context.
++                    if expression.0 == 273318 && context.len() == 7 {
++                        let lhs = expose(&value);
++                        let rhs = expose(expected);
++                        if let (Some(Judgment::Proven { value: Value::Neutral(a), .. }),
++                                Some(Judgment::Proven { value: Value::Neutral(b), .. })) =
++                            (lhs.as_ref(), rhs.as_ref())
++                        {
++                            if a.spine.len() == 3 && b.spine.len() == 3 {
++                                for (i, (a, b)) in a.spine.iter().zip(&b.spine).enumerate() {
++                                    let relation = crate::convert::convert_with_policy_in_context(
++                                        self, &TypeValue::Term(a.clone()), &TypeValue::Term(b.clone()),
++                                        4096, crate::convert::DeltaPolicy::GuardedSemanticFallback,
++                                        context.len(), context,
++                                    );
++                                    eprintln!(
++                                        "NUCLEUS_PROOF2_EQ_ARGUMENT:position={i}:lhs={a:?}:rhs={b:?}:relation={relation:?}"
++                                    );
++                                }
++                            }
++                        }
++                    }
+                 }
+                 #[cfg(feature="diagnostics")]
+                 if crate::run_flags::present(crate::run_flags::Flag::TraceBidirBodyGap)
