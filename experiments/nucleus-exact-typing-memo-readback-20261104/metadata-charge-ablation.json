@@ -1,0 +1,31 @@
+{
+  "status": "DIAGNOSTIC_COUNTERFACTUAL_ONLY",
+  "rows": [
+    {
+      "arm": "sealed-parent",
+      "rc": 0,
+      "wall": 6.108887673999561,
+      "stderr": "",
+      "binary_sha": "c43b174abbad341e5b308d93cd66a28e42db9d9425796ed33b16c644e142ae8e",
+      "input_sha": "342291ab15108c7974a3c68b173e3bbf314b3cd82efb758855e9b56583631ea9"
+    },
+    {
+      "arm": "paid-memo",
+      "rc": 2,
+      "wall": 4.691598659999727,
+      "stderr": "NUCLEUS_DOWNSTREAM:name=MonoidHom.instFunLike._proof_1:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type\n",
+      "binary_sha": "148569048d707ad5e7f2d4e3386fa3818c2c3e06da529fdfcb86532504141adc",
+      "input_sha": "342291ab15108c7974a3c68b173e3bbf314b3cd82efb758855e9b56583631ea9"
+    },
+    {
+      "arm": "COUNTERFACTUAL-UNPAID-METADATA",
+      "rc": 0,
+      "wall": 4.543939171000602,
+      "stderr": "",
+      "binary_sha": "f299c9eead7c91fd3d2b2369ce68bc7e0202ef7c0429a1eb63dd229ece5a60c2",
+      "input_sha": "342291ab15108c7974a3c68b173e3bbf314b3cd82efb758855e9b56583631ea9"
+    }
+  ],
+  "no_promotion": true,
+  "no_performance_claim": true
+}
