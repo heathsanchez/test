@@ -1,0 +1,42 @@
+{
+  "status": "ALL_EXACT_SOURCE_RECONSTRUCTIONS_VERIFIED",
+  "base_tar_sha256": "1b25f9ea47c1d6f430228a473a547490d2c3fa1cf70867c4f0c02c697ce10e23",
+  "rows": [
+    {
+      "arm": "parent-trace",
+      "verified_files": 368,
+      "exact_file_set": true,
+      "patch_sha256": "a817c5891f25c0ccfedfca8eff0e6d7d5382f17ed7f968ecd25475dfb0d30218",
+      "diagnostic_only": true
+    },
+    {
+      "arm": "skip-trace",
+      "verified_files": 368,
+      "exact_file_set": true,
+      "patch_sha256": "b1a5e095c489cab21f220b715fc1da44d8bce332bb596b487f526093a8e87f3a",
+      "diagnostic_only": true
+    },
+    {
+      "arm": "capture-probe",
+      "verified_files": 368,
+      "exact_file_set": true,
+      "patch_sha256": "c95824c25f947589c0f0d8b3f3985a269cb99b97b8e260fee748b1579143ac09",
+      "diagnostic_only": true
+    },
+    {
+      "arm": "envelope",
+      "verified_files": 368,
+      "exact_file_set": true,
+      "patch_sha256": "aa6eaac65c8b96c8f9ec09ff568bbe3a10bbfc6cb59a9bb9a5e8ceaecca9a7be",
+      "diagnostic_only": true
+    },
+    {
+      "arm": "envelope-counterfactual",
+      "verified_files": 368,
+      "exact_file_set": true,
+      "patch_sha256": "7de5049560a84e1b24cdb025918e79d17e796fa49a10ae72e7d33d07d2b6326f",
+      "diagnostic_only": true
+    }
+  ],
+  "no_source_qualification_transfer": true
+}

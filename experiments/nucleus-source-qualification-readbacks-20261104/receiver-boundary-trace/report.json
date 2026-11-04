@@ -1,0 +1,20 @@
+[
+  {
+    "arm": "parent-trace",
+    "rc": 2,
+    "binary_sha256": "e97397a1f2aff987daf2e33fc22f575d895810fbd1db47d562b974599d68b9d4",
+    "input_sha256": "1022e5dc308231b91a2d8833a26006d1d082339785d61a09fc7427b30d8c0bdf",
+    "terminal": ":allowance=47:remaining=0:depth=9\nRECEIVER_BOUNDARY:environment-prefix:root=ExprId(52):env=1636081:virtual=0:used_index=4:traversed=3:end=5:free=FreeId(9)\nNUCLEUS_DOWNSTREAM:name=AddMonoidAlgebra.nonUnitalNonAssocSemiring._proof_1:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type\n",
+    "diagnostic_only": true,
+    "no_promotion": true
+  },
+  {
+    "arm": "skip-trace",
+    "rc": 2,
+    "binary_sha256": "a619704d86e42e3f41a43a1e2946465a568e00271ec276ca6c8adb30a6bb24ce",
+    "input_sha256": "1022e5dc308231b91a2d8833a26006d1d082339785d61a09fc7427b30d8c0bdf",
+    "terminal": "llowance=231:remaining=0:depth=9\nRECEIVER_BOUNDARY:environment-prefix:root=ExprId(143):env=1634658:virtual=0:used_index=6:traversed=2:end=7:free=FreeId(0)\nNUCLEUS_DOWNSTREAM:name=AddMonoidAlgebra.nonUnitalNonAssocSemiring._proof_1:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type\n",
+    "diagnostic_only": true,
+    "no_promotion": true
+  }
+]
