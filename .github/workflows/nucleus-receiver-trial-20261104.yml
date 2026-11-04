@@ -1,0 +1,37 @@
+name: Nucleus receiver trial diagnostic
+on:
+  push:
+    branches: [research/nucleus-receiver-trial-20261104]
+    paths:
+      - '.github/workflows/nucleus-receiver-trial-20261104.yml'
+      - 'experiments/nucleus-receiver-trial-20261104/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  retention:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Restore pinned research default
+        run: |
+          set -euo pipefail
+          gh api repos/heathsanchez/test/actions/artifacts/13332531103/zip > /tmp/receiver-parent.zip
+          printf '%s  %s\n' 9d0ffa1d7ef5c09121477e7543c5abf1b35ec56391dd53fc89d755d737e43e73 /tmp/receiver-parent.zip | sha256sum -c -
+      - run: python3 experiments/nucleus-receiver-trial-20261104/run.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-receiver-trial-${{ github.sha }}
+          retention-days: 90
+          path: |
+            /tmp/nucleus-receiver-trials/**/*.json
+            /tmp/nucleus-receiver-trials/**/*.log
+            /tmp/nucleus-receiver-trials/**/nucleus
+            /tmp/nucleus-receiver-trials/**/stdout
+            /tmp/nucleus-receiver-trials/**/stderr
