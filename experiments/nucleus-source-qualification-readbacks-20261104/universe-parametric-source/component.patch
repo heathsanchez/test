@@ -1,0 +1,255 @@
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -106,6 +106,9 @@
+     fn drop(&mut self) { WIDE_PROOF_TRIAL_ACTIVE.with(|active| active.set(false)); }
+ }
+ 
++#[derive(Clone)]
++struct ParametricSourceSupport { captures:Vec<(u64,u64)>, levels:Vec<(LevelId,LevelId)> }
++
+ pub struct TypeChecker<'a> {
+     expressions: &'a IdTable<ExprId, Expr>,
+     levels: &'a IdTable<LevelId, Level>,
+@@ -117,6 +120,7 @@
+     closed_spine_eligibility: RefCell<HashMap<ExprId, bool>>,
+     source_support: RefCell<HashMap<ExprId, Vec<u64>>>,
+     paired_source_support: RefCell<HashMap<(ExprId, ExprId), Vec<(u64, u64)>>>,
++    parametric_source_support:RefCell<HashMap<(ExprId,ExprId),ParametricSourceSupport>>,
+     checked_frames: RefCell<HashMap<CheckedFrameKey, EnvFrame>>,
+     // Completed pure source-freshness proofs, local to these borrowed immutable
+     // source tables. Retained closures pin frame and level allocation identity.
+@@ -179,6 +183,7 @@
+             closed_spine_eligibility: RefCell::new(HashMap::new()),
+             source_support: RefCell::new(HashMap::new()),
+             paired_source_support: RefCell::new(HashMap::new()),
++            parametric_source_support:RefCell::new(HashMap::new()),
+             checked_frames: RefCell::new(HashMap::new()),
+             source_opening_proofs:RefCell::new(HashMap::new()),
+             source_capture_proofs:RefCell::new(HashMap::new()),
+@@ -208,6 +213,7 @@
+             closed_spine_eligibility: RefCell::new(HashMap::new()),
+             source_support: RefCell::new(HashMap::new()),
+             paired_source_support: RefCell::new(HashMap::new()),
++            parametric_source_support:RefCell::new(HashMap::new()),
+             checked_frames: RefCell::new(HashMap::new()),
+             source_opening_proofs:RefCell::new(HashMap::new()),
+             source_capture_proofs:RefCell::new(HashMap::new()),
+@@ -1500,9 +1506,110 @@
+         }
+     }
+ 
+-    pub(crate) fn exact_source_capture_identity(
+-        &self, left: &Closure, right: &Closure, remaining: &mut usize,
+-    ) -> bool {
++    // A context-free schema retains syntax obligations, not their instantiated
++    // truth. Every use rechecks all universe arguments in its actual closures.
++    fn complete_parametric_source_support(&self,left:ExprId,right:ExprId,remaining:&mut usize)->Option<ParametricSourceSupport>{
++        let root=(left,right);let mut pending=vec![(root,false)];let mut active=std::collections::HashSet::new();let mut complete=HashMap::<(ExprId,ExprId),ParametricSourceSupport>::new();
++        while let Some((pair@(a,b),finish))=pending.pop(){
++            if !finish{
++                if !take_step(remaining){return None}
++                if complete.contains_key(&pair){continue}
++                if let Some(plan)=self.parametric_source_support.borrow().get(&pair).cloned(){complete.insert(pair,plan);continue}
++                if !active.insert(pair){return None}
++                pending.push((pair,true));
++                match(self.expressions.get(a)?,self.expressions.get(b)?){
++                    (Expr::BVar(_),Expr::BVar(_))|(Expr::Sort(_),Expr::Sort(_))=>{},
++                    (Expr::Const{name:x,levels:u},Expr::Const{name:y,levels:v})=>{if x!=y||u.len()!=v.len()||*remaining<u.len(){return None}*remaining-=u.len();},
++                    (Expr::NatLit(x),Expr::NatLit(y))=>{let cost=x.limb_count().max(y.limb_count());if *remaining<cost{return None}*remaining-=cost;if x!=y{return None}},
++                    (Expr::StrLit(x),Expr::StrLit(y))=>{let cost=x.len().max(y.len());if *remaining<cost{return None}*remaining-=cost;if x!=y{return None}},
++                    (Expr::App{fun:x,arg:u},Expr::App{fun:y,arg:v})=>{pending.push(((*u,*v),false));pending.push(((*x,*y),false));},
++                    (Expr::Lam{domain:x,body:u},Expr::Lam{domain:y,body:v})|(Expr::Pi{domain:x,body:u},Expr::Pi{domain:y,body:v})=>{pending.push(((*u,*v),false));pending.push(((*x,*y),false));},
++                    (Expr::Let{ty:x,value:u,body:m}|Expr::LetNondep{ty:x,value:u,body:m},Expr::Let{ty:y,value:v,body:n}|Expr::LetNondep{ty:y,value:v,body:n})=>{pending.push(((*m,*n),false));pending.push(((*u,*v),false));pending.push(((*x,*y),false));},
++                    (Expr::Proj{type_name:x,index:i,structure:u},Expr::Proj{type_name:y,index:j,structure:v})if x==y&&i==j=>pending.push(((*u,*v),false)),
++                    _=>return None,
++                }
++            }else{
++                let mut captures=std::collections::BTreeSet::new();let mut levels=std::collections::BTreeSet::new();
++                let mut add=|child:(ExprId,ExprId),binder:bool|->Option<()>{
++                    let plan=complete.get(&child)?;
++                    for &(x,y)in &plan.captures{if !take_step(remaining){return None}if binder{match(x,y){(0,0)=>continue,(0,_)|(_,0)=>return None,_=>{captures.insert((x-1,y-1));}}}else{captures.insert((x,y));}if captures.len()>128{return None}}
++                    for &pair in &plan.levels{if !take_step(remaining){return None}levels.insert(pair);if levels.len()>128{return None}}
++                    Some(())
++                };
++                match(self.expressions.get(a)?,self.expressions.get(b)?){
++                    (Expr::BVar(x),Expr::BVar(y))=>{captures.insert((*x,*y));},
++                    (Expr::Sort(x),Expr::Sort(y))=>{levels.insert((*x,*y));},
++                    (Expr::Const{levels:u,..},Expr::Const{levels:v,..})=>{levels.extend(u.iter().copied().zip(v.iter().copied()));if levels.len()>128{return None}},
++                    (Expr::App{fun:x,arg:u},Expr::App{fun:y,arg:v})=>{add((*x,*y),false)?;add((*u,*v),false)?;},
++                    (Expr::Lam{domain:x,body:u},Expr::Lam{domain:y,body:v})|(Expr::Pi{domain:x,body:u},Expr::Pi{domain:y,body:v})=>{add((*x,*y),false)?;add((*u,*v),true)?;},
++                    (Expr::Let{ty:x,value:u,body:m}|Expr::LetNondep{ty:x,value:u,body:m},Expr::Let{ty:y,value:v,body:n}|Expr::LetNondep{ty:y,value:v,body:n})=>{add((*x,*y),false)?;add((*u,*v),false)?;add((*m,*n),true)?;},
++                    (Expr::Proj{structure:x,..},Expr::Proj{structure:y,..})=>add((*x,*y),false)?,
++                    _=>{},
++                }
++                active.remove(&pair);let plan=ParametricSourceSupport{captures:captures.into_iter().collect(),levels:levels.into_iter().collect()};
++                if self.parametric_source_support.borrow().len()<8192{self.parametric_source_support.borrow_mut().insert(pair,plan.clone());}
++                complete.insert(pair,plan);
++            }
++        }
++        let plan=complete.remove(&root)?;let cost=plan.captures.len().checked_add(plan.levels.len())?;if *remaining<cost{return None}*remaining-=cost;Some(plan)
++    }
++
++    // Borrowed comparison of source universe nodes under their own actual
++    // substitutions. No cloning, invented parameter, or cached truth value.
++    fn exact_instantiated_source_level(&self,left:LevelId,left_map:&LevelSubstitution,right:LevelId,right_map:&LevelSubstitution,remaining:&mut usize)->bool{
++        enum Side<'s>{Source(LevelId,&'s LevelSubstitution),Value(&'s LevelTerm)}
++        enum View<'s>{Zero,Param(&'s str),Succ(Side<'s>),Max(Side<'s>,Side<'s>),IMax(Side<'s>,Side<'s>)}
++        fn expose<'s>(levels:&'s IdTable<LevelId,Level>,mut side:Side<'s>,remaining:&mut usize)->Option<View<'s>>{
++            loop{
++                if !take_step(remaining){return None}
++                return Some(match side{
++                    Side::Source(id,map)=>match levels.get(id)?{
++                        Level::Zero=>View::Zero,
++                        Level::Param(name)=>{let mut value=None;for(n,v)in map.entries(){if !take_step(remaining){return None}if n==name{value=Some(v);break}}side=Side::Value(value?);continue},
++                        Level::Succ(v)=>View::Succ(Side::Source(*v,map)),
++                        Level::Max(a,b)=>View::Max(Side::Source(*a,map),Side::Source(*b,map)),
++                        Level::IMax(a,b)=>View::IMax(Side::Source(*a,map),Side::Source(*b,map)),
++                    },
++                    Side::Value(value)=>match value{
++                        LevelTerm::Zero=>View::Zero,LevelTerm::Param(s)=>View::Param(s),
++                        LevelTerm::Succ(v)=>View::Succ(Side::Value(v)),
++                        LevelTerm::Max(a,b)=>View::Max(Side::Value(a),Side::Value(b)),
++                        LevelTerm::IMax(a,b)=>View::IMax(Side::Value(a),Side::Value(b)),
++                    },
++                });
++            }
++        }
++        let mut pending=vec![(Side::Source(left,left_map),Side::Source(right,right_map))];
++        while let Some((a,b))=pending.pop(){
++            let(Some(a),Some(b))=(expose(self.levels,a,remaining),expose(self.levels,b,remaining))else{return false};
++            match(a,b){
++                (View::Zero,View::Zero)=>{},
++                (View::Param(a),View::Param(b))=>{let cost=a.len().max(b.len());if *remaining<cost{return false}*remaining-=cost;if a!=b{return false}},
++                (View::Succ(a),View::Succ(b))=>pending.push((a,b)),
++                (View::Max(a,b),View::Max(c,d))|(View::IMax(a,b),View::IMax(c,d))=>{pending.push((b,d));pending.push((a,c));},
++                _=>return false,
++            }
++        }
++        true
++    }
++
++    fn instantiated_source_support(&self,left:&Closure,right:&Closure,remaining:&mut usize)->Option<Vec<(u64,u64)>>{
++        let plan=self.complete_parametric_source_support(left.expr,right.expr,remaining)?;
++        for &(a,b)in &plan.levels{if !self.exact_instantiated_source_level(a,&left.levels,b,&right.levels,remaining){return None}}
++        Some(plan.captures)
++    }
++
++    pub(crate) fn exact_source_capture_identity(&self,left:&Closure,right:&Closure,remaining:&mut usize)->bool{
++        self.source_capture_relation::<false>(left,right,remaining)
++    }
++
++    pub(crate) fn instantiated_source_capture_congruence(&self,left:&Closure,right:&Closure,remaining:&mut usize)->bool{
++        self.source_capture_relation::<true>(left,right,remaining)
++    }
++
++    fn source_capture_relation<const PARAMETRIC:bool>(
++        &self,left:&Closure,right:&Closure,remaining:&mut usize,
++    )->bool{
+         enum Capture { Free(FreeId), Closure(Closure), Nat(crate::nat::BigNat) }
+         fn resolve(checker: &TypeChecker<'_>, term: &Closure, index: u64, remaining: &mut usize) -> Option<Capture> {
+             let mut frame = term.env.clone();
+@@ -1587,10 +1694,12 @@
+                 // Only a completed dependency tree earns this fact. Retention
+                 // is optional; pay table growth before allocating, and never
+                 // withhold a proved equality when storage cannot be afforded.
+-                let mut proofs=self.source_capture_proofs.borrow_mut();
+-                if !proofs.contains_key(&pair) && proofs.len()<8192 {
+-                    let cost=if proofs.len()==proofs.capacity(){proofs.capacity().saturating_mul(2).saturating_add(8)}else{1};
+-                    if *remaining>=cost { *remaining-=cost; proofs.insert(pair,(a.clone(),b.clone())); }
++                if !PARAMETRIC {
++                    let mut proofs=self.source_capture_proofs.borrow_mut();
++                    if !proofs.contains_key(&pair) && proofs.len()<8192 {
++                        let cost=if proofs.len()==proofs.capacity(){proofs.capacity().saturating_mul(2).saturating_add(8)}else{1};
++                        if *remaining>=cost { *remaining-=cost; proofs.insert(pair,(a.clone(),b.clone())); }
++                    }
+                 }
+                 retained.push((a, b)); continue
+             }
+@@ -1598,10 +1707,11 @@
+             // No active, failed, exhausted or absent pair is retained.
+             if !take_step(remaining){return false;}
+             if self.source_capture_proofs.borrow().contains_key(&pair){continue;}
+-            if !Self::exact_source_levels(&a.levels, &b.levels, remaining) { return false }
+-            if complete.contains(&pair) { continue }
+-            if !active.insert(pair) { return false }
+-            let Some(support) = self.complete_paired_source_support(a.expr, b.expr, remaining) else { return false };
++            if !PARAMETRIC && !Self::exact_source_levels(&a.levels,&b.levels,remaining){return false}
++            if complete.contains(&pair){continue}
++            if !active.insert(pair){return false}
++            let support=if PARAMETRIC{self.instantiated_source_support(&a,&b,remaining)}else{self.complete_paired_source_support(a.expr,b.expr,remaining)};
++            let Some(support)=support else{return false};
+             pending.push((a.clone(), b.clone(), true));
+             for (left_index, right_index) in support {
+                 let Some(lhs) = resolve(self, &a, left_index, remaining) else { return false };
+@@ -4596,6 +4706,7 @@
+             closed_spine_eligibility: RefCell::new(HashMap::new()),
+             source_support: RefCell::new(HashMap::new()),
+             paired_source_support: RefCell::new(HashMap::new()),
++            parametric_source_support:RefCell::new(HashMap::new()),
+             checked_frames: RefCell::new(HashMap::new()),
+             source_opening_proofs:RefCell::new(HashMap::new()),
+             source_capture_proofs:RefCell::new(HashMap::new()),
+@@ -4764,6 +4875,7 @@
+             closed_spine_eligibility: RefCell::new(HashMap::new()),
+             source_support: RefCell::new(HashMap::new()),
+             paired_source_support: RefCell::new(HashMap::new()),
++            parametric_source_support:RefCell::new(HashMap::new()),
+             checked_frames: RefCell::new(HashMap::new()),
+             source_opening_proofs:RefCell::new(HashMap::new()),
+             source_capture_proofs:RefCell::new(HashMap::new()),
+@@ -4817,6 +4929,7 @@
+             closed_spine_eligibility: RefCell::new(HashMap::new()),
+             source_support: RefCell::new(HashMap::new()),
+             paired_source_support: RefCell::new(HashMap::new()),
++            parametric_source_support:RefCell::new(HashMap::new()),
+             checked_frames: RefCell::new(HashMap::new()),
+             source_opening_proofs:RefCell::new(HashMap::new()),
+             source_capture_proofs:RefCell::new(HashMap::new()),
+@@ -7461,3 +7574,25 @@
+  fn default()->Self{Self{slots:std::iter::repeat_with(||None).take(8192).collect::<Vec<_>>().into_boxed_slice(),hand:[0;2048]}}
+ }
+ impl ExactTypingMemo{fn clear(&mut self){for slot in self.slots.iter_mut(){*slot=None;}self.hand.fill(0);}}
++
++#[cfg(test)]
++mod universe_parametric_source_controls {
++ use super::*;
++ fn fixture()->(IdTable<ExprId,Expr>,IdTable<LevelId,Level>,Environment){
++  let mut e=IdTable::default();for(id,x)in[(0,Expr::BVar(0)),(1,Expr::BVar(1)),(2,Expr::Sort(LevelId(1))),(3,Expr::Sort(LevelId(2))),(4,Expr::Lam{domain:ExprId(2),body:ExprId(0)}),(5,Expr::Lam{domain:ExprId(3),body:ExprId(0)}),(6,Expr::Lam{domain:ExprId(2),body:ExprId(1)}),(7,Expr::Lam{domain:ExprId(3),body:ExprId(1)}),(8,Expr::Lam{domain:ExprId(2),body:ExprId(8)}),(9,Expr::Lam{domain:ExprId(3),body:ExprId(9)})]{e.insert(ExprId(id),x).unwrap();}
++  let mut l=IdTable::default();l.insert(LevelId(0),Level::Zero).unwrap();l.insert(LevelId(1),Level::Param(NameId(1))).unwrap();l.insert(LevelId(2),Level::Param(NameId(2))).unwrap();(e,l,Environment::empty())
++ }
++ fn term(expr:u64,param:u64,value:LevelTerm,frame:EnvFrame)->Closure{Closure::with_levels(ExprId(expr),frame,LevelSubstitution::new(vec![(NameId(param),value)]))}
++ fn one()->LevelTerm{crate::level::succ(LevelTerm::Zero)}
++ #[test]fn renamed_source_universe_parameters_compare_through_their_actual_values(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let a=term(4,1,one(),EnvFrame::empty());let b=term(5,2,one(),EnvFrame::empty());assert!(c.instantiated_source_capture_congruence(&a,&b,&mut 256));}
++ #[test]fn unused_universe_entries_carry_no_source_identity_obligation(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let a=Closure::with_levels(ExprId(4),EnvFrame::empty(),LevelSubstitution::new(vec![(NameId(1),one()),(NameId(99),LevelTerm::Zero)]));let b=term(4,1,one(),EnvFrame::empty());assert!(c.instantiated_source_capture_congruence(&a,&b,&mut 256));}
++ #[test]fn a_warm_parametric_template_rechecks_the_actual_used_universe(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let a=term(4,1,one(),EnvFrame::empty());let b=term(5,2,one(),EnvFrame::empty());assert!(c.instantiated_source_capture_congruence(&a,&b,&mut 256));let wrong=term(5,2,LevelTerm::Zero,EnvFrame::empty());assert!(!c.instantiated_source_capture_congruence(&a,&wrong,&mut 256));}
++ #[test]fn universe_alpha_equivalence_still_requires_actual_data_capture_equality(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let a=term(6,1,one(),EnvFrame::empty().extend_free(FreeId(7)));let b=term(7,2,one(),EnvFrame::empty().extend_free(FreeId(7)));assert!(c.instantiated_source_capture_congruence(&a,&b,&mut 256));let wrong=term(7,2,one(),EnvFrame::empty().extend_free(FreeId(8)));assert!(!c.instantiated_source_capture_congruence(&a,&wrong,&mut 256));}
++ #[test]fn a_bound_source_variable_never_matches_an_outer_capture(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let a=term(4,1,one(),EnvFrame::empty());let b=term(7,2,one(),EnvFrame::empty().extend_free(FreeId(0)));assert!(!c.instantiated_source_capture_congruence(&a,&b,&mut 256));}
++ #[test]fn cyclic_source_templates_and_missing_universe_witnesses_decline(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);assert!(!c.instantiated_source_capture_congruence(&term(8,1,one(),EnvFrame::empty()),&term(9,2,one(),EnvFrame::empty()),&mut 256));let missing=Closure::new(ExprId(5),EnvFrame::empty());assert!(!c.instantiated_source_capture_congruence(&term(4,1,one(),EnvFrame::empty()),&missing,&mut 256));}
++ #[test]fn parametric_source_identity_cannot_succeed_with_no_work(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);assert!(!c.instantiated_source_capture_congruence(&term(4,1,one(),EnvFrame::empty()),&term(5,2,one(),EnvFrame::empty()),&mut 0));}
++
++ #[test]fn identical_substitution_allocation_does_not_equal_different_used_levels(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let map=LevelSubstitution::new(vec![(NameId(1),one()),(NameId(2),LevelTerm::Zero)]);let a=Closure::with_levels(ExprId(4),EnvFrame::empty(),map.clone());let b=Closure::with_levels(ExprId(5),EnvFrame::empty(),map);assert!(!c.instantiated_source_capture_congruence(&a,&b,&mut 256));}
++ #[test]fn constant_universe_arguments_are_checked_without_renaming_constant_authority(){let(mut e,l,env)=fixture();for(id,name,level)in[(10,42,1),(11,42,2),(12,43,2)]{e.insert(ExprId(id),Expr::Const{name:NameId(name),levels:vec![LevelId(level)]}).unwrap();}let c=TypeChecker::new(&e,&l,&env);let a=term(10,1,one(),EnvFrame::empty());assert!(c.instantiated_source_capture_congruence(&a,&term(11,2,one(),EnvFrame::empty()),&mut 256));for b in[term(11,2,LevelTerm::Zero,EnvFrame::empty()),term(12,2,one(),EnvFrame::empty())]{assert!(!c.instantiated_source_capture_congruence(&a,&b,&mut 256));}}
++ #[test]fn parametric_projection_templates_preserve_owner_field_and_actual_receiver(){let(mut e,l,env)=fixture();for(id,owner,index)in[(13,70,0),(14,70,0),(15,71,0),(16,70,1)]{e.insert(ExprId(id),Expr::Proj{type_name:NameId(owner),index,structure:ExprId(0)}).unwrap();}let c=TypeChecker::new(&e,&l,&env);let a=term(13,1,one(),EnvFrame::empty().extend_free(FreeId(7)));assert!(c.instantiated_source_capture_congruence(&a,&term(14,2,one(),EnvFrame::empty().extend_free(FreeId(7))),&mut 256));for b in[term(15,2,one(),EnvFrame::empty().extend_free(FreeId(7))),term(16,2,one(),EnvFrame::empty().extend_free(FreeId(7))),term(14,2,one(),EnvFrame::empty().extend_free(FreeId(8)))]{assert!(!c.instantiated_source_capture_congruence(&a,&b,&mut 256));}}
++}
+--- a/src/convert.rs
++++ b/src/convert.rs
+@@ -183,7 +183,8 @@
+                 (Some(Expr::Lam{..}),Some(Expr::Lam{..})));
+             let allowance = if direct_lambdas { remaining.min(1024) } else { (remaining / 4).min(1024) };
+             let mut trial = allowance;
+-            let identical = checker.exact_source_capture_identity(lhs, rhs, &mut trial);
++            let identical = checker.exact_source_capture_identity(lhs,rhs,&mut trial)
++                || checker.instantiated_source_capture_congruence(lhs,rhs,&mut trial);
+             remaining -= allowance.saturating_sub(trial);
+             if identical { continue; }
+         }
+@@ -2474,7 +2475,8 @@
+             if a.expr == b.expr && a.env == b.env && a.levels.identity() == b.levels.identity() {
+                 continue;
+             }
+-            if !checker.exact_source_capture_identity(a, b, remaining) { return false; }
++            if !checker.exact_source_capture_identity(a,b,remaining)
++                && !checker.instantiated_source_capture_congruence(a,b,remaining){return false;}
+         }
+     }
+     true

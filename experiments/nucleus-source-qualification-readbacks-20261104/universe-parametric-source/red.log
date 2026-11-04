@@ -1,0 +1,148 @@
+   Compiling metatron-kernel v0.1.0 (/tmp/nucleus-universe-parametric-source/source)
+warning: unnecessary parentheses around `if` condition
+    --> src/convert.rs:2634:20
+     |
+2634 |                 if ((l=="Free(FreeId(6))" && r=="Free(FreeId(5))") ||
+     |                    ^
+2635 |                     (l=="Free(FreeId(5))" && r=="Free(FreeId(6))"))
+     |                                                                   ^
+     |
+     = note: `#[warn(unused_parens)]` (part of `#[warn(unused)]`) on by default
+help: remove these parentheses
+     |
+2634 ~                 if (l=="Free(FreeId(6))" && r=="Free(FreeId(5))") ||
+2635 ~                     (l=="Free(FreeId(5))" && r=="Free(FreeId(6))")
+     |
+
+warning: unnecessary parentheses around `if` condition
+    --> src/typecheck.rs:6715:12
+     |
+6715 |         if (!crate::run_flags::present(crate::run_flags::Flag::ExperimentalExpectedLambda)) { return; }
+     |            ^                                                                              ^
+     |
+help: remove these parentheses
+     |
+6715 -         if (!crate::run_flags::present(crate::run_flags::Flag::ExperimentalExpectedLambda)) { return; }
+6715 +         if !crate::run_flags::present(crate::run_flags::Flag::ExperimentalExpectedLambda) { return; }
+     |
+
+warning: unused variable: `c`
+    --> src/convert.rs:3094:91
+     |
+3094 | ...(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let n=Neutral{head:NeutralHead::Const{name:NameId(4),levels:vec![c...
+     |                                  ^ help: if this is intentional, prefix it with an underscore: `_c`
+     |
+     = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: value assigned to `source_work` is never read
+    --> src/typecheck.rs:5684:55
+     |
+5684 |                     if source_work<cost{return false;}source_work-=cost;
+     |                                                       ^^^^^^^^^^^^^^^^^
+     |
+     = help: maybe it is overwritten before being read?
+     = note: `#[warn(unused_assignments)]` (part of `#[warn(unused)]`) on by default
+
+warning: method `qualified_quotient_neutral_result` is never used
+    --> src/machine.rs:1616:19
+     |
+ 319 | impl<'a> Machine<'a> {
+     | -------------------- method in this implementation
+...
+1616 |     pub(crate) fn qualified_quotient_neutral_result(
+     |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: method `diagnostic_captured_recursor_major_chain` is never used
+    --> src/typecheck.rs:1101:19
+     |
+ 139 | impl<'a> TypeChecker<'a> {
+     | ------------------------ method in this implementation
+...
+1101 |     pub(crate) fn diagnostic_captured_recursor_major_chain(
+     |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: method `strong_owners` is never used
+   --> src/value.rs:130:18
+    |
+ 50 | impl EnvFrame {
+    | ------------- method in this implementation
+...
+130 |     pub(crate)fn strong_owners(&self)->usize{Rc::strong_count(&self.0)}
+    |                  ^^^^^^^^^^^^^
+
+warning: methods `strong_owners` and `is_empty_instance` are never used
+   --> src/value.rs:214:18
+    |
+199 | impl LevelSubstitution {
+    | ---------------------- methods in this implementation
+...
+214 |     pub(crate)fn strong_owners(&self)->usize{Rc::strong_count(&self.0)}
+    |                  ^^^^^^^^^^^^^
+215 |     pub(crate)fn is_empty_instance(&self)->bool{self.0.entries.is_empty()}
+    |                  ^^^^^^^^^^^^^^^^^
+
+warning: `metatron-kernel` (lib test) generated 8 warnings (run `cargo fix --lib -p metatron-kernel --tests` to apply 3 suggestions)
+    Finished `release` profile [optimized] target(s) in 46.09s
+     Running unittests src/lib.rs (/tmp/nucleus-universe-parametric-source/target/release/deps/metatron_kernel-258b3b0aea2bca17)
+
+running 10 tests
+test typecheck::universe_parametric_source_controls::a_warm_parametric_template_rechecks_the_actual_used_universe ... FAILED
+test typecheck::universe_parametric_source_controls::parametric_source_identity_cannot_succeed_with_no_work ... ok
+test typecheck::universe_parametric_source_controls::parametric_projection_templates_preserve_owner_field_and_actual_receiver ... FAILED
+test typecheck::universe_parametric_source_controls::a_bound_source_variable_never_matches_an_outer_capture ... ok
+test typecheck::universe_parametric_source_controls::renamed_source_universe_parameters_compare_through_their_actual_values ... FAILED
+test typecheck::universe_parametric_source_controls::identical_substitution_allocation_does_not_equal_different_used_levels ... ok
+test typecheck::universe_parametric_source_controls::universe_alpha_equivalence_still_requires_actual_data_capture_equality ... FAILED
+test typecheck::universe_parametric_source_controls::unused_universe_entries_carry_no_source_identity_obligation ... FAILED
+test typecheck::universe_parametric_source_controls::cyclic_source_templates_and_missing_universe_witnesses_decline ... ok
+test typecheck::universe_parametric_source_controls::constant_universe_arguments_are_checked_without_renaming_constant_authority ... FAILED
+
+failures:
+
+---- typecheck::universe_parametric_source_controls::a_warm_parametric_template_rechecks_the_actual_used_universe stdout ----
+
+thread 'typecheck::universe_parametric_source_controls::a_warm_parametric_template_rechecks_the_actual_used_universe' (61) panicked at src/typecheck.rs:7476:213:
+assertion failed: c.exact_source_capture_identity(&a, &b, &mut 256)
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- typecheck::universe_parametric_source_controls::parametric_projection_templates_preserve_owner_field_and_actual_receiver stdout ----
+
+thread 'typecheck::universe_parametric_source_controls::parametric_projection_templates_preserve_owner_field_and_actual_receiver' (65) panicked at src/typecheck.rs:7484:369:
+assertion failed: c.exact_source_capture_identity(&a,
+    &term(14, 2, one(), EnvFrame::empty().extend_free(FreeId(7))), &mut 256)
+
+---- typecheck::universe_parametric_source_controls::renamed_source_universe_parameters_compare_through_their_actual_values stdout ----
+
+thread 'typecheck::universe_parametric_source_controls::renamed_source_universe_parameters_compare_through_their_actual_values' (67) panicked at src/typecheck.rs:7474:223:
+assertion failed: c.exact_source_capture_identity(&a, &b, &mut 256)
+
+---- typecheck::universe_parametric_source_controls::universe_alpha_equivalence_still_requires_actual_data_capture_equality stdout ----
+
+thread 'typecheck::universe_parametric_source_controls::universe_alpha_equivalence_still_requires_actual_data_capture_equality' (68) panicked at src/typecheck.rs:7477:269:
+assertion failed: c.exact_source_capture_identity(&a, &b, &mut 256)
+
+---- typecheck::universe_parametric_source_controls::unused_universe_entries_carry_no_source_identity_obligation stdout ----
+
+thread 'typecheck::universe_parametric_source_controls::unused_universe_entries_carry_no_source_identity_obligation' (69) panicked at src/typecheck.rs:7475:305:
+assertion failed: c.exact_source_capture_identity(&a, &b, &mut 256)
+
+---- typecheck::universe_parametric_source_controls::constant_universe_arguments_are_checked_without_renaming_constant_authority stdout ----
+
+thread 'typecheck::universe_parametric_source_controls::constant_universe_arguments_are_checked_without_renaming_constant_authority' (62) panicked at src/typecheck.rs:7483:335:
+assertion failed: c.exact_source_capture_identity(&a, &term(11, 2, one(), EnvFrame::empty()),
+    &mut 256)
+
+
+failures:
+    typecheck::universe_parametric_source_controls::a_warm_parametric_template_rechecks_the_actual_used_universe
+    typecheck::universe_parametric_source_controls::constant_universe_arguments_are_checked_without_renaming_constant_authority
+    typecheck::universe_parametric_source_controls::parametric_projection_templates_preserve_owner_field_and_actual_receiver
+    typecheck::universe_parametric_source_controls::renamed_source_universe_parameters_compare_through_their_actual_values
+    typecheck::universe_parametric_source_controls::universe_alpha_equivalence_still_requires_actual_data_capture_equality
+    typecheck::universe_parametric_source_controls::unused_universe_entries_carry_no_source_identity_obligation
+
+test result: FAILED. 4 passed; 6 failed; 0 ignored; 0 measured; 200 filtered out; finished in 0.01s
+
+error: test failed, to rerun pass `--lib`
