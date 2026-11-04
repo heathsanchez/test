@@ -1,0 +1,32 @@
+name: Nucleus projected eta artifact readback
+on:
+  push:
+    branches: [research/nucleus-projected-function-eta-20261104]
+    paths:
+      - '.github/workflows/nucleus-projected-eta-readback-20261104.yml'
+      - 'experiments/nucleus-projected-eta-readback-20261104/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: git fetch --no-tags --depth=1 origin a2578e77079719ff2064f910bd82fd01d8e120b6
+      - name: Restore sealed qualified archive
+        run: gh api repos/heathsanchez/test/actions/artifacts/13325481741/zip > /tmp/nucleus-eta-qualified.zip
+      - name: Verify every archived and reconstructed source byte
+        run: python3 experiments/nucleus-projected-eta-readback-20261104/verify.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-projected-eta-readback-${{ github.sha }}
+          retention-days: 90
+          path: |
+            /tmp/nucleus-eta-readback/verified-readback.json
+            /tmp/nucleus-eta-readback/patch.log
