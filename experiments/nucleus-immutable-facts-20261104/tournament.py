@@ -49,6 +49,15 @@ def boundary(result,directory):
     terminal=next((line for line in reversed(lines)if line.startswith('NUCLEUS_DOWNSTREAM:')),None)
     return result['rc'],terminal
 
+def library_invariants(kernel,build_env,env,arm):
+    # Match the established complete native harness, including its external
+    # frozen source fixture and deliberately ignored boundary controls.
+    library_env=build_env|env|{'NUCLEUS_FROZEN196':'/tmp/current208/inputs'}
+    native=Q.t.run_group(['cargo','test','--release','--locked','--manifest-path',str(kernel/'Cargo.toml'),'--lib','--','--include-ignored','--test-threads=1'],env=library_env,capture_output=True,timeout=600)
+    (arm/'lib.stdout').write_bytes(native.stdout)
+    (arm/'lib.stderr').write_bytes(native.stderr)
+    assert native.returncode==0 and b'0 failed; 0 ignored;'in native.stdout,'Library invariants must pass'
+
 def main():
     OUT.mkdir(exist_ok=True)
     baseline=json.loads((W/'qualification.json').read_text())['candidate']
@@ -64,6 +73,7 @@ def main():
     rebuilt,build_env=Q.t.build(kernel,OUT/'baseline')
     assert rebuilt is not None and Q.t.digest(rebuilt)==BASE_SHA,'Exact source reconstruction must reproduce the qualified executable'
     seal_source(kernel,OUT/'baseline')
+    library_invariants(kernel,build_env,env,OUT/'baseline')
     expected=(baseline_full['result']['rc'],baseline_full['terminal'])
     assert expected[0]in(0,2)
     source=Path('/tmp/mathlib.ndjson')
@@ -87,10 +97,7 @@ def main():
             binary,build_env=Q.t.build(kernel,arm)
             assert binary is not None,'Compile failure is not a performance result'
             seal_source(kernel,arm)
-            native=Q.t.run_group(['cargo','test','--release','--locked','--manifest-path',str(kernel/'Cargo.toml'),'--lib','--','--include-ignored','--test-threads=1'],env=build_env|env,capture_output=True,timeout=600)
-            (arm/'lib.stdout').write_bytes(native.stdout)
-            (arm/'lib.stderr').write_bytes(native.stderr)
-            assert native.returncode==0 and b'0 failed; 0 ignored;'in native.stdout,'Library invariants must pass'
+            library_invariants(kernel,build_env,env,arm)
             def one(old):
                 item=manifest[old['case']]
                 assert item['sha256']==old['sha256']and item['expected']==old['expected']

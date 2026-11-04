@@ -1,0 +1,46 @@
+{
+  "status": "APPARATUS_MISSING_EXTERNAL_FIXTURE",
+  "run": 41744607375,
+  "commit": "e6b401b1347e436a76793a8919cdfa15190569df",
+  "artifact": 13282748910,
+  "artifact_sha256": "fa3ae4577d14c2f33f623dbc72262bc3470ddd571986fa4fd8c536c8498efba9",
+  "cause": "The complete library command lacked NUCLEUS_FROZEN196 required by an incumbent ignored test. No verdict screen or timing occurred.",
+  "arms": [
+    {
+      "arm": "run-flags",
+      "summaries": [
+        "test result: FAILED. 98 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.32s"
+      ],
+      "failures": [
+        "    checker::nested_nullary_source_tests::source_checked_multi_motive_nullary_rule_is_derived"
+      ]
+    },
+    {
+      "arm": "level-digest",
+      "summaries": [
+        "test result: FAILED. 98 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.29s"
+      ],
+      "failures": [
+        "    checker::nested_nullary_source_tests::source_checked_multi_motive_nullary_rule_is_derived"
+      ]
+    },
+    {
+      "arm": "flags-plus-levels",
+      "summaries": [
+        "test result: FAILED. 101 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.29s"
+      ],
+      "failures": [
+        "    checker::nested_nullary_source_tests::source_checked_multi_motive_nullary_rule_is_derived"
+      ]
+    },
+    {
+      "arm": "environment-forks",
+      "summaries": [
+        "test result: FAILED. 97 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.28s"
+      ],
+      "failures": [
+        "    checker::nested_nullary_source_tests::source_checked_multi_motive_nullary_rule_is_derived"
+      ]
+    }
+  ]
+}
