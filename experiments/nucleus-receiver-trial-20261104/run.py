@@ -12,7 +12,7 @@ subprocess.run(['python3',str(ROOT.parent/'nucleus-contextual-frontier-readback-
 input=R/'goal/signature-diagnostic.ndjson';assert sha(input)=='1022e5dc308231b91a2d8833a26006d1d082339785d61a09fc7427b30d8c0bdf'
 env={k:v for k,v in os.environ.items()if not k.startswith('NUCLEUS_')}|q['configuration']|dict(NUCLEUS_TRACE_DOWNSTREAM='1');rows=[]
 for mode in ['parent','quarter','skip']:
- arm=R/mode;arm.mkdir()
+ arm=R/'arms'/mode;arm.mkdir(parents=True)
  if mode=='parent':binary=P/'candidate/nucleus';binary.chmod(0o755)
  else:
   kernel=arm/'metatron-kernel';shutil.copytree(source,kernel)
