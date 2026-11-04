@@ -1,0 +1,143 @@
+--- a/metatron-kernel/src/machine.rs
++++ b/metatron-kernel/src/machine.rs
+@@ -157,6 +157,35 @@
+ impl std::hash::Hash for CachedExposureKey {
+     fn hash<H:std::hash::Hasher>(&self,state:&mut H){std::hash::Hash::hash(&self.digest,state)}
+ }
++// Minimum external term bindings needed by an immutable source expression.
++// A completed zero is a sufficient syntactic proof of capture independence.
++// Missing syntax, overflow, cycles/depth and exhausted work never grant zero.
++fn source_binding_need(expressions:&IdTable<ExprId,Expr>,authority:AuthorityId,
++    expression:ExprId,known:&HashMap<(AuthorityId,ExprId),u64>,
++    completed:&mut HashMap<ExprId,u64>,work:&mut usize,depth:usize)->Option<u64> {
++    if *work==0 || depth>=128{return None;} *work-=1;
++    if let Some(need)=known.get(&(authority,expression)).or_else(||completed.get(&expression)){return Some(*need);}
++    let need=match expressions.get(expression)? {
++        Expr::BVar(index)=>index.checked_add(1)?,
++        Expr::NatLit(_)|Expr::StrLit(_)|Expr::Sort(_)|Expr::Const{..}=>0,
++        Expr::App{fun,arg}=>{
++            let a=source_binding_need(expressions,authority,*fun,known,completed,work,depth+1)?;
++            a.max(source_binding_need(expressions,authority,*arg,known,completed,work,depth+1)?)
++        }
++        Expr::Lam{domain,body}|Expr::Pi{domain,body}=>{
++            let a=source_binding_need(expressions,authority,*domain,known,completed,work,depth+1)?;
++            a.max(source_binding_need(expressions,authority,*body,known,completed,work,depth+1)?.saturating_sub(1))
++        }
++        Expr::Let{ty,value,body}|Expr::LetNondep{ty,value,body}=>{
++            let a=source_binding_need(expressions,authority,*ty,known,completed,work,depth+1)?;
++            let b=source_binding_need(expressions,authority,*value,known,completed,work,depth+1)?;
++            a.max(b).max(source_binding_need(expressions,authority,*body,known,completed,work,depth+1)?.saturating_sub(1))
++        }
++        Expr::Proj{structure,..}=>source_binding_need(expressions,authority,*structure,known,completed,work,depth+1)?,
++    };
++    completed.insert(expression,need);Some(need)
++}
++
+ struct ClockExposure {value:Value,referenced:bool}
+ #[derive(Default)]
+ pub(crate) struct ExposureCacheStore {
+@@ -167,6 +196,7 @@
+     numeric_bindings: HashMap<(AuthorityId, ExprId, crate::nat::BigNat), EnvFrame>,
+     completed_replays:HashMap<u64,Vec<(Rc<ReplayKey>,Value)>>,
+     completed_replay_count:usize,
++    source_needs:HashMap<(AuthorityId,ExprId),u64>,
+ }
+ impl ExposureCacheStore {
+     fn retain_exposure(&mut self,key:Rc<CachedExposureKey>,value:&Value,mut spend:impl FnMut()->bool) {
+@@ -709,13 +739,24 @@
+                 preserve_stuck_projection, pending,
+             );
+         };
+-        let key = Rc::new(CachedExposureKey::new((
++        let mut key = Rc::new(CachedExposureKey::new((
+             self.authority, closure.clone(), transparency,
+             preserve_stuck_projection, pending.clone(),
+         )));
+         let cached = cache.borrow_mut().values.get_mut(&key).and_then(|entry|{
+             if self.unfinished_native_capture(&entry.value){return None;}
+             entry.referenced=true;Some(entry.value.clone())
++        });
++        let cached=cached.or_else(||{
++            if cache.borrow().source_needs.get(&(self.authority,closure.expr))!=Some(&0){return None;}
++            let mut exact=key.exact.clone();exact.1.env=EnvFrame::empty();
++            let canonical=CachedExposureKey::new(exact);
++            cache.borrow_mut().values.get_mut(&canonical).and_then(|entry|{
++                // Closure-bearing values retain source-frame witness identity,
++                // even when their denotation is capture independent.
++                if !matches!(entry.value,Value::Sort(_)|Value::NatLit(_)){return None;}
++                entry.referenced=true;Some(entry.value.clone())
++            })
+         });
+         if let Some(value) = cached {
+             if let Some(fuel) = self.exposure_fuel.get() { self.exposure_fuel.set(Some(fuel.saturating_sub(1))); }
+@@ -747,6 +788,25 @@
+             // present, and otherwise uses this call's finite local allowance.
+             // Exhaustion declines publication; the proved result is retained.
+             let mut local_work=budget;
++            // Optional source analysis runs only after a successful exposure,
++            // outside a shared constructor-work owner. It spends this call's
++            // existing finite local cache-maintenance allowance. A warm proved
++            // fact is usable under an owner; no new owner fuel is introduced.
++            if self.exposure_fuel.get().is_none() && entries.source_needs.len()<8192
++                && matches!(established.value,Value::Sort(_)|Value::NatLit(_)) {
++                let mut completed=HashMap::new();
++                let need=source_binding_need(self.expressions,self.authority,key.exact.1.expr,
++                    &entries.source_needs,&mut completed,&mut local_work,0);
++                if let Some(need)=need{entries.source_needs.insert((self.authority,key.exact.1.expr),need);}
++                for (expression,need)in completed {
++                    if entries.source_needs.len()>=8192{break;}
++                    entries.source_needs.insert((self.authority,expression),need);
++                }
++                if need==Some(0) {
++                    let mut exact=key.exact.clone();exact.1.env=EnvFrame::empty();
++                    key=Rc::new(CachedExposureKey::new(exact));
++                }
++            }
+             entries.retain_exposure(key,&established.value,||{
+                 if let Some(fuel)=self.exposure_fuel.get(){
+                     if fuel==0{return false} self.exposure_fuel.set(Some(fuel-1));true
+@@ -3605,3 +3665,44 @@
+   for id in [0,26]{let n=Neutral{head:NeutralHead::Const{name:NameId(6),levels:vec![]},spine:vec![Closure::new(ExprId(id),EnvFrame::empty().extend_free(FreeId(99)))]};assert!(m.qualified_nat_predecessor_result(&n,256).is_unknown());}
+  }
+ }
++
++#[cfg(test)]
++mod closed_source_reuse_tests {
++ use super::*;
++ fn syntax()->(IdTable<ExprId,Expr>,IdTable<LevelId,Level>){
++  let mut es=IdTable::default();let mut ls=IdTable::default();
++  ls.insert(LevelId(0),Level::Zero).unwrap();ls.insert(LevelId(1),Level::Param(NameId(7))).unwrap();
++  for(id,e)in [(0,Expr::Sort(LevelId(1))),(1,Expr::BVar(0)),(2,Expr::Lam{domain:ExprId(0),body:ExprId(1)}),(3,Expr::App{fun:ExprId(2),arg:ExprId(0)}),(4,Expr::App{fun:ExprId(2),arg:ExprId(1)})]{es.insert(ExprId(id),e).unwrap();}
++  (es,ls)
++ }
++ fn closure(id:u64,free:u64,level:crate::level::LevelTerm)->Closure {
++  Closure::with_levels(ExprId(id),EnvFrame::empty().extend_free(FreeId(free)),LevelSubstitution::new(vec![(NameId(7),level)]))
++ }
++ #[test]
++ fn closed_beta_application_reuses_across_unused_term_captures(){
++  let(es,ls)=syntax();let m=Machine::new(AuthorityId(1),&es,&ls,HashMap::new()).with_exposure_cache(new_exposure_cache());
++  let cold=m.expose(closure(3,11,crate::level::LevelTerm::Zero),Transparency::Full,256);
++  assert_eq!(cold.proven_value(),Some(&Value::Sort(crate::level::LevelTerm::Zero)));
++  let warm=m.expose(closure(3,22,crate::level::LevelTerm::Zero),Transparency::Full,1);
++  assert_eq!(warm.proven_value(),cold.proven_value(),"closed source must reuse under a different unused term environment: {warm:?}");
++ }
++ #[test]
++ fn open_application_retains_actual_term_capture(){
++  let(es,ls)=syntax();let m=Machine::new(AuthorityId(1),&es,&ls,HashMap::new()).with_exposure_cache(new_exposure_cache());
++  for free in [11,22]{
++   let r=m.expose(closure(4,free,crate::level::LevelTerm::Zero),Transparency::Full,256);
++   assert!(matches!(r.proven_value(),Some(Value::Neutral(n))if n.head==NeutralHead::Free(FreeId(free))));
++  }
++ }
++ #[test]
++ fn closed_term_still_separates_universe_instance_and_authority(){
++  let(es,ls)=syntax();let cache=new_exposure_cache();
++  let m=Machine::new(AuthorityId(1),&es,&ls,HashMap::new()).with_exposure_cache(cache.clone());
++  assert!(m.expose(closure(3,11,crate::level::LevelTerm::Zero),Transparency::Full,256).is_proven());
++  let other=crate::level::succ(crate::level::LevelTerm::Zero);
++  assert!(m.expose(closure(3,22,other.clone()),Transparency::Full,1).is_unknown());
++  assert_eq!(m.expose(closure(3,22,other.clone()),Transparency::Full,256).proven_value(),Some(&Value::Sort(other)));
++  let n=Machine::new(AuthorityId(2),&es,&ls,HashMap::new()).with_exposure_cache(cache);
++  assert!(n.expose(closure(3,22,crate::level::LevelTerm::Zero),Transparency::Full,1).is_unknown());
++ }
++}

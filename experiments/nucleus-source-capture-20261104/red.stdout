@@ -1,0 +1,22 @@
+
+running 3 tests
+test machine::closed_source_reuse_tests::closed_beta_application_reuses_across_unused_term_captures ... FAILED
+test machine::closed_source_reuse_tests::closed_term_still_separates_universe_instance_and_authority ... ok
+test machine::closed_source_reuse_tests::open_application_retains_actual_term_capture ... ok
+
+failures:
+
+---- machine::closed_source_reuse_tests::closed_beta_application_reuses_across_unused_term_captures stdout ----
+
+thread 'machine::closed_source_reuse_tests::closed_beta_application_reuses_across_unused_term_captures' (174) panicked at src/machine.rs:3627:3:
+assertion `left == right` failed: closed source must reuse under a different unused term environment: Unknown { residual: ResidualId("reduction-budget-exhausted") }
+  left: None
+ right: Some(Sort(Zero))
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    machine::closed_source_reuse_tests::closed_beta_application_reuses_across_unused_term_captures
+
+test result: FAILED. 2 passed; 1 failed; 0 ignored; 0 measured; 105 filtered out; finished in 0.00s
+

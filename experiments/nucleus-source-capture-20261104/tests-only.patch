@@ -1,0 +1,47 @@
+--- a/metatron-kernel/src/machine.rs
++++ b/metatron-kernel/src/machine.rs
+@@ -3605,3 +3605,44 @@
+   for id in [0,26]{let n=Neutral{head:NeutralHead::Const{name:NameId(6),levels:vec![]},spine:vec![Closure::new(ExprId(id),EnvFrame::empty().extend_free(FreeId(99)))]};assert!(m.qualified_nat_predecessor_result(&n,256).is_unknown());}
+  }
+ }
++
++#[cfg(test)]
++mod closed_source_reuse_tests {
++ use super::*;
++ fn syntax()->(IdTable<ExprId,Expr>,IdTable<LevelId,Level>){
++  let mut es=IdTable::default();let mut ls=IdTable::default();
++  ls.insert(LevelId(0),Level::Zero).unwrap();ls.insert(LevelId(1),Level::Param(NameId(7))).unwrap();
++  for(id,e)in [(0,Expr::Sort(LevelId(1))),(1,Expr::BVar(0)),(2,Expr::Lam{domain:ExprId(0),body:ExprId(1)}),(3,Expr::App{fun:ExprId(2),arg:ExprId(0)}),(4,Expr::App{fun:ExprId(2),arg:ExprId(1)})]{es.insert(ExprId(id),e).unwrap();}
++  (es,ls)
++ }
++ fn closure(id:u64,free:u64,level:crate::level::LevelTerm)->Closure {
++  Closure::with_levels(ExprId(id),EnvFrame::empty().extend_free(FreeId(free)),LevelSubstitution::new(vec![(NameId(7),level)]))
++ }
++ #[test]
++ fn closed_beta_application_reuses_across_unused_term_captures(){
++  let(es,ls)=syntax();let m=Machine::new(AuthorityId(1),&es,&ls,HashMap::new()).with_exposure_cache(new_exposure_cache());
++  let cold=m.expose(closure(3,11,crate::level::LevelTerm::Zero),Transparency::Full,256);
++  assert_eq!(cold.proven_value(),Some(&Value::Sort(crate::level::LevelTerm::Zero)));
++  let warm=m.expose(closure(3,22,crate::level::LevelTerm::Zero),Transparency::Full,1);
++  assert_eq!(warm.proven_value(),cold.proven_value(),"closed source must reuse under a different unused term environment: {warm:?}");
++ }
++ #[test]
++ fn open_application_retains_actual_term_capture(){
++  let(es,ls)=syntax();let m=Machine::new(AuthorityId(1),&es,&ls,HashMap::new()).with_exposure_cache(new_exposure_cache());
++  for free in [11,22]{
++   let r=m.expose(closure(4,free,crate::level::LevelTerm::Zero),Transparency::Full,256);
++   assert!(matches!(r.proven_value(),Some(Value::Neutral(n))if n.head==NeutralHead::Free(FreeId(free))));
++  }
++ }
++ #[test]
++ fn closed_term_still_separates_universe_instance_and_authority(){
++  let(es,ls)=syntax();let cache=new_exposure_cache();
++  let m=Machine::new(AuthorityId(1),&es,&ls,HashMap::new()).with_exposure_cache(cache.clone());
++  assert!(m.expose(closure(3,11,crate::level::LevelTerm::Zero),Transparency::Full,256).is_proven());
++  let other=crate::level::succ(crate::level::LevelTerm::Zero);
++  assert!(m.expose(closure(3,22,other.clone()),Transparency::Full,1).is_unknown());
++  assert_eq!(m.expose(closure(3,22,other.clone()),Transparency::Full,256).proven_value(),Some(&Value::Sort(other)));
++  let n=Machine::new(AuthorityId(2),&es,&ls,HashMap::new()).with_exposure_cache(cache);
++  assert!(n.expose(closure(3,22,crate::level::LevelTerm::Zero),Transparency::Full,1).is_unknown());
++ }
++}

@@ -1,0 +1,201 @@
+{
+  "status": "REJECTED_AS_SUFFICIENT_COVERAGE_FIX",
+  "parent_binary": "a1d903c6ddf1219a7202db87f14ac3de82a344383501251c928a2a19683e621f",
+  "parent_source_tar_sha": "43418750f5972fc8ffe4451c3f0b63270f01d7f00ff29ac1bd68f88261b99fff",
+  "parent_source_manifest_sha": "89a6ac5c38951f3959f71c815a6f31884b0a7ed235602791fb1d5f068348ec7b",
+  "configuration": {
+    "NUCLEUS_EXPERIMENTAL_CERTIFIED_QUOT_IOTA": "1",
+    "NUCLEUS_EXPERIMENTAL_CONTEXT_BINDER": "1",
+    "NUCLEUS_EXPERIMENTAL_DEMAND_MAJOR": "1",
+    "NUCLEUS_EXPERIMENTAL_EXPECTED_LAMBDA": "1",
+    "NUCLEUS_EXPERIMENTAL_FORMED_PROP_DOMAIN_RETRY": "1",
+    "NUCLEUS_EXPERIMENTAL_POLYMORPHIC_PROP_IRREL": "1",
+    "NUCLEUS_EXPERIMENTAL_PROJECTION_CONTEXT": "1",
+    "NUCLEUS_EXPERIMENTAL_PROJECTION_CROSSFRAME_512": "1",
+    "NUCLEUS_EXPERIMENTAL_PROP_SINGLETON_2P1F": "1",
+    "NUCLEUS_EXPERIMENTAL_RELEVANCE": "1",
+    "NUCLEUS_EXPERIMENTAL_REPLAY_NEUTRAL_PROJECTION": "1",
+    "NUCLEUS_EXPERIMENTAL_REPLAY_PROJECTION_MAJOR": "1",
+    "NUCLEUS_EXPERIMENTAL_SOURCE_PAIR_DEPTH8": "1",
+    "NUCLEUS_EXPERIMENTAL_SOURCE_PROOF_IRREL": "1",
+    "NUCLEUS_EXPERIMENTAL_SUBSTITUTION_RECLOSURE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_DATA_CONGRUENCE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_LINEAGE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_PROJECTION_SPINE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_RECEIVER": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_VALUE_NORMALIZATION": "1"
+  },
+  "compiler": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
+  "offline_runtime_artifact": 13287134717,
+  "baseline_red": {
+    "tests": 3,
+    "passed": 2,
+    "failed": 1,
+    "filtered": 105,
+    "experimental_flags_present": false,
+    "assertion": "closed source must reuse under a different unused term environment"
+  },
+  "broad": {
+    "passed": 107,
+    "failed": 1,
+    "ignored": 0,
+    "experimental_flags_present": true,
+    "failure": "machine::captured_beta_frame_tests::repeated_exact_beta_capture_reuses_its_dependent_domain_evidence",
+    "patch_sha": "afbf862e4807153700dfc6d9266d8101e8923da30c5f017965a8e2e9adcef6ee"
+  },
+  "scalar": {
+    "passed": 108,
+    "failed": 0,
+    "ignored": 0,
+    "experimental_flags_present": true,
+    "binary_sha": "4cabddb4630fe138a41ff042993dd2de764869e7466e3427c4e059724686fdd3",
+    "patch_sha": "6c6e90ba0ab6fd7e4f92b26d4e1b2fc1d3104b56ef845d5ec56649f2aac257ff",
+    "prefix": [
+      {
+        "case": "int-ble",
+        "rc": 2,
+        "user": 20.347084,
+        "system": 0.06854099999999999,
+        "wall": 20.42529697199643,
+        "terminal": "NUCLEUS_DOWNSTREAM:name=_private.Init.Data.Int.LemmasAux.0.Int.ble'_eq_true._proof_1_2:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type",
+        "source_sha": "5b7a6b7ad11f5683937e8258322d47f09a9daf6d254bd921e6d23b0d1ee3b494",
+        "binary_sha": "4cabddb4630fe138a41ff042993dd2de764869e7466e3427c4e059724686fdd3"
+      },
+      {
+        "case": "renamed-pprod-forged-fields",
+        "rc": 1,
+        "user": 0.0,
+        "system": 0.001624,
+        "wall": 0.002848281990736723,
+        "terminal": "NUCLEUS_DOWNSTREAM:name=PProd2:stage=inductive:verdict=Reject",
+        "source_sha": "33993418d305e980e224d6102be2fc61ee9c02be1c8c23ccce00a406616ba6d6",
+        "binary_sha": "4cabddb4630fe138a41ff042993dd2de764869e7466e3427c4e059724686fdd3"
+      },
+      {
+        "case": "renamed-pprod-forged-motive",
+        "rc": 2,
+        "user": 0.0,
+        "system": 0.001429,
+        "wall": 0.002279332999023609,
+        "terminal": "NUCLEUS_DOWNSTREAM:name=PProd2:stage=inductive:verdict=Unknown",
+        "source_sha": "2eb5034aa01b1591cc99577bacc50095e3d8e80709172175f569e1f481f680de",
+        "binary_sha": "4cabddb4630fe138a41ff042993dd2de764869e7466e3427c4e059724686fdd3"
+      },
+      {
+        "case": "renamed-pprod",
+        "rc": 0,
+        "user": 0.0,
+        "system": 0.0011769999999999999,
+        "wall": 0.0022374210093403235,
+        "terminal": null,
+        "source_sha": "72349b3f424b4370e6aed5b55d9ee8aa4a026d02c7f3a2e4c5875053948d9184",
+        "binary_sha": "4cabddb4630fe138a41ff042993dd2de764869e7466e3427c4e059724686fdd3"
+      }
+    ],
+    "declines": [
+      {
+        "case": "bugs--eta-ctor-alias",
+        "rc": 2,
+        "user": 0.0,
+        "system": 0.001348,
+        "wall": 0.0027545110060600564,
+        "terminal": "NUCLEUS_DOWNSTREAM:name=etaCtorAlias:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads",
+        "source_sha": "fd1a643c6c52efe34ec0cc0c22e53cdae32561ff80fb533b3bee7064dbd85ea3",
+        "binary_sha": "4cabddb4630fe138a41ff042993dd2de764869e7466e3427c4e059724686fdd3"
+      },
+      {
+        "case": "perf--fueled-chain",
+        "rc": 2,
+        "user": 6.222552,
+        "system": 0.059364999999999994,
+        "wall": 6.28739145900181,
+        "terminal": "NUCLEUS_DOWNSTREAM:name=chain6_datF:stage=theorem.value:verdict=UNKNOWN:reason=neutral-projection-receiver-congruence",
+        "source_sha": "e5ca34489fc7b8ee13b1e7f09f76247ab7b01dd1a752a13cc8b796c569e1401a",
+        "binary_sha": "4cabddb4630fe138a41ff042993dd2de764869e7466e3427c4e059724686fdd3"
+      },
+      {
+        "case": "perf--grind-ring-5",
+        "rc": 2,
+        "user": 8.630479,
+        "system": 0.028696,
+        "wall": 8.6641715309961,
+        "terminal": "NUCLEUS_DOWNSTREAM:name=_private.Init.Grind.Ring.Basic.0.Lean.Grind.Ring.intCast_nat_sub._proof_1_2:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type",
+        "source_sha": "e9c394e0ff311fd10f60dee2433a530f16e82354c32d6588a8775baa06fd221f",
+        "binary_sha": "4cabddb4630fe138a41ff042993dd2de764869e7466e3427c4e059724686fdd3"
+      },
+      {
+        "case": "perf--magma-list-deep-n21",
+        "rc": 2,
+        "user": 0.649544,
+        "system": 0.019303,
+        "wall": 0.6705364679946797,
+        "terminal": "NUCLEUS_DOWNSTREAM:name=countermodel:stage=definition.value:verdict=UNKNOWN:reason=unresolved-qualified-recursor-heads",
+        "source_sha": "b7a211699ab32a5d2397319702e2d5552f5796a6bdac990efa69fb186039f526",
+        "binary_sha": "4cabddb4630fe138a41ff042993dd2de764869e7466e3427c4e059724686fdd3"
+      },
+      {
+        "case": "perf--magma-list-deep-n36",
+        "rc": 2,
+        "user": 0.49446799999999996,
+        "system": 0.003948,
+        "wall": 0.503236984994146,
+        "terminal": "NUCLEUS_DOWNSTREAM:name=countermodel:stage=definition.value:verdict=UNKNOWN:reason=application-function-type",
+        "source_sha": "6669cee92ad330dada351ac9e63656f7e9e848dd70376f17030d64677f8c81ac",
+        "binary_sha": "4cabddb4630fe138a41ff042993dd2de764869e7466e3427c4e059724686fdd3"
+      },
+      {
+        "case": "perf--magma-list-pair-n7",
+        "rc": 2,
+        "user": 0.348074,
+        "system": 0.011930999999999999,
+        "wall": 0.36139829699823167,
+        "terminal": "NUCLEUS_DOWNSTREAM:name=countermodel:stage=definition.value:verdict=UNKNOWN:reason=application-function-type",
+        "source_sha": "abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35",
+        "binary_sha": "4cabddb4630fe138a41ff042993dd2de764869e7466e3427c4e059724686fdd3"
+      },
+      {
+        "case": "perf--magma-string-n4",
+        "rc": 2,
+        "user": 5.158443,
+        "system": 0.031111999999999997,
+        "wall": 5.193510425000568,
+        "terminal": "NUCLEUS_DOWNSTREAM:name=Nat.Internal.Linear.Poly.denote_reverse:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type",
+        "source_sha": "158b54b527a3171cfff366e525d1f3ad78147f024e7946ec04fa6f20ef97bc5a",
+        "binary_sha": "4cabddb4630fe138a41ff042993dd2de764869e7466e3427c4e059724686fdd3"
+      },
+      {
+        "case": "perf--magma-string-pair-n9",
+        "rc": 2,
+        "user": 4.94909,
+        "system": 0.054787999999999996,
+        "wall": 5.02708374899521,
+        "terminal": "NUCLEUS_DOWNSTREAM:name=Nat.Internal.Linear.Poly.denote_reverse:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type",
+        "source_sha": "deeeea5010e88e313dcf3d1b9642a5f9de8fb711066dd0256cec3b35d38c05ae",
+        "binary_sha": "4cabddb4630fe138a41ff042993dd2de764869e7466e3427c4e059724686fdd3"
+      }
+    ]
+  },
+  "apparatus": {
+    "unconfigured_broad": {
+      "passed": 103,
+      "failed": 5,
+      "ignored": 0
+    },
+    "unconfigured_scalar": {
+      "passed": 104,
+      "failed": 4,
+      "ignored": 0
+    },
+    "configuration_related_failures": [
+      "typecheck::checked_binding_lineage_tests::captured_typed_substitution_uses_validated_source_domain_without_reinfer",
+      "typecheck::checked_binding_lineage_tests::checked_pi_elimination_registers_its_actual_typed_substitution",
+      "typecheck::checked_binding_lineage_tests::typed_binder_uses_its_witness_not_unrelated_latest_context_type",
+      "typecheck::minimal_context_binder_tests::actual_source_captured_free_zero_overrules_unrelated_latest_context_entry"
+    ]
+  },
+  "full_native_42_not_run": true,
+  "full_source_51_not_run": true,
+  "no_performance_claim": true,
+  "stacked": false,
+  "complete_mathlib_accept": false
+}

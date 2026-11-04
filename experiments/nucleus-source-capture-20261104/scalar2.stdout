@@ -1,0 +1,146 @@
+
+running 108 tests
+test capability::dense_relevance_guards::absent_false_true_overwrite_and_extreme_sparse ... ok
+test capability::tests::distinct_declared_names_do_not_fire ... ok
+test capability::tests::duplicate_declared_names_reject ... ok
+test checker::nested_nullary_source_tests::source_checked_multi_motive_nullary_rule_is_derived ... ok
+test checker::qualified_nullary_enum_reductions::all_three_source_constructor_branches_reduce_to_their_distinct_numerals ... ok
+test checker::record_universe_bounds::evaluation_field_fits_both_owner_universes_but_not_a_smaller_carrier ... ok
+test checker::record_universe_bounds::imax_upper_bound_remains_conservative_under_nesting_and_zero_valuations ... ok
+test checker::record_universe_bounds::upper_bound_exhaustion_never_supplies_a_witness ... ok
+test checker::tests::exact_and_fixture_satisfies_each_independently_derived_claim ... ok
+test checker::tests::g25_boolprop_reconstructs_prop_only_binary_recursor ... ok
+test checker::tests::g26_rejects_impossible_owned_recursor_metadata ... ok
+test checker::tests::g3_001_ablation_requires_guarded_semantic_delta ... ok
+test checker::tests::good_beta_definition_uses_the_trusted_conversion_route ... ok
+test checker::tests::rejected_twobool_block_cannot_partially_extend_authority ... ok
+test checker::tests::universe_parameter_uniqueness_keeps_distinct_binders ... ok
+test convert::unresolved_registered_recursor_controls::unresolved_registered_recursor_is_unknown_while_distinct_bool_data_is_refuted ... ok
+test environment::owned_append_tests::borrowed_and_pinned_snapshots_keep_their_maps_and_authority ... ok
+test environment::owned_append_tests::retained_machine_delta_witness_cannot_observe_future_owned_appends ... ok
+test environment::owned_append_tests::unique_owned_append_preserves_both_map_allocations_across_many_definitions ... ok
+test environment::owned_append_tests::validation_errors_do_not_modify_shared_snapshots_and_siblings_remain_distinct ... ok
+test machine::bounded_checked_replay_tests::checked_replay_refuses_a_constructor_at_a_different_declared_universe ... ok
+test machine::bounded_checked_replay_tests::checked_replay_resolves_eight_captured_majors_without_guessing_a_branch ... ok
+test machine::bounded_checked_replay_tests::checked_replay_reuses_a_resolved_major_returned_again_by_the_rule_rhs ... ok
+test machine::bounded_checked_replay_tests::completed_inner_replay_survives_outer_exhaustion_without_caching_the_outer ... ok
+test machine::bounded_checked_replay_tests::completed_replay_clone_declines_deep_projection_heads_before_recursive_copy ... ok
+test machine::bounded_checked_replay_tests::completed_replay_constructs_one_source_key_and_shares_it_through_finish ... ok
+test machine::captured_beta_frame_tests::beta_binding_saturation_preserves_existing_exact_captures_and_leaves_new_ones_fresh ... ok
+test machine::captured_beta_frame_tests::completed_replay_still_matches_after_beta_binding_saturation ... ok
+test machine::captured_beta_frame_tests::repeated_exact_beta_capture_reuses_its_dependent_domain_evidence ... ok
+test machine::captured_nat_projection_tests::projection_replays_a_cached_nat_recursor_on_its_actual_numeric_major ... ok
+test machine::captured_native_nat_replay_tests::native_nat_successor_reuses_its_exact_numeric_field_carrier ... ok
+test machine::captured_native_nat_replay_tests::qualified_nat_replay_uses_exact_literal_major_and_predecessor ... ok
+test machine::captured_native_subtraction_tests::cached_incomplete_predecessor_cannot_bypass_replay ... ok
+test machine::captured_native_subtraction_tests::captured_subtraction_resumes_before_predecessor ... ok
+test machine::captured_native_subtraction_tests::completed_predecessor_replay_uses_only_computed_numerals ... ok
+test machine::captured_native_subtraction_tests::deep_captured_subtractions_terminate_without_guessing_a_numeral ... ok
+test machine::captured_native_subtraction_tests::indirect_beta_capture_preserves_subtraction_order ... ok
+test machine::captured_native_subtraction_tests::low_fuel_then_high_fuel_matches_fresh_and_symbolic_stays_symbolic ... ok
+test machine::captured_native_subtraction_tests::predecessor_replay_declines_wrong_authority_shape_universe_and_tiny_fuel ... ok
+test machine::captured_native_subtraction_tests::predecessor_replay_preserves_existing_fuel_and_declines_symbolic_results ... ok
+test machine::captured_native_subtraction_tests::replay_requires_registered_head_universes_arity_and_no_pending_argument ... ok
+test machine::captured_native_subtraction_tests::source_frames_and_authorities_are_not_merged ... ok
+test machine::captured_recursor_spine_tests::checked_neutral_iota_retains_surplus_arguments_and_actual_major_position ... ok
+test machine::checked_one_step_replay_tests::actual_field_enum_iota_can_return_a_symbolic_registered_recursor_without_completing_it ... ok
+test machine::closed_source_reuse_tests::closed_beta_application_reuses_across_unused_term_captures ... ok
+test machine::closed_source_reuse_tests::closed_term_still_separates_universe_instance_and_authority ... ok
+test machine::closed_source_reuse_tests::open_application_retains_actual_term_capture ... ok
+test machine::exposure_clock_tests::clock_keys_preserve_capture_authority_and_exposure_modes ... ok
+test machine::exposure_clock_tests::exhausted_clock_bookkeeping_declines_only_optional_publication ... ok
+test machine::exposure_clock_tests::hot_certified_exposure_survives_cold_churn_at_the_same_capacity ... ok
+test machine::neutral_projection_tests::projection_conversion_preserves_a_constant_neutral_receiver ... ok
+test machine::symbolic_major_cache_tests::demand_reuses_a_normal_form_blocked_on_an_immutable_local ... ok
+test nat::tests::bounded_bit_operations_match_exact_native_arithmetic ... ok
+test nat::tests::bounded_division_preserves_euclidean_and_zero_divisor_semantics ... ok
+test nat::tests::bounded_products_and_powers_are_exact_beyond_machine_words ... ok
+test nat::tests::parses_beyond_u64_and_steps_exactly ... ok
+test nat::tests::subtraction_truncates_at_zero ... ok
+test parser::hot_differential_tests::every_recognized_byte_mutation_is_valid_reference_json ... ok
+test parser::hot_differential_tests::valid_and_hostile_numeric_records_match_reference ... ok
+test run_flags::tests::capture_matches_each_environment_presence_and_fallback_stays_dynamic ... ok
+test run_flags::tests::nested_scopes_restore_the_exact_prior_snapshot ... ok
+test run_flags::tests::unwind_restores_scope_and_new_runs_capture_again ... ok
+test typecheck::checked_binding_lineage_tests::a_different_typing_prefix_is_a_protected_future_separator ... ok
+test typecheck::checked_binding_lineage_tests::captured_typed_substitution_uses_validated_source_domain_without_reinfer ... FAILED
+test typecheck::checked_binding_lineage_tests::checked_pi_elimination_registers_its_actual_typed_substitution ... FAILED
+test typecheck::checked_binding_lineage_tests::conflicting_or_absent_witnesses_do_not_grant_type_authority ... ok
+test typecheck::checked_binding_lineage_tests::strict_origin_requires_immutable_checked_binding_and_exact_context ... ok
+test typecheck::checked_binding_lineage_tests::typed_binder_uses_its_witness_not_unrelated_latest_context_type ... FAILED
+test typecheck::closed_spine_inference_tests::captured_pi_frame_key_preserves_own_codomain_levels_domain_and_quarantine ... ok
+test typecheck::closed_spine_inference_tests::checked_frame_saturation_preserves_old_scopes_and_uses_fresh_fallback ... ok
+test typecheck::closed_spine_inference_tests::checked_frame_tuple_separates_source_role_context_domain_actual_and_authority ... ok
+test typecheck::closed_spine_inference_tests::closed_spine_eligibility_exhaustion_does_not_poison_a_later_proof ... ok
+test typecheck::closed_spine_inference_tests::closed_spine_is_shared_across_distinct_lexical_binders_with_one_step ... ok
+test typecheck::closed_spine_inference_tests::closed_spine_universe_instantiation_stays_with_its_checker ... ok
+test typecheck::closed_spine_inference_tests::exact_captured_pi_substitution_reuses_only_completed_same_scope_bindings ... ok
+test typecheck::closed_spine_inference_tests::failed_binder_formation_and_argument_typing_do_not_create_checked_frames ... ok
+test typecheck::closed_spine_inference_tests::failed_nested_lambda_trials_have_shared_bounded_work_and_preserve_ordinary_budget ... ok
+test typecheck::closed_spine_inference_tests::formed_dependent_literal_lambda_checks_before_whole_function_inference_at_bounded_fuel ... ok
+test typecheck::closed_spine_inference_tests::formed_fixed_pi_checking_does_not_bypass_capture_safe_reopening ... ok
+test typecheck::closed_spine_inference_tests::formed_lambda_entry_rejects_failed_expected_formation_bad_bodies_and_wrong_domains ... ok
+test typecheck::closed_spine_inference_tests::open_spines_keep_their_distinct_typed_binders_and_wrong_closed_arguments_fail ... ok
+test typecheck::closed_spine_inference_tests::repeated_checked_open_let_reuses_only_its_exact_source_scope ... ok
+test typecheck::closed_spine_inference_tests::repeated_literal_beta_spine_reuses_only_its_exact_checked_source_frame ... ok
+test typecheck::context_spine_tests::prefixes_and_sibling_forks_preserve_exact_vector_contents ... ok
+test typecheck::exact_source_support_controls::captured_source_inference_cannot_type_an_ambient_local_by_opening_a_binder ... ok
+test typecheck::exact_source_support_controls::every_annotation_value_projection_and_external_capture_is_accounted_for ... ok
+test typecheck::exact_source_support_controls::paired_support_preserves_binder_capture_constructor_and_level_distinctions ... ok
+test typecheck::exact_source_support_controls::root_source_alias_uses_the_captured_lambda_and_its_own_level_map ... ok
+test typecheck::final_proof_capture_guard_tests::used_captures_cannot_be_identified_by_shared_source_syntax ... ok
+test typecheck::final_proof_guard_tests::both_universe_instantiated_types_must_be_propositions ... ok
+test typecheck::final_proof_guard_tests::bounded_trial_declines_below_its_explicit_entry_budget ... ok
+test typecheck::final_proof_guard_tests::distinct_independently_formed_propositions_do_not_license_proof_equality ... ok
+test typecheck::fixed_pi_capture_tests::fixed_pi_substitution_preserves_shadowing_and_refuses_unsupported_or_low_fuel ... ok
+test typecheck::fixed_pi_capture_tests::fixed_pi_substitution_refuses_actual_captured_by_unrelated_inner_binder ... ok
+test typecheck::lambda_role_sharing_tests::declined_goal_keeps_proven_subject_types_in_the_identical_lambda_scope ... ok
+test typecheck::lambda_role_sharing_tests::lambda_role_sharing_preserves_every_scope_field_and_other_roles ... ok
+test typecheck::lambda_role_sharing_tests::lambda_shared_scope_obeys_quarantine_fixed_pi_and_configuration ... ok
+test typecheck::lambda_role_sharing_tests::lambda_shared_scope_saturation_preserves_exact_old_proofs ... ok
+test typecheck::minimal_context_binder_tests::actual_missing_bvar_still_rejected ... ok
+test typecheck::minimal_context_binder_tests::actual_source_captured_free_zero_overrules_unrelated_latest_context_entry ... FAILED
+test typecheck::minimal_context_binder_tests::high_synthetic_free_id_does_not_claim_unproved_context_correspondence ... ok
+test typecheck::minimal_context_binder_tests::source_captured_free_one_retains_different_data_type ... ok
+test typecheck::opening_memo_tests::cold_freshness_cost_and_saturation_preserve_original_guard ... ok
+test typecheck::opening_memo_tests::completed_exact_freshness_proof_reuses_at_paid_one_step ... ok
+test typecheck::opening_memo_tests::freshness_memo_separates_source_frame_level_instance_and_actual_free ... ok
+test value::cached_level_substitution_tests::equal_entries_keep_equal_hashes_without_aliasing_allocation_witnesses ... ok
+test value::cached_level_substitution_tests::exposure_cache_separates_colliding_universe_substitutions ... ok
+test value::cached_level_substitution_tests::forced_digest_collision_never_equates_different_universe_entries ... ok
+
+failures:
+
+---- typecheck::checked_binding_lineage_tests::captured_typed_substitution_uses_validated_source_domain_without_reinfer stdout ----
+
+thread 'typecheck::checked_binding_lineage_tests::captured_typed_substitution_uses_validated_source_domain_without_reinfer' (122) panicked at src/typecheck.rs:5874:9:
+assertion `left == right` failed: checked substitution should reuse its proven type without re-inference
+  left: None
+ right: Some(Sort(Succ(Zero)))
+
+---- typecheck::checked_binding_lineage_tests::checked_pi_elimination_registers_its_actual_typed_substitution stdout ----
+
+thread 'typecheck::checked_binding_lineage_tests::checked_pi_elimination_registers_its_actual_typed_substitution' (123) panicked at src/typecheck.rs:5844:9:
+a fully checked Pi elimination must produce a retained typed substitution witness
+
+---- typecheck::checked_binding_lineage_tests::typed_binder_uses_its_witness_not_unrelated_latest_context_type stdout ----
+
+thread 'typecheck::checked_binding_lineage_tests::typed_binder_uses_its_witness_not_unrelated_latest_context_type' (126) panicked at src/typecheck.rs:5802:9:
+assertion `left == right` failed: BVar1 uses the checked parent binder's type, not the newest context type
+  left: None
+ right: Some(Sort(Zero))
+
+---- typecheck::minimal_context_binder_tests::actual_source_captured_free_zero_overrules_unrelated_latest_context_entry stdout ----
+
+thread 'typecheck::minimal_context_binder_tests::actual_source_captured_free_zero_overrules_unrelated_latest_context_entry' (158) panicked at src/typecheck.rs:5711:9:
+the source frame actually denotes FreeId0, with context[0] type: Proven { value: Sort(Succ(Zero)), warrant: WarrantId("context-lookup") }
+
+
+failures:
+    typecheck::checked_binding_lineage_tests::captured_typed_substitution_uses_validated_source_domain_without_reinfer
+    typecheck::checked_binding_lineage_tests::checked_pi_elimination_registers_its_actual_typed_substitution
+    typecheck::checked_binding_lineage_tests::typed_binder_uses_its_witness_not_unrelated_latest_context_type
+    typecheck::minimal_context_binder_tests::actual_source_captured_free_zero_overrules_unrelated_latest_context_entry
+
+test result: FAILED. 104 passed; 4 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.51s
+
