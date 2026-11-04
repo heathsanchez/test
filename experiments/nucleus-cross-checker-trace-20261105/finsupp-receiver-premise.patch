@@ -1,8 +1,8 @@
 diff --git a/metatron-kernel/src/convert.rs b/metatron-kernel/src/convert.rs
-index eaed20f..98d228b 100644
+index eaed20f..f8f532f 100644
 --- a/metatron-kernel/src/convert.rs
 +++ b/metatron-kernel/src/convert.rs
-@@ -1568,6 +1568,49 @@ fn compare_values_with_eta_charge(
+@@ -1568,6 +1568,96 @@ fn compare_values_with_eta_charge(
                          );
                      }
                  }
@@ -30,6 +30,53 @@ index eaed20f..98d228b 100644
 +                        };
 +                        let left_inner=deref_bvar(&left_binding);
 +                        let right_inner=deref_bvar(&right_binding);
++                        let capture_path=|root:&Closure| {
++                            let mut current=root.clone();
++                            let mut path=Vec::new();
++                            let mut seen=std::collections::HashSet::new();
++                            for _ in 0..20 {
++                                if !seen.insert((current.expr,current.env.id(),current.levels.identity())) {
++                                    path.push("CYCLE".to_owned());
++                                    break;
++                                }
++                                match checker.expression(current.expr) {
++                                    Some(Expr::BVar(index)) => {
++                                        match current.env.lookup_with_node_id(*index) {
++                                            Some((node_id,EnvBinding::Closure(next))) => {
++                                                path.push(format!("bvar({index})@{}->node{node_id}:closure({},{})",
++                                                    current.env.id(),next.expr.0,next.env.id()));
++                                                current=next;
++                                            }
++                                            Some((node_id,binding)) => {
++                                                path.push(format!("bvar({index})@{}->node{node_id}:{binding:?}",
++                                                    current.env.id()));
++                                                break;
++                                            }
++                                            None => {
++                                                path.push(format!("MISSING:bvar({index})@{}",current.env.id()));
++                                                break;
++                                            }
++                                        }
++                                    }
++                                    other => {
++                                        path.push(format!("TERMINAL:expr{}:frame{}:{other:?}",
++                                            current.expr.0,current.env.id()));
++                                        break;
++                                    }
++                                }
++                            }
++                            path
++                        };
++                        let left_path=capture_path(left_structure);
++                        let right_path=capture_path(right_structure);
++                        let mut exact_budget=4096;
++                        let exact_relation=checker.exact_source_capture_identity(
++                            left_structure,right_structure,&mut exact_budget,
++                        );
++                        let mut instantiated_budget=4096;
++                        let instantiated_relation=checker.instantiated_source_capture_congruence(
++                            left_structure,right_structure,&mut instantiated_budget,
++                        );
 +                        let left_formed=checker.checked_source_conversion(
 +                            left_structure,left_structure,context,512,
 +                        );
@@ -43,7 +90,7 @@ index eaed20f..98d228b 100644
 +                            checker,left_spine,right_spine,512,depth,context,512,
 +                        );
 +                        eprintln!(
-+                            "NUCLEUS_FINSUPP_PREMISE:depth={depth}:budget={current_budget}:left_frame={}:right_frame={}:left_binding={left_binding:?}:right_binding={right_binding:?}:left_inner={left_inner:?}:right_inner={right_inner:?}:left_typed={left_formed:?}:right_typed={right_formed:?}:receiver={receiver_relation:?}:spine={spine_relation}:left_arity={}:right_arity={}",
++                            "NUCLEUS_FINSUPP_PREMISE:depth={depth}:budget={current_budget}:left_frame={}:right_frame={}:left_binding={left_binding:?}:right_binding={right_binding:?}:left_inner={left_inner:?}:right_inner={right_inner:?}:left_path={left_path:?}:right_path={right_path:?}:exact_source={exact_relation}:exact_remaining={exact_budget}:instantiated_source={instantiated_relation}:instantiated_remaining={instantiated_budget}:left_typed={left_formed:?}:right_typed={right_formed:?}:receiver={receiver_relation:?}:spine={spine_relation}:left_arity={}:right_arity={}",
 +                            left_structure.env.id(),right_structure.env.id(),
 +                            left_spine.len(),right_spine.len(),
 +                        );
