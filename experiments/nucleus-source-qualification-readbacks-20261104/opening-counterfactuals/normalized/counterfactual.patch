@@ -1,0 +1,60 @@
+--- a/src/checker.rs
++++ b/src/checker.rs
+@@ -313,6 +313,8 @@
+     // authority; retaining future source records does not admit them.
+     for declaration_index in 0..export.declarations.len() {
+         let declaration = export.declarations[declaration_index].clone();
++        #[cfg(feature="diagnostics")]
++        crate::diagnostics::exact_opening_target(matches!(&declaration,Declaration::Theorem{name,..}if name.0==26089));
+         #[cfg(feature="diagnostics")]
+         if crate::run_flags::present(crate::run_flags::Flag::TraceDeclarationProgress) {
+             let name=match &declaration {
+--- a/src/convert.rs
++++ b/src/convert.rs
+@@ -2942,6 +2942,20 @@
+     if *budget==0{return false;}
+     *budget-=1;
+     if checker.has_source_opening_proof(body,free){return true;}
++    // Diagnostic-only oracle for an assumed already constructed, exact
++    // opening fact. Construction work is additional/unpaid: NOT promotable.
++    #[cfg(feature="diagnostics")]
++    if crate::diagnostics::exact_opening_target_active(){
++        crate::diagnostics::exact_opening_target(false);
++        let (proven,work)=checker.diagnostic_exact_source_opening(body,free);
++        crate::diagnostics::exact_opening_target(true);
++        if proven{
++            use std::sync::atomic::{AtomicUsize,Ordering};static CERTIFICATES:AtomicUsize=AtomicUsize::new(0);
++            if CERTIFICATES.fetch_add(1,Ordering::Relaxed)<64{eprintln!("EXACT_OPENING_COUNTERFACTUAL:expr={:?}:free={free:?}:additional_unpaid_work={work}:precomputed_fact_assumed=true:not_promotable=true",body.expr);}
++            return true;
++        }
++    }
++
+     let safe=source_opening_avoids_capture_uncached(checker,body,free,budget);
+     if safe{checker.retain_source_opening_proof(body,free);}
+     safe
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -6035,6 +6035,13 @@
+         instantiate_level(self.levels, level, &self.level_substitution, budget).map_err(|_| ())
+     }
+ 
++    #[cfg(feature="diagnostics")]
++    pub(crate)fn diagnostic_exact_source_opening(&self,body:&Closure,free:FreeId)->(bool,usize){
++        let isolated=TypeChecker::new(self.expressions,self.levels,self.environment);
++        let mut work=65536usize;
++        let proven=crate::convert::source_opening_avoids_capture(&isolated,body,free,&mut work);
++        (proven,65536-work)
++    }
+     pub(crate) fn has_source_opening_proof(&self,body:&Closure,free:FreeId)->bool {
+         self.source_opening_proofs.borrow().contains_key(&(body.expr,body.env.id(),body.levels.identity(),free))
+     }
+--- a/src/diagnostics.rs
++++ b/src/diagnostics.rs
+@@ -60,3 +60,7 @@
+         conversions: CONVERSIONS.get(),
+     }
+ }
++
++thread_local!{static EXACT_OPENING_TARGET:Cell<bool>=const{Cell::new(false)};}
++pub(crate)fn exact_opening_target(active:bool){EXACT_OPENING_TARGET.set(active)}
++pub(crate)fn exact_opening_target_active()->bool{EXACT_OPENING_TARGET.get()}

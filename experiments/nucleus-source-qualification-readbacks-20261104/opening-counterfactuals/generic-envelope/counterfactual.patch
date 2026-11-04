@@ -1,0 +1,89 @@
+--- a/src/checker.rs
++++ b/src/checker.rs
+@@ -313,6 +313,8 @@
+     // authority; retaining future source records does not admit them.
+     for declaration_index in 0..export.declarations.len() {
+         let declaration = export.declarations[declaration_index].clone();
++        #[cfg(feature="diagnostics")]
++        crate::diagnostics::generic_envelope_target(matches!(&declaration,Declaration::Theorem{name,..}if name.0==26089));
+         #[cfg(feature="diagnostics")]
+         if crate::run_flags::present(crate::run_flags::Flag::TraceDeclarationProgress) {
+             let name=match &declaration {
+--- a/src/convert.rs
++++ b/src/convert.rs
+@@ -2942,6 +2942,18 @@
+     if *budget==0{return false;}
+     *budget-=1;
+     if checker.has_source_opening_proof(body,free){return true;}
++    // Diagnostic only. This construction is NOT charged to semantic fuel;
++    // the experiment assumes an already computed structural certificate.
++    #[cfg(feature="diagnostics")]
++    if crate::diagnostics::generic_envelope_target_active(){
++        let envelope=checker.diagnostic_capture_envelope(body);
++        if envelope.0 && envelope.1.is_none_or(|m|m<free.0){
++            use std::sync::atomic::{AtomicUsize,Ordering};static CERTIFICATES:AtomicUsize=AtomicUsize::new(0);
++            if CERTIFICATES.fetch_add(1,Ordering::Relaxed)<64{eprintln!("GENERIC_ENVELOPE_COUNTERFACTUAL:expr={:?}:free={free:?}:envelope={envelope:?}:precomputed_boundary_assumed=true:not_promotable=true",body.expr);}
++            return true;
++        }
++    }
++
+     let safe=source_opening_avoids_capture_uncached(checker,body,free,budget);
+     if safe{checker.retain_source_opening_proof(body,free);}
+     safe
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -6003,6 +6003,44 @@
+         instantiate_level(self.levels, level, &self.level_substitution, budget).map_err(|_| ())
+     }
+ 
++    #[cfg(feature="diagnostics")]
++    pub(crate) fn diagnostic_capture_envelope(&self,body:&Closure)->(bool,Option<u64>,usize,usize,&'static str){
++        let probe=TypeChecker::new(self.expressions,self.levels,self.environment);
++        let mut work=65536usize;let mut pending=vec![(body.clone(),1u64)];let mut closures=std::collections::HashSet::new();let mut frames=HashMap::new();let mut max_free:Option<u64>=None;let mut count=0usize;let mut bindings=0usize;
++        while let Some((source,virtual_slots))=pending.pop(){
++            if work==0{return(false,max_free,count,bindings,"diagnostic-cap");}work-=1;
++            if !closures.insert((source.expr,source.env.id(),source.levels.identity(),virtual_slots)){continue;}
++            count+=1;
++            let Some(support)=probe.complete_source_support(source.expr,&mut work)else{return(false,max_free,count,bindings,"source-support");};
++            let len=if let Some(len)=frames.get(&source.env.id()){*len}else{
++                let mut len=0u64;
++                for binding in source.env.binding_refs(){
++                    if work==0{return(false,max_free,count,bindings,"diagnostic-cap");}work-=1;bindings+=1;len+=1;
++                    match binding{
++                        EnvBinding::Free(f)=>max_free=Some(max_free.map_or(f.0,|m|m.max(f.0))),
++                        EnvBinding::Closure(c)=>pending.push((c.clone(),0)),
++                        EnvBinding::NatLit(_)=>{},
++                        EnvBinding::Neutral(n)=>{
++                            let mut neutrals=vec![n];while let Some(n)=neutrals.pop(){
++                                if work==0{return(false,max_free,count,bindings,"diagnostic-cap");}work-=1;
++                                match &n.head{
++                                    NeutralHead::Free(f)=>max_free=Some(max_free.map_or(f.0,|m|m.max(f.0))),
++                                    NeutralHead::Projection{structure,..}=>neutrals.push(structure),
++                                    NeutralHead::Const{..}=>{},
++                                }
++                                pending.extend(n.spine.iter().map(|c|(c.clone(),0)));
++                            }
++                        }
++                    }
++                }
++                frames.insert(source.env.id(),len);len
++            };
++            let Some(bound)=len.checked_add(virtual_slots)else{return(false,max_free,count,bindings,"scope-overflow");};
++            if support.last().is_some_and(|i|*i>=bound){return(false,max_free,count,bindings,"out-of-scope-capture");}
++        }
++        (true,max_free,count,bindings,"complete")
++    }
++
+     pub(crate) fn has_source_opening_proof(&self,body:&Closure,free:FreeId)->bool {
+         self.source_opening_proofs.borrow().contains_key(&(body.expr,body.env.id(),body.levels.identity(),free))
+     }
+--- a/src/diagnostics.rs
++++ b/src/diagnostics.rs
+@@ -60,3 +60,7 @@
+         conversions: CONVERSIONS.get(),
+     }
+ }
++
++thread_local!{static GENERIC_ENVELOPE_TARGET:Cell<bool>=const{Cell::new(false)};}
++pub(crate)fn generic_envelope_target(active:bool){GENERIC_ENVELOPE_TARGET.set(active)}
++pub(crate)fn generic_envelope_target_active()->bool{GENERIC_ENVELOPE_TARGET.get()}
