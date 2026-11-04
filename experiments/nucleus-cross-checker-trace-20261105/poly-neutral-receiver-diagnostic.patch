@@ -21,7 +21,7 @@
                  return Judgment::unknown("neutral-projection-receiver-congruence");
              }
              let argument_budget = probe / left_structure.spine.len().max(1);
-@@ -2549,4 +2733,18 @@
+@@ -2549,4 +2733,16 @@
                      argument_budget, DeltaPolicy::GuardedSemanticFallback, depth, context,
                  );
                  if !argument_result.is_proven() {
