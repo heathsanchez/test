@@ -61,8 +61,18 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cargo test --release --locked --features diagnostics --manifest-path /tmp/trace-source/metatron-kernel/Cargo.toml
-          cargo build --release --locked --features diagnostics --manifest-path /tmp/trace-source/metatron-kernel/Cargo.toml
+          python3 - <<'PY'
+          import json, os, pathlib, subprocess
+          config=json.loads(pathlib.Path('/tmp/trace-current/qualification.json').read_text())['candidate']['configuration']
+          assert config and all(k.startswith('NUCLEUS_') for k in config), 'qualified Nucleus runtime configuration missing'
+          env=os.environ.copy()
+          env.update(config)
+          cmd=['cargo','test','--release','--locked','--features','diagnostics','--manifest-path','/tmp/trace-source/metatron-kernel/Cargo.toml']
+          subprocess.run(cmd, env=env, check=True)
+          cmd[1]='build'
+          subprocess.run(cmd, env=env, check=True)
+          print('DIAGNOSTIC_BUILD_QUALIFIED_CONFIG',sorted(config),flush=True)
+          PY
       - name: Diagnose first original Mathlib UNKNOWN
         shell: bash
         run: |
