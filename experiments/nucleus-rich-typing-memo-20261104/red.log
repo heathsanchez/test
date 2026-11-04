@@ -1,0 +1,104 @@
+   Compiling serde_core v1.0.229
+   Compiling zmij v1.0.23
+   Compiling serde_json v1.0.151
+   Compiling memchr v2.8.3
+   Compiling itoa v1.0.18
+   Compiling metatron-kernel v0.1.0 (/workspace/scratch/38cabe96376f/nucleus-tournaments/rich-typing-memo/source/metatron-kernel)
+warning: unnecessary parentheses around `if` condition
+    --> src/convert.rs:2634:20
+     |
+2634 |                 if ((l=="Free(FreeId(6))" && r=="Free(FreeId(5))") ||
+     |                    ^
+2635 |                     (l=="Free(FreeId(5))" && r=="Free(FreeId(6))"))
+     |                                                                   ^
+     |
+     = note: `#[warn(unused_parens)]` (part of `#[warn(unused)]`) on by default
+help: remove these parentheses
+     |
+2634 ~                 if (l=="Free(FreeId(6))" && r=="Free(FreeId(5))") ||
+2635 ~                     (l=="Free(FreeId(5))" && r=="Free(FreeId(6))")
+     |
+
+warning: unnecessary parentheses around `if` condition
+    --> src/typecheck.rs:6715:12
+     |
+6715 |         if (!crate::run_flags::present(crate::run_flags::Flag::ExperimentalExpectedLambda)) { return; }
+     |            ^                                                                              ^
+     |
+help: remove these parentheses
+     |
+6715 -         if (!crate::run_flags::present(crate::run_flags::Flag::ExperimentalExpectedLambda)) { return; }
+6715 +         if !crate::run_flags::present(crate::run_flags::Flag::ExperimentalExpectedLambda) { return; }
+     |
+
+warning: unused variable: `c`
+    --> src/convert.rs:3094:91
+     |
+3094 | ...(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let n=Neutral{head:NeutralHead::Const{name:NameId(4),levels:vec![c...
+     |                                  ^ help: if this is intentional, prefix it with an underscore: `_c`
+     |
+     = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: value assigned to `source_work` is never read
+    --> src/typecheck.rs:5684:55
+     |
+5684 |                     if source_work<cost{return false;}source_work-=cost;
+     |                                                       ^^^^^^^^^^^^^^^^^
+     |
+     = help: maybe it is overwritten before being read?
+     = note: `#[warn(unused_assignments)]` (part of `#[warn(unused)]`) on by default
+
+warning: method `qualified_quotient_neutral_result` is never used
+    --> src/machine.rs:1616:19
+     |
+ 319 | impl<'a> Machine<'a> {
+     | -------------------- method in this implementation
+...
+1616 |     pub(crate) fn qualified_quotient_neutral_result(
+     |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: method `diagnostic_captured_recursor_major_chain` is never used
+    --> src/typecheck.rs:1101:19
+     |
+ 139 | impl<'a> TypeChecker<'a> {
+     | ------------------------ method in this implementation
+...
+1101 |     pub(crate) fn diagnostic_captured_recursor_major_chain(
+     |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: `metatron-kernel` (lib test) generated 6 warnings (run `cargo fix --lib -p metatron-kernel --tests` to apply 3 suggestions)
+    Finished `release` profile [optimized] target(s) in 36.86s
+     Running unittests src/lib.rs (nucleus-tournaments/rich-typing-memo/target/release/deps/metatron_kernel-258b3b0aea2bca17)
+
+running 3 tests
+test typecheck::exact_typing_memo_controls::completed_exact_term_derivation_is_reused_with_paid_lookup ... ok
+test typecheck::exact_typing_memo_controls::completed_formed_pi_sort_reuses_only_the_actual_source_judgment ... FAILED
+test typecheck::exact_typing_memo_controls::completed_function_type_reuses_its_actual_binder_and_exact_context ... FAILED
+
+failures:
+
+---- typecheck::exact_typing_memo_controls::completed_formed_pi_sort_reuses_only_the_actual_source_judgment stdout ----
+
+thread 'typecheck::exact_typing_memo_controls::completed_formed_pi_sort_reuses_only_the_actual_source_judgment' (172) panicked at src/typecheck.rs:7417:257:
+assertion `left == right` failed: completed Pi formation is reusable
+  left: None
+ right: Some(Sort(Zero))
+
+---- typecheck::exact_typing_memo_controls::completed_function_type_reuses_its_actual_binder_and_exact_context stdout ----
+
+thread 'typecheck::exact_typing_memo_controls::completed_function_type_reuses_its_actual_binder_and_exact_context' (173) panicked at src/typecheck.rs:7414:345:
+assertion `left == right` failed: completed lambda typing preserves its actual binder and Γ
+  left: None
+ right: Some(Pi { domain: Term(Closure { expr: ExprId(1), env: EnvFrame { id: 0, .. }, levels: LevelSubstitution([]) }), body: Term(Closure { expr: ExprId(1), env: EnvFrame { id: 0, .. }, levels: LevelSubstitution([]) }), binder: FreeId(12) })
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    typecheck::exact_typing_memo_controls::completed_formed_pi_sort_reuses_only_the_actual_source_judgment
+    typecheck::exact_typing_memo_controls::completed_function_type_reuses_its_actual_binder_and_exact_context
+
+test result: FAILED. 1 passed; 2 failed; 0 ignored; 0 measured; 193 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--lib`
