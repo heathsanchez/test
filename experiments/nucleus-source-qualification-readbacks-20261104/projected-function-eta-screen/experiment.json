@@ -1,0 +1,75 @@
+{
+  "status": "CANDIDATE_FULL_INPUT_SCREEN_PASSED",
+  "qualified_default": "ec137270ead2aee950c8402b4baff87520ef3f2d176a4d2ce7e76ba54d9be997",
+  "source_parent_candidate": "e7607cc9b8e97ce40dac1a6fda210cd16e35014753b184d01c2725735dcfe0c8",
+  "literal_identity_binary": "76c5477c87635b3d4d00706939f88687d9e1527c97a04a80c2fe1fa060e89cda",
+  "literal_identity_foldlm_signature_rc": 1,
+  "metered_identity_binary": "d99e45a4cb58439b6effa67efa7ee852d390f679555df87584e66a82c6823649",
+  "metered_identity_foldlm_signature_rc": 1,
+  "one_shot_goal_binary": "c4fc94a7696fa31102de2be17748a5dab9d9cf68261e0e8048ae3f3c0878bd79",
+  "one_shot_full_rc": 1,
+  "one_shot_full_terminal": "List.foldrM_cons",
+  "source_control_format_failure": "missing_isUnsafe",
+  "source_control_format_failure_counted_as_evidence": false,
+  "literal_nested_projection_test_reproduced_target": false,
+  "literal_constructor_projection_test_reproduced_target": false,
+  "source_selected_field_red_pass": 10,
+  "source_selected_field_red_fail": 2,
+  "candidate_binary": "ed7b4fe264ff4aaf87067339d38c06f5e51bb4309aa2f1458f2f2bf639b5af6f",
+  "library_pass": 180,
+  "library_fail": 0,
+  "library_ignored": 0,
+  "promoted": false,
+  "full_mathlib_completion": "UNKNOWN",
+  "official_rank": "UNKNOWN",
+  "full": [
+    {
+      "case": "full",
+      "rc": 2,
+      "user": 191.422911,
+      "system": 5.204576,
+      "wall": 197.03557700700185,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=Multiset.coe_foldr_swap:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads",
+      "source_sha": "22c5de83469408950005589a3bc5ef5157c65549b5a802f85d567c29151306a6",
+      "binary_sha": "ed7b4fe264ff4aaf87067339d38c06f5e51bb4309aa2f1458f2f2bf639b5af6f"
+    }
+  ],
+  "frontier": {
+    "target": "Multiset.coe_foldr_swap",
+    "record": 256471,
+    "bytes": 13478830,
+    "sha256": "13ea49b22c1d367dbe44a6301a4d4c71dd623e40afa8ab4b8e5728e5f1659d26",
+    "declaration": [
+      "thm",
+      {
+        "all": [
+          22508
+        ],
+        "levelParams": [
+          27,
+          32
+        ],
+        "name": 22508,
+        "type": 230355,
+        "value": 230389
+      }
+    ],
+    "diagnostic": {
+      "status": "COUNTERFACTUAL_DIAGNOSTIC_NOT_ORIGINAL_MATHLIB_VERIFICATION",
+      "sha256": "3e05377b40a314efb786bcff54893a0b00d156024b07d6e688884013463687d2",
+      "earlier_theorems_as_typed_axioms": 1802
+    }
+  },
+  "frontier_reference": [
+    {
+      "case": "parse",
+      "rc": 0
+    },
+    {
+      "case": "reference",
+      "rc": 0
+    }
+  ],
+  "named_native_preserved": 307,
+  "qualification_launched": false
+}

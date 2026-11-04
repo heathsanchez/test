@@ -1,0 +1,38 @@
+[
+  {
+    "case": "authentic",
+    "input_sha": "2be36516ba557c0c345c8eb03e01d0e3420cf9b082c1a1281dc25bd81bf71bea",
+    "results": [
+      {
+        "tool": "parse",
+        "rc": 1
+      },
+      {
+        "tool": "reference",
+        "rc": 1
+      },
+      {
+        "tool": "candidate",
+        "rc": 0
+      }
+    ]
+  },
+  {
+    "case": "wrong-lambda-domain",
+    "input_sha": "75565852e8cab8e74390d7c80ea1e6c5f8542e7538c52321df4c61b6b3baf7fe",
+    "results": [
+      {
+        "tool": "parse",
+        "rc": 1
+      },
+      {
+        "tool": "reference",
+        "rc": 1
+      },
+      {
+        "tool": "candidate",
+        "rc": 2
+      }
+    ]
+  }
+]

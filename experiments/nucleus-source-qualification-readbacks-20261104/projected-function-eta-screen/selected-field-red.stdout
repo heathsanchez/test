@@ -1,0 +1,35 @@
+
+running 12 tests
+test machine::quotient_caller_work_tests::a_repeating_projection_never_publishes_a_completed_value ... FAILED
+test machine::quotient_caller_work_tests::a_source_selected_projection_resumes_with_its_original_application_spine ... FAILED
+test machine::quotient_caller_work_tests::an_exhausted_existing_projection_owner_cannot_borrow_caller_work ... ok
+test machine::quotient_caller_work_tests::eta_existing_smaller_owner_is_debited_once ... ok
+test machine::quotient_caller_work_tests::eta_exposure_success_charges_and_restores_its_owner ... ok
+test machine::quotient_caller_work_tests::eta_failed_projection_pays_actual_source_work ... ok
+test machine::quotient_caller_work_tests::eta_zero_allowance_cannot_borrow_parent_fuel ... ok
+test machine::quotient_caller_work_tests::existing_owner_is_preserved_and_debited_once ... ok
+test machine::quotient_caller_work_tests::failed_actual_major_consumes_caller_work ... ok
+test machine::quotient_caller_work_tests::failed_nested_lift_charges_its_extra_work ... ok
+test machine::quotient_caller_work_tests::failed_projection_is_charged_without_a_constructor_witness ... ok
+test machine::quotient_caller_work_tests::zero_caller_work_never_borrows_a_fresh_parent_allowance ... ok
+
+failures:
+
+---- machine::quotient_caller_work_tests::a_repeating_projection_never_publishes_a_completed_value stdout ----
+
+thread 'machine::quotient_caller_work_tests::a_repeating_projection_never_publishes_a_completed_value' (59) panicked at src/machine.rs:3857:274:
+repeated suspended result is incomplete: Proven { value: StuckProjection { type_name: NameId(99), index: 0, structure: Closure { expr: ExprId(104), env: EnvFrame { id: 0, .. }, levels: LevelSubstitution([]) }, spine: [] }, warrant: WarrantId("explicit-closure-machine") }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- machine::quotient_caller_work_tests::a_source_selected_projection_resumes_with_its_original_application_spine stdout ----
+
+thread 'machine::quotient_caller_work_tests::a_source_selected_projection_resumes_with_its_original_application_spine' (60) panicked at src/machine.rs:3853:63:
+selected field was not resumed: Proven { value: StuckProjection { type_name: NameId(99), index: 0, structure: Closure { expr: ExprId(101), env: EnvFrame { id: 0, .. }, levels: LevelSubstitution([]) }, spine: [Closure { expr: ExprId(0), env: EnvFrame { id: 1, .. }, levels: LevelSubstitution([]) }] }, warrant: WarrantId("explicit-closure-machine") }
+
+
+failures:
+    machine::quotient_caller_work_tests::a_repeating_projection_never_publishes_a_completed_value
+    machine::quotient_caller_work_tests::a_source_selected_projection_resumes_with_its_original_application_spine
+
+test result: FAILED. 10 passed; 2 failed; 0 ignored; 0 measured; 168 filtered out; finished in 0.00s
+

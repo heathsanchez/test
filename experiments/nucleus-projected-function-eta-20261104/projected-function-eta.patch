@@ -1,0 +1,465 @@
+--- a/metatron-kernel/src/convert.rs
++++ b/metatron-kernel/src/convert.rs
+@@ -454,7 +454,8 @@
+                         if let (Some(left_delta), Some(right_delta)) =
+                             (left_delta.proven_value(), right_delta.proven_value())
+                         {
+-                            match compare_values(
++                            let mut eta_work=0;
++                let compared=compare_values_with_eta_charge(
+                                 checker,
+                                 left_delta,
+                                 right_delta,
+@@ -463,7 +464,9 @@
+                                 context,
+                                 &mut work,
+                                 &mut proof_function_frees,
+-                            ) {
++                             &mut eta_work,);
++                remaining=remaining.saturating_sub(eta_work);
++                match compared {
+                                 Judgment::Proven { .. } => continue,
+                                 Judgment::Refuted { obstruction } => {
+                                     return Judgment::Refuted { obstruction };
+@@ -497,7 +500,8 @@
+                     }
+                     return Judgment::unknown("conversion-exposure");
+                 };
+-                match compare_values(
++                let mut eta_work=0;
++                let compared=compare_values_with_eta_charge(
+                     checker,
+                     cheap_left,
+                     cheap_right,
+@@ -506,7 +510,9 @@
+                     context,
+                     &mut work,
+                     &mut proof_function_frees,
+-                ) {
++                 &mut eta_work,);
++                remaining=remaining.saturating_sub(eta_work);
++                match compared {
+                     Judgment::Proven { .. } => {}
+                     Judgment::Refuted { .. }
+                         if delta_policy == DeltaPolicy::GuardedSemanticFallback =>
+@@ -520,7 +526,8 @@
+                         else {
+                             return Judgment::unknown("full-conversion-exposure");
+                         };
+-                        match compare_values(
++                        let mut eta_work=0;
++                let compared=compare_values_with_eta_charge(
+                             checker,
+                             full_left,
+                             full_right,
+@@ -529,7 +536,9 @@
+                             context,
+                             &mut work,
+                             &mut proof_function_frees,
+-                        ) {
++                         &mut eta_work,);
++                remaining=remaining.saturating_sub(eta_work);
++                match compared {
+                             Judgment::Proven { .. } => {}
+                             Judgment::Refuted { obstruction } => {
+                                 return Judgment::Refuted { obstruction };
+@@ -951,6 +960,92 @@
+     true
+ }
+ 
++// Semantic contraction of an evaluated projected function. This is the same
++// eta law as eta_contract: compare the actual opened body to N x with N
++// fresh-free. Exact head/universe gates and mandatory ordinary prefix goals
++// preserve every source receiver and captured argument.
++fn evaluated_projected_eta(
++    checker: &TypeChecker<'_>, neutral: &Neutral, domain:&Closure, body: &Closure,
++    caller: &mut usize, depth: usize, context:&[TypeValue],
++    work:&mut Vec<(TypeValue,TypeValue,usize,Vec<TypeValue>)>,
++) -> bool {
++    if !matches!(&neutral.head, NeutralHead::Projection{..}) || *caller<128
++        || depth!=context.len() || context.len()>64
++        || context.iter().any(|t|!matches!(t,TypeValue::Term(_))) {return false;}
++    let grant=(*caller/4).min(1024);
++    *caller-=grant; // Failed attempts pay too; no fresh nested allowance.
++    let mut fuel=grant;
++    let Some(free)=fresh_local(depth)else{return false;};
++    if !source_opening_avoids_capture(checker,body,free,&mut fuel)
++        || !source_avoids_capture_uncached(checker,domain,0,free,&mut fuel)
++        || !neutral_avoids_free(checker,neutral,free,&mut fuel){return false;}
++    let exposed=checker.machine().expose_projection_for_conversion_metered(body.under_free(free),&mut fuel);
++    let Some(Value::Neutral(opened))=exposed.proven_value()else{return false;};
++    if opened.spine.len()!=neutral.spine.len()+1{return false;}
++    let Some(last)=opened.spine.last()else{return false;};
++    let argument=checker.machine().expose_projection_for_conversion_metered(last.clone(),&mut fuel);
++    if !matches!(argument.proven_value(),Some(Value::Neutral(n)) if matches!(&n.head,NeutralHead::Free(f) if *f==free)&&n.spine.is_empty()){return false;}
++    // The opened prefixes can depend on the fresh binder. Their equality
++    // remains an ordinary mandatory conversion goal in the actual extended
++    // source context; none is erased or typed in the old context.
++    if fuel<context.len()+1{return false;}fuel-=context.len()+1;
++    let mut extended=context.to_vec();extended.push(TypeValue::Term(domain.clone()));
++    neutral_eta_goals(neutral,opened,1,&mut fuel,depth+1,&extended,work)
++}
++
++fn neutral_avoids_free(checker:&TypeChecker<'_>,root:&Neutral,free:FreeId,fuel:&mut usize)->bool{
++    let mut pending=vec![root];
++    while let Some(n)=pending.pop(){
++        if *fuel==0{return false;}*fuel-=1;
++        match &n.head{
++            NeutralHead::Free(actual)if *actual==free=>return false,
++            NeutralHead::Projection{structure,..}=>pending.push(structure),
++            _=>{},
++        }
++        for arg in &n.spine{if !source_avoids_capture_uncached(checker,arg,0,free,fuel){return false;}}
++    }
++    true
++}
++
++fn neutral_eta_goals(left:&Neutral,right:&Neutral,drop_right:usize,fuel:&mut usize,
++    depth:usize,context:&[TypeValue],work:&mut Vec<(TypeValue,TypeValue,usize,Vec<TypeValue>)>,
++)->bool{
++    let mut goals=Vec::new();
++    let mut pending=vec![(left,right,drop_right)];
++    while let Some((a,b,drop))=pending.pop(){
++        if *fuel==0{return false;}*fuel-=1;
++        if b.spine.len().checked_sub(drop)!=Some(a.spine.len()){return false;}
++        match (&a.head,&b.head){
++            (NeutralHead::Free(x),NeutralHead::Free(y))if x==y=>{},
++            (NeutralHead::Const{name:x,levels:xs},NeutralHead::Const{name:y,levels:ys})if x==y&&xs.len()==ys.len()=>{
++                // Identity only: walk universe syntax iteratively within the
++                // same allowance; no deep derived equality or new level law.
++                if *fuel<xs.len(){return false;}*fuel-=xs.len();
++                let mut levels=xs.iter().zip(ys).collect::<Vec<_>>();
++                while let Some((x,y))=levels.pop(){
++                    if *fuel==0{return false;}*fuel-=1;
++                    use crate::level::LevelTerm::*;
++                    match (x,y){
++                        (Zero,Zero)=>{},(Param(a),Param(b))if a==b=>{},
++                        (Succ(a),Succ(b))=>levels.push((a,b)),
++                        (Max(a,b),Max(c,d))|(IMax(a,b),IMax(c,d))=>{levels.push((a,c));levels.push((b,d));},
++                        _=>return false,
++                    }
++                }
++            },
++            (NeutralHead::Projection{type_name:x,index:i,structure:xs},NeutralHead::Projection{type_name:y,index:j,structure:ys})if x==y&&i==j=>pending.push((xs,ys,0)),
++            _=>return false,
++        }
++        let Some(cost)=a.spine.len().checked_mul(context.len()+2)else{return false;};
++        if *fuel<cost{return false;}*fuel-=cost;
++        for(x,y)in a.spine.iter().zip(&b.spine){
++            goals.push((TypeValue::Term(x.clone()),TypeValue::Term(y.clone()),depth,context.to_vec()));
++        }
++    }
++    work.extend(goals); // Commit only after every head and universe gate.
++    true
++}
++
+ fn resolve_local_closure(checker: &TypeChecker<'_>, closure: &Closure) -> Option<Closure> {
+     let mut current = closure.clone();
+     for _ in 0..64 {
+@@ -1192,6 +1287,14 @@
+ }
+ 
+ fn compare_values(
++    checker:&TypeChecker<'_>,left:&Value,right:&Value,budget:usize,depth:usize,
++    context:&[TypeValue],work:&mut Vec<(TypeValue,TypeValue,usize,Vec<TypeValue>)>,
++    proof_function_frees:&mut HashMap<FreeId,(crate::id::NameId,Vec<crate::level::LevelTerm>)>,
++)->Judgment<()>{
++    compare_values_with_eta_charge(checker,left,right,budget,depth,context,work,proof_function_frees,&mut 0)
++}
++
++fn compare_values_with_eta_charge(
+     checker: &TypeChecker<'_>,
+     left: &Value,
+     right: &Value,
+@@ -1200,6 +1303,7 @@
+     context: &[TypeValue],
+     work: &mut Vec<(TypeValue, TypeValue, usize, Vec<TypeValue>)>,
+     proof_function_frees: &mut HashMap<FreeId, (crate::id::NameId, Vec<crate::level::LevelTerm>)>,
++    eta_work:&mut usize,
+ ) -> Judgment<()> {
+     let mut current_left = left.clone();
+     let mut current_right = right.clone();
+@@ -1818,7 +1922,7 @@
+                             return Judgment::unknown("rule-k-reduction-exposure");
+                         };
+                         let other = Value::Neutral(right.clone());
+-                        return compare_values(
++                        return compare_values_with_eta_charge(
+                             checker,
+                             reduced,
+                             &other,
+@@ -1826,7 +1930,7 @@
+                             depth,
+                             context,
+                             work,
+-                            proof_function_frees,
++                            proof_function_frees, eta_work,
+                         );
+                     }
+                     RuleKAttempt::DefiniteMismatch => {
+@@ -1845,7 +1949,7 @@
+                             return Judgment::unknown("rule-k-reduction-exposure");
+                         };
+                         let other = Value::Neutral(left.clone());
+-                        return compare_values(
++                        return compare_values_with_eta_charge(
+                             checker,
+                             &other,
+                             reduced,
+@@ -1853,7 +1957,7 @@
+                             depth,
+                             context,
+                             work,
+-                            proof_function_frees,
++                            proof_function_frees, eta_work,
+                         );
+                     }
+                     RuleKAttempt::DefiniteMismatch => {
+@@ -1897,19 +2001,19 @@
+                     };
+                     if let Some(result) = candidate(left, right) {
+                         if result != Value::Neutral(right.clone()) {
+-                            return compare_values(
++                            return compare_values_with_eta_charge(
+                                 checker, &Value::Neutral(left.clone()), &result,
+                                 current_budget.saturating_sub(1),
+-                                depth, context, work, proof_function_frees,
++                                depth, context, work, proof_function_frees, eta_work,
+                             );
+                         }
+                     }
+                     if let Some(result) = candidate(right, left) {
+                         if result != Value::Neutral(left.clone()) {
+-                            return compare_values(
++                            return compare_values_with_eta_charge(
+                                 checker, &result, &Value::Neutral(right.clone()),
+                                 current_budget.saturating_sub(1),
+-                                depth, context, work, proof_function_frees,
++                                depth, context, work, proof_function_frees, eta_work,
+                             );
+                         }
+                     }
+@@ -2010,6 +2114,14 @@
+             }
+             (Value::Neutral(neutral), Value::Lam { domain, body })
+             | (Value::Lam { domain, body }, Value::Neutral(neutral))
++                if {
++                    let before=current_budget;
++                    let accepted=evaluated_projected_eta(checker,neutral,domain,body,&mut current_budget,depth,context,work);
++                    *eta_work=eta_work.saturating_add(before-current_budget);
++                    accepted
++                } => {}
++            (Value::Neutral(neutral), Value::Lam { domain, body })
++            | (Value::Lam { domain, body }, Value::Neutral(neutral))
+                 if evaluated_free_eta(
+                     checker,
+                     neutral,
+@@ -2839,7 +2951,13 @@
+ fn source_opening_avoids_capture_uncached(
+     checker:&TypeChecker<'_>,body:&Closure,free:FreeId,budget:&mut usize,
+ )->bool {
+-    let mut pending = vec![(body.clone(), 1u64)];
++    source_avoids_capture_uncached(checker,body,1,free,budget)
++}
++
++fn source_avoids_capture_uncached(
++    checker:&TypeChecker<'_>,body:&Closure,virtual_slots:u64,free:FreeId,budget:&mut usize,
++)->bool {
++    let mut pending = vec![(body.clone(), virtual_slots)];
+     let mut visited = HashSet::new();
+     let mut prepaid_root=true;
+     while let Some((source, virtual_slots)) = pending.pop() {
+@@ -2931,3 +3049,51 @@
+         assert!(data.is_refuted(),"distinct certified Bool data must remain refuted: {data:?}");
+     }
+ }
++
++#[cfg(test)]
++mod evaluated_projected_eta_tests {
++    use super::*;
++    use crate::{environment::{Environment,ConstantDecl},id::{IdTable,NameId,LevelId},syntax::Level,value::EnvFrame};
++    fn fixture()->(IdTable<ExprId,Expr>,IdTable<LevelId,Level>,Environment){
++        let mut e=IdTable::default();let mut l=IdTable::default();
++        l.insert(LevelId(0),Level::Zero).unwrap();l.insert(LevelId(1),Level::Succ(LevelId(0))).unwrap();
++        for(id,x)in [
++            (0,Expr::Sort(LevelId(1))),(1,Expr::Const{name:NameId(1),levels:vec![]}),(2,Expr::BVar(0)),(3,Expr::BVar(1)),(4,Expr::BVar(2)),
++            (5,Expr::Proj{type_name:NameId(2),index:0,structure:ExprId(3)}),
++            (6,Expr::App{fun:ExprId(5),arg:ExprId(2)}),
++            (7,Expr::Proj{type_name:NameId(2),index:0,structure:ExprId(4)}),
++            (8,Expr::App{fun:ExprId(7),arg:ExprId(3)}),(9,Expr::App{fun:ExprId(8),arg:ExprId(2)}),
++            (10,Expr::App{fun:ExprId(8),arg:ExprId(3)}),
++            (11,Expr::Proj{type_name:NameId(2),index:0,structure:ExprId(5)}),
++            (12,Expr::App{fun:ExprId(11),arg:ExprId(2)}),
++            (13,Expr::Const{name:NameId(3),levels:vec![]}),
++            (14,Expr::App{fun:ExprId(13),arg:ExprId(5)}),
++            (15,Expr::Proj{type_name:NameId(2),index:0,structure:ExprId(14)}),
++            (16,Expr::App{fun:ExprId(15),arg:ExprId(2)}),
++        ]{e.insert(ExprId(id),x).unwrap();}
++        let mut env=Environment::empty();for name in [NameId(1),NameId(2),NameId(3)]{env=env.extend(name,ConstantDecl::axiom(vec![],ExprId(0))).unwrap();}
++        env=env.install_projection_spec(NameId(2),crate::machine::ProjectionSpec{constructor:NameId(3),num_params:0,field_types:vec![crate::machine::ProjectionFieldType::Derived(ExprId(1))],eta_expandable:false}).unwrap();(e,l,env)
++    }
++    fn projection(receiver:u64,index:usize)->Neutral{Neutral{head:NeutralHead::Projection{type_name:NameId(2),index,structure:Box::new(Neutral{head:NeutralHead::Free(FreeId(receiver)),spine:vec![]})},spine:vec![]}}
++    fn relation(c:&TypeChecker<'_>,n:Neutral,body:Closure,depth:usize,budget:usize)->Judgment<()>{
++        let context=vec![TypeValue::Term(Closure::new(ExprId(1),EnvFrame::empty()));depth];
++        let left=Value::Neutral(n);let right=Value::Lam{domain:Closure::new(ExprId(1),EnvFrame::empty()),body};
++        let mut work=vec![];
++        let j=compare_values(c,&left,&right,budget,depth,&context,&mut work,&mut HashMap::new());
++        if !j.is_proven(){return j}
++        for(a,b,d,g)in work {let q=convert_with_policy_in_context(c,&a,&b,budget,DeltaPolicy::PreferredOnly,d,&g);if !q.is_proven(){return q}}
++        j
++    }
++    #[test]fn an_evaluated_projection_contracts_its_exact_eta_expansion(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);assert!(relation(&c,projection(0,0),Closure::new(ExprId(6),EnvFrame::empty().extend_free(FreeId(0))),1,4096).is_proven());}
++    #[test]fn nested_neutral_projections_preserve_actual_receivers_during_eta(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let n=Neutral{head:NeutralHead::Projection{type_name:NameId(2),index:0,structure:Box::new(projection(0,0))},spine:vec![]};assert!(relation(&c,n,Closure::new(ExprId(12),EnvFrame::empty().extend_free(FreeId(0))),1,4096).is_proven());}
++    #[test]fn a_selected_source_field_can_resume_to_another_actual_projection(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);assert!(relation(&c,projection(0,0),Closure::new(ExprId(16),EnvFrame::empty().extend_free(FreeId(0))),1,4096).is_proven());}
++    #[test]fn applied_projection_preserves_its_actual_argument_prefix(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let mut n=projection(0,0);n.spine.push(Closure::new(ExprId(2),EnvFrame::empty().extend_free(FreeId(1))));assert!(relation(&c,n,Closure::new(ExprId(9),EnvFrame::empty().extend_free(FreeId(0)).extend_free(FreeId(1))),2,4096).is_proven());}
++    #[test]fn changed_receiver_or_selected_field_never_contracts(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);for n in [projection(1,0),projection(0,1)]{assert!(!relation(&c,n,Closure::new(ExprId(6),EnvFrame::empty().extend_free(FreeId(0))),2,4096).is_proven());}}
++    #[test]fn changed_prefix_data_never_contracts(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let mut n=projection(0,0);n.spine.push(Closure::new(ExprId(2),EnvFrame::empty().extend_free(FreeId(0))));assert!(!relation(&c,n,Closure::new(ExprId(9),EnvFrame::empty().extend_free(FreeId(0)).extend_free(FreeId(1))),2,4096).is_proven());}
++    #[test]fn final_argument_must_be_the_actual_fresh_local(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let mut n=projection(0,0);n.spine.push(Closure::new(ExprId(2),EnvFrame::empty().extend_free(FreeId(1))));assert!(!relation(&c,n,Closure::new(ExprId(10),EnvFrame::empty().extend_free(FreeId(0)).extend_free(FreeId(1))),2,4096).is_proven());}
++    #[test]fn a_captured_fresh_id_is_never_a_new_binder(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);assert!(!relation(&c,projection(1,0),Closure::new(ExprId(6),EnvFrame::empty().extend_free(FreeId(1))),1,4096).is_proven());}
++    #[test]fn a_fresh_id_hidden_inside_a_prefix_capture_is_not_eta(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let mut n=projection(0,0);n.spine.push(Closure::new(ExprId(2),EnvFrame::empty().extend_free(FreeId(2))));assert!(!relation(&c,n,Closure::new(ExprId(9),EnvFrame::empty().extend_free(FreeId(0)).extend_free(FreeId(2))),2,4096).is_proven());}
++    #[test]fn receiver_universes_and_projection_owner_remain_exact(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let make=|level|Neutral{head:NeutralHead::Projection{type_name:NameId(2),index:0,structure:Box::new(Neutral{head:NeutralHead::Const{name:NameId(4),levels:vec![level]},spine:vec![]})},spine:vec![]};let a=make(crate::level::LevelTerm::Zero);let b=make(crate::level::LevelTerm::Succ(Box::new(crate::level::LevelTerm::Zero)));assert!(!neutral_eta_goals(&a,&b,0,&mut 1024,0,&[],&mut vec![]));let mut other=projection(0,0);if let NeutralHead::Projection{type_name,..}=&mut other.head{*type_name=NameId(9);}assert!(!relation(&c,other,Closure::new(ExprId(6),EnvFrame::empty().extend_free(FreeId(0))),1,4096).is_proven());}
++    #[test]fn universe_pair_walk_prepays_a_long_initial_list(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let n=Neutral{head:NeutralHead::Const{name:NameId(4),levels:vec![crate::level::LevelTerm::Zero;1000]},spine:vec![]};let mut fuel=8;assert!(!neutral_eta_goals(&n,&n,0,&mut fuel,0,&[],&mut vec![]));assert!(fuel<=8);}
++    #[test]fn an_exhausted_eta_trial_never_claims_equality(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);assert!(!relation(&c,projection(0,0),Closure::new(ExprId(6),EnvFrame::empty().extend_free(FreeId(0))),1,0).is_proven());}
++}
+--- a/metatron-kernel/src/machine.rs
++++ b/metatron-kernel/src/machine.rs
+@@ -272,8 +272,8 @@
+ impl Drop for NeutralProjectionDepthScope<'_> { fn drop(&mut self) {self.depth.set(self.depth.get().saturating_sub(1));} }
+ 
+ // A borrowed allowance returns only unused work and charges both outcomes.
+-struct MeteredQuotientWork<'a>{fuel:&'a Cell<Option<usize>>,caller:&'a mut usize,parent:Option<usize>,grant:usize}
+-impl Drop for MeteredQuotientWork<'_>{fn drop(&mut self){
++struct MeteredConversionWork<'a>{fuel:&'a Cell<Option<usize>>,caller:&'a mut usize,parent:Option<usize>,grant:usize}
++impl Drop for MeteredConversionWork<'_>{fn drop(&mut self){
+     let unused=self.fuel.get().unwrap_or(0).min(self.grant);
+     let spent=self.grant-unused;
+     *self.caller=self.caller.saturating_sub(spent);
+@@ -441,6 +441,29 @@
+             .map(|exposure| exposure.value)
+     }
+ 
++    /// Expose actual source syntax and, if necessary, retain its actual
++    /// neutral projection. Both stages share one caller-owned allowance.
++    pub(crate) fn expose_projection_for_conversion_metered(
++        &self, closure:Closure, remaining:&mut usize,
++    )->Judgment<Value>{
++        let parent=self.exposure_fuel.get();
++        let grant=(*remaining).min(parent.unwrap_or(usize::MAX));
++        self.exposure_fuel.set(Some(grant));
++        let _work=MeteredConversionWork{fuel:&self.exposure_fuel,caller:remaining,parent,grant};
++        let mut exposed=self.expose_for_conversion(closure,Transparency::Reducible,grant);
++        // Selecting an actual source field can reveal another suspended
++        // projection. Resume only that returned source projection, carrying
++        // its own owner/index/receiver/spine and the same finite work owner.
++        for _ in 0..16 {
++            let Some(Value::StuckProjection{type_name,index,structure,spine})=exposed.proven_value()else{return exposed;};
++            if !self.reserve_replay_work(1){return Judgment::unknown("metered-projection-resumption-budget");}
++            exposed=self.projection_value_for_conversion(structure.clone(),*type_name,*index,spine,self.exposure_fuel.get().unwrap_or(0));
++        }
++        if matches!(exposed.proven_value(),Some(Value::StuckProjection{..})){
++            Judgment::unknown("metered-projection-resumption-depth")
++        }else{exposed}
++    }
++
+     /// Unfold a real registered definition after an earlier exposure left
+     /// its evaluated head neutral. Reapply only its *actual* captured spine.
+     /// This is source delta, not a constructor guess or an equality rule.
+@@ -1596,7 +1619,7 @@
+         let parent=self.exposure_fuel.get();
+         let grant=(*remaining).min(2048).min(parent.unwrap_or(usize::MAX));
+         self.exposure_fuel.set(Some(grant));
+-        let _work=MeteredQuotientWork{fuel:&self.exposure_fuel,caller:remaining,parent,grant};
++        let _work=MeteredConversionWork{fuel:&self.exposure_fuel,caller:remaining,parent,grant};
+         self.qualified_quotient_neutral_result_at_depth(n,grant,0)
+     }
+ 
+@@ -3820,5 +3843,26 @@
+     #[test]fn failed_nested_lift_charges_its_extra_work(){let(e,l)=syntax();let m=machine(&e,&l);let mut direct=512;let mut nested=512;assert!(m.qualified_quotient_neutral_result_metered(&request(0),&mut direct).is_unknown());assert!(m.qualified_quotient_neutral_result_metered(&request(7),&mut nested).is_unknown());assert!(nested<direct,"nested={nested},direct={direct}");}
+     #[test]fn failed_projection_is_charged_without_a_constructor_witness(){let(e,l)=syntax();let m=machine(&e,&l);let mut work=512;assert!(m.qualified_quotient_neutral_result_metered(&request(8),&mut work).is_unknown());assert!(work<512);}
+     #[test]fn existing_owner_is_preserved_and_debited_once(){let(e,l)=syntax();let m=machine(&e,&l);m.exposure_fuel.set(Some(200));let mut work=512;assert!(m.qualified_quotient_neutral_result_metered(&request(0),&mut work).is_unknown());let spent=512-work;assert!(spent>0);assert_eq!(m.exposure_fuel.get(),Some(200-spent));}
++    #[test]fn eta_exposure_success_charges_and_restores_its_owner(){let(e,l)=syntax();let m=machine(&e,&l);let c=Closure::new(ExprId(0),EnvFrame::empty().extend_free(crate::value::FreeId(0)));let mut work=64;assert!(m.expose_projection_for_conversion_metered(c,&mut work).is_proven());assert!(work<64);assert_eq!(m.exposure_fuel.get(),None);}
++    #[test]fn eta_failed_projection_pays_actual_source_work(){let(e,l)=syntax();let m=machine(&e,&l);let c=Closure::new(ExprId(8),EnvFrame::empty().extend_free(crate::value::FreeId(0)));let mut work=64;assert!(m.expose_projection_for_conversion_metered(c,&mut work).is_unknown());assert!(work<64);assert_eq!(m.exposure_fuel.get(),None);}
++    #[test]fn eta_existing_smaller_owner_is_debited_once(){let(e,l)=syntax();let m=machine(&e,&l);m.exposure_fuel.set(Some(1));let c=Closure::new(ExprId(8),EnvFrame::empty().extend_free(crate::value::FreeId(0)));let mut work=64;assert!(m.expose_projection_for_conversion_metered(c,&mut work).is_unknown());assert_eq!(work,63);assert_eq!(m.exposure_fuel.get(),Some(0));}
++    #[test]fn eta_zero_allowance_cannot_borrow_parent_fuel(){let(e,l)=syntax();let m=machine(&e,&l);m.exposure_fuel.set(Some(64));let c=Closure::new(ExprId(0),EnvFrame::empty().extend_free(crate::value::FreeId(0)));let mut work=0;assert!(m.expose_projection_for_conversion_metered(c,&mut work).is_unknown());assert_eq!(work,0);assert_eq!(m.exposure_fuel.get(),Some(64));}
++    fn selected_field_machine<'a>(e:&'a IdTable<ExprId,Expr>,l:&'a IdTable<LevelId,Level>)->Machine<'a>{
++        Machine::new(AuthorityId(0),e,l,HashMap::from([(NameId(92),DefinitionBody{value:ExprId(103),preferred_for_reduction:false,level_params:vec![]})]))
++            .with_projection_specs(HashMap::from([(NameId(99),ProjectionSpec{constructor:NameId(90),num_params:0,field_types:vec![ProjectionFieldType::Derived(ExprId(0))],eta_expandable:false})]))
++    }
++    fn selected_field_syntax(cyclic:bool)->(IdTable<ExprId,Expr>,IdTable<LevelId,Level>){
++        let(mut e,l)=syntax();
++        for(id,x)in [(100,Expr::Const{name:NameId(90),levels:vec![]}),(101,Expr::Const{name:NameId(91),levels:vec![]}),(102,Expr::Proj{type_name:NameId(99),index:0,structure:ExprId(101)}),(103,Expr::App{fun:ExprId(100),arg:ExprId(if cyclic{105}else{102})}),(104,Expr::Const{name:NameId(92),levels:vec![]}),(105,Expr::Proj{type_name:NameId(99),index:0,structure:ExprId(104)}),(106,Expr::App{fun:ExprId(105),arg:ExprId(0)})]{e.insert(ExprId(id),x).unwrap();}(e,l)
++    }
++    #[test]fn a_source_selected_projection_resumes_with_its_original_application_spine(){
++        let(e,l)=selected_field_syntax(false);let m=selected_field_machine(&e,&l);let frame=EnvFrame::empty().extend_free(FreeId(0));let mut work=1024;
++        let result=m.expose_projection_for_conversion_metered(Closure::new(ExprId(106),frame.clone()),&mut work);
++        let Some(Value::Neutral(n))=result.proven_value()else{panic!("selected field was not resumed: {result:?}");};
++        assert!(matches!(&n.head,NeutralHead::Projection{type_name:NameId(99),index:0,structure}if matches!(&structure.head,NeutralHead::Const{name:NameId(91),levels}if levels.is_empty())));
++        assert_eq!(n.spine,vec![Closure::new(ExprId(0),frame)]);assert!(work<1024);assert_eq!(m.exposure_fuel.get(),None);
++    }
++    #[test]fn a_repeating_projection_never_publishes_a_completed_value(){let(e,l)=selected_field_syntax(true);let m=selected_field_machine(&e,&l);let mut work=4096;let result=m.expose_projection_for_conversion_metered(Closure::new(ExprId(105),EnvFrame::empty()),&mut work);assert!(result.is_unknown(),"repeated suspended result is incomplete: {result:?}");assert!(work>0&&work<4096);assert_eq!(m.exposure_fuel.get(),None);}
++    #[test]fn an_exhausted_existing_projection_owner_cannot_borrow_caller_work(){let(e,l)=selected_field_syntax(false);let m=selected_field_machine(&e,&l);m.exposure_fuel.set(Some(0));let mut work=1024;assert!(m.expose_projection_for_conversion_metered(Closure::new(ExprId(105),EnvFrame::empty()),&mut work).is_unknown());assert_eq!(work,1024);assert_eq!(m.exposure_fuel.get(),Some(0));}
+     #[test]fn zero_caller_work_never_borrows_a_fresh_parent_allowance(){let(e,l)=syntax();let m=machine(&e,&l);m.exposure_fuel.set(Some(200));let mut work=0;assert!(m.qualified_quotient_neutral_result_metered(&request(7),&mut work).is_unknown());assert_eq!(work,0);assert_eq!(m.exposure_fuel.get(),Some(200));}
+ }
+--- a/metatron-kernel/src/typecheck.rs
++++ b/metatron-kernel/src/typecheck.rs
+@@ -3760,10 +3760,15 @@
+             let Some((rdom,rbody))=self.pi_view(
+                 Judgment::proven(rhs_type,"relevance-typed-function"),probe,
+             ) else { return false };
+-            if !crate::convert::convert_with_policy_in_context(
+-                self,&ldom,&rdom,probe.min(512),
+-                crate::convert::DeltaPolicy::PreferredOnly,depth,context,
+-            ).is_proven() {return false}
++            // The residual telescopes remain definitionally equal: they
++            // begin at one formed constant signature with equal universe
++            // instances. Every preceding argument was independently typed
++            // on both sides and equated below (data conversion or proof
++            // irrelevance at the domains already equal by this invariant).
++            // Substituting that checked prefix preserves tail/domain
++            // equality; re-normalizing the two domains is redundant.
++            // This relies on the same-constant entry guards, not merely on
++            // seeing two Pi shapes or two proposition-valued domains.
+             let mut lf=probe;
+             let Some(larg_ty)=self.infer_exact_closure_in_context(
+                 larg,context,&mut lf,0,
+--- a/metatron-kernel/src/run_flags.rs
++++ b/metatron-kernel/src/run_flags.rs
+@@ -258,3 +258,38 @@
+         assert!(ACTIVE.with(|s|s.get().is_none()));
+     }
+ }
++
++#[cfg(test)]
++mod typed_prefix_congruence_tests {
++    use super::*;
++    use crate::environment::{Environment,ConstantDecl};
++    use crate::id::{IdTable,ExprId,LevelId,NameId};
++    use crate::syntax::{Expr,Level};
++    use crate::typecheck::{TypeChecker,TypeValue};
++    use crate::value::{Closure,EnvFrame,FreeId,Neutral,NeutralHead};
++    use crate::level::LevelTerm;
++    fn configured(f:impl FnOnce()){
++        let _environment=enter();let mut bits=ACTIVE.with(|s|s.get().unwrap());
++        for flag in[Flag::ExperimentalRelevance,Flag::ExperimentalContextBinder,Flag::ExperimentalTypedLineage,Flag::ExperimentalSubstitutionReclosure]{let i=flag as usize;bits[i/64]|=1u64<<(i%64);}
++        let _configuration=install(bits);f();
++    }
++    // Admitted machine fixture only. Source admission remains a separate gate.
++    // F : (x:A) -> P x -> A -> A; no proof permits changing either data slot.
++    fn fixture()->(IdTable<ExprId,Expr>,IdTable<LevelId,Level>,Environment,Vec<TypeValue>){
++        let mut e=IdTable::default();let mut l=IdTable::default();l.insert(LevelId(0),Level::Zero).unwrap();l.insert(LevelId(1),Level::Succ(LevelId(0))).unwrap();
++        for(id,t)in[(0,Expr::Sort(LevelId(0))),(1,Expr::Sort(LevelId(1))),(2,Expr::Const{name:NameId(910),levels:vec![]}),(3,Expr::Const{name:NameId(911),levels:vec![]}),(4,Expr::Const{name:NameId(912),levels:vec![]}),(5,Expr::Const{name:NameId(913),levels:vec![]}),(6,Expr::BVar(0)),(7,Expr::BVar(1)),(8,Expr::App{fun:ExprId(5),arg:ExprId(6)}),(9,Expr::Pi{domain:ExprId(2),body:ExprId(0)}),(10,Expr::Pi{domain:ExprId(2),body:ExprId(2)}),(11,Expr::Pi{domain:ExprId(8),body:ExprId(10)}),(12,Expr::Pi{domain:ExprId(2),body:ExprId(11)}),(13,Expr::App{fun:ExprId(5),arg:ExprId(3)}),(14,Expr::App{fun:ExprId(5),arg:ExprId(4)})]{e.insert(ExprId(id),t).unwrap();}
++        let mut env=Environment::empty();for(name,params,ty)in[(910,vec![],1),(911,vec![],2),(912,vec![],2),(913,vec![],9),(914,vec![NameId(917)],12),(915,vec![NameId(917)],12)]{env=env.extend(NameId(name),ConstantDecl::axiom(params,ExprId(ty))).unwrap();}
++        let c=|id|TypeValue::Term(Closure::new(ExprId(id),EnvFrame::empty()));(e,l,env,vec![c(13),c(13),c(14)])
++    }
++    fn request(first:u64,proof:u64,last:u64)->Neutral{
++        let term=|id|Closure::new(ExprId(id),EnvFrame::empty());
++        Neutral{head:NeutralHead::Const{name:NameId(914),levels:vec![LevelTerm::Zero]},spine:vec![term(first),Closure::new(ExprId(6),EnvFrame::empty().extend_free(FreeId(proof))),term(last)]}
++    }
++    fn relation(c:&TypeChecker<'_>,l:&Neutral,r:&Neutral,ctx:&[TypeValue])->bool{c.certified_relevance_spine_congruence(l,r,ctx,2048,ctx.len())}
++    #[test]fn independently_typed_proofs_at_the_same_dependent_domain_are_irrelevant(){configured(||{let(e,l,env,ctx)=fixture();let c=TypeChecker::new(&e,&l,&env);assert!(relation(&c,&request(3,0,3),&request(3,1,3),&ctx));});}
++    #[test]fn unequal_data_before_a_proof_cannot_establish_a_prefix(){configured(||{let(e,l,env,ctx)=fixture();let c=TypeChecker::new(&e,&l,&env);assert!(!relation(&c,&request(3,0,3),&request(4,2,3),&ctx));});}
++    #[test]fn data_after_a_skipped_proof_is_still_compared(){configured(||{let(e,l,env,ctx)=fixture();let c=TypeChecker::new(&e,&l,&env);assert!(!relation(&c,&request(3,0,3),&request(3,1,4),&ctx));});}
++    #[test]fn two_proposition_types_do_not_supply_wrong_argument_typing(){configured(||{let(e,l,env,ctx)=fixture();let c=TypeChecker::new(&e,&l,&env);assert!(!relation(&c,&request(3,0,3),&request(3,2,3),&ctx));});}
++    #[test]fn distinct_heads_do_not_share_a_telescope_warrant(){configured(||{let(e,l,env,ctx)=fixture();let c=TypeChecker::new(&e,&l,&env);let mut r=request(3,1,3);r.head=NeutralHead::Const{name:NameId(915),levels:vec![LevelTerm::Zero]};assert!(!relation(&c,&request(3,0,3),&r,&ctx));});}
++    #[test]fn unequal_universe_instances_do_not_establish_a_prefix(){configured(||{let(e,l,env,ctx)=fixture();let c=TypeChecker::new(&e,&l,&env);let mut r=request(3,1,3);r.head=NeutralHead::Const{name:NameId(914),levels:vec![LevelTerm::Succ(Box::new(LevelTerm::Zero))]};assert!(!relation(&c,&request(3,0,3),&r,&ctx));});}
++}

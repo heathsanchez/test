@@ -1,0 +1,45 @@
+{
+  "binary_sha": "ed7b4fe264ff4aaf87067339d38c06f5e51bb4309aa2f1458f2f2bf639b5af6f",
+  "rows": [
+    {
+      "case": "authentic-dependent-prefix",
+      "file": "authentic-dependent-prefix.ndjson",
+      "sha256": "ef85097d1d7ee284f5d807fee766c20c5a41089f2c55a693767dcbe93f44cd86",
+      "expect_reference": 0,
+      "counterfactual_source_control": true,
+      "parse_rc": 0,
+      "reference_rc": 0,
+      "candidate_rc": 0
+    },
+    {
+      "case": "dependent-prefix-false-proof",
+      "file": "dependent-prefix-false-proof.ndjson",
+      "sha256": "b03b4151b83ded9ba6bdd4f808e2e6967200bb581ff792b35e82a1c401e8616d",
+      "expect_reference": 1,
+      "counterfactual_source_control": true,
+      "parse_rc": 0,
+      "reference_rc": 1,
+      "candidate_rc": 2
+    },
+    {
+      "case": "dependent-prefix-trailing-data",
+      "file": "dependent-prefix-trailing-data.ndjson",
+      "sha256": "bbd79f3341d893dc14af9fd71b571437ee17b524aaa5da2b9e88c04dc13e961e",
+      "expect_reference": 1,
+      "counterfactual_source_control": true,
+      "parse_rc": 0,
+      "reference_rc": 1,
+      "candidate_rc": 2
+    },
+    {
+      "case": "dependent-prefix-wrong-universe",
+      "file": "dependent-prefix-wrong-universe.ndjson",
+      "sha256": "afb33c2ff4002da4fff8e4faba13cd14f33f00bc64efa48aee2829360464c7e0",
+      "expect_reference": 1,
+      "counterfactual_source_control": true,
+      "parse_rc": 0,
+      "reference_rc": 1,
+      "candidate_rc": 1
+    }
+  ]
+}

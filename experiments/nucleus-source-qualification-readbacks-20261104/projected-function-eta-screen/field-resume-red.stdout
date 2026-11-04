@@ -1,0 +1,17 @@
+
+running 12 tests
+test convert::evaluated_projected_eta_tests::a_captured_fresh_id_is_never_a_new_binder ... ok
+test convert::evaluated_projected_eta_tests::a_fresh_id_hidden_inside_a_prefix_capture_is_not_eta ... ok
+test convert::evaluated_projected_eta_tests::a_selected_source_field_can_resume_to_another_actual_projection ... ok
+test convert::evaluated_projected_eta_tests::an_evaluated_projection_contracts_its_exact_eta_expansion ... ok
+test convert::evaluated_projected_eta_tests::an_exhausted_eta_trial_never_claims_equality ... ok
+test convert::evaluated_projected_eta_tests::applied_projection_preserves_its_actual_argument_prefix ... ok
+test convert::evaluated_projected_eta_tests::changed_prefix_data_never_contracts ... ok
+test convert::evaluated_projected_eta_tests::changed_receiver_or_selected_field_never_contracts ... ok
+test convert::evaluated_projected_eta_tests::final_argument_must_be_the_actual_fresh_local ... ok
+test convert::evaluated_projected_eta_tests::nested_neutral_projections_preserve_actual_receivers_during_eta ... ok
+test convert::evaluated_projected_eta_tests::receiver_universes_and_projection_owner_remain_exact ... ok
+test convert::evaluated_projected_eta_tests::universe_pair_walk_prepays_a_long_initial_list ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 165 filtered out; finished in 0.00s
+
