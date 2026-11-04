@@ -1,6 +1,6 @@
 --- a/metatron-kernel/src/typecheck.rs
 +++ b/metatron-kernel/src/typecheck.rs
-@@ -2476,6 +2598,41 @@
+@@ -2476,6 +2598,45 @@
                          context.len(), frame.id(), *remaining, expose(&value), expose(expected));
                  }
                  #[cfg(feature="diagnostics")]
@@ -27,11 +27,15 @@
 +                                    );
 +                                    let semantic=self.checked_semantic_capture_congruence(a,b,context,4096);
 +                                    let typed=self.checked_source_conversion(a,b,context,4096);
-+                                    format!("arg{i}:a={:?}:aenv={}:asource={:?}:abinding={:?}:b={:?}:benv={}:bsource={:?}:bbinding={:?}:converted={cmp:?}:semantic={semantic:?}:source_typed={typed:?}",
++                                    let left_reduction=machine.expose_for_conversion(a.clone(),Transparency::Full,16384);
++                                    let right_reduction=machine.expose_for_conversion(b.clone(),Transparency::Full,16384);
++                                    format!("arg{i}:a={:?}:aenv={}:asource={:?}:abinding={:?}:b={:?}:benv={}:bsource={:?}:bbinding={:?}:converted={cmp:?}:semantic={semantic:?}:source_typed={typed:?}:left_exposure={}:right_exposure={}",
 +                                        a.expr,a.env.id(),self.expressions.get(a.expr),
 +                                        match self.expressions.get(a.expr) {Some(Expr::BVar(n))=>a.env.lookup(*n),_=>None},
 +                                        b.expr,b.env.id(),self.expressions.get(b.expr),
 +                                        match self.expressions.get(b.expr) {Some(Expr::BVar(n))=>b.env.lookup(*n),_=>None},
++                                        format!("{left_reduction:?}").chars().take(2400).collect::<String>(),
++                                        format!("{right_reduction:?}").chars().take(2400).collect::<String>(),
 +                                    )
 +                                }).collect::<Vec<_>>();
 +                            eprintln!("NUCLEUS_POLY_EQ_SPINE:head={:?}:other={:?}:argc={}:otherc={}:pairs={pairs:?}:NO_ADMISSION",lhs.head,rhs.head,lhs.spine.len(),rhs.spine.len());
