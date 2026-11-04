@@ -23,11 +23,27 @@ assert paths==set(manifest)
 for n,sha in manifest.items():
  p=PurePosixPath(n);assert not p.is_absolute()and '..'not in p.parts
  assert digest(archived/n)==sha,n
-reconstructed=ROOT/'reconstructed';reconstructed.mkdir()
 with (ROOT/'base.tar').open('wb')as f:subprocess.run(['git','archive','a2578e77079719ff2064f910bd82fd01d8e120b6','metatron-kernel'],stdout=f,check=True)
+legacy=ROOT/'legacy';legacy.mkdir()
+with tarfile.open(ROOT/'base.tar')as t:t.extractall(legacy,filter='data')
+old_patch=subprocess.run(['patch','--batch','--fuzz=0','-p1','-i',str(C/'source.patch')],cwd=legacy,capture_output=True)
+(ROOT/'patch.log').write_bytes(old_patch.stdout+old_patch.stderr)
+base=ROOT/'canonical-base';base.mkdir()
+with tarfile.open(ROOT/'base.tar')as t:t.extractall(base,filter='data')
+base_source=base/'metatron-kernel'
+base_names={str(p.relative_to(base_source))for p in base_source.rglob('*')if p.is_file()}
+parts=[]
+for n in sorted(base_names|set(manifest)):
+ old=base_source/n;new=archived/n
+ if old.exists()and new.exists()and old.read_bytes()==new.read_bytes():continue
+ args=['diff','-u','--label','a/metatron-kernel/'+n if old.exists()else'/dev/null','--label','b/metatron-kernel/'+n if new.exists()else'/dev/null',str(old)if old.exists()else'/dev/null',str(new)if new.exists()else'/dev/null']
+ delta=subprocess.run(args,capture_output=True);assert delta.returncode==1,(n,delta.returncode)
+ parts.append(delta.stdout)
+canonical=ROOT/'canonical-source.patch';canonical.write_bytes(b''.join(parts))
+reconstructed=ROOT/'reconstructed';reconstructed.mkdir()
 with tarfile.open(ROOT/'base.tar')as t:t.extractall(reconstructed,filter='data')
-patch=subprocess.run(['patch','--batch','--fuzz=0','-p1','-i',str(C/'source.patch')],cwd=reconstructed,capture_output=True)
-(ROOT/'patch.log').write_bytes(patch.stdout+patch.stderr);assert patch.returncode==0
+patched=subprocess.run(['patch','--batch','--fuzz=0','-p1','-i',str(canonical)],cwd=reconstructed,capture_output=True)
+(ROOT/'canonical-patch.log').write_bytes(patched.stdout+patched.stderr);assert patched.returncode==0
 source=reconstructed/'metatron-kernel'
 assert {str(p.relative_to(source))for p in source.rglob('*')if p.is_file()}==set(manifest)
 for n,sha in manifest.items():assert digest(source/n)==sha,n
@@ -41,6 +57,6 @@ assert full['frontier_official_reference']['parse_rc']==full['frontier_official_
 frontier=ROOT/'frontier.ndjson'
 subprocess.run(['zstd','-dq',str(A/'next-frontier.ndjson.zst'),'-o',str(frontier)],check=True)
 assert digest(frontier)==full['next_frontier']['sha256']
-verified=dict(status='VERIFIED_ARCHIVE_AND_SOURCE_RECONSTRUCTION',source_commit='3d64f88e3f7194b495428e10cd9536a0aac2f745',source_base='a2578e77079719ff2064f910bd82fd01d8e120b6',qualification_run=41830566061,artifact=13325481741,zip_sha=digest(ZIP),binary_sha=q['binary_sha'],patch_sha=q['source_patch_sha'],source_tar_sha=digest(C/'source.tar.gz'),source_manifest_sha=digest(C/'source-manifest.json'),source_files=len(manifest),all_archived_files_match=True,all_reconstructed_files_match=True,source_controls=113,protected_controls=61,native_targets=42,native_counts=counts,frozen_cases=208,frozen_changes=q['verdict_changes'],extra_unchanged=q['extra_unchanged'],full=full,no_official_rank_claim=True)
+verified=dict(status='VERIFIED_ARCHIVE_AND_SOURCE_RECONSTRUCTION',source_commit='3d64f88e3f7194b495428e10cd9536a0aac2f745',source_base='a2578e77079719ff2064f910bd82fd01d8e120b6',qualification_run=41830566061,artifact=13325481741,zip_sha=digest(ZIP),binary_sha=q['binary_sha'],legacy_cumulative_patch_sha=q['source_patch_sha'],legacy_reconstruction_rc=old_patch.returncode,canonical_patch_sha=digest(canonical),source_tar_sha=digest(C/'source.tar.gz'),source_manifest_sha=digest(C/'source-manifest.json'),source_files=len(manifest),all_archived_files_match=True,all_reconstructed_files_match=True,source_controls=113,protected_controls=61,native_targets=42,native_counts=counts,frozen_cases=208,frozen_changes=q['verdict_changes'],extra_unchanged=q['extra_unchanged'],full=full,no_official_rank_claim=True)
 (ROOT/'verified-readback.json').write_text(json.dumps(verified,indent=2))
 print('VERIFIED_READBACK '+json.dumps(verified),flush=True)
