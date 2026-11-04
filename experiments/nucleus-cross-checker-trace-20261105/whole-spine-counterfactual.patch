@@ -1,8 +1,6 @@
-diff --git a/metatron-kernel/src/typecheck.rs b/metatron-kernel/src/typecheck.rs
-index 5421007..e0d9423 100644
 --- a/metatron-kernel/src/typecheck.rs
 +++ b/metatron-kernel/src/typecheck.rs
-@@ -1835,6 +1835,63 @@ impl<'a> TypeChecker<'a> {
+@@ -1835,6 +1835,70 @@
          result
      }
  
@@ -33,14 +31,21 @@ index 5421007..e0d9423 100644
 +            Judgment::Proven{value,..}=>value,
 +            _=>return Judgment::unknown("spine-head-type-unavailable"),
 +        };
-+        for arg in args.into_iter().rev() {
++        for (arg_index,arg) in args.into_iter().rev().enumerate() {
 +            let Some((domain,body))=self.pi_view(
 +                Judgment::proven(head_type,"spine-independently-inferred-head"),
 +                *remaining,
 +            ) else{return Judgment::unknown("spine-pi-view-unavailable")};
-+            if !self.check_with_formation(
++            let prior=*remaining;
++            let arg_verdict=self.check_with_formation(
 +                arg,&domain,context,frame,remaining,true,cache,true,
-+            ).is_proven() {
++            );
++            if !arg_verdict.is_proven() {
++                use std::sync::atomic::{AtomicUsize,Ordering};
++                static ARG_FAILURES:AtomicUsize=AtomicUsize::new(0);
++                if ARG_FAILURES.fetch_add(1,Ordering::Relaxed)<80 {
++                    eprintln!("NUCLEUS_SPINE_ARG_FAIL:root={root:?}:head={head:?}:argument={arg:?}:position={arg_index}:context={}:frame={}:remaining_before={prior}:remaining_after={}:verdict={arg_verdict:?}",context.len(),frame.id(),*remaining);
++                }
 +                return Judgment::unknown("spine-dependent-argument-unproven")
 +            }
 +            let actual=self.closure(arg,frame.clone());
@@ -66,7 +71,7 @@ index 5421007..e0d9423 100644
      fn infer_uncached(
          &self,
          expression: ExprId,
-@@ -2027,6 +2084,22 @@ impl<'a> TypeChecker<'a> {
+@@ -2027,6 +2091,22 @@
                      Some((TypeValue::Term(domain.clone()), PiBody::Closure(body.clone())))
                  });
                  let Some((domain, body)) = checked_view else {
