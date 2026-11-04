@@ -153,7 +153,10 @@ impl Environment {
     }
 
     pub fn get(&self, name: NameId) -> Option<&ConstantDecl> {
-        self.constants.get(&name)
+        let found = self.constants.get(&name);
+        #[cfg(feature = "semantic-witness")]
+        crate::semantic_witness::record_constant_get(name, found.is_some());
+        found
     }
 
     pub fn extend(

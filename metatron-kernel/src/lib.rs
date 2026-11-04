@@ -19,6 +19,8 @@ pub mod observation;
 pub mod parser;
 pub mod receipt;
 pub mod receipt_store;
+#[cfg(feature = "semantic-witness")]
+pub mod semantic_witness;
 pub mod syntax;
 pub mod typecheck;
 pub mod value;
@@ -49,6 +51,15 @@ pub fn run<R: BufRead>(reader: R) -> Verdict {
 /// checker. Even after successful prefix checks, UNKNOWN/REJECT/ERROR produce
 /// no verified-declaration candidates.
 pub fn run_observed<R: BufRead>(reader: R) -> (Verdict, [u8; 32], Vec<CheckedDecl>) {
+    run_observed_callback(reader, &mut |_| {})
+}
+
+/// A single callback path serves the ordinary MGSO observer and optional
+/// read-witness collector. Only the Rust checker decides any verdict.
+fn run_observed_callback<R: BufRead>(
+    reader: R,
+    callback: &mut dyn FnMut(&CheckedDecl),
+) -> (Verdict, [u8; 32], Vec<CheckedDecl>) {
     let mut hashed = BufReader::new(observation::Sha256Read::new(reader));
     let parsed = parse(&mut hashed).and_then(|export| export.resolve());
     // On early parse errors, finish hashing the entire supplied source rather
@@ -58,6 +69,7 @@ pub fn run_observed<R: BufRead>(reader: R) -> (Verdict, [u8; 32], Vec<CheckedDec
     let mut checked = Vec::new();
     let verdict = match parsed {
         Ok(export) => checker::check_export_observed(export, Limits::default(), &mut |event| {
+            callback(&event);
             checked.push(event);
         }),
         Err(error) => {
@@ -72,6 +84,38 @@ pub fn run_observed<R: BufRead>(reader: R) -> (Verdict, [u8; 32], Vec<CheckedDec
         checked.clear();
     }
     (verdict, source_sha256, checked)
+}
+
+/// Observe source-bound, *partial* actual kernel environment reads.
+///
+/// The returned whole-export digest is a mandatory conservative global
+/// invalidation barrier, including guards that depend on later declarations.
+/// No local read set is certified complete; never promote a stored witness to
+/// a kernel ACCEPT or use it to skip proof checking.
+#[cfg(feature = "semantic-witness")]
+pub fn run_dependency_witness<R: BufRead>(
+    reader: R,
+) -> (Verdict, [u8; 32], Vec<semantic_witness::ObservedSemanticWitness>) {
+    let scope = semantic_witness::ReadScope::enter();
+    let mut provisional = Vec::new();
+    let (verdict, source_sha256, _) = run_observed_callback(reader, &mut |event| {
+        provisional.push((event.clone(), scope.drain()));
+    });
+    if verdict != Verdict::Accept {
+        // An earlier admitted prefix is not evidence for a failed export.
+        return (verdict, source_sha256, Vec::new());
+    }
+    let observed = provisional.into_iter().map(|(declaration, constant_reads)| {
+        semantic_witness::ObservedSemanticWitness {
+            declaration,
+            global_export_sha256: source_sha256,
+            constant_reads,
+            read_coverage: "PARTIAL",
+            verification_reuse_authority: "NONE",
+            proof_skips: 0,
+        }
+    }).collect();
+    (verdict, source_sha256, observed)
 }
 
 /// Run the full independent checker, then compare/write optional MGSO shadow

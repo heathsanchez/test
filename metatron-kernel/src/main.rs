@@ -24,6 +24,47 @@ fn check_input() -> ExitCode {
     let mut args = std::env::args_os().skip(1);
     match (args.next(), args.next(), args.next()) {
         (None, None, None) => {}
+        (Some(flag), None, None) if flag == "--semantic-read-witness" => {
+            #[cfg(feature = "semantic-witness")]
+            {
+                let (verdict, source_sha256, observed) = metatron_kernel::run_dependency_witness(
+                    BufReader::new(io::stdin().lock()),
+                );
+                let source_hex = source_sha256.iter()
+                    .map(|byte| format!("{byte:02x}"))
+                    .collect::<String>();
+                for witness in &observed {
+                    let reads = witness.constant_reads.iter().map(|read| {
+                        serde_json::json!({"name_id": read.name_id, "present": read.present})
+                    }).collect::<Vec<_>>();
+                    eprintln!("NUCLEUS_SEMANTIC_READ:{}", serde_json::json!({
+                        "index": witness.declaration.index,
+                        "name": witness.declaration.name,
+                        "kind": witness.declaration.kind,
+                        "constant_reads": reads,
+                        "global_export_sha256": source_hex,
+                        "read_coverage": witness.read_coverage,
+                        "verification_reuse_authority": witness.verification_reuse_authority,
+                        "proof_skips": witness.proof_skips,
+                    }));
+                }
+                eprintln!("NUCLEUS_SEMANTIC_SUMMARY:{}", serde_json::json!({
+                    "status": format!("{verdict:?}"),
+                    "source_sha256": source_hex,
+                    "observed_declarations": observed.len(),
+                    "read_coverage": "PARTIAL",
+                    "global_barrier": "whole-export-sha256",
+                    "verification_reuse_authority": "NONE",
+                    "proof_skips": 0,
+                }));
+                return ExitCode::from(verdict.exit_code() as u8);
+            }
+            #[cfg(not(feature = "semantic-witness"))]
+            {
+                eprintln!("NUCLEUS_SEMANTIC_SUMMARY:status=unavailable;reason=feature-disabled;authority=none");
+                return ExitCode::from(3);
+            }
+        }
         (Some(flag), Some(directory), None)
             if flag == "--mgso-shadow-dir" || flag == "--mgso-inspect-dir" =>
         {
@@ -89,7 +130,7 @@ fn check_input() -> ExitCode {
             return ExitCode::from(verdict.exit_code() as u8);
         }
         _ => {
-            eprintln!("Usage: metatron-kernel [--mgso-shadow-dir PATH|--mgso-inspect-dir PATH]");
+            eprintln!("Usage: metatron-kernel [--mgso-shadow-dir PATH|--mgso-inspect-dir PATH|--semantic-read-witness]");
             return ExitCode::from(3);
         }
     }
