@@ -3,7 +3,7 @@ name: Nucleus typed receiver Gamma extractor
 on:
   push:
     branches: [research/nucleus-cross-checker-trace-20261105]
-    paths: ['.github/workflows/nucleus-typed-receiver-context-20261105.yml']
+    paths: ['.github/workflows/nucleus-typed-receiver-context-20261105.yml', 'experiments/nucleus-cross-checker-trace-20261105/typed-receiver-context.patch']
   workflow_dispatch:
 
 permissions:
