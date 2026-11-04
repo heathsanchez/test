@@ -1,0 +1,61 @@
+--- a/metatron-kernel/src/machine.rs
++++ b/metatron-kernel/src/machine.rs
+@@ -450,7 +450,12 @@
+         let grant=(*remaining).min(parent.unwrap_or(usize::MAX));
+         self.exposure_fuel.set(Some(grant));
+         let _work=MeteredConversionWork{fuel:&self.exposure_fuel,caller:remaining,parent,grant};
+-        let mut exposed=self.expose_for_conversion(closure,Transparency::Reducible,grant);
++        let exposed=self.expose_for_conversion(closure,Transparency::Reducible,grant);
++        self.resume_source_projections_under_owner(exposed)
++    }
++
++    fn resume_source_projections_under_owner(&self,mut exposed:Judgment<Value>)->Judgment<Value>{
++        if self.exposure_fuel.get().is_none(){return Judgment::unknown("projection-resumption-no-work-owner");}
+         // Selecting an actual source field can reveal another suspended
+         // projection. Resume only that returned source projection, carrying
+         // its own owner/index/receiver/spine and the same finite work owner.
+@@ -1671,7 +1676,11 @@
+             }
+         }
+         if !self.reserve_replay_work(2){return Judgment::unknown("quotient-result-work");}
+-        self.expose_internal_with_pending(neutral.spine[3].clone(),Transparency::Full,allowance().min(2048),false,false,vec![constructor_arguments[2].clone()]).map(|out|out.value)
++        // Quotient iota returns the actual function applied to the actual
++        // constructor payload. Its result may still contain a source
++        // projection; preserve and resume it through the shared owner.
++        let result=self.expose_internal_with_pending(neutral.spine[3].clone(),Transparency::Full,allowance().min(2048),false,true,vec![constructor_arguments[2].clone()]).map(|out|out.value);
++        self.resume_source_projections_under_owner(result)
+     }
+ 
+     fn try_quot_reduction(
+@@ -3866,3 +3875,31 @@
+     #[test]fn an_exhausted_existing_projection_owner_cannot_borrow_caller_work(){let(e,l)=selected_field_syntax(false);let m=selected_field_machine(&e,&l);m.exposure_fuel.set(Some(0));let mut work=1024;assert!(m.expose_projection_for_conversion_metered(Closure::new(ExprId(105),EnvFrame::empty()),&mut work).is_unknown());assert_eq!(work,1024);assert_eq!(m.exposure_fuel.get(),Some(0));}
+     #[test]fn zero_caller_work_never_borrows_a_fresh_parent_allowance(){let(e,l)=syntax();let m=machine(&e,&l);m.exposure_fuel.set(Some(200));let mut work=0;assert!(m.qualified_quotient_neutral_result_metered(&request(7),&mut work).is_unknown());assert_eq!(work,0);assert_eq!(m.exposure_fuel.get(),Some(200));}
+ }
++
++#[cfg(test)]
++mod quotient_result_projection_tests {
++    use super::*;
++    fn syntax(cyclic:bool,payload_is_opaque:bool)->(IdTable<ExprId,Expr>,IdTable<LevelId,Level>){
++        let mut e=IdTable::default();let mut l=IdTable::default();l.insert(LevelId(0),Level::Zero).unwrap();
++        for(id,x)in [
++            (0,Expr::BVar(0)),(1,Expr::Sort(LevelId(0))),
++            (2,Expr::Const{name:NameId(2),levels:vec![LevelId(0)]}),
++            (3,Expr::App{fun:ExprId(2),arg:ExprId(1)}),(4,Expr::App{fun:ExprId(3),arg:ExprId(1)}),
++            (5,Expr::App{fun:ExprId(4),arg:ExprId(if payload_is_opaque{7}else{1})}),
++            (6,Expr::Const{name:NameId(90),levels:vec![]}),(7,Expr::Const{name:NameId(91),levels:vec![]}),
++            (8,Expr::Proj{type_name:NameId(99),index:0,structure:ExprId(7)}),
++            (9,Expr::App{fun:ExprId(6),arg:ExprId(if cyclic{11}else{8})}),
++            (10,Expr::Const{name:NameId(92),levels:vec![]}),(11,Expr::Proj{type_name:NameId(99),index:0,structure:ExprId(10)}),
++            (12,Expr::Lam{domain:ExprId(1),body:ExprId(11)}),(13,Expr::Lam{domain:ExprId(1),body:ExprId(0)}),
++        ]{e.insert(ExprId(id),x).unwrap();}(e,l)
++    }
++    fn machine<'a>(e:&'a IdTable<ExprId,Expr>,l:&'a IdTable<LevelId,Level>)->Machine<'a>{
++        Machine::new(AuthorityId(0),e,l,HashMap::from([(NameId(92),DefinitionBody{value:ExprId(9),preferred_for_reduction:false,level_params:vec![]})]))
++        .with_quot_primitives(Some(QuotPrimitives{type_name:NameId(1),mk:NameId(2),lift:NameId(3),ind:NameId(4)}))
++        .with_projection_specs(HashMap::from([(NameId(99),ProjectionSpec{constructor:NameId(90),num_params:0,field_types:vec![ProjectionFieldType::Derived(ExprId(1))],eta_expandable:false})]))
++    }
++    fn request(function:u64)->Neutral{let c=|id|Closure::new(ExprId(id),EnvFrame::empty());let mut args=vec![c(1);6];args[3]=c(function);args[5]=c(5);Neutral{head:NeutralHead::Const{name:NameId(3),levels:vec![crate::level::LevelTerm::Zero;2]},spine:args}}
++    #[test]fn actual_quotient_result_may_be_a_source_neutral_projection(){let(e,l)=syntax(false,false);let m=machine(&e,&l);let mut work=2048;let q=m.qualified_quotient_neutral_result_metered(&request(12),&mut work);assert!(matches!(q.proven_value(),Some(Value::Neutral(n))if n.spine.is_empty()&&matches!(&n.head,NeutralHead::Projection{type_name:NameId(99),index:0,structure}if matches!(&structure.head,NeutralHead::Const{name:NameId(91),levels}if levels.is_empty()))),"actual source projection was lost: {q:?}");assert!(work<2048);assert_eq!(m.exposure_fuel.get(),None);}
++    #[test]fn an_incomplete_quotient_result_never_becomes_a_completed_value(){let(e,l)=syntax(true,false);let m=machine(&e,&l);let mut work=2048;assert!(m.qualified_quotient_neutral_result_metered(&request(12),&mut work).is_unknown());assert!(work<2048);assert_eq!(m.exposure_fuel.get(),None);}
++    #[test]fn original_quotient_function_receives_its_actual_constructor_payload(){for opaque in [false,true]{let(e,l)=syntax(false,opaque);let m=machine(&e,&l);let mut work=2048;let q=m.qualified_quotient_neutral_result_metered(&request(13),&mut work);if opaque{assert!(matches!(q.proven_value(),Some(Value::Neutral(n))if matches!(&n.head,NeutralHead::Const{name:NameId(91),..})&&n.spine.is_empty()));}else{assert!(matches!(q.proven_value(),Some(Value::Sort(crate::level::LevelTerm::Zero))));}}}
++}

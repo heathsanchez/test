@@ -1,0 +1,33 @@
+{
+  "status": "REPORTED_DIAGNOSTIC_SUMMARY_EVENTS_LOST_IN_SCRATCH_RESET",
+  "diagnostic_only": true,
+  "no_performance_win_claim": true,
+  "source_commit": "3d64f88e3f7194b495428e10cd9536a0aac2f745",
+  "binary_sha": "7232eb13b0268f631de6b9001562b74e779f700b4ce7e1c1c17be0e6ea34ba29",
+  "input_sha": "13ea49b22c1d367dbe44a6301a4d4c71dd623e40afa8ab4b8e5728e5f1659d26",
+  "rc": 2,
+  "user": 176.454873,
+  "system": 0.889349,
+  "wall": 177.39302685600705,
+  "hot_declaration": "AddMonoidAlgebra.instAddCommMonoid._proof_1",
+  "hot_cpu": 118.88,
+  "top5_cpu_share": 0.7875644237228097,
+  "probe_binary_sha": "5cfa43868544d602a5a309cc9ac6d035f2f78e0ced3519ff2a4b162abf851cc5",
+  "probe_input_sha": "106882a9c3b884d1afa40733c9a6b3856360c44c014996788a33f92b0b433693",
+  "probe_rc": 0,
+  "probe_counts": [
+    19240666,
+    5691305,
+    39015,
+    349,
+    0,
+    5651941,
+    8192,
+    15,
+    0,
+    0,
+    5576777,
+    13520337
+  ],
+  "probe_table_policy": "first8192_completed_positive_compound_facts_global_insertion_cap_no_reuse_for_verdicts"
+}

@@ -1,0 +1,55 @@
+[
+  {
+    "case": "quotient-result-authentic",
+    "file": "quotient-result-authentic.ndjson",
+    "sha256": "981146476cbaa7e411c37246d16c6a8cc8d7c4d27ece9f3466e5981ad2d2b713",
+    "expect_reference": 0,
+    "counterfactual_source_control": true,
+    "parse_rc": 0,
+    "reference_rc": 0
+  },
+  {
+    "case": "quotient-result-false-proof",
+    "file": "quotient-result-false-proof.ndjson",
+    "sha256": "be18bcfcced0314d48e22cde532ce3e52beaf29a6769d44bad0bfe5bcc8232ef",
+    "expect_reference": 1,
+    "counterfactual_source_control": true,
+    "parse_rc": 0,
+    "reference_rc": 1
+  },
+  {
+    "case": "quotient-result-unbound-source",
+    "file": "quotient-result-unbound-source.ndjson",
+    "sha256": "8bc74f7461be3583c4b7b46fdd520ef0a3c597b5834fc09dc15a09519a120a7d",
+    "expect_reference": 1,
+    "counterfactual_source_control": true,
+    "parse_rc": 0,
+    "reference_rc": 1
+  },
+  {
+    "case": "quotient-result-changed-data",
+    "file": "quotient-result-changed-data.ndjson",
+    "sha256": "6c23f29bdbbe5ff081d99ea84b0968e300534ce6401dae1b13b14a0cb42c9187",
+    "expect_reference": 1,
+    "counterfactual_source_control": true,
+    "parse_rc": 0,
+    "reference_rc": 1
+  },
+  {
+    "case": "quotient-result-wrong-universe",
+    "file": "quotient-result-wrong-universe.ndjson",
+    "sha256": "a5b901a3ad03f147b114b663909ad5f2039ff33828dc65298249d923eb6ecb16",
+    "expect_reference": 1,
+    "counterfactual_source_control": true,
+    "parse_rc": 0,
+    "reference_rc": 1
+  },
+  {
+    "case": "authentic-original-coe-foldr-swap",
+    "file": "original-coe-foldr-swap.ndjson",
+    "sha256": "13ea49b22c1d367dbe44a6301a4d4c71dd623e40afa8ab4b8e5728e5f1659d26",
+    "expect_reference": 0,
+    "parse_rc": 0,
+    "reference_rc": 0
+  }
+]
