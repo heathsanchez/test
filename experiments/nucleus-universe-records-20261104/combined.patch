@@ -150,3 +150,93 @@
      let Some((parameters,result))=pi_spine(export,inductive.ty,p) else{return false;};
      let Some(Expr::Sort(level))=export.exprs.get(result) else{return false;};
      let substitution=parameter_substitution(&inductive.level_params);
+--- a/metatron-kernel/src/checker.rs
++++ b/metatron-kernel/src/checker.rs
+@@ -2930,6 +2930,29 @@
+         && bounded_record_source(export,&fields[p..],Some(inductive.name))
+ }
+ 
++// A sufficient pointwise upper bound: imax(a,b) is 0 when b=0,
++// and max(a,b) otherwise. Succ and max are monotone, so replacing
++// every imax by max preserves an upper bound under every valuation.
++// Exhaustion declines this extra proof route; it never supplies evidence.
++fn record_universe_upper_bound(level:&LevelTerm,depth:usize,remaining:&mut usize)->Option<LevelTerm> {
++    if depth==0 || *remaining==0 {return None;}
++    *remaining-=1;
++    Some(match level {
++        LevelTerm::Zero=>LevelTerm::Zero,
++        LevelTerm::Param(name)=>LevelTerm::Param(name.clone()),
++        LevelTerm::Succ(inner)=>crate::level::succ(record_universe_upper_bound(inner,depth-1,remaining)?),
++        LevelTerm::Max(a,b)|LevelTerm::IMax(a,b)=>crate::level::max(
++            record_universe_upper_bound(a,depth-1,remaining)?,
++            record_universe_upper_bound(b,depth-1,remaining)?),
++    })
++}
++
++fn record_field_sort_fits(sort:LevelTerm,carrier:&LevelTerm,budget:usize)->bool {
++    if crate::level::level_equal(crate::level::max(sort.clone(),carrier.clone()),carrier.clone(),budget).is_proven() {return true;}
++    let Some(upper)=record_universe_upper_bound(&sort,128,&mut 4096) else{return false;};
++    crate::level::level_equal(crate::level::max(upper,carrier.clone()),carrier.clone(),budget).is_proven()
++}
++
+ fn parameter_record_obligations(export:&ResolvedExport,environment:&Environment,block:&InductiveBlock,limits:Limits,policy:DeltaPolicy)->bool {
+     if !parameter_record_candidate(export,block) {return false;}
+     let inductive=&block.types[0];let constructor=&block.constructors[0];let recursor=&block.recursors[0];
+@@ -2953,7 +2976,7 @@
+     }
+     for field in &fields[p..] {
+         let Judgment::Proven{value:sort,..}=checker.infer_sort_in_context(*field,&context,&frame,limits.judgment_steps) else{return false;};
+-        if !crate::level::level_equal(crate::level::max(sort,carrier.clone()),carrier.clone(),limits.judgment_steps).is_proven() {return false;}
++        if !record_field_sort_fits(sort,&carrier,limits.judgment_steps) {return false;}
+         context.push(TypeValue::Term(checker.closure(*field,frame.clone())));
+         frame=frame.extend_free(FreeId((context.len()-1) as u64));
+     }
+@@ -13249,3 +13272,48 @@
+         }
+     }
+ }
++
++#[cfg(test)]
++mod record_universe_bounds {
++    use super::*;
++    fn evaluate(level:&LevelTerm,u:u32,v:u32)->u32 {
++        match level {
++            LevelTerm::Zero=>0,
++            LevelTerm::Param(name)=>if name=="u" {u} else {v},
++            LevelTerm::Succ(a)=>evaluate(a,u,v)+1,
++            LevelTerm::Max(a,b)=>evaluate(a,u,v).max(evaluate(b,u,v)),
++            LevelTerm::IMax(a,b)=>if evaluate(b,u,v)==0 {0} else {evaluate(a,u,v).max(evaluate(b,u,v))},
++        }
++    }
++    #[test]
++    fn evaluation_field_fits_both_owner_universes_but_not_a_smaller_carrier() {
++        let u=LevelTerm::param("u");let v=LevelTerm::param("v");
++        let field=LevelTerm::IMax(Box::new(u.clone()),Box::new(v.clone()));
++        let carrier=crate::level::max(crate::level::max(crate::level::succ(LevelTerm::Zero),u.clone()),v);
++        assert!(!crate::level::level_equal(crate::level::max(field.clone(),carrier.clone()),carrier.clone(),4096).is_proven());
++        assert!(record_field_sort_fits(field.clone(),&carrier,4096));
++        assert!(!record_field_sort_fits(field.clone(),&LevelTerm::Zero,4096));
++        assert!(!record_field_sort_fits(field.clone(),&crate::level::succ(LevelTerm::Zero),4096));
++        assert!(!record_field_sort_fits(field,&u,4096));
++    }
++    #[test]
++    fn imax_upper_bound_remains_conservative_under_nesting_and_zero_valuations() {
++        let mut terms=vec![LevelTerm::Zero,LevelTerm::param("u"),LevelTerm::param("v")];
++        for _ in 0..2 {
++            let previous=terms.clone();
++            for a in &previous {terms.push(crate::level::succ(a.clone()));
++                for b in &previous {terms.push(LevelTerm::IMax(Box::new(a.clone()),Box::new(b.clone())));terms.push(LevelTerm::Max(Box::new(a.clone()),Box::new(b.clone())));}}
++        }
++        for term in terms {
++            let upper=record_universe_upper_bound(&term,128,&mut 4096).unwrap();
++            for u in 0..=4 {for v in 0..=4 {assert!(evaluate(&term,u,v)<=evaluate(&upper,u,v));}}
++        }
++    }
++    #[test]
++    fn upper_bound_exhaustion_never_supplies_a_witness() {
++        let term=LevelTerm::IMax(Box::new(LevelTerm::param("u")),Box::new(LevelTerm::param("v")));
++        assert!(record_universe_upper_bound(&term,128,&mut 2).is_none());
++        assert!(record_universe_upper_bound(&term,1,&mut 4096).is_none());
++        assert!(!record_field_sort_fits(term,&LevelTerm::Zero,0));
++    }
++}

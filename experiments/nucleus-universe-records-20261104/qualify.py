@@ -16,6 +16,14 @@ SOURCE_SHA='f37e9434b2cee5f9623a2218fb6418c58d43dbe5ac3582cadd9cc844dfa215b4'
 BASE_SHA='013e742dc3bf541301235b6e6d37615b62c9800b923b7c9506b254cffdbfe61e'
 
 def new_gate(binary,env):
+    # The complete native suite runs later; execute this new proof boundary
+    # first so an authentic-source failure cannot hide its unit-test result.
+    kernel=binary.parent/'metatron-kernel'
+    cargo_env=__import__('os').environ|env|{'CARGO_TARGET_DIR':str(binary.parent/'target')}
+    test=Q.t.run_group(['cargo','test','--release','--locked','--manifest-path',str(kernel/'Cargo.toml'),'--lib','record_universe_bounds','--','--test-threads=1'],env=cargo_env,capture_output=True,timeout=600)
+    (C.OUT/'record-bound-tests.stdout').write_bytes(test.stdout)
+    (C.OUT/'record-bound-tests.stderr').write_bytes(test.stderr)
+    assert test.returncode==0 and b'3 passed; 0 failed; 0 ignored;'in test.stdout
     prior=Path('/tmp/nonzero-qualified')
     q=json.loads((prior/'qualification.json').read_text())['candidate']
     assert q['qualified']and q['binary_sha']==BASE_SHA

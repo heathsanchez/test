@@ -108,6 +108,7 @@ jobs:
           name: nucleus-universe-record-protected-${{ github.sha }}
           path: |
             /tmp/nucleus-universe-record-qualified/*.json
+            /tmp/nucleus-universe-record-qualified/record-bound-tests.*
             /tmp/nucleus-universe-record-qualified/candidate/*.json
             /tmp/nucleus-universe-record-qualified/candidate/*.patch
             /tmp/nucleus-universe-record-qualified/candidate/*.log

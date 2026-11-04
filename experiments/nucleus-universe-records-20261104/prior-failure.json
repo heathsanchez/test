@@ -1,0 +1,15 @@
+{
+  "status": "REJECTED_AS_SUFFICIENT",
+  "run": 41740325164,
+  "source_commit": "aace6c97c44740653d552dbe6bcc417c4142cf1a",
+  "artifact": 13279429700,
+  "artifact_sha256": "c6ee258e51136451fb91f971cafb0ab5b636bcdf3010e14f2c460a32c5953f02",
+  "binary": "867a99d204f9d0fbfc2037b4669f79a9860784e0876919c58ef3e757def3c2ff",
+  "input": "f37e9434b2cee5f9623a2218fb6418c58d43dbe5ac3582cadd9cc844dfa215b4",
+  "reference_rc": 0,
+  "nucleus_rc": 2,
+  "diagnostic": [
+    "NUCLEUS_IMAX side=left left=Max(IMax(Param(\"u#6\"), Param(\"u#27\")), Max(Max(Succ(Zero), Param(\"u#6\")), Param(\"u#27\"))) right=Max(Max(Succ(Zero), Param(\"u#6\")), Param(\"u#27\"))",
+    "NUCLEUS_DOWNSTREAM:name=Lean.Data.AC.EvalInformation:stage=inductive:verdict=Unknown"
+  ]
+}
