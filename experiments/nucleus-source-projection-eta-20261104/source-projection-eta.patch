@@ -1,0 +1,321 @@
+--- a/metatron-kernel/src/typecheck.rs
++++ b/metatron-kernel/src/typecheck.rs
+@@ -5041,38 +5041,41 @@
+         // Reserve each nested trial from this one allowance before entry.
+         // Unused child allowance is deliberately not refunded.
+         fn reserve(fuel:&mut usize,cap:usize)->Option<usize>{
+-            let grant=(*fuel).min(cap);if grant==0{return None;}*fuel-=grant;Some(grant)
++            let grant=(*fuel/4).min(cap);if grant==0{return None;}*fuel-=grant;Some(grant)
+         }
+         let major=neutral.spine.get(required-1)?;
+-        // Restrict this earned rule to actual lexical locals. Follow the
+-        // source capture chain by borrow, charging frame traversal before
+-        // lookup; never clone an arbitrary captured neutral to inspect it.
++        // Discover an actual lexical local by borrowed capture traversal.
++        // Computed majors instead retain literal source projections; this
++        // never clones an arbitrary evaluated neutral to inspect it.
+         let mut captured=major.clone();
+-        let free=loop{
++        let actual_free=loop{
+             if !take_step(&mut fuel){return None;}
+-            let Expr::BVar(index)=self.expression(captured.expr)? else{return None};
++            let Some(Expr::BVar(index))=self.expression(captured.expr)else{break None};
+             let cost=usize::try_from(*index).ok()?.checked_add(1)?;
+             if fuel<cost{return None;}fuel-=cost;
+             match captured.env.lookup_binding_ref(*index)?{
+-                EnvBinding::Free(free)=>break *free,
+-                EnvBinding::Neutral(Neutral{head:NeutralHead::Free(free),spine})if spine.is_empty()=>break *free,
++                EnvBinding::Free(free)=>break Some(*free),
++                EnvBinding::Neutral(Neutral{head:NeutralHead::Free(free),spine})if spine.is_empty()=>break Some(*free),
+                 EnvBinding::Closure(next)=>captured=next.clone(),
+                 _=>return None,
+             }
+         };
+-        if !matches!(context.get(usize::try_from(free.0).ok()?),Some(TypeValue::Term(_))){return None;}
+-        let actual=Neutral{head:NeutralHead::Free(free),spine:vec![]};
+-        let mut major_fuel=reserve(&mut fuel,2048)?;
++        if let Some(free)=actual_free{
++            if !matches!(context.get(usize::try_from(free.0).ok()?),Some(TypeValue::Term(_))){return None;}
++        }
++        let mut major_fuel=reserve(&mut fuel,512)?;
+         let TypeValue::Term(major_type)=self.infer_exact_closure_in_context(major,context,&mut major_fuel,0)? else{return None};
+-        let mut formation_fuel=reserve(&mut fuel,1024)?;
++        let mut formation_fuel=reserve(&mut fuel,256)?;
+         let formed=self.infer_exact_closure_in_context(&major_type,context,&mut formation_fuel,0)?;
+-        let formation=self.sort_level(Judgment::proven(formed,"record-eta-owner-formation"),reserve(&mut fuel,256)?);
+-        let Judgment::Proven{value:sort,..}=formation else{return None};
++        let sort=match formed{
++            TypeValue::Sort(level)=>level,
++            other=>{let Judgment::Proven{value:level,..}=self.sort_level(Judgment::proven(other,"record-eta-owner-formation"),reserve(&mut fuel,128)?)else{return None};level}
++        };
+         fn nonzero(l:&LevelTerm,depth:usize,fuel:&mut usize)->bool{
+             if depth>=32 || !take_step(fuel){return false;}match l{LevelTerm::Succ(_)=>true,LevelTerm::Max(a,b)=>nonzero(a,depth+1,fuel)||nonzero(b,depth+1,fuel),LevelTerm::IMax(_,b)=>nonzero(b,depth+1,fuel),_=>false}
+         }
+         if !nonzero(&sort,0,&mut fuel){return None;}
+-        let exposed=self.machine().expose_for_conversion(major_type,Transparency::Full,reserve(&mut fuel,512)?);
++        let exposed=self.machine().expose_for_conversion(major_type,Transparency::Full,reserve(&mut fuel,128)?);
+         let Some(Value::Neutral(owner_type))=exposed.proven_value()else{return None};
+         let NeutralHead::Const{name:actual_owner,levels:owner_levels}=&owner_type.head else{return None};
+         let owner=*actual_owner;
+@@ -5097,15 +5100,23 @@
+             if !take_step(&mut fuel){return None;}
+             if !crate::convert::convert_with_policy_in_context(self,&TypeValue::Term(actual.clone()),&TypeValue::Term(expected.clone()),reserve(&mut fuel,256)?,crate::convert::DeltaPolicy::GuardedSemanticFallback,context.len(),context).is_proven(){return None;}
+         }
+-        // A bounded search finds a real BVar(0) source carrier. It supplies
+-        // no authority: its captured value is the typed actual projection.
+-        let mut carrier=None;
+-        for i in 0..256{if !take_step(&mut fuel){return None;}if matches!(self.expression(ExprId(i)),Some(Expr::BVar(0))){carrier=Some(ExprId(i));break;}}
+-        let carrier=carrier?;
++        let carrier=if actual_free.is_some(){
++            let mut carrier=None;
++            for i in 0..256{if !take_step(&mut fuel){return None;}if matches!(self.expression(ExprId(i)),Some(Expr::BVar(0))){carrier=Some(ExprId(i));break;}}
++            Some(carrier?)
++        }else{None};
+         let mut arguments=neutral.spine[..prefix].to_vec();
+         for index in 0..fields{
+             if !take_step(&mut fuel){return None;}
+-            arguments.push(Closure::new(carrier,EnvFrame::empty().extend_neutral(Neutral{head:NeutralHead::Projection{type_name:owner,index,structure:Box::new(actual.clone())},spine:vec![]})));
++            let projection=if let Some(free)=actual_free{
++                Closure::new(carrier?,EnvFrame::empty().extend_neutral(Neutral{head:NeutralHead::Projection{type_name:owner,index,structure:Box::new(Neutral{head:NeutralHead::Free(free),spine:vec![]})},spine:vec![]}))
++            }else{
++                let template=self.checked_source_projection_template(owner,index,&mut fuel)?;
++                // The literal template has only receiver BVar(0), so all
++                // actual term and universe captures live on the major itself.
++                Closure::new(template,EnvFrame::empty().extend(major.clone()))
++            };
++            arguments.push(projection);
+         }
+         for level in levels{if !charge_level(level,&mut fuel,0){return None;}}
+         let substitution=reduction.level_params.iter().copied().zip(levels.iter().cloned()).collect();
+@@ -5132,6 +5143,63 @@
+             result=body.sibling(body.expr,body.env.extend(argument.clone()));
+         }
+         Some(result)
++    }
++
++
++
++    fn checked_source_projection_template(&self,owner:NameId,index:usize,fuel:&mut usize)->Option<ExprId>{
++        fn inspect(checker:&TypeChecker<'_>,declaration:NameId,owner:NameId,index:usize,fuel:&mut usize)->Option<ExprId>{
++            if !take_step(fuel){return None;}
++            let mut expression=checker.environment.get(declaration)?.value?;
++            let mut lambdas=0;
++            for _ in 0..16{
++                if !take_step(fuel){return None;}
++                match checker.expression(expression)?{
++                    Expr::Lam{body,..}=>{lambdas+=1;expression=*body;},
++                    Expr::Proj{type_name,index:actual_index,structure}if lambdas>0&&*type_name==owner&&usize::try_from(*actual_index).ok()==Some(index)=>{
++                        if !take_step(fuel){return None;}
++                        return matches!(checker.expression(*structure),Some(Expr::BVar(0))).then_some(expression);
++                    },
++                    _=>return None,
++                }
++            }
++            None
++        }
++        if let Some((declaration,expression))=self.environment.cached_source_projection_template(owner,index){
++            if inspect(self,declaration,owner,index,fuel)==Some(expression){return Some(expression);}
++        }
++        // This is candidate discovery only. Numeric proximity never licenses
++        // a field: each hit must be an admitted declaration with the exact
++        // literal owner/index/BVar(0) body. Unknown searches retain no absence.
++        for offset in 0..2048u64{
++            if !take_step(fuel){return None;}
++            let declaration=NameId(owner.0.checked_add(offset)?);
++            if let Some(expression)=inspect(self,declaration,owner,index,fuel){
++                self.environment.retain_source_projection_template(owner,index,declaration,expression,fuel);
++                return Some(expression);
++            }
++        }
++        None
++    }
++    /// Reduce the receiver of one actual registered source projection by
++    /// typed record eta/iota, then select only that original field.
++    pub(crate) fn checked_record_eta_projection(
++        &self, neutral:&Neutral, context:&[TypeValue], budget:&mut usize,
++    )->Option<Closure>{
++        let NeutralHead::Projection{type_name,index,structure}=&neutral.head else{return None};
++        if !neutral.spine.is_empty(){return None;}
++        let spec=self.environment.projection_spec(*type_name)?;
++        if *index>=spec.field_types.len() || spec.field_types.len()>8 || spec.num_params>8{return None;}
++        let rhs=self.checked_record_recursor_eta(structure,context,budget)?;
++        let grant=(*budget/4).min(1024);if grant==0{return None;}*budget-=grant;
++        let exposed=self.machine().expose_for_conversion(rhs,Transparency::Full,grant);
++        let Judgment::Proven{value:Value::Neutral(actual),..}=exposed else{return None};
++        let NeutralHead::Const{name,levels}=&actual.head else{return None};
++        if *name!=spec.constructor || actual.spine.len()!=spec.num_params+spec.field_types.len()
++            || self.environment.get(*name)?.level_params.len()!=levels.len(){return None;}
++        // Move the original field closure; do not reconstruct a value from
++        // the expected result or clone an arbitrary neutral receiver.
++        actual.spine.into_iter().nth(spec.num_params+*index)
+     }
+ 
+     pub(crate) fn rule_k_reduce_neutral(
+@@ -7053,3 +7121,43 @@
+   assert!(checker.checked_record_recursor_eta(&subject(),&[TypeValue::Term(Closure::new(ExprId(2),EnvFrame::empty()))],&mut budget).is_some());
+  }
+ }
++
++#[cfg(test)]
++mod source_projection_template_tests {
++ use super::*;
++ use crate::environment::ConstantDecl;
++ fn source(projected_owner:NameId)->(IdTable<ExprId,Expr>,IdTable<LevelId,Level>){
++  let mut e=IdTable::default();let mut l=IdTable::default();l.insert(LevelId(0),Level::Zero).unwrap();l.insert(LevelId(1),Level::Succ(LevelId(0))).unwrap();
++  for(id,n)in[(0,Expr::Sort(LevelId(0))),(1,Expr::Sort(LevelId(1))),(2,Expr::Const{name:NameId(900),levels:vec![]}),(3,Expr::BVar(0)),(4,Expr::Proj{type_name:projected_owner,index:0,structure:ExprId(3)}),(5,Expr::Lam{domain:ExprId(2),body:ExprId(4)})]{e.insert(ExprId(id),n).unwrap();}(e,l)
++ }
++ // These tests certify only literal syntax discovery. Layout and typing
++ // authority are independently required by the caller before eta reduction.
++ fn base()->Environment{Environment::empty().extend(NameId(900),ConstantDecl::axiom(vec![],ExprId(1))).unwrap()}
++ fn with_projector(env:&Environment)->Environment{env.extend(NameId(905),ConstantDecl::definition(vec![],ExprId(0),ExprId(5),true)).unwrap()}
++ #[test]fn completed_literal_projection_fact_reuses_at_a_small_paid_allowance(){
++  let(e,l)=source(NameId(900));let env=with_projector(&base());let checker=TypeChecker::new(&e,&l,&env);let mut cold=512;
++  assert_eq!(checker.checked_source_projection_template(NameId(900),0,&mut cold),Some(ExprId(4)));let mut warm=8;
++  assert_eq!(checker.checked_source_projection_template(NameId(900),0,&mut warm),Some(ExprId(4)));assert!(warm<8);
++ }
++ #[test]fn cached_projection_fact_never_bypasses_current_source_shape(){
++  let(e,l)=source(NameId(900));let env=with_projector(&base());let checker=TypeChecker::new(&e,&l,&env);let mut fuel=512;assert!(checker.checked_source_projection_template(NameId(900),0,&mut fuel).is_some());
++  let(changed,ll)=source(NameId(901));let other=TypeChecker::new(&changed,&ll,&env);let mut fuel=512;assert!(other.checked_source_projection_template(NameId(900),0,&mut fuel).is_none());
++ }
++ #[test]fn a_future_projector_definition_does_not_justify_an_earlier_scope(){
++  let(e,l)=source(NameId(900));let early=base();let late=with_projector(&early);let checker=TypeChecker::new(&e,&l,&late);let mut fuel=512;assert!(checker.checked_source_projection_template(NameId(900),0,&mut fuel).is_some());
++  let earlier=TypeChecker::new(&e,&l,&early);let mut fuel=512;assert!(earlier.checked_source_projection_template(NameId(900),0,&mut fuel).is_none());let mut fuel=8;assert!(checker.checked_source_projection_template(NameId(900),0,&mut fuel).is_some());
++ }
++ #[test]fn unfinished_template_search_retains_no_absence_certificate(){
++  let(e,l)=source(NameId(900));let env=with_projector(&base());let checker=TypeChecker::new(&e,&l,&env);let mut tiny=1;assert!(checker.checked_source_projection_template(NameId(900),0,&mut tiny).is_none());assert!(env.cached_source_projection_template(NameId(900),0).is_none());
++  let mut enough=512;assert_eq!(checker.checked_source_projection_template(NameId(900),0,&mut enough),Some(ExprId(4)));
++ }
++ #[test]fn a_completed_source_fact_can_be_used_without_unpaid_memo_growth(){
++  let mut witnessed=false;
++  for budget in 1..64{
++   let(e,l)=source(NameId(900));let env=with_projector(&base());let checker=TypeChecker::new(&e,&l,&env);let mut fuel=budget;
++   if checker.checked_source_projection_template(NameId(900),0,&mut fuel)==Some(ExprId(4))&&env.cached_source_projection_template(NameId(900),0).is_none(){witnessed=true;break;}
++  }
++  assert!(witnessed,"optional retention must not withhold a completed literal source fact");
++ }
++
++}
+--- a/metatron-kernel/src/convert.rs
++++ b/metatron-kernel/src/convert.rs
+@@ -1787,7 +1787,9 @@
+                 }
+                 let mut eta_result=None;
+                 for (subject,subject_is_left) in [(left,true),(right,false)] {
+-                    if let Some(rhs)=checker.checked_record_recursor_eta(subject,context,&mut current_budget){
++                    let rhs=checker.checked_record_recursor_eta(subject,context,&mut current_budget)
++                        .or_else(||checker.checked_record_eta_projection(subject,context,&mut current_budget));
++                    if let Some(rhs)=rhs{
+                         let exposed=checker.machine().expose_for_conversion(rhs,Transparency::Reducible,current_budget.saturating_sub(1));
+                         let Judgment::Proven{value:reduced,..}=exposed else{return Judgment::unknown("record-recursor-eta-exposure")};
+                         eta_result=Some((subject_is_left,reduced));break;
+--- a/metatron-kernel/src/environment.rs
++++ b/metatron-kernel/src/environment.rs
+@@ -1,4 +1,5 @@
+ use std::collections::{HashMap, HashSet};
++use std::cell::RefCell;
+ use std::error::Error;
+ use std::fmt;
+ use std::rc::Rc;
+@@ -114,6 +115,10 @@
+     closed_nested_minor_reductions: Rc<HashMap<NameId,Vec<ClosedNestedMinorReduction>>>,
+     recursor_reductions: Rc<HashMap<NameId, RecursorReduction>>,
+     projection_specs: Rc<HashMap<NameId, ProjectionSpec>>,
++    // Completed literal source-carrier facts, shared by this source's
++    // immutable environment lineage. Every use rechecks its declaration and
++    // exact source shape; no absence or typing judgment is cached here.
++    source_projection_templates: Rc<RefCell<HashMap<(NameId,usize),(NameId,ExprId)>>>,
+     nat_primitives: Option<NatPrimitives>,
+     string_literal_type:Option<ExprId>,
+     bool_primitives: Option<BoolPrimitives>,
+@@ -132,6 +137,7 @@
+             closed_nested_minor_reductions: Rc::new(HashMap::new()),
+             recursor_reductions: Rc::new(HashMap::new()),
+             projection_specs: Rc::new(HashMap::new()),
++            source_projection_templates: Rc::new(RefCell::new(HashMap::new())),
+             nat_primitives: None,
+             string_literal_type:None,
+             bool_primitives: None,
+@@ -238,6 +244,7 @@
+             closed_nested_minor_reductions: self.closed_nested_minor_reductions.clone(),
+             recursor_reductions: self.recursor_reductions.clone(),
+             projection_specs: self.projection_specs.clone(),
++            source_projection_templates: self.source_projection_templates.clone(),
+             nat_primitives: self.nat_primitives.clone(),
+             string_literal_type:self.string_literal_type,
+             bool_primitives: self.bool_primitives.clone(),
+@@ -275,6 +282,7 @@
+             closed_nested_minor_reductions: self.closed_nested_minor_reductions.clone(),
+             recursor_reductions: Rc::new(reductions),
+             projection_specs: self.projection_specs.clone(),
++            source_projection_templates: self.source_projection_templates.clone(),
+             nat_primitives: self.nat_primitives.clone(),
+             string_literal_type:self.string_literal_type,
+             bool_primitives: self.bool_primitives.clone(),
+@@ -340,12 +348,27 @@
+             closed_nested_minor_reductions: self.closed_nested_minor_reductions.clone(),
+             recursor_reductions: self.recursor_reductions.clone(),
+             projection_specs: Rc::new(specs),
++            source_projection_templates: self.source_projection_templates.clone(),
+             nat_primitives: self.nat_primitives.clone(),
+             string_literal_type:self.string_literal_type,
+             bool_primitives: self.bool_primitives.clone(),
+             quot_primitives: self.quot_primitives.clone(),
+             unit_like_types: self.unit_like_types.clone(),
+         })
++    }
++
++    pub(crate) fn cached_source_projection_template(&self,owner:NameId,index:usize)->Option<(NameId,ExprId)>{
++        self.source_projection_templates.borrow().get(&(owner,index)).copied()
++    }
++    pub(crate) fn retain_source_projection_template(&self,owner:NameId,index:usize,declaration:NameId,expression:ExprId,fuel:&mut usize){
++        let mut facts=self.source_projection_templates.borrow_mut();
++        let new=!facts.contains_key(&(owner,index));
++        if new&&facts.len()>=512{return;}
++        // Cache retention is optional. Pay a conservative table-growth
++        // allowance before allocation; never let memo growth grant work.
++        let cost=if new&&facts.len()==facts.capacity(){facts.capacity().saturating_mul(2).saturating_add(8)}else{1};
++        if *fuel<cost{return;}*fuel-=cost;
++        facts.insert((owner,index),(declaration,expression));
+     }
+ 
+     pub(crate) fn projection_spec(&self, owner:NameId)->Option<&ProjectionSpec>{
+@@ -387,6 +410,7 @@
+             closed_nested_minor_reductions: self.closed_nested_minor_reductions.clone(),
+             recursor_reductions: self.recursor_reductions.clone(),
+             projection_specs: self.projection_specs.clone(),
++            source_projection_templates: self.source_projection_templates.clone(),
+             nat_primitives: Some(primitives),
+             string_literal_type:self.string_literal_type,
+             bool_primitives: self.bool_primitives.clone(),
+@@ -441,6 +465,7 @@
+             closed_nested_minor_reductions: self.closed_nested_minor_reductions.clone(),
+             recursor_reductions: self.recursor_reductions.clone(),
+             projection_specs: self.projection_specs.clone(),
++            source_projection_templates: self.source_projection_templates.clone(),
+             nat_primitives: Some(primitives),
+             string_literal_type:self.string_literal_type,
+             bool_primitives: self.bool_primitives.clone(),
+@@ -475,6 +500,7 @@
+             closed_nested_minor_reductions: self.closed_nested_minor_reductions.clone(),
+             recursor_reductions: self.recursor_reductions.clone(),
+             projection_specs: self.projection_specs.clone(),
++            source_projection_templates: self.source_projection_templates.clone(),
+             nat_primitives: self.nat_primitives.clone(),
+             string_literal_type:self.string_literal_type,
+             bool_primitives: Some(primitives),
+@@ -518,6 +544,7 @@
+             closed_nested_minor_reductions: self.closed_nested_minor_reductions.clone(),
+             recursor_reductions: self.recursor_reductions.clone(),
+             projection_specs: self.projection_specs.clone(),
++            source_projection_templates: self.source_projection_templates.clone(),
+             nat_primitives: self.nat_primitives.clone(),
+             string_literal_type:self.string_literal_type,
+             bool_primitives: self.bool_primitives.clone(),
+@@ -553,6 +580,7 @@
+             closed_nested_minor_reductions: self.closed_nested_minor_reductions.clone(),
+             recursor_reductions: self.recursor_reductions.clone(),
+             projection_specs: self.projection_specs.clone(),
++            source_projection_templates: self.source_projection_templates.clone(),
+             nat_primitives: self.nat_primitives.clone(),
+             string_literal_type:self.string_literal_type,
+             bool_primitives: self.bool_primitives.clone(),

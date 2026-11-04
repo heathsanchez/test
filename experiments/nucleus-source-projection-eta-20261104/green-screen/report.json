@@ -1,0 +1,32 @@
+{
+  "binary_sha": "f4069a8a8d1cfbb97a8748f49629043a968145bc5436a322a2ea7a15f29d2142",
+  "rows": [
+    {
+      "case": "authentic-computed-product-eta",
+      "file": "authentic-computed-product-eta.ndjson",
+      "sha256": "32fc86954645662bd448173c271c1218d438bfecda3816586e7e6aaacef23884",
+      "expect_reference": 0,
+      "parse_rc": 0,
+      "reference_rc": 0,
+      "candidate_rc": 0
+    },
+    {
+      "case": "computed-product-eta-wrong-field",
+      "file": "computed-product-eta-wrong-field.ndjson",
+      "sha256": "985a71f2fa0ff1675ee5b198292ffa513521ba59ebf235fe9567654aaccdcf41",
+      "expect_reference": 1,
+      "parse_rc": 0,
+      "reference_rc": 1,
+      "candidate_rc": 2
+    },
+    {
+      "case": "computed-product-eta-wrong-owner",
+      "file": "computed-product-eta-wrong-owner.ndjson",
+      "sha256": "ddaea0f0a69925439de290f32a1de35e4bd21e195b2cf03cfb3f5bfdafa540a5",
+      "expect_reference": 1,
+      "parse_rc": 0,
+      "reference_rc": 1,
+      "candidate_rc": 1
+    }
+  ]
+}
