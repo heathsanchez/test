@@ -1,0 +1,47 @@
+diff --git a/metatron-kernel/src/convert.rs b/metatron-kernel/src/convert.rs
+index eaed20f..15ea6f5 100644
+--- a/metatron-kernel/src/convert.rs
++++ b/metatron-kernel/src/convert.rs
+@@ -1568,6 +1568,42 @@ fn compare_values_with_eta_charge(
+                         );
+                     }
+                 }
++                // Diagnostic-only: inspect the exact remaining Mathlib
++                // Finsupp projection pair. Binder-node values and the existing
++                // source/spine premises are reported, never used as authority.
++                #[cfg(feature="diagnostics")]
++                if std::env::var_os("NUCLEUS_TRACE_FINSUPP_PREMISE").is_some()
++                    && *left_type==crate::id::NameId(18300)
++                    && *left_index==1
++                    && depth==8
++                    && depth==context.len()
++                    && left_structure.expr==crate::id::ExprId(5)
++                    && right_structure.expr==crate::id::ExprId(5)
++                {
++                    use std::sync::atomic::{AtomicUsize,Ordering};
++                    static PROBES:AtomicUsize=AtomicUsize::new(0);
++                    if PROBES.fetch_add(1,Ordering::Relaxed)<24 {
++                        let left_binding=left_structure.env.lookup_with_node_id(0);
++                        let right_binding=right_structure.env.lookup_with_node_id(0);
++                        let left_formed=checker.checked_source_conversion(
++                            left_structure,left_structure,context,512,
++                        );
++                        let right_formed=checker.checked_source_conversion(
++                            right_structure,right_structure,context,512,
++                        );
++                        let receiver_relation=checker.checked_source_conversion(
++                            left_structure,right_structure,context,2048,
++                        );
++                        let spine_relation=same_closure_spine_congruence_in_context(
++                            checker,left_spine,right_spine,512,depth,context,512,
++                        );
++                        eprintln!(
++                            "NUCLEUS_FINSUPP_PREMISE:depth={depth}:budget={current_budget}:left_frame={}:right_frame={}:left_binding={left_binding:?}:right_binding={right_binding:?}:left_typed={left_formed:?}:right_typed={right_formed:?}:receiver={receiver_relation:?}:spine={spine_relation}:left_arity={}:right_arity={}",
++                            left_structure.env.id(),right_structure.env.id(),
++                            left_spine.len(),right_spine.len(),
++                        );
++                    }
++                }
+                 let source_typed_pair =
+                     crate::run_flags::present(crate::run_flags::Flag::ExperimentalSourcePairDepth8)
+                     && depth == context.len()
