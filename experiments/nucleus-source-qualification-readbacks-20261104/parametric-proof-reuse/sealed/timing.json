@@ -1,0 +1,53 @@
+{
+  "median_cpu_ratio": 1.094617056642373,
+  "no_rank_claim": true,
+  "preset": "every candidate CPU sample beats every parent sample by more than1percent",
+  "rows": [
+    {
+      "arm": "candidate",
+      "binary_sha": "cb2b25d43417e18339a43469071dc88849091920719eb5775da5ad99bcd8c4e8",
+      "input_sha": "8428d5d4282a608eb77e48ff62adace23212d9487ff9e86dc2e57af7c573d5f1",
+      "rc": 0,
+      "rss_kb": 147820.0,
+      "system": 0.14,
+      "user": 43.4,
+      "wall": 43.54,
+      "wall_observed": 43.57850599499989
+    },
+    {
+      "arm": "parent",
+      "binary_sha": "82ebbce2278e54f82667e4d12793034acdf72f329b989e4605cf65473c9de715",
+      "input_sha": "8428d5d4282a608eb77e48ff62adace23212d9487ff9e86dc2e57af7c573d5f1",
+      "rc": 0,
+      "rss_kb": 146616.0,
+      "system": 0.15,
+      "user": 39.83,
+      "wall": 39.99,
+      "wall_observed": 40.02136507099999
+    },
+    {
+      "arm": "parent",
+      "binary_sha": "82ebbce2278e54f82667e4d12793034acdf72f329b989e4605cf65473c9de715",
+      "input_sha": "8428d5d4282a608eb77e48ff62adace23212d9487ff9e86dc2e57af7c573d5f1",
+      "rc": 0,
+      "rss_kb": 146588.0,
+      "system": 0.13,
+      "user": 38.1,
+      "wall": 38.23,
+      "wall_observed": 38.26494281200007
+    },
+    {
+      "arm": "candidate",
+      "binary_sha": "cb2b25d43417e18339a43469071dc88849091920719eb5775da5ad99bcd8c4e8",
+      "input_sha": "8428d5d4282a608eb77e48ff62adace23212d9487ff9e86dc2e57af7c573d5f1",
+      "rc": 0,
+      "rss_kb": 147808.0,
+      "system": 0.13,
+      "user": 41.94,
+      "wall": 42.08,
+      "wall_observed": 42.120456483
+    }
+  ],
+  "speed_win": false,
+  "status": "COMPLETE"
+}
