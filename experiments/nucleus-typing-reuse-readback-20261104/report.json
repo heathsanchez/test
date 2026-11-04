@@ -1,0 +1,133 @@
+{
+  "status": "COMPLETE_TYPING_REUSE_OPPORTUNITY_TOURNAMENT",
+  "diagnostic_only": true,
+  "no_performance_win_claim": true,
+  "no_official_rank_claim": true,
+  "memoization_implemented": false,
+  "parent_source_commit": "3d64f88e3f7194b495428e10cd9536a0aac2f745",
+  "parent_binary_sha": "c43b174abbad341e5b308d93cd66a28e42db9d9425796ed33b16c644e142ae8e",
+  "input_sha": "106882a9c3b884d1afa40733c9a6b3856360c44c014996788a33f92b0b433693",
+  "reference_binary_sha": "ae92c625e612fff1c90e329344d22e3c3c330383cb335ce28fd41435be3b3b94",
+  "baseline_rc": 0,
+  "oracle_parse_rc": 0,
+  "oracle_rc": 0,
+  "count_schema": [
+    "all_calls",
+    "eligible_compound_calls",
+    "hits_term",
+    "hits_pi",
+    "hits_sort",
+    "misses",
+    "stored",
+    "hit_recomputed_unknown",
+    "context_too_large",
+    "context_nonterm",
+    "capacity_events",
+    "leaf_calls",
+    "leaf_const",
+    "leaf_bvar",
+    "leaf_sort",
+    "leaf_other"
+  ],
+  "rows": [
+    {
+      "mode": "first-exact",
+      "binary_sha": "dbcefb67433708fe7ab1c092af4db0574dc2fd1ef45b1c90794714b73c04eb59",
+      "diagnostic_patch_sha": "25317617d80393b809d5075a2cb5cf280ef521e30a7fc375793bd2445d6d5a65",
+      "input_sha": "106882a9c3b884d1afa40733c9a6b3856360c44c014996788a33f92b0b433693",
+      "result": {
+        "rc": 0,
+        "wall": 104.05177806599997
+      },
+      "counts": [
+        19240666,
+        5691305,
+        39015,
+        349,
+        0,
+        5651941,
+        8192,
+        15,
+        0,
+        0,
+        5576777,
+        13520337,
+        2316449,
+        11146277,
+        22044,
+        35567
+      ],
+      "eligible": 5691305,
+      "positive_hits": 39364,
+      "hit_fraction": 0.006916515632179263,
+      "capacity_per_checker": 8192,
+      "results_reused_for_verdicts": false
+    },
+    {
+      "mode": "fifo-exact",
+      "binary_sha": "4c97fde1bff9aa0b1e97cb6362ff6bc00f852de66e7f34bddc8baa77f9361976",
+      "diagnostic_patch_sha": "bb5eea89e64a7e47cf7e158f000c947e6eb3c6eda16ee5d0c12c154a0f47f871",
+      "input_sha": "106882a9c3b884d1afa40733c9a6b3856360c44c014996788a33f92b0b433693",
+      "result": {
+        "rc": 0,
+        "wall": 111.96933192199998
+      },
+      "counts": [
+        19240666,
+        5691305,
+        3132775,
+        67304,
+        0,
+        2491226,
+        2432826,
+        8587,
+        0,
+        0,
+        2424634,
+        13520337,
+        2316449,
+        11146277,
+        22044,
+        35567
+      ],
+      "eligible": 5691305,
+      "positive_hits": 3200079,
+      "hit_fraction": 0.5622750845368505,
+      "capacity_per_checker": 8192,
+      "results_reused_for_verdicts": false
+    },
+    {
+      "mode": "fifo-semantic",
+      "binary_sha": "887298daa35e392a0a94534f6a2f09fde3db48747d38a06d88bda8959eb41fec",
+      "diagnostic_patch_sha": "b10fe5ef88f654e6c3de8b8af8e3f918db3b31762f3002ccc7193f77a889b1d1",
+      "input_sha": "106882a9c3b884d1afa40733c9a6b3856360c44c014996788a33f92b0b433693",
+      "result": {
+        "rc": 0,
+        "wall": 113.51710479599996
+      },
+      "counts": [
+        19240666,
+        5691305,
+        3140938,
+        67460,
+        0,
+        2482907,
+        2424507,
+        8587,
+        0,
+        0,
+        2416315,
+        13520337,
+        2316449,
+        11146277,
+        22044,
+        35567
+      ],
+      "eligible": 5691305,
+      "positive_hits": 3208398,
+      "hit_fraction": 0.5637367879598791,
+      "capacity_per_checker": 8192,
+      "results_reused_for_verdicts": false
+    }
+  ]
+}
