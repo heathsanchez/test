@@ -1,0 +1,29 @@
+name: Nucleus postflight global decision witness (observation only)
+
+on:
+  push:
+    branches: [research/nucleus-postflight-semantic-witness-20261104]
+    paths:
+      - '.github/workflows/nucleus-postflight-semantic-witness-20261104.yml'
+      - 'metatron-kernel/**'
+      - 'experiments/nucleus-postflight-semantic-witness-20261104/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  postflight-witness:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Source-native postflight Rust controls
+        run: |
+          set -euo pipefail
+          cargo test --release --locked --features semantic-witness \
+            --manifest-path metatron-kernel/Cargo.toml \
+            --test semantic_witness_v2 --test semantic_witness \
+            --test mgso_shadow --test quotient_source_ownership

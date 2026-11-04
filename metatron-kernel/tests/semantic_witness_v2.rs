@@ -24,8 +24,19 @@ fn source_resolution_global_guards_and_local_reads_are_distinct() {
     assert!(global.source_resolution_reads.iter().any(|read|
         read.table == "expression" && read.access == "point" && read.present == Some(true)
     ));
+    // Break caught: the outer string qualification's expression-table bulk
+    // scan is a semantic preflight read, not an exporter-resolution read.
+    assert!(global.preflight_reads.iter().any(|read|
+        read.table == "expression" && read.access == "bulk"
+    ));
+    assert!(!global.source_resolution_reads.iter().any(|read|
+        read.table == "expression" && read.access == "bulk"
+    ));
     assert!(global.guards.iter().any(|guard|
         guard.stage == "quotient-source-ownership" && guard.result == "PASS"
+    ));
+    assert!(global.guards.iter().any(|guard|
+        guard.stage == "postflight-string-literal-qualification" && guard.result == "PASS"
     ));
     assert_eq!(witnessed[1].global_export_sha256, whole_export_sha);
     assert!(witnessed[1].table_reads.iter().any(|read|
@@ -67,6 +78,11 @@ fn failed_export_after_valid_prefix_keeps_diagnostics_but_no_admissions() {
     let (verdict, _, witnessed, global) = run_dependency_witness_v2(Cursor::new(&source));
     assert_eq!(verdict, Verdict::Unknown);
     assert!(witnessed.is_empty());
+    // Break caught: this UNKNOWN is an executed terminal downgrade of the
+    // otherwise valid two-theorem prefix; omitting its guard hides causality.
+    assert!(global.guards.iter().any(|guard|
+        guard.stage == "postflight-string-literal-qualification" && guard.result == "DEFER"
+    ));
     assert_eq!(global.verification_reuse_authority, "NONE");
     assert_eq!(global.proof_skips, 0);
 }
