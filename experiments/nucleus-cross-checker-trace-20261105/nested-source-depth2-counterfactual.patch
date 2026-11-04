@@ -1,0 +1,47 @@
+diff --git a/metatron-kernel/src/typecheck.rs b/metatron-kernel/src/typecheck.rs
+index 5421007..26c6c72 100644
+--- a/metatron-kernel/src/typecheck.rs
++++ b/metatron-kernel/src/typecheck.rs
+@@ -1276,17 +1276,38 @@ impl<'a> TypeChecker<'a> {
+         // This optional typed trial may call conversion while proving its
+         // prerequisites. Do not recursively start another fresh trial from
+         // those conversions; leave their ordinary conversion authoritative.
++        // Counterfactual only: permit one extra *finite* nested checked trial
++        // with its own strictly smaller source budget. No circular or
++        // coinductive proof is allowed, and the ordinary mode is unchanged.
++        #[cfg(feature="diagnostics")]
++        let probe_nested = std::env::var_os("NUCLEUS_PROBE_NESTED_SOURCE_TRIAL").is_some();
++        #[cfg(not(feature="diagnostics"))]
++        let probe_nested = false;
+         thread_local! {
+-            static SOURCE_CONVERSION_ACTIVE:std::cell::Cell<bool>=const{std::cell::Cell::new(false)};
++            static SOURCE_CONVERSION_ACTIVE:std::cell::Cell<usize>=const{std::cell::Cell::new(0)};
+         }
+-        if SOURCE_CONVERSION_ACTIVE.with(|active|active.replace(true)) {
++        let Some(entered_depth)=SOURCE_CONVERSION_ACTIVE.with(|active|{
++            let depth=active.get();
++            if depth>0 && (!probe_nested || depth>=2) {None}
++            else {active.set(depth+1);Some(depth)}
++        }) else {
+             return Judgment::unknown("nested-source-conversion-trial");
+-        }
++        };
+         struct SourceConversionTrial;
+         impl Drop for SourceConversionTrial {
+-            fn drop(&mut self){SOURCE_CONVERSION_ACTIVE.with(|active|active.set(false));}
++            fn drop(&mut self){SOURCE_CONVERSION_ACTIVE.with(|active|active.set(active.get().saturating_sub(1))); }
+         }
+         let _trial=SourceConversionTrial;
++        let budget=if entered_depth==1 {budget.min(256)} else {budget};
++        #[cfg(feature="diagnostics")]
++        if probe_nested && entered_depth==1 {
++            use std::sync::atomic::{AtomicUsize,Ordering};
++            static REPORTED:AtomicUsize=AtomicUsize::new(0);
++            if REPORTED.fetch_add(1,Ordering::Relaxed)<32 {
++                eprintln!("NUCLEUS_NESTED_SOURCE_TRIAL:budget={budget}:left={:?}:right={:?}:context_len={}",
++                    left.expr,right.expr,context.len());
++            }
++        }
+         let mut left_fuel=budget.min(4096);
+         let Some(left_type)=self.infer_exact_closure_in_context(
+             left,context,&mut left_fuel,0,
