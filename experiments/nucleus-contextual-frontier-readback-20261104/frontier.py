@@ -10,7 +10,7 @@ def extract(source,out,target):
    if 'in'in row:
     n=row.get('str',row.get('num'));names[row['in']]=names[n['pre']]+('.'if n['pre']else'')+str(n.get('str',n.get('i')))
    decl=next(((k,row[k])for k in ['thm','def','opaque','axiom','inductive','quot']if k in row),None)
-   found=decl is not None and names.get(decl[1].get('name'))==target
+   found=decl is not None and (names.get(decl[1].get('name'))==target or (decl[0]=='inductive' and any(names.get(t.get('name'))==target for t in decl[1].get('types',[]))))
    if 'thm'in row and not found:
     d=row['thm'];row={'axiom':dict(name=d['name'],levelParams=d['levelParams'],type=d['type'],isUnsafe=False)};diagnostic.write((json.dumps(row,separators=(',',':'))+'\n').encode());changed+=1
    else:diagnostic.write(raw)

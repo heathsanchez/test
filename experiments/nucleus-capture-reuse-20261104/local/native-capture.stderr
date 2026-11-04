@@ -1,0 +1,204 @@
+   Compiling metatron-kernel v0.1.0 (/workspace/scratch/38cabe96376f/nucleus-tournaments/capture-lambda-budget/source/metatron-kernel)
+warning: unnecessary parentheses around `if` condition
+    --> src/convert.rs:2524:20
+     |
+2524 |                 if ((l=="Free(FreeId(6))" && r=="Free(FreeId(5))") ||
+     |                    ^
+2525 |                     (l=="Free(FreeId(5))" && r=="Free(FreeId(6))"))
+     |                                                                   ^
+     |
+     = note: `#[warn(unused_parens)]` (part of `#[warn(unused)]`) on by default
+help: remove these parentheses
+     |
+2524 ~                 if (l=="Free(FreeId(6))" && r=="Free(FreeId(5))") ||
+2525 ~                     (l=="Free(FreeId(5))" && r=="Free(FreeId(6))")
+     |
+
+warning: value assigned to `source_work` is never read
+    --> src/typecheck.rs:5606:55
+     |
+5606 |                     if source_work<cost{return false;}source_work-=cost;
+     |                                                       ^^^^^^^^^^^^^^^^^
+     |
+     = help: maybe it is overwritten before being read?
+     = note: `#[warn(unused_assignments)]` (part of `#[warn(unused)]`) on by default
+
+warning: method `diagnostic_captured_recursor_major_chain` is never used
+    --> src/typecheck.rs:1048:19
+     |
+ 137 | impl<'a> TypeChecker<'a> {
+     | ------------------------ method in this implementation
+...
+1048 |     pub(crate) fn diagnostic_captured_recursor_major_chain(
+     |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: methods `starts_with` and `to_vec` are never used
+    --> src/typecheck.rs:6960:5
+     |
+6955 | impl ContextSpine{
+     | ----------------- methods in this implementation
+...
+6960 |  fn starts_with(&self,s:&[TypeValue])->bool{self.len()>=s.len()&&self.ancestor(s.len()).equals_slice(s)}
+     |     ^^^^^^^^^^^
+6961 |  fn is_prefix_of(&self,s:&[TypeValue])->bool{self.len()<=s.len()&&self.equals_slice(&s[..self.len()])}
+6962 |  fn to_vec(&self)->Vec<TypeValue>{let mut v=Vec::with_capacity(self.len());let mut p=self;while let Some(n)=&p.0{v.push(n.value.cl...
+     |     ^^^^^^
+
+warning: multiple variants are never constructed
+   --> src/run_flags.rs:7:5
+    |
+  6 | pub(crate) enum Flag {
+    |                 ---- variants in this enum
+  7 |     AssuranceSourceOwnedProbe,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+ 25 |     TraceApplicationFunctionType,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 26 |     TraceAppDomainObligation,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^
+ 27 |     TraceArithmeticInstance,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^
+ 28 |     TraceBidirBodyGap,
+    |     ^^^^^^^^^^^^^^^^^
+ 29 |     TraceBleSymbolic,
+    |     ^^^^^^^^^^^^^^^^
+ 30 |     TraceCapability,
+ 31 |     TraceCertifiedArithmeticField,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 32 |     TraceCertifiedProofVsLocal,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 33 |     TraceCertifiedQuotIota,
+    |     ^^^^^^^^^^^^^^^^^^^^^^
+ 34 |     TraceCheckedMajorChain,
+    |     ^^^^^^^^^^^^^^^^^^^^^^
+ 35 |     TraceCheckedRelevance,
+    |     ^^^^^^^^^^^^^^^^^^^^^
+ 36 |     TraceConstructorMismatch,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^
+ 37 |     TraceContextualProofSpine,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+ 38 |     TraceContextBinder,
+    |     ^^^^^^^^^^^^^^^^^^
+ 39 |     TraceDecidableMajorChain,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^
+ 40 |     TraceDeclarationProgress,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^
+ 41 |     TraceDependencyGap,
+    |     ^^^^^^^^^^^^^^^^^^
+ 42 |     TraceDependencyValues,
+    |     ^^^^^^^^^^^^^^^^^^^^^
+...
+ 45 |     TraceExactProjection,
+    |     ^^^^^^^^^^^^^^^^^^^^
+ 46 |     TraceExpectedLambda,
+    |     ^^^^^^^^^^^^^^^^^^^
+ 47 |     TraceExposureCache,
+    |     ^^^^^^^^^^^^^^^^^^
+ 48 |     TraceFailedReceiverCaptures,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 49 |     TraceFailedReceiverConversion,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 50 |     TraceFieldPair,
+    |     ^^^^^^^^^^^^^^
+ 51 |     TraceFinalCodomain,
+    |     ^^^^^^^^^^^^^^^^^^
+ 52 |     TraceFirstPiDomain,
+    |     ^^^^^^^^^^^^^^^^^^
+ 53 |     TraceFirstTypedContinuation,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 54 |     TraceFormedPropDomainRetry,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+ 58 |     TraceLambdaTrialWork,
+    |     ^^^^^^^^^^^^^^^^^^^^
+ 59 |     TraceLazyDelta,
+ 60 |     TraceLeftDecidableMajorChain,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 61 |     TraceLiteralConversion,
+    |     ^^^^^^^^^^^^^^^^^^^^^^
+ 62 |     TraceLocalProofIrrel,
+    |     ^^^^^^^^^^^^^^^^^^^^
+ 63 |     TraceMultibinderEta,
+    |     ^^^^^^^^^^^^^^^^^^^
+ 64 |     TraceNativeNatBits,
+    |     ^^^^^^^^^^^^^^^^^^
+ 65 |     TraceNatrecMajor,
+    |     ^^^^^^^^^^^^^^^^
+ 66 |     TraceNatAddone,
+    |     ^^^^^^^^^^^^^^
+ 67 |     TraceNatIota,
+ 68 |     TraceNatSubsucc,
+    |     ^^^^^^^^^^^^^^^
+ 69 |     TraceNatSubsuccZero,
+    |     ^^^^^^^^^^^^^^^^^^^
+ 70 |     TraceNatSubzero,
+    |     ^^^^^^^^^^^^^^^
+ 71 |     TraceNestedRecursorIota,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^
+ 72 |     TraceNestedRecursorIotaFailure,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 73 |     TraceNeutralHeads,
+ 74 |     TraceNullaryMinor,
+    |     ^^^^^^^^^^^^^^^^^
+ 75 |     TraceOriginReplay,
+    |     ^^^^^^^^^^^^^^^^^
+ 76 |     TraceParseError,
+ 77 |     TracePolymorphicPropIrrel,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+ 78 |     TracePredSource,
+    |     ^^^^^^^^^^^^^^^
+ 79 |     TraceProjectionCheap,
+    |     ^^^^^^^^^^^^^^^^^^^^
+ 80 |     TraceProjectionCongruence,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+ 81 |     TraceProjectionContext,
+    |     ^^^^^^^^^^^^^^^^^^^^^^
+ 82 |     TraceProjectionCrossframe512,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 83 |     TraceProjectionFieldFailure,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 84 |     TraceProjectionLastFailure,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 85 |     TraceProofArgumentTypes,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^
+...
+ 89 |     TraceRefutationAsUnknown,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^
+ 90 |     TraceReplayCache,
+    |     ^^^^^^^^^^^^^^^^
+ 91 |     TraceRigidTypeMismatch,
+    |     ^^^^^^^^^^^^^^^^^^^^^^
+ 92 |     TraceRuleK,
+ 93 |     TraceSelectedField,
+    |     ^^^^^^^^^^^^^^^^^^
+ 94 |     TraceSingleField,
+ 95 |     TraceSourcePairDepth8,
+    |     ^^^^^^^^^^^^^^^^^^^^^
+ 96 |     TraceSourceProofBeta,
+    |     ^^^^^^^^^^^^^^^^^^^^
+ 97 |     TraceSourceProofIrrel,
+    |     ^^^^^^^^^^^^^^^^^^^^^
+ 98 |     TraceSourceTypeRecovery,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^
+ 99 |     TraceSubstitutionReclosure,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+100 |     TraceTenMethods,
+    |     ^^^^^^^^^^^^^^^
+101 |     TraceTerminalCause,
+    |     ^^^^^^^^^^^^^^^^^^
+102 |     TraceTypedDataCongruence,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^
+103 |     TraceTypedLineage,
+    |     ^^^^^^^^^^^^^^^^^
+104 |     TraceTypedProjectionSpine,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+105 |     TraceTypedReceiver,
+    |     ^^^^^^^^^^^^^^^^^^
+    |
+    = note: `Flag` has a derived impl for the trait `Clone`, but this is intentionally ignored during dead code analysis
+
+warning: `metatron-kernel` (lib) generated 5 warnings (run `cargo fix --lib -p metatron-kernel` to apply 1 suggestion)
+    Finished `release` profile [optimized] target(s) in 20.37s
+     Running tests/captured_source_equivalence.rs (nucleus-tournaments/capture-lambda-budget/local-target/release/deps/captured_source_equivalence-7a8a5d1bffcf0318)
