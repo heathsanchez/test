@@ -1,0 +1,102 @@
+name: Nucleus exact application-function diagnostic
+
+on:
+  push:
+    branches: [research/nucleus-cross-checker-trace-20261105]
+    paths: ['.github/workflows/nucleus-cross-checker-trace-20261105.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  trace:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: '1.99.1'
+      - name: Restore and verify immutable source and frontier
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/trace-parent /tmp/trace-current /tmp/trace-source /tmp/trace-evidence
+          gh api repos/heathsanchez/test/actions/artifacts/13325481741/zip > /tmp/trace-parent.zip
+          unzip -q /tmp/trace-parent.zip -d /tmp/trace-parent
+          printf '%s  %s\n' ce6bdc5eb50757d2b624fefed8e48289d933eeaffdbeba9815d277aa31c4d7de /tmp/trace-parent/candidate/source.tar.gz | sha256sum -c -
+          gh api repos/heathsanchez/test/actions/artifacts/13359400422/zip > /tmp/trace-current.zip
+          printf '%s  %s\n' 79a49583b5e9c4742c4280075b41cdd89ba44f2d96b402af8f90ef4750897e8d /tmp/trace-current.zip | sha256sum -c -
+          unzip -q /tmp/trace-current.zip -d /tmp/trace-current
+          python3 - <<'PY'
+          import tarfile
+          with tarfile.open('/tmp/trace-parent/candidate/source.tar.gz') as t:
+              t.extractall('/tmp/trace-source', filter='data')
+          PY
+          patch --batch --fuzz=0 -p1 -d /tmp/trace-source -i "$GITHUB_WORKSPACE/experiments/nucleus-quotient-result-projection-20261104/quotient-result-projection.patch"
+          patch --batch --fuzz=0 -p1 -d /tmp/trace-source -i "$GITHUB_WORKSPACE/experiments/nucleus-universe-parametric-source-20261104/universe-parametric-source.patch"
+          python3 - <<'PY'
+          import hashlib, json, pathlib
+          root=pathlib.Path('/tmp/trace-source/metatron-kernel')
+          manifest=json.loads(pathlib.Path('/tmp/trace-current/candidate/source-manifest.json').read_text())
+          errors=[n for n,sha in manifest.items() if not (root/n).is_file() or hashlib.sha256((root/n).read_bytes()).hexdigest()!=sha]
+          assert not errors, ('qualified source manifest mismatch',errors[:12])
+          print('QUALIFIED_SOURCE_MATCH',len(manifest),flush=True)
+          PY
+          find /tmp/trace-current -name next-frontier.ndjson.zst -type f -print
+          python3 - <<'PY'
+          import pathlib, subprocess, hashlib
+          files=list(pathlib.Path('/tmp/trace-current').rglob('next-frontier.ndjson.zst'))
+          assert len(files)==1,('ambiguous first frontier',[str(x) for x in files])
+          with open('/tmp/trace-evidence/frontier.ndjson','wb') as out:
+              subprocess.run(['zstd','-dc',str(files[0])],stdout=out,check=True)
+          got=hashlib.sha256(pathlib.Path('/tmp/trace-evidence/frontier.ndjson').read_bytes()).hexdigest()
+          assert got=='ca6ba58a99ca074dc45d975ab982fd119193fa05a6d12e20f08c53cb7dd786f2',got
+          print('EXACT_FRONTIER_SHA256',got,flush=True)
+          PY
+      - name: Compile and test unchanged source with diagnostic flag
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo test --release --locked --features diagnostics --manifest-path /tmp/trace-source/metatron-kernel/Cargo.toml
+          cargo build --release --locked --features diagnostics --manifest-path /tmp/trace-source/metatron-kernel/Cargo.toml
+      - name: Diagnose first original Mathlib UNKNOWN
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import collections,hashlib,json,os,pathlib,re,subprocess
+          out=pathlib.Path('/tmp/trace-evidence')
+          source=out/'frontier.ndjson'
+          q=json.loads(pathlib.Path('/tmp/trace-current/qualification.json').read_text())['candidate']
+          env=os.environ.copy()
+          env.update(q['configuration'])
+          env.update(NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE='1', NUCLEUS_TRACE_DOWNSTREAM='1')
+          binary='/tmp/trace-source/metatron-kernel/target/release/metatron-kernel'
+          with source.open('rb') as f:
+              p=subprocess.run([binary],stdin=f,stdout=subprocess.PIPE,stderr=subprocess.PIPE,env=env,timeout=420)
+          (out/'stderr.log').write_bytes(p.stderr)
+          (out/'stdout.log').write_bytes(p.stdout)
+          trace=[s for s in p.stderr.decode(errors='replace').splitlines() if s.startswith('NUCLEUS_APPLICATION_FUNCTION_TYPE:')]
+          terminal=[s for s in p.stderr.decode(errors='replace').splitlines() if s.startswith('NUCLEUS_DOWNSTREAM:')]
+          kinds=collections.Counter(s.split(':function_type=')[-1].split(' ',1)[0].split('{',1)[0][:90] for s in trace)
+          report=dict(source_commit=os.environ['GITHUB_SHA'],qualified_parent_binary='82ebbce2278e54f82667e4d12793034acdf72f329b989e4605cf65473c9de715',input_sha=hashlib.sha256(source.read_bytes()).hexdigest(),rc=p.returncode,trace_count=len(trace),function_type_shapes=dict(kinds),trace_first=trace[0][:3000] if trace else None,trace_last=trace[-1][:3000] if trace else None,terminal=terminal[-1] if terminal else None,has_unexpected_accept=p.returncode==0)
+          (out/'report.json').write_text(json.dumps(report,indent=2,sort_keys=True)+'\n')
+          print('FIRST_APPLICATION_TRACE',json.dumps(report,sort_keys=True),flush=True)
+          assert p.returncode==2,p.returncode
+          assert trace,'Trace marker absent; do not infer root cause'
+          assert terminal and 'AddMonoidAlgebra.nonUnitalNonAssocSemiring._proof_1' in terminal[-1],terminal
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-cross-checker-trace-${{ github.sha }}
+          retention-days: 30
+          path: |
+            /tmp/trace-evidence/report.json
+            /tmp/trace-evidence/stderr.log
+            /tmp/trace-evidence/stdout.log
+          if-no-files-found: warn
