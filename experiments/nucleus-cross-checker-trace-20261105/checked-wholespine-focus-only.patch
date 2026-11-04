@@ -1,0 +1,102 @@
+--- a/metatron-kernel/src/typecheck.rs
++++ b/metatron-kernel/src/typecheck.rs
+@@ -1835,6 +1873,70 @@
+         result
+     }
+ 
++    // Diagnostic counterfactual: a second, positive-only typing route for
++    // fully applied constants. The exact dependent Pi domain is checked at
++    // every argument; no result is admitted from a shape-only shortcut.
++    #[cfg(feature="diagnostics")]
++    fn try_whole_application_spine(
++        &self,
++        root: ExprId,
++        context: &[TypeValue],
++        frame: &EnvFrame,
++        remaining: &mut usize,
++        cache: &mut HashMap<(ExprId, u64), TypeValue>,
++    ) -> Judgment<TypeValue> {
++        let mut args=Vec::new();
++        let mut head=root;
++        while let Some(Expr::App { fun, arg })=self.expressions.get(head) {
++            if !take_step(remaining) {return Judgment::unknown("spine-read-budget")}
++            if args.len()>=64 {return Judgment::unknown("spine-arity-cap")}
++            args.push(*arg);
++            head=*fun;
++        }
++        if args.len()<2 || !matches!(self.expressions.get(head),Some(Expr::Const{..})) {
++            return Judgment::unknown("spine-head-not-constant");
++        }
++        let mut head_type=match self.infer_in(head,context,frame,remaining,cache) {
++            Judgment::Proven{value,..}=>value,
++            _=>return Judgment::unknown("spine-head-type-unavailable"),
++        };
++        for (arg_index,arg) in args.into_iter().rev().enumerate() {
++            let Some((domain,body))=self.pi_view(
++                Judgment::proven(head_type,"spine-independently-inferred-head"),
++                *remaining,
++            ) else{return Judgment::unknown("spine-pi-view-unavailable")};
++            let prior=*remaining;
++            let arg_verdict=self.check_with_formation(
++                arg,&domain,context,frame,remaining,true,cache,true,
++            );
++            if !arg_verdict.is_proven() {
++                use std::sync::atomic::{AtomicUsize,Ordering};
++                static ARG_FAILURES:AtomicUsize=AtomicUsize::new(0);
++                if ARG_FAILURES.fetch_add(1,Ordering::Relaxed)<80 {
++                    eprintln!("NUCLEUS_SPINE_ARG_FAIL:root={root:?}:head={head:?}:argument={arg:?}:position={arg_index}:context={}:frame={}:remaining_before={prior}:remaining_after={}:verdict={arg_verdict:?}",context.len(),frame.id(),*remaining);
++                }
++                return Judgment::unknown("spine-dependent-argument-unproven")
++            }
++            let actual=self.closure(arg,frame.clone());
++            head_type=match body {
++                PiBody::Fixed(binder,inferred_body)=>{
++                    let Some(instantiated)=self.instantiate_fixed_pi_body(
++                        &inferred_body,binder,&actual,remaining,
++                    )else{return Judgment::unknown("spine-fixed-binder-substitution")};
++                    instantiated
++                }
++                PiBody::Closure(body)=>{
++                    let typed_frame=body.env.extend(actual);
++                    self.retain_checked_elimination(&typed_frame,domain,context);
++                    TypeValue::Term(Closure::with_levels(
++                        body.expr,typed_frame,body.levels,
++                    ))
++                }
++            };
++        }
++        Judgment::proven(head_type,"fully-checked-constant-application-spine")
++    }
++
+     fn infer_uncached(
+         &self,
+         expression: ExprId,
+@@ -2027,6 +2129,27 @@
+                     Some((TypeValue::Term(domain.clone()), PiBody::Closure(body.clone())))
+                 });
+                 let Some((domain, body)) = checked_view else {
++                    #[cfg(feature="diagnostics")]
++                    if std::env::var_os("NUCLEUS_PROBE_WHOLE_SPINE").is_some()
++                        && std::env::var("NUCLEUS_WHOLE_SPINE_FOCUS").ok()
++                            .and_then(|s|s.parse::<u64>().ok())
++                            .map(|target|target==expression.0)
++                            .unwrap_or(true)
++                    {
++                        let before=*remaining;
++                        let alternative=self.try_whole_application_spine(
++                            expression,context,frame,remaining,cache,
++                        );
++                        use std::sync::atomic::{AtomicUsize,Ordering};
++                        static TRIED:AtomicUsize=AtomicUsize::new(0);
++                        if TRIED.fetch_add(1,Ordering::Relaxed)<36 {
++                            eprintln!(
++                                "NUCLEUS_WHOLE_SPINE_TRIAL:expr={expression:?}:head={fun:?}:before={before}:after={}:result={alternative:?}",
++                                *remaining,
++                            );
++                        }
++                        if alternative.is_proven(){return alternative}
++                    }
+                     #[cfg(feature = "diagnostics")]
+                     if crate::run_flags::present(crate::run_flags::Flag::TraceApplicationFunctionType) {
+                         let mut reducible = None;
+
