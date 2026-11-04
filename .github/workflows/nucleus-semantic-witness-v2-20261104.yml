@@ -1,0 +1,64 @@
+name: Nucleus V2 semantic dependency decision witness (observation only)
+
+on:
+  push:
+    branches: [research/nucleus-semantic-witness-v2-20261104]
+    paths:
+      - '.github/workflows/nucleus-semantic-witness-v2-20261104.yml'
+      - 'metatron-kernel/**'
+      - 'experiments/nucleus-semantic-witness-v2-20261104/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  semantic-witness-v2:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Source-native V1 and V2 Rust controls
+        run: |
+          set -euo pipefail
+          cargo test --release --locked --features semantic-witness \
+            --manifest-path metatron-kernel/Cargo.toml \
+            --test semantic_witness_v2 --test semantic_witness --test mgso_shadow --test quotient_source_ownership
+          cargo build --release --locked --features semantic-witness \
+            --manifest-path metatron-kernel/Cargo.toml
+      - name: Source-pinned V2 Python wire and native qualification
+        run: |
+          set -euo pipefail
+          PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover \
+            -s experiments/nucleus-semantic-witness-v2-20261104 -p 'test_*.py' -v
+          mkdir -p /tmp/nucleus-semantic-read-witness-v2
+          git rev-parse HEAD > /tmp/nucleus-semantic-read-witness-v2/commit.txt
+          git rev-parse HEAD:metatron-kernel/src > /tmp/nucleus-semantic-read-witness-v2/kernel-source-tree.txt
+          sha256sum metatron-kernel/target/release/metatron-kernel \
+            metatron-kernel/tests/fixtures/good-theorem-use.ndjson \
+            > /tmp/nucleus-semantic-read-witness-v2/native-source-pins.txt
+          PYTHONDONTWRITEBYTECODE=1 python3 \
+            experiments/nucleus-semantic-witness-v2-20261104/wire_qualification.py \
+            --binary metatron-kernel/target/release/metatron-kernel \
+            --fixture metatron-kernel/tests/fixtures/good-theorem-use.ndjson \
+            --fixtures metatron-kernel/tests/fixtures \
+            --output /tmp/nucleus-semantic-read-witness-v2/qualification.json
+      - name: Full default-feature Rust suite (record inherited failures)
+        continue-on-error: true
+        run: |
+          set +e
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml \
+            > /tmp/nucleus-semantic-read-witness-v2/full-suite.log 2>&1
+          result=$?
+          echo "exit_code=$result" > /tmp/nucleus-semantic-read-witness-v2/full-suite-status.txt
+          tail -75 /tmp/nucleus-semantic-read-witness-v2/full-suite.log
+          exit "$result"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-semantic-read-witness-v2-${{ github.sha }}
+          path: /tmp/nucleus-semantic-read-witness-v2/
+          if-no-files-found: warn
+          retention-days: 30
