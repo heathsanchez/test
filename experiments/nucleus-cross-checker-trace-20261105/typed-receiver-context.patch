@@ -106,11 +106,43 @@
 
 --- a/metatron-kernel/src/typecheck.rs
 +++ b/metatron-kernel/src/typecheck.rs
-@@ -1086,7 +1086,7 @@
+@@ -1086,7 +1086,39 @@
              lines.join(" | ")
          }
          let mut output = vec![format!("left={left:?}:right={right:?}:context={context:?}")];
 -        for index in [4, 1] {
++        // Reify the *actual* source-support obligations of the eventual
++        // receiver, preserving every captured environment and universe map.
++        let root = |term: &Closure| {
++            let mut current=term.clone();
++            let mut seen=std::collections::HashSet::new();
++            for _ in 0..64 {
++                if !seen.insert((current.expr,current.env.id(),current.levels.identity())) { break }
++                let Some(Expr::BVar(index))=self.expressions.get(current.expr) else { break };
++                match current.env.lookup_binding_ref(*index) {
++                    Some(EnvBinding::Closure(next))=>current=next.clone(),
++                    _=>break,
++                }
++            }
++            current
++        };
++        let l=root(left);
++        let r=root(right);
++        let mut support_fuel=8192;
++        let support=self.instantiated_source_support(&l,&r,&mut support_fuel);
++        output.push(format!("terminal_left={l:?}:terminal_right={r:?}:support={support:?}:support_remaining={support_fuel}"));
++        if let Some(support)=support {
++            for (li,ri) in support.into_iter().take(20) {
++                let lhs=l.env.lookup_with_node_id(li);
++                let rhs=r.env.lookup_with_node_id(ri);
++                let status=match (&lhs,&rhs) {
++                    (Some((_,EnvBinding::Closure(a))),Some((_,EnvBinding::Closure(b))))=>
++                        format!("typed={:?}",self.checked_source_conversion(a,b,context,2048)),
++                    _=>"typed=unavailable".to_string(),
++                };
++                output.push(format!("terminal_capture=({li},{ri}):left={lhs:?}:right={rhs:?}:{status}"));
++            }
++        }
 +        for index in [0, 1, 4] {
              let lhs = left.env.lookup_with_node_id(index);
              let rhs = right.env.lookup_with_node_id(index);
