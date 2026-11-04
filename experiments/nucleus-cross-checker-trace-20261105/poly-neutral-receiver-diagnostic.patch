@@ -1,23 +1,18 @@
 --- a/metatron-kernel/src/convert.rs
 +++ b/metatron-kernel/src/convert.rs
-@@ -2540,6 +2710,20 @@
-             if !compare_neutral_heads(
-                 checker, left_structure, right_structure, probe, depth, context,
-             ).is_proven() {
-+                #[cfg(feature="diagnostics")]
-+                if std::env::var_os("NUCLEUS_TRACE_POLY_NEUTRAL_RECEIVER").is_some()
-+                    && depth == 8 && budget >= 64
-+                {
-+                    use std::sync::atomic::{AtomicUsize,Ordering};
-+                    static TRACED:AtomicUsize=AtomicUsize::new(0);
-+                    if TRACED.fetch_add(1,Ordering::Relaxed)<128 {
-+                        eprintln!(
-+                            "NUCLEUS_POLY_NEUTRAL_RECEIVER:stage=head:budget={budget}:probe={probe}:left_owner={left_type:?}:left_field={left_index}:left_head={:?}:right_head={:?}:left_spine={}:right_spine={}",
-+                            left_structure.head,right_structure.head,
-+                            left_structure.spine.len(),right_structure.spine.len(),
-+                        );
+@@ -2719,3 +2719,15 @@
+                     argument_budget, DeltaPolicy::GuardedSemanticFallback, depth, context,
+                 );
+                 if !argument_result.is_proven() {
++                    #[cfg(feature="diagnostics")]
++                    if std::env::var_os("NUCLEUS_TRACE_POLY_NEUTRAL_RECEIVER").is_some()
++                        && depth == 8 && budget >= 8
++                    {
++                        use std::sync::atomic::{AtomicUsize,Ordering};
++                        static TRACED:AtomicUsize=AtomicUsize::new(0);
++                        if TRACED.fetch_add(1,Ordering::Relaxed)<128 {
++                            eprintln!(
++                                "NUCLEUS_POLY_NEUTRAL_RECEIVER:stage=spine:budget={budget}:arg_budget={argument_budget}:left_owner={left_type:?}:field={left_index}:lhs={lhs:?}:rhs={rhs:?}:result={argument_result:?}",
++                            );
++                        }
 +                    }
-+                }
-                 return Judgment::unknown("neutral-projection-receiver-congruence");
-             }
-             let argument_budget = probe / left_structure.spine.len().max(1);
