@@ -54,7 +54,7 @@ jobs:
           set -euo pipefail
           mapfile -t flags < <(jq -r '.candidate.configuration | to_entries[] | select(.key|test("^NUCLEUS_EXPERIMENTAL_[A-Z0-9_]+$")) | "\(.key)=\(.value)"' qualified/qualification.json)
           set +e
-          env "${flags[@]}" NUCLEUS_TRACE_DOWNSTREAM=1 NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE=1 timeout 220 metatron-kernel/target/release/metatron-kernel < next-frontier.ndjson > diagnostic.stdout 2> diagnostic.stderr
+          env "${flags[@]}" NUCLEUS_TRACE_DOWNSTREAM=1 NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE=1 NUCLEUS_TRACE_FAILED_RECEIVER_CONVERSION=1 timeout 220 metatron-kernel/target/release/metatron-kernel < next-frontier.ndjson > diagnostic.stdout 2> diagnostic.stderr
           status=$?
           set -e
           printf 'DIAGNOSTIC_RC=%s\n' "$status"
@@ -62,6 +62,7 @@ jobs:
           grep -F 'AddMonoidAlgebra.nonUnitalNonAssocSemiring._proof_2:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type' diagnostic.stderr
           printf 'TRACE_LOG_BYTES=%s\n' "$(wc -c < diagnostic.stderr)"
           grep -F 'NUCLEUS_APPLICATION_FUNCTION_TYPE:' diagnostic.stderr | tail -n 6 | cut -c 1-900 || true
+          grep -F 'NUCLEUS_FAILED_RECEIVER_CONVERSION:' diagnostic.stderr | tail -n 3 | cut -c 1-1150 || true
           zstd -q -f -1 diagnostic.stderr -o diagnostic.stderr.zst
       - name: Store bounded exact-source diagnosis
         if: always()
