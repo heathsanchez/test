@@ -1,6 +1,6 @@
 --- a/src/typecheck.rs
 +++ b/src/typecheck.rs
-@@ -2579,6 +2579,30 @@
+@@ -2579,6 +2579,36 @@
                      };
                      eprintln!("NUCLEUS_FAILED_RECEIVER_CONVERSION:expression={expression:?}:context_len={}:source_frame={}:remaining={}:actual={value:?}:expected={expected:?}:context={context:?}:actual_exposed={:?}:expected_exposed={:?}",
                          context.len(), frame.id(), *remaining, expose(&value), expose(expected));
@@ -21,8 +21,14 @@
 +                                        4096, crate::convert::DeltaPolicy::GuardedSemanticFallback,
 +                                        context.len(), context,
 +                                    );
++                                    let lhs_whnf = self.machine().expose_for_conversion(
++                                        a.clone(), Transparency::Full, 4096,
++                                    );
++                                    let rhs_whnf = self.machine().expose_for_conversion(
++                                        b.clone(), Transparency::Full, 4096,
++                                    );
 +                                    eprintln!(
-+                                        "NUCLEUS_PROOF2_EQ_ARGUMENT:position={i}:lhs={a:?}:rhs={b:?}:relation={relation:?}"
++                                        "NUCLEUS_PROOF2_EQ_ARGUMENT:position={i}:lhs={a:?}:rhs={b:?}:relation={relation:?}:lhs_whnf={lhs_whnf:?}:rhs_whnf={rhs_whnf:?}"
 +                                    );
 +                                }
 +                            }
