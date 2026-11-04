@@ -1,0 +1,107 @@
+   Compiling metatron-kernel v0.1.0 (/tmp/nucleus-capture-preallocation/source)
+warning: unnecessary parentheses around `if` condition
+    --> src/convert.rs:2634:20
+     |
+2634 |                 if ((l=="Free(FreeId(6))" && r=="Free(FreeId(5))") ||
+     |                    ^
+2635 |                     (l=="Free(FreeId(5))" && r=="Free(FreeId(6))"))
+     |                                                                   ^
+     |
+     = note: `#[warn(unused_parens)]` (part of `#[warn(unused)]`) on by default
+help: remove these parentheses
+     |
+2634 ~                 if (l=="Free(FreeId(6))" && r=="Free(FreeId(5))") ||
+2635 ~                     (l=="Free(FreeId(5))" && r=="Free(FreeId(6))")
+     |
+
+warning: unnecessary parentheses around `if` condition
+    --> src/typecheck.rs:6715:12
+     |
+6715 |         if (!crate::run_flags::present(crate::run_flags::Flag::ExperimentalExpectedLambda)) { return; }
+     |            ^                                                                              ^
+     |
+help: remove these parentheses
+     |
+6715 -         if (!crate::run_flags::present(crate::run_flags::Flag::ExperimentalExpectedLambda)) { return; }
+6715 +         if !crate::run_flags::present(crate::run_flags::Flag::ExperimentalExpectedLambda) { return; }
+     |
+
+warning: unused variable: `c`
+    --> src/convert.rs:3094:91
+     |
+3094 | ...(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let n=Neutral{head:NeutralHead::Const{name:NameId(4),levels:vec![c...
+     |                                  ^ help: if this is intentional, prefix it with an underscore: `_c`
+     |
+     = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: value assigned to `source_work` is never read
+    --> src/typecheck.rs:5684:55
+     |
+5684 |                     if source_work<cost{return false;}source_work-=cost;
+     |                                                       ^^^^^^^^^^^^^^^^^
+     |
+     = help: maybe it is overwritten before being read?
+     = note: `#[warn(unused_assignments)]` (part of `#[warn(unused)]`) on by default
+
+warning: method `qualified_quotient_neutral_result` is never used
+    --> src/machine.rs:1616:19
+     |
+ 319 | impl<'a> Machine<'a> {
+     | -------------------- method in this implementation
+...
+1616 |     pub(crate) fn qualified_quotient_neutral_result(
+     |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: method `diagnostic_captured_recursor_major_chain` is never used
+    --> src/typecheck.rs:1101:19
+     |
+ 139 | impl<'a> TypeChecker<'a> {
+     | ------------------------ method in this implementation
+...
+1101 |     pub(crate) fn diagnostic_captured_recursor_major_chain(
+     |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: method `strong_owners` is never used
+   --> src/value.rs:130:18
+    |
+ 50 | impl EnvFrame {
+    | ------------- method in this implementation
+...
+130 |     pub(crate)fn strong_owners(&self)->usize{Rc::strong_count(&self.0)}
+    |                  ^^^^^^^^^^^^^
+
+warning: methods `strong_owners` and `is_empty_instance` are never used
+   --> src/value.rs:214:18
+    |
+199 | impl LevelSubstitution {
+    | ---------------------- methods in this implementation
+...
+214 |     pub(crate)fn strong_owners(&self)->usize{Rc::strong_count(&self.0)}
+    |                  ^^^^^^^^^^^^^
+215 |     pub(crate)fn is_empty_instance(&self)->bool{self.0.entries.is_empty()}
+    |                  ^^^^^^^^^^^^^^^^^
+
+warning: `metatron-kernel` (lib test) generated 8 warnings (run `cargo fix --lib -p metatron-kernel --tests` to apply 3 suggestions)
+    Finished `release` profile [optimized] target(s) in 40.65s
+     Running unittests src/lib.rs (/tmp/nucleus-frontier-investigation/target/release/deps/metatron_kernel-258b3b0aea2bca17)
+
+running 1 test
+test typecheck::capture_preallocation_regression::completed_source_pair_remains_reusable_after_unrelated_completed_pairs ... FAILED
+
+failures:
+
+---- typecheck::capture_preallocation_regression::completed_source_pair_remains_reusable_after_unrelated_completed_pairs stdout ----
+
+thread 'typecheck::capture_preallocation_regression::completed_source_pair_remains_reusable_after_unrelated_completed_pairs' (63) panicked at src/typecheck.rs:7477:3:
+a completed exact proof must remain reusable without unaffordable table-growth work
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    typecheck::capture_preallocation_regression::completed_source_pair_remains_reusable_after_unrelated_completed_pairs
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 200 filtered out; finished in 0.02s
+
+error: test failed, to rerun pass `--lib`

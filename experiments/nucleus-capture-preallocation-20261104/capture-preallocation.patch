@@ -1,0 +1,479 @@
+--- a/metatron-kernel/src/typecheck.rs
++++ b/metatron-kernel/src/typecheck.rs
+@@ -1,4 +1,4 @@
+-use std::cell::RefCell;
++use std::cell::{RefCell,Cell};
+ use std::collections::{hash_map::Entry, HashMap};
+ use std::rc::Rc;
+ use crate::machine::{ExposureCache, new_exposure_cache};
+@@ -132,6 +132,8 @@
+     // Diagnostic-only strictness: a FreeId is typed solely by its checked
+     // immutable binder node under the identical protected source scope.
+     strict_origin_probe: bool,
++    exact_typing_memo:RefCell<ExactTypingMemo>,
++    binding_revocation_epoch:Rc<Cell<Option<u64>>>,
+ }
+ 
+ impl<'a> TypeChecker<'a> {
+@@ -185,6 +187,8 @@
+             context_arena: RefCell::new(ContextArena::default()),
+             checked_binding_lineage: Rc::new(RefCell::new(HashMap::new())),
+             strict_origin_probe: false,
++            exact_typing_memo:RefCell::new(ExactTypingMemo::default()),
++            binding_revocation_epoch:Rc::new(Cell::new(Some(0))),
+         }
+     }
+ 
+@@ -212,11 +216,14 @@
+             context_arena: RefCell::new(ContextArena::default()),
+             checked_binding_lineage: Rc::new(RefCell::new(HashMap::new())),
+             strict_origin_probe: false,
++            exact_typing_memo:RefCell::new(ExactTypingMemo::default()),
++            binding_revocation_epoch:Rc::new(Cell::new(Some(0))),
+         }
+     }
+ 
+     pub fn with_delta_policy(mut self, policy: crate::convert::DeltaPolicy) -> Self {
+         self.formed_expected.borrow_mut().clear();
++        self.exact_typing_memo.borrow_mut().clear();
+         self.delta_policy = policy;
+         self
+     }
+@@ -247,6 +254,10 @@
+                 if o.get().as_ref()!=Some(&witness) {
+                     // Conflicting records cannot establish a reusable
+                     // typing judgment. Do not arbitrarily choose one.
++                    if o.get().is_some() {
++                        self.binding_revocation_epoch.set(
++                            self.binding_revocation_epoch.get().and_then(|e|e.checked_add(1)));
++                    }
+                     o.insert(None);
+                 }
+             }
+@@ -576,12 +587,8 @@
+     /// environment. In particular, beta reduction of an ill-typed App
+     /// cannot serve as a substitute for checking the argument.
+     fn infer_exact_closure_in_context(
+-        &self,
+-        term: &Closure,
+-        context: &[TypeValue],
+-        remaining: &mut usize,
+-        depth: usize,
+-    ) -> Option<TypeValue> {
++        &self, term:&Closure, context:&[TypeValue], remaining:&mut usize, depth:usize,
++    )->Option<TypeValue>{
+         if depth >= 48 {
+             #[cfg(feature = "diagnostics")]
+             self.record_capture_source_failure(term, context, *remaining, depth, "source-depth-limit");
+@@ -592,6 +599,52 @@
+             self.record_capture_source_failure(term, context, *remaining, depth, "source-fuel-exhausted");
+             return None;
+         }
++        // Fixed host metadata: 8192 slots, four probes, at most 64 actual Γ
++        // closures. A miss has precisely the parent's paid semantic root step.
++        let pending=if context.len()<=64
++            && context.iter().all(|t|matches!(t,TypeValue::Term(_)))
++            && matches!(self.expressions.get(term.expr),Some(Expr::App{..}|Expr::Proj{..}|Expr::Lam{..}|Expr::Pi{..}|Expr::Let{..}|Expr::LetNondep{..}))
++            && let (Some(flags),Some(epoch))=(crate::run_flags::captured_configuration(),self.binding_revocation_epoch.get())
++        {
++            let key=ExactTypingKey{source:(term.expr,term.env.id(),term.levels.identity()),strict:self.strict_origin_probe,flags,epoch};
++            let set=key.set();
++            {
++                let table=self.exact_typing_memo.borrow();
++                for slot in &table.slots[set*4..set*4+4]{
++                    if let Some(fact)=slot && fact.key==key && fact.same_context(context){
++                        return Some(TypeValue::Term(fact.result.clone()));
++                    }
++                }
++            }
++            Some((key,set))
++        }else{None};
++        let result=self.infer_exact_closure_uncached(term,context,remaining,depth);
++        if let (Some((key,set)),Some(TypeValue::Term(value)))=(pending,result.as_ref())
++            && self.binding_revocation_epoch.get()==Some(key.epoch)
++            && crate::run_flags::captured_configuration()==Some(key.flags)
++        {
++            let mut table=self.exact_typing_memo.borrow_mut();
++            let start=table.hand[set]as usize;
++            for offset in 0..4{
++                let within=(start+offset)%4;let index=set*4+within;
++                if table.slots[index].as_ref().is_none_or(ExactTypingFact::relinquishable){
++                    let context=context.iter().map(|t|{let TypeValue::Term(t)=t else{unreachable!()};t.clone()}).collect();
++                    // Eviction excludes last-owner graph reclamation. Final
++                    // reclamation belongs to the checker lifetime boundary.
++                    table.slots[index]=Some(ExactTypingFact{key,_source:term.clone(),context,result:value.clone()});
++                    table.hand[set]=((within+1)%4)as u8;break;
++                }
++            }
++        }
++        result
++    }
++    fn infer_exact_closure_uncached(
++        &self,
++        term: &Closure,
++        context: &[TypeValue],
++        remaining: &mut usize,
++        depth: usize,
++    ) -> Option<TypeValue> {
+         match self.expressions.get(term.expr)? {
+             Expr::BVar(index) => {
+                 // Only a source-checked binder or dependent elimination can
+@@ -4553,6 +4606,8 @@
+                 self.checked_binding_lineage.borrow().clone(),
+             )),
+             strict_origin_probe:true,
++            exact_typing_memo:RefCell::new(ExactTypingMemo::default()),
++            binding_revocation_epoch:Rc::new(Cell::new(Some(0))),
+         };
+         // The directly visible leaf determines a checked six-binder
+         // prefix. The fourth outer recursor argument is a lambda that closes
+@@ -4719,6 +4774,8 @@
+                 self.checked_binding_lineage.borrow().clone(),
+             )),
+             strict_origin_probe: true,
++            exact_typing_memo:RefCell::new(ExactTypingMemo::default()),
++            binding_revocation_epoch:Rc::new(Cell::new(Some(0))),
+         };
+         let replay = isolated.diagnostic_neutral_source_telescope_inner(
+             neutral, &origin, budget.min(1024), false,
+@@ -4770,6 +4827,8 @@
+                 self.checked_binding_lineage.borrow().clone(),
+             )),
+             strict_origin_probe: self.strict_origin_probe,
++            exact_typing_memo:RefCell::new(ExactTypingMemo::default()),
++            binding_revocation_epoch:Rc::new(Cell::new(Some(0))),
+         };
+         let mut remaining = budget.min(1024);
+         let mut current = match &neutral.head {
+@@ -7297,3 +7356,108 @@
+  #[test]fn traversed_but_unused_slots_do_not_claim_capture_authority(){let(mut e,l,env)=fixture();e.insert(ExprId(7),Expr::App{fun:ExprId(1),arg:ExprId(3)}).unwrap();let c=TypeChecker::new(&e,&l,&env);let body=Closure::new(ExprId(7),frame());assert!(crate::convert::source_opening_avoids_capture(&c,&body,FreeId(8),&mut 4096),"unused middle binding is traversed but not used");for free in[7,9]{assert!(!crate::convert::source_opening_avoids_capture(&c,&body,FreeId(free),&mut 4096),"both used endpoints must still be checked");}}
+ 
+ }
++
++#[cfg(test)]
++mod exact_typing_memo_controls {
++ use super::*;
++ fn fixture()->(IdTable<ExprId,Expr>,IdTable<LevelId,Level>,Environment){
++  let mut e=IdTable::default();let mut l=IdTable::default();l.insert(LevelId(0),Level::Zero).unwrap();
++  for(id,x)in[(0,Expr::Sort(LevelId(0))),(1,Expr::Const{name:NameId(1),levels:vec![]}),(2,Expr::Pi{domain:ExprId(1),body:ExprId(1)}),(3,Expr::Const{name:NameId(2),levels:vec![]}),(4,Expr::Const{name:NameId(3),levels:vec![]}),(5,Expr::BVar(0)),(6,Expr::Const{name:NameId(4),levels:vec![]}),(24,Expr::App{fun:ExprId(3),arg:ExprId(5)})]{e.insert(ExprId(id),x).unwrap();}
++  let mut tail=ExprId(4);for id in 8..24{e.insert(ExprId(id),Expr::App{fun:ExprId(3),arg:tail}).unwrap();tail=ExprId(id);}
++  let env=Environment::empty().extend(NameId(1),crate::environment::ConstantDecl::axiom(vec![],ExprId(0))).unwrap().extend(NameId(2),crate::environment::ConstantDecl::axiom(vec![],ExprId(2))).unwrap().extend(NameId(3),crate::environment::ConstantDecl::axiom(vec![],ExprId(1))).unwrap().extend(NameId(4),crate::environment::ConstantDecl::axiom(vec![],ExprId(0))).unwrap();(e,l,env)
++ }
++ #[test]fn completed_exact_term_derivation_is_reused_with_paid_lookup(){
++  let _scope=crate::run_flags::enter();let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let t=c.closure(ExprId(23),EnvFrame::empty());
++  let first=c.infer_exact_closure_in_context(&t,&[],&mut 4096,0);assert!(matches!(first,Some(TypeValue::Term(_))));
++  let mut budget=1;let again=c.infer_exact_closure_in_context(&t,&[],&mut budget,0);assert_eq!(again,first,"a completed exact-source derivation should replace repeated inference");assert_eq!(budget,0,"reuse consumes exactly the existing root step");
++ }
++ #[test]fn source_frame_levels_context_and_strictness_are_not_quotiented(){
++  let _scope=crate::run_flags::enter();let(e,l,env)=fixture();let mut c=TypeChecker::new(&e,&l,&env);let t=c.closure(ExprId(23),EnvFrame::empty());assert!(c.infer_exact_closure_in_context(&t,&[],&mut 4096,0).is_some());
++  for changed in [Closure::with_levels(t.expr,t.env.clone(),LevelSubstitution::new(vec![(NameId(99),LevelTerm::Zero)])),Closure::with_levels(t.expr,EnvFrame::empty().extend_free(FreeId(77)),t.levels.clone())]{assert!(c.infer_exact_closure_in_context(&changed,&[],&mut 3,0).is_none());}
++  let g=[TypeValue::Term(c.closure(ExprId(1),EnvFrame::empty()))];assert!(c.infer_exact_closure_in_context(&t,&g,&mut 4,0).is_none());c.strict_origin_probe=true;assert!(c.infer_exact_closure_in_context(&t,&[],&mut 3,0).is_none());
++ }
++ #[test]fn quarantine_revokes_previously_completed_typing(){
++  let _scope=crate::run_flags::enter();let(e,l,env)=fixture();let mut c=TypeChecker::new(&e,&l,&env);c.strict_origin_probe=true;let frame=EnvFrame::empty().extend_free(FreeId(9));let a=TypeValue::Term(c.closure(ExprId(1),EnvFrame::empty()));let b=TypeValue::Term(c.closure(ExprId(6),EnvFrame::empty()));c.retain_checked_binding(&frame,a.clone(),&[]);let t=c.closure(ExprId(24),frame.clone());
++  assert!(c.infer_exact_closure_in_context(&t,&[],&mut 4096,0).is_some());c.retain_checked_binding(&frame,b,&[]);assert!(c.checked_binding_lineage.borrow().get(&frame.id()).unwrap().is_none());assert!(c.infer_exact_closure_in_context(&t,&[],&mut 4096,0).is_none(),"quarantined binder cannot be revived by a positive cache");
++ }
++ #[test]fn exhausted_work_depth_and_unknown_never_authorize_reuse(){
++  let _scope=crate::run_flags::enter();let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let t=c.closure(ExprId(23),EnvFrame::empty());assert!(c.infer_exact_closure_in_context(&t,&[],&mut 0,0).is_none());assert!(c.infer_exact_closure_in_context(&t,&[],&mut 3,0).is_none());assert!(c.infer_exact_closure_in_context(&t,&[],&mut 4096,0).is_some());assert!(c.infer_exact_closure_in_context(&t,&[],&mut 0,0).is_none());assert!(c.infer_exact_closure_in_context(&t,&[],&mut 4096,48).is_none());
++ }
++ #[test]fn uncaptured_dynamic_configuration_does_not_reuse(){
++  let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let t=c.closure(ExprId(23),EnvFrame::empty());assert!(c.infer_exact_closure_in_context(&t,&[],&mut 4096,0).is_some());assert!(c.infer_exact_closure_in_context(&t,&[],&mut 3,0).is_none());
++ }
++ #[test]fn captured_capability_and_delta_policy_changes_require_new_derivations(){
++  let _scope=crate::run_flags::enter();let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let t=c.closure(ExprId(23),EnvFrame::empty());assert!(c.infer_exact_closure_in_context(&t,&[],&mut 4096,0).is_some());let old=crate::run_flags::captured_configuration().unwrap();let mut other=old;other[0]^=1;
++  {let _changed=crate::run_flags::test_scope(other);assert!(c.infer_exact_closure_in_context(&t,&[],&mut 3,0).is_none());}
++  assert!(c.infer_exact_closure_in_context(&t,&[],&mut 3,0).is_some());let c=c.with_delta_policy(crate::convert::DeltaPolicy::GuardedSemanticFallback);assert!(c.infer_exact_closure_in_context(&t,&[],&mut 3,0).is_none());
++ }
++ #[test]fn epoch_overflow_disables_reuse_and_snapshot_ledgers_start_empty(){
++  let _scope=crate::run_flags::enter();let(e,l,env)=fixture();let mut c=TypeChecker::new(&e,&l,&env);c.strict_origin_probe=true;let t=c.closure(ExprId(23),EnvFrame::empty());assert!(c.infer_exact_closure_in_context(&t,&[],&mut 4096,0).is_some());c.binding_revocation_epoch.set(Some(u64::MAX));let f=EnvFrame::empty().extend_free(FreeId(9));c.retain_checked_binding(&f,TypeValue::Term(t.clone()),&[]);c.retain_checked_binding(&f,TypeValue::Term(c.closure(ExprId(1),EnvFrame::empty())),&[]);assert_eq!(c.binding_revocation_epoch.get(),None);assert!(c.infer_exact_closure_in_context(&t,&[],&mut 3,0).is_none());
++  let other=TypeChecker::new(&e,&l,&env);assert!(other.infer_exact_closure_in_context(&t,&[],&mut 3,0).is_none());
++ }
++
++ #[test]fn actual_nonempty_context_reuses_but_a_changed_context_does_not(){
++  let _scope=crate::run_flags::enter();let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let t=c.closure(ExprId(23),EnvFrame::empty());let g=vec![TypeValue::Term(c.closure(ExprId(1),EnvFrame::empty()));12];let first=c.infer_exact_closure_in_context(&t,&g,&mut 4096,0);assert!(matches!(first,Some(TypeValue::Term(_))));assert_eq!(c.infer_exact_closure_in_context(&t,&g,&mut 1,0),first);let mut changed=g.clone();changed[5]=TypeValue::Term(c.closure(ExprId(6),EnvFrame::empty()));assert!(c.infer_exact_closure_in_context(&t,&changed,&mut 1,0).is_none());assert!(c.infer_exact_closure_in_context(&t,&g[..11],&mut 1,0).is_none());
++ }
++ #[test]fn eviction_never_discharges_an_unbounded_actual_capture(){
++  let captured=(0..70).fold(EnvFrame::empty(),|frame,_|frame.extend_free(FreeId(7)));let source=Closure::with_levels(ExprId(1),captured,LevelSubstitution::new(vec![(NameId(1),LevelTerm::Zero)]));let key=ExactTypingKey{source:(source.expr,source.env.id(),source.levels.identity()),strict:false,flags:[0;2],epoch:0};let fact=ExactTypingFact{key,_source:source.clone(),result:source.clone(),context:vec![source]};assert!(!fact.relinquishable(),"all three owners belong to this fact");let held_env=fact._source.env.clone();assert!(fact.relinquishable(),"the sole owned universe payload is bounded; the environment retains its external owner");let held_levels=fact._source.levels.clone();assert!(fact.relinquishable());drop(held_env);assert!(!fact.relinquishable());drop(held_levels);
++ }
++ #[test]fn fixed_slot_admission_has_no_resize_path(){let table=ExactTypingMemo::default();assert_eq!(table.slots.len(),8192);assert_eq!(table.hand.len(),2048);assert!(std::mem::size_of::<Option<ExactTypingFact>>()*table.slots.len()+table.hand.len()<=2*1024*1024,"constructor metadata admission stays below 2MiB per checker");}
++
++ #[test]fn source_hash_collisions_never_substitute_a_different_actual_frame(){
++  let _scope=crate::run_flags::enter();let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let t=c.closure(ExprId(23),EnvFrame::empty());let key=ExactTypingKey{source:(t.expr,t.env.id(),t.levels.identity()),strict:false,flags:crate::run_flags::captured_configuration().unwrap(),epoch:0};let mut other=None;
++  for _ in 0..100000{let v=Closure::with_levels(t.expr,EnvFrame::empty().extend_free(FreeId(99)),t.levels.clone());let mut k=key.clone();k.source.1=v.env.id();if k.set()==key.set(){other=Some(v);break;}}
++  let other=other.expect("find a real bounded-slot collision");assert!(c.infer_exact_closure_in_context(&other,&[],&mut 4096,0).is_some());assert!(c.infer_exact_closure_in_context(&t,&[],&mut 1,0).is_none(),"a hash collision carries no source typing authority");
++ }
++
++ #[test]fn small_sole_owned_universe_substitution_can_be_reclaimed_at_eviction(){
++  let source=Closure::with_levels(ExprId(1),EnvFrame::empty(),LevelSubstitution::new(vec![(NameId(7),LevelTerm::Param("u".into()))]));let key=ExactTypingKey{source:(source.expr,source.env.id(),source.levels.identity()),strict:false,flags:[0;2],epoch:0};let fact=ExactTypingFact{key,_source:source.clone(),result:source.clone(),context:vec![source]};assert!(fact.relinquishable(),"bounded immutable universe payload may be reclaimed without releasing an environment graph");
++ }
++
++ #[test]fn universe_reclamation_checks_aggregate_bytes_and_unique_allocations(){
++  let make=|name: &str|Closure::with_levels(ExprId(1),EnvFrame::empty(),LevelSubstitution::new(vec![(NameId(7),LevelTerm::Param(name.into()))]));
++  let one=make(&"x".repeat(2000));let key=ExactTypingKey{source:(one.expr,one.env.id(),one.levels.identity()),strict:false,flags:[0;2],epoch:0};
++  let shared=ExactTypingFact{key:key.clone(),_source:one.clone(),result:one.clone(),context:vec![one]};assert!(shared.relinquishable(),"shared payload counted once rather than three times");
++  let a=make(&"a".repeat(2000));let b=make(&"b".repeat(2000));let c=make(&"c".repeat(2000));let aggregate=ExactTypingFact{key,_source:a,result:b,context:vec![c]};assert!(!aggregate.relinquishable(),"individually small maps exceed the aggregate string allowance");
++ }
++ #[test]fn oversized_level_trees_and_utf8_strings_remain_pinned(){
++  for value in [LevelTerm::Param("λ".repeat(2049)),(0..70).fold(LevelTerm::Zero,|v,_|LevelTerm::Succ(Box::new(v)))]{
++   let source=Closure::with_levels(ExprId(1),EnvFrame::empty(),LevelSubstitution::new(vec![(NameId(7),value)]));let key=ExactTypingKey{source:(source.expr,source.env.id(),source.levels.identity()),strict:false,flags:[0;2],epoch:0};let fact=ExactTypingFact{key,_source:source.clone(),result:source,context:vec![]};assert!(!fact.relinquishable());
++  }
++ }
++
++ #[test]fn shallow_owned_result_frame_releases_only_bounded_capture_nodes(){
++  let source=Closure::with_levels(ExprId(1),EnvFrame::empty().extend(Closure::new(ExprId(1),EnvFrame::empty())),LevelSubstitution::new(vec![(NameId(7),LevelTerm::Param("u".into()))]));let key=ExactTypingKey{source:(source.expr,source.env.id(),source.levels.identity()),strict:false,flags:[0;2],epoch:0};let fact=ExactTypingFact{key,_source:source.clone(),result:source.clone(),context:vec![source]};assert!(fact.relinquishable(),"one finite substituted result frame has a bounded destructor graph");
++ }
++
++ #[test]fn internal_capture_edges_are_counted_before_releasing_shared_parents(){
++  let make=|depth|{let parent=(0..depth).fold(EnvFrame::empty(),|frame,_|frame.extend_free(FreeId(7)));let head=parent.clone().extend(Closure::new(ExprId(1),parent.clone()));(head,parent)};
++  let fact=|head:EnvFrame,parent:EnvFrame|{let source=Closure::new(ExprId(1),head);let key=ExactTypingKey{source:(source.expr,source.env.id(),source.levels.identity()),strict:false,flags:[0;2],epoch:0};ExactTypingFact{key,_source:source,result:Closure::new(ExprId(1),parent),context:vec![]}};
++  let (head,parent)=make(2);assert!(fact(head,parent).relinquishable());
++  let (head,parent)=make(70);let held=parent.clone();let value=fact(head,parent);assert!(value.relinquishable(),"only one child frame dies while the deep parent is externally held");drop(held);assert!(!value.relinquishable(),"parent and payload edges must join the root removal before ownership is decided");
++ }
++ #[test]fn unsupported_owned_neutral_payload_is_not_discharged(){
++  let frame=EnvFrame::empty().extend_neutral(Neutral{head:NeutralHead::Free(FreeId(9)),spine:vec![]});let source=Closure::new(ExprId(1),frame);let key=ExactTypingKey{source:(source.expr,source.env.id(),source.levels.identity()),strict:false,flags:[0;2],epoch:0};let fact=ExactTypingFact{key,_source:source.clone(),result:source,context:vec![]};assert!(!fact.relinquishable());
++ }
++
++}
++
++#[derive(Clone,Eq,PartialEq,Hash)]
++struct ExactTypingKey{source:(ExprId,u64,usize),strict:bool,flags:[u64;2],epoch:u64}
++impl ExactTypingKey{
++ fn set(&self)->usize{use std::hash::{Hash,Hasher};let mut h=std::collections::hash_map::DefaultHasher::new();self.hash(&mut h);(h.finish()as usize)%2048}
++}
++struct ExactTypingFact{key:ExactTypingKey,_source:Closure,context:Vec<Closure>,result:Closure}
++impl ExactTypingFact{
++ fn same_context(&self,context:&[TypeValue])->bool{
++  self.context.len()==context.len()&&self.context.iter().zip(context).all(|(old,new)|matches!(new,TypeValue::Term(new)if(old.expr,old.env.id(),old.levels.identity())==(new.expr,new.env.id(),new.levels.identity())))
++ }
++ fn roots(&self)->impl Iterator<Item=&Closure>{std::iter::once(&self._source).chain(std::iter::once(&self.result)).chain(self.context.iter())}
++ fn relinquishable(&self)->bool{
++  crate::value::captures_reclaimable(self.roots())
++ }}
++struct ExactTypingMemo{slots:Box<[Option<ExactTypingFact>]>,hand:[u8;2048]}
++impl Default for ExactTypingMemo{
++ fn default()->Self{Self{slots:std::iter::repeat_with(||None).take(8192).collect::<Vec<_>>().into_boxed_slice(),hand:[0;2048]}}
++}
++impl ExactTypingMemo{fn clear(&mut self){for slot in self.slots.iter_mut(){*slot=None;}self.hand.fill(0);}}
+--- a/metatron-kernel/src/run_flags.rs
++++ b/metatron-kernel/src/run_flags.rs
+@@ -104,8 +104,10 @@
+     TraceTypedProjectionSpine,
+     TraceTypedReceiver,
+     TraceValueMismatch,
++    ExperimentalProjectionContext,
++    ExperimentalProjectionCrossframe512,
+ }
+-const NAMES:[&str;100]=[
++const NAMES:[&str;102]=[
+     "NUCLEUS_ASSURANCE_SOURCE_OWNED_PROBE",
+     "NUCLEUS_EXPERIMENTAL_CERTIFIED_QUOT_IOTA",
+     "NUCLEUS_EXPERIMENTAL_CONTEXT_BINDER",
+@@ -206,6 +208,8 @@
+     "NUCLEUS_TRACE_TYPED_PROJECTION_SPINE",
+     "NUCLEUS_TRACE_TYPED_RECEIVER",
+     "NUCLEUS_TRACE_VALUE_MISMATCH",
++    "NUCLEUS_EXPERIMENTAL_PROJECTION_CONTEXT",
++    "NUCLEUS_EXPERIMENTAL_PROJECTION_CROSSFRAME_512",
+ ];
+ std::thread_local! {static ACTIVE:Cell<Option<Bits>>=const {Cell::new(None)};}
+ pub(crate) struct Scope {previous:Option<Bits>}
+@@ -233,7 +237,7 @@
+ #[cfg(test)]
+ mod tests {
+     use super::*;
+-    const ALL:[Flag;100]=[Flag::AssuranceSourceOwnedProbe,Flag::ExperimentalCertifiedQuotIota,Flag::ExperimentalContextBinder,Flag::ExperimentalDemandMajor,Flag::ExperimentalExpectedLambda,Flag::ExperimentalFormedPropDomainRetry,Flag::ExperimentalPolymorphicPropIrrel,Flag::ExperimentalRelevance,Flag::ExperimentalReplayNeutralProjection,Flag::ExperimentalReplayProjectionMajor,Flag::ExperimentalSourcePairDepth8,Flag::ExperimentalSourceProofIrrel,Flag::ExperimentalSubstitutionReclosure,Flag::ExperimentalTypedDataCongruence,Flag::ExperimentalTypedLineage,Flag::ExperimentalTypedProjectionSpine,Flag::ExperimentalTypedReceiver,Flag::ExperimentalTypedValueNormalization,Flag::TraceApplicationFunctionType,Flag::TraceAppDomainObligation,Flag::TraceArithmeticInstance,Flag::TraceBidirBodyGap,Flag::TraceBleSymbolic,Flag::TraceCapability,Flag::TraceCertifiedArithmeticField,Flag::TraceCertifiedProofVsLocal,Flag::TraceCertifiedQuotIota,Flag::TraceCheckedMajorChain,Flag::TraceCheckedRelevance,Flag::TraceConstructorMismatch,Flag::TraceContextualProofSpine,Flag::TraceContextBinder,Flag::TraceDecidableMajorChain,Flag::TraceDeclarationProgress,Flag::TraceDependencyGap,Flag::TraceDependencyValues,Flag::TraceDownstream,Flag::TraceEta,Flag::TraceExactProjection,Flag::TraceExpectedLambda,Flag::TraceExposureCache,Flag::TraceFailedReceiverCaptures,Flag::TraceFailedReceiverConversion,Flag::TraceFieldPair,Flag::TraceFinalCodomain,Flag::TraceFirstPiDomain,Flag::TraceFirstTypedContinuation,Flag::TraceFormedPropDomainRetry,Flag::TraceGenericNonrec,Flag::TraceImax,Flag::TraceImport,Flag::TraceLambdaTrialWork,Flag::TraceLazyDelta,Flag::TraceLeftDecidableMajorChain,Flag::TraceLiteralConversion,Flag::TraceLocalProofIrrel,Flag::TraceMultibinderEta,Flag::TraceNativeNatBits,Flag::TraceNatrecMajor,Flag::TraceNatAddone,Flag::TraceNatIota,Flag::TraceNatSubsucc,Flag::TraceNatSubsuccZero,Flag::TraceNatSubzero,Flag::TraceNestedRecursorIota,Flag::TraceNestedRecursorIotaFailure,Flag::TraceNeutralHeads,Flag::TraceNullaryMinor,Flag::TraceOriginReplay,Flag::TraceParseError,Flag::TracePolymorphicPropIrrel,Flag::TracePredSource,Flag::TraceProjectionCheap,Flag::TraceProjectionCongruence,Flag::TraceProjectionContext,Flag::TraceProjectionCrossframe512,Flag::TraceProjectionFieldFailure,Flag::TraceProjectionLastFailure,Flag::TraceProofArgumentTypes,Flag::TracePropSingleton,Flag::TracePropSmall,Flag::TraceRecursorMajor,Flag::TraceRefutationAsUnknown,Flag::TraceReplayCache,Flag::TraceRigidTypeMismatch,Flag::TraceRuleK,Flag::TraceSelectedField,Flag::TraceSingleField,Flag::TraceSourcePairDepth8,Flag::TraceSourceProofBeta,Flag::TraceSourceProofIrrel,Flag::TraceSourceTypeRecovery,Flag::TraceSubstitutionReclosure,Flag::TraceTenMethods,Flag::TraceTerminalCause,Flag::TraceTypedDataCongruence,Flag::TraceTypedLineage,Flag::TraceTypedProjectionSpine,Flag::TraceTypedReceiver,Flag::TraceValueMismatch];
++    const ALL:[Flag;102]=[Flag::AssuranceSourceOwnedProbe,Flag::ExperimentalCertifiedQuotIota,Flag::ExperimentalContextBinder,Flag::ExperimentalDemandMajor,Flag::ExperimentalExpectedLambda,Flag::ExperimentalFormedPropDomainRetry,Flag::ExperimentalPolymorphicPropIrrel,Flag::ExperimentalRelevance,Flag::ExperimentalReplayNeutralProjection,Flag::ExperimentalReplayProjectionMajor,Flag::ExperimentalSourcePairDepth8,Flag::ExperimentalSourceProofIrrel,Flag::ExperimentalSubstitutionReclosure,Flag::ExperimentalTypedDataCongruence,Flag::ExperimentalTypedLineage,Flag::ExperimentalTypedProjectionSpine,Flag::ExperimentalTypedReceiver,Flag::ExperimentalTypedValueNormalization,Flag::TraceApplicationFunctionType,Flag::TraceAppDomainObligation,Flag::TraceArithmeticInstance,Flag::TraceBidirBodyGap,Flag::TraceBleSymbolic,Flag::TraceCapability,Flag::TraceCertifiedArithmeticField,Flag::TraceCertifiedProofVsLocal,Flag::TraceCertifiedQuotIota,Flag::TraceCheckedMajorChain,Flag::TraceCheckedRelevance,Flag::TraceConstructorMismatch,Flag::TraceContextualProofSpine,Flag::TraceContextBinder,Flag::TraceDecidableMajorChain,Flag::TraceDeclarationProgress,Flag::TraceDependencyGap,Flag::TraceDependencyValues,Flag::TraceDownstream,Flag::TraceEta,Flag::TraceExactProjection,Flag::TraceExpectedLambda,Flag::TraceExposureCache,Flag::TraceFailedReceiverCaptures,Flag::TraceFailedReceiverConversion,Flag::TraceFieldPair,Flag::TraceFinalCodomain,Flag::TraceFirstPiDomain,Flag::TraceFirstTypedContinuation,Flag::TraceFormedPropDomainRetry,Flag::TraceGenericNonrec,Flag::TraceImax,Flag::TraceImport,Flag::TraceLambdaTrialWork,Flag::TraceLazyDelta,Flag::TraceLeftDecidableMajorChain,Flag::TraceLiteralConversion,Flag::TraceLocalProofIrrel,Flag::TraceMultibinderEta,Flag::TraceNativeNatBits,Flag::TraceNatrecMajor,Flag::TraceNatAddone,Flag::TraceNatIota,Flag::TraceNatSubsucc,Flag::TraceNatSubsuccZero,Flag::TraceNatSubzero,Flag::TraceNestedRecursorIota,Flag::TraceNestedRecursorIotaFailure,Flag::TraceNeutralHeads,Flag::TraceNullaryMinor,Flag::TraceOriginReplay,Flag::TraceParseError,Flag::TracePolymorphicPropIrrel,Flag::TracePredSource,Flag::TraceProjectionCheap,Flag::TraceProjectionCongruence,Flag::TraceProjectionContext,Flag::TraceProjectionCrossframe512,Flag::TraceProjectionFieldFailure,Flag::TraceProjectionLastFailure,Flag::TraceProofArgumentTypes,Flag::TracePropSingleton,Flag::TracePropSmall,Flag::TraceRecursorMajor,Flag::TraceRefutationAsUnknown,Flag::TraceReplayCache,Flag::TraceRigidTypeMismatch,Flag::TraceRuleK,Flag::TraceSelectedField,Flag::TraceSingleField,Flag::TraceSourcePairDepth8,Flag::TraceSourceProofBeta,Flag::TraceSourceProofIrrel,Flag::TraceSourceTypeRecovery,Flag::TraceSubstitutionReclosure,Flag::TraceTenMethods,Flag::TraceTerminalCause,Flag::TraceTypedDataCongruence,Flag::TraceTypedLineage,Flag::TraceTypedProjectionSpine,Flag::TraceTypedReceiver,Flag::TraceValueMismatch,Flag::ExperimentalProjectionContext,Flag::ExperimentalProjectionCrossframe512];
+     fn bits(flag:Flag)->Bits {let mut value=[0;2];let i=flag as usize;value[i/64]|=1u64<<(i%64);value}
+     #[test]
+     fn capture_matches_each_environment_presence_and_fallback_stays_dynamic() {
+@@ -293,3 +297,10 @@
+     #[test]fn distinct_heads_do_not_share_a_telescope_warrant(){configured(||{let(e,l,env,ctx)=fixture();let c=TypeChecker::new(&e,&l,&env);let mut r=request(3,1,3);r.head=NeutralHead::Const{name:NameId(915),levels:vec![LevelTerm::Zero]};assert!(!relation(&c,&request(3,0,3),&r,&ctx));});}
+     #[test]fn unequal_universe_instances_do_not_establish_a_prefix(){configured(||{let(e,l,env,ctx)=fixture();let c=TypeChecker::new(&e,&l,&env);let mut r=request(3,1,3);r.head=NeutralHead::Const{name:NameId(914),levels:vec![LevelTerm::Succ(Box::new(LevelTerm::Zero))]};assert!(!relation(&c,&request(3,0,3),&r,&ctx));});}
+ }
++
++// Only a captured run has a stable capability policy. Dynamic fallback callers
++// deliberately receive no reusable typing authority.
++pub(crate)fn captured_configuration()->Option<[u64;2]>{ACTIVE.with(Cell::get)}
++
++#[cfg(test)]
++pub(crate)fn test_scope(bits:[u64;2])->Scope{install(bits)}
+--- a/metatron-kernel/src/convert.rs
++++ b/metatron-kernel/src/convert.rs
+@@ -1462,9 +1462,7 @@
+                 // fast path remains the production baseline. The new path is
+                 // permitted only when the local context matches its binder depth
+                 // and each argument conversion is independently PROVEN.
+-                let contextual = std::env::var_os(
+-                    "NUCLEUS_EXPERIMENTAL_PROJECTION_CONTEXT",
+-                ).is_some()
++                let contextual = crate::run_flags::present(crate::run_flags::Flag::ExperimentalProjectionContext)
+                     && depth == context.len()
+                     && same_rigid_application_congruence_in_context(
+                         checker, left_structure, right_structure,
+@@ -1490,8 +1488,7 @@
+                 // still independently proved definitionally equal by the
+                 // guarded converter with a bounded local budget.
+                 let deep_contextual =
+-                    std::env::var_os("NUCLEUS_EXPERIMENTAL_PROJECTION_CROSSFRAME_512")
+-                        .is_some()
++                    crate::run_flags::present(crate::run_flags::Flag::ExperimentalProjectionCrossframe512)
+                     && depth == context.len()
+                     && depth <= 2
+                     && *left_index == 0
+--- a/metatron-kernel/src/value.rs
++++ b/metatron-kernel/src/value.rs
+@@ -127,6 +127,8 @@
+         }
+     }
+ 
++    pub(crate)fn strong_owners(&self)->usize{Rc::strong_count(&self.0)}
++
+     pub fn id(&self) -> u64 {
+         match self.0.as_ref() {
+             EnvNode::Empty => 0,
+@@ -209,6 +211,21 @@
+     /// Identity of this immutable substitution allocation. Callers using it
+     /// as a witness must retain a clone to prevent address recycling.
+     pub(crate) fn identity(&self)->usize {Rc::as_ptr(&self.0) as usize}
++    pub(crate)fn strong_owners(&self)->usize{Rc::strong_count(&self.0)}
++    pub(crate)fn is_empty_instance(&self)->bool{self.0.entries.is_empty()}
++    pub(crate)fn bounded_reclamation(&self,nodes:&mut usize,bytes:&mut usize)->bool{
++        fn walk(v:&LevelTerm,nodes:&mut usize,bytes:&mut usize)->bool{
++            if *nodes==0{return false;}*nodes-=1;
++            match v{
++                LevelTerm::Zero=>true,LevelTerm::Succ(v)=>walk(v,nodes,bytes),
++                LevelTerm::Max(a,b)|LevelTerm::IMax(a,b)=>walk(a,nodes,bytes)&&walk(b,nodes,bytes),
++                LevelTerm::Param(s)=>{if s.len()>*bytes{false}else{*bytes-=s.len();true}},
++            }
++        }
++        if self.0.entries.len()>*nodes{return false;}*nodes-=self.0.entries.len();
++        self.0.entries.iter().all(|(_,v)|walk(v,nodes,bytes))
++    }
++
+ 
+     pub fn to_map(&self) -> std::collections::HashMap<NameId, LevelTerm> {
+         self.0.entries.iter().cloned().collect()
+@@ -463,3 +480,56 @@
+         assert!(matches!(reused,crate::judgment::Judgment::Proven{value:Value::Sort(LevelTerm::Zero),warrant:crate::judgment::WarrantId("certified-cached-closure-exposure")}));
+     }
+ }
++
++// Prove a bounded destruction set without changing ownership. Root counts and
++// newly removed parent/value edges are joined before any allocation is freed.
++pub(crate)fn captures_reclaimable<'a>(roots:impl Iterator<Item=&'a Closure>)->bool{
++ #[derive(Clone,Copy)]enum Allocation<'a>{Env(&'a EnvFrame),Levels(&'a LevelSubstitution)}
++ impl Allocation<'_>{
++  fn same(self,other:Self)->bool{match(self,other){(Self::Env(a),Self::Env(b))=>Rc::ptr_eq(&a.0,&b.0),(Self::Levels(a),Self::Levels(b))=>Rc::ptr_eq(&a.0,&b.0),_=>false}}
++  fn owners(self)->usize{match self{Self::Env(v)=>Rc::strong_count(&v.0),Self::Levels(v)=>Rc::strong_count(&v.0)}}
++ }
++ #[derive(Clone,Copy)]struct Removal<'a>{allocation:Allocation<'a>,removed:usize,expanded:bool}
++ struct Plan<'a>{records:[Option<Removal<'a>>;326],len:usize,nodes:usize,bytes:usize}
++ impl<'a>Plan<'a>{
++  fn add(&mut self,allocation:Allocation<'a>)->bool{
++   // Empty payloads have no graph edges. Their fixed headers are covered by
++   // the bounded root/edge count, rather than by the nontrivial-node allowance.
++   match allocation{Allocation::Env(v)if matches!(v.0.as_ref(),EnvNode::Empty)=>return true,Allocation::Levels(v)if v.0.entries.is_empty()=>return true,_=>{}}
++   for i in 0..self.len{if self.records[i].unwrap().allocation.same(allocation){self.records[i].as_mut().unwrap().removed+=1;return true;}}
++   if self.len==self.records.len(){return false;}self.records[self.len]=Some(Removal{allocation,removed:1,expanded:false});self.len+=1;true
++  }
++  fn closure(&mut self,c:&'a Closure)->bool{self.add(Allocation::Env(&c.env))&&self.add(Allocation::Levels(&c.levels))}
++  fn expand(&mut self,allocation:Allocation<'a>)->bool{
++   if self.nodes==0{return false;}self.nodes-=1;
++   match allocation{
++    Allocation::Levels(v)=>v.bounded_reclamation(&mut self.nodes,&mut self.bytes),
++    Allocation::Env(v)=>match v.0.as_ref(){
++     EnvNode::Empty=>true,
++     EnvNode::Extend{parent,value,..}=>self.add(Allocation::Env(parent))&&match value{
++      EnvBinding::Closure(c)=>self.closure(c),EnvBinding::Free(_)=>true,
++      // No unbounded neutral spine or native payload is discharged here.
++      EnvBinding::Neutral(_)|EnvBinding::NatLit(_)=>false,
++     },
++    },
++   }
++  }
++  fn finish(&mut self)->bool{
++   loop{
++    let mut progress=false;
++    for i in 0..self.len{
++     let record=self.records[i].unwrap();let owners=record.allocation.owners();
++     if record.removed>owners{return false;}
++     if !record.expanded&&record.removed==owners{
++      self.records[i].as_mut().unwrap().expanded=true;
++      if !self.expand(record.allocation){return false;}progress=true;
++     }
++    }
++    if !progress{return true;}
++   }
++  }
++ }
++ let mut plan=Plan{records:[None;326],len:0,nodes:64,bytes:4096};let mut count=0;
++ for root in roots{count+=1;if count>66||!plan.closure(root){return false;}}
++ plan.finish()
++}
+--- a/metatron-kernel/src/typecheck.rs
++++ b/metatron-kernel/src/typecheck.rs
+@@ -181,7 +181,7 @@
+             paired_source_support: RefCell::new(HashMap::new()),
+             checked_frames: RefCell::new(HashMap::new()),
+             source_opening_proofs:RefCell::new(HashMap::new()),
+-            source_capture_proofs:RefCell::new(HashMap::new()),
++            source_capture_proofs:RefCell::new(HashMap::with_capacity(8192)),
+             formed_expected: RefCell::new(std::collections::HashSet::new()),
+             lambda_trials: RefCell::new(LambdaTrialState::default()),
+             context_arena: RefCell::new(ContextArena::default()),
+@@ -210,7 +210,7 @@
+             paired_source_support: RefCell::new(HashMap::new()),
+             checked_frames: RefCell::new(HashMap::new()),
+             source_opening_proofs:RefCell::new(HashMap::new()),
+-            source_capture_proofs:RefCell::new(HashMap::new()),
++            source_capture_proofs:RefCell::new(HashMap::with_capacity(8192)),
+             formed_expected: RefCell::new(std::collections::HashSet::new()),
+             lambda_trials: RefCell::new(LambdaTrialState::default()),
+             context_arena: RefCell::new(ContextArena::default()),
+@@ -4598,7 +4598,7 @@
+             paired_source_support: RefCell::new(HashMap::new()),
+             checked_frames: RefCell::new(HashMap::new()),
+             source_opening_proofs:RefCell::new(HashMap::new()),
+-            source_capture_proofs:RefCell::new(HashMap::new()),
++            source_capture_proofs:RefCell::new(HashMap::with_capacity(8192)),
+             formed_expected: RefCell::new(std::collections::HashSet::new()),
+             lambda_trials: RefCell::new(LambdaTrialState::default()),
+             context_arena: RefCell::new(ContextArena::default()),
+@@ -4766,7 +4766,7 @@
+             paired_source_support: RefCell::new(HashMap::new()),
+             checked_frames: RefCell::new(HashMap::new()),
+             source_opening_proofs:RefCell::new(HashMap::new()),
+-            source_capture_proofs:RefCell::new(HashMap::new()),
++            source_capture_proofs:RefCell::new(HashMap::with_capacity(8192)),
+             formed_expected: RefCell::new(std::collections::HashSet::new()),
+             lambda_trials: RefCell::new(LambdaTrialState::default()),
+             context_arena: RefCell::new(ContextArena::default()),
+@@ -4819,7 +4819,7 @@
+             paired_source_support: RefCell::new(HashMap::new()),
+             checked_frames: RefCell::new(HashMap::new()),
+             source_opening_proofs:RefCell::new(HashMap::new()),
+-            source_capture_proofs:RefCell::new(HashMap::new()),
++            source_capture_proofs:RefCell::new(HashMap::with_capacity(8192)),
+             formed_expected: RefCell::new(std::collections::HashSet::new()),
+             lambda_trials: RefCell::new(LambdaTrialState::default()),
+             context_arena: RefCell::new(ContextArena::default()),
+@@ -7461,3 +7461,19 @@
+  fn default()->Self{Self{slots:std::iter::repeat_with(||None).take(8192).collect::<Vec<_>>().into_boxed_slice(),hand:[0;2048]}}
+ }
+ impl ExactTypingMemo{fn clear(&mut self){for slot in self.slots.iter_mut(){*slot=None;}self.hand.fill(0);}}
++
++#[cfg(test)]
++mod capture_preallocation_regression {
++ use super::*;
++ fn chain()->Closure{let mut c=Closure::new(ExprId(0),EnvFrame::empty().extend_free(FreeId(7)));for _ in 0..12{c=Closure::new(ExprId(0),EnvFrame::empty().extend(c));}c}
++ fn term()->Closure{Closure::new(ExprId(2),EnvFrame::empty().extend(chain()).extend(chain()))}
++ #[test]fn completed_source_pair_remains_reusable_after_unrelated_completed_pairs(){
++  let mut e=IdTable::default();for(id,x)in[(0,Expr::BVar(0)),(1,Expr::BVar(1)),(2,Expr::App{fun:ExprId(1),arg:ExprId(0)})]{e.insert(ExprId(id),x).unwrap();}
++  let l=IdTable::default();let env=Environment::empty();let c=TypeChecker::new(&e,&l,&env);
++  // This is the real observed dead zone: growth beyond896 entries asks
++  // for1800 steps while the receiver's comparison allowance is<=1413.
++  for _ in 0..896{assert!(c.exact_source_capture_identity(&term(),&term(),&mut 4096));}
++  let a=term();let b=term();assert!(c.exact_source_capture_identity(&a,&b,&mut 128));
++  assert!(c.exact_source_capture_identity(&a,&b,&mut 4),"a completed exact proof must remain reusable without unaffordable table-growth work");
++ }
++}

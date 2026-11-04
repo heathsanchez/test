@@ -1,0 +1,67 @@
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -181,7 +181,7 @@
+             paired_source_support: RefCell::new(HashMap::new()),
+             checked_frames: RefCell::new(HashMap::new()),
+             source_opening_proofs:RefCell::new(HashMap::new()),
+-            source_capture_proofs:RefCell::new(HashMap::new()),
++            source_capture_proofs:RefCell::new(HashMap::with_capacity(8192)),
+             formed_expected: RefCell::new(std::collections::HashSet::new()),
+             lambda_trials: RefCell::new(LambdaTrialState::default()),
+             context_arena: RefCell::new(ContextArena::default()),
+@@ -210,7 +210,7 @@
+             paired_source_support: RefCell::new(HashMap::new()),
+             checked_frames: RefCell::new(HashMap::new()),
+             source_opening_proofs:RefCell::new(HashMap::new()),
+-            source_capture_proofs:RefCell::new(HashMap::new()),
++            source_capture_proofs:RefCell::new(HashMap::with_capacity(8192)),
+             formed_expected: RefCell::new(std::collections::HashSet::new()),
+             lambda_trials: RefCell::new(LambdaTrialState::default()),
+             context_arena: RefCell::new(ContextArena::default()),
+@@ -4598,7 +4598,7 @@
+             paired_source_support: RefCell::new(HashMap::new()),
+             checked_frames: RefCell::new(HashMap::new()),
+             source_opening_proofs:RefCell::new(HashMap::new()),
+-            source_capture_proofs:RefCell::new(HashMap::new()),
++            source_capture_proofs:RefCell::new(HashMap::with_capacity(8192)),
+             formed_expected: RefCell::new(std::collections::HashSet::new()),
+             lambda_trials: RefCell::new(LambdaTrialState::default()),
+             context_arena: RefCell::new(ContextArena::default()),
+@@ -4766,7 +4766,7 @@
+             paired_source_support: RefCell::new(HashMap::new()),
+             checked_frames: RefCell::new(HashMap::new()),
+             source_opening_proofs:RefCell::new(HashMap::new()),
+-            source_capture_proofs:RefCell::new(HashMap::new()),
++            source_capture_proofs:RefCell::new(HashMap::with_capacity(8192)),
+             formed_expected: RefCell::new(std::collections::HashSet::new()),
+             lambda_trials: RefCell::new(LambdaTrialState::default()),
+             context_arena: RefCell::new(ContextArena::default()),
+@@ -4819,7 +4819,7 @@
+             paired_source_support: RefCell::new(HashMap::new()),
+             checked_frames: RefCell::new(HashMap::new()),
+             source_opening_proofs:RefCell::new(HashMap::new()),
+-            source_capture_proofs:RefCell::new(HashMap::new()),
++            source_capture_proofs:RefCell::new(HashMap::with_capacity(8192)),
+             formed_expected: RefCell::new(std::collections::HashSet::new()),
+             lambda_trials: RefCell::new(LambdaTrialState::default()),
+             context_arena: RefCell::new(ContextArena::default()),
+@@ -7461,3 +7461,19 @@
+  fn default()->Self{Self{slots:std::iter::repeat_with(||None).take(8192).collect::<Vec<_>>().into_boxed_slice(),hand:[0;2048]}}
+ }
+ impl ExactTypingMemo{fn clear(&mut self){for slot in self.slots.iter_mut(){*slot=None;}self.hand.fill(0);}}
++
++#[cfg(test)]
++mod capture_preallocation_regression {
++ use super::*;
++ fn chain()->Closure{let mut c=Closure::new(ExprId(0),EnvFrame::empty().extend_free(FreeId(7)));for _ in 0..12{c=Closure::new(ExprId(0),EnvFrame::empty().extend(c));}c}
++ fn term()->Closure{Closure::new(ExprId(2),EnvFrame::empty().extend(chain()).extend(chain()))}
++ #[test]fn completed_source_pair_remains_reusable_after_unrelated_completed_pairs(){
++  let mut e=IdTable::default();for(id,x)in[(0,Expr::BVar(0)),(1,Expr::BVar(1)),(2,Expr::App{fun:ExprId(1),arg:ExprId(0)})]{e.insert(ExprId(id),x).unwrap();}
++  let l=IdTable::default();let env=Environment::empty();let c=TypeChecker::new(&e,&l,&env);
++  // This is the real observed dead zone: growth beyond896 entries asks
++  // for1800 steps while the receiver's comparison allowance is<=1413.
++  for _ in 0..896{assert!(c.exact_source_capture_identity(&term(),&term(),&mut 4096));}
++  let a=term();let b=term();assert!(c.exact_source_capture_identity(&a,&b,&mut 128));
++  assert!(c.exact_source_capture_identity(&a,&b,&mut 4),"a completed exact proof must remain reusable without unaffordable table-growth work");
++ }
++}
