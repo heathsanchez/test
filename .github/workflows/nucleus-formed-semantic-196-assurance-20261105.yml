@@ -107,7 +107,7 @@ jobs:
           assert len(rows)==196,('corpus changed',len(rows))
           wrong=[r for r in rows if (r['group']=='good' and r['rc']==1) or (r['group']=='bad' and r['rc']==0) or r['rc'] not in (0,1,2)]
           counts=dict(accept=sum(r['group']=='good' and r['rc']==0 for r in rows),reject=sum(r['group']=='bad' and r['rc']==1 for r in rows),unknown=sum(r['rc']==2 for r in rows),wrong=len(wrong))
-          (out/'protected196.json').write_text(json.dumps(dict(counts=counts,rows=rows),indent=2)+'\\n')
+          (out/'protected196.json').write_text(json.dumps(dict(counts=counts,rows=rows),indent=2))
           print('PROTECTED_196_RESULT',counts,flush=True)
           assert counts['wrong']==0,('unsound regression',wrong)
           assert counts['accept']>=119 and counts['reject']>=71 and counts['unknown']<=6,('completeness regression',counts)
