@@ -1,0 +1,58 @@
+    #[cfg(feature="diagnostics")]
+    fn diagnostic_receiver_snapshot(&self,left:&TypeValue,right:&TypeValue,context:&[TypeValue],checked_expr:ExprId,checked_frame:u64,remaining:usize,reason:&str){
+        use serde_json::{Value as Json,json};
+        fn tick(work:&mut usize,n:usize)->Option<()>{if *work<n{return None}*work-=n;Some(())}
+        fn lev(v:&LevelTerm,work:&mut usize,depth:usize)->Option<Json>{
+            tick(work,1)?;if depth>=64{return None}
+            Some(match v{LevelTerm::Zero=>json!(["zero"]),LevelTerm::Param(s)=>{tick(work,s.len())?;json!(["param",s])},LevelTerm::Succ(a)=>json!(["succ",lev(a,work,depth+1)?]),LevelTerm::Max(a,b)=>json!(["max",lev(a,work,depth+1)?,lev(b,work,depth+1)?]),LevelTerm::IMax(a,b)=>json!(["imax",lev(a,work,depth+1)?,lev(b,work,depth+1)?])})
+        }
+        fn cl(c:&Closure,frames:&mut Vec<EnvFrame>,work:&mut usize)->Option<Json>{
+            tick(work,1)?;frames.push(c.env.clone());let mut levels=Vec::new();
+            for(n,v)in c.levels.entries(){tick(work,1)?;levels.push(json!([n.0,lev(v,work,0)?]));}
+            Some(json!({"expr":c.expr.0,"env":c.env.id(),"levels":levels}))
+        }
+        fn neutral(n:&Neutral,frames:&mut Vec<EnvFrame>,work:&mut usize,depth:usize)->Option<Json>{
+            tick(work,1)?;if depth>=64{return None}
+            let head=match &n.head{
+                NeutralHead::Free(f)=>json!({"kind":"free","id":f.0}),
+                NeutralHead::Const{name,levels}=>{let mut values=Vec::new();for v in levels{values.push(lev(v,work,0)?);}json!({"kind":"const","name":name.0,"levels":values})},
+                NeutralHead::Projection{type_name,index,structure}=>json!({"kind":"proj","owner":type_name.0,"index":index,"receiver":neutral(structure,frames,work,depth+1)?}),
+            };
+            let mut spine=Vec::new();for c in &n.spine{spine.push(cl(c,frames,work)?);}Some(json!({"head":head,"spine":spine}))
+        }
+        fn ty(t:&TypeValue,frames:&mut Vec<EnvFrame>,work:&mut usize,depth:usize)->Option<Json>{
+            tick(work,1)?;if depth>=64{return None}
+            Some(match t{
+                TypeValue::Term(c)=>json!({"kind":"term","closure":cl(c,frames,work)?}),
+                TypeValue::Sort(v)=>json!({"kind":"sort","level":lev(v,work,0)?}),
+                TypeValue::Pi{domain,body,binder}=>json!({"kind":"pi","binder":binder.0,"domain":ty(domain,frames,work,depth+1)?,"body":ty(body,frames,work,depth+1)?}),
+                _=>return None,
+            })
+        }
+        fn snapshot(left:&TypeValue,right:&TypeValue,context:&[TypeValue])->Option<Json>{
+            let mut work=65536;let mut pending=Vec::new();let left=ty(left,&mut pending,&mut work,0)?;let right=ty(right,&mut pending,&mut work,0)?;let mut gamma=Vec::new();
+            for t in context{gamma.push(ty(t,&mut pending,&mut work,0)?);}
+            let mut frames=Vec::new();let mut seen=std::collections::HashSet::new();
+            while let Some(frame)=pending.pop(){
+                tick(&mut work,1)?;if !seen.insert(frame.id()){continue}if seen.len()>2048{return None}
+                let mut bindings=Vec::new();
+                for b in frame.binding_refs(){tick(&mut work,1)?;bindings.push(match b{
+                    EnvBinding::Free(f)=>json!({"kind":"free","id":f.0}),
+                    EnvBinding::Closure(c)=>json!({"kind":"closure","closure":cl(c,&mut pending,&mut work)?}),
+                    EnvBinding::Neutral(n)=>json!({"kind":"neutral","neutral":neutral(n,&mut pending,&mut work,0)?}),
+                    EnvBinding::NatLit(n)=>{tick(&mut work,n.limb_count())?;json!({"kind":"nat","base":1000000000u64,"limbs":n.diagnostic_limbs()})},
+                });}
+                frames.push(json!({"id":frame.id(),"bindings":bindings}));
+            }
+            Some(json!({"left":left,"right":right,"context":gamma,"frames":frames,"snapshot_work_spent":65536-work}))
+        }
+        use std::sync::atomic::{AtomicUsize,Ordering};static SLOTS:AtomicUsize=AtomicUsize::new(0);
+        let slot=SLOTS.fetch_add(1,Ordering::Relaxed);if slot>=16{return}
+        let Some(mut data)=snapshot(left,right,context)else{eprintln!("RECEIVER_SNAPSHOT:slot={slot}:DECLINED:unsupported-or-cap");return};
+        data["metadata"]=json!({"slot":slot,"checked_expr":checked_expr.0,"checked_frame":checked_frame,"remaining":remaining,"conversion_residual":reason,"context_len":context.len(),"diagnostic_only":true,"not_a_proof_of_equality":true});
+        let path=format!("/tmp/nucleus-receiver-snapshot-probe/snapshots/pair-{slot}.json");
+        match serde_json::to_vec_pretty(&data).ok().and_then(|bytes|std::fs::write(&path,bytes).ok()){
+            Some(())=>eprintln!("RECEIVER_SNAPSHOT:slot={slot}:SAVED:expr={checked_expr:?}:context={}:reason={reason}",context.len()),
+            None=>eprintln!("RECEIVER_SNAPSHOT:slot={slot}:WRITE_FAILED"),
+        }
+    }

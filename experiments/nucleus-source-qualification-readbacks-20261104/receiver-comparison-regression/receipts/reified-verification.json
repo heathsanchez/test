@@ -1,0 +1,38 @@
+[
+  {
+    "input_sha256": "ce6bb6ab05205db63996338f4905f2e69ad2e90e69506515c32b23c9b89b329b",
+    "rows": [
+      {
+        "arm": "reference-parse",
+        "rc": 0,
+        "wall": 0.5660818020005536,
+        "binary_sha256": "ae92c625e612fff1c90e329344d22e3c3c330383cb335ce28fd41435be3b3b94",
+        "terminal": ""
+      },
+      {
+        "arm": "reference",
+        "rc": 0,
+        "wall": 0.8188021180030773,
+        "binary_sha256": "ae92c625e612fff1c90e329344d22e3c3c330383cb335ce28fd41435be3b3b94",
+        "terminal": ""
+      },
+      {
+        "arm": "qualified-alpha",
+        "rc": 2,
+        "wall": 30.07061672299824,
+        "binary_sha256": "82ebbce2278e54f82667e4d12793034acdf72f329b989e4605cf65473c9de715",
+        "terminal": "NUCLEUS_DOWNSTREAM:name=NucleusReceiverSnapshot0:stage=theorem.value:verdict=UNKNOWN:reason=lazy-projection-value-exposure\n"
+      },
+      {
+        "arm": "nested-normalized",
+        "rc": 2,
+        "wall": 29.614776098998846,
+        "binary_sha256": "6f18eb89063c6802209f250f78f4c8bdd55d4cf16966f337226600ac896f8d53",
+        "terminal": "NUCLEUS_DOWNSTREAM:name=NucleusReceiverSnapshot0:stage=theorem.value:verdict=UNKNOWN:reason=neutral-projection-receiver-congruence\n"
+      }
+    ],
+    "complete_mathlib_accept": false,
+    "no_rank_claim": true,
+    "signature_environment_only": true
+  }
+]

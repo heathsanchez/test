@@ -1,0 +1,45 @@
+{
+  "status": "INSUFFICIENT_FIX_ON_REFERENCE_REGRESSION",
+  "candidate_only": true,
+  "no_promotion": true,
+  "no_speed_claim": true,
+  "binary_sha256": "2ec556e0ee1ed4efb0a3f355bca661db39322c0d4a28586fd78671de272595f2",
+  "configuration": {
+    "NUCLEUS_EXPERIMENTAL_CERTIFIED_QUOT_IOTA": "1",
+    "NUCLEUS_EXPERIMENTAL_CONTEXT_BINDER": "1",
+    "NUCLEUS_EXPERIMENTAL_DEMAND_MAJOR": "1",
+    "NUCLEUS_EXPERIMENTAL_EXPECTED_LAMBDA": "1",
+    "NUCLEUS_EXPERIMENTAL_FORMED_PROP_DOMAIN_RETRY": "1",
+    "NUCLEUS_EXPERIMENTAL_POLYMORPHIC_PROP_IRREL": "1",
+    "NUCLEUS_EXPERIMENTAL_PROJECTION_CONTEXT": "1",
+    "NUCLEUS_EXPERIMENTAL_PROJECTION_CROSSFRAME_512": "1",
+    "NUCLEUS_EXPERIMENTAL_PROP_SINGLETON_2P1F": "1",
+    "NUCLEUS_EXPERIMENTAL_RELEVANCE": "1",
+    "NUCLEUS_EXPERIMENTAL_REPLAY_NEUTRAL_PROJECTION": "1",
+    "NUCLEUS_EXPERIMENTAL_REPLAY_PROJECTION_MAJOR": "1",
+    "NUCLEUS_EXPERIMENTAL_SOURCE_PAIR_DEPTH8": "1",
+    "NUCLEUS_EXPERIMENTAL_SOURCE_PROOF_IRREL": "1",
+    "NUCLEUS_EXPERIMENTAL_SUBSTITUTION_RECLOSURE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_DATA_CONGRUENCE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_LINEAGE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_PROJECTION_SPINE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_RECEIVER": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_VALUE_NORMALIZATION": "1",
+    "NUCLEUS_TRACE_DOWNSTREAM": "1"
+  },
+  "rows": [
+    {
+      "input": "regression",
+      "input_sha256": "ef5df79ed54b93ec8597131304c9ed76358dd4a60c5bf7275fb0033a9fe9e431",
+      "rc": 2,
+      "wall": 36.41687954699955,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=NucleusReceiverSubgoal1:stage=theorem.value:verdict=UNKNOWN:reason=lazy-projection-value-exposure\n"
+    }
+  ],
+  "source_qualified": false,
+  "promoted": false,
+  "component_sha256": "b6b4a2865c580d8bea4f75afb35aa81b27925a1dc0f577e48bcbe36339e240d2",
+  "parent_source_commit": "a1d6ba062615ddb209bb5e0c9644d456a5e79084",
+  "library_verification": "NOT_RUN",
+  "review_soundness_blocker": false
+}

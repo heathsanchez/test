@@ -1,0 +1,326 @@
+--- a/src/level.rs
++++ b/src/level.rs
+@@ -71,11 +71,22 @@
+ }
+ 
+ pub fn level_equal(left: LevelTerm, right: LevelTerm, budget: usize) -> Judgment<()> {
+-    let mut budget = Budget::new(budget);
+-    let Ok(left) = simplify(left, &mut budget) else {
++    level_equal_with_budget(left, right, &mut Budget::new(budget))
++}
++
++/// The existing universe calculus, charged to the caller's remaining work.
++pub(crate) fn level_equal_metered(left: LevelTerm, right: LevelTerm, remaining: &mut usize) -> Judgment<()> {
++    let mut budget = Budget::new(*remaining);
++    let result = level_equal_with_budget(left, right, &mut budget);
++    *remaining = budget.remaining;
++    result
++}
++
++fn level_equal_with_budget(left: LevelTerm, right: LevelTerm, budget: &mut Budget) -> Judgment<()> {
++    let Ok(left) = simplify(left, budget) else {
+         return Judgment::unknown("universe-equality-budget");
+     };
+-    let Ok(right) = simplify(right, &mut budget) else {
++    let Ok(right) = simplify(right, budget) else {
+         return Judgment::unknown("universe-equality-budget");
+     };
+ 
+@@ -83,8 +94,8 @@
+         return Judgment::proven((), "universe-reflexivity");
+     }
+ 
+-    let Some(left_canonical) = canonical(&left, &mut budget) else {
+-        if opaque_max_equal(&left, &right, &mut budget) == Some(true) {
++    let Some(left_canonical) = canonical(&left, budget) else {
++        if opaque_max_equal(&left, &right, budget) == Some(true) {
+             return Judgment::proven((), "max-successor-algebra-with-opaque-imax-atoms");
+         }
+         if crate::run_flags::present(crate::run_flags::Flag::TraceImax) {
+@@ -92,8 +103,8 @@
+         }
+         return Judgment::unknown("unresolved-imax-case");
+     };
+-    let Some(right_canonical) = canonical(&right, &mut budget) else {
+-        if opaque_max_equal(&left, &right, &mut budget) == Some(true) {
++    let Some(right_canonical) = canonical(&right, budget) else {
++        if opaque_max_equal(&left, &right, budget) == Some(true) {
+             return Judgment::proven((), "max-successor-algebra-with-opaque-imax-atoms");
+         }
+         if crate::run_flags::present(crate::run_flags::Flag::TraceImax) {
+@@ -403,3 +414,24 @@
+         }
+     }
+ }
++
++#[cfg(test)]
++mod metered_source_universe_controls {
++    use super::*;
++    #[test]
++    fn normalized_equality_debits_the_callers_remaining_work() {
++        let mut work=64;
++        let a=LevelTerm::Max(Box::new(LevelTerm::Param("u".into())),Box::new(LevelTerm::Zero));
++        assert!(level_equal_metered(a,LevelTerm::Param("u".into()),&mut work).is_proven());
++        assert!(work<64 && work>0);
++    }
++    #[test]
++    fn exhaustion_never_grants_an_equality_or_refreshes_work() {
++        let mut work=0;
++        assert!(!level_equal_metered(LevelTerm::Zero,LevelTerm::Zero,&mut work).is_proven());
++        assert_eq!(work,0);
++        let mut work=1;
++        assert!(!level_equal_metered(LevelTerm::Succ(Box::new(LevelTerm::Zero)),LevelTerm::Zero,&mut work).is_proven());
++        assert_eq!(work,0);
++    }
++}
+--- a/src/machine.rs
++++ b/src/machine.rs
+@@ -446,11 +446,17 @@
+     pub(crate) fn expose_projection_for_conversion_metered(
+         &self, closure:Closure, remaining:&mut usize,
+     )->Judgment<Value>{
++        self.expose_projection_for_conversion_metered_at(closure,Transparency::Reducible,remaining)
++    }
++
++    fn expose_projection_for_conversion_metered_at(
++        &self,closure:Closure,transparency:Transparency,remaining:&mut usize,
++    )->Judgment<Value>{
+         let parent=self.exposure_fuel.get();
+         let grant=(*remaining).min(parent.unwrap_or(usize::MAX));
+         self.exposure_fuel.set(Some(grant));
+         let _work=MeteredConversionWork{fuel:&self.exposure_fuel,caller:remaining,parent,grant};
+-        let exposed=self.expose_for_conversion(closure,Transparency::Reducible,grant);
++        let exposed=self.expose_for_conversion(closure,transparency,grant);
+         self.resume_source_projections_under_owner(exposed)
+     }
+ 
+@@ -665,7 +671,17 @@
+             // Full source delta/iota can stop at a legitimate neutral
+             // recursor or opaque constant. Retain the projection itself;
+             // do not select or synthesize a constructor field.
+-            let receiver = self.expose(structure, Transparency::Full, budget.saturating_sub(1));
++            // The existing receiver trial may itself return a source
++            // projection. Preserve and resume that actual value within the
++            // same allowance rather than losing it in ordinary exposure.
++            // Bound recursive receiver trials as well as each resumer loop.
++            if self.neutral_projection_depth.get()>=8{return Judgment::unknown("projection-receiver-depth");}
++            self.neutral_projection_depth.set(self.neutral_projection_depth.get()+1);
++            let _receiver_depth=NeutralProjectionDepthScope{depth:&self.neutral_projection_depth};
++            let mut receiver_work=budget.saturating_sub(1);
++            let receiver=self.expose_projection_for_conversion_metered_at(
++                structure,Transparency::Full,&mut receiver_work,
++            );
+             if let Some(Value::Neutral(neutral)) = receiver.proven_value()
+                 && !matches!(&neutral.head, NeutralHead::Const { name, .. } if *name == spec.constructor)
+             {
+@@ -3903,3 +3919,40 @@
+     #[test]fn an_incomplete_quotient_result_never_becomes_a_completed_value(){let(e,l)=syntax(true,false);let m=machine(&e,&l);let mut work=2048;assert!(m.qualified_quotient_neutral_result_metered(&request(12),&mut work).is_unknown());assert!(work<2048);assert_eq!(m.exposure_fuel.get(),None);}
+     #[test]fn original_quotient_function_receives_its_actual_constructor_payload(){for opaque in [false,true]{let(e,l)=syntax(false,opaque);let m=machine(&e,&l);let mut work=2048;let q=m.qualified_quotient_neutral_result_metered(&request(13),&mut work);if opaque{assert!(matches!(q.proven_value(),Some(Value::Neutral(n))if matches!(&n.head,NeutralHead::Const{name:NameId(91),..})&&n.spine.is_empty()));}else{assert!(matches!(q.proven_value(),Some(Value::Sort(crate::level::LevelTerm::Zero))));}}}
+ }
++
++#[cfg(test)]
++mod nested_projection_receiver_controls {
++ use super::*;
++ fn fixture()->(IdTable<ExprId,Expr>,IdTable<LevelId,Level>){
++  let mut e=IdTable::default();let mut l=IdTable::default();l.insert(LevelId(0),Level::Zero).unwrap();
++  for(id,x)in[(0,Expr::BVar(0)),(1,Expr::Sort(LevelId(0))),(2,Expr::Const{name:NameId(91),levels:vec![]}),(3,Expr::Proj{type_name:NameId(99),index:0,structure:ExprId(2)}),(4,Expr::Proj{type_name:NameId(100),index:0,structure:ExprId(3)}),(5,Expr::App{fun:ExprId(4),arg:ExprId(0)}),(6,Expr::Proj{type_name:NameId(100),index:1,structure:ExprId(3)}),(7,Expr::Const{name:NameId(92),levels:vec![]}),(8,Expr::Proj{type_name:NameId(100),index:0,structure:ExprId(7)})]{e.insert(ExprId(id),x).unwrap();}
++  for(id,x)in[(9,Expr::Const{name:NameId(90),levels:vec![]}),(10,Expr::Const{name:NameId(101),levels:vec![]}),(11,Expr::App{fun:ExprId(10),arg:ExprId(2)}),(12,Expr::App{fun:ExprId(9),arg:ExprId(11)}),(13,Expr::Proj{type_name:NameId(99),index:0,structure:ExprId(12)}),(14,Expr::Proj{type_name:NameId(100),index:0,structure:ExprId(13)}),(15,Expr::App{fun:ExprId(14),arg:ExprId(0)}),(16,Expr::Proj{type_name:NameId(100),index:0,structure:ExprId(10)})]{e.insert(ExprId(id),x).unwrap();}(e,l)
++ }
++ fn machine<'a>(e:&'a IdTable<ExprId,Expr>,l:&'a IdTable<LevelId,Level>)->Machine<'a>{
++  Machine::new(AuthorityId(0),e,l,HashMap::from([(NameId(92),DefinitionBody{value:ExprId(8),preferred_for_reduction:false,level_params:vec![]})]))
++   .with_projection_specs(HashMap::from([(NameId(99),ProjectionSpec{constructor:NameId(90),num_params:0,field_types:vec![ProjectionFieldType::Derived(ExprId(1))],eta_expandable:false}),(NameId(100),ProjectionSpec{constructor:NameId(101),num_params:0,field_types:vec![ProjectionFieldType::Derived(ExprId(1))],eta_expandable:false})]))
++ }
++ #[test]fn nested_source_neutral_projection_keeps_both_owners_and_actual_pending_spine(){
++  let(e,l)=fixture();let m=machine(&e,&l);let frame=EnvFrame::empty().extend_free(FreeId(7));let mut work=1024;let result=m.expose_projection_for_conversion_metered(Closure::new(ExprId(5),frame.clone()),&mut work);
++  let Some(Value::Neutral(n))=result.proven_value()else{panic!("nested neutral projection lost: {result:?}")};
++  assert!(matches!(&n.head,NeutralHead::Projection{type_name:NameId(100),index:0,structure}if matches!(&structure.head,NeutralHead::Projection{type_name:NameId(99),index:0,structure}if matches!(&structure.head,NeutralHead::Const{name:NameId(91),levels}if levels.is_empty()))));
++  assert_eq!(n.spine,vec![Closure::new(ExprId(0),frame)]);assert!(work>0&&work<1024);assert_eq!(m.exposure_fuel.get(),None);
++ }
++ #[test]fn nested_receiver_cannot_borrow_from_an_exhausted_or_smaller_parent(){
++  let(e,l)=fixture();for parent in[0,1]{let m=machine(&e,&l);m.exposure_fuel.set(Some(parent));let mut work=1024;assert!(m.expose_projection_for_conversion_metered(Closure::new(ExprId(4),EnvFrame::empty()),&mut work).is_unknown());assert_eq!(work,1024-parent);assert_eq!(m.exposure_fuel.get(),Some(0));}
++ }
++ #[test]fn nested_projection_out_of_range_never_becomes_a_neutral_field(){
++  let(e,l)=fixture();let m=machine(&e,&l);let mut work=1024;assert!(m.expose_projection_for_conversion_metered(Closure::new(ExprId(6),EnvFrame::empty()),&mut work).is_unknown());assert!(work<1024);assert_eq!(m.exposure_fuel.get(),None);
++ }
++ #[test]fn cyclic_nested_receiver_stays_incomplete_and_restores_its_owner(){
++  let(e,l)=fixture();let m=machine(&e,&l);let mut work=1024;assert!(m.expose_projection_for_conversion_metered(Closure::new(ExprId(8),EnvFrame::empty()),&mut work).is_unknown());assert!(work<1024);assert_eq!(m.exposure_fuel.get(),None);assert_eq!(m.neutral_projection_depth.get(),0);
++ }
++ #[test]fn actual_nested_constructor_fields_are_selected_instead_of_synthesizing_a_neutral(){
++  let(e,l)=fixture();let m=machine(&e,&l);let frame=EnvFrame::empty().extend_free(FreeId(7));let mut work=1024;let result=m.expose_projection_for_conversion_metered(Closure::new(ExprId(15),frame.clone()),&mut work);
++  assert!(matches!(result.proven_value(),Some(Value::Neutral(n))if matches!(&n.head,NeutralHead::Const{name:NameId(91),levels}if levels.is_empty())&&n.spine==vec![Closure::new(ExprId(0),frame)]));assert!(work<1024);assert_eq!(m.exposure_fuel.get(),None);assert_eq!(m.neutral_projection_depth.get(),0);
++ }
++ #[test]fn a_matching_constructor_with_a_missing_actual_field_stays_incomplete(){
++  let(e,l)=fixture();let m=machine(&e,&l);let mut work=1024;assert!(m.expose_projection_for_conversion_metered(Closure::new(ExprId(16),EnvFrame::empty()),&mut work).is_unknown());assert!(work<1024);assert_eq!(m.exposure_fuel.get(),None);assert_eq!(m.neutral_projection_depth.get(),0);
++ }
++
++}
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -1579,6 +1579,9 @@
+                 });
+             }
+         }
++        // Raw equality stays borrowed. Normalization is a separately metered
++        // sufficient condition, using only this same caller-owned allowance.
++        let exact = (|| {
+         let mut pending=vec![(Side::Source(left,left_map),Side::Source(right,right_map))];
+         while let Some((a,b))=pending.pop(){
+             let(Some(a),Some(b))=(expose(self.levels,a,remaining),expose(self.levels,b,remaining))else{return false};
+@@ -1591,6 +1594,35 @@
+             }
+         }
+         true
++        })();
++        if exact { return true; }
++        fn materialize<'s>(levels:&'s IdTable<LevelId,Level>, root:Side<'s>, remaining:&mut usize)->Option<LevelTerm>{
++            enum Task<'s>{Read(Side<'s>),Succ,Max,IMax}
++            let mut pending=vec![Task::Read(root)];let mut values=Vec::new();
++            // Admission bounds only this optional owned fallback. They do not
++            // restrict the borrowed comparison or grant semantic work.
++            let(mut nodes,mut bytes)=(0usize,0usize);
++            while let Some(task)=pending.pop(){
++                match task{
++                    Task::Read(side)=>{
++                        nodes=nodes.checked_add(1)?;if nodes>64{return None}
++                        match expose(levels,side,remaining)?{
++                            View::Zero=>values.push(LevelTerm::Zero),
++                            View::Param(name)=>{bytes=bytes.checked_add(name.len())?;if bytes>4096||*remaining<name.len(){return None}*remaining-=name.len();values.push(LevelTerm::Param(name.to_owned()));},
++                            View::Succ(v)=>{pending.push(Task::Succ);pending.push(Task::Read(v));},
++                            View::Max(a,b)=>{pending.push(Task::Max);pending.push(Task::Read(b));pending.push(Task::Read(a));},
++                            View::IMax(a,b)=>{pending.push(Task::IMax);pending.push(Task::Read(b));pending.push(Task::Read(a));},
++                        }
++                    },
++                    Task::Succ=>{if !take_step(remaining){return None}let v=values.pop()?;values.push(LevelTerm::Succ(Box::new(v)));},
++                    Task::Max|Task::IMax=>{if !take_step(remaining){return None}let b=values.pop()?;let a=values.pop()?;values.push(if matches!(task,Task::Max){LevelTerm::Max(Box::new(a),Box::new(b))}else{LevelTerm::IMax(Box::new(a),Box::new(b))});},
++                }
++            }
++            if values.len()==1{values.pop()}else{None}
++        }
++        let Some(a)=materialize(self.levels,Side::Source(left,left_map),remaining)else{return false};
++        let Some(b)=materialize(self.levels,Side::Source(right,right_map),remaining)else{return false};
++        crate::level::level_equal_metered(a,b,remaining).is_proven()
+     }
+ 
+     fn instantiated_source_support(&self,left:&Closure,right:&Closure,remaining:&mut usize)->Option<Vec<(u64,u64)>>{
+@@ -7595,4 +7627,6 @@
+  #[test]fn identical_substitution_allocation_does_not_equal_different_used_levels(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let map=LevelSubstitution::new(vec![(NameId(1),one()),(NameId(2),LevelTerm::Zero)]);let a=Closure::with_levels(ExprId(4),EnvFrame::empty(),map.clone());let b=Closure::with_levels(ExprId(5),EnvFrame::empty(),map);assert!(!c.instantiated_source_capture_congruence(&a,&b,&mut 256));}
+  #[test]fn constant_universe_arguments_are_checked_without_renaming_constant_authority(){let(mut e,l,env)=fixture();for(id,name,level)in[(10,42,1),(11,42,2),(12,43,2)]{e.insert(ExprId(id),Expr::Const{name:NameId(name),levels:vec![LevelId(level)]}).unwrap();}let c=TypeChecker::new(&e,&l,&env);let a=term(10,1,one(),EnvFrame::empty());assert!(c.instantiated_source_capture_congruence(&a,&term(11,2,one(),EnvFrame::empty()),&mut 256));for b in[term(11,2,LevelTerm::Zero,EnvFrame::empty()),term(12,2,one(),EnvFrame::empty())]{assert!(!c.instantiated_source_capture_congruence(&a,&b,&mut 256));}}
+  #[test]fn parametric_projection_templates_preserve_owner_field_and_actual_receiver(){let(mut e,l,env)=fixture();for(id,owner,index)in[(13,70,0),(14,70,0),(15,71,0),(16,70,1)]{e.insert(ExprId(id),Expr::Proj{type_name:NameId(owner),index,structure:ExprId(0)}).unwrap();}let c=TypeChecker::new(&e,&l,&env);let a=term(13,1,one(),EnvFrame::empty().extend_free(FreeId(7)));assert!(c.instantiated_source_capture_congruence(&a,&term(14,2,one(),EnvFrame::empty().extend_free(FreeId(7))),&mut 256));for b in[term(15,2,one(),EnvFrame::empty().extend_free(FreeId(7))),term(16,2,one(),EnvFrame::empty().extend_free(FreeId(7))),term(14,2,one(),EnvFrame::empty().extend_free(FreeId(8)))]{assert!(!c.instantiated_source_capture_congruence(&a,&b,&mut 256));}}
++
++ #[test]fn normalized_instantiated_universes_use_existing_level_calculus(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let u=LevelTerm::param("u");for value in[LevelTerm::Max(Box::new(u.clone()),Box::new(LevelTerm::Zero)),LevelTerm::IMax(Box::new(LevelTerm::Zero),Box::new(u.clone()))]{let a=term(4,1,value,EnvFrame::empty());let b=term(5,2,u.clone(),EnvFrame::empty());assert!(c.instantiated_source_capture_congruence(&a,&b,&mut 256));assert!(!c.instantiated_source_capture_congruence(&a,&b,&mut 4));let wrong=term(5,2,LevelTerm::param("v"),EnvFrame::empty());assert!(!c.instantiated_source_capture_congruence(&a,&wrong,&mut 256));}}
+ }
+--- a/src/checker.rs
++++ b/src/checker.rs
+@@ -313,6 +313,8 @@
+     // authority; retaining future source records does not admit them.
+     for declaration_index in 0..export.declarations.len() {
+         let declaration = export.declarations[declaration_index].clone();
++        #[cfg(feature="diagnostics")]
++        crate::diagnostics::receiver_snapshot_target(matches!(&declaration,Declaration::Theorem{name,..}if name.0==26089));
+         #[cfg(feature="diagnostics")]
+         if crate::run_flags::present(crate::run_flags::Flag::TraceDeclarationProgress) {
+             let name=match &declaration {
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -2493,6 +2493,13 @@
+                     context.len(),
+                     context,
+                 );
++                #[cfg(feature="diagnostics")]
++                if crate::diagnostics::receiver_snapshot_target_active() && expected_formed
++                    && *remaining>100000 && (4..=16).contains(&context.len()){
++                    if let Judgment::Unknown{residual}=&conversion{
++                        self.diagnostic_receiver_snapshot(&value,expected,context,expression,frame.id(),*remaining,residual.0);
++                    }
++                }
+                 #[cfg(feature = "diagnostics")]
+                 if crate::run_flags::present(crate::run_flags::Flag::TraceFailedReceiverConversion)
+                     && matches!(&conversion, Judgment::Unknown { residual }
+@@ -6013,6 +6020,65 @@
+         probe.machine().source_predecessor_equations(zero_body,succ_body,free,work)
+     }
+ 
++    #[cfg(feature="diagnostics")]
++    fn diagnostic_receiver_snapshot(&self,left:&TypeValue,right:&TypeValue,context:&[TypeValue],checked_expr:ExprId,checked_frame:u64,remaining:usize,reason:&str){
++        use serde_json::{Value as Json,json};
++        fn tick(work:&mut usize,n:usize)->Option<()>{if *work<n{return None}*work-=n;Some(())}
++        fn lev(v:&LevelTerm,work:&mut usize,depth:usize)->Option<Json>{
++            tick(work,1)?;if depth>=64{return None}
++            Some(match v{LevelTerm::Zero=>json!(["zero"]),LevelTerm::Param(s)=>{tick(work,s.len())?;json!(["param",s])},LevelTerm::Succ(a)=>json!(["succ",lev(a,work,depth+1)?]),LevelTerm::Max(a,b)=>json!(["max",lev(a,work,depth+1)?,lev(b,work,depth+1)?]),LevelTerm::IMax(a,b)=>json!(["imax",lev(a,work,depth+1)?,lev(b,work,depth+1)?])})
++        }
++        fn cl(c:&Closure,frames:&mut Vec<EnvFrame>,work:&mut usize)->Option<Json>{
++            tick(work,1)?;frames.push(c.env.clone());let mut levels=Vec::new();
++            for(n,v)in c.levels.entries(){tick(work,1)?;levels.push(json!([n.0,lev(v,work,0)?]));}
++            Some(json!({"expr":c.expr.0,"env":c.env.id(),"levels":levels}))
++        }
++        fn neutral(n:&Neutral,frames:&mut Vec<EnvFrame>,work:&mut usize,depth:usize)->Option<Json>{
++            tick(work,1)?;if depth>=64{return None}
++            let head=match &n.head{
++                NeutralHead::Free(f)=>json!({"kind":"free","id":f.0}),
++                NeutralHead::Const{name,levels}=>{let mut values=Vec::new();for v in levels{values.push(lev(v,work,0)?);}json!({"kind":"const","name":name.0,"levels":values})},
++                NeutralHead::Projection{type_name,index,structure}=>json!({"kind":"proj","owner":type_name.0,"index":index,"receiver":neutral(structure,frames,work,depth+1)?}),
++            };
++            let mut spine=Vec::new();for c in &n.spine{spine.push(cl(c,frames,work)?);}Some(json!({"head":head,"spine":spine}))
++        }
++        fn ty(t:&TypeValue,frames:&mut Vec<EnvFrame>,work:&mut usize,depth:usize)->Option<Json>{
++            tick(work,1)?;if depth>=64{return None}
++            Some(match t{
++                TypeValue::Term(c)=>json!({"kind":"term","closure":cl(c,frames,work)?}),
++                TypeValue::Sort(v)=>json!({"kind":"sort","level":lev(v,work,0)?}),
++                TypeValue::Pi{domain,body,binder}=>json!({"kind":"pi","binder":binder.0,"domain":ty(domain,frames,work,depth+1)?,"body":ty(body,frames,work,depth+1)?}),
++                _=>return None,
++            })
++        }
++        fn snapshot(left:&TypeValue,right:&TypeValue,context:&[TypeValue])->Option<Json>{
++            let mut work=65536;let mut pending=Vec::new();let left=ty(left,&mut pending,&mut work,0)?;let right=ty(right,&mut pending,&mut work,0)?;let mut gamma=Vec::new();
++            for t in context{gamma.push(ty(t,&mut pending,&mut work,0)?);}
++            let mut frames=Vec::new();let mut seen=std::collections::HashSet::new();
++            while let Some(frame)=pending.pop(){
++                tick(&mut work,1)?;if !seen.insert(frame.id()){continue}if seen.len()>2048{return None}
++                let mut bindings=Vec::new();
++                for b in frame.binding_refs(){tick(&mut work,1)?;bindings.push(match b{
++                    EnvBinding::Free(f)=>json!({"kind":"free","id":f.0}),
++                    EnvBinding::Closure(c)=>json!({"kind":"closure","closure":cl(c,&mut pending,&mut work)?}),
++                    EnvBinding::Neutral(n)=>json!({"kind":"neutral","neutral":neutral(n,&mut pending,&mut work,0)?}),
++                    EnvBinding::NatLit(n)=>{tick(&mut work,n.limb_count())?;json!({"kind":"nat","base":1000000000u64,"limbs":n.diagnostic_limbs()})},
++                });}
++                frames.push(json!({"id":frame.id(),"bindings":bindings}));
++            }
++            Some(json!({"left":left,"right":right,"context":gamma,"frames":frames,"snapshot_work_spent":65536-work}))
++        }
++        use std::sync::atomic::{AtomicUsize,Ordering};static SLOTS:AtomicUsize=AtomicUsize::new(0);
++        let slot=SLOTS.fetch_add(1,Ordering::Relaxed);if slot>=16{return}
++        let Some(mut data)=snapshot(left,right,context)else{eprintln!("RECEIVER_SNAPSHOT:slot={slot}:DECLINED:unsupported-or-cap");return};
++        data["metadata"]=json!({"slot":slot,"checked_expr":checked_expr.0,"checked_frame":checked_frame,"remaining":remaining,"conversion_residual":reason,"context_len":context.len(),"diagnostic_only":true,"not_a_proof_of_equality":true});
++        let path=format!("/tmp/nucleus-receiver-snapshot-probe/snapshots/pair-{slot}.json");
++        match serde_json::to_vec_pretty(&data).ok().and_then(|bytes|std::fs::write(&path,bytes).ok()){
++            Some(())=>eprintln!("RECEIVER_SNAPSHOT:slot={slot}:SAVED:expr={checked_expr:?}:context={}:reason={reason}",context.len()),
++            None=>eprintln!("RECEIVER_SNAPSHOT:slot={slot}:WRITE_FAILED"),
++        }
++    }
++
+     pub(crate) fn machine(&self) -> Machine<'_> {
+         Machine::new(
+             self.environment.authority(),
+--- a/src/nat.rs
++++ b/src/nat.rs
+@@ -6,6 +6,9 @@
+ pub struct BigNat(Vec<u32>);
+ 
+ impl BigNat {
++    #[cfg(feature="diagnostics")]
++    pub(crate) fn diagnostic_limbs(&self)->&[u32]{&self.0}
++
+     pub fn zero() -> Self {
+         Self(Vec::new())
+     }
+--- a/src/diagnostics.rs
++++ b/src/diagnostics.rs
+@@ -60,3 +60,7 @@
+         conversions: CONVERSIONS.get(),
+     }
+ }
++
++thread_local!{static RECEIVER_SNAPSHOT_TARGET:Cell<bool>=const{Cell::new(false)};}
++pub(crate)fn receiver_snapshot_target(active:bool){RECEIVER_SNAPSHOT_TARGET.set(active)}
++pub(crate)fn receiver_snapshot_target_active()->bool{RECEIVER_SNAPSHOT_TARGET.get()}

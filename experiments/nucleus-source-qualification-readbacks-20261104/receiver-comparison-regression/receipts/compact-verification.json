@@ -1,0 +1,110 @@
+[
+  {
+    "input_sha256": "ef5df79ed54b93ec8597131304c9ed76358dd4a60c5bf7275fb0033a9fe9e431",
+    "rows": [
+      {
+        "arm": "reference-parse",
+        "rc": 0,
+        "wall": 0.2654555730005086,
+        "binary_sha256": "ae92c625e612fff1c90e329344d22e3c3c330383cb335ce28fd41435be3b3b94",
+        "terminal": ""
+      },
+      {
+        "arm": "reference",
+        "rc": 0,
+        "wall": 0.6162155189995246,
+        "binary_sha256": "ae92c625e612fff1c90e329344d22e3c3c330383cb335ce28fd41435be3b3b94",
+        "terminal": ""
+      },
+      {
+        "arm": "qualified-alpha",
+        "rc": 2,
+        "wall": 41.10807945099805,
+        "binary_sha256": "82ebbce2278e54f82667e4d12793034acdf72f329b989e4605cf65473c9de715",
+        "terminal": "NUCLEUS_DOWNSTREAM:name=NucleusReceiverSubgoal1:stage=theorem.value:verdict=UNKNOWN:reason=lazy-projection-value-exposure\n"
+      },
+      {
+        "arm": "nested-normalized",
+        "rc": 2,
+        "wall": 38.66786107900043,
+        "binary_sha256": "6f18eb89063c6802209f250f78f4c8bdd55d4cf16966f337226600ac896f8d53",
+        "terminal": "NUCLEUS_DOWNSTREAM:name=NucleusReceiverSubgoal1:stage=theorem.value:verdict=UNKNOWN:reason=neutral-projection-receiver-congruence\n"
+      }
+    ],
+    "complete_mathlib_accept": false,
+    "no_rank_claim": true,
+    "signature_environment_only": true
+  },
+  {
+    "input_sha256": "073472ae087a7d6272166181dbb1616dfe5adbd4f77122c906e36ff470a16cb8",
+    "rows": [
+      {
+        "arm": "reference-parse",
+        "rc": 0,
+        "wall": 0.4172742430018843,
+        "binary_sha256": "ae92c625e612fff1c90e329344d22e3c3c330383cb335ce28fd41435be3b3b94",
+        "terminal": ""
+      },
+      {
+        "arm": "reference",
+        "rc": 0,
+        "wall": 0.8674255410005571,
+        "binary_sha256": "ae92c625e612fff1c90e329344d22e3c3c330383cb335ce28fd41435be3b3b94",
+        "terminal": ""
+      },
+      {
+        "arm": "qualified-alpha",
+        "rc": 2,
+        "wall": 44.417825805001485,
+        "binary_sha256": "82ebbce2278e54f82667e4d12793034acdf72f329b989e4605cf65473c9de715",
+        "terminal": "NUCLEUS_DOWNSTREAM:name=NucleusReceiverSubgoal0:stage=theorem.value:verdict=UNKNOWN:reason=lazy-projection-value-exposure\n"
+      },
+      {
+        "arm": "nested-normalized",
+        "rc": 2,
+        "wall": 45.69539578000331,
+        "binary_sha256": "6f18eb89063c6802209f250f78f4c8bdd55d4cf16966f337226600ac896f8d53",
+        "terminal": "NUCLEUS_DOWNSTREAM:name=NucleusReceiverSubgoal0:stage=theorem.value:verdict=UNKNOWN:reason=neutral-projection-receiver-congruence\n"
+      }
+    ],
+    "complete_mathlib_accept": false,
+    "no_rank_claim": true,
+    "signature_environment_only": true
+  },
+  {
+    "input_sha256": "ae82d81ebdda77f53f359326d9ef8c756aa4f964edd0126a4805f81723025b93",
+    "rows": [
+      {
+        "arm": "reference-parse",
+        "rc": 0,
+        "wall": 0.36788425899794674,
+        "binary_sha256": "ae92c625e612fff1c90e329344d22e3c3c330383cb335ce28fd41435be3b3b94",
+        "terminal": ""
+      },
+      {
+        "arm": "reference",
+        "rc": 0,
+        "wall": 0.6162696370010963,
+        "binary_sha256": "ae92c625e612fff1c90e329344d22e3c3c330383cb335ce28fd41435be3b3b94",
+        "terminal": ""
+      },
+      {
+        "arm": "qualified-alpha",
+        "rc": 2,
+        "wall": 33.74129914700097,
+        "binary_sha256": "82ebbce2278e54f82667e4d12793034acdf72f329b989e4605cf65473c9de715",
+        "terminal": "NUCLEUS_DOWNSTREAM:name=NucleusReceiverSnapshot0:stage=theorem.value:verdict=UNKNOWN:reason=lazy-projection-value-exposure\n"
+      },
+      {
+        "arm": "nested-normalized",
+        "rc": 2,
+        "wall": 29.860322758999246,
+        "binary_sha256": "6f18eb89063c6802209f250f78f4c8bdd55d4cf16966f337226600ac896f8d53",
+        "terminal": "NUCLEUS_DOWNSTREAM:name=NucleusReceiverSnapshot0:stage=theorem.value:verdict=UNKNOWN:reason=neutral-projection-receiver-congruence\n"
+      }
+    ],
+    "complete_mathlib_accept": false,
+    "no_rank_claim": true,
+    "signature_environment_only": true
+  }
+]
