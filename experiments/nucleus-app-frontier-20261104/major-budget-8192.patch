@@ -1,0 +1,9 @@
+diff --git a/metatron-kernel/src/machine.rs b/metatron-kernel/src/machine.rs
+--- a/metatron-kernel/src/machine.rs
++++ b/metatron-kernel/src/machine.rs
+@@ -2293,1 +2293,1 @@
+-                        Transparency::Full,self.exposure_fuel.get().unwrap_or(0).min(512))
++                        Transparency::Full,self.exposure_fuel.get().unwrap_or(0).min(8192))
+@@ -2296,1 +2296,1 @@
+-                        Transparency::Full,self.exposure_fuel.get().unwrap_or(0).min(512))
++                        Transparency::Full,self.exposure_fuel.get().unwrap_or(0).min(8192))
