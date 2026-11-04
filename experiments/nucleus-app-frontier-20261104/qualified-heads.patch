@@ -1,0 +1,58 @@
+diff --git a/metatron-kernel/src/typecheck.rs b/metatron-kernel/src/typecheck.rs
+--- a/metatron-kernel/src/typecheck.rs
++++ b/metatron-kernel/src/typecheck.rs
+@@ -1795,4 +1795,8 @@
+             }
+             Expr::App { fun, arg } => {
++                #[cfg(feature = "diagnostics")]
++                let _trace_target = crate::convert::scoped_target_conversion_trace(
++                    expression.0 == 137312 && std::env::var_os("NUCLEUS_TRACE_TARGET_APP").is_some(),
++                );
+                 let function_type = self.infer_in(*fun, context, frame, remaining, cache);
+                 if let Judgment::Refuted { obstruction } = &function_type {
+diff --git a/metatron-kernel/src/convert.rs b/metatron-kernel/src/convert.rs
+--- a/metatron-kernel/src/convert.rs
++++ b/metatron-kernel/src/convert.rs
+@@ -2503,6 +2503,13 @@
+                 !neutral.spine.is_empty()
+                     && matches!(&neutral.head,NeutralHead::Const{name,..} if checker.has_qualified_recursor(*name))
+             }) {
++                #[cfg(feature = "diagnostics")]
++                if TRACE_TARGET_CONVERSION.with(|flag| flag.get()) {
++                    eprintln!(
++                        "NUCLEUS_TARGET_QUALIFIED_HEADS:context_len={}:depth={depth}:budget={}:left={:?}:right={:?}",
++                        context.len(), budget, left, right,
++                    );
++                }
+                 return Judgment::unknown("unresolved-qualified-recursor-heads");
+             }
+             Judgment::refuted("distinct-neutral-heads")
+@@ -2513,4 +2524,28 @@
+ }
+ 
++#[cfg(feature = "diagnostics")]
++thread_local! {
++    static TRACE_TARGET_CONVERSION: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
++}
++
++#[cfg(feature = "diagnostics")]
++pub(crate) struct TargetConversionTraceScope(Option<bool>);
++
++#[cfg(feature = "diagnostics")]
++impl Drop for TargetConversionTraceScope {
++    fn drop(&mut self) {
++        if let Some(previous) = self.0 {
++            TRACE_TARGET_CONVERSION.with(|flag| flag.set(previous));
++        }
++    }
++}
++
++#[cfg(feature = "diagnostics")]
++pub(crate) fn scoped_target_conversion_trace(enabled: bool) -> TargetConversionTraceScope {
++    if !enabled { return TargetConversionTraceScope(None); }
++    let previous = TRACE_TARGET_CONVERSION.with(|flag| flag.replace(true));
++    TargetConversionTraceScope(Some(previous))
++}
++
+ /// Proof irrelevance is permitted only after checking BOTH proposition
+ /// judgments and checking conversion of their exact dependent types in

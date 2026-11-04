@@ -61,12 +61,14 @@ def main():
     trace_env = qualified_env.copy()
     trace_env.update({"NUCLEUS_TRACE_DOWNSTREAM": "1",
                       "NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE": "1",
+                      "NUCLEUS_TRACE_TARGET_APP": "1",
                       "METATRON_KERNEL_DIAGNOSTICS": "1"})
     diagnostic = checked_run("diagnostic", [str(TRACE)], use_stdin=True, env=trace_env)
     error = (ROOT / "diagnostic.stderr").read_text(errors="replace")
     lines = error.splitlines()
     application_lines = [line for line in lines if line.startswith("NUCLEUS_APPLICATION_FUNCTION_TYPE:")]
     downstream = [line for line in lines if line.startswith("NUCLEUS_DOWNSTREAM:")]
+    target_neutral = [line for line in lines if line.startswith("NUCLEUS_TARGET_QUALIFIED_HEADS:")]
     applications = []
     for line in application_lines:
         fields = {}
@@ -81,6 +83,8 @@ def main():
                "diagnostic_sha256": digest(TRACE),
                "baseline": base, "official": reference, "diagnostic": diagnostic,
                "application_failure_count": len(applications),
+               "qualified_head_observation_count": len(target_neutral),
+               "qualified_head_observations": target_neutral[:48],
                "applications": applications[:16], "terminal": downstream[-1] if downstream else None,
                "trace_line_count": len(lines), "trace_tail": lines[-8:]}
     (ROOT / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
@@ -92,6 +96,7 @@ def main():
     assert reference["rc"] == 0, "official Lean acceptance is a prerequisite"
     assert base["rc"] == diagnostic["rc"] == 2, "preserve first UNKNOWN"
     assert applications, "diagnostic instrumentation must identify an application"
+    assert target_neutral, "the target's exact neutral conversion must be observed"
 
 
 if __name__ == "__main__":
