@@ -1,0 +1,192 @@
+--- a/metatron-kernel/src/convert.rs
++++ b/metatron-kernel/src/convert.rs
+@@ -1685,8 +1685,8 @@
+                     let mut replayed = None;
+                     for (is_left, candidate) in [(true, left), (false, right)] {
+                         if let Judgment::Proven { value, .. } =
+-                            machine.qualified_quotient_neutral_result(
+-                                candidate, current_budget.min(2048),
++                            machine.qualified_quotient_neutral_result_metered(
++                                candidate, &mut current_budget,
+                             )
+                             && !matches!(&value, Value::Neutral(n) if n == candidate)
+                         {
+@@ -1697,7 +1697,8 @@
+                     if let Some((is_left, value)) = replayed {
+                         if is_left { current_left = value; }
+                         else { current_right = value; }
+-                        current_budget = current_budget.saturating_sub(128);
++                        // Success and failed alternatives already paid their
++                        // actual work through the same caller allowance.
+                         continue;
+                     }
+                 }
+--- a/metatron-kernel/src/machine.rs
++++ b/metatron-kernel/src/machine.rs
+@@ -270,6 +270,15 @@
+ 
+ struct NeutralProjectionDepthScope<'a> { depth: &'a Cell<usize> }
+ impl Drop for NeutralProjectionDepthScope<'_> { fn drop(&mut self) {self.depth.set(self.depth.get().saturating_sub(1));} }
++
++// A borrowed allowance returns only unused work and charges both outcomes.
++struct MeteredQuotientWork<'a>{fuel:&'a Cell<Option<usize>>,caller:&'a mut usize,parent:Option<usize>,grant:usize}
++impl Drop for MeteredQuotientWork<'_>{fn drop(&mut self){
++    let unused=self.fuel.get().unwrap_or(0).min(self.grant);
++    let spent=self.grant-unused;
++    *self.caller=self.caller.saturating_sub(spent);
++    self.fuel.set(self.parent.map(|work|work.saturating_sub(spent)));
++}}
+ 
+ struct ConstructorFuelScope<'a> { fuel: &'a Cell<Option<usize>> }
+ impl Drop for ConstructorFuelScope<'_> { fn drop(&mut self) { self.fuel.set(None); } }
+@@ -1577,64 +1586,69 @@
+     }
+ 
+     pub(crate) fn qualified_quotient_neutral_result(
+-        &self,
+-        neutral: &Neutral,
+-        budget: usize,
++        &self, neutral: &Neutral, budget: usize,
+     ) -> Judgment<Value> {
+-        if budget < 128 {
+-            return Judgment::unknown("quotient-neutral-insufficient-fuel");
+-        }
+-        let Some(registered) = self.quot_primitives.as_ref() else {
+-            return Judgment::unknown("quotient-neutral-no-source-package");
+-        };
+-        let NeutralHead::Const { name, levels } = &neutral.head else {
+-            return Judgment::unknown("quotient-neutral-not-registered");
+-        };
+-        if *name != registered.lift || levels.len() != 2 || neutral.spine.len() != 6 {
++        let mut remaining=budget;
++        self.qualified_quotient_neutral_result_metered(neutral,&mut remaining)
++    }
++
++    pub(crate) fn qualified_quotient_neutral_result_metered(&self,n:&Neutral,remaining:&mut usize)->Judgment<Value>{
++        let parent=self.exposure_fuel.get();
++        let grant=(*remaining).min(2048).min(parent.unwrap_or(usize::MAX));
++        self.exposure_fuel.set(Some(grant));
++        let _work=MeteredQuotientWork{fuel:&self.exposure_fuel,caller:remaining,parent,grant};
++        self.qualified_quotient_neutral_result_at_depth(n,grant,0)
++    }
++
++    fn qualified_quotient_neutral_result_at_depth(
++        &self, neutral: &Neutral, budget: usize, depth: usize,
++    ) -> Judgment<Value> {
++        if budget<128 || depth>=16 {return Judgment::unknown("quotient-demand-budget-or-depth");}
++        let Some(registered)=self.quot_primitives.as_ref() else{return Judgment::unknown("quotient-neutral-no-source-package");};
++        let NeutralHead::Const{name,levels}=&neutral.head else{return Judgment::unknown("quotient-neutral-not-registered");};
++        if *name!=registered.lift || levels.len()!=2 || neutral.spine.len()!=6 {
+             return Judgment::unknown("quotient-neutral-not-lift");
+         }
+-        let Some(major) = neutral.spine.last() else {
+-            return Judgment::unknown("quotient-neutral-no-major");
+-        };
+-        let normalized = self.expose_internal(
+-            major.clone(), Transparency::Full, budget.min(1024), false, false,
+-        );
+-        let Some(Exposure {
+-            value: Value::Neutral(Neutral {
+-                head: NeutralHead::Const {
+-                    name: constructor,
+-                    levels: constructor_levels,
++        // Every nested projection and quotient demand borrows this one owner.
++        let _owner=if self.exposure_fuel.get().is_none(){
++            self.exposure_fuel.set(Some(budget));Some(ConstructorFuelScope{fuel:&self.exposure_fuel})
++        }else{None};
++        let allowance=||self.exposure_fuel.get().unwrap_or(0).min(budget);
++        if !self.reserve_replay_work(2){return Judgment::unknown("quotient-demand-work");}
++        let major=self.expose_internal(neutral.spine[5].clone(),Transparency::Full,allowance().min(1024),false,false);
++        let Judgment::Proven{value:Exposure{value:mut major,..},..}=major else{return Judgment::unknown("quotient-neutral-major-not-constructor");};
++        for _ in 0..16 {
++            if !self.reserve_replay_work(1){return Judgment::unknown("quotient-demand-work");}
++            major=match major {
++                Value::StuckProjection{type_name,index,structure,spine}=>{
++                    if !self.reserve_replay_work(spine.len().saturating_add(1)){return Judgment::unknown("quotient-projection-work");}
++                    let selected=self.projection_value_for_conversion(structure,type_name,index,&spine,allowance());
++                    let Judgment::Proven{value,..}=selected else{return Judgment::unknown("quotient-major-projection-unavailable");};
++                    value
+                 },
+-                spine: constructor_arguments,
+-            }),
+-            ..
+-        }) = normalized.proven_value() else {
+-            return Judgment::unknown("quotient-neutral-major-not-constructor");
+-        };
+-        if *constructor != registered.mk
+-            || constructor_levels.len() != 1
+-            || constructor_arguments.len() != 3
+-            || !crate::level::level_equal(
+-                levels[0].clone(), constructor_levels[0].clone(), budget.min(256),
+-            ).is_proven()
+-        {
++                Value::Neutral(ref nested) if matches!(&nested.head,NeutralHead::Const{name,..}if *name==registered.lift)=>{
++                    let result=self.qualified_quotient_neutral_result_at_depth(nested,allowance(),depth+1);
++                    let Judgment::Proven{value,..}=result else{return Judgment::unknown("quotient-nested-major-unavailable");};
++                    value
++                },
++                other=>{major=other;break;},
++            };
++        }
++        let Value::Neutral(Neutral{head:NeutralHead::Const{name:constructor,levels:constructor_levels},spine:constructor_arguments})=major else{return Judgment::unknown("quotient-neutral-major-not-constructor");};
++        if constructor!=registered.mk || constructor_levels.len()!=1 || constructor_arguments.len()!=3 {
+             return Judgment::unknown("quotient-neutral-major-not-matching-mk");
+         }
+-        let function = neutral.spine[3].clone();
+-        let value = constructor_arguments[2].clone();
+-        let reduced = self.expose_internal_with_pending(
+-            function,
+-            Transparency::Full,
+-            budget.min(2048),
+-            false,
+-            false,
+-            vec![value],
+-        ).map(|out| out.value);
+-        #[cfg(feature = "diagnostics")]
+-        if crate::run_flags::present(crate::run_flags::Flag::TraceCertifiedQuotIota) {
+-            eprintln!("NUCLEUS_QUOTIENT_NEUTRAL_IOTA:head={name:?}:result={reduced:?}");
+-        }
+-        reduced
++        if !self.reserve_replay_levels(&levels[0]) || !self.reserve_replay_levels(&constructor_levels[0]) {
++            return Judgment::unknown("quotient-universe-work");
++        }
++        if levels[0]!=constructor_levels[0] {
++            let level_budget=allowance().min(256);
++            if !self.reserve_replay_work(level_budget) || !crate::level::level_equal(levels[0].clone(),constructor_levels[0].clone(),level_budget).is_proven(){
++                return Judgment::unknown("quotient-neutral-major-not-matching-mk");
++            }
++        }
++        if !self.reserve_replay_work(2){return Judgment::unknown("quotient-result-work");}
++        self.expose_internal_with_pending(neutral.spine[3].clone(),Transparency::Full,allowance().min(2048),false,false,vec![constructor_arguments[2].clone()]).map(|out|out.value)
+     }
+ 
+     fn try_quot_reduction(
+@@ -3783,3 +3797,28 @@
+  }
+ 
+ }
++
++#[cfg(test)]
++mod quotient_caller_work_tests {
++    use super::*;
++    fn syntax()->(IdTable<ExprId,Expr>,IdTable<LevelId,Level>){
++        let mut e=IdTable::default();let mut l=IdTable::default();l.insert(LevelId(0),Level::Zero).unwrap();
++        e.insert(ExprId(0),Expr::BVar(0)).unwrap();
++        e.insert(ExprId(1),Expr::Const{name:NameId(3),levels:vec![LevelId(0),LevelId(0)]}).unwrap();
++        let mut f=ExprId(1);for i in 2..8{e.insert(ExprId(i),Expr::App{fun:f,arg:ExprId(0)}).unwrap();f=ExprId(i);}
++        e.insert(ExprId(8),Expr::Proj{type_name:NameId(99),index:0,structure:ExprId(0)}).unwrap();(e,l)
++    }
++    fn machine<'a>(e:&'a IdTable<ExprId,Expr>,l:&'a IdTable<LevelId,Level>)->Machine<'a>{
++        Machine::new(AuthorityId(0),e,l,HashMap::new()).with_quot_primitives(Some(QuotPrimitives{type_name:NameId(1),mk:NameId(2),lift:NameId(3),ind:NameId(4)}))
++    }
++    fn request(major:u64)->Neutral{
++        let c=Closure::new(ExprId(0),EnvFrame::empty().extend_free(crate::value::FreeId(0)));
++        let mut spine=vec![c.clone();6];spine[5]=Closure::new(ExprId(major),c.env);
++        Neutral{head:NeutralHead::Const{name:NameId(3),levels:vec![crate::level::LevelTerm::Zero;2]},spine}
++    }
++    #[test]fn failed_actual_major_consumes_caller_work(){let(e,l)=syntax();let m=machine(&e,&l);let mut work=512;assert!(m.qualified_quotient_neutral_result_metered(&request(0),&mut work).is_unknown());assert!(work<512&&work>0,"failed actual exposure must be charged: {work}");assert_eq!(m.exposure_fuel.get(),None);}
++    #[test]fn failed_nested_lift_charges_its_extra_work(){let(e,l)=syntax();let m=machine(&e,&l);let mut direct=512;let mut nested=512;assert!(m.qualified_quotient_neutral_result_metered(&request(0),&mut direct).is_unknown());assert!(m.qualified_quotient_neutral_result_metered(&request(7),&mut nested).is_unknown());assert!(nested<direct,"nested={nested},direct={direct}");}
++    #[test]fn failed_projection_is_charged_without_a_constructor_witness(){let(e,l)=syntax();let m=machine(&e,&l);let mut work=512;assert!(m.qualified_quotient_neutral_result_metered(&request(8),&mut work).is_unknown());assert!(work<512);}
++    #[test]fn existing_owner_is_preserved_and_debited_once(){let(e,l)=syntax();let m=machine(&e,&l);m.exposure_fuel.set(Some(200));let mut work=512;assert!(m.qualified_quotient_neutral_result_metered(&request(0),&mut work).is_unknown());let spent=512-work;assert!(spent>0);assert_eq!(m.exposure_fuel.get(),Some(200-spent));}
++    #[test]fn zero_caller_work_never_borrows_a_fresh_parent_allowance(){let(e,l)=syntax();let m=machine(&e,&l);m.exposure_fuel.set(Some(200));let mut work=0;assert!(m.qualified_quotient_neutral_result_metered(&request(7),&mut work).is_unknown());assert_eq!(work,0);assert_eq!(m.exposure_fuel.get(),Some(200));}
++}
