@@ -27,3 +27,42 @@ jobs:
             --manifest-path metatron-kernel/Cargo.toml \
             --test semantic_witness_v2 --test semantic_witness \
             --test mgso_shadow --test quotient_source_ownership
+          cargo build --release --locked --features semantic-witness \
+            --manifest-path metatron-kernel/Cargo.toml
+      - name: Independently qualify terminal downgrade and the entire V2 boundary
+        run: |
+          set -euo pipefail
+          PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover \
+            -s experiments/nucleus-semantic-witness-v2-20261104 -p 'test_*.py' -v
+          PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover \
+            -s experiments/nucleus-postflight-semantic-witness-20261104 -p 'test_*.py' -v
+          mkdir -p /tmp/nucleus-postflight-witness
+          git rev-parse HEAD > /tmp/nucleus-postflight-witness/source-commit.txt
+          git rev-parse HEAD:metatron-kernel/src > /tmp/nucleus-postflight-witness/kernel-source-tree.txt
+          sha256sum metatron-kernel/target/release/metatron-kernel \
+            metatron-kernel/tests/fixtures/good-theorem-use.ndjson \
+            > /tmp/nucleus-postflight-witness/native-source-pins.txt
+          PYTHONDONTWRITEBYTECODE=1 python3 \
+            experiments/nucleus-postflight-semantic-witness-20261104/postflight_qualification.py \
+            --binary metatron-kernel/target/release/metatron-kernel \
+            --fixture metatron-kernel/tests/fixtures/good-theorem-use.ndjson \
+            --fixtures metatron-kernel/tests/fixtures \
+            --output /tmp/nucleus-postflight-witness/qualification.json
+      - name: Full default-feature Rust suite (record inherited failures)
+        continue-on-error: true
+        run: |
+          mkdir -p /tmp/nucleus-postflight-witness
+          set +e
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml \
+            > /tmp/nucleus-postflight-witness/full-suite.log 2>&1
+          result=$?
+          echo "exit_code=$result" > /tmp/nucleus-postflight-witness/full-suite-status.txt
+          tail -75 /tmp/nucleus-postflight-witness/full-suite.log
+          exit "$result"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-postflight-witness-${{ github.sha }}
+          path: /tmp/nucleus-postflight-witness/
+          if-no-files-found: warn
+          retention-days: 30
