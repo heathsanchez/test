@@ -1,0 +1,97 @@
+--- a/src/checker.rs
++++ b/src/checker.rs
+@@ -313,6 +313,9 @@
+     // authority; retaining future source records does not admit them.
+     for declaration_index in 0..export.declarations.len() {
+         let declaration = export.declarations[declaration_index].clone();
++        #[cfg(feature="diagnostics")]
++        crate::diagnostics::receiver_target(matches!(&declaration,Declaration::Theorem{name,..} if name.0==26089));
++
+         #[cfg(feature="diagnostics")]
+         if crate::run_flags::present(crate::run_flags::Flag::TraceDeclarationProgress) {
+             let name=match &declaration {
+--- a/src/convert.rs
++++ b/src/convert.rs
+@@ -181,10 +181,16 @@
+             // shapes reserve work for ordinary beta/delta exposure.
+             let direct_lambdas=matches!((checker.expression(lhs.expr),checker.expression(rhs.expr)),
+                 (Some(Expr::Lam{..}),Some(Expr::Lam{..})));
+-            let allowance = if direct_lambdas { remaining.min(1024) } else { (remaining / 4).min(1024) };
++            let diagnostic_reserve={#[cfg(feature="diagnostics")]{crate::diagnostics::receiver_target_active()}#[cfg(not(feature="diagnostics"))]{false}};
++            let allowance = if direct_lambdas && !diagnostic_reserve { remaining.min(1024) } else { (remaining / 4).min(1024) };
+             let mut trial = allowance;
+             let identical = checker.exact_source_capture_identity(lhs, rhs, &mut trial);
+             remaining -= allowance.saturating_sub(trial);
++            #[cfg(feature="diagnostics")]
++            if diagnostic_reserve && lhs.expr==ExprId(690) && rhs.expr==ExprId(690){
++                use std::sync::atomic::{AtomicUsize,Ordering};static TRIALS:AtomicUsize=AtomicUsize::new(0);
++                if TRIALS.fetch_add(1,Ordering::Relaxed)<32{eprintln!("LAMBDA_RESERVATION:allowance={allowance}:unused={trial}:remaining={remaining}:identity={identical}:depth={depth}:target_scoped_only=true");}
++            }
+             if identical { continue; }
+         }
+ 
+@@ -1374,6 +1380,8 @@
+                 let mut opening_budget = allowance;
+                 if !source_opening_avoids_capture(checker, left_body, free, &mut opening_budget)
+                     || !source_opening_avoids_capture(checker, right_body, free, &mut opening_budget) {
++                    #[cfg(feature="diagnostics")]
++                    crate::diagnostics::receiver_event(format_args!("opening:left_expr={:?}:right_expr={:?}:left_env={}:right_env={}:free={free:?}:allowance={allowance}:remaining={opening_budget}:depth={depth}",left_body.expr,right_body.expr,left_body.env.id(),right_body.env.id()));
+                     return Judgment::unknown("source-binder-capture-or-support-unavailable");
+                 }
+                 current_budget -= allowance - opening_budget;
+@@ -2530,7 +2538,8 @@
+                 return Judgment::unknown("neutral-projection-receiver-congruence");
+             }
+             let mut source_work = budget.saturating_sub(1);
+-            if exact_neutral_source_congruence(checker, left_structure, right_structure, &mut source_work) {
++            let diagnostic_skip={ #[cfg(feature="diagnostics")] {crate::diagnostics::receiver_target_active()} #[cfg(not(feature="diagnostics"))] {false} };
++            if !diagnostic_skip && exact_neutral_source_congruence(checker, left_structure, right_structure, &mut source_work) {
+                 return Judgment::proven((), "exact-source-neutral-receiver-congruence");
+             }
+             let budget = source_work;
+@@ -2547,6 +2556,8 @@
+                     argument_budget, DeltaPolicy::GuardedSemanticFallback, depth, context,
+                 );
+                 if !argument_result.is_proven() {
++                    #[cfg(feature="diagnostics")]
++                    crate::diagnostics::receiver_event(format_args!("argument:owner={left_type:?}:field={left_index}:depth={depth}:outer_budget={budget}:argument_budget={argument_budget}:left_expr={:?}:right_expr={:?}:left_env={}:right_env={}:result={argument_result:?}",lhs.expr,rhs.expr,lhs.env.id(),rhs.env.id()));
+                     #[cfg(feature = "diagnostics")]
+                     if crate::run_flags::present(crate::run_flags::Flag::TraceFailedReceiverCaptures)
+                         && matches!(lhs.expr.0, 600 | 1214)
+@@ -2964,7 +2975,11 @@
+             *budget -= 1;
+         }
+         if !visited.insert((source.expr, source.env.id(), virtual_slots)) { continue; }
+-        let Some(support) = checker.complete_source_support(source.expr, budget) else { return false; };
++        let Some(support) = checker.complete_source_support(source.expr, budget) else {
++            #[cfg(feature="diagnostics")]
++            crate::diagnostics::receiver_event(format_args!("support:root={:?}:env={}:virtual={virtual_slots}:free={free:?}:remaining={budget}",source.expr,source.env.id()));
++            return false;
++        };
+         // Completed support is sorted and unique. Share the already read
+         // environment prefix across its actual used indices, rather than
+         // restarting linked-list lookup for every index.
+@@ -2977,7 +2992,11 @@
+             if end<=traversed{return false;} // Never invent an unsorted support witness.
+             let mut binding=None;
+             while traversed<end{
+-                if *budget==0{return false;}*budget-=1;
++                if *budget==0{
++                    #[cfg(feature="diagnostics")]
++                    crate::diagnostics::receiver_event(format_args!("environment-prefix:root={:?}:env={}:virtual={virtual_slots}:used_index={index}:traversed={traversed}:end={end}:free={free:?}",source.expr,source.env.id()));
++                    return false;
++                }*budget-=1;
+                 binding=bindings.next();
+                 if binding.is_none(){return false;}
+                 traversed+=1;
+--- a/src/diagnostics.rs
++++ b/src/diagnostics.rs
+@@ -60,3 +60,8 @@
+         conversions: CONVERSIONS.get(),
+     }
+ }
++
++thread_local! { static RECEIVER_TARGET:Cell<bool>=const{Cell::new(false)}; static RECEIVER_EVENTS:Cell<usize>=const{Cell::new(0)}; }
++pub(crate) fn receiver_target_active()->bool { RECEIVER_TARGET.get() }
++pub(crate) fn receiver_target(active:bool){ RECEIVER_TARGET.set(active); RECEIVER_EVENTS.set(0); }
++pub(crate) fn receiver_event(args:std::fmt::Arguments<'_>){ if RECEIVER_TARGET.get() && RECEIVER_EVENTS.get()<256 { RECEIVER_EVENTS.set(RECEIVER_EVENTS.get()+1); eprintln!("RECEIVER_BOUNDARY:{args}"); } }
