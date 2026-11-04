@@ -67,3 +67,18 @@ diff --git a/metatron-kernel/src/convert.rs b/metatron-kernel/src/convert.rs
 +
  /// Proof irrelevance is permitted only after checking BOTH proposition
  /// judgments and checking conversion of their exact dependent types in
+diff --git a/metatron-kernel/src/machine.rs b/metatron-kernel/src/machine.rs
+--- a/metatron-kernel/src/machine.rs
++++ b/metatron-kernel/src/machine.rs
+@@ -2368,1 +2368,10 @@
++                #[cfg(feature="diagnostics")]
++                if std::env::var_os("NUCLEUS_TRACE_IOTA_UNMATCHED").is_some() && name.0 == 2005 {
++                    eprintln!(
++                        "NUCLEUS_TARGET_IOTA_UNMATCHED:recursor={name:?}:actual={constructor:?}:universes={constructor_levels:?}:arity={}:registered={:?}:remaining_fuel={:?}",
++                        constructor_args.len(),
++                        reduction.rules.iter().map(|r|(r.constructor,r.num_params,r.num_fields)).collect::<Vec<_>>(),
++                        self.exposure_fuel.get(),
++                    );
++                }
+-                return Judgment::unknown("nested-recursor-iota-unmatched-rule");
++                return Judgment::unknown("nested-recursor-iota-unmatched-rule");
