@@ -1,0 +1,44 @@
+--- a/metatron-kernel/src/typecheck.rs
++++ b/metatron-kernel/src/typecheck.rs
+@@ -2476,6 +2598,41 @@
+                         context.len(), frame.id(), *remaining, expose(&value), expose(expected));
+                 }
+                 #[cfg(feature="diagnostics")]
++                if std::env::var_os("NUCLEUS_TRACE_POLY_EQ_SPINE").is_some()
++                    && expression == ExprId(159703) && context.len() == 8
++                    && *remaining > 100_000
++                {
++                    use std::sync::atomic::{AtomicUsize,Ordering};
++                    static ONCE:AtomicUsize=AtomicUsize::new(0);
++                    if ONCE.fetch_add(1,Ordering::Relaxed)==0 {
++                        let machine=self.machine();
++                        let read=|tv:&TypeValue| match tv {
++                            TypeValue::Term(t)=>machine.expose_for_conversion(
++                                t.clone(),Transparency::Full,4096,
++                            ).proven_value().cloned(),
++                            _=>None,
++                        };
++                        if let (Some(Value::Neutral(lhs)),Some(Value::Neutral(rhs)))=(read(&value),read(expected)) {
++                            let pairs=lhs.spine.iter().zip(rhs.spine.iter()).enumerate()
++                                .map(|(i,(a,b))| {
++                                    let cmp=crate::convert::convert_with_policy_in_context(
++                                        self,&TypeValue::Term(a.clone()),&TypeValue::Term(b.clone()),
++                                        4096,crate::convert::DeltaPolicy::PreferredOnly,context.len(),context,
++                                    );
++                                    let semantic=self.checked_semantic_capture_congruence(a,b,context,4096);
++                                    let typed=self.checked_source_conversion(a,b,context,4096);
++                                    format!("arg{i}:a={:?}:aenv={}:asource={:?}:abinding={:?}:b={:?}:benv={}:bsource={:?}:bbinding={:?}:converted={cmp:?}:semantic={semantic:?}:source_typed={typed:?}",
++                                        a.expr,a.env.id(),self.expressions.get(a.expr),
++                                        match self.expressions.get(a.expr) {Some(Expr::BVar(n))=>a.env.lookup(*n),_=>None},
++                                        b.expr,b.env.id(),self.expressions.get(b.expr),
++                                        match self.expressions.get(b.expr) {Some(Expr::BVar(n))=>b.env.lookup(*n),_=>None},
++                                    )
++                                }).collect::<Vec<_>>();
++                            eprintln!("NUCLEUS_POLY_EQ_SPINE:head={:?}:other={:?}:argc={}:otherc={}:pairs={pairs:?}:NO_ADMISSION",lhs.head,rhs.head,lhs.spine.len(),rhs.spine.len());
++                        }
++                    }
++                }
++                #[cfg(feature="diagnostics")]
+                 if crate::run_flags::present(crate::run_flags::Flag::TraceBidirBodyGap)
+                     && context.len()==5
+                     && matches!(expression.0,11147|11146|7584|7250|5306)
