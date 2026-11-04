@@ -3,7 +3,7 @@ name: Nucleus typed semantic capture congruence counterfactual
 on:
   push:
     branches: [research/nucleus-cross-checker-trace-20261105]
-    paths: ['.github/workflows/nucleus-typed-semantic-captures-20261105.yml']
+    paths: ['.github/workflows/nucleus-typed-semantic-captures-20261105.yml', 'experiments/nucleus-cross-checker-trace-20261105/typed-semantic-captures-counterfactual.patch']
   workflow_dispatch:
 
 permissions:
@@ -106,7 +106,9 @@ jobs:
           spine=[s for s in p.stderr.decode(errors='replace').splitlines() if s.startswith('NUCLEUS_WHOLE_SPINE_TRIAL:')]
           capture_successes=[s for s in p.stderr.decode(errors='replace').splitlines() if s.startswith('NUCLEUS_TYPED_CAPTURE_SUCCESS:')]
           capture_unknown=[s for s in p.stderr.decode(errors='replace').splitlines() if s.startswith('NUCLEUS_TYPED_CAPTURE_UNPROVEN:')]
-          report=dict(source_commit=os.environ['GITHUB_SHA'],qualified_parent_binary='82ebbce2278e54f82667e4d12793034acdf72f329b989e4605cf65473c9de715',input_sha=hashlib.sha256(source.read_bytes()).hexdigest(),rc=p.returncode,trace_count=len(trace),function_type_shapes=dict(kinds),trace_first=trace[0][:3000] if trace else None,trace_last=trace[-1][:3000] if trace else None,terminal_cause_count=len(causes),spine_marker_count=len(spine),spine_examples=[s[:800] for s in spine[:32]],capture_success_count=len(capture_successes),capture_success_examples=capture_successes[:20],capture_unknown_count=len(capture_unknown),capture_unknown_examples=capture_unknown[:12],terminal=terminal[-1] if terminal else None,frontier_accept=p.returncode==0)
+          stuck_success=[s for s in p.stderr.decode(errors='replace').splitlines() if s.startswith('NUCLEUS_TYPED_STUCK_RECEIVER_SUCCESS:')]
+          stuck_unknown=[s for s in p.stderr.decode(errors='replace').splitlines() if s.startswith('NUCLEUS_TYPED_STUCK_RECEIVER_UNPROVEN:')]
+          report=dict(source_commit=os.environ['GITHUB_SHA'],qualified_parent_binary='82ebbce2278e54f82667e4d12793034acdf72f329b989e4605cf65473c9de715',input_sha=hashlib.sha256(source.read_bytes()).hexdigest(),rc=p.returncode,trace_count=len(trace),function_type_shapes=dict(kinds),trace_first=trace[0][:3000] if trace else None,trace_last=trace[-1][:3000] if trace else None,terminal_cause_count=len(causes),spine_marker_count=len(spine),spine_examples=[s[:800] for s in spine[:32]],capture_success_count=len(capture_successes),capture_success_examples=capture_successes[:20],capture_unknown_count=len(capture_unknown),capture_unknown_examples=capture_unknown[:12],stuck_success_count=len(stuck_success),stuck_success_examples=stuck_success[:20],stuck_unknown_count=len(stuck_unknown),stuck_unknown_examples=stuck_unknown[:32],terminal=terminal[-1] if terminal else None,frontier_accept=p.returncode==0)
           (out/'report.json').write_text(json.dumps(report,indent=2,sort_keys=True)+'\n')
           print('FIRST_APPLICATION_TRACE',json.dumps(report,sort_keys=True),flush=True)
           assert p.returncode in (0,2),('unexpected verdict',p.returncode)
