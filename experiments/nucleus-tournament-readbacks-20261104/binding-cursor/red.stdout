@@ -1,0 +1,20 @@
+
+running 3 tests
+test typecheck::sorted_capture_binding_tests::a_middle_used_binding_still_exposes_a_real_free_collision ... ok
+test typecheck::sorted_capture_binding_tests::an_unbound_used_slot_is_not_confused_with_the_virtual_binder ... ok
+test typecheck::sorted_capture_binding_tests::sorted_used_captures_share_a_single_paid_environment_prefix ... FAILED
+
+failures:
+
+---- typecheck::sorted_capture_binding_tests::sorted_used_captures_share_a_single_paid_environment_prefix stdout ----
+
+thread 'typecheck::sorted_capture_binding_tests::sorted_used_captures_share_a_single_paid_environment_prefix' (174) panicked at src/typecheck.rs:7275:250:
+assertion failed: crate::convert::source_opening_avoids_capture(&c, &body, FreeId(0), &mut 9)
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    typecheck::sorted_capture_binding_tests::sorted_used_captures_share_a_single_paid_environment_prefix
+
+test result: FAILED. 2 passed; 1 failed; 0 ignored; 0 measured; 146 filtered out; finished in 0.00s
+

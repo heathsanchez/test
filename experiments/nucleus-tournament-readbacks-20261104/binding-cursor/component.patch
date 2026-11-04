@@ -1,0 +1,81 @@
+--- a/metatron-kernel/src/value.rs
++++ b/metatron-kernel/src/value.rs
+@@ -33,6 +33,20 @@
+ #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+ pub struct FreeId(pub u64);
+ 
++/// Borrowed immutable environment traversal. Each next() inspects one node;
++/// callers retain their own paid work and never clone a binding payload.
++pub(crate) struct EnvBindings<'a>{next:Option<&'a EnvFrame>}
++impl<'a> Iterator for EnvBindings<'a>{
++    type Item=&'a EnvBinding;
++    fn next(&mut self)->Option<Self::Item>{
++        let frame=self.next.take()?;
++        match frame.0.as_ref(){
++            EnvNode::Empty=>None,
++            EnvNode::Extend{parent,value,..}=>{self.next=Some(parent);Some(value)},
++        }
++    }
++}
++
+ impl EnvFrame {
+     pub fn empty() -> Self {
+         Self(Rc::new(EnvNode::Empty))
+@@ -90,6 +104,8 @@
+             }
+         }
+     }
++
++    pub(crate) fn binding_refs(&self)->EnvBindings<'_>{EnvBindings{next:Some(self)}}
+ 
+     /// Retrieve the *identity of the immutable binding node* read by one
+     /// de Bruijn index, in addition to its value. Typed binder authority is
+--- a/metatron-kernel/src/convert.rs
++++ b/metatron-kernel/src/convert.rs
+@@ -2849,13 +2849,24 @@
+         }
+         if !visited.insert((source.expr, source.env.id(), virtual_slots)) { continue; }
+         let Some(support) = checker.complete_source_support(source.expr, budget) else { return false; };
++        // Completed support is sorted and unique. Share the already read
++        // environment prefix across its actual used indices, rather than
++        // restarting linked-list lookup for every index.
++        let mut bindings=source.env.binding_refs();
++        let mut traversed=0usize;
+         for index in support {
+             if index < virtual_slots { continue; }
+             let index = index - virtual_slots;
+-            let Some(cost) = index.checked_add(1).and_then(|n| usize::try_from(n).ok()) else { return false; };
+-            if *budget < cost { return false; }
+-            *budget -= cost;
+-            let Some(binding) = source.env.lookup_binding_ref(index) else { return false; };
++            let Some(end)=usize::try_from(index).ok().and_then(|n|n.checked_add(1))else{return false;};
++            if end<=traversed{return false;} // Never invent an unsorted support witness.
++            let mut binding=None;
++            while traversed<end{
++                if *budget==0{return false;}*budget-=1;
++                binding=bindings.next();
++                if binding.is_none(){return false;}
++                traversed+=1;
++            }
++            let Some(binding)=binding else{return false;};
+             match binding {
+                 EnvBinding::Free(actual) => { if *actual == free { return false; } }
+                 EnvBinding::Closure(captured) => pending.push((captured.clone(), 0)),
+--- a/metatron-kernel/src/typecheck.rs
++++ b/metatron-kernel/src/typecheck.rs
+@@ -7266,3 +7266,15 @@
+   assert!(!crate::convert::convert_with_policy_in_context(&checker,&left,&right,128,crate::convert::DeltaPolicy::PreferredOnly,0,&[]).is_proven());
+  }
+ }
++
++#[cfg(test)]
++mod sorted_capture_binding_tests{
++ use super::*;
++ fn fixture()->(IdTable<ExprId,Expr>,IdTable<LevelId,Level>,Environment){let mut e=IdTable::default();for(id,x)in[(0,Expr::BVar(0)),(1,Expr::BVar(1)),(2,Expr::BVar(2)),(3,Expr::BVar(3)),(4,Expr::App{fun:ExprId(1),arg:ExprId(2)}),(5,Expr::App{fun:ExprId(4),arg:ExprId(3)}),(6,Expr::BVar(4))]{e.insert(ExprId(id),x).unwrap();}(e,IdTable::default(),Environment::empty())}
++ fn frame()->EnvFrame{EnvFrame::empty().extend_free(FreeId(7)).extend_free(FreeId(8)).extend_free(FreeId(9))}
++ #[test]fn sorted_used_captures_share_a_single_paid_environment_prefix(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);assert_eq!(c.complete_source_support(ExprId(5),&mut 4096),Some(vec![1,2,3]));let body=Closure::new(ExprId(5),frame());assert!(crate::convert::source_opening_avoids_capture(&c,&body,FreeId(0),&mut 9));}
++ #[test]fn a_middle_used_binding_still_exposes_a_real_free_collision(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let body=Closure::new(ExprId(5),frame());assert!(!crate::convert::source_opening_avoids_capture(&c,&body,FreeId(8),&mut 4096));}
++ #[test]fn an_unbound_used_slot_is_not_confused_with_the_virtual_binder(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let frame=frame();let absent=Closure::new(ExprId(6),frame.clone());assert!(!crate::convert::source_opening_avoids_capture(&c,&absent,FreeId(0),&mut 128));let internal=Closure::new(ExprId(0),frame);assert!(crate::convert::source_opening_avoids_capture(&c,&internal,FreeId(0),&mut 128));}
++ #[test]fn traversed_but_unused_slots_do_not_claim_capture_authority(){let(mut e,l,env)=fixture();e.insert(ExprId(7),Expr::App{fun:ExprId(1),arg:ExprId(3)}).unwrap();let c=TypeChecker::new(&e,&l,&env);let body=Closure::new(ExprId(7),frame());assert!(crate::convert::source_opening_avoids_capture(&c,&body,FreeId(8),&mut 4096),"unused middle binding is traversed but not used");for free in[7,9]{assert!(!crate::convert::source_opening_avoids_capture(&c,&body,FreeId(free),&mut 4096),"both used endpoints must still be checked");}}
++
++}
