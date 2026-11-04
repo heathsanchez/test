@@ -1,0 +1,29 @@
+name: Nucleus semantic read witness V1 (observation only)
+
+on:
+  push:
+    branches: [research/nucleus-semantic-witness-v1-20261104]
+    paths:
+      - '.github/workflows/nucleus-semantic-witness-v1-20261104.yml'
+      - 'metatron-kernel/**'
+      - 'experiments/nucleus-semantic-witness-v1-20261104/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  read-witness:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Rust witnessed controls and protected baseline
+        run: |
+          set -euo pipefail
+          cargo test --release --locked --features semantic-witness \
+            --manifest-path metatron-kernel/Cargo.toml \
+            --test semantic_witness --test mgso_shadow --test quotient_source_ownership
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
