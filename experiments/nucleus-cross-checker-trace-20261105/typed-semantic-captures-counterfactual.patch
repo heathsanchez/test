@@ -114,7 +114,48 @@
 
 --- a/metatron-kernel/src/convert.rs
 +++ b/metatron-kernel/src/convert.rs
-@@ -2549,6 +2671,31 @@
+@@ -1590,6 +1686,40 @@
+                     }
+                     return Judgment::proven((),"checked-source-paired-projection");
+                 }
++                // Research-only positive congruence for two stuck projections:
++                // the source receiver's entire used-capture support is proved
++                // equal in the REAL Gamma, and every pending spine argument
++                // independently converts. Never infer receiver equality from
++                // a matching projection name or a matching source ExprId.
++                #[cfg(feature="diagnostics")]
++                if std::env::var_os("NUCLEUS_PROBE_TYPED_CAPTURE_CONGRUENCE").is_some()
++                    && left_type==right_type && left_index==right_index
++                    && depth==context.len() && current_budget>=2048
++                {
++                    use std::sync::atomic::{AtomicUsize,Ordering};
++                    static STUCK_TRIALS:AtomicUsize=AtomicUsize::new(0);
++                    static STUCK_WINS:AtomicUsize=AtomicUsize::new(0);
++                    let grant=current_budget.min(8192);
++                    current_budget-=grant;
++                    let receiver=checker.checked_semantic_capture_congruence(
++                        left_structure,right_structure,context,grant,
++                    );
++                    let mut spine=false;
++                    if receiver.is_proven() {
++                        spine=same_closure_spine_congruence_in_context(
++                            checker,left_spine,right_spine,512,depth,context,512,
++                        );
++                    }
++                    if receiver.is_proven() && spine {
++                        if STUCK_WINS.fetch_add(1,Ordering::Relaxed)<24 {
++                            eprintln!("NUCLEUS_TYPED_STUCK_RECEIVER_SUCCESS:depth={depth}:grant={grant}:owner={left_type:?}:index={left_index}:left={:?}:right={:?}",left_structure.expr,right_structure.expr);
++                        }
++                        return Judgment::proven((),"typed-semantic-stuck-projection-congruence");
++                    }
++                    if STUCK_TRIALS.fetch_add(1,Ordering::Relaxed)<32 {
++                        eprintln!("NUCLEUS_TYPED_STUCK_RECEIVER_UNPROVEN:depth={depth}:grant={grant}:owner={left_type:?}:index={left_index}:receiver={receiver:?}:spine={spine}:left={:?}:right={:?}",left_structure.expr,right_structure.expr);
++                    }
++                }
+                 if same_rigid_application_congruence(
+                     checker,
+                     left_structure,
+@@ -2549,6 +2705,31 @@
                      argument_budget, DeltaPolicy::GuardedSemanticFallback, depth, context,
                  );
                  if !argument_result.is_proven() {
