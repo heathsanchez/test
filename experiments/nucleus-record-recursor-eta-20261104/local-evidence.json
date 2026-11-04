@@ -1,0 +1,27 @@
+{
+  "status": "CANDIDATE",
+  "parent_binary": "d2148397405717a0b56127a596911bf79c18603d06632da578e1d65b6fd16edc",
+  "source_reconstruction": "THREE_FILES_BYTE_IDENTICAL_FROM_QUALIFIED_SEALED_TAR",
+  "library": {
+    "passed": 131,
+    "failed": 0,
+    "ignored": 0
+  },
+  "new_source_red": {
+    "official_authentic_rc": 0,
+    "parent_authentic_rc": 2
+  },
+  "binary_sha": "5c3b3c11e656ec9dc8ece3355b7273d54df2c30c735e7717965249c891882bfa",
+  "patch_sha": "eae4b4a7f708966ea2290e7ca7780e3eb65e3c6b7ecf78de7653f62ebab0853e",
+  "preserved_separate_C_metadata_gap": true,
+  "excluded_prototypes": [
+    "unreserved general-neutral prototype",
+    "caller-debited general-neutral prototype"
+  ],
+  "apparatus_failures": [
+    "initial Prod generator used wrong Type universe arguments: official rejected, corrected before RED",
+    "unit fixture missing constructor constant",
+    "Rust borrow-loop assignment compile failure"
+  ],
+  "no_rank_claim": true
+}

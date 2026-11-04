@@ -1,0 +1,50 @@
+{
+  "binary_sha": "fbf5bd3e0ca21871535afb68fb04a54f60d78d05a87c645c410ff989a199f1ac",
+  "rows": [
+    {
+      "case": "authentic-product-recursor-eta",
+      "file": "authentic-product-recursor-eta.ndjson",
+      "sha256": "896b9aa91748301dec51cfdd5e6cec0858d02659468cec9df859bbbf853952a8",
+      "expect_reference": 0,
+      "parse_rc": 0,
+      "reference_rc": 0,
+      "candidate_rc": 0
+    },
+    {
+      "case": "product-recursor-wrong-field",
+      "file": "product-recursor-wrong-field.ndjson",
+      "sha256": "bdbda3db359a78d71c6dde2ae40054b3bd56381d1e789d6c577c382c4ede2a73",
+      "expect_reference": 1,
+      "parse_rc": 0,
+      "reference_rc": 1,
+      "candidate_rc": 2
+    },
+    {
+      "case": "product-recursor-wrong-major",
+      "file": "product-recursor-wrong-major.ndjson",
+      "sha256": "1c48f463de6315586e9ed20b61ff88e322b31d06d31d5211f333d66efc32a8cb",
+      "expect_reference": 1,
+      "parse_rc": 0,
+      "reference_rc": 1,
+      "candidate_rc": 2
+    },
+    {
+      "case": "product-recursor-wrong-universe",
+      "file": "product-recursor-wrong-universe.ndjson",
+      "sha256": "caee600a2b0f66cd129f162e4a2558603c3196932dfb1ef934a75af93677b059",
+      "expect_reference": 1,
+      "parse_rc": 0,
+      "reference_rc": 1,
+      "candidate_rc": 1
+    },
+    {
+      "case": "product-recursor-illtyped-minor",
+      "file": "product-recursor-illtyped-minor.ndjson",
+      "sha256": "47cc5bf0beedbbbeefb8676a52f034155db7a119fc648d4a25e13b825a03a41a",
+      "expect_reference": 1,
+      "parse_rc": 0,
+      "reference_rc": 1,
+      "candidate_rc": 1
+    }
+  ]
+}

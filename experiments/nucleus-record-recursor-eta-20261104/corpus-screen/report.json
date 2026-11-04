@@ -1,0 +1,82 @@
+[
+  {
+    "case": "bugs--eta-ctor-alias",
+    "rc": 2,
+    "user": 0.002077,
+    "system": 0.0,
+    "wall": 0.003896643000189215,
+    "terminal": "NUCLEUS_DOWNSTREAM:name=etaCtorAlias:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads",
+    "source_sha": "fd1a643c6c52efe34ec0cc0c22e53cdae32561ff80fb533b3bee7064dbd85ea3",
+    "binary_sha": "fbf5bd3e0ca21871535afb68fb04a54f60d78d05a87c645c410ff989a199f1ac"
+  },
+  {
+    "case": "perf--fueled-chain",
+    "rc": 2,
+    "user": 10.881643,
+    "system": 0.137679,
+    "wall": 11.028329979992122,
+    "terminal": "NUCLEUS_DOWNSTREAM:name=chain6_datF:stage=theorem.value:verdict=UNKNOWN:reason=neutral-projection-receiver-congruence",
+    "source_sha": "e5ca34489fc7b8ee13b1e7f09f76247ab7b01dd1a752a13cc8b796c569e1401a",
+    "binary_sha": "fbf5bd3e0ca21871535afb68fb04a54f60d78d05a87c645c410ff989a199f1ac"
+  },
+  {
+    "case": "perf--grind-ring-5",
+    "rc": 2,
+    "user": 38.123728,
+    "system": 0.11086,
+    "wall": 38.26803305700014,
+    "terminal": "NUCLEUS_DOWNSTREAM:name=Nat.Internal.Linear.Poly.denote_reverse:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type",
+    "source_sha": "e9c394e0ff311fd10f60dee2433a530f16e82354c32d6588a8775baa06fd221f",
+    "binary_sha": "fbf5bd3e0ca21871535afb68fb04a54f60d78d05a87c645c410ff989a199f1ac"
+  },
+  {
+    "case": "perf--magma-list-deep-n21",
+    "rc": 2,
+    "user": 0.724378,
+    "system": 0.028419999999999997,
+    "wall": 0.7554014070046833,
+    "terminal": "NUCLEUS_DOWNSTREAM:name=countermodel:stage=definition.value:verdict=UNKNOWN:reason=unresolved-qualified-recursor-heads",
+    "source_sha": "b7a211699ab32a5d2397319702e2d5552f5796a6bdac990efa69fb186039f526",
+    "binary_sha": "fbf5bd3e0ca21871535afb68fb04a54f60d78d05a87c645c410ff989a199f1ac"
+  },
+  {
+    "case": "perf--magma-list-deep-n36",
+    "rc": 2,
+    "user": 0.7187979999999999,
+    "system": 0.008163,
+    "wall": 0.7311619200045243,
+    "terminal": "NUCLEUS_DOWNSTREAM:name=countermodel:stage=definition.value:verdict=UNKNOWN:reason=application-function-type",
+    "source_sha": "6669cee92ad330dada351ac9e63656f7e9e848dd70376f17030d64677f8c81ac",
+    "binary_sha": "fbf5bd3e0ca21871535afb68fb04a54f60d78d05a87c645c410ff989a199f1ac"
+  },
+  {
+    "case": "perf--magma-list-pair-n7",
+    "rc": 2,
+    "user": 0.357053,
+    "system": 0.023683,
+    "wall": 0.3851742390106665,
+    "terminal": "NUCLEUS_DOWNSTREAM:name=countermodel:stage=definition.value:verdict=UNKNOWN:reason=application-function-type",
+    "source_sha": "abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35",
+    "binary_sha": "fbf5bd3e0ca21871535afb68fb04a54f60d78d05a87c645c410ff989a199f1ac"
+  },
+  {
+    "case": "perf--magma-string-n4",
+    "rc": 2,
+    "user": 8.492417,
+    "system": 0.054251999999999995,
+    "wall": 8.55395205700188,
+    "terminal": "NUCLEUS_DOWNSTREAM:name=Nat.Internal.Linear.Poly.denote_reverse:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type",
+    "source_sha": "158b54b527a3171cfff366e525d1f3ad78147f024e7946ec04fa6f20ef97bc5a",
+    "binary_sha": "fbf5bd3e0ca21871535afb68fb04a54f60d78d05a87c645c410ff989a199f1ac"
+  },
+  {
+    "case": "perf--magma-string-pair-n9",
+    "rc": 2,
+    "user": 8.830755,
+    "system": 0.099979,
+    "wall": 8.944656267005485,
+    "terminal": "NUCLEUS_DOWNSTREAM:name=Nat.Internal.Linear.Poly.denote_reverse:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type",
+    "source_sha": "deeeea5010e88e313dcf3d1b9642a5f9de8fb711066dd0256cec3b35d38c05ae",
+    "binary_sha": "fbf5bd3e0ca21871535afb68fb04a54f60d78d05a87c645c410ff989a199f1ac"
+  }
+]

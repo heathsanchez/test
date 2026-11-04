@@ -1,0 +1,180 @@
+name: Nucleus typed record recursor eta qualification
+on:
+  push:
+    branches: [research/nucleus-record-recursor-eta-20261104]
+    paths:
+      - '.github/workflows/nucleus-record-recursor-eta-20261104.yml'
+      - 'experiments/nucleus-record-recursor-eta-20261104/**'
+      - 'experiments/nucleus-performance-gates-20261104/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  protected-and-full:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: git fetch --no-tags --depth=1 origin a2578e77079719ff2064f910bd82fd01d8e120b6
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Restore SHA-pinned qualified ancestor, baseline and comparator
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/dense-qualified /tmp/delta-qualified /tmp/base-dense /tmp/current208 /tmp/source-receipt /tmp/let-oracle /tmp/beq-source /tmp/std-source
+          gh api repos/heathsanchez/test/actions/artifacts/13269133385/zip > /tmp/prior.zip
+          printf '%s  %s\n' 689749feedc5025f0672dd7e7b091944f700f5b15c9a8105753341db38575d22 /tmp/prior.zip | sha256sum -c -
+          unzip -q /tmp/prior.zip -d /tmp/dense-qualified
+          gh api repos/heathsanchez/test/actions/artifacts/13271488438/zip > /tmp/delta.zip
+          printf '%s  %s\n' 92c000926197c7e961ebf470aa7ed1b40d7584c48cc8fc2bfe8512fcd3471663 /tmp/delta.zip | sha256sum -c -
+          unzip -q /tmp/delta.zip -d /tmp/delta-qualified
+          zstd -dq /tmp/delta-qualified/next-frontier.ndjson.zst -o /tmp/std-prefix.ndjson
+          printf '%s  %s\n' 282a7cf85e897f1e246fc25bc0cf6a6b69afdce72856f2fb500299504b8488ef /tmp/std-prefix.ndjson | sha256sum -c -
+          gh api repos/heathsanchez/test/actions/artifacts/13268111683/zip > /tmp/dense-base.zip
+          printf '%s  %s\n' 826a94548f9b95b1c18a173bbaa625d2ed96771b1c1d78fb3e4a9e8431ba77e4 /tmp/dense-base.zip | sha256sum -c -
+          unzip -q /tmp/dense-base.zip -d /tmp/base-dense
+          gh api repos/heathsanchez/test/actions/artifacts/13126161718/zip > /tmp/inputs.zip
+          printf '%s  %s\n' 462e31e21379054490570b465b46ece4fff878490d9ad7de6bbc73149d587f4c /tmp/inputs.zip | sha256sum -c -
+          unzip -q /tmp/inputs.zip -d /tmp/current208
+          gh api repos/heathsanchez/test/actions/artifacts/13264820032/zip > /tmp/source-receipt.zip
+          printf '%s  %s\n' 9fc805f01dc7525e14d7905c3bbaf9361e947eed420295e5e7e9d9a50155d7b9 /tmp/source-receipt.zip | sha256sum -c -
+          unzip -q /tmp/source-receipt.zip -d /tmp/source-receipt
+          grep -F 'Accepted 2004 declarations.' /tmp/source-receipt/reference-kernel.stdout
+          gh api repos/heathsanchez/test/actions/artifacts/13261917242/zip > /tmp/let-oracle.zip
+          printf '%s  %s\n' bde62a227167517215d6a011f48cbf211447dba5c476c8eddbc4aff345183d05 /tmp/let-oracle.zip | sha256sum -c -
+          unzip -q /tmp/let-oracle.zip -d /tmp/let-oracle
+          test -f /tmp/let-oracle/reference.json
+          gh api repos/heathsanchez/test/actions/artifacts/13268572042/zip > /tmp/beq.zip
+          printf '%s  %s\n' 00ce34eb4e8bb6e9b5fd8d5223bb07ef613364e8ece1f4fcc6cddb24804118b2 /tmp/beq.zip | sha256sum -c -
+          unzip -q /tmp/beq.zip -d /tmp/beq-source
+          zstd -dq /tmp/beq-source/next-frontier.ndjson.zst -o /tmp/beq-prefix.ndjson
+          printf '%s  %s\n' d1c35f6a0de8644817b404e225a16de460e897e0b34c129fcb2a37483e630738 /tmp/beq-prefix.ndjson | sha256sum -c -
+      - name: Restore pinned portable official Lean checker
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/k-reference
+          gh api repos/heathsanchez/test/actions/artifacts/13267462207/zip > /tmp/k-reference.zip
+          printf '%s  %s\n' 9dfaff0a6cb272e6950e301aab75cf99e09a440f5ad881e2e1790019b4add1dd /tmp/k-reference.zip | sha256sum -c -
+          unzip -q /tmp/k-reference.zip -d /tmp/k-reference
+          chmod +x /tmp/k-reference/bundle/kernel /tmp/k-reference/bundle/run
+      - name: Restore exact canonical K comparator
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/k-qualified
+          gh api repos/heathsanchez/test/actions/artifacts/13274413134/zip > /tmp/k-qualified.zip
+          printf '%s  %s\n' e21106aa8a76e7d094d9f69ba2a1d6409de9c11493161fbf7a4a7039a728aef7 /tmp/k-qualified.zip | sha256sum -c -
+          unzip -q /tmp/k-qualified.zip -d /tmp/k-qualified
+          zstd -dq /tmp/k-qualified/next-frontier.ndjson.zst -o /tmp/ac-prefix.ndjson
+          printf '%s  %s\n' e08afe0a4ce9c0cd64308ee6eef52d0952316784d72175c843846762e2eb4d0b /tmp/ac-prefix.ndjson | sha256sum -c -
+      - name: Restore exact qualified carrier comparator and oracle witnesses
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/ac-qualified
+          gh api repos/heathsanchez/test/actions/artifacts/13276242300/zip > /tmp/ac-qualified.zip
+          printf '%s  %s\n' a891c75dbcabd6fddfbbcc5b9ea6826a68b53cf51ae1fbc6e50fdae5d23c104e /tmp/ac-qualified.zip | sha256sum -c -
+          unzip -q /tmp/ac-qualified.zip -d /tmp/ac-qualified
+          zstd -dq /tmp/ac-qualified/next-frontier.ndjson.zst -o /tmp/information-prefix.ndjson
+          printf '%s  %s\n' e7daddaf05fa799dc248bb3f10a502fd5ab5569561a4502d9f48de63256f3113 /tmp/information-prefix.ndjson | sha256sum -c -
+      - name: Restore exact several-universe comparator and prior oracle witnesses
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/nonzero-qualified
+          gh api repos/heathsanchez/test/actions/artifacts/13276734778/zip > /tmp/nonzero-qualified.zip
+          printf '%s  %s\n' 609aa7c3d4b7629d79d51486989c39e9bc5609bc17fbe35f6b117c78c72226b7 /tmp/nonzero-qualified.zip | sha256sum -c -
+          unzip -q /tmp/nonzero-qualified.zip -d /tmp/nonzero-qualified
+          zstd -dq /tmp/nonzero-qualified/next-frontier.ndjson.zst -o /tmp/evaluation-prefix.ndjson
+          printf '%s  %s\n' f37e9434b2cee5f9623a2218fb6418c58d43dbe5ac3582cadd9cc844dfa215b4 /tmp/evaluation-prefix.ndjson | sha256sum -c -
+      - name: Restore qualified universe source and exact oracle witnesses
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/universe-qualified /tmp/universe-prior
+          gh api repos/heathsanchez/test/actions/artifacts/13284067853/zip > /tmp/universe-qualified.zip
+          printf '%s  %s\n' ec5db42c2843d66ec6e5540da79a88bbdd4f4843adbfdfd5f00439a852561856 /tmp/universe-qualified.zip | sha256sum -c -
+          unzip -q /tmp/universe-qualified.zip -d /tmp/universe-qualified
+          gh api repos/heathsanchez/test/actions/artifacts/13282929137/zip > /tmp/universe-prior.zip
+          printf '%s  %s\n' d89e82e3f7c671a4246e94c082c12002a66c855368879f4345bc01836545f012 /tmp/universe-prior.zip | sha256sum -c -
+          unzip -q /tmp/universe-prior.zip -d /tmp/universe-prior
+      - name: Restore qualified composition and source authority
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/qualified-stack
+          gh api repos/heathsanchez/test/actions/artifacts/13285618199/zip > /tmp/qualified-stack.zip
+          printf '%s  %s\n' 9a5a38454c3c689601580e92c49147d88ba6c9918b45a8d2cba32207aeca0705 /tmp/qualified-stack.zip | sha256sum -c -
+          unzip -q /tmp/qualified-stack.zip -d /tmp/qualified-stack
+      - name: Restore qualified parser source and the exact prior frontier
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/parser-qualified
+          gh api repos/heathsanchez/test/actions/artifacts/13289913014/zip > /tmp/parser-qualified.zip
+          printf '%s  %s\n' c7c1512662c80a79fd00ae652af046be72305f32e565eca199488d456df049e4 /tmp/parser-qualified.zip | sha256sum -c -
+          unzip -q /tmp/parser-qualified.zip -d /tmp/parser-qualified
+          zstd -dq /tmp/parser-qualified/qualified-winner/next-frontier.ndjson.zst -o /tmp/int-ble-prefix.ndjson
+          printf '%s  %s\n' 5b7a6b7ad11f5683937e8258322d47f09a9daf6d254bd921e6d23b0d1ee3b494 /tmp/int-ble-prefix.ndjson | sha256sum -c -
+      - name: Restore exact qualified native-completion source
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/native-qualified
+          gh api repos/heathsanchez/test/actions/artifacts/13294067035/zip > /tmp/native-qualified.zip
+          printf '%s  %s\n' 79ae6ce624bb745b2578222204bf8516943e604f57b61aeabe0ff209d39d2455 /tmp/native-qualified.zip | sha256sum -c -
+          unzip -q /tmp/native-qualified.zip -d /tmp/native-qualified
+          zstd -dq /tmp/native-qualified/next-frontier.ndjson.zst -o /tmp/dite-prefix.ndjson
+          printf '%s  %s\n' 53b48e5b9a4ee62f201d0e1f5eec26116446a1c511ca5d529767f64838fd22de /tmp/dite-prefix.ndjson | sha256sum -c -
+      - name: Restore qualified contextual source authority
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/contextual-qualified
+          gh api repos/heathsanchez/test/actions/artifacts/13296621408/zip > /tmp/contextual-qualified.zip
+          printf '%s  %s\n' 47fdc3c64240d5be1503b3a94e0c69dd18cdabcae6d03fecfa71fb847f604c4a /tmp/contextual-qualified.zip | sha256sum -c -
+          unzip -q /tmp/contextual-qualified.zip -d /tmp/contextual-qualified
+      - name: Restore qualified combined proof source authority
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/neutral-qualified
+          gh api repos/heathsanchez/test/actions/artifacts/13296941054/zip > /tmp/neutral-qualified.zip
+          printf '%s  %s\n' 41745c82fa9020e16224ca0fa0a6e7caa693823200712c9328c6a0f1954dc2a2 /tmp/neutral-qualified.zip | sha256sum -c -
+          unzip -q /tmp/neutral-qualified.zip -d /tmp/neutral-qualified
+      - name: Restore independently pinned complete Mathlib export
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/mathlib-source
+          gh api repos/heathsanchez/test/actions/artifacts/13231986845/zip > /tmp/mathlib.zip
+          printf '%s  %s\n' 3dd3fbb522816bdaa9d9cd2808196e075bfa27e3d6c82648731140594f87ce2b /tmp/mathlib.zip | sha256sum -c -
+          unzip -q /tmp/mathlib.zip -d /tmp/mathlib-source
+          zstd -dq /tmp/mathlib-source/mathlib.ndjson.zst -o /tmp/mathlib.ndjson
+          printf '%s  %s\n' 22c5de83469408950005589a3bc5ef5157c65549b5a802f85d567c29151306a6 /tmp/mathlib.ndjson | sha256sum -c -
+      - name: Prepare native protected controls
+        run: |
+          python3 -m py_compile experiments/nucleus-record-recursor-eta-20261104/qualify.py experiments/nucleus-k-canonical-20261104/qualify.py
+          python3 experiments/nucleus-nat-closure-20261104/generate_fixtures.py --out /tmp/nat-fixtures
+          python3 experiments/nucleus-parameter-telescope-20261104/prepare.py
+          python3 experiments/nucleus-nullary-enum-20261104/prepare.py
+      - name: Extract exact second proof frontier
+        run: |
+          python3 experiments/nucleus-contextual-frontier-readback-20261104/frontier.py --source /tmp/mathlib.ndjson --out /tmp/neutral-frontier --target dite_eq_right_of_eq_false
+          cp /tmp/neutral-frontier/next-frontier.ndjson /tmp/right-dite-prefix.ndjson
+          printf '%s  %s\n' 5937f7e74092f8c4adaf8268a2ef5c1e7dabfad096549a832c559e30b4f2dece /tmp/right-dite-prefix.ndjson | sha256sum -c -
+      - name: Extract exact product frontier
+        run: |
+          python3 experiments/nucleus-contextual-frontier-readback-20261104/frontier.py --source /tmp/mathlib.ndjson --out /tmp/product-frontier --target Prod.instLawfulBEq
+          cp /tmp/product-frontier/next-frontier.ndjson /tmp/product-lawful-prefix.ndjson
+          printf '%s  %s\n' 75c66db3fcfded589778eac59ff31d7881df1420cd741c4c42c8d119321a9355 /tmp/product-lawful-prefix.ndjson | sha256sum -c -
+      - name: Exact native, source, Arena, negative, and complete Mathlib replay
+        run: python3 experiments/nucleus-record-recursor-eta-20261104/qualify.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-record-recursor-eta-${{ github.sha }}
+          retention-days: 90
+          path: |
+            /tmp/nucleus-record-recursor-eta/**/*.json
+            /tmp/nucleus-record-recursor-eta/**/*.patch
+            /tmp/nucleus-record-recursor-eta/**/*.log
+            /tmp/nucleus-record-recursor-eta/**/nucleus
+            /tmp/nucleus-record-recursor-eta/**/source.tar.gz
+            /tmp/nucleus-record-recursor-eta/**/*.stdout
+            /tmp/nucleus-record-recursor-eta/**/*.stderr
+            /tmp/nucleus-record-recursor-eta/**/stderr
+            /tmp/nucleus-record-recursor-eta/**/time.txt
+            /tmp/nucleus-record-recursor-eta/**/next-frontier.ndjson.zst
