@@ -1,6 +1,6 @@
 --- a/src/typecheck.rs
 +++ b/src/typecheck.rs
-@@ -2579,6 +2579,68 @@
+@@ -2579,6 +2579,89 @@
                      };
                      eprintln!("NUCLEUS_FAILED_RECEIVER_CONVERSION:expression={expression:?}:context_len={}:source_frame={}:remaining={}:actual={value:?}:expected={expected:?}:context={context:?}:actual_exposed={:?}:expected_exposed={:?}",
                          context.len(), frame.id(), *remaining, expose(&value), expose(expected));
@@ -57,6 +57,27 @@
 +                                                            context.len(), context,
 +                                                        );
 +                                                        eprintln!("NUCLEUS_PROOF2_LAST_QUOT_ARG:left_exposed={left_exposed:?}:right_exposed={right_exposed:?}:budget16384={larger:?}");
++                                                        let mut pair = (lhs.clone(), rhs.clone());
++                                                        for depth in 0..20 {
++                                                            let left = self.machine().expose_for_conversion(
++                                                                pair.0.clone(), Transparency::Full, 2048,
++                                                            );
++                                                            let right = self.machine().expose_for_conversion(
++                                                                pair.1.clone(), Transparency::Full, 2048,
++                                                            );
++                                                            let (Some(Value::Neutral(a)), Some(Value::Neutral(b))) =
++                                                                (left.proven_value(), right.proven_value())
++                                                            else {
++                                                                eprintln!("NUCLEUS_PROOF2_QUOT_CHAIN:depth={depth}:terminal_left={left:?}:terminal_right={right:?}");
++                                                                break;
++                                                            };
++                                                            eprintln!("NUCLEUS_PROOF2_QUOT_CHAIN:depth={depth}:left_head={:?}:right_head={:?}:left_spine={}:right_spine={}", a.head,b.head,a.spine.len(),b.spine.len());
++                                                            if a.spine.len() != 6 || b.spine.len() != 6 { break; }
++                                                            let next = (a.spine[5].clone(), b.spine[5].clone());
++                                                            eprintln!("NUCLEUS_PROOF2_QUOT_CHAIN_NEXT:depth={depth}:left={:?}:right={:?}",next.0,next.1);
++                                                            if next == pair { break; }
++                                                            pair = next;
++                                                        }
 +                                                    }
 +                                                }
 +                                            }
