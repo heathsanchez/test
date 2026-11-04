@@ -1,0 +1,67 @@
+name: Nucleus qualified current Arena protected corpus qualification
+on:
+  push:
+    branches: [research/nucleus-proof2-function-type-diagnostic-20261105]
+    paths:
+      - '.github/workflows/nucleus-qualified-current-arena-20261105.yml'
+  workflow_dispatch:
+permissions:
+  actions: read
+  contents: read
+jobs:
+  current-arena:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore exact qualified Nucleus binary and current published Arena corpus
+        run: |
+          set -euo pipefail
+          mkdir -p qualified arena-current
+          gh api repos/heathsanchez/test/actions/artifacts/13370874970/zip > qualified.zip
+          printf '%s  %s\n' 0fd8a4cd86dcb233b532f59ea8dc853d22480b6ba62ff864049224250613e517 qualified.zip | sha256sum -c -
+          unzip -q qualified.zip -d qualified
+          printf '%s  %s\n' 2003c831c32a8249e8524349bc169f3e491e9c84fb71b5fc8db9bce2a8583d01 qualified/candidate/nucleus | sha256sum -c -
+          curl -fLsS --retry 3 https://arena.lean-lang.org/lean-arena-tests.tar.gz -o arena-current.tar.gz
+          sha256sum arena-current.tar.gz
+          tar --no-same-owner -xzf arena-current.tar.gz -C arena-current
+          printf 'CURRENT_VALID=%s CURRENT_INVALID=%s\n' "$(find arena-current/good -name '*.ndjson' -type f | wc -l)" "$(find arena-current/bad -name '*.ndjson' -type f | wc -l)"
+          chmod +x qualified/candidate/nucleus
+      - name: Source-time-stamped current Arena verdict vector and wrong-boundary check
+        run: |
+          set -euo pipefail
+          while IFS= read -r setting; do export "$setting"; done < <(jq -r '.candidate.configuration | to_entries[] | "\(.key)=\(.value)"' qualified/qualification.json)
+          find arena-current -type f -name '*.ndjson' -print0 | xargs -0 -P 4 -n 1 bash -c '
+            file="$1"
+            label="${file#arena-current/}"
+            if [[ "$label" == good/* ]]; then expected=0; else expected=1; fi
+            actual=0
+            timeout 200 qualified/candidate/nucleus < "$file" > /dev/null 2> /dev/null || actual=$?
+            printf "%s\t%s\t%s\n" "$label" "$expected" "$actual"
+          ' _ > replay-unsorted.tsv
+          LC_ALL=C sort -t $'\t' -k1,1 replay-unsorted.tsv > replay-current.tsv
+          awk -F '\t' '{
+            total++;
+            if ($2==0 && $3==0) accept++;
+            else if ($2==1 && $3==1) reject++;
+            else if ($3==2 || $3==124) unknown++;
+            else { wrong++; print "WRONG", $1, $2, $3; }
+          } END {
+            printf "CURRENT_ARENA: total=%d ACCEPT=%d REJECT=%d DECLINE_OR_TIMEOUT=%d WRONG=%d\n", total,accept,reject,unknown,wrong;
+            if (wrong!=0) exit 1;
+          }' replay-current.tsv
+          printf 'CURRENT NON-CORRECT CASES:\n'
+          awk -F '\t' '$2!=$3 { print $1, "expected=" $2, "actual=" $3 }' replay-current.tsv
+          sha256sum replay-current.tsv
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-current-arena-source-pinned-qualification
+          path: |
+            arena-current.tar.gz
+            replay-current.tsv
+            qualified/qualification.json
+          retention-days: 60
+          if-no-files-found: warn
