@@ -1,0 +1,34 @@
+{
+  "status": "APPARATUS_INCOMPLETE_LIBRARY_BOUNDARY",
+  "run": 41743714692,
+  "commit": "60ea0283ad3c81938869bb0d5a7d1f65edd0ea79",
+  "artifact": 13283170616,
+  "artifact_sha256": "adc370426493486d638e2e821440412364130beb3931588e905fe9c1b28da688",
+  "cause": "Ten incumbent ignored tests were not executed; no timing or candidate qualification occurred",
+  "arms": [
+    {
+      "arm": "run-flags",
+      "summaries": [
+        "test result: ok. 89 passed; 0 failed; 10 ignored; 0 measured; 0 filtered out; finished in 0.30s"
+      ]
+    },
+    {
+      "arm": "level-digest",
+      "summaries": [
+        "test result: ok. 89 passed; 0 failed; 10 ignored; 0 measured; 0 filtered out; finished in 0.30s"
+      ]
+    },
+    {
+      "arm": "flags-plus-levels",
+      "summaries": [
+        "test result: ok. 92 passed; 0 failed; 10 ignored; 0 measured; 0 filtered out; finished in 0.31s"
+      ]
+    },
+    {
+      "arm": "environment-forks",
+      "summaries": [
+        "test result: ok. 88 passed; 0 failed; 10 ignored; 0 measured; 0 filtered out; finished in 0.30s"
+      ]
+    }
+  ]
+}

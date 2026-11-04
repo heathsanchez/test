@@ -87,7 +87,7 @@ def main():
             binary,build_env=Q.t.build(kernel,arm)
             assert binary is not None,'Compile failure is not a performance result'
             seal_source(kernel,arm)
-            native=Q.t.run_group(['cargo','test','--release','--locked','--manifest-path',str(kernel/'Cargo.toml'),'--lib','--','--test-threads=1'],env=build_env|env,capture_output=True,timeout=600)
+            native=Q.t.run_group(['cargo','test','--release','--locked','--manifest-path',str(kernel/'Cargo.toml'),'--lib','--','--include-ignored','--test-threads=1'],env=build_env|env,capture_output=True,timeout=600)
             (arm/'lib.stdout').write_bytes(native.stdout)
             (arm/'lib.stderr').write_bytes(native.stderr)
             assert native.returncode==0 and b'0 failed; 0 ignored;'in native.stdout,'Library invariants must pass'
