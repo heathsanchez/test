@@ -1,0 +1,70 @@
+name: Nucleus qualified quotient exact original196 independent replay
+on:
+  push:
+    branches: [research/nucleus-proof2-function-type-diagnostic-20261105]
+    paths:
+      - '.github/workflows/nucleus-qualified-196-replay-20261105.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  frozen196:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rehydrate immutable source-pinned qualified binary and official Arena 196
+        run: |
+          set -euo pipefail
+          mkdir -p qualified original196
+          gh api repos/heathsanchez/test/actions/artifacts/13370874970/zip > qualified.zip
+          printf '%s  %s\n' 0fd8a4cd86dcb233b532f59ea8dc853d22480b6ba62ff864049224250613e517 qualified.zip | sha256sum -c -
+          unzip -q qualified.zip -d qualified
+          printf '%s  %s\n' 2003c831c32a8249e8524349bc169f3e491e9c84fb71b5fc8db9bce2a8583d01 qualified/candidate/nucleus | sha256sum -c -
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/11272848230/zip > original196.zip
+          printf '%s  %s\n' f6cd590db7f6fb92b8d1b3ca87231d4b0f521f085d73f93abd005f5caaff86d2 original196.zip | sha256sum -c -
+          unzip -p original196.zip lean-arena-tests.tar.gz | tar --no-same-owner -xzf - -C original196
+          test "$(find original196 -name '*.ndjson' -type f | wc -l)" -eq 196
+          test "$(find original196/good -name '*.ndjson' | wc -l)" -eq 125
+          test "$(find original196/bad -name '*.ndjson' | wc -l)" -eq 71
+          chmod +x qualified/candidate/nucleus
+      - name: Full 196-case no-wrong-replay with exact original verdict vector
+        run: |
+          set -euo pipefail
+          while IFS= read -r setting; do export "$setting"; done < <(jq -r '.candidate.configuration | to_entries[] | "\(.key)=\(.value)"' qualified/qualification.json)
+          find original196 -type f -name '*.ndjson' -print0 | xargs -0 -P 4 -n 1 bash -c '
+            file="$1"
+            label="${file#original196/}"
+            if [[ "$label" == good/* ]]; then expected=0; else expected=1; fi
+            actual=0
+            timeout 200 qualified/candidate/nucleus < "$file" > /dev/null 2> /dev/null || actual=$?
+            printf "%s\t%s\t%s\n" "$label" "$expected" "$actual"
+          ' _ > replay-unsorted.tsv
+          LC_ALL=C sort -t $'\t' -k1,1 replay-unsorted.tsv > replay-original196.tsv
+          printf '%s  %s\n' afe519cb2b5473893db6ca7c169cd38180fc9de3a05334e0a1e77820a4798efb replay-original196.tsv | sha256sum -c -
+          awk -F '\t' '{
+            total++;
+            if ($2==0 && $3==0) accept++;
+            else if ($2==1 && $3==1) reject++;
+            else if ($2==0 && $3==2) unknown++;
+            else { wrong++; print "WRONG", $1, $2, $3; }
+          } END {
+            printf "ORIGINAL196: total=%d ACCEPT=%d REJECT=%d UNKNOWN=%d wrong=%d\n", total,accept,reject,unknown,wrong;
+            if (total!=196 || accept!=119 || reject!=71 || unknown!=6 || wrong!=0) exit 1;
+          }' replay-original196.tsv
+          printf 'Remaining valid UNKNOWNs:\n'
+          awk -F '\t' '$2==0 && $3==2 {print $1}' replay-original196.tsv
+      - name: Preserve source-linked protected replay
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-quotient-qualified-original196-verdict-vector
+          path: |
+            replay-original196.tsv
+            replay-unsorted.tsv
+            qualified/qualification.json
+          retention-days: 60
+          if-no-files-found: warn
