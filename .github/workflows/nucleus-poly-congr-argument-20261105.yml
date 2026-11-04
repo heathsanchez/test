@@ -1,0 +1,131 @@
+name: Nucleus Poly congr argument source domain diagnostic
+
+on:
+  push:
+    branches: [research/nucleus-cross-checker-trace-20261105]
+    paths: ['.github/workflows/nucleus-poly-congr-argument-20261105.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  trace:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: '1.99.1'
+      - name: Restore and verify immutable source and frontier
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/trace-parent /tmp/trace-current /tmp/trace-source /tmp/trace-evidence
+          gh api repos/heathsanchez/test/actions/artifacts/13325481741/zip > /tmp/trace-parent.zip
+          unzip -q /tmp/trace-parent.zip -d /tmp/trace-parent
+          printf '%s  %s\n' ce6bdc5eb50757d2b624fefed8e48289d933eeaffdbeba9815d277aa31c4d7de /tmp/trace-parent/candidate/source.tar.gz | sha256sum -c -
+          gh api repos/heathsanchez/test/actions/artifacts/13359400422/zip > /tmp/trace-current.zip
+          printf '%s  %s\n' 79a49583b5e9c4742c4280075b41cdd89ba44f2d96b402af8f90ef4750897e8d /tmp/trace-current.zip | sha256sum -c -
+          unzip -q /tmp/trace-current.zip -d /tmp/trace-current
+          python3 - <<'PY'
+          import tarfile
+          with tarfile.open('/tmp/trace-parent/candidate/source.tar.gz') as t:
+              t.extractall('/tmp/trace-source', filter='data')
+          PY
+          patch --batch --fuzz=0 -p1 -d /tmp/trace-source -i "$GITHUB_WORKSPACE/experiments/nucleus-quotient-result-projection-20261104/quotient-result-projection.patch"
+          patch --batch --fuzz=0 -p1 -d /tmp/trace-source -i "$GITHUB_WORKSPACE/experiments/nucleus-universe-parametric-source-20261104/universe-parametric-source.patch"
+          python3 - <<'PY'
+          import hashlib, json, pathlib
+          root=pathlib.Path('/tmp/trace-source/metatron-kernel')
+          manifest=json.loads(pathlib.Path('/tmp/trace-current/candidate/source-manifest.json').read_text())
+          errors=[n for n,sha in manifest.items() if not (root/n).is_file() or hashlib.sha256((root/n).read_bytes()).hexdigest()!=sha]
+          assert not errors, ('qualified source manifest mismatch',errors[:12])
+          print('QUALIFIED_SOURCE_MATCH',len(manifest),flush=True)
+          PY
+          find /tmp/trace-current -name next-frontier.ndjson.zst -type f -print
+          python3 - <<'PY'
+          import pathlib, subprocess, hashlib
+          files=list(pathlib.Path('/tmp/trace-current').rglob('next-frontier.ndjson.zst'))
+          assert len(files)==1,('ambiguous first frontier',[str(x) for x in files])
+          with open('/tmp/trace-evidence/frontier.ndjson','wb') as out:
+              subprocess.run(['zstd','-dc',str(files[0])],stdout=out,check=True)
+          got=hashlib.sha256(pathlib.Path('/tmp/trace-evidence/frontier.ndjson').read_bytes()).hexdigest()
+          assert got=='ca6ba58a99ca074dc45d975ab982fd119193fa05a6d12e20f08c53cb7dd786f2',got
+          print('EXACT_FRONTIER_SHA256',got,flush=True)
+          PY
+      - name: Apply source-scoped semantic capture congruence trial
+        shell: bash
+        run: |
+          set -euo pipefail
+          patch --batch --fuzz=0 -p1 -d /tmp/trace-source -i "$GITHUB_WORKSPACE/experiments/nucleus-cross-checker-trace-20261105/typed-semantic-captures-counterfactual.patch"
+          patch --batch --fuzz=0 -p1 -d /tmp/trace-source -i "$GITHUB_WORKSPACE/experiments/nucleus-cross-checker-trace-20261105/checked-wholespine-focus-only.patch"
+          patch --batch --fuzz=0 -p1 -d /tmp/trace-source -i "$GITHUB_WORKSPACE/experiments/nucleus-cross-checker-trace-20261105/poly-application-domain-diagnostic.patch"
+      - name: Qualify positive and forged semantic-capture unit controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo test --locked --manifest-path /tmp/trace-source/metatron-kernel/Cargo.toml --features diagnostics typed_semantic_captures_preserve_value_equality_and_reject_changed_data -- --nocapture
+      - name: Compile exact checker with semantic capture trial
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os, pathlib, subprocess
+          config=json.loads(pathlib.Path('/tmp/trace-current/qualification.json').read_text())['candidate']['configuration']
+          assert config and all(k.startswith('NUCLEUS_') for k in config), 'qualified Nucleus runtime configuration missing'
+          env=os.environ.copy()
+          env.update(config)
+          cmd=['cargo','build','--release','--locked','--features','diagnostics','--manifest-path','/tmp/trace-source/metatron-kernel/Cargo.toml']
+          subprocess.run(cmd, env=env, check=True)
+          print('DIAGNOSTIC_BUILD_QUALIFIED_CONFIG',sorted(config),flush=True)
+          print('TEST_GATE_REUSED_FROM_EXACT_SOURCE_RUN',41908748112,flush=True)
+          PY
+      - name: Test real RED prefix with composed typed-capture and source-checked whole spine
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import collections,hashlib,json,os,pathlib,re,subprocess
+          out=pathlib.Path('/tmp/trace-evidence')
+          source=out/'frontier.ndjson'
+          q=json.loads(pathlib.Path('/tmp/trace-current/qualification.json').read_text())['candidate']
+          env=os.environ.copy()
+          env.update(q['configuration'])
+          env.update(NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE='1', NUCLEUS_TRACE_DOWNSTREAM='1', NUCLEUS_PROBE_TYPED_CAPTURE_CONGRUENCE='1', NUCLEUS_PROBE_WHOLE_SPINE='1', NUCLEUS_WHOLE_SPINE_FOCUS='159734', NUCLEUS_TRACE_APP_DOMAIN_OBLIGATION='1')
+          binary='/tmp/trace-source/metatron-kernel/target/release/metatron-kernel'
+          with source.open('rb') as f:
+              p=subprocess.run([binary],stdin=f,stdout=subprocess.PIPE,stderr=subprocess.PIPE,env=env,timeout=420)
+          (out/'stderr.log').write_bytes(p.stderr)
+          (out/'stdout.log').write_bytes(p.stdout)
+          trace=[s for s in p.stderr.decode(errors='replace').splitlines() if s.startswith('NUCLEUS_APPLICATION_FUNCTION_TYPE:')]
+          terminal=[s for s in p.stderr.decode(errors='replace').splitlines() if s.startswith('NUCLEUS_DOWNSTREAM:')]
+          kinds=collections.Counter(s.split(':function_type=')[-1].split(' ',1)[0].split('{',1)[0][:90] for s in trace)
+          causes=[s for s in p.stderr.decode(errors='replace').splitlines() if s.startswith('NUCLEUS_TERMINAL_CAUSE:')]
+          spine=[s for s in p.stderr.decode(errors='replace').splitlines() if s.startswith('NUCLEUS_WHOLE_SPINE_TRIAL:')]
+          capture_successes=[s for s in p.stderr.decode(errors='replace').splitlines() if s.startswith('NUCLEUS_TYPED_CAPTURE_SUCCESS:')]
+          capture_unknown=[s for s in p.stderr.decode(errors='replace').splitlines() if s.startswith('NUCLEUS_TYPED_CAPTURE_UNPROVEN:')]
+          stuck_success=[s for s in p.stderr.decode(errors='replace').splitlines() if s.startswith('NUCLEUS_TYPED_STUCK_RECEIVER_SUCCESS:')]
+          stuck_unknown=[s for s in p.stderr.decode(errors='replace').splitlines() if s.startswith('NUCLEUS_TYPED_STUCK_RECEIVER_UNPROVEN:')]
+          spine_failures=[s for s in p.stderr.decode(errors='replace').splitlines() if s.startswith('NUCLEUS_SPINE_ARG_FAIL:')]
+          app_domains=[s for s in p.stderr.decode(errors='replace').splitlines() if s.startswith('NUCLEUS_APP_DOMAIN_OBLIGATION:')]
+          report=dict(source_commit=os.environ['GITHUB_SHA'],qualified_parent_binary='82ebbce2278e54f82667e4d12793034acdf72f329b989e4605cf65473c9de715',input_sha=hashlib.sha256(source.read_bytes()).hexdigest(),rc=p.returncode,trace_count=len(trace),function_type_shapes=dict(kinds),trace_first=trace[0][:3000] if trace else None,trace_last=trace[-1][:3000] if trace else None,terminal_cause_count=len(causes),spine_marker_count=len(spine),spine_examples=[s[:800] for s in spine[:32]],capture_success_count=len(capture_successes),capture_success_examples=capture_successes[:20],capture_unknown_count=len(capture_unknown),capture_unknown_examples=capture_unknown[:12],stuck_success_count=len(stuck_success),stuck_success_examples=stuck_success[:20],stuck_unknown_count=len(stuck_unknown),stuck_unknown_examples=stuck_unknown[:32],spine_failure_count=len(spine_failures),spine_failure_examples=spine_failures[:24],app_domain_count=len(app_domains),app_domain_examples=app_domains[-30:],terminal=terminal[-1] if terminal else None,frontier_accept=p.returncode==0)
+          (out/'report.json').write_text(json.dumps(report,indent=2,sort_keys=True)+'\n')
+          print('FIRST_APPLICATION_TRACE',json.dumps(report,sort_keys=True),flush=True)
+          assert p.returncode in (0,2),('unexpected verdict',p.returncode)
+          assert env.get('NUCLEUS_PROBE_TYPED_CAPTURE_CONGRUENCE')=='1','Semantic capture probe flag missing'
+          assert p.returncode==0 or (terminal and ':verdict=UNKNOWN:' in terminal[-1]),terminal
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-poly-congr-argument-${{ github.sha }}
+          retention-days: 30
+          path: |
+            /tmp/trace-evidence/report.json
+            /tmp/trace-evidence/stderr.log
+            /tmp/trace-evidence/stdout.log
+          if-no-files-found: warn
