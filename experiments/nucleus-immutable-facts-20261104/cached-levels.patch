@@ -1,0 +1,106 @@
+--- a/metatron-kernel/src/value.rs
++++ b/metatron-kernel/src/value.rs
+@@ -155,28 +155,54 @@
+     pub levels: LevelSubstitution,
+ }
+ 
+-#[derive(Clone, Debug, Default, Eq, Hash, PartialEq)]
+-pub struct LevelSubstitution(Rc<Vec<(NameId, LevelTerm)>>);
++#[derive(Clone)]
++struct LevelSubstitutionData {
++    entries: Vec<(NameId,LevelTerm)>,
++    digest: u64,
++}
++#[derive(Clone)]
++pub struct LevelSubstitution(Rc<LevelSubstitutionData>);
++impl Default for LevelSubstitution {
++    fn default()->Self {Self::new(Vec::new())}
++}
++impl fmt::Debug for LevelSubstitution {
++    fn fmt(&self,f:&mut fmt::Formatter<'_>)->fmt::Result {
++        f.debug_tuple("LevelSubstitution").field(&self.0.entries).finish()
++    }
++}
++impl PartialEq for LevelSubstitution {
++    fn eq(&self,other:&Self)->bool {Rc::ptr_eq(&self.0,&other.0)||self.0.entries==other.0.entries}
++}
++impl Eq for LevelSubstitution {}
++impl Hash for LevelSubstitution {
++    fn hash<H:Hasher>(&self,state:&mut H) {self.0.digest.hash(state);}
++}
+ 
+ impl LevelSubstitution {
+     pub fn new(entries: Vec<(NameId, LevelTerm)>) -> Self {
+-        Self(Rc::new(entries))
+-    }
+-
+-    pub(crate) fn entries(&self) -> impl Iterator<Item=&(NameId,LevelTerm)> { self.0.iter() }
++        // Cache only a hash, never equality or type authority. Full entries
++        // remain the collision witness, and allocation identity is retained.
++        let digest=if entries.is_empty() {0} else {
++            let mut state=std::collections::hash_map::DefaultHasher::new();
++            entries.hash(&mut state);state.finish()
++        };
++        Self(Rc::new(LevelSubstitutionData{entries,digest}))
++    }
++
++    pub(crate) fn entries(&self) -> impl Iterator<Item=&(NameId,LevelTerm)> { self.0.entries.iter() }
+     /// Identity of this immutable substitution allocation. Callers using it
+     /// as a witness must retain a clone to prevent address recycling.
+     pub(crate) fn identity(&self)->usize {Rc::as_ptr(&self.0) as usize}
+ 
+     pub fn to_map(&self) -> std::collections::HashMap<NameId, LevelTerm> {
+-        self.0.iter().cloned().collect()
++        self.0.entries.iter().cloned().collect()
+     }
+ }
+ 
+ impl crate::level::LevelSubstitutionLookup for LevelSubstitution {
+     #[inline]
+     fn lookup_level(&self, name: NameId) -> Option<LevelTerm> {
+-        self.0
++        self.0.entries
+             .iter()
+             .find_map(|(candidate, level)| (*candidate == name).then(|| level.clone()))
+     }
+@@ -384,3 +410,40 @@
+         s.closure(self).map(|(c, _)| c)
+     }
+ }
++
++#[cfg(test)]
++mod cached_level_substitution_tests {
++    use super::*;
++    fn hash(value:&LevelSubstitution)->u64 {let mut state=std::collections::hash_map::DefaultHasher::new();value.hash(&mut state);state.finish()}
++    #[test]
++    fn equal_entries_keep_equal_hashes_without_aliasing_allocation_witnesses() {
++        let entries=vec![(NameId(8),LevelTerm::param("u"))];
++        let a=LevelSubstitution::new(entries.clone());let b=LevelSubstitution::new(entries);
++        assert_eq!(a,b);assert_eq!(hash(&a),hash(&b));assert_ne!(a.identity(),b.identity());
++        assert_eq!(a.identity(),a.clone().identity());
++        assert_eq!(LevelSubstitution::default(),LevelSubstitution::new(vec![]));
++        assert_eq!(hash(&LevelSubstitution::default()),hash(&LevelSubstitution::new(vec![])));
++    }
++    #[test]
++    fn forced_digest_collision_never_equates_different_universe_entries() {
++        let a=LevelSubstitution(Rc::new(LevelSubstitutionData{entries:vec![(NameId(1),LevelTerm::Zero)],digest:77}));
++        let b=LevelSubstitution(Rc::new(LevelSubstitutionData{entries:vec![(NameId(1),crate::level::succ(LevelTerm::Zero))],digest:77}));
++        assert_ne!(a,b);assert_eq!(hash(&a),hash(&b));
++        let mut values=std::collections::HashMap::new();values.insert(a.clone(),11);values.insert(b.clone(),23);
++        assert_eq!(values.len(),2);assert_eq!(values[&a],11);assert_eq!(values[&b],23);
++    }
++    #[test]
++    fn exposure_cache_separates_colliding_universe_substitutions() {
++        use crate::id::{IdTable,LevelId};use crate::syntax::{Expr,Level};use crate::machine::{Machine,Transparency};
++        let mut exprs=IdTable::default();exprs.insert(ExprId(0),Expr::Sort(LevelId(1))).unwrap();
++        let mut levels=IdTable::default();levels.insert(LevelId(0),Level::Zero).unwrap();levels.insert(LevelId(1),Level::Param(NameId(1))).unwrap();
++        let environment=crate::environment::Environment::empty();
++        let machine=Machine::new(environment.authority(),&exprs,&levels,environment.definition_bodies()).with_exposure_cache(crate::machine::new_exposure_cache());
++        let a=LevelSubstitution(Rc::new(LevelSubstitutionData{entries:vec![(NameId(1),LevelTerm::Zero)],digest:77}));
++        let b=LevelSubstitution(Rc::new(LevelSubstitutionData{entries:vec![(NameId(1),crate::level::succ(LevelTerm::Zero))],digest:77}));
++        assert_eq!(machine.expose(Closure::with_levels(ExprId(0),EnvFrame::empty(),a.clone()),Transparency::Full,256).proven_value(),Some(&Value::Sort(LevelTerm::Zero)));
++        assert_eq!(machine.expose(Closure::with_levels(ExprId(0),EnvFrame::empty(),b),Transparency::Full,256).proven_value(),Some(&Value::Sort(crate::level::succ(LevelTerm::Zero))));
++        let reused=machine.expose(Closure::with_levels(ExprId(0),EnvFrame::empty(),a),Transparency::Full,256);
++        assert!(matches!(reused,crate::judgment::Judgment::Proven{value:Value::Sort(LevelTerm::Zero),warrant:crate::judgment::WarrantId("certified-cached-closure-exposure")}));
++    }
++}
