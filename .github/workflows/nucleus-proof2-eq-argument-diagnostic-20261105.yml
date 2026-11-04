@@ -1,0 +1,64 @@
+name: Nucleus proof2 exact-context Eq argument separator
+on:
+  push:
+    branches: [research/nucleus-proof2-function-type-diagnostic-20261105]
+    paths:
+      - '.github/workflows/nucleus-proof2-eq-argument-diagnostic-20261105.yml'
+      - 'experiments/nucleus-proof2-function-type-diagnostic-20261105/proof2-eq-argument-diagnostic.patch'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  eq-argument-separator:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Restore exact qualified source and original first-UNKNOWN prefix
+        run: |
+          set -euo pipefail
+          mkdir -p qualified
+          gh api repos/heathsanchez/test/actions/artifacts/13370874970/zip > qualified.zip
+          printf '%s  %s\n' 0fd8a4cd86dcb233b532f59ea8dc853d22480b6ba62ff864049224250613e517 qualified.zip | sha256sum -c -
+          unzip -q qualified.zip -d qualified
+          printf '%s  %s\n' 2003c831c32a8249e8524349bc169f3e491e9c84fb71b5fc8db9bce2a8583d01 qualified/candidate/nucleus | sha256sum -c -
+          tar --no-same-owner -xzf qualified/candidate/source.tar.gz
+          printf '%s  %s\n' 3b3c9c6e70f671a6473aca4ce2ba4bc3b6ab0d4c770ead7da9f7656ae7ba640e metatron-kernel/src/typecheck.rs | sha256sum -c -
+          patch -p1 -d metatron-kernel < experiments/nucleus-proof2-function-type-diagnostic-20261105/proof2-eq-argument-diagnostic.patch
+          zstd -dq qualified/next-frontier.ndjson.zst -o next-frontier.ndjson
+          printf '%s  %s\n' 61b130d9e864c99afd4111b662f884827be98a87f27277c42a5949b025fc0d6b next-frontier.ndjson | sha256sum -c -
+      - name: Build diagnostic-only Eq separator
+        run: |
+          set -euo pipefail
+          cd metatron-kernel
+          cargo build --locked --release --features diagnostics
+      - name: Run same exact frontier under full qualifying feature set
+        run: |
+          set -euo pipefail
+          mapfile -t flags < <(jq -r '.candidate.configuration | to_entries[] | "\(.key)=\(.value)"' qualified/qualification.json)
+          set +e
+          env "${flags[@]}" NUCLEUS_TRACE_DOWNSTREAM=1 NUCLEUS_TRACE_FAILED_RECEIVER_CONVERSION=1 timeout 220 metatron-kernel/target/release/metatron-kernel < next-frontier.ndjson > diag.stdout 2> diag.stderr
+          status=$?
+          set -e
+          printf 'DIAGNOSTIC_RC=%s\n' "$status"
+          grep -F 'AddMonoidAlgebra.nonUnitalNonAssocSemiring._proof_2:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type' diag.stderr
+          test "$status" -eq 2
+          printf 'EQ ARGUMENT RELATIONS:\n'
+          grep -F 'NUCLEUS_PROOF2_EQ_ARGUMENT:' diag.stderr | tail -n 3 | cut -c 1-1200
+          test "$(grep -Fc 'NUCLEUS_PROOF2_EQ_ARGUMENT:' diag.stderr)" -ge 3
+          zstd -q -f -1 diag.stderr -o diag.stderr.zst
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-proof2-eq-arguments-same-context
+          path: |
+            diag.stderr.zst
+            diag.stdout
+            qualified/qualification.json
+          retention-days: 60
+          if-no-files-found: warn
