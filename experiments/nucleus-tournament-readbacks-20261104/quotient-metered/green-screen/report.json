@@ -1,0 +1,45 @@
+{
+  "binary_sha": "57d1414d50d056ff5a5d53ae584c12c7ed7e72b5e956a00670dcbcd66690725a",
+  "rows": [
+    {
+      "case": "authentic-quotient-projection",
+      "file": "authentic-quotient-projection.ndjson",
+      "sha256": "020ded5a51d3cda948de279c48aa2a420d313bc6866d7e1f833ed87137806fc2",
+      "expect_reference": 0,
+      "counterfactual_source_control": true,
+      "parse_rc": 0,
+      "reference_rc": 0,
+      "candidate_rc": 0
+    },
+    {
+      "case": "quotient-projection-false-proof",
+      "file": "quotient-projection-false-proof.ndjson",
+      "sha256": "2ee0fd6c8d16b726834f5d53c0848404cbc745644aa602976cda7b58b62666b1",
+      "expect_reference": 1,
+      "counterfactual_source_control": true,
+      "parse_rc": 0,
+      "reference_rc": 1,
+      "candidate_rc": 2
+    },
+    {
+      "case": "quotient-projection-wrong-universe",
+      "file": "quotient-projection-wrong-universe.ndjson",
+      "sha256": "9c731db40e9dc3431401d5e7ee9880ca8d1662d3fbdb403fb0791b4d8ea944cd",
+      "expect_reference": 1,
+      "counterfactual_source_control": true,
+      "parse_rc": 0,
+      "reference_rc": 1,
+      "candidate_rc": 1
+    },
+    {
+      "case": "quotient-projection-unbound-source",
+      "file": "quotient-projection-unbound-source.ndjson",
+      "sha256": "e9f6e22461d9f0faf5dc978ea210bb78662b98d936ecdda5ab3fa8442bd4839a",
+      "expect_reference": 1,
+      "counterfactual_source_control": true,
+      "parse_rc": 0,
+      "reference_rc": 1,
+      "candidate_rc": 1
+    }
+  ]
+}

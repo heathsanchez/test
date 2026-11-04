@@ -1,0 +1,27 @@
+
+running 2 tests
+test typecheck::completed_support_allocation_tests::closed_source_support_hit_allocates_nothing ... FAILED
+test typecheck::completed_support_allocation_tests::completed_source_support_hit_has_only_result_allocation ... FAILED
+
+failures:
+
+---- typecheck::completed_support_allocation_tests::closed_source_support_hit_allocates_nothing stdout ----
+
+thread 'typecheck::completed_support_allocation_tests::closed_source_support_hit_allocates_nothing' (171) panicked at src/typecheck.rs:7328:60:
+assertion `left == right` failed: closed completed fact needs no heap work
+  left: 2
+ right: 0
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- typecheck::completed_support_allocation_tests::completed_source_support_hit_has_only_result_allocation stdout ----
+
+thread 'typecheck::completed_support_allocation_tests::completed_source_support_hit_has_only_result_allocation' (172) panicked at src/typecheck.rs:7323:63:
+completed fact allocated 3 times
+
+
+failures:
+    typecheck::completed_support_allocation_tests::closed_source_support_hit_allocates_nothing
+    typecheck::completed_support_allocation_tests::completed_source_support_hit_has_only_result_allocation
+
+test result: FAILED. 0 passed; 2 failed; 0 ignored; 0 measured; 155 filtered out; finished in 0.00s
+

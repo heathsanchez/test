@@ -1,0 +1,92 @@
+--- a/metatron-kernel/src/typecheck.rs
++++ b/metatron-kernel/src/typecheck.rs
+@@ -116,6 +116,7 @@
+     // Eligibility is structural; typing proofs stay in the per-judgment cache.
+     closed_spine_eligibility: RefCell<HashMap<ExprId, bool>>,
+     source_support: RefCell<HashMap<ExprId, Vec<u64>>>,
++    #[cfg(feature="diagnostics")] source_epoch:usize,
+     paired_source_support: RefCell<HashMap<(ExprId, ExprId), Vec<(u64, u64)>>>,
+     checked_frames: RefCell<HashMap<CheckedFrameKey, EnvFrame>>,
+     // Completed pure source-freshness proofs, local to these borrowed immutable
+@@ -176,6 +177,7 @@
+             exposure_cache: new_exposure_cache(),
+             closed_spine_eligibility: RefCell::new(HashMap::new()),
+             source_support: RefCell::new(HashMap::new()),
++            #[cfg(feature="diagnostics")] source_epoch:crate::diagnostics::new_source_checker(),
+             paired_source_support: RefCell::new(HashMap::new()),
+             checked_frames: RefCell::new(HashMap::new()),
+             source_opening_proofs:RefCell::new(HashMap::new()),
+@@ -203,6 +205,7 @@
+             exposure_cache: new_exposure_cache(),
+             closed_spine_eligibility: RefCell::new(HashMap::new()),
+             source_support: RefCell::new(HashMap::new()),
++            #[cfg(feature="diagnostics")] source_epoch:crate::diagnostics::new_source_checker(),
+             paired_source_support: RefCell::new(HashMap::new()),
+             checked_frames: RefCell::new(HashMap::new()),
+             source_opening_proofs:RefCell::new(HashMap::new()),
+@@ -1251,6 +1254,8 @@
+ 
+     // A complete structural support certificate carries no typing authority.
+     pub(crate) fn complete_source_support(&self, expression: ExprId, remaining: &mut usize) -> Option<Vec<u64>> {
++        #[cfg(feature="diagnostics")]
++        crate::diagnostics::source_support_begin(expression,self.source_support.borrow().contains_key(&expression),self.source_epoch);
+         let mut pending = vec![(expression, false)];
+         let mut active = std::collections::HashSet::new();
+         let mut complete = HashMap::<ExprId, Vec<u64>>::new();
+@@ -1313,6 +1318,8 @@
+         let support = complete.remove(&expression)?;
+         if *remaining < support.len() { return None }
+         *remaining -= support.len();
++        #[cfg(feature="diagnostics")]
++        crate::diagnostics::source_support_finish(expression,self.source_epoch);
+         Some(support)
+     }
+ 
+@@ -4537,6 +4544,7 @@
+             exposure_cache:new_exposure_cache(),
+             closed_spine_eligibility: RefCell::new(HashMap::new()),
+             source_support: RefCell::new(HashMap::new()),
++            #[cfg(feature="diagnostics")] source_epoch:crate::diagnostics::new_source_checker(),
+             paired_source_support: RefCell::new(HashMap::new()),
+             checked_frames: RefCell::new(HashMap::new()),
+             source_opening_proofs:RefCell::new(HashMap::new()),
+@@ -4703,6 +4711,7 @@
+             exposure_cache: new_exposure_cache(),
+             closed_spine_eligibility: RefCell::new(HashMap::new()),
+             source_support: RefCell::new(HashMap::new()),
++            #[cfg(feature="diagnostics")] source_epoch:crate::diagnostics::new_source_checker(),
+             paired_source_support: RefCell::new(HashMap::new()),
+             checked_frames: RefCell::new(HashMap::new()),
+             source_opening_proofs:RefCell::new(HashMap::new()),
+@@ -4754,6 +4763,7 @@
+             exposure_cache: new_exposure_cache(),
+             closed_spine_eligibility: RefCell::new(HashMap::new()),
+             source_support: RefCell::new(HashMap::new()),
++            #[cfg(feature="diagnostics")] source_epoch:crate::diagnostics::new_source_checker(),
+             paired_source_support: RefCell::new(HashMap::new()),
+             checked_frames: RefCell::new(HashMap::new()),
+             source_opening_proofs:RefCell::new(HashMap::new()),
+--- a/metatron-kernel/src/checker.rs
++++ b/metatron-kernel/src/checker.rs
+@@ -41,6 +41,7 @@
+         .any(|expression| matches!(expression, Expr::StrLit(_)));
+     let qualified_string_source=export.declarations.iter().any(|d|matches!(d,Declaration::Inductive(b) if qualified_string_literal_type(&export,b).is_some()));
+     let verdict = check_export_with_policy(export, limits, DeltaPolicy::GuardedSemanticFallback);
++    #[cfg(feature="diagnostics")] crate::diagnostics::report_source_reuse();
+     if has_unqualified_string_literal && !qualified_string_source && matches!(verdict, Verdict::Accept | Verdict::Reject) {
+         if crate::run_flags::present(crate::run_flags::Flag::TraceDownstream) {
+             eprintln!(
+--- a/metatron-kernel/src/diagnostics.rs
++++ b/metatron-kernel/src/diagnostics.rs
+@@ -60,3 +60,11 @@
+         conversions: CONVERSIONS.get(),
+     }
+ }
++
++#[derive(Default,Debug)]
++struct SourceReuseProbe { calls:u64,local_misses:u64,prior_other_checker_positive_misses:u64,finished_calls:u64,completed:std::collections::HashMap<crate::id::ExprId,usize> }
++thread_local!{static SOURCE_REUSE:std::cell::RefCell<SourceReuseProbe>=std::cell::RefCell::new(SourceReuseProbe::default());}
++pub(crate) fn new_source_checker()->usize {use std::sync::atomic::{AtomicUsize,Ordering};static EPOCH:AtomicUsize=AtomicUsize::new(1);EPOCH.fetch_add(1,Ordering::Relaxed)}
++pub(crate) fn source_support_begin(expr:crate::id::ExprId,local_hit:bool,epoch:usize){SOURCE_REUSE.with(|s|{let mut s=s.borrow_mut();s.calls+=1;if !local_hit{s.local_misses+=1;if s.completed.get(&expr).is_some_and(|e|*e!=epoch){s.prior_other_checker_positive_misses+=1;}}});}
++pub(crate) fn source_support_finish(expr:crate::id::ExprId,epoch:usize){SOURCE_REUSE.with(|s|{let mut s=s.borrow_mut();s.finished_calls+=1;if s.completed.len()<65536{s.completed.entry(expr).or_insert(epoch);}});}
++pub(crate) fn report_source_reuse(){SOURCE_REUSE.with(|s|{let s=s.borrow();eprintln!("NUCLEUS_SOURCE_REUSE_PROBE:calls={}:local_misses={}:prior_other_checker_positive_misses={}:finished_calls={}:retained_positive_roots={}",s.calls,s.local_misses,s.prior_other_checker_positive_misses,s.finished_calls,s.completed.len());});}

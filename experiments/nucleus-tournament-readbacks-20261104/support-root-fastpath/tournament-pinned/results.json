@@ -1,0 +1,137 @@
+{
+  "status": "NO_ESTABLISHED_SPEED_WIN",
+  "schedule": [
+    "B",
+    "A",
+    "A",
+    "B"
+  ],
+  "configuration": {
+    "NUCLEUS_EXPERIMENTAL_CERTIFIED_QUOT_IOTA": "1",
+    "NUCLEUS_EXPERIMENTAL_CONTEXT_BINDER": "1",
+    "NUCLEUS_EXPERIMENTAL_DEMAND_MAJOR": "1",
+    "NUCLEUS_EXPERIMENTAL_EXPECTED_LAMBDA": "1",
+    "NUCLEUS_EXPERIMENTAL_FORMED_PROP_DOMAIN_RETRY": "1",
+    "NUCLEUS_EXPERIMENTAL_POLYMORPHIC_PROP_IRREL": "1",
+    "NUCLEUS_EXPERIMENTAL_PROJECTION_CONTEXT": "1",
+    "NUCLEUS_EXPERIMENTAL_PROJECTION_CROSSFRAME_512": "1",
+    "NUCLEUS_EXPERIMENTAL_PROP_SINGLETON_2P1F": "1",
+    "NUCLEUS_EXPERIMENTAL_RELEVANCE": "1",
+    "NUCLEUS_EXPERIMENTAL_REPLAY_NEUTRAL_PROJECTION": "1",
+    "NUCLEUS_EXPERIMENTAL_REPLAY_PROJECTION_MAJOR": "1",
+    "NUCLEUS_EXPERIMENTAL_SOURCE_PAIR_DEPTH8": "1",
+    "NUCLEUS_EXPERIMENTAL_SOURCE_PROOF_IRREL": "1",
+    "NUCLEUS_EXPERIMENTAL_SUBSTITUTION_RECLOSURE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_DATA_CONGRUENCE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_LINEAGE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_PROJECTION_SPINE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_RECEIVER": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_VALUE_NORMALIZATION": "1"
+  },
+  "trace_flags": {
+    "NUCLEUS_TRACE_DOWNSTREAM": "1"
+  },
+  "input_sha": "22c5de83469408950005589a3bc5ef5157c65549b5a802f85d567c29151306a6",
+  "input_bytes": 6184415052,
+  "expected_terminal": "NUCLEUS_DOWNSTREAM:name=Multiset.singleton_add:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads",
+  "binary_sha": {
+    "A": "ec137270ead2aee950c8402b4baff87520ef3f2d176a4d2ce7e76ba54d9be997",
+    "B": "ff9edf7cfef37bce52ed7503ab73a5dc7f72b83f2cbf2d9e91835317561af554"
+  },
+  "parent_frontier": {
+    "bytes": 12977717,
+    "declaration": {
+      "all": [
+        21819
+      ],
+      "levelParams": [
+        32
+      ],
+      "name": 21819,
+      "type": 222101,
+      "value": 222106
+    },
+    "name_records_parsed": 21819,
+    "record": 247390,
+    "sha256": "231655af734415d00fcc7dc83cffe7d96f97406d1d3cd93554ff49aa6de8e521",
+    "tag": "thm",
+    "target": "Multiset.singleton_add"
+  },
+  "cpu_affinity": [
+    4
+  ],
+  "original_cpu_affinity": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8
+  ],
+  "pin_policy": "median",
+  "runner_sha": "d04ec7c3052c5af2c24b1b2d12b56a1f4c9656fff6303aeb885ddc7ffeacbac5",
+  "rounds": [
+    {
+      "index": 0,
+      "arm": "B",
+      "rc": 2,
+      "user": 169.989447,
+      "system": 3.150293,
+      "cpu": 173.13974000000002,
+      "wall": 173.3174859360006,
+      "rss_kib": 4531436,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=Multiset.singleton_add:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads",
+      "cutoff": [],
+      "matched": true
+    },
+    {
+      "index": 1,
+      "arm": "A",
+      "rc": 2,
+      "user": 171.898347,
+      "system": 2.818141,
+      "cpu": 174.716488,
+      "wall": 175.14367609600595,
+      "rss_kib": 4531440,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=Multiset.singleton_add:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads",
+      "cutoff": [],
+      "matched": true
+    },
+    {
+      "index": 2,
+      "arm": "A",
+      "rc": 2,
+      "user": 170.545584,
+      "system": 2.794321,
+      "cpu": 173.339905,
+      "wall": 173.6106811690115,
+      "rss_kib": 4531480,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=Multiset.singleton_add:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads",
+      "cutoff": [],
+      "matched": true
+    },
+    {
+      "index": 3,
+      "arm": "B",
+      "rc": 2,
+      "user": 160.136475,
+      "system": 2.7664299999999997,
+      "cpu": 162.90290499999998,
+      "wall": 163.2824705499952,
+      "rss_kib": 4531480,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=Multiset.singleton_add:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads",
+      "cutoff": [],
+      "matched": true
+    }
+  ],
+  "full_mathlib": "UNKNOWN",
+  "official_rank": "UNKNOWN",
+  "baseline_median_cpu": 174.02819649999998,
+  "candidate_median_cpu": 168.0213225,
+  "median_cpu_ratio": 1.0357506649193289,
+  "median_cpu_reduction_percent": 3.4516670980957898,
+  "criterion": "Every observed candidate CPU must beat every baseline CPU by more than1%; two observations per arm, no statistical confidence claim"
+}

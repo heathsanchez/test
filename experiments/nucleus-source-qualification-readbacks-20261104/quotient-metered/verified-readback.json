@@ -1,0 +1,85 @@
+{
+  "zip_sha": "b8ae1034cbfa7b464fbb3111e1d33174313ff30bf9e7645db2486db57c92887c",
+  "hashes": {
+    "nucleus": "ec137270ead2aee950c8402b4baff87520ef3f2d176a4d2ce7e76ba54d9be997",
+    "source.patch": "a443b4fe97c629dd75e40499c635b0aa2343d4b1e339b5c69a90960b60aa4254",
+    "source.tar.gz": "2f268e78bcf2fbadefc1c4224753c2b51eaf2544d17c9e01c14d8659b12065de",
+    "source-manifest.json": "c44e824a9ecb504cd57a744ac95153b240ac39659c54d65b41c44377bb19ca8e"
+  },
+  "all_archive_and_local_source_files_verified": 368,
+  "summary": {
+    "binary_sha": "ec137270ead2aee950c8402b4baff87520ef3f2d176a4d2ce7e76ba54d9be997",
+    "full": {
+      "binary_sha": "ec137270ead2aee950c8402b4baff87520ef3f2d176a4d2ce7e76ba54d9be997",
+      "complete_mathlib_accept": false,
+      "frontier_official_reference": {
+        "binary_sha": "ae92c625e612fff1c90e329344d22e3c3c330383cb335ce28fd41435be3b3b94",
+        "parse_rc": 0,
+        "rc": 0,
+        "source_sha": "231655af734415d00fcc7dc83cffe7d96f97406d1d3cd93554ff49aa6de8e521"
+      },
+      "next_frontier": {
+        "bytes": 12977717,
+        "declaration": {
+          "all": [
+            21819
+          ],
+          "levelParams": [
+            32
+          ],
+          "name": 21819,
+          "type": 222101,
+          "value": 222106
+        },
+        "name_records_parsed": 21819,
+        "record": 247390,
+        "sha256": "231655af734415d00fcc7dc83cffe7d96f97406d1d3cd93554ff49aa6de8e521",
+        "tag": "thm",
+        "target": "Multiset.singleton_add"
+      },
+      "no_official_arena_score": true,
+      "qualified": true,
+      "result": {
+        "rc": 2,
+        "rss_kb": 4532316.0,
+        "system": 3.59,
+        "user": 121.45,
+        "wall": 125.06,
+        "wall_observed": 125.0986754170001
+      },
+      "source_sha": "22c5de83469408950005589a3bc5ef5157c65549b5a802f85d567c29151306a6",
+      "status": "WARRANTED_BOUNDED_FIRST_FRONTIER",
+      "terminal": "NUCLEUS_DOWNSTREAM:name=Multiset.singleton_add:stage=theorem.value:verdict=UNKNOWN:reason=distinct-neutral-heads"
+    },
+    "known_native_failures": {
+      "residual_closure|test": [
+        "all_seven_complete_positive_exports_accept"
+      ]
+    },
+    "native_counts": [
+      461,
+      1,
+      0,
+      0,
+      0
+    ],
+    "native_targets": 42,
+    "no_official_rank_claim": true,
+    "no_performance_claim_different_frontier": true,
+    "nodup_singleton_prefix_accept": true,
+    "nodup_singleton_prefix_sha": "67f330e56e94c29578eb6375167b15483277c151edc0ee2dabae9898b4dc4318",
+    "parent_binary": "413d526c8a097ac39c85090107ab09268f6bef40bf0914a095535fc00f3cb163",
+    "protected_controls": 61,
+    "qualified": true,
+    "source_controls": 102,
+    "source_patch_sha": "a443b4fe97c629dd75e40499c635b0aa2343d4b1e339b5c69a90960b60aa4254",
+    "status": "WARRANTED_BOUNDED_SEMANTIC_EXTENSION"
+  },
+  "source_commit": "2ac0facfe09fcee88f86ad60fe91a014f00b2d51",
+  "source_tree": "bf24aac7675d8d8eae9c795b03cafa63bcbd8b43",
+  "run": 41810328113,
+  "artifact": 13312992934,
+  "source_base_commit": "a2578e77079719ff2064f910bd82fd01d8e120b6",
+  "full_mathlib": "UNKNOWN",
+  "official_rank": "UNKNOWN"
+}

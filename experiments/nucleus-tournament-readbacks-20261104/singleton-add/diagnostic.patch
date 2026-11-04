@@ -1,0 +1,149 @@
+--- a/metatron-kernel/src/typecheck.rs
++++ b/metatron-kernel/src/typecheck.rs
+@@ -2323,8 +2323,7 @@
+                 }
+                 #[cfg(feature="diagnostics")]
+                 if crate::run_flags::present(crate::run_flags::Flag::TraceFinalCodomain)
+-                    && matches!((context.len(),expression.0),
+-                        (8,7581)|(8,7247)|(7,11145)|(7,11144))
++                    && matches!(expression.0,222103..=222106)
+                 {
+                     let machine=self.machine();
+                     let actual_exposed=match &value {
+@@ -2392,6 +2391,78 @@
+                             let b_value=self.machine().expose_for_conversion(
+                                 b.clone(),Transparency::Reducible,512,
+                             );
++                            if label=="arg2" && context.len()==3 {
++                                let mut endpoints=Vec::new();
++                                for (tag,value) in [("left",&a_value),("right",&b_value)] {
++                                    let m=self.machine();let mut current=value.proven_value().cloned();let mut work=2048;
++                                    for step in 0..4 {
++                                        let Some(v)=current else{break};
++                                        let next=match &v {
++                                            Value::StuckProjection{type_name,index,structure,spine}=>m.projection_value_for_conversion(structure.clone(),*type_name,*index,spine,work),
++                                            Value::Neutral(n)=>m.qualified_quotient_neutral_result_metered(n,&mut work),
++                                            _=>Judgment::unknown("diagnostic-no-step"),
++                                        };
++                                        eprintln!("NUCLEUS_SINGLETON_STEP:side={tag}:step={step}:remaining={work}:result={next:?}");
++                                        if let Judgment::Proven{value,..}=next{current=Some(value);}else{
++                                            if let Value::Neutral(n)=&v {
++                                                if matches!(&n.head,NeutralHead::Const{name,..}if name.0==55)&&n.spine.len()==6{endpoints.push(n.clone());}
++                                                if let Some(f)=n.spine.get(3){
++                                                    let fv=m.expose_for_conversion(f.clone(),Transparency::Full,2048);
++                                                    eprintln!("NUCLEUS_SINGLETON_FUNCTION:side={tag}:value={fv:?}");
++                                                    if let Some(Value::Lam{body,..})=fv.proven_value(){
++                                                        let free=FreeId(context.len() as u64);let mut freshness=1024;
++                                                        if crate::convert::source_opening_avoids_capture(self,body,free,&mut freshness){
++                                                            let opened=Closure::with_levels(body.expr,body.env.extend_free(free),body.levels.clone());
++                                                            let body_value=m.expose_for_conversion(opened,Transparency::Full,2048);
++                                                            eprintln!("NUCLEUS_SINGLETON_FUNCTION_BODY:side={tag}:value={body_value:?}");
++                                                            if let Some(Value::Neutral(ctor))=body_value.proven_value(){
++                                                                if let Some(payload)=ctor.spine.last(){
++                                                                    let mut stage=m.expose_for_conversion(payload.clone(),Transparency::Full,2048);
++                                                                    for j in 0..4 {
++                                                                        eprintln!("NUCLEUS_SINGLETON_PAYLOAD:side={tag}:step={j}:value={stage:?}");
++                                                                        if let Some(Value::Neutral(n))=stage.proven_value(){
++                                                                            if matches!(&n.head,NeutralHead::Const{name,..}if name.0==65){
++                                                                                let mut tail=n.spine.last().map(|t|m.expose_for_conversion(t.clone(),Transparency::Full,2048));
++                                                                                for k in 0..4 {
++                                                                                    let Some(t)=tail else{break};eprintln!("NUCLEUS_SINGLETON_LIST_TAIL:side={tag}:step={k}:value={t:?}");
++                                                                                    tail=match t.proven_value(){Some(Value::StuckProjection{type_name,index,structure,spine})=>Some(m.projection_value_for_conversion(structure.clone(),*type_name,*index,spine,2048)),Some(Value::Neutral(n))=>Some(m.qualified_nested_recursor_result(n,2048)),_=>None};
++                                                                                    if tail.as_ref().is_some_and(|t|!t.is_proven()){eprintln!("NUCLEUS_SINGLETON_LIST_TAIL_DECLINE:side={tag}:value={tail:?}");break;}
++                                                                                }
++                                                                            }
++                                                                        }
++                                                                        stage=match stage.proven_value(){
++                                                                            Some(Value::StuckProjection{type_name,index,structure,spine})=>m.projection_value_for_conversion(structure.clone(),*type_name,*index,spine,2048),
++                                                                            Some(Value::Neutral(n))=>m.qualified_nested_recursor_result(n,2048),
++                                                                            _=>break,
++                                                                        };
++                                                                        if !stage.is_proven(){eprintln!("NUCLEUS_SINGLETON_PAYLOAD_DECLINE:side={tag}:value={stage:?}");break;}
++                                                                    }
++                                                                }
++                                                            }
++                                                        }
++                                                    }
++                                                }
++                                            }
++                                            break;
++                                        }
++                                    }
++                                }
++                                if let [lhs,rhs]=endpoints.as_slice(){
++                                    for (i,(x,y))in lhs.spine.iter().zip(&rhs.spine).enumerate(){
++                                        let guard=crate::convert::convert_with_policy_in_context(self,&TypeValue::Term(x.clone()),&TypeValue::Term(y.clone()),2048,crate::convert::DeltaPolicy::GuardedSemanticFallback,context.len(),context);
++                                        let preferred=crate::convert::convert_with_policy_in_context(self,&TypeValue::Term(x.clone()),&TypeValue::Term(y.clone()),2048,crate::convert::DeltaPolicy::PreferredOnly,context.len(),context);
++                                        let checked=self.checked_source_conversion(x,y,context,2048);
++                                        eprintln!("NUCLEUS_SINGLETON_QUOT_ARG:index={i}:guarded={guard:?}:preferred={preferred:?}:checked={checked:?}");
++                                        if i==4{
++                                            for(tag,arg)in[("left",x),("right",y)]{
++                                                let mut f=2048;let ty=self.infer_exact_closure_in_context(arg,context,&mut f,0);
++                                                let prop=if let Some(TypeValue::Term(c))=&ty{Some(self.checked_captured_prop_type_in_context(c,context,2048))}else{None};
++                                                eprintln!("NUCLEUS_SINGLETON_QUOT_PROOF:side={tag}:type={ty:?}:prop_formation={prop:?}");
++                                            }
++                                        }
++                                    }
++                                }
++                            }
+                             #[cfg(feature="diagnostics")]
+                             if crate::run_flags::present(crate::run_flags::Flag::TraceArithmeticInstance)
+                                 && label != "arg0" && context.len()>=7
+@@ -3753,34 +3824,38 @@
+         let mut rhs_type=ty_for(rlevels);
+         let probe=budget.min(2048);
+         let mut skipped_proof=false;
+-        for (larg,rarg) in left.spine.iter().zip(&right.spine) {
++        for (item,(larg,rarg)) in left.spine.iter().zip(&right.spine).enumerate() {
++            let trace=lname.0==55&&context.len()==3&&crate::run_flags::present(crate::run_flags::Flag::TraceCheckedRelevance);
++            if trace{eprintln!("NUCLEUS_QUOT_RELEVANCE:item={item}:stage=begin:probe={probe}:left={:?}:right={:?}",larg.expr,rarg.expr);}
++
+             let Some((ldom,lbody))=self.pi_view(
+                 Judgment::proven(lhs_type,"relevance-typed-function"),probe,
+             ) else { return false };
+             let Some((rdom,rbody))=self.pi_view(
+                 Judgment::proven(rhs_type,"relevance-typed-function"),probe,
+             ) else { return false };
+-            if !crate::convert::convert_with_policy_in_context(
++            let domain_relation=crate::convert::convert_with_policy_in_context(
+                 self,&ldom,&rdom,probe.min(512),
+                 crate::convert::DeltaPolicy::PreferredOnly,depth,context,
+-            ).is_proven() {return false}
++            );
++            if trace{eprintln!("NUCLEUS_QUOT_RELEVANCE:item={item}:stage=domains:result={domain_relation:?}");}
++            if !domain_relation.is_proven(){return false}
+             let mut lf=probe;
+             let Some(larg_ty)=self.infer_exact_closure_in_context(
+                 larg,context,&mut lf,0,
+-            ) else {return false};
++            ) else {if trace{eprintln!("NUCLEUS_QUOT_RELEVANCE:item={item}:stage=left-infer-failed:remaining={lf}");}return false};
+             let mut rf=probe;
+             let Some(rarg_ty)=self.infer_exact_closure_in_context(
+                 rarg,context,&mut rf,0,
+-            ) else {return false};
++            ) else {if trace{eprintln!("NUCLEUS_QUOT_RELEVANCE:item={item}:stage=right-infer-failed:remaining={rf}");}return false};
+             let check_ty=|actual:&TypeValue,expected:&TypeValue| {
+                 crate::convert::convert_with_policy_in_context(
+                     self,actual,expected,probe.min(512),
+                     crate::convert::DeltaPolicy::PreferredOnly,depth,context,
+                 ).is_proven()
+             };
+-            if !check_ty(&larg_ty,&ldom) || !check_ty(&rarg_ty,&rdom) {
+-                return false;
+-            }
++            let lc=check_ty(&larg_ty,&ldom);if trace{eprintln!("NUCLEUS_QUOT_RELEVANCE:item={item}:stage=left-type:result={lc}");}if !lc{return false}
++            let rc=check_ty(&rarg_ty,&rdom);if trace{eprintln!("NUCLEUS_QUOT_RELEVANCE:item={item}:stage=right-type:result={rc}");}if !rc{return false}
+             let prop_domain=|dom:&TypeValue| {
+                 let TypeValue::Term(c)=dom else {return false};
+                 let mut f=probe;
+@@ -3793,7 +3868,9 @@
+                     Judgment::Proven {value:LevelTerm::Zero,..}
+                 )
+             };
+-            if prop_domain(&ldom) && prop_domain(&rdom) {
++            let lp=prop_domain(&ldom);let rp=lp&&prop_domain(&rdom);
++            if trace{eprintln!("NUCLEUS_QUOT_RELEVANCE:item={item}:stage=prop-domains:left={lp}:right={rp}");}
++            if rp {
+                 skipped_proof=true;
+             } else if !crate::convert::convert_with_policy_in_context(
+                 self,

@@ -1,0 +1,69 @@
+{
+  "candidate_binary": "ec137270ead2aee950c8402b4baff87520ef3f2d176a4d2ce7e76ba54d9be997",
+  "red": {
+    "rc": 2,
+    "rss_kb": 875308.0,
+    "system": 0.67,
+    "user": 112.69,
+    "wall": 113.37,
+    "wall_observed": 113.39558881900001
+  },
+  "reference_binary": "ae92c625e612fff1c90e329344d22e3c3c330383cb335ce28fd41435be3b3b94",
+  "rows": [
+    {
+      "case": "authentic-original-nodup-singleton",
+      "expect_reference": 0,
+      "file": "dite.ndjson",
+      "nucleus_rc": 0,
+      "pass_": true,
+      "reference_parse_rc": 0,
+      "reference_rc": 0,
+      "sha256": "67f330e56e94c29578eb6375167b15483277c151edc0ee2dabae9898b4dc4318"
+    },
+    {
+      "case": "authentic-quotient-projection",
+      "counterfactual_source_control": true,
+      "expect_reference": 0,
+      "file": "authentic-quotient-projection.ndjson",
+      "nucleus_rc": 0,
+      "pass_": true,
+      "reference_parse_rc": 0,
+      "reference_rc": 0,
+      "sha256": "020ded5a51d3cda948de279c48aa2a420d313bc6866d7e1f833ed87137806fc2"
+    },
+    {
+      "case": "quotient-projection-false-proof",
+      "counterfactual_source_control": true,
+      "expect_reference": 1,
+      "file": "quotient-projection-false-proof.ndjson",
+      "nucleus_rc": 2,
+      "pass_": true,
+      "reference_parse_rc": 0,
+      "reference_rc": 1,
+      "sha256": "2ee0fd6c8d16b726834f5d53c0848404cbc745644aa602976cda7b58b62666b1"
+    },
+    {
+      "case": "quotient-projection-wrong-universe",
+      "counterfactual_source_control": true,
+      "expect_reference": 1,
+      "file": "quotient-projection-wrong-universe.ndjson",
+      "nucleus_rc": 1,
+      "pass_": true,
+      "reference_parse_rc": 0,
+      "reference_rc": 1,
+      "sha256": "9c731db40e9dc3431401d5e7ee9880ca8d1662d3fbdb403fb0791b4d8ea944cd"
+    },
+    {
+      "case": "quotient-projection-unbound-source",
+      "counterfactual_source_control": true,
+      "expect_reference": 1,
+      "file": "quotient-projection-unbound-source.ndjson",
+      "nucleus_rc": 1,
+      "pass_": true,
+      "reference_parse_rc": 0,
+      "reference_rc": 1,
+      "sha256": "e9f6e22461d9f0faf5dc978ea210bb78662b98d936ecdda5ab3fa8442bd4839a"
+    }
+  ],
+  "workers": 2
+}

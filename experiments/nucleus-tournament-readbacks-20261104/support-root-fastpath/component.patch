@@ -1,0 +1,115 @@
+--- a/metatron-kernel/src/typecheck.rs
++++ b/metatron-kernel/src/typecheck.rs
+@@ -1251,16 +1251,28 @@
+ 
+     // A complete structural support certificate carries no typing authority.
+     pub(crate) fn complete_source_support(&self, expression: ExprId, remaining: &mut usize) -> Option<Vec<u64>> {
++        // Pay the same root visit before consulting its completed fact. A
++        // hit needs only its result copy, not a temporary traversal/map.
++        if !take_step(remaining) { return None }
++        if let Some(support)=self.source_support.borrow().get(&expression) {
++            if *remaining<support.len(){return None}
++            *remaining-=support.len();
++            return Some(support.clone());
++        }
++        let mut prepaid_root=true;
+         let mut pending = vec![(expression, false)];
+         let mut active = std::collections::HashSet::new();
+         let mut complete = HashMap::<ExprId, Vec<u64>>::new();
+         while let Some((id, finish)) = pending.pop() {
+             if !finish {
+-                if !take_step(remaining) { return None }
++                let prepaid=prepaid_root;prepaid_root=false;
++                if !prepaid && !take_step(remaining) { return None }
+                 if complete.contains_key(&id) { continue }
+-                if let Some(support) = self.source_support.borrow().get(&id).cloned() {
+-                    complete.insert(id, support);
+-                    continue;
++                if !prepaid {
++                    if let Some(support) = self.source_support.borrow().get(&id).cloned() {
++                        complete.insert(id, support);
++                        continue;
++                    }
+                 }
+                 if !active.insert(id) { return None } // no cyclic coinduction
+                 pending.push((id, true));
+@@ -1323,15 +1335,25 @@
+             return self.complete_source_support(left, remaining).map(|indices| indices.into_iter().map(|i| (i, i)).collect());
+         }
+         let root = (left, right);
++        if !take_step(remaining){return None}
++        if let Some(support)=self.paired_source_support.borrow().get(&root){
++            if *remaining<support.len(){return None}
++            *remaining-=support.len();
++            return Some(support.clone());
++        }
++        let mut prepaid_root=true;
+         let mut pending = vec![(root, false)];
+         let mut active = std::collections::HashSet::new();
+         let mut complete = HashMap::<(ExprId, ExprId), Vec<(u64, u64)>>::new();
+         while let Some((pair @ (a, b), finish)) = pending.pop() {
+             if !finish {
+-                if !take_step(remaining) { return None }
++                let prepaid=prepaid_root;prepaid_root=false;
++                if !prepaid && !take_step(remaining) { return None }
+                 if complete.contains_key(&pair) { continue }
+-                if let Some(support) = self.paired_source_support.borrow().get(&pair).cloned() {
+-                    complete.insert(pair, support); continue;
++                if !prepaid {
++                    if let Some(support) = self.paired_source_support.borrow().get(&pair).cloned() {
++                        complete.insert(pair, support); continue;
++                    }
+                 }
+                 if a == b {
+                     let support = self.complete_source_support(a, remaining)?;
+@@ -7292,3 +7314,50 @@
+  #[test]fn traversed_but_unused_slots_do_not_claim_capture_authority(){let(mut e,l,env)=fixture();e.insert(ExprId(7),Expr::App{fun:ExprId(1),arg:ExprId(3)}).unwrap();let c=TypeChecker::new(&e,&l,&env);let body=Closure::new(ExprId(7),frame());assert!(crate::convert::source_opening_avoids_capture(&c,&body,FreeId(8),&mut 4096),"unused middle binding is traversed but not used");for free in[7,9]{assert!(!crate::convert::source_opening_avoids_capture(&c,&body,FreeId(free),&mut 4096),"both used endpoints must still be checked");}}
+ 
+ }
++
++#[cfg(test)]
++mod completed_support_allocation_tests {
++    use super::*;
++    use std::alloc::{GlobalAlloc,Layout,System};
++    use std::cell::Cell;
++    thread_local!{static TRACK:Cell<bool>=const{Cell::new(false)};static ALLOCS:Cell<usize>=const{Cell::new(0)};}
++    struct CountingSystem;
++    fn allocation(){let _=TRACK.try_with(|t|if t.get(){let _=ALLOCS.try_with(|c|c.set(c.get()+1));});}
++    // Test-only instrumentation delegates every allocation unchanged to System.
++    unsafe impl GlobalAlloc for CountingSystem {
++        unsafe fn alloc(&self,l:Layout)->*mut u8{allocation();unsafe{System.alloc(l)}}
++        unsafe fn alloc_zeroed(&self,l:Layout)->*mut u8{allocation();unsafe{System.alloc_zeroed(l)}}
++        unsafe fn realloc(&self,p:*mut u8,l:Layout,n:usize)->*mut u8{allocation();unsafe{System.realloc(p,l,n)}}
++        unsafe fn dealloc(&self,p:*mut u8,l:Layout){unsafe{System.dealloc(p,l)}}
++    }
++    #[global_allocator]static ALLOCATOR:CountingSystem=CountingSystem;
++    fn counted<T>(f:impl FnOnce()->T)->(T,usize){
++        struct Stop;impl Drop for Stop{fn drop(&mut self){TRACK.set(false);}}
++        ALLOCS.set(0);TRACK.set(true);let stop=Stop;let result=f();drop(stop);(result,ALLOCS.get())
++    }
++    fn fixture()->(IdTable<ExprId,Expr>,IdTable<LevelId,crate::syntax::Level>,Environment){
++        let mut e=IdTable::default();let mut l=IdTable::default();l.insert(LevelId(0),crate::syntax::Level::Zero).unwrap();
++        e.insert(ExprId(0),Expr::BVar(0)).unwrap();e.insert(ExprId(1),Expr::BVar(1)).unwrap();e.insert(ExprId(2),Expr::App{fun:ExprId(0),arg:ExprId(1)}).unwrap();e.insert(ExprId(3),Expr::Sort(LevelId(0))).unwrap();(e,l,Environment::empty())
++    }
++    #[test]fn completed_source_support_hit_has_only_result_allocation(){
++        let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);assert_eq!(c.complete_source_support(ExprId(2),&mut 1024),Some(vec![0,1]));
++        let mut fuel=4;let(result,allocations)=counted(||c.complete_source_support(ExprId(2),&mut fuel));
++        assert_eq!(result,Some(vec![0,1]));assert_eq!(fuel,1);assert!(allocations<=1,"completed fact allocated {allocations} times");
++    }
++    #[test]fn closed_source_support_hit_allocates_nothing(){
++        let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);assert_eq!(c.complete_source_support(ExprId(3),&mut 1024),Some(vec![]));
++        let mut fuel=1;let(result,allocations)=counted(||c.complete_source_support(ExprId(3),&mut fuel));
++        assert_eq!(result,Some(vec![]));assert_eq!(fuel,0);assert_eq!(allocations,0,"closed completed fact needs no heap work");
++    }
++    #[test]fn completed_paired_support_hit_has_only_result_allocation(){
++        let(mut e,l,env)=fixture();e.insert(ExprId(4),Expr::BVar(0)).unwrap();e.insert(ExprId(5),Expr::BVar(1)).unwrap();e.insert(ExprId(6),Expr::App{fun:ExprId(4),arg:ExprId(5)}).unwrap();let c=TypeChecker::new(&e,&l,&env);
++        assert_eq!(c.complete_paired_source_support(ExprId(2),ExprId(6),&mut 1024),Some(vec![(0,0),(1,1)]));
++        let mut fuel=4;let(result,allocations)=counted(||c.complete_paired_source_support(ExprId(2),ExprId(6),&mut fuel));
++        assert_eq!(result,Some(vec![(0,0),(1,1)]));assert_eq!(fuel,1);assert!(allocations<=1,"completed pair allocated {allocations} times");
++    }
++    #[test]fn closed_paired_support_hit_allocates_nothing(){
++        let(mut e,l,env)=fixture();e.insert(ExprId(7),Expr::Sort(LevelId(0))).unwrap();let c=TypeChecker::new(&e,&l,&env);assert_eq!(c.complete_paired_source_support(ExprId(3),ExprId(7),&mut 1024),Some(vec![]));
++        let mut fuel=1;let(result,allocations)=counted(||c.complete_paired_source_support(ExprId(3),ExprId(7),&mut fuel));assert_eq!(result,Some(vec![]));assert_eq!(fuel,0);assert_eq!(allocations,0);
++    }
++
++}
