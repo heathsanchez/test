@@ -1,0 +1,154 @@
+--- a/metatron-kernel/src/convert.rs
++++ b/metatron-kernel/src/convert.rs
+@@ -1568,6 +1568,102 @@
+                         );
+                     }
+                 }
++                // Diagnostic-only: inspect the exact remaining Mathlib
++                // Finsupp projection pair. Binder-node values and the existing
++                // source/spine premises are reported, never used as authority.
++                #[cfg(feature="diagnostics")]
++                if std::env::var_os("NUCLEUS_TRACE_FINSUPP_PREMISE").is_some()
++                    && *left_type==crate::id::NameId(18300)
++                    && *left_index==1
++                    && depth==8
++                    && depth==context.len()
++                    && left_structure.expr==crate::id::ExprId(5)
++                    && right_structure.expr==crate::id::ExprId(5)
++                {
++                    use std::sync::atomic::{AtomicUsize,Ordering};
++                    static PROBES:AtomicUsize=AtomicUsize::new(0);
++                    if PROBES.fetch_add(1,Ordering::Relaxed)<24 {
++                        let left_binding=left_structure.env.lookup_with_node_id(0);
++                        let right_binding=right_structure.env.lookup_with_node_id(0);
++                        let deref_bvar = |binding:&Option<(u64,EnvBinding)>| {
++                            let Some((_,EnvBinding::Closure(c)))=binding else {return None};
++                            let Some(Expr::BVar(index))=checker.expression(c.expr) else {return None};
++                            c.env.lookup_with_node_id(*index)
++                        };
++                        let left_inner=deref_bvar(&left_binding);
++                        let right_inner=deref_bvar(&right_binding);
++                        let capture_path=|root:&Closure| {
++                            let mut current=root.clone();
++                            let mut path=Vec::new();
++                            let mut seen=std::collections::HashSet::new();
++                            for _ in 0..20 {
++                                if !seen.insert((current.expr,current.env.id(),current.levels.identity())) {
++                                    path.push("CYCLE".to_owned());
++                                    break;
++                                }
++                                match checker.expression(current.expr) {
++                                    Some(Expr::BVar(index)) => {
++                                        match current.env.lookup_with_node_id(*index) {
++                                            Some((node_id,EnvBinding::Closure(next))) => {
++                                                path.push(format!("bvar({index})@{}->node{node_id}:closure({},{})",
++                                                    current.env.id(),next.expr.0,next.env.id()));
++                                                current=next;
++                                            }
++                                            Some((node_id,binding)) => {
++                                                path.push(format!("bvar({index})@{}->node{node_id}:{binding:?}",
++                                                    current.env.id()));
++                                                break;
++                                            }
++                                            None => {
++                                                path.push(format!("MISSING:bvar({index})@{}",current.env.id()));
++                                                break;
++                                            }
++                                        }
++                                    }
++                                    other => {
++                                        path.push(format!("TERMINAL:expr{}:frame{}:{other:?}",
++                                            current.expr.0,current.env.id()));
++                                        break;
++                                    }
++                                }
++                            }
++                            path
++                        };
++                        let left_path=capture_path(left_structure);
++                        let right_path=capture_path(right_structure);
++                        let mut exact_budget=4096;
++                        let exact_relation=checker.exact_source_capture_identity(
++                            left_structure,right_structure,&mut exact_budget,
++                        );
++                        let mut instantiated_budget=4096;
++                        let instantiated_relation=checker.instantiated_source_capture_congruence(
++                            left_structure,right_structure,&mut instantiated_budget,
++                        );
++                        let left_formed=checker.checked_source_conversion(
++                            left_structure,left_structure,context,512,
++                        );
++                        let right_formed=checker.checked_source_conversion(
++                            right_structure,right_structure,context,512,
++                        );
++                        let receiver_relation=checker.checked_source_conversion(
++                            left_structure,right_structure,context,2048,
++                        );
++                        let spine_relation=same_closure_spine_congruence_in_context(
++                            checker,left_spine,right_spine,512,depth,context,512,
++                        );
++                        eprintln!(
++                            "NUCLEUS_FINSUPP_PREMISE:depth={depth}:budget={current_budget}:left_frame={}:right_frame={}:left_binding={left_binding:?}:right_binding={right_binding:?}:left_inner={left_inner:?}:right_inner={right_inner:?}:left_path={left_path:?}:right_path={right_path:?}:exact_source={exact_relation}:exact_remaining={exact_budget}:instantiated_source={instantiated_relation}:instantiated_remaining={instantiated_budget}:left_typed={left_formed:?}:right_typed={right_formed:?}:receiver={receiver_relation:?}:spine={spine_relation}:left_arity={}:right_arity={}",
++                            left_structure.env.id(),right_structure.env.id(),
++                            left_spine.len(),right_spine.len(),
++                        );
++                        if current_budget > 8192 {
++                            eprintln!("NUCLEUS_FINSUPP_TYPED_CONTEXT:{}",
++                                checker.diagnostic_receiver_capture_pair(
++                                    left_structure,right_structure,context,96,
++                                ));
++                        }
++                    }
++                }
+                 let source_typed_pair =
+                     crate::run_flags::present(crate::run_flags::Flag::ExperimentalSourcePairDepth8)
+                     && depth == context.len()
+@@ -2101,14 +2197,40 @@
+                         (),"certified-dependent-predicate-proof-irrelevance",
+                     );
+                 }
+-                work.extend(left.spine.iter().zip(&right.spine).map(|(left, right)| {
+-                    (
+-                        TypeValue::Term(left.clone()),
+-                        TypeValue::Term(right.clone()),
+-                        depth,
+-                        context.to_vec(),
+-                    )
+-                }));
++                // Source-pinned Kefir (8fb94a9) inspires this diagnostic-only,
++                // positive premise: two checked proofs of one formed Prop are
++                // interchangeable even in non-final application positions.
++                // Every selected pair is checked in this exact real Gamma;
++                // no source shape, head identity, or untyped reduction grants
++                // equality. Charge the whole bounded trial before using it.
++                let all_proof_trial = cfg!(feature="diagnostics")
++                    && std::env::var_os("NUCLEUS_PROBE_ALL_PROOF_ARGS").is_some()
++                    && depth==context.len() && current_budget>=2048
++                    && left.head==right.head && (1..=8).contains(&left.spine.len());
++                if all_proof_trial {
++                    use std::sync::atomic::{AtomicUsize,Ordering};
++                    static PROOF_SKIP_SAMPLES:AtomicUsize=AtomicUsize::new(0);
++                    let mut charged=0usize;
++                    for (index,(lhs,rhs)) in left.spine.iter().zip(&right.spine).enumerate() {
++                        let grant=current_budget.saturating_sub(charged).min(256);
++                        let proof=if grant>=32 {
++                            charged=charged.saturating_add(grant);
++                            checker.checked_proof_pair_in_bounded_context(lhs,rhs,context,grant)
++                        } else {false};
++                        if proof {
++                            if PROOF_SKIP_SAMPLES.fetch_add(1,Ordering::Relaxed)<40 {
++                                eprintln!("NUCLEUS_TYPED_PROOF_ARG_SKIP:position={index}:lhs={:?}:rhs={:?}:depth={depth}:grant={grant}",lhs.expr,rhs.expr);
++                            }
++                            continue;
++                        }
++                        work.push((TypeValue::Term(lhs.clone()),TypeValue::Term(rhs.clone()),depth,context.to_vec()));
++                    }
++                    *eta_work=eta_work.saturating_add(charged);
++                } else {
++                    work.extend(left.spine.iter().zip(&right.spine).map(|(left, right)| {
++                        (TypeValue::Term(left.clone()),TypeValue::Term(right.clone()),depth,context.to_vec())
++                    }));
++                }
+             }
+             (Value::Neutral(neutral), Value::Lam { domain, body })
+             | (Value::Lam { domain, body }, Value::Neutral(neutral))
