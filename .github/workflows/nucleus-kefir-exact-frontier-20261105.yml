@@ -1,0 +1,76 @@
+name: Independent Kefir exact Mathlib frontier comparator
+
+on:
+  push:
+    branches: [research/nucleus-cross-checker-trace-20261105]
+    paths: ['.github/workflows/nucleus-kefir-exact-frontier-20261105.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: '1.95.0'
+      - name: Restore SHA-pinned first Mathlib frontier
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/kefir-evidence /tmp/frontier-archive
+          gh api repos/heathsanchez/test/actions/artifacts/13359400422/zip > /tmp/qualified-prefix.zip
+          printf '%s  %s\n' 79a49583b5e9c4742c4280075b41cdd89ba44f2d96b402af8f90ef4750897e8d /tmp/qualified-prefix.zip | sha256sum -c -
+          unzip -q /tmp/qualified-prefix.zip -d /tmp/frontier-archive
+          python3 - <<'PY'
+          import pathlib,hashlib,subprocess
+          files=list(pathlib.Path('/tmp/frontier-archive').rglob('next-frontier.ndjson.zst'))
+          assert len(files)==1,('ambiguous frontier',files)
+          with open('/tmp/kefir-evidence/first-frontier.ndjson','wb') as output:
+              subprocess.run(['zstd','-dc',str(files[0])],stdout=output,check=True)
+          sha=hashlib.sha256(pathlib.Path('/tmp/kefir-evidence/first-frontier.ndjson').read_bytes()).hexdigest()
+          assert sha=='ca6ba58a99ca074dc45d975ab982fd119193fa05a6d12e20f08c53cb7dd786f2',sha
+          print('QUALIFIED_EXACT_FRONTIER_SHA',sha)
+          PY
+      - name: Build pinned independent Kefir checker
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --quiet --filter=blob:none https://github.com/dmitrykorolev/kefir /tmp/kefir-source
+          git -C /tmp/kefir-source checkout --quiet 8fb94a9aa71572897d1944753dec82932ae50706
+          test "$(git -C /tmp/kefir-source rev-parse HEAD)" = 8fb94a9aa71572897d1944753dec82932ae50706
+          cargo build --release --locked --manifest-path /tmp/kefir-source/Cargo.toml
+      - name: Compare independent verdict on original Nucleus UNKNOWN
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,os,pathlib,subprocess,hashlib
+          root=pathlib.Path('/tmp/kefir-evidence')
+          source=root/'first-frontier.ndjson'
+          env=os.environ.copy()
+          env['IN']=str(source)
+          proc=subprocess.run(['/tmp/kefir-source/target/release/kefir','--axiom-policy=allow-all-declared-axioms'],env=env,stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=420)
+          (root/'kefir-stdout.json').write_bytes(proc.stdout)
+          (root/'kefir-stderr.log').write_bytes(proc.stderr)
+          report={'checker':'Kefir','checker_sha':'8fb94a9aa71572897d1944753dec82932ae50706','frontier_sha256':hashlib.sha256(source.read_bytes()).hexdigest(),'input_bytes':source.stat().st_size,'exit_code':proc.returncode,'verdict':{0:'ACCEPT',1:'REJECT',2:'UNKNOWN',3:'INPUT_OR_INTERNAL_ERROR'}.get(proc.returncode,'UNEXPECTED'),'stdout_tail':proc.stdout.decode(errors='replace')[-2400:],'stderr_tail':proc.stderr.decode(errors='replace')[-2000:]}
+          (root/'report.json').write_text(json.dumps(report,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(report,sort_keys=True))
+          assert proc.returncode in (0,1,2,3),proc.returncode
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: kefir-original-frontier
+          retention-days: 30
+          path: |
+            /tmp/kefir-evidence/report.json
+            /tmp/kefir-evidence/kefir-stdout.json
+            /tmp/kefir-evidence/kefir-stderr.log
+          if-no-files-found: warn
