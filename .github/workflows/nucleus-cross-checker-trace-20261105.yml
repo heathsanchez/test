@@ -57,7 +57,12 @@ jobs:
           assert got=='ca6ba58a99ca074dc45d975ab982fd119193fa05a6d12e20f08c53cb7dd786f2',got
           print('EXACT_FRONTIER_SHA256',got,flush=True)
           PY
-      - name: Compile and test unchanged source with diagnostic flag
+      - name: Apply diagnostic-only Finsupp receiver premise probe
+        shell: bash
+        run: |
+          set -euo pipefail
+          patch --batch --fuzz=0 -p1 -d /tmp/trace-source -i "$GITHUB_WORKSPACE/experiments/nucleus-cross-checker-trace-20261105/finsupp-receiver-premise.patch"
+      - name: Compile source with diagnostics (no acceptance change)
         shell: bash
         run: |
           set -euo pipefail
@@ -83,7 +88,7 @@ jobs:
           q=json.loads(pathlib.Path('/tmp/trace-current/qualification.json').read_text())['candidate']
           env=os.environ.copy()
           env.update(q['configuration'])
-          env.update(NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE='1', NUCLEUS_TRACE_DOWNSTREAM='1', NUCLEUS_TRACE_TERMINAL_CAUSE='1', NUCLEUS_TRACE_FAILED_RECEIVER_CAPTURES='1')
+          env.update(NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE='1', NUCLEUS_TRACE_DOWNSTREAM='1', NUCLEUS_TRACE_FINSUPP_PREMISE='1', NUCLEUS_TRACE_FAILED_RECEIVER_CAPTURES='1')
           binary='/tmp/trace-source/metatron-kernel/target/release/metatron-kernel'
           with source.open('rb') as f:
               p=subprocess.run([binary],stdin=f,stdout=subprocess.PIPE,stderr=subprocess.PIPE,env=env,timeout=420)
@@ -94,11 +99,13 @@ jobs:
           kinds=collections.Counter(s.split(':function_type=')[-1].split(' ',1)[0].split('{',1)[0][:90] for s in trace)
           causes=[s for s in p.stderr.decode(errors='replace').splitlines() if s.startswith('NUCLEUS_TERMINAL_CAUSE:')]
           receiver=[s for s in p.stderr.decode(errors='replace').splitlines() if s.startswith('NUCLEUS_FAILED_RECEIVER_CAPTURES:')]
-          report=dict(source_commit=os.environ['GITHUB_SHA'],qualified_parent_binary='82ebbce2278e54f82667e4d12793034acdf72f329b989e4605cf65473c9de715',input_sha=hashlib.sha256(source.read_bytes()).hexdigest(),rc=p.returncode,trace_count=len(trace),function_type_shapes=dict(kinds),trace_first=trace[0][:3000] if trace else None,trace_last=trace[-1][:3000] if trace else None,terminal_cause_count=len(causes),terminal_causes_first=[s[:3000] for s in causes[:3]],terminal_causes_last=[s[:3000] for s in causes[-8:]],failed_receiver_captures=[s[:3000] for s in receiver],terminal=terminal[-1] if terminal else None,has_unexpected_accept=p.returncode==0)
+          premise=[s for s in p.stderr.decode(errors='replace').splitlines() if s.startswith('NUCLEUS_FINSUPP_PREMISE:')]
+          report=dict(source_commit=os.environ['GITHUB_SHA'],qualified_parent_binary='82ebbce2278e54f82667e4d12793034acdf72f329b989e4605cf65473c9de715',input_sha=hashlib.sha256(source.read_bytes()).hexdigest(),rc=p.returncode,trace_count=len(trace),function_type_shapes=dict(kinds),trace_first=trace[0][:3000] if trace else None,trace_last=trace[-1][:3000] if trace else None,terminal_cause_count=len(causes),terminal_causes_first=[s[:3000] for s in causes[:3]],terminal_causes_last=[s[:3000] for s in causes[-8:]],failed_receiver_captures=[s[:3000] for s in receiver],finsupp_premise_count=len(premise),finsupp_premises=[s[:12000] for s in premise],terminal=terminal[-1] if terminal else None,has_unexpected_accept=p.returncode==0)
           (out/'report.json').write_text(json.dumps(report,indent=2,sort_keys=True)+'\n')
           print('FIRST_APPLICATION_TRACE',json.dumps(report,sort_keys=True),flush=True)
           assert p.returncode==2,p.returncode
           assert trace,'Trace marker absent; do not infer root cause'
+          assert premise,'Targeted Finsupp premise marker absent; preserve UNKNOWN'
           assert terminal and 'AddMonoidAlgebra.nonUnitalNonAssocSemiring._proof_1' in terminal[-1],terminal
           PY
       - uses: actions/upload-artifact@v4
