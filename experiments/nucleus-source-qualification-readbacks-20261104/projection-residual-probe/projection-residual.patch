@@ -1,0 +1,53 @@
+--- a/src/checker.rs
++++ b/src/checker.rs
+@@ -313,6 +313,8 @@
+     // authority; retaining future source records does not admit them.
+     for declaration_index in 0..export.declarations.len() {
+         let declaration = export.declarations[declaration_index].clone();
++        #[cfg(feature="diagnostics")]
++        crate::diagnostics::projection_residual_target(matches!(&declaration,Declaration::Theorem{name,..}if name.0==26089));
+         #[cfg(feature="diagnostics")]
+         if crate::run_flags::present(crate::run_flags::Flag::TraceDeclarationProgress) {
+             let name=match &declaration {
+--- a/src/convert.rs
++++ b/src/convert.rs
+@@ -1635,6 +1635,8 @@
+                             "NUCLEUS_TERMINAL_CAUSE:shape=pair:depth={depth}:left_type={left_type:?}:left_index={left_index}:left_receiver={left_structure:?}:left_result={left_value:?}:right_type={right_type:?}:right_index={right_index}:right_receiver={right_structure:?}:right_result={right_value:?}"
+                         );
+                     }
++                    #[cfg(feature="diagnostics")]
++                    if crate::diagnostics::projection_residual_target_active(){use std::sync::atomic::{AtomicUsize,Ordering};static PAIRS:AtomicUsize=AtomicUsize::new(0);if PAIRS.fetch_add(1,Ordering::Relaxed)<32{eprintln!("PROJECTION_RESIDUAL:shape=pair:depth={depth}:scope={}:budget={current_budget}:left_type={left_type:?}:left_index={left_index}:left_expr={:?}:left_env={}:left_result={}:right_type={right_type:?}:right_index={right_index}:right_expr={:?}:right_env={}:right_result={}",context.len(),left_structure.expr,left_structure.env.id(),crate::diagnostics::projection_residual_verdict(&left_value),right_structure.expr,right_structure.env.id(),crate::diagnostics::projection_residual_verdict(&right_value));}}
+                     return Judgment::unknown("lazy-projection-value-exposure");
+                 };
+                 if current_budget == 0 {
+@@ -1712,6 +1714,8 @@
+                             );
+                         }
+                     }
++                    #[cfg(feature="diagnostics")]
++                    if crate::diagnostics::projection_residual_target_active(){use std::sync::atomic::{AtomicUsize,Ordering};static SINGLES:AtomicUsize=AtomicUsize::new(0);if SINGLES.fetch_add(1,Ordering::Relaxed)<32{eprintln!("PROJECTION_RESIDUAL:shape=single:depth={depth}:scope={}:budget={current_budget}:owner={type_name:?}:index={index}:expr={:?}:env={}:pending={}:result={}",context.len(),structure.expr,structure.env.id(),spine.len(),crate::diagnostics::projection_residual_verdict(&exposed));}}
+                     return Judgment::unknown("lazy-projection-value-exposure");
+                 };
+                 if current_budget == 0 {
+@@ -1766,6 +1770,8 @@
+                             );
+                         }
+                     }
++                    #[cfg(feature="diagnostics")]
++                    if crate::diagnostics::projection_residual_target_active(){use std::sync::atomic::{AtomicUsize,Ordering};static SINGLES:AtomicUsize=AtomicUsize::new(0);if SINGLES.fetch_add(1,Ordering::Relaxed)<32{eprintln!("PROJECTION_RESIDUAL:shape=single:depth={depth}:scope={}:budget={current_budget}:owner={type_name:?}:index={index}:expr={:?}:env={}:pending={}:result={}",context.len(),structure.expr,structure.env.id(),spine.len(),crate::diagnostics::projection_residual_verdict(&exposed));}}
+                     return Judgment::unknown("lazy-projection-value-exposure");
+                 };
+                 if current_budget == 0 {
+--- a/src/diagnostics.rs
++++ b/src/diagnostics.rs
+@@ -60,3 +60,10 @@
+         conversions: CONVERSIONS.get(),
+     }
+ }
++
++thread_local!{static PROJECTION_RESIDUAL_TARGET:Cell<bool>=const{Cell::new(false)};}
++pub(crate)fn projection_residual_target(active:bool){PROJECTION_RESIDUAL_TARGET.set(active)}
++pub(crate)fn projection_residual_target_active()->bool{PROJECTION_RESIDUAL_TARGET.get()}
++pub(crate)fn projection_residual_verdict<T>(j:&crate::judgment::Judgment<T>)->&'static str{
++ match j{crate::judgment::Judgment::Proven{..}=>"PROVEN",crate::judgment::Judgment::Unknown{residual}=>residual.0,crate::judgment::Judgment::Refuted{obstruction}=>obstruction.0}
++}

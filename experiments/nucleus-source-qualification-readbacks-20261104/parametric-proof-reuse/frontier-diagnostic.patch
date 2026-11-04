@@ -1,0 +1,77 @@
+--- a/src/checker.rs
++++ b/src/checker.rs
+@@ -313,6 +313,8 @@
+     // authority; retaining future source records does not admit them.
+     for declaration_index in 0..export.declarations.len() {
+         let declaration = export.declarations[declaration_index].clone();
++        #[cfg(feature="diagnostics")]
++        crate::diagnostics::universe_target(matches!(&declaration,Declaration::Theorem{name,..}if name.0==26089));
+         #[cfg(feature="diagnostics")]
+         if crate::run_flags::present(crate::run_flags::Flag::TraceDeclarationProgress) {
+             let name=match &declaration {
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -1594,8 +1594,16 @@
+     }
+ 
+     fn instantiated_source_support(&self,left:&Closure,right:&Closure,remaining:&mut usize)->Option<Vec<(u64,u64)>>{
+-        let plan=self.complete_parametric_source_support(left.expr,right.expr,remaining)?;
+-        for &(a,b)in &plan.levels{if !self.exact_instantiated_source_level(a,&left.levels,b,&right.levels,remaining){return None}}
++        let Some(plan)=self.complete_parametric_source_support(left.expr,right.expr,remaining)else{
++            #[cfg(feature="diagnostics")]
++            if crate::diagnostics::universe_target_active(){use std::sync::atomic::{AtomicUsize,Ordering};static SHAPES:AtomicUsize=AtomicUsize::new(0);if SHAPES.fetch_add(1,Ordering::Relaxed)<16{let isolated=TypeChecker::new(self.expressions,self.levels,self.environment);let mut work=65536;let broad=isolated.complete_parametric_source_support(left.expr,right.expr,&mut work);eprintln!("PARAMETRIC_FRONTIER:phase=template:left={:?}:right={:?}:remaining={remaining}:generous_template={}:left_syntax={:?}:right_syntax={:?}",left.expr,right.expr,broad.is_some(),self.expressions.get(left.expr),self.expressions.get(right.expr));}}
++            return None;
++        };
++        for &(a,b)in &plan.levels{if !self.exact_instantiated_source_level(a,&left.levels,b,&right.levels,remaining){
++            #[cfg(feature="diagnostics")]
++            if crate::diagnostics::universe_target_active(){use std::sync::atomic::{AtomicUsize,Ordering};static LEVELS:AtomicUsize=AtomicUsize::new(0);if LEVELS.fetch_add(1,Ordering::Relaxed)<16{let mut work=65536;let broad=self.exact_instantiated_source_level(a,&left.levels,b,&right.levels,&mut work);let l=instantiate_level(self.levels,a,&left.levels,65536);let r=instantiate_level(self.levels,b,&right.levels,65536);let normalized=match(l,r){(Ok(l),Ok(r))=>format!("{:?}",crate::level::level_equal(l,r,65536)),(l,r)=>format!("left_error={:?}:right_error={:?}",l.err(),r.err())};eprintln!("PARAMETRIC_FRONTIER:phase=universe:left={:?}:right={:?}:level_left={a:?}:level_right={b:?}:remaining={remaining}:generous_exact={broad}:generous_normalized={normalized}",left.expr,right.expr);}}
++            return None;
++        }}
+         Some(plan.captures)
+     }
+ 
+@@ -1719,7 +1727,11 @@
+             let Some(support)=support else{return false};
+             pending.push((a.clone(), b.clone(), true));
+             for (left_index, right_index) in support {
+-                let Some(lhs) = resolve(self, &a, left_index, remaining) else { return false };
++                let Some(lhs)=resolve(self,&a,left_index,remaining)else{
++                    #[cfg(feature="diagnostics")]
++                    if PARAMETRIC&&crate::diagnostics::universe_target_active(){use std::sync::atomic::{AtomicUsize,Ordering};static ALIAS:AtomicUsize=AtomicUsize::new(0);if ALIAS.fetch_add(1,Ordering::Relaxed)<16{let mut work=65536;let broad=resolve(self,&a,left_index,&mut work);eprintln!("PARAMETRIC_FRONTIER:phase=resolve-left:expr={:?}:index={left_index}:remaining={remaining}:generous_resolve={}:actual_binding_kind={:?}",a.expr,broad.is_some(),a.env.lookup_binding_ref(left_index).map(std::mem::discriminant));}}
++                    return false;
++                };
+                 let Some(rhs) = resolve(self, &b, right_index, remaining) else { return false };
+                 match (lhs, rhs) {
+                     (Capture::Free(x), Capture::Free(y)) if x == y => {}
+@@ -1730,7 +1742,11 @@
+                         if x != y { return false }
+                     }
+                     (Capture::Closure(x), Capture::Closure(y)) => pending.push((x, y, false)),
+-                    _ => return false,
++                    (x,y)=>{
++                        #[cfg(feature="diagnostics")]
++                        if PARAMETRIC && crate::diagnostics::universe_target_active(){use std::sync::atomic::{AtomicUsize,Ordering};static DATA:AtomicUsize=AtomicUsize::new(0);if DATA.fetch_add(1,Ordering::Relaxed)<16{let label=|c:&Capture|match c{Capture::Free(f)=>format!("free:{f:?}"),Capture::Closure(c)=>format!("closure:{:?}:env={}",c.expr,c.env.id()),Capture::Nat(n)=>format!("nat_limbs:{}",n.limb_count())};eprintln!("PARAMETRIC_FRONTIER:phase=data:left={:?}:right={:?}:capture_left={}:capture_right={}:remaining={remaining}",a.expr,b.expr,label(&x),label(&y));}}
++                        return false;
++                    }
+                 }
+             }
+         }
+@@ -2033,7 +2049,7 @@
+                 });
+                 let Some((domain, body)) = checked_view else {
+                     #[cfg(feature = "diagnostics")]
+-                    if crate::run_flags::present(crate::run_flags::Flag::TraceApplicationFunctionType) {
++                    if crate::diagnostics::universe_target_active() && {use std::sync::atomic::{AtomicUsize,Ordering};static APPLICATIONS:AtomicUsize=AtomicUsize::new(0);APPLICATIONS.fetch_add(1,Ordering::Relaxed)<32} {
+                         let mut reducible = None;
+                         let mut full = None;
+                         if let Judgment::Proven {
+--- a/src/diagnostics.rs
++++ b/src/diagnostics.rs
+@@ -60,3 +60,7 @@
+         conversions: CONVERSIONS.get(),
+     }
+ }
++
++thread_local!{static UNIVERSE_TARGET:Cell<bool>=const{Cell::new(false)};}
++pub(crate)fn universe_target(active:bool){UNIVERSE_TARGET.set(active)}
++pub(crate)fn universe_target_active()->bool{UNIVERSE_TARGET.get()}
