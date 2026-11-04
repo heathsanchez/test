@@ -1,0 +1,45 @@
+name: Nucleus reusable byte-pinned Mathlib input archive
+on:
+  push:
+    branches: [research/nucleus-environment-forks-20261104]
+    paths:
+      - '.github/workflows/nucleus-input-archive-20261104.yml'
+      - 'experiments/nucleus-input-archive-20261104/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  preserve-source:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read existing pinned archive once and split for portable reuse
+        run: |
+          gh api repos/heathsanchez/test/actions/artifacts/13231986845/zip > /tmp/mathlib-original.zip
+          python3 experiments/nucleus-input-archive-20261104/archive.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-mathlib-input-part-001-${{ github.sha }}
+          compression-level: 0
+          retention-days: 90
+          path: /tmp/nucleus-input-archive/*.part001
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-mathlib-input-part-002-${{ github.sha }}
+          compression-level: 0
+          retention-days: 90
+          path: /tmp/nucleus-input-archive/*.part002
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-mathlib-input-part-003-${{ github.sha }}
+          compression-level: 0
+          retention-days: 90
+          path: /tmp/nucleus-input-archive/*.part003
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-mathlib-input-manifest-${{ github.sha }}
+          retention-days: 90
+          path: /tmp/nucleus-input-archive/nucleus-mathlib-source-manifest.json
