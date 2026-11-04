@@ -24,12 +24,13 @@ fn source_resolution_global_guards_and_local_reads_are_distinct() {
     assert!(global.source_resolution_reads.iter().any(|read|
         read.table == "expression" && read.access == "point" && read.present == Some(true)
     ));
-    // Break caught: the outer string qualification's expression-table bulk
-    // scan is a semantic preflight read, not an exporter-resolution read.
+    // Break caught: the outer String check must register a preflight bulk
+    // scan. The parser independently scans expressions during resolution,
+    // so both phases legitimately contain an expression-table bulk read.
     assert!(global.preflight_reads.iter().any(|read|
         read.table == "expression" && read.access == "bulk"
     ));
-    assert!(!global.source_resolution_reads.iter().any(|read|
+    assert!(global.source_resolution_reads.iter().any(|read|
         read.table == "expression" && read.access == "bulk"
     ));
     assert!(global.guards.iter().any(|guard|
