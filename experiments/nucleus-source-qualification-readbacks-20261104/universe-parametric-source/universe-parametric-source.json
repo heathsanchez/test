@@ -1,0 +1,129 @@
+{
+  "additional_verified_original_prefixes": {
+    "foldlm_cons": "7a5a71599fb8240c88553967ae3d3146d1d26d176ef3cd2388608c25c4a2da29",
+    "foldrm_cons": "8fbfa485711e12b989548753fb35fd077e7bb71c9a7b5d53a91e3c4db93d87d4"
+  },
+  "binary_sha": "82ebbce2278e54f82667e4d12793034acdf72f329b989e4605cf65473c9de715",
+  "complete_mathlib_accept": false,
+  "full": {
+    "binary_sha": "82ebbce2278e54f82667e4d12793034acdf72f329b989e4605cf65473c9de715",
+    "complete_mathlib_accept": false,
+    "frontier_official_reference": {
+      "binary_sha": "ae92c625e612fff1c90e329344d22e3c3c330383cb335ce28fd41435be3b3b94",
+      "parse_rc": 0,
+      "rc": 0,
+      "source_sha": "ca6ba58a99ca074dc45d975ab982fd119193fa05a6d12e20f08c53cb7dd786f2"
+    },
+    "next_frontier": {
+      "bytes": 15901003,
+      "declaration": {
+        "all": [
+          26089
+        ],
+        "levelParams": [
+          32,
+          326
+        ],
+        "name": 26089,
+        "type": 271653,
+        "value": 272480
+      },
+      "name_records_parsed": 26094,
+      "record": 302649,
+      "sha256": "ca6ba58a99ca074dc45d975ab982fd119193fa05a6d12e20f08c53cb7dd786f2",
+      "tag": "thm",
+      "target": "AddMonoidAlgebra.nonUnitalNonAssocSemiring._proof_1"
+    },
+    "no_official_arena_score": true,
+    "qualified": true,
+    "result": {
+      "rc": 2,
+      "rss_kb": 3840924.0,
+      "system": 2.24,
+      "user": 65.02,
+      "wall": 67.27,
+      "wall_observed": 67.28855432799992
+    },
+    "source_sha": "22c5de83469408950005589a3bc5ef5157c65549b5a802f85d567c29151306a6",
+    "status": "WARRANTED_BOUNDED_FIRST_FRONTIER",
+    "terminal": "NUCLEUS_DOWNSTREAM:name=AddMonoidAlgebra.nonUnitalNonAssocSemiring._proof_1:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type"
+  },
+  "known_native_failures": {
+    "residual_closure|test": [
+      "all_seven_complete_positive_exports_accept"
+    ]
+  },
+  "native_counts": [
+    516,
+    1,
+    0,
+    0,
+    0
+  ],
+  "native_targets": 42,
+  "no_official_rank_claim": true,
+  "no_performance_claim_different_frontier": true,
+  "parent_binary": "26244e47fb94c1ffa47a09531bc8fb9d8205bba176c459bcf31d431e9f4aea89",
+  "protected_controls": 61,
+  "qualified": true,
+  "singleton_add_prefix_accept": true,
+  "singleton_add_prefix_sha": "231655af734415d00fcc7dc83cffe7d96f97406d1d3cd93554ff49aa6de8e521",
+  "source_controls": 119,
+  "source_parent_binary": "c43b174abbad341e5b308d93cd66a28e42db9d9425796ed33b16c644e142ae8e",
+  "source_patch_sha": "9ee250be7ec3771dca207615bbac2676c144864751fb101e7c3f0f4c3f43035f",
+  "source_qualified": true,
+  "status": "PROMOTABLE_UNIVERSE_PARAMETRIC_SOURCE",
+  "timing": {
+    "median_cpu_ratio": 0.4980723606168447,
+    "no_rank_claim": true,
+    "preset": "every candidate CPU sample beats every parent sample by more than1percent",
+    "rows": [
+      {
+        "arm": "candidate",
+        "binary_sha": "82ebbce2278e54f82667e4d12793034acdf72f329b989e4605cf65473c9de715",
+        "input_sha": "8428d5d4282a608eb77e48ff62adace23212d9487ff9e86dc2e57af7c573d5f1",
+        "rc": 0,
+        "rss_kb": 146452.0,
+        "system": 0.08,
+        "user": 33.45,
+        "wall": 33.54,
+        "wall_observed": 33.582609563000005
+      },
+      {
+        "arm": "parent",
+        "binary_sha": "26244e47fb94c1ffa47a09531bc8fb9d8205bba176c459bcf31d431e9f4aea89",
+        "input_sha": "8428d5d4282a608eb77e48ff62adace23212d9487ff9e86dc2e57af7c573d5f1",
+        "rc": 0,
+        "rss_kb": 250596.0,
+        "system": 0.17,
+        "user": 67.34,
+        "wall": 67.52,
+        "wall_observed": 67.54492380200008
+      },
+      {
+        "arm": "parent",
+        "binary_sha": "26244e47fb94c1ffa47a09531bc8fb9d8205bba176c459bcf31d431e9f4aea89",
+        "input_sha": "8428d5d4282a608eb77e48ff62adace23212d9487ff9e86dc2e57af7c573d5f1",
+        "rc": 0,
+        "rss_kb": 250404.0,
+        "system": 0.17,
+        "user": 67.2,
+        "wall": 67.37,
+        "wall_observed": 67.38807884900007
+      },
+      {
+        "arm": "candidate",
+        "binary_sha": "82ebbce2278e54f82667e4d12793034acdf72f329b989e4605cf65473c9de715",
+        "input_sha": "8428d5d4282a608eb77e48ff62adace23212d9487ff9e86dc2e57af7c573d5f1",
+        "rc": 0,
+        "rss_kb": 146324.0,
+        "system": 0.07,
+        "user": 33.58,
+        "wall": 33.66,
+        "wall_observed": 33.674900682999805
+      }
+    ],
+    "speed_win": true,
+    "status": "COMPLETE"
+  }
+}
