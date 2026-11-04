@@ -1,0 +1,40 @@
+name: Nucleus exact typing reuse opportunity tournament
+on:
+  push:
+    branches: [research/nucleus-typing-reuse-probes-20261104]
+    paths:
+      - '.github/workflows/nucleus-typing-reuse-probes-20261104.yml'
+      - 'experiments/nucleus-typing-reuse-probes-20261104/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  tournament:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Restore pinned source and reference authorities
+        run: |
+          set -euo pipefail
+          gh api repos/heathsanchez/test/actions/artifacts/13325481741/zip > /tmp/probe-parent.zip
+          gh api repos/heathsanchez/test/actions/artifacts/13267462207/zip > /tmp/probe-reference.zip
+      - name: Run three bounded diagnostic arms without memoized verdicts
+        run: python3 experiments/nucleus-typing-reuse-probes-20261104/run.py --root /tmp/nucleus-typing-reuse-probes
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-typing-reuse-probes-${{ github.sha }}
+          retention-days: 90
+          path: |
+            /tmp/nucleus-typing-reuse-probes/report.json
+            /tmp/nucleus-typing-reuse-probes/**/stdout
+            /tmp/nucleus-typing-reuse-probes/**/stderr
+            /tmp/nucleus-typing-reuse-probes/**/source-manifest.json
+            /tmp/nucleus-typing-reuse-probes/**/diagnostic.patch
+            /tmp/nucleus-typing-reuse-probes/**/nucleus
