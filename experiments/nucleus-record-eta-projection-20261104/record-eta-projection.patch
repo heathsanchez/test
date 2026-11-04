@@ -1,0 +1,53 @@
+--- a/metatron-kernel/src/typecheck.rs
++++ b/metatron-kernel/src/typecheck.rs
+@@ -5041,7 +5041,7 @@
+         // Reserve each nested trial from this one allowance before entry.
+         // Unused child allowance is deliberately not refunded.
+         fn reserve(fuel:&mut usize,cap:usize)->Option<usize>{
+-            let grant=(*fuel).min(cap);if grant==0{return None;}*fuel-=grant;Some(grant)
++            let grant=(*fuel/4).min(cap);if grant==0{return None;}*fuel-=grant;Some(grant)
+         }
+         let major=neutral.spine.get(required-1)?;
+         // Restrict this earned rule to actual lexical locals. Follow the
+@@ -5132,6 +5132,28 @@
+             result=body.sibling(body.expr,body.env.extend(argument.clone()));
+         }
+         Some(result)
++    }
++
++
++    /// Reduce the receiver of one actual registered source projection by
++    /// typed record eta/iota, then select only that original field.
++    pub(crate) fn checked_record_eta_projection(
++        &self, neutral:&Neutral, context:&[TypeValue], budget:&mut usize,
++    )->Option<Closure>{
++        let NeutralHead::Projection{type_name,index,structure}=&neutral.head else{return None};
++        if !neutral.spine.is_empty(){return None;}
++        let spec=self.environment.projection_spec(*type_name)?;
++        if *index>=spec.field_types.len() || spec.field_types.len()>8 || spec.num_params>8{return None;}
++        let rhs=self.checked_record_recursor_eta(structure,context,budget)?;
++        let grant=(*budget/4).min(1024);if grant==0{return None;}*budget-=grant;
++        let exposed=self.machine().expose_for_conversion(rhs,Transparency::Full,grant);
++        let Judgment::Proven{value:Value::Neutral(actual),..}=exposed else{return None};
++        let NeutralHead::Const{name,levels}=&actual.head else{return None};
++        if *name!=spec.constructor || actual.spine.len()!=spec.num_params+spec.field_types.len()
++            || self.environment.get(*name)?.level_params.len()!=levels.len(){return None;}
++        // Move the original field closure; do not reconstruct a value from
++        // the expected result or clone an arbitrary neutral receiver.
++        actual.spine.into_iter().nth(spec.num_params+*index)
+     }
+ 
+     pub(crate) fn rule_k_reduce_neutral(
+--- a/metatron-kernel/src/convert.rs
++++ b/metatron-kernel/src/convert.rs
+@@ -1787,7 +1787,9 @@
+                 }
+                 let mut eta_result=None;
+                 for (subject,subject_is_left) in [(left,true),(right,false)] {
+-                    if let Some(rhs)=checker.checked_record_recursor_eta(subject,context,&mut current_budget){
++                    let rhs=checker.checked_record_recursor_eta(subject,context,&mut current_budget)
++                        .or_else(||checker.checked_record_eta_projection(subject,context,&mut current_budget));
++                    if let Some(rhs)=rhs{
+                         let exposed=checker.machine().expose_for_conversion(rhs,Transparency::Reducible,current_budget.saturating_sub(1));
+                         let Judgment::Proven{value:reduced,..}=exposed else{return Judgment::unknown("record-recursor-eta-exposure")};
+                         eta_result=Some((subject_is_left,reduced));break;

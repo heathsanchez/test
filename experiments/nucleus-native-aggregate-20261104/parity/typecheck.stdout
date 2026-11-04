@@ -1,0 +1,16 @@
+
+running 11 tests
+test typecheck::annotated_identity_lambda_infers_a_pi_type ... ok
+test typecheck::captured_two_argument_relation_requires_checked_domains ... ok
+test typecheck::dependent_application_instantiates_the_pi_body_with_the_argument_closure ... ok
+test typecheck::dependent_let_wrapped_lambda_substitutes_proposition_binder ... ok
+test typecheck::fixed_pi_substitution_keeps_distinct_arguments_and_checks_ignored_argument ... ok
+test typecheck::identity_application_checks_its_argument ... ok
+test typecheck::let_inference_uses_the_established_annotation ... ok
+test typecheck::pi_sort_uses_imax_of_domain_and_body_sorts ... ok
+test typecheck::sort_u_has_type_sort_successor_u ... ok
+test typecheck::stored_dependent_function_under_colliding_local_declines_capture ... ok
+test typecheck::unbound_bvar_is_refuted ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 296 filtered out; finished in 0.00s
+

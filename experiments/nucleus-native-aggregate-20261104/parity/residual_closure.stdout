@@ -1,0 +1,26 @@
+
+running 7 tests
+test residual_closure::admitted_nonrecursive_lift_supports_its_source_eta_equation ... ok
+test residual_closure::all_seven_complete_positive_exports_accept ... FAILED
+test residual_closure::checked_nonrecursive_indexed_prop_closes_int_nonneg_prefix ... ok
+test residual_closure::checked_ofnat_iota_closes_no_confusion_prefix ... ok
+test residual_closure::checked_product_iota_closes_source_no_confusion_prefix ... ok
+test residual_closure::checked_source_replay_closes_parser_no_confusion_prefix ... ok
+test residual_closure::checked_transport_projection_closes_syntax_no_confusion_prefix ... ok
+
+failures:
+
+---- residual_closure::all_seven_complete_positive_exports_accept stdout ----
+
+thread 'residual_closure::all_seven_complete_positive_exports_accept' (355) panicked at tests/residual_closure.rs:20:9:
+assertion `left == right` failed: complete export remains unresolved: perf/grind-ring-5
+  left: Unknown
+ right: Accept
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    residual_closure::all_seven_complete_positive_exports_accept
+
+test result: FAILED. 6 passed; 1 failed; 0 ignored; 0 measured; 300 filtered out; finished in 44.94s
+

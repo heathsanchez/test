@@ -1,0 +1,16 @@
+
+running 11 tests
+test parser::missing_nested_inductive_type_reference_is_malformed ... ok
+test parser::missing_reference_is_malformed_not_unknown ... ok
+test parser::missing_theorem_all_name_reference_is_malformed ... ok
+test parser::missing_theorem_expression_reference_is_malformed ... ok
+test parser::parses_sparse_name_index ... ok
+test parser::parses_the_complete_empty_inductive_contract ... ok
+test parser::parses_theorem_as_a_distinct_supported_declaration ... ok
+test parser::preserves_unsupported_declaration_for_semantic_unknown ... ok
+test parser::resolves_forward_referenced_levels ... ok
+test parser::run_separates_malformed_input_from_supported_and_unimplemented_semantics ... ok
+test parser::unknown_structural_table_record_is_malformed ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 296 filtered out; finished in 0.00s
+

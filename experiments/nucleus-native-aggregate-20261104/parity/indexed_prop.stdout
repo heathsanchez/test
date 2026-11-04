@@ -1,0 +1,17 @@
+
+running 12 tests
+test indexed_prop::admitted_recursive_prop_rules_execute_cons_and_both_trans_hypotheses ... ok
+test indexed_prop::nonrecursive_indexed_prop_checks_the_same_reconstructed_contract ... ok
+test indexed_prop::nonrecursive_indexed_prop_refuses_a_different_constructor_result_index ... ok
+test indexed_prop::nonrecursive_indexed_prop_refuses_a_rule_returning_its_payload ... ok
+test indexed_prop::nonrecursive_indexed_prop_refuses_false_recursion_and_index_metadata ... ok
+test indexed_prop::nonrecursive_indexed_prop_refuses_large_elimination ... ok
+test indexed_prop::recursive_prop_contract_is_independent_of_the_family_name ... ok
+test indexed_prop::recursive_prop_refuses_a_false_nonrecursive_annotation ... ok
+test indexed_prop::recursive_prop_refuses_a_rule_that_drops_recursive_calls ... ok
+test indexed_prop::recursive_prop_refuses_false_index_metadata ... ok
+test indexed_prop::recursive_prop_refuses_large_elimination_even_with_unchanged_metadata ... ok
+test indexed_prop::recursive_prop_refuses_out_of_range_variables_without_panicking ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 295 filtered out; finished in 0.01s
+

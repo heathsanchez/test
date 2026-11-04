@@ -1,0 +1,346 @@
+{
+  "status": "WARRANTED_NAMED_INTEGRATION_TEST_PARITY",
+  "baseline_binary": "d2148397405717a0b56127a596911bf79c18603d06632da578e1d65b6fd16edc",
+  "baseline_source_manifest": "31ca773c4e56569c83ceadc225a61c49275f2cd706c5399e22056ee88582e780",
+  "aggregate_binary": "f8a546a758a4931481361a03b2de2d6d8149ca5fcc2274a26c88bc8050c50040",
+  "separate_module_processes": true,
+  "configuration": {
+    "NUCLEUS_EXPERIMENTAL_CERTIFIED_QUOT_IOTA": "1",
+    "NUCLEUS_EXPERIMENTAL_CONTEXT_BINDER": "1",
+    "NUCLEUS_EXPERIMENTAL_DEMAND_MAJOR": "1",
+    "NUCLEUS_EXPERIMENTAL_EXPECTED_LAMBDA": "1",
+    "NUCLEUS_EXPERIMENTAL_FORMED_PROP_DOMAIN_RETRY": "1",
+    "NUCLEUS_EXPERIMENTAL_POLYMORPHIC_PROP_IRREL": "1",
+    "NUCLEUS_EXPERIMENTAL_PROJECTION_CONTEXT": "1",
+    "NUCLEUS_EXPERIMENTAL_PROJECTION_CROSSFRAME_512": "1",
+    "NUCLEUS_EXPERIMENTAL_PROP_SINGLETON_2P1F": "1",
+    "NUCLEUS_EXPERIMENTAL_RELEVANCE": "1",
+    "NUCLEUS_EXPERIMENTAL_REPLAY_NEUTRAL_PROJECTION": "1",
+    "NUCLEUS_EXPERIMENTAL_REPLAY_PROJECTION_MAJOR": "1",
+    "NUCLEUS_EXPERIMENTAL_SOURCE_PAIR_DEPTH8": "1",
+    "NUCLEUS_EXPERIMENTAL_SOURCE_PROOF_IRREL": "1",
+    "NUCLEUS_EXPERIMENTAL_SUBSTITUTION_RECLOSURE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_DATA_CONGRUENCE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_LINEAGE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_PROJECTION_SPINE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_RECEIVER": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_VALUE_NORMALIZATION": "1"
+  },
+  "modules": [
+    {
+      "module": "captured_projection_warrant",
+      "rc": 0,
+      "identity_and_outcome_parity": true,
+      "tests": 4,
+      "expected_tests": 4,
+      "failures": []
+    },
+    {
+      "module": "captured_source_equivalence",
+      "rc": 0,
+      "identity_and_outcome_parity": true,
+      "tests": 7,
+      "expected_tests": 7,
+      "failures": []
+    },
+    {
+      "module": "checked_relevance_signature",
+      "rc": 0,
+      "identity_and_outcome_parity": true,
+      "tests": 3,
+      "expected_tests": 3,
+      "failures": []
+    },
+    {
+      "module": "cli_verdict",
+      "rc": 0,
+      "identity_and_outcome_parity": true,
+      "tests": 1,
+      "expected_tests": 1,
+      "failures": []
+    },
+    {
+      "module": "closed_direct_recursive",
+      "rc": 0,
+      "identity_and_outcome_parity": true,
+      "tests": 5,
+      "expected_tests": 5,
+      "failures": []
+    },
+    {
+      "module": "closed_field_enum",
+      "rc": 0,
+      "identity_and_outcome_parity": true,
+      "tests": 1,
+      "expected_tests": 1,
+      "failures": []
+    },
+    {
+      "module": "closed_pair_record",
+      "rc": 0,
+      "identity_and_outcome_parity": true,
+      "tests": 8,
+      "expected_tests": 8,
+      "failures": []
+    },
+    {
+      "module": "convert",
+      "rc": 0,
+      "identity_and_outcome_parity": true,
+      "tests": 34,
+      "expected_tests": 34,
+      "failures": []
+    },
+    {
+      "module": "diagnostics",
+      "rc": 0,
+      "identity_and_outcome_parity": true,
+      "tests": 0,
+      "expected_tests": 0,
+      "failures": []
+    },
+    {
+      "module": "end_to_end",
+      "rc": 0,
+      "identity_and_outcome_parity": true,
+      "tests": 86,
+      "expected_tests": 86,
+      "failures": []
+    },
+    {
+      "module": "environment",
+      "rc": 0,
+      "identity_and_outcome_parity": true,
+      "tests": 3,
+      "expected_tests": 3,
+      "failures": []
+    },
+    {
+      "module": "final_proof_spine",
+      "rc": 0,
+      "identity_and_outcome_parity": true,
+      "tests": 4,
+      "expected_tests": 4,
+      "failures": []
+    },
+    {
+      "module": "homogeneous_pair",
+      "rc": 0,
+      "identity_and_outcome_parity": true,
+      "tests": 3,
+      "expected_tests": 3,
+      "failures": []
+    },
+    {
+      "module": "id_table",
+      "rc": 0,
+      "identity_and_outcome_parity": true,
+      "tests": 3,
+      "expected_tests": 3,
+      "failures": []
+    },
+    {
+      "module": "indexed_prop",
+      "rc": 0,
+      "identity_and_outcome_parity": true,
+      "tests": 12,
+      "expected_tests": 12,
+      "failures": []
+    },
+    {
+      "module": "inductive_universe_scope",
+      "rc": 0,
+      "identity_and_outcome_parity": true,
+      "tests": 2,
+      "expected_tests": 2,
+      "failures": []
+    },
+    {
+      "module": "inference_sharing",
+      "rc": 0,
+      "identity_and_outcome_parity": true,
+      "tests": 2,
+      "expected_tests": 2,
+      "failures": []
+    },
+    {
+      "module": "let_metadata",
+      "rc": 0,
+      "identity_and_outcome_parity": true,
+      "tests": 4,
+      "expected_tests": 4,
+      "failures": []
+    },
+    {
+      "module": "level",
+      "rc": 0,
+      "identity_and_outcome_parity": true,
+      "tests": 12,
+      "expected_tests": 12,
+      "failures": []
+    },
+    {
+      "module": "machine",
+      "rc": 0,
+      "identity_and_outcome_parity": true,
+      "tests": 22,
+      "expected_tests": 22,
+      "failures": []
+    },
+    {
+      "module": "native_source_replay",
+      "rc": 0,
+      "identity_and_outcome_parity": true,
+      "tests": 2,
+      "expected_tests": 2,
+      "failures": []
+    },
+    {
+      "module": "native_string",
+      "rc": 0,
+      "identity_and_outcome_parity": true,
+      "tests": 4,
+      "expected_tests": 4,
+      "failures": []
+    },
+    {
+      "module": "nullary_enum",
+      "rc": 0,
+      "identity_and_outcome_parity": true,
+      "tests": 7,
+      "expected_tests": 7,
+      "failures": []
+    },
+    {
+      "module": "opaque",
+      "rc": 0,
+      "identity_and_outcome_parity": true,
+      "tests": 3,
+      "expected_tests": 3,
+      "failures": []
+    },
+    {
+      "module": "parameter_record",
+      "rc": 0,
+      "identity_and_outcome_parity": true,
+      "tests": 3,
+      "expected_tests": 3,
+      "failures": []
+    },
+    {
+      "module": "parameter_telescope",
+      "rc": 0,
+      "identity_and_outcome_parity": true,
+      "tests": 12,
+      "expected_tests": 12,
+      "failures": []
+    },
+    {
+      "module": "parameter_tree",
+      "rc": 0,
+      "identity_and_outcome_parity": true,
+      "tests": 2,
+      "expected_tests": 2,
+      "failures": []
+    },
+    {
+      "module": "parametric_field_enum",
+      "rc": 0,
+      "identity_and_outcome_parity": true,
+      "tests": 3,
+      "expected_tests": 3,
+      "failures": []
+    },
+    {
+      "module": "parser",
+      "rc": 0,
+      "identity_and_outcome_parity": true,
+      "tests": 11,
+      "expected_tests": 11,
+      "failures": []
+    },
+    {
+      "module": "polymorphic_empty",
+      "rc": 0,
+      "identity_and_outcome_parity": true,
+      "tests": 2,
+      "expected_tests": 2,
+      "failures": []
+    },
+    {
+      "module": "proof_only_singleton",
+      "rc": 0,
+      "identity_and_outcome_parity": true,
+      "tests": 5,
+      "expected_tests": 5,
+      "failures": []
+    },
+    {
+      "module": "quotient_reuse",
+      "rc": 0,
+      "identity_and_outcome_parity": true,
+      "tests": 5,
+      "expected_tests": 5,
+      "failures": []
+    },
+    {
+      "module": "quotient_source_ownership",
+      "rc": 0,
+      "identity_and_outcome_parity": true,
+      "tests": 2,
+      "expected_tests": 2,
+      "failures": []
+    },
+    {
+      "module": "relation_record",
+      "rc": 0,
+      "identity_and_outcome_parity": true,
+      "tests": 5,
+      "expected_tests": 5,
+      "failures": []
+    },
+    {
+      "module": "residual_closure",
+      "rc": 101,
+      "identity_and_outcome_parity": true,
+      "tests": 7,
+      "expected_tests": 7,
+      "failures": [
+        "all_seven_complete_positive_exports_accept"
+      ]
+    },
+    {
+      "module": "rigid_locals",
+      "rc": 0,
+      "identity_and_outcome_parity": true,
+      "tests": 2,
+      "expected_tests": 2,
+      "failures": []
+    },
+    {
+      "module": "sparse_native_nat_rec",
+      "rc": 0,
+      "identity_and_outcome_parity": true,
+      "tests": 1,
+      "expected_tests": 1,
+      "failures": []
+    },
+    {
+      "module": "transport_projection",
+      "rc": 0,
+      "identity_and_outcome_parity": true,
+      "tests": 4,
+      "expected_tests": 4,
+      "failures": []
+    },
+    {
+      "module": "typecheck",
+      "rc": 0,
+      "identity_and_outcome_parity": true,
+      "tests": 11,
+      "expected_tests": 11,
+      "failures": []
+    }
+  ],
+  "wall": 69.90919084199413
+}

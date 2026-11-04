@@ -1,0 +1,66 @@
+{
+  "binary_sha": "00bb12f7bd95fe131b44661b79eb4ef85055d0d706ced10f8d3844c2403c265b",
+  "full": {
+    "binary_sha": "00bb12f7bd95fe131b44661b79eb4ef85055d0d706ced10f8d3844c2403c265b",
+    "complete_mathlib_accept": false,
+    "frontier_official_reference": {
+      "binary_sha": "ae92c625e612fff1c90e329344d22e3c3c330383cb335ce28fd41435be3b3b94",
+      "parse_rc": 0,
+      "rc": 0,
+      "source_sha": "d6a69c3a7cf4bb71ada35baa6087c7cef2bca5609385a0a46de0378df74df156"
+    },
+    "next_frontier": {
+      "bytes": 9278231,
+      "declaration": {
+        "all": [
+          16080
+        ],
+        "levelParams": [],
+        "name": 16080,
+        "type": 159985,
+        "value": 160093
+      },
+      "name_records_parsed": 16095,
+      "record": 178659,
+      "sha256": "d6a69c3a7cf4bb71ada35baa6087c7cef2bca5609385a0a46de0378df74df156",
+      "tag": "thm",
+      "target": "Nat.Internal.Linear.Poly.denote_reverse"
+    },
+    "no_official_arena_score": true,
+    "qualified": true,
+    "result": {
+      "rc": 2,
+      "rss_kb": 3779788.0,
+      "system": 3.0,
+      "user": 43.17,
+      "wall": 46.18,
+      "wall_observed": 46.18527606400016
+    },
+    "source_sha": "22c5de83469408950005589a3bc5ef5157c65549b5a802f85d567c29151306a6",
+    "status": "WARRANTED_BOUNDED_FIRST_FRONTIER",
+    "terminal": "NUCLEUS_DOWNSTREAM:name=Nat.Internal.Linear.Poly.denote_reverse:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type"
+  },
+  "known_native_failures": {
+    "residual_closure|test": [
+      "all_seven_complete_positive_exports_accept"
+    ]
+  },
+  "native_counts": [
+    437,
+    1,
+    0,
+    0,
+    0
+  ],
+  "native_targets": 42,
+  "no_official_rank_claim": true,
+  "no_performance_claim_different_frontier": true,
+  "parent_binary": "d2148397405717a0b56127a596911bf79c18603d06632da578e1d65b6fd16edc",
+  "product_lawful_prefix_accept": true,
+  "product_lawful_prefix_sha": "75c66db3fcfded589778eac59ff31d7881df1420cd741c4c42c8d119321a9355",
+  "protected_controls": 61,
+  "qualified": true,
+  "source_controls": 74,
+  "source_patch_sha": "1b7de1663c5d92cc0379f38600140234b63054382dacbd72136d0511a7b3e9c9",
+  "status": "WARRANTED_BOUNDED_SEMANTIC_EXTENSION"
+}
