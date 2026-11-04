@@ -99,3 +99,67 @@ index eaed20f..f8f532f 100644
                  let source_typed_pair =
                      crate::run_flags::present(crate::run_flags::Flag::ExperimentalSourcePairDepth8)
                      && depth == context.len()
+diff --git a/metatron-kernel/src/typecheck.rs b/metatron-kernel/src/typecheck.rs
+index 5421007..04d547b 100644
+--- a/metatron-kernel/src/typecheck.rs
++++ b/metatron-kernel/src/typecheck.rs
+@@ -1273,6 +1273,10 @@ impl<'a> TypeChecker<'a> {
+         context: &[TypeValue],
+         budget: usize,
+     ) -> Judgment<()> {
++        #[cfg(feature="diagnostics")]
++        let trace_finsupp = std::env::var_os("NUCLEUS_TRACE_FINSUPP_STAGES").is_some()
++            && left.expr == ExprId(5) && right.expr == ExprId(5)
++            && context.len() == 8 && left.env.id() != right.env.id();
+         // This optional typed trial may call conversion while proving its
+         // prerequisites. Do not recursively start another fresh trial from
+         // those conversions; leave their ordinary conversion authoritative.
+@@ -1280,6 +1284,8 @@ impl<'a> TypeChecker<'a> {
+             static SOURCE_CONVERSION_ACTIVE:std::cell::Cell<bool>=const{std::cell::Cell::new(false)};
+         }
+         if SOURCE_CONVERSION_ACTIVE.with(|active|active.replace(true)) {
++            #[cfg(feature="diagnostics")]
++            if trace_finsupp { eprintln!("NUCLEUS_FINSUPP_STAGES:stage=nested:budget={budget}"); }
+             return Judgment::unknown("nested-source-conversion-trial");
+         }
+         struct SourceConversionTrial;
+@@ -1290,22 +1296,35 @@ impl<'a> TypeChecker<'a> {
+         let mut left_fuel=budget.min(4096);
+         let Some(left_type)=self.infer_exact_closure_in_context(
+             left,context,&mut left_fuel,0,
+-        ) else { return Judgment::unknown("source-left-type-unavailable") };
++        ) else {
++            #[cfg(feature="diagnostics")]
++            if trace_finsupp { eprintln!("NUCLEUS_FINSUPP_STAGES:stage=left-type-unavailable:budget={budget}:remaining={left_fuel}"); }
++            return Judgment::unknown("source-left-type-unavailable")
++        };
+         let mut right_fuel=budget.min(4096);
+         let Some(right_type)=self.infer_exact_closure_in_context(
+             right,context,&mut right_fuel,0,
+-        ) else { return Judgment::unknown("source-right-type-unavailable") };
++        ) else {
++            #[cfg(feature="diagnostics")]
++            if trace_finsupp { eprintln!("NUCLEUS_FINSUPP_STAGES:stage=right-type-unavailable:budget={budget}:remaining={right_fuel}"); }
++            return Judgment::unknown("source-right-type-unavailable")
++        };
+         let types=crate::convert::convert_with_policy_in_context(
+             self,&left_type,&right_type,budget.min(2048),
+             crate::convert::DeltaPolicy::PreferredOnly,
+             context.len(),context,
+         );
++        #[cfg(feature="diagnostics")]
++        if trace_finsupp { eprintln!("NUCLEUS_FINSUPP_STAGES:stage=type-relation:budget={budget}:left_remaining={left_fuel}:right_remaining={right_fuel}:result={types:?}"); }
+         if !types.is_proven() { return types }
+-        crate::convert::convert_with_policy_in_context(
++        let value=crate::convert::convert_with_policy_in_context(
+             self,&TypeValue::Term(left.clone()),&TypeValue::Term(right.clone()),
+             budget.min(4096),crate::convert::DeltaPolicy::PreferredOnly,
+             context.len(),context,
+-        )
++        );
++        #[cfg(feature="diagnostics")]
++        if trace_finsupp { eprintln!("NUCLEUS_FINSUPP_STAGES:stage=value-relation:budget={budget}:result={value:?}"); }
++        value
+     }
+ 
+     // A complete structural support certificate carries no typing authority.
