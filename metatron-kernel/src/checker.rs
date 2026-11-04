@@ -61,6 +61,10 @@ pub fn check_export_observed(
     limits: Limits,
     observer: &mut dyn FnMut(CheckedDecl),
 ) -> Verdict {
+    // Source resolution has finished. The following whole-export String
+    // carrier check is a semantic preflight scan, not an exporter read.
+    #[cfg(feature = "semantic-witness")]
+    crate::semantic_witness::phase_preflight();
     let has_unqualified_string_literal = export
         .exprs
         .values()
@@ -74,10 +78,15 @@ pub fn check_export_observed(
         DeltaPolicy::GuardedSemanticFallback,
         Some(observer),
     );
-    if has_unqualified_string_literal
+    let postflight_downgrade = has_unqualified_string_literal
         && !qualified_string_source
-        && matches!(verdict, Verdict::Accept | Verdict::Reject)
-    {
+        && matches!(verdict, Verdict::Accept | Verdict::Reject);
+    #[cfg(feature = "semantic-witness")]
+    crate::semantic_witness::record_global_guard(
+        "postflight-string-literal-qualification",
+        if postflight_downgrade { "DEFER" } else { "PASS" },
+    );
+    if postflight_downgrade {
         if std::env::var_os("NUCLEUS_TRACE_DOWNSTREAM").is_some() {
             eprintln!(
                 "NUCLEUS_DOWNSTREAM:name=<string-literal-guard>:stage=string-literal-guard:inner={verdict:?}:verdict=Unknown"
