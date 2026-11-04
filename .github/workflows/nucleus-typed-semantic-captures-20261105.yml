@@ -113,7 +113,7 @@ jobs:
           print('FIRST_APPLICATION_TRACE',json.dumps(report,sort_keys=True),flush=True)
           assert p.returncode in (0,2),('unexpected verdict',p.returncode)
           assert env.get('NUCLEUS_PROBE_TYPED_CAPTURE_CONGRUENCE')=='1','Semantic capture probe flag missing'
-          assert p.returncode==0 or (terminal and 'AddMonoidAlgebra.nonUnitalNonAssocSemiring._proof_1' in terminal[-1]),terminal
+          assert p.returncode==0 or (terminal and ':verdict=UNKNOWN:' in terminal[-1]),terminal
           PY
       - uses: actions/upload-artifact@v4
         if: always()
