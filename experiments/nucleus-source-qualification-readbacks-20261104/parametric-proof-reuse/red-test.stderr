@@ -1,0 +1,101 @@
+[1m[92m    Updating[0m crates.io index
+[1m[92m Downloading[0m crates ...
+[1m[92m  Downloaded[0m zmij v1.0.23
+[1m[92m  Downloaded[0m itoa v1.0.18
+[1m[92m  Downloaded[0m memchr v2.8.3
+[1m[92m  Downloaded[0m serde_core v1.0.229
+[1m[92m  Downloaded[0m serde_json v1.0.151
+[1m[92m   Compiling[0m zmij v1.0.23
+[1m[92m   Compiling[0m serde_core v1.0.229
+[1m[92m   Compiling[0m serde_json v1.0.151
+[1m[92m   Compiling[0m itoa v1.0.18
+[1m[92m   Compiling[0m memchr v2.8.3
+[1m[92m   Compiling[0m metatron-kernel v0.1.0 (/tmp/parametric-proof-reuse-red/metatron-kernel)
+[1m[33mwarning[0m[1m: unnecessary parentheses around `if` condition[0m
+    [1m[94m--> [0msrc/convert.rs:2636:20
+     [1m[94m|[0m
+[1m[94m2636[0m [1m[94m|[0m                 if ((l=="Free(FreeId(6))" && r=="Free(FreeId(5))") ||
+     [1m[94m|[0m                    [1m[33m^[0m
+[1m[94m2637[0m [1m[94m|[0m                     (l=="Free(FreeId(5))" && r=="Free(FreeId(6))"))
+     [1m[94m|[0m                                                                   [1m[33m^[0m
+     [1m[94m|[0m
+     [1m[94m= [0m[1mnote[0m: `#[warn(unused_parens)]` (part of `#[warn(unused)]`) on by default
+[1m[96mhelp[0m: remove these parentheses
+     [1m[94m|[0m
+[1m[94m2636[0m [92m~ [0m                if (l=="Free(FreeId(6))" && r=="Free(FreeId(5))") ||
+[1m[94m2637[0m [92m~ [0m                    (l=="Free(FreeId(5))" && r=="Free(FreeId(6))")
+     [1m[94m|[0m
+
+[1m[33mwarning[0m[1m: unnecessary parentheses around `if` condition[0m
+    [1m[94m--> [0msrc/typecheck.rs:6828:12
+     [1m[94m|[0m
+[1m[94m6828[0m [1m[94m|[0m         if (!crate::run_flags::present(crate::run_flags::Flag::ExperimentalExpectedLambda)) { return; }
+     [1m[94m|[0m            [1m[33m^[0m                                                                              [1m[33m^[0m
+     [1m[94m|[0m
+[1m[96mhelp[0m: remove these parentheses
+     [1m[94m|[0m
+[1m[94m6828[0m [91m- [0m        if [91m([0m!crate::run_flags::present(crate::run_flags::Flag::ExperimentalExpectedLambda)[91m)[0m { return; }
+[1m[94m6828[0m [92m+ [0m        if !crate::run_flags::present(crate::run_flags::Flag::ExperimentalExpectedLambda) { return; }
+     [1m[94m|[0m
+
+[1m[33mwarning[0m[1m: unused variable: `c`[0m
+    [1m[94m--> [0msrc/convert.rs:3096:91
+     [1m[94m|[0m
+[1m[94m3096[0m [1m[94m|[0m [1m[94m...[0m(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let n=Neutral{head:NeutralHead::Const{name:NameId(4),levels:vec![c[1m[94m...[0m
+     [1m[94m|[0m                                  [1m[33m^[0m [1m[33mhelp: if this is intentional, prefix it with an underscore: `_c`[0m
+     [1m[94m|[0m
+     [1m[94m= [0m[1mnote[0m: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+[1m[33mwarning[0m[1m: value assigned to `source_work` is never read[0m
+    [1m[94m--> [0msrc/typecheck.rs:5797:55
+     [1m[94m|[0m
+[1m[94m5797[0m [1m[94m|[0m                     if source_work<cost{return false;}source_work-=cost;
+     [1m[94m|[0m                                                       [1m[33m^^^^^^^^^^^^^^^^^[0m
+     [1m[94m|[0m
+     [1m[94m= [0m[1mhelp[0m: maybe it is overwritten before being read?
+     [1m[94m= [0m[1mnote[0m: `#[warn(unused_assignments)]` (part of `#[warn(unused)]`) on by default
+
+[1m[33mwarning[0m[1m: method `qualified_quotient_neutral_result` is never used[0m
+    [1m[94m--> [0msrc/machine.rs:1616:19
+     [1m[94m|[0m
+[1m[94m 319[0m [1m[94m|[0m impl<'a> Machine<'a> {
+     [1m[94m|[0m [1m[94m--------------------[0m [1m[94mmethod in this implementation[0m
+[1m[94m...[0m
+[1m[94m1616[0m [1m[94m|[0m     pub(crate) fn qualified_quotient_neutral_result(
+     [1m[94m|[0m                   [1m[33m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+     [1m[94m|[0m
+     [1m[94m= [0m[1mnote[0m: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+[1m[33mwarning[0m[1m: method `diagnostic_captured_recursor_major_chain` is never used[0m
+    [1m[94m--> [0msrc/typecheck.rs:1107:19
+     [1m[94m|[0m
+[1m[94m 143[0m [1m[94m|[0m impl<'a> TypeChecker<'a> {
+     [1m[94m|[0m [1m[94m------------------------[0m [1m[94mmethod in this implementation[0m
+[1m[94m...[0m
+[1m[94m1107[0m [1m[94m|[0m     pub(crate) fn diagnostic_captured_recursor_major_chain(
+     [1m[94m|[0m                   [1m[33m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: method `strong_owners` is never used[0m
+   [1m[94m--> [0msrc/value.rs:130:18
+    [1m[94m|[0m
+[1m[94m 50[0m [1m[94m|[0m impl EnvFrame {
+    [1m[94m|[0m [1m[94m-------------[0m [1m[94mmethod in this implementation[0m
+[1m[94m...[0m
+[1m[94m130[0m [1m[94m|[0m     pub(crate)fn strong_owners(&self)->usize{Rc::strong_count(&self.0)}
+    [1m[94m|[0m                  [1m[33m^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: methods `strong_owners` and `is_empty_instance` are never used[0m
+   [1m[94m--> [0msrc/value.rs:214:18
+    [1m[94m|[0m
+[1m[94m199[0m [1m[94m|[0m impl LevelSubstitution {
+    [1m[94m|[0m [1m[94m----------------------[0m [1m[94mmethods in this implementation[0m
+[1m[94m...[0m
+[1m[94m214[0m [1m[94m|[0m     pub(crate)fn strong_owners(&self)->usize{Rc::strong_count(&self.0)}
+    [1m[94m|[0m                  [1m[33m^^^^^^^^^^^^^[0m
+[1m[94m215[0m [1m[94m|[0m     pub(crate)fn is_empty_instance(&self)->bool{self.0.entries.is_empty()}
+    [1m[94m|[0m                  [1m[33m^^^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m: `metatron-kernel` (lib test) generated 8 warnings (run `cargo fix --lib -p metatron-kernel --tests` to apply 3 suggestions)
+[1m[92m    Finished[0m `release` profile [optimized] target(s) in 31.81s
+[1m[92m     Running[0m unittests src/lib.rs (/tmp/parametric-proof-reuse-red-target/release/deps/metatron_kernel-258b3b0aea2bca17)
+[1m[91merror[0m: test failed, to rerun pass `--lib`

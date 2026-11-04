@@ -1,0 +1,66 @@
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -126,7 +126,7 @@
+     // source tables. Retained closures pin frame and level allocation identity.
+     // Pure completed capture identity only; this carries no typing or Γ authority.
+     // Owning closures pin every frame and level allocation used by the key.
+-    source_capture_proofs:RefCell<HashMap<(ExprId,u64,usize,ExprId,u64,usize),(Closure,Closure)>>,
++    source_capture_proofs:RefCell<HashMap<(ExprId,u64,usize,ExprId,u64,usize),(Closure,Closure,bool)>>,
+     source_opening_proofs: RefCell<HashMap<(ExprId,u64,usize,FreeId),Closure>>,
+     // Closed source types admitted by this checker's actual formation judgment.
+     formed_expected: RefCell<std::collections::HashSet<Closure>>,
+@@ -1694,11 +1694,14 @@
+                 // Only a completed dependency tree earns this fact. Retention
+                 // is optional; pay table growth before allocating, and never
+                 // withhold a proved equality when storage cannot be afforded.
+-                if !PARAMETRIC {
++                {
+                     let mut proofs=self.source_capture_proofs.borrow_mut();
+-                    if !proofs.contains_key(&pair) && proofs.len()<8192 {
+-                        let cost=if proofs.len()==proofs.capacity(){proofs.capacity().saturating_mul(2).saturating_add(8)}else{1};
+-                        if *remaining>=cost { *remaining-=cost; proofs.insert(pair,(a.clone(),b.clone())); }
++                    let existing=proofs.get(&pair).map(|(_,_,strict)|*strict);
++                    let upgrade=!PARAMETRIC && existing==Some(false);
++                    let insert=existing.is_none() && proofs.len()<8192;
++                    if insert || upgrade {
++                        let cost=if insert && proofs.len()==proofs.capacity(){proofs.capacity().saturating_mul(2).saturating_add(8)}else{1};
++                        if *remaining>=cost { *remaining-=cost; proofs.insert(pair,(a.clone(),b.clone(),!PARAMETRIC)); }
+                     }
+                 }
+                 retained.push((a, b)); continue
+@@ -1706,7 +1709,9 @@
+             // Replace the original node step by a paid exact-key lookup.
+             // No active, failed, exhausted or absent pair is retained.
+             if !take_step(remaining){return false;}
+-            if self.source_capture_proofs.borrow().contains_key(&pair){continue;}
++            // Broad substitution congruence cannot grant literal whole-map
++            // identity. Stronger completed strict facts serve either mode.
++            if self.source_capture_proofs.borrow().get(&pair).is_some_and(|(_,_,strict)|PARAMETRIC||*strict){continue;}
+             if !PARAMETRIC && !Self::exact_source_levels(&a.levels,&b.levels,remaining){return false}
+             if complete.contains(&pair){continue}
+             if !active.insert(pair){return false}
+@@ -7595,4 +7600,24 @@
+  #[test]fn identical_substitution_allocation_does_not_equal_different_used_levels(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let map=LevelSubstitution::new(vec![(NameId(1),one()),(NameId(2),LevelTerm::Zero)]);let a=Closure::with_levels(ExprId(4),EnvFrame::empty(),map.clone());let b=Closure::with_levels(ExprId(5),EnvFrame::empty(),map);assert!(!c.instantiated_source_capture_congruence(&a,&b,&mut 256));}
+  #[test]fn constant_universe_arguments_are_checked_without_renaming_constant_authority(){let(mut e,l,env)=fixture();for(id,name,level)in[(10,42,1),(11,42,2),(12,43,2)]{e.insert(ExprId(id),Expr::Const{name:NameId(name),levels:vec![LevelId(level)]}).unwrap();}let c=TypeChecker::new(&e,&l,&env);let a=term(10,1,one(),EnvFrame::empty());assert!(c.instantiated_source_capture_congruence(&a,&term(11,2,one(),EnvFrame::empty()),&mut 256));for b in[term(11,2,LevelTerm::Zero,EnvFrame::empty()),term(12,2,one(),EnvFrame::empty())]{assert!(!c.instantiated_source_capture_congruence(&a,&b,&mut 256));}}
+  #[test]fn parametric_projection_templates_preserve_owner_field_and_actual_receiver(){let(mut e,l,env)=fixture();for(id,owner,index)in[(13,70,0),(14,70,0),(15,71,0),(16,70,1)]{e.insert(ExprId(id),Expr::Proj{type_name:NameId(owner),index,structure:ExprId(0)}).unwrap();}let c=TypeChecker::new(&e,&l,&env);let a=term(13,1,one(),EnvFrame::empty().extend_free(FreeId(7)));assert!(c.instantiated_source_capture_congruence(&a,&term(14,2,one(),EnvFrame::empty().extend_free(FreeId(7))),&mut 256));for b in[term(15,2,one(),EnvFrame::empty().extend_free(FreeId(7))),term(16,2,one(),EnvFrame::empty().extend_free(FreeId(7))),term(14,2,one(),EnvFrame::empty().extend_free(FreeId(8)))]{assert!(!c.instantiated_source_capture_congruence(&a,&b,&mut 256));}}
++ #[test]fn completed_parametric_fact_reuses_with_one_paid_root_step(){
++  let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let a=term(6,1,one(),EnvFrame::empty().extend_free(FreeId(7)));let b=term(7,2,one(),EnvFrame::empty().extend_free(FreeId(7)));
++  assert!(c.instantiated_source_capture_congruence(&a,&b,&mut 256));assert!(c.instantiated_source_capture_congruence(&a,&b,&mut 1));assert!(!c.instantiated_source_capture_congruence(&a,&b,&mut 0));assert!(!c.exact_source_capture_identity(&a,&b,&mut 256));
++ }
++ #[test]fn broad_completed_fact_never_grants_strict_identity_until_strictly_reproved(){
++  let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let a=term(4,1,one(),EnvFrame::empty());let b=term(4,1,one(),EnvFrame::empty());
++  assert!(c.instantiated_source_capture_congruence(&a,&b,&mut 256));assert!(c.instantiated_source_capture_congruence(&a,&b,&mut 1));assert!(!c.exact_source_capture_identity(&a,&b,&mut 1));assert!(c.exact_source_capture_identity(&a,&b,&mut 256));assert!(c.exact_source_capture_identity(&a,&b,&mut 1));
++ }
++ #[test]fn failed_or_exhausted_parametric_obligations_never_become_reusable(){
++  let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let a=term(6,1,one(),EnvFrame::empty().extend_free(FreeId(7)));let wrong=term(7,2,one(),EnvFrame::empty().extend_free(FreeId(8)));let b=term(7,2,one(),EnvFrame::empty().extend_free(FreeId(7)));
++  assert!(!c.instantiated_source_capture_congruence(&a,&wrong,&mut 256));assert!(!c.instantiated_source_capture_congruence(&a,&wrong,&mut 1));assert!(!c.instantiated_source_capture_congruence(&a,&b,&mut 1));assert!(!c.instantiated_source_capture_congruence(&a,&b,&mut 1));assert!(c.instantiated_source_capture_congruence(&a,&b,&mut 256));assert!(c.instantiated_source_capture_congruence(&a,&b,&mut 1));
++ }
++
++ #[test]fn strict_upgrade_still_works_at_the_shared_retention_limit(){
++  let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let a=term(4,1,one(),EnvFrame::empty());let b=term(4,1,one(),EnvFrame::empty());assert!(c.instantiated_source_capture_congruence(&a,&b,&mut 65536));
++  for _ in 1..8192{let x=term(4,1,one(),EnvFrame::empty());let y=term(5,2,one(),EnvFrame::empty());assert!(c.instantiated_source_capture_congruence(&x,&y,&mut 65536));}
++  assert_eq!(c.source_capture_proofs.borrow().len(),8192);assert!(!c.exact_source_capture_identity(&a,&b,&mut 1));assert!(c.exact_source_capture_identity(&a,&b,&mut 256));assert!(c.exact_source_capture_identity(&a,&b,&mut 1));assert_eq!(c.source_capture_proofs.borrow().len(),8192);
++  let x=term(4,1,one(),EnvFrame::empty());let y=term(5,2,one(),EnvFrame::empty());assert!(c.instantiated_source_capture_congruence(&x,&y,&mut 65536));assert!(!c.instantiated_source_capture_congruence(&x,&y,&mut 1));assert_eq!(c.source_capture_proofs.borrow().len(),8192);
++ }
++
+ }
