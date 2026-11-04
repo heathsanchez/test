@@ -1,0 +1,33 @@
+name: Nucleus parametric proof reuse RED
+on:
+  push:
+    branches: [research/nucleus-parametric-proof-reuse-20261104]
+    paths:
+      - '.github/workflows/nucleus-parametric-proof-reuse-red-20261104.yml'
+      - 'experiments/nucleus-parametric-proof-reuse-red-20261104/**'
+permissions:
+  contents: read
+  actions: read
+jobs:
+  red:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.99.1
+      - name: Restore sealed source parent
+        run: gh api repos/heathsanchez/test/actions/artifacts/13359400422/zip > /tmp/parent.zip
+      - name: Verify three requested behaviors fail before implementation
+        run: python3 experiments/nucleus-parametric-proof-reuse-red-20261104/red-ci.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-parametric-proof-reuse-red-${{ github.sha }}
+          path: |
+            /tmp/parametric-proof-reuse-red/report.json
+            /tmp/parametric-proof-reuse-red/test.stdout
+            /tmp/parametric-proof-reuse-red/test.stderr
