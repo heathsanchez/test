@@ -1,0 +1,27 @@
+--- a/metatron-kernel/tests/end_to_end.rs
++++ b/metatron-kernel/tests/end_to_end.rs
+@@ -1041,14 +1041,18 @@
+ }
+ 
+ #[test]
+-fn g15_shared_representation_earns_no_fourth_family() {
++fn renamed_parameter_record_is_source_checked_beyond_the_sealed_g15_family() {
+     let pprod = include_str!("../evidence/residuals/G14-001/fixture.ndjson");
+     let renamed = pprod.replacen("\"str\":\"PProd\"", "\"str\":\"PProd2\"", 1);
+-
+-    assert_eq!(
+-        run_with_g15_oracle("renamed fourth family", renamed),
+-        Verdict::Unknown,
+-    );
++    // Retain the historical boundary independently of current validation.
++    if let Some(historical)=sealed_g15_verdict(&renamed) {assert_eq!(historical,Verdict::Unknown);}
++    assert_eq!(metatron_kernel::run(Cursor::new(renamed.clone())), Verdict::Accept);
++    for forged in [
++        renamed.replacen("\"numFields\":2", "\"numFields\":3", 1),
++        renamed.replacen("\"str\":\"u_1\"", "\"str\":\"u_7\"", 1),
++    ] {
++        assert!(matches!(metatron_kernel::run(Cursor::new(forged)),Verdict::Reject|Verdict::Unknown));
++    }
+ }
+ 
+ fn run_g16_perturbations(replacements: &[(&str, &str)]) -> Verdict {

@@ -1,0 +1,62 @@
+name: Nucleus exact executable boundary reconciliation
+on:
+  push:
+    branches: [research/nucleus-universe-records-20261104]
+    paths:
+      - '.github/workflows/nucleus-universe-reconcile-20261104.yml'
+      - 'experiments/nucleus-universe-reconcile-20261104/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  reconcile-and-full:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Restore exact sources and prior native and semantic witnesses
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/immutable-prior /tmp/universe-prior /tmp/nonzero-qualified /tmp/current208 /tmp/k-reference /tmp/mathlib-source
+          gh api repos/heathsanchez/test/actions/artifacts/13283170616/zip > /tmp/immutable-prior.zip
+          printf '%s  %s\n' adc370426493486d638e2e821440412364130beb3931588e905fe9c1b28da688 /tmp/immutable-prior.zip | sha256sum -c -
+          unzip -q /tmp/immutable-prior.zip 'baseline/*' -d /tmp/immutable-prior
+          gh api repos/heathsanchez/test/actions/artifacts/13282929137/zip > /tmp/universe-prior.zip
+          printf '%s  %s\n' d89e82e3f7c671a4246e94c082c12002a66c855368879f4345bc01836545f012 /tmp/universe-prior.zip | sha256sum -c -
+          unzip -q /tmp/universe-prior.zip -d /tmp/universe-prior
+          gh api repos/heathsanchez/test/actions/artifacts/13276734778/zip > /tmp/nonzero-qualified.zip
+          printf '%s  %s\n' 609aa7c3d4b7629d79d51486989c39e9bc5609bc17fbe35f6b117c78c72226b7 /tmp/nonzero-qualified.zip | sha256sum -c -
+          unzip -q /tmp/nonzero-qualified.zip qualification.json -d /tmp/nonzero-qualified
+          gh api repos/heathsanchez/test/actions/artifacts/13126161718/zip > /tmp/corpus.zip
+          printf '%s  %s\n' 462e31e21379054490570b465b46ece4fff878490d9ad7de6bbc73149d587f4c /tmp/corpus.zip | sha256sum -c -
+          unzip -q /tmp/corpus.zip -d /tmp/current208
+          gh api repos/heathsanchez/test/actions/artifacts/13267462207/zip > /tmp/reference.zip
+          printf '%s  %s\n' 9dfaff0a6cb272e6950e301aab75cf99e09a440f5ad881e2e1790019b4add1dd /tmp/reference.zip | sha256sum -c -
+          unzip -q /tmp/reference.zip -d /tmp/k-reference
+          chmod +x /tmp/k-reference/bundle/kernel /tmp/k-reference/bundle/run
+          gh api repos/heathsanchez/test/actions/artifacts/13231986845/zip > /tmp/mathlib.zip
+          printf '%s  %s\n' 3dd3fbb522816bdaa9d9cd2808196e075bfa27e3d6c82648731140594f87ce2b /tmp/mathlib.zip | sha256sum -c -
+          unzip -q /tmp/mathlib.zip -d /tmp/mathlib-source
+          zstd -dq /tmp/mathlib-source/mathlib.ndjson.zst -o /tmp/mathlib.ndjson
+          printf '%s  %s\n' 22c5de83469408950005589a3bc5ef5157c65549b5a802f85d567c29151306a6 /tmp/mathlib.ndjson | sha256sum -c -
+      - name: Reconcile native boundary and replay complete Mathlib
+        run: python3 experiments/nucleus-universe-reconcile-20261104/reconcile.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-universe-reconciled-${{ github.sha }}
+          retention-days: 90
+          path: |
+            /tmp/nucleus-universe-reconciled/*.json
+            /tmp/nucleus-universe-reconciled/candidate/*.json
+            /tmp/nucleus-universe-reconciled/candidate/*.patch
+            /tmp/nucleus-universe-reconciled/candidate/*.log
+            /tmp/nucleus-universe-reconciled/candidate/source.tar.gz
+            /tmp/nucleus-universe-reconciled/candidate/nucleus
+            /tmp/nucleus-universe-reconciled/renamed-record-differential/**/*
+            /tmp/nucleus-universe-reconciled/full/*
+            /tmp/nucleus-universe-reconciled/next-frontier.ndjson.zst
