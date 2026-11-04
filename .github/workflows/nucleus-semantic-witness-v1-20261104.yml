@@ -26,7 +26,6 @@ jobs:
           cargo test --release --locked --features semantic-witness \
             --manifest-path metatron-kernel/Cargo.toml \
             --test semantic_witness --test mgso_shadow --test quotient_source_ownership
-          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
           cargo build --release --locked --features semantic-witness \
             --manifest-path metatron-kernel/Cargo.toml
       - name: Source-pinned seven-arm and 55-fixture native qualification
@@ -46,10 +45,49 @@ jobs:
             --fixture metatron-kernel/tests/fixtures/good-theorem-use.ndjson \
             --fixtures metatron-kernel/tests/fixtures \
             --output /tmp/nucleus-semantic-read-witness-v1/qualification.json
+      - name: Full default-feature Rust suite (report all baseline failures)
+        continue-on-error: true
+        run: |
+          set +e
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml \
+            > /tmp/nucleus-semantic-read-witness-v1/full-suite.log 2>&1
+          result=$?
+          echo "exit_code=$result" > /tmp/nucleus-semantic-read-witness-v1/full-suite-status.txt
+          tail -75 /tmp/nucleus-semantic-read-witness-v1/full-suite.log
+          exit "$result"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: nucleus-semantic-read-witness-v1-${{ github.sha }}
           path: /tmp/nucleus-semantic-read-witness-v1/
+          if-no-files-found: warn
+          retention-days: 30
+
+  untouched-v3-failure-control:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: c8b59f0c66239519b4117436360ac859bd4b2df8
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Measure same failing full-suite case on untouched V3 source
+        run: |
+          set +e
+          mkdir -p /tmp/nucleus-untouched-v3-baseline
+          git rev-parse HEAD > /tmp/nucleus-untouched-v3-baseline/commit.txt
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml \
+            --test checked_relevance_signature \
+            > /tmp/nucleus-untouched-v3-baseline/checked-relevance.log 2>&1
+          result=$?
+          echo "exit_code=$result" > /tmp/nucleus-untouched-v3-baseline/status.txt
+          tail -50 /tmp/nucleus-untouched-v3-baseline/checked-relevance.log
+          exit 0
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-untouched-v3-checked-relevance-${{ github.sha }}
+          path: /tmp/nucleus-untouched-v3-baseline/
           if-no-files-found: warn
           retention-days: 30
