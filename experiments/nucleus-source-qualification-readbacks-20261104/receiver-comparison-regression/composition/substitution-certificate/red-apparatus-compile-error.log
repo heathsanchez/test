@@ -1,0 +1,80 @@
+   Compiling serde_core v1.0.229
+   Compiling zmij v1.0.23
+   Compiling serde_json v1.0.151
+   Compiling memchr v2.8.3
+   Compiling itoa v1.0.18
+   Compiling metatron-kernel v0.1.0 (/tmp/nucleus-completed-substitution-certificate/source)
+warning: unnecessary parentheses around `if` condition
+    --> src/convert.rs:2642:20
+     |
+2642 |                 if ((l=="Free(FreeId(6))" && r=="Free(FreeId(5))") ||
+     |                    ^
+2643 |                     (l=="Free(FreeId(5))" && r=="Free(FreeId(6))"))
+     |                                                                   ^
+     |
+     = note: `#[warn(unused_parens)]` (part of `#[warn(unused)]`) on by default
+help: remove these parentheses
+     |
+2642 ~                 if (l=="Free(FreeId(6))" && r=="Free(FreeId(5))") ||
+2643 ~                     (l=="Free(FreeId(5))" && r=="Free(FreeId(6))")
+     |
+
+warning: unnecessary parentheses around `if` condition
+    --> src/typecheck.rs:6899:12
+     |
+6899 |         if (!crate::run_flags::present(crate::run_flags::Flag::ExperimentalExpectedLambda)) { return; }
+     |            ^                                                                              ^
+     |
+help: remove these parentheses
+     |
+6899 -         if (!crate::run_flags::present(crate::run_flags::Flag::ExperimentalExpectedLambda)) { return; }
+6899 +         if !crate::run_flags::present(crate::run_flags::Flag::ExperimentalExpectedLambda) { return; }
+     |
+
+error[E0599]: no associated function or constant named `from_u64` found for struct `BigNat` in the current scope
+    --> src/typecheck.rs:7696:275
+     |
+7696 | ...xpr::NatLit(crate::nat::BigNat::from_u64(1))) ]{e.insert(ExprId(id),x).unwrap();}(e,IdTable::default(),Environment::empty())}
+     |                                    ^^^^^^^^ associated function or constant not found in `BigNat`
+     |
+    ::: src/nat.rs:6:1
+     |
+   6 | pub struct BigNat(Vec<u32>);
+     | ----------------- associated function or constant `from_u64` not found for this struct
+     |
+note: if you're trying to build a new `BigNat` consider using one of the following associated functions:
+      BigNat::zero
+      BigNat::parse_decimal
+    --> src/nat.rs:9:5
+     |
+   9 |     pub fn zero() -> Self {
+     |     ^^^^^^^^^^^^^^^^^^^^^
+...
+  13 |     pub fn parse_decimal(text: &str) -> Option<Self> {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+help: there is an associated function `from` with a similar name
+     |
+7696 -  fn fixture()->(IdTable<ExprId,Expr>,IdTable<LevelId,Level>,Environment){let mut e=IdTable::default();for(id,x)in[(0,Expr::BVar(0)),(1,Expr::BVar(1)),(2,Expr::App{fun:ExprId(0),arg:ExprId(0)}),(3,Expr::NatLit(crate::nat::BigNat::zero())),(4,Expr::NatLit(crate::nat::BigNat::from_u64(1))) ]{e.insert(ExprId(id),x).unwrap();}(e,IdTable::default(),Environment::empty())}
+7696 +  fn fixture()->(IdTable<ExprId,Expr>,IdTable<LevelId,Level>,Environment){let mut e=IdTable::default();for(id,x)in[(0,Expr::BVar(0)),(1,Expr::BVar(1)),(2,Expr::App{fun:ExprId(0),arg:ExprId(0)}),(3,Expr::NatLit(crate::nat::BigNat::zero())),(4,Expr::NatLit(crate::nat::BigNat::from(1))) ]{e.insert(ExprId(id),x).unwrap();}(e,IdTable::default(),Environment::empty())}
+     |
+
+warning: unused variable: `c`
+    --> src/convert.rs:3102:91
+     |
+3102 | ...(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let n=Neutral{head:NeutralHead::Const{name:NameId(4),levels:vec![c...
+     |                                  ^ help: if this is intentional, prefix it with an underscore: `_c`
+     |
+     = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: value assigned to `source_work` is never read
+    --> src/typecheck.rs:5868:55
+     |
+5868 |                     if source_work<cost{return false;}source_work-=cost;
+     |                                                       ^^^^^^^^^^^^^^^^^
+     |
+     = help: maybe it is overwritten before being read?
+     = note: `#[warn(unused_assignments)]` (part of `#[warn(unused)]`) on by default
+
+For more information about this error, try `rustc --explain E0599`.
+warning: `metatron-kernel` (lib test) generated 4 warnings
+error: could not compile `metatron-kernel` (lib test) due to 1 previous error; 4 warnings emitted
