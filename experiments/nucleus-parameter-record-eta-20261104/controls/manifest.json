@@ -1,0 +1,26 @@
+[
+  {
+    "case": "authentic-parameter-record-eta",
+    "file": "authentic-parameter-record-eta.ndjson",
+    "sha256": "a5ae0d0fceeac3d6bebd628888b68a276cbc00bf719d04732a64a971bc7dd8d9",
+    "expect_reference": 0
+  },
+  {
+    "case": "parameter-record-wrong-receiver",
+    "file": "parameter-record-wrong-receiver.ndjson",
+    "sha256": "a182603f6ad2deb1f31394d12011b745a72dcd741dd561e60e0fabd0b3edc1fc",
+    "expect_reference": 1
+  },
+  {
+    "case": "parameter-record-forged-nonrecursive-field",
+    "file": "parameter-record-forged-nonrecursive-field.ndjson",
+    "sha256": "67e9a2d53c6bb823dcd201dc5f32b4d9b33fa97c7aff96d8ef08bb3ca62b2641",
+    "expect_reference": 1
+  },
+  {
+    "case": "parameter-record-prop-collapse",
+    "file": "parameter-record-prop-collapse.ndjson",
+    "sha256": "fc9a1a95604fedc92414fad52e1dae625fd1638b8bf19ed8f60d794df9f18eb4",
+    "expect_reference": 1
+  }
+]

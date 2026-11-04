@@ -1,0 +1,30 @@
+
+running 4 tests
+test typecheck::eta_projection_shape_tests::a_literal_source_projection_witnesses_its_exact_receiver_field ... FAILED
+test typecheck::eta_projection_shape_tests::an_already_evaluated_captured_projection_keeps_the_same_witness ... FAILED
+test typecheck::eta_projection_shape_tests::applied_captured_projection_is_not_an_unapplied_field_witness ... ok
+test typecheck::eta_projection_shape_tests::literal_projection_never_substitutes_a_different_owner_field_or_receiver ... ok
+
+failures:
+
+---- typecheck::eta_projection_shape_tests::a_literal_source_projection_witnesses_its_exact_receiver_field stdout ----
+
+thread 'typecheck::eta_projection_shape_tests::a_literal_source_projection_witnesses_its_exact_receiver_field' (60) panicked at src/typecheck.rs:7176:3:
+assertion failed: checker.certified_eta_projection_field(&Closure::new(ExprId(2), frame),
+    NameId(900), 0, &target(0), 4, 256)
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- typecheck::eta_projection_shape_tests::an_already_evaluated_captured_projection_keeps_the_same_witness stdout ----
+
+thread 'typecheck::eta_projection_shape_tests::an_already_evaluated_captured_projection_keeps_the_same_witness' (61) panicked at src/typecheck.rs:7180:3:
+assertion failed: checker.certified_eta_projection_field(&Closure::new(ExprId(0),
+            EnvFrame::empty().extend_neutral(value)), NameId(900), 0,
+    &target(0), 4, 256)
+
+
+failures:
+    typecheck::eta_projection_shape_tests::a_literal_source_projection_witnesses_its_exact_receiver_field
+    typecheck::eta_projection_shape_tests::an_already_evaluated_captured_projection_keeps_the_same_witness
+
+test result: FAILED. 2 passed; 2 failed; 0 ignored; 0 measured; 136 filtered out; finished in 0.00s
+

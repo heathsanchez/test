@@ -1,0 +1,113 @@
+--- a/metatron-kernel/src/checker.rs
++++ b/metatron-kernel/src/checker.rs
+@@ -4341,7 +4341,8 @@
+         return Err(Verdict::Unknown);
+     }
+     if same_universe_pair_candidate(export,block) && !same_universe_pair_obligations(export,block) {return Err(Verdict::Unknown);}
+-    if parameter_record_scope(export,block) && !parameter_record_obligations(export,environment,block,limits,delta_policy) {return Err(Verdict::Unknown);}
++    let parameter_record_in_scope=parameter_record_scope(export,block);
++    if parameter_record_in_scope && !parameter_record_obligations(export,environment,block,limits,delta_policy) {return Err(Verdict::Unknown);}
+     if parametric_field_enum_candidate(export, block)
+         && !parametric_field_enum_obligations(export, environment, block, limits, delta_policy) { return Err(Verdict::Unknown); }
+     if closed_pair_record_candidate(export, block)
+@@ -4468,7 +4469,14 @@
+                     constructor: constructor.name,
+                     num_params: p,
+                     field_types,
+-                    eta_expandable: false,
++                    // This precise scope has independently formed the full
++                    // parameter/field telescope, established a universally
++                    // nonzero carrier and excluded the owner from every
++                    // field source. Promotion above has checked signatures
++                    // and the original recursor shape before granting eta.
++                    eta_expandable: parameter_record_in_scope
++                        && !inductive.is_recursive && !inductive.is_reflexive
++                        && inductive.num_indices==0 && inductive.num_nested==0,
+                 },
+             )
+             .map_err(|_| Verdict::Reject)?;
+--- a/metatron-kernel/src/typecheck.rs
++++ b/metatron-kernel/src/typecheck.rs
+@@ -5545,9 +5545,12 @@
+         num_params: usize,
+         budget: usize,
+     ) -> bool {
++        if !matches!(&target.head,NeutralHead::Free(_))||!target.spine.is_empty(){return false;}
++        let mut source_work=budget;
+         let mut closure = field.clone();
+         let mut arguments = Vec::new();
+         let (projection, levels) = loop {
++            if !take_step(&mut source_work){return false;}
+             let Some(expression) = self.expressions.get(closure.expr) else {
+                 return false;
+             };
+@@ -5557,17 +5560,30 @@
+                     closure = closure.sibling(*fun, closure.env.clone());
+                 }
+                 Expr::BVar(bvar) => {
+-                    let Some(binding) = closure.env.lookup(*bvar) else {
+-                        return false;
+-                    };
++                    let Ok(binding_index)=usize::try_from(*bvar)else{return false};
++                    let Some(cost)=binding_index.checked_add(1)else{return false};
++                    if source_work<cost{return false;}source_work-=cost;
++                    let Some(binding) = closure.env.lookup_binding_ref(*bvar) else {return false};
+                     match binding {
+-                        crate::value::EnvBinding::Closure(bound) => closure = bound,
+-                        crate::value::EnvBinding::Free(_)
+-                        | crate::value::EnvBinding::Neutral(_)
+-                        | crate::value::EnvBinding::NatLit(_) => return false,
++                        crate::value::EnvBinding::Closure(bound) => closure = bound.clone(),
++                        crate::value::EnvBinding::Neutral(Neutral{head:NeutralHead::Projection{type_name:owner,index:field_index,structure},spine})=>{
++                            return arguments.is_empty()&&spine.is_empty()&&*owner==type_name&&*field_index==index
++                                && structure.as_ref()==target;
++                        },
++                        _ => return false,
+                     }
+                 }
+-                Expr::Const { name, levels } => break (*name, levels.clone()),
++                Expr::Proj{type_name:owner,index:field_index,structure}=>{
++                    if !arguments.is_empty()||*owner!=type_name||usize::try_from(*field_index).ok()!=Some(index){return false;}
++                    let receiver=closure.sibling(*structure,closure.env.clone());
++                    let exposed=self.machine().expose(receiver,Transparency::Reducible,source_work.min(512));
++                    return matches!(exposed.proven_value(),Some(Value::Neutral(actual))if actual==target);
++                },
++                Expr::Const { name, levels } => {
++                    let Some(cost)=levels.len().checked_add(1)else{return false};
++                    if source_work<cost{return false;}source_work-=cost;
++                    break (*name,levels.clone());
++                },
+                 _ => return false,
+             }
+         };
+@@ -7161,3 +7177,30 @@
+  }
+ 
+ }
++
++#[cfg(test)]
++mod eta_projection_shape_tests {
++ use super::*;
++ fn source()->(IdTable<ExprId,Expr>,IdTable<LevelId,Level>){
++  let mut e=IdTable::default();for(id,node)in[(0,Expr::BVar(0)),(1,Expr::BVar(1)),(2,Expr::Proj{type_name:NameId(900),index:0,structure:ExprId(1)}),(3,Expr::Proj{type_name:NameId(900),index:0,structure:ExprId(0)}),(4,Expr::Proj{type_name:NameId(901),index:0,structure:ExprId(1)}),(5,Expr::Proj{type_name:NameId(900),index:1,structure:ExprId(1)})]{e.insert(ExprId(id),node).unwrap();}(e,IdTable::default())
++ }
++ fn target(free:u64)->Neutral{Neutral{head:NeutralHead::Free(FreeId(free)),spine:vec![]}}
++ // These are structural projection-witness checks only. The caller still
++ // proves the actual owner, universe instance, parameters and eta eligibility.
++ #[test]fn a_literal_source_projection_witnesses_its_exact_receiver_field(){
++  let(e,l)=source();let env=Environment::empty();let checker=TypeChecker::new(&e,&l,&env);let frame=EnvFrame::empty().extend_free(FreeId(0)).extend_free(FreeId(1));
++  assert!(checker.certified_eta_projection_field(&Closure::new(ExprId(2),frame),NameId(900),0,&target(0),4,256));
++ }
++ #[test]fn an_already_evaluated_captured_projection_keeps_the_same_witness(){
++  let(e,l)=source();let env=Environment::empty();let checker=TypeChecker::new(&e,&l,&env);let value=Neutral{head:NeutralHead::Projection{type_name:NameId(900),index:0,structure:Box::new(target(0))},spine:vec![]};
++  assert!(checker.certified_eta_projection_field(&Closure::new(ExprId(0),EnvFrame::empty().extend_neutral(value)),NameId(900),0,&target(0),4,256));
++ }
++ #[test]fn literal_projection_never_substitutes_a_different_owner_field_or_receiver(){
++  let(e,l)=source();let env=Environment::empty();let checker=TypeChecker::new(&e,&l,&env);let frame=EnvFrame::empty().extend_free(FreeId(0)).extend_free(FreeId(1));
++  for id in [3,4,5]{assert!(!checker.certified_eta_projection_field(&Closure::new(ExprId(id),frame.clone()),NameId(900),0,&target(0),4,256));}
++ }
++ #[test]fn applied_captured_projection_is_not_an_unapplied_field_witness(){
++  let(e,l)=source();let env=Environment::empty();let checker=TypeChecker::new(&e,&l,&env);let value=Neutral{head:NeutralHead::Projection{type_name:NameId(900),index:0,structure:Box::new(target(0))},spine:vec![Closure::new(ExprId(0),EnvFrame::empty())]};
++  assert!(!checker.certified_eta_projection_field(&Closure::new(ExprId(0),EnvFrame::empty().extend_neutral(value)),NameId(900),0,&target(0),4,256));
++ }
++}

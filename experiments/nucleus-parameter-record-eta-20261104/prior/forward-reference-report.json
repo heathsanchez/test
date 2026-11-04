@@ -1,0 +1,41 @@
+{
+  "binary_sha": "f4069a8a8d1cfbb97a8748f49629043a968145bc5436a322a2ea7a15f29d2142",
+  "rows": [
+    {
+      "case": "authentic-parameter-record-eta",
+      "file": "authentic-parameter-record-eta.ndjson",
+      "sha256": "a5ae0d0fceeac3d6bebd628888b68a276cbc00bf719d04732a64a971bc7dd8d9",
+      "expect_reference": 0,
+      "parse_rc": 0,
+      "reference_rc": 0,
+      "candidate_rc": 1
+    },
+    {
+      "case": "parameter-record-wrong-receiver",
+      "file": "parameter-record-wrong-receiver.ndjson",
+      "sha256": "a182603f6ad2deb1f31394d12011b745a72dcd741dd561e60e0fabd0b3edc1fc",
+      "expect_reference": 1,
+      "parse_rc": 0,
+      "reference_rc": 1,
+      "candidate_rc": 1
+    },
+    {
+      "case": "parameter-record-forged-nonrecursive-field",
+      "file": "parameter-record-forged-nonrecursive-field.ndjson",
+      "sha256": "5afb2048875006c3e925d4adb1e868364ac0660a94ea51571e1dac11756af0c0",
+      "expect_reference": 1,
+      "parse_rc": 1,
+      "reference_rc": 1,
+      "candidate_rc": 2
+    },
+    {
+      "case": "parameter-record-prop-collapse",
+      "file": "parameter-record-prop-collapse.ndjson",
+      "sha256": "deea0a3b2c18f406f19af1f7e6bd6328d9ab84307ba77c3589002965d04584e3",
+      "expect_reference": 1,
+      "parse_rc": 1,
+      "reference_rc": 1,
+      "candidate_rc": 2
+    }
+  ]
+}
