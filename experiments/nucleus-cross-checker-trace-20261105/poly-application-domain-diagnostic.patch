@@ -1,0 +1,18 @@
+--- a/metatron-kernel/src/typecheck.rs
++++ b/metatron-kernel/src/typecheck.rs
+@@ -2076,11 +2196,13 @@
+                 #[cfg(feature="diagnostics")]
+                 if crate::run_flags::present(crate::run_flags::Flag::TraceAppDomainObligation)
+                     && matches!(argument_judgment,Judgment::Unknown {..})
+-                    && (context.len()==4 || context.len()==11)
++                    && (context.len()==4 || context.len()==11
++                        || (context.len()==8 && expression==ExprId(159705)))
+                 {
+                     use std::sync::atomic::{AtomicUsize,Ordering};
+                     static TRACED:AtomicUsize=AtomicUsize::new(0);
+-                    if TRACED.fetch_add(1,Ordering::Relaxed)<24 {
++                    if expression==ExprId(159705)
++                        || TRACED.fetch_add(1,Ordering::Relaxed)<24 {
+                         let binding=match self.expressions.get(*arg){
+                             Some(Expr::BVar(i))=>frame.lookup_with_node_id(*i),
+                             _=>None,
