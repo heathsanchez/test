@@ -1,0 +1,42 @@
+{
+  "status": "COMPLETE",
+  "source_boundary": "Original Mathlib prefix through AddMonoidAlgebra.instAddCommMonoid._proof_1",
+  "rows": [
+    {
+      "arm": "candidate",
+      "rc": 0,
+      "cpu": 149.061411,
+      "wall": 149.12025137599994,
+      "binary_sha": "53d0ed8553d60162d3634cd1f940f5482004d985ef363b6ff1af8cf1fa59fc59",
+      "input_sha": "8428d5d4282a608eb77e48ff62adace23212d9487ff9e86dc2e57af7c573d5f1"
+    },
+    {
+      "arm": "parent",
+      "rc": 0,
+      "cpu": 159.449175,
+      "wall": 159.48137608899924,
+      "binary_sha": "c43b174abbad341e5b308d93cd66a28e42db9d9425796ed33b16c644e142ae8e",
+      "input_sha": "8428d5d4282a608eb77e48ff62adace23212d9487ff9e86dc2e57af7c573d5f1"
+    },
+    {
+      "arm": "parent",
+      "rc": 0,
+      "cpu": 157.65157600000003,
+      "wall": 157.68714339600047,
+      "binary_sha": "c43b174abbad341e5b308d93cd66a28e42db9d9425796ed33b16c644e142ae8e",
+      "input_sha": "8428d5d4282a608eb77e48ff62adace23212d9487ff9e86dc2e57af7c573d5f1"
+    },
+    {
+      "arm": "candidate",
+      "rc": 0,
+      "cpu": 143.93447299999997,
+      "wall": 143.95219396599987,
+      "binary_sha": "53d0ed8553d60162d3634cd1f940f5482004d985ef363b6ff1af8cf1fa59fc59",
+      "input_sha": "8428d5d4282a608eb77e48ff62adace23212d9487ff9e86dc2e57af7c573d5f1"
+    }
+  ],
+  "gate": "all candidate CPU samples beat all parent CPU samples by more than 1 percent",
+  "speed_win": true,
+  "median_cpu_ratio": 0.9239835701303649,
+  "no_rank_claim": true
+}
