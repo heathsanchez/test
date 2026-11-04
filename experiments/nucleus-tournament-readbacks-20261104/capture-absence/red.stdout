@@ -1,0 +1,21 @@
+
+running 4 tests
+test typecheck::captured_absence_reuse_tests::a_used_captured_free_cannot_be_hidden_by_an_opened_virtual_slot ... ok
+test typecheck::captured_absence_reuse_tests::capture_absence_facts_do_not_cross_checker_source_scope ... ok
+test typecheck::captured_absence_reuse_tests::completed_shared_capture_proofs_reuse_across_distinct_root_bodies ... FAILED
+test typecheck::captured_absence_reuse_tests::unknown_or_cyclic_captured_syntax_never_earns_absence ... ok
+
+failures:
+
+---- typecheck::captured_absence_reuse_tests::completed_shared_capture_proofs_reuse_across_distinct_root_bodies stdout ----
+
+thread 'typecheck::captured_absence_reuse_tests::completed_shared_capture_proofs_reuse_across_distinct_root_bodies' (174) panicked at src/typecheck.rs:7275:358:
+assertion failed: crate::convert::source_opening_avoids_capture(&c, &second, FreeId(0), &mut 32)
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    typecheck::captured_absence_reuse_tests::completed_shared_capture_proofs_reuse_across_distinct_root_bodies
+
+test result: FAILED. 3 passed; 1 failed; 0 ignored; 0 measured; 146 filtered out; finished in 0.00s
+

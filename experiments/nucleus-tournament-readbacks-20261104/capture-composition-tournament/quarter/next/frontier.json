@@ -1,0 +1,83 @@
+{
+  "target": "AlgHom",
+  "record": 210749,
+  "bytes": 11013872,
+  "sha256": "eb2ad18e41889f28f6e0e6e9d36690ff5b4ba5d2228ec6d831cce2c695e628b1",
+  "declaration": [
+    "inductive",
+    {
+      "ctors": [
+        {
+          "cidx": 0,
+          "induct": 18332,
+          "isUnsafe": false,
+          "levelParams": [
+            6,
+            27,
+            346
+          ],
+          "name": 18342,
+          "numFields": 2,
+          "numParams": 8,
+          "type": 189179
+        }
+      ],
+      "recs": [
+        {
+          "all": [
+            18332
+          ],
+          "isUnsafe": false,
+          "k": false,
+          "levelParams": [
+            32,
+            6,
+            27,
+            346
+          ],
+          "name": 18344,
+          "numIndices": 0,
+          "numMinors": 1,
+          "numMotives": 1,
+          "numParams": 8,
+          "rules": [
+            {
+              "ctor": 18342,
+              "nfields": 2,
+              "rhs": 189395
+            }
+          ],
+          "type": 189295
+        }
+      ],
+      "types": [
+        {
+          "all": [
+            18332
+          ],
+          "ctors": [
+            18342
+          ],
+          "isRec": false,
+          "isReflexive": false,
+          "isUnsafe": false,
+          "levelParams": [
+            6,
+            27,
+            346
+          ],
+          "name": 18332,
+          "numIndices": 0,
+          "numNested": 0,
+          "numParams": 8,
+          "type": 189060
+        }
+      ]
+    }
+  ],
+  "diagnostic": {
+    "status": "COUNTERFACTUAL_DIAGNOSTIC_NOT_ORIGINAL_MATHLIB_VERIFICATION",
+    "sha256": "8e8135b478728e8b8024f7fc45dc727a636d778bbb9210bcf78ff6a5eda29dae",
+    "earlier_theorems_as_typed_axioms": 1498
+  }
+}

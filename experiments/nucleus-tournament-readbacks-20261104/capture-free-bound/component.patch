@@ -1,0 +1,185 @@
+--- a/metatron-kernel/src/typecheck.rs
++++ b/metatron-kernel/src/typecheck.rs
+@@ -105,6 +105,10 @@
+ impl Drop for WideProofTrial {
+     fn drop(&mut self) { WIDE_PROOF_TRIAL_ACTIVE.with(|active| active.set(false)); }
+ }
++
++// Fixed allocation at checker construction; no judgment can resize or evict it.
++const CAPTURE_BOUND_SLOTS:usize=256;
++struct CompletedCaptureBound{source:Closure,upper:Option<FreeId>,excluded:FreeId}
+ 
+ pub struct TypeChecker<'a> {
+     expressions: &'a IdTable<ExprId, Expr>,
+@@ -123,6 +127,8 @@
+     // Pure completed capture identity only; this carries no typing or Γ authority.
+     // Owning closures pin every frame and level allocation used by the key.
+     source_capture_proofs:RefCell<HashMap<(ExprId,u64,usize,ExprId,u64,usize),(Closure,Closure)>>,
++    // Pure completed bounds on used semantic Frees, never typing/Γ authority.
++    captured_source_bounds:RefCell<Box<[Option<CompletedCaptureBound>]>>,
+     source_opening_proofs: RefCell<HashMap<(ExprId,u64,usize,FreeId),Closure>>,
+     // Closed source types admitted by this checker's actual formation judgment.
+     formed_expected: RefCell<std::collections::HashSet<Closure>>,
+@@ -179,6 +185,7 @@
+             paired_source_support: RefCell::new(HashMap::new()),
+             checked_frames: RefCell::new(HashMap::new()),
+             source_opening_proofs:RefCell::new(HashMap::new()),
++            captured_source_bounds:RefCell::new(std::iter::repeat_with(||None).take(CAPTURE_BOUND_SLOTS).collect::<Vec<_>>().into_boxed_slice()),
+             source_capture_proofs:RefCell::new(HashMap::new()),
+             formed_expected: RefCell::new(std::collections::HashSet::new()),
+             lambda_trials: RefCell::new(LambdaTrialState::default()),
+@@ -206,6 +213,7 @@
+             paired_source_support: RefCell::new(HashMap::new()),
+             checked_frames: RefCell::new(HashMap::new()),
+             source_opening_proofs:RefCell::new(HashMap::new()),
++            captured_source_bounds:RefCell::new(std::iter::repeat_with(||None).take(CAPTURE_BOUND_SLOTS).collect::<Vec<_>>().into_boxed_slice()),
+             source_capture_proofs:RefCell::new(HashMap::new()),
+             formed_expected: RefCell::new(std::collections::HashSet::new()),
+             lambda_trials: RefCell::new(LambdaTrialState::default()),
+@@ -4526,6 +4534,7 @@
+             paired_source_support: RefCell::new(HashMap::new()),
+             checked_frames: RefCell::new(HashMap::new()),
+             source_opening_proofs:RefCell::new(HashMap::new()),
++            captured_source_bounds:RefCell::new(std::iter::repeat_with(||None).take(CAPTURE_BOUND_SLOTS).collect::<Vec<_>>().into_boxed_slice()),
+             source_capture_proofs:RefCell::new(HashMap::new()),
+             formed_expected: RefCell::new(std::collections::HashSet::new()),
+             lambda_trials: RefCell::new(LambdaTrialState::default()),
+@@ -4692,6 +4701,7 @@
+             paired_source_support: RefCell::new(HashMap::new()),
+             checked_frames: RefCell::new(HashMap::new()),
+             source_opening_proofs:RefCell::new(HashMap::new()),
++            captured_source_bounds:RefCell::new(std::iter::repeat_with(||None).take(CAPTURE_BOUND_SLOTS).collect::<Vec<_>>().into_boxed_slice()),
+             source_capture_proofs:RefCell::new(HashMap::new()),
+             formed_expected: RefCell::new(std::collections::HashSet::new()),
+             lambda_trials: RefCell::new(LambdaTrialState::default()),
+@@ -4743,6 +4753,7 @@
+             paired_source_support: RefCell::new(HashMap::new()),
+             checked_frames: RefCell::new(HashMap::new()),
+             source_opening_proofs:RefCell::new(HashMap::new()),
++            captured_source_bounds:RefCell::new(std::iter::repeat_with(||None).take(CAPTURE_BOUND_SLOTS).collect::<Vec<_>>().into_boxed_slice()),
+             source_capture_proofs:RefCell::new(HashMap::new()),
+             formed_expected: RefCell::new(std::collections::HashSet::new()),
+             lambda_trials: RefCell::new(LambdaTrialState::default()),
+@@ -5823,6 +5834,41 @@
+         }
+     }
+ 
++    fn capture_bound_slot(source:&Closure)->usize{
++        // Indexing is independent of allocator addresses. The complete
++        // owning key, including level allocation identity, is checked below.
++        let mixed=source.expr.0.wrapping_mul(0x9e3779b97f4a7c15)
++            ^source.env.id().wrapping_mul(0xbf58476d1ce4e5b9);
++        let mixed=(mixed^(mixed>>30)).wrapping_mul(0x94d049bb133111eb);
++        ((mixed^(mixed>>31))as usize)&(CAPTURE_BOUND_SLOTS-1)
++    }
++
++    pub(crate) fn completed_capture_bound(&self,source:&Closure,query:FreeId)->Option<Option<FreeId>>{
++        let facts=self.captured_source_bounds.borrow();let slot=Self::capture_bound_slot(source);
++        for offset in 0..4{
++            if let Some(fact)=&facts[(slot+offset)&(CAPTURE_BOUND_SLOTS-1)]
++                && fact.source.expr==source.expr && fact.source.env.id()==source.env.id()
++                && fact.source.levels.identity()==source.levels.identity()
++                && (query==fact.excluded||fact.upper.is_none_or(|bound|query.0>bound.0))
++            {return Some(fact.upper);}
++        }
++        None
++    }
++
++    pub(crate) fn retain_completed_capture_bound(&self,source:&Closure,upper:Option<FreeId>,excluded:FreeId,budget:&mut usize){
++        if *budget==0{return;}*budget-=1;
++        let mut facts=self.captured_source_bounds.borrow_mut();let slot=Self::capture_bound_slot(source);let mut empty=None;
++        for offset in 0..4{
++            let i=(slot+offset)&(CAPTURE_BOUND_SLOTS-1);
++            match &facts[i]{
++                Some(fact)if fact.source.expr==source.expr&&fact.source.env.id()==source.env.id()&&fact.source.levels.identity()==source.levels.identity()=>return,
++                None if empty.is_none()=>empty=Some(i),
++                _=>{},
++            }
++        }
++        if let Some(i)=empty{facts[i]=Some(CompletedCaptureBound{source:source.clone(),upper,excluded});}
++    }
++
+     pub(crate) fn authority(&self) -> crate::machine::AuthorityId {
+         self.environment.authority()
+     }
+@@ -7266,3 +7312,17 @@
+   assert!(!crate::convert::convert_with_policy_in_context(&checker,&left,&right,128,crate::convert::DeltaPolicy::PreferredOnly,0,&[]).is_proven());
+  }
+ }
++
++#[cfg(test)]
++mod captured_absence_reuse_tests{
++ use super::*;
++ fn fixture()->(IdTable<ExprId,Expr>,IdTable<LevelId,Level>,Environment){let mut e=IdTable::default();for(id,x)in[(0,Expr::BVar(0)),(1,Expr::BVar(1)),(2,Expr::Pi{domain:ExprId(1),body:ExprId(1)}),(3,Expr::BVar(2)),(4,Expr::Pi{domain:ExprId(1),body:ExprId(3)}),(5,Expr::Lam{domain:ExprId(0),body:ExprId(5)})]{e.insert(ExprId(id),x).unwrap();}(e,IdTable::default(),Environment::empty())}
++ fn chain(free:u64)->Closure{let mut c=Closure::new(ExprId(0),EnvFrame::empty().extend_free(FreeId(free)));for _ in 0..12{c=Closure::new(ExprId(0),EnvFrame::empty().extend(c));}c}
++ #[test]fn completed_shared_capture_proofs_reuse_across_distinct_root_bodies(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let frame=EnvFrame::empty().extend(chain(9));let first=Closure::new(ExprId(1),frame.clone());let second=Closure::new(ExprId(4),frame);assert!(crate::convert::source_opening_avoids_capture(&c,&first,FreeId(0),&mut 4096));assert!(crate::convert::source_opening_avoids_capture(&c,&second,FreeId(0),&mut 32));}
++ #[test]fn a_used_captured_free_cannot_be_hidden_by_an_opened_virtual_slot(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let frame=EnvFrame::empty().extend(chain(0));let internal=Closure::new(ExprId(0),frame.clone());assert!(crate::convert::source_opening_avoids_capture(&c,&internal,FreeId(0),&mut 128));let used=Closure::new(ExprId(4),frame);assert!(!crate::convert::source_opening_avoids_capture(&c,&used,FreeId(0),&mut 4096));}
++ #[test]fn unknown_or_cyclic_captured_syntax_never_earns_absence(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);for value in[Closure::new(ExprId(999),EnvFrame::empty()),Closure::new(ExprId(5),EnvFrame::empty())]{let body=Closure::new(ExprId(1),EnvFrame::empty().extend(value));for _ in 0..2{assert!(!crate::convert::source_opening_avoids_capture(&c,&body,FreeId(0),&mut 128));}}let body=Closure::new(ExprId(4),EnvFrame::empty().extend(chain(9)));assert!(!crate::convert::source_opening_avoids_capture(&c,&body,FreeId(0),&mut 0));}
++ #[test]fn capture_absence_facts_do_not_cross_checker_source_scope(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let frame=EnvFrame::empty().extend(chain(9));let first=Closure::new(ExprId(1),frame.clone());assert!(crate::convert::source_opening_avoids_capture(&c,&first,FreeId(0),&mut 4096));let other=TypeChecker::new(&e,&l,&env);let second=Closure::new(ExprId(4),frame);assert!(!crate::convert::source_opening_avoids_capture(&other,&second,FreeId(0),&mut 32));}
++ #[test]fn a_completed_capture_bound_serves_a_new_fresh_binder(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let shared=chain(9);let first=Closure::new(ExprId(1),EnvFrame::empty().extend(shared.clone()));assert!(crate::convert::source_opening_avoids_capture(&c,&first,FreeId(10),&mut 4096));let second=Closure::new(ExprId(4),EnvFrame::empty().extend(shared));assert!(crate::convert::source_opening_avoids_capture(&c,&second,FreeId(11),&mut 32));}
++ #[test]fn reused_capture_bounds_propagate_into_new_completed_wrappers(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let shared=chain(9);let first=Closure::new(ExprId(1),EnvFrame::empty().extend(shared.clone()));assert!(crate::convert::source_opening_avoids_capture(&c,&first,FreeId(10),&mut 4096));let wrapper=Closure::new(ExprId(0),EnvFrame::empty().extend(shared));let second=Closure::new(ExprId(1),EnvFrame::empty().extend(wrapper.clone()));assert!(crate::convert::source_opening_avoids_capture(&c,&second,FreeId(11),&mut 4096));let collision=Closure::new(ExprId(4),EnvFrame::empty().extend(wrapper));assert!(!crate::convert::source_opening_avoids_capture(&c,&collision,FreeId(9),&mut 4096));}
++
++}
+--- a/metatron-kernel/src/convert.rs
++++ b/metatron-kernel/src/convert.rs
+@@ -2841,6 +2841,10 @@
+     let mut pending = vec![(body.clone(), 1u64)];
+     let mut visited = HashSet::new();
+     let mut prepaid_root=true;
++    let mut upper:Option<FreeId>=None;
++    let mut captured:[Option<Closure>;64]=std::array::from_fn(|_|None);
++    let mut captured_len=0usize;
++    let include=|upper:&mut Option<FreeId>,actual:FreeId|{if upper.is_none_or(|old|actual.0>old.0){*upper=Some(actual);}};
+     while let Some((source, virtual_slots)) = pending.pop() {
+         if prepaid_root {prepaid_root=false;}
+         else {
+@@ -2848,6 +2852,15 @@
+             *budget -= 1;
+         }
+         if !visited.insert((source.expr, source.env.id(), virtual_slots)) { continue; }
++        if virtual_slots==0{
++            // The paid source-node step includes this fixed four-slot lookup.
++            // A hit's bound must flow into any subsequently retained fact.
++            if let Some(bound)=checker.completed_capture_bound(&source,free){
++                if let Some(bound)=bound{include(&mut upper,bound);}
++                continue;
++            }
++            if captured_len<captured.len(){captured[captured_len]=Some(source.clone());captured_len+=1;}
++        }
+         let Some(support) = checker.complete_source_support(source.expr, budget) else { return false; };
+         for index in support {
+             if index < virtual_slots { continue; }
+@@ -2857,7 +2870,7 @@
+             *budget -= cost;
+             let Some(binding) = source.env.lookup_binding_ref(index) else { return false; };
+             match binding {
+-                EnvBinding::Free(actual) => { if *actual == free { return false; } }
++                EnvBinding::Free(actual) => {if *actual==free{return false;}include(&mut upper,*actual);}
+                 EnvBinding::Closure(captured) => pending.push((captured.clone(), 0)),
+                 EnvBinding::NatLit(_) => {}
+                 EnvBinding::Neutral(neutral) => {
+@@ -2866,7 +2879,7 @@
+                         if *budget == 0 { return false; }
+                         *budget -= 1;
+                         match &value.head {
+-                            NeutralHead::Free(actual) => { if *actual == free { return false; } }
++                            NeutralHead::Free(actual) => {if *actual==free{return false;}include(&mut upper,*actual);}
+                             NeutralHead::Projection { structure, .. } => neutrals.push(structure.as_ref()),
+                             NeutralHead::Const { .. } => {}
+                         }
+@@ -2878,6 +2891,15 @@
+             }
+         }
+     }
++    // Only the completed original traversal licenses these conservative
++    // bounds. Every visited slot-0 source's actual Frees are a subset of
++    // the whole traversal's Frees. None means proved no used Frees.
++    let allowance=(*budget/8).min(captured_len);let mut retention=allowance;
++    for source in captured.into_iter().flatten(){
++        checker.retain_completed_capture_bound(&source,upper,free,&mut retention);
++        if retention==0{break;}
++    }
++    *budget-=allowance-retention;
+     true
+ }
+ 

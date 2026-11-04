@@ -1,0 +1,62 @@
+[
+  {
+    "arm": "quarter",
+    "grant": "(remaining / 4).min(1024)",
+    "results": {
+      "unit": 0,
+      "build": 0,
+      "binary_sha": "1bae8486f650e6fbe9fb625db975316b5ecf7339cc594341bd977fc12560813c",
+      "original": {
+        "rc": 0,
+        "wall": 52.295197627012385,
+        "input_sha": "f9ab8c3cd617710b22862c5c4243c51bc57e1c7ca9ef7ffe7de816b25fca8e5c",
+        "stderr": ""
+      }
+    }
+  },
+  {
+    "arm": "half",
+    "grant": "(remaining / 2).min(1024)",
+    "results": {
+      "unit": 0,
+      "build": 0,
+      "binary_sha": "6c2598b26ff09ced298ef2f710092ef89eae9effed5f1e29f11edfa1d51e3ebc",
+      "original": {
+        "rc": 2,
+        "wall": 30.873188368001138,
+        "input_sha": "f9ab8c3cd617710b22862c5c4243c51bc57e1c7ca9ef7ffe7de816b25fca8e5c",
+        "stderr": "NUCLEUS_DOWNSTREAM:name=RingHom.instFunLike._proof_1:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type\n"
+      }
+    }
+  },
+  {
+    "arm": "three-quarters",
+    "grant": "(remaining - remaining / 4).min(1024)",
+    "results": {
+      "unit": 0,
+      "build": 0,
+      "binary_sha": "61cace1826bce49fe41f8071547b22bb33b035b7978c23e769d87c86d7f72b88",
+      "original": {
+        "rc": 2,
+        "wall": 30.141569589002756,
+        "input_sha": "f9ab8c3cd617710b22862c5c4243c51bc57e1c7ca9ef7ffe7de816b25fca8e5c",
+        "stderr": "NUCLEUS_DOWNSTREAM:name=RingHom.instFunLike._proof_1:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type\n"
+      }
+    }
+  },
+  {
+    "arm": "reserve32",
+    "grant": "remaining.saturating_sub(32).min(1024)",
+    "results": {
+      "unit": 0,
+      "build": 0,
+      "binary_sha": "6285ec3ee3d8bc89dabb39fd2e95c135ceef1518bd03fee07a8de496ee2e8280",
+      "original": {
+        "rc": 2,
+        "wall": 27.74932215300214,
+        "input_sha": "f9ab8c3cd617710b22862c5c4243c51bc57e1c7ca9ef7ffe7de816b25fca8e5c",
+        "stderr": "NUCLEUS_DOWNSTREAM:name=RingHom.instFunLike._proof_1:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type\n"
+      }
+    }
+  }
+]

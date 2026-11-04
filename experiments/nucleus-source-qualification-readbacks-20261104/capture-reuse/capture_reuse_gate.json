@@ -1,0 +1,65 @@
+{
+  "candidate_binary": "91421939c9d4be4bd7477ae616f6e0e552c1bb2863538404a093f0866a7d85d4",
+  "red": {
+    "rc": 2,
+    "rss_kb": 80224.0,
+    "system": 0.09,
+    "user": 31.31,
+    "wall": 31.41,
+    "wall_observed": 31.452608397000006
+  },
+  "reference_binary": "ae92c625e612fff1c90e329344d22e3c3c330383cb335ce28fd41435be3b3b94",
+  "rows": [
+    {
+      "case": "authentic-original-ringhom",
+      "expect_reference": 0,
+      "file": "dite.ndjson",
+      "nucleus_rc": 0,
+      "pass_": true,
+      "reference_parse_rc": 0,
+      "reference_rc": 0,
+      "sha256": "f9ab8c3cd617710b22862c5c4243c51bc57e1c7ca9ef7ffe7de816b25fca8e5c"
+    },
+    {
+      "case": "authentic-parameter-record-eta",
+      "expect_reference": 0,
+      "file": "authentic-parameter-record-eta.ndjson",
+      "nucleus_rc": 0,
+      "pass_": true,
+      "reference_parse_rc": 0,
+      "reference_rc": 0,
+      "sha256": "a5ae0d0fceeac3d6bebd628888b68a276cbc00bf719d04732a64a971bc7dd8d9"
+    },
+    {
+      "case": "parameter-record-wrong-receiver",
+      "expect_reference": 1,
+      "file": "parameter-record-wrong-receiver.ndjson",
+      "nucleus_rc": 2,
+      "pass_": true,
+      "reference_parse_rc": 0,
+      "reference_rc": 1,
+      "sha256": "a182603f6ad2deb1f31394d12011b745a72dcd741dd561e60e0fabd0b3edc1fc"
+    },
+    {
+      "case": "parameter-record-forged-nonrecursive-field",
+      "expect_reference": 1,
+      "file": "parameter-record-forged-nonrecursive-field.ndjson",
+      "nucleus_rc": 2,
+      "pass_": true,
+      "reference_parse_rc": 0,
+      "reference_rc": 1,
+      "sha256": "67e9a2d53c6bb823dcd201dc5f32b4d9b33fa97c7aff96d8ef08bb3ca62b2641"
+    },
+    {
+      "case": "parameter-record-prop-collapse",
+      "expect_reference": 1,
+      "file": "parameter-record-prop-collapse.ndjson",
+      "nucleus_rc": 2,
+      "pass_": true,
+      "reference_parse_rc": 0,
+      "reference_rc": 1,
+      "sha256": "fc9a1a95604fedc92414fad52e1dae625fd1638b8bf19ed8f60d794df9f18eb4"
+    }
+  ],
+  "workers": 2
+}

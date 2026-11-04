@@ -1,0 +1,51 @@
+   Compiling metatron-kernel v0.1.0 (/workspace/scratch/38cabe96376f/nucleus-tournaments/capture-absence/source/metatron-kernel)
+warning: unnecessary parentheses around `if` condition
+    --> src/convert.rs:2524:20
+     |
+2524 |                 if ((l=="Free(FreeId(6))" && r=="Free(FreeId(5))") ||
+     |                    ^
+2525 |                     (l=="Free(FreeId(5))" && r=="Free(FreeId(6))"))
+     |                                                                   ^
+     |
+     = note: `#[warn(unused_parens)]` (part of `#[warn(unused)]`) on by default
+help: remove these parentheses
+     |
+2524 ~                 if (l=="Free(FreeId(6))" && r=="Free(FreeId(5))") ||
+2525 ~                     (l=="Free(FreeId(5))" && r=="Free(FreeId(6))")
+     |
+
+warning: unnecessary parentheses around `if` condition
+    --> src/typecheck.rs:6658:12
+     |
+6658 |         if (!crate::run_flags::present(crate::run_flags::Flag::ExperimentalExpectedLambda)) { return; }
+     |            ^                                                                              ^
+     |
+help: remove these parentheses
+     |
+6658 -         if (!crate::run_flags::present(crate::run_flags::Flag::ExperimentalExpectedLambda)) { return; }
+6658 +         if !crate::run_flags::present(crate::run_flags::Flag::ExperimentalExpectedLambda) { return; }
+     |
+
+warning: value assigned to `source_work` is never read
+    --> src/typecheck.rs:5614:55
+     |
+5614 |                     if source_work<cost{return false;}source_work-=cost;
+     |                                                       ^^^^^^^^^^^^^^^^^
+     |
+     = help: maybe it is overwritten before being read?
+     = note: `#[warn(unused_assignments)]` (part of `#[warn(unused)]`) on by default
+
+warning: method `diagnostic_captured_recursor_major_chain` is never used
+    --> src/typecheck.rs:1053:19
+     |
+ 140 | impl<'a> TypeChecker<'a> {
+     | ------------------------ method in this implementation
+...
+1053 |     pub(crate) fn diagnostic_captured_recursor_major_chain(
+     |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `metatron-kernel` (lib test) generated 4 warnings (run `cargo fix --lib -p metatron-kernel --tests` to apply 2 suggestions)
+    Finished `release` profile [optimized] target(s) in 33.19s
+     Running unittests src/lib.rs (nucleus-tournaments/capture-absence/local-target/release/deps/metatron_kernel-258b3b0aea2bca17)

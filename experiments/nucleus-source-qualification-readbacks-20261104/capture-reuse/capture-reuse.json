@@ -1,0 +1,126 @@
+{
+  "binary_sha": "91421939c9d4be4bd7477ae616f6e0e552c1bb2863538404a093f0866a7d85d4",
+  "full": {
+    "binary_sha": "91421939c9d4be4bd7477ae616f6e0e552c1bb2863538404a093f0866a7d85d4",
+    "complete_mathlib_accept": false,
+    "frontier_official_reference": {
+      "binary_sha": "ae92c625e612fff1c90e329344d22e3c3c330383cb335ce28fd41435be3b3b94",
+      "parse_rc": 0,
+      "rc": 0,
+      "source_sha": "eb2ad18e41889f28f6e0e6e9d36690ff5b4ba5d2228ec6d831cce2c695e628b1"
+    },
+    "next_frontier": {
+      "bytes": 11013872,
+      "declaration": {
+        "ctors": [
+          {
+            "cidx": 0,
+            "induct": 18332,
+            "isUnsafe": false,
+            "levelParams": [
+              6,
+              27,
+              346
+            ],
+            "name": 18342,
+            "numFields": 2,
+            "numParams": 8,
+            "type": 189179
+          }
+        ],
+        "recs": [
+          {
+            "all": [
+              18332
+            ],
+            "isUnsafe": false,
+            "k": false,
+            "levelParams": [
+              32,
+              6,
+              27,
+              346
+            ],
+            "name": 18344,
+            "numIndices": 0,
+            "numMinors": 1,
+            "numMotives": 1,
+            "numParams": 8,
+            "rules": [
+              {
+                "ctor": 18342,
+                "nfields": 2,
+                "rhs": 189395
+              }
+            ],
+            "type": 189295
+          }
+        ],
+        "types": [
+          {
+            "all": [
+              18332
+            ],
+            "ctors": [
+              18342
+            ],
+            "isRec": false,
+            "isReflexive": false,
+            "isUnsafe": false,
+            "levelParams": [
+              6,
+              27,
+              346
+            ],
+            "name": 18332,
+            "numIndices": 0,
+            "numNested": 0,
+            "numParams": 8,
+            "type": 189060
+          }
+        ]
+      },
+      "name_records_parsed": 18344,
+      "record": 210749,
+      "sha256": "eb2ad18e41889f28f6e0e6e9d36690ff5b4ba5d2228ec6d831cce2c695e628b1",
+      "tag": "inductive",
+      "target": "AlgHom"
+    },
+    "no_official_arena_score": true,
+    "qualified": true,
+    "result": {
+      "rc": 2,
+      "rss_kb": 3779944.0,
+      "system": 3.16,
+      "user": 61.68,
+      "wall": 64.86,
+      "wall_observed": 64.91135383100004
+    },
+    "source_sha": "22c5de83469408950005589a3bc5ef5157c65549b5a802f85d567c29151306a6",
+    "status": "WARRANTED_BOUNDED_FIRST_FRONTIER",
+    "terminal": "NUCLEUS_DOWNSTREAM:name=AlgHom:stage=inductive:verdict=Unknown"
+  },
+  "known_native_failures": {
+    "residual_closure|test": [
+      "all_seven_complete_positive_exports_accept"
+    ]
+  },
+  "native_counts": [
+    452,
+    1,
+    0,
+    0,
+    0
+  ],
+  "native_targets": 42,
+  "no_official_rank_claim": true,
+  "no_performance_claim_different_frontier": true,
+  "parent_binary": "218ca188ba89121246f4dfc3377950ab26e299fe330ed0c6a998d9706cea3133",
+  "protected_controls": 61,
+  "qualified": true,
+  "ringhom_prefix_accept": true,
+  "ringhom_prefix_sha": "f9ab8c3cd617710b22862c5c4243c51bc57e1c7ca9ef7ffe7de816b25fca8e5c",
+  "source_controls": 92,
+  "source_patch_sha": "dda482ff11cc8736cfea669a4ec1f55be75b6bc38ad3141ced897cf3d6a4ea4e",
+  "status": "WARRANTED_BOUNDED_SEMANTIC_EXTENSION"
+}

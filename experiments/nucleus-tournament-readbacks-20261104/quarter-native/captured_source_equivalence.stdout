@@ -1,0 +1,24 @@
+
+running 7 tests
+test captured_source_equivalence::ambient_free_zero_is_not_a_fresh_virtual_opening_binder ... ok
+test captured_source_equivalence::complete_shared_source_dag_reuses_support_and_exact_alias_captures ... ok
+test captured_source_equivalence::copied_shifted_source_dag_matches_actual_capture_not_offset_shape ... FAILED
+test captured_source_equivalence::paired_sources_do_not_identify_bound_and_external_variables ... ok
+test captured_source_equivalence::root_aliases_do_not_identify_a_free_with_a_bound_lambda_or_cyclic_source ... ok
+test captured_source_equivalence::root_aliases_preserve_the_actual_payload_and_its_own_universes ... ok
+test captured_source_equivalence::source_identity_preserves_instantiated_universes_and_rejects_cycles ... ok
+
+failures:
+
+---- captured_source_equivalence::copied_shifted_source_dag_matches_actual_capture_not_offset_shape stdout ----
+
+thread 'captured_source_equivalence::copied_shifted_source_dag_matches_actual_capture_not_offset_shape' (546) panicked at tests/captured_source_equivalence.rs:96:5:
+copied217-node syntax and shifted used capture need a complete paired support proof
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    captured_source_equivalence::copied_shifted_source_dag_matches_actual_capture_not_offset_shape
+
+test result: FAILED. 6 passed; 1 failed; 0 ignored; 0 measured; 300 filtered out; finished in 0.01s
+
