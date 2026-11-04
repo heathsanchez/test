@@ -1,0 +1,96 @@
+{
+  "baseline_binary": "013e742dc3bf541301235b6e6d37615b62c9800b923b7c9506b254cffdbfe61e",
+  "binary_sha": "1678d95515a6fe2babcb5dafe8f604fc42ae848582baeb4d26129197f995b5c6",
+  "boundary": [
+    2,
+    "NUCLEUS_DOWNSTREAM:name=Lean.Data.AC.EvalInformation:stage=inductive:verdict=Unknown"
+  ],
+  "complete_mathlib_accept": false,
+  "geomean_total_cpu_ratio": 0.8320131417247876,
+  "input_sha": "22c5de83469408950005589a3bc5ef5157c65549b5a802f85d567c29151306a6",
+  "no_official_rank_claim": true,
+  "pairs": [
+    {
+      "index": 0,
+      "order": [
+        "baseline",
+        "candidate"
+      ],
+      "ratio": 0.8274410774410774,
+      "results": {
+        "baseline": {
+          "rc": 2,
+          "rss_kb": 3779824.0,
+          "system": 3.21,
+          "user": 44.31,
+          "wall": 47.53,
+          "wall_observed": 47.56696507499987
+        },
+        "candidate": {
+          "rc": 2,
+          "rss_kb": 3779924.0,
+          "system": 3.22,
+          "user": 36.1,
+          "wall": 39.34,
+          "wall_observed": 39.39526088799994
+        }
+      }
+    },
+    {
+      "index": 1,
+      "order": [
+        "candidate",
+        "baseline"
+      ],
+      "ratio": 0.857327030511388,
+      "results": {
+        "baseline": {
+          "rc": 2,
+          "rss_kb": 3779968.0,
+          "system": 3.27,
+          "user": 43.27,
+          "wall": 46.55,
+          "wall_observed": 46.60177326499979
+        },
+        "candidate": {
+          "rc": 2,
+          "rss_kb": 3780032.0,
+          "system": 3.34,
+          "user": 36.56,
+          "wall": 39.9,
+          "wall_observed": 39.94024643199987
+        }
+      }
+    },
+    {
+      "index": 2,
+      "order": [
+        "baseline",
+        "candidate"
+      ],
+      "ratio": 0.811908268462024,
+      "results": {
+        "baseline": {
+          "rc": 2,
+          "rss_kb": 3779900.0,
+          "system": 3.22,
+          "user": 44.31,
+          "wall": 47.54,
+          "wall_observed": 47.55406106400005
+        },
+        "candidate": {
+          "rc": 2,
+          "rss_kb": 3779864.0,
+          "system": 3.17,
+          "user": 35.42,
+          "wall": 38.6,
+          "wall_observed": 38.635717643000135
+        }
+      }
+    }
+  ],
+  "qualified": true,
+  "source_patch_sha": "3913d467e815c7d2e54caac487917c9fdca323a0548982ddbe3fc980690765c0",
+  "status": "WARRANTED_BOUNDED_PARTIAL_SPEEDUP",
+  "winner": "flags-plus-levels"
+}
