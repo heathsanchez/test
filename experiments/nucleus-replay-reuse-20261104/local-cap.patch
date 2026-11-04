@@ -1,0 +1,24 @@
+--- a/metatron-kernel/src/machine.rs
++++ b/metatron-kernel/src/machine.rs
+@@ -2468,10 +2468,10 @@
+                 parents.push(Continuation::Finish(key));
+                 let major_result=if self.replay_projection_major {
+                     self.expose_for_conversion(neutral.spine[required-1].clone(),
+-                        Transparency::Full,self.exposure_fuel.get().unwrap_or(0).min(512))
++                        Transparency::Full,self.exposure_fuel.get().unwrap_or(0).min(8192))
+                 } else {
+                     self.expose(neutral.spine[required-1].clone(),
+-                        Transparency::Full,self.exposure_fuel.get().unwrap_or(0).min(512))
++                        Transparency::Full,self.exposure_fuel.get().unwrap_or(0).min(8192))
+                 };
+                 let Some(value)=major_result.proven_value() else {
+                     #[cfg(feature="diagnostics")]
+@@ -2600,7 +2600,7 @@
+                 }
+             }
+             let exposed=self.expose_internal_with_pending(
+-                result, Transparency::Full, self.exposure_fuel.get().unwrap_or(0).min(512),
++                result, Transparency::Full, self.exposure_fuel.get().unwrap_or(0).min(8192),
+                 false, true, neutral.spine[required..].iter().rev().cloned().collect(),
+             ).map(|exposure| exposure.value);
+             let value=match exposed {
