@@ -1,0 +1,197 @@
+{
+  "status": "WARRANTED_BOUNDED_PARTIAL_SPEEDUP",
+  "source_commit": "17ccebee8d87d78b8fd0cf105b6b28c6ca5fee98",
+  "run": 41758549495,
+  "artifact": 13289913014,
+  "artifact_zip_sha": "c7c1512662c80a79fd00ae652af046be72305f32e565eca199488d456df049e4",
+  "binary_sha": "da7917a52bcb88683b5122fa25116de549c4446483c0e0955aa7387f0e409956",
+  "source_patch_sha": "49a012cada70fc0b4f3c790300f8882fd7d9f64f81571314e36afe5b4a982dbf",
+  "source_tar_sha": "c21f7031cdb4676703bcebe51ede8ad23322f7bd0a47f8854463daa5e29955f9",
+  "source_manifest_sha": "faa64c82960b8bccf8ca94eca985c6ff6791cfb44d28b8cb46d1d65c26c20117",
+  "configuration": {
+    "NUCLEUS_EXPERIMENTAL_CERTIFIED_QUOT_IOTA": "1",
+    "NUCLEUS_EXPERIMENTAL_CONTEXT_BINDER": "1",
+    "NUCLEUS_EXPERIMENTAL_DEMAND_MAJOR": "1",
+    "NUCLEUS_EXPERIMENTAL_EXPECTED_LAMBDA": "1",
+    "NUCLEUS_EXPERIMENTAL_FORMED_PROP_DOMAIN_RETRY": "1",
+    "NUCLEUS_EXPERIMENTAL_POLYMORPHIC_PROP_IRREL": "1",
+    "NUCLEUS_EXPERIMENTAL_PROJECTION_CONTEXT": "1",
+    "NUCLEUS_EXPERIMENTAL_PROJECTION_CROSSFRAME_512": "1",
+    "NUCLEUS_EXPERIMENTAL_PROP_SINGLETON_2P1F": "1",
+    "NUCLEUS_EXPERIMENTAL_RELEVANCE": "1",
+    "NUCLEUS_EXPERIMENTAL_REPLAY_NEUTRAL_PROJECTION": "1",
+    "NUCLEUS_EXPERIMENTAL_REPLAY_PROJECTION_MAJOR": "1",
+    "NUCLEUS_EXPERIMENTAL_SOURCE_PAIR_DEPTH8": "1",
+    "NUCLEUS_EXPERIMENTAL_SOURCE_PROOF_IRREL": "1",
+    "NUCLEUS_EXPERIMENTAL_SUBSTITUTION_RECLOSURE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_DATA_CONGRUENCE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_LINEAGE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_PROJECTION_SPINE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_RECEIVER": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_VALUE_NORMALIZATION": "1"
+  },
+  "native_targets": 42,
+  "native_pass": 414,
+  "native_fail": 1,
+  "native_ignored": 0,
+  "known_failure": "residual_closure::all_seven_complete_positive_exports_accept",
+  "source_controls": 51,
+  "protected_controls": 61,
+  "corpus": 208,
+  "extra_unchanged": true,
+  "verdict_changes": [],
+  "full_input_sha": "22c5de83469408950005589a3bc5ef5157c65549b5a802f85d567c29151306a6",
+  "boundary": [
+    2,
+    "NUCLEUS_DOWNSTREAM:name=_private.Init.Data.Int.LemmasAux.0.Int.ble'_eq_true._proof_1_2:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type"
+  ],
+  "same_job_ci_parent_pairs": [
+    {
+      "index": 0,
+      "order": [
+        "baseline",
+        "candidate"
+      ],
+      "ratio": 0.8789535337758687,
+      "results": {
+        "baseline": {
+          "rc": 2,
+          "rss_kb": 3779980.0,
+          "system": 2.29,
+          "user": 23.32,
+          "wall": 25.62,
+          "wall_observed": 25.65428698900007
+        },
+        "candidate": {
+          "rc": 2,
+          "rss_kb": 3779972.0,
+          "system": 2.29,
+          "user": 20.22,
+          "wall": 22.52,
+          "wall_observed": 22.549265913
+        }
+      }
+    },
+    {
+      "index": 1,
+      "order": [
+        "candidate",
+        "baseline"
+      ],
+      "ratio": 0.8779251170046802,
+      "results": {
+        "baseline": {
+          "rc": 2,
+          "rss_kb": 3780204.0,
+          "system": 2.25,
+          "user": 23.39,
+          "wall": 25.65,
+          "wall_observed": 25.704041683000014
+        },
+        "candidate": {
+          "rc": 2,
+          "rss_kb": 3780128.0,
+          "system": 2.28,
+          "user": 20.23,
+          "wall": 22.51,
+          "wall_observed": 22.548957545999997
+        }
+      }
+    },
+    {
+      "index": 2,
+      "order": [
+        "baseline",
+        "candidate"
+      ],
+      "ratio": 0.8835482610394685,
+      "results": {
+        "baseline": {
+          "rc": 2,
+          "rss_kb": 3779980.0,
+          "system": 2.28,
+          "user": 23.31,
+          "wall": 25.59,
+          "wall_observed": 25.604294764999963
+        },
+        "candidate": {
+          "rc": 2,
+          "rss_kb": 3780020.0,
+          "system": 2.38,
+          "user": 20.23,
+          "wall": 22.62,
+          "wall_observed": 22.650632997000002
+        }
+      }
+    }
+  ],
+  "same_job_ci_parent_geomean_cpu_ratio": 0.8801389125744384,
+  "direct_local_universe_parent_pairs": [
+    {
+      "baseline": {
+        "rc": 2,
+        "user": 65.716428,
+        "system": 3.7741730000000002,
+        "rss": 3778808,
+        "wall": 69.80767912400188,
+        "terminal": "NUCLEUS_DOWNSTREAM:name=_private.Init.Data.Int.LemmasAux.0.Int.ble'_eq_true._proof_1_2:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type",
+        "binary_sha": "adc2275242f93633bf143e61a0c80c946579d62a19c342bca3be3b7ee23d8f93"
+      },
+      "candidate": {
+        "rc": 2,
+        "user": 34.619018,
+        "system": 2.536467,
+        "rss": 3778672,
+        "wall": 37.33185247400252,
+        "terminal": "NUCLEUS_DOWNSTREAM:name=_private.Init.Data.Int.LemmasAux.0.Int.ble'_eq_true._proof_1_2:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type",
+        "binary_sha": "da7917a52bcb88683b5122fa25116de549c4446483c0e0955aa7387f0e409956"
+      },
+      "ratio": 0.5346836041898674
+    },
+    {
+      "candidate": {
+        "rc": 2,
+        "user": 42.495427,
+        "system": 2.639775,
+        "rss": 3778448,
+        "wall": 45.43295642500743,
+        "terminal": "NUCLEUS_DOWNSTREAM:name=_private.Init.Data.Int.LemmasAux.0.Int.ble'_eq_true._proof_1_2:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type",
+        "binary_sha": "da7917a52bcb88683b5122fa25116de549c4446483c0e0955aa7387f0e409956"
+      },
+      "baseline": {
+        "rc": 2,
+        "user": 53.383982,
+        "system": 2.637352,
+        "rss": 3778796,
+        "wall": 57.00714533901191,
+        "terminal": "NUCLEUS_DOWNSTREAM:name=_private.Init.Data.Int.LemmasAux.0.Int.ble'_eq_true._proof_1_2:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type",
+        "binary_sha": "adc2275242f93633bf143e61a0c80c946579d62a19c342bca3be3b7ee23d8f93"
+      },
+      "ratio": 0.8056788151456729
+    },
+    {
+      "baseline": {
+        "rc": 2,
+        "user": 58.971882,
+        "system": 2.7428179999999998,
+        "rss": 3778848,
+        "wall": 62.22578655699908,
+        "terminal": "NUCLEUS_DOWNSTREAM:name=_private.Init.Data.Int.LemmasAux.0.Int.ble'_eq_true._proof_1_2:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type",
+        "binary_sha": "adc2275242f93633bf143e61a0c80c946579d62a19c342bca3be3b7ee23d8f93"
+      },
+      "candidate": {
+        "rc": 2,
+        "user": 37.54427,
+        "system": 2.578726,
+        "rss": 3778672,
+        "wall": 40.29913979799312,
+        "terminal": "NUCLEUS_DOWNSTREAM:name=_private.Init.Data.Int.LemmasAux.0.Int.ble'_eq_true._proof_1_2:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type",
+        "binary_sha": "da7917a52bcb88683b5122fa25116de549c4446483c0e0955aa7387f0e409956"
+      },
+      "ratio": 0.6501367745448006
+    }
+  ],
+  "direct_local_universe_parent_geomean_cpu_ratio": 0.6542662446900993,
+  "complete_mathlib_accept": false,
+  "no_official_rank_claim": true
+}

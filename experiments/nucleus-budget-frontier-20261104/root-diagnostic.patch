@@ -1,0 +1,27 @@
+--- a/metatron-kernel/src/machine.rs
++++ b/metatron-kernel/src/machine.rs
+@@ -2362,6 +2362,24 @@
+     fn qualified_recursor_result(
+         &self,neutral:&Neutral,budget:usize,goal:CheckedReplayGoal,
+     ) -> Judgment<Value> {
++        let result=self.qualified_recursor_result_body(neutral,budget,goal);
++        #[cfg(feature="diagnostics")]
++        if budget>=8192 && crate::run_flags::present(crate::run_flags::Flag::TraceReplayCache) {
++            let description=match &result {
++                Judgment::Unknown{residual}=>format!("unknown:{residual:?}"),
++                Judgment::Refuted{obstruction}=>format!("refuted:{obstruction:?}"),
++                Judgment::Proven{value:Value::Neutral(n),..}=>format!("proven-neutral:{:?}:spine={}",n.head,n.spine.len()),
++                Judgment::Proven{value:Value::StuckProjection{type_name,index,..},..}=>format!("proven-projection:{type_name:?}:{index}"),
++                Judgment::Proven{..}=>"proven-other".to_owned(),
++            };
++            eprintln!("NUCLEUS_ROOT_REPLAY_RESULT:budget={budget}:head={:?}:spine={}:result={description}",neutral.head,neutral.spine.len());
++        }
++        result
++    }
++
++    fn qualified_recursor_result_body(
++        &self,neutral:&Neutral,budget:usize,goal:CheckedReplayGoal,
++    ) -> Judgment<Value> {
+         // Exposure and replay consume the same owner's work allowance. A
+         // child never receives a fresh budget, and this scope does not reset
+         // an allowance already owned by a surrounding constructor demand.

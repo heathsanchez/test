@@ -1,0 +1,14 @@
+--- a/metatron-kernel/src/machine.rs
++++ b/metatron-kernel/src/machine.rs
+@@ -2542,6 +2542,11 @@
+                 rule.constructor == constructor
+                     && constructor_args.len() == rule.num_params + rule.num_fields
+             }) else {
++                #[cfg(feature="diagnostics")]
++                if budget>=8192 && crate::run_flags::present(crate::run_flags::Flag::TraceReplayCache) {
++                    eprintln!("NUCLEUS_ROOT_RULE_MISMATCH:budget={budget}:recursor={name:?}:actual={constructor:?}:actual_levels={constructor_levels:?}:actual_arity={}:expected={:?}",constructor_args.len(),reduction.rules.iter().map(|r|(r.constructor,r.num_params+r.num_fields)).collect::<Vec<_>>());
++                }
++
+                 return { #[cfg(feature="diagnostics")] if budget>=8192 && crate::run_flags::present(crate::run_flags::Flag::TraceReplayCache) { eprintln!("NUCLEUS_ROOT_REPLAY_DECLINE:budget={budget}:head={:?}:reason=nested-recursor-iota-unmatched-rule",neutral.head); } Judgment::unknown("nested-recursor-iota-unmatched-rule") };
+             };
+             // Check the actual constructor's universe instantiation against

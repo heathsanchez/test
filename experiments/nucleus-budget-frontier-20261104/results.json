@@ -1,0 +1,184 @@
+{
+  "status": "BOUNDED_DIAGNOSTIC",
+  "parent_binary": "a1d903c6ddf1219a7202db87f14ac3de82a344383501251c928a2a19683e621f",
+  "parent_source_tar_sha": "43418750f5972fc8ffe4451c3f0b63270f01d7f00ff29ac1bd68f88261b99fff",
+  "prefix_sha": "5b7a6b7ad11f5683937e8258322d47f09a9daf6d254bd921e6d23b0d1ee3b494",
+  "budgets": [
+    {
+      "case": "262144",
+      "rc": 2,
+      "user": 21.06741,
+      "system": 0.030338999999999998,
+      "wall": 21.11326625899528,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=_private.Init.Data.Int.LemmasAux.0.Int.ble'_eq_true._proof_1_2:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type",
+      "source_sha": "5b7a6b7ad11f5683937e8258322d47f09a9daf6d254bd921e6d23b0d1ee3b494",
+      "binary_sha": "a3a77bb31846e2a3df155ba7f9209b4437cfe599101928c5bb5e7bd247debb86"
+    },
+    {
+      "case": "524288",
+      "rc": 2,
+      "user": 19.587218,
+      "system": 0.07059499999999999,
+      "wall": 19.661878318001982,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=_private.Init.Data.Int.LemmasAux.0.Int.ble'_eq_true._proof_1_2:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type",
+      "source_sha": "5b7a6b7ad11f5683937e8258322d47f09a9daf6d254bd921e6d23b0d1ee3b494",
+      "binary_sha": "a3a77bb31846e2a3df155ba7f9209b4437cfe599101928c5bb5e7bd247debb86"
+    },
+    {
+      "case": "1048576",
+      "rc": 2,
+      "user": 19.313347,
+      "system": 0.052249,
+      "wall": 19.377601512998808,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=_private.Init.Data.Int.LemmasAux.0.Int.ble'_eq_true._proof_1_2:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type",
+      "source_sha": "5b7a6b7ad11f5683937e8258322d47f09a9daf6d254bd921e6d23b0d1ee3b494",
+      "binary_sha": "a3a77bb31846e2a3df155ba7f9209b4437cfe599101928c5bb5e7bd247debb86"
+    }
+  ],
+  "diagnostic": [
+    {
+      "case": "262144",
+      "rc": 2,
+      "user": 21.662691,
+      "system": 1.26149,
+      "wall": 22.977037553006085,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=_private.Init.Data.Int.LemmasAux.0.Int.ble'_eq_true._proof_1_2:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type",
+      "source_sha": "5b7a6b7ad11f5683937e8258322d47f09a9daf6d254bd921e6d23b0d1ee3b494",
+      "binary_sha": "1efc6ea34f96b251e69b0abf5a919f703ab232641fe3ef938b75bca3ab0aea4a"
+    }
+  ],
+  "diagnostic_stderr_sha": "ee12b7513f92aae93b6928d6da450caa1599574071a7ce20ef2b3cb24431cf2a",
+  "replay_rows": 75547,
+  "max_replay_start": 262114,
+  "root_rule_mismatches": [
+    "NUCLEUS_ROOT_RULE_MISMATCH:budget=129683:recursor=NameId(432):actual=NameId(438):actual_levels=[]:actual_arity=2:expected=[(NameId(430), 0), (NameId(431), 0)]",
+    "NUCLEUS_ROOT_RULE_MISMATCH:budget=64841:recursor=NameId(432):actual=NameId(438):actual_levels=[]:actual_arity=2:expected=[(NameId(430), 0), (NameId(431), 0)]",
+    "NUCLEUS_ROOT_RULE_MISMATCH:budget=130739:recursor=NameId(432):actual=NameId(438):actual_levels=[]:actual_arity=2:expected=[(NameId(430), 0), (NameId(431), 0)]",
+    "NUCLEUS_ROOT_RULE_MISMATCH:budget=65369:recursor=NameId(432):actual=NameId(438):actual_levels=[]:actual_arity=2:expected=[(NameId(430), 0), (NameId(431), 0)]",
+    "NUCLEUS_ROOT_RULE_MISMATCH:budget=130544:recursor=NameId(432):actual=NameId(438):actual_levels=[]:actual_arity=2:expected=[(NameId(430), 0), (NameId(431), 0)]",
+    "NUCLEUS_ROOT_RULE_MISMATCH:budget=65272:recursor=NameId(432):actual=NameId(438):actual_levels=[]:actual_arity=2:expected=[(NameId(430), 0), (NameId(431), 0)]",
+    "NUCLEUS_ROOT_RULE_MISMATCH:budget=131045:recursor=NameId(432):actual=NameId(438):actual_levels=[]:actual_arity=2:expected=[(NameId(430), 0), (NameId(431), 0)]",
+    "NUCLEUS_ROOT_RULE_MISMATCH:budget=65523:recursor=NameId(432):actual=NameId(438):actual_levels=[]:actual_arity=2:expected=[(NameId(430), 0), (NameId(431), 0)]",
+    "NUCLEUS_ROOT_RULE_MISMATCH:budget=262114:recursor=NameId(5):actual=NameId(3246):actual_levels=[]:actual_arity=1:expected=[(NameId(2), 0), (NameId(3), 1)]",
+    "NUCLEUS_ROOT_RULE_MISMATCH:budget=131057:recursor=NameId(5):actual=NameId(3246):actual_levels=[]:actual_arity=1:expected=[(NameId(2), 0), (NameId(3), 1)]"
+  ],
+  "root_work_tail": [
+    [
+      2005,
+      507,
+      0,
+      507,
+      89
+    ],
+    [
+      2005,
+      253,
+      1,
+      252,
+      65
+    ],
+    [
+      2005,
+      507,
+      0,
+      507,
+      89
+    ],
+    [
+      2005,
+      253,
+      1,
+      252,
+      65
+    ],
+    [
+      2005,
+      262114,
+      260410,
+      1704,
+      350
+    ],
+    [
+      2005,
+      131057,
+      129353,
+      1704,
+      350
+    ],
+    [
+      2005,
+      507,
+      0,
+      507,
+      89
+    ],
+    [
+      2005,
+      253,
+      1,
+      252,
+      65
+    ],
+    [
+      2005,
+      507,
+      0,
+      507,
+      89
+    ],
+    [
+      2005,
+      253,
+      1,
+      252,
+      65
+    ],
+    [
+      2005,
+      3919,
+      2215,
+      1704,
+      350
+    ],
+    [
+      2005,
+      1959,
+      255,
+      1704,
+      350
+    ]
+  ],
+  "resolved_source_names": {
+    "3246": "Nat.pred",
+    "438": "Nat.beq",
+    "5": "Nat.rec",
+    "432": "Bool.rec",
+    "2": "Nat.zero",
+    "3": "Nat.succ",
+    "430": "Bool.false",
+    "431": "Bool.true"
+  },
+  "predecessor_source_certificate": [
+    "NUCLEUS_PRED_SOURCE_EQUATIONS:zero=Proven { value: NatLit(BigNat([])), warrant: WarrantId(\"explicit-closure-machine\") }:succ=Proven { value: Neutral(Neutral { head: Free(FreeId(0)), spine: [] }), warrant: WarrantId(\"explicit-closure-machine\") }:fuel=Some(3959)"
+  ],
+  "source_certificate_probe": [
+    {
+      "case": "262144",
+      "rc": 2,
+      "user": 23.512757,
+      "system": 0.035598,
+      "wall": 23.628144279995468,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=_private.Init.Data.Int.LemmasAux.0.Int.ble'_eq_true._proof_1_2:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type",
+      "source_sha": "5b7a6b7ad11f5683937e8258322d47f09a9daf6d254bd921e6d23b0d1ee3b494",
+      "binary_sha": "1efc6ea34f96b251e69b0abf5a919f703ab232641fe3ef938b75bca3ab0aea4a"
+    }
+  ],
+  "no_semantic_change": true,
+  "no_performance_claim": true,
+  "stale_wrapper_attempt": {
+    "status": "APPARATUS_STALE_EXECUTABLE",
+    "build_stderr_sha": "cd97aa4b3dca05ccbeea93688155fb2f8dc50768ce4fb82aab4ad1997ab3fa41",
+    "observed_binary": "4f92fce5c4249613c339842a623ea42290495b33cc17f8341e3ef3c772bbcd87",
+    "excluded": true
+  }
+}
