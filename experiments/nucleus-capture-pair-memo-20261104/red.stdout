@@ -1,0 +1,27 @@
+
+running 4 tests
+test typecheck::capture_pair_memo_tests::a_completed_capture_pair_reuses_its_proof_at_a_small_paid_allowance ... FAILED
+test typecheck::capture_pair_memo_tests::capture_proofs_do_not_cross_checker_source_authority ... ok
+test typecheck::capture_pair_memo_tests::failed_or_exhausted_work_never_becomes_a_capture_proof ... ok
+test typecheck::capture_pair_memo_tests::retained_pairs_do_not_erase_actual_free_universe_or_source_differences ... FAILED
+
+failures:
+
+---- typecheck::capture_pair_memo_tests::a_completed_capture_pair_reuses_its_proof_at_a_small_paid_allowance stdout ----
+
+thread 'typecheck::capture_pair_memo_tests::a_completed_capture_pair_reuses_its_proof_at_a_small_paid_allowance' (172) panicked at src/typecheck.rs:7217:226:
+assertion failed: c.exact_source_capture_identity(&a, &b, &mut 4)
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- typecheck::capture_pair_memo_tests::retained_pairs_do_not_erase_actual_free_universe_or_source_differences stdout ----
+
+thread 'typecheck::capture_pair_memo_tests::retained_pairs_do_not_erase_actual_free_universe_or_source_differences' (175) panicked at src/typecheck.rs:7218:455:
+assertion failed: c.exact_source_capture_identity(&a, &b, &mut 4)
+
+
+failures:
+    typecheck::capture_pair_memo_tests::a_completed_capture_pair_reuses_its_proof_at_a_small_paid_allowance
+    typecheck::capture_pair_memo_tests::retained_pairs_do_not_erase_actual_free_universe_or_source_differences
+
+test result: FAILED. 2 passed; 2 failed; 0 ignored; 0 measured; 140 filtered out; finished in 0.00s
+

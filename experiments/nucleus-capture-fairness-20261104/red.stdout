@@ -1,0 +1,20 @@
+
+running 2 tests
+test typecheck::capture_fairness_tests::failed_optional_capture_walk_leaves_work_for_ordinary_beta ... FAILED
+test typecheck::capture_fairness_tests::preserved_reduction_budget_does_not_identify_different_results ... ok
+
+failures:
+
+---- typecheck::capture_fairness_tests::failed_optional_capture_walk_leaves_work_for_ordinary_beta stdout ----
+
+thread 'typecheck::capture_fairness_tests::failed_optional_capture_walk_leaves_work_for_ordinary_beta' (172) panicked at src/typecheck.rs:7224:3:
+assertion failed: crate::convert::convert_with_policy_in_context(&checker, &left, &right, 128,
+        crate::convert::DeltaPolicy::PreferredOnly, 0, &[]).is_proven()
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    typecheck::capture_fairness_tests::failed_optional_capture_walk_leaves_work_for_ordinary_beta
+
+test result: FAILED. 1 passed; 1 failed; 0 ignored; 0 measured; 140 filtered out; finished in 0.00s
+

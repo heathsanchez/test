@@ -1,0 +1,47 @@
+[
+  {
+    "arm": "half",
+    "grant": "(remaining / 2).min(1024)",
+    "results": {
+      "unit": 0,
+      "build": 0,
+      "binary_sha": "a1bfa8de02ff2635f91ca7d4c32bb8acf11e20ac4bcf52783e1eaaeb3d206098",
+      "original": {
+        "rc": 2,
+        "wall": 12.155622051999671,
+        "input_sha": "f9ab8c3cd617710b22862c5c4243c51bc57e1c7ca9ef7ffe7de816b25fca8e5c",
+        "stderr": "NUCLEUS_DOWNSTREAM:name=Lean.Omega.LinearCombo.add_eval:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type\n"
+      }
+    }
+  },
+  {
+    "arm": "three-quarters",
+    "grant": "(remaining - remaining / 4).min(1024)",
+    "results": {
+      "unit": 0,
+      "build": 0,
+      "binary_sha": "cbdc251bb2f9c2e54017141e8907fa387072861ca06d3902266f605a1a258159",
+      "original": {
+        "rc": 2,
+        "wall": 30.320011114003137,
+        "input_sha": "f9ab8c3cd617710b22862c5c4243c51bc57e1c7ca9ef7ffe7de816b25fca8e5c",
+        "stderr": "NUCLEUS_DOWNSTREAM:name=RingHom.instFunLike._proof_1:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type\n"
+      }
+    }
+  },
+  {
+    "arm": "reserve32",
+    "grant": "remaining.saturating_sub(32).min(1024)",
+    "results": {
+      "unit": 0,
+      "build": 0,
+      "binary_sha": "bc14d7cea95afa231c0d96e687e8dcbe927db1eef105468667ec21753b68b758",
+      "original": {
+        "rc": 2,
+        "wall": 39.214238977991045,
+        "input_sha": "f9ab8c3cd617710b22862c5c4243c51bc57e1c7ca9ef7ffe7de816b25fca8e5c",
+        "stderr": "NUCLEUS_DOWNSTREAM:name=RingHom.instFunLike._proof_1:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type\n"
+      }
+    }
+  }
+]
