@@ -1,6 +1,71 @@
 --- a/metatron-kernel/src/typecheck.rs
 +++ b/metatron-kernel/src/typecheck.rs
-@@ -1835,6 +1835,70 @@
+@@ -1610,6 +1610,7 @@
+     fn source_capture_relation<const PARAMETRIC:bool>(
+         &self,left:&Closure,right:&Closure,remaining:&mut usize,
+     )->bool{
++        #[derive(Debug)]
+         enum Capture { Free(FreeId), Closure(Closure), Nat(crate::nat::BigNat) }
+         fn resolve(checker: &TypeChecker<'_>, term: &Closure, index: u64, remaining: &mut usize) -> Option<Capture> {
+             let mut frame = term.env.clone();
+@@ -1711,11 +1712,34 @@
+             if complete.contains(&pair){continue}
+             if !active.insert(pair){return false}
+             let support=if PARAMETRIC{self.instantiated_source_support(&a,&b,remaining)}else{self.complete_paired_source_support(a.expr,b.expr,remaining)};
+-            let Some(support)=support else{return false};
++            let Some(support)=support else{
++                #[cfg(feature="diagnostics")]
++                if std::env::var_os("NUCLEUS_PROBE_SOURCE_CAPTURE_FAILURE").is_some() {
++                    use std::sync::atomic::{AtomicUsize,Ordering};
++                    static UNMATCHED:AtomicUsize=AtomicUsize::new(0);
++                    if UNMATCHED.fetch_add(1,Ordering::Relaxed)<24 {
++                        eprintln!("NUCLEUS_CAPTURE_FAIL:stage=support:parametric={PARAMETRIC}:a={:?}:b={:?}:left_frame={}:right_frame={}:remaining={}",a.expr,b.expr,a.env.id(),b.env.id(),*remaining);
++                    }
++                }
++                return false
++            };
+             pending.push((a.clone(), b.clone(), true));
+             for (left_index, right_index) in support {
+-                let Some(lhs) = resolve(self, &a, left_index, remaining) else { return false };
+-                let Some(rhs) = resolve(self, &b, right_index, remaining) else { return false };
++                let lhs=resolve(self, &a, left_index, remaining);
++                let rhs=resolve(self, &b, right_index, remaining);
++                if lhs.is_none() || rhs.is_none() {
++                    #[cfg(feature="diagnostics")]
++                    if std::env::var_os("NUCLEUS_PROBE_SOURCE_CAPTURE_FAILURE").is_some() {
++                        use std::sync::atomic::{AtomicUsize,Ordering};
++                        static MISSING:AtomicUsize=AtomicUsize::new(0);
++                        if MISSING.fetch_add(1,Ordering::Relaxed)<24 {
++                            eprintln!("NUCLEUS_CAPTURE_FAIL:stage=resolve:parametric={PARAMETRIC}:a={:?}:b={:?}:left_frame={}:right_frame={}:indices=({left_index},{right_index}):left={lhs:?}:right={rhs:?}:remaining={}",a.expr,b.expr,a.env.id(),b.env.id(),*remaining);
++                        }
++                    }
++                    return false
++                }
++                let lhs=lhs.expect("checked capture presence");
++                let rhs=rhs.expect("checked capture presence");
+                 match (lhs, rhs) {
+                     (Capture::Free(x), Capture::Free(y)) if x == y => {}
+                     (Capture::Nat(x), Capture::Nat(y)) => {
+@@ -1725,7 +1749,17 @@
+                         if x != y { return false }
+                     }
+                     (Capture::Closure(x), Capture::Closure(y)) => pending.push((x, y, false)),
+-                    _ => return false,
++                    (lhs,rhs) => {
++                        #[cfg(feature="diagnostics")]
++                        if std::env::var_os("NUCLEUS_PROBE_SOURCE_CAPTURE_FAILURE").is_some() {
++                            use std::sync::atomic::{AtomicUsize,Ordering};
++                            static DISAGREEMENTS:AtomicUsize=AtomicUsize::new(0);
++                            if DISAGREEMENTS.fetch_add(1,Ordering::Relaxed)<40 {
++                                eprintln!("NUCLEUS_CAPTURE_FAIL:stage=binding:parametric={PARAMETRIC}:a={:?}:b={:?}:left_frame={}:right_frame={}:indices=({left_index},{right_index}):left={lhs:?}:right={rhs:?}:remaining={}",a.expr,b.expr,a.env.id(),b.env.id(),*remaining);
++                            }
++                        }
++                        return false
++                    },
+                 }
+             }
+         }
+@@ -1835,6 +1869,70 @@
          result
      }
  
@@ -71,7 +136,7 @@
      fn infer_uncached(
          &self,
          expression: ExprId,
-@@ -2027,6 +2091,22 @@
+@@ -2027,6 +2125,22 @@
                      Some((TypeValue::Term(domain.clone()), PiBody::Closure(body.clone())))
                  });
                  let Some((domain, body)) = checked_view else {
