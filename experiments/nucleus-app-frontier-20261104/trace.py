@@ -72,6 +72,7 @@ def main():
     target_neutral = [line for line in lines if line.startswith("NUCLEUS_TARGET_QUALIFIED_HEADS:")]
     nested_replay = [line for line in lines if line.startswith("NUCLEUS_TARGET_NESTED_IOTA_REPLAY:")]
     unmatched = [line for line in lines if line.startswith("NUCLEUS_TARGET_IOTA_UNMATCHED:")]
+    binding_chain = [line for line in lines if line.startswith("NUCLEUS_TARGET_BINDING_CHAIN:")]
     applications = []
     for line in application_lines:
         fields = {}
@@ -92,6 +93,8 @@ def main():
                "nested_replay_observations": nested_replay[:48],
                "unmatched_constructor_observation_count": len(unmatched),
                "unmatched_constructor_observations": unmatched[:48],
+               "binding_chain_observation_count": len(binding_chain),
+               "binding_chain_observations": binding_chain[:48],
                "applications": applications[:16], "terminal": downstream[-1] if downstream else None,
                "trace_line_count": len(lines), "trace_tail": lines[-8:]}
     (ROOT / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
@@ -106,6 +109,7 @@ def main():
     assert target_neutral, "the target's exact neutral conversion must be observed"
     assert nested_replay, "the exact checked nested-iota obstruction must be observed"
     assert unmatched, "the missing constructor/rule pair must be observed"
+    assert binding_chain, "captured source binder identity must be inspected"
 
 
 if __name__ == "__main__":

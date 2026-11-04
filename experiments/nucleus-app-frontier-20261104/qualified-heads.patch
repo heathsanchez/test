@@ -75,7 +75,7 @@ diff --git a/metatron-kernel/src/convert.rs b/metatron-kernel/src/convert.rs
 diff --git a/metatron-kernel/src/machine.rs b/metatron-kernel/src/machine.rs
 --- a/metatron-kernel/src/machine.rs
 +++ b/metatron-kernel/src/machine.rs
-@@ -2368,1 +2368,10 @@
+@@ -2368,1 +2368,30 @@
 +                #[cfg(feature="diagnostics")]
 +                if std::env::var_os("NUCLEUS_TRACE_IOTA_UNMATCHED").is_some() && crate::convert::target_conversion_trace_active() {
 +                    eprintln!(
@@ -84,6 +84,26 @@ diff --git a/metatron-kernel/src/machine.rs b/metatron-kernel/src/machine.rs
 +                        reduction.rules.iter().map(|r|(r.constructor,r.num_params,r.num_fields)).collect::<Vec<_>>(),
 +                        self.exposure_fuel.get(),
 +                    );
++                    let mut pointer = constructor_args.first().cloned();
++                    let mut chain = Vec::new();
++                    for _ in 0..10 {
++                        let Some(closure) = pointer else { break; };
++                        match self.expressions.get(closure.expr) {
++                            Some(Expr::BVar(index)) => {
++                                let binding = closure.env.lookup_binding_ref(*index);
++                                chain.push(format!("BVar:{index}:binding:{binding:?}"));
++                                pointer = match binding {
++                                    Some(EnvBinding::Closure(next)) => Some(next.clone()),
++                                    _ => None,
++                                };
++                            }
++                            source => {
++                                chain.push(format!("expr:{:?}:source:{source:?}", closure.expr));
++                                break;
++                            }
++                        }
++                    }
++                    eprintln!("NUCLEUS_TARGET_BINDING_CHAIN:{chain:?}");
 +                }
 -                return Judgment::unknown("nested-recursor-iota-unmatched-rule");
 +                return Judgment::unknown("nested-recursor-iota-unmatched-rule");
