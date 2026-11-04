@@ -69,6 +69,7 @@ def main():
     application_lines = [line for line in lines if line.startswith("NUCLEUS_APPLICATION_FUNCTION_TYPE:")]
     downstream = [line for line in lines if line.startswith("NUCLEUS_DOWNSTREAM:")]
     target_neutral = [line for line in lines if line.startswith("NUCLEUS_TARGET_QUALIFIED_HEADS:")]
+    nested_replay = [line for line in lines if line.startswith("NUCLEUS_TARGET_NESTED_IOTA_REPLAY:")]
     applications = []
     for line in application_lines:
         fields = {}
@@ -85,6 +86,8 @@ def main():
                "application_failure_count": len(applications),
                "qualified_head_observation_count": len(target_neutral),
                "qualified_head_observations": target_neutral[:48],
+               "nested_replay_observation_count": len(nested_replay),
+               "nested_replay_observations": nested_replay[:48],
                "applications": applications[:16], "terminal": downstream[-1] if downstream else None,
                "trace_line_count": len(lines), "trace_tail": lines[-8:]}
     (ROOT / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
@@ -97,6 +100,7 @@ def main():
     assert base["rc"] == diagnostic["rc"] == 2, "preserve first UNKNOWN"
     assert applications, "diagnostic instrumentation must identify an application"
     assert target_neutral, "the target's exact neutral conversion must be observed"
+    assert nested_replay, "the exact checked nested-iota obstruction must be observed"
 
 
 if __name__ == "__main__":

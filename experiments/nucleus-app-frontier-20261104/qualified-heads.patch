@@ -13,6 +13,17 @@ diff --git a/metatron-kernel/src/typecheck.rs b/metatron-kernel/src/typecheck.rs
 diff --git a/metatron-kernel/src/convert.rs b/metatron-kernel/src/convert.rs
 --- a/metatron-kernel/src/convert.rs
 +++ b/metatron-kernel/src/convert.rs
+@@ -1845,3 +1845,8 @@
+-                        checker.machine().qualified_nested_recursor_result(
++                        let replay = checker.machine().qualified_nested_recursor_result(
+                             recursive, current_budget,
+-                        ).proven_value().cloned()
++                        );
++                        #[cfg(feature = "diagnostics")]
++                        if TRACE_TARGET_CONVERSION.with(|flag| flag.get()) {
++                            eprintln!("NUCLEUS_TARGET_NESTED_IOTA_REPLAY:recur_head={:?}:budget={current_budget}:result={replay:?}", recursive.head);
++                        }
++                        replay.proven_value().cloned()
 @@ -2503,6 +2503,13 @@
                  !neutral.spine.is_empty()
                      && matches!(&neutral.head,NeutralHead::Const{name,..} if checker.has_qualified_recursor(*name))

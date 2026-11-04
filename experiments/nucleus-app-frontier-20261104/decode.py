@@ -60,6 +60,8 @@ for query in map(int, sys.argv[2:]):
     print("TARGET", query)
     children(query, maximum=1)
 
+print("BLOCKED NEUTRAL HEAD IDENTITIES", [(key, names.get(key)) for key in (431, 2005)])
+
 print("REFERENCED DECLARATIONS")
 roots = (87624, 18627, 55137, 86154)
 for kind, decl in decls:
@@ -67,3 +69,13 @@ for kind, decl in decls:
         continue
     print(kind, names.get(decl["name"]), "type", decl.get("type"), "value", decl.get("value"))
     children(decl["type"], maximum=0)
+    current = decl["type"]
+    for binder_index in range(10):
+        expression = exprs.get(current, {})
+        binder = expression.get("forallE")
+        if binder is None:
+            print("  final", unfold(current))
+            break
+        print("  binder", binder_index, names.get(binder["name"]),
+              binder["binderInfo"], "domain", unfold(binder["type"]))
+        current = binder["body"]
