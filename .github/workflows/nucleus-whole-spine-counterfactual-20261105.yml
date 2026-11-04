@@ -1,4 +1,4 @@
-name: Nucleus source capture mismatch diagnosis
+name: Nucleus Equiv.toFun capture lineage diagnosis
 
 on:
   push:
@@ -77,7 +77,7 @@ jobs:
           print('DIAGNOSTIC_BUILD_QUALIFIED_CONFIG',sorted(config),flush=True)
           print('TEST_GATE_REUSED_FROM_EXACT_SOURCE_RUN',41908748112,flush=True)
           PY
-      - name: Resolve real captured binder equality obstruction on RED prefix
+      - name: Trace source capture mismatch on target receiver subterm
         shell: bash
         run: |
           set -euo pipefail
