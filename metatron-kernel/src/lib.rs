@@ -96,26 +96,40 @@ fn run_observed_callback<R: BufRead>(
 pub fn run_dependency_witness<R: BufRead>(
     reader: R,
 ) -> (Verdict, [u8; 32], Vec<semantic_witness::ObservedSemanticWitness>) {
+    let (verdict, source_sha256, observed, _) = run_dependency_witness_v2(reader);
+    (verdict, source_sha256, observed)
+}
+
+/// V2 separates source-resolution reads, executed global preflight decisions,
+/// and per-declaration reads. It still carries a complete source SHA barrier;
+/// NO trace can grant proof reuse, cached ACCEPT, or completeness authority.
+#[cfg(feature = "semantic-witness")]
+pub fn run_dependency_witness_v2<R: BufRead>(
+    reader: R,
+) -> (Verdict, [u8; 32], Vec<semantic_witness::ObservedSemanticWitness>, semantic_witness::GlobalTrace) {
     let scope = semantic_witness::ReadScope::enter();
     let mut provisional = Vec::new();
     let (verdict, source_sha256, _) = run_observed_callback(reader, &mut |event| {
-        provisional.push((event.clone(), scope.drain()));
+        provisional.push((event.clone(), scope.drain_bundle()));
     });
+    let global = scope.global_trace();
     if verdict != Verdict::Accept {
         // An earlier admitted prefix is not evidence for a failed export.
-        return (verdict, source_sha256, Vec::new());
+        return (verdict, source_sha256, Vec::new(), global);
     }
-    let observed = provisional.into_iter().map(|(declaration, constant_reads)| {
+    let observed = provisional.into_iter().map(|(declaration, reads)| {
         semantic_witness::ObservedSemanticWitness {
             declaration,
             global_export_sha256: source_sha256,
-            constant_reads,
+            constant_reads: reads.constants,
+            table_reads: reads.tables,
+            environment_reads: reads.environment,
             read_coverage: "PARTIAL",
             verification_reuse_authority: "NONE",
             proof_skips: 0,
         }
     }).collect();
-    (verdict, source_sha256, observed)
+    (verdict, source_sha256, observed, global)
 }
 
 /// Run the full independent checker, then compare/write optional MGSO shadow

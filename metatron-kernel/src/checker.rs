@@ -202,10 +202,23 @@ fn check_export_with_policy_observed(
     delta_policy: DeltaPolicy,
     mut observer: Option<&mut dyn FnMut(CheckedDecl)>,
 ) -> Verdict {
-    if !quotient_source_ownership_is_well_ordered(&export) {
+    #[cfg(feature = "semantic-witness")]
+    crate::semantic_witness::phase_preflight();
+    let source_ownership_valid = quotient_source_ownership_is_well_ordered(&export);
+    #[cfg(feature = "semantic-witness")]
+    crate::semantic_witness::record_global_guard(
+        "quotient-source-ownership", if source_ownership_valid { "PASS" } else { "REJECT" });
+    if !source_ownership_valid {
         return trace_direct_reject("preflight-quotient-source-ownership");
     }
-    if let Some(verdict) = crate::capability::execute(&export) {
+    let capability_verdict = crate::capability::execute(&export);
+    #[cfg(feature = "semantic-witness")]
+    crate::semantic_witness::record_global_guard("capability-bank", match capability_verdict {
+        None => "PASS",
+        Some(Verdict::Reject) => "REJECT",
+        Some(_) => "DEFER",
+    });
+    if let Some(verdict) = capability_verdict {
         return verdict;
     }
 
@@ -257,6 +270,8 @@ fn check_export_with_policy_observed(
             })
         })
     }) {
+        #[cfg(feature = "semantic-witness")]
+        crate::semantic_witness::record_global_guard("recursor-external-constructor", "REJECT");
         if std::env::var_os("NUCLEUS_TRACE_DOWNSTREAM").is_some() {
             let owner = owner
                 .map(|name| trace_name(&export, name))
@@ -323,34 +338,50 @@ fn check_export_with_policy_observed(
         }
         return trace_direct_reject("preflight-external-recursor-constructor");
     }
+    #[cfg(feature = "semantic-witness")]
+    crate::semantic_witness::record_global_guard("recursor-external-constructor", "PASS");
 
-    if export.declarations.iter().any(|declaration| {
+    let dropped_minor = export.declarations.iter().any(|declaration| {
         matches!(declaration, Declaration::Inductive(block)
             if recursor_rule_drops_required_minor_argument(&export, block))
-    }) {
+    });
+    #[cfg(feature = "semantic-witness")]
+    crate::semantic_witness::record_global_guard("recursor-drops-required-minor",
+        if dropped_minor { "REJECT" } else { "PASS" });
+    if dropped_minor {
         return trace_direct_reject("preflight-recursor-drops-required-minor");
     }
 
-    if export.declarations.iter().any(|declaration| {
+    let malformed_result_sort = export.declarations.iter().any(|declaration| {
         matches!(declaration, Declaration::Inductive(block)
             if proof_dependent_result_sort_is_definitely_malformed(&export, block))
-    }) {
+    });
+    #[cfg(feature = "semantic-witness")]
+    crate::semantic_witness::record_global_guard("proof-dependent-result-sort",
+        if malformed_result_sort { "REJECT" } else { "PASS" });
+    if malformed_result_sort {
         return trace_direct_reject("preflight-proof-dependent-result-sort");
     }
 
     // Universe parameters belong to the individual imported signature.
     // A later declaration, another mutual member, or a constant mentioned by
     // the signature cannot supply an undeclared binder to this owner.
-    if export.declarations.iter().any(|declaration| {
+    let unbound_inductive_universe = export.declarations.iter().any(|declaration| {
         let Declaration::Inductive(block) = declaration else { return false };
         block.types.iter().any(|member|
             source_signature_has_unbound_universe(&export,member.ty,&member.level_params))
             || block.constructors.iter().any(|member|
                 source_signature_has_unbound_universe(&export,member.ty,&member.level_params))
-    }) {
+    });
+    #[cfg(feature = "semantic-witness")]
+    crate::semantic_witness::record_global_guard("inductive-signature-unbound-universe",
+        if unbound_inductive_universe { "REJECT" } else { "PASS" });
+    if unbound_inductive_universe {
         return trace_direct_reject("inductive-signature-unbound-universe");
     }
 
+    #[cfg(feature = "semantic-witness")]
+    crate::semantic_witness::phase_declarations();
     let mut environment = Environment::empty();
 
     // Preserve the immutable source catalogue for structural contract

@@ -83,26 +83,40 @@ impl<I: TableId, T> IdTable<I, T> {
     }
 
     pub fn get(&self, id: I) -> Option<&T> {
-        self.entries.get(&id.raw())
+        let found = self.entries.get(&id.raw());
+        #[cfg(feature = "semantic-witness")]
+        crate::semantic_witness::record_table_access(I::KIND, "point", Some(id.raw()), Some(found.is_some()));
+        found
     }
 
     pub fn contains(&self, id: I) -> bool {
-        self.entries.contains_key(&id.raw())
+        let found = self.entries.contains_key(&id.raw());
+        #[cfg(feature = "semantic-witness")]
+        crate::semantic_witness::record_table_access(I::KIND, "point", Some(id.raw()), Some(found));
+        found
     }
 
     pub fn len(&self) -> usize {
+        #[cfg(feature = "semantic-witness")]
+        crate::semantic_witness::record_table_access(I::KIND, "bulk", None, None);
         self.entries.len()
     }
 
     pub fn is_empty(&self) -> bool {
+        #[cfg(feature = "semantic-witness")]
+        crate::semantic_witness::record_table_access(I::KIND, "bulk", None, None);
         self.entries.is_empty()
     }
 
     pub fn values(&self) -> impl Iterator<Item = &T> {
+        #[cfg(feature = "semantic-witness")]
+        crate::semantic_witness::record_table_access(I::KIND, "bulk", None, None);
         self.entries.values()
     }
 
     pub fn iter_raw(&self) -> impl Iterator<Item = (u64, &T)> {
+        #[cfg(feature = "semantic-witness")]
+        crate::semantic_witness::record_table_access(I::KIND, "bulk", None, None);
         self.entries.iter().map(|(id, value)| (*id, value))
     }
 }

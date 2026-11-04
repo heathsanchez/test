@@ -24,6 +24,62 @@ fn check_input() -> ExitCode {
     let mut args = std::env::args_os().skip(1);
     match (args.next(), args.next(), args.next()) {
         (None, None, None) => {}
+        (Some(flag), None, None) if flag == "--semantic-read-witness-v2" => {
+            #[cfg(feature = "semantic-witness")]
+            {
+                use metatron_kernel::semantic_witness::{EnvironmentRead, TableRead};
+                let (verdict, source_sha256, observed, global) =
+                    metatron_kernel::run_dependency_witness_v2(BufReader::new(io::stdin().lock()));
+                let identity = source_sha256.iter()
+                    .map(|byte| format!("{byte:02x}"))
+                    .collect::<String>();
+                let tables = |reads: &[TableRead]| reads.iter().map(|read| serde_json::json!({
+                    "table": read.table, "access": read.access,
+                    "id": read.id, "present": read.present,
+                })).collect::<Vec<_>>();
+                let environment = |reads: &[EnvironmentRead]| reads.iter().map(|read| serde_json::json!({
+                    "channel": read.channel, "name_id": read.name_id, "present": read.present,
+                })).collect::<Vec<_>>();
+                let declarations = observed.iter().map(|witness| serde_json::json!({
+                    "index": witness.declaration.index,
+                    "name": witness.declaration.name,
+                    "kind": witness.declaration.kind,
+                    "global_export_sha256": identity,
+                    "constant_reads": witness.constant_reads.iter().map(|read| serde_json::json!({
+                        "name_id": read.name_id, "present": read.present,
+                    })).collect::<Vec<_>>(),
+                    "table_reads": tables(&witness.table_reads),
+                    "environment_reads": environment(&witness.environment_reads),
+                    "read_coverage": "PARTIAL",
+                    "verification_reuse_authority": "NONE",
+                    "proof_skips": 0,
+                })).collect::<Vec<_>>();
+                let guards = global.guards.iter().map(|guard| serde_json::json!({
+                    "stage": guard.stage, "result": guard.result,
+                })).collect::<Vec<_>>();
+                eprintln!("NUCLEUS_SEMANTIC_V2:{}", serde_json::json!({
+                    "status": format!("{verdict:?}"),
+                    "source_sha256": identity,
+                    "global_barrier": "whole-export-sha256",
+                    "read_coverage": global.read_coverage,
+                    "semantic_dependency_completeness": "UNKNOWN",
+                    "verification_reuse_authority": global.verification_reuse_authority,
+                    "proof_skips": global.proof_skips,
+                    "global": {
+                        "source_resolution_reads": tables(&global.source_resolution_reads),
+                        "preflight_reads": tables(&global.preflight_reads),
+                        "guards": guards,
+                    },
+                    "declarations": declarations,
+                }));
+                return ExitCode::from(verdict.exit_code() as u8);
+            }
+            #[cfg(not(feature = "semantic-witness"))]
+            {
+                eprintln!("NUCLEUS_SEMANTIC_V2:status=unavailable;reason=feature-disabled;authority=none");
+                return ExitCode::from(3);
+            }
+        }
         (Some(flag), None, None) if flag == "--semantic-read-witness" => {
             #[cfg(feature = "semantic-witness")]
             {
@@ -130,7 +186,7 @@ fn check_input() -> ExitCode {
             return ExitCode::from(verdict.exit_code() as u8);
         }
         _ => {
-            eprintln!("Usage: metatron-kernel [--mgso-shadow-dir PATH|--mgso-inspect-dir PATH|--semantic-read-witness]");
+            eprintln!("Usage: metatron-kernel [--mgso-shadow-dir PATH|--mgso-inspect-dir PATH|--semantic-read-witness|--semantic-read-witness-v2]");
             return ExitCode::from(3);
         }
     }

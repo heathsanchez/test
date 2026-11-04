@@ -140,7 +140,11 @@ impl Environment {
         }
     }
 
-    pub(crate) fn string_literal_type(&self)->Option<ExprId> {self.string_literal_type}
+    pub(crate) fn string_literal_type(&self)->Option<ExprId> {
+        #[cfg(feature = "semantic-witness")]
+        crate::semantic_witness::record_environment_access("string-literal-type", None, Some(self.string_literal_type.is_some()));
+        self.string_literal_type
+    }
 
     pub(crate) fn install_string_literal_type(&self,ty:ExprId)->Result<Self,EnvironmentError> {
         let mut result=self.clone();
@@ -149,6 +153,8 @@ impl Environment {
     }
 
     pub fn authority(&self) -> AuthorityId {
+        #[cfg(feature = "semantic-witness")]
+        crate::semantic_witness::record_environment_access("environment-authority", None, None);
         self.authority
     }
 
@@ -198,6 +204,8 @@ impl Environment {
     }
 
     pub(crate) fn closed_nested_minor_reductions(&self)->Rc<HashMap<NameId,Vec<ClosedNestedMinorReduction>>> {
+        #[cfg(feature = "semantic-witness")]
+        crate::semantic_witness::record_environment_access("closed-nested-minor-reductions-map", None, None);
         self.closed_nested_minor_reductions.clone()
     }
 
@@ -212,6 +220,8 @@ impl Environment {
     }
 
     pub(crate) fn nullary_minor_reductions(&self)->Rc<HashMap<NameId,Vec<NullaryMinorReduction>>> {
+        #[cfg(feature = "semantic-witness")]
+        crate::semantic_witness::record_environment_access("nullary-minor-reductions-map", None, None);
         self.nullary_minor_reductions.clone()
     }
 
@@ -287,33 +297,49 @@ impl Environment {
     }
 
     pub(crate) fn shared_singleton_recursor_reductions(&self) -> Rc<HashSet<NameId>> {
+        #[cfg(feature = "semantic-witness")]
+        crate::semantic_witness::record_environment_access("singleton-recursor-reductions-map", None, None);
         self.singleton_recursor_reductions.clone()
     }
 
     pub(crate) fn shared_recursor_reductions(&self) -> Rc<HashMap<NameId, RecursorReduction>> {
+        #[cfg(feature = "semantic-witness")]
+        crate::semantic_witness::record_environment_access("recursor-reductions-map", None, None);
         self.recursor_reductions.clone()
     }
 
     pub(crate) fn shared_projection_specs(&self) -> Rc<HashMap<NameId, ProjectionSpec>> {
+        #[cfg(feature = "semantic-witness")]
+        crate::semantic_witness::record_environment_access("projection-specs-map", None, None);
         self.projection_specs.clone()
     }
 
     pub fn singleton_recursor_reductions(&self) -> HashSet<NameId> {
+        #[cfg(feature = "semantic-witness")]
+        crate::semantic_witness::record_environment_access("singleton-recursor-reductions-map", None, None);
         self.singleton_recursor_reductions.as_ref().clone()
     }
 
     pub fn recursor_reductions(&self) -> HashMap<NameId, RecursorReduction> {
+        #[cfg(feature = "semantic-witness")]
+        crate::semantic_witness::record_environment_access("recursor-reductions-map", None, None);
         self.recursor_reductions.as_ref().clone()
     }
 
     pub fn recursor_reduction(&self, name: NameId) -> Option<&RecursorReduction> {
-        self.recursor_reductions.get(&name)
+        let found = self.recursor_reductions.get(&name);
+        #[cfg(feature = "semantic-witness")]
+        crate::semantic_witness::record_environment_access("recursor-reduction", Some(name), Some(found.is_some()));
+        found
     }
 
     pub(crate) fn is_certified_constructor(&self, name: NameId) -> bool {
-        self.recursor_reductions
+        let found = self.recursor_reductions
             .values()
-            .any(|reduction| reduction.rules.iter().any(|rule| rule.constructor == name))
+            .any(|reduction| reduction.rules.iter().any(|rule| rule.constructor == name));
+        #[cfg(feature = "semantic-witness")]
+        crate::semantic_witness::record_environment_access("certified-constructor", Some(name), Some(found));
+        found
     }
 
     pub fn install_projection_spec(
@@ -352,6 +378,8 @@ impl Environment {
     }
 
     pub fn projection_specs(&self) -> HashMap<NameId, ProjectionSpec> {
+        #[cfg(feature = "semantic-witness")]
+        crate::semantic_witness::record_environment_access("projection-specs-map", None, None);
         self.projection_specs.as_ref().clone()
     }
 
@@ -395,6 +423,8 @@ impl Environment {
     }
 
     pub fn nat_primitives(&self) -> Option<&NatPrimitives> {
+        #[cfg(feature = "semantic-witness")]
+        crate::semantic_witness::record_environment_access("nat-primitives", None, Some(self.nat_primitives.is_some()));
         self.nat_primitives.as_ref()
     }
 
@@ -483,6 +513,8 @@ impl Environment {
     }
 
     pub fn bool_primitives(&self) -> Option<&BoolPrimitives> {
+        #[cfg(feature = "semantic-witness")]
+        crate::semantic_witness::record_environment_access("bool-primitives", None, Some(self.bool_primitives.is_some()));
         self.bool_primitives.as_ref()
     }
 
@@ -526,6 +558,8 @@ impl Environment {
     }
 
     pub fn quot_primitives(&self) -> Option<&QuotPrimitives> {
+        #[cfg(feature = "semantic-witness")]
+        crate::semantic_witness::record_environment_access("quot-primitives", None, Some(self.quot_primitives.is_some()));
         self.quot_primitives.as_ref()
     }
 
@@ -561,10 +595,15 @@ impl Environment {
     }
 
     pub fn is_unit_like_type(&self, name: NameId) -> bool {
-        self.unit_like_types.contains(&name)
+        let found = self.unit_like_types.contains(&name);
+        #[cfg(feature = "semantic-witness")]
+        crate::semantic_witness::record_environment_access("unit-like-type", Some(name), Some(found));
+        found
     }
 
     pub fn definition_bodies(&self) -> Rc<HashMap<NameId, DefinitionBody>> {
+        #[cfg(feature = "semantic-witness")]
+        crate::semantic_witness::record_environment_access("definition-bodies-map", None, None);
         self.definitions.clone()
     }
 }
