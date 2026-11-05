@@ -1,0 +1,46 @@
+--- a/src/machine.rs
++++ b/src/machine.rs
+@@ -3449,6 +3449,43 @@
+     }
+ 
+     #[test]
++    fn prehashed_level_substitution_key_does_not_rewalk_cached_universes() {
++        // LevelSubstitution::new paid to hash its entries exactly once;
++        // Clone and Hash of its Rc-backed value are bounded operations.
++        // Equality of *different* allocations still has to traverse the
++        // real entries on a forced digest collision under the same fuel.
++        use crate::level::LevelTerm;
++        let mut expressions=IdTable::default();let levels=IdTable::default();
++        expressions.insert(ExprId(0),Expr::BVar(0)).unwrap();
++        let machine=Machine::new(AuthorityId(1),&expressions,&levels,HashMap::new())
++            .with_recursor_reductions(HashMap::from([(NameId(1),RecursorReduction{
++                k:false,num_params:0,num_indices:0,level_params:vec![],
++                rules:vec![RecursorRule{constructor:NameId(2),constructor_level_params:vec![],
++                    num_params:0,num_fields:0,rhs:ExprId(0)}],
++            })]));
++        let mut universe=LevelTerm::Zero;
++        for _ in 0..128 {universe=LevelTerm::Succ(Box::new(universe));}
++        let subst=LevelSubstitution::new(vec![(NameId(88),universe.clone())]);
++        let spine=vec![Closure::with_levels(ExprId(0),EnvFrame::empty(),subst);3];
++        machine.exposure_fuel.set(Some(32));
++        assert!(machine.completed_replay_key(NameId(1),&[],&spine).is_some(),
++            "prehashed immutable universe substitutions must not exhaust key-construction fuel");
++
++        machine.exposure_fuel.set(Some(8192));
++        let first=machine.completed_replay_key(NameId(1),&[],&spine).unwrap();
++        let different=LevelSubstitution::new(vec![(NameId(88),LevelTerm::Succ(Box::new(universe)))]);
++        let changed=vec![Closure::with_levels(ExprId(0),EnvFrame::empty(),different);3];
++        let alternative=machine.completed_replay_key(NameId(1),&[],&changed).unwrap();
++        let mut alternative=Rc::try_unwrap(alternative).ok().expect("uncached source key has one strong owner");
++        alternative.digest=first.digest;
++        let alternative=Rc::new(alternative);
++        machine.exposure_fuel.set(Some(16));
++        assert!(machine.replay_keys_equal(&first,&alternative).is_none(),
++            "forced digest collisions must not traverse deep universe substitutions without paid work");
++        machine.exposure_fuel.set(None);
++    }
++
++    #[test]
+     fn checked_replay_refuses_a_constructor_at_a_different_declared_universe() {
+         let mut expressions=IdTable::default();
+         let mut levels=IdTable::default();levels.insert(LevelId(0),Level::Zero).unwrap();
