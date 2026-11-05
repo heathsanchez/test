@@ -38,6 +38,28 @@ jobs:
           printf 'TOP-LEVEL FULL MATHLIB VERDICT\n'
           cat causal/mathlib.status
           zstd -q -3 -f causal/mathlib.stderr -o causal/mathlib.stderr.zst
+      - name: Replay archived identical Mathlib and checker with source-owned terminal trace
+        run: |
+          set -euo pipefail
+          unzip -p full-mathlib-evidence.zip candidate/nucleus > causal/nucleus
+          chmod +x causal/nucleus
+          printf '%s  %s\n' "$(cut -d ' ' -f1 causal/candidate-binary-sha256.txt)" causal/nucleus | sha256sum -c -
+          unzip -p full-mathlib-evidence.zip qualified/qualification.json > causal/qualification.json
+          test -s causal/qualification.json
+          mapfile -t flags < <(jq -r '.candidate.configuration | to_entries[] | "\(.key)=\(.value)"' causal/qualification.json)
+          set +e
+          unzip -p full-mathlib-evidence.zip mathlib-full.ndjson.zst | zstd -dc | \
+            env "${flags[@]}" NUCLEUS_EXPERIMENTAL_DEFERRED_PROJECTION_CONGRUENCE=1 NUCLEUS_TRACE_DOWNSTREAM=1 \
+            timeout 1500 causal/nucleus > causal/trace.stdout 2> causal/trace.stderr
+          results=("${PIPESTATUS[@]}")
+          set -e
+          printf 'zip_read=%s\tzstd=%s\tchecker=%s\n' "${results[0]}" "${results[1]}" "${results[2]}" | tee causal/trace-status.tsv
+          test "${results[0]}" -eq 0
+          test "${results[1]}" -eq 0
+          test "${results[2]}" -eq 2
+          printf 'FIRST CAUSAL UNKNOWN IN EXACT-ARCHIVE REPLAY\n'
+          grep 'NUCLEUS_DOWNSTREAM' causal/trace.stderr | tail -n 18 | cut -c1-1500 || true
+          zstd -q -3 -f causal/trace.stderr -o causal/trace.stderr.zst
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -55,3 +77,6 @@ jobs:
             causal/mathlib.stderr.zst
             causal/mathlib.stdout
             causal/entry-list.txt
+            causal/trace-status.tsv
+            causal/trace.stderr.zst
+            causal/trace.stdout
