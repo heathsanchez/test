@@ -60,6 +60,26 @@ jobs:
           printf 'FIRST CAUSAL UNKNOWN IN EXACT-ARCHIVE REPLAY\n'
           grep 'NUCLEUS_DOWNSTREAM' causal/trace.stderr | tail -n 18 | cut -c1-1500 || true
           zstd -q -3 -f causal/trace.stderr -o causal/trace.stderr.zst
+      - name: Capture only bounded last neutral-head mismatch lines at the known Finsupp frontier
+        run: |
+          set -euo pipefail
+          mapfile -t flags < <(jq -r '.candidate.configuration | to_entries[] | "\(.key)=\(.value)"' causal/qualification.json)
+          mkfifo causal/mismatch.fifo
+          (grep --line-buffered -E 'NUCLEUS_NEUTRAL_HEAD_MISMATCH|NUCLEUS_DOWNSTREAM' < causal/mismatch.fifo | cut -c1-1500 | tail -n 90 > causal/neutral-tail.txt) &
+          sink_pid=$!
+          set +e
+          unzip -p full-mathlib-evidence.zip mathlib-full.ndjson.zst | zstd -dc | \
+            env "${flags[@]}" NUCLEUS_EXPERIMENTAL_DEFERRED_PROJECTION_CONGRUENCE=1 \
+            NUCLEUS_TRACE_DOWNSTREAM=1 NUCLEUS_TRACE_NEUTRAL_HEADS=1 \
+            timeout 600 causal/nucleus > causal/neutral.stdout 2> causal/mismatch.fifo
+          results=("${PIPESTATUS[@]}")
+          wait "$sink_pid"
+          set -e
+          printf 'zip_read=%s\tzstd=%s\tchecker=%s\n' "${results[0]}" "${results[1]}" "${results[2]}" | tee causal/neutral-status.tsv
+          test "${results[0]}" -eq 0
+          test "${results[1]}" -eq 0
+          test "${results[2]}" -eq 2
+          tail -n 12 causal/neutral-tail.txt | cut -c1-900
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -80,3 +100,5 @@ jobs:
             causal/trace-status.tsv
             causal/trace.stderr.zst
             causal/trace.stdout
+            causal/neutral-status.tsv
+            causal/neutral-tail.txt
