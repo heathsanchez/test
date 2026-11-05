@@ -1,6 +1,6 @@
 --- a/src/typecheck.rs
 +++ b/src/typecheck.rs
-@@ -2579,6 +2579,118 @@
+@@ -2579,6 +2579,126 @@
                      };
                      eprintln!("NUCLEUS_FAILED_RECEIVER_CONVERSION:expression={expression:?}:context_len={}:source_frame={}:remaining={}:actual={value:?}:expected={expected:?}:context={context:?}:actual_exposed={:?}:expected_exposed={:?}",
                          context.len(), frame.id(), *remaining, expose(&value), expose(expected));
@@ -89,6 +89,14 @@
 +                                                                            Some(Value::StuckProjection {type_name:tb,index:ib,structure:sb,spine:ab}),
 +                                                                        )=(a.proven_value(),b.proven_value()) {
 +                                                                            eprintln!("NUCLEUS_PROOF2_RECEIVER_LAYER:layer={layer}:left_type={ta:?}:right_type={tb:?}:left_index={ia}:right_index={ib}:left_arity={}:right_arity={}:left_receiver={sa:?}:right_receiver={sb:?}",aa.len(),ab.len());
++                                                                            if layer == 1 {
++                                                                                let machine=self.machine();
++                                                                                let lhs_field=machine.projection_field_for_conversion(sa.clone(),*ta,*ia,16384);
++                                                                                let rhs_field=machine.projection_field_for_conversion(sb.clone(),*tb,*ib,16384);
++                                                                                let lhs_value=machine.projection_value_for_conversion(sa.clone(),*ta,*ia,aa,16384);
++                                                                                let rhs_value=machine.projection_value_for_conversion(sb.clone(),*tb,*ib,ab,16384);
++                                                                                eprintln!("NUCLEUS_PROOF2_DIVERGENT_FIELDS:left_field={lhs_field:?}:right_field={rhs_field:?}:left_value={lhs_value:?}:right_value={rhs_value:?}");
++                                                                            }
 +                                                                            let next=(sa.clone(),sb.clone());
 +                                                                            if next==receivers {break;}
 +                                                                            receivers=next;
