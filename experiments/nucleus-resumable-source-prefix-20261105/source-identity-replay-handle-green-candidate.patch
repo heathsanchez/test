@@ -1,0 +1,99 @@
+--- a/src/machine.rs
++++ b/src/machine.rs
+@@ -140,6 +140,17 @@
+ impl ReplayKey {
+     fn identity(key:&Rc<Self>)->usize {Rc::as_ptr(key) as usize}
+ }
++// A strictly narrower lookup identity used *within one immutable Machine*.
++// Environment frame IDs are globally unique for the lifetime of their
++// immutable frames; each retained full ReplayKey owns its referenced frames
++// and level substitutions, so these identities cannot be recycled while an
++// alias is live. Identity mismatch is a safe cache miss, never equivalence.
++#[derive(Eq,Hash,PartialEq)]
++struct ReplaySourceHandle {
++    name:NameId,
++    levels:Vec<crate::level::LevelTerm>,
++    spine:Vec<(ExprId,u64,usize)>,
++}
+ // Share the exact key with the CLOCK ring. Its structural digest is computed
+ // once; pointer equality makes removal of an owned ring entry constant work.
+ struct CachedExposureKey { exact:ExposureCacheKey, digest:u64 }
+@@ -334,6 +345,9 @@
+     // During that *single* major probe, retain the source application for
+     // the certified worklist instead of recursively spending its owner here.
+     worklist_major_probe: Cell<bool>,
++    // Retain full certified replay keys on exact source handles. All fields
++    // omitted from the handle are immutable for the lifetime of this Machine.
++    replay_source_handles: RefCell<HashMap<ReplaySourceHandle,Rc<ReplayKey>>>,
+     #[cfg(test)]
+     replay_key_builds: Cell<usize>,
+     exposure_cache: Option<ExposureCache>,
+@@ -367,6 +381,7 @@
+             exposure_depth: Cell::new(0),
+             native_completion: Cell::new(true),
+             worklist_major_probe: Cell::new(false),
++            replay_source_handles: RefCell::new(HashMap::new()),
+             #[cfg(test)]
+             replay_key_builds: Cell::new(0),
+             exposure_cache: None,
+@@ -1122,6 +1137,27 @@
+         let required=certificate.num_params.checked_add(1)?.checked_add(certificate.rules.len())?
+             .checked_add(certificate.num_indices)?.checked_add(1)?;
+         if certificate.level_params.len()!=levels.len() || spine.len()<required {return None;}
++        // Charge the complete narrower lookup: source/spine handles and every
++        // level node inspected while hashing its structural value. A hit
++        // shares a retained, full key; a miss still builds and checks one.
++        if !self.reserve_replay_work(4usize.saturating_add(spine.len().saturating_mul(2))
++            .saturating_add(levels.len())) {return None;}
++        for level in levels {if !self.reserve_replay_levels(level){return None;}}
++        let handle=ReplaySourceHandle{
++            name,levels:levels.to_vec(),
++            spine:spine.iter().map(|c|(c.expr,c.env.id(),c.levels.identity())).collect(),
++        };
++        if let Some(saved)=self.replay_source_handles.borrow().get(&handle).cloned(){
++            #[cfg(feature="diagnostics")]
++            if crate::run_flags::present(crate::run_flags::Flag::TraceReplayCache){
++                use std::sync::atomic::{AtomicUsize,Ordering};
++                static HITS:AtomicUsize=AtomicUsize::new(0);
++                if HITS.fetch_add(1,Ordering::Relaxed)<32{
++                    eprintln!("NUCLEUS_REPLAY_HANDLE:hit:name={name:?}:fuel={:?}",self.exposure_fuel.get());
++                }
++            }
++            return Some(saved);
++        }
+         if !self.reserve_replay_key(levels,spine,certificate) {return None;}
+         #[cfg(test)]
+         self.replay_key_builds.set(self.replay_key_builds.get()+1);
+@@ -1135,7 +1171,10 @@
+         use std::hash::{Hash,Hasher};
+         let mut hash=std::collections::hash_map::DefaultHasher::new();
+         exact.hash(&mut hash);
+-        Some(Rc::new(ReplayKey{exact,digest:hash.finish()}))
++        let key=Rc::new(ReplayKey{exact,digest:hash.finish()});
++        let mut aliases=self.replay_source_handles.borrow_mut();
++        if aliases.len()<4096 {aliases.insert(handle,key.clone());}
++        Some(key)
+     }
+ 
+     fn replay_keys_equal(&self,left:&Rc<ReplayKey>,right:&Rc<ReplayKey>)->Option<bool> {
+@@ -3502,6 +3541,20 @@
+         assert!(machine.qualified_nested_recursor_result(&wrong_constructor,2048).is_unknown());
+         let mut wrong_levels=chain;wrong_levels.head=NeutralHead::Const{name:NameId(1),levels:vec![crate::level::LevelTerm::Zero]};
+         assert!(machine.qualified_nested_recursor_result(&wrong_levels,2048).is_unknown());
++
++        // An exact source handle may reuse an already built, independently
++        // checked replay key. A different captured binder must not alias it.
++        machine.exposure_fuel.set(Some(4096));
++        let same_spine=vec![closed(0),closed(0),closed(2)];
++        let first=machine.completed_replay_key(NameId(1),&[],&same_spine).expect("first source key");
++        let built=machine.replay_key_builds.get();
++        let again=machine.completed_replay_key(NameId(1),&[],&same_spine).expect("same source key");
++        assert!(Rc::ptr_eq(&first,&again),"unchanged source should reuse the exact checked key");
++        assert_eq!(machine.replay_key_builds.get(),built,"unchanged source must not rebuild certificate identity");
++        let changed_spine=vec![closed(0),closed(0),Closure::new(ExprId(1),EnvFrame::empty().extend_free(FreeId(71)))];
++        let different=machine.completed_replay_key(NameId(1),&[],&changed_spine).expect("different captured source key");
++        assert!(!Rc::ptr_eq(&first,&different),"different source binder must remain distinct");
++        machine.exposure_fuel.set(None);
+     }
+ }
+ 
