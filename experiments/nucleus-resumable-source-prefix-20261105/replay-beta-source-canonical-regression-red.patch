@@ -1,0 +1,23 @@
+--- a/src/machine.rs
++++ b/src/machine.rs
+@@ -3584,6 +3584,20 @@
+         let changed_spine=vec![closed(0),closed(0),Closure::new(ExprId(1),EnvFrame::empty().extend_free(FreeId(71)))];
+         let different=machine.completed_replay_key(NameId(1),&[],&changed_spine).expect("different captured source key");
+         assert!(!Rc::ptr_eq(&first,&different),"different source binder must remain distinct");
++
++        // The evaluator's source beta rule follows only BVar bound to an
++        // exact immutable Closure. Two independently allocated lexical
++        // frames with the same actual bound source must share a checked
++        // replay key; Free/Neutral locals must never be equated this way.
++        let first_frame=machine.bind_captured_argument(&closed(4),closed(2));
++        let second_frame=machine.bind_captured_argument(&closed(3),closed(2));
++        assert_ne!(first_frame.id(),second_frame.id(),"different binders should build different captures");
++        let beta_a=vec![closed(0),closed(0),Closure::new(ExprId(1),first_frame)];
++        let beta_b=vec![closed(0),closed(0),Closure::new(ExprId(1),second_frame)];
++        let alias_a=machine.completed_replay_key(NameId(1),&[],&beta_a).expect("first beta alias");
++        assert!(Rc::ptr_eq(&first,&alias_a),"source beta alias should share the exact checked key");
++        let alias_b=machine.completed_replay_key(NameId(1),&[],&beta_b).expect("second beta alias");
++        assert!(Rc::ptr_eq(&first,&alias_b),"separate beta frames of the same source must reuse the key");
+         machine.exposure_fuel.set(None);
+         // Consuming a Machine through a builder is legal after previous
+         // checking. An updated certified rule table must invalidate the
