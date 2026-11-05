@@ -1,0 +1,6 @@
+{"input": "hot", "input_sha256": "8428d5d4282a608eb77e48ff62adace23212d9487ff9e86dc2e57af7c573d5f1", "rc": 2, "wall": 15.730022864001512, "terminal": ""}
+Traceback (most recent call last):
+  File "/tmp/nucleus-inlined-source-congruence/regression.py", line 12, in <module>
+    assert kind=='proof2' or r.returncode==0,'STOP: accepted-prefix regression'
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: STOP: accepted-prefix regression

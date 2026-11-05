@@ -1,0 +1,108 @@
+--- a/src/convert.rs
++++ b/src/convert.rs
+@@ -195,6 +195,7 @@
+                     *congruence_attempts-=1;
+                     checker.exact_source_capture_identity(lhs,rhs,&mut trial)
+                         || checker.instantiated_source_capture_congruence(lhs,rhs,&mut trial)
++                        || checker.reclosed_source_congruence(lhs,rhs,&mut trial)
+                 }else{false};
+             remaining -= allowance.saturating_sub(trial);
+             if identical { continue; }
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -1674,6 +1674,73 @@
+                 (EnvBinding::Closure(a),EnvBinding::Closure(b))=>{
+                     let identical=a.expr==b.expr&&a.env.id()==b.env.id()&&a.levels.identity()==b.levels.identity();
+                     if !identical&&!self.reuse_completed_source_capture_fact(a,b){return false;}
++                }
++                _=>return false,
++            }
++        }
++        true
++    }
++
++    // Pure syntax congruence after actual capture substitution. Intrinsic
++    // binders and ambient free variables have disjoint identities. No cached
++    // raw-closure fact is consulted under a virtual binder.
++    pub(crate)fn reclosed_source_congruence(&self,left:&Closure,right:&Closure,remaining:&mut usize)->bool{
++        enum Head{Bound(u64),Free(FreeId),Nat(crate::nat::BigNat),Node(Closure,u64)}
++        fn debit(work:&mut usize,cost:usize)->bool{if *work<cost{return false}*work-=cost;true}
++        fn expose(c:&TypeChecker,mut term:Closure,mut intrinsic:u64,depth:u64,work:&mut usize)->Option<Head>{
++            if intrinsic>depth{return None}
++            loop{
++                if !take_step(work){return None}
++                match c.expressions.get(term.expr)?{
++                    Expr::BVar(index)if *index<intrinsic=>return Some(Head::Bound(depth.checked_sub(1+index)?)),
++                    Expr::BVar(index)=>{
++                        let index=index.checked_sub(intrinsic)?;
++                        let cost=usize::try_from(index).ok()?.checked_add(1)?;
++                        if !debit(work,cost){return None}
++                        match term.env.lookup_binding_ref(index)?{
++                            EnvBinding::Free(f)=>return Some(Head::Free(*f)),
++                            EnvBinding::Neutral(Neutral{head:NeutralHead::Free(f),spine})if spine.is_empty()=>return Some(Head::Free(*f)),
++                            EnvBinding::Closure(child)=>{term=child.clone();intrinsic=0;},
++                            EnvBinding::NatLit(n)=>{if !debit(work,n.limb_count()){return None}return Some(Head::Nat(n.clone()))},
++                            _=>return None,
++                        }
++                    }
++                    Expr::NatLit(n)=>{if !debit(work,n.limb_count()){return None}return Some(Head::Nat(n.clone()))},
++                    _=>return Some(Head::Node(term,intrinsic)),
++                }
++            }
++        }
++        let mut pending=vec![(left.clone(),0u64,right.clone(),0u64,0u64)];
++        while let Some((left,kl,right,kr,depth))=pending.pop(){
++            if !take_step(remaining){return false}
++            let(Some(a),Some(b))=(expose(self,left,kl,depth,remaining),expose(self,right,kr,depth,remaining))else{return false};
++            match(a,b){
++                (Head::Bound(a),Head::Bound(b))if a==b=>{},
++                (Head::Free(a),Head::Free(b))if a==b=>{},
++                (Head::Nat(a),Head::Nat(b))=>{if !debit(remaining,a.limb_count().max(b.limb_count()))||a!=b{return false}},
++                (Head::Node(a,ka),Head::Node(b,kb))=>{
++                    let(Some(x),Some(y))=(self.expressions.get(a.expr),self.expressions.get(b.expr))else{return false};
++                    let mut push=|x,y,ka,kb,depth|pending.push((a.sibling(x,a.env.clone()),ka,b.sibling(y,b.env.clone()),kb,depth));
++                    match(x,y){
++                        (Expr::Sort(x),Expr::Sort(y))=>if !self.exact_instantiated_source_level(*x,&a.levels,*y,&b.levels,remaining){return false},
++                        (Expr::Const{name:x,levels:xs},Expr::Const{name:y,levels:ys})if x==y&&xs.len()==ys.len()=>{
++                            for(x,y)in xs.iter().zip(ys){if !self.exact_instantiated_source_level(*x,&a.levels,*y,&b.levels,remaining){return false}}
++                        }
++                        (Expr::App{fun:x,arg:u},Expr::App{fun:y,arg:v})=>{push(*u,*v,ka,kb,depth);push(*x,*y,ka,kb,depth);},
++                        (Expr::Lam{domain:x,body:u},Expr::Lam{domain:y,body:v})
++                        |(Expr::Pi{domain:x,body:u},Expr::Pi{domain:y,body:v})=>{
++                            let(Some(next),Some(ka1),Some(kb1))=(depth.checked_add(1),ka.checked_add(1),kb.checked_add(1))else{return false};
++                            push(*u,*v,ka1,kb1,next);push(*x,*y,ka,kb,depth);
++                        }
++                        (Expr::Let{ty:x,value:u,body:m},Expr::Let{ty:y,value:v,body:n})
++                        |(Expr::LetNondep{ty:x,value:u,body:m},Expr::LetNondep{ty:y,value:v,body:n})=>{
++                            let(Some(next),Some(ka1),Some(kb1))=(depth.checked_add(1),ka.checked_add(1),kb.checked_add(1))else{return false};
++                            push(*m,*n,ka1,kb1,next);push(*u,*v,ka,kb,depth);push(*x,*y,ka,kb,depth);
++                        }
++                        (Expr::Proj{type_name:x,index:i,structure:u},Expr::Proj{type_name:y,index:j,structure:v})if x==y&&i==j=>push(*u,*v,ka,kb,depth),
++                        (Expr::StrLit(x),Expr::StrLit(y))=>if !debit(remaining,x.len().max(y.len()))||x!=y{return false},
++                        _=>return false,
++                    }
+                 }
+                 _=>return false,
+             }
+@@ -7747,3 +7814,21 @@
+  #[test]fn a_nonempty_neutral_capture_is_not_solved(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);c.complete_source_support(ExprId(2),&mut 128).unwrap();let t=||Closure::new(ExprId(2),EnvFrame::empty().extend_neutral(Neutral{head:NeutralHead::Free(FreeId(7)),spine:vec![Closure::new(ExprId(3),EnvFrame::empty())]}));assert!(!c.replay_completed_source_substitution(&t(),&t(),&mut 128));}
+ 
+ }
++
++#[cfg(test)]
++mod inlined_source_congruence_controls{
++ use super::*;
++ fn fixture()->(IdTable<ExprId,Expr>,IdTable<LevelId,Level>,Environment){let mut e=IdTable::default();for(id,x)in[(0,Expr::BVar(0)),(1,Expr::BVar(1)),(2,Expr::BVar(2)),(3,Expr::Sort(LevelId(0))),(4,Expr::Const{name:NameId(100),levels:vec![]}),(5,Expr::Const{name:NameId(101),levels:vec![]}),(6,Expr::App{fun:ExprId(4),arg:ExprId(0)}),(7,Expr::App{fun:ExprId(4),arg:ExprId(5)}),(8,Expr::Lam{domain:ExprId(3),body:ExprId(0)}),(9,Expr::Lam{domain:ExprId(3),body:ExprId(1)}),(10,Expr::Lam{domain:ExprId(3),body:ExprId(8)}),(11,Expr::Lam{domain:ExprId(3),body:ExprId(9)}),(12,Expr::Lam{domain:ExprId(3),body:ExprId(2)}),(13,Expr::App{fun:ExprId(4),arg:ExprId(2)}),(14,Expr::Lam{domain:ExprId(3),body:ExprId(13)}),(15,Expr::Lam{domain:ExprId(3),body:ExprId(14)}),(16,Expr::Lam{domain:ExprId(3),body:ExprId(7)}),(17,Expr::Lam{domain:ExprId(3),body:ExprId(16)}),(18,Expr::Const{name:NameId(101),levels:vec![LevelId(1)]}),(19,Expr::NatLit(crate::nat::BigNat::zero())),(20,Expr::NatLit(crate::nat::BigNat::parse_decimal("1").unwrap())),(21,Expr::Proj{type_name:NameId(200),index:0,structure:ExprId(0)}),(22,Expr::Proj{type_name:NameId(201),index:0,structure:ExprId(0)}),(23,Expr::Proj{type_name:NameId(200),index:1,structure:ExprId(0)}),(24,Expr::App{fun:ExprId(24),arg:ExprId(5)}),(25,Expr::App{fun:ExprId(25),arg:ExprId(5)}),(26,Expr::Lam{domain:ExprId(3),body:ExprId(12)}),(27,Expr::Lam{domain:ExprId(3),body:ExprId(10)})]{e.insert(ExprId(id),x).unwrap();}let mut l=IdTable::default();l.insert(LevelId(0),Level::Zero).unwrap();l.insert(LevelId(1),Level::Param(NameId(7))).unwrap();(e,l,Environment::empty())}
++ fn t(expr:u64,frame:EnvFrame)->Closure{Closure::new(ExprId(expr),frame)}
++ fn captured(expr:u64)->EnvFrame{EnvFrame::empty().extend(t(expr,EnvFrame::empty()))}
++ #[test]fn captured_alias_inside_application_matches_actual_subtree(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);assert!(c.reclosed_source_congruence(&t(6,captured(5)),&t(7,EnvFrame::empty()),&mut 1024));}
++ #[test]fn captured_subtree_resets_intrinsics_under_two_binders(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);assert!(c.reclosed_source_congruence(&t(15,captured(5)),&t(17,EnvFrame::empty()),&mut 1024));assert!(c.reclosed_source_congruence(&t(26,captured(8)),&t(27,EnvFrame::empty()),&mut 1024));}
++ #[test]fn ambient_free_zero_never_becomes_intrinsic_bound_zero(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let frame=EnvFrame::empty().extend(t(0,EnvFrame::empty().extend_free(FreeId(0))));assert!(!c.reclosed_source_congruence(&t(9,frame),&t(8,EnvFrame::empty()),&mut 1024));}
++ #[test]fn warmed_ambient_fact_never_applies_under_virtual_binders(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let frame=captured(5).extend(t(5,EnvFrame::empty()));let map=LevelSubstitution::default();let term=|id|Closure::with_levels(ExprId(id),frame.clone(),map.clone());assert!(c.exact_source_capture_identity(&term(0),&term(1),&mut 256));assert!(!c.reclosed_source_congruence(&term(10),&term(11),&mut 1024));}
++ #[test]fn captured_closure_keeps_its_actual_universes(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let map=|v|LevelSubstitution::new(vec![(NameId(7),v)]);let actual=Closure::with_levels(ExprId(18),EnvFrame::empty(),map(LevelTerm::Zero));let caller=map(LevelTerm::Succ(Box::new(LevelTerm::Zero)));let left=Closure::with_levels(ExprId(0),EnvFrame::empty().extend(actual),caller.clone());let right=Closure::with_levels(ExprId(18),EnvFrame::empty(),caller);assert!(!c.reclosed_source_congruence(&left,&right,&mut 1024));}
++ #[test]fn equal_data_types_never_equate_distinct_nat_values(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);assert!(!c.reclosed_source_congruence(&t(0,EnvFrame::empty().extend_nat_literal(crate::nat::BigNat::zero())),&t(20,EnvFrame::empty()),&mut 1024));}
++ #[test]fn missing_capture_never_invents_the_other_subtree(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);assert!(!c.reclosed_source_congruence(&t(6,EnvFrame::empty()),&t(7,EnvFrame::empty()),&mut 1024));}
++ #[test]fn cyclic_source_is_not_a_coinductive_certificate(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);assert!(!c.reclosed_source_congruence(&t(24,EnvFrame::empty()),&t(25,EnvFrame::empty()),&mut 1024));}
++ #[test]fn alias_lookup_stays_within_the_same_allowance(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let mut child=t(5,EnvFrame::empty());for _ in 0..12{child=t(0,EnvFrame::empty().extend(child));}let left=t(6,EnvFrame::empty().extend(child));let right=t(7,EnvFrame::empty());assert!(!c.reclosed_source_congruence(&left,&right,&mut 0));assert!(!c.reclosed_source_congruence(&left,&right,&mut 4));assert!(c.source_capture_proofs.borrow().is_empty());assert!(c.reclosed_source_congruence(&left,&right,&mut 1024));}
++ #[test]fn actual_projection_owner_and_index_remain_mandatory(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let f=EnvFrame::empty().extend_free(FreeId(7));assert!(!c.reclosed_source_congruence(&t(21,f.clone()),&t(22,f.clone()),&mut 1024));assert!(!c.reclosed_source_congruence(&t(21,f.clone()),&t(23,f),&mut 1024));}
++}
