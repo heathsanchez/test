@@ -1,0 +1,69 @@
+name: Nucleus candidate deferred projection congruence exact-prefix experiment
+on:
+  push:
+    branches: [research/nucleus-deferred-projection-congruence-20261105]
+    paths:
+      - '.github/workflows/nucleus-deferred-projection-congruence-20261105.yml'
+      - 'experiments/nucleus-deferred-projection-congruence-20261105/*.patch'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  source-qualified-experiment:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      GH_TOKEN: ${{ github.token }}
+      CARGO_INCREMENTAL: 0
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Restore qualified independent Nucleus source and exact first-UNKNOWN prefix
+        run: |
+          set -euo pipefail
+          mkdir -p qualified
+          gh api repos/heathsanchez/test/actions/artifacts/13370874970/zip > qualified.zip
+          printf '%s  %s\n' 0fd8a4cd86dcb233b532f59ea8dc853d22480b6ba62ff864049224250613e517 qualified.zip | sha256sum -c -
+          unzip -q qualified.zip -d qualified
+          tar --no-same-owner -xzf qualified/candidate/source.tar.gz
+          printf '%s  %s\n' 1949144e581167be2547bb18a0331d7b34a769f2cff75037b884ce9b2de6c4ac metatron-kernel/src/convert.rs | sha256sum -c -
+          printf '%s  %s\n' 633fb3fd4c58def5143e17078d3d188f832dc1a7432dea84a88b8d91676e5d20 metatron-kernel/src/run_flags.rs | sha256sum -c -
+          patch -p1 -d metatron-kernel < experiments/nucleus-deferred-projection-congruence-20261105/run_flags.rs.patch
+          patch -p1 -d metatron-kernel < experiments/nucleus-deferred-projection-congruence-20261105/convert.rs.patch
+          zstd -dq qualified/next-frontier.ndjson.zst -o next-frontier.ndjson
+          printf '%s  %s\n' 61b130d9e864c99afd4111b662f884827be98a87f27277c42a5949b025fc0d6 next-frontier.ndjson | sha256sum -c -
+      - name: Compile and execute source tests with both protected and candidate paths
+        run: |
+          set -euo pipefail
+          cd metatron-kernel
+          cargo test --locked --release > ../tests.stdout 2> ../tests.stderr
+          cargo build --locked --release
+          sha256sum target/release/metatron-kernel | tee ../candidate-binary.sha256
+      - name: Replay exact formerly-UNKNOWN Mathlib prefix with candidate enabled
+        run: |
+          set -euo pipefail
+          mapfile -t flags < <(jq -r '.candidate.configuration | to_entries[] | "\(.key)=\(.value)"' qualified/qualification.json)
+          set +e
+          env "${flags[@]}" NUCLEUS_EXPERIMENTAL_DEFERRED_PROJECTION_CONGRUENCE=1 timeout 220 metatron-kernel/target/release/metatron-kernel < next-frontier.ndjson > candidate.stdout 2> candidate.stderr
+          status=$?
+          set -e
+          printf 'CANDIDATE_RC=%s\n' "$status" | tee candidate.status
+          if test "$status" -ne 0 && test "$status" -ne 2; then exit "$status"; fi
+          rg 'UNKNOWN|REJECT|ERROR|last_record|stage=theorem.value' candidate.stderr | tail -n 15 || true
+          zstd -q -f -1 candidate.stderr -o candidate.stderr.zst
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-deferred-projection-first-prefix-experiment
+          path: |
+            tests.stdout
+            tests.stderr
+            candidate-binary.sha256
+            candidate.status
+            candidate.stderr.zst
+            candidate.stdout
+            qualified/qualification.json
+          retention-days: 60
+          if-no-files-found: warn
