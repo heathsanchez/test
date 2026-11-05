@@ -1,0 +1,634 @@
+diff --git a/src/convert.rs b/src/convert.rs
+--- a/src/convert.rs
++++ b/src/convert.rs
+@@ -6,7 +6,7 @@
+ use crate::machine::Transparency;
+ use crate::syntax::Expr;
+ use crate::typecheck::{RuleKAttempt, TypeChecker, TypeValue};
+-use crate::value::{Closure, EnvBinding, FreeId, Neutral, NeutralHead, Value};
++use crate::value::{Closure, EnvBinding, EnvFrame, FreeId, Neutral, NeutralHead, Value};
+ 
+ type ConversionVisitKey = (crate::machine::AuthorityId, TypeValue, TypeValue);
+ const INLINE_CONVERSION_VISIT_CAPACITY: usize = 8;
+@@ -1636,6 +1636,12 @@
+                 ) {
+                     return Judgment::proven((), "stuck-projection-rigid-application-congruence");
+                 }
++                if crate::run_flags::present(crate::run_flags::Flag::ExperimentalTypedReceiver){
++                    let allowance=(current_budget/4).min(1024);let mut trial=allowance;
++                    let proved=metered_projection_chain(checker,left_structure,right_structure,left_spine,right_spine,&mut trial,depth,context);
++                    let spent=allowance.saturating_sub(trial);current_budget=current_budget.saturating_sub(spent);*eta_work=eta_work.saturating_add(spent);
++                    if proved{return Judgment::proven((),"completed-premise-projection-chain-congruence")}
++                }
+                 let machine = checker.machine();
+                 let left_value = machine.projection_value_for_conversion(
+                     left_structure.clone(),
+@@ -2980,6 +2986,263 @@
+     safe
+ }
+ 
++// A deliberately finite, fail-closed continuation of source capture checking.
++// Its state is owned by one TypeChecker; a suspended walk is NEVER a warrant.
++// The unchanged ordinary source check remains authoritative outside the
++// experimental projection receiver path.
++pub(crate) struct ResumableSourceOpening {
++    root: Closure,
++    free: FreeId,
++    epoch: u64,
++    pending: Vec<SourceOpeningTask>,
++    visited: HashSet<(ExprId,u64,u64)>,
++    retries: u8,
++}
++
++// A complete syntactic-support certificate says precisely which bindings of
++// the enclosing environment can affect the source. A proof of absence of the
++// opened FreeId therefore transfers to a new environment ONLY if those actual
++// bindings are unchanged. Keep the original closure alive with each warrant.
++#[derive(Clone,Eq,PartialEq,Hash)]
++pub(crate) struct SourceOpeningFootprint {
++    source: ExprId,
++    levels: usize,
++    free: FreeId,
++    epoch: u64,
++    bindings: Vec<SourceCaptureToken>,
++}
++
++#[derive(Clone,Eq,PartialEq,Hash)]
++enum SourceCaptureToken {
++    Free(FreeId),
++    Closure(ExprId,u64,usize),
++    NatLit,
++}
++
++enum SourceOpeningTask {
++    Source(Closure,u64),
++    Scan {
++        support: Vec<u64>,
++        at: usize,
++        virtual_slots: u64,
++        traversed: u64,
++        cursor: EnvFrame,
++    },
++}
++
++enum OpeningProgress { Complete, Pending, Invalid }
++
++fn paid_step(work:&mut usize)->bool {
++    if *work==0{return false}*work-=1;true
++}
++
++fn complete_source_opening_footprint(
++    checker:&TypeChecker<'_>,body:&Closure,free:FreeId,epoch:u64,work:&mut usize,reserve:usize,
++)->Option<SourceOpeningFootprint>{
++    if !paid_step(work){return None}
++    let support=checker.complete_source_support(body.expr,work)?;
++    // Do not begin an optional long walk that cannot finish under the caller's
++    // paid allowance. The maximum selected source index bounds its traversal.
++    let scan=support.last().copied().unwrap_or(0);
++    let required=usize::try_from(scan).ok()?
++        .checked_add(support.len().checked_mul(2)?)?.checked_add(reserve)?;
++    if *work<required{return None}
++    let mut bindings=Vec::new();
++    let mut cursor=body.env.binding_refs();
++    let mut traversed=0u64;
++    for index in support {
++        if !paid_step(work){return None}
++        if index==0 {continue} // virtual binder introduced by opening
++        let target=index.checked_sub(1)?;
++        if target<traversed.saturating_sub(1){return None}
++        let mut selected=None;
++        while traversed<=target {
++            if !paid_step(work){return None}
++            selected=cursor.next();
++            if selected.is_none(){return None}
++            traversed=traversed.checked_add(1)?;
++        }
++        let token=match selected? {
++            EnvBinding::Free(id)=>SourceCaptureToken::Free(*id),
++            EnvBinding::Closure(c)=>SourceCaptureToken::Closure(c.expr,c.env.id(),c.levels.identity()),
++            EnvBinding::NatLit(_)=>SourceCaptureToken::NatLit,
++            EnvBinding::Neutral(_)=>return None, // no unproved neutral normalization
++        };
++        if !paid_step(work){return None} // retain and hash one actual token
++        bindings.push(token);
++    }
++    Some(SourceOpeningFootprint{source:body.expr,levels:body.levels.identity(),free,epoch,bindings})
++}
++
++impl ResumableSourceOpening {
++    fn new(body:&Closure,free:FreeId,epoch:u64)->Self{
++        Self {root:body.clone(),free,epoch,
++            pending:vec![SourceOpeningTask::Source(body.clone(),1)],
++            visited:HashSet::new(),retries:0}
++    }
++
++    fn same_key(&self,body:&Closure,free:FreeId,epoch:u64)->bool{
++        self.root.expr==body.expr && self.root.env.id()==body.env.id()
++            && self.root.levels.identity()==body.levels.identity()
++            && self.free==free && self.epoch==epoch
++    }
++
++    fn neutral_children(neutral:&Neutral,free:FreeId,work:&mut usize)->Result<Vec<Closure>,OpeningProgress>{
++        let mut pending=vec![neutral];
++        let mut children=Vec::new();
++        while let Some(node)=pending.pop(){
++            if !paid_step(work){return Err(OpeningProgress::Pending)}
++            match &node.head {
++                NeutralHead::Free(actual) if *actual==free=>return Err(OpeningProgress::Invalid),
++                NeutralHead::Projection{structure,..}=>pending.push(structure),
++                _=>{}
++            }
++            if *work<node.spine.len(){return Err(OpeningProgress::Pending)}
++            *work-=node.spine.len();
++            children.extend(node.spine.iter().cloned());
++        }
++        Ok(children)
++    }
++
++    fn advance(&mut self,checker:&TypeChecker<'_>,work:&mut usize)->OpeningProgress{
++        while let Some(task)=self.pending.pop(){
++            if self.pending.len()>4096||self.visited.len()>4096{return OpeningProgress::Invalid}
++            match task{
++                SourceOpeningTask::Source(source,virtual_slots)=>{
++                    if !paid_step(work){self.pending.push(SourceOpeningTask::Source(source,virtual_slots));return OpeningProgress::Pending}
++                    let key=(source.expr,source.env.id(),virtual_slots);
++                    if self.visited.contains(&key){continue}
++                    let Some(support)=checker.complete_source_support(source.expr,work) else{
++                        self.pending.push(SourceOpeningTask::Source(source,virtual_slots));
++                        return OpeningProgress::Pending;
++                    };
++                    if !paid_step(work){self.pending.push(SourceOpeningTask::Source(source,virtual_slots));return OpeningProgress::Pending}
++                    self.visited.insert(key);
++                    self.pending.push(SourceOpeningTask::Scan {support,at:0,virtual_slots,traversed:0,cursor:source.env});
++                }
++                SourceOpeningTask::Scan{support,mut at,virtual_slots,mut traversed,cursor}=>{
++                    if at>=support.len(){continue}
++                    let requested=support[at];
++                    if requested<virtual_slots{
++                        if !paid_step(work){
++                            self.pending.push(SourceOpeningTask::Scan{support,at,virtual_slots,traversed,cursor});
++                            return OpeningProgress::Pending;
++                        }
++                        at+=1;
++                        self.pending.push(SourceOpeningTask::Scan{support,at,virtual_slots,traversed,cursor});
++                        continue;
++                    }
++                    let needed=requested-virtual_slots;
++                    if traversed>needed{return OpeningProgress::Invalid}
++                    // Read exactly one immutable node and save the cursor.
++                    // Non-selected captured values need not be inspected.
++                    if !paid_step(work){
++                        self.pending.push(SourceOpeningTask::Scan{support,at,virtual_slots,traversed,cursor});
++                        return OpeningProgress::Pending;
++                    }
++                    let Some((binding,parent))=cursor.head_binding()else{return OpeningProgress::Invalid};
++                    let selected=traversed==needed;
++                    let mut children=Vec::new();
++                    if selected{
++                        match binding{
++                            EnvBinding::Free(actual) if *actual==self.free=>return OpeningProgress::Invalid,
++                            EnvBinding::Closure(captured)=>children.push(captured.clone()),
++                            EnvBinding::Neutral(neutral)=>match Self::neutral_children(neutral,self.free,work){
++                                Ok(found)=>children=found,
++                                Err(OpeningProgress::Pending)=>{
++                                    self.pending.push(SourceOpeningTask::Scan{support,at,virtual_slots,traversed,cursor});
++                                    return OpeningProgress::Pending;
++                                }
++                                Err(other)=>return other,
++                            },
++                            _=>{},
++                        }
++                    }
++                    if *work<children.len(){
++                        self.pending.push(SourceOpeningTask::Scan{support,at,virtual_slots,traversed,cursor});
++                        return OpeningProgress::Pending;
++                    }
++                    *work-=children.len();
++                    let next=parent.clone();
++                    traversed+=1;
++                    if selected{at+=1}
++                    self.pending.push(SourceOpeningTask::Scan{support,at,virtual_slots,traversed,cursor:next});
++                    for child in children.into_iter().rev(){
++                        self.pending.push(SourceOpeningTask::Source(child,0));
++                    }
++                }
++            }
++        }
++        OpeningProgress::Complete
++    }
++}
++
++fn source_opening_avoids_capture_resumable(
++    checker:&TypeChecker<'_>,body:&Closure,free:FreeId,work:&mut usize,
++)->bool{
++    if !paid_step(work){return false}
++    if checker.has_source_opening_proof(body,free){return true}
++    let Some(epoch)=checker.source_reuse_epoch()else{return false};
++    // Completed source support is sufficient to form an observational key:
++    // only the actual captures the source can reference are compared. A key
++    // hit is a previously FULLY checked absence proof; partial walks cannot
++    // populate this cache, and unknown neutral captures never join a key.
++    let prefix=(body.expr,body.levels.identity(),free,epoch);
++    let previously_certified=checker.source_opening_footprint_prefixes.borrow().contains(&prefix);
++    let footprint=if previously_certified && *work>=16 {
++        complete_source_opening_footprint(checker,body,free,epoch,work,0)
++    }else{None};
++    if let Some(key)=footprint.as_ref(){
++        let known=checker.source_opening_footprints.borrow().contains_key(key);
++        if known && *work>=key.bindings.len().saturating_add(1) {
++            *work-=key.bindings.len().saturating_add(1);
++            checker.retain_source_opening_proof(body,free);
++            return true;
++        }
++    }
++    let mut entries=checker.resumed_source_openings.borrow_mut();
++    let mut existing=None;
++    for (i,entry) in entries.iter().enumerate(){
++        if !paid_step(work){return false}
++        if entry.same_key(body,free,epoch){existing=Some(i);break}
++    }
++    let index=if let Some(index)=existing{index}else{
++        if entries.len()>=64{return false}
++        if !paid_step(work){return false}
++        entries.push(ResumableSourceOpening::new(body,free,epoch));
++        entries.len()-1
++    };
++    let state=&mut entries[index];
++    state.retries=state.retries.saturating_add(1);
++    let result=state.advance(checker,work);
++    match result{
++        OpeningProgress::Complete=>{
++            entries.swap_remove(index);
++            drop(entries);
++            checker.retain_source_opening_proof(body,free);
++            let completed_footprint=footprint.or_else(||{
++                // Speculative memo construction must not consume the tight
++                // remainder needed to finish a current congruence trial.
++                if *work>=128 {complete_source_opening_footprint(checker,body,free,epoch,work,64)}
++                else {None}
++            });
++            if let Some(key)=completed_footprint {
++                let mut proofs=checker.source_opening_footprints.borrow_mut();
++                if proofs.len()<4096 {
++                    proofs.entry(key).or_insert_with(||body.clone());
++                    checker.source_opening_footprint_prefixes.borrow_mut().insert(prefix);
++                }
++            }
++            true
++        }
++        OpeningProgress::Invalid=>{entries.swap_remove(index);false}
++        OpeningProgress::Pending=>{
++            if entries[index].retries==u8::MAX{entries.swap_remove(index);}
++            false
++        }
++    }
++}
++
+ fn source_opening_avoids_capture_uncached(
+     checker:&TypeChecker<'_>,body:&Closure,free:FreeId,budget:&mut usize,
+ )->bool {
+@@ -3172,3 +3435,243 @@
+  }
+ 
+ }
++
++thread_local!{static PROJECTION_CHAIN_ACTIVE:std::cell::Cell<bool>=const{std::cell::Cell::new(false)};}
++// Finite sufficient VALUE congruence only. This path starts no new Core
++// conversion or typing trial; non-structural bases require completed evidence.
++fn metered_projection_chain(checker:&TypeChecker<'_>,left:&Closure,right:&Closure,left_args:&[Closure],right_args:&[Closure],work:&mut usize,depth:usize,context:&[TypeValue])->bool{
++    if *work<256||depth!=context.len()||context.len()>64||context.iter().any(|x|!matches!(x,TypeValue::Term(_)))||checker.strict_source_origin_probe()||left_args.len()!=right_args.len(){return false}
++    if !PROJECTION_CHAIN_ACTIVE.try_with(|active|!active.replace(true)).unwrap_or(false){return false}
++    struct Trial;impl Drop for Trial{fn drop(&mut self){let _=PROJECTION_CHAIN_ACTIVE.try_with(|active|active.set(false));}}
++    let _trial=Trial;
++    // An opened binder changes Gamma, so memo identity MUST include the
++    // exact local scope. Separate sibling scopes never share unproved facts.
++    type Key=(crate::id::ExprId,u64,usize,crate::id::ExprId,u64,usize,usize);
++    fn key(a:&Closure,b:&Closure,scope:usize)->Key{(a.expr,a.env.id(),a.levels.identity(),b.expr,b.env.id(),b.levels.identity(),scope)}
++    fn pay(work:&mut usize,cost:usize)->bool{if *work<cost{return false}*work-=cost;true}
++    fn level_copy(level:&crate::level::LevelTerm,work:&mut usize)->Option<crate::level::LevelTerm>{
++        use crate::level::LevelTerm;let mut pending=vec![level];let(mut nodes,mut bytes)=(0usize,0usize);
++        while let Some(level)=pending.pop(){nodes=nodes.checked_add(1)?;if nodes>64||!pay(work,1){return None}
++            match level{LevelTerm::Zero=>{},LevelTerm::Param(s)=>{bytes=bytes.checked_add(s.len())?;if bytes>4096||!pay(work,s.len()){return None}},LevelTerm::Succ(x)=>pending.push(x),LevelTerm::Max(a,b)|LevelTerm::IMax(a,b)=>{pending.push(b);pending.push(a);}}
++        }
++        Some(level.clone())
++    }
++    fn level_equal(a:&crate::level::LevelTerm,b:&crate::level::LevelTerm,work:&mut usize)->bool{
++        let(Some(a),Some(b))=(level_copy(a,work),level_copy(b,work))else{return false};crate::level::level_equal_metered(a,b,work).is_proven()
++    }
++    enum Task{Enter(Closure,Closure,usize),Finish(Key),Neutral(Neutral,Neutral,usize)}
++    // Reverse release keeps ancestor owners alive while descendants drop.
++    struct Owners(Vec<(Closure,Closure)>);impl Drop for Owners{fn drop(&mut self){while let Some(pair)=self.0.pop(){drop(pair);}}}
++    let mut owners=Owners(Vec::new());let mut pending=Vec::new();let mut active=HashSet::new();let mut complete=HashSet::new();
++    if !pay(work,left_args.len().saturating_add(context.len()).saturating_add(1)){return false}
++    let mut scopes=vec![(depth,context.to_vec())];
++    for(a,b)in left_args.iter().zip(right_args){pending.push(Task::Enter(a.clone(),b.clone(),0));}
++    pending.push(Task::Enter(left.clone(),right.clone(),0));let machine=checker.machine();
++    while let Some(task)=pending.pop(){
++        if !pay(work,1){return false}
++        match task{
++            Task::Finish(k)=>{active.remove(&k);complete.insert(k);},
++            Task::Enter(a,b,scope)=>{
++                let k=key(&a,&b,scope);owners.0.push((a.clone(),b.clone()));
++                if complete.contains(&k){continue}
++                if !active.insert(k){return false}
++                if (a.expr,a.env.id(),a.levels.identity())==(b.expr,b.env.id(),b.levels.identity())
++                    ||checker.reuse_completed_source_capture_fact(&a,&b){active.remove(&k);complete.insert(k);continue}
++                let av=TypeValue::Term(a.clone());let bv=TypeValue::Term(b.clone());
++                // Query only an already completed ordinary root conversion in
++                // its original namespace; no reset or fresh recursive search.
++                let (local_depth,local_context)=&scopes[scope];
++                if let Some(fact)=checker.completed_core_conversion_key(&av,&bv,local_context,*local_depth,0,DeltaPolicy::GuardedSemanticFallback,*work)
++                    && checker.reuse_completed_core_conversion(&fact,local_context){active.remove(&k);complete.insert(k);continue}
++                let probe=(*work/2).min(16);if probe<16||!pay(work,2*probe){return false}
++                let a=machine.expose_for_conversion(a,Transparency::Reducible,probe);let b=machine.expose_for_conversion(b,Transparency::Reducible,probe);
++                let(Judgment::Proven{value:a,..},Judgment::Proven{value:b,..})=(a,b)else{return false};
++                pending.push(Task::Finish(k));
++                match(a,b){
++                    (Value::StuckProjection{type_name:x,index:i,structure:a,spine:aa},Value::StuckProjection{type_name:y,index:j,structure:b,spine:ba})if x==y&&i==j&&aa.len()==ba.len()=>{
++                        if !pay(work,aa.len().saturating_add(1)){return false}for(a,b)in aa.into_iter().zip(ba){pending.push(Task::Enter(a,b,scope));}pending.push(Task::Enter(a,b,scope));
++                    }
++                    (Value::Lam{domain:left_domain,body:left_body},Value::Lam{domain:right_domain,body:right_body})=>{
++                        // Mirror the ordinary kernel's lambda congruence:
++                        // prove the domains in Gamma first, then the bodies
++                        // opened by the same fresh local in Gamma,domain.
++                        // A same-shape shortcut without these two obligations
++                        // would be unsound. Neither obligation receives fuel.
++                        if *local_depth>=64||local_context.len()!=*local_depth{return false}
++                        let Some(free)=fresh_local(*local_depth)else{return false};
++                        if !source_opening_avoids_capture_resumable(checker,&left_body,free,work)
++                            ||!source_opening_avoids_capture_resumable(checker,&right_body,free,work){return false}
++                        if !pay(work,local_context.len().saturating_add(3)){return false}
++                        let mut body_context=local_context.clone();
++                        body_context.push(TypeValue::Term(left_domain.clone()));
++                        let next_scope=scopes.len();scopes.push((local_depth+1,body_context));
++                        pending.push(Task::Enter(left_body.under_free(free),right_body.under_free(free),next_scope));
++                        pending.push(Task::Enter(left_domain,right_domain,scope));
++                    }
++                    (Value::Neutral(a),Value::Neutral(b))=>pending.push(Task::Neutral(a,b,scope)),
++                    (Value::Sort(a),Value::Sort(b))=>if !level_equal(&a,&b,work){return false},
++                    (Value::NatLit(a),Value::NatLit(b))=>if !pay(work,a.limb_count().max(b.limb_count()))||a!=b{return false},
++                    _=>return false,
++                }
++            }
++            Task::Neutral(a,b,scope)=>{
++                if a.spine.len()!=b.spine.len()||!pay(work,a.spine.len()){return false}
++                match(a.head,b.head){
++                    (NeutralHead::Free(a),NeutralHead::Free(b))if a==b=>{},
++                    (NeutralHead::Const{name:a,levels:al},NeutralHead::Const{name:b,levels:bl})if a==b&&al.len()==bl.len()=>{
++                        for(a,b)in al.iter().zip(&bl){if !level_equal(a,b,work){return false}}
++                    }
++                    (NeutralHead::Projection{type_name:a,index:i,structure:x},NeutralHead::Projection{type_name:b,index:j,structure:y})if a==b&&i==j=>pending.push(Task::Neutral(*x,*y,scope)),
++                    _=>return false,
++                }
++                for(a,b)in a.spine.into_iter().zip(b.spine){pending.push(Task::Enter(a,b,scope));}
++            }
++        }
++    }
++    true
++}
++#[cfg(test)]
++mod metered_projection_chain_controls{
++ use super::*;
++ use crate::id::{IdTable,ExprId,LevelId,NameId};use crate::syntax::{Expr,Level};use crate::environment::{Environment,ConstantDecl};
++ fn fixture()->(IdTable<ExprId,Expr>,IdTable<LevelId,Level>,Environment){let mut e=IdTable::default();for(id,x)in[(0,Expr::Sort(LevelId(0))),(1,Expr::BVar(0)),(2,Expr::Lam{domain:ExprId(0),body:ExprId(1)}),(3,Expr::Const{name:NameId(1),levels:vec![]}),(4,Expr::App{fun:ExprId(2),arg:ExprId(3)}),(5,Expr::Const{name:NameId(2),levels:vec![]}),(6,Expr::App{fun:ExprId(6),arg:ExprId(3)}),(7,Expr::App{fun:ExprId(7),arg:ExprId(3)}),(8,Expr::Const{name:NameId(3),levels:vec![LevelId(0)]}),(9,Expr::Const{name:NameId(3),levels:vec![LevelId(1)]}),(10,Expr::Const{name:NameId(3),levels:vec![LevelId(4)]}),(11,Expr::Const{name:NameId(3),levels:vec![LevelId(5)]})]{e.insert(ExprId(id),x).unwrap();}let mut l=IdTable::default();for(id,x)in[(0,Level::Zero),(1,Level::Succ(LevelId(0))),(2,Level::Param(NameId(32))),(3,Level::Param(NameId(326))),(4,Level::Max(LevelId(2),LevelId(3))),(5,Level::Max(LevelId(3),LevelId(2)))]{l.insert(LevelId(id),x).unwrap();}let env=Environment::empty().extend(NameId(1),ConstantDecl::axiom(vec![],ExprId(0))).unwrap().extend(NameId(2),ConstantDecl::axiom(vec![],ExprId(0))).unwrap().extend(NameId(3),ConstantDecl::axiom(vec![NameId(7)],ExprId(0))).unwrap();(e,l,env)}
++ fn term(c:&TypeChecker,id:u64)->Closure{c.closure(ExprId(id),crate::value::EnvFrame::empty())}
++ #[test]fn checked_base_conversion_is_a_sufficient_receiver_premise(){let _scope=crate::run_flags::enter();let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let mut work=8192;assert!(metered_projection_chain(&c,&term(&c,4),&term(&c,3),&[],&[],&mut work,0,&[]));assert!(work<8192);}
++ #[test]fn all_applied_arguments_remain_value_obligations(){let _scope=crate::run_flags::enter();let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let a=term(&c,3);assert!(!metered_projection_chain(&c,&a,&a,&[a.clone()],&[term(&c,5)],&mut 8192,0,&[]));}
++ #[test]fn completed_duplicate_leaf_is_reused_without_coinduction(){let _scope=crate::run_flags::enter();let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let a=term(&c,4);let b=term(&c,3);assert!(metered_projection_chain(&c,&b,&b,&[a.clone(),a],&[b.clone(),b.clone()],&mut 16384,0,&[]));}
++ #[test]fn zero_work_or_unmatched_arity_cannot_prove(){let _scope=crate::run_flags::enter();let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let a=term(&c,3);assert!(!metered_projection_chain(&c,&a,&a,&[],&[],&mut 0,0,&[]));assert!(!metered_projection_chain(&c,&a,&a,&[a.clone()],&[],&mut 8192,0,&[]));}
++ #[test]fn active_trial_never_starts_a_nested_cold_trial(){let _scope=crate::run_flags::enter();let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);struct Reset;impl Drop for Reset{fn drop(&mut self){PROJECTION_CHAIN_ACTIVE.with(|a|a.set(false));}}PROJECTION_CHAIN_ACTIVE.with(|a|assert!(!a.replace(true)));let _reset=Reset;let mut work=8192;assert!(!metered_projection_chain(&c,&term(&c,4),&term(&c,3),&[],&[],&mut work,0,&[]));assert_eq!(work,8192);}
++ #[test]fn different_actual_universes_do_not_form_a_head_certificate(){let _scope=crate::run_flags::enter();let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);assert!(!metered_projection_chain(&c,&term(&c,8),&term(&c,9),&[],&[],&mut 8192,0,&[]));}
++ #[test]fn universe_max_permutation_uses_the_existing_paid_calculus(){let _scope=crate::run_flags::enter();let(e,l,env)=fixture();let c=TypeChecker::with_level_substitution(&e,&l,&env,[(NameId(32),crate::level::LevelTerm::Param("u".into())),(NameId(326),crate::level::LevelTerm::Param("v".into()))].into_iter().collect());assert!(metered_projection_chain(&c,&term(&c,10),&term(&c,11),&[],&[],&mut 8192,0,&[]));}
++ #[test]fn cyclic_source_is_not_a_completed_equality(){let _scope=crate::run_flags::enter();let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);assert!(!metered_projection_chain(&c,&term(&c,6),&term(&c,7),&[],&[],&mut 8192,0,&[]));}
++ #[test]
++ fn distinct_source_lambdas_need_checked_binder_continuation() {
++     let _scope=crate::run_flags::enter();
++     let (mut e,l,env)=fixture();
++     e.insert(ExprId(13),Expr::BVar(0)).unwrap();
++     e.insert(ExprId(12),Expr::Lam {domain:ExprId(0),body:ExprId(13)}).unwrap();
++     let c=TypeChecker::new(&e,&l,&env);
++     let mut work=8192;
++     assert!(metered_projection_chain(&c,&term(&c,2),&term(&c,12),&[],&[],&mut work,0,&[]),
++         "independent source lambdas with equal typed domains and bound bodies must compare");
++     assert!(work<8192,"the common semantic owner must pay for the continuation");
++ }
++ #[test]
++ fn lambda_continuation_does_not_restart_four_whole_checks() {
++     let _scope=crate::run_flags::enter();
++     let (mut e,l,env)=fixture();
++     e.insert(ExprId(13),Expr::BVar(0)).unwrap();
++     e.insert(ExprId(12),Expr::Lam {domain:ExprId(0),body:ExprId(13)}).unwrap();
++     let c=TypeChecker::new(&e,&l,&env);
++     let mut work=320;
++     assert!(metered_projection_chain(&c,&term(&c,2),&term(&c,12),&[],&[],&mut work,0,&[]),
++         "a finite lambda congruence should discharge domain and opened body under one owner");
++ }
++ #[test]
++ fn source_lambda_binder_capture_and_domain_mismatch_never_prove() {
++     let _scope=crate::run_flags::enter();
++     let (mut e,l,env)=fixture();
++     e.insert(ExprId(13),Expr::BVar(1)).unwrap();
++     e.insert(ExprId(12),Expr::Lam {domain:ExprId(0),body:ExprId(13)}).unwrap();
++     e.insert(ExprId(15),Expr::Sort(LevelId(1))).unwrap();
++     e.insert(ExprId(14),Expr::Lam {domain:ExprId(15),body:ExprId(1)}).unwrap();
++     let c=TypeChecker::new(&e,&l,&env);
++     let captured=Closure::new(ExprId(12),crate::value::EnvFrame::empty().extend_free(crate::value::FreeId(0)));
++     assert!(!metered_projection_chain(&c,&term(&c,2),&captured,&[],&[],&mut 8192,0,&[]),
++         "an outer captured Free(0) is not the newly opened binder Free(0)");
++     assert!(!metered_projection_chain(&c,&term(&c,2),&term(&c,14),&[],&[],&mut 8192,0,&[]),
++         "different source annotations cannot be ignored");
++ }
++ #[test]
++ fn source_opening_two_paid_visits_must_resume_without_minting_proof() {
++     let _scope=crate::run_flags::enter();
++     let (mut e,l,environment)=fixture();
++     // Under the virtual binder, BVar(201) selects capture index 200.
++     e.insert(ExprId(30),Expr::BVar(201)).unwrap();
++     let checker=TypeChecker::new(&e,&l,&environment);
++     let mut safe_env=crate::value::EnvFrame::empty();
++     for _ in 0..201 { safe_env=safe_env.extend_free(crate::value::FreeId(1)); }
++     let safe=Closure::new(ExprId(30),safe_env);
++     let mut first=128;
++     assert!(!source_opening_avoids_capture_resumable(&checker,&safe,crate::value::FreeId(0),&mut first),
++         "a partial traversal must not mint a capture warrant");
++     let mut none=0;
++     assert!(!source_opening_avoids_capture_resumable(&checker,&safe,crate::value::FreeId(0),&mut none),
++         "a zero-work revisit must not complete an unfinished check");
++     let mut second=128;
++     assert!(source_opening_avoids_capture_resumable(&checker,&safe,crate::value::FreeId(0),&mut second),
++         "verified earlier steps must survive an exhausted caller allowance");
++     let mut malicious_env=crate::value::EnvFrame::empty().extend_free(crate::value::FreeId(0));
++     for _ in 0..200 { malicious_env=malicious_env.extend_free(crate::value::FreeId(1)); }
++     let malicious=Closure::new(ExprId(30),malicious_env);
++     let mut mal_first=128;
++     assert!(!source_opening_avoids_capture_resumable(&checker,&malicious,crate::value::FreeId(0),&mut mal_first));
++     let mut mal_second=128;
++     assert!(!source_opening_avoids_capture_resumable(&checker,&malicious,crate::value::FreeId(0),&mut mal_second),
++         "completed absence for a different environment is never evidence");
++     let mut other_free=4096;
++     assert!(!source_opening_avoids_capture_resumable(&checker,&safe,crate::value::FreeId(1),&mut other_free),
++         "an actual captured Free(1) must not be mistaken for safe Free(0)");
++ }
++ #[test]
++ fn source_support_footprint_reuses_only_referenced_capture_across_distinct_frames() {
++     let _scope=crate::run_flags::enter();
++     let (mut expressions,levels,environment)=fixture();
++     // The root source references only its head capture; a different tail
++     // must not change the proved absence of Free(0) in that capture.
++     expressions.insert(ExprId(30),Expr::BVar(1)).unwrap();
++     expressions.insert(ExprId(31),Expr::BVar(200)).unwrap();
++     let checker=TypeChecker::new(&expressions,&levels,&environment);
++     let mut inner=crate::value::EnvFrame::empty();
++     for _ in 0..201 {inner=inner.extend_free(FreeId(1));}
++     let shared=Closure::new(ExprId(31),inner);
++     let a=Closure::new(ExprId(30),crate::value::EnvFrame::empty().extend(shared.clone()));
++     let b=a.sibling(ExprId(30),crate::value::EnvFrame::empty().extend_free(FreeId(0)).extend(shared));
++     assert_ne!(a.env.id(),b.env.id());
++     let mut first=1024;
++     assert!(source_opening_avoids_capture_resumable(&checker,&a,FreeId(0),&mut first));
++     let mut reused=24;
++     assert!(source_opening_avoids_capture_resumable(&checker,&b,FreeId(0),&mut reused),
++         "a complete support fingerprint should transfer across an unrelated enclosing binding");
++     let mut none=0;
++     assert!(!source_opening_avoids_capture_resumable(&checker,&b,FreeId(0),&mut none),
++         "even a completed support footprint requires a caller work unit");
++     let distinct_level_owner=Closure::new(ExprId(30),b.env.clone());
++     let mut different_levels=24;
++     assert!(!source_opening_avoids_capture_resumable(&checker,&distinct_level_owner,FreeId(0),&mut different_levels),
++         "a different level-instance identity cannot borrow the cached proof");
++     let mut harmful=crate::value::EnvFrame::empty().extend_free(FreeId(0));
++     for _ in 0..200 { harmful=harmful.extend_free(FreeId(1)); }
++     let changed=a.sibling(ExprId(30),crate::value::EnvFrame::empty()
++         .extend(Closure::new(ExprId(31),harmful)));
++     let mut negative=1024;
++     assert!(!source_opening_avoids_capture_resumable(&checker,&changed,FreeId(0),&mut negative),
++         "a changed referenced closure must not reuse the unrelated certified wrapper");
++     let mut changed_free=1024;
++     assert!(!source_opening_avoids_capture_resumable(&checker,&b,FreeId(1),&mut changed_free),
++         "the capture fingerprint is specific to the exact opened FreeId");
++ }
++ #[test]
++ fn lambda_receiver_reuses_paid_opening_across_trials() {
++     let _scope=crate::run_flags::enter();
++     let (mut e,l,environment)=fixture();
++     e.insert(ExprId(30),Expr::BVar(401)).unwrap();
++     e.insert(ExprId(42),Expr::Lam{domain:ExprId(0),body:ExprId(30)}).unwrap();
++     e.insert(ExprId(43),Expr::Lam{domain:ExprId(0),body:ExprId(30)}).unwrap();
++     let checker=TypeChecker::new(&e,&l,&environment);
++     let mut captured=crate::value::EnvFrame::empty();
++     for _ in 0..401{captured=captured.extend_free(crate::value::FreeId(1));}
++     let left=Closure::new(ExprId(42),captured.clone());
++     let right=Closure::new(ExprId(43),captured);
++     let mut first=320;
++     assert!(!metered_projection_chain(&checker,&left,&right,&[],&[],&mut first,0,&[]),
++         "the first partial source opening must remain unknown");
++     let mut eventually=false;
++     for _ in 0..3{
++         let mut allowance=320;
++         if metered_projection_chain(&checker,&left,&right,&[],&[],&mut allowance,0,&[]){eventually=true;break}
++     }
++     assert!(eventually,
++         "four separately bounded lambda trials must share paid capture progress");
++ }
++}
+diff --git a/src/typecheck.rs b/src/typecheck.rs
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -129,6 +129,9 @@
+     // Owning closures pin every frame and level allocation used by the key.
+     source_capture_proofs:RefCell<HashMap<(ExprId,u64,usize,ExprId,u64,usize),(Closure,Closure,bool)>>,
+     source_opening_proofs: RefCell<HashMap<(ExprId,u64,usize,FreeId),Closure>>,
++    pub(crate) resumed_source_openings: RefCell<Vec<crate::convert::ResumableSourceOpening>>,
++    pub(crate) source_opening_footprints: RefCell<HashMap<crate::convert::SourceOpeningFootprint,Closure>>,
++    pub(crate) source_opening_footprint_prefixes: RefCell<std::collections::HashSet<(ExprId,usize,FreeId,u64)>>,
+     // Closed source types admitted by this checker's actual formation judgment.
+     formed_expected: RefCell<std::collections::HashSet<Closure>>,
+     lambda_trials: RefCell<LambdaTrialState>,
+@@ -189,6 +192,9 @@
+             parametric_source_support:RefCell::new(HashMap::new()),
+             checked_frames: RefCell::new(HashMap::new()),
+             source_opening_proofs:RefCell::new(HashMap::new()),
++            resumed_source_openings:RefCell::new(Vec::new()),
++            source_opening_footprints:RefCell::new(HashMap::new()),
++            source_opening_footprint_prefixes:RefCell::new(std::collections::HashSet::new()),
+             source_capture_proofs:RefCell::new(HashMap::new()),
+             formed_expected: RefCell::new(std::collections::HashSet::new()),
+             lambda_trials: RefCell::new(LambdaTrialState::default()),
+@@ -221,6 +227,9 @@
+             parametric_source_support:RefCell::new(HashMap::new()),
+             checked_frames: RefCell::new(HashMap::new()),
+             source_opening_proofs:RefCell::new(HashMap::new()),
++            resumed_source_openings:RefCell::new(Vec::new()),
++            source_opening_footprints:RefCell::new(HashMap::new()),
++            source_opening_footprint_prefixes:RefCell::new(std::collections::HashSet::new()),
+             source_capture_proofs:RefCell::new(HashMap::new()),
+             formed_expected: RefCell::new(std::collections::HashSet::new()),
+             lambda_trials: RefCell::new(LambdaTrialState::default()),
+@@ -1305,6 +1314,8 @@
+     /// A reusable source-scoped conversion warrant. Both terms must first
+     /// typecheck in the SAME real context; equality of their types is not
+     /// confused with equality of their values. No unchecked strengthening.
++    pub(crate)fn strict_source_origin_probe(&self)->bool{self.strict_origin_probe}
++
+     pub(crate) fn checked_source_conversion(
+         &self,
+         left: &Closure,
+@@ -4854,6 +4865,9 @@
+             parametric_source_support:RefCell::new(HashMap::new()),
+             checked_frames: RefCell::new(HashMap::new()),
+             source_opening_proofs:RefCell::new(HashMap::new()),
++            resumed_source_openings:RefCell::new(Vec::new()),
++            source_opening_footprints:RefCell::new(HashMap::new()),
++            source_opening_footprint_prefixes:RefCell::new(std::collections::HashSet::new()),
+             source_capture_proofs:RefCell::new(HashMap::new()),
+             formed_expected: RefCell::new(std::collections::HashSet::new()),
+             lambda_trials: RefCell::new(LambdaTrialState::default()),
+@@ -5025,6 +5039,9 @@
+             parametric_source_support:RefCell::new(HashMap::new()),
+             checked_frames: RefCell::new(HashMap::new()),
+             source_opening_proofs:RefCell::new(HashMap::new()),
++            resumed_source_openings:RefCell::new(Vec::new()),
++            source_opening_footprints:RefCell::new(HashMap::new()),
++            source_opening_footprint_prefixes:RefCell::new(std::collections::HashSet::new()),
+             source_capture_proofs:RefCell::new(HashMap::new()),
+             formed_expected: RefCell::new(std::collections::HashSet::new()),
+             lambda_trials: RefCell::new(LambdaTrialState::default()),
+@@ -5081,6 +5098,9 @@
+             parametric_source_support:RefCell::new(HashMap::new()),
+             checked_frames: RefCell::new(HashMap::new()),
+             source_opening_proofs:RefCell::new(HashMap::new()),
++            resumed_source_openings:RefCell::new(Vec::new()),
++            source_opening_footprints:RefCell::new(HashMap::new()),
++            source_opening_footprint_prefixes:RefCell::new(std::collections::HashSet::new()),
+             source_capture_proofs:RefCell::new(HashMap::new()),
+             formed_expected: RefCell::new(std::collections::HashSet::new()),
+             lambda_trials: RefCell::new(LambdaTrialState::default()),
+@@ -6157,6 +6177,8 @@
+         self.source_opening_proofs.borrow().contains_key(&(body.expr,body.env.id(),body.levels.identity(),free))
+     }
+ 
++    pub(crate) fn source_reuse_epoch(&self)->Option<u64>{self.binding_revocation_epoch.get()}
++
+     pub(crate) fn retain_source_opening_proof(&self,body:&Closure,free:FreeId) {
+         let mut proofs=self.source_opening_proofs.borrow_mut();
+         if proofs.len()<8192 {
+diff --git a/src/value.rs b/src/value.rs
+--- a/src/value.rs
++++ b/src/value.rs
+@@ -107,6 +107,16 @@
+ 
+     pub(crate) fn binding_refs(&self)->EnvBindings<'_>{EnvBindings{next:Some(self)}}
+ 
++    /// Inspect one immutable binding and its persistent parent without
++    /// allocating or cloning a possibly large binding payload. A metered
++    /// capture walk can retain the parent after paying for this step.
++    pub(crate) fn head_binding(&self)->Option<(&EnvBinding,&EnvFrame)>{
++        match self.0.as_ref(){
++            EnvNode::Empty=>None,
++            EnvNode::Extend{parent,value,..}=>Some((value,parent)),
++        }
++    }
++
+     /// Retrieve the *identity of the immutable binding node* read by one
+     /// de Bruijn index, in addition to its value. Typed binder authority is
+     /// attached to the node when a checked Pi/Lam/Let introduces it. The
