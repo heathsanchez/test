@@ -1,0 +1,86 @@
+name: Nucleus newly reached Finsupp application type diagnostic
+on:
+  push:
+    branches: [research/nucleus-deferred-projection-congruence-20261105]
+    paths:
+      - '.github/workflows/nucleus-next-finsupp-application-type-diag-20261105.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      GH_TOKEN: ${{ github.token }}
+      CARGO_INCREMENTAL: 0
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Restore source owner and apply only source-visible candidate patch
+        run: |
+          set -euo pipefail
+          mkdir -p qualified original196 arena-current candidate mathlib
+          gh api repos/heathsanchez/test/actions/artifacts/13370874970/zip > qualified.zip
+          printf '%s  %s\n' 0fd8a4cd86dcb233b532f59ea8dc853d22480b6ba62ff864049224250613e517 qualified.zip | sha256sum -c -
+          unzip -q qualified.zip -d qualified
+          tar --no-same-owner -xzf qualified/candidate/source.tar.gz
+          printf '%s  %s\n' \
+            1949144e581167be2547bb18a0331d7b34a769f2cff75037b884ce9b2de6c4ac metatron-kernel/src/convert.rs \
+            633fb3fd4c58def5143e17078d3d188f832dc1a7432dea84a88b8d91676e5d20 metatron-kernel/src/run_flags.rs \
+            3b3c9c6e70f671a6473aca4ce2ba4bc3b6ab0d4c770ead7da9f7656ae7ba640e metatron-kernel/src/typecheck.rs | sha256sum -c -
+          patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-distinct-const-proof-20261105/source-formed-Prop-4096-candidate.patch
+          sha256sum metatron-kernel/src/{convert,run_flags,typecheck}.rs | tee candidate-source-sha256.txt
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/11272848230/zip > original196.zip
+          printf '%s  %s\n' f6cd590db7f6fb92b8d1b3ca87231d4b0f521f085d73f93abd005f5caaff86d2 original196.zip | sha256sum -c -
+          unzip -p original196.zip lean-arena-tests.tar.gz | tar --no-same-owner -xzf - -C original196
+          curl -fLsS --retry 3 https://arena.lean-lang.org/lean-arena-tests.tar.gz -o current207.tar.gz
+          printf '%s  %s\n' 9a6ef995a4cff1fff0e15bf46fde67ccbc4754dc023b9a61ee9b46bfe252fd75 current207.tar.gz | sha256sum -c -
+          tar --no-same-owner -xzf current207.tar.gz -C arena-current
+          test "$(find original196 -name '*.ndjson' -type f | wc -l)" -eq 196
+          test "$(find arena-current -name '*.ndjson' -type f | wc -l)" -eq 207
+      - name: Compile diagnostic build with unchanged acceptance semantics
+        run: |
+          set -euo pipefail
+          cd metatron-kernel
+          cargo build --locked --release --features diagnostics
+          cp target/release/metatron-kernel ../candidate/nucleus
+          sha256sum ../candidate/nucleus | tee ../candidate-binary-sha256.txt
+      - name: Replay exact archived 109.8M-record Mathlib and report next declaration
+        run: |
+          set -euo pipefail
+          gh api repos/heathsanchez/test/actions/artifacts/13377771876/zip > full-mathlib-evidence.zip
+          printf '%s  %s\n' 699da072ffc367c84cc168d7e1c7eec48e6572c6316ac33d43cc17944816cf65 full-mathlib-evidence.zip | sha256sum -c -
+          mapfile -t flags < <(jq -r '.candidate.configuration | to_entries[] | "\(.key)=\(.value)"' qualified/qualification.json)
+          set +e
+          unzip -p full-mathlib-evidence.zip mathlib-full.ndjson.zst | zstd -dc | \
+            env "${flags[@]}" NUCLEUS_EXPERIMENTAL_DEFERRED_PROJECTION_CONGRUENCE=1 \
+            NUCLEUS_EXPERIMENTAL_DISTINCT_CONST_PROOF_IRREL=1 NUCLEUS_EXPERIMENTAL_EXACT_CAPTURE_SEMANTIC_RETRY=1 NUCLEUS_TRACE_DOWNSTREAM=1 NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE=1 NUCLEUS_DISTINCT_PROOF_DIAG=1 \
+            timeout 1500 candidate/nucleus > mathlib/trace.stdout 2> mathlib/trace.stderr
+          statuses=("${PIPESTATUS[@]}")
+          set -e
+          printf 'zip_read=%s\tzstd=%s\tchecker=%s\n' "${statuses[0]}" "${statuses[1]}" "${statuses[2]}" | tee mathlib/status.tsv
+          grep -E 'NUCLEUS_(APPLICATION_FUNCTION_TYPE|DISTINCT_PROOF_DIAG|DOWNSTREAM)' mathlib/trace.stderr | tail -n 180 | cut -c1-1200 || true
+          test "${statuses[0]}" -eq 0
+          test "${statuses[1]}" -eq 0
+          test "${statuses[2]}" -eq 0
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-next-finsupp-app-type-diagnostic
+          retention-days: 60
+          if-no-files-found: warn
+          path: |
+            candidate-source-sha256.txt
+            candidate-binary-sha256.txt
+            original196.summary.txt
+            original196.verdicts.tsv
+            original196.residuals.txt
+            arena-current.summary.txt
+            arena-current.verdicts.tsv
+            arena-current.residuals.txt
+            mathlib/status.tsv
+            mathlib/trace.stdout
+            mathlib/trace.stderr
