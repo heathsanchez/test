@@ -1,0 +1,30 @@
+--- a/src/machine.rs
++++ b/src/machine.rs
+@@ -2709,6 +2709,27 @@
+                 if !active.insert(identity) {return Judgment::unknown("nested-recursor-iota-cycle");}
+                 entered.entry(key.digest).or_default().push(key.clone());
+                 parents.push(Continuation::Finish(key));
++                #[cfg(feature="diagnostics")]
++                if crate::run_flags::present(crate::run_flags::Flag::TraceNestedRecursorIotaFailure) {
++                    use std::sync::atomic::{AtomicUsize,Ordering};
++                    static REPLAY_MAJOR_STARTS:AtomicUsize=AtomicUsize::new(0);
++                    if REPLAY_MAJOR_STARTS.fetch_add(1,Ordering::Relaxed)<32 {
++                        let source=&neutral.spine[required-1];
++                        let binding=match self.expressions.get(source.expr) {
++                            Some(Expr::BVar(index))=>match source.env.lookup(*index) {
++                                Some(EnvBinding::Neutral(n))=>format!("captured-neutral:{:?}:spine={}",n.head,n.spine.len()),
++                                Some(EnvBinding::Closure(c))=>format!("captured-closure:expr={:?}:env={}",c.expr,c.env.id()),
++                                Some(EnvBinding::Free(f))=>format!("captured-free:{f:?}"),
++                                Some(EnvBinding::NatLit(n))=>format!("captured-nat-limbs={}",n.limb_count()),
++                                None=>String::from("unbound-bvar"),
++                            },
++                            other=>format!("source:{other:?}"),
++                        };
++                        eprintln!("NUCLEUS_REPLAY_MAJOR_START:head={name:?}:depth={depth}:major_expr={:?}:env={}:pending={}:binding={}:allowance={}:fuel={:?}",
++                            source.expr,source.env.id(),neutral.spine.len().saturating_sub(required),
++                            binding,budget,self.exposure_fuel.get());
++                    }
++                }
+                 let major_result=if self.replay_projection_major {
+                     self.expose_for_conversion(neutral.spine[required-1].clone(),
+                         Transparency::Full,self.exposure_fuel.get().unwrap_or(0).min(512))
