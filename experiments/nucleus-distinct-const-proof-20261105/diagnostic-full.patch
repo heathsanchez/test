@@ -142,7 +142,64 @@
  pub(crate) struct Scope {previous:Option<Bits>}
 --- a/src/typecheck.rs
 +++ b/src/typecheck.rs
-@@ -2579,6 +2579,126 @@
+@@ -835,15 +835,24 @@
+                 let is_pi = matches!(
+                     self.expressions.get(term.expr), Some(Expr::Pi { .. })
+                 );
++                let probe_lambda = term.expr.0 == 316361
++                    && std::env::var_os("NUCLEUS_DISTINCT_PROOF_DIAG").is_some();
++                if probe_lambda {
++                    eprintln!("NUCLEUS_EXACT_LAMBDA:begin:context={}:depth={depth}:remaining={remaining}:env={}:domain={domain:?}:body={body:?}",context.len(),term.env.id());
++                }
+                 let domain = term.sibling(*domain, term.env.clone());
+-                let domain_ty = self.infer_exact_closure_in_context(
++                let Some(domain_ty) = self.infer_exact_closure_in_context(
+                     &domain, context, remaining, depth + 1,
+-                )?;
++                ) else {
++                    if probe_lambda { eprintln!("NUCLEUS_EXACT_LAMBDA:domain-type-declined:remaining={remaining}"); }
++                    return None;
++                };
+                 let domain_sort_result = self.sort_level(
+                     Judgment::proven(domain_ty, "captured-binder-domain"),
+                     (*remaining).min(512),
+                 );
+                 let Some(domain_sort) = domain_sort_result.proven_value().cloned() else {
++                    if probe_lambda { eprintln!("NUCLEUS_EXACT_LAMBDA:domain-sort-declined:result={domain_sort_result:?}:remaining={remaining}"); }
+                     #[cfg(feature = "diagnostics")]
+                     self.record_capture_source_failure(term, context, *remaining, depth, &format!("binder-domain-formation:{domain_sort_result:?}"));
+                     return None;
+@@ -856,7 +865,10 @@
+                     self, &source_body, binder, &mut opening_budget,
+                 );
+                 *remaining -= allowance - opening_budget;
+-                if !safe { return None; }
++                if !safe {
++                    if probe_lambda { eprintln!("NUCLEUS_EXACT_LAMBDA:source-opening-declined:remaining={remaining}:opening-budget={opening_budget}"); }
++                    return None;
++                }
+                 let mut extended = context.to_vec();
+                 extended.push(TypeValue::Term(domain.clone()));
+                 let body_frame=term.env.extend_free(binder);
+@@ -874,9 +886,15 @@
+                     );
+                 }
+                 let body=term.sibling(*body,body_frame);
+-                let body_ty=self.infer_exact_closure_in_context(
++                let Some(body_ty)=self.infer_exact_closure_in_context(
+                     &body,&extended,remaining,depth+1,
+-                )?;
++                ) else {
++                    if probe_lambda {
++                        eprintln!("NUCLEUS_EXACT_LAMBDA:body-type-declined:remaining={remaining}:body={body:?}:syntax={:?}:body-capture-top={:?}",self.expressions.get(body.expr),body.env.binding_refs().next());
++                    }
++                    return None;
++                };
++                if probe_lambda { eprintln!("NUCLEUS_EXACT_LAMBDA:typed:remaining={remaining}"); }
+                 if is_pi {
+                     let body_sort = self.sort_level(
+                         Judgment::proven(body_ty, "captured-pi-body"),
+@@ -2579,6 +2597,126 @@
                      };
                      eprintln!("NUCLEUS_FAILED_RECEIVER_CONVERSION:expression={expression:?}:context_len={}:source_frame={}:remaining={}:actual={value:?}:expected={expected:?}:context={context:?}:actual_exposed={:?}:expected_exposed={:?}",
                          context.len(), frame.id(), *remaining, expose(&value), expose(expected));
@@ -269,7 +326,7 @@
                  }
                  #[cfg(feature="diagnostics")]
                  if crate::run_flags::present(crate::run_flags::Flag::TraceBidirBodyGap)
-@@ -3883,6 +4003,142 @@
+@@ -3883,6 +4021,142 @@
          true
      }
  
