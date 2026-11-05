@@ -111,14 +111,7 @@ jobs:
               timeout 200 env NUCLEUS_EXPERIMENTAL_DEFERRED_PROJECTION_CONGRUENCE=1 NUCLEUS_EXPERIMENTAL_DISTINCT_CONST_PROOF_IRREL=1 NUCLEUS_EXPERIMENTAL_EXACT_CAPTURE_SEMANTIC_RETRY=1 NUCLEUS_EXPERIMENTAL_QUOTIENT_PROJECTION_BRIDGE=1 candidate/nucleus < "$file" >/dev/null 2>/dev/null || actual=$?
               printf "%s\t%s\t%s\n" "$label" "$expected" "$actual"
             ' _ > "matrix/$corpus.unsorted.tsv"
-            LC_ALL=C sort -t 
-        if: always()
-        with:
-          name: nucleus-replay-prehashed-full-corpus
-          retention-days: 60
-          if-no-files-found: warn
-          path: matrix/
-\t' -k1,1 "matrix/$corpus.unsorted.tsv" > "matrix/$corpus.verdicts.tsv"
+            LC_ALL=C sort "matrix/$corpus.unsorted.tsv" > "matrix/$corpus.verdicts.tsv"
             awk -F '\t' -v corpus="$corpus" '{
               total++;
               if ($2==0 && $3==0) accept++;
