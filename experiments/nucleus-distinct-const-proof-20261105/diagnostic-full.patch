@@ -194,7 +194,61 @@
          if let (Some((key,set)),Some(TypeValue::Term(value)))=(pending,result.as_ref())
              && self.binding_revocation_epoch.get()==Some(key.epoch)
              && crate::run_flags::captured_configuration()==Some(key.flags)
-@@ -835,15 +867,24 @@
+@@ -720,22 +752,34 @@
+                 )))
+             }
+             Expr::App { fun, arg } => {
++                let probe_app = term.expr.0 == 316356
++                    && std::env::var_os("NUCLEUS_DISTINCT_PROOF_DIAG").is_some();
++                if probe_app {
++                    eprintln!("NUCLEUS_EXACT_APP:begin:expr={:?}:fun={fun:?}:arg={arg:?}:ctx={}:depth={depth}:remaining={remaining}",term.expr,context.len());
++                }
+                 let function = term.sibling(*fun, term.env.clone());
+                 let argument = term.sibling(*arg, term.env.clone());
+-                let function_ty = self.infer_exact_closure_in_context(
++                let Some(function_ty) = self.infer_exact_closure_in_context(
+                     &function, context, remaining, depth + 1,
+-                )?;
++                ) else {
++                    if probe_app { eprintln!("NUCLEUS_EXACT_APP:function-type-declined:remaining={remaining}"); }
++                    return None;
++                };
+                 let Some((domain, body)) = self.pi_view(
+                     Judgment::proven(function_ty, "exact-captured-function-type"),
+                     (*remaining).min(512),
+                 ) else {
++                    if probe_app { eprintln!("NUCLEUS_EXACT_APP:function-Pi-view-declined:remaining={remaining}"); }
+                     #[cfg(feature = "diagnostics")]
+                     self.record_capture_source_failure(term, context, *remaining, depth, "function-Pi-view-unavailable");
+                     return None;
+                 };
+-                let argument_ty = self.infer_exact_closure_in_context(
++                let Some(argument_ty) = self.infer_exact_closure_in_context(
+                     &argument, context, remaining, depth + 1,
+-                )?;
++                ) else {
++                    if probe_app { eprintln!("NUCLEUS_EXACT_APP:argument-type-declined:remaining={remaining}"); }
++                    return None;
++                };
+                 let mut domain_check = crate::convert::convert_with_policy_in_context(
+                     self, &argument_ty, &domain, (*remaining).min(512),
+                     crate::convert::DeltaPolicy::PreferredOnly,
+@@ -766,10 +810,14 @@
+                     }
+                 }
+                 if !domain_check.is_proven() {
++                    if probe_app {
++                        eprintln!("NUCLEUS_EXACT_APP:domain-conversion-declined:remaining={remaining}:actual={argument_ty:?}:required={domain:?}:result={domain_check:?}");
++                    }
+                     #[cfg(feature = "diagnostics")]
+                     self.record_capture_source_failure(term, context, *remaining, depth, &format!("argument-domain-relation:{domain_check:?}"));
+                     return None;
+                 }
++                if probe_app { eprintln!("NUCLEUS_EXACT_APP:checked-domain:remaining={remaining}"); }
+                 if !take_step(remaining) {
+                     #[cfg(feature = "diagnostics")]
+                     self.record_capture_source_failure(term, context, *remaining, depth, "argument-substitution-fuel-exhausted");
+@@ -835,15 +883,24 @@
                  let is_pi = matches!(
                      self.expressions.get(term.expr), Some(Expr::Pi { .. })
                  );
@@ -221,7 +275,7 @@
                      #[cfg(feature = "diagnostics")]
                      self.record_capture_source_failure(term, context, *remaining, depth, &format!("binder-domain-formation:{domain_sort_result:?}"));
                      return None;
-@@ -856,7 +897,10 @@
+@@ -856,7 +913,10 @@
                      self, &source_body, binder, &mut opening_budget,
                  );
                  *remaining -= allowance - opening_budget;
@@ -233,7 +287,7 @@
                  let mut extended = context.to_vec();
                  extended.push(TypeValue::Term(domain.clone()));
                  let body_frame=term.env.extend_free(binder);
-@@ -874,9 +918,15 @@
+@@ -874,9 +934,15 @@
                      );
                  }
                  let body=term.sibling(*body,body_frame);
@@ -251,7 +305,7 @@
                  if is_pi {
                      let body_sort = self.sort_level(
                          Judgment::proven(body_ty, "captured-pi-body"),
-@@ -2579,6 +2629,126 @@
+@@ -2579,6 +2645,126 @@
                      };
                      eprintln!("NUCLEUS_FAILED_RECEIVER_CONVERSION:expression={expression:?}:context_len={}:source_frame={}:remaining={}:actual={value:?}:expected={expected:?}:context={context:?}:actual_exposed={:?}:expected_exposed={:?}",
                          context.len(), frame.id(), *remaining, expose(&value), expose(expected));
@@ -378,7 +432,7 @@
                  }
                  #[cfg(feature="diagnostics")]
                  if crate::run_flags::present(crate::run_flags::Flag::TraceBidirBodyGap)
-@@ -3883,6 +4053,142 @@
+@@ -3883,6 +4069,142 @@
          true
      }
  
