@@ -1,0 +1,51 @@
+--- a/src/machine.rs
++++ b/src/machine.rs
+@@ -123,7 +123,9 @@
+     singletons:ImmutableMapWitness<HashSet<NameId>>,
+     nullary:ImmutableMapWitness<HashMap<NameId,Vec<NullaryMinorReduction>>>,
+     nested:ImmutableMapWitness<HashMap<NameId,Vec<ClosedNestedMinorReduction>>>,
+-    certificate:RecursorReduction,
++    // The registered recursor certificate is a *function* of (rules Rc
++    // owner, name) above/below; it must not be copied or rehashed in every
++    // captured source key. The immutable source-owner witness remains exact.
+     name:NameId,
+     levels:Vec<crate::level::LevelTerm>,
+     spine:Vec<Closure>,
+@@ -1112,9 +1114,16 @@
+         result
+     }
+     fn reserve_replay_key_inner(&self,levels:&[crate::level::LevelTerm],spine:&[Closure],certificate:&RecursorReduction)->bool {
+-        let Some(base)=spine.len().checked_add(certificate.rules.len()).and_then(|n|n.checked_add(certificate.level_params.len())).and_then(|n|n.checked_add(4)) else {return false;};
++        // Preserve legacy conservative work allowances for small rule
++        // tables (and their budget-sensitive protected regressions). Beyond
++        // eight immutable entries the certificate is still obtained by
++        // exact table owner + name; no copied/rehashed rule vector exists.
++        let charged_rules=certificate.rules.len().min(8);
++        let Some(base)=spine.len().checked_add(levels.len()).and_then(|n|n.checked_add(charged_rules)).and_then(|n|n.checked_add(4)) else {return false;};
+         if !self.reserve_replay_work(base) {return false;}
+-        for rule in &certificate.rules {if !self.reserve_replay_work(rule.constructor_level_params.len()) {return false;}}
++        for rule in certificate.rules.iter().take(8) {
++            if !self.reserve_replay_work(rule.constructor_level_params.len()) {return false;}
++        }
+         for level in levels {if !self.reserve_replay_levels(level) {return false;}}
+         for closure in spine {
+             for (_,level) in closure.levels.entries() {
+@@ -1194,7 +1203,7 @@
+             rules:ImmutableMapWitness(self.recursor_reductions.clone()),
+             definitions:ImmutableMapWitness(self.definitions.clone()),projections:ImmutableMapWitness(self.projection_specs.clone()),
+             singletons:ImmutableMapWitness(self.singleton_recursor_reductions.clone()),nullary:ImmutableMapWitness(self.nullary_minor_reductions.clone()),
+-            nested:ImmutableMapWitness(self.closed_nested_minor_reductions.clone()),certificate:certificate.clone(),
++            nested:ImmutableMapWitness(self.closed_nested_minor_reductions.clone()),
+             name,levels:levels.to_vec(),spine:spine.to_vec(),nat:self.nat_primitives.clone(),
+             bools:self.bool_primitives.clone(),quot:self.quot_primitives.as_ref().map(|q|(q.type_name,q.mk,q.lift,q.ind))};
+         use std::hash::{Hash,Hasher};
+@@ -1210,7 +1219,8 @@
+         if Rc::ptr_eq(left,right) {return Some(true);}
+         if left.digest!=right.digest {return Some(false);}
+         let key=&left.exact;
+-        if !self.reserve_replay_key(&key.levels,&key.spine,&key.certificate) {return None;}
++        let certificate=key.rules.0.get(&key.name)?;
++        if !self.reserve_replay_key(&key.levels,&key.spine,certificate) {return None;}
+         Some(left.exact==right.exact)
+     }
+ 
