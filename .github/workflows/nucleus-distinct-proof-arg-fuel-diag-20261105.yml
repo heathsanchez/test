@@ -1,4 +1,4 @@
-name: Nucleus exact captured lambda subobligation diagnostic
+name: Nucleus recursively traced exact lambda typing diagnostic
 on:
   push:
     branches: [research/nucleus-deferred-projection-congruence-20261105]
@@ -62,7 +62,7 @@ jobs:
           statuses=("${PIPESTATUS[@]}")
           set -e
           printf 'zip_read=%s\tzstd=%s\tchecker=%s\n' "${statuses[0]}" "${statuses[1]}" "${statuses[2]}" | tee mathlib/status.tsv
-          grep -E 'NUCLEUS_(DISTINCT_PROOF_DIAG|DOWNSTREAM)' mathlib/trace.stderr | tail -n 180 | cut -c1-1200 || true
+          grep -E 'NUCLEUS_(DISTINCT_PROOF_DIAG|EXACT_LAMBDA|INFER_FAILURE|DOWNSTREAM)' mathlib/trace.stderr | tail -n 180 | cut -c1-1200 || true
           test "${statuses[0]}" -eq 0
           test "${statuses[1]}" -eq 0
           test "${statuses[2]}" -eq 0
