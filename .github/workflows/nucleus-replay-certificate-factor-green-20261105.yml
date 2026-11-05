@@ -1,0 +1,97 @@
+name: Nucleus source certificate factorization GREEN and Magma tournament
+on:
+  push:
+    branches: [research/nucleus-deferred-projection-congruence-20261105]
+    paths:
+      - '.github/workflows/nucleus-replay-certificate-factor-green-20261105.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  trial:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      GH_TOKEN: ${{ github.token }}
+      CARGO_INCREMENTAL: 0
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Apply isolated pinned candidate and symbolic registered major capture experiment
+        run: |
+          set -euo pipefail
+          mkdir -p qualified original196 candidate matrix
+          gh api repos/heathsanchez/test/actions/artifacts/13370874970/zip > qualified.zip
+          printf '%s  %s\n' 0fd8a4cd86dcb233b532f59ea8dc853d22480b6ba62ff864049224250613e517 qualified.zip | sha256sum -c -
+          unzip -q qualified.zip -d qualified
+          tar --no-same-owner -xzf qualified/candidate/source.tar.gz
+          patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-distinct-const-proof-20261105/next-finsupp-inner-quotient-replay-diag.patch
+          patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-distinct-const-proof-20261105/quotient-projection-bridge-regression-red-v2.patch
+          patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-distinct-const-proof-20261105/guarded-quotient-projection-bridge-candidate.patch
+          patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-resumable-source-prefix-20261105/source-prefix-red-regression.patch
+          patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-resumable-source-prefix-20261105/resumable-exposure-machine-candidate.patch
+          patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-resumable-source-prefix-20261105/resumable-exposure-flag.patch
+          patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-resumable-source-prefix-20261105/source-major-entry-diagnostic.patch
+          patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-resumable-source-prefix-20261105/worklist-symbolic-major-source-capture-trial.patch
+          patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-resumable-source-prefix-20261105/source-identity-replay-handle-v3-weak-candidate.patch
+          patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-resumable-source-prefix-20261105/replay-functional-certificate-key-red.patch
+          patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-resumable-source-prefix-20261105/replay-immutable-certificate-factor-candidate.patch
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/11272848230/zip > original196.zip
+          printf '%s  %s\n' f6cd590db7f6fb92b8d1b3ca87231d4b0f521f085d73f93abd005f5caaff86d2 original196.zip | sha256sum -c -
+          unzip -p original196.zip lean-arena-tests.tar.gz | tar --no-same-owner -xzf - -C original196
+          sha256sum metatron-kernel/src/{machine,run_flags}.rs | tee matrix/source-sha256.txt
+      - name: Run native protected regression without omitting failed checks
+        run: |
+          set -euo pipefail
+          set +e
+          (cd metatron-kernel && cargo test --locked --lib --features diagnostics -- --test-threads=2) > matrix/native.stdout 2> matrix/native.stderr
+          rc=$?
+          set -e
+          printf '%s\n' "$rc" > matrix/native.status
+          tail -n 20 matrix/native.stdout
+          tail -n 20 matrix/native.stderr
+      - name: Build source-evaluated experimental binary
+        run: |
+          set -euo pipefail
+          cd metatron-kernel
+          cargo build --locked --release --features diagnostics
+          cp target/release/metatron-kernel ../candidate/nucleus
+          sha256sum ../candidate/nucleus | tee ../matrix/binary-sha256.txt
+      - name: Test genuine Magma and malformed recursor controls in both prefix modes
+        run: |
+          set -euo pipefail
+          mapfile -t flags < <(jq -r '.candidate.configuration | to_entries[] | "\(.key)=\(.value)"' qualified/qualification.json)
+          for arm in off on; do
+            if [[ "$arm" == on ]]; then prefix_flag=(NUCLEUS_EXPERIMENTAL_RESUMABLE_EXPOSURE=1);else prefix_flag=();fi
+            for input in good/perf/magma-list-pair-n7 good/perf/magma-list-pair-n21 good/perf/magma-list-deep-n21 good/perf/magma-list-deep-n36 bad/bugs/nat-rec-rules bad/bugs/orphan-rec; do
+              label=${arm}_${input//\//_}
+              set +e
+              env "${flags[@]}" "${prefix_flag[@]}" NUCLEUS_EXPERIMENTAL_DEFERRED_PROJECTION_CONGRUENCE=1 NUCLEUS_EXPERIMENTAL_DISTINCT_CONST_PROOF_IRREL=1 NUCLEUS_EXPERIMENTAL_EXACT_CAPTURE_SEMANTIC_RETRY=1 NUCLEUS_EXPERIMENTAL_QUOTIENT_PROJECTION_BRIDGE=1 NUCLEUS_TRACE_NESTED_RECURSOR_IOTA_FAILURE=1 timeout 45 candidate/nucleus < "original196/$input.ndjson" > "matrix/$label.stdout" 2> "matrix/$label.stderr"
+              rc=$?
+              set -e
+              printf '%s\t%s\t%s\n' "$arm" "$input" "$rc" | tee -a matrix/verdicts.tsv
+              grep -E 'NUCLEUS_(NESTED_REPLAY_FAILURE|REPLAY_MAJOR_START|WORKLIST_MAJOR_CAPTURE)' "matrix/$label.stderr" | tail -n 3 | cut -c1-400 || true
+              if [[ "$input" == bad/* && "$rc" -eq 0 ]];then echo 'UNSOUND malformed source accepted' >&2;exit 1;fi
+            done
+          done
+          test "$(cat matrix/native.status)" -eq 0
+      - name: Count actual certified replay key reuse without relaxing source identity
+        run: |
+          set -euo pipefail
+          mapfile -t flags < <(jq -r '.candidate.configuration | to_entries[] | "\(.key)=\(.value)"' qualified/qualification.json)
+          set +e
+          env "${flags[@]}" NUCLEUS_EXPERIMENTAL_DEFERRED_PROJECTION_CONGRUENCE=1 NUCLEUS_EXPERIMENTAL_DISTINCT_CONST_PROOF_IRREL=1 NUCLEUS_EXPERIMENTAL_EXACT_CAPTURE_SEMANTIC_RETRY=1 NUCLEUS_EXPERIMENTAL_QUOTIENT_PROJECTION_BRIDGE=1 NUCLEUS_TRACE_REPLAY_CACHE=1 NUCLEUS_TRACE_NESTED_RECURSOR_IOTA_FAILURE=1 timeout 45 candidate/nucleus < original196/good/perf/magma-list-pair-n7.ndjson > matrix/key-reuse.stdout 2> matrix/key-reuse.stderr
+          rc=$?
+          set -e
+          printf 'trace_case_exit=%s\n' "$rc" | tee matrix/key-reuse.status
+          printf 'exact_source_handle_hits=%s\n' "$(grep -c 'NUCLEUS_REPLAY_HANDLE:hit' matrix/key-reuse.stderr || true)" | tee -a matrix/key-reuse.status
+          grep -E 'NUCLEUS_REPLAY_HANDLE:hit|NUCLEUS_REPLAY_WORK:' matrix/key-reuse.stderr | head -n 35 | cut -c1-280 || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-replay-certificate-factor-green
+          retention-days: 60
+          if-no-files-found: warn
+          path: matrix/
