@@ -1,0 +1,101 @@
+name: Nucleus typed-child continuation source qualification
+on:
+  push:
+    branches: [research/nucleus-typed-child-continuation-20261106]
+    paths:
+      - '.github/workflows/nucleus-typed-child-continuation-20261106.yml'
+      - 'experiments/nucleus-typed-child-continuation-20261106/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    env:
+      GH_TOKEN: ${{ github.token }}
+      CARGO_INCREMENTAL: '0'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Restore and verify exact independent source and 207 official exports
+        run: |
+          set -euo pipefail
+          mkdir -p qualified arena207 reports
+          gh api repos/heathsanchez/test/actions/artifacts/13381489248/zip > qualified.zip
+          printf '%s  %s\n' 0167b15caae9b474ae0d6540466ec68ef6fac2786b3eb263554d5e94c055adbb qualified.zip | sha256sum -c -
+          unzip -q qualified.zip -d qualified
+          printf '%s  %s\n' 6f68f0ae7e2630e8025820cc922e014a6a318b3b6cef99194a33f1ce0d83bdd3 qualified/candidate/source.tar.gz | sha256sum -c -
+          tar --no-same-owner -xzf qualified/candidate/source.tar.gz
+          printf '%s  %s\n' dab58e53410dc39054bfb9c4db9a2f8dd1d9d240cb3a9c0952470f3222d16f6c metatron-kernel/src/typecheck.rs ac7ac2a526d6c8bf451d1bbf919bf2abeac9fc469ef298977245317e701ff48b metatron-kernel/src/convert.rs | sha256sum -c -
+          gh api repos/heathsanchez/test/actions/artifacts/13276400289/zip > portable207.zip
+          printf '%s  %s\n' a9582eadc0d9893cbe39e6bcfccd79bfaec2032838851b8a487c35df16096763 portable207.zip | sha256sum -c -
+          unzip -p portable207.zip lean-arena-tests.tar.gz | tar --no-same-owner -xzf - -C arena207
+          test "$(find arena207 -name '*.ndjson' -type f | wc -l)" -eq 207
+          patch --fuzz=0 -p1 --dry-run -d metatron-kernel < experiments/nucleus-typed-child-continuation-20261106/typed-child-bridge.patch
+          patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-typed-child-continuation-20261106/typed-child-bridge.patch
+          printf '%s  %s\n' 4c7230e94f40335c08605d23043eee2b67a1b151ffca1317d0d29115df9d773b metatron-kernel/src/typecheck.rs f27bb219b3bcd75c62cd0444f81b739caee6009382f8b20afe1e36e642586659 metatron-kernel/src/convert.rs | sha256sum -c -
+          sha256sum qualified/candidate/nucleus metatron-kernel/src/{typecheck,convert}.rs > reports/source-sha256.txt
+      - name: Compiler and native proof-preservation tests
+        run: |
+          set -euo pipefail
+          cd metatron-kernel
+          cargo test --locked --release --features diagnostics --lib -- --test-threads=2
+          cargo build --locked --release --features diagnostics
+          cp target/release/metatron-kernel ../candidate-bin
+          sha256sum ../candidate-bin >> ../reports/source-sha256.txt
+      - name: Six original valid RED-GREEN whole-export comparisons
+        run: |
+          set -euo pipefail
+          mapfile -t flags < <(jq -r '.candidate.configuration | to_entries[] | "\(.key)=\(.value)"' qualified/qualification.json)
+          improved=0
+          for case in fueled-chain grind-ring-5 magma-list-deep-n21 magma-list-deep-n36 magma-list-pair-n21 magma-list-pair-n7; do
+            for arm in baseline candidate; do
+              bin=qualified/candidate/nucleus
+              if [ "$arm" = candidate ]; then bin=./candidate-bin; fi
+              set +e
+              timeout 100 env "${flags[@]}" METATRON_KERNEL_DIAGNOSTICS=1 NUCLEUS_TRACE_DOWNSTREAM=1 "$bin" < "arena207/good/perf/$case.ndjson" > "reports/$arm-$case.stdout" 2> "reports/$arm-$case.stderr"
+              rc=$?
+              set -e
+              printf '%s\t%s\t%s\n' "$case" "$arm" "$rc" | tee -a reports/targeted.tsv
+              if [ "$arm" = baseline ]; then baseline="$rc"; else
+                if [ "$rc" -eq 1 ]; then echo "Valid export REJECTED: $case" >&2; exit 1; fi
+                if [ "$baseline" -ne 0 ] && [ "$rc" -eq 0 ]; then improved=$((improved+1)); fi
+              fi
+            done
+          done
+          printf '%s\n' "$improved" > reports/targeted-improved.txt
+          echo "Improved valid whole exports: $improved/6"
+      - name: Protected invalid controls and full 207 replay after a gain
+        run: |
+          set -euo pipefail
+          mapfile -t flags < <(jq -r '.candidate.configuration | to_entries[] | "\(.key)=\(.value)"' qualified/qualification.json)
+          for case in arena207/bad/bugs/*.ndjson arena207/bad/tutorial/*.ndjson; do
+            set +e
+            timeout 50 env "${flags[@]}" ./candidate-bin < "$case" > /dev/null
+            rc=$?
+            set -e
+            printf '%s\t%s\n' "$case" "$rc" >> reports/invalid.tsv
+            if [ "$rc" -eq 0 ]; then echo "UNSOUND invalid accepted: $case" >&2; exit 1; fi
+          done
+          test "$(wc -l < reports/invalid.tsv)" -eq 80
+          if [ "$(cat reports/targeted-improved.txt)" -gt 0 ]; then
+            for case in arena207/good/**/*.ndjson arena207/good/*.ndjson; do
+              [ -f "$case" ] || continue
+              set +e
+              timeout 100 env "${flags[@]}" ./candidate-bin < "$case" > /dev/null
+              rc=$?
+              set -e
+              printf '%s\t%s\n' "$case" "$rc" >> reports/valid.tsv
+              if [ "$rc" -eq 1 ]; then echo "WRONG valid REJECTED: $case" >&2; exit 1; fi
+            done
+            test "$(wc -l < reports/valid.tsv)" -eq 127
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-typed-child-continuation-qualified
+          retention-days: 60
+          path: reports/
