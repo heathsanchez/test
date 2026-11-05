@@ -1,0 +1,88 @@
+--- a/src/machine.rs
++++ b/src/machine.rs
+@@ -3957,3 +3957,85 @@
+ 
+ }
+ 
++#[cfg(test)]
++mod quotient_projection_bridge_regression {
++    use super::*;
++    use crate::level::LevelTerm;
++
++    // Evaluator-only source fixture. Real export admission separately proves
++    // ownership of Quot.lift, Quot.mk and the projection constructor.
++    // The major is delta-hidden so ordinary syntactic Quot.iota cannot fire.
++    fn fixture() -> (IdTable<ExprId, Expr>, IdTable<LevelId, Level>) {
++        let mut expressions = IdTable::default();
++        let mut levels = IdTable::default();
++        levels.insert(LevelId(0), Level::Zero).unwrap();
++        for (id, expr) in [
++            (0, Expr::Sort(LevelId(0))),
++            (1, Expr::Const { name: NameId(2), levels: vec![LevelId(0)] }),
++            (2, Expr::App { fun: ExprId(1), arg: ExprId(0) }),
++            (3, Expr::App { fun: ExprId(2), arg: ExprId(0) }),
++            (4, Expr::App { fun: ExprId(3), arg: ExprId(0) }),
++            (5, Expr::Const { name: NameId(94), levels: vec![] }),
++            (6, Expr::App { fun: ExprId(5), arg: ExprId(4) }),
++            (7, Expr::BVar(0)),
++            (8, Expr::Const { name: NameId(90), levels: vec![] }),
++            (9, Expr::App { fun: ExprId(8), arg: ExprId(7) }),
++            (10, Expr::Lam { domain: ExprId(0), body: ExprId(9) }),
++            (11, Expr::Const { name: NameId(3), levels: vec![LevelId(0), LevelId(0)] }),
++            (12, Expr::App { fun: ExprId(11), arg: ExprId(0) }),
++            (13, Expr::App { fun: ExprId(12), arg: ExprId(0) }),
++            (14, Expr::App { fun: ExprId(13), arg: ExprId(0) }),
++            (15, Expr::App { fun: ExprId(14), arg: ExprId(10) }),
++            (16, Expr::App { fun: ExprId(15), arg: ExprId(0) }),
++            (17, Expr::App { fun: ExprId(16), arg: ExprId(6) }),
++            (18, Expr::Proj { type_name: NameId(99), index: 0, structure: ExprId(17) }),
++            (19, Expr::Proj { type_name: NameId(98), index: 0, structure: ExprId(17) }),
++            (20, Expr::Proj { type_name: NameId(99), index: 1, structure: ExprId(17) }),
++            (21, Expr::Lam { domain: ExprId(0), body: ExprId(7) }),
++            (22, Expr::Const { name: NameId(91), levels: vec![] }),
++            (23, Expr::App { fun: ExprId(5), arg: ExprId(22) }),
++            (24, Expr::App { fun: ExprId(16), arg: ExprId(23) }),
++            (25, Expr::Proj { type_name: NameId(99), index: 0, structure: ExprId(24) }),
++        ] {
++            expressions.insert(ExprId(id), expr).unwrap();
++        }
++        (expressions, levels)
++    }
++
++    fn checker<'a>(expressions: &'a IdTable<ExprId, Expr>, levels: &'a IdTable<LevelId, Level>) -> Machine<'a> {
++        Machine::new(AuthorityId(0), expressions, levels,
++            HashMap::from([(NameId(94), DefinitionBody {
++                value: ExprId(21), preferred_for_reduction: true, level_params: vec![],
++            })]))
++            .with_quot_primitives(Some(QuotPrimitives {
++                type_name: NameId(1), mk: NameId(2), lift: NameId(3), ind: NameId(4),
++            }))
++            .with_projection_specs(HashMap::from([
++                (NameId(99), ProjectionSpec { constructor: NameId(90), num_params: 0,
++                    field_types: vec![ProjectionFieldType::Derived(ExprId(0))], eta_expandable: false }),
++                (NameId(98), ProjectionSpec { constructor: NameId(91), num_params: 0,
++                    field_types: vec![ProjectionFieldType::Derived(ExprId(0))], eta_expandable: false }),
++            ]))
++    }
++
++    #[test]
++    fn delta_hidden_quotient_iota_supplies_only_a_registered_constructor_field() {
++        // This reserved captured bit is assigned to the isolated bridge flag
++        // after the test has failed against the unchanged evaluator.
++        let _bridge = crate::run_flags::test_scope([0, 1u64 << (105 - 64)]);
++        let (expressions, levels) = fixture();
++        let machine = checker(&expressions, &levels);
++        let closure = |id| Closure::new(ExprId(id), EnvFrame::empty());
++        let neutral = machine.expose(closure(17), Transparency::Full, 4096);
++        assert!(matches!(neutral.proven_value(), Some(Value::Neutral(Neutral {
++            head: NeutralHead::Const { name: NameId(3), .. }, spine,
++        })) if spine.len() == 6), "only a qualified quotient evaluator should resume this source: {neutral:?}");
++        let field = machine.expose(closure(18), Transparency::Full, 4096);
++        assert_eq!(field.proven_value(), Some(&Value::Sort(LevelTerm::Zero)),
++            "verified inner quotient result must supply the actual registered constructor field: {field:?}");
++        for id in [19, 20, 25] {
++            let rejected = machine.expose(closure(id), Transparency::Full, 4096);
++            assert!(rejected.is_unknown(), "wrong owner, field or quotient major must not be accepted ({id}): {rejected:?}");
++        }
++    }
++}
