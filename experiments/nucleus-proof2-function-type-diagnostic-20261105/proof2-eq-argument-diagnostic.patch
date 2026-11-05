@@ -1,6 +1,6 @@
 --- a/src/typecheck.rs
 +++ b/src/typecheck.rs
-@@ -2579,6 +2579,101 @@
+@@ -2579,6 +2579,118 @@
                      };
                      eprintln!("NUCLEUS_FAILED_RECEIVER_CONVERSION:expression={expression:?}:context_len={}:source_frame={}:remaining={}:actual={value:?}:expected={expected:?}:context={context:?}:actual_exposed={:?}:expected_exposed={:?}",
                          context.len(), frame.id(), *remaining, expose(&value), expose(expected));
@@ -80,6 +80,23 @@
 +                                                                        crate::convert::DeltaPolicy::GuardedSemanticFallback,context.len(),context,
 +                                                                    );
 +                                                                    eprintln!("NUCLEUS_PROOF2_FINAL_RECEIVER:lhs={left_receiver:?}:rhs={right_receiver:?}:left_exposed={a:?}:right_exposed={b:?}:relation={relation:?}");
++                                                                    let mut receivers=(left_receiver.clone(),right_receiver.clone());
++                                                                    for layer in 0..40 {
++                                                                        let a=self.machine().expose_for_conversion(receivers.0.clone(),Transparency::Full,4096);
++                                                                        let b=self.machine().expose_for_conversion(receivers.1.clone(),Transparency::Full,4096);
++                                                                        if let (
++                                                                            Some(Value::StuckProjection {type_name:ta,index:ia,structure:sa,spine:aa}),
++                                                                            Some(Value::StuckProjection {type_name:tb,index:ib,structure:sb,spine:ab}),
++                                                                        )=(a.proven_value(),b.proven_value()) {
++                                                                            eprintln!("NUCLEUS_PROOF2_RECEIVER_LAYER:layer={layer}:left_type={ta:?}:right_type={tb:?}:left_index={ia}:right_index={ib}:left_arity={}:right_arity={}:left_receiver={sa:?}:right_receiver={sb:?}",aa.len(),ab.len());
++                                                                            let next=(sa.clone(),sb.clone());
++                                                                            if next==receivers {break;}
++                                                                            receivers=next;
++                                                                        }else{
++                                                                            eprintln!("NUCLEUS_PROOF2_RECEIVER_LAYER:layer={layer}:terminal_left={a:?}:terminal_right={b:?}");
++                                                                            break;
++                                                                        }
++                                                                    }
 +                                                                }
 +                                                                break;
 +                                                            };
