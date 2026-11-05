@@ -5,6 +5,7 @@ on:
     branches: [research/nucleus-deferred-projection-congruence-20261105]
     paths:
       - '.github/workflows/nucleus-budget-sweep-20261105.yml'
+      - 'experiments/nucleus-budget-sweep-20261105.rs'
 permissions:
   contents: read
   actions: read
