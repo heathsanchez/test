@@ -1,0 +1,71 @@
+name: Nucleus exact registered major source-owner trace
+on:
+  push:
+    branches: [research/nucleus-deferred-projection-congruence-20261105]
+    paths:
+      - '.github/workflows/nucleus-major-owner-scope-20261105.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      GH_TOKEN: ${{ github.token }}
+      CARGO_INCREMENTAL: 0
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Restore pinned qualified checker and exact original Arena inputs
+        run: |
+          set -euo pipefail
+          mkdir -p qualified original196 candidate matrix
+          gh api repos/heathsanchez/test/actions/artifacts/13370874970/zip > qualified.zip
+          printf '%s  %s\n' 0fd8a4cd86dcb233b532f59ea8dc853d22480b6ba62ff864049224250613e517 qualified.zip | sha256sum -c -
+          unzip -q qualified.zip -d qualified
+          tar --no-same-owner -xzf qualified/candidate/source.tar.gz
+          patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-distinct-const-proof-20261105/next-finsupp-inner-quotient-replay-diag.patch
+          patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-distinct-const-proof-20261105/quotient-projection-bridge-regression-red-v2.patch
+          patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-distinct-const-proof-20261105/guarded-quotient-projection-bridge-candidate.patch
+          patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-resumable-source-prefix-20261105/source-prefix-red-regression.patch
+          patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-resumable-source-prefix-20261105/resumable-exposure-machine-candidate.patch
+          patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-resumable-source-prefix-20261105/resumable-exposure-flag.patch
+          patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-resumable-source-prefix-20261105/source-major-entry-diagnostic.patch
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/11272848230/zip > original196.zip
+          printf '%s  %s\n' f6cd590db7f6fb92b8d1b3ca87231d4b0f521f085d73f93abd005f5caaff86d2 original196.zip | sha256sum -c -
+          unzip -p original196.zip lean-arena-tests.tar.gz | tar --no-same-owner -xzf - -C original196
+          sha256sum metatron-kernel/src/{machine,run_flags}.rs | tee matrix/source-sha256.txt
+      - name: Build diagnostic source without acceptance-rule changes
+        run: |
+          set -euo pipefail
+          cd metatron-kernel
+          cargo build --locked --release --features diagnostics
+          cp target/release/metatron-kernel ../candidate/nucleus
+          sha256sum ../candidate/nucleus | tee ../matrix/binary-sha256.txt
+      - name: Compare exact major source with and without bounded prefix cursor
+        run: |
+          set -euo pipefail
+          mapfile -t flags < <(jq -r '.candidate.configuration | to_entries[] | "\(.key)=\(.value)"' qualified/qualification.json)
+          for arm in off on; do
+            if [[ "$arm" == on ]]; then state=1; else state=0; fi
+            for input in good/perf/magma-list-pair-n7 good/perf/magma-list-deep-n21 bad/bugs/nat-rec-rules; do
+              label=${arm}_${input//\//_}
+              set +e
+              env "${flags[@]}" NUCLEUS_EXPERIMENTAL_DEFERRED_PROJECTION_CONGRUENCE=1 NUCLEUS_EXPERIMENTAL_DISTINCT_CONST_PROOF_IRREL=1 NUCLEUS_EXPERIMENTAL_EXACT_CAPTURE_SEMANTIC_RETRY=1 NUCLEUS_EXPERIMENTAL_QUOTIENT_PROJECTION_BRIDGE=1 NUCLEUS_EXPERIMENTAL_RESUMABLE_EXPOSURE="$state" NUCLEUS_TRACE_NESTED_RECURSOR_IOTA_FAILURE=1 timeout 45 candidate/nucleus < "original196/$input.ndjson" > "matrix/$label.stdout" 2> "matrix/$label.stderr"
+              rc=$?
+              set -e
+              printf '%s\t%s\t%s\n' "$arm" "$input" "$rc" | tee -a matrix/verdicts.tsv
+              grep -E 'NUCLEUS_REPLAY_MAJOR_START|NUCLEUS_NESTED_REPLAY_FAILURE' "matrix/$label.stderr" | tail -n 14 | cut -c1-700 || true
+              if [[ "$input" == bad/* && "$rc" -eq 0 ]];then echo 'UNSOUND malformed source accepted' >&2;exit 1;fi
+            done
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-major-owner-source-trace
+          retention-days: 60
+          if-no-files-found: warn
+          path: matrix/
