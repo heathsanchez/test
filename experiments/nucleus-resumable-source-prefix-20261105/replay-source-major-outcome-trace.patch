@@ -1,0 +1,27 @@
+--- a/src/machine.rs
++++ b/src/machine.rs
+@@ -2875,6 +2875,24 @@
+                             Transparency::Full,self.exposure_fuel.get().unwrap_or(0).min(512))
+                     }
+                 };
++                #[cfg(feature="diagnostics")]
++                if crate::run_flags::present(crate::run_flags::Flag::TraceNestedRecursorIotaFailure) {
++                    use std::sync::atomic::{AtomicUsize,Ordering};
++                    static OUTCOMES:AtomicUsize=AtomicUsize::new(0);
++                    if OUTCOMES.fetch_add(1,Ordering::Relaxed)<512 {
++                        let source=&neutral.spine[required-1];
++                        let kind=match major_result.proven_value() {
++                            None=>"unknown",
++                            Some(Value::Neutral(n)) if matches!(&n.head,NeutralHead::Const{name,..} if self.recursor_reductions.contains_key(name))=>"nested-recursor",
++                            Some(Value::Neutral(_))=>"neutral",
++                            Some(Value::NatLit(_))=>"nat",
++                            Some(Value::StuckProjection{..})=>"stuck-projection",
++                            Some(_)=>"source-value",
++                        };
++                        eprintln!("NUCLEUS_MAJOR_SOURCE_OUTCOME:head={name:?}:expr={:?}:env={}:levels={:?}:result={kind}:fuel={:?}",
++                            source.expr,source.env.id(),source.levels.identity(),self.exposure_fuel.get());
++                    }
++                }
+                 let Some(value)=major_result.proven_value() else {
+                     #[cfg(feature="diagnostics")]
+                     if crate::run_flags::present(crate::run_flags::Flag::TraceNestedRecursorIotaFailure) {
