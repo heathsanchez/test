@@ -33,7 +33,7 @@ jobs:
           patch -p1 -d metatron-kernel < experiments/nucleus-deferred-projection-congruence-20261105/run_flags.rs.patch
           patch -p1 -d metatron-kernel < experiments/nucleus-deferred-projection-congruence-20261105/convert.rs.patch
           zstd -dq qualified/next-frontier.ndjson.zst -o next-frontier.ndjson
-          printf '%s  %s\n' 61b130d9e864c99afd4111b662f884827be98a87f27277c42a5949b025fc0d6 next-frontier.ndjson | sha256sum -c -
+          printf '%s  %s\n' 61b130d9e864c99afd4111b662f884827be98a87f27277c42a5949b025fc0d6b next-frontier.ndjson | sha256sum -c -
       - name: Compile and execute source tests with both protected and candidate paths
         run: |
           set -euo pipefail
