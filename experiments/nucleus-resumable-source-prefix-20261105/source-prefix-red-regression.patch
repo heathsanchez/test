@@ -1,0 +1,62 @@
+--- a/src/machine.rs
++++ b/src/machine.rs
+@@ -2888,3 +2888,59 @@
+ 
++#[cfg(test)]
++mod resumable_exposure_regression_tests {
++    use super::*;
++    use crate::level::LevelTerm;
++
++    #[test]
++    fn exact_bounded_source_prefix_eventually_completes_without_publishing_partial_proof() {
++        // A 32-step well-formed source chain cannot finish under a 7-step
++        // allowance. Repeated identical independent calls must reuse only
++        // actual evaluator state, and never return a guessed normal form.
++        let _experiment = crate::run_flags::test_scope([0, 1u64 << (106 - 64)]);
++        let mut expressions = IdTable::default();
++        let mut levels = IdTable::default();
++        levels.insert(LevelId(0), Level::Zero).unwrap();
++        expressions.insert(ExprId(0), Expr::Sort(LevelId(0))).unwrap();
++        let mut body = ExprId(0);
++        for index in 1..=32 {
++            let id = ExprId(index);
++            expressions.insert(id, Expr::Let {
++                ty: ExprId(0), value: ExprId(0), body,
++            }).unwrap();
++            body = id;
++        }
++        let cache = new_exposure_cache();
++        let machine = Machine::new(AuthorityId(777), &expressions, &levels, HashMap::new())
++            .with_exposure_cache(cache.clone());
++        let source = Closure::new(body, EnvFrame::empty());
++        let first = machine.expose(source.clone(), Transparency::Full, 7);
++        assert!(first.is_unknown(), "first slice cannot independently prove 32 reductions: {first:?}");
++        assert_eq!(cache.borrow().values.len(), 0, "unfinished source must not enter the certified normal-form cache");
++        let mut final_result = first;
++        for _ in 0..12 {
++            final_result = machine.expose(source.clone(), Transparency::Full, 7);
++            if final_result.is_proven() { break; }
++        }
++        assert_eq!(final_result.proven_value(), Some(&Value::Sort(LevelTerm::Zero)),
++            "exact immutable source prefix must resume across bounded attempts: {final_result:?}");
++
++        // A different authority must not inherit the original cursor.
++        let other = Machine::new(AuthorityId(778), &expressions, &levels, HashMap::new())
++            .with_exposure_cache(cache.clone());
++        assert!(other.expose(source.clone(), Transparency::Full, 7).is_unknown());
++        // A cyclic source never turns into a proof because of accumulated work.
++        expressions.insert(ExprId(99), Expr::Let {
++            ty: ExprId(0), value: ExprId(0), body: ExprId(99),
++        }).unwrap();
++        let cycle_machine = Machine::new(AuthorityId(779), &expressions, &levels, HashMap::new())
++            .with_exposure_cache(cache);
++        let cycle = Closure::new(ExprId(99), EnvFrame::empty());
++        for _ in 0..12 {
++            assert!(cycle_machine.expose(cycle.clone(), Transparency::Full, 7).is_unknown(),
++                "a cyclic source cannot be accepted by repeated bounded work");
++        }
++    }
++}
++
+ #[cfg(test)]
+ mod neutral_projection_tests {
