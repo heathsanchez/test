@@ -1,0 +1,30 @@
+--- a/src/machine.rs
++++ b/src/machine.rs
+@@ -3418,6 +3418,27 @@
+     }
+ 
+     #[test]
++    fn completed_replay_key_does_not_rehash_an_immutable_source_certificate_per_request() {
++        // The exact recursor certificate is already uniquely determined by
++        // the immutable rule table's Rc owner and the registered head name.
++        // A fresh key still pays for all 98 source spine closures, but it
++        // must not pay again for all 96 unchanged rule declarations.
++        let mut expressions=IdTable::default();let levels=IdTable::default();
++        expressions.insert(ExprId(0),Expr::BVar(0)).unwrap();
++        let rules=(0..96).map(|i|RecursorRule{constructor:NameId(200+i),
++            constructor_level_params:vec![],num_params:0,num_fields:0,rhs:ExprId(0)}).collect();
++        let machine=Machine::new(AuthorityId(1),&expressions,&levels,HashMap::new())
++            .with_recursor_reductions(HashMap::from([(NameId(1),RecursorReduction{
++                k:false,num_params:0,num_indices:0,level_params:vec![],rules,
++            })]));
++        let spine=vec![Closure::new(ExprId(0),EnvFrame::empty());98];
++        machine.exposure_fuel.set(Some(160));
++        assert!(machine.completed_replay_key(NameId(1),&[],&spine).is_some(),
++            "immutable recursor certificate must not be independently copied/hashed for every exact source key");
++        machine.exposure_fuel.set(None);
++    }
++
++    #[test]
+     fn checked_replay_refuses_a_constructor_at_a_different_declared_universe() {
+         let mut expressions=IdTable::default();
+         let mut levels=IdTable::default();levels.insert(LevelId(0),Level::Zero).unwrap();
