@@ -37,8 +37,9 @@ jobs:
       - name: Compile and execute source tests with both protected and candidate paths
         run: |
           set -euo pipefail
+          mapfile -t flags < <(jq -r '.candidate.configuration | to_entries[] | "\\(.key)=\\(.value)"' qualified/qualification.json)
           cd metatron-kernel
-          cargo test --locked --release > ../tests.stdout 2> ../tests.stderr
+          env "${flags[@]}" NUCLEUS_EXPERIMENTAL_DEFERRED_PROJECTION_CONGRUENCE=1 cargo test --locked --release > ../tests.stdout 2> ../tests.stderr
           cargo build --locked --release
           sha256sum target/release/metatron-kernel | tee ../candidate-binary.sha256
       - name: Replay exact formerly-UNKNOWN Mathlib prefix with candidate enabled
