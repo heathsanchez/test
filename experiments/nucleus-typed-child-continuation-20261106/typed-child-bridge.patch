@@ -17,7 +17,7 @@ index ca69dd4..044b546 100644
          )
      }
 diff --git a/src/convert.rs b/src/convert.rs
-index bf43ba7..cf1870d 100644
+index bf43ba7..1227805 100644
 --- a/src/convert.rs
 +++ b/src/convert.rs
 @@ -1556,7 +1556,7 @@ fn compare_values_with_eta_charge(
@@ -29,7 +29,66 @@ index bf43ba7..cf1870d 100644
                      ).is_proven()
                      && same_closure_spine_congruence_in_context(
                          checker,left_spine,right_spine,
-@@ -2455,6 +2455,7 @@ fn compare_nat_literal_neutral(
+@@ -2450,11 +2450,66 @@ fn compare_nat_literal_neutral(
+     Judgment::refuted("Nat-literal-non-Nat-head")
+ }
+ 
++// A source substitution equality is established from its *complete* set of
++// actually used captures. Neither identical AST text nor a successful type
++// comparison alone authorizes a value equality: each differing captured
++// value must receive an independent value-conversion proof in the real Γ.
++fn checked_used_source_capture_congruence(
++    checker:&TypeChecker<'_>,left:&Closure,right:&Closure,
++    context:&[TypeValue],allowance:usize,
++)->Judgment<()> {
++    if left.expr!=right.expr || left.levels!=right.levels {
++        return Judgment::unknown("nonidentical-source-substitution-schema");
++    }
++    let mut remaining=allowance;
++    let Some(support)=checker.complete_source_support(left.expr,&mut remaining)else{
++        return Judgment::unknown("source-substitution-support-incomplete");
++    };
++    for index in support {
++        let Some(fee)=usize::try_from(index).ok()
++            .and_then(|n|n.checked_add(1)).and_then(|n|n.checked_mul(2))else{
++            return Judgment::unknown("source-substitution-index-overflow");
++        };
++        if remaining<fee{return Judgment::unknown("source-substitution-lookup-budget");}
++        remaining-=fee;
++        let (Some(a),Some(b))=(left.env.lookup_binding_ref(index),right.env.lookup_binding_ref(index))else{
++            return Judgment::unknown("source-substitution-missing-binding");
++        };
++        match(a,b){
++            (EnvBinding::Free(a),EnvBinding::Free(b))if a==b=>{},
++            (EnvBinding::Neutral(a),EnvBinding::Neutral(b))if a==b=>{},
++            (EnvBinding::NatLit(a),EnvBinding::NatLit(b))if a==b=>{
++                let fee=a.limb_count().max(b.limb_count());
++                if remaining<fee{return Judgment::unknown("source-substitution-nat-budget");}
++                remaining-=fee;
++            },
++            (EnvBinding::Closure(a),EnvBinding::Closure(b))=>{
++                if a.expr==b.expr && a.env==b.env && a.levels==b.levels{continue;}
++                let mut proven=false;
++                for bound in [128usize,16384usize] {
++                    if remaining<bound{continue;}
++                    remaining-=bound;
++                    let judgment=checker.checked_source_conversion(a,b,context,bound);
++                    #[cfg(feature="diagnostics")]
++                    if left.expr.0==600&&crate::run_flags::present(crate::run_flags::Flag::TraceFailedReceiverCaptures){
++                        eprintln!("NUCLEUS_SOURCE_USED_CAPTURE:expr={:?}:index={index}:ctx={}:budget={bound}:result={judgment:?}",left.expr,context.len());
++                    }
++                    if judgment.is_proven(){proven=true;break;}
++                }
++                if !proven{return Judgment::unknown("source-substitution-unproven-used-capture");}
++            },
++            _=>return Judgment::unknown("source-substitution-incompatible-capture-kinds"),
++        }
++    }
++    Judgment::proven((),"checked-complete-source-substitution-congruence")
++}
++
+ // A sufficient source equality proof for an entire neutral receiver. Every
+ // child uses the same remaining allowance; no normalization or typing
  // witness is borrowed from another receiver or context.
  fn exact_neutral_source_congruence(
      checker: &TypeChecker<'_>, left: &Neutral, right: &Neutral, remaining: &mut usize,
@@ -37,7 +96,7 @@ index bf43ba7..cf1870d 100644
  ) -> bool {
      use crate::level::LevelTerm;
      let mut pending = vec![(left, right)];
-@@ -2508,8 +2509,34 @@ fn exact_neutral_source_congruence(
+@@ -2508,8 +2563,34 @@ fn exact_neutral_source_congruence(
              if a.expr == b.expr && a.env == b.env && a.levels.identity() == b.levels.identity() {
                  continue;
              }
@@ -51,7 +110,7 @@ index bf43ba7..cf1870d 100644
 +            let use_typed_bridge=
 +                crate::run_flags::present(crate::run_flags::Flag::ExperimentalTypedReceiver)
 +                && a.expr==b.expr && a.env!=b.env && context.len()<=64;
-+            let reserved=if use_typed_bridge {(*remaining/2).min(16384)}else{0};
++            let reserved=if use_typed_bridge {(*remaining/2).min(32768)}else{0};
 +            let mut structural_remaining=remaining.saturating_sub(reserved);
 +            let structural=checker.exact_source_capture_identity(a,b,&mut structural_remaining)
 +                ||checker.instantiated_source_capture_congruence(a,b,&mut structural_remaining);
@@ -64,7 +123,7 @@ index bf43ba7..cf1870d 100644
 +            if !structural {
 +                if reserved<128{return false;}
 +                *remaining-=reserved;
-+                let typed=checker.checked_source_conversion(a,b,context,reserved);
++                let typed=checked_used_source_capture_congruence(checker,a,b,context,reserved);
 +                #[cfg(feature="diagnostics")]
 +                if a.expr.0==600 && crate::run_flags::present(crate::run_flags::Flag::TraceFailedReceiverCaptures){
 +                    eprintln!("NUCLEUS_TYPED_CHILD_BRIDGE_RESULT:expr={:?}:ctx={}:reserve={}:typed={typed:?}",a.expr,context.len(),reserved);
@@ -74,7 +133,7 @@ index bf43ba7..cf1870d 100644
          }
      }
      true
-@@ -2565,7 +2592,7 @@ fn compare_neutral_heads(
+@@ -2565,7 +2646,7 @@ fn compare_neutral_heads(
                  return Judgment::unknown("neutral-projection-receiver-congruence");
              }
              let mut source_work = budget.saturating_sub(1);
