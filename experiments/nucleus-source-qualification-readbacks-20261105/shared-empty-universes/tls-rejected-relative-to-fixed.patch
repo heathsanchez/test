@@ -1,0 +1,14 @@
+--- a/src/value.rs
++++ b/src/value.rs
+@@ -185,10 +185,7 @@
+     static EMPTY_LEVEL_SUBSTITUTION:LevelSubstitution=LevelSubstitution::new(Vec::new());
+ }
+ impl Default for LevelSubstitution {
+-    fn default()->Self {
+-        // Preserve the public constructor during other TLS destructors too.
+-        EMPTY_LEVEL_SUBSTITUTION.try_with(Clone::clone).unwrap_or_else(|_|Self::new(Vec::new()))
+-    }
++    fn default()->Self {EMPTY_LEVEL_SUBSTITUTION.with(Clone::clone)}
+ }
+ impl fmt::Debug for LevelSubstitution {
+     fn fmt(&self,f:&mut fmt::Formatter<'_>)->fmt::Result {

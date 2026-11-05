@@ -1,0 +1,39 @@
+{
+  "status": "COMPLETE",
+  "candidate_only": true,
+  "no_promotion": true,
+  "no_speed_claim": true,
+  "binary_sha256": "058ef1079357a4531c900dda255119f686ac3342f3c1bf5f4e48d1aae0543d33",
+  "configuration": {
+    "NUCLEUS_EXPERIMENTAL_CERTIFIED_QUOT_IOTA": "1",
+    "NUCLEUS_EXPERIMENTAL_CONTEXT_BINDER": "1",
+    "NUCLEUS_EXPERIMENTAL_DEMAND_MAJOR": "1",
+    "NUCLEUS_EXPERIMENTAL_EXPECTED_LAMBDA": "1",
+    "NUCLEUS_EXPERIMENTAL_FORMED_PROP_DOMAIN_RETRY": "1",
+    "NUCLEUS_EXPERIMENTAL_POLYMORPHIC_PROP_IRREL": "1",
+    "NUCLEUS_EXPERIMENTAL_PROJECTION_CONTEXT": "1",
+    "NUCLEUS_EXPERIMENTAL_PROJECTION_CROSSFRAME_512": "1",
+    "NUCLEUS_EXPERIMENTAL_PROP_SINGLETON_2P1F": "1",
+    "NUCLEUS_EXPERIMENTAL_RELEVANCE": "1",
+    "NUCLEUS_EXPERIMENTAL_REPLAY_NEUTRAL_PROJECTION": "1",
+    "NUCLEUS_EXPERIMENTAL_REPLAY_PROJECTION_MAJOR": "1",
+    "NUCLEUS_EXPERIMENTAL_SOURCE_PAIR_DEPTH8": "1",
+    "NUCLEUS_EXPERIMENTAL_SOURCE_PROOF_IRREL": "1",
+    "NUCLEUS_EXPERIMENTAL_SUBSTITUTION_RECLOSURE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_DATA_CONGRUENCE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_LINEAGE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_PROJECTION_SPINE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_RECEIVER": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_VALUE_NORMALIZATION": "1",
+    "NUCLEUS_TRACE_DOWNSTREAM": "1"
+  },
+  "rows": [
+    {
+      "input": "proof2",
+      "input_sha256": "61b130d9e864c99afd4111b662f884827be98a87f27277c42a5949b025fc0d6b",
+      "rc": 2,
+      "wall": 49.808016325994686,
+      "terminal": "NUCLEUS_DOWNSTREAM:name=AddMonoidAlgebra.nonUnitalNonAssocSemiring._proof_2:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type\nCONVERSION_REUSE_METRICS:{\"calls\":177647,\"capture_cap\":100000,\"captured\":55474,\"evicted\":42074,\"examples\":[],\"literal_metadata_only\":true,\"no_semantic_owner_retention\":true,\"no_speed_claim\":true,\"nonterm_or_bounded_out\":1812,\"prior_proven\":9993,\"prior_reverse\":3,\"prior_then_refuted\":0,\"prior_then_unknown\":0,\"proven\":52579,\"reflexive\":816,\"retained\":512,\"unproven\":267,\"unstable\":0,\"window\":512}\n"
+    }
+  ]
+}

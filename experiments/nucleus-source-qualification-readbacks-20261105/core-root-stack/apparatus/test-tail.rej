@@ -1,0 +1,15 @@
+--- src/typecheck.rs
++++ src/typecheck.rs
+@@ -7752,3 +7757,12 @@
+  #[test]fn a_nonempty_neutral_capture_is_not_solved(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);c.complete_source_support(ExprId(2),&mut 128).unwrap();let t=||Closure::new(ExprId(2),EnvFrame::empty().extend_neutral(Neutral{head:NeutralHead::Free(FreeId(7)),spine:vec![Closure::new(ExprId(3),EnvFrame::empty())]}));assert!(!c.replay_completed_source_substitution(&t(),&t(),&mut 128));}
+ 
+ }
++
++#[cfg(test)]
++mod root_universe_payload_controls{
++ use super::*;
++ #[test]fn fixed_checker_reuses_one_literal_payload_across_closures(){let e=IdTable::default();let l=IdTable::default();let env=Environment::empty();let map=[(NameId(9),LevelTerm::Param("v".into())),(NameId(3),LevelTerm::Param("u".into()))].into_iter().collect();let c=TypeChecker::with_level_substitution(&e,&l,&env,map);let a=c.closure(ExprId(1),EnvFrame::empty());let b=c.closure(ExprId(2),EnvFrame::empty().extend_free(FreeId(7)));assert_eq!(a.levels.identity(),b.levels.identity());assert_eq!(a.levels.entries().map(|(n,_)|n.0).collect::<Vec<_>>(),vec![3,9]);}
++ #[test]fn different_actual_assignments_never_share_payload_identity(){let e=IdTable::default();let l=IdTable::default();let env=Environment::empty();let a=TypeChecker::with_level_substitution(&e,&l,&env,[(NameId(3),LevelTerm::Zero)].into_iter().collect());let b=TypeChecker::with_level_substitution(&e,&l,&env,[(NameId(3),LevelTerm::Succ(Box::new(LevelTerm::Zero)))].into_iter().collect());let x=a.closure(ExprId(1),EnvFrame::empty());let y=b.closure(ExprId(1),EnvFrame::empty());assert_ne!(x.levels.identity(),y.levels.identity());assert_ne!(x.levels,y.levels);}
++ #[test]fn closure_keeps_its_actual_payload_after_checker_drops(){let e=IdTable::default();let l=IdTable::default();let env=Environment::empty();let term={let c=TypeChecker::with_level_substitution(&e,&l,&env,[(NameId(3),LevelTerm::Zero)].into_iter().collect());c.closure(ExprId(1),EnvFrame::empty())};assert_eq!(term.levels.entries().map(|(n,v)|(n.0,v.clone())).collect::<Vec<_>>(),vec![(3,LevelTerm::Zero)]);}
++ #[test]fn ordinary_empty_checker_also_reuses_its_empty_payload(){let e=IdTable::default();let l=IdTable::default();let env=Environment::empty();let c=TypeChecker::new(&e,&l,&env);let a=c.closure(ExprId(1),EnvFrame::empty());let b=c.closure(ExprId(2),EnvFrame::empty());assert_eq!(a.levels.identity(),b.levels.identity());assert_eq!(a.levels.entries().count(),0);}
++}

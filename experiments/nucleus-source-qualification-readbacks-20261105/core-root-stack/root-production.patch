@@ -1,0 +1,70 @@
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -114,6 +114,7 @@
+     levels: &'a IdTable<LevelId, Level>,
+     environment: &'a Environment,
+     level_substitution: HashMap<NameId, LevelTerm>,
++    cached_level_payload:std::cell::OnceCell<LevelSubstitution>,
+     delta_policy: crate::convert::DeltaPolicy,
+     exposure_cache: ExposureCache,
+     // Eligibility is structural; typing proofs stay in the per-judgment cache.
+@@ -179,6 +180,7 @@
+             environment,
+             level_substitution: HashMap::new(),
+             delta_policy: crate::convert::DeltaPolicy::GuardedSemanticFallback,
++            cached_level_payload:std::cell::OnceCell::new(),
+             exposure_cache: new_exposure_cache(),
+             closed_spine_eligibility: RefCell::new(HashMap::new()),
+             source_support: RefCell::new(HashMap::new()),
+@@ -209,6 +211,7 @@
+             environment,
+             level_substitution,
+             delta_policy: crate::convert::DeltaPolicy::GuardedSemanticFallback,
++            cached_level_payload:std::cell::OnceCell::new(),
+             exposure_cache: new_exposure_cache(),
+             closed_spine_eligibility: RefCell::new(HashMap::new()),
+             source_support: RefCell::new(HashMap::new()),
+@@ -4807,6 +4810,7 @@
+             environment:self.environment,
+             level_substitution:self.level_substitution.clone(),
+             delta_policy:self.delta_policy,
++            cached_level_payload:std::cell::OnceCell::new(),
+             exposure_cache:new_exposure_cache(),
+             closed_spine_eligibility: RefCell::new(HashMap::new()),
+             source_support: RefCell::new(HashMap::new()),
+@@ -4976,6 +4980,7 @@
+             environment: self.environment,
+             level_substitution: self.level_substitution.clone(),
+             delta_policy: self.delta_policy,
++            cached_level_payload:std::cell::OnceCell::new(),
+             exposure_cache: new_exposure_cache(),
+             closed_spine_eligibility: RefCell::new(HashMap::new()),
+             source_support: RefCell::new(HashMap::new()),
+@@ -5030,6 +5035,7 @@
+             environment: self.environment,
+             level_substitution: self.level_substitution.clone(),
+             delta_policy: self.delta_policy,
++            cached_level_payload:std::cell::OnceCell::new(),
+             exposure_cache: new_exposure_cache(),
+             closed_spine_eligibility: RefCell::new(HashMap::new()),
+             source_support: RefCell::new(HashMap::new()),
+@@ -6194,13 +6200,12 @@
+     }
+ 
+     pub(crate) fn closure(&self, expr: ExprId, env: EnvFrame) -> Closure {
+-        let mut entries: Vec<_> = self
+-            .level_substitution
+-            .iter()
+-            .map(|(name, level)| (*name, level.clone()))
+-            .collect();
+-        entries.sort_by_key(|(name, _)| name.0);
+-        Closure::with_levels(expr, env, LevelSubstitution::new(entries))
++        let levels=self.cached_level_payload.get_or_init(||{
++            let mut entries:Vec<_>=self.level_substitution.iter().map(|(name,level)|(*name,level.clone())).collect();
++            entries.sort_by_key(|(name,_)|name.0);
++            LevelSubstitution::new(entries)
++        });
++        Closure::with_levels(expr,env,levels.clone())
+     }
+ }
+ 

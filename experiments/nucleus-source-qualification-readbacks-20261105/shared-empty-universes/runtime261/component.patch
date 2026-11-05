@@ -1,0 +1,473 @@
+--- a/src/convert.rs
++++ b/src/convert.rs
+@@ -146,6 +146,28 @@
+     #[cfg(feature = "diagnostics")]
+     crate::diagnostics::conversion();
+ 
++    let key=checker.completed_core_conversion_key(left,right,context,initial_depth,congruence_depth,delta_policy,budget);
++    if let Some(key)=key.as_ref() && checker.reuse_completed_core_conversion(key,context){
++        // A hit uses the original root step, and starts no fresh discovery.
++        let _paid_replay_root=budget-1;
++        return Judgment::proven((),"completed-whole-conversion-in-exact-scope");
++    }
++    let result=convert_in_context_with_congruence_uncached(checker,left,right,budget,delta_policy,initial_depth,context,congruence_depth,congruence_attempts);
++    if result.is_proven() && let Some(key)=key {checker.retain_completed_core_conversion(key,left,right,context);}
++    result
++}
++
++fn convert_in_context_with_congruence_uncached(
++    checker: &TypeChecker<'_>,
++    left: &TypeValue,
++    right: &TypeValue,
++    budget: usize,
++    delta_policy: DeltaPolicy,
++    initial_depth: usize,
++    context: &[TypeValue],
++    congruence_depth: usize,
++    congruence_attempts: &mut usize,
++) -> Judgment<()> {
+     let mut remaining = budget;
+     let mut work = vec![(left.clone(), right.clone(), initial_depth, context.to_vec())];
+     let mut visited = ConversionVisitSet::new();
+--- a/src/machine.rs
++++ b/src/machine.rs
+@@ -494,7 +494,7 @@
+         let substitution = definition.level_params.iter().copied()
+             .zip(levels.iter().cloned()).collect::<Vec<_>>();
+         let source = Closure::with_levels(definition.value, EnvFrame::empty(),
+-            LevelSubstitution::new(substitution));
++            LevelSubstitution::from_instantiation(substitution));
+         self.expose_internal_with_pending(source, Transparency::Full, budget,
+             false, true, neutral.spine.iter().rev().cloned().collect())
+             .map(|exposure| exposure.value)
+@@ -542,7 +542,7 @@
+                     let body = Closure::with_levels(
+                         definition.value,
+                         EnvFrame::empty(),
+-                        LevelSubstitution::new(substitution),
++                        LevelSubstitution::from_instantiation(substitution),
+                     );
+                     return Some(
+                         self.expose_internal_with_pending(
+@@ -1362,7 +1362,7 @@
+                             let mut actuals=args[..rule.prefix_len].to_vec();actuals.extend_from_slice(&spine[p..]);
+                             pending.truncate(offset);
+                             for actual in actuals.iter().rev() {pending.push(actual.clone());}
+-                            closure=Closure::with_levels(rule.rhs,EnvFrame::empty(),LevelSubstitution::new(substitution));
++                            closure=Closure::with_levels(rule.rhs,EnvFrame::empty(),LevelSubstitution::from_instantiation(substitution));
+                             visited.clear();nested_selected=true;
+                             record_transition(&mut transitions,record_witnesses,TransitionWitness::ConstructorRecursor);
+                             #[cfg(feature="diagnostics")]
+@@ -1447,7 +1447,7 @@
+                                     closure = Closure::with_levels(
+                                         rule.rhs,
+                                         EnvFrame::empty(),
+-                                        LevelSubstitution::new(level_substitution),
++                                        LevelSubstitution::from_instantiation(level_substitution),
+                                     );
+                                     continue;
+                                 }
+@@ -1475,7 +1475,7 @@
+                         closure = Closure::with_levels(
+                             definition.value,
+                             EnvFrame::empty(),
+-                            LevelSubstitution::new(substitution),
++                            LevelSubstitution::from_instantiation(substitution),
+                         );
+                         continue;
+                     }
+@@ -2399,7 +2399,7 @@
+         let substitution = reduction.level_params.iter().copied()
+             .zip(levels.iter().cloned()).collect::<Vec<_>>();
+         let mut result = Closure::with_levels(
+-            rule.rhs, EnvFrame::empty(), LevelSubstitution::new(substitution),
++            rule.rhs, EnvFrame::empty(), LevelSubstitution::from_instantiation(substitution),
+         );
+         let prefix_len = reduction.num_params + 1 + reduction.rules.len();
+         for arg in neutral.spine.iter().take(prefix_len) {
+@@ -2687,7 +2687,7 @@
+             let substitution = reduction.level_params.iter().copied()
+                 .zip(levels.iter().cloned()).collect::<Vec<_>>();
+             let mut result = Closure::with_levels(
+-                rule.rhs, EnvFrame::empty(), LevelSubstitution::new(substitution),
++                rule.rhs, EnvFrame::empty(), LevelSubstitution::from_instantiation(substitution),
+             );
+             let prefix_len = reduction.num_params + 1 + reduction.rules.len();
+             let mut arguments = neutral.spine[..prefix_len].to_vec();
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -114,6 +114,7 @@
+     levels: &'a IdTable<LevelId, Level>,
+     environment: &'a Environment,
+     level_substitution: HashMap<NameId, LevelTerm>,
++    cached_level_payload:std::cell::OnceCell<LevelSubstitution>,
+     delta_policy: crate::convert::DeltaPolicy,
+     exposure_cache: ExposureCache,
+     // Eligibility is structural; typing proofs stay in the per-judgment cache.
+@@ -137,6 +138,7 @@
+     // immutable binder node under the identical protected source scope.
+     strict_origin_probe: bool,
+     exact_typing_memo:RefCell<ExactTypingMemo>,
++    completed_core_conversion:RefCell<CompletedCoreConversionMemo>,
+     binding_revocation_epoch:Rc<Cell<Option<u64>>>,
+ }
+ 
+@@ -179,6 +181,7 @@
+             environment,
+             level_substitution: HashMap::new(),
+             delta_policy: crate::convert::DeltaPolicy::GuardedSemanticFallback,
++            cached_level_payload:std::cell::OnceCell::new(),
+             exposure_cache: new_exposure_cache(),
+             closed_spine_eligibility: RefCell::new(HashMap::new()),
+             source_support: RefCell::new(HashMap::new()),
+@@ -193,6 +196,7 @@
+             checked_binding_lineage: Rc::new(RefCell::new(HashMap::new())),
+             strict_origin_probe: false,
+             exact_typing_memo:RefCell::new(ExactTypingMemo::default()),
++            completed_core_conversion:RefCell::new(CompletedCoreConversionMemo::default()),
+             binding_revocation_epoch:Rc::new(Cell::new(Some(0))),
+         }
+     }
+@@ -209,6 +213,7 @@
+             environment,
+             level_substitution,
+             delta_policy: crate::convert::DeltaPolicy::GuardedSemanticFallback,
++            cached_level_payload:std::cell::OnceCell::new(),
+             exposure_cache: new_exposure_cache(),
+             closed_spine_eligibility: RefCell::new(HashMap::new()),
+             source_support: RefCell::new(HashMap::new()),
+@@ -223,6 +228,7 @@
+             checked_binding_lineage: Rc::new(RefCell::new(HashMap::new())),
+             strict_origin_probe: false,
+             exact_typing_memo:RefCell::new(ExactTypingMemo::default()),
++            completed_core_conversion:RefCell::new(CompletedCoreConversionMemo::default()),
+             binding_revocation_epoch:Rc::new(Cell::new(Some(0))),
+         }
+     }
+@@ -716,7 +722,7 @@
+                 }
+                 Some(TypeValue::Term(Closure::with_levels(
+                     declaration.ty, EnvFrame::empty(),
+-                    LevelSubstitution::new(substitution),
++                    LevelSubstitution::from_instantiation(substitution),
+                 )))
+             }
+             Expr::App { fun, arg } => {
+@@ -965,7 +971,7 @@
+                                 }
+                             }
+                         }
+-                        let substitution = LevelSubstitution::new(
++                        let substitution = LevelSubstitution::from_instantiation(
+                             inductive_decl.level_params.iter().copied()
+                                 .zip(levels).collect(),
+                         );
+@@ -1263,6 +1269,39 @@
+         }
+     }
+ 
++    // Fixed host metadata, like the exact typing memo: four probes and at
++    // most 64 literal Term Γ entries. No term/level traversal is hidden in
++    // lookup. The existing semantic root step pays for this metadata; misses
++    // keep exactly the parent's cold conversion budget.
++    pub(crate)fn completed_core_conversion_key(&self,left:&TypeValue,right:&TypeValue,context:&[TypeValue],depth:usize,congruence_depth:usize,policy:crate::convert::DeltaPolicy,budget:usize)->Option<CompletedCoreConversionKey>{
++        if budget==0||context.len()>64||!context.iter().all(|x|matches!(x,TypeValue::Term(_))){return None}
++        let(TypeValue::Term(a),TypeValue::Term(b))=(left,right)else{return None};
++        Some(CompletedCoreConversionKey{
++            left:(a.expr,a.env.id(),a.levels.identity()),right:(b.expr,b.env.id(),b.levels.identity()),
++            context_len:context.len(),depth,congruence_depth,strict:self.strict_origin_probe,
++            flags:crate::run_flags::captured_configuration()?,epoch:self.binding_revocation_epoch.get()?,
++            conversion_fallback:policy==crate::convert::DeltaPolicy::GuardedSemanticFallback,
++            inference_fallback:self.delta_policy==crate::convert::DeltaPolicy::GuardedSemanticFallback,
++        })
++    }
++    pub(crate)fn reuse_completed_core_conversion(&self,key:&CompletedCoreConversionKey,context:&[TypeValue])->bool{
++        let table=self.completed_core_conversion.borrow();
++        table.slots[key.set()*4..key.set()*4+4].iter().any(|slot|slot.as_ref().is_some_and(|fact|&fact.key==key&&fact.same_context(context)))
++    }
++    pub(crate)fn retain_completed_core_conversion(&self,key:CompletedCoreConversionKey,left:&TypeValue,right:&TypeValue,context:&[TypeValue]){
++        if self.binding_revocation_epoch.get()!=Some(key.epoch)||crate::run_flags::captured_configuration()!=Some(key.flags){return}
++        let(TypeValue::Term(left),TypeValue::Term(right))=(left,right)else{return};
++        let mut table=self.completed_core_conversion.borrow_mut();let set=key.set();let start=table.hand[set]as usize;
++        for offset in 0..4{
++            let within=(start+offset)%4;let index=set*4+within;
++            if table.slots[index].as_ref().is_none_or(CompletedCoreConversionFact::relinquishable){
++                let context=context.iter().map(|x|{let TypeValue::Term(x)=x else{unreachable!()};x.clone()}).collect();
++                table.slots[index]=Some(CompletedCoreConversionFact{key,left:left.clone(),right:right.clone(),context});
++                table.hand[set]=((within+1)%4)as u8;break;
++            }
++        }
++    }
++
+     /// A reusable source-scoped conversion warrant. Both terms must first
+     /// typecheck in the SAME real context; equality of their types is not
+     /// confused with equality of their values. No unchecked strengthening.
+@@ -2038,7 +2077,7 @@
+                     TypeValue::Term(Closure::with_levels(
+                         declaration.ty,
+                         EnvFrame::empty(),
+-                        LevelSubstitution::new(substitution),
++                        LevelSubstitution::from_instantiation(substitution),
+                     )),
+                     "constant-type",
+                 )
+@@ -2369,7 +2408,7 @@
+                             }
+                         }
+ 
+-                        let level_substitution = LevelSubstitution::new(
++                        let level_substitution = LevelSubstitution::from_instantiation(
+                             declaration
+                                 .level_params
+                                 .iter()
+@@ -3792,7 +3831,7 @@
+         if decl.level_params.len() != llevels.len() { return false; }
+         let ty_for = |levels: &Vec<LevelTerm>| TypeValue::Term(
+             Closure::with_levels(
+-                decl.ty, EnvFrame::empty(), LevelSubstitution::new(
++                decl.ty, EnvFrame::empty(), LevelSubstitution::from_instantiation(
+                     decl.level_params.iter().copied().zip(levels.iter().cloned()).collect()
+                 )
+             )
+@@ -3910,7 +3949,7 @@
+                 let substitutions = decl.level_params.iter().copied()
+                     .zip(levels.iter().cloned()).collect::<Vec<_>>();
+                 let mut current = TypeValue::Term(Closure::with_levels(
+-                    decl.ty, EnvFrame::empty(), LevelSubstitution::new(substitutions),
++                    decl.ty, EnvFrame::empty(), LevelSubstitution::from_instantiation(substitutions),
+                 ));
+                 for argument in &neutral.spine {
+                     let Some((domain, body)) = self.pi_view(
+@@ -4012,7 +4051,7 @@
+         if decl.level_params.len() != llevels.len() { return false; }
+         let ty_for = |levels: &Vec<LevelTerm>| TypeValue::Term(
+             Closure::with_levels(
+-                decl.ty, EnvFrame::empty(), LevelSubstitution::new(
++                decl.ty, EnvFrame::empty(), LevelSubstitution::from_instantiation(
+                     decl.level_params.iter().copied().zip(levels.iter().cloned()).collect()
+                 )
+             )
+@@ -4252,7 +4291,7 @@
+                 TypeValue::Term(Closure::with_levels(
+                     declaration.ty,
+                     EnvFrame::empty(),
+-                    LevelSubstitution::new(substitution),
++                    LevelSubstitution::from_instantiation(substitution),
+                 ))
+             }
+             NeutralHead::Projection { .. } => return None,
+@@ -4807,6 +4846,7 @@
+             environment:self.environment,
+             level_substitution:self.level_substitution.clone(),
+             delta_policy:self.delta_policy,
++            cached_level_payload:std::cell::OnceCell::new(),
+             exposure_cache:new_exposure_cache(),
+             closed_spine_eligibility: RefCell::new(HashMap::new()),
+             source_support: RefCell::new(HashMap::new()),
+@@ -4823,6 +4863,7 @@
+             )),
+             strict_origin_probe:true,
+             exact_typing_memo:RefCell::new(ExactTypingMemo::default()),
++            completed_core_conversion:RefCell::new(CompletedCoreConversionMemo::default()),
+             binding_revocation_epoch:Rc::new(Cell::new(Some(0))),
+         };
+         // The directly visible leaf determines a checked six-binder
+@@ -4976,6 +5017,7 @@
+             environment: self.environment,
+             level_substitution: self.level_substitution.clone(),
+             delta_policy: self.delta_policy,
++            cached_level_payload:std::cell::OnceCell::new(),
+             exposure_cache: new_exposure_cache(),
+             closed_spine_eligibility: RefCell::new(HashMap::new()),
+             source_support: RefCell::new(HashMap::new()),
+@@ -4992,6 +5034,7 @@
+             )),
+             strict_origin_probe: true,
+             exact_typing_memo:RefCell::new(ExactTypingMemo::default()),
++            completed_core_conversion:RefCell::new(CompletedCoreConversionMemo::default()),
+             binding_revocation_epoch:Rc::new(Cell::new(Some(0))),
+         };
+         let replay = isolated.diagnostic_neutral_source_telescope_inner(
+@@ -5030,6 +5073,7 @@
+             environment: self.environment,
+             level_substitution: self.level_substitution.clone(),
+             delta_policy: self.delta_policy,
++            cached_level_payload:std::cell::OnceCell::new(),
+             exposure_cache: new_exposure_cache(),
+             closed_spine_eligibility: RefCell::new(HashMap::new()),
+             source_support: RefCell::new(HashMap::new()),
+@@ -5046,6 +5090,7 @@
+             )),
+             strict_origin_probe: self.strict_origin_probe,
+             exact_typing_memo:RefCell::new(ExactTypingMemo::default()),
++            completed_core_conversion:RefCell::new(CompletedCoreConversionMemo::default()),
+             binding_revocation_epoch:Rc::new(Cell::new(Some(0))),
+         };
+         let mut remaining = budget.min(1024);
+@@ -5060,7 +5105,7 @@
+                 TypeValue::Term(Closure::with_levels(
+                     decl.ty,
+                     EnvFrame::empty(),
+-                    LevelSubstitution::new(
++                    LevelSubstitution::from_instantiation(
+                         decl.level_params.iter().copied()
+                             .zip(levels.iter().cloned()).collect(),
+                     ),
+@@ -5438,7 +5483,7 @@
+         }
+         for level in levels{if !charge_level(level,&mut fuel,0){return None;}}
+         let substitution=reduction.level_params.iter().copied().zip(levels.iter().cloned()).collect();
+-        let mut result=Closure::with_levels(rule.rhs,EnvFrame::empty(),LevelSubstitution::new(substitution));
++        let mut result=Closure::with_levels(rule.rhs,EnvFrame::empty(),LevelSubstitution::from_instantiation(substitution));
+         for arg in arguments{
+             let mut lets=0;
+             loop{
+@@ -5601,7 +5646,7 @@
+         let mut current = TypeValue::Term(Closure::with_levels(
+             declaration.ty,
+             EnvFrame::empty(),
+-            LevelSubstitution::new(substitutions),
++            LevelSubstitution::from_instantiation(substitutions),
+         ));
+         for argument in &neutral.spine[..neutral.spine.len().saturating_sub(1)] {
+             let Some((_domain, body)) = self.pi_view(
+@@ -5709,7 +5754,7 @@
+                 let mut result = Closure::with_levels(
+                     rule.rhs,
+                     EnvFrame::empty(),
+-                    LevelSubstitution::new(substitutions),
++                    LevelSubstitution::from_instantiation(substitutions),
+                 );
+                 let prefix_len = reduction.num_params + 1 + reduction.rules.len();
+                 for argument in &neutral.spine[..prefix_len] {
+@@ -6035,7 +6080,7 @@
+         let proposition_type = Closure::with_levels(
+             declaration.ty,
+             EnvFrame::empty(),
+-            LevelSubstitution::new(substitutions),
++            LevelSubstitution::from_instantiation(substitutions),
+         );
+         let proposition_type = machine.expose(proposition_type, Transparency::Reducible, budget);
+         matches!(
+@@ -6180,7 +6225,7 @@
+             let ty = Closure::with_levels(
+                 declaration.ty,
+                 EnvFrame::empty(),
+-                LevelSubstitution::new(Vec::new()),
++                LevelSubstitution::from_instantiation(Vec::new()),
+             );
+             matches!(
+                 self.machine()
+@@ -6194,13 +6239,12 @@
+     }
+ 
+     pub(crate) fn closure(&self, expr: ExprId, env: EnvFrame) -> Closure {
+-        let mut entries: Vec<_> = self
+-            .level_substitution
+-            .iter()
+-            .map(|(name, level)| (*name, level.clone()))
+-            .collect();
+-        entries.sort_by_key(|(name, _)| name.0);
+-        Closure::with_levels(expr, env, LevelSubstitution::new(entries))
++        let levels=self.cached_level_payload.get_or_init(||{
++            let mut entries:Vec<_>=self.level_substitution.iter().map(|(name,level)|(*name,level.clone())).collect();
++            entries.sort_by_key(|(name,_)|name.0);
++            LevelSubstitution::from_instantiation(entries)
++        });
++        Closure::with_levels(expr,env,levels.clone())
+     }
+ }
+ 
+@@ -7747,3 +7791,42 @@
+  #[test]fn a_nonempty_neutral_capture_is_not_solved(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);c.complete_source_support(ExprId(2),&mut 128).unwrap();let t=||Closure::new(ExprId(2),EnvFrame::empty().extend_neutral(Neutral{head:NeutralHead::Free(FreeId(7)),spine:vec![Closure::new(ExprId(3),EnvFrame::empty())]}));assert!(!c.replay_completed_source_substitution(&t(),&t(),&mut 128));}
+ 
+ }
++
++#[cfg(test)]
++mod completed_core_conversion_controls {
++ use super::*;
++ fn fixture()->(IdTable<ExprId,Expr>,IdTable<LevelId,Level>,Environment){let mut e=IdTable::default();let mut l=IdTable::default();l.insert(LevelId(0),Level::Zero).unwrap();for(id,x)in[(0,Expr::Sort(LevelId(0))),(1,Expr::BVar(0)),(2,Expr::Lam{domain:ExprId(0),body:ExprId(1)}),(3,Expr::Const{name:NameId(1),levels:vec![]}),(4,Expr::App{fun:ExprId(2),arg:ExprId(3)}),(5,Expr::Const{name:NameId(2),levels:vec![]})]{e.insert(ExprId(id),x).unwrap();}let env=Environment::empty().extend(NameId(1),crate::environment::ConstantDecl::axiom(vec![],ExprId(0))).unwrap().extend(NameId(2),crate::environment::ConstantDecl::axiom(vec![],ExprId(0))).unwrap();(e,l,env)}
++ fn call(c:&TypeChecker,a:&TypeValue,b:&TypeValue,g:&[TypeValue],work:usize)->Judgment<()>{crate::convert::convert_with_policy_in_context(c,a,b,work,crate::convert::DeltaPolicy::PreferredOnly,g.len(),g)}
++ #[test]fn completed_whole_conversion_replays_at_one_root_step(){let _scope=crate::run_flags::enter();let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let a=TypeValue::Term(c.closure(ExprId(4),EnvFrame::empty()));let b=TypeValue::Term(c.closure(ExprId(3),EnvFrame::empty()));let g=vec![TypeValue::Term(c.closure(ExprId(0),EnvFrame::empty()))];assert!(call(&c,&a,&b,&g,2048).is_proven());assert!(call(&c,&a,&b,&g,1).is_proven(),"completed conversion should replace repeat evaluation");assert!(!call(&c,&a,&b,&g,0).is_proven());}
++ #[test]fn changed_context_subject_and_authority_do_not_replay(){let _scope=crate::run_flags::enter();let(e,l,env)=fixture();let mut c=TypeChecker::new(&e,&l,&env);let a=TypeValue::Term(c.closure(ExprId(4),EnvFrame::empty()));let b=TypeValue::Term(c.closure(ExprId(3),EnvFrame::empty()));let g=vec![TypeValue::Term(c.closure(ExprId(0),EnvFrame::empty()))];assert!(call(&c,&a,&b,&g,2048).is_proven());assert!(!call(&c,&a,&b,&[],1).is_proven());let wrong=TypeValue::Term(c.closure(ExprId(5),EnvFrame::empty()));assert!(!call(&c,&a,&wrong,&g,1).is_proven());c.strict_origin_probe=true;assert!(!call(&c,&a,&b,&g,1).is_proven());c.strict_origin_probe=false;c.binding_revocation_epoch.set(Some(1));assert!(!call(&c,&a,&b,&g,1).is_proven());c.binding_revocation_epoch.set(None);assert!(!call(&c,&a,&b,&g,1).is_proven());}
++ #[test]fn source_level_allocations_and_checkers_remain_distinct(){let _scope=crate::run_flags::enter();let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let source=c.closure(ExprId(4),EnvFrame::empty());let a=TypeValue::Term(source.clone());let b=TypeValue::Term(c.closure(ExprId(3),EnvFrame::empty()));assert!(call(&c,&a,&b,&[],2048).is_proven());let other=TypeValue::Term(Closure::with_levels(source.expr,source.env.clone(),LevelSubstitution::new(vec![(NameId(7),LevelTerm::Zero)])));assert!(!call(&c,&other,&b,&[],1).is_proven());let other=TypeChecker::new(&e,&l,&env);assert!(!call(&other,&a,&b,&[],1).is_proven());}
++ #[test]fn capability_policy_and_free_depth_changes_require_new_conversion(){let _scope=crate::run_flags::enter();let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let a=TypeValue::Term(c.closure(ExprId(4),EnvFrame::empty()));let b=TypeValue::Term(c.closure(ExprId(3),EnvFrame::empty()));assert!(call(&c,&a,&b,&[],2048).is_proven());let mut flags=crate::run_flags::captured_configuration().unwrap();flags[0]^=1;{let _changed=crate::run_flags::test_scope(flags);assert!(!call(&c,&a,&b,&[],1).is_proven());}assert!(!crate::convert::convert_with_policy_in_context(&c,&a,&b,1,crate::convert::DeltaPolicy::GuardedSemanticFallback,0,&[]).is_proven());assert!(!crate::convert::convert_with_policy_in_context(&c,&a,&b,1,crate::convert::DeltaPolicy::PreferredOnly,1,&[]).is_proven());let c=c.with_delta_policy(crate::convert::DeltaPolicy::PreferredOnly);assert!(!call(&c,&a,&b,&[],1).is_proven());}
++ #[test]fn actual_lineage_quarantine_invalidates_completed_conversion(){let _scope=crate::run_flags::enter();let(e,l,env)=fixture();let mut c=TypeChecker::new(&e,&l,&env);c.strict_origin_probe=true;let frame=EnvFrame::empty().extend_free(FreeId(9));let a=TypeValue::Term(c.closure(ExprId(4),EnvFrame::empty()));let b=TypeValue::Term(c.closure(ExprId(3),EnvFrame::empty()));c.retain_checked_binding(&frame,b.clone(),&[]);assert!(call(&c,&a,&b,&[],2048).is_proven());let epoch=c.binding_revocation_epoch.get();c.retain_checked_binding(&frame,TypeValue::Term(c.closure(ExprId(0),EnvFrame::empty())),&[]);assert_ne!(c.binding_revocation_epoch.get(),epoch);assert!(!call(&c,&a,&b,&[],1).is_proven());}
++ #[test]fn uncaptured_dynamic_capabilities_never_reuse_a_completed_conversion(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let a=TypeValue::Term(c.closure(ExprId(4),EnvFrame::empty()));let b=TypeValue::Term(c.closure(ExprId(3),EnvFrame::empty()));assert!(call(&c,&a,&b,&[],2048).is_proven());assert!(!call(&c,&a,&b,&[],1).is_proven());}
++ #[test]fn failed_comparisons_never_authorize_a_later_small_trial(){let _scope=crate::run_flags::enter();let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let a=TypeValue::Term(c.closure(ExprId(4),EnvFrame::empty()));let b=TypeValue::Term(c.closure(ExprId(5),EnvFrame::empty()));assert!(!call(&c,&a,&b,&[],2048).is_proven());assert!(!call(&c,&a,&b,&[],1).is_proven());}
++}
++
++// Ordinary conversion evidence is scope-indexed VALUE equality only. It
++// grants neither term formation nor context-free source-capture authority.
++#[derive(Clone,Eq,PartialEq,Hash)]
++pub(crate)struct CompletedCoreConversionKey{
++ left:(ExprId,u64,usize),right:(ExprId,u64,usize),context_len:usize,depth:usize,congruence_depth:usize,
++ strict:bool,flags:[u64;2],epoch:u64,conversion_fallback:bool,inference_fallback:bool,
++}
++impl CompletedCoreConversionKey{fn set(&self)->usize{use std::hash::{Hash,Hasher};let mut h=std::collections::hash_map::DefaultHasher::new();self.hash(&mut h);(h.finish()as usize)%128}}
++struct CompletedCoreConversionFact{key:CompletedCoreConversionKey,left:Closure,right:Closure,context:Vec<Closure>}
++impl CompletedCoreConversionFact{
++ fn same_context(&self,context:&[TypeValue])->bool{self.context.len()==context.len()&&self.context.iter().zip(context).all(|(a,b)|matches!(b,TypeValue::Term(b)if(a.expr,a.env.id(),a.levels.identity())==(b.expr,b.env.id(),b.levels.identity())))}
++ fn relinquishable(&self)->bool{crate::value::captures_reclaimable(std::iter::once(&self.left).chain(std::iter::once(&self.right)).chain(self.context.iter()))}
++}
++struct CompletedCoreConversionMemo{slots:Box<[Option<CompletedCoreConversionFact>]>,hand:[u8;128]}
++impl Default for CompletedCoreConversionMemo{fn default()->Self{Self{slots:std::iter::repeat_with(||None).take(512).collect::<Vec<_>>().into_boxed_slice(),hand:[0;128]}}}
++
++#[cfg(test)]
++mod root_universe_payload_controls{
++ use super::*;
++ #[test]fn fixed_checker_reuses_one_literal_payload_across_closures(){let e=IdTable::default();let l=IdTable::default();let env=Environment::empty();let map=[(NameId(9),LevelTerm::Param("v".into())),(NameId(3),LevelTerm::Param("u".into()))].into_iter().collect();let c=TypeChecker::with_level_substitution(&e,&l,&env,map);let a=c.closure(ExprId(1),EnvFrame::empty());let b=c.closure(ExprId(2),EnvFrame::empty().extend_free(FreeId(7)));assert_eq!(a.levels.identity(),b.levels.identity());assert_eq!(a.levels.entries().map(|(n,_)|n.0).collect::<Vec<_>>(),vec![3,9]);}
++ #[test]fn different_actual_assignments_never_share_payload_identity(){let e=IdTable::default();let l=IdTable::default();let env=Environment::empty();let a=TypeChecker::with_level_substitution(&e,&l,&env,[(NameId(3),LevelTerm::Zero)].into_iter().collect());let b=TypeChecker::with_level_substitution(&e,&l,&env,[(NameId(3),LevelTerm::Succ(Box::new(LevelTerm::Zero)))].into_iter().collect());let x=a.closure(ExprId(1),EnvFrame::empty());let y=b.closure(ExprId(1),EnvFrame::empty());assert_ne!(x.levels.identity(),y.levels.identity());assert_ne!(x.levels,y.levels);}
++ #[test]fn closure_keeps_its_actual_payload_after_checker_drops(){let e=IdTable::default();let l=IdTable::default();let env=Environment::empty();let term={let c=TypeChecker::with_level_substitution(&e,&l,&env,[(NameId(3),LevelTerm::Zero)].into_iter().collect());c.closure(ExprId(1),EnvFrame::empty())};assert_eq!(term.levels.entries().map(|(n,v)|(n.0,v.clone())).collect::<Vec<_>>(),vec![(3,LevelTerm::Zero)]);}
++ #[test]fn ordinary_empty_checker_also_reuses_its_empty_payload(){let e=IdTable::default();let l=IdTable::default();let env=Environment::empty();let c=TypeChecker::new(&e,&l,&env);let a=c.closure(ExprId(1),EnvFrame::empty());let b=c.closure(ExprId(2),EnvFrame::empty());assert_eq!(a.levels.identity(),b.levels.identity());assert_eq!(a.levels.entries().count(),0);}
++}
+--- a/src/value.rs
++++ b/src/value.rs
+@@ -180,8 +180,15 @@
+ }
+ #[derive(Clone)]
+ pub struct LevelSubstitution(Rc<LevelSubstitutionData>);
++thread_local! {
++    // Pure immutable data, with no expression, environment or typing authority.
++    static EMPTY_LEVEL_SUBSTITUTION:LevelSubstitution=LevelSubstitution::new(Vec::new());
++}
+ impl Default for LevelSubstitution {
+-    fn default()->Self {Self::new(Vec::new())}
++    fn default()->Self {
++        // Preserve the public constructor during other TLS destructors too.
++        EMPTY_LEVEL_SUBSTITUTION.try_with(Clone::clone).unwrap_or_else(|_|Self::new(Vec::new()))
++    }
+ }
+ impl fmt::Debug for LevelSubstitution {
+     fn fmt(&self,f:&mut fmt::Formatter<'_>)->fmt::Result {
+@@ -197,6 +204,9 @@
+ }
+ 
+ impl LevelSubstitution {
++    pub(crate)fn from_instantiation(entries:Vec<(NameId,LevelTerm)>)->Self{
++        if entries.is_empty(){Self::default()}else{Self::new(entries)}
++    }
+     pub fn new(entries: Vec<(NameId, LevelTerm)>) -> Self {
+         // Cache only a hash, never equality or type authority. Full entries
+         // remain the collision witness, and allocation identity is retained.
+@@ -533,3 +543,20 @@
+  for root in roots{count+=1;if count>66||!plan.closure(root){return false;}}
+  plan.finish()
+ }
++
++#[cfg(test)]
++mod shared_empty_universe_controls{
++ use super::*;
++ #[test]fn default_empty_payload_is_constructed_once(){let a=LevelSubstitution::default();let b=LevelSubstitution::default();assert_eq!(a.identity(),b.identity(),"the immutable empty assignment has one reusable payload");assert_eq!(a.entries().count(),0);}
++ #[test]fn empty_instantiations_reuse_default_without_changing_fresh_constructor(){let a=LevelSubstitution::from_instantiation(vec![]);let b=LevelSubstitution::default();assert_eq!(a.identity(),b.identity());let fresh=LevelSubstitution::new(vec![]);assert_ne!(fresh.identity(),a.identity());assert_eq!(fresh,a);}
++ #[test]fn default_is_available_during_thread_local_teardown(){
++  if std::env::var("TEST_EMPTY_LEVEL_TLS_CHILD").as_deref()==Ok("1"){
++   struct DefaultOnDrop;impl Drop for DefaultOnDrop{fn drop(&mut self){assert_eq!(LevelSubstitution::default().entries().count(),0);}}
++   thread_local!{static EARLY:DefaultOnDrop=const{DefaultOnDrop};}
++   std::thread::spawn(||{EARLY.with(|_|{});let _=LevelSubstitution::default();}).join().unwrap();return;
++  }
++  let output=std::process::Command::new(std::env::current_exe().unwrap()).args(["--exact","value::shared_empty_universe_controls::default_is_available_during_thread_local_teardown","--nocapture"]).env("TEST_EMPTY_LEVEL_TLS_CHILD","1").output().unwrap();
++  assert!(output.status.success(),"{}",String::from_utf8_lossy(&output.stderr));assert!(String::from_utf8_lossy(&output.stdout).contains("1 passed; 0 failed"));
++ }
++ #[test]fn nonempty_actual_assignments_keep_their_literal_payloads(){let a=LevelSubstitution::from_instantiation(vec![(NameId(7),LevelTerm::Zero)]);let b=LevelSubstitution::from_instantiation(vec![(NameId(7),crate::level::succ(LevelTerm::Zero))]);assert_ne!(a,b);assert_ne!(a.identity(),b.identity());assert_ne!(a,LevelSubstitution::default());}
++}
