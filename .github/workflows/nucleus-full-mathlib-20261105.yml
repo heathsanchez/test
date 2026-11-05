@@ -33,10 +33,15 @@ jobs:
           patch -p1 -d metatron-kernel < experiments/nucleus-deferred-projection-congruence-20261105/convert.rs.patch
           sha256sum metatron-kernel/src/convert.rs metatron-kernel/src/run_flags.rs | tee candidate-source-sha256.txt
           printf 'leanprover/lean4:v4.34.1\n' > lean-toolchain
-      - uses: leanprover/lean-action@v1
-        with:
-          auto-config: 'false'
-          use-github-cache: 'false'
+      - name: Install Lean 4.34.1 from the official elan installer
+        run: |
+          set -euo pipefail
+          curl -fLsS --retry 3 https://elan.lean-lang.org/elan-init.sh -o elan-init.sh
+          sha256sum elan-init.sh | tee elan-installer.sha256
+          sh elan-init.sh -y --default-toolchain none
+          printf '%s\n' "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.34.1
+          "$HOME/.elan/bin/lake" --version
       - name: Build Nucleus from source
         run: |
           set -euo pipefail
@@ -110,3 +115,4 @@ jobs:
             mathlib.stderr.zst
             mathlib.stdout
             qualified/qualification.json
+            elan-installer.sha256
