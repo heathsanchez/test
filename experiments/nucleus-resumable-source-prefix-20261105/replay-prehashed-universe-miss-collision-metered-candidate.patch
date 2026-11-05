@@ -1,0 +1,35 @@
+--- a/src/machine.rs
++++ b/src/machine.rs
+@@ -1125,8 +1125,22 @@
+             if !self.reserve_replay_work(rule.constructor_level_params.len()) {return false;}
+         }
+         for level in levels {if !self.reserve_replay_levels(level) {return false;}}
+-        for closure in spine {
+-            for (_,level) in closure.levels.entries() {
++        // Each captured Closure owns an Rc-backed LevelSubstitution whose
++        // digest was computed when it was constructed. Key clone and hash
++        // copy only the Rc and consume that saved digest; no source universe
++        // syntax tree is traversed on this path. Full equality of different
++        // substitutions is charged separately only on a digest collision.
++        true
++    }
++
++    fn reserve_replay_substitution_equality(&self,left:&[Closure],right:&[Closure])->bool {
++        if left.len()!=right.len() {return true;}
++        for (a,b) in left.iter().zip(right) {
++            // The two retained Rc allocations are a sound pointer witness.
++            // For distinct allocations the structural equality comparator
++            // may visit real universe trees even if their hashes collide.
++            if a.levels.identity()==b.levels.identity() {continue;}
++            for (_,level) in a.levels.entries() {
+                 if !self.reserve_replay_work(1)||!self.reserve_replay_levels(level) {return false;}
+             }
+         }
+@@ -1221,6 +1235,7 @@
+         let key=&left.exact;
+         let certificate=key.rules.0.get(&key.name)?;
+         if !self.reserve_replay_key(&key.levels,&key.spine,certificate) {return None;}
++        if !self.reserve_replay_substitution_equality(&key.spine,&right.exact.spine) {return None;}
+         Some(left.exact==right.exact)
+     }
+ 
