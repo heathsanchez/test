@@ -135,8 +135,8 @@ def main():
  signature=lambda rows:[(r['case'],r['expected'],r['rc'],r['sha256'])for r in rows]
  current_rows=json.loads((arm/'verdicts.json').read_text());parent_rows=json.loads((BASE/'candidate/verdicts.json').read_text())
  assert len(current_rows)==len(parent_rows)==208 and signature(current_rows)==signature(parent_rows),'Direct frozen208 agreement with sealed current parent'
- control_signature=lambda rows:[(r['file'],r['expected'],r['rc'],r['sha256'])for r in rows]
- assert control_signature(q['controls'])==control_signature(parent['controls']),'Direct protected61 agreement with sealed current parent'
+ from receipt_schema import controls_equal
+ assert controls_equal(q['controls'],parent['controls']),'Direct complete recorded protected61 metadata agreement with sealed current parent'
 
  full=json.loads((OUT/'full.json').read_text());reference=Path('/tmp/k-reference/bundle/kernel');assert t.digest(reference)==C.REF_SHA
  assert full['source_sha']==t.INPUT_SHA and full['binary_sha']==q['binary_sha']

@@ -1,0 +1,13 @@
+...F
+======================================================================
+FAIL: test_mixed_real_schemas_compare_independent_of_completion_order (__main__.ReceiptTests.test_mixed_real_schemas_compare_independent_of_completion_order)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/nucleus-core-conversion-resume/test_receipts.py", line 8, in test_mixed_real_schemas_compare_independent_of_completion_order
+    self.assertTrue(controls_equal([self.rich,self.legacy],[self.legacy,self.rich|dict(stderr='different diagnostics')]))
+AssertionError: False is not true
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.000s
+
+FAILED (failures=1)

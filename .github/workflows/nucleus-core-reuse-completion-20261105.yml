@@ -1,0 +1,46 @@
+name: Nucleus whole conversion qualification completion
+on:
+  push:
+    branches: [research/nucleus-core-reuse-completion-20261105]
+    paths:
+      - '.github/workflows/nucleus-core-reuse-completion-20261105.yml'
+      - 'experiments/nucleus-core-conversion-reuse-20261105/resume.py'
+      - 'experiments/nucleus-core-conversion-reuse-20261105/receipt_schema.py'
+      - 'experiments/nucleus-core-conversion-reuse-20261105/test_receipts.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  complete-sealed-evidence:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore exact completed source tests and actual research parent
+        run: |
+          set -euo pipefail
+          gh api repos/heathsanchez/test/actions/artifacts/13381050552/zip > /tmp/core-partial.zip
+          printf '%s  %s\n' fa0a06101ca8dda97b9c15f4e106eb24e12b2b46aafb8594a9ffb0f44368cd08 /tmp/core-partial.zip | sha256sum -c -
+          mkdir -p /tmp/core-partial
+          unzip -q /tmp/core-partial.zip -d /tmp/core-partial
+          gh api repos/heathsanchez/test/actions/artifacts/13370874970/zip > /tmp/core-parent.zip
+          printf '%s  %s\n' 0fd8a4cd86dcb233b532f59ea8dc853d22480b6ba62ff864049224250613e517 /tmp/core-parent.zip | sha256sum -c -
+          mkdir -p /tmp/core-parent
+          unzip -q /tmp/core-parent.zip -d /tmp/core-parent
+      - name: Protect receipt schema compatibility
+        run: python3 -m unittest discover -s experiments/nucleus-core-conversion-reuse-20261105 -p test_receipts.py
+      - name: Independent readback, fresh protected61, and serial paired timing
+        run: |
+          python3 experiments/nucleus-core-conversion-reuse-20261105/resume.py \
+            --partial /tmp/core-partial --parent /tmp/core-parent \
+            --partial-zip /tmp/core-partial.zip --parent-zip /tmp/core-parent.zip \
+            --out /tmp/nucleus-core-reuse-completion
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-core-reuse-completion-${{ github.sha }}
+          retention-days: 90
+          path: /tmp/nucleus-core-reuse-completion/
+          if-no-files-found: error
