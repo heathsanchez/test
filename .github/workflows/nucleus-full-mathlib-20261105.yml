@@ -1,0 +1,112 @@
+name: Nucleus exact-source full Mathlib 4.34.1 acceptance experiment
+on:
+  push:
+    branches: [research/nucleus-deferred-projection-congruence-20261105]
+    paths:
+      - '.github/workflows/nucleus-full-mathlib-20261105.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  mathlib-full:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 115
+    env:
+      GH_TOKEN: ${{ github.token }}
+      CARGO_INCREMENTAL: 0
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Rehydrate exact qualified independent Rust Nucleus and checked candidate changes
+        run: |
+          set -euo pipefail
+          mkdir -p qualified candidate
+          gh api repos/heathsanchez/test/actions/artifacts/13370874970/zip > qualified.zip
+          printf '%s  %s\n' 0fd8a4cd86dcb233b532f59ea8dc853d22480b6ba62ff864049224250613e517 qualified.zip | sha256sum -c -
+          unzip -q qualified.zip -d qualified
+          tar --no-same-owner -xzf qualified/candidate/source.tar.gz
+          printf '%s  %s\n' 1949144e581167be2547bb18a0331d7b34a769f2cff75037b884ce9b2de6c4ac metatron-kernel/src/convert.rs | sha256sum -c -
+          printf '%s  %s\n' 633fb3fd4c58def5143e17078d3d188f832dc1a7432dea84a88b8d91676e5d20 metatron-kernel/src/run_flags.rs | sha256sum -c -
+          patch -p1 -d metatron-kernel < experiments/nucleus-deferred-projection-congruence-20261105/run_flags.rs.patch
+          patch -p1 -d metatron-kernel < experiments/nucleus-deferred-projection-congruence-20261105/convert.rs.patch
+          sha256sum metatron-kernel/src/convert.rs metatron-kernel/src/run_flags.rs | tee candidate-source-sha256.txt
+          printf 'leanprover/lean4:v4.34.1\n' > lean-toolchain
+      - uses: leanprover/lean-action@v1
+        with:
+          auto-config: 'false'
+          use-github-cache: 'false'
+      - name: Build Nucleus from source
+        run: |
+          set -euo pipefail
+          cd metatron-kernel
+          cargo build --locked --release
+          cp target/release/metatron-kernel ../candidate/nucleus
+          sha256sum ../candidate/nucleus | tee ../candidate-binary-sha256.txt
+      - name: Independently build official revision of Mathlib and compatible lean4export
+        run: |
+          set -euo pipefail
+          git clone --depth 1 --branch v4.34.1 https://github.com/leanprover-community/mathlib4.git mathlib4
+          test "$(git -C mathlib4 rev-parse HEAD)" = d13f23b723b8a846827a245b89c10fc7d3f11612
+          git clone --no-checkout https://github.com/leanprover/lean4export.git lean4export
+          git -C lean4export checkout --detach 076e8e57707e813375e8f9da8bf989799ace9680
+          test "$(git -C lean4export rev-parse HEAD)" = 076e8e57707e813375e8f9da8bf989799ace9680
+          printf 'leanprover/lean4:v4.34.1\n' > lean4export/lean-toolchain
+          cd lean4export
+          lake build lean4export
+          cd ../mathlib4
+          lake exe cache get
+          df -h .
+      - name: Export complete source-pinned Mathlib and compare known first-frontier prefix
+        run: |
+          set -euo pipefail
+          cd mathlib4
+          lake env ../lean4export/.lake/build/bin/lean4export Mathlib > ../mathlib-full.ndjson
+          cd ..
+          wc -l mathlib-full.ndjson | tee mathlib-record-count.txt
+          test "$(wc -l < mathlib-full.ndjson)" -gt 303563
+          sha256sum mathlib-full.ndjson | tee mathlib-sha256.txt
+          head -n 303563 mathlib-full.ndjson | sha256sum | tee generated-prefix-sha256.txt
+          if test "$(cut -d ' ' -f 1 generated-prefix-sha256.txt)" = 61b130d9e864c99afd4111b662f884827be98a87f27277c42a5949b025fc0d6b; then
+            echo 'EXACT_PREFIX_MATCH=YES' | tee prefix-comparison.txt
+          else
+            echo 'EXACT_PREFIX_MATCH=NO — separately pinned source, no substitution claim' | tee prefix-comparison.txt
+          fi
+          zstd -q -3 -T0 -f mathlib-full.ndjson -o mathlib-full.ndjson.zst
+          sha256sum mathlib-full.ndjson.zst | tee compressed-sha256.txt
+      - name: Replay full Mathlib with source-qualified candidate and preserve first causal residual
+        run: |
+          set -euo pipefail
+          mapfile -t flags < <(jq -r '.candidate.configuration | to_entries[] | "\(.key)=\(.value)"' qualified/qualification.json)
+          set +e
+          env "${flags[@]}" NUCLEUS_EXPERIMENTAL_DEFERRED_PROJECTION_CONGRUENCE=1 timeout 3500 candidate/nucleus < mathlib-full.ndjson > mathlib.stdout 2> mathlib.stderr
+          status=$?
+          set -e
+          printf 'MATHLIB_FULL_RC=%s\n' "$status" | tee mathlib.status
+          rg 'UNKNOWN|REJECT|ERROR|last_record|stage=theorem.value' mathlib.stderr | tail -n 30 || true
+          zstd -q -3 -f mathlib.stderr -o mathlib.stderr.zst
+          if test "$status" -ne 0 && test "$status" -ne 2 && test "$status" -ne 124; then
+            echo "Unexpected checker process status $status" >&2
+            exit "$status"
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-full-mathlib-v4341-deferred-projection-experiment
+          retention-days: 45
+          if-no-files-found: warn
+          path: |
+            candidate/nucleus
+            candidate-binary-sha256.txt
+            candidate-source-sha256.txt
+            mathlib-full.ndjson.zst
+            mathlib-sha256.txt
+            compressed-sha256.txt
+            generated-prefix-sha256.txt
+            mathlib-record-count.txt
+            prefix-comparison.txt
+            mathlib.status
+            mathlib.stderr.zst
+            mathlib.stdout
+            qualified/qualification.json
