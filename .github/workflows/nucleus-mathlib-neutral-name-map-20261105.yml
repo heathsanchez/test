@@ -1,0 +1,69 @@
+name: Nucleus source-pinned Mathlib neutral name resolution
+on:
+  push:
+    branches: [research/nucleus-deferred-projection-congruence-20261105]
+    paths:
+      - '.github/workflows/nucleus-mathlib-neutral-name-map-20261105.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  resolve:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Resolve both observed NameIds from the exact archived Mathlib source stream
+        run: |
+          set -euo pipefail
+          gh api repos/heathsanchez/test/actions/artifacts/13377771876/zip > full-mathlib-evidence.zip
+          printf '%s  %s\n' 699da072ffc367c84cc168d7e1c7eec48e6572c6316ac33d43cc17944816cf65 full-mathlib-evidence.zip | sha256sum -c -
+          # Exit early once both names are found. The upstream streaming
+          # decompressor's expected SIGPIPE is not an evidence failure.
+          set +o pipefail
+          unzip -p full-mathlib-evidence.zip mathlib-full.ndjson.zst | zstd -dc | \
+            python3 -c '
+          import json
+          import sys
+
+          names = {0: ""}
+          wanted = {26532, 26539}
+          found = {}
+          for line in sys.stdin.buffer:
+              if b"\"in\":" not in line:
+                  continue
+              row = json.loads(line)
+              name_id = row.get("in")
+              if name_id is None:
+                  continue
+              item = row.get("str") or row.get("num")
+              if not isinstance(item, dict):
+                  continue
+              parent_id = item["pre"]
+              if parent_id not in names:
+                  raise RuntimeError(f"Unresolved parent {parent_id} for {name_id}")
+              suffix = str(item.get("str", item.get("num")))
+              if suffix == "None":
+                  raise RuntimeError(f"Unexpected source name record: {row}")
+              names[name_id] = (names[parent_id] + "." if names[parent_id] else "") + suffix
+              if name_id in wanted:
+                  found[name_id] = names[name_id]
+              if set(found) == wanted:
+                  break
+          if set(found) != wanted:
+              raise SystemExit(f"Missing source names: {sorted(wanted-set(found))}")
+          for name_id in sorted(found):
+              print(f"NAME_ID:{name_id}:{found[name_id]}")
+          ' | tee neutral-names.txt
+          set -o pipefail
+          test "$(grep -c '^NAME_ID:' neutral-names.txt)" -eq 2
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-source-pinned-mathlib-neutral-name-map
+          retention-days: 45
+          if-no-files-found: warn
+          path: neutral-names.txt
