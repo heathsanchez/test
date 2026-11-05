@@ -36,7 +36,7 @@ jobs:
           test "$(find arena207 -name '*.ndjson' -type f | wc -l)" -eq 207
           patch --fuzz=0 -p1 --dry-run -d metatron-kernel < experiments/nucleus-typed-child-continuation-20261106/typed-child-bridge.patch
           patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-typed-child-continuation-20261106/typed-child-bridge.patch
-          printf '%s  %s\n' 8d9204d6895e9e0110b86daff3354f089f7937287f34008a5dfe9e509a847a5a metatron-kernel/src/typecheck.rs c6416fc332f7c77670931466009c35a9d01e656b8a3d135b32fc6be72f45b297 metatron-kernel/src/convert.rs | sha256sum -c -
+          printf '%s  %s\n' 8d9204d6895e9e0110b86daff3354f089f7937287f34008a5dfe9e509a847a5a metatron-kernel/src/typecheck.rs c449503456da93b8a66cc9f3c23bb46e92db6e8b405c214d88b4a3b4975f4dcc metatron-kernel/src/convert.rs | sha256sum -c -
           sha256sum qualified/candidate/nucleus metatron-kernel/src/{typecheck,convert}.rs > reports/source-sha256.txt
       - name: Compiler and native proof-preservation tests
         run: |
