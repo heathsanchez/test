@@ -1,8 +1,33 @@
 diff --git a/src/typecheck.rs b/src/typecheck.rs
-index ca69dd4..044b546 100644
+index ca69dd4..db2a776 100644
 --- a/src/typecheck.rs
 +++ b/src/typecheck.rs
-@@ -1340,9 +1340,12 @@ impl<'a> TypeChecker<'a> {
+@@ -1092,7 +1092,7 @@ impl<'a> TypeChecker<'a> {
+             lines.join(" | ")
+         }
+         let mut output = vec![format!("left={left:?}:right={right:?}:context={context:?}")];
+-        for index in [4, 1] {
++        for index in [0, 4] {
+             let lhs = left.env.lookup_with_node_id(index);
+             let rhs = right.env.lookup_with_node_id(index);
+             output.push(format!("capture_index={index}:left_binding={lhs:?}:right_binding={rhs:?}"));
+@@ -1100,9 +1100,12 @@ impl<'a> TypeChecker<'a> {
+                 (Some((_, EnvBinding::Closure(a))), Some((_, EnvBinding::Closure(b)))) => {
+                     output.push(format!("left_chain={}", chain(self, a.clone(), budget)));
+                     output.push(format!("right_chain={}", chain(self, b.clone(), budget)));
+-                    let _scope = CaptureSourceFailureScope::enter();
+-                    let relation = self.checked_source_conversion(&a, &b, context, budget.min(128));
+-                    output.push(format!("independently_typed_capture_relation={relation:?}:first_source_failure={:?}", CaptureSourceFailureScope::first()));
++                    for allowance in [128, 4096, 16384] {
++                        if allowance > budget { continue }
++                        let _scope = CaptureSourceFailureScope::enter();
++                        let relation = self.checked_source_conversion(&a, &b, context, allowance);
++                        output.push(format!("capture_index={index}:allowance={allowance}:independently_typed_capture_relation={relation:?}:first_source_failure={:?}", CaptureSourceFailureScope::first()));
++                    }
+                 }
+                 _ => output.push("typed_capture_relation=unavailable-nonclosure-binding".to_string()),
+             }
+@@ -1340,9 +1343,12 @@ impl<'a> TypeChecker<'a> {
              context.len(),context,
          );
          if !types.is_proven() { return types }
