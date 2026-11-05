@@ -1,0 +1,23 @@
+--- a/src/machine.rs
++++ b/src/machine.rs
+@@ -3502,6 +3502,20 @@
+         assert!(machine.qualified_nested_recursor_result(&wrong_constructor,2048).is_unknown());
+         let mut wrong_levels=chain;wrong_levels.head=NeutralHead::Const{name:NameId(1),levels:vec![crate::level::LevelTerm::Zero]};
+         assert!(machine.qualified_nested_recursor_result(&wrong_levels,2048).is_unknown());
++
++        // An exact source handle may reuse an already built, independently
++        // checked replay key. A different captured binder must not alias it.
++        machine.exposure_fuel.set(Some(4096));
++        let same_spine=vec![closed(0),closed(0),closed(2)];
++        let first=machine.completed_replay_key(NameId(1),&[],&same_spine).expect("first source key");
++        let built=machine.replay_key_builds.get();
++        let again=machine.completed_replay_key(NameId(1),&[],&same_spine).expect("same source key");
++        assert!(Rc::ptr_eq(&first,&again),"unchanged source should reuse the exact checked key");
++        assert_eq!(machine.replay_key_builds.get(),built,"unchanged source must not rebuild certificate identity");
++        let changed_spine=vec![closed(0),closed(0),Closure::new(ExprId(1),EnvFrame::empty().extend_free(FreeId(71)))];
++        let different=machine.completed_replay_key(NameId(1),&[],&changed_spine).expect("different captured source key");
++        assert!(!Rc::ptr_eq(&first,&different),"different source binder must remain distinct");
++        machine.exposure_fuel.set(None);
+     }
+ }
+ 
