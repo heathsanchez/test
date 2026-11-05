@@ -13,7 +13,10 @@ def main():
  p=argparse.ArgumentParser();p.add_argument('--completion',type=Path,required=True);p.add_argument('--completion-zip',type=Path,required=True);p.add_argument('--inputs',type=Path,required=True);p.add_argument('--inputs-zip',type=Path,required=True);p.add_argument('--repo',type=Path,required=True);p.add_argument('--out',type=Path,required=True);a=p.parse_args();assert sha(a.completion_zip)==COMPLETE_ZIP and sha(a.inputs_zip)==INPUT_ZIP
  report=load(a.completion/'core-conversion-reuse.json');assert report['qualified']and report['source_qualified']and report['fresh_protected_replay']and report['binary_sha']==BINARY
  assert sha(a.completion/'candidate/nucleus')==BINARY
- source=a.completion/'sealed-source/metatron-kernel';source_manifest=load(a.completion/'candidate/source-manifest.json');actual={str(f.relative_to(source)):sha(f)for f in source.rglob('*')if f.is_file()};assert actual==source_manifest and len(actual)==368
+ archive=a.completion/'candidate/source.tar.gz';assert sha(archive)=='6f68f0ae7e2630e8025820cc922e014a6a318b3b6cef99194a33f1ce0d83bdd3'
+ restored=a.out.parent/(a.out.name+'-sealed-source');restored.mkdir(parents=True,exist_ok=False)
+ with tarfile.open(archive)as source_tar:source_tar.extractall(restored,filter='data')
+ source=restored/'metatron-kernel';source_manifest=load(a.completion/'candidate/source-manifest.json');actual={str(f.relative_to(source)):sha(f)for f in source.rglob('*')if f.is_file()};assert actual==source_manifest and len(actual)==368
  frontier=a.completion/'original-frontier.ndjson';assert sha(frontier)==FRONTIER;data=frontier.read_bytes();wanted={r['sha256']:Path(r['path'])for r in load(Path(__file__).with_name('prefixes.json'))};h=hashlib.sha256();offset=0;found={}
  for line in data.splitlines(True):
   h.update(line);offset+=len(line);digest=h.hexdigest()
