@@ -1,0 +1,75 @@
+diff --git a/src/typecheck.rs b/src/typecheck.rs
+index ca69dd4..044b546 100644
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -1340,9 +1340,12 @@ impl<'a> TypeChecker<'a> {
+             context.len(),context,
+         );
+         if !types.is_proven() { return types }
++        let value_budget=if crate::run_flags::present(crate::run_flags::Flag::ExperimentalTypedReceiver){
++            budget.min(16384)
++        }else{budget.min(4096)};
+         crate::convert::convert_with_policy_in_context(
+             self,&TypeValue::Term(left.clone()),&TypeValue::Term(right.clone()),
+-            budget.min(4096),crate::convert::DeltaPolicy::PreferredOnly,
++            value_budget,crate::convert::DeltaPolicy::PreferredOnly,
+             context.len(),context,
+         )
+     }
+diff --git a/src/convert.rs b/src/convert.rs
+index bf43ba7..486327f 100644
+--- a/src/convert.rs
++++ b/src/convert.rs
+@@ -1556,7 +1556,7 @@ fn compare_values_with_eta_charge(
+                     && current_budget >= 512
+                     && checker.checked_source_conversion(
+                         left_structure,right_structure,context,
+-                        current_budget.min(2048),
++                        current_budget.min(16384),
+                     ).is_proven()
+                     && same_closure_spine_congruence_in_context(
+                         checker,left_spine,right_spine,
+@@ -2455,6 +2455,7 @@ fn compare_nat_literal_neutral(
+ // witness is borrowed from another receiver or context.
+ fn exact_neutral_source_congruence(
+     checker: &TypeChecker<'_>, left: &Neutral, right: &Neutral, remaining: &mut usize,
++    context: &[TypeValue],
+ ) -> bool {
+     use crate::level::LevelTerm;
+     let mut pending = vec![(left, right)];
+@@ -2508,8 +2509,24 @@ fn exact_neutral_source_congruence(
+             if a.expr == b.expr && a.env == b.env && a.levels.identity() == b.levels.identity() {
+                 continue;
+             }
+-            if !checker.exact_source_capture_identity(a,b,remaining)
+-                && !checker.instantiated_source_capture_congruence(a,b,remaining){return false;}
++            // The structural source relation may exhaust its search without
++            // disproving equality. Reserve part of the parent's *real* work
++            // allowance for a separately source-typed relation in exactly
++            // the caller's Γ. The reserve is spent on the trial even when
++            // it fails; no incomplete or out-of-scope fact is admitted.
++            let use_typed_bridge=
++                crate::run_flags::present(crate::run_flags::Flag::ExperimentalTypedReceiver)
++                && a.expr==b.expr && a.env!=b.env && context.len()<=64;
++            let reserved=if use_typed_bridge {(*remaining/2).min(16384)}else{0};
++            let mut structural_remaining=remaining.saturating_sub(reserved);
++            let structural=checker.exact_source_capture_identity(a,b,&mut structural_remaining)
++                ||checker.instantiated_source_capture_congruence(a,b,&mut structural_remaining);
++            *remaining=structural_remaining.saturating_add(reserved);
++            if !structural {
++                if reserved<128{return false;}
++                *remaining-=reserved;
++                if !checker.checked_source_conversion(a,b,context,reserved).is_proven(){return false;}
++            }
+         }
+     }
+     true
+@@ -2565,7 +2582,7 @@ fn compare_neutral_heads(
+                 return Judgment::unknown("neutral-projection-receiver-congruence");
+             }
+             let mut source_work = budget.saturating_sub(1);
+-            if exact_neutral_source_congruence(checker, left_structure, right_structure, &mut source_work) {
++            if exact_neutral_source_congruence(checker, left_structure, right_structure, &mut source_work, context) {
+                 return Judgment::proven((), "exact-source-neutral-receiver-congruence");
+             }
+             let budget = source_work;
