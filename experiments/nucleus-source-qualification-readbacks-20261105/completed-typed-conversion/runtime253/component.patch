@@ -1,0 +1,155 @@
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -1,3 +1,4 @@
++thread_local! { static SOURCE_CONVERSION_ACTIVE:std::cell::Cell<bool>=const{std::cell::Cell::new(false)}; }
+ use std::cell::{RefCell,Cell};
+ use std::collections::{hash_map::Entry, HashMap};
+ use std::rc::Rc;
+@@ -137,6 +138,7 @@
+     // immutable binder node under the identical protected source scope.
+     strict_origin_probe: bool,
+     exact_typing_memo:RefCell<ExactTypingMemo>,
++    completed_typed_conversion:RefCell<CompletedTypedConversionMemo>,
+     binding_revocation_epoch:Rc<Cell<Option<u64>>>,
+ }
+ 
+@@ -193,6 +195,7 @@
+             checked_binding_lineage: Rc::new(RefCell::new(HashMap::new())),
+             strict_origin_probe: false,
+             exact_typing_memo:RefCell::new(ExactTypingMemo::default()),
++            completed_typed_conversion:RefCell::new(CompletedTypedConversionMemo::default()),
+             binding_revocation_epoch:Rc::new(Cell::new(Some(0))),
+         }
+     }
+@@ -223,6 +226,7 @@
+             checked_binding_lineage: Rc::new(RefCell::new(HashMap::new())),
+             strict_origin_probe: false,
+             exact_typing_memo:RefCell::new(ExactTypingMemo::default()),
++            completed_typed_conversion:RefCell::new(CompletedTypedConversionMemo::default()),
+             binding_revocation_epoch:Rc::new(Cell::new(Some(0))),
+         }
+     }
+@@ -1273,12 +1277,54 @@
+         context: &[TypeValue],
+         budget: usize,
+     ) -> Judgment<()> {
++        // Replay only a complete typing + type equality + VALUE equality
++        // derivation in this exact checker authority. A hit starts no trial.
++        let mut remaining=budget;
++        let key=if context.len()<=64
++            && context.iter().all(|t|matches!(t,TypeValue::Term(_)))
++            && let (Some(flags),Some(epoch))=(crate::run_flags::captured_configuration(),self.binding_revocation_epoch.get())
++            && remaining>=1+context.len()
++        {
++            remaining-=1+context.len();
++            Some(CompletedTypedConversionKey{
++                left:(left.expr,left.env.id()),right:(right.expr,right.env.id()),
++                context_len:context.len(),strict:self.strict_origin_probe,flags,epoch,
++                fallback:self.delta_policy==crate::convert::DeltaPolicy::GuardedSemanticFallback,
++            })
++        }else{None};
++        if let Some(key)=key.as_ref(){
++            let table=self.completed_typed_conversion.borrow();
++            for slot in &table.slots[key.set()*4..key.set()*4+4]{
++                if !take_step(&mut remaining){break}
++                if let Some(fact)=slot && &fact.key==key
++                    && fact.matches(left,right,context,&mut remaining)
++                {return Judgment::proven((),"completed-source-typed-value-conversion")}
++            }
++        }
++        let result=self.checked_source_conversion_uncached(left,right,context,remaining);
++        if result.is_proven() && let Some(key)=key
++            && self.binding_revocation_epoch.get()==Some(key.epoch)
++            && crate::run_flags::captured_configuration()==Some(key.flags)
++        {
++            let mut table=self.completed_typed_conversion.borrow_mut();
++            let set=key.set();let start=table.hand[set]as usize;
++            for offset in 0..4{
++                let within=(start+offset)%4;let index=set*4+within;
++                if table.slots[index].as_ref().is_none_or(CompletedTypedConversionFact::relinquishable){
++                    let context=context.iter().map(|t|{let TypeValue::Term(t)=t else{unreachable!()};t.clone()}).collect();
++                    table.slots[index]=Some(CompletedTypedConversionFact{key,left:left.clone(),right:right.clone(),context});
++                    table.hand[set]=((within+1)%4)as u8;break;
++                }
++            }
++        }
++        result
++    }
++    fn checked_source_conversion_uncached(
++        &self,left:&Closure,right:&Closure,context:&[TypeValue],budget:usize,
++    )->Judgment<()>{
+         // This optional typed trial may call conversion while proving its
+         // prerequisites. Do not recursively start another fresh trial from
+         // those conversions; leave their ordinary conversion authoritative.
+-        thread_local! {
+-            static SOURCE_CONVERSION_ACTIVE:std::cell::Cell<bool>=const{std::cell::Cell::new(false)};
+-        }
+         if SOURCE_CONVERSION_ACTIVE.with(|active|active.replace(true)) {
+             return Judgment::unknown("nested-source-conversion-trial");
+         }
+@@ -4823,6 +4869,7 @@
+             )),
+             strict_origin_probe:true,
+             exact_typing_memo:RefCell::new(ExactTypingMemo::default()),
++            completed_typed_conversion:RefCell::new(CompletedTypedConversionMemo::default()),
+             binding_revocation_epoch:Rc::new(Cell::new(Some(0))),
+         };
+         // The directly visible leaf determines a checked six-binder
+@@ -4992,6 +5039,7 @@
+             )),
+             strict_origin_probe: true,
+             exact_typing_memo:RefCell::new(ExactTypingMemo::default()),
++            completed_typed_conversion:RefCell::new(CompletedTypedConversionMemo::default()),
+             binding_revocation_epoch:Rc::new(Cell::new(Some(0))),
+         };
+         let replay = isolated.diagnostic_neutral_source_telescope_inner(
+@@ -5046,6 +5094,7 @@
+             )),
+             strict_origin_probe: self.strict_origin_probe,
+             exact_typing_memo:RefCell::new(ExactTypingMemo::default()),
++            completed_typed_conversion:RefCell::new(CompletedTypedConversionMemo::default()),
+             binding_revocation_epoch:Rc::new(Cell::new(Some(0))),
+         };
+         let mut remaining = budget.min(1024);
+@@ -7747,3 +7796,41 @@
+  #[test]fn a_nonempty_neutral_capture_is_not_solved(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);c.complete_source_support(ExprId(2),&mut 128).unwrap();let t=||Closure::new(ExprId(2),EnvFrame::empty().extend_neutral(Neutral{head:NeutralHead::Free(FreeId(7)),spine:vec![Closure::new(ExprId(3),EnvFrame::empty())]}));assert!(!c.replay_completed_source_substitution(&t(),&t(),&mut 128));}
+ 
+ }
++
++#[cfg(test)]
++mod completed_typed_conversion_controls {
++ use super::*;
++ fn fixture()->(IdTable<ExprId,Expr>,IdTable<LevelId,Level>,Environment){let mut e=IdTable::default();e.insert(ExprId(0),Expr::Sort(LevelId(0))).unwrap();let mut l=IdTable::default();l.insert(LevelId(0),Level::Zero).unwrap();(e,l,Environment::empty())}
++ struct Active;impl Drop for Active{fn drop(&mut self){SOURCE_CONVERSION_ACTIVE.with(|a|a.set(false));}}
++ fn active()->Active{assert!(!SOURCE_CONVERSION_ACTIVE.with(|a|a.replace(true)));Active}
++ fn terms()->(Closure,Closure){(Closure::new(ExprId(0),EnvFrame::empty().extend_free(FreeId(7))),Closure::new(ExprId(0),EnvFrame::empty().extend_free(FreeId(8))))}
++ #[test]fn completed_typed_judgment_replays_before_nested_trial_guard(){let _scope=crate::run_flags::enter();let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let(a,b)=terms();let g=vec![TypeValue::Term(a.clone())];assert!(c.checked_source_conversion(&a,&b,&g,2048).is_proven());let _guard=active();assert!(c.checked_source_conversion(&a,&b,&g,128).is_proven(),"completed full typed equality should replay without a fresh trial");}
++ #[test]fn cold_nested_trial_remains_unknown(){let _scope=crate::run_flags::enter();let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let(a,b)=terms();let _guard=active();assert!(!c.checked_source_conversion(&a,&b,&[],2048).is_proven());}
++ #[test]fn changed_context_frame_levels_and_zero_work_do_not_replay(){let _scope=crate::run_flags::enter();let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let(a,b)=terms();let g=vec![TypeValue::Term(a.clone())];assert!(c.checked_source_conversion(&a,&b,&g,2048).is_proven());let _guard=active();assert!(!c.checked_source_conversion(&a,&b,&[],2048).is_proven());let changed=vec![TypeValue::Term(b.clone())];assert!(!c.checked_source_conversion(&a,&b,&changed,2048).is_proven());let other=Closure::new(a.expr,EnvFrame::empty().extend_free(FreeId(9)));assert!(!c.checked_source_conversion(&other,&b,&g,2048).is_proven());let other=Closure::with_levels(a.expr,a.env.clone(),LevelSubstitution::new(vec![(NameId(7),LevelTerm::Zero)]));assert!(!c.checked_source_conversion(&other,&b,&g,2048).is_proven());assert!(!c.checked_source_conversion(&a,&b,&g,0).is_proven());}
++ #[test]fn changed_authority_does_not_replay(){let _scope=crate::run_flags::enter();let(e,l,env)=fixture();let mut c=TypeChecker::new(&e,&l,&env);let(a,b)=terms();assert!(c.checked_source_conversion(&a,&b,&[],2048).is_proven());let _guard=active();c.strict_origin_probe=true;assert!(!c.checked_source_conversion(&a,&b,&[],2048).is_proven());c.strict_origin_probe=false;c.binding_revocation_epoch.set(Some(1));assert!(!c.checked_source_conversion(&a,&b,&[],2048).is_proven());c.binding_revocation_epoch.set(None);assert!(!c.checked_source_conversion(&a,&b,&[],2048).is_proven());c.binding_revocation_epoch.set(Some(0));let mut flags=crate::run_flags::captured_configuration().unwrap();flags[0]^=1;{let _changed=crate::run_flags::test_scope(flags);assert!(!c.checked_source_conversion(&a,&b,&[],2048).is_proven());}let c=c.with_delta_policy(crate::convert::DeltaPolicy::PreferredOnly);assert!(!c.checked_source_conversion(&a,&b,&[],2048).is_proven());}
++ #[test]fn equal_types_without_equal_values_never_warm_a_value_judgment(){let _scope=crate::run_flags::enter();let(mut e,l,env)=fixture();e.insert(ExprId(1),Expr::Const{name:NameId(1),levels:vec![]}).unwrap();e.insert(ExprId(2),Expr::Const{name:NameId(2),levels:vec![]}).unwrap();let env=env.extend(NameId(1),crate::environment::ConstantDecl::axiom(vec![],ExprId(0))).unwrap().extend(NameId(2),crate::environment::ConstantDecl::axiom(vec![],ExprId(0))).unwrap();let c=TypeChecker::new(&e,&l,&env);let a=c.closure(ExprId(1),EnvFrame::empty());let b=c.closure(ExprId(2),EnvFrame::empty());let ta=c.infer_exact_closure_in_context(&a,&[],&mut 2048,0).unwrap();let tb=c.infer_exact_closure_in_context(&b,&[],&mut 2048,0).unwrap();assert!(crate::convert::convert_with_policy_in_context(&c,&ta,&tb,2048,crate::convert::DeltaPolicy::PreferredOnly,0,&[]).is_proven());assert!(!c.checked_source_conversion(&a,&b,&[],2048).is_proven());assert!(c.completed_typed_conversion.borrow().slots.iter().all(Option::is_none));let _guard=active();assert!(!c.checked_source_conversion(&a,&b,&[],2048).is_proven());}
++ #[test]fn literal_maps_replay_but_checker_authority_is_not_shared(){let _scope=crate::run_flags::enter();let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let(a,b)=terms();let map=||LevelSubstitution::new(vec![(NameId(7),LevelTerm::Zero)]);let left=Closure::with_levels(a.expr,a.env.clone(),map());assert!(c.checked_source_conversion(&left,&b,&[],2048).is_proven());let rebuilt=Closure::with_levels(a.expr,a.env.clone(),map());let other=TypeChecker::new(&e,&l,&env);let _guard=active();assert!(c.checked_source_conversion(&rebuilt,&b,&[],128).is_proven());assert!(!other.checked_source_conversion(&rebuilt,&b,&[],2048).is_proven());}
++ #[test]fn literal_universe_comparison_cannot_hide_unpaid_string_work(){let _scope=crate::run_flags::enter();let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let(a,b)=terms();let map=||LevelSubstitution::new(vec![(NameId(7),LevelTerm::Param("u".repeat(400)))]);let left=Closure::with_levels(a.expr,a.env.clone(),map());assert!(c.checked_source_conversion(&left,&b,&[],2048).is_proven());let rebuilt=Closure::with_levels(a.expr,a.env.clone(),map());let _guard=active();assert!(!c.checked_source_conversion(&rebuilt,&b,&[],128).is_proven());assert!(c.checked_source_conversion(&rebuilt,&b,&[],2048).is_proven());}
++
++}
++
++#[derive(Clone,Eq,PartialEq,Hash)]
++struct CompletedTypedConversionKey{
++ left:(ExprId,u64),right:(ExprId,u64),context_len:usize,strict:bool,flags:[u64;2],epoch:u64,fallback:bool,
++}
++impl CompletedTypedConversionKey{fn set(&self)->usize{use std::hash::{Hash,Hasher};let mut h=std::collections::hash_map::DefaultHasher::new();self.hash(&mut h);(h.finish()as usize)%32}}
++// This namespace contains typed VALUE equality, never inferred types or
++// unscoped source congruence. Owners pin every environment and universe map.
++struct CompletedTypedConversionFact{key:CompletedTypedConversionKey,left:Closure,right:Closure,context:Vec<Closure>}
++impl CompletedTypedConversionFact{
++ fn same(a:&Closure,b:&Closure,work:&mut usize)->bool{
++  take_step(work)&&(a.expr,a.env.id())==(b.expr,b.env.id())&&TypeChecker::exact_source_levels(&a.levels,&b.levels,work)
++ }
++ fn matches(&self,left:&Closure,right:&Closure,context:&[TypeValue],work:&mut usize)->bool{
++  self.context.len()==context.len()&&Self::same(&self.left,left,work)&&Self::same(&self.right,right,work)
++   &&self.context.iter().zip(context).all(|(a,b)|matches!(b,TypeValue::Term(b)if Self::same(a,b,work)))
++ }
++ fn relinquishable(&self)->bool{crate::value::captures_reclaimable(std::iter::once(&self.left).chain(std::iter::once(&self.right)).chain(self.context.iter()))}
++}
++struct CompletedTypedConversionMemo{slots:Box<[Option<CompletedTypedConversionFact>]>,hand:[u8;32]}
++impl Default for CompletedTypedConversionMemo{fn default()->Self{Self{slots:std::iter::repeat_with(||None).take(128).collect::<Vec<_>>().into_boxed_slice(),hand:[0;32]}}}

@@ -1,0 +1,69 @@
+--- a/src/checker.rs
++++ b/src/checker.rs
+@@ -439,6 +439,7 @@
+                     parameter_substitution(&level_params),
+                 )
+                 .with_delta_policy(delta_policy);
++                let _reuse_observation=crate::convert::conversion_reuse_observer::Scope::new(&checker,name==NameId(26127));
+                 if let Err(verdict) = trace_verdict_boundary(
+                     &export,
+                     name,
+--- a/src/convert.rs
++++ b/src/convert.rs
+@@ -3150,3 +3150,25 @@
+  }
+ 
+ }
++
++// Diagnostic only: copies bounded literal metadata, never Closure/EnvFrame or
++// LevelSubstitution owners. It cannot warm semantic caches or alter results.
++pub(crate)mod conversion_reuse_observer{
++ use super::*;use crate::level::LevelTerm;use crate::id::NameId;use std::cell::{Cell,RefCell};use std::collections::{HashSet,VecDeque};
++ const WINDOW:usize=512;const CAPTURES:usize=100000;
++ #[derive(Clone,Hash,Eq,PartialEq)]struct TermKey{expr:ExprId,env:u64,levels:Vec<(NameId,LevelTerm)>}
++ #[derive(Clone,Hash,Eq,PartialEq)]pub(crate)struct Key{left:TermKey,right:TermKey,context:Vec<TermKey>,depth:usize,congruence_depth:usize,policy:u8,state:(u64,bool,[u64;2])}
++ pub(crate)struct Observation{key:Key,prior:bool,reverse:bool,budget:usize,attempts:usize}
++ #[derive(Default)]struct Metrics{calls:u64,captured:u64,nonterm_or_bounded_out:u64,reflexive:u64,proven:u64,unproven:u64,prior_proven:u64,prior_reverse:u64,prior_then_unknown:u64,prior_then_refuted:u64,unstable:u64,evicted:u64,seen:HashSet<Key>,order:VecDeque<Key>,examples:Vec<serde_json::Value>}
++ thread_local!{static TARGET:Cell<usize>=const{Cell::new(0)};static METRICS:RefCell<Metrics>=RefCell::new(Metrics::default());}
++ pub(crate)struct Scope{active:bool}
++ impl Scope{pub(crate)fn new(checker:&TypeChecker<'_>,active:bool)->Self{if active{TARGET.set(checker as *const _ as usize);METRICS.with(|m|*m.borrow_mut()=Metrics::default());}Self{active}}}
++ impl Drop for Scope{fn drop(&mut self){if self.active{TARGET.set(0);METRICS.with(|m|{let m=m.borrow();eprintln!("CONVERSION_REUSE_METRICS:{}",serde_json::json!({"calls":m.calls,"captured":m.captured,"capture_cap":CAPTURES,"window":WINDOW,"nonterm_or_bounded_out":m.nonterm_or_bounded_out,"reflexive":m.reflexive,"proven":m.proven,"unproven":m.unproven,"prior_proven":m.prior_proven,"prior_reverse":m.prior_reverse,"prior_then_unknown":m.prior_then_unknown,"prior_then_refuted":m.prior_then_refuted,"unstable":m.unstable,"evicted":m.evicted,"retained":m.seen.len(),"examples":m.examples,"observer_kind":"checked_source_conversion","literal_metadata_only":true,"no_semantic_owner_retention":true,"no_speed_claim":true}));});}}}
++ fn term(value:&TypeValue,bytes:&mut usize)->Option<TermKey>{let TypeValue::Term(c)=value else{return None;};let mut nodes=0usize;let mut entries=Vec::new();for(name,value)in c.levels.entries(){nodes=nodes.checked_add(1)?;if nodes>64{return None;}let mut pending=vec![value];while let Some(v)=pending.pop(){nodes=nodes.checked_add(1)?;if nodes>64{return None;}match v{LevelTerm::Zero=>{},LevelTerm::Param(s)=>{if s.len()>*bytes{return None;}*bytes-=s.len();},LevelTerm::Succ(v)=>pending.push(v),LevelTerm::Max(a,b)|LevelTerm::IMax(a,b)=>{pending.push(a);pending.push(b);}}}entries.push((*name,value.clone()));}Some(TermKey{expr:c.expr,env:c.env.id(),levels:entries})}
++ pub(crate)fn begin(checker:&TypeChecker<'_>,left:&TypeValue,right:&TypeValue,budget:usize,policy:DeltaPolicy,depth:usize,context:&[TypeValue],congruence_depth:usize,attempts:usize)->Option<Observation>{
++  if TARGET.get()!=checker as *const _ as usize{return None;}
++  METRICS.with(|m|{let mut m=m.borrow_mut();m.calls+=1;if budget<128||context.len()>64||m.captured>=CAPTURES as u64{return None;}m.captured+=1;let mut bytes=4096;
++   let key=(||Some(Key{left:term(left,&mut bytes)?,right:term(right,&mut bytes)?,context:context.iter().map(|v|term(v,&mut bytes)).collect::<Option<Vec<_>>>()?,depth,congruence_depth,policy:match policy{DeltaPolicy::PreferredOnly=>0,DeltaPolicy::GuardedSemanticFallback=>1},state:checker.conversion_observation_state()?}))();let Some(key)=key else{m.nonterm_or_bounded_out+=1;return None;};if key.left==key.right{m.reflexive+=1;return None;}let prior=m.seen.contains(&key);let mut swapped=key.clone();std::mem::swap(&mut swapped.left,&mut swapped.right);let reverse=m.seen.contains(&swapped);if prior{m.prior_proven+=1;}if reverse{m.prior_reverse+=1;}Some(Observation{key,prior,reverse,budget,attempts})})
++ }
++ pub(crate)fn finish(checker:&TypeChecker<'_>,observation:Option<Observation>,result:&Judgment<()>,attempts_after:usize){let Some(o)=observation else{return;};METRICS.with(|m|{let mut m=m.borrow_mut();if checker.conversion_observation_state()!=Some(o.key.state){m.unstable+=1;return;}if result.is_proven(){m.proven+=1;if !m.seen.contains(&o.key){if m.seen.len()==WINDOW{if let Some(old)=m.order.pop_front(){m.seen.remove(&old);m.evicted+=1;}}m.seen.insert(o.key.clone());m.order.push_back(o.key.clone());}}else{m.unproven+=1;if o.prior||o.reverse{let label=match result{Judgment::Unknown{..}=>{m.prior_then_unknown+=1;"UNKNOWN"},Judgment::Refuted{..}=>{m.prior_then_refuted+=1;"REFUTED"},_=>"OTHER"};if m.examples.len()<16{m.examples.push(serde_json::json!({"left_expr":o.key.left.expr.0,"left_env":o.key.left.env,"right_expr":o.key.right.expr.0,"right_env":o.key.right.env,"context":o.key.context.len(),"depth":o.key.depth,"congruence_depth":o.key.congruence_depth,"budget":o.budget,"attempts_before":o.attempts,"attempts_after":attempts_after,"prior_direct":o.prior,"prior_reverse":o.reverse,"actual_result":label,"detail":format!("{result:?}")}));}}}});}
++}
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -1267,6 +1267,19 @@
+     /// typecheck in the SAME real context; equality of their types is not
+     /// confused with equality of their values. No unchecked strengthening.
+     pub(crate) fn checked_source_conversion(
++        &self,
++        left: &Closure,
++        right: &Closure,
++        context: &[TypeValue],
++        budget: usize,
++    ) -> Judgment<()> {
++        let observation={let a=TypeValue::Term(left.clone());let b=TypeValue::Term(right.clone());crate::convert::conversion_reuse_observer::begin(self,&a,&b,budget,crate::convert::DeltaPolicy::PreferredOnly,context.len(),context,0,0)};
++        let result=self.checked_source_conversion_observed_inner(left,right,context,budget);
++        crate::convert::conversion_reuse_observer::finish(self,observation,&result,0);
++        result
++    }
++
++    fn checked_source_conversion_observed_inner(
+         &self,
+         left: &Closure,
+         right: &Closure,
+@@ -6119,6 +6132,8 @@
+         }
+     }
+ 
++    pub(crate)fn conversion_observation_state(&self)->Option<(u64,bool,[u64;2])>{Some((self.binding_revocation_epoch.get()?,self.strict_origin_probe,crate::run_flags::captured_configuration()?))}
++
+     pub(crate) fn authority(&self) -> crate::machine::AuthorityId {
+         self.environment.authority()
+     }

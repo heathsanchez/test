@@ -1,0 +1,121 @@
+   Compiling zmij v1.0.23
+   Compiling serde_core v1.0.229
+   Compiling serde_json v1.0.151
+   Compiling memchr v2.8.3
+   Compiling itoa v1.0.18
+   Compiling metatron-kernel v0.1.0 (/tmp/nucleus-completed-typed-conversion/source)
+warning: unnecessary parentheses around `if` condition
+    --> src/convert.rs:2647:20
+     |
+2647 |                 if ((l=="Free(FreeId(6))" && r=="Free(FreeId(5))") ||
+     |                    ^
+2648 |                     (l=="Free(FreeId(5))" && r=="Free(FreeId(6))"))
+     |                                                                   ^
+     |
+     = note: `#[warn(unused_parens)]` (part of `#[warn(unused)]`) on by default
+help: remove these parentheses
+     |
+2647 ~                 if (l=="Free(FreeId(6))" && r=="Free(FreeId(5))") ||
+2648 ~                     (l=="Free(FreeId(5))" && r=="Free(FreeId(6))")
+     |
+
+warning: unnecessary parentheses around `if` condition
+    --> src/typecheck.rs:6931:12
+     |
+6931 |         if (!crate::run_flags::present(crate::run_flags::Flag::ExperimentalExpectedLambda)) { return; }
+     |            ^                                                                              ^
+     |
+help: remove these parentheses
+     |
+6931 -         if (!crate::run_flags::present(crate::run_flags::Flag::ExperimentalExpectedLambda)) { return; }
+6931 +         if !crate::run_flags::present(crate::run_flags::Flag::ExperimentalExpectedLambda) { return; }
+     |
+
+warning: unused variable: `c`
+    --> src/convert.rs:3107:91
+     |
+3107 | ...(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let n=Neutral{head:NeutralHead::Const{name:NameId(4),levels:vec![c...
+     |                                  ^ help: if this is intentional, prefix it with an underscore: `_c`
+     |
+     = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: value assigned to `source_work` is never read
+    --> src/typecheck.rs:5900:55
+     |
+5900 |                     if source_work<cost{return false;}source_work-=cost;
+     |                                                       ^^^^^^^^^^^^^^^^^
+     |
+     = help: maybe it is overwritten before being read?
+     = note: `#[warn(unused_assignments)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `definition_arguments_used` is never used
+    --> src/convert.rs:1081:4
+     |
+1081 | fn definition_arguments_used(
+     |    ^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: method `qualified_quotient_neutral_result` is never used
+    --> src/machine.rs:1632:19
+     |
+ 319 | impl<'a> Machine<'a> {
+     | -------------------- method in this implementation
+...
+1632 |     pub(crate) fn qualified_quotient_neutral_result(
+     |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: method `diagnostic_captured_recursor_major_chain` is never used
+    --> src/typecheck.rs:1108:19
+     |
+ 144 | impl<'a> TypeChecker<'a> {
+     | ------------------------ method in this implementation
+...
+1108 |     pub(crate) fn diagnostic_captured_recursor_major_chain(
+     |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: method `strong_owners` is never used
+   --> src/value.rs:130:18
+    |
+ 50 | impl EnvFrame {
+    | ------------- method in this implementation
+...
+130 |     pub(crate)fn strong_owners(&self)->usize{Rc::strong_count(&self.0)}
+    |                  ^^^^^^^^^^^^^
+
+warning: methods `strong_owners` and `is_empty_instance` are never used
+   --> src/value.rs:214:18
+    |
+199 | impl LevelSubstitution {
+    | ---------------------- methods in this implementation
+...
+214 |     pub(crate)fn strong_owners(&self)->usize{Rc::strong_count(&self.0)}
+    |                  ^^^^^^^^^^^^^
+215 |     pub(crate)fn is_empty_instance(&self)->bool{self.0.entries.is_empty()}
+    |                  ^^^^^^^^^^^^^^^^^
+
+warning: `metatron-kernel` (lib test) generated 9 warnings (run `cargo fix --lib -p metatron-kernel --tests` to apply 3 suggestions)
+    Finished `release` profile [optimized] target(s) in 44.35s
+     Running unittests src/lib.rs (/tmp/nucleus-completed-typed-conversion/target/release/deps/metatron_kernel-258b3b0aea2bca17)
+
+running 4 tests
+test typecheck::completed_typed_conversion_controls::cold_nested_trial_remains_unknown ... ok
+test typecheck::completed_typed_conversion_controls::changed_context_frame_levels_and_zero_work_do_not_replay ... ok
+test typecheck::completed_typed_conversion_controls::changed_authority_does_not_replay ... ok
+test typecheck::completed_typed_conversion_controls::completed_typed_judgment_replays_before_nested_trial_guard ... FAILED
+
+failures:
+
+---- typecheck::completed_typed_conversion_controls::completed_typed_judgment_replays_before_nested_trial_guard stdout ----
+
+thread 'typecheck::completed_typed_conversion_controls::completed_typed_judgment_replays_before_nested_trial_guard' (174) panicked at src/typecheck.rs:7756:308:
+completed full typed equality should replay without a fresh trial
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    typecheck::completed_typed_conversion_controls::completed_typed_judgment_replays_before_nested_trial_guard
+
+test result: FAILED. 3 passed; 1 failed; 0 ignored; 0 measured; 246 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--lib`

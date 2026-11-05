@@ -1,0 +1,83 @@
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -114,6 +114,7 @@
+     levels: &'a IdTable<LevelId, Level>,
+     environment: &'a Environment,
+     level_substitution: HashMap<NameId, LevelTerm>,
++    cached_level_payload:std::cell::OnceCell<LevelSubstitution>,
+     delta_policy: crate::convert::DeltaPolicy,
+     exposure_cache: ExposureCache,
+     // Eligibility is structural; typing proofs stay in the per-judgment cache.
+@@ -179,6 +180,7 @@
+             environment,
+             level_substitution: HashMap::new(),
+             delta_policy: crate::convert::DeltaPolicy::GuardedSemanticFallback,
++            cached_level_payload:std::cell::OnceCell::new(),
+             exposure_cache: new_exposure_cache(),
+             closed_spine_eligibility: RefCell::new(HashMap::new()),
+             source_support: RefCell::new(HashMap::new()),
+@@ -209,6 +211,7 @@
+             environment,
+             level_substitution,
+             delta_policy: crate::convert::DeltaPolicy::GuardedSemanticFallback,
++            cached_level_payload:std::cell::OnceCell::new(),
+             exposure_cache: new_exposure_cache(),
+             closed_spine_eligibility: RefCell::new(HashMap::new()),
+             source_support: RefCell::new(HashMap::new()),
+@@ -4807,6 +4810,7 @@
+             environment:self.environment,
+             level_substitution:self.level_substitution.clone(),
+             delta_policy:self.delta_policy,
++            cached_level_payload:std::cell::OnceCell::new(),
+             exposure_cache:new_exposure_cache(),
+             closed_spine_eligibility: RefCell::new(HashMap::new()),
+             source_support: RefCell::new(HashMap::new()),
+@@ -4976,6 +4980,7 @@
+             environment: self.environment,
+             level_substitution: self.level_substitution.clone(),
+             delta_policy: self.delta_policy,
++            cached_level_payload:std::cell::OnceCell::new(),
+             exposure_cache: new_exposure_cache(),
+             closed_spine_eligibility: RefCell::new(HashMap::new()),
+             source_support: RefCell::new(HashMap::new()),
+@@ -5030,6 +5035,7 @@
+             environment: self.environment,
+             level_substitution: self.level_substitution.clone(),
+             delta_policy: self.delta_policy,
++            cached_level_payload:std::cell::OnceCell::new(),
+             exposure_cache: new_exposure_cache(),
+             closed_spine_eligibility: RefCell::new(HashMap::new()),
+             source_support: RefCell::new(HashMap::new()),
+@@ -6194,13 +6200,12 @@
+     }
+ 
+     pub(crate) fn closure(&self, expr: ExprId, env: EnvFrame) -> Closure {
+-        let mut entries: Vec<_> = self
+-            .level_substitution
+-            .iter()
+-            .map(|(name, level)| (*name, level.clone()))
+-            .collect();
+-        entries.sort_by_key(|(name, _)| name.0);
+-        Closure::with_levels(expr, env, LevelSubstitution::new(entries))
++        let levels=self.cached_level_payload.get_or_init(||{
++            let mut entries:Vec<_>=self.level_substitution.iter().map(|(name,level)|(*name,level.clone())).collect();
++            entries.sort_by_key(|(name,_)|name.0);
++            LevelSubstitution::new(entries)
++        });
++        Closure::with_levels(expr,env,levels.clone())
+     }
+ }
+ 
+@@ -7747,3 +7752,12 @@
+  #[test]fn a_nonempty_neutral_capture_is_not_solved(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);c.complete_source_support(ExprId(2),&mut 128).unwrap();let t=||Closure::new(ExprId(2),EnvFrame::empty().extend_neutral(Neutral{head:NeutralHead::Free(FreeId(7)),spine:vec![Closure::new(ExprId(3),EnvFrame::empty())]}));assert!(!c.replay_completed_source_substitution(&t(),&t(),&mut 128));}
+ 
+ }
++
++#[cfg(test)]
++mod root_universe_payload_controls{
++ use super::*;
++ #[test]fn fixed_checker_reuses_one_literal_payload_across_closures(){let e=IdTable::default();let l=IdTable::default();let env=Environment::empty();let map=[(NameId(9),LevelTerm::Param("v".into())),(NameId(3),LevelTerm::Param("u".into()))].into_iter().collect();let c=TypeChecker::with_level_substitution(&e,&l,&env,map);let a=c.closure(ExprId(1),EnvFrame::empty());let b=c.closure(ExprId(2),EnvFrame::empty().extend_free(FreeId(7)));assert_eq!(a.levels.identity(),b.levels.identity());assert_eq!(a.levels.entries().map(|(n,_)|n.0).collect::<Vec<_>>(),vec![3,9]);}
++ #[test]fn different_actual_assignments_never_share_payload_identity(){let e=IdTable::default();let l=IdTable::default();let env=Environment::empty();let a=TypeChecker::with_level_substitution(&e,&l,&env,[(NameId(3),LevelTerm::Zero)].into_iter().collect());let b=TypeChecker::with_level_substitution(&e,&l,&env,[(NameId(3),LevelTerm::Succ(Box::new(LevelTerm::Zero)))].into_iter().collect());let x=a.closure(ExprId(1),EnvFrame::empty());let y=b.closure(ExprId(1),EnvFrame::empty());assert_ne!(x.levels.identity(),y.levels.identity());assert_ne!(x.levels,y.levels);}
++ #[test]fn closure_keeps_its_actual_payload_after_checker_drops(){let e=IdTable::default();let l=IdTable::default();let env=Environment::empty();let term={let c=TypeChecker::with_level_substitution(&e,&l,&env,[(NameId(3),LevelTerm::Zero)].into_iter().collect());c.closure(ExprId(1),EnvFrame::empty())};assert_eq!(term.levels.entries().map(|(n,v)|(n.0,v.clone())).collect::<Vec<_>>(),vec![(3,LevelTerm::Zero)]);}
++ #[test]fn ordinary_empty_checker_also_reuses_its_empty_payload(){let e=IdTable::default();let l=IdTable::default();let env=Environment::empty();let c=TypeChecker::new(&e,&l,&env);let a=c.closure(ExprId(1),EnvFrame::empty());let b=c.closure(ExprId(2),EnvFrame::empty());assert_eq!(a.levels.identity(),b.levels.identity());assert_eq!(a.levels.entries().count(),0);}
++}
