@@ -56,7 +56,7 @@ jobs:
           # stack. The source-owned 64-parameter telescope case needs a larger
           # thread stack to exercise the same depth as the CLI's main thread.
           RUST_MIN_STACK=16777216 cargo test --locked --tests
-          cargo build --locked --release
+          cargo build --locked --release --features diagnostics
           cp target/release/metatron-kernel ../candidate/nucleus
           sha256sum ../candidate/nucleus | tee ../candidate-binary-sha256.txt
       - name: Replay six authentic performance cases, source-pinned
