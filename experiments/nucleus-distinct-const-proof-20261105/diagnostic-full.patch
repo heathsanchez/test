@@ -142,7 +142,59 @@
  pub(crate) struct Scope {previous:Option<Bits>}
 --- a/src/typecheck.rs
 +++ b/src/typecheck.rs
-@@ -835,15 +835,24 @@
+@@ -595,12 +595,43 @@
+     fn infer_exact_closure_in_context(
+         &self, term:&Closure, context:&[TypeValue], remaining:&mut usize, depth:usize,
+     )->Option<TypeValue>{
++        // Research-only recursive failure trace. The numeric expression is
++        // an observation filter, never an authorization or conversion rule.
++        thread_local! {
++            static TRACE_EXACT_ROOT: std::cell::Cell<usize> =
++                const { std::cell::Cell::new(0) };
++        }
++        let trace = std::env::var_os("NUCLEUS_DISTINCT_PROOF_DIAG").is_some()
++            && (term.expr.0 == 316361
++                || TRACE_EXACT_ROOT.with(|value| value.get() > 0));
++        if trace {
++            TRACE_EXACT_ROOT.with(|value| value.set(value.get().saturating_add(1)));
++        }
++        struct TraceExactGuard(bool);
++        impl Drop for TraceExactGuard {
++            fn drop(&mut self) {
++                if self.0 {
++                    TRACE_EXACT_ROOT.with(|value| value.set(value.get().saturating_sub(1)));
++                }
++            }
++        }
++        let _trace_guard = TraceExactGuard(trace);
++        let report_failure = |why:&str, remaining_value:usize| {
++            static COUNT: std::sync::atomic::AtomicUsize =
++                std::sync::atomic::AtomicUsize::new(0);
++            if trace && COUNT.fetch_add(1,std::sync::atomic::Ordering::Relaxed)<90 {
++                eprintln!("NUCLEUS_INFER_FAILURE:{why}:expr={:?}:syntax={:?}:context={}:depth={depth}:remaining={remaining_value}:env={}",
++                    term.expr,self.expressions.get(term.expr),context.len(),term.env.id());
++            }
++        };
+         if depth >= 48 {
++            report_failure("source-depth-limit",*remaining);
+             #[cfg(feature = "diagnostics")]
+             self.record_capture_source_failure(term, context, *remaining, depth, "source-depth-limit");
+             return None;
+         }
+         if !take_step(remaining) {
++            report_failure("source-fuel-exhausted",*remaining);
+             #[cfg(feature = "diagnostics")]
+             self.record_capture_source_failure(term, context, *remaining, depth, "source-fuel-exhausted");
+             return None;
+@@ -625,6 +656,7 @@
+             Some((key,set))
+         }else{None};
+         let result=self.infer_exact_closure_uncached(term,context,remaining,depth);
++        if result.is_none() { report_failure("exact-uncached-declined",*remaining); }
+         if let (Some((key,set)),Some(TypeValue::Term(value)))=(pending,result.as_ref())
+             && self.binding_revocation_epoch.get()==Some(key.epoch)
+             && crate::run_flags::captured_configuration()==Some(key.flags)
+@@ -835,15 +867,24 @@
                  let is_pi = matches!(
                      self.expressions.get(term.expr), Some(Expr::Pi { .. })
                  );
@@ -169,7 +221,7 @@
                      #[cfg(feature = "diagnostics")]
                      self.record_capture_source_failure(term, context, *remaining, depth, &format!("binder-domain-formation:{domain_sort_result:?}"));
                      return None;
-@@ -856,7 +865,10 @@
+@@ -856,7 +897,10 @@
                      self, &source_body, binder, &mut opening_budget,
                  );
                  *remaining -= allowance - opening_budget;
@@ -181,7 +233,7 @@
                  let mut extended = context.to_vec();
                  extended.push(TypeValue::Term(domain.clone()));
                  let body_frame=term.env.extend_free(binder);
-@@ -874,9 +886,15 @@
+@@ -874,9 +918,15 @@
                      );
                  }
                  let body=term.sibling(*body,body_frame);
@@ -199,7 +251,7 @@
                  if is_pi {
                      let body_sort = self.sort_level(
                          Judgment::proven(body_ty, "captured-pi-body"),
-@@ -2579,6 +2597,126 @@
+@@ -2579,6 +2629,126 @@
                      };
                      eprintln!("NUCLEUS_FAILED_RECEIVER_CONVERSION:expression={expression:?}:context_len={}:source_frame={}:remaining={}:actual={value:?}:expected={expected:?}:context={context:?}:actual_exposed={:?}:expected_exposed={:?}",
                          context.len(), frame.id(), *remaining, expose(&value), expose(expected));
@@ -326,7 +378,7 @@
                  }
                  #[cfg(feature="diagnostics")]
                  if crate::run_flags::present(crate::run_flags::Flag::TraceBidirBodyGap)
-@@ -3883,6 +4021,142 @@
+@@ -3883,6 +4053,142 @@
          true
      }
  
