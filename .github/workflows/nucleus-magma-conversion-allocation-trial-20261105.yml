@@ -43,13 +43,15 @@ jobs:
         run: |
           set -euo pipefail
           test "$(grep -c 'let probe = available / 2;' metatron-kernel/src/convert.rs)" -eq 2
-          sed -i '/let mut available = current_budget;/,/if reduced.is_none()/ s@let probe = available / 2;@let probe = available;@' metatron-kernel/src/convert.rs
+          sed -n '2072p' metatron-kernel/src/convert.rs | grep -Fq 'let probe = available / 2;'
+          sed -i '2072s@let probe = available / 2;@let probe = available;@' metatron-kernel/src/convert.rs
           test "$(grep -c 'let probe = available / 2;' metatron-kernel/src/convert.rs)" -eq 1
           test "$(grep -c 'let probe = available;' metatron-kernel/src/convert.rs)" -eq 1
           if [[ "$ORDER" == left_first ]]; then
-            sed -i '/let mut available = current_budget;/,/if reduced.is_none()/ s@\[(false, right), (true, left)\]@[(true, left), (false, right)]@' metatron-kernel/src/convert.rs
+            sed -n '2066,2070p' metatron-kernel/src/convert.rs | grep -Fq '[(false, right), (true, left)]'
+            sed -i '2066,2070s@\[(false, right), (true, left)\]@[(true, left), (false, right)]@' metatron-kernel/src/convert.rs
           fi
-          sed -n '/let mut available = current_budget;/,/if reduced.is_none()/p' metatron-kernel/src/convert.rs | tee matrix/target-conversion-loop.txt
+          sed -n '2060,2090p' metatron-kernel/src/convert.rs | tee matrix/target-conversion-loop.txt
           sha256sum metatron-kernel/src/{convert,machine,run_flags,typecheck}.rs | tee matrix/candidate-source-sha256.txt
       - name: Build qualified experimental checker
         run: |
