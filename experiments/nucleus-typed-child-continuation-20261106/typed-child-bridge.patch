@@ -17,7 +17,7 @@ index ca69dd4..044b546 100644
          )
      }
 diff --git a/src/convert.rs b/src/convert.rs
-index bf43ba7..486327f 100644
+index bf43ba7..cf1870d 100644
 --- a/src/convert.rs
 +++ b/src/convert.rs
 @@ -1556,7 +1556,7 @@ fn compare_values_with_eta_charge(
@@ -37,7 +37,7 @@ index bf43ba7..486327f 100644
  ) -> bool {
      use crate::level::LevelTerm;
      let mut pending = vec![(left, right)];
-@@ -2508,8 +2509,24 @@ fn exact_neutral_source_congruence(
+@@ -2508,8 +2509,34 @@ fn exact_neutral_source_congruence(
              if a.expr == b.expr && a.env == b.env && a.levels.identity() == b.levels.identity() {
                  continue;
              }
@@ -56,15 +56,25 @@ index bf43ba7..486327f 100644
 +            let structural=checker.exact_source_capture_identity(a,b,&mut structural_remaining)
 +                ||checker.instantiated_source_capture_congruence(a,b,&mut structural_remaining);
 +            *remaining=structural_remaining.saturating_add(reserved);
++            #[cfg(feature="diagnostics")]
++            if a.expr.0==600 && crate::run_flags::present(crate::run_flags::Flag::TraceFailedReceiverCaptures){
++                eprintln!("NUCLEUS_TYPED_CHILD_BRIDGE:expr={:?}:ctx={}:left_env={}:right_env={}:structural={}:reserve={}:remaining={}",
++                    a.expr,context.len(),a.env.id(),b.env.id(),structural,reserved,*remaining);
++            }
 +            if !structural {
 +                if reserved<128{return false;}
 +                *remaining-=reserved;
-+                if !checker.checked_source_conversion(a,b,context,reserved).is_proven(){return false;}
++                let typed=checker.checked_source_conversion(a,b,context,reserved);
++                #[cfg(feature="diagnostics")]
++                if a.expr.0==600 && crate::run_flags::present(crate::run_flags::Flag::TraceFailedReceiverCaptures){
++                    eprintln!("NUCLEUS_TYPED_CHILD_BRIDGE_RESULT:expr={:?}:ctx={}:reserve={}:typed={typed:?}",a.expr,context.len(),reserved);
++                }
++                if !typed.is_proven(){return false;}
 +            }
          }
      }
      true
-@@ -2565,7 +2582,7 @@ fn compare_neutral_heads(
+@@ -2565,7 +2592,7 @@ fn compare_neutral_heads(
                  return Judgment::unknown("neutral-projection-receiver-congruence");
              }
              let mut source_work = budget.saturating_sub(1);
