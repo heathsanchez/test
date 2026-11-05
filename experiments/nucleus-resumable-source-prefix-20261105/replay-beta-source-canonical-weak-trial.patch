@@ -1,0 +1,69 @@
+--- a/src/machine.rs
++++ b/src/machine.rs
+@@ -1146,6 +1146,22 @@
+         }
+     }
+ 
++    // This is the *actual* evaluator beta step (see expose_uncached_internal):
++    // a BVar bound to an immutable source Closure is a transparent reference
++    // to precisely that Closure. It is not a guessed constructor, a proof of
++    // arbitrary term equality, or a conversion of rigid Free/Neutral locals.
++    // Limit and charge every hop under the caller's finite work owner.
++    fn canonical_replay_beta_closure(&self,mut closure:Closure)->Option<(Closure,usize)> {
++        let mut hops=0usize;
++        while let Some(Expr::BVar(index))=self.expressions.get(closure.expr) {
++            let Some(EnvBinding::Closure(bound))=closure.env.lookup(*index) else {break;};
++            if hops>=256 || !self.reserve_replay_work(1){return None;}
++            closure=bound;
++            hops+=1;
++        }
++        Some((closure,hops))
++    }
++
+     fn completed_replay_key(&self,name:NameId,levels:&[crate::level::LevelTerm],spine:&[Closure])->Option<Rc<ReplayKey>> {
+         let certificate=self.recursor_reductions.get(&name)?;
+         let required=certificate.num_params.checked_add(1)?.checked_add(certificate.rules.len())?
+@@ -1155,6 +1171,13 @@
+         // for inspecting exact source handles and structural universe nodes;
+         // a miss pays the existing full-key reservation instead. Never charge
+         // both for the same source construction work.
++        let mut canonical_spine=Vec::with_capacity(spine.len());
++        let mut beta_hops=0usize;
++        for source in spine {
++            let (canonical,hops)=self.canonical_replay_beta_closure(source.clone())?;
++            beta_hops=beta_hops.checked_add(hops)?;
++            canonical_spine.push((canonical.expr,canonical.env.id(),canonical.levels));
++        }
+         let handle=ReplaySourceHandle{
+             authority:self.authority,
+             modes:(self.demand_major,self.replay_projection_major,self.replay_neutral_projection),
+@@ -1167,7 +1190,7 @@
+             nat:self.nat_primitives.clone(),bools:self.bool_primitives.clone(),
+             quot:self.quot_primitives.as_ref().map(|q|(q.type_name,q.mk,q.lift,q.ind)),
+             name,levels:levels.to_vec(),
+-            spine:spine.iter().map(|c|(c.expr,c.env.id(),c.levels.clone())).collect(),
++            spine:canonical_spine,
+         };
+         if let Some(saved)=self.replay_source_handles.borrow().get(&handle).and_then(std::rc::Weak::upgrade){
+             if !self.reserve_replay_work(1usize.saturating_add(spine.len()).saturating_add(levels.len())){return None;}
+@@ -1182,11 +1205,19 @@
+                 use std::sync::atomic::{AtomicUsize,Ordering};
+                 static HITS:AtomicUsize=AtomicUsize::new(0);
+                 if HITS.fetch_add(1,Ordering::Relaxed)<32{
+-                    eprintln!("NUCLEUS_REPLAY_HANDLE:hit:name={name:?}:fuel={:?}",self.exposure_fuel.get());
++                    eprintln!("NUCLEUS_REPLAY_HANDLE:hit:name={name:?}:beta_hops={beta_hops}:fuel={:?}",self.exposure_fuel.get());
+                 }
+             }
+             return Some(saved);
+         }
++        #[cfg(feature="diagnostics")]
++        if crate::run_flags::present(crate::run_flags::Flag::TraceReplayCache){
++            use std::sync::atomic::{AtomicUsize,Ordering};
++            static MISSES:AtomicUsize=AtomicUsize::new(0);
++            if MISSES.fetch_add(1,Ordering::Relaxed)<64{
++                eprintln!("NUCLEUS_REPLAY_HANDLE:miss:name={name:?}:beta_hops={beta_hops}:spine={}:fuel={:?}",spine.len(),self.exposure_fuel.get());
++            }
++        }
+         if !self.reserve_replay_key(levels,spine,certificate) {return None;}
+         #[cfg(test)]
+         self.replay_key_builds.set(self.replay_key_builds.get()+1);
