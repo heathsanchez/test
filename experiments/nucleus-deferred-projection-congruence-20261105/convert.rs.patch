@@ -1,35 +1,103 @@
 --- a/src/convert.rs
 +++ b/src/convert.rs
-@@ -1614,6 +1614,32 @@
+@@ -1614,6 +1614,23 @@
                  ) {
                      return Judgment::proven((), "stuck-projection-rigid-application-congruence");
                  }
-+                // Definitional equality is congruent under a fixed, source-
-+                // identified projection and its applied spine. Preserve every
-+                // receiver/argument obligation in this caller's work queue;
-+                // never equate differing projection owners or field indices.
-+                // Unlike a nested fixed-fuel probe this can establish long
-+                // equal chains of stuck projections with one shared budget.
++                // Sufficient equality only: field projections can be equal
++                // even when their receivers are unequal. Therefore a failed
++                // receiver proof MUST NOT refute the projected terms. This
++                // candidate accepts only when a separately metered descent
++                // proves every actual receiver and argument obligation.
 +                if crate::run_flags::present(
 +                    crate::run_flags::Flag::ExperimentalDeferredProjectionCongruence,
 +                ) && depth == context.len()
 +                    && current_budget >= 8
 +                    && left_spine.len() == right_spine.len()
++                    && prove_projection_chain_congruence(
++                        checker, left_structure, right_structure,
++                        left_spine, right_spine, current_budget, depth, context,
++                    )
 +                {
-+                    work.push((
-+                        TypeValue::Term(left_structure.clone()),
-+                        TypeValue::Term(right_structure.clone()),
-+                        depth,
-+                        context.to_vec(),
-+                    ));
-+                    work.extend(left_spine.iter().zip(right_spine).map(|(lhs, rhs)| (
-+                        TypeValue::Term(lhs.clone()),
-+                        TypeValue::Term(rhs.clone()),
-+                        depth,
-+                        context.to_vec(),
-+                    )));
-+                    return Judgment::proven((), "deferred-projection-congruence-obligations");
++                    return Judgment::proven((), "checked-stuck-projection-chain-congruence");
 +                }
                  let machine = checker.machine();
                  let left_value = machine.projection_value_for_conversion(
                      left_structure.clone(),
+@@ -2165,6 +2182,76 @@
+     Judgment::proven((), "rigid-value-comparison")
+ }
+ 
++// Sufficient, source-owned projection congruence for long chains of stuck
++// receivers. Repeated structure projections are followed iteratively, but
++// different fields/owners, failed normalization, or an unproved base return
++// false. The caller may then try its existing iota path or return UNKNOWN;
++// a failed sufficient equality proof is never an inequality certificate.
++fn prove_projection_chain_congruence(
++    checker: &TypeChecker<'_>,
++    left_structure: &Closure,
++    right_structure: &Closure,
++    left_spine: &[Closure],
++    right_spine: &[Closure],
++    budget: usize,
++    depth: usize,
++    context: &[TypeValue],
++) -> bool {
++    if left_spine.len() != right_spine.len() || budget < 256 { return false; }
++    let mut remaining = budget;
++    let mut pending: Vec<(Closure, Closure)> = left_spine.iter().zip(right_spine)
++        .map(|(lhs, rhs)| (lhs.clone(), rhs.clone())).collect();
++    pending.push((left_structure.clone(), right_structure.clone()));
++    let mut visited = HashSet::new();
++    let machine = checker.machine();
++    while let Some((lhs, rhs)) = pending.pop() {
++        if lhs == rhs { continue; }
++        // Do not use coinductive equality for cyclic or repeatedly exposed
++        // source captures. A complete finite proof is required.
++        if !visited.insert((lhs.clone(), rhs.clone())) { return false; }
++        let probe = remaining.min(64);
++        if probe < 16 || remaining < 2 * probe { return false; }
++        remaining -= 2 * probe;
++        let lhs_value = machine.expose_for_conversion(
++            lhs.clone(), Transparency::Reducible, probe,
++        );
++        let rhs_value = machine.expose_for_conversion(
++            rhs.clone(), Transparency::Reducible, probe,
++        );
++        if let (
++            Some(Value::StuckProjection {
++                type_name: lhs_type, index: lhs_index,
++                structure: lhs_receiver, spine: lhs_args,
++            }),
++            Some(Value::StuckProjection {
++                type_name: rhs_type, index: rhs_index,
++                structure: rhs_receiver, spine: rhs_args,
++            }),
++        ) = (lhs_value.proven_value(), rhs_value.proven_value())
++        {
++            if lhs_type != rhs_type || lhs_index != rhs_index
++                || lhs_args.len() != rhs_args.len() { return false; }
++            pending.extend(lhs_args.iter().zip(rhs_args).map(|(a,b)| (a.clone(),b.clone())));
++            pending.push((lhs_receiver.clone(), rhs_receiver.clone()));
++            continue;
++        }
++        // A stuck projection against a different shape is not an immediate
++        // source congruence. Keep the original fallback authoritative.
++        if lhs_value.proven_value().is_none() || rhs_value.proven_value().is_none()
++            || matches!(lhs_value.proven_value(), Some(Value::StuckProjection { .. }))
++            || matches!(rhs_value.proven_value(), Some(Value::StuckProjection { .. }))
++        { return false; }
++        let allowance = remaining.min(4096);
++        if allowance < 16 { return false; }
++        remaining -= allowance;
++        if !convert_with_policy_in_context(
++            checker, &TypeValue::Term(lhs), &TypeValue::Term(rhs), allowance,
++            DeltaPolicy::GuardedSemanticFallback, depth, context,
++        ).is_proven() { return false; }
++    }
++    true
++}
++
+ fn same_closure_spine_congruence(
+     checker: &TypeChecker<'_>,
+     left: &[Closure],
