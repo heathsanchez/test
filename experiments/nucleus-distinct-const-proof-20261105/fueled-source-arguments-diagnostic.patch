@@ -1,0 +1,42 @@
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -2804,15 +2804,39 @@
+                     && matches!(&conversion, Judgment::Unknown { residual }
+                         if residual.0 == "neutral-projection-receiver-congruence")
+                 {
+                     let machine = self.machine();
+                     let expose = |ty: &TypeValue| match ty {
+                         TypeValue::Term(term) => Some(machine.expose_for_conversion(
+                             term.clone(), Transparency::Full, (*remaining).min(2048))),
+                         _ => None,
+                     };
+                     eprintln!("NUCLEUS_FAILED_RECEIVER_CONVERSION:expression={expression:?}:context_len={}:source_frame={}:remaining={}:actual={value:?}:expected={expected:?}:context={context:?}:actual_exposed={:?}:expected_exposed={:?}",
+                         context.len(), frame.id(), *remaining, expose(&value), expose(expected));
++                    // Diagnostic only: test each genuine, context-checked source
++                    // argument at the first original Arena fueled-chain frontier.
++                    // A PROVEN equality here would be a candidate premise, never
++                    // an authority to change the enclosing checker verdict.
++                    if expression.0 == 7196 && context.len() == 2 {
++                        if let (Some(Judgment::Proven { value: Value::Neutral(a), .. }),
++                                Some(Judgment::Proven { value: Value::Neutral(b), .. })) =
++                            (expose(&value), expose(expected))
++                        {
++                            eprintln!("NUCLEUS_FUELED_ARGUMENTS:heads={:?}/{:?}:arity={}/{}",
++                                a.head, b.head, a.spine.len(), b.spine.len());
++                            for (i, (lhs, rhs)) in a.spine.iter().zip(&b.spine).enumerate() {
++                                let source = self.checked_source_conversion(lhs, rhs, context, 8192);
++                                let conversion = crate::convert::convert_with_policy_in_context(
++                                    self, &TypeValue::Term(lhs.clone()),
++                                    &TypeValue::Term(rhs.clone()), 8192,
++                                    crate::convert::DeltaPolicy::GuardedSemanticFallback,
++                                    context.len(), context,
++                                );
++                                eprintln!("NUCLEUS_FUELED_ARGUMENT:{i}:left_expr={:?}:right_expr={:?}:same_env={}:source={source:?}:conversion={conversion:?}",
++                                    lhs.expr, rhs.expr, lhs.env == rhs.env);
++                            }
++                        }
++                    }
+                     // Exact first-frontier diagnosis only. No production verdict or
+                     // cached premise is changed: each Eq child is independently
+                     // tested under the same source-checked context.
+                     if expression.0 == 273318 && context.len() == 7 {
