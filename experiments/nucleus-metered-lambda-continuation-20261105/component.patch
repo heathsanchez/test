@@ -1,0 +1,169 @@
+diff --git a/src/convert.rs b/src/convert.rs
+index bf43ba7..25dfe2d 100644
+--- a/src/convert.rs
++++ b/src/convert.rs
+@@ -1636,6 +1636,12 @@ fn compare_values_with_eta_charge(
+                 ) {
+                     return Judgment::proven((), "stuck-projection-rigid-application-congruence");
+                 }
++                if crate::run_flags::present(crate::run_flags::Flag::ExperimentalTypedReceiver){
++                    let allowance=(current_budget/4).min(1024);let mut trial=allowance;
++                    let proved=metered_projection_chain(checker,left_structure,right_structure,left_spine,right_spine,&mut trial,depth,context);
++                    let spent=allowance.saturating_sub(trial);current_budget=current_budget.saturating_sub(spent);*eta_work=eta_work.saturating_add(spent);
++                    if proved{return Judgment::proven((),"completed-premise-projection-chain-congruence")}
++                }
+                 let machine = checker.machine();
+                 let left_value = machine.projection_value_for_conversion(
+                     left_structure.clone(),
+@@ -3172,3 +3178,151 @@ mod completed_congruence_replay_controls {
+  }
+ 
+ }
++
++thread_local!{static PROJECTION_CHAIN_ACTIVE:std::cell::Cell<bool>=const{std::cell::Cell::new(false)};}
++// Finite sufficient VALUE congruence only. This path starts no new Core
++// conversion or typing trial; non-structural bases require completed evidence.
++fn metered_projection_chain(checker:&TypeChecker<'_>,left:&Closure,right:&Closure,left_args:&[Closure],right_args:&[Closure],work:&mut usize,depth:usize,context:&[TypeValue])->bool{
++    if *work<256||depth!=context.len()||context.len()>64||context.iter().any(|x|!matches!(x,TypeValue::Term(_)))||checker.strict_source_origin_probe()||left_args.len()!=right_args.len(){return false}
++    if !PROJECTION_CHAIN_ACTIVE.try_with(|active|!active.replace(true)).unwrap_or(false){return false}
++    struct Trial;impl Drop for Trial{fn drop(&mut self){let _=PROJECTION_CHAIN_ACTIVE.try_with(|active|active.set(false));}}
++    let _trial=Trial;
++    // An opened binder changes Gamma, so memo identity MUST include the
++    // exact local scope. Separate sibling scopes never share unproved facts.
++    type Key=(crate::id::ExprId,u64,usize,crate::id::ExprId,u64,usize,usize);
++    fn key(a:&Closure,b:&Closure,scope:usize)->Key{(a.expr,a.env.id(),a.levels.identity(),b.expr,b.env.id(),b.levels.identity(),scope)}
++    fn pay(work:&mut usize,cost:usize)->bool{if *work<cost{return false}*work-=cost;true}
++    fn level_copy(level:&crate::level::LevelTerm,work:&mut usize)->Option<crate::level::LevelTerm>{
++        use crate::level::LevelTerm;let mut pending=vec![level];let(mut nodes,mut bytes)=(0usize,0usize);
++        while let Some(level)=pending.pop(){nodes=nodes.checked_add(1)?;if nodes>64||!pay(work,1){return None}
++            match level{LevelTerm::Zero=>{},LevelTerm::Param(s)=>{bytes=bytes.checked_add(s.len())?;if bytes>4096||!pay(work,s.len()){return None}},LevelTerm::Succ(x)=>pending.push(x),LevelTerm::Max(a,b)|LevelTerm::IMax(a,b)=>{pending.push(b);pending.push(a);}}
++        }
++        Some(level.clone())
++    }
++    fn level_equal(a:&crate::level::LevelTerm,b:&crate::level::LevelTerm,work:&mut usize)->bool{
++        let(Some(a),Some(b))=(level_copy(a,work),level_copy(b,work))else{return false};crate::level::level_equal_metered(a,b,work).is_proven()
++    }
++    enum Task{Enter(Closure,Closure,usize),Finish(Key),Neutral(Neutral,Neutral,usize)}
++    // Reverse release keeps ancestor owners alive while descendants drop.
++    struct Owners(Vec<(Closure,Closure)>);impl Drop for Owners{fn drop(&mut self){while let Some(pair)=self.0.pop(){drop(pair);}}}
++    let mut owners=Owners(Vec::new());let mut pending=Vec::new();let mut active=HashSet::new();let mut complete=HashSet::new();
++    if !pay(work,left_args.len().saturating_add(context.len()).saturating_add(1)){return false}
++    let mut scopes=vec![(depth,context.to_vec())];
++    for(a,b)in left_args.iter().zip(right_args){pending.push(Task::Enter(a.clone(),b.clone(),0));}
++    pending.push(Task::Enter(left.clone(),right.clone(),0));let machine=checker.machine();
++    while let Some(task)=pending.pop(){
++        if !pay(work,1){return false}
++        match task{
++            Task::Finish(k)=>{active.remove(&k);complete.insert(k);},
++            Task::Enter(a,b,scope)=>{
++                let k=key(&a,&b,scope);owners.0.push((a.clone(),b.clone()));
++                if complete.contains(&k){continue}
++                if !active.insert(k){return false}
++                if (a.expr,a.env.id(),a.levels.identity())==(b.expr,b.env.id(),b.levels.identity())
++                    ||checker.reuse_completed_source_capture_fact(&a,&b){active.remove(&k);complete.insert(k);continue}
++                let av=TypeValue::Term(a.clone());let bv=TypeValue::Term(b.clone());
++                // Query only an already completed ordinary root conversion in
++                // its original namespace; no reset or fresh recursive search.
++                let (local_depth,local_context)=&scopes[scope];
++                if let Some(fact)=checker.completed_core_conversion_key(&av,&bv,local_context,*local_depth,0,DeltaPolicy::GuardedSemanticFallback,*work)
++                    && checker.reuse_completed_core_conversion(&fact,local_context){active.remove(&k);complete.insert(k);continue}
++                let probe=(*work/2).min(16);if probe<16||!pay(work,2*probe){return false}
++                let a=machine.expose_for_conversion(a,Transparency::Reducible,probe);let b=machine.expose_for_conversion(b,Transparency::Reducible,probe);
++                let(Judgment::Proven{value:a,..},Judgment::Proven{value:b,..})=(a,b)else{return false};
++                pending.push(Task::Finish(k));
++                match(a,b){
++                    (Value::StuckProjection{type_name:x,index:i,structure:a,spine:aa},Value::StuckProjection{type_name:y,index:j,structure:b,spine:ba})if x==y&&i==j&&aa.len()==ba.len()=>{
++                        if !pay(work,aa.len().saturating_add(1)){return false}for(a,b)in aa.into_iter().zip(ba){pending.push(Task::Enter(a,b,scope));}pending.push(Task::Enter(a,b,scope));
++                    }
++                    (Value::Lam{domain:left_domain,body:left_body},Value::Lam{domain:right_domain,body:right_body})=>{
++                        // Mirror the ordinary kernel's lambda congruence:
++                        // prove the domains in Gamma first, then the bodies
++                        // opened by the same fresh local in Gamma,domain.
++                        // A same-shape shortcut without these two obligations
++                        // would be unsound. Neither obligation receives fuel.
++                        if *local_depth>=64||local_context.len()!=*local_depth{return false}
++                        let Some(free)=fresh_local(*local_depth)else{return false};
++                        if !source_opening_avoids_capture(checker,&left_body,free,work)
++                            ||!source_opening_avoids_capture(checker,&right_body,free,work){return false}
++                        if !pay(work,local_context.len().saturating_add(3)){return false}
++                        let mut body_context=local_context.clone();
++                        body_context.push(TypeValue::Term(left_domain.clone()));
++                        let next_scope=scopes.len();scopes.push((local_depth+1,body_context));
++                        pending.push(Task::Enter(left_body.under_free(free),right_body.under_free(free),next_scope));
++                        pending.push(Task::Enter(left_domain,right_domain,scope));
++                    }
++                    (Value::Neutral(a),Value::Neutral(b))=>pending.push(Task::Neutral(a,b,scope)),
++                    (Value::Sort(a),Value::Sort(b))=>if !level_equal(&a,&b,work){return false},
++                    (Value::NatLit(a),Value::NatLit(b))=>if !pay(work,a.limb_count().max(b.limb_count()))||a!=b{return false},
++                    _=>return false,
++                }
++            }
++            Task::Neutral(a,b,scope)=>{
++                if a.spine.len()!=b.spine.len()||!pay(work,a.spine.len()){return false}
++                match(a.head,b.head){
++                    (NeutralHead::Free(a),NeutralHead::Free(b))if a==b=>{},
++                    (NeutralHead::Const{name:a,levels:al},NeutralHead::Const{name:b,levels:bl})if a==b&&al.len()==bl.len()=>{
++                        for(a,b)in al.iter().zip(&bl){if !level_equal(a,b,work){return false}}
++                    }
++                    (NeutralHead::Projection{type_name:a,index:i,structure:x},NeutralHead::Projection{type_name:b,index:j,structure:y})if a==b&&i==j=>pending.push(Task::Neutral(*x,*y,scope)),
++                    _=>return false,
++                }
++                for(a,b)in a.spine.into_iter().zip(b.spine){pending.push(Task::Enter(a,b,scope));}
++            }
++        }
++    }
++    true
++}
++#[cfg(test)]
++mod metered_projection_chain_controls{
++ use super::*;
++ use crate::id::{IdTable,ExprId,LevelId,NameId};use crate::syntax::{Expr,Level};use crate::environment::{Environment,ConstantDecl};
++ fn fixture()->(IdTable<ExprId,Expr>,IdTable<LevelId,Level>,Environment){let mut e=IdTable::default();for(id,x)in[(0,Expr::Sort(LevelId(0))),(1,Expr::BVar(0)),(2,Expr::Lam{domain:ExprId(0),body:ExprId(1)}),(3,Expr::Const{name:NameId(1),levels:vec![]}),(4,Expr::App{fun:ExprId(2),arg:ExprId(3)}),(5,Expr::Const{name:NameId(2),levels:vec![]}),(6,Expr::App{fun:ExprId(6),arg:ExprId(3)}),(7,Expr::App{fun:ExprId(7),arg:ExprId(3)}),(8,Expr::Const{name:NameId(3),levels:vec![LevelId(0)]}),(9,Expr::Const{name:NameId(3),levels:vec![LevelId(1)]}),(10,Expr::Const{name:NameId(3),levels:vec![LevelId(4)]}),(11,Expr::Const{name:NameId(3),levels:vec![LevelId(5)]})]{e.insert(ExprId(id),x).unwrap();}let mut l=IdTable::default();for(id,x)in[(0,Level::Zero),(1,Level::Succ(LevelId(0))),(2,Level::Param(NameId(32))),(3,Level::Param(NameId(326))),(4,Level::Max(LevelId(2),LevelId(3))),(5,Level::Max(LevelId(3),LevelId(2)))]{l.insert(LevelId(id),x).unwrap();}let env=Environment::empty().extend(NameId(1),ConstantDecl::axiom(vec![],ExprId(0))).unwrap().extend(NameId(2),ConstantDecl::axiom(vec![],ExprId(0))).unwrap().extend(NameId(3),ConstantDecl::axiom(vec![NameId(7)],ExprId(0))).unwrap();(e,l,env)}
++ fn term(c:&TypeChecker,id:u64)->Closure{c.closure(ExprId(id),crate::value::EnvFrame::empty())}
++ #[test]fn checked_base_conversion_is_a_sufficient_receiver_premise(){let _scope=crate::run_flags::enter();let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let mut work=8192;assert!(metered_projection_chain(&c,&term(&c,4),&term(&c,3),&[],&[],&mut work,0,&[]));assert!(work<8192);}
++ #[test]fn all_applied_arguments_remain_value_obligations(){let _scope=crate::run_flags::enter();let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let a=term(&c,3);assert!(!metered_projection_chain(&c,&a,&a,&[a.clone()],&[term(&c,5)],&mut 8192,0,&[]));}
++ #[test]fn completed_duplicate_leaf_is_reused_without_coinduction(){let _scope=crate::run_flags::enter();let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let a=term(&c,4);let b=term(&c,3);assert!(metered_projection_chain(&c,&b,&b,&[a.clone(),a],&[b.clone(),b.clone()],&mut 16384,0,&[]));}
++ #[test]fn zero_work_or_unmatched_arity_cannot_prove(){let _scope=crate::run_flags::enter();let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let a=term(&c,3);assert!(!metered_projection_chain(&c,&a,&a,&[],&[],&mut 0,0,&[]));assert!(!metered_projection_chain(&c,&a,&a,&[a.clone()],&[],&mut 8192,0,&[]));}
++ #[test]fn active_trial_never_starts_a_nested_cold_trial(){let _scope=crate::run_flags::enter();let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);struct Reset;impl Drop for Reset{fn drop(&mut self){PROJECTION_CHAIN_ACTIVE.with(|a|a.set(false));}}PROJECTION_CHAIN_ACTIVE.with(|a|assert!(!a.replace(true)));let _reset=Reset;let mut work=8192;assert!(!metered_projection_chain(&c,&term(&c,4),&term(&c,3),&[],&[],&mut work,0,&[]));assert_eq!(work,8192);}
++ #[test]fn different_actual_universes_do_not_form_a_head_certificate(){let _scope=crate::run_flags::enter();let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);assert!(!metered_projection_chain(&c,&term(&c,8),&term(&c,9),&[],&[],&mut 8192,0,&[]));}
++ #[test]fn universe_max_permutation_uses_the_existing_paid_calculus(){let _scope=crate::run_flags::enter();let(e,l,env)=fixture();let c=TypeChecker::with_level_substitution(&e,&l,&env,[(NameId(32),crate::level::LevelTerm::Param("u".into())),(NameId(326),crate::level::LevelTerm::Param("v".into()))].into_iter().collect());assert!(metered_projection_chain(&c,&term(&c,10),&term(&c,11),&[],&[],&mut 8192,0,&[]));}
++ #[test]fn cyclic_source_is_not_a_completed_equality(){let _scope=crate::run_flags::enter();let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);assert!(!metered_projection_chain(&c,&term(&c,6),&term(&c,7),&[],&[],&mut 8192,0,&[]));}
++ #[test]
++ fn distinct_source_lambdas_need_checked_binder_continuation() {
++     let _scope=crate::run_flags::enter();
++     let (mut e,l,env)=fixture();
++     e.insert(ExprId(13),Expr::BVar(0)).unwrap();
++     e.insert(ExprId(12),Expr::Lam {domain:ExprId(0),body:ExprId(13)}).unwrap();
++     let c=TypeChecker::new(&e,&l,&env);
++     let mut work=8192;
++     assert!(metered_projection_chain(&c,&term(&c,2),&term(&c,12),&[],&[],&mut work,0,&[]),
++         "independent source lambdas with equal typed domains and bound bodies must compare");
++     assert!(work<8192,"the common semantic owner must pay for the continuation");
++ }
++ #[test]
++ fn lambda_continuation_does_not_restart_four_whole_checks() {
++     let _scope=crate::run_flags::enter();
++     let (mut e,l,env)=fixture();
++     e.insert(ExprId(13),Expr::BVar(0)).unwrap();
++     e.insert(ExprId(12),Expr::Lam {domain:ExprId(0),body:ExprId(13)}).unwrap();
++     let c=TypeChecker::new(&e,&l,&env);
++     let mut work=320;
++     assert!(metered_projection_chain(&c,&term(&c,2),&term(&c,12),&[],&[],&mut work,0,&[]),
++         "a finite lambda congruence should discharge domain and opened body under one owner");
++ }
++ #[test]
++ fn source_lambda_binder_capture_and_domain_mismatch_never_prove() {
++     let _scope=crate::run_flags::enter();
++     let (mut e,l,env)=fixture();
++     e.insert(ExprId(13),Expr::BVar(1)).unwrap();
++     e.insert(ExprId(12),Expr::Lam {domain:ExprId(0),body:ExprId(13)}).unwrap();
++     e.insert(ExprId(15),Expr::Sort(LevelId(1))).unwrap();
++     e.insert(ExprId(14),Expr::Lam {domain:ExprId(15),body:ExprId(1)}).unwrap();
++     let c=TypeChecker::new(&e,&l,&env);
++     let captured=Closure::new(ExprId(12),crate::value::EnvFrame::empty().extend_free(crate::value::FreeId(0)));
++     assert!(!metered_projection_chain(&c,&term(&c,2),&captured,&[],&[],&mut 8192,0,&[]),
++         "an outer captured Free(0) is not the newly opened binder Free(0)");
++     assert!(!metered_projection_chain(&c,&term(&c,2),&term(&c,14),&[],&[],&mut 8192,0,&[]),
++         "different source annotations cannot be ignored");
++ }
++}
