@@ -65,7 +65,11 @@ jobs:
           set -euo pipefail
           mapfile -t flags < <(jq -r '.candidate.configuration | to_entries[] | "\(.key)=\(.value)"' causal/qualification.json)
           mkfifo causal/mismatch.fifo
-          (grep --line-buffered -E 'NUCLEUS_NEUTRAL_HEAD_MISMATCH|NUCLEUS_DOWNSTREAM' < causal/mismatch.fifo | cut -c1-1500 | tail -n 90 > causal/neutral-tail.txt) &
+          # Keep both neutral heads, even when a captured left argument spine
+          # exceeds 1500 characters. Discard only the verbose argument spines.
+          (grep --line-buffered -E 'NUCLEUS_NEUTRAL_HEAD_MISMATCH|NUCLEUS_DOWNSTREAM' < causal/mismatch.fifo | \
+            awk -F ':left_spine=|:right=|:right_spine=' '/NUCLEUS_NEUTRAL_HEAD_MISMATCH/ {print substr($1, 1, 2400) ":right=" substr($3, 1, 2400); next} {print}' | \
+            tail -n 90 > causal/neutral-tail.txt) &
           sink_pid=$!
           set +e
           unzip -p full-mathlib-evidence.zip mathlib-full.ndjson.zst | zstd -dc | \
