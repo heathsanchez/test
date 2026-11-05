@@ -1,0 +1,57 @@
+name: Nucleus full Mathlib first-UNKNOWN evidence retrieval
+on:
+  push:
+    branches: [research/nucleus-deferred-projection-congruence-20261105]
+    paths:
+      - '.github/workflows/nucleus-full-mathlib-residual-retrieval-20261105.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  extract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Retrieve the immutable Mathlib replay artifact without rerunning or altering the checker
+        run: |
+          set -euo pipefail
+          mkdir -p causal
+          gh api repos/heathsanchez/test/actions/artifacts/13377771876/zip > full-mathlib-evidence.zip
+          printf '%s  %s\n' 699da072ffc367c84cc168d7e1c7eec48e6572c6316ac33d43cc17944816cf65 full-mathlib-evidence.zip | sha256sum -c -
+          unzip -Z -1 full-mathlib-evidence.zip | tee causal/entry-list.txt
+          for entry in mathlib.status mathlib-record-count.txt mathlib-sha256.txt generated-prefix-sha256.txt prefix-comparison.txt candidate-binary-sha256.txt; do
+            unzip -p full-mathlib-evidence.zip "$entry" > "causal/$entry"
+            test -s "causal/$entry"
+          done
+          unzip -p full-mathlib-evidence.zip mathlib.stderr.zst | zstd -dc > causal/mathlib.stderr
+          unzip -p full-mathlib-evidence.zip mathlib.stdout > causal/mathlib.stdout
+          sha256sum causal/mathlib.stderr | tee causal/stderr-sha256.txt
+          wc -c causal/mathlib.stderr causal/mathlib.stdout
+          printf 'FIRST LINES OF CAUSAL STDERR\n'
+          head -n 35 causal/mathlib.stderr | cut -c1-1000
+          printf 'LAST LINES OF CAUSAL STDERR\n'
+          tail -n 55 causal/mathlib.stderr | cut -c1-1000
+          printf 'TOP-LEVEL FULL MATHLIB VERDICT\n'
+          cat causal/mathlib.status
+          zstd -q -3 -f causal/mathlib.stderr -o causal/mathlib.stderr.zst
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-full-mathlib-next-causal-frontier
+          retention-days: 45
+          if-no-files-found: warn
+          path: |
+            causal/mathlib.status
+            causal/mathlib-record-count.txt
+            causal/mathlib-sha256.txt
+            causal/generated-prefix-sha256.txt
+            causal/prefix-comparison.txt
+            causal/candidate-binary-sha256.txt
+            causal/stderr-sha256.txt
+            causal/mathlib.stderr.zst
+            causal/mathlib.stdout
+            causal/entry-list.txt
