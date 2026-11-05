@@ -10,7 +10,7 @@ fn main() -> ExitCode {
         eprintln!("usage: nucleus-budget-sweep STEPS");
         return ExitCode::from(3);
     };
-    let checker = || {
+    let checker = move || {
         let export = match metatron_kernel::parser::parse(BufReader::new(io::stdin().lock()))
             .and_then(|export| export.resolve())
         {
