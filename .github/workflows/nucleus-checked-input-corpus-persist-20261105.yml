@@ -1,0 +1,42 @@
+name: Persist verified Nucleus checked inputs
+on:
+  push:
+    branches: [research/nucleus-checked-input-corpus-20261105]
+    paths: ['.github/workflows/nucleus-checked-input-corpus-persist-20261105.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: read
+jobs:
+  persist-exact-seal:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore exact successful corpus artifact
+        run: |
+          set -euo pipefail
+          gh api repos/heathsanchez/test/actions/artifacts/13385221276/zip > /tmp/corpus.zip
+          printf '%s  %s\n' 5b73fdc85867ed871cb269666f4c1901f05568cb52b299b6f954e046b0a86b30 /tmp/corpus.zip | sha256sum -c -
+          mkdir /tmp/corpus-artifact /tmp/corpus-restored
+          unzip -q /tmp/corpus.zip -d /tmp/corpus-artifact
+          printf '%s  %s\n' d3c3948ea1799f10af02dd49633ad4f41fdbc34d6131ae4ba999af5238af1002 /tmp/corpus-artifact/checked-inputs.tar.zst | sha256sum -c -
+          zstd -dq /tmp/corpus-artifact/checked-inputs.tar.zst -c | tar -xf - -C /tmp/corpus-restored
+          python3 experiments/nucleus-checked-input-corpus-20261105/verify.py /tmp/corpus-restored/corpus > /tmp/corpus-artifact/persistence-verification.json
+      - name: Persist exact bytes on dedicated research branch
+        run: |
+          set -euo pipefail
+          destination=experiments/nucleus-checked-input-corpus-20261105/sealed
+          mkdir -p "$destination"
+          cp /tmp/corpus-artifact/checked-inputs.tar.zst /tmp/corpus-artifact/checked-inputs.json /tmp/corpus-artifact/persistence-verification.json "$destination/"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination/checked-inputs.tar.zst" "$destination/checked-inputs.json" "$destination/persistence-verification.json"
+          git commit -m 'Persist verified immutable 388-case checked input seal'
+          git push --force-with-lease=refs/heads/research/nucleus-checked-input-corpus-sealed-20261105: origin HEAD:refs/heads/research/nucleus-checked-input-corpus-sealed-20261105
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-corpus-persistence-verification
+          path: /tmp/corpus-artifact/persistence-verification.json

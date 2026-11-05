@@ -1,0 +1,7 @@
+{
+  "case": "duplicate-valid-row-replaces-distinct-row-counts-preserved",
+  "rc": 1,
+  "correctly_rejected": true,
+  "unchanged_entries_count": 388,
+  "stderr": "Traceback (most recent call last):\n  File \"/tmp/nucleus-checked-input-corpus/verify.py\", line 35, in <module>\n    if __name__=='__main__':main()\n                            ^^^^^^\n  File \"/tmp/nucleus-checked-input-corpus/verify.py\", line 28, in main\n    assert signature([(e['group'],e['case'],e['sha256'])for e in m['entries']if e['group'].startswith('source119/')])==signature([('source119/'+r['group'],r['row']['case'],r['row']['sha256'])for r in registry])\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError\n"
+}

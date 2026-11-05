@@ -1,0 +1,140 @@
+   Compiling zmij v1.0.23
+   Compiling serde_core v1.0.229
+   Compiling serde_json v1.0.151
+   Compiling memchr v2.8.3
+   Compiling itoa v1.0.18
+   Compiling metatron-kernel v0.1.0 (/tmp/nucleus-metered-projection-chain/source)
+warning: unnecessary parentheses around `if` condition
+    --> src/convert.rs:2669:20
+     |
+2669 |                 if ((l=="Free(FreeId(6))" && r=="Free(FreeId(5))") ||
+     |                    ^
+2670 |                     (l=="Free(FreeId(5))" && r=="Free(FreeId(6))"))
+     |                                                                   ^
+     |
+     = note: `#[warn(unused_parens)]` (part of `#[warn(unused)]`) on by default
+help: remove these parentheses
+     |
+2669 ~                 if (l=="Free(FreeId(6))" && r=="Free(FreeId(5))") ||
+2670 ~                     (l=="Free(FreeId(5))" && r=="Free(FreeId(6))")
+     |
+
+warning: unnecessary parentheses around `if` condition
+    --> src/typecheck.rs:6977:12
+     |
+6977 |         if (!crate::run_flags::present(crate::run_flags::Flag::ExperimentalExpectedLambda)) { return; }
+     |            ^                                                                              ^
+     |
+help: remove these parentheses
+     |
+6977 -         if (!crate::run_flags::present(crate::run_flags::Flag::ExperimentalExpectedLambda)) { return; }
+6977 +         if !crate::run_flags::present(crate::run_flags::Flag::ExperimentalExpectedLambda) { return; }
+     |
+
+warning: unused variable: `c`
+    --> src/convert.rs:3129:91
+     |
+3129 | ...(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let n=Neutral{head:NeutralHead::Const{name:NameId(4),levels:vec![c...
+     |                                  ^ help: if this is intentional, prefix it with an underscore: `_c`
+     |
+     = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: value assigned to `source_work` is never read
+    --> src/typecheck.rs:5947:55
+     |
+5947 |                     if source_work<cost{return false;}source_work-=cost;
+     |                                                       ^^^^^^^^^^^^^^^^^
+     |
+     = help: maybe it is overwritten before being read?
+     = note: `#[warn(unused_assignments)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `definition_arguments_used` is never used
+    --> src/convert.rs:1103:4
+     |
+1103 | fn definition_arguments_used(
+     |    ^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: method `qualified_quotient_neutral_result` is never used
+    --> src/machine.rs:1632:19
+     |
+ 319 | impl<'a> Machine<'a> {
+     | -------------------- method in this implementation
+...
+1632 |     pub(crate) fn qualified_quotient_neutral_result(
+     |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: method `diagnostic_captured_recursor_major_chain` is never used
+    --> src/typecheck.rs:1113:19
+     |
+ 145 | impl<'a> TypeChecker<'a> {
+     | ------------------------ method in this implementation
+...
+1113 |     pub(crate) fn diagnostic_captured_recursor_major_chain(
+     |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: method `strong_owners` is never used
+   --> src/value.rs:130:18
+    |
+ 50 | impl EnvFrame {
+    | ------------- method in this implementation
+...
+130 |     pub(crate)fn strong_owners(&self)->usize{Rc::strong_count(&self.0)}
+    |                  ^^^^^^^^^^^^^
+
+warning: methods `strong_owners` and `is_empty_instance` are never used
+   --> src/value.rs:214:18
+    |
+199 | impl LevelSubstitution {
+    | ---------------------- methods in this implementation
+...
+214 |     pub(crate)fn strong_owners(&self)->usize{Rc::strong_count(&self.0)}
+    |                  ^^^^^^^^^^^^^
+215 |     pub(crate)fn is_empty_instance(&self)->bool{self.0.entries.is_empty()}
+    |                  ^^^^^^^^^^^^^^^^^
+
+warning: `metatron-kernel` (lib test) generated 9 warnings (run `cargo fix --lib -p metatron-kernel --tests` to apply 3 suggestions)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 14.42s
+     Running unittests src/lib.rs (/tmp/nucleus-metered-projection-chain/target/debug/deps/metatron_kernel-a6ba7eb199698f6f)
+
+running 8 tests
+test convert::metered_projection_chain_controls::active_trial_never_starts_a_nested_cold_trial ... ok
+test convert::metered_projection_chain_controls::cyclic_source_is_not_a_completed_equality ... ok
+test convert::metered_projection_chain_controls::checked_base_conversion_is_a_sufficient_receiver_premise ... FAILED
+test convert::metered_projection_chain_controls::all_applied_arguments_remain_value_obligations ... ok
+test convert::metered_projection_chain_controls::zero_work_or_unmatched_arity_cannot_prove ... ok
+test convert::metered_projection_chain_controls::universe_max_permutation_uses_the_existing_paid_calculus ... FAILED
+test convert::metered_projection_chain_controls::different_actual_universes_do_not_form_a_head_certificate ... ok
+test convert::metered_projection_chain_controls::completed_duplicate_leaf_is_reused_without_coinduction ... FAILED
+
+failures:
+
+---- convert::metered_projection_chain_controls::checked_base_conversion_is_a_sufficient_receiver_premise stdout ----
+
+thread 'convert::metered_projection_chain_controls::checked_base_conversion_is_a_sufficient_receiver_premise' (406) panicked at src/convert.rs:3184:184:
+assertion failed: metered_projection_chain(&c, &term(&c, 4), &term(&c, 3), &[], &[], &mut work,
+    0, &[])
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- convert::metered_projection_chain_controls::universe_max_permutation_uses_the_existing_paid_calculus stdout ----
+
+thread 'convert::metered_projection_chain_controls::universe_max_permutation_uses_the_existing_paid_calculus' (410) panicked at src/convert.rs:3190:166:
+assertion failed: metered_projection_chain(&c, &term(&c, 10), &term(&c, 11), &[], &[],
+    &mut 8192, 0, &[])
+
+---- convert::metered_projection_chain_controls::completed_duplicate_leaf_is_reused_without_coinduction stdout ----
+
+thread 'convert::metered_projection_chain_controls::completed_duplicate_leaf_is_reused_without_coinduction' (407) panicked at src/convert.rs:3186:198:
+assertion failed: metered_projection_chain(&c, &b, &b, &[a.clone(), a], &[b.clone(), b.clone()],
+    &mut 16384, 0, &[])
+
+
+failures:
+    convert::metered_projection_chain_controls::checked_base_conversion_is_a_sufficient_receiver_premise
+    convert::metered_projection_chain_controls::completed_duplicate_leaf_is_reused_without_coinduction
+    convert::metered_projection_chain_controls::universe_max_permutation_uses_the_existing_paid_calculus
+
+test result: FAILED. 5 passed; 3 failed; 0 ignored; 0 measured; 257 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--lib`

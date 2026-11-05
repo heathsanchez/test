@@ -1,0 +1,71 @@
+{
+  "status": "NO_COVERAGE_WIN_UNQUALIFIED",
+  "candidate_only": true,
+  "no_promotion": true,
+  "no_speed_claim": true,
+  "binary_sha256": "5805bcad72f58d1455275b7bdbda018fbffb31d6a35dcdaa6597feaffd338eb8",
+  "configuration": {
+    "NUCLEUS_EXPERIMENTAL_CERTIFIED_QUOT_IOTA": "1",
+    "NUCLEUS_EXPERIMENTAL_CONTEXT_BINDER": "1",
+    "NUCLEUS_EXPERIMENTAL_DEMAND_MAJOR": "1",
+    "NUCLEUS_EXPERIMENTAL_EXPECTED_LAMBDA": "1",
+    "NUCLEUS_EXPERIMENTAL_FORMED_PROP_DOMAIN_RETRY": "1",
+    "NUCLEUS_EXPERIMENTAL_POLYMORPHIC_PROP_IRREL": "1",
+    "NUCLEUS_EXPERIMENTAL_PROJECTION_CONTEXT": "1",
+    "NUCLEUS_EXPERIMENTAL_PROJECTION_CROSSFRAME_512": "1",
+    "NUCLEUS_EXPERIMENTAL_PROP_SINGLETON_2P1F": "1",
+    "NUCLEUS_EXPERIMENTAL_RELEVANCE": "1",
+    "NUCLEUS_EXPERIMENTAL_REPLAY_NEUTRAL_PROJECTION": "1",
+    "NUCLEUS_EXPERIMENTAL_REPLAY_PROJECTION_MAJOR": "1",
+    "NUCLEUS_EXPERIMENTAL_SOURCE_PAIR_DEPTH8": "1",
+    "NUCLEUS_EXPERIMENTAL_SOURCE_PROOF_IRREL": "1",
+    "NUCLEUS_EXPERIMENTAL_SUBSTITUTION_RECLOSURE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_DATA_CONGRUENCE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_LINEAGE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_PROJECTION_SPINE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_RECEIVER": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_VALUE_NORMALIZATION": "1"
+  },
+  "rows": [
+    {
+      "input": "hot",
+      "input_sha256": "8428d5d4282a608eb77e48ff62adace23212d9487ff9e86dc2e57af7c573d5f1",
+      "rc": 0,
+      "wall": 19.793689107995306,
+      "terminal": ""
+    },
+    {
+      "input": "compact",
+      "input_sha256": "ef5df79ed54b93ec8597131304c9ed76358dd4a60c5bf7275fb0033a9fe9e431",
+      "rc": 0,
+      "wall": 11.407980661999318,
+      "terminal": ""
+    },
+    {
+      "input": "proof2",
+      "input_sha256": "61b130d9e864c99afd4111b662f884827be98a87f27277c42a5949b025fc0d6b",
+      "rc": 2,
+      "wall": 34.50080905399955,
+      "terminal": ""
+    }
+  ],
+  "source_tests": 265,
+  "source_test_failures": 0,
+  "component_sha256": "92cda25c83bedb378858fe21e0bbac6d8acf92eba4a11af0c73cf5f01f5be5e0",
+  "source_manifest_sha256": "3a460670b3c2f52c33d115956678be6967b7867942dc650d3e73150546f17b71",
+  "source_files": 368,
+  "parent_binary_sha256": "72ee79b8e1757ff65b06ee37d9321315b9b113f9503cbda635e3ebe1e3b99a41",
+  "parent_source_tar_sha256": "6f68f0ae7e2630e8025820cc922e014a6a318b3b6cef99194a33f1ce0d83bdd3",
+  "independently_reconstructed": true,
+  "resource_review_status": "IMPORTANT_UNRESOLVED_RECURSIVE_NEUTRAL_DROP_AND_INHERITED_EXPOSURE_CLONE",
+  "promoted": false,
+  "complete_mathlib_accept": false,
+  "official_rank_unknown": true,
+  "apparatus_fixture_error": "Universe max-permutation fixture initially omitted actual universe parameter bindings. Exposure returned neutral-level-instantiation UNKNOWN. Fixed only fixture with explicit actual bindings. All265 pass.",
+  "red_source_tests": {
+    "passed": 5,
+    "failed": 3
+  },
+  "native_full_qualification": false,
+  "frozen208_kernel_replay": false
+}
