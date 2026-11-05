@@ -28,6 +28,8 @@ jobs:
       - name: Persist exact bytes on dedicated research branch
         run: |
           set -euo pipefail
+          git fetch --no-tags --depth=1 origin 1997fd111281babc0769cf1ffbe2157a00d9d8b1
+          git checkout --detach 1997fd111281babc0769cf1ffbe2157a00d9d8b1
           destination=experiments/nucleus-checked-input-corpus-20261105/sealed
           mkdir -p "$destination"
           cp /tmp/corpus-artifact/checked-inputs.tar.zst /tmp/corpus-artifact/checked-inputs.json /tmp/corpus-artifact/persistence-verification.json "$destination/"
@@ -35,7 +37,7 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add "$destination/checked-inputs.tar.zst" "$destination/checked-inputs.json" "$destination/persistence-verification.json"
           git commit -m 'Persist verified immutable 388-case checked input seal'
-          git push --force-with-lease=refs/heads/research/nucleus-checked-input-corpus-sealed-20261105: origin HEAD:refs/heads/research/nucleus-checked-input-corpus-sealed-20261105
+          git push --force-with-lease=refs/heads/research/nucleus-checked-input-corpus-sealed-20261105:1997fd111281babc0769cf1ffbe2157a00d9d8b1 origin HEAD:refs/heads/research/nucleus-checked-input-corpus-sealed-20261105
       - uses: actions/upload-artifact@v4
         with:
           name: nucleus-corpus-persistence-verification
