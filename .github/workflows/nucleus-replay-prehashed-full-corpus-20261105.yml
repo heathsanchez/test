@@ -101,15 +101,16 @@ jobs:
           test "$(find original196 -type f -name '*.ndjson' | wc -l)" -eq 196
           test "$(find arena-current -type f -name '*.ndjson' | wc -l)" -eq 207
           mapfile -t flags < <(jq -r '.candidate.configuration | to_entries[] | "\(.key)=\(.value)"' qualified/qualification.json)
+          export "${flags[@]}"
           for corpus in original196 arena-current; do
             find "$corpus" -type f -name '*.ndjson' -print0 | xargs -0 -P 4 -n 1 bash -c '
               file="$1"
               label="${file#*/}"
               if [[ "$label" == good/* ]]; then expected=0; else expected=1; fi
               actual=0
-              timeout 200 env "${@:2}" NUCLEUS_EXPERIMENTAL_DEFERRED_PROJECTION_CONGRUENCE=1 NUCLEUS_EXPERIMENTAL_DISTINCT_CONST_PROOF_IRREL=1 NUCLEUS_EXPERIMENTAL_EXACT_CAPTURE_SEMANTIC_RETRY=1 NUCLEUS_EXPERIMENTAL_QUOTIENT_PROJECTION_BRIDGE=1 candidate/nucleus < "$file" >/dev/null 2>/dev/null || actual=$?
+              timeout 200 env NUCLEUS_EXPERIMENTAL_DEFERRED_PROJECTION_CONGRUENCE=1 NUCLEUS_EXPERIMENTAL_DISTINCT_CONST_PROOF_IRREL=1 NUCLEUS_EXPERIMENTAL_EXACT_CAPTURE_SEMANTIC_RETRY=1 NUCLEUS_EXPERIMENTAL_QUOTIENT_PROJECTION_BRIDGE=1 candidate/nucleus < "$file" >/dev/null 2>/dev/null || actual=$?
               printf "%s\t%s\t%s\n" "$label" "$expected" "$actual"
-            ' _ "${flags[@]}" > "matrix/$corpus.unsorted.tsv"
+            ' _ > "matrix/$corpus.unsorted.tsv"
             LC_ALL=C sort -t 
         if: always()
         with:
