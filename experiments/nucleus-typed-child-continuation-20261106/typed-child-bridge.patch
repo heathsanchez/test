@@ -42,7 +42,7 @@ index ca69dd4..db2a776 100644
          )
      }
 diff --git a/src/convert.rs b/src/convert.rs
-index bf43ba7..a68820e 100644
+index bf43ba7..17e7649 100644
 --- a/src/convert.rs
 +++ b/src/convert.rs
 @@ -1556,7 +1556,7 @@ fn compare_values_with_eta_charge(
@@ -54,7 +54,7 @@ index bf43ba7..a68820e 100644
                      ).is_proven()
                      && same_closure_spine_congruence_in_context(
                          checker,left_spine,right_spine,
-@@ -2450,11 +2450,74 @@ fn compare_nat_literal_neutral(
+@@ -2450,11 +2450,86 @@ fn compare_nat_literal_neutral(
      Judgment::refuted("Nat-literal-non-Nat-head")
  }
  
@@ -112,7 +112,19 @@ index bf43ba7..a68820e 100644
 +                    }
 +                    if judgment.is_proven(){proven=true;break;}
 +                }
-+                if !proven{return Judgment::unknown("source-substitution-unproven-used-capture");}
++                if !proven {
++                    #[cfg(feature="diagnostics")]
++                    if left.expr.0==600 && index==0 && context.len()==2
++                        && crate::run_flags::present(crate::run_flags::Flag::TraceFailedReceiverCaptures){
++                        use std::sync::atomic::{AtomicUsize,Ordering};
++                        static SOURCE_CAPTURE_PROBE:AtomicUsize=AtomicUsize::new(0);
++                        if SOURCE_CAPTURE_PROBE.fetch_add(1,Ordering::Relaxed)==0 {
++                            eprintln!("NUCLEUS_SOURCE_CAPTURE_PROBE:{}",
++                                checker.diagnostic_receiver_capture_pair(left,right,context,16384));
++                        }
++                    }
++                    return Judgment::unknown("source-substitution-unproven-used-capture");
++                }
 +            },
 +            _=>return Judgment::unknown("source-substitution-incompatible-capture-kinds"),
 +        }
@@ -129,7 +141,7 @@ index bf43ba7..a68820e 100644
  ) -> bool {
      use crate::level::LevelTerm;
      let mut pending = vec![(left, right)];
-@@ -2508,8 +2571,34 @@ fn exact_neutral_source_congruence(
+@@ -2508,8 +2583,34 @@ fn exact_neutral_source_congruence(
              if a.expr == b.expr && a.env == b.env && a.levels.identity() == b.levels.identity() {
                  continue;
              }
@@ -166,7 +178,7 @@ index bf43ba7..a68820e 100644
          }
      }
      true
-@@ -2565,7 +2654,7 @@ fn compare_neutral_heads(
+@@ -2565,7 +2666,7 @@ fn compare_neutral_heads(
                  return Judgment::unknown("neutral-projection-receiver-congruence");
              }
              let mut source_work = budget.saturating_sub(1);
