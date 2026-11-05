@@ -1,0 +1,410 @@
+--- a/src/convert.rs
++++ b/src/convert.rs
+@@ -1614,6 +1614,23 @@
+                 ) {
+                     return Judgment::proven((), "stuck-projection-rigid-application-congruence");
+                 }
++                // Sufficient equality only: field projections can be equal
++                // even when their receivers are unequal. Therefore a failed
++                // receiver proof MUST NOT refute the projected terms. This
++                // candidate accepts only when a separately metered descent
++                // proves every actual receiver and argument obligation.
++                if crate::run_flags::present(
++                    crate::run_flags::Flag::ExperimentalDeferredProjectionCongruence,
++                ) && depth == context.len()
++                    && current_budget >= 8
++                    && left_spine.len() == right_spine.len()
++                    && prove_projection_chain_congruence(
++                        checker, left_structure, right_structure,
++                        left_spine, right_spine, current_budget, depth, context,
++                    )
++                {
++                    return Judgment::proven((), "checked-stuck-projection-chain-congruence");
++                }
+                 let machine = checker.machine();
+                 let left_value = machine.projection_value_for_conversion(
+                     left_structure.clone(),
+@@ -1844,6 +1861,15 @@
+                     }
+                     current_budget = available;
+                 }
++                // Two different theorem constants may still be the same
++                // proof by Lean's proof irrelevance, but ONLY after their
++                // exact source application telescopes have independently
++                // checked and their resulting proposition types converted.
++                if checker.certified_distinct_const_proof_irrelevance(
++                    left, right, context, current_budget, depth,
++                ) {
++                    return Judgment::proven((), "checked-distinct-constant-proof-irrelevance");
++                }
+                 // Proof-carrying relevance signature: a proposition-valued
+                 // argument may differ ONLY after both applications' exact
+                 // dependent argument typing and data-argument congruence
+@@ -2165,6 +2191,76 @@
+     Judgment::proven((), "rigid-value-comparison")
+ }
+ 
++// Sufficient, source-owned projection congruence for long chains of stuck
++// receivers. Repeated structure projections are followed iteratively, but
++// different fields/owners, failed normalization, or an unproved base return
++// false. The caller may then try its existing iota path or return UNKNOWN;
++// a failed sufficient equality proof is never an inequality certificate.
++fn prove_projection_chain_congruence(
++    checker: &TypeChecker<'_>,
++    left_structure: &Closure,
++    right_structure: &Closure,
++    left_spine: &[Closure],
++    right_spine: &[Closure],
++    budget: usize,
++    depth: usize,
++    context: &[TypeValue],
++) -> bool {
++    if left_spine.len() != right_spine.len() || budget < 256 { return false; }
++    let mut remaining = budget;
++    let mut pending: Vec<(Closure, Closure)> = left_spine.iter().zip(right_spine)
++        .map(|(lhs, rhs)| (lhs.clone(), rhs.clone())).collect();
++    pending.push((left_structure.clone(), right_structure.clone()));
++    let mut visited = HashSet::new();
++    let machine = checker.machine();
++    while let Some((lhs, rhs)) = pending.pop() {
++        if lhs == rhs { continue; }
++        // Do not use coinductive equality for cyclic or repeatedly exposed
++        // source captures. A complete finite proof is required.
++        if !visited.insert((lhs.clone(), rhs.clone())) { return false; }
++        let probe = remaining.min(64);
++        if probe < 16 || remaining < 2 * probe { return false; }
++        remaining -= 2 * probe;
++        let lhs_value = machine.expose_for_conversion(
++            lhs.clone(), Transparency::Reducible, probe,
++        );
++        let rhs_value = machine.expose_for_conversion(
++            rhs.clone(), Transparency::Reducible, probe,
++        );
++        if let (
++            Some(Value::StuckProjection {
++                type_name: lhs_type, index: lhs_index,
++                structure: lhs_receiver, spine: lhs_args,
++            }),
++            Some(Value::StuckProjection {
++                type_name: rhs_type, index: rhs_index,
++                structure: rhs_receiver, spine: rhs_args,
++            }),
++        ) = (lhs_value.proven_value(), rhs_value.proven_value())
++        {
++            if lhs_type != rhs_type || lhs_index != rhs_index
++                || lhs_args.len() != rhs_args.len() { return false; }
++            pending.extend(lhs_args.iter().zip(rhs_args).map(|(a,b)| (a.clone(),b.clone())));
++            pending.push((lhs_receiver.clone(), rhs_receiver.clone()));
++            continue;
++        }
++        // A stuck projection against a different shape is not an immediate
++        // source congruence. Keep the original fallback authoritative.
++        if lhs_value.proven_value().is_none() || rhs_value.proven_value().is_none()
++            || matches!(lhs_value.proven_value(), Some(Value::StuckProjection { .. }))
++            || matches!(rhs_value.proven_value(), Some(Value::StuckProjection { .. }))
++        { return false; }
++        let allowance = remaining.min(4096);
++        if allowance < 16 { return false; }
++        remaining -= allowance;
++        if !convert_with_policy_in_context(
++            checker, &TypeValue::Term(lhs), &TypeValue::Term(rhs), allowance,
++            DeltaPolicy::GuardedSemanticFallback, depth, context,
++        ).is_proven() { return false; }
++    }
++    true
++}
++
+ fn same_closure_spine_congruence(
+     checker: &TypeChecker<'_>,
+     left: &[Closure],
+--- a/src/run_flags.rs
++++ b/src/run_flags.rs
+@@ -106,8 +106,10 @@
+     TraceValueMismatch,
+     ExperimentalProjectionContext,
+     ExperimentalProjectionCrossframe512,
++    ExperimentalDeferredProjectionCongruence,
++    ExperimentalDistinctConstProofIrrel,
+ }
+-const NAMES:[&str;102]=[
++const NAMES:[&str;104]=[
+     "NUCLEUS_ASSURANCE_SOURCE_OWNED_PROBE",
+     "NUCLEUS_EXPERIMENTAL_CERTIFIED_QUOT_IOTA",
+     "NUCLEUS_EXPERIMENTAL_CONTEXT_BINDER",
+@@ -210,6 +212,8 @@
+     "NUCLEUS_TRACE_VALUE_MISMATCH",
+     "NUCLEUS_EXPERIMENTAL_PROJECTION_CONTEXT",
+     "NUCLEUS_EXPERIMENTAL_PROJECTION_CROSSFRAME_512",
++    "NUCLEUS_EXPERIMENTAL_DEFERRED_PROJECTION_CONGRUENCE",
++    "NUCLEUS_EXPERIMENTAL_DISTINCT_CONST_PROOF_IRREL",
+ ];
+ std::thread_local! {static ACTIVE:Cell<Option<Bits>>=const {Cell::new(None)};}
+ pub(crate) struct Scope {previous:Option<Bits>}
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -2579,6 +2579,126 @@
+                     };
+                     eprintln!("NUCLEUS_FAILED_RECEIVER_CONVERSION:expression={expression:?}:context_len={}:source_frame={}:remaining={}:actual={value:?}:expected={expected:?}:context={context:?}:actual_exposed={:?}:expected_exposed={:?}",
+                         context.len(), frame.id(), *remaining, expose(&value), expose(expected));
++                    // Exact first-frontier diagnosis only. No production verdict or
++                    // cached premise is changed: each Eq child is independently
++                    // tested under the same source-checked context.
++                    if expression.0 == 273318 && context.len() == 7 {
++                        let lhs = expose(&value);
++                        let rhs = expose(expected);
++                        if let (Some(Judgment::Proven { value: Value::Neutral(a), .. }),
++                                Some(Judgment::Proven { value: Value::Neutral(b), .. })) =
++                            (lhs.as_ref(), rhs.as_ref())
++                        {
++                            if a.spine.len() == 3 && b.spine.len() == 3 {
++                                for (i, (a, b)) in a.spine.iter().zip(&b.spine).enumerate() {
++                                    let relation = crate::convert::convert_with_policy_in_context(
++                                        self, &TypeValue::Term(a.clone()), &TypeValue::Term(b.clone()),
++                                        4096, crate::convert::DeltaPolicy::GuardedSemanticFallback,
++                                        context.len(), context,
++                                    );
++                                    let lhs_whnf = self.machine().expose_for_conversion(
++                                        a.clone(), Transparency::Full, 4096,
++                                    );
++                                    let rhs_whnf = self.machine().expose_for_conversion(
++                                        b.clone(), Transparency::Full, 4096,
++                                    );
++                                    eprintln!(
++                                        "NUCLEUS_PROOF2_EQ_ARGUMENT:position={i}:lhs={a:?}:rhs={b:?}:relation={relation:?}:lhs_whnf={lhs_whnf:?}:rhs_whnf={rhs_whnf:?}"
++                                    );
++                                    if i == 1 {
++                                        if let (Some(Value::Neutral(a)), Some(Value::Neutral(b))) =
++                                            (lhs_whnf.proven_value(), rhs_whnf.proven_value())
++                                        {
++                                            if a.spine.len() == b.spine.len() {
++                                                for (j, (lhs, rhs)) in a.spine.iter().zip(&b.spine).enumerate() {
++                                                    let result = crate::convert::convert_with_policy_in_context(
++                                                        self, &TypeValue::Term(lhs.clone()),
++                                                        &TypeValue::Term(rhs.clone()), 4096,
++                                                        crate::convert::DeltaPolicy::GuardedSemanticFallback,
++                                                        context.len(), context,
++                                                    );
++                                                    eprintln!("NUCLEUS_PROOF2_QUOT_LIFT_ARG:position={j}:lhs={lhs:?}:rhs={rhs:?}:result={result:?}");
++                                                    if j == 5 {
++                                                        let left_exposed = self.machine().expose_for_conversion(
++                                                            lhs.clone(), Transparency::Full, 16384,
++                                                        );
++                                                        let right_exposed = self.machine().expose_for_conversion(
++                                                            rhs.clone(), Transparency::Full, 16384,
++                                                        );
++                                                        let larger = crate::convert::convert_with_policy_in_context(
++                                                            self, &TypeValue::Term(lhs.clone()),
++                                                            &TypeValue::Term(rhs.clone()), 16384,
++                                                            crate::convert::DeltaPolicy::GuardedSemanticFallback,
++                                                            context.len(), context,
++                                                        );
++                                                        eprintln!("NUCLEUS_PROOF2_LAST_QUOT_ARG:left_exposed={left_exposed:?}:right_exposed={right_exposed:?}:budget16384={larger:?}");
++                                                        let mut pair = (lhs.clone(), rhs.clone());
++                                                        for depth in 0..20 {
++                                                            let left = self.machine().expose_for_conversion(
++                                                                pair.0.clone(), Transparency::Full, 2048,
++                                                            );
++                                                            let right = self.machine().expose_for_conversion(
++                                                                pair.1.clone(), Transparency::Full, 2048,
++                                                            );
++                                                            let (Some(Value::Neutral(a)), Some(Value::Neutral(b))) =
++                                                                (left.proven_value(), right.proven_value())
++                                                            else {
++                                                                eprintln!("NUCLEUS_PROOF2_QUOT_CHAIN:depth={depth}:terminal_left={left:?}:terminal_right={right:?}");
++                                                                if let (
++                                                                    Some(Value::StuckProjection { structure: left_receiver, .. }),
++                                                                    Some(Value::StuckProjection { structure: right_receiver, .. }),
++                                                                ) = (left.proven_value(), right.proven_value()) {
++                                                                    let a = self.machine().expose_for_conversion(left_receiver.clone(),Transparency::Full,16384);
++                                                                    let b = self.machine().expose_for_conversion(right_receiver.clone(),Transparency::Full,16384);
++                                                                    let relation = crate::convert::convert_with_policy_in_context(
++                                                                        self,&TypeValue::Term(left_receiver.clone()),&TypeValue::Term(right_receiver.clone()),16384,
++                                                                        crate::convert::DeltaPolicy::GuardedSemanticFallback,context.len(),context,
++                                                                    );
++                                                                    eprintln!("NUCLEUS_PROOF2_FINAL_RECEIVER:lhs={left_receiver:?}:rhs={right_receiver:?}:left_exposed={a:?}:right_exposed={b:?}:relation={relation:?}");
++                                                                    let mut receivers=(left_receiver.clone(),right_receiver.clone());
++                                                                    for layer in 0..40 {
++                                                                        let a=self.machine().expose_for_conversion(receivers.0.clone(),Transparency::Full,4096);
++                                                                        let b=self.machine().expose_for_conversion(receivers.1.clone(),Transparency::Full,4096);
++                                                                        if let (
++                                                                            Some(Value::StuckProjection {type_name:ta,index:ia,structure:sa,spine:aa}),
++                                                                            Some(Value::StuckProjection {type_name:tb,index:ib,structure:sb,spine:ab}),
++                                                                        )=(a.proven_value(),b.proven_value()) {
++                                                                            eprintln!("NUCLEUS_PROOF2_RECEIVER_LAYER:layer={layer}:left_type={ta:?}:right_type={tb:?}:left_index={ia}:right_index={ib}:left_arity={}:right_arity={}:left_receiver={sa:?}:right_receiver={sb:?}",aa.len(),ab.len());
++                                                                            if layer == 1 {
++                                                                                let machine=self.machine();
++                                                                                let lhs_field=machine.projection_field_for_conversion(sa.clone(),*ta,*ia,16384);
++                                                                                let rhs_field=machine.projection_field_for_conversion(sb.clone(),*tb,*ib,16384);
++                                                                                let lhs_value=machine.projection_value_for_conversion(sa.clone(),*ta,*ia,aa,16384);
++                                                                                let rhs_value=machine.projection_value_for_conversion(sb.clone(),*tb,*ib,ab,16384);
++                                                                                eprintln!("NUCLEUS_PROOF2_DIVERGENT_FIELDS:left_field={lhs_field:?}:right_field={rhs_field:?}:left_value={lhs_value:?}:right_value={rhs_value:?}");
++                                                                            }
++                                                                            let next=(sa.clone(),sb.clone());
++                                                                            if next==receivers {break;}
++                                                                            receivers=next;
++                                                                        }else{
++                                                                            eprintln!("NUCLEUS_PROOF2_RECEIVER_LAYER:layer={layer}:terminal_left={a:?}:terminal_right={b:?}");
++                                                                            break;
++                                                                        }
++                                                                    }
++                                                                }
++                                                                break;
++                                                            };
++                                                            eprintln!("NUCLEUS_PROOF2_QUOT_CHAIN:depth={depth}:left_head={:?}:right_head={:?}:left_spine={}:right_spine={}", a.head,b.head,a.spine.len(),b.spine.len());
++                                                            if a.spine.len() != 6 || b.spine.len() != 6 { break; }
++                                                            let next = (a.spine[5].clone(), b.spine[5].clone());
++                                                            eprintln!("NUCLEUS_PROOF2_QUOT_CHAIN_NEXT:depth={depth}:left={:?}:right={:?}",next.0,next.1);
++                                                            if next == pair { break; }
++                                                            pair = next;
++                                                        }
++                                                    }
++                                                }
++                                            }
++                                        }
++                                    }
++                                }
++                            }
++                        }
++                    }
+                 }
+                 #[cfg(feature="diagnostics")]
+                 if crate::run_flags::present(crate::run_flags::Flag::TraceBidirBodyGap)
+@@ -3883,6 +4003,138 @@
+         true
+     }
+ 
++    /// Independently checked Lean proof irrelevance for two *different*
++    /// constant-headed applications. Different theorem names are not
++    /// themselves equality evidence: both actual dependent application
++    /// telescopes must check, both result types must inhabit Prop, and those
++    /// instantiated proposition types must convert in the caller's context.
++    /// Any incomplete premise declines the trial.
++    pub(crate) fn certified_distinct_const_proof_irrelevance(
++        &self,
++        left: &Neutral,
++        right: &Neutral,
++        context: &[TypeValue],
++        budget: usize,
++        depth: usize,
++    ) -> bool {
++        // Diagnostic-only, bounded observation of the first full-Mathlib
++        // neutral frontier; neither the probe nor the name IDs authorize
++        // conversion. The judgment below remains entirely source-typed.
++        let names_match = matches!((&left.head, &right.head),
++            (NeutralHead::Const { name: NameId(26532), .. },
++             NeutralHead::Const { name: NameId(26539), .. })
++            | (NeutralHead::Const { name: NameId(26539), .. },
++               NeutralHead::Const { name: NameId(26532), .. }));
++        static DIAG_CALLS: std::sync::atomic::AtomicUsize =
++            std::sync::atomic::AtomicUsize::new(0);
++        let diag = names_match
++            && std::env::var_os("NUCLEUS_DISTINCT_PROOF_DIAG").is_some()
++            && DIAG_CALLS.fetch_add(1, std::sync::atomic::Ordering::Relaxed) < 24;
++        let report = |reason: &str| {
++            if diag { eprintln!("NUCLEUS_DISTINCT_PROOF_DIAG:{reason}"); }
++        };
++        if diag {
++            eprintln!("NUCLEUS_DISTINCT_PROOF_DIAG:entry:depth={depth}:ctx={}:budget={budget}:left_args={}:right_args={}",
++                context.len(), left.spine.len(), right.spine.len());
++        }
++        if !crate::run_flags::present(crate::run_flags::Flag::ExperimentalDistinctConstProofIrrel)
++            || depth != context.len() || !(1..=16).contains(&depth)
++            || budget < 1024 || left.spine.len() > 12 || right.spine.len() > 12
++            || left.head == right.head
++            || !matches!(&left.head, NeutralHead::Const { .. })
++            || !matches!(&right.head, NeutralHead::Const { .. })
++        { report("entry-gate-declined"); return false; }
++        thread_local! {
++            static ACTIVE: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
++        }
++        if ACTIVE.with(|active| active.replace(true)) {
++            report("recursive-trial-declined");
++            return false;
++        }
++        struct TrialGuard;
++        impl Drop for TrialGuard {
++            fn drop(&mut self) { ACTIVE.with(|active| active.set(false)); }
++        }
++        let _guard = TrialGuard;
++        let probe = budget.min(4096);
++        let checked_type = |neutral: &Neutral, side: &str| -> Option<TypeValue> {
++            let NeutralHead::Const { name, levels } = &neutral.head else { return None; };
++            let Some(decl) = self.environment.get(*name) else {
++                report("missing-head-declaration");
++                return None;
++            };
++            if decl.level_params.len() != levels.len() {
++                report("universe-arity-mismatch");
++                return None;
++            }
++            let substitution = decl.level_params.iter().copied()
++                .zip(levels.iter().cloned()).collect();
++            let mut current = TypeValue::Term(Closure::with_levels(
++                decl.ty, EnvFrame::empty(), LevelSubstitution::new(substitution),
++            ));
++            for (index, argument) in neutral.spine.iter().enumerate() {
++                let Some((domain, body)) = self.pi_view(
++                    Judgment::proven(current, "distinct-proof-source-Pi"),
++                    probe.min(2048),
++                ) else {
++                    if diag { eprintln!("NUCLEUS_DISTINCT_PROOF_DIAG:{side}:pi-view-failed:{index}"); }
++                    return None;
++                };
++                let mut remaining = probe.min(2048);
++                let Some(actual) = self.infer_exact_closure_in_context(
++                    argument, context, &mut remaining, 0,
++                ) else {
++                    if diag { eprintln!("NUCLEUS_DISTINCT_PROOF_DIAG:{side}:arg-infer-failed:{index}"); }
++                    return None;
++                };
++                if !crate::convert::convert_with_policy_in_context(
++                    self, &actual, &domain, remaining.min(1024),
++                    crate::convert::DeltaPolicy::GuardedSemanticFallback,
++                    depth, context,
++                ).is_proven() {
++                    if diag { eprintln!("NUCLEUS_DISTINCT_PROOF_DIAG:{side}:arg-type-conv-failed:{index}"); }
++                    return None;
++                }
++                current = match body {
++                    PiBody::Fixed(binder, body) => {
++                        let mut fuel = probe.min(1024);
++                        let Some(instantiated) = self.instantiate_fixed_pi_body(
++                            &body, binder, argument, &mut fuel,
++                        ) else {
++                            if diag { eprintln!("NUCLEUS_DISTINCT_PROOF_DIAG:{side}:fixed-pi-instantiation-failed:{index}"); }
++                            return None;
++                        };
++                        instantiated
++                    }
++                    PiBody::Closure(body) => TypeValue::Term(Closure::with_levels(
++                        body.expr, body.env.extend(argument.clone()), body.levels,
++                    )),
++                };
++            }
++            if diag { eprintln!("NUCLEUS_DISTINCT_PROOF_DIAG:{side}:telescope-checked"); }
++            Some(current)
++        };
++        let Some(left_type) = checked_type(left, "left") else { return false; };
++        let Some(right_type) = checked_type(right, "right") else { return false; };
++        let formed_proposition = |ty: &TypeValue| -> bool {
++            let TypeValue::Term(proposition) = ty else { return false; };
++            self.checked_captured_prop_type_in_context(
++                proposition, context, probe.min(2048),
++            ).is_proven()
++        };
++        if !formed_proposition(&left_type) || !formed_proposition(&right_type) {
++            report("instantiated-result-not-both-checked-Prop");
++            return false;
++        }
++        let converted = crate::convert::convert_with_policy_in_context(
++            self, &left_type, &right_type, probe.min(2048),
++            crate::convert::DeltaPolicy::GuardedSemanticFallback,
++            depth, context,
++        ).is_proven();
++        report(if converted {"proposition-types-converted"} else {"proposition-type-conversion-declined"});
++        converted
++    }
++
+     pub(crate) fn certified_neutral_lambda_proof_irrelevance(
+         &self,
+         neutral: &Neutral,
