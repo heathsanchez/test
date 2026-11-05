@@ -42,12 +42,12 @@ jobs:
       - name: Widen only shared-fuel qualified-recursor local exposure windows
         run: |
           set -euo pipefail
-          before=$(rg -o 'unwrap_or\(0\)\.min\(512\)' metatron-kernel/src/machine.rs | wc -l)
+          before=$(grep -o 'unwrap_or(0)\.min(512)' metatron-kernel/src/machine.rs | wc -l)
           test "$before" -eq 3
           sed -i "s/unwrap_or(0)\.min(512)/unwrap_or(0).min($REC_CAP)/g" metatron-kernel/src/machine.rs
-          after=$(rg -o "unwrap_or\(0\)\.min\($REC_CAP\)" metatron-kernel/src/machine.rs | wc -l)
+          after=$(grep -o "unwrap_or(0)\.min($REC_CAP)" metatron-kernel/src/machine.rs | wc -l)
           test "$after" -eq 3
-          rg -n "unwrap_or\(0\)\.min\($REC_CAP\)" metatron-kernel/src/machine.rs | tee matrix/local-cap-changes.txt
+          grep -n "unwrap_or(0)\.min($REC_CAP)" metatron-kernel/src/machine.rs | tee matrix/local-cap-changes.txt
           sha256sum metatron-kernel/src/{machine,convert,run_flags,typecheck}.rs | tee matrix/candidate-source-sha256.txt
       - name: Compile metered experimental candidate
         run: |
@@ -67,7 +67,7 @@ jobs:
             rc=$?
             set -e
             printf '%s\t%s\n' "$input" "$rc" | tee -a matrix/verdicts.tsv
-            rg 'NUCLEUS_(NESTED_REPLAY_FAILURE|DOWNSTREAM)' "matrix/$label.stderr" | tail -n 2 | cut -c1-800 || true
+            grep -E 'NUCLEUS_(NESTED_REPLAY_FAILURE|DOWNSTREAM)' "matrix/$label.stderr" | tail -n 2 | cut -c1-800 || true
             if [[ "$input" == bad/* && "$rc" -eq 0 ]]; then
               echo 'FAIL-CLOSED VIOLATION: malformed control accepted' >&2
               exit 1
