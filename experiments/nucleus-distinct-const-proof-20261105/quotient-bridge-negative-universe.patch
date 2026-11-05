@@ -1,0 +1,36 @@
+--- a/src/machine.rs
++++ b/src/machine.rs
+@@ -3969,6 +3969,7 @@
+         let mut expressions = IdTable::default();
+         let mut levels = IdTable::default();
+         levels.insert(LevelId(0), Level::Zero).unwrap();
++        levels.insert(LevelId(1), Level::Succ(LevelId(0))).unwrap();
+         for (id, expr) in [
+             (0, Expr::Sort(LevelId(0))),
+             (1, Expr::Const { name: NameId(2), levels: vec![LevelId(0)] }),
+@@ -3996,6 +3997,13 @@
+             (23, Expr::App { fun: ExprId(5), arg: ExprId(22) }),
+             (24, Expr::App { fun: ExprId(16), arg: ExprId(23) }),
+             (25, Expr::Proj { type_name: NameId(99), index: 0, structure: ExprId(24) }),
++            (26, Expr::Const { name: NameId(2), levels: vec![LevelId(1)] }),
++            (27, Expr::App { fun: ExprId(26), arg: ExprId(0) }),
++            (28, Expr::App { fun: ExprId(27), arg: ExprId(0) }),
++            (29, Expr::App { fun: ExprId(28), arg: ExprId(0) }),
++            (30, Expr::App { fun: ExprId(5), arg: ExprId(29) }),
++            (31, Expr::App { fun: ExprId(16), arg: ExprId(30) }),
++            (32, Expr::Proj { type_name: NameId(99), index: 0, structure: ExprId(31) }),
+         ] {
+             expressions.insert(ExprId(id), expr).unwrap();
+         }
+@@ -4033,9 +4041,9 @@
+         let field = machine.expose(closure(18), Transparency::Full, 4096);
+         assert_eq!(field.proven_value(), Some(&Value::Sort(LevelTerm::Zero)),
+             "verified inner quotient result must supply the actual registered constructor field: {field:?}");
+-        for id in [19, 20, 25] {
++        for id in [19, 20, 25, 32] {
+             let rejected = machine.expose(closure(id), Transparency::Full, 4096);
+-            assert!(rejected.is_unknown(), "wrong owner, field or quotient major must not be accepted ({id}): {rejected:?}");
++            assert!(rejected.is_unknown(), "wrong owner, field, quotient major or universe must not be accepted ({id}): {rejected:?}");
+         }
+     }
+ }
