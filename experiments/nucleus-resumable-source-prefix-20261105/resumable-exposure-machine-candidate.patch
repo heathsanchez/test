@@ -1,0 +1,172 @@
+--- a/src/machine.rs
++++ b/src/machine.rs
+@@ -158,6 +158,34 @@
+     fn hash<H:std::hash::Hasher>(&self,state:&mut H){std::hash::Hash::hash(&self.digest,state)}
+ }
+ struct ClockExposure {value:Value,referenced:bool}
++// This is a source-reduction cursor, never a cached proof. The exact origin,
++// source rule-map owners, and evaluation modes prevent borrowing an unfinished
++// prefix from an unrelated immutable program.
++#[derive(Clone,Eq,Hash,PartialEq)]
++struct ExposureProgressKey {
++    exact:ExposureCacheKey,
++    expression_table:usize,
++    level_table:usize,
++    demand_major:bool,
++    replay_projection_major:bool,
++    replay_neutral_projection:bool,
++    definitions:ImmutableMapWitness<HashMap<NameId,DefinitionBody>>,
++    recursors:ImmutableMapWitness<HashMap<NameId,RecursorReduction>>,
++    projections:ImmutableMapWitness<HashMap<NameId,ProjectionSpec>>,
++    singletons:ImmutableMapWitness<HashSet<NameId>>,
++    nullary:ImmutableMapWitness<HashMap<NameId,Vec<NullaryMinorReduction>>>,
++    nested:ImmutableMapWitness<HashMap<NameId,Vec<ClosedNestedMinorReduction>>>,
++    nat:Option<NatPrimitives>,
++    bools:Option<BoolPrimitives>,
++    quot:Option<(NameId,NameId,NameId,NameId)>,
++    native_completion:bool,
++}
++#[derive(Clone)]
++struct ExposureProgress {
++    closure:Closure,
++    pending:Vec<Closure>,
++    visited:VisitSet,
++}
+ #[derive(Default)]
+ pub(crate) struct ExposureCacheStore {
+     values: HashMap<Rc<CachedExposureKey>, ClockExposure>,
+@@ -167,6 +195,7 @@
+     numeric_bindings: HashMap<(AuthorityId, ExprId, crate::nat::BigNat), EnvFrame>,
+     completed_replays:HashMap<u64,Vec<(Rc<ReplayKey>,Value)>>,
+     completed_replay_count:usize,
++    unfinished_prefixes:HashMap<ExposureProgressKey,ExposureProgress>,
+ }
+ impl ExposureCacheStore {
+     fn retain_exposure(&mut self,key:Rc<CachedExposureKey>,value:&Value,mut spend:impl FnMut()->bool) {
+@@ -204,6 +233,7 @@
+ type VisitKey = (AuthorityId, ExprId, u64);
+ const INLINE_VISIT_CAPACITY: usize = 8;
+ 
++#[derive(Clone)]
+ struct VisitSet {
+     inline: [Option<VisitKey>; INLINE_VISIT_CAPACITY],
+     len: usize,
+@@ -808,7 +838,7 @@
+         let Some(cache) = self.exposure_cache.as_ref().filter(|_| !record_witnesses && self.native_completion.get()) else {
+             return self.expose_uncached_internal_with_pending(
+                 closure, transparency, budget, record_witnesses,
+-                preserve_stuck_projection, pending,
++                preserve_stuck_projection, pending, VisitSet::new(),
+             );
+         };
+         let key = Rc::new(CachedExposureKey::new((
+@@ -830,9 +860,97 @@
+                 "certified-cached-closure-exposure",
+             );
+         }
++        let mut progress=ExposureProgress{closure,pending,visited:VisitSet::new()};
++        let mut remaining=budget;
++        if crate::run_flags::present(crate::run_flags::Flag::ExperimentalResumableExposure)
++            && progress.pending.len()<=32
++            && progress.closure.levels.entries().count()<=16
++            && remaining>4
++        {
++            // All stored operations are source-beta/zeta/application steps.
++            // Deep rule evaluation, conversion, and recursor branching still
++            // happen in the ordinary checker and can return UNKNOWN.
++            let key_cost=1+progress.pending.len();
++            if remaining>key_cost+1
++                && self.exposure_fuel.get().is_none_or(|fuel|fuel>key_cost+1)
++            {
++                remaining-=key_cost;
++                if let Some(fuel)=self.exposure_fuel.get(){self.exposure_fuel.set(Some(fuel-key_cost));}
++                let key=ExposureProgressKey{
++                    exact:(self.authority,progress.closure.clone(),transparency,
++                        preserve_stuck_projection,progress.pending.clone()),
++                    expression_table:self.expressions as *const _ as usize,
++                    level_table:self.levels as *const _ as usize,
++                    demand_major:self.demand_major,
++                    replay_projection_major:self.replay_projection_major,
++                    replay_neutral_projection:self.replay_neutral_projection,
++                    definitions:ImmutableMapWitness(self.definitions.clone()),
++                    recursors:ImmutableMapWitness(self.recursor_reductions.clone()),
++                    projections:ImmutableMapWitness(self.projection_specs.clone()),
++                    singletons:ImmutableMapWitness(self.singleton_recursor_reductions.clone()),
++                    nullary:ImmutableMapWitness(self.nullary_minor_reductions.clone()),
++                    nested:ImmutableMapWitness(self.closed_nested_minor_reductions.clone()),
++                    nat:self.nat_primitives.clone(),bools:self.bool_primitives.clone(),
++                    quot:self.quot_primitives.as_ref().map(|q|(q.type_name,q.mk,q.lift,q.ind)),
++                    native_completion:self.native_completion.get(),
++                };
++                if let Some(previous)=cache.borrow_mut().unfinished_prefixes.remove(&key){
++                    progress=previous;
++                }
++                let mut advanced=false;
++                while remaining>1 && self.exposure_fuel.get().is_none_or(|fuel|fuel>1){
++                    let Some(expression)=self.expressions.get(progress.closure.expr) else{break;};
++                    // Never continue from a partial branch whose decision
++                    // depends on fuel, context, registered rules or a guess.
++                    let pure_step=match expression {
++                        Expr::Let{..}|Expr::LetNondep{..}|Expr::App{..}=>true,
++                        Expr::Lam{..}=>!progress.pending.is_empty(),
++                        Expr::BVar(index)=>matches!(progress.closure.env.lookup(*index),Some(EnvBinding::Closure(_))),
++                        _=>false,
++                    };
++                    if !pure_step{break;}
++                    if !progress.visited.insert((self.authority,progress.closure.expr,progress.closure.env.id())){
++                        return Judgment::unknown("reduction-cycle");
++                    }
++                    match expression {
++                        Expr::Let{value,body,..}|Expr::LetNondep{value,body,..}=>{
++                            progress.visited.clear();
++                            let argument=progress.closure.sibling(*value,progress.closure.env.clone());
++                            progress.closure=progress.closure.sibling(*body,self.bind_captured_argument(&progress.closure,argument));
++                        }
++                        Expr::App{fun,arg}=>{
++                            progress.pending.push(progress.closure.sibling(*arg,progress.closure.env.clone()));
++                            progress.closure=progress.closure.sibling(*fun,progress.closure.env.clone());
++                        }
++                        Expr::Lam{body,..}=>{
++                            let argument=progress.pending.pop().expect("pure step checked");
++                            progress.visited.clear();
++                            progress.closure=progress.closure.sibling(*body,self.bind_captured_argument(&progress.closure,argument));
++                        }
++                        Expr::BVar(index)=>{
++                            let Some(EnvBinding::Closure(bound))=progress.closure.env.lookup(*index)else{unreachable!("pure step checked")};
++                            progress.visited.clear();
++                            progress.closure=bound;
++                        }
++                        _=>unreachable!("pure step checked"),
++                    }
++                    remaining-=1;
++                    if let Some(fuel)=self.exposure_fuel.get(){self.exposure_fuel.set(Some(fuel-1));}
++                    advanced=true;
++                }
++                // Cursor capacity is finite. It is strictly non-authoritative:
++                // only the normal evaluator may establish a value.
++                if advanced && progress.visited.overflow.is_none() && progress.pending.len()<=32 {
++                    let mut entries=cache.borrow_mut();
++                    if entries.unfinished_prefixes.len()<128 {
++                        entries.unfinished_prefixes.insert(key,progress.clone());
++                    }
++                }
++            }
++        }
+         let result = self.expose_uncached_internal_with_pending(
+-            closure, transparency, budget, false,
+-            preserve_stuck_projection, pending,
++            progress.closure, transparency, remaining, false,
++            preserve_stuck_projection, progress.pending, progress.visited,
+         );
+         if let Some(established) = result.proven_value()
+             && !self.unfinished_native_capture(&established.value)
+@@ -1096,8 +1214,8 @@
+         record_witnesses: bool,
+         preserve_stuck_projection: bool,
+         mut pending: Vec<Closure>,
++        mut visited: VisitSet,
+     ) -> Judgment<Exposure> {
+-        let mut visited = VisitSet::new();
+         let mut transitions = Vec::new();
+ 
+         loop {
