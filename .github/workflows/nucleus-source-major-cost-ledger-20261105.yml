@@ -77,14 +77,14 @@ jobs:
       - name: Attribute actual source-replay work against two remaining valid witnesses
         run: |
           set -euo pipefail
-          mapfile -t flags < <(jq -r '.candidate.configuration | to_entries[] | "\\(.key)=\\(.value)"' qualified/qualification.json)
+          mapfile -t flags < <(jq -r '.candidate.configuration | to_entries[] | "\(.key)=\(.value)"' qualified/qualification.json)
           for input in good/perf/magma-list-pair-n7 good/perf/fueled-chain; do
-            label=attribution_${input//\\//_}
+            label=attribution_${input//\//_}
             set +e
             env "${flags[@]}" NUCLEUS_EXPERIMENTAL_DEFERRED_PROJECTION_CONGRUENCE=1 NUCLEUS_EXPERIMENTAL_DISTINCT_CONST_PROOF_IRREL=1 NUCLEUS_EXPERIMENTAL_EXACT_CAPTURE_SEMANTIC_RETRY=1 NUCLEUS_EXPERIMENTAL_QUOTIENT_PROJECTION_BRIDGE=1 NUCLEUS_TRACE_REPLAY_CACHE=1 NUCLEUS_TRACE_EXPOSURE_CACHE=1 NUCLEUS_TRACE_NESTED_RECURSOR_IOTA_FAILURE=1 timeout 45 candidate/nucleus < "original196/$input.ndjson" > "matrix/$label.stdout" 2> "matrix/$label.stderr"
             rc=$?
             set -e
-            printf '%s\\t%s\\n' "$input" "$rc" | tee -a matrix/attribution-verdicts.tsv
+            printf '%s\t%s\n' "$input" "$rc" | tee -a matrix/attribution-verdicts.tsv
             grep -E 'NUCLEUS_REPLAY_WORK:|NUCLEUS_REPLAY_CACHE:|NUCLEUS_EXPOSURE_CACHE:' "matrix/$label.stderr" | tail -n 15 | cut -c1-340 || true
           done
       - uses: actions/upload-artifact@v4
