@@ -37,7 +37,7 @@ jobs:
       - name: Compile and execute source tests with both protected and candidate paths
         run: |
           set -euo pipefail
-          mapfile -t flags < <(jq -r '.candidate.configuration | to_entries[] | "\\(.key)=\\(.value)"' qualified/qualification.json)
+          mapfile -t flags < <(jq -r '.candidate.configuration | to_entries[] | "\(.key)=\(.value)"' qualified/qualification.json)
           cd metatron-kernel
           env "${flags[@]}" NUCLEUS_EXPERIMENTAL_DEFERRED_PROJECTION_CONGRUENCE=1 cargo test --locked --release > ../tests.stdout 2> ../tests.stderr
           cargo build --locked --release
