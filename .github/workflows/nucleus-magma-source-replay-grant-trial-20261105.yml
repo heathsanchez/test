@@ -1,0 +1,81 @@
+name: Nucleus Magma checked recursor stand-alone grant diagnostic
+on:
+  push:
+    branches: [research/nucleus-deferred-projection-congruence-20261105]
+    paths:
+      - '.github/workflows/nucleus-magma-source-replay-grant-trial-20261105.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  qualify:
+    strategy:
+      fail-fast: false
+      matrix:
+        replay_grant: [4096, 32768, 131072]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+      CARGO_INCREMENTAL: 0
+      REPLAY_GRANT: ${{ matrix.replay_grant }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Restore pinned trusted source and complete original corpus
+        run: |
+          set -euo pipefail
+          mkdir -p qualified original196 candidate matrix
+          gh api repos/heathsanchez/test/actions/artifacts/13370874970/zip > qualified.zip
+          printf '%s  %s\n' 0fd8a4cd86dcb233b532f59ea8dc853d22480b6ba62ff864049224250613e517 qualified.zip | sha256sum -c -
+          unzip -q qualified.zip -d qualified
+          tar --no-same-owner -xzf qualified/candidate/source.tar.gz
+          patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-distinct-const-proof-20261105/next-finsupp-inner-quotient-replay-diag.patch
+          patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-distinct-const-proof-20261105/quotient-projection-bridge-regression-red-v2.patch
+          patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-distinct-const-proof-20261105/guarded-quotient-projection-bridge-candidate.patch
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/11272848230/zip > original196.zip
+          printf '%s  %s\n' f6cd590db7f6fb92b8d1b3ca87231d4b0f521f085d73f93abd005f5caaff86d2 original196.zip | sha256sum -c -
+          unzip -p original196.zip lean-arena-tests.tar.gz | tar --no-same-owner -xzf - -C original196
+          test "$(find original196 -name '*.ndjson' -type f | wc -l)" -eq 196
+      - name: Diagnose source-registered replay with separate bounded owner request
+        run: |
+          set -euo pipefail
+          sed -n '2034p' metatron-kernel/src/convert.rs | grep -Fq 'recursive, current_budget,'
+          sed -n '2075p' metatron-kernel/src/convert.rs | grep -Fq '.qualified_one_step_recursor_result(candidate, probe)'
+          sed -i "2034s@recursive, current_budget,@recursive, current_budget.max($REPLAY_GRANT),@" metatron-kernel/src/convert.rs
+          sed -i "2075s@candidate, probe)@candidate, probe.max($REPLAY_GRANT))@" metatron-kernel/src/convert.rs
+          sed -n '2028,2036p;2070,2077p' metatron-kernel/src/convert.rs | tee matrix/replay-grant-source.txt
+          sha256sum metatron-kernel/src/{convert,machine,run_flags,typecheck}.rs | tee matrix/candidate-source-sha256.txt
+      - name: Build experimentally metered checker (do not promote)
+        run: |
+          set -euo pipefail
+          cd metatron-kernel
+          cargo build --locked --release --features diagnostics
+          cp target/release/metatron-kernel ../candidate/nucleus
+          sha256sum ../candidate/nucleus | tee ../matrix/candidate-binary-sha256.txt
+      - name: Evaluate four genuine Magma recursor majors and malformed controls
+        run: |
+          set -euo pipefail
+          mapfile -t flags < <(jq -r '.candidate.configuration | to_entries[] | "\(.key)=\(.value)"' qualified/qualification.json)
+          for input in good/perf/magma-list-pair-n7 good/perf/magma-list-pair-n21 good/perf/magma-list-deep-n21 good/perf/magma-list-deep-n36 bad/bugs/nat-rec-rules bad/bugs/orphan-rec; do
+            label=${input//\//_}
+            set +e
+            env "${flags[@]}" NUCLEUS_EXPERIMENTAL_DEFERRED_PROJECTION_CONGRUENCE=1 NUCLEUS_EXPERIMENTAL_DISTINCT_CONST_PROOF_IRREL=1 NUCLEUS_EXPERIMENTAL_EXACT_CAPTURE_SEMANTIC_RETRY=1 NUCLEUS_EXPERIMENTAL_QUOTIENT_PROJECTION_BRIDGE=1 NUCLEUS_TRACE_NESTED_RECURSOR_IOTA_FAILURE=1 NUCLEUS_TRACE_DOWNSTREAM=1 timeout 90 candidate/nucleus < "original196/$input.ndjson" > "matrix/$label.stdout" 2> "matrix/$label.stderr"
+            rc=$?
+            set -e
+            printf '%s\t%s\n' "$input" "$rc" | tee -a matrix/verdicts.tsv
+            grep -E 'NUCLEUS_(NESTED_REPLAY_FAILURE|DOWNSTREAM)' "matrix/$label.stderr" | tail -n 1 | cut -c1-700 || true
+            if [[ "$input" == bad/* && "$rc" -eq 0 ]]; then
+              echo 'UNSOUND: malformed recursor accepted' >&2
+              exit 1
+            fi
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-magma-grant-${{ matrix.replay_grant }}
+          retention-days: 60
+          if-no-files-found: warn
+          path: matrix/
