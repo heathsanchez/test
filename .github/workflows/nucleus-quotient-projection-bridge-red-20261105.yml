@@ -1,0 +1,52 @@
+name: Nucleus guarded quotient projection bridge RED regression
+on:
+  push:
+    branches: [research/nucleus-deferred-projection-congruence-20261105]
+    paths:
+      - '.github/workflows/nucleus-quotient-projection-bridge-red-20261105.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  red:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      GH_TOKEN: ${{ github.token }}
+      CARGO_INCREMENTAL: 0
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Restore immutable source and layer only prior candidate and test
+        run: |
+          set -euo pipefail
+          mkdir -p qualified red
+          gh api repos/heathsanchez/test/actions/artifacts/13370874970/zip > qualified.zip
+          printf '%s  %s\n' 0fd8a4cd86dcb233b532f59ea8dc853d22480b6ba62ff864049224250613e517 qualified.zip | sha256sum -c -
+          unzip -q qualified.zip -d qualified
+          tar --no-same-owner -xzf qualified/candidate/source.tar.gz
+          printf '%s  %s\n' 1949144e581167be2547bb18a0331d7b34a769f2cff75037b884ce9b2de6c4ac metatron-kernel/src/convert.rs | sha256sum -c -
+          patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-distinct-const-proof-20261105/next-finsupp-inner-quotient-replay-diag.patch
+          patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-distinct-const-proof-20261105/quotient-projection-bridge-regression-red.patch
+          sha256sum metatron-kernel/src/{machine,convert,run_flags,typecheck}.rs | tee red/source-sha256.txt
+      - name: Assert test genuinely fails on the still-unbridged evaluator
+        run: |
+          set -euo pipefail
+          set +e
+          (cd metatron-kernel && cargo test --locked --release --lib delta_hidden_quotient_iota_supplies_only_a_registered_constructor_field -- --nocapture) > red/native-test.log 2>&1
+          status=$?
+          set -e
+          tail -n 85 red/native-test.log
+          echo "test_exit=$status" | tee red/status.txt
+          test "$status" -ne 0
+          grep -F 'verified inner quotient result must supply the actual registered constructor field' red/native-test.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-quotient-projection-bridge-red
+          retention-days: 60
+          if-no-files-found: warn
+          path: |
+            red/
