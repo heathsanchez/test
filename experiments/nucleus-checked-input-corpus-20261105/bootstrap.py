@@ -34,7 +34,7 @@ def main():
  program=(root/'qualify.py').read_text();start=program.index(" source=Path('/tmp/singleton-add-prefix.ndjson')");end=program.index(' def additional(',start)
  # Execute only the unchanged, existing input-generation region, not build,
  # native tests, checker calls or qualification. Every output is rehashed below.
- scope=dict(ROOT=root,OUT=generated,kernel=source,t=types.SimpleNamespace(digest=sha),Path=Path,json=json,shutil=shutil,subprocess=subprocess)
+ scope=dict(INT="231655af734415d00fcc7dc83cffe7d96f97406d1d3cd93554ff49aa6de8e521",ROOT=root,OUT=generated,kernel=source,t=types.SimpleNamespace(digest=sha),Path=Path,json=json,shutil=shutil,subprocess=subprocess)
  exec(compile(textwrap.dedent(program[start:end]),str(root/'qualify.py')+':input-generation','exec'),scope)
  generator=a.repo/'experiments/nucleus-k-canonical-20261104/generate.py'
  for input_file,directory,extra in [('std-prefix.ndjson','differential-inputs',[]),('std-prefix.ndjson','differential-inputs/closed',['--closed']),('ac-prefix.ndjson','ac-inputs',['--record']),('information-prefix.ndjson','carrier-inputs',['--information']),('evaluation-prefix.ndjson','universe-inputs',['--evaluation'])]:
