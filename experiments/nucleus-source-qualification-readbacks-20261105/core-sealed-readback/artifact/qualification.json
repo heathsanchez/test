@@ -1,0 +1,1041 @@
+{
+  "candidate": {
+    "baseline_binary": "7897fdf50b447ec1bb38dd4a409d3a3bc690eeac7868d58848f6046b099684a6",
+    "binary_sha": "72ee79b8e1757ff65b06ee37d9321315b9b113f9503cbda635e3ebe1e3b99a41",
+    "boundary": "One source-registered evaluated-neutral delta fallback added to exact prequalified 4x dense checker; no new neutral equality rule",
+    "configuration": {
+      "NUCLEUS_EXPERIMENTAL_CERTIFIED_QUOT_IOTA": "1",
+      "NUCLEUS_EXPERIMENTAL_CONTEXT_BINDER": "1",
+      "NUCLEUS_EXPERIMENTAL_DEMAND_MAJOR": "1",
+      "NUCLEUS_EXPERIMENTAL_EXPECTED_LAMBDA": "1",
+      "NUCLEUS_EXPERIMENTAL_FORMED_PROP_DOMAIN_RETRY": "1",
+      "NUCLEUS_EXPERIMENTAL_POLYMORPHIC_PROP_IRREL": "1",
+      "NUCLEUS_EXPERIMENTAL_PROJECTION_CONTEXT": "1",
+      "NUCLEUS_EXPERIMENTAL_PROJECTION_CROSSFRAME_512": "1",
+      "NUCLEUS_EXPERIMENTAL_PROP_SINGLETON_2P1F": "1",
+      "NUCLEUS_EXPERIMENTAL_RELEVANCE": "1",
+      "NUCLEUS_EXPERIMENTAL_REPLAY_NEUTRAL_PROJECTION": "1",
+      "NUCLEUS_EXPERIMENTAL_REPLAY_PROJECTION_MAJOR": "1",
+      "NUCLEUS_EXPERIMENTAL_SOURCE_PAIR_DEPTH8": "1",
+      "NUCLEUS_EXPERIMENTAL_SOURCE_PROOF_IRREL": "1",
+      "NUCLEUS_EXPERIMENTAL_SUBSTITUTION_RECLOSURE": "1",
+      "NUCLEUS_EXPERIMENTAL_TYPED_DATA_CONGRUENCE": "1",
+      "NUCLEUS_EXPERIMENTAL_TYPED_LINEAGE": "1",
+      "NUCLEUS_EXPERIMENTAL_TYPED_PROJECTION_SPINE": "1",
+      "NUCLEUS_EXPERIMENTAL_TYPED_RECEIVER": "1",
+      "NUCLEUS_EXPERIMENTAL_TYPED_VALUE_NORMALIZATION": "1"
+    },
+    "controls": [
+      {
+        "expected": 0,
+        "file": "binder-info.ndjson",
+        "pass_": true,
+        "rc": 0,
+        "sha256": "9d9ff9041cd712f86e78c5d2d2d7253bb144321f83dda2d8246b57ec3c8d65b0",
+        "stderr": ""
+      },
+      {
+        "expected": 0,
+        "file": "binder-name.ndjson",
+        "pass_": true,
+        "rc": 0,
+        "sha256": "2302f33a34868d553e41277ea38f071f51254af87043d4c32af405ad775e69ab",
+        "stderr": ""
+      },
+      {
+        "expected": 0,
+        "file": "boundary.ndjson",
+        "pass_": true,
+        "rc": 0,
+        "sha256": "5fd004cae8f4778e2d42731cff023ca9733137f026c0214f87c7aa44af4bb08b",
+        "stderr": ""
+      },
+      {
+        "expected": 0,
+        "file": "canonical-homogeneous-pair.ndjson",
+        "pass_": true,
+        "rc": 0,
+        "sha256": "1ee0fe76cc3bf657135e6894392b411c8e22fe5fb5b9c906f7f02261703992ec",
+        "stderr": ""
+      },
+      {
+        "expected": 0,
+        "file": "canonical-parameter-record.ndjson",
+        "pass_": true,
+        "rc": 0,
+        "sha256": "736d9cd25da02d0d4dae76a480b8d97cd025005b660f72b60c6faee0bcf0c093",
+        "stderr": ""
+      },
+      {
+        "expected": 1,
+        "file": "colliding-motive-universe.ndjson",
+        "pass_": true,
+        "rc": 2,
+        "sha256": "db06c8043708a228c3816730aae88cbe91afdb64cb2c687825be3481f3b6d80a",
+        "stderr": ""
+      },
+      {
+        "expected": 1,
+        "file": "ctor-parameter-domain.ndjson",
+        "pass_": true,
+        "rc": 2,
+        "sha256": "9f7c1ea62d0621aaee082aec5844f5e77bfb4ad7d74a534d74393e05afc8be64",
+        "stderr": ""
+      },
+      {
+        "expected": 0,
+        "file": "dependent.ndjson",
+        "pass_": true,
+        "rc": 0,
+        "sha256": "3fc30fa7ed35945635cb126d1d79c82afc8a6125d6634f69d30aa148146018ce",
+        "stderr": ""
+      },
+      {
+        "expected": 1,
+        "file": "excessive-depth.ndjson",
+        "pass_": true,
+        "rc": 2,
+        "sha256": "4cd07cc34a31ab53667f00c2ad9bc554aa758c797f05c5e0a2650f53d16ca51d",
+        "stderr": ""
+      },
+      {
+        "expected": 1,
+        "file": "expanded-dag.ndjson",
+        "pass_": true,
+        "rc": 2,
+        "sha256": "77ad3876df026534fb7ff931da9b5b783ae1c2bb68302f53d5a59d4bcd139452",
+        "stderr": ""
+      },
+      {
+        "expected": 1,
+        "file": "field-too-large.ndjson",
+        "pass_": true,
+        "rc": 2,
+        "sha256": "ba5e814bca19f772120ed7402f5c7f7e8ff8e7f160254f0c7434e09c8085d29a",
+        "stderr": ""
+      },
+      {
+        "expected": 1,
+        "file": "legacy-homogeneous-pair.ndjson",
+        "pass_": true,
+        "rc": 2,
+        "sha256": "361f4c5316482efdb96e3223fbc102b12290928f5a5ec3bf10f70dd644b9c983",
+        "stderr": ""
+      },
+      {
+        "expected": 1,
+        "file": "legacy-parameter-record.ndjson",
+        "pass_": true,
+        "rc": 2,
+        "sha256": "5cd4c57fda61abf7e5baf3931b29c881cc1ceb6012fef3df269b3a24608b0831",
+        "stderr": ""
+      },
+      {
+        "expected": 1,
+        "file": "motive-hierarchical.ndjson",
+        "pass_": true,
+        "rc": 2,
+        "sha256": "cb30a5c6d5b4ab98449d55231b85cbb6e491d60f4363966d0eef89252d6a233c",
+        "stderr": ""
+      },
+      {
+        "expected": 1,
+        "file": "motive-u2.ndjson",
+        "pass_": true,
+        "rc": 2,
+        "sha256": "3a0d1aac0d9eea5890a43c270b1d4a36ef3034bf762e02417c966159d5b26ecf",
+        "stderr": ""
+      },
+      {
+        "expected": 1,
+        "file": "motive-v.ndjson",
+        "pass_": true,
+        "rc": 2,
+        "sha256": "ac23e2097c5eb86fed32a2756e4f16dc31dc57ee5af6ae384311637158c2d864",
+        "stderr": ""
+      },
+      {
+        "expected": 0,
+        "file": "original.ndjson",
+        "pass_": true,
+        "rc": 0,
+        "sha256": "2833a44b446524b25c8053006a3684d0fdab5779d76ef17695cbd4763ec9a0cd",
+        "stderr": ""
+      },
+      {
+        "expected": 0,
+        "file": "owner-u1.ndjson",
+        "pass_": true,
+        "rc": 0,
+        "sha256": "239d63407488dd036357b12311099e9dbe118868229b3fad8f8ce0565af6f264",
+        "stderr": ""
+      },
+      {
+        "expected": 0,
+        "file": "owner-w.ndjson",
+        "pass_": true,
+        "rc": 0,
+        "sha256": "431f39273979fbec46ca7f39a8d390433ddecbaa11489b47abf12d05537bd360",
+        "stderr": ""
+      },
+      {
+        "expected": 1,
+        "file": "recursive-function-domain.ndjson",
+        "pass_": true,
+        "rc": 1,
+        "sha256": "83545e0de494bc21360950708e140d58ae02bf6a5538c7282d8415c42a4dded5",
+        "stderr": ""
+      },
+      {
+        "expected": 1,
+        "file": "rhs-field-shift.ndjson",
+        "pass_": true,
+        "rc": 2,
+        "sha256": "41d665cbb4b27450d388bbc6b6ebb69ee2bc4ee16b0a891a4379cfbaf565632c",
+        "stderr": ""
+      },
+      {
+        "expected": 1,
+        "file": "rhs-minor-annotation.ndjson",
+        "pass_": true,
+        "rc": 2,
+        "sha256": "8b625fda65c98ab38d09b857e4b030951f723f959fdce52da3975bca219facbe",
+        "stderr": ""
+      },
+      {
+        "expected": 1,
+        "file": "rhs-motive-annotation.ndjson",
+        "pass_": true,
+        "rc": 2,
+        "sha256": "31058afc6798614b0d94003c414fca084853005b4cc27f6c7fb33b084f86e903",
+        "stderr": ""
+      },
+      {
+        "expected": 1,
+        "file": "rhs-parameter-annotation.ndjson",
+        "pass_": true,
+        "rc": 2,
+        "sha256": "e368630810d854c90ae4b26f0e1e88fd1ffd9cb5ed43cbe500932ef7edc4ae34",
+        "stderr": ""
+      },
+      {
+        "expected": 0,
+        "file": "two.ndjson",
+        "pass_": true,
+        "rc": 0,
+        "sha256": "f96ec038a54d8da70cf88ec84f37379ea06b8ab3a03a40ac2f11b6801d39ad7d",
+        "stderr": ""
+      },
+      {
+        "expected": 1,
+        "file": "wrong-parameter-count.ndjson",
+        "pass_": true,
+        "rc": 1,
+        "sha256": "138fb4e844d57ee1c26b1cea96e9687b13331bbc46677248351dd288001665c2",
+        "stderr": ""
+      },
+      {
+        "expected": 1,
+        "file": "dag-rule-annotation.ndjson",
+        "native_expected": 1,
+        "pass_": true,
+        "rc": 2,
+        "reference": false,
+        "sha256": "52bb714d19452666273bff647118598fb3aec6e0fbb31e996f12aeec1ebbe9c4",
+        "stderr": ""
+      },
+      {
+        "expected": 1,
+        "file": "deep-rule-annotation.ndjson",
+        "native_expected": 1,
+        "pass_": true,
+        "rc": 2,
+        "reference": false,
+        "sha256": "598c2154804c37beecdfd45eba9a6fc12fc74913e78e8d28eb7da395c32afc0e",
+        "stderr": ""
+      },
+      {
+        "expected": 0,
+        "file": "enum16.ndjson",
+        "native_expected": 0,
+        "pass_": true,
+        "rc": 0,
+        "reference": true,
+        "sha256": "fca456536c8dec98021814fc1040f6ee763e3244e5cca50b081eed26a280654e",
+        "stderr": ""
+      },
+      {
+        "expected": 0,
+        "file": "enum17.ndjson",
+        "native_expected": 2,
+        "pass_": true,
+        "rc": 2,
+        "reference": true,
+        "sha256": "25c55c560c857557a72714728563e5ecf4937caf943d89264b0c978777028b85",
+        "stderr": ""
+      },
+      {
+        "expected": 0,
+        "file": "enum3.ndjson",
+        "native_expected": 0,
+        "pass_": true,
+        "rc": 0,
+        "reference": true,
+        "sha256": "6750b0f499d29b8318472640f6a4c19f2a7de8419759764b8e52504d3a9642e2",
+        "stderr": ""
+      },
+      {
+        "expected": 1,
+        "file": "motive-hierarchical.ndjson",
+        "native_expected": 1,
+        "pass_": true,
+        "rc": 2,
+        "reference": true,
+        "sha256": "b33e5f9a7b30b488ba247da3110648643a5833a0b97ea6ae114cfbdabe827730",
+        "stderr": ""
+      },
+      {
+        "expected": 1,
+        "file": "motive-v.ndjson",
+        "native_expected": 1,
+        "pass_": true,
+        "rc": 2,
+        "reference": true,
+        "sha256": "700a63ddad3e92eb34499d69ae8fc0e9693ac64acd75ff7d36b5b7652b44a32a",
+        "stderr": ""
+      },
+      {
+        "expected": 0,
+        "file": "original.ndjson",
+        "native_expected": 0,
+        "pass_": true,
+        "rc": 0,
+        "reference": true,
+        "sha256": "e0034bd4cb29aa1f260a40ced49d03bf4e748a191335bedfd23fce60afa85a48",
+        "stderr": ""
+      },
+      {
+        "expected": 1,
+        "file": "wrong-branch.ndjson",
+        "native_expected": 1,
+        "pass_": true,
+        "rc": 2,
+        "reference": true,
+        "sha256": "d4d7e43855ea3568f7a5cf3f8a42836ddfc54c7ad3df31d155ab161c98435e97",
+        "stderr": ""
+      },
+      {
+        "expected": 1,
+        "file": "wrong-constructor-result.ndjson",
+        "native_expected": 1,
+        "pass_": true,
+        "rc": 2,
+        "reference": true,
+        "sha256": "fad185b77e3a729f9f2b85aefe163c6a3bceecd38ca9a70cf4ff76ee96c5462a",
+        "stderr": ""
+      },
+      {
+        "expected": 1,
+        "file": "wrong-field-count.ndjson",
+        "native_expected": 1,
+        "pass_": true,
+        "rc": 2,
+        "reference": true,
+        "sha256": "cbdd5a987ed08b39e8db14db20f78f43ca32b96607a70fc1a80b447b250483fb",
+        "stderr": ""
+      },
+      {
+        "expected": 1,
+        "file": "wrong-index.ndjson",
+        "native_expected": 1,
+        "pass_": true,
+        "rc": 2,
+        "reference": true,
+        "sha256": "7faefaa4997116ee55a2565967e9c5eef244a3123831c7d318018c7085565dc2",
+        "stderr": ""
+      },
+      {
+        "expected": 1,
+        "file": "wrong-k.ndjson",
+        "native_expected": 1,
+        "pass_": true,
+        "rc": 2,
+        "reference": true,
+        "sha256": "d150f197dacb21d967e29a8973428ea72bf9dc4b8dc40a26d352c2ff745c365e",
+        "stderr": ""
+      },
+      {
+        "expected": 1,
+        "file": "wrong-rule-annotation.ndjson",
+        "native_expected": 1,
+        "pass_": true,
+        "rc": 2,
+        "reference": true,
+        "sha256": "86e5ff66bc3b3db8b6ee072ad0551cfca06c6c2191b07a135828ccb5b68da864",
+        "stderr": ""
+      },
+      {
+        "case": "nat-original.ndjson",
+        "pass_": true,
+        "rc": 0
+      },
+      {
+        "case": "false-goal.ndjson",
+        "pass_": true,
+        "rc": 2
+      },
+      {
+        "case": "pred-universe.ndjson",
+        "pass_": true,
+        "rc": 1
+      },
+      {
+        "case": "sub-universe.ndjson",
+        "pass_": true,
+        "rc": 1
+      },
+      {
+        "case": "wrong_data.ndjson",
+        "pass_": true,
+        "rc": 2
+      },
+      {
+        "case": "proof_last.ndjson",
+        "pass_": true,
+        "rc": 0
+      },
+      {
+        "case": "long_prefix_wrong_2.ndjson",
+        "pass_": true,
+        "rc": 2
+      },
+      {
+        "case": "long_prefix_wrong_3.ndjson",
+        "pass_": true,
+        "rc": 2
+      },
+      {
+        "case": "wrong_head.ndjson",
+        "pass_": true,
+        "rc": 2
+      },
+      {
+        "case": "dependent_proof_last.ndjson",
+        "pass_": true,
+        "rc": 0
+      },
+      {
+        "case": "data_slot.ndjson",
+        "pass_": true,
+        "rc": 2
+      },
+      {
+        "case": "long_prefix_wrong_4.ndjson",
+        "pass_": true,
+        "rc": 2
+      },
+      {
+        "case": "long_prefix_valid.ndjson",
+        "pass_": true,
+        "rc": 0
+      },
+      {
+        "case": "long_prefix_wrong_1.ndjson",
+        "pass_": true,
+        "rc": 2
+      },
+      {
+        "case": "wrong_prop.ndjson",
+        "pass_": true,
+        "rc": 1
+      },
+      {
+        "case": "same.ndjson",
+        "pass_": true,
+        "rc": 0
+      },
+      {
+        "case": "long_prefix_wrong_0.ndjson",
+        "pass_": true,
+        "rc": 2
+      },
+      {
+        "expected": 1,
+        "file": "let/forged-let-nondep.ndjson",
+        "pass_": true,
+        "rc": 2,
+        "sha256": "970caf68a6b24d69f666c1847b674642a5a775b0793c70a9456640aac2b4985e"
+      },
+      {
+        "expected": 0,
+        "file": "let/canonical-independent-let.ndjson",
+        "pass_": true,
+        "rc": 0,
+        "sha256": "e161160ba2e279e730ae65edcf7870d73d69bece06ee66a5d66ab413bb28d366"
+      },
+      {
+        "expected": 0,
+        "file": "let/canonical-let.ndjson",
+        "pass_": true,
+        "rc": 0,
+        "sha256": "f394ea102cc4645ae1824322e495e6d7ae658c66295e877741bc9098d6b0d281"
+      },
+      {
+        "expected": 1,
+        "file": "let/forged-independent-let-nondep.ndjson",
+        "pass_": true,
+        "rc": 2,
+        "sha256": "f71b0a163cde7d03b7efd3ba14201d58911f06132a77a46044d388ee25a7bf16"
+      }
+    ],
+    "controls_unchanged": true,
+    "extra_unchanged": true,
+    "green": [
+      {
+        "label": "authentic",
+        "rc": 0,
+        "source_sha": "d1c35f6a0de8644817b404e225a16de460e897e0b34c129fcb2a37483e630738",
+        "tail": ""
+      },
+      {
+        "label": "forged-type",
+        "rc": 1,
+        "tail": "NUCLEUS_DOWNSTREAM:name=Nat.beq_refl:stage=theorem.proposition:verdict=REJECT:reason=distinct-canonical-universes\n"
+      },
+      {
+        "label": "forged-value",
+        "rc": 2,
+        "tail": "NUCLEUS_DOWNSTREAM:name=Nat.beq_refl:stage=theorem.value:verdict=UNKNOWN:reason=rigid-type-constructor-mismatch\n"
+      }
+    ],
+    "native": {
+      "compiled": true,
+      "targets": {
+        "captured_projection_warrant|test": {
+          "complete": true,
+          "counts": [
+            4,
+            0,
+            0,
+            0,
+            0
+          ],
+          "failures": [],
+          "rc": 0
+        },
+        "captured_source_equivalence|test": {
+          "complete": true,
+          "counts": [
+            7,
+            0,
+            0,
+            0,
+            0
+          ],
+          "failures": [],
+          "rc": 0
+        },
+        "checked_relevance_signature|test": {
+          "complete": true,
+          "counts": [
+            3,
+            0,
+            0,
+            0,
+            0
+          ],
+          "failures": [],
+          "rc": 0
+        },
+        "cli_verdict|test": {
+          "complete": true,
+          "counts": [
+            1,
+            0,
+            0,
+            0,
+            0
+          ],
+          "failures": [],
+          "rc": 0
+        },
+        "closed_direct_recursive|test": {
+          "complete": true,
+          "counts": [
+            5,
+            0,
+            0,
+            0,
+            0
+          ],
+          "failures": [],
+          "rc": 0
+        },
+        "closed_field_enum|test": {
+          "complete": true,
+          "counts": [
+            1,
+            0,
+            0,
+            0,
+            0
+          ],
+          "failures": [],
+          "rc": 0
+        },
+        "closed_pair_record|test": {
+          "complete": true,
+          "counts": [
+            8,
+            0,
+            0,
+            0,
+            0
+          ],
+          "failures": [],
+          "rc": 0
+        },
+        "convert|test": {
+          "complete": true,
+          "counts": [
+            34,
+            0,
+            0,
+            0,
+            0
+          ],
+          "failures": [],
+          "rc": 0
+        },
+        "diagnostics|test": {
+          "complete": true,
+          "counts": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "failures": [],
+          "rc": 0
+        },
+        "end_to_end|test": {
+          "complete": true,
+          "counts": [
+            86,
+            0,
+            0,
+            0,
+            0
+          ],
+          "failures": [],
+          "rc": 0
+        },
+        "environment|test": {
+          "complete": true,
+          "counts": [
+            3,
+            0,
+            0,
+            0,
+            0
+          ],
+          "failures": [],
+          "rc": 0
+        },
+        "final_proof_spine|test": {
+          "complete": true,
+          "counts": [
+            4,
+            0,
+            0,
+            0,
+            0
+          ],
+          "failures": [],
+          "rc": 0
+        },
+        "homogeneous_pair|test": {
+          "complete": true,
+          "counts": [
+            3,
+            0,
+            0,
+            0,
+            0
+          ],
+          "failures": [],
+          "rc": 0
+        },
+        "id_table|test": {
+          "complete": true,
+          "counts": [
+            3,
+            0,
+            0,
+            0,
+            0
+          ],
+          "failures": [],
+          "rc": 0
+        },
+        "indexed_prop|test": {
+          "complete": true,
+          "counts": [
+            12,
+            0,
+            0,
+            0,
+            0
+          ],
+          "failures": [],
+          "rc": 0
+        },
+        "inductive_universe_scope|test": {
+          "complete": true,
+          "counts": [
+            2,
+            0,
+            0,
+            0,
+            0
+          ],
+          "failures": [],
+          "rc": 0
+        },
+        "inference_sharing|test": {
+          "complete": true,
+          "counts": [
+            2,
+            0,
+            0,
+            0,
+            0
+          ],
+          "failures": [],
+          "rc": 0
+        },
+        "let_metadata|test": {
+          "complete": true,
+          "counts": [
+            4,
+            0,
+            0,
+            0,
+            0
+          ],
+          "failures": [],
+          "rc": 0
+        },
+        "level|test": {
+          "complete": true,
+          "counts": [
+            12,
+            0,
+            0,
+            0,
+            0
+          ],
+          "failures": [],
+          "rc": 0
+        },
+        "machine|test": {
+          "complete": true,
+          "counts": [
+            22,
+            0,
+            0,
+            0,
+            0
+          ],
+          "failures": [],
+          "rc": 0
+        },
+        "metatron-kernel|bin": {
+          "complete": true,
+          "counts": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "failures": [],
+          "rc": 0
+        },
+        "metatron_kernel|lib": {
+          "complete": true,
+          "counts": [
+            257,
+            0,
+            0,
+            0,
+            0
+          ],
+          "failures": [],
+          "rc": 0
+        },
+        "native_source_replay|test": {
+          "complete": true,
+          "counts": [
+            2,
+            0,
+            0,
+            0,
+            0
+          ],
+          "failures": [],
+          "rc": 0
+        },
+        "native_string|test": {
+          "complete": true,
+          "counts": [
+            4,
+            0,
+            0,
+            0,
+            0
+          ],
+          "failures": [],
+          "rc": 0
+        },
+        "nullary_enum|test": {
+          "complete": true,
+          "counts": [
+            7,
+            0,
+            0,
+            0,
+            0
+          ],
+          "failures": [],
+          "rc": 0
+        },
+        "opaque|test": {
+          "complete": true,
+          "counts": [
+            3,
+            0,
+            0,
+            0,
+            0
+          ],
+          "failures": [],
+          "rc": 0
+        },
+        "parameter_record|test": {
+          "complete": true,
+          "counts": [
+            3,
+            0,
+            0,
+            0,
+            0
+          ],
+          "failures": [],
+          "rc": 0
+        },
+        "parameter_telescope|test": {
+          "complete": true,
+          "counts": [
+            12,
+            0,
+            0,
+            0,
+            0
+          ],
+          "failures": [],
+          "rc": 0
+        },
+        "parameter_tree|test": {
+          "complete": true,
+          "counts": [
+            2,
+            0,
+            0,
+            0,
+            0
+          ],
+          "failures": [],
+          "rc": 0
+        },
+        "parametric_field_enum|test": {
+          "complete": true,
+          "counts": [
+            3,
+            0,
+            0,
+            0,
+            0
+          ],
+          "failures": [],
+          "rc": 0
+        },
+        "parser|test": {
+          "complete": true,
+          "counts": [
+            11,
+            0,
+            0,
+            0,
+            0
+          ],
+          "failures": [],
+          "rc": 0
+        },
+        "polymorphic_empty|test": {
+          "complete": true,
+          "counts": [
+            2,
+            0,
+            0,
+            0,
+            0
+          ],
+          "failures": [],
+          "rc": 0
+        },
+        "proof_only_singleton|test": {
+          "complete": true,
+          "counts": [
+            5,
+            0,
+            0,
+            0,
+            0
+          ],
+          "failures": [],
+          "rc": 0
+        },
+        "quotient_reuse|test": {
+          "complete": true,
+          "counts": [
+            5,
+            0,
+            0,
+            0,
+            0
+          ],
+          "failures": [],
+          "rc": 0
+        },
+        "quotient_source_ownership|test": {
+          "complete": true,
+          "counts": [
+            2,
+            0,
+            0,
+            0,
+            0
+          ],
+          "failures": [],
+          "rc": 0
+        },
+        "relation_record|test": {
+          "complete": true,
+          "counts": [
+            5,
+            0,
+            0,
+            0,
+            0
+          ],
+          "failures": [],
+          "rc": 0
+        },
+        "residual_closure|test": {
+          "complete": true,
+          "counts": [
+            6,
+            1,
+            0,
+            0,
+            0
+          ],
+          "failures": [
+            "all_seven_complete_positive_exports_accept"
+          ],
+          "rc": 101
+        },
+        "rigid_locals|test": {
+          "complete": true,
+          "counts": [
+            2,
+            0,
+            0,
+            0,
+            0
+          ],
+          "failures": [],
+          "rc": 0
+        },
+        "rustdoc": {
+          "complete": true,
+          "counts": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "failures": [],
+          "rc": 0
+        },
+        "sparse_native_nat_rec|test": {
+          "complete": true,
+          "counts": [
+            1,
+            0,
+            0,
+            0,
+            0
+          ],
+          "failures": [],
+          "rc": 0
+        },
+        "transport_projection|test": {
+          "complete": true,
+          "counts": [
+            4,
+            0,
+            0,
+            0,
+            0
+          ],
+          "failures": [],
+          "rc": 0
+        },
+        "typecheck|test": {
+          "complete": true,
+          "counts": [
+            11,
+            0,
+            0,
+            0,
+            0
+          ],
+          "failures": [],
+          "rc": 0
+        }
+      }
+    },
+    "native_nonregression": true,
+    "native_nonregression_to_promotion_parent": true,
+    "native_promotion_parent_binary": "2003c831c32a8249e8524349bc169f3e491e9c84fb71b5fc8db9bce2a8583d01",
+    "promotion_parent": "2003c831c32a8249e8524349bc169f3e491e9c84fb71b5fc8db9bce2a8583d01",
+    "qualified": true,
+    "red": {
+      "rc": 2,
+      "rss_kb": 37664.0,
+      "system": 0.01,
+      "user": 12.84,
+      "wall": 12.85,
+      "wall_observed": 12.900057535000002
+    },
+    "source_patch_sha": "b509707c86c26b14a06eb5b8bf90f6c157a963b93eaca9c8db69e680b6ce0506",
+    "source_qualified": true,
+    "source_sha": "d1c35f6a0de8644817b404e225a16de460e897e0b34c129fcb2a37483e630738",
+    "status": "PROMOTABLE_CORE_CONVERSION_REUSE",
+    "verdict_changes": []
+  }
+}

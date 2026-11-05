@@ -1,0 +1,814 @@
+{
+  "binary_sha": "72ee79b8e1757ff65b06ee37d9321315b9b113f9503cbda635e3ebe1e3b99a41",
+  "complete_mathlib_accept": false,
+  "component_sha256": "b509707c86c26b14a06eb5b8bf90f6c157a963b93eaca9c8db69e680b6ce0506",
+  "controls": [
+    {
+      "case": "binder-info.ndjson",
+      "expected_rc": 0,
+      "prior_recorded_input_hash": "9d9ff9041cd712f86e78c5d2d2d7253bb144321f83dda2d8246b57ec3c8d65b0",
+      "results": {
+        "candidate": 0,
+        "parent": 0
+      },
+      "sha256": "9d9ff9041cd712f86e78c5d2d2d7253bb144321f83dda2d8246b57ec3c8d65b0",
+      "source_path": "tests/fixtures/parameter-telescope/binder-info.ndjson"
+    },
+    {
+      "case": "binder-name.ndjson",
+      "expected_rc": 0,
+      "prior_recorded_input_hash": "2302f33a34868d553e41277ea38f071f51254af87043d4c32af405ad775e69ab",
+      "results": {
+        "candidate": 0,
+        "parent": 0
+      },
+      "sha256": "2302f33a34868d553e41277ea38f071f51254af87043d4c32af405ad775e69ab",
+      "source_path": "tests/fixtures/parameter-telescope/binder-name.ndjson"
+    },
+    {
+      "case": "boundary.ndjson",
+      "expected_rc": 0,
+      "prior_recorded_input_hash": "5fd004cae8f4778e2d42731cff023ca9733137f026c0214f87c7aa44af4bb08b",
+      "results": {
+        "candidate": 0,
+        "parent": 0
+      },
+      "sha256": "5fd004cae8f4778e2d42731cff023ca9733137f026c0214f87c7aa44af4bb08b",
+      "source_path": "tests/fixtures/parameter-telescope/boundary.ndjson"
+    },
+    {
+      "case": "canonical-homogeneous-pair.ndjson",
+      "expected_rc": 0,
+      "prior_recorded_input_hash": "1ee0fe76cc3bf657135e6894392b411c8e22fe5fb5b9c906f7f02261703992ec",
+      "results": {
+        "candidate": 0,
+        "parent": 0
+      },
+      "sha256": "1ee0fe76cc3bf657135e6894392b411c8e22fe5fb5b9c906f7f02261703992ec",
+      "source_path": "tests/fixtures/parameter-telescope/canonical-homogeneous-pair.ndjson"
+    },
+    {
+      "case": "canonical-parameter-record.ndjson",
+      "expected_rc": 0,
+      "prior_recorded_input_hash": "736d9cd25da02d0d4dae76a480b8d97cd025005b660f72b60c6faee0bcf0c093",
+      "results": {
+        "candidate": 0,
+        "parent": 0
+      },
+      "sha256": "736d9cd25da02d0d4dae76a480b8d97cd025005b660f72b60c6faee0bcf0c093",
+      "source_path": "tests/fixtures/parameter-telescope/canonical-parameter-record.ndjson"
+    },
+    {
+      "case": "colliding-motive-universe.ndjson",
+      "expected_rc": 2,
+      "prior_recorded_input_hash": "db06c8043708a228c3816730aae88cbe91afdb64cb2c687825be3481f3b6d80a",
+      "results": {
+        "candidate": 2,
+        "parent": 2
+      },
+      "sha256": "db06c8043708a228c3816730aae88cbe91afdb64cb2c687825be3481f3b6d80a",
+      "source_path": "tests/fixtures/parameter-telescope/colliding-motive-universe.ndjson"
+    },
+    {
+      "case": "ctor-parameter-domain.ndjson",
+      "expected_rc": 2,
+      "prior_recorded_input_hash": "9f7c1ea62d0621aaee082aec5844f5e77bfb4ad7d74a534d74393e05afc8be64",
+      "results": {
+        "candidate": 2,
+        "parent": 2
+      },
+      "sha256": "9f7c1ea62d0621aaee082aec5844f5e77bfb4ad7d74a534d74393e05afc8be64",
+      "source_path": "tests/fixtures/parameter-telescope/ctor-parameter-domain.ndjson"
+    },
+    {
+      "case": "dependent.ndjson",
+      "expected_rc": 0,
+      "prior_recorded_input_hash": "3fc30fa7ed35945635cb126d1d79c82afc8a6125d6634f69d30aa148146018ce",
+      "results": {
+        "candidate": 0,
+        "parent": 0
+      },
+      "sha256": "3fc30fa7ed35945635cb126d1d79c82afc8a6125d6634f69d30aa148146018ce",
+      "source_path": "tests/fixtures/parameter-telescope/dependent.ndjson"
+    },
+    {
+      "case": "excessive-depth.ndjson",
+      "expected_rc": 2,
+      "prior_recorded_input_hash": "4cd07cc34a31ab53667f00c2ad9bc554aa758c797f05c5e0a2650f53d16ca51d",
+      "results": {
+        "candidate": 2,
+        "parent": 2
+      },
+      "sha256": "4cd07cc34a31ab53667f00c2ad9bc554aa758c797f05c5e0a2650f53d16ca51d",
+      "source_path": "tests/fixtures/parameter-telescope/excessive-depth.ndjson"
+    },
+    {
+      "case": "expanded-dag.ndjson",
+      "expected_rc": 2,
+      "prior_recorded_input_hash": "77ad3876df026534fb7ff931da9b5b783ae1c2bb68302f53d5a59d4bcd139452",
+      "results": {
+        "candidate": 2,
+        "parent": 2
+      },
+      "sha256": "77ad3876df026534fb7ff931da9b5b783ae1c2bb68302f53d5a59d4bcd139452",
+      "source_path": "tests/fixtures/parameter-telescope/expanded-dag.ndjson"
+    },
+    {
+      "case": "field-too-large.ndjson",
+      "expected_rc": 2,
+      "prior_recorded_input_hash": "ba5e814bca19f772120ed7402f5c7f7e8ff8e7f160254f0c7434e09c8085d29a",
+      "results": {
+        "candidate": 2,
+        "parent": 2
+      },
+      "sha256": "ba5e814bca19f772120ed7402f5c7f7e8ff8e7f160254f0c7434e09c8085d29a",
+      "source_path": "tests/fixtures/parameter-telescope/field-too-large.ndjson"
+    },
+    {
+      "case": "legacy-homogeneous-pair.ndjson",
+      "expected_rc": 2,
+      "prior_recorded_input_hash": "361f4c5316482efdb96e3223fbc102b12290928f5a5ec3bf10f70dd644b9c983",
+      "results": {
+        "candidate": 2,
+        "parent": 2
+      },
+      "sha256": "361f4c5316482efdb96e3223fbc102b12290928f5a5ec3bf10f70dd644b9c983",
+      "source_path": "tests/fixtures/parameter-telescope/legacy-homogeneous-pair.ndjson"
+    },
+    {
+      "case": "legacy-parameter-record.ndjson",
+      "expected_rc": 2,
+      "prior_recorded_input_hash": "5cd4c57fda61abf7e5baf3931b29c881cc1ceb6012fef3df269b3a24608b0831",
+      "results": {
+        "candidate": 2,
+        "parent": 2
+      },
+      "sha256": "5cd4c57fda61abf7e5baf3931b29c881cc1ceb6012fef3df269b3a24608b0831",
+      "source_path": "tests/fixtures/parameter-telescope/legacy-parameter-record.ndjson"
+    },
+    {
+      "case": "motive-hierarchical.ndjson",
+      "expected_rc": 2,
+      "prior_recorded_input_hash": "cb30a5c6d5b4ab98449d55231b85cbb6e491d60f4363966d0eef89252d6a233c",
+      "results": {
+        "candidate": 2,
+        "parent": 2
+      },
+      "sha256": "cb30a5c6d5b4ab98449d55231b85cbb6e491d60f4363966d0eef89252d6a233c",
+      "source_path": "tests/fixtures/parameter-telescope/motive-hierarchical.ndjson"
+    },
+    {
+      "case": "motive-u2.ndjson",
+      "expected_rc": 2,
+      "prior_recorded_input_hash": "3a0d1aac0d9eea5890a43c270b1d4a36ef3034bf762e02417c966159d5b26ecf",
+      "results": {
+        "candidate": 2,
+        "parent": 2
+      },
+      "sha256": "3a0d1aac0d9eea5890a43c270b1d4a36ef3034bf762e02417c966159d5b26ecf",
+      "source_path": "tests/fixtures/parameter-telescope/motive-u2.ndjson"
+    },
+    {
+      "case": "motive-v.ndjson",
+      "expected_rc": 2,
+      "prior_recorded_input_hash": "ac23e2097c5eb86fed32a2756e4f16dc31dc57ee5af6ae384311637158c2d864",
+      "results": {
+        "candidate": 2,
+        "parent": 2
+      },
+      "sha256": "ac23e2097c5eb86fed32a2756e4f16dc31dc57ee5af6ae384311637158c2d864",
+      "source_path": "tests/fixtures/parameter-telescope/motive-v.ndjson"
+    },
+    {
+      "case": "original.ndjson",
+      "expected_rc": 0,
+      "prior_recorded_input_hash": "2833a44b446524b25c8053006a3684d0fdab5779d76ef17695cbd4763ec9a0cd",
+      "results": {
+        "candidate": 0,
+        "parent": 0
+      },
+      "sha256": "2833a44b446524b25c8053006a3684d0fdab5779d76ef17695cbd4763ec9a0cd",
+      "source_path": "original-frontier-prefix/2833a44b446524b25c8053006a3684d0fdab5779d76ef17695cbd4763ec9a0cd.ndjson"
+    },
+    {
+      "case": "owner-u1.ndjson",
+      "expected_rc": 0,
+      "prior_recorded_input_hash": "239d63407488dd036357b12311099e9dbe118868229b3fad8f8ce0565af6f264",
+      "results": {
+        "candidate": 0,
+        "parent": 0
+      },
+      "sha256": "239d63407488dd036357b12311099e9dbe118868229b3fad8f8ce0565af6f264",
+      "source_path": "tests/fixtures/parameter-telescope/owner-u1.ndjson"
+    },
+    {
+      "case": "owner-w.ndjson",
+      "expected_rc": 0,
+      "prior_recorded_input_hash": "431f39273979fbec46ca7f39a8d390433ddecbaa11489b47abf12d05537bd360",
+      "results": {
+        "candidate": 0,
+        "parent": 0
+      },
+      "sha256": "431f39273979fbec46ca7f39a8d390433ddecbaa11489b47abf12d05537bd360",
+      "source_path": "tests/fixtures/parameter-telescope/owner-w.ndjson"
+    },
+    {
+      "case": "recursive-function-domain.ndjson",
+      "expected_rc": 1,
+      "prior_recorded_input_hash": "83545e0de494bc21360950708e140d58ae02bf6a5538c7282d8415c42a4dded5",
+      "results": {
+        "candidate": 1,
+        "parent": 1
+      },
+      "sha256": "83545e0de494bc21360950708e140d58ae02bf6a5538c7282d8415c42a4dded5",
+      "source_path": "tests/fixtures/parameter-telescope/recursive-function-domain.ndjson"
+    },
+    {
+      "case": "rhs-field-shift.ndjson",
+      "expected_rc": 2,
+      "prior_recorded_input_hash": "41d665cbb4b27450d388bbc6b6ebb69ee2bc4ee16b0a891a4379cfbaf565632c",
+      "results": {
+        "candidate": 2,
+        "parent": 2
+      },
+      "sha256": "41d665cbb4b27450d388bbc6b6ebb69ee2bc4ee16b0a891a4379cfbaf565632c",
+      "source_path": "tests/fixtures/parameter-telescope/rhs-field-shift.ndjson"
+    },
+    {
+      "case": "rhs-minor-annotation.ndjson",
+      "expected_rc": 2,
+      "prior_recorded_input_hash": "8b625fda65c98ab38d09b857e4b030951f723f959fdce52da3975bca219facbe",
+      "results": {
+        "candidate": 2,
+        "parent": 2
+      },
+      "sha256": "8b625fda65c98ab38d09b857e4b030951f723f959fdce52da3975bca219facbe",
+      "source_path": "tests/fixtures/parameter-telescope/rhs-minor-annotation.ndjson"
+    },
+    {
+      "case": "rhs-motive-annotation.ndjson",
+      "expected_rc": 2,
+      "prior_recorded_input_hash": "31058afc6798614b0d94003c414fca084853005b4cc27f6c7fb33b084f86e903",
+      "results": {
+        "candidate": 2,
+        "parent": 2
+      },
+      "sha256": "31058afc6798614b0d94003c414fca084853005b4cc27f6c7fb33b084f86e903",
+      "source_path": "tests/fixtures/parameter-telescope/rhs-motive-annotation.ndjson"
+    },
+    {
+      "case": "rhs-parameter-annotation.ndjson",
+      "expected_rc": 2,
+      "prior_recorded_input_hash": "e368630810d854c90ae4b26f0e1e88fd1ffd9cb5ed43cbe500932ef7edc4ae34",
+      "results": {
+        "candidate": 2,
+        "parent": 2
+      },
+      "sha256": "e368630810d854c90ae4b26f0e1e88fd1ffd9cb5ed43cbe500932ef7edc4ae34",
+      "source_path": "tests/fixtures/parameter-telescope/rhs-parameter-annotation.ndjson"
+    },
+    {
+      "case": "two.ndjson",
+      "expected_rc": 0,
+      "prior_recorded_input_hash": "f96ec038a54d8da70cf88ec84f37379ea06b8ab3a03a40ac2f11b6801d39ad7d",
+      "results": {
+        "candidate": 0,
+        "parent": 0
+      },
+      "sha256": "f96ec038a54d8da70cf88ec84f37379ea06b8ab3a03a40ac2f11b6801d39ad7d",
+      "source_path": "tests/fixtures/parameter-telescope/two.ndjson"
+    },
+    {
+      "case": "wrong-parameter-count.ndjson",
+      "expected_rc": 1,
+      "prior_recorded_input_hash": "138fb4e844d57ee1c26b1cea96e9687b13331bbc46677248351dd288001665c2",
+      "results": {
+        "candidate": 1,
+        "parent": 1
+      },
+      "sha256": "138fb4e844d57ee1c26b1cea96e9687b13331bbc46677248351dd288001665c2",
+      "source_path": "tests/fixtures/parameter-telescope/wrong-parameter-count.ndjson"
+    },
+    {
+      "case": "dag-rule-annotation.ndjson",
+      "expected_rc": 2,
+      "prior_recorded_input_hash": "52bb714d19452666273bff647118598fb3aec6e0fbb31e996f12aeec1ebbe9c4",
+      "results": {
+        "candidate": 2,
+        "parent": 2
+      },
+      "sha256": "52bb714d19452666273bff647118598fb3aec6e0fbb31e996f12aeec1ebbe9c4",
+      "source_path": "tests/fixtures/nullary-enum/dag-rule-annotation.ndjson"
+    },
+    {
+      "case": "deep-rule-annotation.ndjson",
+      "expected_rc": 2,
+      "prior_recorded_input_hash": "598c2154804c37beecdfd45eba9a6fc12fc74913e78e8d28eb7da395c32afc0e",
+      "results": {
+        "candidate": 2,
+        "parent": 2
+      },
+      "sha256": "598c2154804c37beecdfd45eba9a6fc12fc74913e78e8d28eb7da395c32afc0e",
+      "source_path": "tests/fixtures/nullary-enum/deep-rule-annotation.ndjson"
+    },
+    {
+      "case": "enum16.ndjson",
+      "expected_rc": 0,
+      "prior_recorded_input_hash": "fca456536c8dec98021814fc1040f6ee763e3244e5cca50b081eed26a280654e",
+      "results": {
+        "candidate": 0,
+        "parent": 0
+      },
+      "sha256": "fca456536c8dec98021814fc1040f6ee763e3244e5cca50b081eed26a280654e",
+      "source_path": "tests/fixtures/nullary-enum/enum16.ndjson"
+    },
+    {
+      "case": "enum17.ndjson",
+      "expected_rc": 2,
+      "prior_recorded_input_hash": "25c55c560c857557a72714728563e5ecf4937caf943d89264b0c978777028b85",
+      "results": {
+        "candidate": 2,
+        "parent": 2
+      },
+      "sha256": "25c55c560c857557a72714728563e5ecf4937caf943d89264b0c978777028b85",
+      "source_path": "tests/fixtures/nullary-enum/enum17.ndjson"
+    },
+    {
+      "case": "enum3.ndjson",
+      "expected_rc": 0,
+      "prior_recorded_input_hash": "6750b0f499d29b8318472640f6a4c19f2a7de8419759764b8e52504d3a9642e2",
+      "results": {
+        "candidate": 0,
+        "parent": 0
+      },
+      "sha256": "6750b0f499d29b8318472640f6a4c19f2a7de8419759764b8e52504d3a9642e2",
+      "source_path": "tests/fixtures/nullary-enum/enum3.ndjson"
+    },
+    {
+      "case": "motive-hierarchical.ndjson",
+      "expected_rc": 2,
+      "prior_recorded_input_hash": "b33e5f9a7b30b488ba247da3110648643a5833a0b97ea6ae114cfbdabe827730",
+      "results": {
+        "candidate": 2,
+        "parent": 2
+      },
+      "sha256": "b33e5f9a7b30b488ba247da3110648643a5833a0b97ea6ae114cfbdabe827730",
+      "source_path": "tests/fixtures/nullary-enum/motive-hierarchical.ndjson"
+    },
+    {
+      "case": "motive-v.ndjson",
+      "expected_rc": 2,
+      "prior_recorded_input_hash": "700a63ddad3e92eb34499d69ae8fc0e9693ac64acd75ff7d36b5b7652b44a32a",
+      "results": {
+        "candidate": 2,
+        "parent": 2
+      },
+      "sha256": "700a63ddad3e92eb34499d69ae8fc0e9693ac64acd75ff7d36b5b7652b44a32a",
+      "source_path": "tests/fixtures/nullary-enum/motive-v.ndjson"
+    },
+    {
+      "case": "original.ndjson",
+      "expected_rc": 0,
+      "prior_recorded_input_hash": "e0034bd4cb29aa1f260a40ced49d03bf4e748a191335bedfd23fce60afa85a48",
+      "results": {
+        "candidate": 0,
+        "parent": 0
+      },
+      "sha256": "e0034bd4cb29aa1f260a40ced49d03bf4e748a191335bedfd23fce60afa85a48",
+      "source_path": "original-frontier-prefix/e0034bd4cb29aa1f260a40ced49d03bf4e748a191335bedfd23fce60afa85a48.ndjson"
+    },
+    {
+      "case": "wrong-branch.ndjson",
+      "expected_rc": 2,
+      "prior_recorded_input_hash": "d4d7e43855ea3568f7a5cf3f8a42836ddfc54c7ad3df31d155ab161c98435e97",
+      "results": {
+        "candidate": 2,
+        "parent": 2
+      },
+      "sha256": "d4d7e43855ea3568f7a5cf3f8a42836ddfc54c7ad3df31d155ab161c98435e97",
+      "source_path": "tests/fixtures/nullary-enum/wrong-branch.ndjson"
+    },
+    {
+      "case": "wrong-constructor-result.ndjson",
+      "expected_rc": 2,
+      "prior_recorded_input_hash": "fad185b77e3a729f9f2b85aefe163c6a3bceecd38ca9a70cf4ff76ee96c5462a",
+      "results": {
+        "candidate": 2,
+        "parent": 2
+      },
+      "sha256": "fad185b77e3a729f9f2b85aefe163c6a3bceecd38ca9a70cf4ff76ee96c5462a",
+      "source_path": "tests/fixtures/nullary-enum/wrong-constructor-result.ndjson"
+    },
+    {
+      "case": "wrong-field-count.ndjson",
+      "expected_rc": 2,
+      "prior_recorded_input_hash": "cbdd5a987ed08b39e8db14db20f78f43ca32b96607a70fc1a80b447b250483fb",
+      "results": {
+        "candidate": 2,
+        "parent": 2
+      },
+      "sha256": "cbdd5a987ed08b39e8db14db20f78f43ca32b96607a70fc1a80b447b250483fb",
+      "source_path": "tests/fixtures/nullary-enum/wrong-field-count.ndjson"
+    },
+    {
+      "case": "wrong-index.ndjson",
+      "expected_rc": 2,
+      "prior_recorded_input_hash": "7faefaa4997116ee55a2565967e9c5eef244a3123831c7d318018c7085565dc2",
+      "results": {
+        "candidate": 2,
+        "parent": 2
+      },
+      "sha256": "7faefaa4997116ee55a2565967e9c5eef244a3123831c7d318018c7085565dc2",
+      "source_path": "tests/fixtures/nullary-enum/wrong-index.ndjson"
+    },
+    {
+      "case": "wrong-k.ndjson",
+      "expected_rc": 2,
+      "prior_recorded_input_hash": "d150f197dacb21d967e29a8973428ea72bf9dc4b8dc40a26d352c2ff745c365e",
+      "results": {
+        "candidate": 2,
+        "parent": 2
+      },
+      "sha256": "d150f197dacb21d967e29a8973428ea72bf9dc4b8dc40a26d352c2ff745c365e",
+      "source_path": "tests/fixtures/nullary-enum/wrong-k.ndjson"
+    },
+    {
+      "case": "wrong-rule-annotation.ndjson",
+      "expected_rc": 2,
+      "prior_recorded_input_hash": "86e5ff66bc3b3db8b6ee072ad0551cfca06c6c2191b07a135828ccb5b68da864",
+      "results": {
+        "candidate": 2,
+        "parent": 2
+      },
+      "sha256": "86e5ff66bc3b3db8b6ee072ad0551cfca06c6c2191b07a135828ccb5b68da864",
+      "source_path": "tests/fixtures/nullary-enum/wrong-rule-annotation.ndjson"
+    },
+    {
+      "case": "nat-original.ndjson",
+      "expected_rc": 0,
+      "prior_recorded_input_hash": null,
+      "results": {
+        "candidate": 0,
+        "parent": 0
+      },
+      "sha256": "7767e7f90b3e24b30ecb5324f1117d6858b5f40653b31011ad1948eed747e8ea",
+      "source_path": "tests/fixtures/native-source-replay/nat-original.ndjson"
+    },
+    {
+      "case": "false-goal.ndjson",
+      "expected_rc": 2,
+      "prior_recorded_input_hash": null,
+      "results": {
+        "candidate": 2,
+        "parent": 2
+      },
+      "sha256": "f0289c76f2c30accaaa92c1464be75b4e706cc59beac63f6a5506bd813f79213",
+      "source_path": "tests/fixtures/native-source-replay/false-goal.ndjson"
+    },
+    {
+      "case": "pred-universe.ndjson",
+      "expected_rc": 1,
+      "prior_recorded_input_hash": null,
+      "results": {
+        "candidate": 1,
+        "parent": 1
+      },
+      "sha256": "4cb9d29ae34c02cc561d455b9fde4b41293a18d1521431758a4858bdc0befc17",
+      "source_path": "tests/fixtures/native-source-replay/pred-universe.ndjson"
+    },
+    {
+      "case": "sub-universe.ndjson",
+      "expected_rc": 1,
+      "prior_recorded_input_hash": null,
+      "results": {
+        "candidate": 1,
+        "parent": 1
+      },
+      "sha256": "9d1d5d51fec8a171a6cd0c1474875cc3f79d267079853c1572fc751d3027caf2",
+      "source_path": "tests/fixtures/native-source-replay/sub-universe.ndjson"
+    },
+    {
+      "case": "wrong_data.ndjson",
+      "expected_rc": 2,
+      "prior_recorded_input_hash": null,
+      "results": {
+        "candidate": 2,
+        "parent": 2
+      },
+      "sha256": "a49d3a0191705d2f503077c557f99a3a25378a3bbbdaf02a62ed93709a73235c",
+      "source_path": "tests/fixtures/final-proof/wrong_data.ndjson"
+    },
+    {
+      "case": "proof_last.ndjson",
+      "expected_rc": 0,
+      "prior_recorded_input_hash": null,
+      "results": {
+        "candidate": 0,
+        "parent": 0
+      },
+      "sha256": "aeafbad23eb446737749b9cc17f6f25464decbaa381b5e7b1a3994bf6d11d16d",
+      "source_path": "tests/fixtures/final-proof/proof_last.ndjson"
+    },
+    {
+      "case": "long_prefix_wrong_2.ndjson",
+      "expected_rc": 2,
+      "prior_recorded_input_hash": null,
+      "results": {
+        "candidate": 2,
+        "parent": 2
+      },
+      "sha256": "3596444e2546d52f2b482b993f9fc135deb934a373bfeec714b040ead19df79e",
+      "source_path": "tests/fixtures/final-proof/long_prefix_wrong_2.ndjson"
+    },
+    {
+      "case": "long_prefix_wrong_3.ndjson",
+      "expected_rc": 2,
+      "prior_recorded_input_hash": null,
+      "results": {
+        "candidate": 2,
+        "parent": 2
+      },
+      "sha256": "68f79d57b23a94b9d9bcf6c4218e577a76c245f923e459d75848b04ee140001e",
+      "source_path": "tests/fixtures/final-proof/long_prefix_wrong_3.ndjson"
+    },
+    {
+      "case": "wrong_head.ndjson",
+      "expected_rc": 2,
+      "prior_recorded_input_hash": null,
+      "results": {
+        "candidate": 2,
+        "parent": 2
+      },
+      "sha256": "6905db10311d02e41912cc9b8506aee20bdf7250583b6e9cc9478ad8d7a5eb2d",
+      "source_path": "tests/fixtures/final-proof/wrong_head.ndjson"
+    },
+    {
+      "case": "dependent_proof_last.ndjson",
+      "expected_rc": 0,
+      "prior_recorded_input_hash": null,
+      "results": {
+        "candidate": 0,
+        "parent": 0
+      },
+      "sha256": "1397db2f74562276cd07e4f5bbb4a875f2655755996c1d8e2ddd3c6dca298ff1",
+      "source_path": "tests/fixtures/final-proof/dependent_proof_last.ndjson"
+    },
+    {
+      "case": "data_slot.ndjson",
+      "expected_rc": 2,
+      "prior_recorded_input_hash": null,
+      "results": {
+        "candidate": 2,
+        "parent": 2
+      },
+      "sha256": "b0e7a521df576f986187733925c7e304a597297d89b364f109dbd19665109099",
+      "source_path": "tests/fixtures/final-proof/data_slot.ndjson"
+    },
+    {
+      "case": "long_prefix_wrong_4.ndjson",
+      "expected_rc": 2,
+      "prior_recorded_input_hash": null,
+      "results": {
+        "candidate": 2,
+        "parent": 2
+      },
+      "sha256": "9d1eeca0f82a4d358fa4a35ad56239e7007b22ae044f170fc6cfe01bb165877e",
+      "source_path": "tests/fixtures/final-proof/long_prefix_wrong_4.ndjson"
+    },
+    {
+      "case": "long_prefix_valid.ndjson",
+      "expected_rc": 0,
+      "prior_recorded_input_hash": null,
+      "results": {
+        "candidate": 0,
+        "parent": 0
+      },
+      "sha256": "319a69da7ee9c2cd8db968733d8f3b37f75836652232a98c122978cde4300690",
+      "source_path": "tests/fixtures/final-proof/long_prefix_valid.ndjson"
+    },
+    {
+      "case": "long_prefix_wrong_1.ndjson",
+      "expected_rc": 2,
+      "prior_recorded_input_hash": null,
+      "results": {
+        "candidate": 2,
+        "parent": 2
+      },
+      "sha256": "90d2b09ca362aa097c01190625ea080ba6f57fa3388e162e907c4ded031356f4",
+      "source_path": "tests/fixtures/final-proof/long_prefix_wrong_1.ndjson"
+    },
+    {
+      "case": "wrong_prop.ndjson",
+      "expected_rc": 1,
+      "prior_recorded_input_hash": null,
+      "results": {
+        "candidate": 1,
+        "parent": 1
+      },
+      "sha256": "dac4d79d444338a53cb7860ced7e8d634e3c520e5852f02885494b3b980b9543",
+      "source_path": "tests/fixtures/final-proof/wrong_prop.ndjson"
+    },
+    {
+      "case": "same.ndjson",
+      "expected_rc": 0,
+      "prior_recorded_input_hash": null,
+      "results": {
+        "candidate": 0,
+        "parent": 0
+      },
+      "sha256": "1c5c97da3265f4f3b474da0272c1ed29a6ba060af5cbabf6e7755bfaac6dcb8f",
+      "source_path": "tests/fixtures/final-proof/same.ndjson"
+    },
+    {
+      "case": "long_prefix_wrong_0.ndjson",
+      "expected_rc": 2,
+      "prior_recorded_input_hash": null,
+      "results": {
+        "candidate": 2,
+        "parent": 2
+      },
+      "sha256": "7453e2ec0999f2d3827281df5a3b8c7f60fb9f6d2292358660239fd4adfbd0a1",
+      "source_path": "tests/fixtures/final-proof/long_prefix_wrong_0.ndjson"
+    },
+    {
+      "case": "let/forged-let-nondep.ndjson",
+      "expected_rc": 2,
+      "prior_recorded_input_hash": "970caf68a6b24d69f666c1847b674642a5a775b0793c70a9456640aac2b4985e",
+      "results": {
+        "candidate": 2,
+        "parent": 2
+      },
+      "sha256": "970caf68a6b24d69f666c1847b674642a5a775b0793c70a9456640aac2b4985e",
+      "source_path": "tests/fixtures/let-metadata/forged-let-nondep.ndjson"
+    },
+    {
+      "case": "let/canonical-independent-let.ndjson",
+      "expected_rc": 0,
+      "prior_recorded_input_hash": "e161160ba2e279e730ae65edcf7870d73d69bece06ee66a5d66ab413bb28d366",
+      "results": {
+        "candidate": 0,
+        "parent": 0
+      },
+      "sha256": "e161160ba2e279e730ae65edcf7870d73d69bece06ee66a5d66ab413bb28d366",
+      "source_path": "tests/fixtures/let-metadata/canonical-independent-let.ndjson"
+    },
+    {
+      "case": "let/canonical-let.ndjson",
+      "expected_rc": 0,
+      "prior_recorded_input_hash": "f394ea102cc4645ae1824322e495e6d7ae658c66295e877741bc9098d6b0d281",
+      "results": {
+        "candidate": 0,
+        "parent": 0
+      },
+      "sha256": "f394ea102cc4645ae1824322e495e6d7ae658c66295e877741bc9098d6b0d281",
+      "source_path": "tests/fixtures/let-metadata/canonical-let.ndjson"
+    },
+    {
+      "case": "let/forged-independent-let-nondep.ndjson",
+      "expected_rc": 2,
+      "prior_recorded_input_hash": "f71b0a163cde7d03b7efd3ba14201d58911f06132a77a46044d388ee25a7bf16",
+      "results": {
+        "candidate": 2,
+        "parent": 2
+      },
+      "sha256": "f71b0a163cde7d03b7efd3ba14201d58911f06132a77a46044d388ee25a7bf16",
+      "source_path": "tests/fixtures/let-metadata/forged-independent-let-nondep.ndjson"
+    }
+  ],
+  "fresh_protected_replay": true,
+  "frozen208_unchanged": true,
+  "full": {
+    "binary_sha": "72ee79b8e1757ff65b06ee37d9321315b9b113f9503cbda635e3ebe1e3b99a41",
+    "complete_mathlib_accept": false,
+    "next_frontier": {
+      "bytes": 15949259,
+      "declaration": {
+        "all": [
+          26127
+        ],
+        "levelParams": [
+          32,
+          326
+        ],
+        "name": 26127,
+        "type": 272766,
+        "value": 273354
+      },
+      "name_records_parsed": 26127,
+      "record": 303563,
+      "sha256": "61b130d9e864c99afd4111b662f884827be98a87f27277c42a5949b025fc0d6b",
+      "tag": "thm",
+      "target": "AddMonoidAlgebra.nonUnitalNonAssocSemiring._proof_2"
+    },
+    "no_official_arena_score": true,
+    "qualified": true,
+    "result": {
+      "rc": 2,
+      "rss_kb": 3780164.0,
+      "system": 1.87,
+      "user": 37.81,
+      "wall": 39.69,
+      "wall_observed": 39.715607696999996
+    },
+    "source_sha": "22c5de83469408950005589a3bc5ef5157c65549b5a802f85d567c29151306a6",
+    "status": "WARRANTED_BOUNDED_FIRST_FRONTIER",
+    "terminal": "NUCLEUS_DOWNSTREAM:name=AddMonoidAlgebra.nonUnitalNonAssocSemiring._proof_2:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type"
+  },
+  "full_frontier_unchanged": true,
+  "known_failures": {
+    "residual_closure|test": [
+      "all_seven_complete_positive_exports_accept"
+    ]
+  },
+  "legacy_protected_input_hashes_completed": 17,
+  "native_counts": [
+    563,
+    1,
+    0,
+    0,
+    0
+  ],
+  "native_targets": 42,
+  "no_official_rank_claim": true,
+  "parent_artifact_sha256": "0fd8a4cd86dcb233b532f59ea8dc853d22480b6ba62ff864049224250613e517",
+  "parent_binary": "2003c831c32a8249e8524349bc169f3e491e9c84fb71b5fc8db9bce2a8583d01",
+  "promoted": false,
+  "protected_controls": 61,
+  "protected_input_hashes_previously_recorded": 44,
+  "qualification_completion_run": "41954263475",
+  "qualified": true,
+  "source_artifact": 13381050552,
+  "source_artifact_sha256": "fa0a06101ca8dda97b9c15f4e106eb24e12b2b46aafb8594a9ffb0f44368cd08",
+  "source_commit": "0b27e4617c0b4fb34f3b49a55755109cfa3d1ae9",
+  "source_controls": 119,
+  "source_files": 368,
+  "source_manifest_sha256": "d1cfb21fe400d30f9b28278730fcf6d762117ae73a07abc21da2844160f898af",
+  "source_qualified": true,
+  "source_run": 41947915219,
+  "source_tar_sha256": "6f68f0ae7e2630e8025820cc922e014a6a318b3b6cef99194a33f1ce0d83bdd3",
+  "source_tree_matches_archive_and_reconstruction": true,
+  "status": "PROMOTABLE_CORE_CONVERSION_REUSE",
+  "timing": {
+    "accepted_prefix_only": true,
+    "median_cpu_ratio": 0.6207346668133764,
+    "median_rss_ratio": 0.5981075597163349,
+    "no_rank_claim": true,
+    "preset": "Every candidate CPU sample beats every actual parent CPU sample by more than1percent",
+    "rows": [
+      {
+        "arm": "candidate",
+        "binary_sha256": "72ee79b8e1757ff65b06ee37d9321315b9b113f9503cbda635e3ebe1e3b99a41",
+        "cpu": 19.541627000000002,
+        "input_sha256": "8428d5d4282a608eb77e48ff62adace23212d9487ff9e86dc2e57af7c573d5f1",
+        "order": 1,
+        "rc": 0,
+        "rss_kib": 59552,
+        "stderr": "",
+        "system": 0.049996,
+        "user": 19.491631,
+        "wall": 19.563994361000027
+      },
+      {
+        "arm": "parent",
+        "binary_sha256": "2003c831c32a8249e8524349bc169f3e491e9c84fb71b5fc8db9bce2a8583d01",
+        "cpu": 31.35614,
+        "input_sha256": "8428d5d4282a608eb77e48ff62adace23212d9487ff9e86dc2e57af7c573d5f1",
+        "order": 2,
+        "rc": 0,
+        "rss_kib": 102772,
+        "stderr": "",
+        "system": 0.067019,
+        "user": 31.289121,
+        "wall": 31.390573616999973
+      },
+      {
+        "arm": "parent",
+        "binary_sha256": "2003c831c32a8249e8524349bc169f3e491e9c84fb71b5fc8db9bce2a8583d01",
+        "cpu": 31.17098,
+        "input_sha256": "8428d5d4282a608eb77e48ff62adace23212d9487ff9e86dc2e57af7c573d5f1",
+        "order": 3,
+        "rc": 0,
+        "rss_kib": 96336,
+        "stderr": "",
+        "system": 0.061994999999999995,
+        "user": 31.108985,
+        "wall": 31.18843373599998
+      },
+      {
+        "arm": "candidate",
+        "binary_sha256": "72ee79b8e1757ff65b06ee37d9321315b9b113f9503cbda635e3ebe1e3b99a41",
+        "cpu": 19.271124,
+        "input_sha256": "8428d5d4282a608eb77e48ff62adace23212d9487ff9e86dc2e57af7c573d5f1",
+        "order": 4,
+        "rc": 0,
+        "rss_kib": 59536,
+        "stderr": "",
+        "system": 0.044010999999999995,
+        "user": 19.227113,
+        "wall": 19.311944953999955
+      }
+    ],
+    "speed_win": true,
+    "status": "COMPLETE"
+  }
+}
