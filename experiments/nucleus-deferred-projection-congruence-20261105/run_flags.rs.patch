@@ -1,0 +1,21 @@
+--- a/src/run_flags.rs
++++ b/src/run_flags.rs
+@@ -106,8 +106,9 @@
+     TraceValueMismatch,
+     ExperimentalProjectionContext,
+     ExperimentalProjectionCrossframe512,
++    ExperimentalDeferredProjectionCongruence,
+ }
+-const NAMES:[&str;102]=[
++const NAMES:[&str;103]=[
+     "NUCLEUS_ASSURANCE_SOURCE_OWNED_PROBE",
+     "NUCLEUS_EXPERIMENTAL_CERTIFIED_QUOT_IOTA",
+     "NUCLEUS_EXPERIMENTAL_CONTEXT_BINDER",
+@@ -210,6 +211,7 @@
+     "NUCLEUS_TRACE_VALUE_MISMATCH",
+     "NUCLEUS_EXPERIMENTAL_PROJECTION_CONTEXT",
+     "NUCLEUS_EXPERIMENTAL_PROJECTION_CROSSFRAME_512",
++    "NUCLEUS_EXPERIMENTAL_DEFERRED_PROJECTION_CONGRUENCE",
+ ];
+ std::thread_local! {static ACTIVE:Cell<Option<Bits>>=const {Cell::new(None)};}
+ pub(crate) struct Scope {previous:Option<Bits>}
