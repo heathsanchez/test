@@ -36,7 +36,7 @@ jobs:
           test "$(find arena207 -name '*.ndjson' -type f | wc -l)" -eq 207
           patch --fuzz=0 -p1 --dry-run -d metatron-kernel < experiments/nucleus-typed-child-continuation-20261106/typed-child-bridge.patch
           patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-typed-child-continuation-20261106/typed-child-bridge.patch
-          printf '%s  %s\n' 4c7230e94f40335c08605d23043eee2b67a1b151ffca1317d0d29115df9d773b metatron-kernel/src/typecheck.rs f27bb219b3bcd75c62cd0444f81b739caee6009382f8b20afe1e36e642586659 metatron-kernel/src/convert.rs | sha256sum -c -
+          printf '%s  %s\n' 4c7230e94f40335c08605d23043eee2b67a1b151ffca1317d0d29115df9d773b metatron-kernel/src/typecheck.rs f054c55043e17a253998ca4a4068cc4d4da30e8a27d8e44b9a43fadc6b024411 metatron-kernel/src/convert.rs | sha256sum -c -
           sha256sum qualified/candidate/nucleus metatron-kernel/src/{typecheck,convert}.rs > reports/source-sha256.txt
       - name: Compiler and native proof-preservation tests
         run: |
@@ -56,7 +56,7 @@ jobs:
               bin=qualified/candidate/nucleus
               if [ "$arm" = candidate ]; then bin=./candidate-bin; fi
               set +e
-              timeout 100 env "${flags[@]}" METATRON_KERNEL_DIAGNOSTICS=1 NUCLEUS_TRACE_DOWNSTREAM=1 "$bin" < "arena207/good/perf/$case.ndjson" > "reports/$arm-$case.stdout" 2> "reports/$arm-$case.stderr"
+              timeout 100 env "${flags[@]}" METATRON_KERNEL_DIAGNOSTICS=1 NUCLEUS_TRACE_DOWNSTREAM=1 NUCLEUS_TRACE_FAILED_RECEIVER_CAPTURES=1 NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE=1 NUCLEUS_TRACE_NEUTRAL_HEADS=1 NUCLEUS_TRACE_NESTED_RECURSOR_IOTA_FAILURE=1 "$bin" < "arena207/good/perf/$case.ndjson" > "reports/$arm-$case.stdout" 2> "reports/$arm-$case.stderr"
               rc=$?
               set -e
               printf '%s\t%s\t%s\n' "$case" "$arm" "$rc" | tee -a reports/targeted.tsv
@@ -72,7 +72,7 @@ jobs:
         run: |
           set -euo pipefail
           mapfile -t flags < <(jq -r '.candidate.configuration | to_entries[] | "\(.key)=\(.value)"' qualified/qualification.json)
-          for case in arena207/bad/bugs/*.ndjson arena207/bad/tutorial/*.ndjson; do
+          for case in arena207/bad/*/*.ndjson; do
             set +e
             timeout 50 env "${flags[@]}" ./candidate-bin < "$case" > /dev/null
             rc=$?
