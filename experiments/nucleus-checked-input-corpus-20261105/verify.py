@@ -23,6 +23,11 @@ def main():
   elif group=='frozen208':
    frozen_count+=1;row=frozen[entry['case']];assert row['sha256']==digest and entry['metadata']==row and entry['authority_run']==41947915219
   else:raise AssertionError(group)
+ registry=json.loads((root/'receipts/input-registry.json').read_text());assert len(registry)==119
+ signature=lambda rows:collections.Counter(json.dumps(row,sort_keys=True,separators=(',',':'))for row in rows)
+ assert signature([(e['group'],e['case'],e['sha256'])for e in m['entries']if e['group'].startswith('source119/')])==signature([('source119/'+r['group'],r['row']['case'],r['row']['sha256'])for r in registry])
+ assert signature([e['metadata']for e in m['entries']if e['group']=='protected61'])==signature(report['controls'])
+ assert signature([e['metadata']for e in m['entries']if e['group']=='frozen208'])==signature(list(frozen.values()))
  assert(source_count,protected_count,frozen_count)==(119,61,208)
  assert len(unique)==m['unique_inputs']and sum(unique.values())==m['uncompressed_unique_bytes']
  assert{p.name for p in(root/'inputs').iterdir()}=={x+'.ndjson'for x in unique}

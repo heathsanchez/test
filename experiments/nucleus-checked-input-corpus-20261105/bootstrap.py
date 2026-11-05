@@ -65,7 +65,7 @@ def main():
   old=verdicts[row['case']];assert old['sha256']==row['sha256']and old['expected']==row['expected']
   add(a.inputs/'inputs'/row['relative_path'],'frozen208',row['case'],row['sha256'],old,41947915219)
  shutil.copyfile(a.completion/'candidate/verdicts.json',bundle/'receipts/frozen208-verdicts.json')
- for name in ['core-conversion-reuse.json','verified-receipts.json','qualification.json','full.json','timing.json']:
+ for name in ['input-registry.json','core-conversion-reuse.json','verified-receipts.json','qualification.json','full.json','timing.json']:
   shutil.copyfile(a.completion/name,bundle/'receipts'/name)
  result=dict(schema='nucleus-checked-inputs-v1',status='SEALED_CHECKED_INPUT_CORPUS',entries=entries,entries_count=len(entries),source_controls=119,protected_controls=61,frozen_controls=208,unique_inputs=len(unique),uncompressed_unique_bytes=sum(unique.values()),prefix_count=len(found),prefixes=found,source_artifact=13381050552,source_artifact_sha256='fa0a06101ca8dda97b9c15f4e106eb24e12b2b46aafb8594a9ffb0f44368cd08',completion_artifact=13381489248,completion_artifact_sha256=COMPLETE_ZIP,frozen_input_artifact=13126161718,frozen_input_artifact_sha256=INPUT_ZIP,candidate_binary_sha256=BINARY,reference_binary_sha256=REFERENCE,configuration=load(a.completion/'qualification.json')['candidate']['configuration'],bootstrap_run=os.environ.get('GITHUB_RUN_ID'),source_checker_tests_reexecuted=False,receipts_reused_only_after_exact_input_hash_match=True,requires_fresh_new_candidate_execution=True,receipt_hashes={p.name:sha(p)for p in sorted((bundle/'receipts').iterdir())if p.is_file()},no_rank_claim=True)
  assert len(entries)==388;write(bundle/'manifest.json',result)
