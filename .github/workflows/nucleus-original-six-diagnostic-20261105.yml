@@ -1,0 +1,75 @@
+name: Nucleus six original valid UNKNOWN causal diagnostic
+on:
+  push:
+    branches: [research/nucleus-deferred-projection-congruence-20261105]
+    paths:
+      - '.github/workflows/nucleus-original-six-diagnostic-20261105.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  six-valid:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      GH_TOKEN: ${{ github.token }}
+      CARGO_INCREMENTAL: 0
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Rehydrate the immutable original196 and exact source-patched candidate
+        run: |
+          set -euo pipefail
+          mkdir -p qualified original196 residuals
+          gh api repos/heathsanchez/test/actions/artifacts/13370874970/zip > qualified.zip
+          printf '%s  %s\n' 0fd8a4cd86dcb233b532f59ea8dc853d22480b6ba62ff864049224250613e517 qualified.zip | sha256sum -c -
+          unzip -q qualified.zip -d qualified
+          tar --no-same-owner -xzf qualified/candidate/source.tar.gz
+          printf '%s  %s\n' 1949144e581167be2547bb18a0331d7b34a769f2cff75037b884ce9b2de6c4ac metatron-kernel/src/convert.rs | sha256sum -c -
+          printf '%s  %s\n' 633fb3fd4c58def5143e17078d3d188f832dc1a7432dea84a88b8d91676e5d20 metatron-kernel/src/run_flags.rs | sha256sum -c -
+          patch -p1 -d metatron-kernel < experiments/nucleus-deferred-projection-congruence-20261105/run_flags.rs.patch
+          patch -p1 -d metatron-kernel < experiments/nucleus-deferred-projection-congruence-20261105/convert.rs.patch
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/11272848230/zip > original196.zip
+          printf '%s  %s\n' f6cd590db7f6fb92b8d1b3ca87231d4b0f521f085d73f93abd005f5caaff86d2 original196.zip | sha256sum -c -
+          unzip -p original196.zip lean-arena-tests.tar.gz | tar --no-same-owner -xzf - -C original196
+          test "$(find original196/good -name '*.ndjson' -type f | wc -l)" -eq 125
+      - name: Build the source checker with built-in diagnostics (no new admission rules)
+        run: |
+          set -euo pipefail
+          cd metatron-kernel
+          cargo build --locked --release --features diagnostics
+          sha256sum target/release/metatron-kernel | tee ../diagnostic-binary-sha256.txt
+      - name: Capture precise first failure for all six, same production flags and candidate
+        run: |
+          set -euo pipefail
+          mapfile -t flags < <(jq -r '.candidate.configuration | to_entries[] | "\(.key)=\(.value)"' qualified/qualification.json)
+          export "${flags[@]}"
+          export NUCLEUS_EXPERIMENTAL_DEFERRED_PROJECTION_CONGRUENCE=1
+          export NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE=1
+          export NUCLEUS_TRACE_TERMINAL_CAUSE=1
+          cases=(fueled-chain grind-ring-5 magma-list-deep-n21 magma-list-deep-n36 magma-list-pair-n21 magma-list-pair-n7)
+          for case_name in "${cases[@]}"; do
+            source="original196/good/perf/${case_name}.ndjson"
+            test -f "$source"
+            actual=0
+            timeout 200 metatron-kernel/target/release/metatron-kernel < "$source" > "residuals/${case_name}.stdout" 2> "residuals/${case_name}.stderr" || actual=$?
+            printf '%s\t%s\n' "$case_name" "$actual" | tee -a residuals/exit-codes.tsv
+            wc -c "residuals/${case_name}.stderr"
+            rg 'NUCLEUS_(APPLICATION_FUNCTION_TYPE|TERMINAL_CAUSE|POST_IOTA_PROJECTION_GAP)|UNKNOWN|REJECT' "residuals/${case_name}.stderr" | tail -n 5 || true
+            zstd -q -3 -f "residuals/${case_name}.stderr" -o "residuals/${case_name}.stderr.zst"
+            head -c 250000 "residuals/${case_name}.stderr" > "residuals/${case_name}.head.txt"
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-original-six-candidate-causal-residuals
+          retention-days: 45
+          if-no-files-found: warn
+          path: |
+            diagnostic-binary-sha256.txt
+            residuals/exit-codes.tsv
+            residuals/*.stderr.zst
+            residuals/*.head.txt
+            qualified/qualification.json
