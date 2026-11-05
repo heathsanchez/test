@@ -45,7 +45,8 @@ jobs:
               parent_id = item["pre"]
               if parent_id not in names:
                   raise RuntimeError(f"Unresolved parent {parent_id} for {name_id}")
-              suffix = str(item.get("str", item.get("num")))
+              # lean4export 3.1 uses `i` for numeric name components.
+              suffix = str(item.get("str", item.get("i")))
               if suffix == "None":
                   raise RuntimeError(f"Unexpected source name record: {row}")
               names[name_id] = (names[parent_id] + "." if names[parent_id] else "") + suffix
