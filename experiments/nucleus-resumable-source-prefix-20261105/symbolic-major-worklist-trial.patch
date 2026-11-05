@@ -1,0 +1,29 @@
+--- a/src/machine.rs
++++ b/src/machine.rs
+@@ -2730,12 +2730,20 @@
+                             binding,budget,self.exposure_fuel.get());
+                     }
+                 }
+-                let major_result=if self.replay_projection_major {
+-                    self.expose_for_conversion(neutral.spine[required-1].clone(),
+-                        Transparency::Full,self.exposure_fuel.get().unwrap_or(0).min(512))
+-                } else {
+-                    self.expose(neutral.spine[required-1].clone(),
+-                        Transparency::Full,self.exposure_fuel.get().unwrap_or(0).min(512))
++                let major_result={
++                    // Experimental comparison arm: let the qualified worklist
++                    // see the actual registered major before any eager native
++                    // completion recursively spends its shared work owner.
++                    // This does not grant constructor or equality authority.
++                    let previous=self.native_completion.replace(false);
++                    let _scope=NativeCompletionScope{enabled:&self.native_completion,previous};
++                    if self.replay_projection_major {
++                        self.expose_for_conversion(neutral.spine[required-1].clone(),
++                            Transparency::Full,self.exposure_fuel.get().unwrap_or(0).min(512))
++                    } else {
++                        self.expose(neutral.spine[required-1].clone(),
++                            Transparency::Full,self.exposure_fuel.get().unwrap_or(0).min(512))
++                    }
+                 };
+                 let Some(value)=major_result.proven_value() else {
+                     #[cfg(feature="diagnostics")]
