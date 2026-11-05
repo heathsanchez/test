@@ -1,0 +1,121 @@
+{
+  "status": "DIAGNOSTIC_ONLY_NO_COVERAGE_WIN",
+  "candidate_only": true,
+  "no_promotion": true,
+  "no_speed_claim": true,
+  "binary_sha256": "2f093df0fd9d036479746b0ddd46bc8b007762361244649bde9d334a6fa3a45a",
+  "configuration": {
+    "NUCLEUS_EXPERIMENTAL_CERTIFIED_QUOT_IOTA": "1",
+    "NUCLEUS_EXPERIMENTAL_CONTEXT_BINDER": "1",
+    "NUCLEUS_EXPERIMENTAL_DEMAND_MAJOR": "1",
+    "NUCLEUS_EXPERIMENTAL_EXPECTED_LAMBDA": "1",
+    "NUCLEUS_EXPERIMENTAL_FORMED_PROP_DOMAIN_RETRY": "1",
+    "NUCLEUS_EXPERIMENTAL_POLYMORPHIC_PROP_IRREL": "1",
+    "NUCLEUS_EXPERIMENTAL_PROJECTION_CONTEXT": "1",
+    "NUCLEUS_EXPERIMENTAL_PROJECTION_CROSSFRAME_512": "1",
+    "NUCLEUS_EXPERIMENTAL_PROP_SINGLETON_2P1F": "1",
+    "NUCLEUS_EXPERIMENTAL_RELEVANCE": "1",
+    "NUCLEUS_EXPERIMENTAL_REPLAY_NEUTRAL_PROJECTION": "1",
+    "NUCLEUS_EXPERIMENTAL_REPLAY_PROJECTION_MAJOR": "1",
+    "NUCLEUS_EXPERIMENTAL_SOURCE_PAIR_DEPTH8": "1",
+    "NUCLEUS_EXPERIMENTAL_SOURCE_PROOF_IRREL": "1",
+    "NUCLEUS_EXPERIMENTAL_SUBSTITUTION_RECLOSURE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_DATA_CONGRUENCE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_LINEAGE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_PROJECTION_SPINE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_RECEIVER": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_VALUE_NORMALIZATION": "1",
+    "NUCLEUS_TRACE_DOWNSTREAM": "1"
+  },
+  "rows": [
+    {
+      "input": "proof2",
+      "input_sha256": "61b130d9e864c99afd4111b662f884827be98a87f27277c42a5949b025fc0d6b",
+      "rc": 2,
+      "wall": 32.194763588995556,
+      "terminal": "5), 12330235, 140615890988320) depth=13 context=13 remaining=97\nCHAIN_LEAF_OBSERVER:exposure root=(740,740) left=Lam right=Lam remaining=1\nCHAIN_LEAF_OBSERVER:decline line=3237 root=(740,740) remaining=1\nCHAIN_LEAF_OBSERVER:enter root=(740,740) leaf=(ExprId(740), 12348516, 140615907282608, ExprId(740), 12348524, 140615911481680) depth=12 context=12 remaining=1022\nCHAIN_LEAF_OBSERVER:exposure root=(740,740) left=Neutral right=Neutral remaining=894\nCHAIN_LEAF_OBSERVER:enter root=(740,740) leaf=(ExprId(12), 12348528, 140615895225904, ExprId(12), 12348532, 140615912571920) depth=12 context=12 remaining=817\nCHAIN_LEAF_OBSERVER:exposure root=(740,740) left=Neutral right=Neutral remaining=689\nCHAIN_LEAF_OBSERVER:enter root=(740,740) leaf=(ExprId(725), 12348528, 140615895225904, ExprId(725), 12348532, 140615912571920) depth=12 context=12 remaining=686\nCHAIN_LEAF_OBSERVER:exposure root=(740,740) left=Lam right=Lam remaining=558\nCHAIN_LEAF_OBSERVER:decline line=3237 root=(740,740) remaining=558\n"
+    }
+  ],
+  "observer_rows": 78,
+  "observer_window": 128,
+  "declines": [
+    {
+      "source_line": 3212,
+      "remaining": 0
+    },
+    {
+      "source_line": 3237,
+      "remaining": 558
+    },
+    {
+      "source_line": 3237,
+      "remaining": 339
+    },
+    {
+      "source_line": 3237,
+      "remaining": 339
+    },
+    {
+      "source_line": 3237,
+      "remaining": 596
+    },
+    {
+      "source_line": 3237,
+      "remaining": 339
+    },
+    {
+      "source_line": 3237,
+      "remaining": 339
+    },
+    {
+      "source_line": 3237,
+      "remaining": 764
+    },
+    {
+      "source_line": 3237,
+      "remaining": 596
+    },
+    {
+      "source_line": 3237,
+      "remaining": 558
+    },
+    {
+      "source_line": 3237,
+      "remaining": 544
+    },
+    {
+      "source_line": 3237,
+      "remaining": 0
+    },
+    {
+      "source_line": 3237,
+      "remaining": 1
+    },
+    {
+      "source_line": 3237,
+      "remaining": 558
+    }
+  ],
+  "exposed_value_pairs": [
+    {
+      "left": "Neutral",
+      "right": "Neutral",
+      "count": 18
+    },
+    {
+      "left": "Lam",
+      "right": "Lam",
+      "count": 8
+    },
+    {
+      "left": "StuckProjection",
+      "right": "StuckProjection",
+      "count": 6
+    }
+  ],
+  "no_semantic_owner_retention": true,
+  "no_new_conversion_calls": true,
+  "source_checker_scope": "primary theorem NameId26127",
+  "conclusion": "Finite helper reaches unsupported Lam/Lam leaf obligations, including with558 remaining. This identifies a local missing sufficient premise, not the global cause of all proof2 UNKNOWNs.",
+  "promoted": false
+}
