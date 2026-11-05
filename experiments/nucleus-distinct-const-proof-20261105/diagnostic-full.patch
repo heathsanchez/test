@@ -269,7 +269,7 @@
                  }
                  #[cfg(feature="diagnostics")]
                  if crate::run_flags::present(crate::run_flags::Flag::TraceBidirBodyGap)
-@@ -3883,6 +4003,138 @@
+@@ -3883,6 +4003,142 @@
          true
      }
  
@@ -354,7 +354,11 @@
 +                let Some(actual) = self.infer_exact_closure_in_context(
 +                    argument, context, &mut remaining, 0,
 +                ) else {
-+                    if diag { eprintln!("NUCLEUS_DISTINCT_PROOF_DIAG:{side}:arg-infer-failed:{index}"); }
++                    if diag {
++                        eprintln!("NUCLEUS_DISTINCT_PROOF_DIAG:{side}:arg-infer-failed:{index}:remaining={remaining}:source={argument:?}:syntax={:?}:first-capture={:?}",
++                            self.expressions.get(argument.expr),
++                            argument.env.binding_refs().next());
++                    }
 +                    return None;
 +                };
 +                if !crate::convert::convert_with_policy_in_context(
