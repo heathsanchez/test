@@ -17,7 +17,7 @@ index ca69dd4..044b546 100644
          )
      }
 diff --git a/src/convert.rs b/src/convert.rs
-index bf43ba7..1227805 100644
+index bf43ba7..a68820e 100644
 --- a/src/convert.rs
 +++ b/src/convert.rs
 @@ -1556,7 +1556,7 @@ fn compare_values_with_eta_charge(
@@ -29,7 +29,7 @@ index bf43ba7..1227805 100644
                      ).is_proven()
                      && same_closure_spine_congruence_in_context(
                          checker,left_spine,right_spine,
-@@ -2450,11 +2450,66 @@ fn compare_nat_literal_neutral(
+@@ -2450,11 +2450,74 @@ fn compare_nat_literal_neutral(
      Judgment::refuted("Nat-literal-non-Nat-head")
  }
  
@@ -48,6 +48,14 @@ index bf43ba7..1227805 100644
 +    let Some(support)=checker.complete_source_support(left.expr,&mut remaining)else{
 +        return Judgment::unknown("source-substitution-support-incomplete");
 +    };
++    #[cfg(feature="diagnostics")]
++    if left.expr.0==600 && context.len()==2
++        && crate::run_flags::present(crate::run_flags::Flag::TraceFailedReceiverCaptures){
++        for index in &support {
++            eprintln!("NUCLEUS_SOURCE_USED_CAPTURE_SCHEMA:expr={:?}:index={index}:left={:?}:right={:?}:remaining={remaining}",
++                left.expr,left.env.lookup_binding_ref(*index),right.env.lookup_binding_ref(*index));
++        }
++    }
 +    for index in support {
 +        let Some(fee)=usize::try_from(index).ok()
 +            .and_then(|n|n.checked_add(1)).and_then(|n|n.checked_mul(2))else{
@@ -96,7 +104,7 @@ index bf43ba7..1227805 100644
  ) -> bool {
      use crate::level::LevelTerm;
      let mut pending = vec![(left, right)];
-@@ -2508,8 +2563,34 @@ fn exact_neutral_source_congruence(
+@@ -2508,8 +2571,34 @@ fn exact_neutral_source_congruence(
              if a.expr == b.expr && a.env == b.env && a.levels.identity() == b.levels.identity() {
                  continue;
              }
@@ -133,7 +141,7 @@ index bf43ba7..1227805 100644
          }
      }
      true
-@@ -2565,7 +2646,7 @@ fn compare_neutral_heads(
+@@ -2565,7 +2654,7 @@ fn compare_neutral_heads(
                  return Judgment::unknown("neutral-projection-receiver-congruence");
              }
              let mut source_work = budget.saturating_sub(1);
