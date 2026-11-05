@@ -1,0 +1,55 @@
+name: Nucleus immutable checked input corpus
+on:
+  push:
+    branches: [research/nucleus-checked-input-corpus-20261105]
+    paths:
+      - '.github/workflows/nucleus-checked-input-corpus-20261105.yml'
+      - 'experiments/nucleus-checked-input-corpus-20261105/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  seal-once:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore exact checked evidence and frozen input bytes
+        run: |
+          set -euo pipefail
+          gh api repos/heathsanchez/test/actions/artifacts/13381489248/zip > /tmp/core-completion.zip
+          printf '%s  %s\n' 0167b15caae9b474ae0d6540466ec68ef6fac2786b3eb263554d5e94c055adbb /tmp/core-completion.zip | sha256sum -c -
+          mkdir -p /tmp/core-completion
+          unzip -q /tmp/core-completion.zip -d /tmp/core-completion
+          gh api repos/heathsanchez/test/actions/artifacts/13126161718/zip > /tmp/core-inputs.zip
+          printf '%s  %s\n' 462e31e21379054490570b465b46ece4fff878490d9ad7de6bbc73149d587f4c /tmp/core-inputs.zip | sha256sum -c -
+          mkdir -p /tmp/core-inputs
+          unzip -q /tmp/core-inputs.zip -d /tmp/core-inputs
+      - name: Regenerate only exact already checked input bytes
+        run: |
+          python3 experiments/nucleus-checked-input-corpus-20261105/bootstrap.py \
+            --completion /tmp/core-completion --completion-zip /tmp/core-completion.zip \
+            --inputs /tmp/core-inputs --inputs-zip /tmp/core-inputs.zip \
+            --repo "$GITHUB_WORKSPACE" --out /tmp/nucleus-checked-input-corpus
+      - name: Verify sealed bytes and their source receipt bindings
+        run: |
+          python3 experiments/nucleus-checked-input-corpus-20261105/verify.py \
+            /tmp/nucleus-checked-input-corpus/corpus > /tmp/nucleus-checked-input-corpus/verified-corpus.json
+          mkdir -p /tmp/corpus-independent-readback
+          zstd -dq /tmp/nucleus-checked-input-corpus/checked-inputs.tar.zst -c | tar -xf - -C /tmp/corpus-independent-readback
+          python3 experiments/nucleus-checked-input-corpus-20261105/verify.py \
+            /tmp/corpus-independent-readback/corpus > /tmp/nucleus-checked-input-corpus/verified-archive-readback.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-checked-input-corpus-${{ github.sha }}
+          retention-days: 90
+          path: |
+            /tmp/nucleus-checked-input-corpus/checked-inputs.tar.zst
+            /tmp/nucleus-checked-input-corpus/checked-inputs.json
+            /tmp/nucleus-checked-input-corpus/verified-corpus.json
+            /tmp/nucleus-checked-input-corpus/verified-archive-readback.json
+            /tmp/nucleus-checked-input-corpus/corpus/manifest.json
+          if-no-files-found: warn
