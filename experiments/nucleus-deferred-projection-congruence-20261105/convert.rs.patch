@@ -1,0 +1,35 @@
+--- a/src/convert.rs
++++ b/src/convert.rs
+@@ -1614,6 +1614,32 @@
+                 ) {
+                     return Judgment::proven((), "stuck-projection-rigid-application-congruence");
+                 }
++                // Definitional equality is congruent under a fixed, source-
++                // identified projection and its applied spine. Preserve every
++                // receiver/argument obligation in this caller's work queue;
++                // never equate differing projection owners or field indices.
++                // Unlike a nested fixed-fuel probe this can establish long
++                // equal chains of stuck projections with one shared budget.
++                if crate::run_flags::present(
++                    crate::run_flags::Flag::ExperimentalDeferredProjectionCongruence,
++                ) && depth == context.len()
++                    && current_budget >= 8
++                    && left_spine.len() == right_spine.len()
++                {
++                    work.push((
++                        TypeValue::Term(left_structure.clone()),
++                        TypeValue::Term(right_structure.clone()),
++                        depth,
++                        context.to_vec(),
++                    ));
++                    work.extend(left_spine.iter().zip(right_spine).map(|(lhs, rhs)| (
++                        TypeValue::Term(lhs.clone()),
++                        TypeValue::Term(rhs.clone()),
++                        depth,
++                        context.to_vec(),
++                    )));
++                    return Judgment::proven((), "deferred-projection-congruence-obligations");
++                }
+                 let machine = checker.machine();
+                 let left_value = machine.projection_value_for_conversion(
+                     left_structure.clone(),
