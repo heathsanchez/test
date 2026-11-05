@@ -52,7 +52,10 @@ jobs:
           export "${flags[@]}"
           export NUCLEUS_EXPERIMENTAL_DEFERRED_PROJECTION_CONGRUENCE=1
           export NUCLEUS_EXPERIMENTAL_DISTINCT_CONST_PROOF_IRREL=1
-          cargo test --locked --tests
+          # Rust's integration-test harness starts each test on a small thread
+          # stack. The source-owned 64-parameter telescope case needs a larger
+          # thread stack to exercise the same depth as the CLI's main thread.
+          RUST_MIN_STACK=16777216 cargo test --locked --tests
           cargo build --locked --release
           cp target/release/metatron-kernel ../candidate/nucleus
           sha256sum ../candidate/nucleus | tee ../candidate-binary-sha256.txt
