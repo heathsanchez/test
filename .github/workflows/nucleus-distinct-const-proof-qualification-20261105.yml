@@ -45,7 +45,14 @@ jobs:
         run: |
           set -euo pipefail
           cd metatron-kernel
-          cargo test --locked --lib --tests
+          # The source-owning library tests exercise default behavior; the
+          # published integration regressions require their qualified flags.
+          cargo test --locked --lib
+          mapfile -t flags < <(jq -r '.candidate.configuration | to_entries[] | "\(.key)=\(.value)"' ../qualified/qualification.json)
+          export "${flags[@]}"
+          export NUCLEUS_EXPERIMENTAL_DEFERRED_PROJECTION_CONGRUENCE=1
+          export NUCLEUS_EXPERIMENTAL_DISTINCT_CONST_PROOF_IRREL=1
+          cargo test --locked --tests
           cargo build --locked --release
           cp target/release/metatron-kernel ../candidate/nucleus
           sha256sum ../candidate/nucleus | tee ../candidate-binary-sha256.txt
