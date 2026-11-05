@@ -1,0 +1,150 @@
+--- a/src/machine.rs
++++ b/src/machine.rs
+@@ -140,6 +140,29 @@
+ impl ReplayKey {
+     fn identity(key:&Rc<Self>)->usize {Rc::as_ptr(key) as usize}
+ }
++// A strictly narrower lookup identity used *within one immutable Machine*.
++// Environment frame IDs are globally unique for the lifetime of their
++// immutable frames. LevelSubstitution hashes its structural entries and
++// compares them on hash collision, so newly allocated equal substitutions
++// share an index without using allocation as an equality witness. Mutable
++// builder configuration is explicitly included to prevent stale key reuse.
++#[derive(Eq,Hash,PartialEq)]
++struct ReplaySourceHandle {
++    authority:AuthorityId,
++    modes:(bool,bool,bool),
++    definitions:usize,
++    recursors:usize,
++    projections:usize,
++    singletons:usize,
++    nullary:usize,
++    nested:usize,
++    nat:Option<NatPrimitives>,
++    bools:Option<BoolPrimitives>,
++    quot:Option<(NameId,NameId,NameId,NameId)>,
++    name:NameId,
++    levels:Vec<crate::level::LevelTerm>,
++    spine:Vec<(ExprId,u64,LevelSubstitution)>,
++}
+ // Share the exact key with the CLOCK ring. Its structural digest is computed
+ // once; pointer equality makes removal of an owned ring entry constant work.
+ struct CachedExposureKey { exact:ExposureCacheKey, digest:u64 }
+@@ -334,6 +357,11 @@
+     // During that *single* major probe, retain the source application for
+     // the certified worklist instead of recursively spending its owner here.
+     worklist_major_probe: Cell<bool>,
++    // Retain full certified replay keys on exact source handles. All fields
++    // omitted from the handle are immutable for the lifetime of this Machine.
++    // Weak aliases cannot make an incomplete key outlive its actual replay
++    // owner or prevent independently tested forced-digest collision checks.
++    replay_source_handles: RefCell<HashMap<ReplaySourceHandle,std::rc::Weak<ReplayKey>>>,
+     #[cfg(test)]
+     replay_key_builds: Cell<usize>,
+     exposure_cache: Option<ExposureCache>,
+@@ -367,6 +395,7 @@
+             exposure_depth: Cell::new(0),
+             native_completion: Cell::new(true),
+             worklist_major_probe: Cell::new(false),
++            replay_source_handles: RefCell::new(HashMap::new()),
+             #[cfg(test)]
+             replay_key_builds: Cell::new(0),
+             exposure_cache: None,
+@@ -1122,6 +1151,42 @@
+         let required=certificate.num_params.checked_add(1)?.checked_add(certificate.rules.len())?
+             .checked_add(certificate.num_indices)?.checked_add(1)?;
+         if certificate.level_params.len()!=levels.len() || spine.len()<required {return None;}
++        // The borrowed lookup is fully accounted on either path: a hit pays
++        // for inspecting exact source handles and structural universe nodes;
++        // a miss pays the existing full-key reservation instead. Never charge
++        // both for the same source construction work.
++        let handle=ReplaySourceHandle{
++            authority:self.authority,
++            modes:(self.demand_major,self.replay_projection_major,self.replay_neutral_projection),
++            definitions:Rc::as_ptr(&self.definitions) as usize,
++            recursors:Rc::as_ptr(&self.recursor_reductions) as usize,
++            projections:Rc::as_ptr(&self.projection_specs) as usize,
++            singletons:Rc::as_ptr(&self.singleton_recursor_reductions) as usize,
++            nullary:Rc::as_ptr(&self.nullary_minor_reductions) as usize,
++            nested:Rc::as_ptr(&self.closed_nested_minor_reductions) as usize,
++            nat:self.nat_primitives.clone(),bools:self.bool_primitives.clone(),
++            quot:self.quot_primitives.as_ref().map(|q|(q.type_name,q.mk,q.lift,q.ind)),
++            name,levels:levels.to_vec(),
++            spine:spine.iter().map(|c|(c.expr,c.env.id(),c.levels.clone())).collect(),
++        };
++        if let Some(saved)=self.replay_source_handles.borrow().get(&handle).and_then(std::rc::Weak::upgrade){
++            if !self.reserve_replay_work(1usize.saturating_add(spine.len()).saturating_add(levels.len())){return None;}
++            for level in levels{if !self.reserve_replay_levels(level){return None;}}
++            for closure in spine{
++                for (_,level) in closure.levels.entries(){
++                    if !self.reserve_replay_work(1)||!self.reserve_replay_levels(level){return None;}
++                }
++            }
++            #[cfg(feature="diagnostics")]
++            if crate::run_flags::present(crate::run_flags::Flag::TraceReplayCache){
++                use std::sync::atomic::{AtomicUsize,Ordering};
++                static HITS:AtomicUsize=AtomicUsize::new(0);
++                if HITS.fetch_add(1,Ordering::Relaxed)<32{
++                    eprintln!("NUCLEUS_REPLAY_HANDLE:hit:name={name:?}:fuel={:?}",self.exposure_fuel.get());
++                }
++            }
++            return Some(saved);
++        }
+         if !self.reserve_replay_key(levels,spine,certificate) {return None;}
+         #[cfg(test)]
+         self.replay_key_builds.set(self.replay_key_builds.get()+1);
+@@ -1135,7 +1200,10 @@
+         use std::hash::{Hash,Hasher};
+         let mut hash=std::collections::hash_map::DefaultHasher::new();
+         exact.hash(&mut hash);
+-        Some(Rc::new(ReplayKey{exact,digest:hash.finish()}))
++        let key=Rc::new(ReplayKey{exact,digest:hash.finish()});
++        let mut aliases=self.replay_source_handles.borrow_mut();
++        if aliases.len()<4096 {aliases.insert(handle,Rc::downgrade(&key));}
++        Some(key)
+     }
+ 
+     fn replay_keys_equal(&self,left:&Rc<ReplayKey>,right:&Rc<ReplayKey>)->Option<bool> {
+@@ -3415,7 +3483,8 @@
+             }
+             assert_no_completed_replay(&machine,&different);
+             machine.exposure_fuel.set(Some(12));
+-            assert!(machine.qualified_nested_recursor_result(&different,48).is_unknown());
++            let actual=machine.qualified_nested_recursor_result(&different,48);
++            assert!(actual.is_unknown(),"distinct source variant={variant} must remain UNKNOWN under this fixed work owner; observed {actual:?}");
+             machine.exposure_fuel.set(None);
+         }
+         // Saturation keeps previously completed progress instead of
+@@ -3502,6 +3571,32 @@
+         assert!(machine.qualified_nested_recursor_result(&wrong_constructor,2048).is_unknown());
+         let mut wrong_levels=chain;wrong_levels.head=NeutralHead::Const{name:NameId(1),levels:vec![crate::level::LevelTerm::Zero]};
+         assert!(machine.qualified_nested_recursor_result(&wrong_levels,2048).is_unknown());
++
++        // An exact source handle may reuse an already built, independently
++        // checked replay key. A different captured binder must not alias it.
++        machine.exposure_fuel.set(Some(4096));
++        let same_spine=vec![closed(0),closed(0),closed(2)];
++        let first=machine.completed_replay_key(NameId(1),&[],&same_spine).expect("first source key");
++        let built=machine.replay_key_builds.get();
++        let again=machine.completed_replay_key(NameId(1),&[],&same_spine).expect("same source key");
++        assert!(Rc::ptr_eq(&first,&again),"unchanged source should reuse the exact checked key");
++        assert_eq!(machine.replay_key_builds.get(),built,"unchanged source must not rebuild certificate identity");
++        let changed_spine=vec![closed(0),closed(0),Closure::new(ExprId(1),EnvFrame::empty().extend_free(FreeId(71)))];
++        let different=machine.completed_replay_key(NameId(1),&[],&changed_spine).expect("different captured source key");
++        assert!(!Rc::ptr_eq(&first,&different),"different source binder must remain distinct");
++        machine.exposure_fuel.set(None);
++        // Consuming a Machine through a builder is legal after previous
++        // checking. An updated certified rule table must invalidate the
++        // borrowed shortcut even if the source application is identical.
++        let changed_machine=machine.with_recursor_reductions(HashMap::from([(NameId(1),RecursorReduction{
++            k:false,num_params:0,num_indices:0,level_params:vec![],rules:vec![RecursorRule{
++                constructor:NameId(2),constructor_level_params:vec![],num_params:0,num_fields:0,rhs:ExprId(3),
++            }],
++        })]));
++        changed_machine.exposure_fuel.set(Some(4096));
++        let changed_certificate=changed_machine.completed_replay_key(NameId(1),&[],&same_spine).expect("updated certified rule key");
++        assert!(!Rc::ptr_eq(&first,&changed_certificate),"changed rule authority must never borrow the old replay key");
++        changed_machine.exposure_fuel.set(None);
+     }
+ }
+ 
