@@ -1,0 +1,28 @@
+name: Nucleus context mismatch source inquiry
+on:
+  push:
+    branches: [research/nucleus-obligation-census-20261107]
+    paths: ['.github/workflows/nucleus-context-match-probe-20261107.yml']
+  workflow_dispatch:
+permissions: {contents: read, actions: read}
+jobs:
+  observe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Qualify scope calibration and native controls
+        run: python experiments/nucleus-capture-substitution-20261107/qualify-context-match-probe.py > driver.log 2>&1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-context-match-probe-OBSERVATION
+          retention-days: 60
+          path: |
+            reports/
+            candidate/
+            driver.log
