@@ -1,0 +1,52 @@
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -751,6 +751,10 @@
+                         Some(f)if !f.same_context(context)=>crate::memo_path_trace::event(11),
+                         _=>{},
+                     }}
++                    #[cfg(feature="diagnostics")]
++                    if crate::context_probe::active() && let Some(fact)=slot && fact.key==key && !fact.same_context(context){
++                        crate::context_probe::observe(term.expr.0,&fact.context,context,&fact.result,|a,b,work|self.relational_source_substitution(a,b,work));
++                    }
+                     if let Some(fact)=slot && fact.key==key && fact.same_context(context){
+                         #[cfg(feature="diagnostics")]
+                         if short_alias&&std::env::var_os("NUCLEUS_TRACE_ALIAS_RESULT_REUSE").is_some(){match &fact.result{TypeValue::Pi{..}=>crate::alias_result_trace::hit(term.expr.0,context.len(),"Pi"),TypeValue::Sort(_)=>crate::alias_result_trace::hit(term.expr.0,context.len(),"Sort"),_=>{}}}
+@@ -8823,3 +8827,18 @@
+  #[test]fn short_alias_to_dependent_function_reuses_completed_pi(){let _scope=crate::run_flags::enter();let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);for index in [0,1]{let t=alias(&c,index);let first=c.infer_exact_closure_in_context(&t,&[],&mut 4096,0);assert!(matches!(first,Some(TypeValue::Pi{..})));let mut work=1;assert_eq!(c.infer_exact_closure_in_context(&t,&[],&mut work,0),first);assert_eq!(work,0);}}
+  #[test]fn changed_capture_zero_work_and_unadmitted_aliases_never_reuse_pi(){let _scope=crate::run_flags::enter();let(e,l,env)=fixture();let mut c=TypeChecker::new(&e,&l,&env);let t=alias(&c,0);assert!(c.infer_exact_closure_in_context(&t,&[],&mut 4096,0).is_some());assert!(c.infer_exact_closure_in_context(&t,&[],&mut 0,0).is_none());let changed=Closure::with_levels(t.expr,EnvFrame::empty().extend(c.closure(ExprId(0),EnvFrame::empty())),t.levels.clone());assert!(c.infer_exact_closure_in_context(&changed,&[],&mut 1,0).is_none());let wide=alias(&c,2);assert!(c.infer_exact_closure_in_context(&wide,&[],&mut 4096,0).is_some());assert!(c.infer_exact_closure_in_context(&wide,&[],&mut 1,0).is_none());c.strict_origin_probe=true;assert!(c.infer_exact_closure_in_context(&t,&[],&mut 1,0).is_none());}
+ }
++
++#[cfg(all(test,feature="diagnostics"))]mod context_probe_purity_controls{
++ use super::*;
++ #[test]fn observation_uses_pure_source_relation_without_issuing_or_retaining_typing_facts(){
++  let mut e=IdTable::default();e.insert(ExprId(0),Expr::BVar(0)).unwrap();e.insert(ExprId(1),Expr::Const{name:NameId(1),levels:vec![]}).unwrap();e.insert(ExprId(2),Expr::Const{name:NameId(2),levels:vec![]}).unwrap();
++  e.insert(ExprId(100),Expr::BVar(100)).unwrap();let levels=IdTable::default();let environment=Environment::empty();let c=TypeChecker::new(&e,&levels,&environment);
++  let direct=c.closure(ExprId(1),EnvFrame::empty());let old=c.closure(ExprId(0),EnvFrame::empty().extend(direct.clone()));let other=c.closure(ExprId(2),EnvFrame::empty());
++  let difficult=c.closure(ExprId(100),EnvFrame::empty());let mut little=10;assert!(!c.relational_source_substitution(&difficult,&direct,&mut little));assert!(little>0,"unaffordable operation may leave positive balance");let epoch=c.binding_revocation_epoch.get();let _scope=crate::context_probe::Scope::enter("test".into(),"test");
++  crate::context_probe::observe(5,&[old.clone()],&[TypeValue::Term(direct)],&TypeValue::Sort(LevelTerm::Zero),|a,b,w|c.relational_source_substitution(a,b,w));
++  assert_eq!(crate::context_probe::test_counts()[14],1);
++  crate::context_probe::observe(5,&[old],&[TypeValue::Term(other)],&TypeValue::Sort(LevelTerm::Zero),|a,b,w|c.relational_source_substitution(a,b,w));
++  assert_eq!(crate::context_probe::test_counts()[14],1);assert_eq!(crate::context_probe::test_counts()[16],1);
++  assert!(c.source_capture_proofs.borrow().is_empty());assert!(c.source_support.borrow().is_empty());assert!(c.exact_typing_memo.borrow().slots.iter().all(Option::is_none));assert_eq!(c.binding_revocation_epoch.get(),epoch);
++ }
++}
+--- a/src/checker.rs
++++ b/src/checker.rs
+@@ -632,6 +632,8 @@
+     let _alias_trace=std::env::var_os("NUCLEUS_TRACE_ALIAS_RESULT_REUSE").is_some().then(||crate::alias_result_trace::Scope::enter(trace_name(export,name),stage));
+     #[cfg(feature="diagnostics")]
+     let _memo_trace=if std::env::var_os("NUCLEUS_TRACE_MEMO_PATH").is_some(){let owner=trace_name(export,name);if matches!(owner.as_str(),"chain9_datF"|"AddMonoidAlgebra.semiring"){Some(crate::memo_path_trace::Scope::enter(owner,stage))}else{None}}else{None};
++    #[cfg(feature="diagnostics")]
++    let _context_trace=if std::env::var_os("NUCLEUS_TRACE_CONTEXT_PROBE").is_some(){let owner=trace_name(export,name);if matches!(owner.as_str(),"chain9_datF"|"AddMonoidAlgebra.semiring"){Some(crate::context_probe::Scope::enter(owner,stage))}else{None}}else{None};
+     if let Some(state)=census.as_deref_mut(){
+         if state.assume_prefix_boundary(name){return Ok(());}
+         let judgment=judgment();
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -61,3 +61,6 @@
+ 
+ #[cfg(feature="diagnostics")]
+ mod memo_path_trace;
++
++#[cfg(feature="diagnostics")]
++mod context_probe;
