@@ -1,0 +1,40 @@
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -55,3 +55,6 @@
+ 
+ #[cfg(feature="diagnostics")]
+ mod obligation_shadow;
++
++#[cfg(feature="diagnostics")]
++mod owner_work;
+--- a/src/checker.rs
++++ b/src/checker.rs
+@@ -628,6 +628,8 @@
+     state.report(match terminal{Verdict::Accept=>"unexpected-terminal",Verdict::Reject=>"structural-or-metadata-rejection",Verdict::Unknown=>"unsupported-metadata-or-structural-obligation",Verdict::Error=>"process-error"})
+ }
+ fn census_boundary(census:&mut Option<&mut crate::census::Census>,export:&ResolvedExport,name:NameId,stage:&'static str,judgment:impl FnOnce()->Judgment<()>)->Result<(),Verdict>{
++    #[cfg(feature="diagnostics")]
++    let _owner_work=crate::owner_work::Scope::enter(&trace_name(export,name),stage);
+     if let Some(state)=census.as_deref_mut(){
+         if state.assume_prefix_boundary(name){return Ok(());}
+         let judgment=judgment();
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -671,7 +671,17 @@
+             let mut entries=term.levels.entries().collect::<Vec<_>>();entries.sort_by_key(|(name,_)|name.0);
+             crate::obligation_shadow::bounded_debug(&entries).and_then(|levels|self.shadow_key(term.expr,term.env.id(),levels,context)).map(|key|self.shadow_typing.borrow().snapshot(&key))
+         }else{None};
++        #[cfg(feature="diagnostics")]
++        let work_ticket=if crate::owner_work::active(){
++            let key=if depth<48&&context.len()<=64&&*remaining>0&&crate::run_flags::captured_configuration().is_some()&&self.binding_revocation_epoch.get().is_some(){
++                let mut levels=term.levels.entries().collect::<Vec<_>>();levels.sort_by_key(|(n,_)|n.0);
++                crate::obligation_shadow::bounded_debug(&(self.authority(),term.expr,term.env.id(),levels,context,self.strict_origin_probe,self.delta_policy,crate::run_flags::captured_configuration(),self.binding_revocation_epoch.get()))
++            }else{None};
++            crate::owner_work::begin(key,term.expr.0,term.env.id(),context.len(),*remaining)
++        }else{None};
+         let result=self.infer_exact_closure_in_context_inner(term,context,remaining,depth);
++        #[cfg(feature="diagnostics")]
++        crate::owner_work::finish(work_ticket,*remaining,result.is_some());
+         #[cfg(feature="diagnostics")]
+         if let Some(matches)=snapshot {self.shadow_typing.borrow_mut().query(matches,result.is_some());}
+         result
