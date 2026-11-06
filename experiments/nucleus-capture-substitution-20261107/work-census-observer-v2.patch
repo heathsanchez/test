@@ -1,0 +1,77 @@
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -55,3 +55,6 @@
+ 
+ #[cfg(feature="diagnostics")]
+ mod obligation_shadow;
++
++#[cfg(feature="diagnostics")]
++mod work_census;
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -671,7 +671,11 @@
+             let mut entries=term.levels.entries().collect::<Vec<_>>();entries.sort_by_key(|(name,_)|name.0);
+             crate::obligation_shadow::bounded_debug(&entries).and_then(|levels|self.shadow_key(term.expr,term.env.id(),levels,context)).map(|key|self.shadow_typing.borrow().snapshot(&key))
+         }else{None};
++        #[cfg(feature="diagnostics")]
++        let work_scope=crate::work_census::begin(remaining as *mut usize as usize,*remaining,"exact",term.expr.0,context.len(),term.env.id());
+         let result=self.infer_exact_closure_in_context_inner(term,context,remaining,depth);
++        #[cfg(feature="diagnostics")]
++        crate::work_census::end(work_scope,*remaining,result.is_some());
+         #[cfg(feature="diagnostics")]
+         if let Some(matches)=snapshot {self.shadow_typing.borrow_mut().query(matches,result.is_some());}
+         result
+@@ -2382,6 +2386,22 @@
+     }
+ 
+     fn infer_in(
++        &self,
++        expression: ExprId,
++        context: &[TypeValue],
++        frame: &EnvFrame,
++        remaining: &mut usize,
++        cache: &mut HashMap<(ExprId, u64), TypeValue>,
++    ) -> Judgment<TypeValue> {
++        #[cfg(feature="diagnostics")]
++        let scope=crate::work_census::begin(remaining as *mut usize as usize,*remaining,"ordinary",expression.0,context.len(),frame.id());
++        let result=self.infer_in_observed(expression,context,frame,remaining,cache);
++        #[cfg(feature="diagnostics")]
++        crate::work_census::end(scope,*remaining,result.is_proven());
++        result
++    }
++
++    fn infer_in_observed(
+         &self,
+         expression: ExprId,
+         context: &[TypeValue],
+--- a/src/work_census.rs
++++ b/src/work_census.rs
+@@ -0,0 +1,28 @@
++//! Read-only inference work census. Different mutable owners are not summed
++//! into a global fuel claim; only same-owner nested charges are subtracted.
++use std::{cell::RefCell,collections::{HashMap,HashSet}};
++#[derive(Default)]struct Row{calls:u64,proven:u64,inclusive:u64,exclusive:u64,frames:HashSet<u64>,frames_overflow:bool,depth_min:Option<usize>,depth_max:usize}
++struct Frame{owner:usize,start:usize,children:usize,key:(&'static str,u64),depth:usize,env:u64}
++struct Ledger{enabled:bool,stack:Vec<Frame>,rows:HashMap<(&'static str,u64),Row>,dropped:u64,anomalies:u64}
++impl Default for Ledger{fn default()->Self{Self{enabled:std::env::var_os("NUCLEUS_DIAGNOSTIC_WORK_CENSUS").is_some(),stack:vec![],rows:HashMap::new(),dropped:0,anomalies:0}}}
++impl Ledger{
++ fn begin(&mut self,owner:usize,start:usize,phase:&'static str,expr:u64,depth:usize,env:u64)->Option<usize>{if !self.enabled{return None;}let n=self.stack.len();self.stack.push(Frame{owner,start,children:0,key:(phase,expr),depth,env});Some(n)}
++ fn end(&mut self,token:usize,end:usize,proven:bool){
++  if self.stack.len()!=token+1{self.anomalies+=1;return;}
++  let f=self.stack.pop().unwrap();let spent=f.start.saturating_sub(end);
++  if f.children>spent{self.anomalies+=1;}
++  if let Some(parent)=self.stack.iter_mut().rev().find(|p|p.owner==f.owner){parent.children=parent.children.saturating_add(spent);}
++  if !self.rows.contains_key(&f.key)&&self.rows.len()>=32768{self.dropped+=1;return;}
++  let r=self.rows.entry(f.key).or_default();r.depth_min=Some(r.depth_min.map_or(f.depth,|x|x.min(f.depth)));r.depth_max=r.depth_max.max(f.depth);r.calls+=1;r.proven+=u64::from(proven);r.inclusive+=spent as u64;r.exclusive+=spent.saturating_sub(f.children)as u64;
++  if r.frames.len()<128{r.frames.insert(f.env);}else if !r.frames.contains(&f.env){r.frames_overflow=true;}
++ }
++}
++impl Drop for Ledger{fn drop(&mut self){if self.enabled&&!self.rows.is_empty(){let mut rows=self.rows.iter().collect::<Vec<_>>();rows.sort_by_key(|(_,r)|std::cmp::Reverse(r.exclusive));let rows=rows.into_iter().take(64).map(|(&(phase,expr),r)|serde_json::json!({"phase":phase,"expr":expr,"context_depth_min":r.depth_min,"context_depth_max":r.depth_max,"calls":r.calls,"proven":r.proven,"inclusive_owner_steps":r.inclusive,"exclusive_owner_steps":r.exclusive,"distinct_frames_lower_bound":r.frames.len(),"frame_count_capped":r.frames_overflow})).collect::<Vec<_>>();eprintln!("NUCLEUS_INFERENCE_WORK_CENSUS:{}",serde_json::json!({"diagnostic_only":true,"acceptance_authority":false,"global_work_conservation_claim":false,"tracked_expression_keys":self.rows.len(),"dropped_new_keys":self.dropped,"accounting_anomalies":self.anomalies,"unclosed_scopes":self.stack.len(),"rows":rows}));}}}
++thread_local!{static LEDGER:RefCell<Ledger>=RefCell::new(Ledger::default());}
++pub(crate)fn begin(owner:usize,start:usize,phase:&'static str,expr:u64,depth:usize,env:u64)->Option<usize>{LEDGER.with(|l|l.borrow_mut().begin(owner,start,phase,expr,depth,env))}
++pub(crate)fn end(token:Option<usize>,remaining:usize,proven:bool){if let Some(token)=token{LEDGER.with(|l|l.borrow_mut().end(token,remaining,proven));}}
++#[cfg(test)]mod tests{
++ use super::*;
++ #[test]fn same_owner_child_is_subtracted_once(){let mut l=Ledger::default();l.enabled=true;let p=l.begin(1,100,"p",1,0,1).unwrap();let c=l.begin(1,90,"c",2,0,1).unwrap();l.end(c,60,true);l.end(p,50,false);assert_eq!(l.rows[&("p",1)].exclusive,20);assert_eq!(l.rows[&("c",2)].exclusive,30);assert_eq!(l.anomalies,0);}
++ #[test]fn a_distinct_owner_never_creates_a_fictitious_refund(){let mut l=Ledger::default();l.enabled=true;let p=l.begin(1,100,"p",1,0,1).unwrap();let c=l.begin(2,1000,"c",2,0,1).unwrap();l.end(c,100,true);l.end(p,90,false);assert_eq!(l.rows[&("p",1)].exclusive,10);assert_eq!(l.rows[&("c",2)].exclusive,900);assert_eq!(l.anomalies,0);}
++}
