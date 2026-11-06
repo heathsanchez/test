@@ -1,0 +1,15 @@
+--- a/src/convert.rs
++++ b/src/convert.rs
+@@ -3042,7 +3042,11 @@
+             let mut opening_budget = allowance;
+             let safe = source_opening_avoids_capture(checker, body, free, &mut opening_budget);
+             *remaining -= allowance - opening_budget;
+-            if !safe { return None; }
++            if !safe {
++                #[cfg(feature="diagnostics")]
++                if std::env::var_os("NUCLEUS_TRACE_VALUE_AS_TYPE_CAPTURE").is_some(){eprintln!("NUCLEUS_VALUE_AS_TYPE_CAPTURE_GAP:source={}:depth={depth}:allowance={allowance}:opening_remaining={opening_budget}:owner_remaining={remaining}",body.expr.0);}
++                return None;
++            }
+             Some(TypeValue::Pi {
+                 domain: Box::new(TypeValue::Term(domain.clone())),
+                 body: Box::new(TypeValue::Term(body.under_free(free))),
