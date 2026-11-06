@@ -1,0 +1,79 @@
+name: Nucleus empty universe identity experiment v2
+on:
+  push:
+    branches: [research/nucleus-obligation-census-20261107]
+    paths: ['.github/workflows/nucleus-empty-intern-v2-20261107.yml']
+  workflow_dispatch:
+permissions: {contents: read, actions: read}
+jobs:
+  experiment:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RUST_MIN_STACK: '16777216'
+      CARGO_BUILD_JOBS: '2'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Restore exact parent and independently fail identity control
+        run: |
+          set -euo pipefail
+          mkdir -p base reports candidate
+          gh api repos/heathsanchez/test/actions/artifacts/13520537513/zip > source.zip
+          printf '%s  %s\n' f8dc913015842af9a923c6b419f29d9b2fad14e269ea8bfbbbbcce9ffd7a9b0f source.zip | sha256sum -c -
+          unzip -q source.zip -d base
+          tar --no-same-owner -xzf base/candidate/source.tar.gz
+          patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-capture-substitution-20261107/empty-intern-controls-v2.patch
+          set +e
+          cargo test --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml empty_universe_intern_tests > reports/parent-red.log 2>&1
+          rc=$?
+          set -e
+          test "$rc" = 101
+          grep -q 'equal_empty_substitutions_share_only_the_immutable_map ... FAILED' reports/parent-red.log
+      - name: Candidate controls and adversarial late TLS teardown
+        run: |
+          set -euo pipefail
+          ulimit -c 0
+          patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-capture-substitution-20261107/empty-intern-candidate-v2.patch
+          cargo test --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml empty_universe_intern_tests > reports/candidate-controls.log 2>&1
+          python - <<'PY'
+          import pathlib,subprocess
+          p=pathlib.Path('metatron-kernel/src/value.rs');safe=p.read_text()
+          old='return EMPTY.try_with(|value|Self(value.clone())).unwrap_or_else(|_|Self(Rc::new(LevelSubstitutionData{entries:Vec::new(),digest:0})));'
+          assert safe.count(old)==1
+          try:
+           p.write_text(safe.replace(old,'return EMPTY.with(|value|Self(value.clone()));'))
+           with open('reports/unsafe-tls-mutant.log','wb')as out:
+            r=subprocess.run(['cargo','test','--locked','--features','diagnostics','--manifest-path','metatron-kernel/Cargo.toml','constructor_available_in_late_tls_destructor'],stdout=out,stderr=subprocess.STDOUT)
+           assert r.returncode!=0
+           log=pathlib.Path('reports/unsafe-tls-mutant.log').read_text()
+           assert 'cannot access a Thread Local Storage value' in log or 'thread local panicked on drop' in log
+          finally:p.write_text(safe)
+          assert p.read_text()==safe
+          PY
+      - name: Complete candidate native suite and release executable
+        run: |
+          set -euo pipefail
+          mapfile -t flags < <(jq -r 'to_entries[] | "\(.key)=\(.value)"' base/flags.json)
+          env "${flags[@]}" cargo test --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml > reports/native.log 2>&1
+          cargo check --locked --all-targets --manifest-path metatron-kernel/Cargo.toml > reports/plain-build.log 2>&1
+          cargo build --locked --release --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel candidate/
+          tar --exclude=target -czf candidate/source.tar.gz metatron-kernel
+          find metatron-kernel/src -type f -print0 | sort -z | xargs -0 sha256sum > reports/source.sha256
+      - name: Decisive unchanged inputs and protected acquired prefixes
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/11272848230/zip > original196.zip
+          gh api repos/heathsanchez/test/actions/artifacts/13507335517/zip > prefix.zip
+          python experiments/nucleus-capture-substitution-20261107/qualify-empty-intern.py > reports/driver.log 2>&1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-empty-intern-v2-CANDIDATE
+          retention-days: 60
+          path: |
+            reports/
+            candidate/
