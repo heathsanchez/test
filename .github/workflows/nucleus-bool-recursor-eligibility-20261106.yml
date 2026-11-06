@@ -40,6 +40,7 @@ jobs:
           patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-resumable-source-prefix-20261105/replay-prehashed-universe-regression-red.patch
           patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-resumable-source-prefix-20261105/replay-prehashed-universe-miss-collision-metered-candidate.patch
           patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-bool-recursor-eligibility-20261106/eligibility.patch
+          patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-bool-recursor-eligibility-20261106/applied-local-proof.patch
           mkdir -p metatron-kernel/src/bin arena207 reports
           cp experiments/nucleus-bool-recursor-eligibility-20261106/nucleus-diagnostic.rs metatron-kernel/src/bin/
           python - <<'PYFLAGS'
@@ -59,7 +60,7 @@ jobs:
         run: |
           set -euo pipefail
           mapfile -t flags < <(jq -r 'to_entries[] | "\(.key)=\(.value)"' flags.json)
-          env "${flags[@]}" cargo test --manifest-path metatron-kernel/Cargo.toml --locked --release --features diagnostics > reports/native.log 2>&1
+          env "${flags[@]}" cargo test --manifest-path metatron-kernel/Cargo.toml --locked --features diagnostics > reports/native.log 2>&1
           cargo build --manifest-path metatron-kernel/Cargo.toml --locked --release --features diagnostics
           cp metatron-kernel/target/release/{metatron-kernel,nucleus-diagnostic} candidate/
           sha256sum candidate/* > reports/binaries.sha256
