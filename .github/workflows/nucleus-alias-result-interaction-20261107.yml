@@ -1,0 +1,40 @@
+name: Nucleus source eligibility by result interaction
+on:
+  push:
+    branches: [research/nucleus-obligation-census-20261107]
+    paths: ['.github/workflows/nucleus-alias-result-interaction-20261107.yml']
+  workflow_dispatch:
+permissions: {contents: read, actions: read}
+jobs:
+  qualification:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Restore independently pinned source arms
+        run: |
+          set -euo pipefail
+          gh api repos/heathsanchez/test/actions/artifacts/13520537513/zip > parent.zip
+          gh api repos/heathsanchez/test/actions/artifacts/13532623956/zip > alias.zip
+          gh api repos/heathsanchez/test/actions/artifacts/13533891383/zip > results.zip
+      - name: Four-way interaction, complete native suite and combined release
+        run: python experiments/nucleus-capture-substitution-20261107/qualify-alias-result-matrix.py > matrix-driver.log 2>&1
+      - name: Actual unchanged source replay and conditional complete-corpus qualification
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/11272848230/zip > original196.zip
+          gh api repos/heathsanchez/test/actions/artifacts/13507335517/zip > prefix.zip
+          python experiments/nucleus-capture-substitution-20261107/qualify-alias-result-native.py > reports/driver.log 2>&1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-alias-result-interaction-CANDIDATE
+          retention-days: 60
+          path: |
+            reports/
+            candidate/
+            matrix-driver.log
