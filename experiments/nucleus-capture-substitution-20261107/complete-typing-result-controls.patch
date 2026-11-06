@@ -1,0 +1,14 @@
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -8739,3 +8739,11 @@
+  }
+  #[test]fn incomplete_source_or_work_never_proves(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let a=c.closure(ExprId(4),EnvFrame::empty());assert!(!c.relational_source_substitution(&a,&a,&mut 0));assert!(!c.relational_source_substitution(&a,&a,&mut 4096));}
+ }
++
++#[cfg(test)]
++mod complete_typing_result_controls {
++ use super::*;
++ fn fixture()->(IdTable<ExprId,Expr>,IdTable<LevelId,Level>,Environment){let mut e=IdTable::default();let mut l=IdTable::default();l.insert(LevelId(0),Level::Zero).unwrap();l.insert(LevelId(1),Level::Succ(LevelId(0))).unwrap();for(id,x)in[(0,Expr::Sort(LevelId(1))),(1,Expr::BVar(0)),(2,Expr::Lam{domain:ExprId(1),body:ExprId(1)}),(3,Expr::Lam{domain:ExprId(0),body:ExprId(2)}),(4,Expr::Pi{domain:ExprId(0),body:ExprId(0)})]{e.insert(ExprId(id),x).unwrap();}(e,l,Environment::empty())}
++ #[test]fn a_completed_sort_is_reused_at_one_paid_step(){let _flags=crate::run_flags::enter();let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let t=c.closure(ExprId(4),EnvFrame::empty());let first=c.infer_exact_closure_in_context(&t,&[],&mut 4096,0);assert!(matches!(first,Some(TypeValue::Sort(_))));let mut work=1;assert_eq!(c.infer_exact_closure_in_context(&t,&[],&mut work,0),first);assert_eq!(work,0);assert!(c.infer_exact_closure_in_context(&t,&[],&mut 0,0).is_none());}
++ #[test]fn a_completed_dependent_pi_keeps_its_owned_binders_and_exact_scope(){let _flags=crate::run_flags::enter();let(e,l,env)=fixture();let mut c=TypeChecker::new(&e,&l,&env);let t=c.closure(ExprId(3),EnvFrame::empty());let first=c.infer_exact_closure_in_context(&t,&[],&mut 4096,0);assert!(matches!(first,Some(TypeValue::Pi{..})));assert_eq!(c.infer_exact_closure_in_context(&t,&[],&mut 1,0),first);let changed=[TypeValue::Term(c.closure(ExprId(0),EnvFrame::empty()))];assert!(c.infer_exact_closure_in_context(&t,&changed,&mut 1,0).is_none());c.strict_origin_probe=true;assert!(c.infer_exact_closure_in_context(&t,&[],&mut 1,0).is_none());c.strict_origin_probe=false;c.binding_revocation_epoch.set(Some(1));assert!(c.infer_exact_closure_in_context(&t,&[],&mut 1,0).is_none());assert!(c.infer_exact_closure_in_context(&t,&[],&mut 4096,48).is_none());}
++}
