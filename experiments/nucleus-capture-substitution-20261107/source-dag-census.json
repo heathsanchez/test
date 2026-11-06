@@ -1,0 +1,255 @@
+{
+  "input_sha256": "e5ca34489fc7b8ee13b1e7f09f76247ab7b01dd1a752a13cc8b796c569e1401a",
+  "diagnostic_only": true,
+  "scope": "literal source AST sharing; constants not unfolded; no claim of type equality or dynamic execution count",
+  "source_tags": {
+    "sort": 21,
+    "const": 276,
+    "forallE": 998,
+    "bvar": 35,
+    "app": 12137,
+    "lam": 2584,
+    "proj": 16,
+    "letE": 100,
+    "natVal": 1
+  },
+  "rows": [
+    {
+      "name": "chain6",
+      "unique_nodes": 2690,
+      "expanded_source_nodes": 1524645,
+      "closed_non_spine_candidates": [
+        {
+          "expr": 7199,
+          "syntactic_occurrences": 1,
+          "expanded_nodes": 1524645,
+          "tag": "lam"
+        },
+        {
+          "expr": 4730,
+          "syntactic_occurrences": 2332,
+          "expanded_nodes": 21,
+          "tag": "lam"
+        },
+        {
+          "expr": 4680,
+          "syntactic_occurrences": 2560,
+          "expanded_nodes": 19,
+          "tag": "lam"
+        },
+        {
+          "expr": 4643,
+          "syntactic_occurrences": 513,
+          "expanded_nodes": 65,
+          "tag": "lam"
+        },
+        {
+          "expr": 5383,
+          "syntactic_occurrences": 157,
+          "expanded_nodes": 65,
+          "tag": "lam"
+        },
+        {
+          "expr": 4626,
+          "syntactic_occurrences": 1216,
+          "expanded_nodes": 5,
+          "tag": "forallE"
+        },
+        {
+          "expr": 4727,
+          "syntactic_occurrences": 542,
+          "expanded_nodes": 5,
+          "tag": "forallE"
+        },
+        {
+          "expr": 4671,
+          "syntactic_occurrences": 535,
+          "expanded_nodes": 5,
+          "tag": "forallE"
+        },
+        {
+          "expr": 6954,
+          "syntactic_occurrences": 64,
+          "expanded_nodes": 25,
+          "tag": "lam"
+        },
+        {
+          "expr": 5365,
+          "syntactic_occurrences": 314,
+          "expanded_nodes": 5,
+          "tag": "forallE"
+        },
+        {
+          "expr": 5070,
+          "syntactic_occurrences": 64,
+          "expanded_nodes": 23,
+          "tag": "lam"
+        },
+        {
+          "expr": 5407,
+          "syntactic_occurrences": 126,
+          "expanded_nodes": 5,
+          "tag": "lam"
+        }
+      ]
+    },
+    {
+      "name": "chain9",
+      "unique_nodes": 4904,
+      "expanded_source_nodes": 17805841,
+      "closed_non_spine_candidates": [
+        {
+          "expr": 10707,
+          "syntactic_occurrences": 1,
+          "expanded_nodes": 17805841,
+          "tag": "lam"
+        },
+        {
+          "expr": 4680,
+          "syntactic_occurrences": 28928,
+          "expanded_nodes": 19,
+          "tag": "lam"
+        },
+        {
+          "expr": 4730,
+          "syntactic_occurrences": 25596,
+          "expanded_nodes": 21,
+          "tag": "lam"
+        },
+        {
+          "expr": 4643,
+          "syntactic_occurrences": 4097,
+          "expanded_nodes": 65,
+          "tag": "lam"
+        },
+        {
+          "expr": 5383,
+          "syntactic_occurrences": 1277,
+          "expanded_nodes": 65,
+          "tag": "lam"
+        },
+        {
+          "expr": 4626,
+          "syntactic_occurrences": 9728,
+          "expanded_nodes": 5,
+          "tag": "forallE"
+        },
+        {
+          "expr": 4727,
+          "syntactic_occurrences": 4562,
+          "expanded_nodes": 5,
+          "tag": "forallE"
+        },
+        {
+          "expr": 4671,
+          "syntactic_occurrences": 4343,
+          "expanded_nodes": 5,
+          "tag": "forallE"
+        },
+        {
+          "expr": 6954,
+          "syntactic_occurrences": 512,
+          "expanded_nodes": 25,
+          "tag": "lam"
+        },
+        {
+          "expr": 5365,
+          "syntactic_occurrences": 2554,
+          "expanded_nodes": 5,
+          "tag": "forallE"
+        },
+        {
+          "expr": 5070,
+          "syntactic_occurrences": 512,
+          "expanded_nodes": 23,
+          "tag": "lam"
+        },
+        {
+          "expr": 5407,
+          "syntactic_occurrences": 1022,
+          "expanded_nodes": 5,
+          "tag": "lam"
+        }
+      ]
+    },
+    {
+      "name": "chain12",
+      "unique_nodes": 7766,
+      "expanded_source_nodes": 187079037,
+      "closed_non_spine_candidates": [
+        {
+          "expr": 16167,
+          "syntactic_occurrences": 1,
+          "expanded_nodes": 187079037,
+          "tag": "lam"
+        },
+        {
+          "expr": 4680,
+          "syntactic_occurrences": 299008,
+          "expanded_nodes": 19,
+          "tag": "lam"
+        },
+        {
+          "expr": 4730,
+          "syntactic_occurrences": 260092,
+          "expanded_nodes": 21,
+          "tag": "lam"
+        },
+        {
+          "expr": 4643,
+          "syntactic_occurrences": 32769,
+          "expanded_nodes": 65,
+          "tag": "lam"
+        },
+        {
+          "expr": 5383,
+          "syntactic_occurrences": 10237,
+          "expanded_nodes": 65,
+          "tag": "lam"
+        },
+        {
+          "expr": 4626,
+          "syntactic_occurrences": 77824,
+          "expanded_nodes": 5,
+          "tag": "forallE"
+        },
+        {
+          "expr": 4727,
+          "syntactic_occurrences": 36806,
+          "expanded_nodes": 5,
+          "tag": "forallE"
+        },
+        {
+          "expr": 4671,
+          "syntactic_occurrences": 34807,
+          "expanded_nodes": 5,
+          "tag": "forallE"
+        },
+        {
+          "expr": 6954,
+          "syntactic_occurrences": 4096,
+          "expanded_nodes": 25,
+          "tag": "lam"
+        },
+        {
+          "expr": 5365,
+          "syntactic_occurrences": 20474,
+          "expanded_nodes": 5,
+          "tag": "forallE"
+        },
+        {
+          "expr": 5070,
+          "syntactic_occurrences": 4096,
+          "expanded_nodes": 23,
+          "tag": "lam"
+        },
+        {
+          "expr": 5407,
+          "syntactic_occurrences": 8190,
+          "expanded_nodes": 5,
+          "tag": "lam"
+        }
+      ]
+    }
+  ]
+}
