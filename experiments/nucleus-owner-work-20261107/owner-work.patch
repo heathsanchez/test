@@ -1,0 +1,73 @@
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -55,3 +55,6 @@
+ 
+ #[cfg(feature="diagnostics")]
+ mod obligation_shadow;
++
++#[cfg(feature="diagnostics")]
++mod owner_work;
+--- a/src/checker.rs
++++ b/src/checker.rs
+@@ -628,6 +628,8 @@
+     state.report(match terminal{Verdict::Accept=>"unexpected-terminal",Verdict::Reject=>"structural-or-metadata-rejection",Verdict::Unknown=>"unsupported-metadata-or-structural-obligation",Verdict::Error=>"process-error"})
+ }
+ fn census_boundary(census:&mut Option<&mut crate::census::Census>,export:&ResolvedExport,name:NameId,stage:&'static str,judgment:impl FnOnce()->Judgment<()>)->Result<(),Verdict>{
++    #[cfg(feature="diagnostics")]
++    let _owner_work=crate::owner_work::Scope::enter(&trace_name(export,name),stage);
+     if let Some(state)=census.as_deref_mut(){
+         if state.assume_prefix_boundary(name){return Ok(());}
+         let judgment=judgment();
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -671,7 +671,19 @@
+             let mut entries=term.levels.entries().collect::<Vec<_>>();entries.sort_by_key(|(name,_)|name.0);
+             crate::obligation_shadow::bounded_debug(&entries).and_then(|levels|self.shadow_key(term.expr,term.env.id(),levels,context)).map(|key|self.shadow_typing.borrow().snapshot(&key))
+         }else{None};
++        #[cfg(feature="diagnostics")]
++        let work_ticket=if crate::owner_work::active(){
++            let checker_id=self.shadow_typing.borrow().identity;
++            let key=if depth<48&&context.len()<=64&&*remaining>0&&checker_id.is_some()&&crate::run_flags::captured_configuration().is_some()&&self.binding_revocation_epoch.get().is_some(){
++                let mut levels=term.levels.entries().collect::<Vec<_>>();levels.sort_by_key(|(n,_)|n.0);
++                let inherited=self.inherited_binding_lineage.as_ref().map(|b|(Rc::as_ptr(&b.ledger)as usize,b.captured_epoch,b.epoch.get()));
++                crate::obligation_shadow::bounded_debug(&(checker_id,self.authority(),term.expr,term.env.id(),levels,context,self.strict_origin_probe,self.delta_policy,crate::run_flags::captured_configuration(),self.binding_revocation_epoch.get(),inherited))
++            }else{None};
++            crate::owner_work::begin(key,term.expr.0,term.env.id(),context.len(),*remaining)
++        }else{None};
+         let result=self.infer_exact_closure_in_context_inner(term,context,remaining,depth);
++        #[cfg(feature="diagnostics")]
++        crate::owner_work::finish(work_ticket,*remaining,result.is_some());
+         #[cfg(feature="diagnostics")]
+         if let Some(matches)=snapshot {self.shadow_typing.borrow_mut().query(matches,result.is_some());}
+         result
+--- a/src/obligation_shadow.rs
++++ b/src/obligation_shadow.rs
+@@ -5,11 +5,12 @@
+ pub(crate) struct Key{pub expr:u64,pub env:u64,pub levels:String,pub context:String,pub strict:bool,pub policy:String,pub flags:Option<[u64;2]>,pub epoch:Option<u64>}
+ pub(crate) struct Shadow{
+  pub enabled:bool,
++ pub identity:Option<u64>,
+  active:HashMap<Key,usize>,completed:HashSet<Key>,order:VecDeque<Key>,
+  queries:usize,completed_hits:usize,active_hits:usize,
+  completed_hit_unresolved:usize,active_hit_unresolved:usize,untracked:usize,
+ }
+-impl Default for Shadow{fn default()->Self{Self{enabled:std::env::var_os("NUCLEUS_DIAGNOSTIC_SHARED_TYPING").is_some(),active:HashMap::new(),completed:HashSet::new(),order:VecDeque::new(),queries:0,completed_hits:0,active_hits:0,completed_hit_unresolved:0,active_hit_unresolved:0,untracked:0}}}
++impl Default for Shadow{fn default()->Self{Self{identity:next_identity(),enabled:std::env::var_os("NUCLEUS_DIAGNOSTIC_SHARED_TYPING").is_some(),active:HashMap::new(),completed:HashSet::new(),order:VecDeque::new(),queries:0,completed_hits:0,active_hits:0,completed_hit_unresolved:0,active_hit_unresolved:0,untracked:0}}}
+ impl Shadow{
+  pub fn begin(&mut self,key:Key){if let Some(n)=self.active.get_mut(&key){*n+=1;}else if self.active.len()<4096{self.active.insert(key,1);}else{self.untracked+=1;}}
+  pub fn finish(&mut self,key:Key,proven:bool){
+@@ -31,3 +32,14 @@
+  struct Sink(String);impl std::fmt::Write for Sink{fn write_str(&mut self,s:&str)->std::fmt::Result{if self.0.len()+s.len()>65536{return Err(std::fmt::Error);}self.0.push_str(s);Ok(())}}
+  let mut sink=Sink(String::new());std::fmt::write(&mut sink,format_args!("{value:?}")).ok()?;Some(sink.0)
+ }
++
++fn next_identity()->Option<u64>{
++ use std::sync::atomic::{AtomicU64,Ordering};
++ static NEXT:AtomicU64=AtomicU64::new(0);
++ NEXT.fetch_update(Ordering::Relaxed,Ordering::Relaxed,|n|n.checked_add(1)).ok()
++}
++#[cfg(test)]mod identity_tests{
++ #[test]fn checker_observation_identities_are_distinct_and_not_recycled(){
++  let a=super::Shadow::default();let first=a.identity;let b=super::Shadow::default();assert!(first.is_some()&&b.identity.is_some());assert_ne!(first,b.identity);drop(a);let c=super::Shadow::default();assert_ne!(c.identity,first);assert_ne!(c.identity,b.identity);
++ }
++}

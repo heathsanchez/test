@@ -1,0 +1,28 @@
+name: Nucleus owner inference work census v2
+on:
+  push:
+    branches: [research/nucleus-owner-work-v2-20261107]
+    paths: ['.github/workflows/nucleus-owner-work-20261107.yml']
+  workflow_dispatch:
+permissions: {contents: read, actions: read}
+jobs:
+  census:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Run pinned native source observation and parity gates
+        run: python experiments/nucleus-owner-work-20261107/run.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-owner-work-CANDIDATE
+          retention-days: 60
+          path: |
+            reports/
+            candidate/
+            flags.json
