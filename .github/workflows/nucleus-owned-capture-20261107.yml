@@ -31,7 +31,7 @@ jobs:
           tar --no-same-owner -xzf base/candidate/source.tar.gz
           cp base/flags.json flags.json
           patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-obligation-census-20261107/qualified-diagnostics.patch
-          patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-owned-capture-20261107/learning-extra.patch
+          patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-owned-capture-20261107/learning-extra-v2.patch
           find metatron-kernel/src -type f -print0 | sort -z | xargs -0 sha256sum > reports/source.sha256
           cargo check --manifest-path metatron-kernel/Cargo.toml --locked --all-targets > reports/plain-build.log 2>&1
       - name: Native suite and all authoritative targets unchanged
@@ -69,28 +69,7 @@ jobs:
           unzip -p full-mathlib-evidence.zip mathlib-full.ndjson.zst | zstd -dc > mathlib-full.ndjson
           printf '%s  %s\n' 22c5de83469408950005589a3bc5ef5157c65549b5a802f85d567c29151306a6 mathlib-full.ndjson | sha256sum -c -
           python experiments/nucleus-owned-capture-20261107/qualify.py mathlib
-          python - <<'CHECK'
-          import json
-          r=json.load(open('reports/mathlib-census.json'));assert r['visited_declarations']>4852
-          CHECK
-          python experiments/nucleus-structural-inquiry-20261107/extract_prefix.py
-          python experiments/nucleus-owned-capture-20261107/protect_prefix.py
-          mapfile -t flags < <(jq -r 'to_entries[] | "\(.key)=\(.value)"' flags.json)
-          env "${flags[@]}" NUCLEUS_TRACE_DOWNSTREAM=1 candidate/metatron-kernel < protected-prefix.ndjson > reports/protected-prefix.stdout 2> reports/protected-prefix.stderr
-          echo PROTECTED_PREVIOUS_MATHLIB_PREFIX_ACCEPT
-          gzip -dc reports/mathlib-through-LinearMap.ndjson.gz > prefix.ndjson
-          set +e
-          mapfile -t flags < <(jq -r 'to_entries[] | "\(.key)=\(.value)"' flags.json)
-          env "${flags[@]}" NUCLEUS_DIAGNOSTIC_SIGNATURE_IDS=30446,30461,30464 candidate/nucleus-census --source-assumptions-only 262144 64 256 4851 < prefix.ndjson > reports/focused-candidate.json 2> reports/focused-candidate.stderr
-          result=$?
-          set -e
-          test "$result" = 2
-          python - <<'PYCODE'
-          import json
-          r=json.load(open('reports/focused-candidate.json'))
-          assert r['finished_all_declarations'] is True and r['whole_export_warrant']=='FORBIDDEN'
-          assert r['assumed_prefix_checks']>0
-          PYCODE
+          python experiments/nucleus-owned-capture-20261107/check_mathlib.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
