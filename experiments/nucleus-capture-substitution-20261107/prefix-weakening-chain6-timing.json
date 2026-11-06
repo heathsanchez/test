@@ -1,0 +1,104 @@
+{
+  "status": "MATCHED_BOUNDED_TIMING",
+  "input_sha256": "16c9e3018e740505474ab8863017798241a5b6f07597520a0a0464aed7f6ee90",
+  "parent_binary_sha256": "d3e024777287f950d87bb20ba8bd02754b49a2660b52f88b96603fd89eb7883c",
+  "candidate_binary_sha256": "49d7727f88b7c73f6b9959b872904b3c0de8e4372762f233d62ba533210f23f6",
+  "flags": {
+    "NUCLEUS_EXPERIMENTAL_CERTIFIED_QUOT_IOTA": "1",
+    "NUCLEUS_EXPERIMENTAL_CONTEXT_BINDER": "1",
+    "NUCLEUS_EXPERIMENTAL_DEMAND_MAJOR": "1",
+    "NUCLEUS_EXPERIMENTAL_EXPECTED_LAMBDA": "1",
+    "NUCLEUS_EXPERIMENTAL_FORMED_PROP_DOMAIN_RETRY": "1",
+    "NUCLEUS_EXPERIMENTAL_POLYMORPHIC_PROP_IRREL": "1",
+    "NUCLEUS_EXPERIMENTAL_PROJECTION_CONTEXT": "1",
+    "NUCLEUS_EXPERIMENTAL_PROJECTION_CROSSFRAME_512": "1",
+    "NUCLEUS_EXPERIMENTAL_PROP_SINGLETON_2P1F": "1",
+    "NUCLEUS_EXPERIMENTAL_RELEVANCE": "1",
+    "NUCLEUS_EXPERIMENTAL_REPLAY_NEUTRAL_PROJECTION": "1",
+    "NUCLEUS_EXPERIMENTAL_REPLAY_PROJECTION_MAJOR": "1",
+    "NUCLEUS_EXPERIMENTAL_SOURCE_PAIR_DEPTH8": "1",
+    "NUCLEUS_EXPERIMENTAL_SOURCE_PROOF_IRREL": "1",
+    "NUCLEUS_EXPERIMENTAL_SUBSTITUTION_RECLOSURE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_DATA_CONGRUENCE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_LINEAGE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_PROJECTION_SPINE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_RECEIVER": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_VALUE_NORMALIZATION": "1",
+    "NUCLEUS_EXPERIMENTAL_DEFERRED_PROJECTION_CONGRUENCE": "1",
+    "NUCLEUS_EXPERIMENTAL_DISTINCT_CONST_PROOF_IRREL": "1",
+    "NUCLEUS_EXPERIMENTAL_EXACT_CAPTURE_SEMANTIC_RETRY": "1",
+    "NUCLEUS_EXPERIMENTAL_QUOTIENT_PROJECTION_BRIDGE": "1"
+  },
+  "judgment_steps": 262144,
+  "rows": [
+    {
+      "pair": -1,
+      "arm": "parent",
+      "seconds": 12.145659136000177,
+      "rc": 0,
+      "stdout_bytes": 0,
+      "stderr_bytes": 0
+    },
+    {
+      "pair": -1,
+      "arm": "candidate",
+      "seconds": 11.961719292998168,
+      "rc": 0,
+      "stdout_bytes": 0,
+      "stderr_bytes": 0
+    },
+    {
+      "pair": 0,
+      "arm": "parent",
+      "seconds": 11.835428159000003,
+      "rc": 0,
+      "stdout_bytes": 0,
+      "stderr_bytes": 0
+    },
+    {
+      "pair": 0,
+      "arm": "candidate",
+      "seconds": 11.785928196000896,
+      "rc": 0,
+      "stdout_bytes": 0,
+      "stderr_bytes": 0
+    },
+    {
+      "pair": 1,
+      "arm": "candidate",
+      "seconds": 11.317924618000688,
+      "rc": 0,
+      "stdout_bytes": 0,
+      "stderr_bytes": 0
+    },
+    {
+      "pair": 1,
+      "arm": "parent",
+      "seconds": 11.4099180230005,
+      "rc": 0,
+      "stdout_bytes": 0,
+      "stderr_bytes": 0
+    },
+    {
+      "pair": 2,
+      "arm": "parent",
+      "seconds": 11.483415310001874,
+      "rc": 0,
+      "stdout_bytes": 0,
+      "stderr_bytes": 0
+    },
+    {
+      "pair": 2,
+      "arm": "candidate",
+      "seconds": 11.89679379899826,
+      "rc": 0,
+      "stdout_bytes": 0,
+      "stderr_bytes": 0
+    }
+  ],
+  "warmup_pair_excluded": -1,
+  "parent_median_seconds": 11.483415310001874,
+  "candidate_median_seconds": 11.785928196000896,
+  "parent_over_candidate_median_ratio": 0.9743327058362983,
+  "boundary": "Serial alternating matched original accepted chain6, three measured pairs after excluded warmups; local wall time only, no full-corpus runtime/completeness claim and no403 qualification."
+}
