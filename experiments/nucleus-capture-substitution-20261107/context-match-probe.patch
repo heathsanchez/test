@@ -1,0 +1,89 @@
+--- a/src/checker.rs
++++ b/src/checker.rs
+@@ -632,6 +632,8 @@
+     let _alias_trace=std::env::var_os("NUCLEUS_TRACE_ALIAS_RESULT_REUSE").is_some().then(||crate::alias_result_trace::Scope::enter(trace_name(export,name),stage));
+     #[cfg(feature="diagnostics")]
+     let _memo_trace=if std::env::var_os("NUCLEUS_TRACE_MEMO_PATH").is_some(){let owner=trace_name(export,name);if matches!(owner.as_str(),"chain9_datF"|"AddMonoidAlgebra.semiring"){Some(crate::memo_path_trace::Scope::enter(owner,stage))}else{None}}else{None};
++    #[cfg(feature="diagnostics")]
++    let _context_trace=if std::env::var_os("NUCLEUS_TRACE_CONTEXT_MATCH").is_some(){let owner=trace_name(export,name);if matches!(owner.as_str(),"chain9_datF"|"AddMonoidAlgebra.semiring"){Some(crate::context_match_trace::Scope::enter(owner,stage))}else{None}}else{None};
+     if let Some(state)=census.as_deref_mut(){
+         if state.assume_prefix_boundary(name){return Ok(());}
+         let judgment=judgment();
+--- /dev/null
++++ b/src/context_match_trace.rs
+@@ -0,0 +1,10 @@
++//! Observation-only, stratified same-key context samples. No cache admission.
++use std::cell::RefCell;
++struct State{owner:String,stage:&'static str,events:u64,same_len:u64,extension:u64,contraction:u64,claims:usize,rows:Vec<serde_json::Value>}
++thread_local!{static CURRENT:RefCell<Option<State>>=const{RefCell::new(None)};}
++pub(crate)struct Scope{previous:Option<State>,active:bool}
++impl Scope{pub(crate)fn enter(owner:String,stage:&'static str)->Self{match CURRENT.try_with(|s|s.replace(Some(State{owner,stage,events:0,same_len:0,extension:0,contraction:0,claims:0,rows:vec![]}))){Ok(previous)=>Self{previous,active:true},Err(_)=>Self{previous:None,active:false}}}}
++impl Drop for Scope{fn drop(&mut self){if !self.active{return;}let previous=self.previous.take();if let Ok(Some(s))=CURRENT.try_with(|slot|slot.replace(previous)){eprintln!("NUCLEUS_CONTEXT_MATCH:{}",serde_json::json!({"diagnostic_only":true,"acceptance_authority":false,"owner":s.owner,"stage":s.stage,"events":s.events,"same_length_events":s.same_len,"extension_events":s.extension,"contraction_events":s.contraction,"claimed_samples":s.claims,"sampling":"first8 then every8192th same-key/context-mismatch slot event; at most128; 512 independent diagnostic steps/sample; no population estimate","rows":s.rows}));}}}
++pub(crate)fn active()->bool{CURRENT.try_with(|s|s.borrow().is_some()).unwrap_or(false)}
++pub(crate)fn claim(old:usize,new:usize)->Option<u64>{CURRENT.try_with(|slot|{let mut s=slot.borrow_mut();let s=s.as_mut()?;s.events=s.events.saturating_add(1);match old.cmp(&new){std::cmp::Ordering::Equal=>s.same_len+=1,std::cmp::Ordering::Less=>s.extension+=1,std::cmp::Ordering::Greater=>s.contraction+=1};if s.claims<128&&(s.events<=8||s.events%8192==0){s.claims+=1;Some(s.events)}else{None}}).ok().flatten()}
++pub(crate)fn record(value:serde_json::Value){let _=CURRENT.try_with(|slot|{if let Some(s)=slot.borrow_mut().as_mut(){if s.rows.len()<128{s.rows.push(value);}}});}
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -61,3 +61,6 @@
+ 
+ #[cfg(feature="diagnostics")]
+ mod memo_path_trace;
++
++#[cfg(feature="diagnostics")]
++mod context_match_trace;
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -744,6 +744,14 @@
+             {
+                 let table=self.exact_typing_memo.borrow();
+                 for slot in &table.slots[set*4..set*4+4]{
++                    #[cfg(feature="diagnostics")]
++                    if crate::context_match_trace::active()&&let Some(fact)=slot&&fact.key==key&&!fact.same_context(context)
++                        &&let Some(sequence)=crate::context_match_trace::claim(fact.context.len(),context.len()){
++                        let mut probe_work=512usize;
++                        let comparison=self.diagnostic_context_match(&fact.context,context,&mut probe_work);
++                        crate::context_match_trace::record(serde_json::json!({"sequence":sequence,"source_expr":term.expr.0,"source_env":term.env.id(),"result_kind":match &fact.result{TypeValue::Term(_)=>"Term",TypeValue::Sort(_)=>"Sort",TypeValue::Pi{..}=>"Pi"},"diagnostic_steps_spent":512-probe_work,"comparison":comparison}));
++                    }
++
+                     #[cfg(feature="diagnostics")]
+                     if crate::memo_path_trace::active(){match slot{
+                         None=>crate::memo_path_trace::event(9),
+@@ -2118,6 +2126,24 @@
+         #[cfg(feature="diagnostics")]
+         if proven&&std::env::var("NUCLEUS_TRACE_TYPED_SUBSTITUTION").ok().and_then(|s|s.parse::<u64>().ok())==Some(left.expr.0){eprintln!("NUCLEUS_CHECKED_CAPTURE_SUBSTITUTION:source={}:context={}:remaining={remaining}:strict_origin=true",left.expr.0,context.len());}
+         proven
++    }
++
++    #[cfg(feature="diagnostics")]
++    fn diagnostic_context_match(&self,old:&[Closure],new:&[TypeValue],work:&mut usize)->serde_json::Value{
++        let relation=match old.len().cmp(&new.len()){std::cmp::Ordering::Equal=>"same-length",std::cmp::Ordering::Less=>"extension",std::cmp::Ordering::Greater=>"contraction"};
++        let common=old.len().min(new.len());
++        if old.len()>64||new.len()>64{return serde_json::json!({"relation":relation,"status":"UNKNOWN_METADATA_BOUND"});}
++        let cost=common+1;if *work<cost{*work=0;return serde_json::json!({"relation":relation,"status":"UNKNOWN_DIAGNOSTIC_BUDGET"});}*work-=cost;
++        let mut first=None;let mut identity=true;let mut equivalent=true;let mut compared=0;
++        for(index,(a,b))in old.iter().zip(new).enumerate(){
++            let TypeValue::Term(b)=b else{return serde_json::json!({"relation":relation,"status":"UNKNOWN_CONTEXT_REPRESENTATION"});};
++            let equal=(a.expr,a.env.id(),a.levels.identity())==(b.expr,b.env.id(),b.levels.identity());
++            if !equal{identity=false;if first.is_none(){first=Some(serde_json::json!({"position":index,"old_expr":a.expr.0,"new_expr":b.expr.0,"expr_equal":a.expr==b.expr,"env_equal":a.env.id()==b.env.id(),"levels_identity_equal":a.levels.identity()==b.levels.identity()}));}
++                if equivalent{compared+=1;if !self.relational_source_substitution(a,b,work){equivalent=false;}}
++            }
++        }
++        let status=if equivalent{"SOURCE_PREFIX_PROVED"}else{"UNKNOWN_SOURCE_PREFIX"};
++        serde_json::json!({"old_len":old.len(),"new_len":new.len(),"relation":relation,"identity_prefix":identity,"common_prefix_source_equivalent":equivalent,"same_scope_source_equivalent":equivalent&&old.len()==new.len(),"changed_pairs_compared":compared,"first_identity_difference":first,"probe_counter_zero":*work==0,"negative_boundary":"nonproof may reflect representation, source difference or insufficient allowance even if counter remains nonzero","status":status})
+     }
+ 
+     // Pure simultaneous substitution, with virtual AST binders represented
+@@ -8823,3 +8849,13 @@
+  #[test]fn short_alias_to_dependent_function_reuses_completed_pi(){let _scope=crate::run_flags::enter();let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);for index in [0,1]{let t=alias(&c,index);let first=c.infer_exact_closure_in_context(&t,&[],&mut 4096,0);assert!(matches!(first,Some(TypeValue::Pi{..})));let mut work=1;assert_eq!(c.infer_exact_closure_in_context(&t,&[],&mut work,0),first);assert_eq!(work,0);}}
+  #[test]fn changed_capture_zero_work_and_unadmitted_aliases_never_reuse_pi(){let _scope=crate::run_flags::enter();let(e,l,env)=fixture();let mut c=TypeChecker::new(&e,&l,&env);let t=alias(&c,0);assert!(c.infer_exact_closure_in_context(&t,&[],&mut 4096,0).is_some());assert!(c.infer_exact_closure_in_context(&t,&[],&mut 0,0).is_none());let changed=Closure::with_levels(t.expr,EnvFrame::empty().extend(c.closure(ExprId(0),EnvFrame::empty())),t.levels.clone());assert!(c.infer_exact_closure_in_context(&changed,&[],&mut 1,0).is_none());let wide=alias(&c,2);assert!(c.infer_exact_closure_in_context(&wide,&[],&mut 4096,0).is_some());assert!(c.infer_exact_closure_in_context(&wide,&[],&mut 1,0).is_none());c.strict_origin_probe=true;assert!(c.infer_exact_closure_in_context(&t,&[],&mut 1,0).is_none());}
+ }
++
++#[cfg(all(test,feature="diagnostics"))]
++mod context_match_observer_controls{
++ use super::*;
++ fn fixture()->(IdTable<ExprId,Expr>,IdTable<LevelId,Level>,Environment){let mut e=IdTable::default();e.insert(ExprId(0),Expr::Sort(LevelId(1))).unwrap();e.insert(ExprId(1),Expr::BVar(0)).unwrap();let mut l=IdTable::default();l.insert(LevelId(0),Level::Zero).unwrap();l.insert(LevelId(1),Level::Param(NameId(1))).unwrap();(e,l,Environment::empty())}
++ fn closure(value:LevelTerm)->Closure{Closure::with_levels(ExprId(0),EnvFrame::empty(),LevelSubstitution::new(vec![(NameId(1),value)]))}
++ #[test]fn separate_level_allocations_can_be_equal_but_universes_are_not_erased(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let a=closure(LevelTerm::Zero);let b=closure(LevelTerm::Zero);assert_ne!(a.levels.identity(),b.levels.identity());let r=c.diagnostic_context_match(&[a.clone()],&[TypeValue::Term(b)],&mut 512);assert_eq!(r["same_scope_source_equivalent"],true);assert_eq!(r["identity_prefix"],false);let r=c.diagnostic_context_match(&[a],&[TypeValue::Term(closure(crate::level::succ(LevelTerm::Zero)))],&mut 512);assert_eq!(r["same_scope_source_equivalent"],false);}
++ #[test]fn scope_length_direction_is_not_silently_promoted_to_same_scope(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let a=closure(LevelTerm::Zero);let r=c.diagnostic_context_match(&[a.clone()],&[TypeValue::Term(a.clone()),TypeValue::Term(a.clone())],&mut 512);assert_eq!(r["relation"],"extension");assert_eq!(r["identity_prefix"],true);assert_eq!(r["same_scope_source_equivalent"],false);let r=c.diagnostic_context_match(&[a.clone(),a.clone()],&[TypeValue::Term(a)],&mut 512);assert_eq!(r["relation"],"contraction");assert_eq!(r["same_scope_source_equivalent"],false);}
++ #[test]fn actual_free_ids_and_zero_allowance_remain_distinct(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let a=Closure::new(ExprId(1),EnvFrame::empty().extend_free(FreeId(0)));let b=Closure::new(ExprId(1),EnvFrame::empty().extend_free(FreeId(1)));let r=c.diagnostic_context_match(&[a],&[TypeValue::Term(b)],&mut 512);assert_eq!(r["same_scope_source_equivalent"],false);let r=c.diagnostic_context_match(&[],&[],&mut 0);assert_eq!(r["status"],"UNKNOWN_DIAGNOSTIC_BUDGET");}
++}
