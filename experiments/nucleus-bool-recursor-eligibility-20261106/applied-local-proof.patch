@@ -1,0 +1,37 @@
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -3963,7 +3963,7 @@
+                 matches!(&theorem.head,NeutralHead::Const{..})
+                     && (1..=8).contains(&theorem.spine.len())
+                 && matches!(&local.head,NeutralHead::Free(_))
+-                && local.spine.is_empty()
++                && local.spine.len() <= 8
+             };
+         let checked_constant_shape=|n:&Neutral| matches!(&n.head,NeutralHead::Const{..})
+             && (1..=8).contains(&n.spine.len());
+@@ -8332,3 +8332,25 @@
+  #[test]fn a_nonempty_neutral_capture_is_not_solved(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);c.complete_source_support(ExprId(2),&mut 128).unwrap();let t=||Closure::new(ExprId(2),EnvFrame::empty().extend_neutral(Neutral{head:NeutralHead::Free(FreeId(7)),spine:vec![Closure::new(ExprId(3),EnvFrame::empty())]}));assert!(!c.replay_completed_source_substitution(&t(),&t(),&mut 128));}
+ 
+ }
++
++#[cfg(test)]
++mod applied_local_proof_regression {
++    use super::*;
++    use crate::environment::ConstantDecl;
++    #[test]
++    fn applied_local_and_theorem_proofs_require_the_same_checked_proposition() {
++        let mut e=IdTable::default();let mut l=IdTable::default();l.insert(LevelId(0),Level::Zero).unwrap();
++        for(id,x)in[(0,Expr::Sort(LevelId(0))),(1,Expr::Const{name:NameId(100),levels:vec![]}),(2,Expr::Const{name:NameId(101),levels:vec![]}),(3,Expr::Pi{domain:ExprId(1),body:ExprId(1)}),(4,Expr::Pi{domain:ExprId(1),body:ExprId(2)}),(5,Expr::Const{name:NameId(102),levels:vec![]}),(6,Expr::BVar(0)),(7,Expr::BVar(1)),(8,Expr::App{fun:ExprId(5),arg:ExprId(6)}),(9,Expr::App{fun:ExprId(7),arg:ExprId(6)})]{e.insert(ExprId(id),x).unwrap();}
++        let env=Environment::empty().extend(NameId(100),ConstantDecl::axiom(vec![],ExprId(0))).unwrap().extend(NameId(101),ConstantDecl::axiom(vec![],ExprId(0))).unwrap().extend(NameId(102),ConstantDecl::theorem(vec![],ExprId(3))).unwrap();
++        let checker=TypeChecker::new(&e,&l,&env);
++        let term=|expr|TypeValue::Term(Closure::new(ExprId(expr),EnvFrame::empty()));
++        let ctx=vec![TypeValue::Sort(LevelTerm::Zero),TypeValue::Sort(LevelTerm::Zero),term(1),term(3),term(4)];
++        let frame=EnvFrame::empty().extend_free(FreeId(3)).extend_free(FreeId(2));
++        let theorem=Closure::new(ExprId(8),frame.clone());let local=Closure::new(ExprId(9),frame);
++        assert!(checker.checked_proof_vs_local_in_context(&theorem,&local,&ctx,4096),"applied local proof and checked theorem inhabit the same P");
++        let different=Closure::new(ExprId(9),EnvFrame::empty().extend_free(FreeId(4)).extend_free(FreeId(2)));
++        assert!(!checker.checked_proof_vs_local_in_context(&theorem,&different,&ctx,4096),"proofs of P and Q cannot be identified");
++        let illtyped=Closure::new(ExprId(9),EnvFrame::empty().extend_free(FreeId(3)).extend_free(FreeId(0)));
++        assert!(!checker.checked_proof_vs_local_in_context(&theorem,&illtyped,&ctx,4096),"unverified local argument cannot supply a proof");
++    }
++}
