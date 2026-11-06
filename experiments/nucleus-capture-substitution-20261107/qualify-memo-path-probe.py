@@ -13,8 +13,8 @@ manifest=json.loads(P('base/reports/combined-source.json').read_text())
 for name,digest in manifest['source_files'].items():assert sha(source/name)==digest
 flags=manifest['flags'];assert len(flags)==24
 env={k:v for k,v in os.environ.items()if not k.startswith('NUCLEUS_')};env.update(flags);env.update(RUST_MIN_STACK='16777216',CARGO_BUILD_JOBS='2')
-patch=root/'experiments/nucleus-capture-substitution-20261107/memo-path-probe.patch'
-assert sha(patch)=='6d13bb534776702d1019269ed97720c8667f03b46dea5ee992deaa8302e1dd4c'
+patch=root/'experiments/nucleus-capture-substitution-20261107/memo-path-probe-v2.patch'
+assert sha(patch)=='ec978fc14f1ee69c09b5162660de49b80ad786269c2cad04441175a498ccb650'
 with patch.open()as f:subprocess.run(['patch','--fuzz=0','-p1'],stdin=f,cwd=source,check=True)
 for label,args in [('native',['cargo','test','--locked','--profile','inquiry','--features','diagnostics']),('plain',['cargo','check','--locked','--lib']),('build',['cargo','build','--locked','--release','--features','diagnostics','--bin','metatron-kernel'])]:
  with(out/(label+'.log')).open('w')as f:subprocess.run(args,cwd=source,env=env,stdout=f,stderr=subprocess.STDOUT,check=True)
