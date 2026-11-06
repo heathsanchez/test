@@ -1,0 +1,61 @@
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -723,9 +723,16 @@
+         }
+         // Fixed host metadata: 8192 slots, four probes, at most 64 actual Γ
+         // closures. A miss has precisely the parent's paid semantic root step.
++        // This additional eligibility test follows at most one parent link.
++        // Retain only a COMPLETED same-checker alias typing derivation under
++        // the existing exact source/universe/context/flags/revocation key.
++        // Strict and inherited witness views retain the original derivation.
++        let short_alias=!self.strict_origin_probe && self.inherited_binding_lineage.is_none()
++            && matches!(self.expressions.get(term.expr),Some(Expr::BVar(index))
++                if *index<=1 && matches!(term.env.lookup_binding_ref(*index),Some(EnvBinding::Closure(_))));
+         let pending=if context.len()<=64
+             && context.iter().all(|t|matches!(t,TypeValue::Term(_)))
+-            && matches!(self.expressions.get(term.expr),Some(Expr::App{..}|Expr::Proj{..}|Expr::Lam{..}|Expr::Pi{..}|Expr::Let{..}|Expr::LetNondep{..}))
++            && (matches!(self.expressions.get(term.expr),Some(Expr::App{..}|Expr::Proj{..}|Expr::Lam{..}|Expr::Pi{..}|Expr::Let{..}|Expr::LetNondep{..}))||short_alias)
+             && let (Some(flags),Some(epoch))=(crate::run_flags::captured_configuration(),self.binding_revocation_epoch.get())
+         {
+             let key=ExactTypingKey{source:(term.expr,term.env.id(),term.levels.identity()),strict:self.strict_origin_probe,flags,epoch};
+@@ -734,6 +741,8 @@
+                 let table=self.exact_typing_memo.borrow();
+                 for slot in &table.slots[set*4..set*4+4]{
+                     if let Some(fact)=slot && fact.key==key && fact.same_context(context){
++                        #[cfg(feature="diagnostics")]
++                        if short_alias{match &fact.result{TypeValue::Pi{..}=>crate::alias_result_trace::hit(term.expr.0,context.len(),"Pi"),TypeValue::Sort(_)=>crate::alias_result_trace::hit(term.expr.0,context.len(),"Sort"),_=>{}}}
+                         return Some(fact.result.clone());
+                     }
+                 }
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -55,3 +55,6 @@
+ 
+ #[cfg(feature="diagnostics")]
+ mod obligation_shadow;
++
++#[cfg(feature="diagnostics")]
++mod alias_result_trace;
+--- a/src/checker.rs
++++ b/src/checker.rs
+@@ -628,6 +628,8 @@
+     state.report(match terminal{Verdict::Accept=>"unexpected-terminal",Verdict::Reject=>"structural-or-metadata-rejection",Verdict::Unknown=>"unsupported-metadata-or-structural-obligation",Verdict::Error=>"process-error"})
+ }
+ fn census_boundary(census:&mut Option<&mut crate::census::Census>,export:&ResolvedExport,name:NameId,stage:&'static str,judgment:impl FnOnce()->Judgment<()>)->Result<(),Verdict>{
++    #[cfg(feature="diagnostics")]
++    let _alias_trace=std::env::var_os("NUCLEUS_TRACE_ALIAS_RESULT_REUSE").is_some().then(||crate::alias_result_trace::Scope::enter(trace_name(export,name),stage));
+     if let Some(state)=census.as_deref_mut(){
+         if state.assume_prefix_boundary(name){return Ok(());}
+         let judgment=judgment();
+--- a/src/alias_result_trace.rs
++++ b/src/alias_result_trace.rs
+@@ -0,0 +1,9 @@
++//! Attribute actual non-Term alias memo hits to a source obligation.
++//! This metadata never supplies a typing/equality premise.
++use std::cell::RefCell;
++struct State{owner:String,stage:&'static str,sort:u64,pi:u64,samples:Vec<(u64,usize,&'static str)>}
++thread_local!{static CURRENT:RefCell<Option<State>>=const{RefCell::new(None)};}
++pub(crate)struct Scope{previous:Option<State>}
++impl Scope{pub(crate)fn enter(owner:String,stage:&'static str)->Self{let previous=CURRENT.with(|slot|slot.replace(Some(State{owner,stage,sort:0,pi:0,samples:vec![]})));Self{previous}}}
++impl Drop for Scope{fn drop(&mut self){let state=CURRENT.with(|slot|slot.replace(self.previous.take()));if let Some(s)=state{if s.sort+s.pi>0{eprintln!("NUCLEUS_ALIAS_RESULT_REUSE:{}",serde_json::json!({"diagnostic_only":true,"acceptance_authority":false,"owner":s.owner,"stage":s.stage,"sort_hits":s.sort,"pi_hits":s.pi,"samples":s.samples,"interpretation":"actual cache activation within owner; nested alternatives may not support final outcome"}));}}}}
++pub(crate)fn hit(expr:u64,depth:usize,kind:&'static str){CURRENT.with(|slot|{if let Some(s)=slot.borrow_mut().as_mut(){if kind=="Pi"{s.pi+=1}else{s.sort+=1};if s.samples.len()<8{s.samples.push((expr,depth,kind));}}});}
