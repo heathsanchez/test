@@ -1,0 +1,146 @@
+{
+  "tag": "actual-origin-ablation",
+  "rc": 2,
+  "seconds": 24.425665212998865,
+  "input_sha256": "e5ca34489fc7b8ee13b1e7f09f76247ab7b01dd1a752a13cc8b796c569e1401a",
+  "binary_sha256": "b709498c48e46d2569fe689ac778e2ddea7a1c752e308e6678d78250b0a7c9ac",
+  "configured_judgment_steps": 262144,
+  "profile": "inquiry",
+  "flags": {
+    "NUCLEUS_EXPERIMENTAL_CERTIFIED_QUOT_IOTA": "1",
+    "NUCLEUS_EXPERIMENTAL_CONTEXT_BINDER": "1",
+    "NUCLEUS_EXPERIMENTAL_DEMAND_MAJOR": "1",
+    "NUCLEUS_EXPERIMENTAL_EXPECTED_LAMBDA": "1",
+    "NUCLEUS_EXPERIMENTAL_FORMED_PROP_DOMAIN_RETRY": "1",
+    "NUCLEUS_EXPERIMENTAL_POLYMORPHIC_PROP_IRREL": "1",
+    "NUCLEUS_EXPERIMENTAL_PROJECTION_CONTEXT": "1",
+    "NUCLEUS_EXPERIMENTAL_PROJECTION_CROSSFRAME_512": "1",
+    "NUCLEUS_EXPERIMENTAL_PROP_SINGLETON_2P1F": "1",
+    "NUCLEUS_EXPERIMENTAL_RELEVANCE": "1",
+    "NUCLEUS_EXPERIMENTAL_REPLAY_NEUTRAL_PROJECTION": "1",
+    "NUCLEUS_EXPERIMENTAL_REPLAY_PROJECTION_MAJOR": "1",
+    "NUCLEUS_EXPERIMENTAL_SOURCE_PAIR_DEPTH8": "1",
+    "NUCLEUS_EXPERIMENTAL_SOURCE_PROOF_IRREL": "1",
+    "NUCLEUS_EXPERIMENTAL_SUBSTITUTION_RECLOSURE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_DATA_CONGRUENCE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_LINEAGE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_PROJECTION_SPINE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_RECEIVER": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_VALUE_NORMALIZATION": "1",
+    "NUCLEUS_EXPERIMENTAL_DEFERRED_PROJECTION_CONGRUENCE": "1",
+    "NUCLEUS_EXPERIMENTAL_DISTINCT_CONST_PROOF_IRREL": "1",
+    "NUCLEUS_EXPERIMENTAL_EXACT_CAPTURE_SEMANTIC_RETRY": "1",
+    "NUCLEUS_EXPERIMENTAL_QUOTIENT_PROJECTION_BRIDGE": "1"
+  },
+  "captures": [
+    {
+      "capture_index": 0,
+      "rows": [
+        {
+          "strict_origin": true,
+          "requested": 128,
+          "outcome": "Unknown { residual: ResidualId(\"source-left-type-unavailable\") }",
+          "first_failure": "Some(\"reason=source-lambda-opening-unavailable:local_allowance=28:local_remaining=0:free=FreeId(2):source=Closure { expr: ExprId(1233), env: EnvFrame { id: 2908247, .. }, levels: LevelSubstitution([(NameId(6), Succ(Zero))]) }:syntax=Some(Lam { domain: ExprId(10), body: ExprId(8) }):context_len=2:depth=0:remaining=0\")"
+        },
+        {
+          "strict_origin": true,
+          "requested": 512,
+          "outcome": "Unknown { residual: ResidualId(\"source-left-type-unavailable\") }",
+          "first_failure": "Some(\"reason=argument-domain-relation:Unknown { residual: ResidualId(\\\"source-binder-capture-or-support-unavailable\\\") }:source=Closure { expr: ExprId(4664), env: EnvFrame { id: 3341739, .. }, levels: LevelSubstitution([]) }:syntax=Some(App { fun: ExprId(4661), arg: ExprId(4663) }):context_len=4:depth=9:remaining=25\")"
+        },
+        {
+          "strict_origin": true,
+          "requested": 2048,
+          "outcome": "Unknown { residual: ResidualId(\"source-right-type-unavailable\") }",
+          "first_failure": "Some(\"reason=argument-domain-relation:Unknown { residual: ResidualId(\\\"source-binder-capture-or-support-unavailable\\\") }:source=Closure { expr: ExprId(2209), env: EnvFrame { id: 3342827, .. }, levels: LevelSubstitution([]) }:syntax=Some(App { fun: ExprId(2205), arg: ExprId(2208) }):context_len=12:depth=25:remaining=121\")"
+        },
+        {
+          "strict_origin": true,
+          "requested": 4096,
+          "outcome": "Unknown { residual: ResidualId(\"neutral-projection-receiver-congruence\") }",
+          "first_failure": "Some(\"reason=strict-free-witness-unavailable:source=Closure { expr: ExprId(12), env: EnvFrame { id: 3344512, .. }, levels: LevelSubstitution([]) }:syntax=Some(BVar(1)):context_len=4:depth=2:remaining=530\")"
+        },
+        {
+          "strict_origin": false,
+          "requested": 128,
+          "outcome": "Unknown { residual: ResidualId(\"source-left-type-unavailable\") }",
+          "first_failure": "Some(\"reason=source-lambda-opening-unavailable:local_allowance=28:local_remaining=0:free=FreeId(2):source=Closure { expr: ExprId(1233), env: EnvFrame { id: 2908247, .. }, levels: LevelSubstitution([(NameId(6), Succ(Zero))]) }:syntax=Some(Lam { domain: ExprId(10), body: ExprId(8) }):context_len=2:depth=0:remaining=0\")"
+        },
+        {
+          "strict_origin": false,
+          "requested": 512,
+          "outcome": "Unknown { residual: ResidualId(\"source-left-type-unavailable\") }",
+          "first_failure": "Some(\"reason=argument-domain-relation:Unknown { residual: ResidualId(\\\"source-binder-capture-or-support-unavailable\\\") }:source=Closure { expr: ExprId(4664), env: EnvFrame { id: 3348152, .. }, levels: LevelSubstitution([]) }:syntax=Some(App { fun: ExprId(4661), arg: ExprId(4663) }):context_len=4:depth=9:remaining=25\")"
+        },
+        {
+          "strict_origin": false,
+          "requested": 2048,
+          "outcome": "Unknown { residual: ResidualId(\"source-right-type-unavailable\") }",
+          "first_failure": "Some(\"reason=argument-domain-relation:Unknown { residual: ResidualId(\\\"source-binder-capture-or-support-unavailable\\\") }:source=Closure { expr: ExprId(2209), env: EnvFrame { id: 3349240, .. }, levels: LevelSubstitution([]) }:syntax=Some(App { fun: ExprId(2205), arg: ExprId(2208) }):context_len=12:depth=25:remaining=121\")"
+        },
+        {
+          "strict_origin": false,
+          "requested": 4096,
+          "outcome": "Unknown { residual: ResidualId(\"neutral-projection-receiver-congruence\") }",
+          "first_failure": "Some(\"reason=argument-domain-relation:Unknown { residual: ResidualId(\\\"conversion-exposure\\\") }:source=Closure { expr: ExprId(4683), env: EnvFrame { id: 3351401, .. }, levels: LevelSubstitution([]) }:syntax=Some(App { fun: ExprId(4682), arg: ExprId(2238) }):context_len=12:depth=20:remaining=19\")"
+        }
+      ]
+    },
+    {
+      "capture_index": 4,
+      "rows": [
+        {
+          "strict_origin": true,
+          "requested": 128,
+          "outcome": "Proven { value: (), warrant: WarrantId(\"guarded-relational-conversion\") }",
+          "first_failure": "None"
+        },
+        {
+          "strict_origin": true,
+          "requested": 512,
+          "outcome": "Proven { value: (), warrant: WarrantId(\"guarded-relational-conversion\") }",
+          "first_failure": "None"
+        },
+        {
+          "strict_origin": true,
+          "requested": 2048,
+          "outcome": "Proven { value: (), warrant: WarrantId(\"guarded-relational-conversion\") }",
+          "first_failure": "None"
+        },
+        {
+          "strict_origin": true,
+          "requested": 4096,
+          "outcome": "Proven { value: (), warrant: WarrantId(\"guarded-relational-conversion\") }",
+          "first_failure": "None"
+        },
+        {
+          "strict_origin": false,
+          "requested": 128,
+          "outcome": "Proven { value: (), warrant: WarrantId(\"guarded-relational-conversion\") }",
+          "first_failure": "None"
+        },
+        {
+          "strict_origin": false,
+          "requested": 512,
+          "outcome": "Proven { value: (), warrant: WarrantId(\"guarded-relational-conversion\") }",
+          "first_failure": "None"
+        },
+        {
+          "strict_origin": false,
+          "requested": 2048,
+          "outcome": "Proven { value: (), warrant: WarrantId(\"guarded-relational-conversion\") }",
+          "first_failure": "None"
+        },
+        {
+          "strict_origin": false,
+          "requested": 4096,
+          "outcome": "Proven { value: (), warrant: WarrantId(\"guarded-relational-conversion\") }",
+          "first_failure": "None"
+        }
+      ]
+    }
+  ],
+  "diagnostic_only": true,
+  "whole_export_authority": "FORBIDDEN",
+  "raw_stderr_sha256": "06eebbe6596d1e7120b231b154b197f01a964e5a3bd93d02789426ababa55300"
+}
