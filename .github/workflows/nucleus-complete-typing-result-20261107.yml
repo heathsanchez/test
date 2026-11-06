@@ -1,0 +1,62 @@
+name: Nucleus complete typing result experiment
+on:
+  push:
+    branches: [research/nucleus-obligation-census-20261107]
+    paths: ['.github/workflows/nucleus-complete-typing-result-20261107.yml']
+  workflow_dispatch:
+permissions: {contents: read, actions: read}
+jobs:
+  experiment:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RUST_MIN_STACK: '16777216'
+      CARGO_BUILD_JOBS: '2'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Restore exact parent and independent completed-result RED controls
+        run: |
+          set -euo pipefail
+          mkdir -p base reports candidate
+          gh api repos/heathsanchez/test/actions/artifacts/13520537513/zip > source.zip
+          printf '%s  %s\n' f8dc913015842af9a923c6b419f29d9b2fad14e269ea8bfbbbbcce9ffd7a9b0f source.zip | sha256sum -c -
+          unzip -q source.zip -d base
+          tar --no-same-owner -xzf base/candidate/source.tar.gz
+          patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-capture-substitution-20261107/complete-typing-result-controls.patch
+          set +e
+          cargo test --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml complete_typing_result_controls > reports/parent-red.log 2>&1
+          rc=$?
+          set -e
+          test "$rc" = 101
+          grep -q 'a_completed_sort_is_reused_at_one_paid_step ... FAILED' reports/parent-red.log
+          grep -q 'a_completed_dependent_pi_keeps_its_owned_binders_and_exact_scope ... FAILED' reports/parent-red.log
+      - name: Candidate complete results and bounded reclamation controls
+        run: |
+          set -euo pipefail
+          patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-capture-substitution-20261107/complete-typing-result-candidate-v2.patch
+          cargo test --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml complete_typing_result_controls > reports/candidate-controls.log 2>&1
+          cargo test --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml exact_result_payload_controls >> reports/candidate-controls.log 2>&1
+          mapfile -t flags < <(jq -r 'to_entries[] | "\(.key)=\(.value)"' base/flags.json)
+          env "${flags[@]}" cargo test --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml > reports/native.log 2>&1
+          cargo check --locked --all-targets --manifest-path metatron-kernel/Cargo.toml > reports/plain-build.log 2>&1
+          cargo build --locked --release --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel candidate/
+          tar --exclude=target -czf candidate/source.tar.gz metatron-kernel
+          find metatron-kernel/src -type f -print0 | sort -z | xargs -0 sha256sum > reports/source.sha256
+      - name: Decisive unchanged source targets and protected acquired prefixes
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/11272848230/zip > original196.zip
+          gh api repos/heathsanchez/test/actions/artifacts/13507335517/zip > prefix.zip
+          python experiments/nucleus-capture-substitution-20261107/qualify-empty-intern.py > reports/driver.log 2>&1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-complete-typing-result-CANDIDATE
+          retention-days: 60
+          path: |
+            reports/
+            candidate/
