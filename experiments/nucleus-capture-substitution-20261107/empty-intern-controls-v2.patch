@@ -1,0 +1,18 @@
+--- a/src/value.rs
++++ b/src/value.rs
+@@ -616,3 +616,15 @@
+         }).unwrap().join().unwrap();
+     }
+ }
++
++#[cfg(test)]
++mod empty_universe_intern_tests {
++ use super::*;
++ #[test]fn equal_empty_substitutions_share_only_the_immutable_map(){let a=LevelSubstitution::default();let b=LevelSubstitution::new(vec![]);assert_eq!(a,b);assert_eq!(a.identity(),b.identity());assert_eq!(a.0.digest,b.0.digest);}
++ #[test]fn constructor_available_in_late_tls_destructor(){
++  struct LateDrop;impl Drop for LateDrop{fn drop(&mut self){let value=LevelSubstitution::default();assert!(value.is_empty_instance());}}
++  thread_local!{static BEFORE_EMPTY:LateDrop=const{LateDrop};}
++  std::thread::spawn(||{BEFORE_EMPTY.with(|_|{});let _value=LevelSubstitution::default();}).join().expect("empty map constructor remains available during TLS teardown");
++ }
++ #[test]fn nonempty_maps_keep_instance_identity_and_actual_universes(){let a=LevelSubstitution::new(vec![(NameId(7),LevelTerm::Zero)]);let b=LevelSubstitution::new(vec![(NameId(7),LevelTerm::Zero)]);let c=LevelSubstitution::new(vec![(NameId(7),LevelTerm::Succ(Box::new(LevelTerm::Zero)))]);assert_eq!(a,b);assert_ne!(a.identity(),b.identity());assert_ne!(a,c);assert_ne!(a.identity(),LevelSubstitution::default().identity());}
++}
