@@ -9,7 +9,7 @@ def digest(path):
 def census(path,label,timeout):
  start=time.monotonic()
  with open(path,'rb')as inp,open(out/(label+'.stderr'),'wb')as err:
-  try:r=subprocess.run(['candidate/nucleus-census','--source-assumptions-only','262144','64',('4096' if a.mode=='mathlib' else '256')],stdin=inp,stdout=subprocess.PIPE,stderr=err,env={**os.environ,**flags},timeout=timeout)
+  try:r=subprocess.run(['candidate/nucleus-census','--source-assumptions-only','262144','64',('512' if a.mode=='mathlib' else '256')],stdin=inp,stdout=subprocess.PIPE,stderr=err,env={**os.environ,**flags},timeout=timeout)
   except subprocess.TimeoutExpired:
    row={'diagnostic_only':True,'whole_export_warrant':'FORBIDDEN','finished_all_declarations':False,'stop_reason':'process-timeout','failures':[]}
    for line in (out/(label+'.stderr')).read_text(errors='replace').splitlines():
