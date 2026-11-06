@@ -1,0 +1,26 @@
+name: Nucleus exact prefix parent controls
+on:
+  push:
+    branches: [research/nucleus-obligation-census-20261107]
+    paths: ['.github/workflows/nucleus-prefix-weakening-red-20261107.yml']
+  workflow_dispatch:
+permissions: {contents: read, actions: read}
+jobs:
+  red:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Check exact expected parent failures and origin separator
+        run: python experiments/nucleus-capture-substitution-20261107/qualify-prefix-weakening-red.py > driver.log 2>&1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-prefix-weakening-parent-RED
+          path: |
+            reports/
+            driver.log
