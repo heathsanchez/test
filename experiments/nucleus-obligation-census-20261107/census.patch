@@ -169,7 +169,7 @@
 +}
 --- a/src/census.rs
 +++ b/src/census.rs
-@@ -0,0 +1,52 @@
+@@ -0,0 +1,53 @@
 +//! Quarantined diagnostics. No value in this module is a kernel warrant.
 +use std::collections::HashSet;
 +use serde_json::{json,Value};
@@ -216,6 +216,7 @@
 +        };
 +        if let (Some((ty,body)),Some(row))=(roots,self.failures.last_mut()){
 +            row["type_expr"]=json!(ty.0);row["body_expr"]=json!(body.map(|id|id.0));
++            eprintln!("NUCLEUS_CENSUS_OBSERVATION:{row}");
 +        }
 +    }
 +    pub(crate) fn report(self,terminal:&str)->Value{
