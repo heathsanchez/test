@@ -1,0 +1,32 @@
+name: Nucleus combined alias and result qualification
+on:
+  push:
+    branches: [research/nucleus-combined-alias-result-20261107]
+    paths: ['.github/workflows/nucleus-combined-alias-result-20261107.yml']
+  workflow_dispatch:
+permissions: {contents: read, actions: read}
+jobs:
+  qualify:
+    strategy:
+      fail-fast: false
+      matrix: {scope: [prefix]}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      GH_TOKEN: ${{ github.token }}
+      SCOPE: ${{ matrix.scope }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Qualify one source-derived alias reuse candidate
+        run: python experiments/nucleus-combined-alias-result-20261107/run.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-combined-alias-result-${{ matrix.scope }}-CANDIDATE
+          retention-days: 60
+          path: |
+            reports/
+            candidate/
+            flags.json
