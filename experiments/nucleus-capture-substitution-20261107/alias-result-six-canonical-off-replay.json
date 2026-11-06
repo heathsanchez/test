@@ -1,0 +1,83 @@
+{
+  "source_artifact": 13535062053,
+  "binary_sha256": "272e8e89b5d0ddf252f27799ca69160e517797862f6b605efefe919084821d07",
+  "flags": {
+    "NUCLEUS_EXPERIMENTAL_CERTIFIED_QUOT_IOTA": "1",
+    "NUCLEUS_EXPERIMENTAL_CONTEXT_BINDER": "1",
+    "NUCLEUS_EXPERIMENTAL_DEMAND_MAJOR": "1",
+    "NUCLEUS_EXPERIMENTAL_EXPECTED_LAMBDA": "1",
+    "NUCLEUS_EXPERIMENTAL_FORMED_PROP_DOMAIN_RETRY": "1",
+    "NUCLEUS_EXPERIMENTAL_POLYMORPHIC_PROP_IRREL": "1",
+    "NUCLEUS_EXPERIMENTAL_PROJECTION_CONTEXT": "1",
+    "NUCLEUS_EXPERIMENTAL_PROJECTION_CROSSFRAME_512": "1",
+    "NUCLEUS_EXPERIMENTAL_PROP_SINGLETON_2P1F": "1",
+    "NUCLEUS_EXPERIMENTAL_RELEVANCE": "1",
+    "NUCLEUS_EXPERIMENTAL_REPLAY_NEUTRAL_PROJECTION": "1",
+    "NUCLEUS_EXPERIMENTAL_REPLAY_PROJECTION_MAJOR": "1",
+    "NUCLEUS_EXPERIMENTAL_SOURCE_PAIR_DEPTH8": "1",
+    "NUCLEUS_EXPERIMENTAL_SOURCE_PROOF_IRREL": "1",
+    "NUCLEUS_EXPERIMENTAL_SUBSTITUTION_RECLOSURE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_DATA_CONGRUENCE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_LINEAGE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_PROJECTION_SPINE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_RECEIVER": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_VALUE_NORMALIZATION": "1",
+    "NUCLEUS_EXPERIMENTAL_DEFERRED_PROJECTION_CONGRUENCE": "1",
+    "NUCLEUS_EXPERIMENTAL_DISTINCT_CONST_PROOF_IRREL": "1",
+    "NUCLEUS_EXPERIMENTAL_EXACT_CAPTURE_SEMANTIC_RETRY": "1",
+    "NUCLEUS_EXPERIMENTAL_QUOTIENT_PROJECTION_BRIDGE": "1"
+  },
+  "diagnostics": false,
+  "judgment_steps": 262144,
+  "rows": [
+    {
+      "name": "magma-list-pair-n7",
+      "input_sha256": "abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35",
+      "rc": 2,
+      "seconds": 0.4285832820005453,
+      "stdout_bytes": 0,
+      "stderr_bytes": 0
+    },
+    {
+      "name": "magma-list-pair-n21",
+      "input_sha256": "b8279fa9189a203c6c11b04702c27c0f99a650b37f2b0165dd260b1d14e9ef84",
+      "rc": 2,
+      "seconds": 0.36222275300133333,
+      "stdout_bytes": 0,
+      "stderr_bytes": 0
+    },
+    {
+      "name": "magma-list-deep-n21",
+      "input_sha256": "b7a211699ab32a5d2397319702e2d5552f5796a6bdac990efa69fb186039f526",
+      "rc": 2,
+      "seconds": 0.711184667001362,
+      "stdout_bytes": 0,
+      "stderr_bytes": 0
+    },
+    {
+      "name": "magma-list-deep-n36",
+      "input_sha256": "6669cee92ad330dada351ac9e63656f7e9e848dd70376f17030d64677f8c81ac",
+      "rc": 2,
+      "seconds": 0.6268708919997152,
+      "stdout_bytes": 0,
+      "stderr_bytes": 0
+    },
+    {
+      "name": "fueled-chain",
+      "input_sha256": "e5ca34489fc7b8ee13b1e7f09f76247ab7b01dd1a752a13cc8b796c569e1401a",
+      "rc": 2,
+      "seconds": 21.372568860000683,
+      "stdout_bytes": 0,
+      "stderr_bytes": 0
+    },
+    {
+      "name": "grind-ring-5",
+      "input_sha256": "e9c394e0ff311fd10f60dee2433a530f16e82354c32d6588a8775baa06fd221f",
+      "rc": 2,
+      "seconds": 60.00677284400081,
+      "stdout_bytes": 0,
+      "stderr_bytes": 0
+    }
+  ],
+  "boundary": "All six original positives, canonical diagnostics-off replay; no runtime comparison or 403 qualification."
+}
