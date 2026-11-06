@@ -21,7 +21,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         with: {toolchain: '1.99.1'}
-      - name: Restore exact qualified source and explicit census-only patch
+      - name: Restore exact qualified source and reviewed diagnostic-only patch
         run: |
           set -euo pipefail
           mkdir -p base candidate reports original196 arena207
@@ -30,7 +30,7 @@ jobs:
           unzip -q base.zip -d base
           tar --no-same-owner -xzf base/candidate/source.tar.gz
           cp base/flags.json flags.json
-          patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-obligation-census-20261107/census.patch
+          patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-obligation-census-20261107/qualified-diagnostics.patch
           find metatron-kernel/src -type f -print0 | sort -z | xargs -0 sha256sum > reports/source.sha256
           cargo check --manifest-path metatron-kernel/Cargo.toml --locked --all-targets > reports/plain-build.log 2>&1
       - name: Native suite and all authoritative targets unchanged
@@ -58,6 +58,7 @@ jobs:
           unzip -p arena207.zip lean-arena-tests.tar.gz | tar --no-same-owner -xzf - -C arena207
           python experiments/nucleus-obligation-census-20261107/qualify.py normal
           python experiments/nucleus-obligation-census-20261107/qualify.py six
+          python experiments/nucleus-obligation-census-20261107/probe_qualified.py
       - name: Exact full Mathlib source with bounded post-failure census
         if: matrix.scope == 'mathlib'
         run: |
