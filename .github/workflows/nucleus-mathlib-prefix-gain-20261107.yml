@@ -1,0 +1,29 @@
+name: Nucleus newly accepted Mathlib prefix
+on:
+  push:
+    branches: [research/nucleus-obligation-census-20261107]
+    paths: ['.github/workflows/nucleus-mathlib-prefix-gain-20261107.yml']
+  workflow_dispatch:
+permissions: {contents: read, actions: read}
+jobs:
+  qualification:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch pinned qualified executables and original source prefix
+        run: |
+          set -euo pipefail
+          gh api repos/heathsanchez/test/actions/artifacts/13519372769/zip > parent.zip
+          gh api repos/heathsanchez/test/actions/artifacts/13520537513/zip > candidate.zip
+          gh api repos/heathsanchez/test/actions/artifacts/13507335517/zip > prefix.zip
+      - name: Matched standard-budget original-prefix replay
+        run: python experiments/nucleus-capture-substitution-20261107/qualify-mathlib-gain.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-mathlib-4679-native-prefix
+          retention-days: 60
+          path: reports/
