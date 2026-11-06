@@ -1,0 +1,53 @@
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -2093,6 +2093,8 @@
+     // by tokens distinct from every concrete FreeId in a captured closure.
+     // A stored capture owns its scope: crossing into it clears virtual slots.
+     pub(crate) fn relational_source_substitution(&self,left:&Closure,right:&Closure,remaining:&mut usize)->bool {
++        if !take_step(remaining){return false;}
++        if self.reuse_completed_source_capture_fact(left,right){return true;}
+         enum Subject { Term(Closure,Vec<u64>),Bound(u64),Free(FreeId),Nat(crate::nat::BigNat) }
+         fn resolve(c:&TypeChecker<'_>,mut subject:Subject,work:&mut usize)->Option<Subject>{
+             loop {
+@@ -2155,6 +2157,15 @@
+                 },
+                 _=>return false,
+             }
++        }
++        // Only the emptied worklist certifies the original subjects. Keep
++        // owning closures; a semantic VALUE relation is not a strict source
++        // map-identity certificate. Optional retention pays its admission fee.
++        let pair=(left.expr,left.env.id(),left.levels.identity(),right.expr,right.env.id(),right.levels.identity());
++        let mut facts=self.source_capture_proofs.borrow_mut();
++        if !facts.contains_key(&pair)&&facts.len()<8192 {
++            let cost=if facts.len()==facts.capacity(){facts.capacity().saturating_mul(2).saturating_add(8)}else{1};
++            if *remaining>=cost{*remaining-=cost;facts.insert(pair,(left.clone(),right.clone(),false));}
+         }
+         true
+     }
+@@ -8737,5 +8748,15 @@
+   let b=Closure::with_levels(ExprId(20),EnvFrame::empty(),LevelSubstitution::new(vec![(NameId(9),LevelTerm::Succ(Box::new(LevelTerm::Zero)))]));
+   assert!(!c.relational_source_substitution(&a,&b,&mut 4096));assert!(c.relational_source_substitution(&a,&a,&mut 4096));
+  }
++ #[test]fn only_a_completed_relation_can_be_replayed_at_one_paid_step(){
++  let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let a=c.closure(ExprId(4),EnvFrame::empty().extend(c.closure(ExprId(1),EnvFrame::empty())));let b=c.closure(ExprId(5),EnvFrame::empty());
++  assert!(!c.relational_source_substitution(&a,&b,&mut 1));
++  assert!(c.relational_source_substitution(&a,&b,&mut 4096));
++  assert!(c.relational_source_substitution(&a,&b,&mut 1));
++  assert!(!c.relational_source_substitution(&a,&b,&mut 0));
++  let wrong=c.closure(ExprId(4),EnvFrame::empty().extend_free(FreeId(0)));
++  assert!(!c.relational_source_substitution(&wrong,&b,&mut 4096));
++  assert!(!c.exact_source_capture_identity(&a,&b,&mut 1),"a semantic substitution fact never claims whole-map literal identity");
++ }
+  #[test]fn incomplete_source_or_work_never_proves(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let a=c.closure(ExprId(4),EnvFrame::empty());assert!(!c.relational_source_substitution(&a,&a,&mut 0));assert!(!c.relational_source_substitution(&a,&a,&mut 4096));}
+ }
+--- a/src/convert.rs
++++ b/src/convert.rs
+@@ -195,6 +195,7 @@
+                     *congruence_attempts-=1;
+                     checker.exact_source_capture_identity(lhs,rhs,&mut trial)
+                         || checker.instantiated_source_capture_congruence(lhs,rhs,&mut trial)
++                        || checker.relational_source_substitution(lhs,rhs,&mut trial)
+                 }else{false};
+             remaining -= allowance.saturating_sub(trial);
+             if identical { continue; }
