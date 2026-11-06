@@ -1,0 +1,240 @@
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -22,3 +22,8 @@
+ [profile.release]
+ lto = "thin"
+ codegen-units = 1
++
++[[bin]]
++name = "nucleus-census"
++path = "src/bin/nucleus-census.rs"
++required-features = ["diagnostics"]
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -50,3 +50,5 @@
+ }
+ 
+ mod run_flags;
++
++mod census;
+--- a/src/checker.rs
++++ b/src/checker.rs
+@@ -156,6 +156,15 @@
+     export: ResolvedExport,
+     limits: Limits,
+     delta_policy: DeltaPolicy,
++) -> Verdict {
++    check_export_with_policy_inner(export,limits,delta_policy,None)
++}
++
++fn check_export_with_policy_inner(
++    export: ResolvedExport,
++    limits: Limits,
++    delta_policy: DeltaPolicy,
++    mut census: Option<&mut crate::census::Census>,
+ ) -> Verdict {
+     if !quotient_source_ownership_is_well_ordered(&export) {
+         return trace_direct_reject("preflight-quotient-source-ownership");
+@@ -312,6 +321,7 @@
+     // derivation. Only the progressively checked environment supplies typing
+     // authority; retaining future source records does not admit them.
+     for declaration_index in 0..export.declarations.len() {
++        if let Some(state)=census.as_deref_mut() {if !state.enter(declaration_index){return Verdict::Unknown;}}
+         let declaration = export.declarations[declaration_index].clone();
+         #[cfg(feature="diagnostics")]
+         if crate::run_flags::present(crate::run_flags::Flag::TraceDeclarationProgress) {
+@@ -349,7 +359,7 @@
+                     parameter_substitution(&level_params),
+                 )
+                 .with_delta_policy(delta_policy);
+-                if let Err(verdict) = trace_verdict_boundary(
++                if let Err(verdict) = census_boundary(&mut census, 
+                     &export,
+                     name,
+                     "axiom.type",
+@@ -390,7 +400,7 @@
+                     parameter_substitution(&level_params),
+                 )
+                 .with_delta_policy(delta_policy);
+-                if let Err(verdict) = trace_verdict_boundary(
++                if let Err(verdict) = census_boundary(&mut census, 
+                     &export,
+                     name,
+                     "definition.type",
+@@ -399,7 +409,7 @@
+                     return verdict;
+                 }
+                 let expected = TypeValue::Term(checker.closure(ty, EnvFrame::empty()));
+-                if let Err(verdict) = trace_verdict_boundary(
++                if let Err(verdict) = census_boundary(&mut census, 
+                     &export,
+                     name,
+                     "definition.value",
+@@ -420,9 +430,9 @@
+                 let checker = TypeChecker::with_level_substitution(
+                     &export.exprs, &export.levels, &environment, parameter_substitution(&level_params),
+                 ).with_delta_policy(delta_policy);
+-                if let Err(verdict) = trace_verdict_boundary(&export, name, "opaque.type", checker.is_type(ty, limits.judgment_steps)) { return verdict; }
++                if let Err(verdict) = census_boundary(&mut census, &export, name, "opaque.type", checker.is_type(ty, limits.judgment_steps)) { return verdict; }
+                 let expected = TypeValue::Term(checker.closure(ty, EnvFrame::empty()));
+-                if let Err(verdict) = trace_verdict_boundary(&export, name, "opaque.value", checker.check_formed(value, &expected, limits.judgment_steps)) { return verdict; }
++                if let Err(verdict) = census_boundary(&mut census, &export, name, "opaque.value", checker.check_formed(value, &expected, limits.judgment_steps)) { return verdict; }
+                 (name, ConstantDecl::theorem(level_params, ty))
+             }
+             Declaration::Theorem {
+@@ -439,7 +449,7 @@
+                     parameter_substitution(&level_params),
+                 )
+                 .with_delta_policy(delta_policy);
+-                if let Err(verdict) = trace_verdict_boundary(
++                if let Err(verdict) = census_boundary(&mut census, 
+                     &export,
+                     name,
+                     "theorem.proposition",
+@@ -448,7 +458,7 @@
+                     return verdict;
+                 }
+                 let expected = TypeValue::Term(checker.closure(ty, EnvFrame::empty()));
+-                if let Err(verdict) = trace_verdict_boundary(
++                if let Err(verdict) = census_boundary(&mut census, 
+                     &export,
+                     name,
+                     "theorem.value",
+@@ -591,7 +601,27 @@
+         }
+     }
+ 
++    if let Some(state)=census {state.finished=true;return Verdict::Unknown;}
+     Verdict::Accept
++}
++
++/// Census only: failed source declarations may be assumed in a quarantined
++/// environment. The report can never authorize a theorem or an export.
++#[cfg(feature="diagnostics")]
++pub fn diagnostic_census(export:ResolvedExport,limits:Limits,max_failures:usize,max_after_first:usize)->serde_json::Value {
++    let _configuration=crate::run_flags::enter();
++    let mut state=crate::census::Census::new(export.declarations.len(),max_failures,max_after_first);
++    let terminal=check_export_with_policy_inner(export,limits,DeltaPolicy::GuardedSemanticFallback,Some(&mut state));
++    state.report(match terminal{Verdict::Accept=>"unexpected-terminal",Verdict::Reject=>"structural-or-metadata-rejection",Verdict::Unknown=>"unsupported-metadata-or-structural-obligation",Verdict::Error=>"process-error"})
++}
++fn census_boundary(census:&mut Option<&mut crate::census::Census>,export:&ResolvedExport,name:NameId,stage:&'static str,judgment:Judgment<()>)->Result<(),Verdict>{
++    if let Some(state)=census.as_deref_mut(){
++        state.boundary(name,trace_name(export,name),stage,&judgment);
++        if !judgment.is_proven(){state.attach_source(export);}
++        // This permits further DIAGNOSTIC observations, not an admission
++        // in the ordinary checker. The containing API returns a report only.
++        Ok(())
++    }else{trace_verdict_boundary(export,name,stage,judgment)}
+ }
+ 
+ fn recursor_claims_external_constructor(block: &InductiveBlock) -> bool {
+@@ -13326,3 +13356,38 @@
+         assert!(!record_field_sort_fits(term,&LevelTerm::Zero,0));
+     }
+ }
++
++#[cfg(all(test, feature="diagnostics"))]
++mod obligation_census_tests {
++    use super::*;
++    use crate::syntax::Name;
++    fn fixture()->ResolvedExport {
++        let mut e=crate::parser::parse(std::io::Cursor::new(include_bytes!("../tests/fixtures/good-beta-definition.ndjson"))).unwrap().resolve().unwrap();
++        e.exprs.insert(ExprId(100),Expr::BVar(99)).unwrap();
++        for id in 10..13 {e.names.insert(NameId(id),Name::Str{prefix:NameId(0),value:format!("census_{id}")}).unwrap();}
++        for id in 10..12 {e.declarations.push(Declaration::Definition{name:NameId(id),level_params:vec![],ty:ExprId(3),value:ExprId(100),preferred_for_reduction:true});}
++        e.declarations.push(Declaration::Definition{name:NameId(12),level_params:vec![],ty:ExprId(3),value:ExprId(2),preferred_for_reduction:true});e
++    }
++    #[test]fn census_exposes_later_failures_and_never_changes_authoritative_verdict(){
++        let e=fixture();let before=check_export(e.clone(),Limits::default());assert_ne!(before,Verdict::Accept);
++        let report=diagnostic_census(e.clone(),Limits::default(),8,64);
++        assert_eq!(report["diagnostic_only"],true);assert_eq!(report["whole_export_warrant"],"FORBIDDEN");
++        assert_eq!(report["failures"].as_array().unwrap().len(),2);
++        assert_eq!(report["assumed_declarations"],2);assert!(report["conditional_successes"].as_u64().unwrap()>0);
++        assert_eq!(report["finished_all_declarations"],true);
++        assert_eq!(before,check_export(e,Limits::default()));
++    }
++    #[test]fn census_limit_is_explicit_and_does_not_claim_complete_coverage(){
++        let report=diagnostic_census(fixture(),Limits::default(),1,64);
++        assert_eq!(report["failures"].as_array().unwrap().len(),1);
++        assert_eq!(report["finished_all_declarations"],false);
++        assert_eq!(report["stop_reason"],"failure-limit");
++    }
++    #[test]fn census_does_not_bypass_malformed_recursor_preflight(){
++        let e=crate::parser::parse(std::io::Cursor::new(include_bytes!("../tests/fixtures/bad-orphan-recursor.ndjson"))).unwrap().resolve().unwrap();
++        let report=diagnostic_census(e,Limits::default(),8,64);
++        assert_eq!(report["finished_all_declarations"],false);
++        assert_eq!(report["assumed_declarations"],0);
++        assert_eq!(report["whole_export_warrant"],"FORBIDDEN");
++    }
++}
+--- a/src/census.rs
++++ b/src/census.rs
+@@ -0,0 +1,52 @@
++//! Quarantined diagnostics. No value in this module is a kernel warrant.
++use std::collections::HashSet;
++use serde_json::{json,Value};
++use crate::{id::NameId,judgment::Judgment};
++pub(crate) struct Census {
++    pub(crate) total:usize,
++    pub(crate) visited:usize,
++    pub(crate) current:usize,
++    pub(crate) finished:bool,
++    pub(crate) stop:Option<&'static str>,
++    first_failure:Option<usize>,
++    max_failures:usize,
++    max_after_first:usize,
++    failures:Vec<Value>,
++    assumed:HashSet<NameId>,
++    checks:usize,
++    conditional_successes:usize,
++}
++impl Census {
++    pub(crate) fn new(total:usize,max_failures:usize,max_after_first:usize)->Self{
++        Self{total,visited:0,current:0,finished:false,stop:None,first_failure:None,max_failures,max_after_first,failures:vec![],assumed:HashSet::new(),checks:0,conditional_successes:0}
++    }
++    pub(crate) fn enter(&mut self,index:usize)->bool{
++        if self.failures.len()>=self.max_failures {self.stop=Some("failure-limit");return false;}
++        if self.first_failure.is_some_and(|first|index.saturating_sub(first)>=self.max_after_first){self.stop=Some("post-failure-window");return false;}
++        self.current=index;self.visited=index+1;true
++    }
++    pub(crate) fn boundary(&mut self,name:NameId,label:String,stage:&str,judgment:&Judgment<()>){
++        self.checks+=1;
++        let (outcome,reason)=match judgment {
++            Judgment::Proven{..}=>{if !self.assumed.is_empty(){self.conditional_successes+=1;}return;},
++            Judgment::Refuted{obstruction}=>("REFUTED",obstruction.0),
++            Judgment::Unknown{residual}=>("UNKNOWN",residual.0),
++        };
++        self.first_failure.get_or_insert(self.current);
++        self.failures.push(json!({"declaration_index":self.current,"name_id":name.0,"name":label,"stage":stage,"observed_judgment":outcome,"reason":reason,"prior_assumed_declarations":self.assumed.len(),"authority":"DIAGNOSTIC_SOURCE_ASSUMPTIONS_ONLY"}));
++        self.assumed.insert(name);
++    }
++    pub(crate) fn attach_source(&mut self,export:&crate::parser::ResolvedExport){
++        use crate::syntax::Declaration;
++        let roots=match export.declarations.get(self.current){
++            Some(Declaration::Definition{ty,value,..}|Declaration::Theorem{ty,value,..}|Declaration::Opaque{ty,value,..})=>Some((*ty,Some(*value))),
++            Some(Declaration::Axiom{ty,..})=>Some((*ty,None)),_=>None,
++        };
++        if let (Some((ty,body)),Some(row))=(roots,self.failures.last_mut()){
++            row["type_expr"]=json!(ty.0);row["body_expr"]=json!(body.map(|id|id.0));
++        }
++    }
++    pub(crate) fn report(self,terminal:&str)->Value{
++        json!({"schema":"nucleus.obligation_census.v1","diagnostic_only":true,"whole_export_warrant":"FORBIDDEN","source_reference_status":"ASSUMED_ORIGINAL_SOURCE_NOT_REVERIFIED_BY_THIS_CENSUS","total_declarations":self.total,"visited_declarations":self.visited,"finished_all_declarations":self.finished,"stop_reason":self.stop.unwrap_or(if self.finished{"end-of-source"}else{terminal}),"scalar_checks":self.checks,"assumed_declarations":self.assumed.len(),"conditional_successes":self.conditional_successes,"failures":self.failures})
++    }
++}
+--- a/src/bin/nucleus-census.rs
++++ b/src/bin/nucleus-census.rs
+@@ -0,0 +1,13 @@
++use std::{io::{self,BufReader},process::ExitCode};
++fn main()->ExitCode{
++ let args:Vec<String>=std::env::args().collect();
++ if args.get(1).map(String::as_str)!=Some("--source-assumptions-only") {eprintln!("requires --source-assumptions-only; this executable cannot issue ACCEPT");return ExitCode::from(3);}
++ let number=|index:usize,default:usize|args.get(index).and_then(|s|s.parse::<usize>().ok()).unwrap_or(default);
++ let (steps,failures,window)=(number(2,262144),number(3,64),number(4,256));
++ std::thread::Builder::new().stack_size(64*1024*1024).spawn(move||{
++  match metatron_kernel::parser::parse(BufReader::new(io::stdin().lock())).and_then(|e|e.resolve()){
++   Ok(e)=>{println!("{}",metatron_kernel::checker::diagnostic_census(e,metatron_kernel::checker::Limits{judgment_steps:steps},failures,window));ExitCode::from(2)},
++   Err(error)=>{eprintln!("diagnostic parse error: {error}");ExitCode::from(3)}
++  }
++ }).unwrap().join().unwrap_or(ExitCode::from(3))
++}
