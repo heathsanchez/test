@@ -1,0 +1,621 @@
+--- a/src/census.rs
++++ b/src/census.rs
+@@ -10,6 +10,8 @@
+     pub(crate) stop:Option<&'static str>,
+     pub(crate) location:Option<Value>,
+     first_failure:Option<usize>,
++    pub(crate) assume_before:usize,
++    assumed_prefix_checks:usize,
+     max_failures:usize,
+     max_after_first:usize,
+     failures:Vec<Value>,
+@@ -19,7 +21,7 @@
+ }
+ impl Census {
+     pub(crate) fn new(total:usize,max_failures:usize,max_after_first:usize)->Self{
+-        Self{total,visited:0,current:0,finished:false,stop:None,location:None,first_failure:None,max_failures,max_after_first,failures:vec![],assumed:HashSet::new(),checks:0,conditional_successes:0}
++        Self{total,visited:0,current:0,finished:false,stop:None,location:None,first_failure:None,assume_before:0,assumed_prefix_checks:0,max_failures,max_after_first,failures:vec![],assumed:HashSet::new(),checks:0,conditional_successes:0}
+     }
+     pub(crate) fn enter(&mut self,index:usize)->bool{
+         if self.failures.len()>=self.max_failures {self.stop=Some("failure-limit");return false;}
+@@ -27,6 +29,10 @@
+         self.current=index;self.visited=index+1;true
+     }
+     pub(crate) fn at_failure_limit(&mut self)->bool{if self.failures.len()>=self.max_failures{self.stop=Some("failure-limit");true}else{false}}
++    pub(crate) fn assume_prefix_boundary(&mut self,name:NameId)->bool{
++        if self.current>=self.assume_before{return false;}
++        self.checks+=1;self.assumed_prefix_checks+=1;self.assumed.insert(name);true
++    }
+     pub(crate) fn boundary(&mut self,name:NameId,label:String,stage:&str,judgment:&Judgment<()>){
+         self.checks+=1;
+         let (outcome,reason)=match judgment {
+@@ -50,6 +56,6 @@
+         }
+     }
+     pub(crate) fn report(self,terminal:&str)->Value{
+-        json!({"schema":"nucleus.obligation_census.v1","diagnostic_only":true,"whole_export_warrant":"FORBIDDEN","source_reference_status":"ASSUMED_ORIGINAL_SOURCE_NOT_REVERIFIED_BY_THIS_CENSUS","total_declarations":self.total,"visited_declarations":self.visited,"finished_all_declarations":self.finished,"stop_reason":self.stop.unwrap_or(if self.finished{"end-of-source"}else{terminal}),"stopping_declaration":if !self.finished&&self.stop.is_none(){self.location}else{None},"conditionality_policy":"CONSERVATIVE_PRIOR_FAILURE_CONTAMINATION_NOT_DEPENDENCY_COUNTS","scalar_checks":self.checks,"assumed_declarations":self.assumed.len(),"conditional_successes":self.conditional_successes,"failures":self.failures})
++        json!({"schema":"nucleus.obligation_census.v1","diagnostic_only":true,"whole_export_warrant":"FORBIDDEN","source_reference_status":"ASSUMED_ORIGINAL_SOURCE_NOT_REVERIFIED_BY_THIS_CENSUS","total_declarations":self.total,"visited_declarations":self.visited,"finished_all_declarations":self.finished,"stop_reason":self.stop.unwrap_or(if self.finished{"end-of-source"}else{terminal}),"stopping_declaration":if !self.finished&&self.stop.is_none(){self.location}else{None},"conditionality_policy":"CONSERVATIVE_PRIOR_FAILURE_CONTAMINATION_NOT_DEPENDENCY_COUNTS","assume_scalar_boundaries_before":self.assume_before,"assumed_prefix_checks":self.assumed_prefix_checks,"scalar_checks":self.checks,"assumed_declarations":self.assumed.len(),"conditional_successes":self.conditional_successes,"failures":self.failures})
+     }
+ }
+--- a/src/convert.rs
++++ b/src/convert.rs
+@@ -1382,10 +1382,22 @@
+                 let Some(free) = fresh_local(depth) else {
+                     return Judgment::unknown("binder-depth-overflow");
+                 };
+-                let allowance = current_budget.min(1024);
++                // Capture safety is a mandatory premise. Use the budget
++                // already supplied by this conversion, charging completed
++                // support/capture work to its owner rather than declining
++                // behind an unrelated fixed sub-allowance.
++                let allowance = current_budget;
+                 let mut opening_budget = allowance;
+-                if !source_opening_avoids_capture(checker, left_body, free, &mut opening_budget)
+-                    || !source_opening_avoids_capture(checker, right_body, free, &mut opening_budget) {
++                let left_safe=source_opening_avoids_capture(checker, left_body, free, &mut opening_budget);
++                let right_safe=left_safe.then(||source_opening_avoids_capture(checker, right_body, free, &mut opening_budget));
++                let opening_spent=allowance-opening_budget;
++                // Preserve the existing accounting of the old bounded
++                // guard. Debit only the additional work newly enabled
++                // beyond that guard's historical 1024-step allowance.
++                *eta_work=eta_work.saturating_add(opening_spent.saturating_sub(1024));
++                if !left_safe || right_safe!=Some(true) {
++                    #[cfg(feature="diagnostics")]
++                    if crate::inductive::signature_probe_active(){eprintln!("NUCLEUS_SIGNATURE_CAPTURE_GAP:{}",serde_json::json!({"left_expr":left_body.expr.0,"right_expr":right_body.expr.0,"free":free.0,"depth":depth,"context_len":context.len(),"owner_budget":current_budget,"opening_allowance":allowance,"opening_remaining":opening_budget,"left_safe":left_safe,"right_safe":right_safe}));}
+                     return Judgment::unknown("source-binder-capture-or-support-unavailable");
+                 }
+                 current_budget -= allowance - opening_budget;
+@@ -3278,3 +3290,17 @@
+         assert!(!compare_values(&checker,&truth,&Value::Neutral(wrong_universe),512,0,&[],&mut vec![],&mut HashMap::new()).is_proven());
+     }
+ }
++
++#[cfg(test)]
++mod large_source_opening_tests {
++ use super::*;
++ use crate::{environment::Environment,id::{ExprId,IdTable,LevelId},syntax::{Expr,Level},value::EnvFrame};
++ #[test]fn alpha_equal_large_pi_towers_use_the_available_judgment_budget(){
++  let mut e=IdTable::default();let mut l=IdTable::default();l.insert(LevelId(0),Level::Zero).unwrap();e.insert(ExprId(0),Expr::Sort(LevelId(0))).unwrap();
++  let mut roots=vec![];
++  for start in [1u64,1001]{let mut body=ExprId(0);for k in start..start+300{e.insert(ExprId(k),Expr::Pi{domain:ExprId(0),body}).unwrap();body=ExprId(k);}roots.push(body);}
++  let env=Environment::empty();let c=TypeChecker::new(&e,&l,&env);let left=TypeValue::Term(c.closure(roots[0],EnvFrame::empty()));let right=TypeValue::Term(c.closure(roots[1],EnvFrame::empty()));
++  let result=c.convert(&left,&right,20000);assert!(result.is_proven(),"equal well-formed Pi towers must convert within their supplied work budget: {result:?}");
++  let cold=TypeChecker::new(&e,&l,&env);assert!(cold.convert(&left,&right,128).is_unknown(),"insufficient owner work remains UNKNOWN");
++ }
++}
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -1348,9 +1348,17 @@
+                 (Some((_, EnvBinding::Closure(a))), Some((_, EnvBinding::Closure(b)))) => {
+                     output.push(format!("left_chain={}", chain(self, a.clone(), budget)));
+                     output.push(format!("right_chain={}", chain(self, b.clone(), budget)));
+-                    let _scope = CaptureSourceFailureScope::enter();
+-                    let relation = self.checked_source_conversion(&a, &b, context, budget.min(128));
+-                    output.push(format!("independently_typed_capture_relation={relation:?}:first_source_failure={:?}", CaptureSourceFailureScope::first()));
++                    // Every allowance starts from the same checked witness
++                    // snapshot, without warming or modifying the live checker.
++                    for allowance in [128usize,512,2048,4096]{
++                        let mut isolated=Self::with_level_substitution(self.expressions,self.levels,self.environment,self.level_substitution.clone()).with_delta_policy(self.delta_policy);
++                        isolated.strict_origin_probe=self.strict_origin_probe;
++                        *isolated.checked_binding_lineage.borrow_mut()=self.checked_binding_lineage.borrow().clone();
++                        isolated.binding_revocation_epoch.set(self.binding_revocation_epoch.get());
++                        let _scope=CaptureSourceFailureScope::enter();
++                        let relation=isolated.checked_source_conversion(&a,&b,context,allowance);
++                        output.push(format!("isolated_typed_capture_relation:requested={allowance}:inference_cap={}:type_conversion_cap={}:term_conversion_cap={}:result={relation:?}:first_source_failure={:?}",allowance.min(4096),allowance.min(2048),allowance.min(4096),CaptureSourceFailureScope::first()));
++                    }
+                 }
+                 _ => output.push("typed_capture_relation=unavailable-nonclosure-binding".to_string()),
+             }
+@@ -2446,6 +2454,8 @@
+                             full,
+                         );
+                     }
++                    #[cfg(feature="diagnostics")]
++                    if crate::inductive::signature_probe_active(){eprintln!("NUCLEUS_SIGNATURE_APP_GAP:{}",serde_json::json!({"expression":expression.0,"function":fun.0,"argument":arg.0,"context_len":context.len(),"remaining":*remaining,"function_type":crate::obligation_shadow::bounded_debug(&function_type)}));}
+                     return Judgment::unknown("application-function-type");
+                 };
+                 // Proven function inference in the checked caller Γ yields
+--- a/src/inductive.rs
++++ b/src/inductive.rs
+@@ -62,7 +62,16 @@
+             parameter_substitution(&signature.level_params),
+         )
+         .with_delta_policy(delta_policy);
+-        verdict_boundary(checker.is_type(signature.ty, judgment_steps))?;
++        #[cfg(feature="diagnostics")]
++        let selected=std::env::var("NUCLEUS_DIAGNOSTIC_SIGNATURE_IDS").ok().is_some_and(|ids|ids.split(',').any(|id|id.parse::<u64>().ok()==Some(signature.name.0)));
++        #[cfg(feature="diagnostics")]
++        let _probe=SignatureProbeScope::enter(selected);
++        let formation=checker.is_type(signature.ty, judgment_steps);
++        #[cfg(feature="diagnostics")]
++        if selected{
++            eprintln!("NUCLEUS_SIGNATURE_FORMATION:{}",serde_json::json!({"diagnostic_only":true,"acceptance_authority":false,"name_id":signature.name.0,"type_expr":signature.ty.0,"kind":format!("{:?}",signature.kind),"judgment":format!("{formation:?}")}));
++        }
++        verdict_boundary(formation)?;
+ 
+         let declaration = match signature.kind {
+             OpaqueInductiveKind::Type => {
+@@ -126,3 +135,14 @@
+         Judgment::Unknown { .. } => Err(Verdict::Unknown),
+     }
+ }
++
++#[cfg(feature="diagnostics")]
++thread_local!{static SIGNATURE_PROBE:std::cell::Cell<bool>=const{std::cell::Cell::new(false)};}
++#[cfg(feature="diagnostics")]
++pub(crate) fn signature_probe_active()->bool{SIGNATURE_PROBE.get()}
++#[cfg(feature="diagnostics")]
++struct SignatureProbeScope(bool);
++#[cfg(feature="diagnostics")]
++impl SignatureProbeScope{fn enter(selected:bool)->Self{Self(SIGNATURE_PROBE.replace(selected))}}
++#[cfg(feature="diagnostics")]
++impl Drop for SignatureProbeScope{fn drop(&mut self){SIGNATURE_PROBE.set(self.0);}}
+--- a/src/checker.rs
++++ b/src/checker.rs
+@@ -369,7 +369,7 @@
+                     &export,
+                     name,
+                     "axiom.type",
+-                    checker.is_type(ty, limits.judgment_steps),
++                    || checker.is_type(ty, limits.judgment_steps),
+                 ) {
+                     return verdict;
+                 }
+@@ -410,7 +410,7 @@
+                     &export,
+                     name,
+                     "definition.type",
+-                    checker.is_type(ty, limits.judgment_steps),
++                    || checker.is_type(ty, limits.judgment_steps),
+                 ) {
+                     return verdict;
+                 }
+@@ -419,7 +419,7 @@
+                     &export,
+                     name,
+                     "definition.value",
+-                    checker.check_formed(value, &expected, limits.judgment_steps),
++                    || checker.check_formed(value, &expected, limits.judgment_steps),
+                 ) {
+                     return verdict;
+                 }
+@@ -436,9 +436,9 @@
+                 let checker = TypeChecker::with_level_substitution(
+                     &export.exprs, &export.levels, &environment, parameter_substitution(&level_params),
+                 ).with_delta_policy(delta_policy);
+-                if let Err(verdict) = census_boundary(&mut census, &export, name, "opaque.type", checker.is_type(ty, limits.judgment_steps)) { return verdict; }
++                if let Err(verdict) = census_boundary(&mut census, &export, name, "opaque.type", || checker.is_type(ty, limits.judgment_steps)) { return verdict; }
+                 let expected = TypeValue::Term(checker.closure(ty, EnvFrame::empty()));
+-                if let Err(verdict) = census_boundary(&mut census, &export, name, "opaque.value", checker.check_formed(value, &expected, limits.judgment_steps)) { return verdict; }
++                if let Err(verdict) = census_boundary(&mut census, &export, name, "opaque.value", || checker.check_formed(value, &expected, limits.judgment_steps)) { return verdict; }
+                 (name, ConstantDecl::theorem(level_params, ty))
+             }
+             Declaration::Theorem {
+@@ -459,7 +459,7 @@
+                     &export,
+                     name,
+                     "theorem.proposition",
+-                    checker.is_proposition(ty, limits.judgment_steps),
++                    || checker.is_proposition(ty, limits.judgment_steps),
+                 ) {
+                     return verdict;
+                 }
+@@ -468,7 +468,7 @@
+                     &export,
+                     name,
+                     "theorem.value",
+-                    checker.check_formed(value, &expected, limits.judgment_steps),
++                    || checker.check_formed(value, &expected, limits.judgment_steps),
+                 ) {
+                     return verdict;
+                 }
+@@ -615,19 +615,28 @@
+ /// environment. The report can never authorize a theorem or an export.
+ #[cfg(feature="diagnostics")]
+ pub fn diagnostic_census(export:ResolvedExport,limits:Limits,max_failures:usize,max_after_first:usize)->serde_json::Value {
++    diagnostic_census_with_assumed_prefix(export,limits,max_failures,max_after_first,0)
++}
++/// Faster conditional inquiry only. Every skipped scalar boundary is recorded
++/// as a source assumption, never a successful kernel judgment.
++#[cfg(feature="diagnostics")]
++pub fn diagnostic_census_with_assumed_prefix(export:ResolvedExport,limits:Limits,max_failures:usize,max_after_first:usize,assume_before:usize)->serde_json::Value {
+     let _configuration=crate::run_flags::enter();
+     let mut state=crate::census::Census::new(export.declarations.len(),max_failures,max_after_first);
++    state.assume_before=assume_before;
+     let terminal=check_export_with_policy_inner(export,limits,DeltaPolicy::GuardedSemanticFallback,Some(&mut state));
+     state.report(match terminal{Verdict::Accept=>"unexpected-terminal",Verdict::Reject=>"structural-or-metadata-rejection",Verdict::Unknown=>"unsupported-metadata-or-structural-obligation",Verdict::Error=>"process-error"})
+ }
+-fn census_boundary(census:&mut Option<&mut crate::census::Census>,export:&ResolvedExport,name:NameId,stage:&'static str,judgment:Judgment<()>)->Result<(),Verdict>{
++fn census_boundary(census:&mut Option<&mut crate::census::Census>,export:&ResolvedExport,name:NameId,stage:&'static str,judgment:impl FnOnce()->Judgment<()>)->Result<(),Verdict>{
+     if let Some(state)=census.as_deref_mut(){
++        if state.assume_prefix_boundary(name){return Ok(());}
++        let judgment=judgment();
+         state.boundary(name,trace_name(export,name),stage,&judgment);
+         if !judgment.is_proven(){state.attach_source(export);if state.at_failure_limit(){return Err(Verdict::Unknown);}}
+         // This permits further DIAGNOSTIC observations, not an admission
+         // in the ordinary checker. The containing API returns a report only.
+         Ok(())
+-    }else{trace_verdict_boundary(export,name,stage,judgment)}
++    }else{trace_verdict_boundary(export,name,stage,judgment())}
+ }
+ 
+ fn recursor_claims_external_constructor(block: &InductiveBlock) -> bool {
+@@ -2500,6 +2509,19 @@
+     install_certified_recursor_reduction(environment, &block.constructors, recursor)
+ }
+ 
++
++// Observation only: preserve every existing false/UNKNOWN decision.
++fn trace_structural_false(export:&ResolvedExport,block:&InductiveBlock,stage:&str,line:u32)->bool{
++    #[cfg(feature="diagnostics")]
++    if let Some(owner)=block.types.first(){
++        if std::env::var("NUCLEUS_DIAGNOSTIC_STRUCTURAL_OWNER").ok().is_some_and(|name|trace_name(export,owner.name)==name){
++            eprintln!("NUCLEUS_STRUCTURAL_RESIDUAL:{}",serde_json::json!({"diagnostic_only":true,"acceptance_authority":false,"owner":trace_name(export,owner.name),"stage":stage,"source_line":line,"num_params":owner.num_params,"num_indices":owner.num_indices,"num_nested":owner.num_nested,"recursive":owner.is_recursive,"reflexive":owner.is_reflexive,"constructor_fields":block.constructors.iter().map(|c|c.num_fields).collect::<Vec<_>>()}));
++        }
++    }
++    false
++}
++fn trace_structural_unknown(export:&ResolvedExport,block:&InductiveBlock,stage:&str,line:u32)->Verdict{trace_structural_false(export,block,stage,line);Verdict::Unknown}
++
+ fn check_inductive(
+     export: &ResolvedExport,
+     environment: &Environment,
+@@ -2511,12 +2533,12 @@
+         && generic_prop_singleton_large_elim_candidate(export,block);
+     if nullary_prop && !block.recursors[0].level_params.first().is_some_and(|motive|
+         source_motive_level_matches(export,&block.types[0].level_params,*motive))
+-    {return Err(Verdict::Unknown);}
++    {return Err(trace_structural_unknown(export,block,"check_inductive",line!()));}
+     if parameter_record_scope(export,block) || nullary_enum_scope(block) || nullary_prop {
+         let mut roots=vec![block.types[0].ty,block.recursors[0].ty];
+         roots.extend(block.constructors.iter().map(|constructor|constructor.ty));
+         roots.extend(block.recursors[0].rules.iter().map(|rule|rule.rhs));
+-        if !bounded_record_source(export,&roots,None) {return Err(Verdict::Unknown);}
++        if !bounded_record_source(export,&roots,None) {return Err(trace_structural_unknown(export,block,"check_inductive",line!()));}
+     }
+     if generated_mutual_nested_family_candidate(export, block) {
+         return check_generated_mutual_nested_family(
+@@ -2619,19 +2641,19 @@
+             || inductive.is_reflexive
+             || inductive.is_unsafe
+         {
+-            return Err(Verdict::Unknown);
++            return Err(trace_structural_unknown(export,block,"check_inductive",line!()));
+         }
+         let [constructor] = block.constructors.as_slice() else {
+             return Err(Verdict::Reject);
+         };
+         if constructor.is_unsafe {
+-            return Err(Verdict::Unknown);
++            return Err(trace_structural_unknown(export,block,"check_inductive",line!()));
+         }
+         let [recursor] = block.recursors.as_slice() else {
+             return Err(Verdict::Reject);
+         };
+         if recursor.is_unsafe {
+-            return Err(Verdict::Unknown);
++            return Err(trace_structural_unknown(export,block,"check_inductive",line!()));
+         }
+         let [level] = inductive.level_params.as_slice() else {
+             return Err(Verdict::Reject);
+@@ -2657,7 +2679,7 @@
+             || inductive.is_reflexive
+             || inductive.is_unsafe
+         {
+-            return Err(Verdict::Unknown);
++            return Err(trace_structural_unknown(export,block,"check_inductive",line!()));
+         }
+         if inductive.num_params != 2 || inductive.num_indices != 1 {
+             return Err(Verdict::Reject);
+@@ -2666,13 +2688,13 @@
+             return Err(Verdict::Reject);
+         };
+         if constructor.is_unsafe {
+-            return Err(Verdict::Unknown);
++            return Err(trace_structural_unknown(export,block,"check_inductive",line!()));
+         }
+         let [recursor] = block.recursors.as_slice() else {
+             return Err(Verdict::Reject);
+         };
+         if recursor.is_unsafe {
+-            return Err(Verdict::Unknown);
++            return Err(trace_structural_unknown(export,block,"check_inductive",line!()));
+         }
+         let [level] = inductive.level_params.as_slice() else {
+             return Err(Verdict::Reject);
+@@ -2764,17 +2786,17 @@
+ 
+     if crate::indexed_prop::contracts(export, block).is_some() {
+         let [inductive] = block.types.as_slice() else {
+-            return Err(Verdict::Unknown);
++            return Err(trace_structural_unknown(export,block,"check_inductive",line!()));
+         };
+         let [recursor] = block.recursors.as_slice() else {
+-            return Err(Verdict::Unknown);
++            return Err(trace_structural_unknown(export,block,"check_inductive",line!()));
+         };
+         if has_duplicate_parameter(&inductive.level_params)
+             || !recursor_metadata_admissible(
+                 export, inductive, &block.constructors, recursor, false, true,
+             )
+         {
+-            return Err(Verdict::Unknown);
++            return Err(trace_structural_unknown(export,block,"check_inductive",line!()));
+         }
+         let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+         derivation.promote(
+@@ -2801,7 +2823,7 @@
+         0 => check_empty_inductive(export, environment, block, limits, delta_policy),
+         1 => check_single_constructor_inductive(export, environment, block, limits, delta_policy),
+         2 => check_binary_enum(export, environment, block, limits, delta_policy),
+-        _ => Err(Verdict::Unknown),
++        _ => Err(trace_structural_unknown(export,block,"check_inductive:dispatch",line!())),
+     }
+ }
+ 
+@@ -2943,24 +2965,24 @@
+ }
+ 
+ fn parameter_record_scope(export:&ResolvedExport,block:&InductiveBlock)->bool {
+-    let ([inductive],[constructor],[_])=(block.types.as_slice(),block.constructors.as_slice(),block.recursors.as_slice()) else{return false;};
++    let ([inductive],[constructor],[_])=(block.types.as_slice(),block.constructors.as_slice(),block.recursors.as_slice()) else{return trace_structural_false(export,block,"parameter_record_scope",line!());};
+     if inductive.level_params.is_empty() || inductive.level_params.len()>64 || !(1..=64).contains(&inductive.num_params)
+-        || !(2..=64).contains(&constructor.num_fields) {return false;}
+-    let Some((parameters,result))=pi_spine(export,inductive.ty,inductive.num_params as usize) else{return false;};
++        || !(2..=64).contains(&constructor.num_fields) {return trace_structural_false(export,block,"parameter_record_scope",line!());}
++    let Some((parameters,result))=pi_spine(export,inductive.ty,inductive.num_params as usize) else{return trace_structural_false(export,block,"parameter_record_scope",line!());};
+     matches!(export.exprs.get(parameters[0]),Some(Expr::Sort(_)))
+         && matches!(export.exprs.get(result), Some(Expr::Sort(level))
+             if exported_level_is_definitely_nonzero(export,*level,128))
+ }
+ 
+ fn parameter_record_candidate(export:&ResolvedExport,block:&InductiveBlock)->bool {
+-    if !parameter_record_scope(export,block) {return false;}
++    if !parameter_record_scope(export,block) {return trace_structural_false(export,block,"parameter_record_candidate",line!());}
+     let inductive=&block.types[0];let constructor=&block.constructors[0];let recursor=&block.recursors[0];
+     let p=inductive.num_params as usize;
+-    if constructor.num_params!=inductive.num_params {return false;}
++    if constructor.num_params!=inductive.num_params {return trace_structural_false(export,block,"parameter_record_candidate",line!());}
+     let mut roots=vec![inductive.ty,constructor.ty,recursor.ty];roots.extend(recursor.rules.iter().map(|rule|rule.rhs));
+-    if !bounded_record_source(export,&roots,None) {return false;}
+-    let Some((parameters,result))=pi_spine(export,inductive.ty,p) else{return false;};
+-    let Some((fields,_))=pi_spine(export,constructor.ty,p+constructor.num_fields as usize) else{return false;};
++    if !bounded_record_source(export,&roots,None) {return trace_structural_false(export,block,"parameter_record_candidate",line!());}
++    let Some((parameters,result))=pi_spine(export,inductive.ty,p) else{return trace_structural_false(export,block,"parameter_record_candidate",line!());};
++    let Some((fields,_))=pi_spine(export,constructor.ty,p+constructor.num_fields as usize) else{return trace_structural_false(export,block,"parameter_record_candidate",line!());};
+     matches!(export.exprs.get(parameters[0]),Some(Expr::Sort(_))) && matches!(export.exprs.get(result), Some(Expr::Sort(level))
+             if exported_level_is_definitely_nonzero(export,*level,128))
+         && parameters.iter().zip(&fields[..p]).all(|(a,b)|expr_eq_with_bvar_shift(export,*a,*b,0,0))
+@@ -2991,35 +3013,35 @@
+ }
+ 
+ fn parameter_record_obligations(export:&ResolvedExport,environment:&Environment,block:&InductiveBlock,limits:Limits,policy:DeltaPolicy)->bool {
+-    if !parameter_record_candidate(export,block) {return false;}
++    if !parameter_record_candidate(export,block) {return trace_structural_false(export,block,"parameter_record_obligations",line!());}
+     let inductive=&block.types[0];let constructor=&block.constructors[0];let recursor=&block.recursors[0];
+     let p=inductive.num_params as usize;let count=constructor.num_fields as usize;
+     // Regenerate the first unused motive name from all owner universes.
+-    let Some(motive)=recursor.level_params.first() else{return false;};
+-    if !source_motive_level_matches(export,&inductive.level_params,*motive) {return false;}
+-    let Some((parameters,result))=pi_spine(export,inductive.ty,p) else{return false;};
+-    let Some(Expr::Sort(level))=export.exprs.get(result) else{return false;};
++    let Some(motive)=recursor.level_params.first() else{return trace_structural_false(export,block,"parameter_record_obligations",line!());};
++    if !source_motive_level_matches(export,&inductive.level_params,*motive) {return trace_structural_false(export,block,"parameter_record_obligations",line!());}
++    let Some((parameters,result))=pi_spine(export,inductive.ty,p) else{return trace_structural_false(export,block,"parameter_record_obligations",line!());};
++    let Some(Expr::Sort(level))=export.exprs.get(result) else{return trace_structural_false(export,block,"parameter_record_obligations",line!());};
+     let substitution=parameter_substitution(&inductive.level_params);
+-    let Ok(carrier)=crate::level::instantiate_level(&export.levels,*level,&substitution,limits.judgment_steps) else{return false;};
++    let Ok(carrier)=crate::level::instantiate_level(&export.levels,*level,&substitution,limits.judgment_steps) else{return trace_structural_false(export,block,"parameter_record_obligations",line!());};
+     let checker=TypeChecker::with_level_substitution(&export.exprs,&export.levels,environment,substitution).with_delta_policy(policy);
+-    let Some((fields,_))=pi_spine(export,constructor.ty,count+p) else{return false;};
++    let Some((fields,_))=pi_spine(export,constructor.ty,count+p) else{return trace_structural_false(export,block,"parameter_record_obligations",line!());};
+     let mut frame=EnvFrame::empty();let mut context=Vec::new();
+     // Parameter domains may exceed the carrier universe. Each is formed in
+     // its own preceding telescope; fields must fit the declared carrier.
+     for parameter in &parameters {
+-        if !checker.infer_sort_in_context(*parameter,&context,&frame,limits.judgment_steps).is_proven() {return false;}
++        if !checker.infer_sort_in_context(*parameter,&context,&frame,limits.judgment_steps).is_proven() {return trace_structural_false(export,block,"parameter_record_obligations",line!());}
+         context.push(TypeValue::Term(checker.closure(*parameter,frame.clone())));
+         frame=frame.extend_free(FreeId((context.len()-1) as u64));
+     }
+     for field in &fields[p..] {
+-        let Judgment::Proven{value:sort,..}=checker.infer_sort_in_context(*field,&context,&frame,limits.judgment_steps) else{return false;};
+-        if !record_field_sort_fits(sort,&carrier,limits.judgment_steps) {return false;}
++        let Judgment::Proven{value:sort,..}=checker.infer_sort_in_context(*field,&context,&frame,limits.judgment_steps) else{return trace_structural_false(export,block,"parameter_record_obligations",line!());};
++        if !record_field_sort_fits(sort,&carrier,limits.judgment_steps) {return trace_structural_false(export,block,"parameter_record_obligations",line!());}
+         context.push(TypeValue::Term(checker.closure(*field,frame.clone())));
+         frame=frame.extend_free(FreeId((context.len()-1) as u64));
+     }
+-    let Some((rec_domains,_))=pi_spine(export,recursor.ty,p+3) else{return false;};
+-    let [rule]=recursor.rules.as_slice() else{return false;};
+-    let Some((annotations,_))=lam_spine(export,rule.rhs,count+p+2) else{return false;};
++    let Some((rec_domains,_))=pi_spine(export,recursor.ty,p+3) else{return trace_structural_false(export,block,"parameter_record_obligations",line!());};
++    let [rule]=recursor.rules.as_slice() else{return trace_structural_false(export,block,"parameter_record_obligations",line!());};
++    let Some((annotations,_))=lam_spine(export,rule.rhs,count+p+2) else{return trace_structural_false(export,block,"parameter_record_obligations",line!());};
+     rec_domains[..p+2].iter().zip(&annotations[..p+2]).all(|(a,b)|expr_eq_with_bvar_shift(export,*a,*b,0,0))
+         && fields[p..].iter().zip(&annotations[p+2..]).enumerate().all(|(k,(a,b))|
+             expr_eq_with_bvar_shift(export,*a,*b,k as u64,2)
+@@ -3041,14 +3063,14 @@
+     if parameter_record_scope(export,block) {
+         let mut roots=vec![block.types[0].ty,block.constructors[0].ty,block.recursors[0].ty];
+         roots.extend(block.recursors[0].rules.iter().map(|rule|rule.rhs));
+-        if !bounded_record_source(export,&roots,None) {return false;}
++        if !bounded_record_source(export,&roots,None) {return trace_structural_false(export,block,"generic_nonrecursive_type_candidate",line!());}
+     }
+     let ([inductive], [constructor], [recursor]) = (
+         block.types.as_slice(),
+         block.constructors.as_slice(),
+         block.recursors.as_slice(),
+     ) else {
+-        return false;
++        return trace_structural_false(export,block,"generic_nonrecursive_type_candidate",line!());
+     };
+     if inductive.num_nested != 0
+         || inductive.num_indices != 0
+@@ -3058,7 +3080,7 @@
+         || constructor.is_unsafe
+         || recursor.is_unsafe
+     {
+-        return false;
++        return trace_structural_false(export,block,"generic_nonrecursive_type_candidate",line!());
+     }
+ 
+     let dependent_pair = inductive.num_params == 2
+@@ -3137,14 +3159,14 @@
+         && !parameter_record_candidate(export,block)
+         && !unary_type_constructor_operations
+     {
+-        return false;
++        return trace_structural_false(export,block,"generic_nonrecursive_type_candidate",line!());
+     }
+ 
+     let Ok(parameter_count) = usize::try_from(inductive.num_params) else {
+-        return false;
++        return trace_structural_false(export,block,"generic_nonrecursive_type_candidate",line!());
+     };
+     let Some((_, result)) = pi_spine(export, inductive.ty, parameter_count) else {
+-        return false;
++        return trace_structural_false(export,block,"generic_nonrecursive_type_candidate",line!());
+     };
+     matches!(
+         export.exprs.get(result),
+@@ -4366,37 +4388,37 @@
+     export:&ResolvedExport, environment:&Environment, block:&InductiveBlock,
+     limits:Limits, delta_policy:DeltaPolicy,
+ )->Result<Environment,Verdict>{
+-    let [inductive]=block.types.as_slice() else{return Err(Verdict::Unknown);};
+-    let [recursor]=block.recursors.as_slice() else{return Err(Verdict::Unknown);};
++    let [inductive]=block.types.as_slice() else{return Err(trace_structural_unknown(export,block,"check_generic_nonrecursive_type",line!()));};
++    let [recursor]=block.recursors.as_slice() else{return Err(trace_structural_unknown(export,block,"check_generic_nonrecursive_type",line!()));};
+     if !generic_nonrecursive_type_candidate(export,block)
+         && !generic_two_parameter_sum_candidate(export, block)
+         && !generic_optional_value_candidate(export, block)
+         && !closed_field_enum_candidate(export, block)
+         && !parametric_field_enum_candidate(export, block)
+     {
+-        return Err(Verdict::Unknown);
+-    }
+-    if same_universe_pair_candidate(export,block) && !same_universe_pair_obligations(export,block) {return Err(Verdict::Unknown);}
++        return Err(trace_structural_unknown(export,block,"check_generic_nonrecursive_type",line!()));
++    }
++    if same_universe_pair_candidate(export,block) && !same_universe_pair_obligations(export,block) {return Err(trace_structural_unknown(export,block,"check_generic_nonrecursive_type",line!()));}
+     let parameter_record_in_scope=parameter_record_scope(export,block);
+-    if parameter_record_in_scope && !parameter_record_obligations(export,environment,block,limits,delta_policy) {return Err(Verdict::Unknown);}
++    if parameter_record_in_scope && !parameter_record_obligations(export,environment,block,limits,delta_policy) {return Err(trace_structural_unknown(export,block,"check_generic_nonrecursive_type",line!()));}
+     if parametric_field_enum_candidate(export, block)
+-        && !parametric_field_enum_obligations(export, environment, block, limits, delta_policy) { return Err(Verdict::Unknown); }
++        && !parametric_field_enum_obligations(export, environment, block, limits, delta_policy) { return Err(trace_structural_unknown(export,block,"check_generic_nonrecursive_type",line!())); }
+     if closed_pair_record_candidate(export, block)
+         && !closed_pair_record_obligations(export, environment, block, limits, delta_policy)
+     {
+-        return Err(Verdict::Unknown);
++        return Err(trace_structural_unknown(export,block,"check_generic_nonrecursive_type",line!()));
+     }
+     if inductive.num_params == 0
+         && (block.constructors.first().is_some_and(|ctor| (3..=64).contains(&ctor.num_fields))
+             || closed_field_enum_candidate(export, block))
+         && !closed_record_obligations(export, environment, block, limits, delta_policy)
+     {
+-        return Err(Verdict::Unknown);
++        return Err(trace_structural_unknown(export,block,"check_generic_nonrecursive_type",line!()));
+     }
+     if generic_relation_proof_record_candidate(export, block)
+         && !relation_proof_record_obligations(export, environment, block, limits, delta_policy)
+     {
+-        return Err(Verdict::Unknown);
++        return Err(trace_structural_unknown(export,block,"check_generic_nonrecursive_type",line!()));
+     }
+     let arity_ok = inductive_arity_metadata_is_well_formed(export, inductive);
+     let all_ok = inductive.all == [inductive.name];
+@@ -4474,7 +4496,7 @@
+         || !recursor_metadata_ok
+         || !recursor_shape_ok
+     {
+-        return Err(Verdict::Unknown);
++        return Err(trace_structural_unknown(export,block,"check_generic_nonrecursive_type",line!()));
+     }
+ 
+     let mut d=ClosedNonrecursiveDerivation::begin(environment);
+@@ -4491,7 +4513,7 @@
+         let p = usize::try_from(inductive.num_params).map_err(|_| Verdict::Reject)?;
+         let fields = usize::try_from(constructor.num_fields).map_err(|_| Verdict::Reject)?;
+         let Some((constructor_domains, _)) = pi_spine(export, constructor.ty, p + fields) else {
+-            return Err(Verdict::Unknown);
++            return Err(trace_structural_unknown(export,block,"check_generic_nonrecursive_type",line!()));
+         };
+         let field_types = constructor_domains[p..]
+             .iter()
+@@ -4528,7 +4550,7 @@
+     delta_policy: DeltaPolicy,
+ ) -> Result<Environment, Verdict> {
+     let [inductive] = block.types.as_slice() else {
+-        return Err(Verdict::Unknown);
++        return Err(trace_structural_unknown(export,block,"check_single_constructor_inductive",line!()));
+     };
+     if name_is_root_str(export, inductive.name, "SortElimProp2") {
+         check_exact_sort_elim_prop2(export, environment, block, limits, delta_policy)
+@@ -7568,10 +7590,10 @@
+     block: &InductiveBlock,
+ ) -> Result<Environment, Verdict> {
+     let [inductive] = block.types.as_slice() else {
+-        return Err(Verdict::Unknown);
++        return Err(trace_structural_unknown(export,block,"check_unrecognized_single_constructor_coherence",line!()));
+     };
+     let [constructor] = block.constructors.as_slice() else {
+-        return Err(Verdict::Unknown);
++        return Err(trace_structural_unknown(export,block,"check_unrecognized_single_constructor_coherence",line!()));
+     };
+ 
+     // Preserve unsupported semantic envelopes rather than strengthening them
+@@ -7581,7 +7603,7 @@
+         || inductive.num_nested != 0
+         || constructor.is_unsafe
+     {
+-        return Err(Verdict::Unknown);
++        return Err(trace_structural_unknown(export,block,"check_unrecognized_single_constructor_coherence",line!()));
+     }
+ 
+     if constructor_result_is_definitely_malformed(export, inductive, constructor)
+@@ -7589,7 +7611,7 @@
+     {
+         Err(Verdict::Reject)
+     } else {
+-        Err(Verdict::Unknown)
++        Err(trace_structural_unknown(export,block,"unrecognized-single-constructor",line!()))
+     }
+ }
+ 
+--- a/src/bin/nucleus-census.rs
++++ b/src/bin/nucleus-census.rs
+@@ -3,10 +3,10 @@
+  let args:Vec<String>=std::env::args().collect();
+  if args.get(1).map(String::as_str)!=Some("--source-assumptions-only") {eprintln!("requires --source-assumptions-only; this executable cannot issue ACCEPT");return ExitCode::from(3);}
+  let number=|index:usize,default:usize|args.get(index).and_then(|s|s.parse::<usize>().ok()).unwrap_or(default);
+- let (steps,failures,window)=(number(2,262144),number(3,64),number(4,256));
++ let (steps,failures,window,assume_before)=(number(2,262144),number(3,64),number(4,256),number(5,0));
+  std::thread::Builder::new().stack_size(64*1024*1024).spawn(move||{
+   match metatron_kernel::parser::parse(BufReader::new(io::stdin().lock())).and_then(|e|e.resolve()){
+-   Ok(e)=>{println!("{}",metatron_kernel::checker::diagnostic_census(e,metatron_kernel::checker::Limits{judgment_steps:steps},failures,window));ExitCode::from(2)},
++   Ok(e)=>{println!("{}",metatron_kernel::checker::diagnostic_census_with_assumed_prefix(e,metatron_kernel::checker::Limits{judgment_steps:steps},failures,window,assume_before));ExitCode::from(2)},
+    Err(error)=>{eprintln!("diagnostic parse error: {error}");ExitCode::from(3)}
+   }
+  }).unwrap().join().unwrap_or(ExitCode::from(3))
+--- /dev/null
++++ b/tests/focused_census.rs
+@@ -0,0 +1,16 @@
++#![cfg(feature="diagnostics")]
++use std::{io::Write,process::{Command,Stdio}};
++fn report(source:&str,focus:&str)->serde_json::Value{
++ let mut child=Command::new(env!("CARGO_BIN_EXE_nucleus-census")).args(["--source-assumptions-only","262144","64","256",focus]).stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::null()).spawn().unwrap();
++ child.stdin.take().unwrap().write_all(source.as_bytes()).unwrap();let out=child.wait_with_output().unwrap();assert_eq!(out.status.code(),Some(2));serde_json::from_slice(&out.stdout).unwrap()
++}
++#[test]fn focused_census_labels_assumed_scalar_prefix_without_issuing_a_verdict(){
++ let source=format!("{}{}",include_str!("fixtures/good-beta-definition.ndjson"),r#"{"in":10,"str":{"pre":0,"str":"bad"}}
++{"ie":100,"bvar":99}
++{"def":{"all":[10],"hints":"abbrev","levelParams":[],"name":10,"safety":"safe","type":3,"value":100}}
++"#);
++ assert_ne!(metatron_kernel::run(std::io::Cursor::new(source.clone())),metatron_kernel::verdict::Verdict::Accept);
++ assert!(!report(&source,"0")["failures"].as_array().unwrap().is_empty());
++ let r=report(&source,"99");assert!(r["failures"].as_array().unwrap().is_empty());assert!(r["assumed_prefix_checks"].as_u64().unwrap()>0);assert_eq!(r["whole_export_warrant"],"FORBIDDEN");assert_eq!(r["assumed_declarations"],2);
++}
++#[test]fn focused_census_cannot_bypass_structural_metadata(){let r=report(include_str!("fixtures/bad-orphan-recursor.ndjson"),"99");assert_eq!(r["finished_all_declarations"],false);assert_eq!(r["assumed_prefix_checks"],0);}
