@@ -1,0 +1,47 @@
+name: Nucleus inference owner work inquiry
+on:
+  push:
+    branches: [research/nucleus-obligation-census-20261107]
+    paths: ['.github/workflows/nucleus-work-census-20261107.yml']
+  workflow_dispatch:
+permissions: {contents: read, actions: read}
+jobs:
+  inquiry:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RUST_MIN_STACK: '16777216'
+      CARGO_BUILD_JOBS: '2'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Restore verified qualified source and observer patch
+        run: |
+          set -euo pipefail
+          mkdir -p base reports
+          gh api repos/heathsanchez/test/actions/artifacts/13520537513/zip > source.zip
+          printf '%s  %s\n' f8dc913015842af9a923c6b419f29d9b2fad14e269ea8bfbbbbcce9ffd7a9b0f source.zip | sha256sum -c -
+          unzip -q source.zip -d base
+          tar --no-same-owner -xzf base/candidate/source.tar.gz
+          patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-capture-substitution-20261107/work-census-observer.patch
+          find metatron-kernel/src -type f -print0 | sort -z | xargs -0 sha256sum > reports/source.sha256
+          cargo check --locked --all-targets --manifest-path metatron-kernel/Cargo.toml > reports/plain-build.log 2>&1
+      - name: Observer accounting controls and inquiry executables
+        run: |
+          set -euo pipefail
+          cargo test --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml work_census::tests > reports/observer-tests.log 2>&1
+          cargo build --locked --profile inquiry --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+      - name: Matched observer on and off at exact residual owners
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/11272848230/zip > original196.zip
+          gh api repos/heathsanchez/test/actions/artifacts/13507335517/zip > prefix.zip
+          python experiments/nucleus-capture-substitution-20261107/qualify-work-census.py > reports/driver.log 2>&1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-owner-work-DIAGNOSTIC-ONLY
+          retention-days: 60
+          path: reports/
