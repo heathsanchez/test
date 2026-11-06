@@ -41,6 +41,7 @@ jobs:
           patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-resumable-source-prefix-20261105/replay-prehashed-universe-miss-collision-metered-candidate.patch
           patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-bool-recursor-eligibility-20261106/eligibility.patch
           patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-bool-recursor-eligibility-20261106/applied-local-proof.patch
+          patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-bool-recursor-eligibility-20261106/iterative-environment-drop.patch
           mkdir -p metatron-kernel/src/bin arena207 reports
           cp experiments/nucleus-bool-recursor-eligibility-20261106/nucleus-diagnostic.rs metatron-kernel/src/bin/
           python - <<'PYFLAGS'
