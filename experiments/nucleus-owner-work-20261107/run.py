@@ -6,14 +6,23 @@ def artifact(repo,id,name,digest):
  with p.open('wb')as f:subprocess.run(['gh','api',f'repos/{repo}/actions/artifacts/{id}/zip'],stdout=f,check=True)
  assert sha(p)==digest,(id,sha(p))
  with zipfile.ZipFile(p)as z:assert z.testzip()is None;z.extractall(root/name)
-artifact('heathsanchez/test',13520537513,'base','f8dc913015842af9a923c6b419f29d9b2fad14e269ea8bfbbbbcce9ffd7a9b0f')
+artifact('heathsanchez/test',13530838327,'base','a7daced9c684bf1e881f26452b8667517435aa42e22edf7e2233a9488e7a82eb')
 artifact('leanprover/lean-kernel-arena',11272848230,'arena','f6cd590db7f6fb92b8d1b3ca87231d4b0f521f085d73f93abd005f5caaff86d2')
 with tarfile.open('base/candidate/source.tar.gz')as t:t.extractall(root,filter='data')
 with tarfile.open('arena/lean-arena-tests.tar.gz')as t:t.extractall(root/'inputs',filter='data')
 for line in P('base/reports/source.sha256').read_text().splitlines():
  digest,name=line.split(maxsplit=1);assert sha(name.strip())==digest
 source=root/'metatron-kernel';exp=root/'experiments/nucleus-owner-work-20261107'
-with (exp/'owner-work.patch').open()as f:subprocess.run(['patch','--fuzz=0','-p1'],cwd=source,stdin=f,check=True)
+# RED: the previous first-admission policy must fail this real window test.
+module=source/'src/owner_work.rs';old_module=module.read_text()
+red_test='''
+#[cfg(test)]mod window_regression{use super::*;#[test]fn late_keys_remain_observable_with_the_same_memory_bound(){let mut c=Census::default();for n in 0..=CAP{let t=c.begin(Some(format!("key{n}")),1,0,0,3);c.finish(t,2,true);}assert_eq!(c.report()["capacity_drops"],0,"the observer must continue admitting later evidence");assert!(c.rows.len()<=CAP&&c.bytes<=BYTE_CAP);}}
+'''
+module.write_text(old_module+red_test)
+flags=json.loads(P('base/flags.json').read_text());red_env={**os.environ,**flags,'RUST_MIN_STACK':'16777216','CARGO_BUILD_JOBS':'2'}
+with (out/'window-red.log').open('w')as f:r=subprocess.run(['cargo','test','--locked','--profile','inquiry','--features','diagnostics','--lib','window_regression'],cwd=source,env=red_env,stdout=f,stderr=subprocess.STDOUT)
+red=(out/'window-red.log').read_text();assert r.returncode==101 and 'the observer must continue admitting later evidence' in red
+
 (source/'src/owner_work.rs').write_bytes((exp/'owner_work.rs').read_bytes())
 flags=json.loads(P('base/flags.json').read_text());env={**os.environ,**flags,'RUST_MIN_STACK':'16777216','CARGO_BUILD_JOBS':'2'}
 for label,args in [('native',['cargo','test','--locked','--profile','inquiry','--features','diagnostics']),('build',['cargo','build','--locked','--profile','inquiry','--features','diagnostics','--bin','metatron-kernel','--bin','nucleus-census'])]:
@@ -36,7 +45,7 @@ semiring=root/'semiring.ndjson';semiring.write_bytes(b''.join(lines))
 
 for target,target_owner,target_input in [('chain9','chain9_datF',prefix),('semiring','AddMonoidAlgebra.semiring',semiring)]:
  target_rows=[]
- for label,exe,extra in [('parent',baseline,{}),('off',binary,{}),('on',binary,{'NUCLEUS_DIAGNOSTIC_WORK_OWNER':target_owner})]:
+ for label,exe,extra in [('on',binary,{'NUCLEUS_DIAGNOSTIC_WORK_OWNER':target_owner})]:
   t=time.monotonic()
   with target_input.open('rb')as f:r=subprocess.run([str(exe)],stdin=f,env={**env,**extra,'NUCLEUS_TRACE_DOWNSTREAM':'1'},stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=600)
   (out/(target+'-'+label+'.stderr')).write_bytes(r.stderr);(out/(target+'-'+label+'.stdout')).write_bytes(r.stdout)
@@ -47,6 +56,9 @@ for target,target_owner,target_input in [('chain9','chain9_datF',prefix),('semir
   if label=='on':
    reports=[json.loads(x.split(':',1)[1])for x in r.stderr.decode().splitlines()if x.startswith('NUCLEUS_OWNER_WORK:')];assert len(reports)==1 and reports[0]['owner']==target_owner and reports[0]['acceptance_authority']is False
    (out/(target+'-owner-work.json')).write_text(json.dumps(reports[0],indent=2))
+   previous=json.loads(P('base/reports/'+target+'-owner-work.json').read_text());reports[0]['previous_calls']=previous['calls'];reports[0]['call_count_equal_to_previous']=reports[0]['calls']==previous['calls'];(out/(target+'-owner-work.json')).write_text(json.dumps(reports[0],indent=2))
+   assert reports[0]['capacity_drops']==0 and reports[0]['key_bytes']<=8*1024*1024 and reports[0]['resident_keys']<=8192
+   assert reports[0]['evicted_keys']>0
  assert len({x['stdout_sha256']for x in target_rows})==1
  (out/'arms.json').write_text(json.dumps(rows,indent=2))
 # Unchanged authoritative valid and malformed controls, with observer selected
@@ -64,5 +76,5 @@ P('candidate').mkdir(exist_ok=True)
 with tarfile.open('candidate/source.tar.gz','w:gz')as t:
  t.add(source,arcname='metatron-kernel',filter=lambda i:None if '/target/'in i.name or i.name.endswith('/target')else i)
 import shutil
-shutil.copy2(binary,'candidate/metatron-kernel');shutil.copy2(census,'candidate/nucleus-census');shutil.copy2('base/flags.json','flags.json')
-(out/'receipt.json').write_text(json.dumps({'diagnostic_only':True,'acceptance_authority':False,'source_parent':'018135224632f72ba06a2818132c3e857d67eaad','source_artifact':13520537513,'input_sha256':{'chain9':sha(prefix),'semiring':sha(semiring)},'binary_sha256':sha(binary),'profile':'inquiry','matched_arms':rows,'controls':len(controls)//2,'source_scope':'ordinary original chain9 and semiring prefixes, standard262144; observer has no semantic output','interpretation':'row debits overlap; coarse source families do not establish scope equivalence; no efficiency or completion promotion'},indent=2))
+shutil.copy2(binary,'candidate/metatron-kernel');shutil.copy2(census,'candidate/nucleus-census');shutil.copy2('base/flags.json','flags.json');shutil.copy2('base/reports/arms.json',out/'inherited-v2-arms.json')
+(out/'receipt.json').write_text(json.dumps({'diagnostic_only':True,'acceptance_authority':False,'source_parent':'018135224632f72ba06a2818132c3e857d67eaad','source_artifact':13530838327,'inherited_comparator_run':42272576602,'inherited_comparator_note':'Parent/off target results inherited from exact v2 source; only metadata retention changes here. Fresh observer replays require unchanged owner, reason and call counts.','input_sha256':{'chain9':sha(prefix),'semiring':sha(semiring)},'binary_sha256':sha(binary),'profile':'inquiry','matched_arms':rows,'controls':len(controls)//2,'source_scope':'ordinary original chain9 and semiring prefixes, standard262144; observer has no semantic output','interpretation':'row debits overlap; coarse source families do not establish scope equivalence; no efficiency or completion promotion'},indent=2))

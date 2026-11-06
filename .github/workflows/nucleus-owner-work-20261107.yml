@@ -1,7 +1,7 @@
-name: Nucleus owner inference work census v2
+name: Nucleus owner inference work census v3
 on:
   push:
-    branches: [research/nucleus-owner-work-v2-20261107]
+    branches: [research/nucleus-owner-work-v3-20261107]
     paths: ['.github/workflows/nucleus-owner-work-20261107.yml']
   workflow_dispatch:
 permissions: {contents: read, actions: read}
