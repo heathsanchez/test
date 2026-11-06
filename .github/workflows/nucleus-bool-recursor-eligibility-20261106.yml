@@ -1,0 +1,100 @@
+name: Nucleus registered Bool replay complete qualification
+on:
+  push:
+    branches: [research/nucleus-bool-recursor-eligibility-20261106]
+    paths: ['.github/workflows/nucleus-bool-recursor-eligibility-20261106.yml']
+  workflow_dispatch:
+permissions: {contents: read, actions: read}
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    env:
+      GH_TOKEN: ${{ github.token }}
+      CARGO_INCREMENTAL: '0'
+      CARGO_BUILD_JOBS: '2'
+      RUST_MIN_STACK: '16777216'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Restore exact source lineage and both immutable corpora
+        run: |
+          set -euo pipefail
+          mkdir -p qualified original196 candidate matrix
+          gh api repos/heathsanchez/test/actions/artifacts/13370874970/zip > qualified.zip
+          printf '%s  %s\n' 0fd8a4cd86dcb233b532f59ea8dc853d22480b6ba62ff864049224250613e517 qualified.zip | sha256sum -c -
+          unzip -q qualified.zip -d qualified
+          tar --no-same-owner -xzf qualified/candidate/source.tar.gz
+          patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-distinct-const-proof-20261105/next-finsupp-inner-quotient-replay-diag.patch
+          patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-distinct-const-proof-20261105/quotient-projection-bridge-regression-red-v2.patch
+          patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-distinct-const-proof-20261105/guarded-quotient-projection-bridge-candidate.patch
+          patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-resumable-source-prefix-20261105/source-prefix-red-regression.patch
+          patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-resumable-source-prefix-20261105/resumable-exposure-machine-candidate.patch
+          patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-resumable-source-prefix-20261105/resumable-exposure-flag.patch
+          patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-resumable-source-prefix-20261105/source-major-entry-diagnostic.patch
+          patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-resumable-source-prefix-20261105/worklist-symbolic-major-source-capture-trial.patch
+          patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-resumable-source-prefix-20261105/source-identity-replay-handle-v3-weak-candidate.patch
+          patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-resumable-source-prefix-20261105/replay-functional-certificate-key-red.patch
+          patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-resumable-source-prefix-20261105/replay-immutable-certificate-factor-v2-conservative.patch
+          patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-resumable-source-prefix-20261105/replay-prehashed-universe-regression-red.patch
+          patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-resumable-source-prefix-20261105/replay-prehashed-universe-miss-collision-metered-candidate.patch
+          patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-bool-recursor-eligibility-20261106/eligibility.patch
+          mkdir -p metatron-kernel/src/bin arena207 reports
+          cp experiments/nucleus-bool-recursor-eligibility-20261106/nucleus-diagnostic.rs metatron-kernel/src/bin/
+          python - <<'PYFLAGS'
+          import json
+          flags=json.load(open('qualified/qualification.json'))['candidate']['configuration']
+          flags.update({k:'1' for k in ['NUCLEUS_EXPERIMENTAL_DEFERRED_PROJECTION_CONGRUENCE','NUCLEUS_EXPERIMENTAL_DISTINCT_CONST_PROOF_IRREL','NUCLEUS_EXPERIMENTAL_EXACT_CAPTURE_SEMANTIC_RETRY','NUCLEUS_EXPERIMENTAL_QUOTIENT_PROJECTION_BRIDGE']})
+          json.dump(flags,open('flags.json','w'),indent=2)
+          PYFLAGS
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/11272848230/zip > original196.zip
+          printf '%s  %s\n' f6cd590db7f6fb92b8d1b3ca87231d4b0f521f085d73f93abd005f5caaff86d2 original196.zip | sha256sum -c -
+          unzip -p original196.zip lean-arena-tests.tar.gz | tar --no-same-owner -xzf - -C original196
+          gh api repos/heathsanchez/test/actions/artifacts/13276400289/zip > arena207.zip
+          printf '%s  %s\n' a9582eadc0d9893cbe39e6bcfccd79bfaec2032838851b8a487c35df16096763 arena207.zip | sha256sum -c -
+          unzip -p arena207.zip lean-arena-tests.tar.gz | tar --no-same-owner -xzf - -C arena207
+          find metatron-kernel/src -type f -print0 | sort -z | xargs -0 sha256sum > reports/source.sha256
+      - name: Full native suite and source build
+        run: |
+          set -euo pipefail
+          mapfile -t flags < <(jq -r 'to_entries[] | "\(.key)=\(.value)"' flags.json)
+          env "${flags[@]}" cargo test --manifest-path metatron-kernel/Cargo.toml --locked --release --features diagnostics > reports/native.log 2>&1
+          cargo build --manifest-path metatron-kernel/Cargo.toml --locked --release --features diagnostics
+          cp metatron-kernel/target/release/{metatron-kernel,nucleus-diagnostic} candidate/
+          sha256sum candidate/* > reports/binaries.sha256
+          tar --exclude=target --exclude=.git -czf candidate/source.tar.gz metatron-kernel
+      - name: Both complete corpora and large-budget invalid qualification
+        run: python experiments/nucleus-bool-recursor-eligibility-20261106/qualify.py
+      - name: Entire exact Mathlib replay
+        if: ${{ !cancelled() && hashFiles('candidate/nucleus-diagnostic') != '' }}
+        run: |
+          set -euo pipefail
+          gh api repos/heathsanchez/test/actions/artifacts/13377771876/zip > full-mathlib-evidence.zip
+          printf '%s  %s\n' 699da072ffc367c84cc168d7e1c7eec48e6572c6316ac33d43cc17944816cf65 full-mathlib-evidence.zip | sha256sum -c -
+          unzip -p full-mathlib-evidence.zip mathlib-full.ndjson.zst | zstd -dc > mathlib-full.ndjson
+          printf '%s  %s\n' 22c5de83469408950005589a3bc5ef5157c65549b5a802f85d567c29151306a6 mathlib-full.ndjson | sha256sum -c -
+          test "$(wc -c < mathlib-full.ndjson)" -eq 6184415052
+          mapfile -t flags < <(jq -r 'to_entries[] | "\(.key)=\(.value)"' flags.json)
+          rc=0
+          timeout 1200 env "${flags[@]}" NUCLEUS_TRACE_DOWNSTREAM=1 candidate/nucleus-diagnostic 262144 < mathlib-full.ndjson > reports/mathlib.stdout 2> reports/mathlib.stderr || rc=$?
+          printf '%s\n' "$rc" > reports/mathlib.status
+      - name: Require complete acceptance and strict invalid rejection
+        if: ${{ !cancelled() && hashFiles('reports/summary.json') != '' }}
+        run: |
+          python - <<'PY'
+          import json,pathlib
+          s=json.load(open('reports/summary.json'))
+          assert s['wrong']==0 and s['large_budget_invalid_accept']==0,s
+          assert s['standard_unresolved']==0,s
+          assert pathlib.Path('reports/mathlib.status').read_text().strip()=='0','Full Mathlib did not ACCEPT'
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-bool-recursor-eligibility-qualification
+          retention-days: 60
+          path: |
+            reports/
+            candidate/
+            flags.json
