@@ -13,8 +13,8 @@ manifest=json.loads(P('base/reports/combined-source.json').read_text())
 for name,digest in manifest['source_files'].items():assert sha(source/name)==digest
 flags=manifest['flags'];assert len(flags)==24
 env={k:v for k,v in os.environ.items()if not k.startswith('NUCLEUS_')};env.update(flags);env.update(RUST_MIN_STACK='16777216',CARGO_BUILD_JOBS='2')
-patch=root/'experiments/nucleus-capture-substitution-20261107/memo-path-probe-v2.patch'
-assert sha(patch)=='ec978fc14f1ee69c09b5162660de49b80ad786269c2cad04441175a498ccb650'
+patch=root/'experiments/nucleus-capture-substitution-20261107/memo-path-probe-v3.patch'
+assert sha(patch)=='ec2568b137de878c0a781441ea96a355c10f13c79e124a94603bc8bb8af9db0b'
 with patch.open()as f:subprocess.run(['patch','--fuzz=0','-p1'],stdin=f,cwd=source,check=True)
 for label,args in [('native',['cargo','test','--locked','--profile','inquiry','--features','diagnostics']),('plain',['cargo','check','--locked','--lib']),('build',['cargo','build','--locked','--release','--features','diagnostics','--bin','metatron-kernel'])]:
  with(out/(label+'.log')).open('w')as f:subprocess.run(args,cwd=source,env=env,stdout=f,stderr=subprocess.STDOUT,check=True)
@@ -26,24 +26,26 @@ artifact('heathsanchez/test',13507335517,'mathlib','f2446f88e13fa54e2d1a964d06bc
 P('semiring.ndjson').write_bytes(gzip.decompress(P('mathlib/reports/mathlib-through-LinearMap.ndjson.gz').read_bytes()))
 assert sha('semiring.ndjson')=='295f995252c7d8924d4dc898d137021f5081dd6283bc86e40b260045d5b6b35d'
 binary=source/'target/release/metatron-kernel';rows=[]
+pristine=root/'base/candidate/metatron-kernel';pristine.chmod(0o755)
 for name in ['chain9','semiring']:
  pair=[]
- for enabled in [False,True]:
-  label=name+('-on'if enabled else'-off');e={**env,'NUCLEUS_TRACE_DOWNSTREAM':'1'}
-  if enabled:e['NUCLEUS_TRACE_MEMO_PATH']='1'
+ for enabled in ['pristine',False,True]:
+  label=name+('-pristine'if enabled=='pristine'else'-on'if enabled else'-off');e={**env,'NUCLEUS_TRACE_DOWNSTREAM':'1'}
+  if enabled is True:e['NUCLEUS_TRACE_MEMO_PATH']='1'
+  executable=pristine if enabled=='pristine'else binary
   t=time.monotonic()
-  with P(name+'.ndjson').open('rb')as inp:r=subprocess.run([str(binary)],stdin=inp,stdout=subprocess.PIPE,stderr=subprocess.PIPE,env=e,timeout=300)
+  with P(name+'.ndjson').open('rb')as inp:r=subprocess.run([str(executable)],stdin=inp,stdout=subprocess.PIPE,stderr=subprocess.PIPE,env=e,timeout=300)
   (out/(label+'.stderr')).write_bytes(r.stderr);(out/(label+'.stdout')).write_bytes(r.stdout)
   lines=r.stderr.decode().splitlines()
   row={'name':name,'observer_on':enabled,'rc':r.returncode,'seconds':time.monotonic()-t,'input_sha256':sha(name+'.ndjson'),'first_failure':next((x for x in lines if x.startswith('NUCLEUS_DOWNSTREAM:')),None),'observations':[json.loads(x.split(':',1)[1])for x in lines if x.startswith('NUCLEUS_MEMO_PATH:')]}
   assert r.returncode==2
   pair.append(row);rows.append(row);(out/'rows.json').write_text(json.dumps(rows,indent=2))
- assert pair[0]['first_failure']==pair[1]['first_failure']
- assert not pair[0]['observations']and pair[1]['observations']
+ assert pair[0]['first_failure']==pair[1]['first_failure']==pair[2]['first_failure']
+ assert not pair[0]['observations']and not pair[1]['observations']and pair[2]['observations']
 P('candidate').mkdir(exist_ok=True)
 import shutil
 shutil.copy2(binary,'candidate/metatron-kernel')
 with tarfile.open('candidate/source.tar.gz','w:gz')as t:t.add(source,arcname='metatron-kernel',filter=lambda i:None if '/target/'in i.name or i.name.endswith('/target')else i)
 counts=re.findall(r'test result: ok. (\d+) passed; \d+ failed; (\d+) ignored',(out/'native.log').read_text())
-receipt={'status':'OBSERVATION_ONLY','source_base_artifact':13535062053,'patch_sha256':sha(patch),'binary_sha256':sha(binary),'flags':flags,'judgment_steps':262144,'native_passed':sum(int(a)for a,b in counts),'native_ignored':sum(int(b)for a,b in counts),'rows':rows,'boundary':'Native matched observer OFF/ON; counters overlap and do not establish saved work or permit acceptance; no semantic repair or full403 qualification.'}
+receipt={'status':'OBSERVATION_ONLY','pristine_binary_sha256':sha(pristine),'source_base_artifact':13535062053,'patch_sha256':sha(patch),'binary_sha256':sha(binary),'flags':flags,'judgment_steps':262144,'native_passed':sum(int(a)for a,b in counts),'native_ignored':sum(int(b)for a,b in counts),'rows':rows,'boundary':'Native matched observer OFF/ON; counters overlap and do not establish saved work or permit acceptance; no semantic repair or full403 qualification.'}
 (out/'receipt.json').write_text(json.dumps(receipt,indent=2))
