@@ -1,0 +1,61 @@
+--- a/src/checker.rs
++++ b/src/checker.rs
+@@ -628,6 +628,8 @@
+     state.report(match terminal{Verdict::Accept=>"unexpected-terminal",Verdict::Reject=>"structural-or-metadata-rejection",Verdict::Unknown=>"unsupported-metadata-or-structural-obligation",Verdict::Error=>"process-error"})
+ }
+ fn census_boundary(census:&mut Option<&mut crate::census::Census>,export:&ResolvedExport,name:NameId,stage:&'static str,judgment:impl FnOnce()->Judgment<()>)->Result<(),Verdict>{
++    #[cfg(feature="diagnostics")]
++    let _prefix_trace=std::env::var_os("NUCLEUS_TRACE_PREFIX_REUSE").is_some().then(||crate::prefix_reuse_trace::Scope::enter(trace_name(export,name),stage));
+     if let Some(state)=census.as_deref_mut(){
+         if state.assume_prefix_boundary(name){return Ok(());}
+         let judgment=judgment();
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -55,3 +55,6 @@
+ 
+ #[cfg(feature="diagnostics")]
+ mod obligation_shadow;
++
++#[cfg(feature="diagnostics")]
++mod prefix_reuse_trace;
+--- /dev/null
++++ b/src/prefix_reuse_trace.rs
+@@ -0,0 +1,8 @@
++//! Actual exact-prefix Term reuse, diagnostic only.
++use std::cell::RefCell;
++struct State{owner:String,stage:&'static str,hits:u64,samples:Vec<(u64,usize,usize,bool)>}
++thread_local!{static CURRENT:RefCell<Option<State>>=const{RefCell::new(None)};}
++pub(crate)struct Scope{previous:Option<State>,active:bool}
++impl Scope{pub(crate)fn enter(owner:String,stage:&'static str)->Self{match CURRENT.try_with(|s|s.replace(Some(State{owner,stage,hits:0,samples:vec![]}))){Ok(previous)=>Self{previous,active:true},Err(_)=>Self{previous:None,active:false}}}}
++impl Drop for Scope{fn drop(&mut self){if !self.active{return;}let previous=self.previous.take();if let Ok(Some(s))=CURRENT.try_with(|slot|slot.replace(previous)){if s.hits>0{eprintln!("NUCLEUS_PREFIX_REUSE:{}",serde_json::json!({"owner":s.owner,"stage":s.stage,"hits":s.hits,"samples":s.samples,"acceptance_authority":false,"boundary":"actual cache activation; nested alternatives need not support final outcome"}));}}}}
++pub(crate)fn hit(expr:u64,old:usize,new:usize,strict:bool){let _=CURRENT.try_with(|slot|{if let Some(s)=slot.borrow_mut().as_mut(){s.hits=s.hits.saturating_add(1);if s.samples.len()<8{s.samples.push((expr,old,new,strict));}}});}
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -733,7 +733,17 @@
+             {
+                 let table=self.exact_typing_memo.borrow();
+                 for slot in &table.slots[set*4..set*4+4]{
+-                    if let Some(fact)=slot && fact.key==key && fact.same_context(context){
++                    // A completed source Term is stable under exact append
++                    // of the local context. Preserve every old source/env/
++                    // universe handle; no context conversion or contraction.
++                    if let Some(fact)=slot && fact.key==key
++                        && (fact.same_context(context)
++                            || (self.inherited_binding_lineage.is_none()
++                                && fact.context.len()<context.len()
++                                && fact.same_context(&context[..fact.context.len()]))) {
++                        #[cfg(feature="diagnostics")]
++                        if fact.context.len()<context.len()&&std::env::var_os("NUCLEUS_TRACE_PREFIX_REUSE").is_some(){crate::prefix_reuse_trace::hit(term.expr.0,fact.context.len(),context.len(),self.strict_origin_probe);}
++
+                         return Some(TypeValue::Term(fact.result.clone()));
+                     }
+                 }
+@@ -8406,7 +8416,7 @@
+  #[test]fn source_frame_levels_context_and_strictness_are_not_quotiented(){
+   let _scope=crate::run_flags::enter();let(e,l,env)=fixture();let mut c=TypeChecker::new(&e,&l,&env);let t=c.closure(ExprId(23),EnvFrame::empty());assert!(c.infer_exact_closure_in_context(&t,&[],&mut 4096,0).is_some());
+   for changed in [Closure::with_levels(t.expr,t.env.clone(),LevelSubstitution::new(vec![(NameId(99),LevelTerm::Zero)])),Closure::with_levels(t.expr,EnvFrame::empty().extend_free(FreeId(77)),t.levels.clone())]{assert!(c.infer_exact_closure_in_context(&changed,&[],&mut 3,0).is_none());}
+-  let g=[TypeValue::Term(c.closure(ExprId(1),EnvFrame::empty()))];assert!(c.infer_exact_closure_in_context(&t,&g,&mut 4,0).is_none());c.strict_origin_probe=true;assert!(c.infer_exact_closure_in_context(&t,&[],&mut 3,0).is_none());
++  let g=[TypeValue::Term(c.closure(ExprId(1),EnvFrame::empty()))];assert!(c.infer_exact_closure_in_context(&t,&g,&mut 1,0).is_some(),"an empty exact prefix permits append");c.strict_origin_probe=true;assert!(c.infer_exact_closure_in_context(&t,&[],&mut 3,0).is_none());
+  }
+  #[test]fn quarantine_revokes_previously_completed_typing(){
+   let _scope=crate::run_flags::enter();let(e,l,env)=fixture();let mut c=TypeChecker::new(&e,&l,&env);c.strict_origin_probe=true;let frame=EnvFrame::empty().extend_free(FreeId(9));let a=TypeValue::Term(c.closure(ExprId(1),EnvFrame::empty()));let b=TypeValue::Term(c.closure(ExprId(6),EnvFrame::empty()));c.retain_checked_binding(&frame,a.clone(),&[]);let t=c.closure(ExprId(24),frame.clone());
