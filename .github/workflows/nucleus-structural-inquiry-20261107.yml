@@ -80,6 +80,14 @@ jobs:
           python - <<'PYCODE'
           import json
           a=json.load(open('reports/mathlib-census.json'));b=json.load(open('reports/prefix-census.json'))
+          for report in (a,b):
+              assert report['stopping_declaration'] is not None
+              assert report['stopping_declaration']['name']=='LinearMap'
+              assert report['stopping_declaration']['declaration_index']==4851
+              assert report['stopping_declaration']['stage']=='inductive'
+              assert report['stop_reason']=='unsupported-metadata-or-structural-obligation'
+              assert report['visited_declarations']==4852
+              assert report['finished_all_declarations'] is False
           assert a['stopping_declaration']==b['stopping_declaration']
           assert a['failures']==b['failures']
           assert b['total_declarations']==4852
