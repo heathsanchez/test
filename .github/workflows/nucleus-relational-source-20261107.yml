@@ -1,0 +1,62 @@
+name: Nucleus lexical substitution qualification
+on:
+  push:
+    branches: [research/nucleus-obligation-census-20261107]
+    paths: ['.github/workflows/nucleus-relational-source-20261107.yml']
+  workflow_dispatch:
+permissions: {contents: read, actions: read}
+jobs:
+  qualification:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      GH_TOKEN: ${{ github.token }}
+      CARGO_INCREMENTAL: '0'
+      CARGO_BUILD_JOBS: '2'
+      RUST_MIN_STACK: '16777216'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Restore pinned qualified source and apply component patch
+        run: |
+          set -euo pipefail
+          mkdir -p base candidate reports original196 arena207 base-prefix
+          gh api repos/heathsanchez/test/actions/artifacts/13519372769/zip > base.zip
+          printf '%s  %s\n' 39195a945244d6975feaff4f36cb9d26ae22373eb3d763ef567a048117d08baa base.zip | sha256sum -c -
+          unzip -q base.zip -d base
+          tar --no-same-owner -xzf base/candidate/source.tar.gz
+          cp base/flags.json flags.json
+          patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-capture-substitution-20261107/relational-source.patch
+          find metatron-kernel/src -type f -print0 | sort -z | xargs -0 sha256sum > reports/source.sha256
+          cargo check --manifest-path metatron-kernel/Cargo.toml --locked --all-targets > reports/plain-build.log 2>&1
+      - name: Canonical native checks and release executable
+        run: |
+          set -euo pipefail
+          mapfile -t flags < <(jq -r 'to_entries[] | "\(.key)=\(.value)"' flags.json)
+          env "${flags[@]}" cargo test --manifest-path metatron-kernel/Cargo.toml --locked --features diagnostics > reports/native.log 2>&1
+          cargo build --manifest-path metatron-kernel/Cargo.toml --locked --release --features diagnostics
+          cp metatron-kernel/target/release/metatron-kernel candidate/
+          tar --exclude=target -czf candidate/source.tar.gz metatron-kernel
+      - name: Exact original and portable corpora plus protected Mathlib prefix
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/11272848230/zip > original196.zip
+          printf '%s  %s\n' f6cd590db7f6fb92b8d1b3ca87231d4b0f521f085d73f93abd005f5caaff86d2 original196.zip | sha256sum -c -
+          unzip -p original196.zip lean-arena-tests.tar.gz | tar --no-same-owner -xzf - -C original196
+          gh api repos/heathsanchez/test/actions/artifacts/13276400289/zip > arena207.zip
+          printf '%s  %s\n' a9582eadc0d9893cbe39e6bcfccd79bfaec2032838851b8a487c35df16096763 arena207.zip | sha256sum -c -
+          unzip -p arena207.zip lean-arena-tests.tar.gz | tar --no-same-owner -xzf - -C arena207
+          gh api repos/heathsanchez/test/actions/artifacts/13507335517/zip > base-prefix.zip
+          printf '%s  %s\n' f2446f88e13fa54e2d1a964d06bc0a4a5d35a151afbe42a1d2546a1a5a8ba879 base-prefix.zip | sha256sum -c -
+          unzip -q base-prefix.zip -d base-prefix
+          python experiments/nucleus-capture-substitution-20261107/qualify-relational.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-relational-source-CANDIDATE
+          retention-days: 60
+          path: |
+            reports/
+            candidate/
+            flags.json
