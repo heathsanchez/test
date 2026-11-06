@@ -1,0 +1,114 @@
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -58,3 +58,6 @@
+ 
+ #[cfg(feature="diagnostics")]
+ mod alias_result_trace;
++
++#[cfg(feature="diagnostics")]
++mod memo_path_trace;
+--- a/src/checker.rs
++++ b/src/checker.rs
+@@ -630,6 +630,8 @@
+ fn census_boundary(census:&mut Option<&mut crate::census::Census>,export:&ResolvedExport,name:NameId,stage:&'static str,judgment:impl FnOnce()->Judgment<()>)->Result<(),Verdict>{
+     #[cfg(feature="diagnostics")]
+     let _alias_trace=std::env::var_os("NUCLEUS_TRACE_ALIAS_RESULT_REUSE").is_some().then(||crate::alias_result_trace::Scope::enter(trace_name(export,name),stage));
++    #[cfg(feature="diagnostics")]
++    let _memo_trace=if std::env::var_os("NUCLEUS_TRACE_MEMO_PATH").is_some(){let owner=trace_name(export,name);if matches!(owner.as_str(),"chain9_datF"|"AddMonoidAlgebra.semiring"){Some(crate::memo_path_trace::Scope::enter(owner,stage))}else{None}}else{None};
+     if let Some(state)=census.as_deref_mut(){
+         if state.assume_prefix_boundary(name){return Ok(());}
+         let judgment=judgment();
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -680,6 +680,7 @@
+     fn infer_exact_closure_in_context_inner(
+         &self, term:&Closure, context:&[TypeValue], remaining:&mut usize, depth:usize,
+     )->Option<TypeValue>{
++        #[cfg(feature="diagnostics")] crate::memo_path_trace::event(0);
+         // Research-only recursive failure trace. The numeric expression is
+         // an observation filter, never an authorization or conversion rule.
+         thread_local! {
+@@ -710,12 +711,14 @@
+             }
+         };
+         if depth >= 48 {
++            #[cfg(feature="diagnostics")] crate::memo_path_trace::event(1);
+             report_failure("source-depth-limit",*remaining);
+             #[cfg(feature = "diagnostics")]
+             self.record_capture_source_failure(term, context, *remaining, depth, "source-depth-limit");
+             return None;
+         }
+         if !take_step(remaining) {
++            #[cfg(feature="diagnostics")] crate::memo_path_trace::event(2);
+             report_failure("source-fuel-exhausted",*remaining);
+             #[cfg(feature = "diagnostics")]
+             self.record_capture_source_failure(term, context, *remaining, depth, "source-fuel-exhausted");
+@@ -736,20 +739,35 @@
+             && let (Some(flags),Some(epoch))=(crate::run_flags::captured_configuration(),self.binding_revocation_epoch.get())
+         {
+             let key=ExactTypingKey{source:(term.expr,term.env.id(),term.levels.identity()),strict:self.strict_origin_probe,flags,epoch};
++            #[cfg(feature="diagnostics")] crate::memo_path_trace::event(3);
+             let set=key.set();
+             {
+                 let table=self.exact_typing_memo.borrow();
+                 for slot in &table.slots[set*4..set*4+4]{
++                    #[cfg(feature="diagnostics")]
++                    match slot{
++                        None=>crate::memo_path_trace::event(9),
++                        Some(f)if f.key!=key=>{crate::memo_path_trace::event(10);if f.key.source.0!=key.source.0{crate::memo_path_trace::event(12);}if f.key.source.1!=key.source.1{crate::memo_path_trace::event(13);}if f.key.source.2!=key.source.2{crate::memo_path_trace::event(14);}if f.key.epoch!=key.epoch{crate::memo_path_trace::event(15);}if f.key.flags!=key.flags||f.key.strict!=key.strict{crate::memo_path_trace::event(16);}},
++                        Some(f)if !f.same_context(context)=>crate::memo_path_trace::event(11),
++                        _=>{},
++                    }
+                     if let Some(fact)=slot && fact.key==key && fact.same_context(context){
+                         #[cfg(feature="diagnostics")]
+                         if short_alias&&std::env::var_os("NUCLEUS_TRACE_ALIAS_RESULT_REUSE").is_some(){match &fact.result{TypeValue::Pi{..}=>crate::alias_result_trace::hit(term.expr.0,context.len(),"Pi"),TypeValue::Sort(_)=>crate::alias_result_trace::hit(term.expr.0,context.len(),"Sort"),_=>{}}}
++                        #[cfg(feature="diagnostics")] crate::memo_path_trace::event(match &fact.result{TypeValue::Term(_)=>17,TypeValue::Pi{..}=>18,TypeValue::Sort(_)=>19});
+                         return Some(fact.result.clone());
+                     }
+                 }
+             }
+             Some((key,set))
+-        }else{None};
++        }else{
++            #[cfg(feature="diagnostics")]{crate::memo_path_trace::event(4);if context.len()>64{crate::memo_path_trace::event(5);}if context.iter().any(|t|!matches!(t,TypeValue::Term(_))){crate::memo_path_trace::event(6);}if !(matches!(self.expressions.get(term.expr),Some(Expr::App{..}|Expr::Proj{..}|Expr::Lam{..}|Expr::Pi{..}|Expr::Let{..}|Expr::LetNondep{..}))||short_alias){crate::memo_path_trace::event(7);}if crate::run_flags::captured_configuration().is_none()||self.binding_revocation_epoch.get().is_none(){crate::memo_path_trace::event(8);}}
++            None
++        };
+         let result=self.infer_exact_closure_uncached(term,context,remaining,depth);
++        #[cfg(feature="diagnostics")] crate::memo_path_trace::event(match &result{None=>20,Some(TypeValue::Term(_))=>21,Some(TypeValue::Pi{..})=>22,Some(TypeValue::Sort(_))=>23});
++        #[cfg(feature="diagnostics")]
++        if let (Some((key,_)),Some(value))=(pending.as_ref(),result.as_ref()){if !cacheable_exact_type(value){crate::memo_path_trace::event(24);}if self.binding_revocation_epoch.get()!=Some(key.epoch)||crate::run_flags::captured_configuration()!=Some(key.flags){crate::memo_path_trace::event(25);}}
+         if result.is_none() {
+             report_failure("exact-uncached-declined",*remaining);
+             #[cfg(feature="diagnostics")]
+@@ -768,6 +786,7 @@
+         {
+             let mut table=self.exact_typing_memo.borrow_mut();
+             let start=table.hand[set]as usize;
++            #[cfg(feature="diagnostics")] let mut observed_inserted=false;
+             for offset in 0..4{
+                 let within=(start+offset)%4;let index=set*4+within;
+                 if table.slots[index].as_ref().is_none_or(ExactTypingFact::relinquishable){
+@@ -775,9 +794,11 @@
+                     // Eviction excludes last-owner graph reclamation. Final
+                     // reclamation belongs to the checker lifetime boundary.
+                     table.slots[index]=Some(ExactTypingFact{key,_source:term.clone(),context,result:value.clone()});
++                    #[cfg(feature="diagnostics")]{observed_inserted=true;crate::memo_path_trace::event(26);}
+                     table.hand[set]=((within+1)%4)as u8;break;
+                 }
+             }
++            #[cfg(feature="diagnostics")] if !observed_inserted{crate::memo_path_trace::event(27);}
+         }
+         result
+     }
+--- /dev/null
++++ b/src/memo_path_trace.rs
+@@ -0,0 +1,9 @@
++//! Fixed-size observation only. Counts overlap; none authorizes acceptance or measures fuel savings.
++use std::cell::RefCell;
++const NAMES:[&str;28]=["request", "depth_limit", "fuel_empty", "eligible", "ineligible", "context_over_64", "context_non_term", "source_grammar_excluded", "no_captured_policy", "slot_empty", "slot_key_mismatch", "slot_context_mismatch", "key_expr_mismatch", "key_env_mismatch", "key_levels_mismatch", "key_epoch_mismatch", "key_policy_mismatch", "hit_term", "hit_pi", "hit_sort", "completed_none", "completed_term", "completed_pi", "completed_sort", "payload_over_bound", "completion_epoch_or_policy_changed", "inserted", "no_reclaimable_slot"];
++struct State{owner:String,stage:&'static str,counts:[u64;28]}
++thread_local!{static CURRENT:RefCell<Option<State>>=const{RefCell::new(None)};}
++pub(crate)struct Scope{previous:Option<State>,active:bool}
++impl Scope{pub(crate)fn enter(owner:String,stage:&'static str)->Self{match CURRENT.try_with(|s|s.replace(Some(State{owner,stage,counts:[0;28]}))){Ok(previous)=>Self{previous,active:true},Err(_)=>Self{previous:None,active:false}}}}
++impl Drop for Scope{fn drop(&mut self){if !self.active{return;}let previous=self.previous.take();if let Ok(Some(s))=CURRENT.try_with(|slot|slot.replace(previous)){let counts=NAMES.iter().zip(s.counts).collect::<std::collections::BTreeMap<_,_>>();eprintln!("NUCLEUS_MEMO_PATH:{}",serde_json::json!({"owner":s.owner,"stage":s.stage,"diagnostic_only":true,"acceptance_authority":false,"counts":counts,"boundary":"overlapping request/slot/retention events; no work or saving conservation claim"}));}}}
++#[inline]pub(crate)fn event(index:usize){let _=CURRENT.try_with(|slot|{if let Some(s)=slot.borrow_mut().as_mut(){s.counts[index]=s.counts[index].saturating_add(1);}});}
