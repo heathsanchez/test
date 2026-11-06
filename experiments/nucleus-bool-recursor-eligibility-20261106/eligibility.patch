@@ -1,0 +1,47 @@
+--- a/src/convert.rs
++++ b/src/convert.rs
+@@ -2026,7 +2026,8 @@
+                         if !constructor.spine.is_empty()
+                             || !levels.is_empty()
+                             || !checker.is_certified_bool_constructor(*name)
+-                            || recursive.spine.len() != 5
++                            || !matches!(&recursive.head, NeutralHead::Const { name, .. }
++                                if checker.has_qualified_recursor(*name))
+                         {
+                             return None;
+                         }
+@@ -3246,3 +3247,34 @@
+  }
+ 
+ }
++
++#[cfg(test)]
++mod bool_four_argument_replay_regression {
++    use super::*;
++    use crate::{environment::{Environment,ConstantDecl,BoolPrimitives},id::{IdTable,LevelId,NameId},machine::{RecursorReduction,RecursorRule},syntax::Level,value::EnvFrame};
++    #[test]
++    fn completed_four_argument_bool_replay_survives_a_bounded_major() {
++        let mut e=IdTable::default(); let mut l=IdTable::default();
++        l.insert(LevelId(0),Level::Zero).unwrap();l.insert(LevelId(1),Level::Succ(LevelId(0))).unwrap();
++        for (id,x) in [(0,Expr::Sort(LevelId(1))),(1,Expr::Const{name:NameId(2),levels:vec![]}),(2,Expr::Const{name:NameId(3),levels:vec![]}),(3,Expr::BVar(0)),(4,Expr::BVar(1)),(5,Expr::Lam{domain:ExprId(0),body:ExprId(3)}),(6,Expr::Lam{domain:ExprId(0),body:ExprId(5)}),(7,Expr::Lam{domain:ExprId(0),body:ExprId(6)}),(8,Expr::Lam{domain:ExprId(0),body:ExprId(4)}),(9,Expr::Lam{domain:ExprId(0),body:ExprId(8)}),(10,Expr::Lam{domain:ExprId(0),body:ExprId(9)})]{e.insert(ExprId(id),x).unwrap();}
++        let mut env=Environment::empty();
++        for name in [NameId(1),NameId(2),NameId(3)]{env=env.extend(name,ConstantDecl::axiom(vec![],ExprId(0))).unwrap();}
++        env=env.install_bool_primitives(BoolPrimitives{false_ctor:NameId(2),true_ctor:NameId(3)}).unwrap();
++        env=env.install_recursor_reduction(NameId(1),RecursorReduction{k:false,num_params:0,num_indices:0,level_params:vec![],rules:vec![RecursorRule{constructor:NameId(2),constructor_level_params:vec![],num_params:0,num_fields:0,rhs:ExprId(10)},RecursorRule{constructor:NameId(3),constructor_level_params:vec![],num_params:0,num_fields:0,rhs:ExprId(7)}]}).unwrap();
++        let mut major=ExprId(2);
++        for id in 11..361 {e.insert(ExprId(id),Expr::Let{ty:ExprId(0),value:ExprId(2),body:major}).unwrap();major=ExprId(id);}
++        let checker=TypeChecker::new(&e,&l,&env);
++        let c=|expr|Closure::new(expr,EnvFrame::empty());
++        let recursive=Value::Neutral(Neutral{head:NeutralHead::Const{name:NameId(1),levels:vec![]},spine:vec![c(ExprId(0)),c(ExprId(1)),c(ExprId(2)),c(major)]});
++        let truth=Value::Neutral(Neutral{head:NeutralHead::Const{name:NameId(3),levels:vec![]},spine:vec![]});
++        let result=compare_values(&checker,&truth,&recursive,512,0,&[],&mut vec![],&mut HashMap::new());
++        assert!(result.is_proven(),"registered four-argument Bool iota must complete from its actual major: {result:?}");
++        let falsity=Value::Neutral(Neutral{head:NeutralHead::Const{name:NameId(2),levels:vec![]},spine:vec![]});
++        assert!(!compare_values(&checker,&falsity,&recursive,512,0,&[],&mut vec![],&mut HashMap::new()).is_proven());
++        let Value::Neutral(mut short)=recursive.clone()else{unreachable!()};short.spine.pop();
++        assert!(!compare_values(&checker,&truth,&Value::Neutral(short),512,0,&[],&mut vec![],&mut HashMap::new()).is_proven());
++        let Value::Neutral(mut wrong_universe)=recursive.clone()else{unreachable!()};
++        wrong_universe.head=NeutralHead::Const{name:NameId(1),levels:vec![crate::level::LevelTerm::Zero]};
++        assert!(!compare_values(&checker,&truth,&Value::Neutral(wrong_universe),512,0,&[],&mut vec![],&mut HashMap::new()).is_proven());
++    }
++}
