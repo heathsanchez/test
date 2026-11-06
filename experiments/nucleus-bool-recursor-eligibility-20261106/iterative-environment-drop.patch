@@ -1,0 +1,96 @@
+--- a/src/value.rs
++++ b/src/value.rs
+@@ -20,6 +20,53 @@
+         parent: EnvFrame,
+         value: EnvBinding,
+     },
++}
++
++// Release immutable environment DAGs without recursively dropping every
++// parent or captured closure on the thread stack. Shared nodes keep their
++// existing Rc ownership; only uniquely owned nodes are opened and drained.
++impl Drop for EnvNode {
++    fn drop(&mut self) {
++        let EnvNode::Extend { parent, value, .. } = self else { return; };
++        if matches!(parent.0.as_ref(), EnvNode::Empty)
++            && matches!(value, EnvBinding::Free(_) | EnvBinding::NatLit(_)) {
++            return;
++        }
++        let empty = Rc::new(EnvNode::Empty);
++        let mut pending = Vec::new();
++        fn frame(frame: &mut EnvFrame, empty: &Rc<EnvNode>, pending: &mut Vec<Rc<EnvNode>>) {
++            if !matches!(frame.0.as_ref(), EnvNode::Empty) {
++                pending.push(std::mem::replace(&mut frame.0, empty.clone()));
++            }
++        }
++        fn neutral(mut value: Neutral, empty: &Rc<EnvNode>, pending: &mut Vec<Rc<EnvNode>>) {
++            loop {
++                for mut capture in value.spine {
++                    frame(&mut capture.env, empty, pending);
++                }
++                match value.head {
++                    NeutralHead::Projection { structure, .. } => value = *structure,
++                    NeutralHead::Free(_) | NeutralHead::Const { .. } => break,
++                }
++            }
++        }
++        fn drain(node: &mut EnvNode, empty: &Rc<EnvNode>, pending: &mut Vec<Rc<EnvNode>>) {
++            if let EnvNode::Extend { parent, value, .. } = node {
++                frame(parent, empty, pending);
++                match std::mem::replace(value, EnvBinding::Free(FreeId(0))) {
++                    EnvBinding::Closure(mut capture) => frame(&mut capture.env, empty, pending),
++                    EnvBinding::Neutral(value) => neutral(value, empty, pending),
++                    EnvBinding::Free(_) | EnvBinding::NatLit(_) => {}
++                }
++            }
++        }
++        drain(self, &empty, &mut pending);
++        while let Some(owner) = pending.pop() {
++            if let Ok(mut node) = Rc::try_unwrap(owner) {
++                drain(&mut node, &empty, &mut pending);
++            }
++        }
++    }
+ }
+ 
+ #[derive(Clone, Debug)]
+@@ -533,3 +580,39 @@
+  for root in roots{count+=1;if count>66||!plan.closure(root){return false;}}
+  plan.finish()
+ }
++
++#[cfg(test)]
++mod deep_environment_cleanup_regression {
++    use super::*;
++    #[test]
++    fn deep_captured_environment_graph_drops_on_a_small_stack() {
++        std::thread::Builder::new().stack_size(128*1024).spawn(|| {
++            let mut frame=EnvFrame::empty();
++            for i in 0..50_000 { frame=frame.extend_free(FreeId(i)); }
++            let retained=frame.clone();
++            let weak=Rc::downgrade(&frame.0);
++            drop(frame);assert!(weak.upgrade().is_some());
++            drop(retained);assert!(weak.upgrade().is_none());
++        }).unwrap().join().unwrap();
++    }
++}
++
++#[cfg(test)]
++mod deep_capture_cleanup_controls {
++    use super::*;
++    #[test]
++    fn nested_captured_closures_and_projection_owners_are_released_iteratively() {
++        std::thread::Builder::new().stack_size(128*1024).spawn(|| {
++            let mut captured=EnvFrame::empty();let mut witnesses=Vec::new();
++            for i in 0..20_000 {
++                captured=EnvFrame::empty().extend(Closure::new(ExprId(0),captured));
++                if i%1000==0 {witnesses.push(Rc::downgrade(&captured.0));}
++            }
++            let mut value=Neutral{head:NeutralHead::Free(FreeId(0)),spine:vec![Closure::new(ExprId(0),captured)]};
++            for _ in 0..20_000 {value=Neutral{head:NeutralHead::Projection{type_name:NameId(1),index:0,structure:Box::new(value)},spine:vec![]};}
++            let owner=EnvFrame::empty().extend_neutral(value);
++            drop(owner);
++            assert!(witnesses.iter().all(|weak|weak.upgrade().is_none()));
++        }).unwrap().join().unwrap();
++    }
++}
