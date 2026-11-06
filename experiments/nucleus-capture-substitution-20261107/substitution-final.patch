@@ -1,0 +1,519 @@
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -27,3 +27,11 @@
+ name = "nucleus-census"
+ path = "src/bin/nucleus-census.rs"
+ required-features = ["diagnostics"]
++
++# Inquiry binaries accelerate local observation iterations; release remains the qualification profile.
++[profile.inquiry]
++inherits = "release"
++opt-level = 2
++lto = false
++codegen-units = 16
++incremental = true
+--- a/src/convert.rs
++++ b/src/convert.rs
+@@ -2662,13 +2662,20 @@
+             ).is_proven() {
+                 return Judgment::unknown("neutral-projection-receiver-congruence");
+             }
+-            let argument_budget = probe / left_structure.spine.len().max(1);
+-            for (lhs, rhs) in left_structure.spine.iter().zip(&right_structure.spine) {
++            let mut argument_pool=probe;
++            for (argument_index,(lhs, rhs)) in left_structure.spine.iter().zip(&right_structure.spine).enumerate() {
++                let remaining_arguments=left_structure.spine.len()-argument_index;
++                let argument_budget=argument_pool/remaining_arguments.max(1);
++                argument_pool-=argument_budget;
+                 let argument_result = convert_with_policy_in_context(
+                     checker, &TypeValue::Term(lhs.clone()), &TypeValue::Term(rhs.clone()),
+                     argument_budget, DeltaPolicy::GuardedSemanticFallback, depth, context,
+                 );
+                 if !argument_result.is_proven() {
++                    // Borrow only still-unspent work reserved for subsequent
++                    // arguments. Both prior attempts and new premises stay
++                    // inside this receiver's original argument-work pool.
++                    if checker.checked_capture_substitution(lhs,rhs,context,&mut argument_pool){continue;}
+                     #[cfg(feature = "diagnostics")]
+                     if crate::run_flags::present(crate::run_flags::Flag::TraceFailedReceiverCaptures)
+                         && matches!(lhs.expr.0, 600 | 1214)
+@@ -2679,6 +2686,7 @@
+                         // Count before probing typed captures so recursive
+                         // diagnostic conversion cannot start another trace.
+                         if CAPTURES.fetch_add(1, Ordering::Relaxed) == 0 {
++                            eprintln!("NUCLEUS_RECEIVER_ARGUMENT_POSITION:index={argument_index}:arity={}:argument_budget={argument_budget}:receiver_budget={budget}",left_structure.spine.len());
+                             eprintln!("NUCLEUS_FAILED_RECEIVER_CAPTURES:owner={left_type:?}:field={left_index}:depth={depth}:budget={budget}:argument_budget={argument_budget}:result={argument_result:?}:{}",
+                                 checker.diagnostic_receiver_capture_pair(lhs, rhs, context, 128));
+                         }
+@@ -3106,7 +3114,11 @@
+             }
+             let Some(binding)=binding else{return false;};
+             match binding {
+-                EnvBinding::Free(actual) => { if *actual == free { return false; } }
++                EnvBinding::Free(actual) => { if *actual == free {
++                    #[cfg(feature="diagnostics")]
++                    checker.record_source_opening_collision(&source,free,*actual,*budget,virtual_slots);
++                    return false;
++                } }
+                 EnvBinding::Closure(captured) => pending.push((captured.clone(), 0)),
+                 EnvBinding::NatLit(_) => {}
+                 EnvBinding::Neutral(neutral) => {
+@@ -3115,7 +3127,11 @@
+                         if *budget == 0 { return false; }
+                         *budget -= 1;
+                         match &value.head {
+-                            NeutralHead::Free(actual) => { if *actual == free { return false; } }
++                            NeutralHead::Free(actual) => { if *actual == free {
++                                #[cfg(feature="diagnostics")]
++                                checker.record_source_opening_collision(&source,free,*actual,*budget,virtual_slots);
++                                return false;
++                            } }
+                             NeutralHead::Projection { structure, .. } => neutrals.push(structure.as_ref()),
+                             NeutralHead::Const { .. } => {}
+                         }
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -33,6 +33,10 @@
+     domain: TypeValue,
+     protected_prefix: ContextSpine,
+ }
++
++type BindingLedger=Rc<RefCell<HashMap<u64,Option<CheckedBinderWitness>>>>;
++#[derive(Clone)]
++struct InheritedBindings{ledger:BindingLedger,epoch:Rc<Cell<Option<u64>>>,captured_epoch:Option<u64>}
+ 
+ #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+ enum CheckedFrameRole { InferPi, InferLambda, ExpectedLambda, LambdaIntro, LiteralBeta, Let, ExactPiSubstitution }
+@@ -131,7 +135,7 @@
+     exposure_cache: ExposureCache,
+     // Eligibility is structural; typing proofs stay in the per-judgment cache.
+     closed_spine_eligibility: RefCell<HashMap<ExprId, bool>>,
+-    source_support: RefCell<HashMap<ExprId, Vec<u64>>>,
++    source_support: Rc<RefCell<HashMap<ExprId, Vec<u64>>>>,
+     paired_source_support: RefCell<HashMap<(ExprId, ExprId), Vec<(u64, u64)>>>,
+     parametric_source_support:RefCell<HashMap<(ExprId,ExprId),ParametricSourceSupport>>,
+     checked_frames: RefCell<HashMap<CheckedFrameKey, EnvFrame>>,
+@@ -140,7 +144,7 @@
+     // Pure completed capture identity only; this carries no typing or Γ authority.
+     // Owning closures pin every frame and level allocation used by the key.
+     source_capture_proofs:RefCell<HashMap<(ExprId,u64,usize,ExprId,u64,usize),(Closure,Closure,bool)>>,
+-    source_opening_proofs: RefCell<HashMap<(ExprId,u64,usize,FreeId),Closure>>,
++    source_opening_proofs: Rc<RefCell<HashMap<(ExprId,u64,usize,FreeId),Closure>>>,
+     // Closed source types admitted by this checker's actual formation judgment.
+     formed_expected: RefCell<std::collections::HashSet<Closure>>,
+     lambda_trials: RefCell<LambdaTrialState>,
+@@ -149,6 +153,7 @@
+     // Diagnostic-only strictness: a FreeId is typed solely by its checked
+     // immutable binder node under the identical protected source scope.
+     strict_origin_probe: bool,
++    inherited_binding_lineage:Option<InheritedBindings>,
+     exact_typing_memo:RefCell<ExactTypingMemo>,
+     #[cfg(feature="diagnostics")]
+     shadow_typing:RefCell<crate::obligation_shadow::Shadow>,
+@@ -197,17 +202,18 @@
+             delta_policy: crate::convert::DeltaPolicy::GuardedSemanticFallback,
+             exposure_cache: new_exposure_cache(),
+             closed_spine_eligibility: RefCell::new(HashMap::new()),
+-            source_support: RefCell::new(HashMap::new()),
++            source_support: Rc::new(RefCell::new(HashMap::new())),
+             paired_source_support: RefCell::new(HashMap::new()),
+             parametric_source_support:RefCell::new(HashMap::new()),
+             checked_frames: RefCell::new(HashMap::new()),
+-            source_opening_proofs:RefCell::new(HashMap::new()),
++            source_opening_proofs:Rc::new(RefCell::new(HashMap::new())),
+             source_capture_proofs:RefCell::new(HashMap::new()),
+             formed_expected: RefCell::new(std::collections::HashSet::new()),
+             lambda_trials: RefCell::new(LambdaTrialState::default()),
+             context_arena: RefCell::new(ContextArena::default()),
+             checked_binding_lineage: Rc::new(RefCell::new(HashMap::new())),
+-            strict_origin_probe: false,
++            inherited_binding_lineage:None,
++            strict_origin_probe:false,
+             exact_typing_memo:RefCell::new(ExactTypingMemo::default()),
+             #[cfg(feature="diagnostics")]
+             shadow_typing:RefCell::new(crate::obligation_shadow::Shadow::default()),
+@@ -230,17 +236,18 @@
+             delta_policy: crate::convert::DeltaPolicy::GuardedSemanticFallback,
+             exposure_cache: new_exposure_cache(),
+             closed_spine_eligibility: RefCell::new(HashMap::new()),
+-            source_support: RefCell::new(HashMap::new()),
++            source_support: Rc::new(RefCell::new(HashMap::new())),
+             paired_source_support: RefCell::new(HashMap::new()),
+             parametric_source_support:RefCell::new(HashMap::new()),
+             checked_frames: RefCell::new(HashMap::new()),
+-            source_opening_proofs:RefCell::new(HashMap::new()),
++            source_opening_proofs:Rc::new(RefCell::new(HashMap::new())),
+             source_capture_proofs:RefCell::new(HashMap::new()),
+             formed_expected: RefCell::new(std::collections::HashSet::new()),
+             lambda_trials: RefCell::new(LambdaTrialState::default()),
+             context_arena: RefCell::new(ContextArena::default()),
+             checked_binding_lineage: Rc::new(RefCell::new(HashMap::new())),
+-            strict_origin_probe: false,
++            inherited_binding_lineage:None,
++            strict_origin_probe:false,
+             exact_typing_memo:RefCell::new(ExactTypingMemo::default()),
+             #[cfg(feature="diagnostics")]
+             shadow_typing:RefCell::new(crate::obligation_shadow::Shadow::default()),
+@@ -277,6 +284,17 @@
+             domain,
+             protected_prefix:self.context_arena.borrow_mut().capture(protected_context),
+         };
++        if let Some(base)=&self.inherited_binding_lineage{
++            if base.captured_epoch.is_none()||base.epoch.get()!=base.captured_epoch{self.binding_revocation_epoch.set(None);return;}
++            let inherited=base.ledger.borrow().get(&node).cloned();
++            if let Some(inherited)=inherited{
++                if inherited.as_ref()==Some(&witness){return;}
++                let already_revoked=self.checked_binding_lineage.borrow().get(&node).is_some_and(Option::is_none);
++                self.checked_binding_lineage.borrow_mut().insert(node,None);
++                if inherited.is_some()&&!already_revoked{self.binding_revocation_epoch.set(self.binding_revocation_epoch.get().and_then(|e|e.checked_add(1)));}
++                return;
++            }
++        }
+         match self.checked_binding_lineage.borrow_mut().entry(node) {
+             Entry::Vacant(v)=>{v.insert(Some(witness));}
+             Entry::Occupied(mut o)=>{
+@@ -290,6 +308,22 @@
+                     o.insert(None);
+                 }
+             }
++        }
++    }
++
++    // A borrowed authority view is read-only. Overlay tombstones and base
++    // revocation always dominate, and disagreement never selects a witness.
++    fn effective_binding_witness(&self,node:u64)->Option<CheckedBinderWitness>{
++        let own=self.checked_binding_lineage.borrow().get(&node).cloned();
++        let Some(base)=&self.inherited_binding_lineage else{return own.flatten();};
++        if base.captured_epoch.is_none()||base.epoch.get()!=base.captured_epoch{return None;}
++        let inherited=base.ledger.borrow().get(&node).cloned();
++        match(own,inherited){
++            (Some(None),_)|(_,Some(None))=>None,
++            (Some(Some(a)),Some(Some(b)))=>if a==b{Some(a)}else{None},
++            (Some(Some(a)),None)=>Some(a),
++            (None,Some(Some(b)))=>Some(b),
++            (None,None)=>None,
+         }
+     }
+ 
+@@ -423,8 +457,7 @@
+             return None;
+         }
+         let (node_id,_)=frame.lookup_with_node_id(index)?;
+-        let proof=self.checked_binding_lineage.borrow()
+-            .get(&node_id)?.as_ref()?.clone();
++        let proof=self.effective_binding_witness(node_id)?;
+         if !proof.protected_prefix.is_prefix_of(context) {return None;}
+         #[cfg(feature="diagnostics")]
+         if crate::run_flags::present(crate::run_flags::Flag::TraceTypedLineage){
+@@ -610,6 +643,10 @@
+         });
+     }
+ 
++    #[cfg(feature="diagnostics")]
++    pub(crate) fn record_source_opening_collision(&self,source:&Closure,requested:FreeId,actual:FreeId,remaining:usize,virtual_slots:u64){
++        CAPTURE_SOURCE_FAILURE.with(|failure|{let mut failure=failure.borrow_mut();if let Some(first@None)=failure.as_mut(){*first=Some(format!("source-opening-real-free-collision:requested={requested:?}:actual={actual:?}:source={source:?}:virtual_slots={virtual_slots}:remaining={remaining}"));}});
++    }
+     /// A deliberately partial *typing derivation* for evaluated closures.
+     /// In contrast to inferring just the normalized neutral head, this
+     /// reconstructs the original expression's typing through its capture
+@@ -704,7 +741,17 @@
+             Some((key,set))
+         }else{None};
+         let result=self.infer_exact_closure_uncached(term,context,remaining,depth);
+-        if result.is_none() { report_failure("exact-uncached-declined",*remaining); }
++        if result.is_none() {
++            report_failure("exact-uncached-declined",*remaining);
++            #[cfg(feature="diagnostics")]
++            if CAPTURE_SOURCE_FAILURE.with(|failure|matches!(&*failure.borrow(),Some(None))) {
++                let reason=match self.expressions.get(term.expr){
++                    Some(Expr::BVar(index))=>format!("exact-source-node-no-derivation:bvar={index}:binding={}",crate::obligation_shadow::bounded_debug(&term.env.lookup(*index)).unwrap_or_else(||"metadata-over-limit".into())),
++                    _=>"exact-source-node-no-derivation".into(),
++                };
++                self.record_capture_source_failure(term,context,*remaining,depth,&reason);
++            }
++        }
+         if let (Some((key,set)),Some(TypeValue::Term(value)))=(pending,result.as_ref())
+             && self.binding_revocation_epoch.get()==Some(key.epoch)
+             && crate::run_flags::captured_configuration()==Some(key.flags)
+@@ -1095,7 +1142,10 @@
+                 };
+                 let binder = FreeId(u64::try_from(context.len()).ok()?);
+                 let source_body = term.sibling(*body, term.env.clone());
+-                let allowance = (*remaining).min(1024);
++                // Complete the mandatory capture proof using this inference's
++                // existing work owner; every visited source/binding is debited
++                // below, including a failed attempt.
++                let allowance = *remaining;
+                 let mut opening_budget = allowance;
+                 let safe = crate::convert::source_opening_avoids_capture(
+                     self, &source_body, binder, &mut opening_budget,
+@@ -1103,6 +1153,8 @@
+                 *remaining -= allowance - opening_budget;
+                 if !safe {
+                     if probe_lambda { eprintln!("NUCLEUS_EXACT_LAMBDA:source-opening-declined:remaining={remaining}:opening-budget={opening_budget}"); }
++                    #[cfg(feature="diagnostics")]
++                    self.record_capture_source_failure(term,context,*remaining,depth,&format!("source-lambda-opening-unavailable:local_allowance={allowance}:local_remaining={opening_budget}:free={binder:?}"));
+                     return None;
+                 }
+                 let mut extended = context.to_vec();
+@@ -1340,7 +1392,9 @@
+             lines.join(" | ")
+         }
+         let mut output = vec![format!("left={left:?}:right={right:?}:context={context:?}")];
+-        for index in [4, 1] {
++        let support=self.complete_source_support(left.expr,&mut budget.min(4096));
++        output.push(format!("actual_complete_source_support={support:?}"));
++        for index in support.unwrap_or_default() {
+             let lhs = left.env.lookup_with_node_id(index);
+             let rhs = right.env.lookup_with_node_id(index);
+             output.push(format!("capture_index={index}:left_binding={lhs:?}:right_binding={rhs:?}"));
+@@ -1352,12 +1406,12 @@
+                     // snapshot, without warming or modifying the live checker.
+                     for allowance in [128usize,512,2048,4096]{
+                         let mut isolated=Self::with_level_substitution(self.expressions,self.levels,self.environment,self.level_substitution.clone()).with_delta_policy(self.delta_policy);
+-                        isolated.strict_origin_probe=self.strict_origin_probe;
++                        isolated.strict_origin_probe=true;
+                         *isolated.checked_binding_lineage.borrow_mut()=self.checked_binding_lineage.borrow().clone();
+                         isolated.binding_revocation_epoch.set(self.binding_revocation_epoch.get());
+                         let _scope=CaptureSourceFailureScope::enter();
+                         let relation=isolated.checked_source_conversion(&a,&b,context,allowance);
+-                        output.push(format!("isolated_typed_capture_relation:requested={allowance}:inference_cap={}:type_conversion_cap={}:term_conversion_cap={}:result={relation:?}:first_source_failure={:?}",allowance.min(4096),allowance.min(2048),allowance.min(4096),CaptureSourceFailureScope::first()));
++                        output.push(format!("isolated_typed_capture_relation:strict_origin=true:requested={allowance}:inference_cap={}:type_conversion_cap={}:term_conversion_cap={}:result={relation:?}:first_source_failure={:?}",allowance.min(4096),allowance.min(2048),allowance.min(4096),CaptureSourceFailureScope::first()));
+                     }
+                 }
+                 _ => output.push("typed_capture_relation=unavailable-nonclosure-binding".to_string()),
+@@ -1941,6 +1995,98 @@
+             }
+         }
+         true
++    }
++
++    /// Immediate same-source substitution congruence. Every nonidentical
++    /// captured value is independently typed and converted in this exact Γ.
++    /// No result enters the context-free literal-identity certificate table.
++    pub(crate) fn checked_capture_substitution(&self,left:&Closure,right:&Closure,context:&[TypeValue],remaining:&mut usize)->bool{
++        thread_local!{static ACTIVE:Cell<bool>=const{Cell::new(false)};}
++        if ACTIVE.with(|active|active.replace(true)){return false;}
++        struct Reset;impl Drop for Reset{fn drop(&mut self){ACTIVE.with(|active|active.set(false));}}
++        let _reset=Reset;
++        #[cfg(feature="diagnostics")]
++        let trace=std::env::var("NUCLEUS_TRACE_TYPED_SUBSTITUTION").ok().and_then(|s|s.parse::<u64>().ok())==Some(left.expr.0);
++        #[cfg(feature="diagnostics")]
++        let _trace_scope=trace.then(CaptureSourceFailureScope::enter);
++        let note=|stage:&str,budget:usize|{
++            #[cfg(feature="diagnostics")]
++            if trace{eprintln!("NUCLEUS_CHECKED_CAPTURE_PREMISE:source={}:stage={stage}:context={}:remaining={budget}:ledger={}:first={:?}",left.expr.0,context.len(),self.checked_binding_lineage.borrow().len(),CaptureSourceFailureScope::first());}
++        };
++        note("begin",*remaining);
++        if left.expr!=right.expr || context.len()>64 || self.inherited_binding_lineage.is_some() || !take_step(remaining){return false;}
++        let epoch=self.binding_revocation_epoch.get();if epoch.is_none(){return false;}
++        // Captured free IDs need a source-owned witness, not a numeric Γ
++        // coincidence. Borrow only checked witnesses through a revocable view
++        // in a strict isolated checker; discard its local typing facts.
++        let snapshot_cost=2usize.saturating_add(self.level_substitution.len());
++        if *remaining<snapshot_cost{note("authority-view-work-limit",*remaining);return false;}*remaining-=snapshot_cost;
++        let mut probe=Self::with_level_substitution(self.expressions,self.levels,self.environment,self.level_substitution.clone()).with_delta_policy(self.delta_policy);
++        probe.strict_origin_probe=true;
++        probe.inherited_binding_lineage=Some(InheritedBindings{ledger:self.checked_binding_lineage.clone(),epoch:self.binding_revocation_epoch.clone(),captured_epoch:epoch});
++        probe.binding_revocation_epoch.set(epoch);
++        // These stores contain pure source support/freshness or checked
++        // operational reductions under the identical immutable authority.
++        // Context-dependent typing/conversion caches remain isolated.
++        probe.source_support=self.source_support.clone();
++        probe.source_opening_proofs=self.source_opening_proofs.clone();
++        probe.exposure_cache=self.exposure_cache.clone();
++        if !Self::exact_source_levels(&left.levels,&right.levels,remaining){return false;}
++        let Some(support)=self.complete_source_support(left.expr,remaining)else{return false;};
++        if support.len()>64{return false;}
++        for index in support{
++            let Some(cost)=usize::try_from(index).ok().and_then(|n|n.checked_add(1)).and_then(|n|n.checked_mul(2))else{return false;};
++            if *remaining<cost{return false;}*remaining-=cost;
++            let(Some(a),Some(b))=(left.env.lookup_binding_ref(index),right.env.lookup_binding_ref(index))else{return false;};
++            match(a,b){
++                (EnvBinding::Free(a),EnvBinding::Free(b))if a==b=>{},
++                (EnvBinding::NatLit(a),EnvBinding::NatLit(b))=>{let cost=a.limb_count().max(b.limb_count());if *remaining<cost{return false;}*remaining-=cost;if a!=b{return false;}},
++                (EnvBinding::Closure(a),EnvBinding::Closure(b))=>{
++                    if a.expr==b.expr&&a.env.id()==b.env.id()&&a.levels.identity()==b.levels.identity(){continue;}
++                    // The actual immutable binding may already carry its
++                    // checked argument type in this protected Γ. Reuse that
++                    // source judgment before rebuilding the value's typing.
++                    if *remaining<cost{return false;}*remaining-=cost;
++                    note(&format!("capture-{index}-typing-begin"),*remaining);
++                    let mut left_type=probe.checked_type_of_bound_source(&left.env,index,context);
++                    if left_type.is_some(){note("left-binding-type-reused",*remaining);}else{
++                        let allowance=(*remaining).min(4096);let mut fuel=allowance;
++                        left_type=probe.infer_exact_closure_in_context(a,context,&mut fuel,0);
++                        *remaining-=allowance-fuel;
++                    }
++                    let Some(left_type)=left_type else{note("left-type-unavailable",*remaining);return false;};
++                    let mut right_type=probe.checked_type_of_bound_source(&right.env,index,context);
++                    if right_type.is_some(){note("right-binding-type-reused",*remaining);}else{
++                        let allowance=(*remaining).min(4096);let mut fuel=allowance;
++                        right_type=probe.infer_exact_closure_in_context(b,context,&mut fuel,0);
++                        *remaining-=allowance-fuel;
++                    }
++                    let Some(right_type)=right_type else{note("right-type-unavailable",*remaining);return false;};
++                    // Each attempted conversion reserves its entire grant;
++                    // cheap completed premises leave work for later captures.
++                    fn compare(probe:&TypeChecker<'_>,a:&TypeValue,b:&TypeValue,context:&[TypeValue],remaining:&mut usize,limits:&[usize])->bool{
++                        for cap in limits{
++                            let grant=(*remaining).min(*cap);if grant==0{return false;}*remaining-=grant;
++                            let result=crate::convert::convert_with_policy_in_context(probe,a,b,grant,crate::convert::DeltaPolicy::PreferredOnly,context.len(),context);
++                            #[cfg(feature="diagnostics")]
++                            if std::env::var("NUCLEUS_TRACE_TYPED_SUBSTITUTION").is_ok(){eprintln!("NUCLEUS_CHECKED_CAPTURE_PHASE:grant={grant}:remaining={remaining}:result={result:?}");}
++                            if result.is_proven(){return true;}
++                        }
++                        false
++                    }
++                    note(&format!("capture-{index}-typing-complete"),*remaining);
++                    if !compare(&probe,&left_type,&right_type,context,remaining,&[64,512]){note("capture-types-unproved",*remaining);return false;}
++                    note(&format!("capture-{index}-types-complete"),*remaining);
++                    if !compare(&probe,&TypeValue::Term(a.clone()),&TypeValue::Term(b.clone()),context,remaining,&[512,4096]){note("capture-values-unproved",*remaining);return false;}
++                },
++                _=>return false,
++            }
++        }
++        let proven=self.binding_revocation_epoch.get()==epoch && probe.binding_revocation_epoch.get()==epoch;
++        if !proven{note("revoked-premise",*remaining);}
++        #[cfg(feature="diagnostics")]
++        if proven&&std::env::var("NUCLEUS_TRACE_TYPED_SUBSTITUTION").ok().and_then(|s|s.parse::<u64>().ok())==Some(left.expr.0){eprintln!("NUCLEUS_CHECKED_CAPTURE_SUBSTITUTION:source={}:context={}:remaining={remaining}:strict_origin=true",left.expr.0,context.len());}
++        proven
+     }
+ 
+     pub(crate) fn instantiated_source_capture_congruence(&self,left:&Closure,right:&Closure,remaining:&mut usize)->bool{
+@@ -5395,11 +5541,11 @@
+             delta_policy:self.delta_policy,
+             exposure_cache:new_exposure_cache(),
+             closed_spine_eligibility: RefCell::new(HashMap::new()),
+-            source_support: RefCell::new(HashMap::new()),
++            source_support: Rc::new(RefCell::new(HashMap::new())),
+             paired_source_support: RefCell::new(HashMap::new()),
+             parametric_source_support:RefCell::new(HashMap::new()),
+             checked_frames: RefCell::new(HashMap::new()),
+-            source_opening_proofs:RefCell::new(HashMap::new()),
++            source_opening_proofs:Rc::new(RefCell::new(HashMap::new())),
+             source_capture_proofs:RefCell::new(HashMap::new()),
+             formed_expected: RefCell::new(std::collections::HashSet::new()),
+             lambda_trials: RefCell::new(LambdaTrialState::default()),
+@@ -5407,6 +5553,7 @@
+             checked_binding_lineage:Rc::new(RefCell::new(
+                 self.checked_binding_lineage.borrow().clone(),
+             )),
++            inherited_binding_lineage:self.inherited_binding_lineage.clone(),
+             strict_origin_probe:true,
+             exact_typing_memo:RefCell::new(ExactTypingMemo::default()),
+             #[cfg(feature="diagnostics")]
+@@ -5567,11 +5714,11 @@
+             delta_policy: self.delta_policy,
+             exposure_cache: new_exposure_cache(),
+             closed_spine_eligibility: RefCell::new(HashMap::new()),
+-            source_support: RefCell::new(HashMap::new()),
++            source_support: Rc::new(RefCell::new(HashMap::new())),
+             paired_source_support: RefCell::new(HashMap::new()),
+             parametric_source_support:RefCell::new(HashMap::new()),
+             checked_frames: RefCell::new(HashMap::new()),
+-            source_opening_proofs:RefCell::new(HashMap::new()),
++            source_opening_proofs:Rc::new(RefCell::new(HashMap::new())),
+             source_capture_proofs:RefCell::new(HashMap::new()),
+             formed_expected: RefCell::new(std::collections::HashSet::new()),
+             lambda_trials: RefCell::new(LambdaTrialState::default()),
+@@ -5579,7 +5726,8 @@
+             checked_binding_lineage: Rc::new(RefCell::new(
+                 self.checked_binding_lineage.borrow().clone(),
+             )),
+-            strict_origin_probe: true,
++            inherited_binding_lineage:self.inherited_binding_lineage.clone(),
++            strict_origin_probe:true,
+             exact_typing_memo:RefCell::new(ExactTypingMemo::default()),
+             #[cfg(feature="diagnostics")]
+             shadow_typing:RefCell::new(crate::obligation_shadow::Shadow::default()),
+@@ -5624,11 +5772,11 @@
+             delta_policy: self.delta_policy,
+             exposure_cache: new_exposure_cache(),
+             closed_spine_eligibility: RefCell::new(HashMap::new()),
+-            source_support: RefCell::new(HashMap::new()),
++            source_support: Rc::new(RefCell::new(HashMap::new())),
+             paired_source_support: RefCell::new(HashMap::new()),
+             parametric_source_support:RefCell::new(HashMap::new()),
+             checked_frames: RefCell::new(HashMap::new()),
+-            source_opening_proofs:RefCell::new(HashMap::new()),
++            source_opening_proofs:Rc::new(RefCell::new(HashMap::new())),
+             source_capture_proofs:RefCell::new(HashMap::new()),
+             formed_expected: RefCell::new(std::collections::HashSet::new()),
+             lambda_trials: RefCell::new(LambdaTrialState::default()),
+@@ -5636,7 +5784,8 @@
+             checked_binding_lineage: Rc::new(RefCell::new(
+                 self.checked_binding_lineage.borrow().clone(),
+             )),
+-            strict_origin_probe: self.strict_origin_probe,
++            inherited_binding_lineage:self.inherited_binding_lineage.clone(),
++            strict_origin_probe:self.strict_origin_probe,
+             exact_typing_memo:RefCell::new(ExactTypingMemo::default()),
+             #[cfg(feature="diagnostics")]
+             shadow_typing:RefCell::new(crate::obligation_shadow::Shadow::default()),
+@@ -8429,3 +8578,65 @@
+   assert!(c.shadow_typing.borrow().report()["completed_match_exact_unresolved"].as_u64().unwrap()>0);
+  }
+ }
++
++#[cfg(test)]
++mod captured_source_opening_budget_tests {
++ use super::*;
++ fn tree(e:&mut IdTable<ExprId,Expr>,next:&mut u64,height:usize)->ExprId{
++  if height==0{return ExprId(0);}
++  let domain=tree(e,next,height-1);let body=tree(e,next,height-1);let id=ExprId(*next);*next+=1;e.insert(id,Expr::Pi{domain,body}).unwrap();id
++ }
++ #[test]fn captured_lambda_can_establish_complete_support_with_its_supplied_budget(){
++  let mut e=IdTable::default();let mut l=IdTable::default();l.insert(LevelId(0),Level::Zero).unwrap();e.insert(ExprId(0),Expr::Sort(LevelId(0))).unwrap();
++  let root=tree(&mut e,&mut 1,10);e.insert(ExprId(5000),Expr::BVar(1)).unwrap();e.insert(ExprId(5001),Expr::Lam{domain:ExprId(0),body:ExprId(5000)}).unwrap();
++  let env=Environment::empty();let checker=TypeChecker::new(&e,&l,&env);let capture=checker.closure(root,EnvFrame::empty());let term=checker.closure(ExprId(5001),EnvFrame::empty().extend(capture));
++  let result=checker.infer_exact_closure_in_context(&term,&[],&mut 131072,0);assert!(result.is_some(),"closed captured source is safe; complete its mandatory support proof within the supplied allowance");
++ }
++}
++
++#[cfg(test)]
++mod typed_capture_substitution_tests {
++ use super::*;
++ use crate::environment::ConstantDecl;
++ fn fixture()->(IdTable<ExprId,Expr>,IdTable<LevelId,Level>,Environment){
++  let mut e=IdTable::default();let mut l=IdTable::default();l.insert(LevelId(0),Level::Zero).unwrap();l.insert(LevelId(1),Level::Succ(LevelId(0))).unwrap();
++  for(id,x)in[(0,Expr::Sort(LevelId(1))),(1,Expr::Const{name:NameId(1),levels:vec![]}),(2,Expr::Const{name:NameId(2),levels:vec![]}),(3,Expr::Const{name:NameId(3),levels:vec![]}),(4,Expr::BVar(0)),(5,Expr::Lam{domain:ExprId(1),body:ExprId(4)}),(6,Expr::App{fun:ExprId(5),arg:ExprId(2)}),(7,Expr::Const{name:NameId(4),levels:vec![]}),(8,Expr::App{fun:ExprId(7),arg:ExprId(4)}),(9,Expr::Pi{domain:ExprId(1),body:ExprId(1)})]{e.insert(ExprId(id),x).unwrap();}
++  let env=Environment::empty().extend(NameId(1),ConstantDecl::axiom(vec![],ExprId(0))).unwrap().extend(NameId(2),ConstantDecl::axiom(vec![],ExprId(1))).unwrap().extend(NameId(3),ConstantDecl::axiom(vec![],ExprId(1))).unwrap().extend(NameId(4),ConstantDecl::axiom(vec![],ExprId(9))).unwrap();(e,l,env)
++ }
++ #[test]fn substitution_uses_checked_value_equality_not_capture_allocation(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let wrap=|id|c.closure(ExprId(8),EnvFrame::empty().extend(c.closure(ExprId(id),EnvFrame::empty())));let mut fuel=8192;let proven=c.checked_capture_substitution(&wrap(6),&wrap(2),&[],&mut fuel);assert!(proven,"fuel={fuel}");}
++ #[test]fn unequal_data_captures_cannot_supply_substitution_congruence(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let wrap=|id|c.closure(ExprId(8),EnvFrame::empty().extend(c.closure(ExprId(id),EnvFrame::empty())));assert!(!c.checked_capture_substitution(&wrap(2),&wrap(3),&[],&mut 8192));}
++ #[test]fn missing_origin_type_or_work_remains_unproved(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let open=c.closure(ExprId(4),EnvFrame::empty().extend_free(FreeId(9)));let wrap=|v|c.closure(ExprId(8),EnvFrame::empty().extend(v));let a=wrap(open);let b=wrap(c.closure(ExprId(2),EnvFrame::empty()));assert!(!c.checked_capture_substitution(&a,&b,&[],&mut 8192));assert!(!c.checked_capture_substitution(&b,&b,&[],&mut 0));}
++ #[test]fn checked_origin_context_and_revocation_are_preserved(){
++  let(mut e,l,env)=fixture();e.insert(ExprId(10),Expr::Const{name:NameId(5),levels:vec![]}).unwrap();e.insert(ExprId(11),Expr::App{fun:ExprId(5),arg:ExprId(4)}).unwrap();
++  let env=env.extend(NameId(5),ConstantDecl::axiom(vec![],ExprId(0))).unwrap();let c=TypeChecker::new(&e,&l,&env);
++  let a=TypeValue::Term(c.closure(ExprId(1),EnvFrame::empty()));let b=TypeValue::Term(c.closure(ExprId(10),EnvFrame::empty()));let ctx=vec![a.clone()];let frame=EnvFrame::empty().extend_free(FreeId(0));
++  c.retain_checked_binding(&frame,a.clone(),&ctx);
++  let wrap=|id|c.closure(ExprId(8),EnvFrame::empty().extend(c.closure(ExprId(id),frame.clone())));let left=wrap(11);let right=wrap(4);
++  assert!(c.checked_capture_substitution(&left,&right,&ctx,&mut 16384));
++  assert!(!c.checked_capture_substitution(&left,&right,&[b.clone()],&mut 16384));
++  assert!(c.checked_capture_substitution(&left,&right,&ctx,&mut 16384),"failed calls restore the non-reentry guard");
++  c.retain_checked_binding(&frame,b,&ctx);
++  assert!(!c.checked_capture_substitution(&left,&right,&ctx,&mut 16384),"revoked origin cannot inherit earlier equality");
++ }
++ #[test]fn changed_actual_universe_maps_do_not_supply_substitution(){let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let frame=EnvFrame::empty().extend(c.closure(ExprId(2),EnvFrame::empty()));let a=Closure::with_levels(ExprId(8),frame.clone(),LevelSubstitution::new(vec![(NameId(9),LevelTerm::Zero)]));let b=Closure::with_levels(ExprId(8),frame,LevelSubstitution::new(vec![(NameId(9),LevelTerm::Succ(Box::new(LevelTerm::Zero)))]));assert!(!c.checked_capture_substitution(&a,&b,&[],&mut 8192));}
++
++ #[test]fn authority_view_is_read_only_and_stale_views_decline(){
++  let(mut e,l,env)=fixture();e.insert(ExprId(10),Expr::Const{name:NameId(5),levels:vec![]}).unwrap();let env=env.extend(NameId(5),ConstantDecl::axiom(vec![],ExprId(0))).unwrap();
++  let c=TypeChecker::new(&e,&l,&env);let a=TypeValue::Term(c.closure(ExprId(1),EnvFrame::empty()));let b=TypeValue::Term(c.closure(ExprId(10),EnvFrame::empty()));let ctx=vec![a.clone()];let frame=EnvFrame::empty().extend_free(FreeId(0));c.retain_checked_binding(&frame,a.clone(),&ctx);
++  let mut probe=TypeChecker::new(&e,&l,&env);probe.strict_origin_probe=true;probe.inherited_binding_lineage=Some(InheritedBindings{ledger:c.checked_binding_lineage.clone(),epoch:c.binding_revocation_epoch.clone(),captured_epoch:c.binding_revocation_epoch.get()});
++  assert_eq!(probe.checked_type_of_bound_source(&frame,0,&ctx),Some(a.clone()));assert!(probe.checked_binding_lineage.borrow().is_empty());
++  probe.retain_checked_binding(&frame,b.clone(),&ctx);assert!(probe.checked_type_of_bound_source(&frame,0,&ctx).is_none());assert_eq!(c.checked_type_of_bound_source(&frame,0,&ctx),Some(a.clone()));assert_eq!(c.binding_revocation_epoch.get(),Some(0));
++  let local=EnvFrame::empty().extend_free(FreeId(1));probe.retain_checked_binding(&local,a.clone(),&ctx);assert_eq!(probe.checked_type_of_bound_source(&local,0,&ctx),Some(a));assert!(!c.checked_binding_lineage.borrow().contains_key(&local.id()));
++  c.retain_checked_binding(&frame,b,&ctx);assert!(probe.checked_type_of_bound_source(&local,0,&ctx).is_none(),"base epoch changes invalidate the entire borrowed view");
++ }
++
++ #[test]fn an_already_checked_capture_binding_supplies_its_actual_type(){
++  let(mut e,l,env)=fixture();e.insert(ExprId(11),Expr::App{fun:ExprId(5),arg:ExprId(4)}).unwrap();let c=TypeChecker::new(&e,&l,&env);let a=TypeValue::Term(c.closure(ExprId(1),EnvFrame::empty()));let ctx=vec![a.clone()];let inner=EnvFrame::empty().extend_free(FreeId(0));
++  let left=c.closure(ExprId(8),EnvFrame::empty().extend(c.closure(ExprId(11),inner.clone())));let right=c.closure(ExprId(8),EnvFrame::empty().extend(c.closure(ExprId(4),inner.clone())));
++  assert!(!c.checked_capture_substitution(&left,&right,&ctx,&mut 8192));
++  assert!(c.infer_in(ExprId(11),&ctx,&inner,&mut 8192,&mut HashMap::new()).is_proven());
++  c.retain_checked_binding(&left.env,a.clone(),&ctx);c.retain_checked_binding(&right.env,a,&ctx);
++  assert!(c.checked_capture_substitution(&left,&right,&ctx,&mut 8192),"actual node witnesses avoid recreating an unavailable inner origin");
++ }
++
++}
