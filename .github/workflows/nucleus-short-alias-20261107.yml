@@ -1,0 +1,32 @@
+name: Nucleus short source alias qualification
+on:
+  push:
+    branches: [research/nucleus-short-alias-20261107]
+    paths: ['.github/workflows/nucleus-short-alias-20261107.yml']
+  workflow_dispatch:
+permissions: {contents: read, actions: read}
+jobs:
+  qualify:
+    strategy:
+      fail-fast: false
+      matrix: {scope: [arena, prefix]}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+      SCOPE: ${{ matrix.scope }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Qualify one source-derived alias reuse candidate
+        run: python experiments/nucleus-short-alias-20261107/run.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-short-alias-${{ matrix.scope }}-CANDIDATE
+          retention-days: 60
+          path: |
+            reports/
+            candidate/
+            flags.json

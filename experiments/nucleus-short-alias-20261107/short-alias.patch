@@ -1,0 +1,20 @@
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -723,9 +723,16 @@
+         }
+         // Fixed host metadata: 8192 slots, four probes, at most 64 actual Γ
+         // closures. A miss has precisely the parent's paid semantic root step.
++        // This additional eligibility test follows at most one parent link.
++        // Retain only a COMPLETED same-checker alias typing derivation under
++        // the existing exact source/universe/context/flags/revocation key.
++        // Strict and inherited witness views retain the original derivation.
++        let short_alias=!self.strict_origin_probe && self.inherited_binding_lineage.is_none()
++            && matches!(self.expressions.get(term.expr),Some(Expr::BVar(index))
++                if *index<=1 && matches!(term.env.lookup_binding_ref(*index),Some(EnvBinding::Closure(_))));
+         let pending=if context.len()<=64
+             && context.iter().all(|t|matches!(t,TypeValue::Term(_)))
+-            && matches!(self.expressions.get(term.expr),Some(Expr::App{..}|Expr::Proj{..}|Expr::Lam{..}|Expr::Pi{..}|Expr::Let{..}|Expr::LetNondep{..}))
++            && (matches!(self.expressions.get(term.expr),Some(Expr::App{..}|Expr::Proj{..}|Expr::Lam{..}|Expr::Pi{..}|Expr::Let{..}|Expr::LetNondep{..}))||short_alias)
+             && let (Some(flags),Some(epoch))=(crate::run_flags::captured_configuration(),self.binding_revocation_epoch.get())
+         {
+             let key=ExactTypingKey{source:(term.expr,term.env.id(),term.levels.identity()),strict:self.strict_origin_probe,flags,epoch};
