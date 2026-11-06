@@ -1,0 +1,37 @@
+--- a/src/value.rs
++++ b/src/value.rs
+@@ -245,8 +245,13 @@
+ 
+ impl LevelSubstitution {
+     pub fn new(entries: Vec<(NameId, LevelTerm)>) -> Self {
+-        // Cache only a hash, never equality or type authority. Full entries
+-        // remain the collision witness, and allocation identity is retained.
++        // Equal empty maps share only immutable representation, never a
++        // typing/equality judgment. Nonempty maps retain their own identity.
++        if entries.is_empty(){
++            thread_local!{static EMPTY:Rc<LevelSubstitutionData>=Rc::new(LevelSubstitutionData{entries:Vec::new(),digest:0});}
++            return EMPTY.with(|value|Self(value.clone()));
++        }
++        // Cache only a hash; full entries remain the collision witness.
+         let digest=if entries.is_empty() {0} else {
+             let mut state=std::collections::hash_map::DefaultHasher::new();
+             entries.hash(&mut state);state.finish()
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -7944,9 +7944,15 @@
+         for changed in [
+             Closure::new(ExprId(3),parent.clone()),
+             Closure::new(ExprId(2),EnvFrame::empty().extend_free(FreeId(9))),
+-            Closure::with_levels(ExprId(2),parent.clone(),LevelSubstitution::new(vec![])),
+             Closure::with_levels(ExprId(2),parent.clone(),LevelSubstitution::new(vec![(NameId(7),LevelTerm::Succ(Box::new(LevelTerm::Zero)))])),
+         ] {assert!(!crate::convert::source_opening_avoids_capture(&checker,&changed,FreeId(0),&mut 1));}
++        let same_empty=Closure::with_levels(ExprId(2),parent.clone(),LevelSubstitution::new(vec![]));
++        assert!(crate::convert::source_opening_avoids_capture(&checker,&same_empty,FreeId(0),&mut 1),"canonical empty representation reuses the same already completed proof");
++        let populated=||LevelSubstitution::new(vec![(NameId(7),LevelTerm::Zero)]);
++        let nonempty_a=Closure::with_levels(ExprId(2),parent.clone(),populated());
++        let nonempty_b=Closure::with_levels(ExprId(2),parent.clone(),populated());
++        assert!(crate::convert::source_opening_avoids_capture(&checker,&nonempty_a,FreeId(0),&mut 32));
++        assert!(!crate::convert::source_opening_avoids_capture(&checker,&nonempty_b,FreeId(0),&mut 1),"different nonempty instances retain their own completed-proof keys");
+         assert!(!crate::convert::source_opening_avoids_capture(&checker,&body,FreeId(9),&mut 32));
+         let collision=Closure::new(ExprId(2),EnvFrame::empty().extend_free(FreeId(0)));
+         assert!(!crate::convert::source_opening_avoids_capture(&checker,&collision,FreeId(0),&mut 32));
