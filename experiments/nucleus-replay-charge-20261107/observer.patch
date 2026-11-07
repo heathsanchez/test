@@ -1,0 +1,115 @@
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -678,6 +678,19 @@
+     }
+ 
+     fn infer_exact_closure_in_context_inner(
++        &self, term:&Closure, context:&[TypeValue], remaining:&mut usize, depth:usize,
++    )->Option<TypeValue> {
++        #[cfg(feature = "diagnostics")]
++        let visit = crate::charge_trace::Visit::begin(2, term.expr.0, remaining);
++        let result = self.infer_exact_closure_in_context_inner_impl(term, context, remaining, depth);
++        #[cfg(feature = "diagnostics")]
++        if let Some(visit) = visit {
++            visit.finish(*remaining);
++        }
++        result
++    }
++
++    fn infer_exact_closure_in_context_inner_impl(
+         &self, term:&Closure, context:&[TypeValue], remaining:&mut usize, depth:usize,
+     )->Option<TypeValue>{
+         // Research-only recursive failure trace. The numeric expression is
+@@ -2414,6 +2427,24 @@
+         remaining: &mut usize,
+         cache: &mut HashMap<(ExprId, u64), TypeValue>,
+     ) -> Judgment<TypeValue> {
++        #[cfg(feature = "diagnostics")]
++        let visit = crate::charge_trace::Visit::begin(1, expression.0, remaining);
++        let result = self.infer_in_impl(expression, context, frame, remaining, cache);
++        #[cfg(feature = "diagnostics")]
++        if let Some(visit) = visit {
++            visit.finish(*remaining);
++        }
++        result
++    }
++
++    fn infer_in_impl(
++        &self,
++        expression: ExprId,
++        context: &[TypeValue],
++        frame: &EnvFrame,
++        remaining: &mut usize,
++        cache: &mut HashMap<(ExprId, u64), TypeValue>,
++    ) -> Judgment<TypeValue>{
+         // Closed spines are checked under empty Γ, so their elimination
+         // witnesses protect the empty prefix and admit arbitrary extension.
+         // Open subjects retain their exact source frame.
+@@ -2421,6 +2452,8 @@
+         let empty_frame = EnvFrame::empty();
+         let (context, frame) = if canonical { (&[][..], &empty_frame) } else { (context, frame) };
+         let key = (expression, frame.id());
++        #[cfg(feature = "diagnostics")]
++        crate::charge_trace::classify_infer(remaining, cache.contains_key(&key));
+         if let Some(value) = cache.get(&key) {
+             if canonical && matches!(value, TypeValue::Pi { .. }) {
+                 return Judgment::unknown("closed-spine-returned-fixed-pi");
+@@ -3044,6 +3077,27 @@
+         cache: &mut HashMap<(ExprId, u64), TypeValue>,
+         expected_formed: bool,
+     ) -> Judgment<()> {
++        #[cfg(feature = "diagnostics")]
++        let visit = crate::charge_trace::Visit::begin(0, expression.0, remaining);
++        let result = self.check_with_formation_impl(expression, expected, context, frame, remaining, conversion_refutation_is_unknown, cache, expected_formed);
++        #[cfg(feature = "diagnostics")]
++        if let Some(visit) = visit {
++            visit.finish(*remaining);
++        }
++        result
++    }
++
++    fn check_with_formation_impl(
++        &self,
++        expression: ExprId,
++        expected: &TypeValue,
++        context: &[TypeValue],
++        frame: &EnvFrame,
++        remaining: &mut usize,
++        conversion_refutation_is_unknown: bool,
++        cache: &mut HashMap<(ExprId, u64), TypeValue>,
++        expected_formed: bool,
++    ) -> Judgment<()>{
+         // This rule is tried first only with a real formation premise.
+         // Successful checking consumes its actual fuel; a declined bounded
+         // trial leaves the ordinary inference path its original budget.
+@@ -3832,6 +3886,8 @@
+             probe = *body;
+         }
+         // Declining eligibility preserves the caller's remaining budget.
++        #[cfg(feature = "diagnostics")]
++        let _beta = crate::charge_trace::Beta::enter(remaining);
+         *remaining = eligibility_remaining;
+         let mut lexical_context = context.to_vec();
+         let mut lexical_frame = frame.clone();
+--- a/src/checker.rs
++++ b/src/checker.rs
+@@ -628,6 +628,10 @@
+     state.report(match terminal{Verdict::Accept=>"unexpected-terminal",Verdict::Reject=>"structural-or-metadata-rejection",Verdict::Unknown=>"unsupported-metadata-or-structural-obligation",Verdict::Error=>"process-error"})
+ }
+ fn census_boundary(census:&mut Option<&mut crate::census::Census>,export:&ResolvedExport,name:NameId,stage:&'static str,judgment:impl FnOnce()->Judgment<()>)->Result<(),Verdict>{
++    #[cfg(feature = "diagnostics")]
++    let _charge_trace = (stage == "theorem.value"
++        && std::env::var_os("NUCLEUS_TRACE_CLOSED_ACTIVATION").is_some()
++        && trace_name(export, name) == "chain9_datF").then(crate::charge_trace::Scope::enter);
+     if let Some(state)=census.as_deref_mut(){
+         if state.assume_prefix_boundary(name){return Ok(());}
+         let judgment=judgment();
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -55,3 +55,6 @@
+ 
+ #[cfg(feature="diagnostics")]
+ mod obligation_shadow;
++
++#[cfg(feature = "diagnostics")]
++mod charge_trace;
