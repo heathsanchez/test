@@ -1,0 +1,24 @@
+name: Nucleus captured closed-scope parent controls
+on:
+  push:
+    branches: [research/nucleus-closed-scope-parent-20261107]
+    paths: ['.github/workflows/nucleus-closed-scope-parent-20261107.yml']
+  workflow_dispatch:
+permissions: {contents: read, actions: read}
+jobs:
+  parent:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - run: python experiments/nucleus-closed-scope-20261107/red.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-closed-scope-parent-RED
+          retention-days: 60
+          path: reports/
