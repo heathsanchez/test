@@ -1,0 +1,53 @@
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -734,6 +734,8 @@
+                 let table=self.exact_typing_memo.borrow();
+                 for slot in &table.slots[set*4..set*4+4]{
+                     if let Some(fact)=slot && fact.key==key && (if fact.closed_constant_scope {!self.strict_origin_probe&&self.inherited_binding_lineage.is_none()}else{fact.same_context(context)}){
++                        #[cfg(feature="diagnostics")]
++                        if fact.closed_constant_scope&&term.expr.0==61&&crate::closed_activation::active(){crate::closed_activation::hit();}
+                         return Some(TypeValue::Term(fact.result.clone()));
+                     }
+                 }
+@@ -745,6 +747,21 @@
+         let canonical=pending.is_some()&&!self.strict_origin_probe
+             &&self.inherited_binding_lineage.is_none()
+             &&self.captured_constant_application(term,remaining);
++        #[cfg(feature="diagnostics")]
++        if term.expr.0==61&&crate::closed_activation::active(){crate::closed_activation::observe(canonical,||{
++            let mut probe=32;let structural=self.captured_constant_application(term,&mut probe);
++            fn shape(c:&TypeChecker<'_>,root:&Closure,expr:ExprId)->serde_json::Value{
++                let Some(Expr::BVar(index))=c.expressions.get(expr)else{return serde_json::json!({"raw":"not-bvar"});};
++                if *index>3{return serde_json::json!({"raw":"bvar","index":index,"binding":"outside-probe-bound"});}
++                match root.env.lookup_binding_ref(*index){
++                    Some(EnvBinding::Closure(t))=>serde_json::json!({"raw":"bvar","index":index,"binding":"closure","source":t.expr.0,"syntax":match c.expressions.get(t.expr){Some(Expr::Const{..})=>"Const",Some(Expr::NatLit(_))=>"NatLit",Some(Expr::Sort(_))=>"Sort",Some(Expr::Lam{..})=>"Lam",Some(Expr::BVar(_))=>"BVar",Some(Expr::App{..})=>"App",_=>"other"}}),
++                    Some(EnvBinding::Free(f))=>serde_json::json!({"raw":"bvar","index":index,"binding":"Free","ordinal":f.0}),
++                    _=>serde_json::json!({"raw":"bvar","index":index,"binding":"other-or-missing"})
++                }
++            }
++            let operands=if let Some(Expr::App{fun,arg})=self.expressions.get(term.expr){vec![shape(self,term,*fun),shape(self,term,*arg)]}else{Vec::new()};
++            serde_json::json!({"source":term.expr.0,"context_len":context.len(),"strict":self.strict_origin_probe,"inherited":self.inherited_binding_lineage.is_some(),"pending":pending.is_some(),"structural_gate":structural,"probe_spent":32-probe,"actual_canonical":canonical,"operands":operands})
++        });}
+         let mut result=self.infer_exact_closure_uncached(term,if canonical{&[]}else{context},remaining,depth);
+         let closed_constant_scope=canonical&&matches!(&result,Some(TypeValue::Term(value))if matches!(self.expressions.get(value.expr),Some(Expr::Const{..})));
+         if canonical&&!closed_constant_scope&&!context.is_empty(){
+--- a/src/checker.rs
++++ b/src/checker.rs
+@@ -628,6 +628,8 @@
+     state.report(match terminal{Verdict::Accept=>"unexpected-terminal",Verdict::Reject=>"structural-or-metadata-rejection",Verdict::Unknown=>"unsupported-metadata-or-structural-obligation",Verdict::Error=>"process-error"})
+ }
+ fn census_boundary(census:&mut Option<&mut crate::census::Census>,export:&ResolvedExport,name:NameId,stage:&'static str,judgment:impl FnOnce()->Judgment<()>)->Result<(),Verdict>{
++    #[cfg(feature="diagnostics")]
++    let _activation=if std::env::var_os("NUCLEUS_TRACE_CLOSED_ACTIVATION").is_some(){let owner=trace_name(export,name);if owner=="chain9_datF"{Some(crate::closed_activation::Scope::enter(owner,stage))}else{None}}else{None};
+     if let Some(state)=census.as_deref_mut(){
+         if state.assume_prefix_boundary(name){return Ok(());}
+         let judgment=judgment();
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -55,3 +55,6 @@
+ 
+ #[cfg(feature="diagnostics")]
+ mod obligation_shadow;
++
++#[cfg(feature="diagnostics")]
++mod closed_activation;
