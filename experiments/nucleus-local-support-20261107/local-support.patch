@@ -1,0 +1,54 @@
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -733,6 +733,10 @@
+             {
+                 let table=self.exact_typing_memo.borrow();
+                 for slot in &table.slots[set*4..set*4+4]{
++                    #[cfg(feature="diagnostics")]
++                    if crate::local_support::active()&&let Some(fact)=slot&&fact.key==key&&!fact.same_context(context){
++                        crate::local_support::observe(self.expressions,term,&fact.result,&fact.context,context);
++                    }
+                     if let Some(fact)=slot && fact.key==key && fact.same_context(context){
+                         return Some(TypeValue::Term(fact.result.clone()));
+                     }
+--- a/src/value.rs
++++ b/src/value.rs
+@@ -150,6 +150,18 @@
+                 EnvNode::Extend { parent, .. } => { index -= 1; frame = parent; }
+             }
+         }
++    }
++
++    // Diagnostic-only borrowed lookup; each actual parent node costs one
++    // unit of the observation allowance, never semantic checker fuel.
++    #[cfg(feature="diagnostics")]
++    pub(crate) fn observed_binding(&self,mut index:u64,work:&mut usize)->Option<(u64,&EnvBinding)>{
++        let mut frame=self;
++        loop{if *work==0{return None;}*work-=1;match frame.0.as_ref(){
++            EnvNode::Empty=>return None,
++            EnvNode::Extend{id,value,..}if index==0=>return Some((*id,value)),
++            EnvNode::Extend{parent,..}=>{index-=1;frame=parent;}
++        }}
+     }
+ 
+     pub(crate) fn binding_refs(&self)->EnvBindings<'_>{EnvBindings{next:Some(self)}}
+--- a/src/checker.rs
++++ b/src/checker.rs
+@@ -628,6 +628,8 @@
+     state.report(match terminal{Verdict::Accept=>"unexpected-terminal",Verdict::Reject=>"structural-or-metadata-rejection",Verdict::Unknown=>"unsupported-metadata-or-structural-obligation",Verdict::Error=>"process-error"})
+ }
+ fn census_boundary(census:&mut Option<&mut crate::census::Census>,export:&ResolvedExport,name:NameId,stage:&'static str,judgment:impl FnOnce()->Judgment<()>)->Result<(),Verdict>{
++    #[cfg(feature="diagnostics")]
++    let _support_trace=if std::env::var_os("NUCLEUS_TRACE_LOCAL_SUPPORT").is_some(){let owner=trace_name(export,name);if matches!(owner.as_str(),"chain9_datF"|"AddMonoidAlgebra.semiring"){Some(crate::local_support::Scope::enter(owner,stage))}else{None}}else{None};
+     if let Some(state)=census.as_deref_mut(){
+         if state.assume_prefix_boundary(name){return Ok(());}
+         let judgment=judgment();
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -55,3 +55,6 @@
+ 
+ #[cfg(feature="diagnostics")]
+ mod obligation_shadow;
++
++#[cfg(feature="diagnostics")]
++mod local_support;
