@@ -1,0 +1,121 @@
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -733,14 +733,26 @@
+             {
+                 let table=self.exact_typing_memo.borrow();
+                 for slot in &table.slots[set*4..set*4+4]{
+-                    if let Some(fact)=slot && fact.key==key && fact.same_context(context){
++                    if let Some(fact)=slot && fact.key==key && (if fact.closed_constant_scope {!self.strict_origin_probe&&self.inherited_binding_lineage.is_none()}else{fact.same_context(context)}){
+                         return Some(TypeValue::Term(fact.result.clone()));
+                     }
+                 }
+             }
+             Some((key,set))
+         }else{None};
+-        let result=self.infer_exact_closure_uncached(term,context,remaining,depth);
++        // Eligibility is structural, not a typing certificate. Establish the
++        // SAME captured closure under empty Γ, preserving actual env/levels.
++        let canonical=pending.is_some()&&!self.strict_origin_probe
++            &&self.inherited_binding_lineage.is_none()
++            &&self.captured_constant_application(term,remaining);
++        let mut result=self.infer_exact_closure_uncached(term,if canonical{&[]}else{context},remaining,depth);
++        let closed_constant_scope=canonical&&matches!(&result,Some(TypeValue::Term(value))if matches!(self.expressions.get(value.expr),Some(Expr::Const{..})));
++        if canonical&&!closed_constant_scope&&!context.is_empty(){
++            // Fixed Pis or other result shapes never escape the synthetic
++            // empty-context binder namespace. Preserve the original route.
++            result=if take_step(remaining){self.infer_exact_closure_uncached(term,context,remaining,depth)}else{None};
++        }
++
+         if result.is_none() {
+             report_failure("exact-uncached-declined",*remaining);
+             #[cfg(feature="diagnostics")]
+@@ -761,15 +773,28 @@
+             for offset in 0..4{
+                 let within=(start+offset)%4;let index=set*4+within;
+                 if table.slots[index].as_ref().is_none_or(ExactTypingFact::relinquishable){
+-                    let context=context.iter().map(|t|{let TypeValue::Term(t)=t else{unreachable!()};t.clone()}).collect();
++                    let context=if closed_constant_scope{Vec::new()}else{context.iter().map(|t|{let TypeValue::Term(t)=t else{unreachable!()};t.clone()}).collect()};
+                     // Eviction excludes last-owner graph reclamation. Final
+                     // reclamation belongs to the checker lifetime boundary.
+-                    table.slots[index]=Some(ExactTypingFact{key,_source:term.clone(),context,result:value.clone()});
++                    table.slots[index]=Some(ExactTypingFact{closed_constant_scope,key,_source:term.clone(),context,result:value.clone()});
+                     table.hand[set]=((within+1)%4)as u8;break;
+                 }
+             }
+         }
+         result
++    }
++    // The measured grammar is only a captured constant applied to another
++    // captured constant. No raw FreeId, copied binder, Pi, or alias quotient.
++    fn captured_constant_application(&self,term:&Closure,remaining:&mut usize)->bool{
++        let Some(Expr::App{fun,arg})=self.expressions.get(term.expr)else{return false;};
++        let (Some(Expr::BVar(a)),Some(Expr::BVar(b)))=(self.expressions.get(*fun),self.expressions.get(*arg))else{return false;};
++        if *a>3||*b>3{return false;}
++        for index in [*a,*b]{
++            let cost=index as usize+2; // borrowed parent reads plus source inspection
++            if *remaining<cost{return false;}*remaining-=cost;
++            let Some(EnvBinding::Closure(value))=term.env.lookup_binding_ref(index)else{return false;};
++            if !matches!(self.expressions.get(value.expr),Some(Expr::Const{..})){return false;}
++        }true
+     }
+     fn infer_exact_closure_uncached(
+         &self,
+@@ -8432,7 +8457,7 @@
+   let _scope=crate::run_flags::enter();let(e,l,env)=fixture();let c=TypeChecker::new(&e,&l,&env);let t=c.closure(ExprId(23),EnvFrame::empty());let g=vec![TypeValue::Term(c.closure(ExprId(1),EnvFrame::empty()));12];let first=c.infer_exact_closure_in_context(&t,&g,&mut 4096,0);assert!(matches!(first,Some(TypeValue::Term(_))));assert_eq!(c.infer_exact_closure_in_context(&t,&g,&mut 1,0),first);let mut changed=g.clone();changed[5]=TypeValue::Term(c.closure(ExprId(6),EnvFrame::empty()));assert!(c.infer_exact_closure_in_context(&t,&changed,&mut 1,0).is_none());assert!(c.infer_exact_closure_in_context(&t,&g[..11],&mut 1,0).is_none());
+  }
+  #[test]fn eviction_never_discharges_an_unbounded_actual_capture(){
+-  let captured=(0..70).fold(EnvFrame::empty(),|frame,_|frame.extend_free(FreeId(7)));let source=Closure::with_levels(ExprId(1),captured,LevelSubstitution::new(vec![(NameId(1),LevelTerm::Zero)]));let key=ExactTypingKey{source:(source.expr,source.env.id(),source.levels.identity()),strict:false,flags:[0;2],epoch:0};let fact=ExactTypingFact{key,_source:source.clone(),result:source.clone(),context:vec![source]};assert!(!fact.relinquishable(),"all three owners belong to this fact");let held_env=fact._source.env.clone();assert!(fact.relinquishable(),"the sole owned universe payload is bounded; the environment retains its external owner");let held_levels=fact._source.levels.clone();assert!(fact.relinquishable());drop(held_env);assert!(!fact.relinquishable());drop(held_levels);
++  let captured=(0..70).fold(EnvFrame::empty(),|frame,_|frame.extend_free(FreeId(7)));let source=Closure::with_levels(ExprId(1),captured,LevelSubstitution::new(vec![(NameId(1),LevelTerm::Zero)]));let key=ExactTypingKey{source:(source.expr,source.env.id(),source.levels.identity()),strict:false,flags:[0;2],epoch:0};let fact=ExactTypingFact{closed_constant_scope:false,key,_source:source.clone(),result:source.clone(),context:vec![source]};assert!(!fact.relinquishable(),"all three owners belong to this fact");let held_env=fact._source.env.clone();assert!(fact.relinquishable(),"the sole owned universe payload is bounded; the environment retains its external owner");let held_levels=fact._source.levels.clone();assert!(fact.relinquishable());drop(held_env);assert!(!fact.relinquishable());drop(held_levels);
+  }
+  #[test]fn fixed_slot_admission_has_no_resize_path(){let table=ExactTypingMemo::default();assert_eq!(table.slots.len(),8192);assert_eq!(table.hand.len(),2048);assert!(std::mem::size_of::<Option<ExactTypingFact>>()*table.slots.len()+table.hand.len()<=2*1024*1024,"constructor metadata admission stays below 2MiB per checker");}
+ 
+@@ -8443,33 +8468,33 @@
+  }
+ 
+  #[test]fn small_sole_owned_universe_substitution_can_be_reclaimed_at_eviction(){
+-  let source=Closure::with_levels(ExprId(1),EnvFrame::empty(),LevelSubstitution::new(vec![(NameId(7),LevelTerm::Param("u".into()))]));let key=ExactTypingKey{source:(source.expr,source.env.id(),source.levels.identity()),strict:false,flags:[0;2],epoch:0};let fact=ExactTypingFact{key,_source:source.clone(),result:source.clone(),context:vec![source]};assert!(fact.relinquishable(),"bounded immutable universe payload may be reclaimed without releasing an environment graph");
++  let source=Closure::with_levels(ExprId(1),EnvFrame::empty(),LevelSubstitution::new(vec![(NameId(7),LevelTerm::Param("u".into()))]));let key=ExactTypingKey{source:(source.expr,source.env.id(),source.levels.identity()),strict:false,flags:[0;2],epoch:0};let fact=ExactTypingFact{closed_constant_scope:false,key,_source:source.clone(),result:source.clone(),context:vec![source]};assert!(fact.relinquishable(),"bounded immutable universe payload may be reclaimed without releasing an environment graph");
+  }
+ 
+  #[test]fn universe_reclamation_checks_aggregate_bytes_and_unique_allocations(){
+   let make=|name: &str|Closure::with_levels(ExprId(1),EnvFrame::empty(),LevelSubstitution::new(vec![(NameId(7),LevelTerm::Param(name.into()))]));
+   let one=make(&"x".repeat(2000));let key=ExactTypingKey{source:(one.expr,one.env.id(),one.levels.identity()),strict:false,flags:[0;2],epoch:0};
+-  let shared=ExactTypingFact{key:key.clone(),_source:one.clone(),result:one.clone(),context:vec![one]};assert!(shared.relinquishable(),"shared payload counted once rather than three times");
+-  let a=make(&"a".repeat(2000));let b=make(&"b".repeat(2000));let c=make(&"c".repeat(2000));let aggregate=ExactTypingFact{key,_source:a,result:b,context:vec![c]};assert!(!aggregate.relinquishable(),"individually small maps exceed the aggregate string allowance");
++  let shared=ExactTypingFact{closed_constant_scope:false,key:key.clone(),_source:one.clone(),result:one.clone(),context:vec![one]};assert!(shared.relinquishable(),"shared payload counted once rather than three times");
++  let a=make(&"a".repeat(2000));let b=make(&"b".repeat(2000));let c=make(&"c".repeat(2000));let aggregate=ExactTypingFact{closed_constant_scope:false,key,_source:a,result:b,context:vec![c]};assert!(!aggregate.relinquishable(),"individually small maps exceed the aggregate string allowance");
+  }
+  #[test]fn oversized_level_trees_and_utf8_strings_remain_pinned(){
+   for value in [LevelTerm::Param("λ".repeat(2049)),(0..70).fold(LevelTerm::Zero,|v,_|LevelTerm::Succ(Box::new(v)))]{
+-   let source=Closure::with_levels(ExprId(1),EnvFrame::empty(),LevelSubstitution::new(vec![(NameId(7),value)]));let key=ExactTypingKey{source:(source.expr,source.env.id(),source.levels.identity()),strict:false,flags:[0;2],epoch:0};let fact=ExactTypingFact{key,_source:source.clone(),result:source,context:vec![]};assert!(!fact.relinquishable());
++   let source=Closure::with_levels(ExprId(1),EnvFrame::empty(),LevelSubstitution::new(vec![(NameId(7),value)]));let key=ExactTypingKey{source:(source.expr,source.env.id(),source.levels.identity()),strict:false,flags:[0;2],epoch:0};let fact=ExactTypingFact{closed_constant_scope:false,key,_source:source.clone(),result:source,context:vec![]};assert!(!fact.relinquishable());
+   }
+  }
+ 
+  #[test]fn shallow_owned_result_frame_releases_only_bounded_capture_nodes(){
+-  let source=Closure::with_levels(ExprId(1),EnvFrame::empty().extend(Closure::new(ExprId(1),EnvFrame::empty())),LevelSubstitution::new(vec![(NameId(7),LevelTerm::Param("u".into()))]));let key=ExactTypingKey{source:(source.expr,source.env.id(),source.levels.identity()),strict:false,flags:[0;2],epoch:0};let fact=ExactTypingFact{key,_source:source.clone(),result:source.clone(),context:vec![source]};assert!(fact.relinquishable(),"one finite substituted result frame has a bounded destructor graph");
++  let source=Closure::with_levels(ExprId(1),EnvFrame::empty().extend(Closure::new(ExprId(1),EnvFrame::empty())),LevelSubstitution::new(vec![(NameId(7),LevelTerm::Param("u".into()))]));let key=ExactTypingKey{source:(source.expr,source.env.id(),source.levels.identity()),strict:false,flags:[0;2],epoch:0};let fact=ExactTypingFact{closed_constant_scope:false,key,_source:source.clone(),result:source.clone(),context:vec![source]};assert!(fact.relinquishable(),"one finite substituted result frame has a bounded destructor graph");
+  }
+ 
+  #[test]fn internal_capture_edges_are_counted_before_releasing_shared_parents(){
+   let make=|depth|{let parent=(0..depth).fold(EnvFrame::empty(),|frame,_|frame.extend_free(FreeId(7)));let head=parent.clone().extend(Closure::new(ExprId(1),parent.clone()));(head,parent)};
+-  let fact=|head:EnvFrame,parent:EnvFrame|{let source=Closure::new(ExprId(1),head);let key=ExactTypingKey{source:(source.expr,source.env.id(),source.levels.identity()),strict:false,flags:[0;2],epoch:0};ExactTypingFact{key,_source:source,result:Closure::new(ExprId(1),parent),context:vec![]}};
++  let fact=|head:EnvFrame,parent:EnvFrame|{let source=Closure::new(ExprId(1),head);let key=ExactTypingKey{source:(source.expr,source.env.id(),source.levels.identity()),strict:false,flags:[0;2],epoch:0};ExactTypingFact{closed_constant_scope:false,key,_source:source,result:Closure::new(ExprId(1),parent),context:vec![]}};
+   let (head,parent)=make(2);assert!(fact(head,parent).relinquishable());
+   let (head,parent)=make(70);let held=parent.clone();let value=fact(head,parent);assert!(value.relinquishable(),"only one child frame dies while the deep parent is externally held");drop(held);assert!(!value.relinquishable(),"parent and payload edges must join the root removal before ownership is decided");
+  }
+  #[test]fn unsupported_owned_neutral_payload_is_not_discharged(){
+-  let frame=EnvFrame::empty().extend_neutral(Neutral{head:NeutralHead::Free(FreeId(9)),spine:vec![]});let source=Closure::new(ExprId(1),frame);let key=ExactTypingKey{source:(source.expr,source.env.id(),source.levels.identity()),strict:false,flags:[0;2],epoch:0};let fact=ExactTypingFact{key,_source:source.clone(),result:source,context:vec![]};assert!(!fact.relinquishable());
++  let frame=EnvFrame::empty().extend_neutral(Neutral{head:NeutralHead::Free(FreeId(9)),spine:vec![]});let source=Closure::new(ExprId(1),frame);let key=ExactTypingKey{source:(source.expr,source.env.id(),source.levels.identity()),strict:false,flags:[0;2],epoch:0};let fact=ExactTypingFact{closed_constant_scope:false,key,_source:source.clone(),result:source,context:vec![]};assert!(!fact.relinquishable());
+  }
+ 
+ }
+@@ -8527,7 +8552,7 @@
+ impl ExactTypingKey{
+  fn set(&self)->usize{use std::hash::{Hash,Hasher};let mut h=std::collections::hash_map::DefaultHasher::new();self.hash(&mut h);(h.finish()as usize)%2048}
+ }
+-struct ExactTypingFact{key:ExactTypingKey,_source:Closure,context:Vec<Closure>,result:Closure}
++struct ExactTypingFact{closed_constant_scope:bool,key:ExactTypingKey,_source:Closure,context:Vec<Closure>,result:Closure}
+ impl ExactTypingFact{
+  fn same_context(&self,context:&[TypeValue])->bool{
+   self.context.len()==context.len()&&self.context.iter().zip(context).all(|(old,new)|matches!(new,TypeValue::Term(new)if(old.expr,old.env.id(),old.levels.identity())==(new.expr,new.env.id(),new.levels.identity())))

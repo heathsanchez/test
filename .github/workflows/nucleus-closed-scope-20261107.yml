@@ -1,0 +1,28 @@
+name: Nucleus closed captured constant application
+on:
+  push:
+    branches: [research/nucleus-closed-scope-20261107]
+    paths: ['.github/workflows/nucleus-closed-scope-20261107.yml']
+  workflow_dispatch:
+permissions: {contents: read, actions: read}
+jobs:
+  observe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Qualify bounded closed-scope qualification and native parity
+        run: python experiments/nucleus-closed-scope-20261107/run.py > driver.log 2>&1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-closed-scope-CANDIDATE
+          retention-days: 60
+          path: |
+            reports/
+            candidate/
+            driver.log
