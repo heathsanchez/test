@@ -1,0 +1,71 @@
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -2738,6 +2738,7 @@
+                                 ) != Some(false))
+                             && let Some(instantiated) = self.infer_literal_beta_spine(
+                                 expression, context, frame, remaining, cache,
++                                Some((*binder, inferred_body)),
+                             )
+                         {
+                             return instantiated;
+@@ -3805,6 +3806,7 @@
+         frame: &EnvFrame,
+         remaining: &mut usize,
+         cache: &mut HashMap<(ExprId, u64), TypeValue>,
++        checked_codomain: Option<(FreeId, &TypeValue)>,
+     ) -> Option<Judgment<TypeValue>> {
+         let mut eligibility_remaining = *remaining;
+         let mut head = expression;
+@@ -3833,6 +3835,19 @@
+         }
+         // Declining eligibility preserves the caller's remaining budget.
+         *remaining = eligibility_remaining;
++        if let (Some((binder, body)), Some(argument)) = (checked_codomain, arguments.first()) {
++            // The application caller already checked its function and final
++            // argument. Try the existing capture-checked instantiation before
++            // checking the entire literal spine again.
++            let actual = self.closure(*argument, frame.clone());
++            let allowance = (*remaining).min(256);
++            let mut work = allowance;
++            let instantiated = self.instantiate_fixed_pi_body(body, binder, &actual, &mut work);
++            *remaining -= allowance - work;
++            if let Some(value) = instantiated {
++                return Some(Judgment::proven(value, "checked-fixed-pi-before-beta-replay"));
++            }
++        }
+         let mut lexical_context = context.to_vec();
+         let mut lexical_frame = frame.clone();
+         for arg in arguments.into_iter().rev() {
+@@ -7535,19 +7550,19 @@
+         assert!(checker.infer_in(ExprId(42), &[domain.clone()], &frame, &mut fuel, &mut cache).is_proven());
+         let mut fuel = 1024;
+         let first = checker.infer_literal_beta_spine(ExprId(43), &[domain.clone()], &frame,
+-            &mut fuel, &mut cache).expect("literal source spine");
++            &mut fuel, &mut cache, None).expect("literal source spine");
+         assert!(first.is_proven(), "first body must be independently typed: {first:?}");
+         let mut fuel = 8;
+         let second = checker.infer_literal_beta_spine(ExprId(43), &[domain.clone()], &frame,
+-            &mut fuel, &mut cache).expect("same literal source spine");
++            &mut fuel, &mut cache, None).expect("same literal source spine");
+         assert!(second.is_proven(), "bounded repeated checked body: {second:?}");
+         assert_eq!(first.proven_value(), second.proven_value());
+         let mut fuel = 1024;
+         assert!(!checker.infer_literal_beta_spine(ExprId(44), &[domain.clone()], &frame,
+-            &mut fuel, &mut cache).unwrap().is_proven(), "wrong actual argument cannot reuse a typed frame");
++            &mut fuel, &mut cache, None).unwrap().is_proven(), "wrong actual argument cannot reuse a typed frame");
+         let mut fuel = 0;
+         assert!(checker.infer_literal_beta_spine(ExprId(43), &[domain], &frame,
+-            &mut fuel, &mut cache).is_none());
++            &mut fuel, &mut cache, None).is_none());
+     }
+ 
+     #[test]
+@@ -7613,7 +7628,7 @@
+         let prior = checker.checked_frames.borrow().len();
+         let mut budget = 1024;
+         assert!(!checker.infer_literal_beta_spine(ExprId(27), &[], &EnvFrame::empty(),
+-            &mut budget, &mut HashMap::new()).unwrap().is_proven());
++            &mut budget, &mut HashMap::new(), None).unwrap().is_proven());
+         assert_eq!(checker.checked_frames.borrow().len(), prior, "wrong argument cannot obtain a substitution frame");
+     }
+ 
