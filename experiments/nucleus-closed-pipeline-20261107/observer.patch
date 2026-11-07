@@ -1,0 +1,96 @@
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -734,6 +734,10 @@
+                 let table=self.exact_typing_memo.borrow();
+                 for slot in &table.slots[set*4..set*4+4]{
+                     if let Some(fact)=slot && fact.key==key && (if fact.closed_constant_scope {!self.strict_origin_probe&&self.inherited_binding_lineage.is_none()}else{fact.same_context(context)}){
++                        #[cfg(feature = "diagnostics")]
++                        if term.expr.0 == 61 && fact.closed_constant_scope {
++                            crate::closed_activation::event(9);
++                        }
+                         return Some(TypeValue::Term(fact.result.clone()));
+                     }
+                 }
+@@ -745,8 +749,32 @@
+         let canonical=pending.is_some()&&!self.strict_origin_probe
+             &&self.inherited_binding_lineage.is_none()
+             &&self.captured_constant_application(term,remaining);
++        #[cfg(feature = "diagnostics")]
++        let observe = term.expr.0 == 61 && canonical && crate::closed_activation::active();
++        #[cfg(feature = "diagnostics")]
++        let work_before = *remaining;
+         let mut result=self.infer_exact_closure_uncached(term,if canonical{&[]}else{context},remaining,depth);
+         let closed_constant_scope=canonical&&matches!(&result,Some(TypeValue::Term(value))if matches!(self.expressions.get(value.expr),Some(Expr::Const{..}|Expr::Sort(_))));
++        #[cfg(feature = "diagnostics")]
++        if observe {
++            let kind = match &result {
++                None => 0,
++                Some(TypeValue::Sort(_)) => 1,
++                Some(TypeValue::Pi { .. }) => 2,
++                Some(TypeValue::Term(value)) => match self.expressions.get(value.expr) {
++                    Some(Expr::Const { .. }) => 4,
++                    Some(Expr::Sort(_)) => 5,
++                    _ => 3,
++                },
++            };
++            crate::closed_activation::producer(kind, work_before, *remaining);
++            if closed_constant_scope && pending.as_ref().is_some_and(|(key, _)| {
++                self.binding_revocation_epoch.get() != Some(key.epoch)
++                    || crate::run_flags::captured_configuration() != Some(key.flags)
++            }) {
++                crate::closed_activation::event(6);
++            }
++        }
+         if canonical&&!closed_constant_scope&&!context.is_empty(){
+             // Fixed Pis or other result shapes never escape the synthetic
+             // empty-context binder namespace. Preserve the original route.
+@@ -770,6 +798,8 @@
+         {
+             let mut table=self.exact_typing_memo.borrow_mut();
+             let start=table.hand[set]as usize;
++            #[cfg(feature = "diagnostics")]
++            let mut inserted = false;
+             for offset in 0..4{
+                 let within=(start+offset)%4;let index=set*4+within;
+                 if table.slots[index].as_ref().is_none_or(ExactTypingFact::relinquishable){
+@@ -777,8 +807,17 @@
+                     // Eviction excludes last-owner graph reclamation. Final
+                     // reclamation belongs to the checker lifetime boundary.
+                     table.slots[index]=Some(ExactTypingFact{closed_constant_scope,key,_source:term.clone(),context,result:value.clone()});
++                    #[cfg(feature = "diagnostics")]
++                    if observe && closed_constant_scope {
++                        inserted = true;
++                        crate::closed_activation::event(7);
++                    }
+                     table.hand[set]=((within+1)%4)as u8;break;
+                 }
++            }
++            #[cfg(feature = "diagnostics")]
++            if observe && closed_constant_scope && !inserted {
++                crate::closed_activation::event(8);
+             }
+         }
+         result
+--- a/src/checker.rs
++++ b/src/checker.rs
+@@ -628,6 +628,11 @@
+     state.report(match terminal{Verdict::Accept=>"unexpected-terminal",Verdict::Reject=>"structural-or-metadata-rejection",Verdict::Unknown=>"unsupported-metadata-or-structural-obligation",Verdict::Error=>"process-error"})
+ }
+ fn census_boundary(census:&mut Option<&mut crate::census::Census>,export:&ResolvedExport,name:NameId,stage:&'static str,judgment:impl FnOnce()->Judgment<()>)->Result<(),Verdict>{
++    #[cfg(feature = "diagnostics")]
++    let _activation = if std::env::var_os("NUCLEUS_TRACE_CLOSED_ACTIVATION").is_some() {
++        let owner = trace_name(export, name);
++        (owner == "chain9_datF").then(|| crate::closed_activation::Scope::enter(owner, stage))
++    } else { None };
+     if let Some(state)=census.as_deref_mut(){
+         if state.assume_prefix_boundary(name){return Ok(());}
+         let judgment=judgment();
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -55,3 +55,6 @@
+ 
+ #[cfg(feature="diagnostics")]
+ mod obligation_shadow;
++
++#[cfg(feature = "diagnostics")]
++mod closed_activation;
