@@ -6,7 +6,7 @@ def artifact(repo,id,label,digest):
  with p.open('wb')as f:subprocess.run(['gh','api',f'repos/{repo}/actions/artifacts/{id}/zip'],stdout=f,check=True)
  assert sha(p)==digest
  with zipfile.ZipFile(p)as z:assert z.testzip()is None;z.extractall(root/label)
-artifact('heathsanchez/test',13554703450,'base','9f08545e95049636f1a689ec57bc859c1cef8594e2a78ba41c0442765e9d249b')
+artifact('heathsanchez/test',13555074038,'base','42bfe782d0499049dc89512212e2f76170c4fbc1a233dcf7a8a77e886ec66840')
 with tarfile.open('base/candidate/source.tar.gz')as t:t.extractall(root,filter='data')
 source=root/'metatron-kernel'
 for line in P('base/reports/source.sha256').read_text().splitlines():
@@ -71,7 +71,7 @@ import shutil
 shutil.copy2(binary,'candidate/metatron-kernel')
 with tarfile.open('candidate/source.tar.gz','w:gz')as t:t.add(source,arcname='metatron-kernel',filter=lambda i:None if '/target/'in i.name or i.name.endswith('/target')else i)
 counts=re.findall(r'test result: ok. (\d+) passed; \d+ failed; (\d+) ignored',(out/'native.log').read_text())
-receipt={'status':'BOUNDED_NATIVE_GAIN'if new_reach else'REJECTED_AS_SUFFICIENT','new_native_reach':new_reach,'replayed_403':replayed403,'pristine_binary_sha256':sha(pristine),'source_base_artifact':13554703450,'corpus_authority_source':'018135224632f72ba06a2818132c3e857d67eaad','patch_sha256':sha(patch),'binary_sha256':sha(binary),'flags':flags,'judgment_steps':262144,'native_passed':sum(int(a)for a,b in counts),'native_ignored':sum(int(b)for a,b in counts),'rows':rows,'boundary':'Primary original-source canonical24 flags/262144 with all diagnostic environment flags absent. Try bounded existing fixed-Pi instantiation after original argument checks and literal-spine eligibility. Charge actual attempt work; fall back to original replay on decline. Full403 qualification only if replayed_403 true. No global soundness/fullMathlib or performance claim.'}
+receipt={'status':'BOUNDED_NATIVE_GAIN'if new_reach else'REJECTED_AS_SUFFICIENT','new_native_reach':new_reach,'replayed_403':replayed403,'pristine_binary_sha256':sha(pristine),'source_base_artifact':13555074038,'corpus_authority_source':'018135224632f72ba06a2818132c3e857d67eaad','patch_sha256':sha(patch),'binary_sha256':sha(binary),'flags':flags,'judgment_steps':262144,'native_passed':sum(int(a)for a,b in counts),'native_ignored':sum(int(b)for a,b in counts),'rows':rows,'boundary':'Primary original-source canonical24 flags/262144 with all diagnostic environment flags absent. Try bounded existing fixed-Pi instantiation after original argument checks and literal-spine eligibility. Charge actual attempt work; fall back to original replay on decline. Full403 qualification only if replayed_403 true. No global soundness/fullMathlib or performance claim.'}
 (out/'receipt.json').write_text(json.dumps(receipt,indent=2))
 
 

@@ -15,7 +15,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         with: {toolchain: '1.99.1'}
-      - name: Qualify the bounded substitution-first route
+      - name: Qualify checked fixed Pi on frozen C2 source
         run: python experiments/nucleus-beta-replay-20261107/run.py > driver.log 2>&1
       - uses: actions/upload-artifact@v4
         if: always()
