@@ -1,0 +1,11 @@
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -746,7 +746,7 @@
+             &&self.inherited_binding_lineage.is_none()
+             &&self.captured_constant_application(term,remaining);
+         let mut result=self.infer_exact_closure_uncached(term,if canonical{&[]}else{context},remaining,depth);
+-        let closed_constant_scope=canonical&&matches!(&result,Some(TypeValue::Term(value))if matches!(self.expressions.get(value.expr),Some(Expr::Const{..})));
++        let closed_constant_scope=canonical&&matches!(&result,Some(TypeValue::Term(value))if matches!(self.expressions.get(value.expr),Some(Expr::Const{..}|Expr::Sort(_))));
+         if canonical&&!closed_constant_scope&&!context.is_empty(){
+             // Fixed Pis or other result shapes never escape the synthetic
+             // empty-context binder namespace. Preserve the original route.
