@@ -1,0 +1,76 @@
+# C45: locate first failing source argument in n7's necessary proof spine.
+name: Nucleus C45 source proof argument trace
+on:
+  push:
+    branches: [research/nucleus-c45-proof-arg-20261108]
+    paths: ['.github/workflows/nucleus-c45-proof-arg.yml']
+  workflow_dispatch:
+permissions: {contents: write, actions: read}
+jobs:
+  trace:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      GH_TOKEN: ${{ github.token }}
+      CARGO_INCREMENTAL: '0'
+      CARGO_BUILD_JOBS: '2'
+      RUST_MIN_STACK: '16777216'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Restore qualified source and apply observer patches
+        run: |
+          set -euo pipefail
+          mkdir -p base pristine candidate reports arena207
+          gh api repos/heathsanchez/test/actions/artifacts/13609679273/zip > c37-qualified.zip
+          printf '%s  %s\n' fceddaca338ca36c2964edf0ec81b9e4acd0b66d938864ec5e7239f766e186c3 c37-qualified.zip | sha256sum -c -
+          unzip -p c37-qualified.zip candidate/source.tar.gz > c37-source.tar.gz
+          printf '%s  %s\n' bb64f47470f950f78e7fe4c659fbcb2a75d72e96831430ec1eb3562c55175152 c37-source.tar.gz | sha256sum -c -
+          unzip -p c37-qualified.zip base/flags.json > base/flags.json
+          unzip -p c37-qualified.zip candidate/metatron-kernel > pristine/metatron-kernel
+          chmod +x pristine/metatron-kernel
+          tar --no-same-owner -xzf c37-source.tar.gz
+          for patch_name in c38-early-full-typed-spine.patch c39-typed-failure-stage.patch c44-root-source-check.patch c45-proof-argument-observer.patch; do
+            patch --fuzz=0 -p1 -d metatron-kernel < "experiments/nucleus-logos-support-20261108/$patch_name"
+            sha256sum "experiments/nucleus-logos-support-20261108/$patch_name" >> reports/patches.sha256
+          done
+          cargo check --locked --all-targets --features diagnostics --manifest-path metatron-kernel/Cargo.toml > reports/cargo-check.log 2>&1 || { tail -n 100 reports/cargo-check.log; exit 1; }
+      - name: Native proof and forged-proof controls
+        run: |
+          set -euo pipefail
+          mapfile -t flags < <(jq -r 'to_entries[] | "\(.key)=\(.value)"' base/flags.json)
+          env "${flags[@]}" cargo test --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml > reports/native-tests.log 2>&1 || { tail -n 100 reports/native-tests.log; exit 1; }
+          cargo build --locked --release --features diagnostics --bin metatron-kernel --manifest-path metatron-kernel/Cargo.toml > reports/release-build.log 2>&1 || { tail -n 100 reports/release-build.log; exit 1; }
+          cp metatron-kernel/target/release/metatron-kernel candidate/metatron-kernel
+          sha256sum candidate/metatron-kernel > reports/binary.sha256
+      - name: Classify unchanged n7 child argument checks
+        run: |
+          set -euo pipefail
+          gh api repos/heathsanchez/test/actions/artifacts/13276400289/zip > arena207.zip
+          printf '%s  %s\n' a9582eadc0d9893cbe39e6bcfccd79bfaec2032838851b8a487c35df16096763 arena207.zip | sha256sum -c -
+          unzip -p arena207.zip lean-arena-tests.tar.gz | tar --no-same-owner -xzf - -C arena207
+          PYTHONPATH=experiments/nucleus-logos-support-20261108 python3 -m unittest experiments/nucleus-logos-support-20261108/test_c45_proof_spine.py -v
+          python3 experiments/nucleus-logos-support-20261108/probe_c45_proof_spine.py \
+            --binary candidate/metatron-kernel --input arena207/good/perf/magma-list-pair-n7.ndjson \
+            --flags base/flags.json --stderr reports/c45-n7.stderr | tee reports/c45-proof-spine-n7.json
+          python3 -c 'import json; r=json.load(open("reports/c45-proof-spine-n7.json")); assert r["verdict"]=="UNKNOWN"; print("C45_CHILD_OBSERVATIONS", len(r["children"]))'
+      - name: Preserve positive or negative observer receipt
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          cp reports/c45-proof-spine-n7.json experiments/nucleus-logos-support-20261108/c45-proof-spine-n7-receipt.json
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add experiments/nucleus-logos-support-20261108/c45-proof-spine-n7-receipt.json
+          git commit -m 'C45 exact source n7 child proof typing observation'
+          git push origin HEAD:refs/heads/research/nucleus-c45-proof-arg-20261108
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-C45-source-proof-argument
+          retention-days: 60
+          path: |
+            reports/
+            candidate/
+            base/flags.json
