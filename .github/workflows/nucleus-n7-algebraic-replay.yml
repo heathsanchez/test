@@ -7,6 +7,7 @@ on:
       - 'experiments/nucleus-certified-decide-20261109/MagmaN7Algebraic.lean'
       - 'experiments/nucleus-certified-decide-20261109/lakefile.lean'
       - 'experiments/nucleus-certified-decide-20261109/forge_algebraic.py'
+      - 'experiments/nucleus-certified-decide-20261109/compare_n7_sources.py'
   workflow_dispatch:
 permissions:
   contents: read
@@ -91,6 +92,12 @@ jobs:
           unzip -p arena207.zip lean-arena-tests.tar.gz | tar --no-same-owner -xzf - -C original
           test "$(sha256sum original/good/perf/magma-list-pair-n7.ndjson | cut -d' ' -f1)" = abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35
           jq -e 'length==24 and ([.[]]|all(.=="1"))' qualified/base/flags.json
+      - name: Compare exact source declaration and goal identities
+        run: |
+          set -euo pipefail
+          python3 experiments/nucleus-certified-decide-20261109/compare_n7_sources.py \
+            original/good/perf/magma-list-pair-n7.ndjson matrix/algebraic.ndjson \
+            matrix/source-bridge.json
       - name: Independent Nucleus original vs alternative proof at 262144
         run: |
           set -euo pipefail
@@ -136,4 +143,5 @@ jobs:
             matrix/export.json
             matrix/replay.json
             matrix/forgeries.json
+            matrix/source-bridge.json
             magma-native-proof.log
