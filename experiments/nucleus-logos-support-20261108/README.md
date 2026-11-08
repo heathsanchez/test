@@ -208,3 +208,36 @@ capture is separately unknown. Unit controls distinguish these categories.
 Membership or index identity here is **not** a transport proof, only a way
 to decide which safety condition can be cheaply checked before replay.
 No typing or conversion result is returned by this diagnostic.
+
+## C6 result: predictive caller-frame reuse rejected
+
+[C6 run #42432164811](https://github.com/heathsanchez/test/actions/runs/42432164811)
+is **SUCCESS**, artifact `13598391535`, ZIP SHA-256
+`24d2731c7f6ce2fe299535072cec8576ac7d9840ea43d5994ee618f734ad7fb6`.
+Native tests and unchanged protected 403/403 passed; the original `app-lam`
+passed all three configurations; six unchanged valid originals remain UNKNOWN.
+All 762 proved-equal result supports were **absent from the subsequent
+inference caller's input frame**: zero same-index, zero present at another
+index, 762 absent. This **REJECTS** the direct predictive prior-result memo
+as a safe strategy; the next result capture context cannot be reconstructed
+from the source caller's frame alone.
+
+## C7: exploit same-node reflexivity inside existing conversion (CANDIDATE)
+
+An alternative does not require predicting a future result: the already
+existing `exact_source_capture_identity` equality checker has *both* input
+closures. After its own complete paired-source support and exact universe
+checks, C7 can recognize when the two expressions read the same immutable
+binding node at every relevant index. This is a narrower case of the already
+implemented capture-reflexivity proof, not a new recursor or untyped equality
+axiom. A metered early node-identity check avoids repeatedly resolving the
+same captured closure or local. Nonidentical, missing, exhausted, changed
+source and changed universe cases still follow the original checker logic.
+Diagnostics count the number of skipped redundant capture descents.
+
+C7 is the first **active optimization candidate** in this research sequence.
+It is not admissible for release unless native tests, unchanged protected
+403-case vector, adversarial controls, six-original replay and stack
+preflight independently qualify it. Even if those pass, any improvement
+must be measured against unchanged source/budget; no independent complete
+Mathlib acceptance is asserted.
