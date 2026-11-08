@@ -1,0 +1,43 @@
+--- a/src/machine.rs
++++ b/src/machine.rs
+@@ -3219,12 +3219,38 @@
+                     let _scope=NativeCompletionScope{enabled:&self.native_completion,previous};
+                     let previous_probe=self.worklist_major_probe.replace(true);
+                     let _probe_scope=NativeCompletionScope{enabled:&self.worklist_major_probe,previous:previous_probe};
++                    // C32: vary the *source major-exposure* local request,
++                    // distinct from C17's projection-field borrowed grant.
++                    // The existing enclosing fuel owner remains authoritative.
++                    // No new iota rule, cache key, or independent allowance.
++                    #[cfg(feature="diagnostics")]
++                    let source_major_cap={
++                        static C32_CAP:std::sync::OnceLock<Result<usize,()>>=std::sync::OnceLock::new();
++                        match C32_CAP.get_or_init(||match std::env::var("NUCLEUS_DIAGNOSTIC_C32_RECURSOR_MAJOR_GRANT") {
++                            Ok(s)=>match s.parse::<usize>() {Ok(n) if (48..=16384).contains(&n)=>Ok(n),_=>Err(())},
++                            Err(std::env::VarError::NotPresent)=>Ok(512),
++                            Err(_)=>Err(()),
++                        }) {Ok(n)=>*n,Err(())=>return Judgment::unknown("invalid-C32-source-major-cap")}
++                    };
++                    #[cfg(not(feature="diagnostics"))]
++                    let source_major_cap=512;
++                    let source_major_owner=self.exposure_fuel.get().unwrap_or(0);
++                    let source_major_budget=source_major_owner.min(source_major_cap);
++                    #[cfg(feature="diagnostics")]
++                    if std::env::var_os("NUCLEUS_DIAGNOSTIC_C32_RECURSOR_MAJOR_GRANT").is_some(){
++                        use std::sync::atomic::{AtomicUsize,Ordering};
++                        static C32_PRINTED:AtomicUsize=AtomicUsize::new(0);
++                        let seq=C32_PRINTED.fetch_add(1,Ordering::Relaxed);
++                        if seq<128 {
++                            eprintln!("NUCLEUS_C32_MAJOR_GRANT:seq={seq}:head={name:?}:cap={source_major_cap}:budget={source_major_budget}:owner=Some({source_major_owner})");
++                        }
++                    }
+                     if self.replay_projection_major {
+                         self.expose_for_conversion(neutral.spine[required-1].clone(),
+-                            Transparency::Full,self.exposure_fuel.get().unwrap_or(0).min(512))
++                            Transparency::Full,source_major_budget)
+                     } else {
+                         self.expose(neutral.spine[required-1].clone(),
+-                            Transparency::Full,self.exposure_fuel.get().unwrap_or(0).min(512))
++                            Transparency::Full,source_major_budget)
+                     }
+                 };
+                 let Some(value)=major_result.proven_value() else {
