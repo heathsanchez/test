@@ -1,0 +1,37 @@
+diff --git a/metatron-kernel/src/checker.rs b/metatron-kernel/src/checker.rs
+index 1f2448a..1b1f5ac 100644
+--- a/metatron-kernel/src/checker.rs
++++ b/metatron-kernel/src/checker.rs
+@@ -392,6 +392,32 @@ fn check_export_with_policy_inner(
+                     let probe=TypeChecker::with_level_substitution(
+                         &export.exprs,&export.levels,&environment,parameter_substitution(&level_params),
+                     ).with_delta_policy(delta_policy);
++                    // C64 observation only: inspect the actual captured
++                    // Decidable input and its source-derived Bool, never the
++                    // constructor expected by the surrounding equality.
++                    // No observation is fed back into declaration checking.
++                    if std::env::var_os("NUCLEUS_DIAGNOSTIC_C64_DECIDABLE_INSTANCE").is_some() {
++                        for (role,expression) in [("instance",ExprId(8796)),("decide",ExprId(8799))] {
++                            for grant in [128usize,512,2048,8192,65536,limits.judgment_steps] {
++                                let observed=probe.machine().expose(
++                                    probe.closure(expression,EnvFrame::empty()),
++                                    Transparency::Full,grant,
++                                );
++                                let shape=match observed.proven_value() {
++                                    Some(Value::Neutral(value))=>format!(
++                                        "neutral={:?}:spine={}:bool_constructor={}",
++                                        value.head,value.spine.len(),
++                                        matches!(&value.head,NeutralHead::Const{name,..}
++                                            if probe.is_certified_bool_constructor(*name)),
++                                    ),
++                                    Some(value)=>format!("proven={:?}",value),
++                                    None=>format!("not_proven={:?}",observed),
++                                };
++                                eprintln!("NUCLEUS_C64_INSTANCE:role={role}:expr={expression:?}:grant={grant}:detail={}",
++                                    shape.chars().take(360).collect::<String>());
++                            }
++                        }
++                    }
+                     let actual_type=probe.infer(ExprId(8799),limits.judgment_steps);
+                     let expected_type=probe.infer(ExprId(624),limits.judgment_steps);
+                     let actual=TypeValue::Term(probe.closure(ExprId(8799),EnvFrame::empty()));
