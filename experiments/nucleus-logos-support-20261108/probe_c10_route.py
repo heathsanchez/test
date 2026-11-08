@@ -31,6 +31,10 @@ def main() -> int:
                         help="C13: classify large-budget Bool-vs-Decidable checked replay")
     parser.add_argument("--require-projection-major-boundary", action="store_true",
                         help="C14: classify value and stage at exhausted major owner")
+    parser.add_argument("--require-bounded-projection", action="store_true",
+                        help="C15: prove the candidate's bounded source projection path ran")
+    parser.add_argument("--allow-accepted", action="store_true",
+                        help="C15: valid exact original may improve from UNKNOWN to ACCEPT")
     args = parser.parse_args()
     original = args.input.read_bytes()
     if hashlib.sha256(original).hexdigest() != SHA:
@@ -63,7 +67,10 @@ def main() -> int:
         if grant and int(grant.group(1)) >= 100_000:
             large_replay_outcomes.append(line)
     projection_major_boundaries = []
+    bounded_projection_events = []
     for line in output:
+        if line.startswith("NUCLEUS_PROJECTION_MAJOR_BOUNDED:"):
+            bounded_projection_events.append(line)
         if not line.startswith("NUCLEUS_PROJECTION_MAJOR_EXHAUSTED:"):
             continue
         grant = re.search(r":entry_budget=(\d+):", line)
@@ -76,10 +83,15 @@ def main() -> int:
               "owned_failures": owned_failures[:3],
               "caller_failures": caller_failures[:3],
               "large_replay_outcomes": large_replay_outcomes[:3],
-              "projection_major_boundaries": projection_major_boundaries[:3]}
+              "projection_major_boundaries": projection_major_boundaries[:3],
+              "bounded_projection_events": bounded_projection_events[:16]}
     print(json.dumps(record), flush=True)
-    if exit_code != 2 or not routes:
+    allowed_exit_codes = (0, 2) if args.allow_accepted else (2,)
+    if exit_code not in allowed_exit_codes or (not routes and not args.allow_accepted):
         print("C10 RED: observer must explain the unchanged UNKNOWN route", file=sys.stderr)
+        return 1
+    if args.require_bounded_projection and not bounded_projection_events:
+        print("C15 RED: bounded projection candidate did not execute", file=sys.stderr)
         return 1
     if args.require_owner_event and not owned_failures:
         print("C11 RED: terminal recursor failure did not identify its work owner", file=sys.stderr)
