@@ -1,0 +1,61 @@
+name: Nucleus C75 original Fin equality continuation provenance
+on:
+  push:
+    branches:
+      - research/nucleus-c75-fineq-origin-20261109
+    paths:
+      - '.github/workflows/nucleus-c75-fineq-origin.yml'
+      - 'experiments/nucleus-logos-support-20261108/c75_fineq_origin.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  immutable-source:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Authenticate and unpack original immutable Arena export
+        run: |
+          set -euo pipefail
+          mkdir -p frozen reports
+          gh api repos/heathsanchez/test/actions/artifacts/13276400289/zip > original.zip
+          printf '%s  %s\n' a9582eadc0d9893cbe39e6bcfccd79bfaec2032838851b8a487c35df16096763 original.zip | sha256sum -c -
+          unzip -p original.zip lean-arena-tests.tar.gz | tar --no-same-owner -xzf - -C frozen
+          sha256sum frozen/good/perf/magma-list-pair-n7.ndjson
+      - name: Source-owned Fin.match lambda provenance and negative source mutations
+        run: |
+          set -euo pipefail
+          python3 experiments/nucleus-logos-support-20261108/c75_fineq_origin.py \
+            frozen/good/perf/magma-list-pair-n7.ndjson reports/c75-fineq.json
+          python3 - <<'PY'
+          from pathlib import Path
+          import importlib.util,json
+          p=Path('experiments/nucleus-logos-support-20261108/c75_fineq_origin.py')
+          spec=importlib.util.spec_from_file_location('c75_fineq',p)
+          m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
+          original=Path('frozen/good/perf/magma-list-pair-n7.ndjson').read_bytes()
+          result=m.inspect(original)
+          assert result['owner_name']=='instDecidableEqFin.match_1'
+          assert result['high_event28_binding0']['body']==20
+          assert result['low_event28_binding0']['index']==1
+          assert not result['source_reduction_proof_constructed']
+          assert result['kernel_accept_authority']=='NONE'
+          for name,changed in [
+             ('source_changed',original+b'\n'),
+             ('edited_lambda',original.replace(b'"ie":7369',b'"ie":7368',1)),
+          ]:
+             try:m.inspect(changed)
+             except (ValueError,AssertionError):print('C75_CONTROL_REJECTED',name)
+             else:raise AssertionError('source mutation survived '+name)
+          print('C75_SOURCE_PROVENANCE_ONLY')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-c75-fineq-provenance
+          retention-days: 60
+          path: reports/
