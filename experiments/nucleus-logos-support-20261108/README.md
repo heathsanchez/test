@@ -675,3 +675,22 @@ The C17 diagnostic source patch applies with zero fuzz over C16. A run
 passing the sweep would establish actual parameter sensitivity only; this
 experiment seeks an original unchanged ACCEPT or a reason to reject grant
 tuning and move to deferred projection/reduction rule sharing.
+
+C17 [run #42438356021](https://github.com/heathsanchez/test/actions/runs/42438356021)
+**SUCCESS**, commit `82af813771e4c0b32a1e29db36ef2a53944c1da2`,
+artifact `13600443617`, ZIP SHA256
+`614cd55f324a2adc9dfc1f15194584dbe0dfe5b2f348e4df5e9b03572e1bd523`.
+The actual source-pinned diagnostic grants **64, 96, 128, 192, 256, 384,
+512, 768, 1024, 2048, 4096, and 8192** all returned original n7
+`UNKNOWN` (exit 2), with no ACCEPTs or REJECTs. Borrowed-owner logs show
+real sensitivity; maximum exhausted worklist depths by cap were respectively
+`0, 4, 2, 4, 2, 2, 66, 64, 2, 68, 2, 36`—neither monotone nor a
+constructor witness. The malformed grant failed closed as UNKNOWN. Native
+and adversarial checks passed; the 403/403 independently protected cases
+still matched **240 ACCEPT / 150 REJECT / 13 UNKNOWN**, and all six
+original valid residuals stayed UNKNOWN. C17 is WARRANTED_BOUNDED as a
+diagnostic **negative result**: scalar projection grant tuning in this
+range cannot close n7 under the standard global 262144-step allowance.
+No grant-tuned kernel is promoted, and neither complete Mathlib nor six-case
+closure is claimed. The next experiment must test *structural sharing or
+resumption of source-certified work*, not another cap sweep.
