@@ -50,13 +50,13 @@ jobs:
             set -e
             test "$verdict" -eq 2
             test ! -s "reports/${case_name}.stdout"
-            rg -q '^NUCLEUS_C56_PAIR:' "reports/${case_name}.stderr"
-            rg -q '^NUCLEUS_DECIDABLE_MAJOR_CHAIN:' "reports/${case_name}.stderr"
+            grep -q '^NUCLEUS_C56_PAIR:' "reports/${case_name}.stderr"
+            grep -q '^NUCLEUS_DECIDABLE_MAJOR_CHAIN:' "reports/${case_name}.stderr"
             printf '%s\t%s\t%s\t%s\t%s\n' \
               "$case_name" "$source_root" \
               "$(sha256sum "$source" | cut -d' ' -f1)" \
-              "$(rg -c '^NUCLEUS_C56_PAIR:' "reports/${case_name}.stderr")" \
-              "$(rg -c '^NUCLEUS_DECIDABLE_MAJOR_CHAIN:' "reports/${case_name}.stderr")" \
+              "$(grep -c '^NUCLEUS_C56_PAIR:' "reports/${case_name}.stderr")" \
+              "$(grep -c '^NUCLEUS_DECIDABLE_MAJOR_CHAIN:' "reports/${case_name}.stderr")" \
               >> reports/c57-summary.tsv
           done
           printf 'Case\tFirst root\tOriginal source SHA256\tQualified pair events\tCaptured major traces\n' > reports/c57-header.tsv
