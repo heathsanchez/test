@@ -379,18 +379,50 @@
  #[cfg(test)]
  mod universe_parametric_source_controls {
   use super::*;
---- a/src/machine.rs
-+++ b/src/machine.rs
-@@ -2885,10 +2885,10 @@
-                     let _probe_scope=NativeCompletionScope{enabled:&self.worklist_major_probe,previous:previous_probe};
-                     if self.replay_projection_major {
-                         self.expose_for_conversion(neutral.spine[required-1].clone(),
--                            Transparency::Full,self.exposure_fuel.get().unwrap_or(0).min(512))
-+                            Transparency::Full,self.exposure_fuel.get().unwrap_or(0).min(2048))
-                     } else {
-                         self.expose(neutral.spine[required-1].clone(),
--                            Transparency::Full,self.exposure_fuel.get().unwrap_or(0).min(512))
-+                            Transparency::Full,self.exposure_fuel.get().unwrap_or(0).min(2048))
-                     }
-                 };
-                 let Some(value)=major_result.proven_value() else {
+--- a/src/convert.rs
++++ b/src/convert.rs
+@@ -2043,9 +2043,18 @@
+                         {
+                             return None;
+                         }
+-                        checker.machine().qualified_nested_recursor_result(
++                        let replay=checker.machine().qualified_nested_recursor_result(
+                             recursive, current_budget,
+-                        ).proven_value().cloned()
++                        );
++                        #[cfg(feature="diagnostics")]
++                        if crate::run_flags::present(crate::run_flags::Flag::TraceReplayCache) {
++                            use std::sync::atomic::{AtomicUsize,Ordering};
++                            static PRINTED:AtomicUsize=AtomicUsize::new(0);
++                            if PRINTED.fetch_add(1,Ordering::Relaxed)<128 {
++                                eprintln!("NUCLEUS_CONVERSION_RECURSOR_PROBE:route=certified-bool-constructor:head={:?}:depth={depth}:grant={current_budget}:proved={}",recursive.head,replay.is_proven());
++                            }
++                        }
++                        replay.proven_value().cloned()
+                     };
+                     if let Some(result) = candidate(left, right) {
+                         if result != Value::Neutral(right.clone()) {
+@@ -2082,10 +2091,21 @@
+                                     || candidate.spine.is_empty() || available < 128 {
+                                     continue;
+                                 }
++                                #[cfg(feature="diagnostics")]
++                                let before=available;
+                                 let probe = available / 2;
+                                 available -= probe;
+-                                if let Judgment::Proven { value, .. } = checker.machine()
+-                                    .qualified_one_step_recursor_result(candidate, probe)
++                                let replay=checker.machine().qualified_one_step_recursor_result(candidate, probe);
++                                #[cfg(feature="diagnostics")]
++                                if crate::run_flags::present(crate::run_flags::Flag::TraceReplayCache) {
++                                    use std::sync::atomic::{AtomicUsize,Ordering};
++                                    static PRINTED:AtomicUsize=AtomicUsize::new(0);
++                                    if PRINTED.fetch_add(1,Ordering::Relaxed)<256 {
++                                        let qualified=matches!(&candidate.head,NeutralHead::Const{name,..}if checker.has_qualified_recursor(*name));
++                                        eprintln!("NUCLEUS_CONVERSION_RECURSOR_PROBE:route=one-step:head={:?}:depth={depth}:side={}:qualified={qualified}:comparison={current_budget}:before={before}:grant={probe}:unused={available}:proved={}",candidate.head,if is_left{"left"}else{"right"},replay.is_proven());
++                                    }
++                                }
++                                if let Judgment::Proven { value, .. } = replay
+                                     && !matches!(&value, Value::Neutral(n) if n == candidate)
+                                 {
+                                     reduced = Some((is_left, value));
