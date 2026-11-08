@@ -1,0 +1,102 @@
+name: Nucleus C60 qualified major constructor boundary
+on:
+  push:
+    branches: [research/nucleus-c60-major-completion-boundary-20261109]
+    paths: ['.github/workflows/nucleus-c60-major-completion-boundary.yml']
+  workflow_dispatch:
+permissions: {contents: write, actions: read}
+jobs:
+  original-major:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RUST_MIN_STACK: '16777216'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Retrieve exact native-tested C58 binary and source-frozen corpus
+        run: |
+          set -euo pipefail
+          mkdir -p binary arena207 reports
+          gh api repos/heathsanchez/test/actions/artifacts/13622452324/zip > c58.zip
+          printf '%s  %s\n' 63764179e4cfcd89cac50c8e200977c9169cab47e073086e463c86b3fbcfcadd c58.zip | sha256sum -c -
+          unzip -p c58.zip candidate/nucleus-diagnostic > binary/nucleus-diagnostic
+          chmod +x binary/nucleus-diagnostic
+          printf '%s  %s\n' 37b77b125745e7b3eabfbb0adba1da76ea27dac11d13efcc05586f0892b39e6f binary/nucleus-diagnostic | sha256sum -c -
+          unzip -p c58.zip base/flags.json > binary/flags.json
+          gh api repos/heathsanchez/test/actions/artifacts/13276400289/zip > arena207.zip
+          printf '%s  %s\n' a9582eadc0d9893cbe39e6bcfccd79bfaec2032838851b8a487c35df16096763 arena207.zip | sha256sum -c -
+          unzip -p arena207.zip lean-arena-tests.tar.gz | tar --no-same-owner -xzf - -C arena207
+      - name: Run exact high-budget constructor positive and standard-budget controls
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib,json,os,subprocess,sys
+          sys.path.insert(0,'experiments/nucleus-logos-support-20261108')
+          from probe_c52_six_loss_census import parse_downstream
+          frozen=json.loads(Path('experiments/nucleus-logos-support-20261108/c56-neutral-pair.json').read_text())
+          expected={x['case']:x for x in frozen['cases']}
+          flags=json.loads(Path('binary/flags.json').read_text())
+          assert len(flags)==24 and set(flags.values())=={'1'}
+          cases=[('magma-list-pair-n7',262144,False),('magma-list-pair-n7',14155776,False),
+                 ('magma-list-deep-n36',262144,True)]
+          records=[]
+          for name,budget,pi4096 in cases:
+              src=Path('arena207/good/perf/'+name+'.ndjson').read_bytes()
+              assert hashlib.sha256(src).hexdigest()==expected[name]['source_sha256']
+              env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+              env.update(flags)
+              env.update({'NUCLEUS_DIAGNOSTIC_C38_EARLY_TYPED_SPINE':'1',
+                          'NUCLEUS_DIAGNOSTIC_C47_PROFILE_EXPR':str(expected[name]['first_failed_root']),
+                          'NUCLEUS_DIAGNOSTIC_C55_APP_SHAPE':'1',
+                          'NUCLEUS_DIAGNOSTIC_C56_NEUTRAL_PAIR':'1',
+                          'NUCLEUS_TRACE_DECIDABLE_MAJOR_CHAIN':'1',
+                          'NUCLEUS_TRACE_DOWNSTREAM':'1'})
+              if pi4096: env['NUCLEUS_DIAGNOSTIC_C58_OPENING_4096']='1'
+              run=subprocess.run([str(Path('binary/nucleus-diagnostic').resolve()),str(budget)],
+                                 input=src,capture_output=True,env=env,timeout=300)
+              if run.returncode not in (0,2):
+                  raise RuntimeError(f'{name} changed to REJECT/ERROR ({run.returncode})')
+              tag=f'{name}-{budget}'
+              Path(f'reports/{tag}.stderr').write_bytes(run.stderr)
+              lines=run.stderr.decode(errors='replace').splitlines()
+              chains=[line for line in lines if line.startswith('NUCLEUS_DECIDABLE_MAJOR_CHAIN:')]
+              pairs=[line for line in lines if line.startswith('NUCLEUS_C56_PAIR:')]
+              openings=[line for line in lines if line.startswith('NUCLEUS_C58_OPEN:')]
+              records.append({'case':name,'budget':budget,'pi4096':pi4096,
+                'source_sha256':expected[name]['source_sha256'],
+                'verdict':'ACCEPT' if run.returncode==0 else 'UNKNOWN',
+                'boundary':parse_downstream(run.stderr) if run.returncode==2 else None,
+                'major_chain_events':len(chains),'major_chain_preview':chains[:8],
+                'constructor_true_sampled':sum('constructor_rule=true' in line for line in chains),
+                'pairs':len(pairs),'pair_preview':pairs[:8],
+                'opening_events':openings[:8]})
+              print(name,budget,records[-1]['verdict'],'chains',len(chains),'pairs',len(pairs),flush=True)
+          result={'experiment':'C60 original source constructor completion boundary',
+             'c58_artifact':13622452324,'source_artifact':13276400289,
+             'proof_rules_changed':False,'selected_checker_changed':False,
+             'standard_budget':262144,'high_budget_is_diagnostic_only':True,'records':records}
+          Path('reports/c60-major-completion.json').write_text(json.dumps(result,indent=2)+'\n')
+          PY
+      - name: Commit exact receipt, including failure if needed
+        if: always()
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          if test -s reports/c60-major-completion.json; then
+            cp reports/c60-major-completion.json experiments/nucleus-logos-support-20261108/c60-major-completion.json
+          else
+            jq -n '{status:"UNKNOWN_CI_FAILURE",qualified:false,standard_accepts:0}' > experiments/nucleus-logos-support-20261108/c60-major-completion.json
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add experiments/nucleus-logos-support-20261108/c60-major-completion.json
+          git commit -m 'C60 record actual sampled constructor boundary on frozen Magma sources'
+          git push origin HEAD:refs/heads/research/nucleus-c60-major-completion-boundary-20261109
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-C60-major-completion
+          retention-days: 60
+          path: reports/
