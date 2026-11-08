@@ -1,20 +1,7 @@
-# Triskelion × Lean Kernel Arena — Public Execution Harness
+# PSI Aaronson–Ambainis original-claim bridge audit
 
-Public GitHub Actions harness for the Lean Kernel Arena optimization/development programme.
+This isolated branch contains only an audit workflow and two source artifacts. Its tree intentionally omits the unrelated 319 workflows present on `main`, so the bounded branch-specific workflow is the only one eligible to start here. `main` and PSI's upstream repository are unchanged.
 
-This repository intentionally contains only the execution-facing subset needed to reproduce and continue benchmark experiments. The broader Triskelion research repository remains separate.
+The Lean adapter remains CANDIDATE until its own GitHub Actions run passes. The Python probe is a bounded finite control, not a universal mathematical proof.
 
-## Current execution objective
-
-Preserve complete Lean Kernel Arena semantic correctness while reducing resource cost. New interventions are admitted only after protected semantic and paired resource gates.
-
-## Immediate frontier
-
-The private research ledger reports A2 as the current admitted local frontier and E0012 (symmetric level-equality cache) as semantically clean on the 178-file downloadable corpus, pending paired Mathlib resource validation. Because the exact local E0012 commit was not pushed, this public harness reconstructs the relevant committed experiment families from the existing Triskelion branches and reruns them on public GitHub-hosted runners before promotion.
-
-## Provenance
-
-Source experiment history: `heathsanchez/triskelion` (private research repo).
-External checker/world: Lean Kernel Arena and upstream sokonanoda.
-
-No result in this public repository should be treated as admitted unless the workflow artifact and status ledger say so.
+Pinned PSI source commit: `2a6ceaef872ae993708950f951989134084b851a`.

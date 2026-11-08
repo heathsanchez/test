@@ -1,0 +1,60 @@
+name: PSI AA independent claim bridge (bounded)
+
+on:
+  push:
+    branches:
+      - audit/psi-aa-claim-bridge-20261109
+
+permissions:
+  contents: read
+
+concurrency:
+  group: psi-aa-claim-bridge-20261109
+  cancel-in-progress: true
+
+jobs:
+  check-bridge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      LEAN_NUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check out the exact public PSI proof source
+        shell: bash
+        run: |
+          git clone --quiet https://github.com/physical-superintelligence/aaronson-ambainis.git psi
+          git -C psi checkout --quiet --detach 2a6ceaef872ae993708950f951989134084b851a
+          test "$(git -C psi rev-parse HEAD)" = 2a6ceaef872ae993708950f951989134084b851a
+          python3 psi/scripts/source_digest.py psi AaronsonAmbainis | tee /tmp/psi_source_digest.txt
+          grep -F 'source digest: 593eda9c5d897c139e9b797820498b001a6151d2e1d6e19371f6d2bb5b5261bd (87 files)' /tmp/psi_source_digest.txt
+          sha256sum audit/PSI_OriginalClaimBridge_2026-11-09.lean audit/PSI_claim_semantic_probe_2026-11-09.py
+
+      - name: Configure pinned Lean and Mathlib caches
+        uses: leanprover/lean-action@v1
+        with:
+          lake-package-directory: psi
+          use-github-cache: false
+          use-mathlib-cache: true
+          build: false
+          test: false
+          lint: false
+
+      - name: Compile PSI Main from its exact original sources
+        working-directory: psi
+        shell: bash
+        run: |
+          lean --version
+          lake build AaronsonAmbainis.Main
+
+      - name: Check the independently stated one-way implication
+        working-directory: psi
+        shell: bash
+        run: |
+          cp ../audit/PSI_OriginalClaimBridge_2026-11-09.lean ./PSI_OriginalClaimBridge_2026-11-09.lean
+          lake env lean PSI_OriginalClaimBridge_2026-11-09.lean
+
+      - name: Run separately implemented finite semantic controls
+        shell: bash
+        run: python3 audit/PSI_claim_semantic_probe_2026-11-09.py
