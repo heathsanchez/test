@@ -355,7 +355,7 @@ ceiling cannot enlarge this 504-step call grant. C9 is a **REJECTED**
 hypothesis, NOT PROMOTED; next inspect the conversion-side grant/ownership
 and exact work already charged, rather than increasing another nested cap.
 
-## C10 conversion-side budget route (DIAGNOSTIC CANDIDATE)
+## C10 conversion-side budget route (WARRANTED BOUNDED DIAGNOSTIC)
 
 Source audit found two independent calls in `convert.rs`: a certified Bool
 constructor may request a full checked nested-recursor replay, but the
@@ -379,3 +379,52 @@ If it turns green, protected 403 and all six byte-exact verdicts are
 replayed at the selected 24 flags. No trace can grant a new typing or
 equality result. The next change, if any, must be determined from this
 source-qualified caller work trace rather than guessed budget increases.
+
+C10 [run #42434810378](https://github.com/heathsanchez/test/actions/runs/42434810378),
+commit `9a23db847c387ec04c46a5c12353093946c95f93`, artifact `13599421657`,
+ZIP SHA256 `f76b85d0bd5d9901a095795e4bf0f342ec9e74d852e20f62f09f264e5f6597bd`:
+native suite/adversarial tests, original chain9 three-way UNKNOWN, original
+app-lam three-way ACCEPT and **403/403 selected protected verdicts**
+(240 ACCEPT / 150 REJECT / 13 UNKNOWN) passed. All six originals still
+UNKNOWN at standard budget. Diagnostic-only n7 logged seven conversion
+probe routes under its exact SHA256:
+
+* An unqualified `NameId(64)` constant was nevertheless probed at
+  comparison budget 498; 249 steps were **reserved** for the failed
+  one-step attempt (`qualified=false`). The log does not establish that
+  249 actual machine steps were consumed; reservation is the confirmed
+  inefficiency.
+* Registered `Decidable.rec` at budget 503 was first attempted via the
+  certified Bool-constructor route and then given a one-step grant of 251,
+  twice; neither attempt proved a replay value.
+* The same registered recursor at comparison budget 260,755 later
+  received a one-step grant of 130,377; replay still failed. Thus the
+  full source-qualified caller allowance by itself does not establish
+  a constructor, and inner owner accounting must be examined.
+
+The older replay-major diagnostic printed only the first 32 starts.
+One *observed* `Nat.rec` major start had allowance 504, and a distinct
+terminal failure printed local fuel zero; **do not infer they were the
+same call without an uncapped failure-event grant trace**. C10 warrants
+the conversion budget-allocation observation, but cannot yet identify
+the actual terminal owner's provenance. A C11 diagnostic should record
+the entry work grant at the precise failing `Nat.rec` event, plus its
+source branch, before modifying the budget scheduler.
+
+## C11 exact terminal recursor owner's provenance (DIAGNOSTIC CANDIDATE)
+
+C11 extends only existing `TraceNestedRecursorIotaFailure` output at the
+two actual failure sites in `Machine::qualified_recursor_result`: record
+`stage=major|rhs`, the `entry_budget` from this call, whether an older
+work owner existed at entry (`owner_on_entry`), and, for a failed major,
+the byte-source major expression and captured frame identity. It does
+not alter replay, fuel debiting, iota qualification or acceptance.
+
+The existing original n7 trace test now has an optional
+`--require-owner-event` assertion; it was first observed RED against
+the actual C10 binary because old failure events lack the owner's entry
+grant. The new branch must first make that exact test GREEN without
+changing the original UNKNOWN verdict, then pass all native/protected
+403 and adversarial/stack controls. Only the precise terminal owner
+trace can identify whether its 504-ish grant came from an RHS exposure
+cap, major exposure cap, independent conversion owner or actual work.
