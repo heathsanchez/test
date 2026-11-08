@@ -1,0 +1,83 @@
+{
+  "experiment": "C64 exact-source Decidable instance constructor observation",
+  "source_sha256": "abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35",
+  "c37_artifact": 13609679273,
+  "arena_artifact": 13276400289,
+  "proof_rules_changed": false,
+  "selected_checker_changed": false,
+  "standard_budget": 262144,
+  "protected_403_not_run": true,
+  "records": [
+    {
+      "budget": 262144,
+      "observe": false,
+      "verdict": "UNKNOWN",
+      "equality_relation": "Unknown { residual: ResidualId(\"unresolved-qualified-recursor-heads\") }",
+      "source_instance_observations": [],
+      "stderr_sha256": "85dffaed2a56bb5c43de35174e78984a226104c6bad37df45515765f762f9df5"
+    },
+    {
+      "budget": 262144,
+      "observe": true,
+      "verdict": "UNKNOWN",
+      "equality_relation": "Unknown { residual: ResidualId(\"unresolved-qualified-recursor-heads\") }",
+      "source_instance_observations": [
+        "NUCLEUS_C64_INSTANCE:role=instance:expr=ExprId(8796):grant=128:detail=neutral=Const { name: NameId(147), levels: [Succ(Zero)] }:spine=5:bool_constructor=false",
+        "NUCLEUS_C64_INSTANCE:role=instance:expr=ExprId(8796):grant=512:detail=neutral=Const { name: NameId(147), levels: [Succ(Zero)] }:spine=5:bool_constructor=false",
+        "NUCLEUS_C64_INSTANCE:role=instance:expr=ExprId(8796):grant=2048:detail=neutral=Const { name: NameId(147), levels: [Succ(Zero)] }:spine=5:bool_constructor=false",
+        "NUCLEUS_C64_INSTANCE:role=instance:expr=ExprId(8796):grant=8192:detail=neutral=Const { name: NameId(147), levels: [Succ(Zero)] }:spine=5:bool_constructor=false",
+        "NUCLEUS_C64_INSTANCE:role=instance:expr=ExprId(8796):grant=65536:detail=neutral=Const { name: NameId(147), levels: [Succ(Zero)] }:spine=5:bool_constructor=false",
+        "NUCLEUS_C64_INSTANCE:role=instance:expr=ExprId(8796):grant=262144:detail=neutral=Const { name: NameId(147), levels: [Succ(Zero)] }:spine=5:bool_constructor=false",
+        "NUCLEUS_C64_INSTANCE:role=decide:expr=ExprId(8799):grant=128:detail=neutral=Const { name: NameId(147), levels: [Succ(Zero)] }:spine=5:bool_constructor=false",
+        "NUCLEUS_C64_INSTANCE:role=decide:expr=ExprId(8799):grant=512:detail=neutral=Const { name: NameId(147), levels: [Succ(Zero)] }:spine=5:bool_constructor=false",
+        "NUCLEUS_C64_INSTANCE:role=decide:expr=ExprId(8799):grant=2048:detail=neutral=Const { name: NameId(147), levels: [Succ(Zero)] }:spine=5:bool_constructor=false",
+        "NUCLEUS_C64_INSTANCE:role=decide:expr=ExprId(8799):grant=8192:detail=neutral=Const { name: NameId(147), levels: [Succ(Zero)] }:spine=5:bool_constructor=false",
+        "NUCLEUS_C64_INSTANCE:role=decide:expr=ExprId(8799):grant=65536:detail=neutral=Const { name: NameId(147), levels: [Succ(Zero)] }:spine=5:bool_constructor=false",
+        "NUCLEUS_C64_INSTANCE:role=decide:expr=ExprId(8799):grant=262144:detail=neutral=Const { name: NameId(147), levels: [Succ(Zero)] }:spine=5:bool_constructor=false"
+      ],
+      "stderr_sha256": "1fd5aa1e118671857a637f2c6ab53fa1617e20c46f33619dbeceb8968d7bc6b9"
+    },
+    {
+      "budget": 8388608,
+      "observe": true,
+      "verdict": "UNKNOWN",
+      "equality_relation": "Unknown { residual: ResidualId(\"unresolved-qualified-recursor-heads\") }",
+      "source_instance_observations": [
+        "NUCLEUS_C64_INSTANCE:role=instance:expr=ExprId(8796):grant=128:detail=neutral=Const { name: NameId(147), levels: [Succ(Zero)] }:spine=5:bool_constructor=false",
+        "NUCLEUS_C64_INSTANCE:role=instance:expr=ExprId(8796):grant=512:detail=neutral=Const { name: NameId(147), levels: [Succ(Zero)] }:spine=5:bool_constructor=false",
+        "NUCLEUS_C64_INSTANCE:role=instance:expr=ExprId(8796):grant=2048:detail=neutral=Const { name: NameId(147), levels: [Succ(Zero)] }:spine=5:bool_constructor=false",
+        "NUCLEUS_C64_INSTANCE:role=instance:expr=ExprId(8796):grant=8192:detail=neutral=Const { name: NameId(147), levels: [Succ(Zero)] }:spine=5:bool_constructor=false",
+        "NUCLEUS_C64_INSTANCE:role=instance:expr=ExprId(8796):grant=65536:detail=neutral=Const { name: NameId(147), levels: [Succ(Zero)] }:spine=5:bool_constructor=false",
+        "NUCLEUS_C64_INSTANCE:role=instance:expr=ExprId(8796):grant=8388608:detail=neutral=Const { name: NameId(147), levels: [Succ(Zero)] }:spine=5:bool_constructor=false",
+        "NUCLEUS_C64_INSTANCE:role=decide:expr=ExprId(8799):grant=128:detail=neutral=Const { name: NameId(147), levels: [Succ(Zero)] }:spine=5:bool_constructor=false",
+        "NUCLEUS_C64_INSTANCE:role=decide:expr=ExprId(8799):grant=512:detail=neutral=Const { name: NameId(147), levels: [Succ(Zero)] }:spine=5:bool_constructor=false",
+        "NUCLEUS_C64_INSTANCE:role=decide:expr=ExprId(8799):grant=2048:detail=neutral=Const { name: NameId(147), levels: [Succ(Zero)] }:spine=5:bool_constructor=false",
+        "NUCLEUS_C64_INSTANCE:role=decide:expr=ExprId(8799):grant=8192:detail=neutral=Const { name: NameId(147), levels: [Succ(Zero)] }:spine=5:bool_constructor=false",
+        "NUCLEUS_C64_INSTANCE:role=decide:expr=ExprId(8799):grant=65536:detail=neutral=Const { name: NameId(147), levels: [Succ(Zero)] }:spine=5:bool_constructor=false",
+        "NUCLEUS_C64_INSTANCE:role=decide:expr=ExprId(8799):grant=8388608:detail=neutral=Const { name: NameId(147), levels: [Succ(Zero)] }:spine=5:bool_constructor=false"
+      ],
+      "stderr_sha256": "0e0db59e2803117aeeffebddaca22d9f752a4c67821be818aaeddff699e088d0"
+    },
+    {
+      "budget": 14155776,
+      "observe": true,
+      "verdict": "ACCEPT",
+      "equality_relation": "Proven { value: (), warrant: WarrantId(\"guarded-relational-conversion\") }",
+      "source_instance_observations": [
+        "NUCLEUS_C64_INSTANCE:role=instance:expr=ExprId(8796):grant=128:detail=neutral=Const { name: NameId(147), levels: [Succ(Zero)] }:spine=5:bool_constructor=false",
+        "NUCLEUS_C64_INSTANCE:role=instance:expr=ExprId(8796):grant=512:detail=neutral=Const { name: NameId(147), levels: [Succ(Zero)] }:spine=5:bool_constructor=false",
+        "NUCLEUS_C64_INSTANCE:role=instance:expr=ExprId(8796):grant=2048:detail=neutral=Const { name: NameId(147), levels: [Succ(Zero)] }:spine=5:bool_constructor=false",
+        "NUCLEUS_C64_INSTANCE:role=instance:expr=ExprId(8796):grant=8192:detail=neutral=Const { name: NameId(147), levels: [Succ(Zero)] }:spine=5:bool_constructor=false",
+        "NUCLEUS_C64_INSTANCE:role=instance:expr=ExprId(8796):grant=65536:detail=neutral=Const { name: NameId(147), levels: [Succ(Zero)] }:spine=5:bool_constructor=false",
+        "NUCLEUS_C64_INSTANCE:role=instance:expr=ExprId(8796):grant=14155776:detail=neutral=Const { name: NameId(146), levels: [] }:spine=2:bool_constructor=false",
+        "NUCLEUS_C64_INSTANCE:role=decide:expr=ExprId(8799):grant=128:detail=neutral=Const { name: NameId(169), levels: [] }:spine=0:bool_constructor=true",
+        "NUCLEUS_C64_INSTANCE:role=decide:expr=ExprId(8799):grant=512:detail=neutral=Const { name: NameId(169), levels: [] }:spine=0:bool_constructor=true",
+        "NUCLEUS_C64_INSTANCE:role=decide:expr=ExprId(8799):grant=2048:detail=neutral=Const { name: NameId(169), levels: [] }:spine=0:bool_constructor=true",
+        "NUCLEUS_C64_INSTANCE:role=decide:expr=ExprId(8799):grant=8192:detail=neutral=Const { name: NameId(169), levels: [] }:spine=0:bool_constructor=true",
+        "NUCLEUS_C64_INSTANCE:role=decide:expr=ExprId(8799):grant=65536:detail=neutral=Const { name: NameId(169), levels: [] }:spine=0:bool_constructor=true",
+        "NUCLEUS_C64_INSTANCE:role=decide:expr=ExprId(8799):grant=14155776:detail=neutral=Const { name: NameId(169), levels: [] }:spine=0:bool_constructor=true"
+      ],
+      "stderr_sha256": "70c253c122d141ae8908478e1ebde7bbe4e7d6a1dc92f3a8c0478e484a7bdbd2"
+    }
+  ]
+}
