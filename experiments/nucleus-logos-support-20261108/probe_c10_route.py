@@ -22,6 +22,8 @@ def main() -> int:
     parser.add_argument("--binary", type=Path, required=True)
     parser.add_argument("--input", type=Path, required=True)
     parser.add_argument("--flags", type=Path, required=True)
+    parser.add_argument("--require-owner-event", action="store_true",
+                        help="C11: require the exact failure's owner/budget trace")
     args = parser.parse_args()
     original = args.input.read_bytes()
     if hashlib.sha256(original).hexdigest() != SHA:
@@ -43,13 +45,18 @@ def main() -> int:
     output = result.stderr.decode(errors="replace").splitlines()
     routes = [line for line in output if line.startswith("NUCLEUS_CONVERSION_RECURSOR_PROBE:")]
     exhausted = [line for line in output if line.startswith("NUCLEUS_NESTED_REPLAY_FAILURE:")]
+    owned_failures = [line for line in exhausted if ":stage=" in line and ":entry_budget=" in line]
     record = {"experiment": "C10-source-recursor-caller-budget-route", "original_sha256": SHA,
               "exit_code": exit_code, "seconds": round(time.monotonic() - started, 3),
               "route_count": len(routes), "route_sample": routes[:12],
-              "nested_failure_sample": exhausted[:3]}
+              "nested_failure_sample": exhausted[:3],
+              "owned_failures": owned_failures[:3]}
     print(json.dumps(record), flush=True)
     if exit_code != 2 or not routes:
         print("C10 RED: observer must explain the unchanged UNKNOWN route", file=sys.stderr)
+        return 1
+    if args.require_owner_event and not owned_failures:
+        print("C11 RED: terminal recursor failure did not identify its work owner", file=sys.stderr)
         return 1
     return 0
 
