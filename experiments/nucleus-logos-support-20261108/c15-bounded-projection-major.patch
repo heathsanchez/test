@@ -1,0 +1,26 @@
+--- a/src/machine.rs
++++ b/src/machine.rs
+@@ -2937,9 +2937,22 @@
+                     }
+                     let next=match &major_value {
+                         Value::StuckProjection{type_name,index,structure,spine}=>{
++                            // A projection-field probe is speculative until
++                            // its actual source constructor is established.
++                            // Keep most of the shared owner for the qualified
++                            // recursor worklist that its reduction may reveal.
++                            let grant=self.exposure_fuel.get().unwrap_or(0).min(512);
++                            #[cfg(feature="diagnostics")]
++                            if crate::run_flags::present(crate::run_flags::Flag::TraceNestedRecursorIotaFailure) {
++                                use std::sync::atomic::{AtomicUsize,Ordering};
++                                static BOUNDED:AtomicUsize=AtomicUsize::new(0);
++                                if BOUNDED.fetch_add(1,Ordering::Relaxed)<16 {
++                                    eprintln!("NUCLEUS_PROJECTION_MAJOR_BOUNDED:recursor={name:?}:grant={grant}:owner={:?}:depth={depth}:step={step}",self.exposure_fuel.get());
++                                }
++                            }
+                             self.projection_value_for_conversion(
+                                 structure.clone(),*type_name,*index,spine,
+-                                self.exposure_fuel.get().unwrap_or(0),
++                                grant,
+                             )
+                         }
+                         Value::Neutral(nested) if self.replay_neutral_projection && matches!(&nested.head,NeutralHead::Projection{..})=>{
