@@ -36,8 +36,8 @@ pub fn c69_report() {
     if !c69_enabled(){return;}
     C69.with(|c| {
         let x=c.borrow();
-        eprintln!("NUCLEUS_C69_COUNTS:{{\"expose_steps\":{},\"source_constants\":{},\"nat_mul_heads\":{},\"nat_mod_heads\":{},\"nat_add_heads\":{},\"qualified_recursor_heads\":{},\"source_decidable_rec_heads\":{},\"nat_native_result\":{},\"nat_native_unknown\":{},\"nat_ext_result\":{},\"source_projection_heads\":{}}}",
-            x[0],x[1],x[2],x[3],x[4],x[5],x[6],x[7],x[8],x[9],x[10]);
+        eprintln!("NUCLEUS_C69_COUNTS:{{\"expose_steps\":{},\"source_constants\":{},\"nat_mul_heads\":{},\"nat_mod_heads\":{},\"nat_add_heads\":{},\"qualified_recursor_heads\":{},\"source_decidable_rec_heads\":{},\"source_projection_heads\":{}}}",
+            x[0],x[1],x[2],x[3],x[4],x[5],x[6],x[10]);
     });
 }
 """
@@ -57,67 +57,36 @@ chunk=chunk.replace(anchor,anchor+'''
             crate::diagnostics::c69_count(0);''')
 p.write_text(body[:start]+chunk+body[end:])
 
-replace_once(Path("src/machine.rs"),"""                Expr::Const { name, levels } => {
-                    if let Some(arithmetic)""",
-"""                Expr::Const { name, levels } => {
-                    #[cfg(feature="diagnostics")] {
+# Attribute only expression-head visits. This is an *observation* of attempted
+# source reductions, not a count of successful primitive reductions.
+p=ROOT/"src/machine.rs"
+body=p.read_text()
+start=body.index("    fn expose_uncached_internal_with_pending(")
+end=body.index("    fn ",start+9)
+chunk=body[start:end]
+anchor="            match expression {"
+assert chunk.count(anchor)==1,("expression match anchor drift",chunk.count(anchor))
+insert='''            #[cfg(feature="diagnostics")]
+            if crate::diagnostics::c69_enabled() {
+                match expression {
+                    Expr::Const{name,..}=>{
                         crate::diagnostics::c69_count(1);
                         if let Some(nat)=self.nat_primitives.as_ref() {
                             if nat.mul==Some(*name){crate::diagnostics::c69_count(2);}
                             if nat.modulo==Some(*name){crate::diagnostics::c69_count(3);}
                             if nat.add==Some(*name){crate::diagnostics::c69_count(4);}
                         }
+                        if self.recursor_reductions.contains_key(name){crate::diagnostics::c69_count(5);}
                         if *name==NameId(147){crate::diagnostics::c69_count(6);}
                     }
-                    if let Some(arithmetic)""")
-replace_once(Path("src/machine.rs"),"""                            Judgment::Proven{value,..}=>{
-                                record_transition(&mut transitions,record_witnesses,TransitionWitness::NatExtension);""",
-"""                            Judgment::Proven{value,..}=>{
-                                #[cfg(feature="diagnostics")]
-                                crate::diagnostics::c69_count(7);
-                                record_transition(&mut transitions,record_witnesses,TransitionWitness::NatExtension);""")
-replace_once(Path("src/machine.rs"),"""                            Judgment::Unknown{residual}=>Judgment::Unknown{residual},
-                            Judgment::Refuted{obstruction}=>Judgment::Refuted{obstruction},""",
-"""                            Judgment::Unknown{residual}=>{
-                                #[cfg(feature="diagnostics")]
-                                crate::diagnostics::c69_count(8);
-                                Judgment::Unknown{residual}
-                            },
-                            Judgment::Refuted{obstruction}=>Judgment::Refuted{obstruction},""")
-replace_once(Path("src/machine.rs"),"""                    if let Some(native) = self.try_native_nat_reduction(
-                        *name,""",
-"""                    if let Some(native) = self.try_native_nat_reduction(
-                        *name,""")
-# Count only an actual successfully applied Nat extension.
-replace_once(Path("src/machine.rs"),"""                    ) {
-                        record_transition(
-                            &mut transitions,
-                            record_witnesses,
-                            TransitionWitness::NatExtension,
-                        );
-                        return exposed(native, transitions);
-                    }
+                    Expr::Proj{..}=>crate::diagnostics::c69_count(10),
+                    _=>{}
+                }
+            }
+'''
+chunk=chunk.replace(anchor,insert+anchor)
+p.write_text(body[:start]+chunk+body[end:])
 
-                    if let Some(next) = self.try_quot_reduction""",
-"""                    ) {
-                        #[cfg(feature="diagnostics")]
-                        crate::diagnostics::c69_count(9);
-                        record_transition(
-                            &mut transitions,
-                            record_witnesses,
-                            TransitionWitness::NatExtension,
-                        );
-                        return exposed(native, transitions);
-                    }
-
-                    if let Some(next) = self.try_quot_reduction""")
-# Every encountered eligible certified recursor head
-replace_once(Path("src/machine.rs"),"""                    if let Some(reduction) = self.recursor_reductions.get(name) {
-                        if std::env::var_os("NUCLEUS_TRACE_NAT_IOTA")""",
-"""                    if let Some(reduction) = self.recursor_reductions.get(name) {
-                        #[cfg(feature="diagnostics")]
-                        crate::diagnostics::c69_count(5);
-                        if std::env::var_os("NUCLEUS_TRACE_NAT_IOTA")""")
 # Report the same worker's thread-local census through the C64 diagnostic runner.
 p=Path("experiments/nucleus-bool-recursor-eligibility-20261106/nucleus-diagnostic.rs")
 s=p.read_text()
