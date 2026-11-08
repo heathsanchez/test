@@ -1,37 +1,35 @@
-"""C72: exact-source major-grant observation and single-variable experiment.
+"""C72: isolate the local grant on authentic checked recursor-major exposure.
 
-Runs only against reconstructed C65 Rust source; refuses source drift. No
-constructor/equality inference is added. Variant merely changes *local* major
-exposure allowance, still bounded by the existing shared work owner.
+Exactly two verified 512-cap source calls must be present in the reconstructed
+C65 reducer. Other rules, parent fuel, captured bindings and proof outcomes
+are untouched. Trace-only diagnostics never authorize a constructor.
 """
 from pathlib import Path
+
 p=Path("metatron-kernel/src/machine.rs")
-s=p.read_text()
-start=s.index("    fn qualified_recursor_result(")
-end=s.index("    fn ",start+9)
-section=s[start:end]
-old="""                let major_result=if self.replay_projection_major {
-                    self.expose_for_conversion(neutral.spine[required-1].clone(),
-                        Transparency::Full,self.exposure_fuel.get().unwrap_or(0).min(512))
-                } else {
-                    self.expose(neutral.spine[required-1].clone(),
-                        Transparency::Full,self.exposure_fuel.get().unwrap_or(0).min(512))
-                };"""
-assert section.count(old)==1,("major-grant source anchor drift",section.count(old))
-new="""                // C72: the same source-exposure algorithms, original total
-                // owner fuel, and registered kernel reductions; only the
-                // local grant ceiling is changed for one experimental arm.
-                let c72_grant = if std::env::var_os("NUCLEUS_C72_MAJOR_GRANT_2048").is_some()
-                    { 2048usize } else { 512usize };
+code=p.read_text()
+begin=code.index("    fn qualified_recursor_result(")
+end=code.index("    fn ",begin+9)
+section=code[begin:end]
+oldstart="                let major_result="
+endmarker="                let Some(value)=major_result.proven_value()"
+assert section.count(oldstart)==1,("C72 major declaration mismatch",section.count(oldstart))
+start=section.index(oldstart)
+assert endmarker in section[start:],"major result continuation missing"
+stop=section.index(endmarker,start)
+old=section[start:stop]
+cap="self.exposure_fuel.get().unwrap_or(0).min(512)"
+assert old.count(cap)==2,("C72 expected exactly two local 512 grants",old.count(cap),old[:1700])
+
+prefix="""                // C72: no new proof, constructor, conversion or source rule.
+                // Same source exposure functions, with caller-owned total fuel.
                 let c72_owner_before=self.exposure_fuel.get().unwrap_or(0);
-                let major_result=if self.replay_projection_major {
-                    self.expose_for_conversion(neutral.spine[required-1].clone(),
-                        Transparency::Full,c72_owner_before.min(c72_grant))
-                } else {
-                    self.expose(neutral.spine[required-1].clone(),
-                        Transparency::Full,c72_owner_before.min(c72_grant))
-                };
-                #[cfg(feature="diagnostics")]
+                let c72_grant=if std::env::var_os("NUCLEUS_C72_MAJOR_GRANT_2048").is_some() {
+                    2048usize
+                } else {512usize};
+"""
+calls=old.replace(cap,"self.exposure_fuel.get().unwrap_or(0).min(c72_grant)")
+trace="""                #[cfg(feature="diagnostics")]
                 if std::env::var_os("NUCLEUS_C72_SOURCE_MAJOR").is_some()
                     && crate::typecheck::c56_source_root_active()
                 {
@@ -54,7 +52,8 @@ new="""                // C72: the same source-exposure algorithms, original tot
                             src.levels.entries().count(),c72_grant.min(c72_owner_before),
                             self.exposure_fuel.get().unwrap_or(0),parents.len());
                     }
-                }"""
-section=section.replace(old,new)
-p.write_text(s[:start]+section+s[end:])
-print("C72_SOURCE_OWNED_MAJOR_GRANT_PATCHED")
+                }
+"""
+new_section=section[:start]+prefix+calls+trace+section[stop:]
+p.write_text(code[:begin]+new_section+code[end:])
+print("C72_EXACT_SOURCE_MAJOR_PATCHED: two local grants, no proof rules")
