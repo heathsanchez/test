@@ -1,6 +1,231 @@
 {
-  "status": "UNKNOWN_CI_FAILURE",
-  "standard_accepts": 0,
-  "qualified": false,
-  "reason": "C52 no complete source-qualified report; inspect the workflow job"
+  "diagnostic": "C50 loss events over six unchanged original inputs",
+  "steps_per_case": 262144,
+  "original_artifact_id": 13276400289,
+  "compiled_binary_artifact_id": 13616928035,
+  "binary_sha256": "829ba7516b890b00fce1d5d04b3e232b89635aa36729c13c9d35f8b60b10c113",
+  "proof_rules_changed": false,
+  "partial_state_is_a_proof": false,
+  "cases": [
+    {
+      "case": "fueled-chain",
+      "source_sha256": "e5ca34489fc7b8ee13b1e7f09f76247ab7b01dd1a752a13cc8b796c569e1401a",
+      "source_root": 16167,
+      "declaration_kind": "thm",
+      "steps": 262144,
+      "verdict": "UNKNOWN",
+      "scope": "UNPROFILED_ENTRY_PATH",
+      "loss_summary": null,
+      "first_64_losses": []
+    },
+    {
+      "case": "grind-ring-5",
+      "source_sha256": "e9c394e0ff311fd10f60dee2433a530f16e82354c32d6588a8775baa06fd221f",
+      "source_root": 181938,
+      "declaration_kind": "thm",
+      "steps": 262144,
+      "verdict": "UNKNOWN",
+      "scope": "UNPROFILED_ENTRY_PATH",
+      "loss_summary": null,
+      "first_64_losses": []
+    },
+    {
+      "case": "magma-list-pair-n7",
+      "source_sha256": "abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35",
+      "source_root": 8837,
+      "declaration_kind": "def",
+      "steps": 262144,
+      "verdict": "UNKNOWN",
+      "scope": "C47_SOURCE_ROOT_PROFILED",
+      "loss_summary": {
+        "observed_failure_exits": 3,
+        "with_pending_parents": 3,
+        "first_pending_stage": "owner-exhausted",
+        "maximum_pending_parents": 65,
+        "maximum_completed_children_in_pending_stack": 34,
+        "possibly_truncated": false,
+        "partial_state_is_a_proof": false
+      },
+      "first_64_losses": [
+        {
+          "active": 2,
+          "finish_parents": 2,
+          "major_env": 70453,
+          "major_expr": 11,
+          "major_parents": 1,
+          "owner_remaining": 0,
+          "parents": 3,
+          "projected_parents": 0,
+          "recursor": 147,
+          "resolved": 1,
+          "seq": 0,
+          "stage": "owner-exhausted"
+        },
+        {
+          "active": 2,
+          "finish_parents": 2,
+          "major_env": 70453,
+          "major_expr": 11,
+          "major_parents": 1,
+          "owner_remaining": 0,
+          "parents": 3,
+          "projected_parents": 0,
+          "recursor": 147,
+          "resolved": 0,
+          "seq": 1,
+          "stage": "owner-exhausted"
+        },
+        {
+          "active": 34,
+          "finish_parents": 34,
+          "major_env": 274560,
+          "major_expr": 11,
+          "major_parents": 31,
+          "owner_remaining": 0,
+          "parents": 65,
+          "projected_parents": 0,
+          "recursor": 147,
+          "resolved": 161,
+          "seq": 2,
+          "stage": "owner-exhausted"
+        }
+      ]
+    },
+    {
+      "case": "magma-list-pair-n21",
+      "source_sha256": "b8279fa9189a203c6c11b04702c27c0f99a650b37f2b0165dd260b1d14e9ef84",
+      "source_root": 8827,
+      "declaration_kind": "def",
+      "steps": 262144,
+      "verdict": "UNKNOWN",
+      "scope": "C47_SOURCE_ROOT_PROFILED",
+      "loss_summary": {
+        "observed_failure_exits": 3,
+        "with_pending_parents": 3,
+        "first_pending_stage": "owner-exhausted",
+        "maximum_pending_parents": 116,
+        "maximum_completed_children_in_pending_stack": 59,
+        "possibly_truncated": false,
+        "partial_state_is_a_proof": false
+      },
+      "first_64_losses": [
+        {
+          "active": 2,
+          "finish_parents": 2,
+          "major_env": 70216,
+          "major_expr": 11,
+          "major_parents": 1,
+          "owner_remaining": 0,
+          "parents": 3,
+          "projected_parents": 0,
+          "recursor": 147,
+          "resolved": 1,
+          "seq": 0,
+          "stage": "owner-exhausted"
+        },
+        {
+          "active": 2,
+          "finish_parents": 2,
+          "major_env": 70216,
+          "major_expr": 11,
+          "major_parents": 1,
+          "owner_remaining": 0,
+          "parents": 3,
+          "projected_parents": 0,
+          "recursor": 147,
+          "resolved": 0,
+          "seq": 1,
+          "stage": "owner-exhausted"
+        },
+        {
+          "active": 59,
+          "finish_parents": 59,
+          "major_env": 144574,
+          "major_expr": 11,
+          "major_parents": 57,
+          "owner_remaining": 0,
+          "parents": 116,
+          "projected_parents": 0,
+          "recursor": 147,
+          "resolved": 133,
+          "seq": 2,
+          "stage": "owner-exhausted"
+        }
+      ]
+    },
+    {
+      "case": "magma-list-deep-n21",
+      "source_sha256": "b7a211699ab32a5d2397319702e2d5552f5796a6bdac990efa69fb186039f526",
+      "source_root": 17864,
+      "declaration_kind": "def",
+      "steps": 262144,
+      "verdict": "UNKNOWN",
+      "scope": "C47_SOURCE_ROOT_PROFILED",
+      "loss_summary": {
+        "observed_failure_exits": 2,
+        "with_pending_parents": 2,
+        "first_pending_stage": "projected-source-field",
+        "maximum_pending_parents": 83,
+        "maximum_completed_children_in_pending_stack": 42,
+        "possibly_truncated": false,
+        "partial_state_is_a_proof": false
+      },
+      "first_64_losses": [
+        {
+          "active": 42,
+          "finish_parents": 42,
+          "major_env": 290960,
+          "major_expr": 11,
+          "major_parents": 41,
+          "owner_remaining": 226472,
+          "parents": 83,
+          "projected_parents": 0,
+          "recursor": 65,
+          "resolved": 36,
+          "seq": 0,
+          "stage": "projected-source-field"
+        },
+        {
+          "active": 42,
+          "finish_parents": 42,
+          "major_env": 293773,
+          "major_expr": 11,
+          "major_parents": 41,
+          "owner_remaining": 98529,
+          "parents": 83,
+          "projected_parents": 0,
+          "recursor": 65,
+          "resolved": 1,
+          "seq": 1,
+          "stage": "projected-source-field"
+        }
+      ]
+    },
+    {
+      "case": "magma-list-deep-n36",
+      "source_sha256": "6669cee92ad330dada351ac9e63656f7e9e848dd70376f17030d64677f8c81ac",
+      "source_root": 18985,
+      "declaration_kind": "def",
+      "steps": 262144,
+      "verdict": "UNKNOWN",
+      "scope": "C47_SOURCE_ROOT_PROFILED",
+      "loss_summary": {
+        "observed_failure_exits": 0,
+        "with_pending_parents": 0,
+        "first_pending_stage": null,
+        "maximum_pending_parents": 0,
+        "maximum_completed_children_in_pending_stack": 0,
+        "possibly_truncated": false,
+        "partial_state_is_a_proof": false
+      },
+      "first_64_losses": []
+    }
+  ],
+  "all_six_unknown": true,
+  "all_six_profiled": false,
+  "all_definitions_profiled": true,
+  "theorems_unprofiled": [
+    "fueled-chain",
+    "grind-ring-5"
+  ]
 }
