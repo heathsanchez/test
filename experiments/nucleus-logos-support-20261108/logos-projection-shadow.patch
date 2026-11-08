@@ -381,46 +381,16 @@
   use super::*;
 --- a/src/machine.rs
 +++ b/src/machine.rs
-@@ -1028,6 +1028,12 @@
-         result
-     }
- 
-+    // This bounded interner is an operational sharing aid only: retaining
-+    // more exact frames never transfers typing/equality authority. C8 tests
-+    // whether the earlier 8,192-entry capacity cut off required recursive
-+    // major replay sharing on unchanged Magma inputs.
-+    const fn exact_beta_binding_capacity() -> usize { 32_768 }
-+
-     // Hash-cons only an exact source evaluator binding. This does not open
-     // typed locals or create/transfer any checked typing witness.
-     fn bind_captured_argument(&self, binder: &Closure, argument: Closure) -> EnvFrame {
-@@ -1042,9 +1048,9 @@
-         // Retained source frames are keys of completed replay evidence.
-         // Preserve them at capacity; overflow bindings remain ordinary fresh
-         // evaluator frames, with no source or typing equality transferred.
--        if entries.bindings.len()<8192 {entries.bindings.insert(key,frame.clone());}
-+        if entries.bindings.len()<Self::exact_beta_binding_capacity() {entries.bindings.insert(key,frame.clone());}
-         #[cfg(feature="diagnostics")]
--        if entries.bindings.len()>=8192 && crate::run_flags::present(crate::run_flags::Flag::TraceReplayCache) {
-+        if entries.bindings.len()>=Self::exact_beta_binding_capacity() && crate::run_flags::present(crate::run_flags::Flag::TraceReplayCache) {
-             use std::sync::atomic::{AtomicUsize,Ordering};
-             static PRINTED:AtomicUsize=AtomicUsize::new(0);
-             if PRINTED.fetch_add(1,Ordering::Relaxed)<32 {eprintln!("NUCLEUS_BETA_BINDING_CACHE:capacity:source={:?}",binder.expr);}
-@@ -3931,7 +3937,7 @@
-         let mut inner=Neutral{head:NeutralHead::Const{name:NameId(1),levels:vec![]},
-             spine:vec![closed(0),closed(0),Closure::new(ExprId(1),first_frame)]};
-         assert!(machine.qualified_nested_recursor_result(&inner,128).is_proven());
--        for index in 0..8193 {
-+        for index in 0..u64::try_from(Machine::exact_beta_binding_capacity()).unwrap()+1 {
-             let distinct=Closure::new(ExprId(2),EnvFrame::empty().extend_free(FreeId(1000+index)));
-             machine.bind_captured_argument(&binder,distinct);
-         }
-@@ -3962,7 +3968,7 @@
-         assert_ne!(first.id(),machine.bind_captured_argument(&changed_binder,argument.clone()).id());
-         let changed_argument=Closure::with_levels(argument.expr,argument.env.clone(),changed_levels);
-         assert_ne!(first.id(),machine.bind_captured_argument(&binder,changed_argument).id());
--        for i in 0..8192 {
-+        for i in 0..u64::try_from(Machine::exact_beta_binding_capacity()).unwrap() {
-             let distinct=Closure::new(argument.expr,EnvFrame::empty().extend_free(FreeId(i)));
-             machine.bind_captured_argument(&binder,distinct);
-         }
+@@ -2885,10 +2885,10 @@
+                     let _probe_scope=NativeCompletionScope{enabled:&self.worklist_major_probe,previous:previous_probe};
+                     if self.replay_projection_major {
+                         self.expose_for_conversion(neutral.spine[required-1].clone(),
+-                            Transparency::Full,self.exposure_fuel.get().unwrap_or(0).min(512))
++                            Transparency::Full,self.exposure_fuel.get().unwrap_or(0).min(2048))
+                     } else {
+                         self.expose(neutral.spine[required-1].clone(),
+-                            Transparency::Full,self.exposure_fuel.get().unwrap_or(0).min(512))
++                            Transparency::Full,self.exposure_fuel.get().unwrap_or(0).min(2048))
+                     }
+                 };
+                 let Some(value)=major_result.proven_value() else {
