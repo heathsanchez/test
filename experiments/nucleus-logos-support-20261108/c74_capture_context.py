@@ -18,7 +18,7 @@ insert="""        let Some(seq)=crate::diagnostics::c48_ticket() else { return; 
         {
             let mut binders=Vec::new();
             for i in 0usize..128usize {
-                let Some(b)=source.env.lookup(i) else {break;};
+                let Some(b)=source.env.lookup(i as u64) else {break;};
                 let descriptor=match b {
                     EnvBinding::Closure(c)=>format!(
                         "closure:expr={:?}:levels={}:captured_env={}",
