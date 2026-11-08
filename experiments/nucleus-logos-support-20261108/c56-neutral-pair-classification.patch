@@ -1,0 +1,73 @@
+--- a/metatron-kernel/src/typecheck.rs
++++ b/metatron-kernel/src/typecheck.rs
+@@ -81,6 +81,10 @@
+ #[cfg(feature = "diagnostics")]
+ static C55_APP_FAILURES: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+ #[cfg(feature = "diagnostics")]
++pub(crate) fn c56_source_root_active() -> bool {
++    C55_APP_PROFILE_ACTIVE.with(Cell::get)
++}
++#[cfg(feature = "diagnostics")]
+ struct CaptureSourceFailureScope(Option<Option<String>>);
+ #[cfg(feature = "diagnostics")]
+ impl CaptureSourceFailureScope {
+--- a/metatron-kernel/src/convert.rs
++++ b/metatron-kernel/src/convert.rs
+@@ -604,6 +604,30 @@
+                     let full = recovered.proven_value().unwrap_or(full);
+                     let Some(full) = value_as_type(checker, full, depth, &mut remaining) else {
+                         #[cfg(feature="diagnostics")]
++                        if std::env::var_os("NUCLEUS_DIAGNOSTIC_C56_NEUTRAL_PAIR").is_some()
++                            && crate::typecheck::c56_source_root_active()
++                        {
++                            use std::sync::atomic::{AtomicUsize,Ordering};
++                            static C56_RIGID:AtomicUsize=AtomicUsize::new(0);
++                            let seq=C56_RIGID.fetch_add(1,Ordering::Relaxed);
++                            if seq<16 || (seq+1).is_power_of_two() {
++                                let value_class=match full {
++                                    Value::Neutral(n)=>format!("neutral:{:?}:spine={}",n.head,n.spine.len()),
++                                    Value::StuckProjection{..}=>"stuck-projection".to_string(),
++                                    Value::Sort(_)=>"sort".to_string(),
++                                    Value::Pi{..}=>"pi".to_string(),
++                                    Value::Lam{..}=>"lambda".to_string(),
++                                    Value::NatLit(_)=>"nat".to_string(),
++                                };
++                                let expected_class=match other {
++                                    TypeValue::Pi{..}=>"pi",
++                                    TypeValue::Sort(_)=>"sort",
++                                    TypeValue::Term(_)=>"term",
++                                };
++                                eprintln!("NUCLEUS_C56_RIGID:seq={seq}:source_expr={:?}:source_env={}:context_depth={depth}:remaining={remaining}:exposed={value_class}:other={expected_class}",term.expr,term.env.id());
++                            }
++                        }
++                        #[cfg(feature="diagnostics")]
+                         if crate::run_flags::present(crate::run_flags::Flag::TraceRigidTypeMismatch) {
+                             eprintln!("NUCLEUS_RIGID_TYPE_MISMATCH:depth={depth}:context={}:exposed={full:?}:expected={other:?}:budget={remaining}",context.len());
+                             if let Value::Neutral(n)=full {
+@@ -3073,6 +3097,26 @@
+                 !neutral.spine.is_empty()
+                     && matches!(&neutral.head,NeutralHead::Const{name,..} if checker.has_qualified_recursor(*name))
+             }) {
++                #[cfg(feature="diagnostics")]
++                if std::env::var_os("NUCLEUS_DIAGNOSTIC_C56_NEUTRAL_PAIR").is_some()
++                    && crate::typecheck::c56_source_root_active()
++                {
++                    use std::sync::atomic::{AtomicUsize,Ordering};
++                    static C56_PAIRS:AtomicUsize=AtomicUsize::new(0);
++                    let seq=C56_PAIRS.fetch_add(1,Ordering::Relaxed);
++                    if seq<20 || (seq+1).is_power_of_two() {
++                        let describe=|n:&Neutral| {
++                            let head=match &n.head {
++                                NeutralHead::Const{name,..}=>format!("const:{name:?}:qualified={}",checker.has_qualified_recursor(*name)),
++                                NeutralHead::Free(free)=>format!("free:{free:?}"),
++                                NeutralHead::Projection{type_name,index,..}=>format!("proj:{type_name:?}:field={index}"),
++                            };
++                            let major=n.spine.last().map(|c|format!("expr={:?}:env={}",c.expr,c.env.id())).unwrap_or_else(||"none".into());
++                            format!("{head}:arity={}:major={major}",n.spine.len())
++                        };
++                        eprintln!("NUCLEUS_C56_PAIR:seq={seq}:depth={depth}:context_depth={}:budget={budget}:left={}:right={}",context.len(),describe(left),describe(right));
++                    }
++                }
+                 return Judgment::unknown("unresolved-qualified-recursor-heads");
+             }
+             Judgment::refuted("distinct-neutral-heads")
