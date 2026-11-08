@@ -10,6 +10,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import subprocess
 
 from probe_c50_loss_ledger import parse_loss_events, summarize_losses
@@ -23,6 +24,24 @@ CASES = (
     "magma-list-deep-n21",
     "magma-list-deep-n36",
 )
+DOWNSTREAM = re.compile(
+    r"^NUCLEUS_DOWNSTREAM:name=(.+):stage=([^:]+):verdict=(UNKNOWN|REJECT):reason=(.+)$"
+)
+
+
+def parse_downstream(stderr: bytes) -> dict:
+    found = []
+    for line in stderr.decode(errors="replace").splitlines():
+        if not line.startswith("NUCLEUS_DOWNSTREAM:"):
+            continue
+        match = DOWNSTREAM.fullmatch(line)
+        if not match:
+            raise ValueError("malformed terminal checker-boundary record")
+        name, stage, verdict, reason = match.groups()
+        found.append({"source_name": name, "stage": stage, "verdict": verdict, "reason": reason})
+    if len(found) != 1:
+        raise ValueError("expected exactly one independently recorded terminal boundary")
+    return found[0]
 
 
 def frozen_case_names() -> tuple[str, ...]:
@@ -78,6 +97,7 @@ def census(binary: Path, arena: Path, flags_path: Path, log_dir: Path,
             "NUCLEUS_DIAGNOSTIC_C47_PROFILE_EXPR": str(root),
             "NUCLEUS_DIAGNOSTIC_C48_SOURCE_TRANSITIONS": "1",
             "NUCLEUS_DIAGNOSTIC_C50_STATE_LOSS": "1",
+            "NUCLEUS_TRACE_DOWNSTREAM": "1",
         })
         entry = {
             "case": case,
@@ -98,11 +118,15 @@ def census(binary: Path, arena: Path, flags_path: Path, log_dir: Path,
         log_dir.joinpath(case + ".stderr").write_bytes(run.stderr)
         if run.stdout or run.returncode not in (0, 2):
             raise ValueError(f"{case}: diagnostic executable escaped strict verdict channel")
+        failure_boundary = parse_downstream(run.stderr)
+        if failure_boundary["verdict"] != "UNKNOWN" or run.returncode != 2:
+            raise ValueError(f"{case}: terminal boundary and process verdict disagree")
         profiled = b"NUCLEUS_C47_INNER_WORK:" in run.stderr
         losses = parse_loss_events(run.stderr) if profiled else []
         entry.update({
             "verdict": "ACCEPT_UNEXPECTED_REQUIRES_PROTECTION" if run.returncode == 0 else "UNKNOWN",
             "scope": "C47_SOURCE_ROOT_PROFILED" if profiled else "UNPROFILED_ENTRY_PATH",
+            "first_failed_boundary": failure_boundary,
             "loss_summary": summarize_losses(losses) if profiled else None,
             "first_64_losses": losses[:64],
         })
