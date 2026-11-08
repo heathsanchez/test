@@ -1,0 +1,129 @@
+name: Nucleus C58 source Pi opening allowance trial
+on:
+  push:
+    branches: [research/nucleus-c58-pi-opening-20261109]
+    paths: ['.github/workflows/nucleus-c58-pi-opening-allowance.yml']
+  workflow_dispatch:
+permissions: {contents: write, actions: read}
+jobs:
+  pi-opening:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      GH_TOKEN: ${{ github.token }}
+      CARGO_INCREMENTAL: '0'
+      CARGO_BUILD_JOBS: '2'
+      RUST_MIN_STACK: '16777216'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Restore native-qualified source and apply one scoped allowance trial
+        run: |
+          set -euo pipefail
+          mkdir -p base candidate reports arena207
+          gh api repos/heathsanchez/test/actions/artifacts/13609679273/zip > c37-qualified.zip
+          printf '%s  %s\n' fceddaca338ca36c2964edf0ec81b9e4acd0b66d938864ec5e7239f766e186c3 c37-qualified.zip | sha256sum -c -
+          unzip -p c37-qualified.zip candidate/source.tar.gz > c37-source.tar.gz
+          printf '%s  %s\n' bb64f47470f950f78e7fe4c659fbcb2a75d72e96831430ec1eb3562c55175152 c37-source.tar.gz | sha256sum -c -
+          unzip -p c37-qualified.zip base/flags.json > base/flags.json
+          tar --no-same-owner -xzf c37-source.tar.gz
+          for patch_name in c38-early-full-typed-spine.patch c39-typed-failure-stage.patch c40-c42-source-capture.patch c43-deep-exposure-guard.patch c44-exact-source-forwarding.patch c47-inner-work-diagnostics.patch c48-source-branch-divergence.patch c49-capture-content-fingerprint.patch c50-worklist-loss-diagnostics.patch; do
+            patch --fuzz=0 -p1 -d metatron-kernel < "experiments/nucleus-logos-support-20261108/$patch_name"
+            sha256sum "experiments/nucleus-logos-support-20261108/$patch_name" >> reports/patches.sha256
+          done
+          for patch_name in c55-app-failure-state.patch c56-neutral-pair-classification.patch c58-source-opening-allowance.patch; do
+            patch --fuzz=0 -p1 -d . < "experiments/nucleus-logos-support-20261108/$patch_name"
+            sha256sum "experiments/nucleus-logos-support-20261108/$patch_name" >> reports/patches.sha256
+          done
+          cargo check --locked --all-targets --features diagnostics --manifest-path metatron-kernel/Cargo.toml > reports/cargo-check.log 2>&1 || { tail -n 120 reports/cargo-check.log; exit 1; }
+      - name: Native proof and forged-proof controls
+        run: |
+          set -euo pipefail
+          mapfile -t flags < <(jq -r 'to_entries[] | "\(.key)=\(.value)"' base/flags.json)
+          env "${flags[@]}" cargo test --locked --release --features diagnostics --manifest-path metatron-kernel/Cargo.toml > reports/native-tests.log 2>&1 || { tail -n 120 reports/native-tests.log; exit 1; }
+          cargo build --locked --release --features diagnostics --bin nucleus-diagnostic --manifest-path metatron-kernel/Cargo.toml > reports/release-build.log 2>&1 || { tail -n 120 reports/release-build.log; exit 1; }
+          cp metatron-kernel/target/release/nucleus-diagnostic candidate/nucleus-diagnostic
+          sha256sum candidate/* > reports/binaries.sha256
+      - name: Compare all-six unchanged baseline to Pi opening trial
+        run: |
+          set -euo pipefail
+          gh api repos/heathsanchez/test/actions/artifacts/13276400289/zip > arena207.zip
+          printf '%s  %s\n' a9582eadc0d9893cbe39e6bcfccd79bfaec2032838851b8a487c35df16096763 arena207.zip | sha256sum -c -
+          unzip -p arena207.zip lean-arena-tests.tar.gz | tar --no-same-owner -xzf - -C arena207
+          PYTHONPATH=experiments/nucleus-logos-support-20261108 python3 -m unittest \
+            experiments/nucleus-logos-support-20261108/test_c54_first_failure_roots.py \
+            experiments/nucleus-logos-support-20261108/test_c55_app_failure_shape.py \
+            experiments/nucleus-logos-support-20261108/test_c56_neutral_pair.py -v
+          python3 experiments/nucleus-logos-support-20261108/probe_c56_neutral_pair.py \
+            --binary candidate/nucleus-diagnostic --arena arena207 --flags base/flags.json \
+            --c55 experiments/nucleus-logos-support-20261108/c55-app-type-origin.json \
+            --logs reports --timeout 180 > reports/c58-baseline-six.json
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib, json, os, subprocess, sys
+          sys.path.insert(0,'experiments/nucleus-logos-support-20261108')
+          baseline=json.loads(Path('reports/c58-baseline-six.json').read_text())
+          assert baseline['all_six_unknown'] and baseline['all_six_profiled']
+          prior=next(x for x in baseline['cases'] if x['case']=='magma-list-deep-n36')
+          original=Path('arena207/good/perf/magma-list-deep-n36.ndjson').read_bytes()
+          assert hashlib.sha256(original).hexdigest()==prior['source_sha256']
+          flags=json.loads(Path('base/flags.json').read_text())
+          env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+          env.update(flags)
+          env.update({'NUCLEUS_DIAGNOSTIC_C38_EARLY_TYPED_SPINE':'1',
+                      'NUCLEUS_DIAGNOSTIC_C47_PROFILE_EXPR':str(prior['first_failed_root']),
+                      'NUCLEUS_DIAGNOSTIC_C55_APP_SHAPE':'1',
+                      'NUCLEUS_DIAGNOSTIC_C56_NEUTRAL_PAIR':'1',
+                      'NUCLEUS_DIAGNOSTIC_C58_OPENING_4096':'1',
+                      'NUCLEUS_TRACE_DOWNSTREAM':'1'})
+          run=subprocess.run([str(Path('candidate/nucleus-diagnostic').resolve()),'262144'],
+                             input=original,capture_output=True,env=env,timeout=180)
+          Path('reports/c58-deep-n36.stderr').write_bytes(run.stderr)
+          Path('reports/c58-deep-n36.stdout').write_bytes(run.stdout)
+          if run.returncode not in (0,2):
+              raise RuntimeError(f'deep-n36 changed to REJECT/ERROR ({run.returncode})')
+          events=[line for line in run.stderr.decode(errors='replace').splitlines() if line.startswith('NUCLEUS_C58_OPEN:')]
+          assert events, 'source-root opening trial not observed'
+          if run.returncode==2:
+              from probe_c52_six_loss_census import parse_downstream
+              assert parse_downstream(run.stderr)==prior['first_failed_boundary'], 'UNKNOWN boundary changed'
+          result={'diagnostic':'C58 single-variable Pi opening allowance 1024 to 4096',
+                  'source_sha256':prior['source_sha256'],'original_root':prior['first_failed_root'],
+                  'standard_budget':262144,'baseline_six_all_unknown':True,
+                  'trial_case':'magma-list-deep-n36','trial_verdict':'ACCEPT' if run.returncode==0 else 'UNKNOWN',
+                  'proof_rules_changed':False,'extra_fuel_granted':False,
+                  'opening_events_count':len(events),'opening_event_samples':events[:32],
+                  'trial_boundary':prior['first_failed_boundary'] if run.returncode==2 else None,
+                  'protected_403_not_run':True,'promoted_to_selected_checker':False}
+          Path('reports/c58-pi-opening.json').write_text(json.dumps(result,indent=2)+'\n')
+          print('C58',result['trial_verdict'],'opening events',len(events))
+          PY
+      - name: Preserve positive or negative source-qualified receipt
+        if: always()
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          if test -s reports/c58-pi-opening.json; then
+            cp reports/c58-pi-opening.json experiments/nucleus-logos-support-20261108/c58-pi-opening.json
+          else
+            jq -n \
+              --arg cargo "$(tail -n 45 reports/cargo-check.log 2>/dev/null || true)" \
+              --arg native "$(tail -n 45 reports/native-tests.log 2>/dev/null || true)" \
+              '{status:"UNKNOWN_CI_FAILURE",qualified:false,standard_accepts:0,cargo:$cargo,native:$native}' \
+              > experiments/nucleus-logos-support-20261108/c58-pi-opening.json
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add experiments/nucleus-logos-support-20261108/c58-pi-opening.json
+          git commit -m 'C58 exact Pi opening trial with same source and accountable fuel'
+          git push origin HEAD:refs/heads/research/nucleus-c58-pi-opening-20261109
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-C58-pi-opening
+          retention-days: 60
+          path: |
+            reports/
+            candidate/
+            base/flags.json
