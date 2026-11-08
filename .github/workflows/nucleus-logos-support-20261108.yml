@@ -1,3 +1,5 @@
+# C3: force inlining of the mutual typing path to restore the selected
+# binary's one-frame recursion; app-lam is a preflight, never a waived case.
 name: Nucleus LOGOS support projected-typing observation
 on:
   push:
