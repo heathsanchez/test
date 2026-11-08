@@ -1,0 +1,55 @@
+name: Nucleus C78 captured function source-owner census
+on:
+  push:
+    branches: [research/nucleus-c78-parent-function-origin-20261109]
+    paths:
+      - '.github/workflows/nucleus-c78-parent-origin.yml'
+      - 'experiments/nucleus-logos-support-20261108/c78_source_parent.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  original-owners:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Authenticate immutable original n7
+        run: |
+          set -euo pipefail
+          mkdir -p frozen reports
+          gh api repos/heathsanchez/test/actions/artifacts/13276400289/zip > arena207.zip
+          printf '%s  %s\n' a9582eadc0d9893cbe39e6bcfccd79bfaec2032838851b8a487c35df16096763 arena207.zip | sha256sum -c -
+          unzip -p arena207.zip lean-arena-tests.tar.gz | tar --no-same-owner -xzf - -C frozen
+          test "$(sha256sum frozen/good/perf/magma-list-pair-n7.ndjson | cut -d' ' -f1)" = "abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35"
+      - name: Identify actual source origins and enforce fail-closed drifts
+        run: |
+          set -euo pipefail
+          python3 experiments/nucleus-logos-support-20261108/c78_source_parent.py \
+            frozen/good/perf/magma-list-pair-n7.ndjson reports/c78.json
+          python3 - <<'PY'
+          import sys,json
+          from pathlib import Path
+          sys.path.insert(0,'experiments/nucleus-logos-support-20261108')
+          import c78_source_parent as c78
+          original=Path('frozen/good/perf/magma-list-pair-n7.ndjson').read_bytes()
+          result=json.loads(Path('reports/c78.json').read_text())
+          assert result['verified_definitional_conversion']=='UNKNOWN'
+          assert result['authorization']=='NONE'
+          assert set(result['roots'])=={'6221','8189'}
+          for label,changed in [('newline',original+b'\n'),
+                                ('changed_expr',original.replace(b'"ie":7369',b'"ie":7368',1))]:
+              try:c78.inspect(changed)
+              except (ValueError,AssertionError): print('C78_CONTROL_REJECTED',label)
+              else:raise AssertionError('unqualified source survived drift')
+          print('C78_EXACT_SOURCE_OWNER_WARRANTED_BOUNDED')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-C78-parent-origin
+          retention-days: 60
+          path: reports/
