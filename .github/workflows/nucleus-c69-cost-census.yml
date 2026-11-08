@@ -41,11 +41,9 @@ jobs:
           python3 -m py_compile experiments/nucleus-certified-decide-20261109/c69_instrument.py
           python3 experiments/nucleus-certified-decide-20261109/c69_instrument.py
           cargo check --locked --all-targets --features diagnostics --manifest-path metatron-kernel/Cargo.toml > reports/cargo-check.log 2>&1 || { tail -n 120 reports/cargo-check.log; exit 1; }
-      - name: Native proof and forged-proof controls
+      - name: Compile observation-only Nucleus diagnostic binary
         run: |
           set -euo pipefail
-          mapfile -t flags < <(jq -r 'to_entries[] | "\(.key)=\(.value)"' base/flags.json)
-          env "${flags[@]}" cargo test --locked --release --features diagnostics --manifest-path metatron-kernel/Cargo.toml > reports/native-tests.log 2>&1 || { tail -n 120 reports/native-tests.log; exit 1; }
           cargo build --locked --release --features diagnostics --bin nucleus-diagnostic --manifest-path metatron-kernel/Cargo.toml > reports/release-build.log 2>&1 || { tail -n 120 reports/release-build.log; exit 1; }
           cp metatron-kernel/target/release/nucleus-diagnostic candidate/nucleus-diagnostic
           sha256sum candidate/* > reports/binaries.sha256
@@ -87,6 +85,11 @@ jobs:
               "exact_original_sha256":digest,"source_rules_changed":False,
               "selected_checker_changed":False,"standard_new_accepts":0,"rows":rows},indent=2)+"\n")
           PY
+      - name: Full source-native proof and forged-proof regression gate
+        run: |
+          set -euo pipefail
+          mapfile -t flags < <(jq -r 'to_entries[] | "\(.key)=\(.value)"' base/flags.json)
+          env "${flags[@]}" cargo test --locked --release --features diagnostics --manifest-path metatron-kernel/Cargo.toml > reports/native-tests.log 2>&1 || { tail -n 120 reports/native-tests.log; exit 1; }
       - uses: actions/upload-artifact@v4
         if: always()
         with:
