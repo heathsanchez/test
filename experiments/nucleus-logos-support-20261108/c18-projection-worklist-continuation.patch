@@ -1,0 +1,122 @@
+--- a/src/machine.rs
++++ b/src/machine.rs
+@@ -2777,7 +2777,20 @@
+         };
+         let mut current=neutral.clone();
+         let mut current_is_requested=true;
+-        enum Continuation { Finish(Rc<ReplayKey>), Major(Neutral,bool) }
++        enum Continuation {
++            Finish(Rc<ReplayKey>),
++            Major(Neutral,bool),
++            // A projection is not a constructor. Retain the source-owned
++            // projection while its actual receiver recursor is checked by
++            // this same worklist and work owner.
++            ProjectedMajor {
++                parent:Neutral,
++                requested:bool,
++                type_name:NameId,
++                index:usize,
++                spine:Vec<Closure>,
++            },
++        }
+         let mut parents=Vec::new();
+         let mut established_major=None;
+         let mut active=HashSet::new();
+@@ -2804,6 +2817,47 @@
+                             established_major=Some(value);
+                             continue $target;
+                         }
++                        Continuation::ProjectedMajor {parent,requested,type_name,index,spine} => {
++                            let Some(spec)=self.projection_specs.get(&type_name) else {
++                                return Judgment::unknown("worklist-projection-unknown-type");
++                            };
++                            if index>=spec.field_types.len(){
++                                return Judgment::unknown("worklist-projection-index");
++                            }
++                            let Value::Neutral(Neutral {
++                                head:NeutralHead::Const{name:constructor,..},
++                                spine:constructor_args,
++                            })=&value else {
++                                return Judgment::unknown("worklist-projection-receiver-not-constructor");
++                            };
++                            if *constructor!=spec.constructor
++                                || constructor_args.len()!=spec.num_params+spec.field_types.len()
++                            {
++                                return Judgment::unknown("worklist-projection-constructor-or-arity");
++                            }
++                            // This is the *actual* constructor field at the
++                            // registered index, not a field inferred from a
++                            // comparison target or an unfinished reduction.
++                            let field=constructor_args[spec.num_params+index].clone();
++                            let pending:Vec<Closure>=spine.iter().rev().cloned().collect();
++                            let cheap=self.expose_internal_with_pending(
++                                field.clone(),Transparency::Reducible,
++                                self.exposure_fuel.get().unwrap_or(0).min(512),false,true,pending.clone(),
++                            ).map(|exposure|exposure.value);
++                            let projected=if cheap.is_proven() {cheap} else {
++                                self.expose_internal_with_pending(
++                                    field,Transparency::Full,
++                                    self.exposure_fuel.get().unwrap_or(0).min(512),false,true,pending,
++                                ).map(|exposure|exposure.value)
++                            };
++                            let Some(projected)=projected.proven_value() else {
++                                return Judgment::unknown("worklist-projection-source-field-unavailable");
++                            };
++                            current=parent;
++                            current_is_requested=requested;
++                            established_major=Some(projected.clone());
++                            continue $target;
++                        }
+                     }
+                 }
+                 return Judgment::proven(value,"checked-source-recursor-worklist");
+@@ -2937,6 +2991,49 @@
+                     }
+                     let next=match &major_value {
+                         Value::StuckProjection{type_name,index,structure,spine}=>{
++                            // First ask the actual receiver what it reduces
++                            // to under a bounded *shared* work allowance.
++                            // A registered recursor receiver is handled by
++                            // this worklist, instead of recursively opening
++                            // a second checked-recursor engine in the field
++                            // probe. The field is only selected after that
++                            // engine produces the real source constructor.
++                            let receiver={
++                                let parent=self.exposure_fuel.get();
++                                let grant=parent.unwrap_or(0).min(512);
++                                self.exposure_fuel.set(Some(grant));
++                                let mut remaining=grant;
++                                let _borrow=MeteredConversionWork{
++                                    fuel:&self.exposure_fuel,caller:&mut remaining,parent,grant,
++                                };
++                                let previous=self.native_completion.replace(false);
++                                let _scope=NativeCompletionScope{enabled:&self.native_completion,previous};
++                                let previous_probe=self.worklist_major_probe.replace(true);
++                                let _probe_scope=NativeCompletionScope{enabled:&self.worklist_major_probe,previous:previous_probe};
++                                self.expose_for_conversion(
++                                    structure.clone(),Transparency::Full,grant,
++                                )
++                            };
++                            if let Some(Value::Neutral(nested))=receiver.proven_value()
++                                && matches!(&nested.head,NeutralHead::Const{name,..}
++                                    if self.recursor_reductions.contains_key(name))
++                            {
++                                #[cfg(feature="diagnostics")]
++                                if crate::run_flags::present(crate::run_flags::Flag::TraceNestedRecursorIotaFailure) {
++                                    use std::sync::atomic::{AtomicUsize,Ordering};
++                                    static PRINTED:AtomicUsize=AtomicUsize::new(0);
++                                    if PRINTED.fetch_add(1,Ordering::Relaxed)<32 {
++                                        eprintln!("NUCLEUS_PROJECTION_MAJOR_WORKLIST_DEFERRED:recursor={name:?}:receiver={:?}:index={index}:depth={depth}:fuel={:?}",nested.head,self.exposure_fuel.get());
++                                    }
++                                }
++                                parents.push(Continuation::ProjectedMajor{
++                                    parent:current.clone(),requested:current_is_requested,
++                                    type_name:*type_name,index:*index,spine:spine.clone(),
++                                });
++                                current=nested.clone();
++                                current_is_requested=false;
++                                continue 'evaluate;
++                            }
+                             // A projection-field probe is speculative until
+                             // its actual source constructor is established.
+                             // Keep most of the shared owner for the qualified
