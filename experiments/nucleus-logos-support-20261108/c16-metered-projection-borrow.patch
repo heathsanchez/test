@@ -1,0 +1,30 @@
+--- a/src/machine.rs
++++ b/src/machine.rs
+@@ -2941,13 +2941,25 @@
+                             // its actual source constructor is established.
+                             // Keep most of the shared owner for the qualified
+                             // recursor worklist that its reduction may reveal.
+-                            let grant=self.exposure_fuel.get().unwrap_or(0).min(512);
++                            // Merely passing 512 as an argument would not
++                            // constrain nested checked recursor replays:
++                            // they consume the owner held in exposure_fuel.
++                            // Borrow an actual capped sub-owner, restore the
++                            // parent, and debit every step before resuming.
++                            let parent=self.exposure_fuel.get();
++                            let grant=parent.unwrap_or(0).min(512);
++                            self.exposure_fuel.set(Some(grant));
++                            let mut remaining=grant;
++                            let _borrow=MeteredConversionWork{
++                                fuel:&self.exposure_fuel,caller:&mut remaining,parent,grant,
++                            };
+                             #[cfg(feature="diagnostics")]
+                             if crate::run_flags::present(crate::run_flags::Flag::TraceNestedRecursorIotaFailure) {
+                                 use std::sync::atomic::{AtomicUsize,Ordering};
+                                 static BOUNDED:AtomicUsize=AtomicUsize::new(0);
+                                 if BOUNDED.fetch_add(1,Ordering::Relaxed)<16 {
+-                                    eprintln!("NUCLEUS_PROJECTION_MAJOR_BOUNDED:recursor={name:?}:grant={grant}:owner={:?}:depth={depth}:step={step}",self.exposure_fuel.get());
++                                    eprintln!("NUCLEUS_PROJECTION_MAJOR_BOUNDED:recursor={name:?}:grant={grant}:parent={parent:?}:depth={depth}:step={step}");
++                                    eprintln!("NUCLEUS_PROJECTION_MAJOR_BORROWED:recursor={name:?}:grant={grant}:parent={parent:?}:depth={depth}:step={step}");
+                                 }
+                             }
+                             self.projection_value_for_conversion(
