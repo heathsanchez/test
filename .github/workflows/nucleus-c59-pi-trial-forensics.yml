@@ -1,0 +1,99 @@
+name: Nucleus C59 Pi opening result and baseline forensics
+on:
+  push:
+    branches: [research/nucleus-c59-pi-trial-forensics-20261109]
+    paths: ['.github/workflows/nucleus-c59-pi-trial-forensics.yml']
+  workflow_dispatch:
+permissions: {contents: write, actions: read}
+jobs:
+  exact-result:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RUST_MIN_STACK: '16777216'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reuse exact C58 native-tested binary and frozen source
+        run: |
+          set -euo pipefail
+          mkdir -p from-c58 original reports
+          gh api repos/heathsanchez/test/actions/artifacts/13622452324/zip > c58.zip
+          printf '%s  %s\n' 63764179e4cfcd89cac50c8e200977c9169cab47e073086e463c86b3fbcfcadd c58.zip | sha256sum -c -
+          unzip -q c58.zip -d from-c58
+          chmod +x from-c58/candidate/nucleus-diagnostic
+          gh api repos/heathsanchez/test/actions/artifacts/13276400289/zip > arena207.zip
+          printf '%s  %s\n' a9582eadc0d9893cbe39e6bcfccd79bfaec2032838851b8a487c35df16096763 arena207.zip | sha256sum -c -
+          unzip -p arena207.zip lean-arena-tests.tar.gz | tar --no-same-owner -xzf - -C original
+      - name: Describe first baseline divergence and replay deep n36 twice
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib,json,os,subprocess,sys
+          sys.path.insert(0,'experiments/nucleus-logos-support-20261108')
+          from probe_c52_six_loss_census import parse_downstream
+          from probe_c56_neutral_pair import parse_neutral_observation,source_names
+          frozen=json.loads(Path('experiments/nucleus-logos-support-20261108/c56-neutral-pair.json').read_text())
+          expected={x['case']:x for x in frozen['cases']}
+          baseline_logs=[]
+          for path in sorted(Path('from-c58/reports').glob('*.stderr')):
+              name=path.stem
+              if name not in expected:continue
+              data=path.read_bytes()
+              baseline_logs.append({'case':name,'size':len(data),'boundary':parse_downstream(data),
+                                    'first_c56_pair':next((x[:280] for x in data.decode(errors='replace').splitlines() if x.startswith('NUCLEUS_C56_PAIR:')),None)})
+          src=Path('original/good/perf/magma-list-deep-n36.ndjson').read_bytes()
+          assert hashlib.sha256(src).hexdigest()==expected['magma-list-deep-n36']['source_sha256']
+          flags=json.loads(Path('from-c58/base/flags.json').read_text())
+          assert len(flags)==24 and set(flags.values())=={'1'}
+          binary=str(Path('from-c58/candidate/nucleus-diagnostic').resolve())
+          attempts=[]
+          for increased in (False,True):
+              env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+              env.update(flags)
+              env.update({'NUCLEUS_DIAGNOSTIC_C38_EARLY_TYPED_SPINE':'1',
+                          'NUCLEUS_DIAGNOSTIC_C47_PROFILE_EXPR':'18985',
+                          'NUCLEUS_DIAGNOSTIC_C55_APP_SHAPE':'1',
+                          'NUCLEUS_DIAGNOSTIC_C56_NEUTRAL_PAIR':'1',
+                          'NUCLEUS_TRACE_DOWNSTREAM':'1'})
+              if increased:env['NUCLEUS_DIAGNOSTIC_C58_OPENING_4096']='1'
+              run=subprocess.run([binary,'262144'],input=src,capture_output=True,env=env,timeout=240)
+              if run.returncode not in (0,1,2,3):raise RuntimeError('unknown executable status')
+              tag='4096' if increased else '1024'
+              Path(f'reports/deep-n36-{tag}.stderr').write_bytes(run.stderr)
+              events=[x for x in run.stderr.decode(errors='replace').splitlines() if x.startswith('NUCLEUS_C58_OPEN:')]
+              verdict=['ACCEPT','REJECT','UNKNOWN','ERROR'][run.returncode]
+              attempts.append({'opening_allowance':int(tag),'verdict':verdict,'boundary':parse_downstream(run.stderr) if verdict=='UNKNOWN' else None,
+                               'opening_events':len(events),'opening_samples':events[:24],
+                               'stdout_sha256':hashlib.sha256(run.stdout).hexdigest()})
+          result={'diagnostic':'C59 C58 artifact forensics; no checker change','c58_run':42493189434,
+                  'c58_artifact_id':13622452324,'c58_binary_sha256':hashlib.sha256(Path(binary).read_bytes()).hexdigest(),
+                  'source_sha256':expected['magma-list-deep-n36']['source_sha256'],
+                  'original_262144':True,'native_proof_controls_parent_passed':True,
+                  'failed_c58_baseline_census_logs':baseline_logs,'n36_attempts':attempts,
+                  'selected_checker_changed':False,'protected_403_not_run':True}
+          Path('reports/c59-pi-forensics.json').write_text(json.dumps(result,indent=2)+'\n')
+          print(json.dumps({'baseline_divergences':baseline_logs,'attempts':[{'allowance':x['opening_allowance'],'verdict':x['verdict'],'boundary':x['boundary'],'events':x['opening_events'],'sample':x['opening_samples'][:2]} for x in attempts]},indent=2))
+          PY
+      - name: Commit exact source forensic receipt
+        if: always()
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          if test -s reports/c59-pi-forensics.json; then
+            cp reports/c59-pi-forensics.json experiments/nucleus-logos-support-20261108/c59-pi-forensics.json
+          else
+            jq -n '{status:"UNKNOWN_FORENSICS_FAILURE",qualified:false}' > experiments/nucleus-logos-support-20261108/c59-pi-forensics.json
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add experiments/nucleus-logos-support-20261108/c59-pi-forensics.json
+          git commit -m 'C59 identify baseline drift and run exact Pi opening comparison'
+          git push origin HEAD:refs/heads/research/nucleus-c59-pi-trial-forensics-20261109
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-C59-pi-forensics
+          retention-days: 60
+          path: reports/
