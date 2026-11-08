@@ -1,0 +1,78 @@
+--- a/src/machine.rs
++++ b/src/machine.rs
+@@ -2946,6 +2946,21 @@
+         self.qualified_recursor_result(neutral,budget,CheckedReplayGoal::OneStep)
+     }
+ 
++    // C35 diagnostic: use the existing owner/borrow/return accounting that
++    // already protects checked quotient replay. The entire certified source
++    // recursor worklist runs under this one borrowed allowance. Only work
++    // actually spent is charged back, on both success and failure.
++    #[cfg(feature="diagnostics")]
++    pub(crate) fn qualified_one_step_recursor_result_metered(
++        &self,neutral:&Neutral,remaining:&mut usize,
++    )->Judgment<Value>{
++        let parent=self.exposure_fuel.get();
++        let grant=(*remaining).min(parent.unwrap_or(usize::MAX));
++        self.exposure_fuel.set(Some(grant));
++        let _work=MeteredConversionWork{fuel:&self.exposure_fuel,caller:remaining,parent,grant};
++        self.qualified_recursor_result(neutral,grant,CheckedReplayGoal::OneStep)
++    }
++
+     #[track_caller]
+     pub(crate) fn qualified_nested_recursor_result(&self,neutral:&Neutral,budget:usize)->Judgment<Value> {
+         self.qualified_recursor_result(neutral,budget,CheckedReplayGoal::Completed)
+@@ -3824,6 +3839,17 @@
+         assert!(machine.qualified_nested_recursor_result(&input,512).is_unknown());
+         let actual=machine.qualified_one_step_recursor_result(&input,512);
+         assert!(matches!(actual.proven_value(),Some(Value::Neutral(n)) if matches!(&n.head,NeutralHead::Const{name,..} if *name==natrec.name) && n.spine.len()==4),"valid source iota was lost while completing its symbolic result: {actual:?}");
++        #[cfg(feature="diagnostics")]
++        {
++            let mut metered_allowance=512;
++            let metered=machine.qualified_one_step_recursor_result_metered(&input,&mut metered_allowance);
++            assert!(matches!(metered.proven_value(),Some(Value::Neutral(n)) if matches!(&n.head,NeutralHead::Const{name,..} if *name==natrec.name) && n.spine.len()==4));
++            assert!(metered_allowance>0 && metered_allowance<512,"checked recursor work was not metered: {metered_allowance}");
++            assert_eq!(machine.exposure_fuel.get(),None,"borrowed recursor allowance leaked its owner");
++            let mut failed_allowance=12;
++            assert!(machine.qualified_one_step_recursor_result_metered(&input,&mut failed_allowance).is_unknown());
++            assert_eq!(failed_allowance,12,"unstarted trial must not charge unspent work");
++        }
+         let Some(Value::Neutral(returned))=actual.proven_value() else {panic!("expected actual retained source recursor")};
+         assert!(matches!(machine.expose(returned.spine[3].clone(),Transparency::Full,128).proven_value(),Some(Value::Neutral(Neutral{head:NeutralHead::Free(FreeId(0)),..}))));
+         let mut unknown=input.clone();
+--- a/src/convert.rs
++++ b/src/convert.rs
+@@ -1933,6 +1933,33 @@
+                     for (is_left, candidate) in [(false, right), (true, left)] {
+                         if available < 128 { break; }
+                         let probe = available / 2;
++                        // C35 diagnostic: retain precisely the unused part
++                        // of a *source-owned checked* recursor trial. The
++                        // original branch below still deliberately reserves
++                        // the whole half-budget when C35 is absent.
++                        #[cfg(feature="diagnostics")]
++                        if std::env::var_os("NUCLEUS_DIAGNOSTIC_C35_ACTUAL_RECURSOR_CHARGE").is_some() {
++                            let mut remaining_probe=probe;
++                            let result=checker.machine().qualified_one_step_recursor_result_metered(
++                                candidate,&mut remaining_probe,
++                            );
++                            let paid=probe.saturating_sub(remaining_probe);
++                            available=available.saturating_sub(paid.saturating_add(1));
++                            let changed=matches!(&result,Judgment::Proven{value,..}
++                                if !matches!(value,Value::Neutral(n) if n==candidate));
++                            use std::sync::atomic::{AtomicUsize,Ordering};
++                            static PRINTED:AtomicUsize=AtomicUsize::new(0);
++                            if PRINTED.fetch_add(1,Ordering::Relaxed)<128 {
++                                eprintln!("NUCLEUS_C35_RECURSOR_CHARGE:depth={depth}:left={is_left}:grant={probe}:spent={paid}:remaining={available}:changed={changed}");
++                            }
++                            if let Judgment::Proven{value,..}=result
++                                && !matches!(&value,Value::Neutral(n) if n==candidate)
++                            {
++                                reduced=Some((is_left,value));
++                                break;
++                            }
++                            continue;
++                        }
+                         available -= probe;
+                         if let Judgment::Proven { value, .. } = checker.machine()
+                             .qualified_one_step_recursor_result(candidate, probe)
