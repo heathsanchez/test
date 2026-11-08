@@ -30,10 +30,28 @@ jobs:
           set -euo pipefail
           lake build NucleusDecide
           lake env lean NucleusDecide.lean 2>&1 | tee axioms.log
-          if grep -E 'depends on axioms:|sorryAx|unapproved axiom' axioms.log; then
+          if grep -E 'sorryAx|unapproved axiom' axioms.log; then
             echo 'INVALID_AXIOM_BOUNDARY'
             exit 1
           fi
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          lines=Path("axioms.log").read_text().splitlines()
+          required=[
+            "isTrue_evaluates_true","isFalse_evaluates_false",
+            "checked_decide_true_implies_proof",
+            "checked_decide_false_implies_refutation",
+            "finite_domain_isTrue","raw_true_cannot_certify_arbitrary_prop",
+          ]
+          for name in required:
+              a="'NucleusDecide."+name+"' does not depend on any axioms"
+              if not any(a in line for line in lines):raise AssertionError("core axiom drift: "+name)
+          relevant=[line for line in lines if "'NucleusDecide.fin_certificate_sound' depends on axioms:" in line]
+          if len(relevant)!=1 or not re.search(r"depends on axioms: \[propext\]",relevant[0]):
+              raise AssertionError("fin certificate axiom drift: "+repr(relevant))
+          print("CORE_SIX_AXIOM_FREE_AND_FIN_PROPEXT_ONLY")
+          PY
           lake env lean NatSourceAdapter.lean 2>&1 | tee adapter-axioms.log
           if grep -E 'sorryAx|unapproved axiom' adapter-axioms.log; then
             echo 'UNAPPROVED_ADAPTER_AXIOM'
@@ -51,7 +69,7 @@ jobs:
               axioms={x.strip() for x in m.group(1).split(",")}
               if not axioms <= {"propext","Quot.sound"}:
                   raise AssertionError("unapproved axiom "+repr(axioms))
-          print("NATSOURCE_AXOIOM_WHITELISTED="+repr(sorted({"propext","Quot.sound"})))
+          print("NATSOURCE_AXIOM_WHITELISTED="+repr(sorted({"propext","Quot.sound"})))
           PY
           sha256sum NucleusDecide.lean NatSourceAdapter.lean ForgedIsFalse.lean ForgedFinite.lean lakefile.lean lean-toolchain
       - name: Forged isFalse constructor must be rejected
