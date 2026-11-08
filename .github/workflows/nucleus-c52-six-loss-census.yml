@@ -1,0 +1,68 @@
+# C52 tests C50's discarded checked-source worklist state across the SIX
+# original unchanged valid UNKNOWNs; no Rust source modification or promotion.
+name: Nucleus C52 all-six recursor loss census
+on:
+  push:
+    branches: [research/nucleus-c52-six-loss-census-20261109]
+    paths: ['.github/workflows/nucleus-c52-six-loss-census.yml']
+  workflow_dispatch:
+permissions: {contents: write, actions: read}
+jobs:
+  loss-census:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 22
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore pinned original arena and native-qualified C50 binary
+        run: |
+          set -euo pipefail
+          mkdir -p c50 arena207 reports
+          gh api repos/heathsanchez/test/actions/artifacts/13616928035/zip > c50-qualified.zip
+          printf '%s  %s\n' c04171f1b37eff7093b19be69956354823317086334b6cfca1408e89b2148b9d c50-qualified.zip | sha256sum -c -
+          unzip -q c50-qualified.zip -d c50
+          chmod +x c50/candidate/nucleus-diagnostic
+          gh api repos/heathsanchez/test/actions/artifacts/13276400289/zip > arena207.zip
+          printf '%s  %s\n' a9582eadc0d9893cbe39e6bcfccd79bfaec2032838851b8a487c35df16096763 arena207.zip | sha256sum -c -
+          unzip -p arena207.zip lean-arena-tests.tar.gz | tar --no-same-owner -xzf - -C arena207
+          python3 -c 'import json; f=json.load(open("c50/base/flags.json")); assert len(f)==24 and set(f.values())=={"1"}'
+          sha256sum c50/candidate/nucleus-diagnostic > reports/c50-binary.sha256
+      - name: Six source-frozen UNKNOWNs and C50 failure ledger
+        run: |
+          set -euo pipefail
+          PYTHONPATH=experiments/nucleus-logos-support-20261108 python3 -m unittest \
+            experiments/nucleus-logos-support-20261108/test_c48_first_divergence.py \
+            experiments/nucleus-logos-support-20261108/test_c50_loss_ledger.py \
+            experiments/nucleus-logos-support-20261108/test_c52_six_loss_census.py -v
+          python3 experiments/nucleus-logos-support-20261108/probe_c52_six_loss_census.py \
+            --binary c50/candidate/nucleus-diagnostic \
+            --arena arena207 --flags c50/base/flags.json --logs reports --timeout 180 \
+            | tee reports/c52-all-six-loss.json
+          python3 -c 'import json; r=json.load(open("reports/c52-all-six-loss.json")); assert r["all_six_unknown"] and r["all_six_profiled"] and len(r["cases"])==6; print("C52", [(x["case"],x["loss_summary"]) for x in r["cases"]])'
+      - name: Preserve positive or negative all-six receipt
+        if: always()
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          if test -f reports/c52-all-six-loss.json; then
+            cp reports/c52-all-six-loss.json experiments/nucleus-logos-support-20261108/c52-all-six-loss.json
+          else
+            jq -n --arg cause "C52 no complete source-qualified report; inspect the workflow job" \
+              '{status:"UNKNOWN_CI_FAILURE", standard_accepts:0,qualified:false,reason:$cause}' \
+              > experiments/nucleus-logos-support-20261108/c52-all-six-loss.json
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add experiments/nucleus-logos-support-20261108/c52-all-six-loss.json
+          git commit -m 'C52 six original recursor-loss census (observer only)'
+          git push origin HEAD:refs/heads/research/nucleus-c52-six-loss-census-20261109
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-C52-six-loss-census
+          retention-days: 60
+          path: |
+            reports/
+            c50/base/flags.json
+            reports/c50-binary.sha256
