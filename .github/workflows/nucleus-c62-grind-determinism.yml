@@ -1,0 +1,99 @@
+name: Nucleus C62 grind original root determinism
+on:
+  push:
+    branches: [research/nucleus-c62-grind-replay-determinism-20261109]
+    paths: ['.github/workflows/nucleus-c62-grind-determinism.yml']
+  workflow_dispatch:
+permissions: {contents: write, actions: read}
+jobs:
+  exact-roots:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RUST_MIN_STACK: '16777216'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore the two exact native-tested binaries and frozen original
+        run: |
+          set -euo pipefail
+          mkdir -p c56 c58 arena207 reports
+          gh api repos/heathsanchez/test/actions/artifacts/13619579542/zip > c56.zip
+          printf '%s  %s\n' 324962074304fd397ed3b0f5b2301a6c58037e5cc99248b08c9a4120eecff25a c56.zip | sha256sum -c -
+          unzip -p c56.zip candidate/nucleus-diagnostic > c56/nucleus-diagnostic
+          unzip -p c56.zip base/flags.json > c56/flags.json
+          gh api repos/heathsanchez/test/actions/artifacts/13622452324/zip > c58.zip
+          printf '%s  %s\n' 63764179e4cfcd89cac50c8e200977c9169cab47e073086e463c86b3fbcfcadd c58.zip | sha256sum -c -
+          unzip -p c58.zip candidate/nucleus-diagnostic > c58/nucleus-diagnostic
+          unzip -p c58.zip base/flags.json > c58/flags.json
+          chmod +x c56/nucleus-diagnostic c58/nucleus-diagnostic
+          diff -u c56/flags.json c58/flags.json
+          sha256sum c56/nucleus-diagnostic c58/nucleus-diagnostic > reports/binaries.sha256
+          gh api repos/heathsanchez/test/actions/artifacts/13276400289/zip > arena207.zip
+          printf '%s  %s\n' a9582eadc0d9893cbe39e6bcfccd79bfaec2032838851b8a487c35df16096763 arena207.zip | sha256sum -c -
+          unzip -p arena207.zip lean-arena-tests.tar.gz | tar --no-same-owner -xzf - -C arena207
+      - name: Replay identical Grind bytes under fresh processes three times per binary
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib,json,os,subprocess,sys
+          sys.path.insert(0,'experiments/nucleus-logos-support-20261108')
+          from probe_c52_six_loss_census import parse_downstream
+          source=Path('arena207/good/perf/grind-ring-5.ndjson').read_bytes()
+          digest=hashlib.sha256(source).hexdigest()
+          assert digest=='e9c394e0ff311fd10f60dee2433a530f16e82354c32d6588a8775baa06fd221f'
+          flags=json.loads(Path('c56/flags.json').read_text())
+          assert len(flags)==24 and set(flags.values())=={'1'}
+          records=[]
+          for variant in ('c56','c58'):
+            for repetition in range(3):
+              env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+              env.update(flags)
+              env.update({'NUCLEUS_DIAGNOSTIC_C38_EARLY_TYPED_SPINE':'1',
+                          'NUCLEUS_DIAGNOSTIC_C47_PROFILE_EXPR':'156494',
+                          'NUCLEUS_DIAGNOSTIC_C55_APP_SHAPE':'1',
+                          'NUCLEUS_DIAGNOSTIC_C56_NEUTRAL_PAIR':'1',
+                          'NUCLEUS_TRACE_DOWNSTREAM':'1'})
+              try:
+                run=subprocess.run([str(Path(variant+'/nucleus-diagnostic').resolve()),'262144'],
+                                   input=source,capture_output=True,env=env,timeout=240)
+                verdict=['ACCEPT','REJECT','UNKNOWN','ERROR'][run.returncode] if run.returncode in range(4) else 'ERROR'
+                stderr=run.stderr
+              except subprocess.TimeoutExpired as exc:
+                verdict='TIMEOUT';stderr=exc.stderr or b''
+              Path(f'reports/{variant}-grind-{repetition}.stderr').write_bytes(stderr)
+              rec={'binary':variant,'trial':repetition,'verdict':verdict,
+                   'boundary':parse_downstream(stderr) if verdict=='UNKNOWN' else None,
+                   'stderr_sha256':hashlib.sha256(stderr).hexdigest()}
+              records.append(rec)
+              print(variant,repetition,verdict,rec['boundary'],flush=True)
+          result={'experiment':'C62 exact binary/input/flags first-failing-root determinism',
+             'source_sha256':digest,'standard_steps':262144,'replays_per_binary':3,
+             'proof_rules_changed':False,'selected_checker_changed':False,'records':records}
+          for variant in ('c56','c58'):
+            result[variant+'_distinct_boundaries']=sorted(set(json.dumps(r['boundary'],sort_keys=True)
+                  for r in records if r['binary']==variant))
+          Path('reports/c62-determinism.json').write_text(json.dumps(result,indent=2)+'\n')
+          PY
+      - name: Preserve exact replay and root lineage
+        if: always()
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          if test -s reports/c62-determinism.json; then
+            cp reports/c62-determinism.json experiments/nucleus-logos-support-20261108/c62-determinism.json
+          else
+            jq -n '{status:"UNKNOWN_CI_FAILURE",qualified:false}' > experiments/nucleus-logos-support-20261108/c62-determinism.json
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add experiments/nucleus-logos-support-20261108/c62-determinism.json
+          git commit -m 'C62 exact Grind repeatability and first-root control'
+          git push origin HEAD:refs/heads/research/nucleus-c62-grind-replay-determinism-20261109
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-C62-grind-determinism
+          retention-days: 60
+          path: reports/
