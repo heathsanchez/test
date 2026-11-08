@@ -15,7 +15,7 @@ from pathlib import Path
 import re
 import subprocess
 
-from c33_probe import EXPECTED_N7, parse_record
+from probe_c33_source_congruence import EXPECTED_N7, parse_record
 
 
 MARKER = "NUCLEUS_C34_FALLBACK_RESERVE:"
