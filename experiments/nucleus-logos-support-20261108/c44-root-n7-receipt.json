@@ -1,0 +1,19 @@
+{
+  "case": "magma-list-pair-n7",
+  "sha256": "abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35",
+  "budget": 262144,
+  "proof_rules_changed": false,
+  "verdict": "UNKNOWN",
+  "events": {
+    "inferred": [],
+    "check": [
+      {
+        "context_len": 0,
+        "expected": "Term(Closure { expr: ExprId(6), env: EnvFrame { id: 69552, .. }, levels: LevelSubstitution([]) })",
+        "expression": 8804,
+        "remaining": 261687,
+        "result": "Unknown { residual: ResidualId(\"unresolved-qualified-recursor-heads\") }"
+      }
+    ]
+  }
+}
