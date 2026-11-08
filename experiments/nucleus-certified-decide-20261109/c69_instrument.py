@@ -43,13 +43,19 @@ pub fn c69_report() {
 """
 p.write_text(s)
 
-# Work counter in actual exposure evaluation loop.
-replace_once(Path("src/machine.rs"),"""            budget -= 1;
-            if let Some(fuel) = self.exposure_fuel.get()""",
-"""            budget -= 1;
+# Work counter at a unique location *inside* the named reducer.
+# Earlier C47 observer versions insert their own line after decrement.
+p=ROOT/"src/machine.rs"
+body=p.read_text()
+start=body.index("    fn expose_uncached_internal_with_pending(")
+end=body.index("    fn ",start+9)
+chunk=body[start:end]
+anchor="            budget -= 1;"
+assert chunk.count(anchor)==1,("budget anchor drift",chunk.count(anchor))
+chunk=chunk.replace(anchor,anchor+'''
             #[cfg(feature="diagnostics")]
-            crate::diagnostics::c69_count(0);
-            if let Some(fuel) = self.exposure_fuel.get()""")
+            crate::diagnostics::c69_count(0);''')
+p.write_text(body[:start]+chunk+body[end:])
 
 replace_once(Path("src/machine.rs"),"""                Expr::Const { name, levels } => {
                     if let Some(arithmetic)""",
