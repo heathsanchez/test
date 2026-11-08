@@ -137,3 +137,11 @@ an open or unsupported result must not be silently rewritten to empty Γ.
 No C4 observation has returned yet. C3 is `WARRANTED_BOUNDED` only for
 non-mutating observer qualification and its reported representation classes;
 actual cross-owner transport and six-case closure remain `UNKNOWN`.
+
+The first C4 source attempt [run #42430878438](https://github.com/heathsanchez/test/actions/runs/42430878438)
+was `REJECTED` at compile time: besides the two public constructors, the
+checker has three diagnostic-isolation constructors which also require unique
+observation-lifetime IDs. The correction assigns fresh identities to all
+five constructors, including nested diagnostic probes, and uses checked
+atomic increment so ID exhaustion disables observation. No native outcome
+was obtained from the failed build.
