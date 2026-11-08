@@ -1,0 +1,115 @@
+--- a/src/machine.rs
++++ b/src/machine.rs
+@@ -1498,6 +1498,71 @@
+         );
+     }
+ 
++    // C31: observer of the *actual* PProd major-projection transition inside
++    // the checked recursor worklist. A syntactic projection in the source
++    // chain is not sufficient evidence that this transition was evaluated;
++    // report the source receiver and the qualified evaluator's actual result.
++    // This observer never creates a constructor or changes a judgment/fuel.
++    #[cfg(feature="diagnostics")]
++    #[cold]
++    #[inline(never)]
++    fn diagnostic_c31_projection_transition(
++        &self, head:NameId, source:&Value, result:Option<&Judgment<Value>>,
++        before:Option<usize>, depth:usize, step:usize,
++    ) {
++        use std::sync::atomic::{AtomicUsize,Ordering};
++        static SEQ:AtomicUsize=AtomicUsize::new(0);
++        // The original n7 export fixes these IDs to Decidable.rec and PProd.
++        // This is diagnostic selection, not any rule or semantic authority.
++        if head.0!=147{return;}
++        let (shape,origin,receiver)=match source {
++            Value::StuckProjection{type_name,index,structure,spine} if type_name.0==177=>{
++                let binding=match self.expressions.get(structure.expr){
++                    Some(Expr::BVar(i))=>structure.env.lookup_with_node_id(*i)
++                        .map(|(id,_)|format!("bvar={i}:node={id}"))
++                        .unwrap_or_else(||format!("bvar={i}:node=unbound")),
++                    _=>"not-direct-bvar".to_string(),
++                };
++                (format!("stuck:field={index}:spine={}",spine.len()),
++                 format!("expr={:?}:env={}:levels={}:binding={binding}",
++                    structure.expr,structure.env.id(),structure.levels.entries().count()),
++                 self.diagnostic_source_major_chain(structure))
++            }
++            Value::Neutral(n) if matches!(&n.head,NeutralHead::Projection{type_name,..} if type_name.0==177)=>{
++                let head=match &n.head {
++                    NeutralHead::Projection{type_name,index,structure}=>
++                        format!("projection:type={type_name:?}:field={index}:inner_arity={}",structure.spine.len()),
++                    _=>unreachable!("projection shape selected"),
++                };
++                (format!("neutral-projection:spine={}",n.spine.len()),
++                 "origin-in-source-neutral".to_string(),
++                 head)
++            }
++            _=>return,
++        };
++        let seq=SEQ.fetch_add(1,Ordering::Relaxed);
++        if seq>=1024{return;}
++        let status=if let Some(v)=result.and_then(Judgment::proven_value){
++            match v{
++                Value::NatLit(_)=>"proven-nat".to_string(),
++                Value::Sort(_)=>"proven-sort".to_string(),
++                Value::Lam{..}=>"proven-lam".to_string(),
++                Value::Pi{..}=>"proven-pi".to_string(),
++                Value::StuckProjection{..}=>"proven-stuck-projection".to_string(),
++                Value::Neutral(n)=>match &n.head {
++                    NeutralHead::Const{name,levels}=>format!("proven-const:{name:?}:universes={}:arity={}",levels.len(),n.spine.len()),
++                    NeutralHead::Free(f)=>format!("proven-free:{f:?}:arity={}",n.spine.len()),
++                    NeutralHead::Projection{type_name,index,..}=>format!("proven-projection:{type_name:?}:field={index}:arity={}",n.spine.len()),
++                },
++            }
++        }else if result.is_none(){"deferred-worklist".to_string()}
++         else if result.is_some_and(Judgment::is_unknown){"UNKNOWN".to_string()}
++         else{"REJECTED".to_string()};
++        let after=self.exposure_fuel.get();
++        let spent=before.zip(after).map(|(a,b)|a.saturating_sub(b));
++        eprintln!("NUCLEUS_C31_PROJECTION:seq={seq}:depth={depth}:step={step}:source={shape}:origin={origin}:receiver={receiver}:result={status}:owner_before={before:?}:owner_after={after:?}:charged={spent:?}");
++    }
++
+     fn expose_uncached_internal_with_pending(
+         &self,
+         mut closure: Closure,
+@@ -3207,6 +3272,8 @@
+                         }
+                         return Judgment::unknown("projection-major-replay-budget");
+                     }
++                    #[cfg(feature="diagnostics")]
++                    let owner_before_c31=self.exposure_fuel.get();
+                     let next=match &major_value {
+                         Value::StuckProjection{type_name,index,structure,spine}=>{
+                             // First ask the actual receiver what it reduces
+@@ -3237,6 +3304,15 @@
+                                     if self.recursor_reductions.contains_key(name))
+                             {
+                                 #[cfg(feature="diagnostics")]
++                                {
++                                    static C31_DEFER:std::sync::OnceLock<bool>=std::sync::OnceLock::new();
++                                    if *C31_DEFER.get_or_init(||std::env::var_os("NUCLEUS_DIAGNOSTIC_C31_PROJECTED_TRANSITIONS").is_some()) {
++                                        self.diagnostic_c31_projection_transition(
++                                            *name,&major_value,None,owner_before_c31,depth,step,
++                                        );
++                                    }
++                                }
++                                #[cfg(feature="diagnostics")]
+                                 if crate::run_flags::present(crate::run_flags::Flag::TraceNestedRecursorIotaFailure) {
+                                     use std::sync::atomic::{AtomicUsize,Ordering};
+                                     static PRINTED:AtomicUsize=AtomicUsize::new(0);
+@@ -3308,6 +3384,15 @@
+                         }
+                         _=>break,
+                     };
++                    #[cfg(feature="diagnostics")]
++                    {
++                        static C31:std::sync::OnceLock<bool>=std::sync::OnceLock::new();
++                        if *C31.get_or_init(||std::env::var_os("NUCLEUS_DIAGNOSTIC_C31_PROJECTED_TRANSITIONS").is_some()) {
++                            self.diagnostic_c31_projection_transition(
++                                *name,&major_value,Some(&next),owner_before_c31,depth,step,
++                            );
++                        }
++                    }
+                     let Some(value)=next.proven_value()else {
+                         return Judgment::unknown("projection-major-source-field-unavailable");
+                     };
