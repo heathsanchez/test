@@ -1,0 +1,56 @@
+--- a/src/convert.rs
++++ b/src/convert.rs
+@@ -2051,7 +2051,8 @@
+                             use std::sync::atomic::{AtomicUsize,Ordering};
+                             static PRINTED:AtomicUsize=AtomicUsize::new(0);
+                             if PRINTED.fetch_add(1,Ordering::Relaxed)<128 {
+-                                eprintln!("NUCLEUS_CONVERSION_RECURSOR_PROBE:route=certified-bool-constructor:head={:?}:depth={depth}:grant={current_budget}:proved={}",recursive.head,replay.is_proven());
++                                let outcome=match &replay {Judgment::Proven{..}=>"proven",Judgment::Unknown{residual}=>residual.0,Judgment::Refuted{obstruction}=>obstruction.0};
++                                eprintln!("NUCLEUS_CONVERSION_RECURSOR_PROBE:route=certified-bool-constructor:head={:?}:depth={depth}:grant={current_budget}:proved={}:outcome={outcome}",recursive.head,replay.is_proven());
+                             }
+                         }
+                         replay.proven_value().cloned()
+@@ -2102,7 +2103,8 @@
+                                     static PRINTED:AtomicUsize=AtomicUsize::new(0);
+                                     if PRINTED.fetch_add(1,Ordering::Relaxed)<256 {
+                                         let qualified=matches!(&candidate.head,NeutralHead::Const{name,..}if checker.has_qualified_recursor(*name));
+-                                        eprintln!("NUCLEUS_CONVERSION_RECURSOR_PROBE:route=one-step:head={:?}:depth={depth}:side={}:qualified={qualified}:comparison={current_budget}:before={before}:grant={probe}:unused={available}:proved={}",candidate.head,if is_left{"left"}else{"right"},replay.is_proven());
++                                        let outcome=match &replay {Judgment::Proven{..}=>"proven",Judgment::Unknown{residual}=>residual.0,Judgment::Refuted{obstruction}=>obstruction.0};
++                                        eprintln!("NUCLEUS_CONVERSION_RECURSOR_PROBE:route=one-step:head={:?}:depth={depth}:side={}:qualified={qualified}:comparison={current_budget}:before={before}:grant={probe}:unused={available}:proved={}:outcome={outcome}",candidate.head,if is_left{"left"}else{"right"},replay.is_proven());
+                                     }
+                                 }
+                                 if let Judgment::Proven { value, .. } = replay
+--- a/src/machine.rs
++++ b/src/machine.rs
+@@ -2966,12 +2966,30 @@
+                         (nat.succ,vec![],vec![field])
+                     }
+                 }
+-                _=>return Judgment::unknown("nested-recursor-iota-no-constructor"),
++                other=>{
++                    #[cfg(feature="diagnostics")]
++                    if crate::run_flags::present(crate::run_flags::Flag::TraceNestedRecursorIotaFailure) {
++                        use std::sync::atomic::{AtomicUsize,Ordering};
++                        static PRINTED:AtomicUsize=AtomicUsize::new(0);
++                        if PRINTED.fetch_add(1,Ordering::Relaxed)<64 {
++                            let actual=match &other {
++                                Value::Neutral(n)=>format!("neutral={:?}:arity={}:qualified={}",n.head,n.spine.len(),matches!(&n.head,NeutralHead::Const{name,..} if self.recursor_reductions.contains_key(name))),
++                                _=>format!("{other:?}").chars().take(450).collect::<String>(),
++                            };
++                            eprintln!("NUCLEUS_RECURSOR_NO_CONSTRUCTOR:head={name:?}:depth={depth}:entry_budget={budget}:caller={caller}:replay_goal={replay_goal}:actual={actual}:fuel={:?}",self.exposure_fuel.get());
++                        }
++                    }
++                    return Judgment::unknown("nested-recursor-iota-no-constructor");
++                },
+             };
+             let Some(rule) = reduction.rules.iter().find(|rule| {
+                 rule.constructor == constructor
+                     && constructor_args.len() == rule.num_params + rule.num_fields
+             }) else {
++                #[cfg(feature="diagnostics")]
++                if crate::run_flags::present(crate::run_flags::Flag::TraceNestedRecursorIotaFailure) {
++                    eprintln!("NUCLEUS_RECURSOR_UNMATCHED_CONSTRUCTOR:head={name:?}:depth={depth}:entry_budget={budget}:caller={caller}:replay_goal={replay_goal}:actual_ctor={constructor:?}:arity={}:fuel={:?}",constructor_args.len(),self.exposure_fuel.get());
++                }
+                 return Judgment::unknown("nested-recursor-iota-unmatched-rule");
+             };
+             // Check the actual constructor's universe instantiation against
