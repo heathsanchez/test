@@ -66,8 +66,27 @@ jobs:
           cargo build --locked --release --features vstats --manifest-path nano-reference/Cargo.toml --bin nl-fast > reports/c21-vstats-build.log 2>&1 || { tail -n 100 reports/c21-vstats-build.log; exit 1; }
           NL_VSTATS=1 nano-reference/target/release/nl-fast --steps 262144 -j1 -q \
             arena207/good/perf/fueled-chain.ndjson > reports/c21-vstats.stdout 2> reports/c21-vstats.stderr
-          grep -q '^vstats total ' reports/c21-vstats.stderr
-          grep -E '^vstats (total |chain6_datF |chain9_datF |chain12 |chain12_datF )' reports/c21-vstats.stderr > reports/c21-vstats-selected.txt
+          grep -q '^vstats chain12_datF Stats ' reports/c21-vstats.stderr
+          grep -E '^vstats (chain6_datF|chain9_datF|chain12|chain12_datF) Stats ' reports/c21-vstats.stderr > reports/c21-vstats-selected.txt
+          grep '^vstats chain12_datF Stats ' reports/c21-vstats-selected.txt | grep -Eq 'inst_hit: [1-9][0-9]*'
+      - name: C22 ablate only untyped Pi instantiation memoization in reference
+        run: |
+          set -euo pipefail
+          test "$(git -C nano-reference rev-parse HEAD)" = '54ce971a5ac2513a1bac0ac9bca73f672196c0f2'
+          git -C nano-reference apply --check "$GITHUB_WORKSPACE/experiments/nucleus-logos-support-20261108/c22-nano-no-inst-pi-memo.patch"
+          git -C nano-reference apply "$GITHUB_WORKSPACE/experiments/nucleus-logos-support-20261108/c22-nano-no-inst-pi-memo.patch"
+          cargo build --locked --release --features vstats --manifest-path nano-reference/Cargo.toml --bin nl-fast > reports/c22-build.log 2>&1 || { tail -n 100 reports/c22-build.log; exit 1; }
+          set +e
+          NL_VSTATS=1 timeout --signal=TERM --kill-after=3s 60s nano-reference/target/release/nl-fast --steps 262144 -j1 -q \
+            arena207/good/perf/fueled-chain.ndjson > reports/c22-fueled-chain.stdout 2> reports/c22-fueled-chain.stderr
+          c22_code=$?
+          set -e
+          printf '%s\n' "$c22_code" > reports/c22-fueled-chain.exit
+          case "$c22_code" in 0|2|124) ;; *) echo 'Unexpected failure of unchanged valid source under memo-free reference'; exit 1 ;; esac
+          if test "$c22_code" -ne 124; then
+            grep -q '^vstats chain12_datF Stats ' reports/c22-fueled-chain.stderr
+            grep '^vstats chain12_datF Stats ' reports/c22-fueled-chain.stderr | grep -q 'inst_hit: 0'
+          fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:
