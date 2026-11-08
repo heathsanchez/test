@@ -315,7 +315,7 @@ qualified `Nat.rec` major when its nested work owner reached zero.
 Therefore 32,768-entry retention is not a closure, and the candidate is
 **NOT PROMOTED**. It does not prove unlimited retention would never help.
 
-## C9 nested registered-major exposure (CANDIDATE)
+## C9 nested registered-major exposure (REJECTED AS CLOSURE)
 
 The native `magma-list-pair-n7` trace was mapped against the original
 `lean4export` name table: `NameId(147)=Decidable.rec`, `NameId(170)=Bool.rec`,
@@ -333,8 +333,24 @@ retention-cap change and the C7 active source-capture shortcut are both
 absent. The native red test `probe_c9_n7.py` checks byte-exact original
 n7, all 24 selected flags, 262,144 overall steps and requires exit 0;
 the unchanged C8b candidate fails it with exit 2 (observed RED).
-Only if native C9 succeeds will the original 403-case protected replay
+Only if native C9 succeeds would the original 403-case protected replay
 run; its fail-closed harness permits **UNKNOWN -> ACCEPT solely for the six
 known-valid original inputs**, never changes to any other verdict and never
 changes an original ACCEPT or REJECT. Test-only protocol changes cannot
-grant kernel authority. C9 is not warranted or promoted before the run.
+grant kernel authority.
+
+C9 [run #42434289455](https://github.com/heathsanchez/test/actions/runs/42434289455),
+commit `90d50a4d13d76ea62332fe7101cd05f94d5243e5`, artifact `13599016567`,
+ZIP SHA256 `178b202b3e402e0abbc36fb3fa7c2ed66cff5b97aaaea5ddf660b0122eedf692`:
+Rust build and native proof/adversarial controls succeeded. The byte-exact
+original n7 remained UNKNOWN (`exit 2`, 0.435 s); the deliberate red-green
+gate failed and stopped before the expensive protected 403 regression.
+Hence there is **no C9 403 qualification** and no new ACCEPT. Running the
+resulting binary with selected flags and diagnostic tracing again showed
+`Nat.rec` major `Unknown("reduction-budget-exhausted")` and local fuel zero.
+Crucially, the failing registered `Nat.rec` call had a **caller-owned
+allowance of 504**, already below the previous 512 per-major ceiling.
+The C8b and C9 major-start/work traces were identical. Raising the inner
+ceiling cannot enlarge this 504-step call grant. C9 is a **REJECTED**
+hypothesis, NOT PROMOTED; next inspect the conversion-side grant/ownership
+and exact work already charged, rather than increasing another nested cap.
