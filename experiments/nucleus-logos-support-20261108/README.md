@@ -241,3 +241,34 @@ It is not admissible for release unless native tests, unchanged protected
 preflight independently qualify it. Even if those pass, any improvement
 must be measured against unchanged source/budget; no independent complete
 Mathlib acceptance is asserted.
+
+## C7 qualification: authentic proof work skipped, but no closure
+
+[C7 run #42432804224](https://github.com/heathsanchez/test/actions/runs/42432804224)
+**SUCCESS**, artifact `13598137209`, ZIP SHA-256
+`135106eb7c8a25b3a20113bf9342562dcca88fa344a48d64221ac825d5d7b548`.
+Native tests passed and the protected **403/403** verdict vector matched
+240 ACCEPT, 150 REJECT, 13 UNKNOWN; all three `app-lam` controls ACCEPT.
+The metered node-reflexivity branch skipped **66,095** source-capture descent
+operations on the unchanged chain9 diagnostic prefix. No original six-case
+verdict changed: **six UNKNOWNs remain** under 262,144 steps.
+Within-run timings were 13.970 s pristine, 13.715 s candidate/observer OFF,
+14.366 s candidate/observer ON. Earlier C6's separate runner timings were
+12.734/12.821/13.111 s; cross-run noise prevents attributing a stable speedup.
+This is `WARRANTED_BOUNDED` for guarded identity shortcuts and intact 403
+verdicts, but **NOT PROMOTED** into the selected kernel: it did not discharge
+a consequential original obligation or establish a controlled speedup.
+
+New native diagnostic inspection of unchanged Magma originals identifies
+two distinct residual classes. `magma-list-pair-n7` and `n21` fail top-level
+application typing with `unresolved-qualified-recursor-heads` even while
+more than 261,000 steps remain globally, so their immediate obstruction
+is not simple exhaustion of the outer budget. The nested native replay also
+reported `reduction-budget-exhausted` at a separate, depleted exposure-fuel
+owner. `magma-list-deep-n21` retains an unresolved qualified recursor head
+with exhausted **local** function-type budget; `magma-list-deep-n36` first
+encounters `rigid-type-constructor-mismatch` with substantial global fuel.
+No missing recursor equality or constructor may be invented from those
+diagnostics. The next decisive experiment must discriminate a legitimate
+source iota/major-constructor step from a rigid neutral whose equality needs
+a separately checked dependent-context proof. Preserve C6/C7 negatives.
