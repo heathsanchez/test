@@ -69,6 +69,7 @@ jobs:
           grep -q '^vstats chain12_datF Stats ' reports/c21-vstats.stderr
           grep -E '^vstats (chain6_datF|chain9_datF|chain12|chain12_datF) Stats ' reports/c21-vstats.stderr > reports/c21-vstats-selected.txt
           grep '^vstats chain12_datF Stats ' reports/c21-vstats-selected.txt | grep -Eq 'inst_hit: [1-9][0-9]*'
+          grep '^vstats chain12_datF Stats ' reports/c21-vstats-selected.txt | grep -Eq 'closed_hit: [1-9][0-9]*'
       - name: C22 ablate only untyped Pi instantiation memoization in reference
         run: |
           set -euo pipefail
@@ -86,6 +87,30 @@ jobs:
           if test "$c22_code" -ne 124; then
             grep -q '^vstats chain12_datF Stats ' reports/c22-fueled-chain.stderr
             grep '^vstats chain12_datF Stats ' reports/c22-fueled-chain.stderr | grep -q 'inst_hit: 0'
+          fi
+      - name: C23 ablate only closed-expression type inference memo in pristine reference
+        run: |
+          set -euo pipefail
+          test "$(git -C nano-reference rev-parse HEAD)" = '54ce971a5ac2513a1bac0ac9bca73f672196c0f2'
+          git -C nano-reference apply --reverse --check "$GITHUB_WORKSPACE/experiments/nucleus-logos-support-20261108/c22-nano-no-inst-pi-memo.patch"
+          git -C nano-reference apply --reverse "$GITHUB_WORKSPACE/experiments/nucleus-logos-support-20261108/c22-nano-no-inst-pi-memo.patch"
+          git -C nano-reference diff --exit-code
+          git -C nano-reference apply --check "$GITHUB_WORKSPACE/experiments/nucleus-logos-support-20261108/c23-nano-no-closed-type-memo.patch"
+          git -C nano-reference apply "$GITHUB_WORKSPACE/experiments/nucleus-logos-support-20261108/c23-nano-no-closed-type-memo.patch"
+          git -C nano-reference diff -- src/value_checker/infer.rs > reports/c23-source-diff.patch
+          cargo build --locked --release --features vstats --manifest-path nano-reference/Cargo.toml --bin nl-fast > reports/c23-build.log 2>&1 || { tail -n 100 reports/c23-build.log; exit 1; }
+          set +e
+          NL_VSTATS=1 timeout --signal=TERM --kill-after=3s 60s nano-reference/target/release/nl-fast --steps 262144 -j1 -q \
+            arena207/good/perf/fueled-chain.ndjson > reports/c23-fueled-chain.stdout 2> reports/c23-fueled-chain.stderr
+          c23_code=$?
+          set -e
+          printf '%s\n' "$c23_code" > reports/c23-fueled-chain.exit
+          case "$c23_code" in 0|2|124) ;; *) echo 'Unexpected failure of frozen valid source under closed-memo-free reference'; exit 1 ;; esac
+          if test "$c23_code" -ne 124; then
+            grep -q '^vstats ' reports/c23-fueled-chain.stderr
+            if grep -Eq '^vstats .*closed_hit: [1-9][0-9]*' reports/c23-fueled-chain.stderr; then
+              echo 'Closed inference memo unexpectedly hit after isolated ablation'; exit 1
+            fi
           fi
       - uses: actions/upload-artifact@v4
         if: always()
