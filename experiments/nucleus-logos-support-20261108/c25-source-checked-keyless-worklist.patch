@@ -1,0 +1,65 @@
+--- a/src/machine.rs
++++ b/src/machine.rs
+@@ -2760,6 +2760,14 @@
+         let replay_goal=match goal {CheckedReplayGoal::Completed=>"completed",CheckedReplayGoal::OneStep=>"one-step"};
+         let previous=self.native_completion.replace(true);
+         let _native_scope=NativeCompletionScope{enabled:&self.native_completion,previous};
++        // Diagnostic isolation only: replay an actual certified iota path
++        // without constructing or consulting completed-result cache keys.
++        // The source rule, major constructor and shared work owner remain
++        // mandatory. Never infer a constructor or admit a result from a key.
++        #[cfg(feature="diagnostics")]
++        let no_replay_keys=std::env::var_os("NUCLEUS_DIAGNOSTIC_NO_REPLAY_KEYS").is_some();
++        #[cfg(not(feature="diagnostics"))]
++        let no_replay_keys=false;
+         let _fuel_scope = if self.exposure_fuel.get().is_none() {
+             self.exposure_fuel.set(Some(budget));
+             Some(ConstructorFuelScope { fuel: &self.exposure_fuel })
+@@ -2778,7 +2786,7 @@
+         let mut current=neutral.clone();
+         let mut current_is_requested=true;
+         enum Continuation {
+-            Finish(Rc<ReplayKey>),
++            Finish(Option<Rc<ReplayKey>>),
+             Major(Neutral,bool),
+             // A projection is not a constructor. Retain the source-owned
+             // projection while its actual receiver recursor is checked by
+@@ -2806,10 +2814,12 @@
+                 let value=$value;
+                 while let Some(continuation)=parents.pop() {
+                     match continuation {
+-                        Continuation::Finish(key) => {
+-                            active.remove(&ReplayKey::identity(&key));
+-                            self.cache_completed_replay(key.clone(),&value);
+-                            if !self.unfinished_native_capture(&value) && self.reserve_replay_value_clone(&value) {resolved.insert(ReplayKey::identity(&key),value.clone());}
++                        Continuation::Finish(maybe_key) => {
++                            if let Some(key)=maybe_key {
++                                active.remove(&ReplayKey::identity(&key));
++                                self.cache_completed_replay(key.clone(),&value);
++                                if !self.unfinished_native_capture(&value) && self.reserve_replay_value_clone(&value) {resolved.insert(ReplayKey::identity(&key),value.clone());}
++                            }
+                         }
+                         Continuation::Major(parent,requested) => {
+                             current=parent;
+@@ -2885,6 +2895,11 @@
+                 return Judgment::unknown("nested-recursor-iota-arity");
+             }
+             let mut major_value=if let Some(value)=established_major.take() { value } else {
++                if no_replay_keys {
++                    #[cfg(feature="diagnostics")]
++                    if depth<32 {eprintln!("NUCLEUS_REPLAY_KEYLESS_SOURCE:head={name:?}:depth={depth}:remaining={:?}",self.exposure_fuel.get());}
++                    parents.push(Continuation::Finish(None));
++                } else {
+                 let Some(candidate)=self.completed_replay_key(*name,levels,&neutral.spine) else {return Judgment::unknown("nested-replay-key-work");};
+                 let mut key=candidate;
+                 if let Some(bucket)=entered.get(&key.digest) {
+@@ -2915,7 +2930,8 @@
+                 }
+                 if !active.insert(identity) {return Judgment::unknown("nested-recursor-iota-cycle");}
+                 entered.entry(key.digest).or_default().push(key.clone());
+-                parents.push(Continuation::Finish(key));
++                parents.push(Continuation::Finish(Some(key)));
++                }
+                 #[cfg(feature="diagnostics")]
+                 if crate::run_flags::present(crate::run_flags::Flag::TraceNestedRecursorIotaFailure) {
+                     use std::sync::atomic::{AtomicUsize,Ordering};
