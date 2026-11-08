@@ -1,6 +1,6 @@
 --- a/src/typecheck.rs
 +++ b/src/typecheck.rs
-@@ -2425,10 +2425,43 @@
+@@ -2425,10 +2425,50 @@
              cache.insert(key, value.clone());
          }
          #[cfg(feature="diagnostics")]
@@ -41,10 +41,17 @@
 +        });
 +    }
 +
++    // Keep this as one optimized recursive typing frame. In the source-qualified
++    // LOGOS observer build, outlining this function split a single recursive
++    // frame into two and made the original app-lam proof overflow its 64 MiB
++    // checker thread stack even with the observer disabled. This hint cannot
++    // mint a proof or change any typing rule; the full native regression still
++    // decides whether the diagnostic candidate is admissible.
++    #[inline(always)]
      fn infer_uncached(
          &self,
          expression: ExprId,
-@@ -8542,6 +8575,129 @@
+@@ -8542,6 +8582,129 @@
  }
  impl ExactTypingMemo{fn clear(&mut self){for slot in self.slots.iter_mut(){*slot=None;}self.hand.fill(0);}}
  
