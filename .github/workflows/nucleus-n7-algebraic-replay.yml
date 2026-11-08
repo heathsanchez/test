@@ -6,6 +6,7 @@ on:
       - '.github/workflows/nucleus-n7-algebraic-replay.yml'
       - 'experiments/nucleus-certified-decide-20261109/MagmaN7Algebraic.lean'
       - 'experiments/nucleus-certified-decide-20261109/lakefile.lean'
+      - 'experiments/nucleus-certified-decide-20261109/forge_algebraic.py'
   workflow_dispatch:
 permissions:
   contents: read
@@ -72,6 +73,11 @@ jobs:
           Path('matrix/export.json').write_text(json.dumps(out,indent=2)+'\n')
           print('N7_ALTERNATE_EXPORT='+json.dumps(out,sort_keys=True))
           PY
+      - name: Create one-record invalid proof and claim mutations
+        run: |
+          set -euo pipefail
+          python3 experiments/nucleus-certified-decide-20261109/forge_algebraic.py \
+            matrix/algebraic.ndjson matrix
       - name: Download immutable original input and qualified C64 Nucleus binary
         run: |
           set -euo pipefail
@@ -96,7 +102,9 @@ jobs:
           base.update(flags)
           results=[]
           for label,path in [('original','original/good/perf/magma-list-pair-n7.ndjson'),
-                             ('algebraic','matrix/algebraic.ndjson')]:
+                             ('algebraic','matrix/algebraic.ndjson'),
+                             ('forged_false_claim','matrix/forged_false_claim.ndjson'),
+                             ('forged_nat_zero_proof','matrix/forged_nat_zero_proof.ndjson')]:
             src=pathlib.Path(path).read_bytes()
             rows=[]
             for trial in range(3):
@@ -111,7 +119,9 @@ jobs:
                             'source_bytes':len(src),'replays':rows})
             print('N7_REPLAY='+json.dumps(results[-1],sort_keys=True),flush=True)
           assert all(x['verdict']=='UNKNOWN' for x in results[0]['replays']),"original baseline drift"
-          assert all(x['verdict'] in ('ACCEPT','UNKNOWN') for x in results[1]['replays']),"valid alternate rejected or errored"
+          assert all(x['verdict']=='ACCEPT' for x in results[1]['replays']),"algebraic positive acceptance drift"
+          for mutated in results[2:]:
+            assert all(x['verdict'] in ('REJECT','UNKNOWN') for x in mutated['replays']),"UNSOUND forged source ACCEPT or ERROR"
           out={'kernel_source':'C64 qualified binary artifact 13624008553',
                'standard_budget':262144,'source_mutated':False,'results':results,
                'arena_original_new_accepts':0}
@@ -125,4 +135,5 @@ jobs:
           path: |
             matrix/export.json
             matrix/replay.json
+            matrix/forgeries.json
             magma-native-proof.log
