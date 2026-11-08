@@ -1,9 +1,8 @@
-"""Native, fail-closed observer qualification against the selected Nucleus artifact.
+"""Native, fail-closed qualification against the selected Nucleus artifact.
 
-The candidate is diagnostic-only: any changed standard verdict is a failure.
-The protected 403-case receipt belongs to selected source SHA 0181352 and is
-replayed on the *same* 24 captured flags. No source name or metadata grants
-typing authority here.
+Exactly the six independently established valid original UNKNOWNs may improve
+to ACCEPT; all other 397 protected verdicts must be identical. A valid source
+label alone never grants typing authority: Nucleus must check every proof.
 """
 
 import collections
@@ -31,6 +30,7 @@ SIX = {
     "magma-list-deep-n21": "b7a211699ab32a5d2397319702e2d5552f5796a6bdac990efa69fb186039f526",
     "magma-list-deep-n36": "6669cee92ad330dada351ac9e63656f7e9e848dd70376f17030d64677f8c81ac",
 }
+ALLOW_UNKNOWN_TO_ACCEPT = {f"arena207/good/perf/{name}.ndjson" for name in SIX}
 
 
 def digest(data):
@@ -117,24 +117,29 @@ def main():
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
         for row in pool.map(replay, baseline):
             protected.append(row)
-            if row["rc"] != row["baseline"]:
+            if row["rc"] != row["baseline"] and not (
+                row["case"] in ALLOW_UNKNOWN_TO_ACCEPT
+                and row["baseline"] == 2 and row["rc"] == 0
+            ):
                 print("REGRESSION", json.dumps(row), flush=True)
     (REPORTS / "protected-403.json").write_text(json.dumps(protected, indent=2))
-    assert all(row["rc"] == row["baseline"] for row in protected), "Selected 403 outcomes changed"
+    assert all(row["rc"] == row["baseline"] or (
+        row["case"] in ALLOW_UNKNOWN_TO_ACCEPT and row["baseline"] == 2 and row["rc"] == 0
+    ) for row in protected), "Unexpected change to selected protected 403 outcomes"
 
     six = {}
     for name, expected_hash in SIX.items():
         path = Path("arena207/good/perf") / (name + ".ndjson")
         assert digest(path.read_bytes()) == expected_hash, name
         row = next(row for row in protected if row["case"] == str(path))
-        assert row["rc"] == 2, (name, row)
+        assert row["rc"] in (0, 2) and row["baseline"] == 2, (name, row)
         six[name] = row
 
     # The observer is a diagnostic, not a truth source; no speculative
     # cache entries are installed. Its result may be a useful negative.
     observations = comparisons[-1]["observer"]
     summary = {
-        "status": "OBSERVATION_ONLY", "acceptance_authority": False,
+        "status": "CANDIDATE", "acceptance_authority": False,
         "selected_artifact": 13520537513, "selected_commit": "018135224632f72ba06a2818132c3e857d67eaad",
         "flags": FLAGS, "standard_budget": 262144,
         "baseline_binary_sha256": digest(BASELINE.read_bytes()),
@@ -143,10 +148,13 @@ def main():
         "observations": observations,
         "protected_count": len(protected),
         "protected_verdict_counts": dict(collections.Counter(row["rc"] for row in protected)),
+        "six_newly_accepted": [name for name, row in six.items() if row["rc"] == 0],
         "six_original_unchanged": six,
     }
     (REPORTS / "logos-projection-summary.json").write_text(json.dumps(summary, indent=2))
-    print(json.dumps({"protected": len(protected), "six_unknown": len(six), "observations": observations}), flush=True)
+    print(json.dumps({"protected": len(protected),
+                      "six_newly_accepted": [name for name, row in six.items() if row["rc"] == 0],
+                      "observations": observations}), flush=True)
 
 
 if __name__ == "__main__":
