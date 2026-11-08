@@ -1,0 +1,165 @@
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -4874,6 +4874,45 @@
+                 return false;
+             }};
+         }
++        // C40 is observer-only. It records the exact captured *source*
++        // argument whose independent obligation failed; it neither retries
++        // inference nor changes a conversion result or the shared budget.
++        macro_rules! c40_source_args {
++            ($stage:literal, $index:expr, $lhs:expr, $rhs:expr, $ldom:expr, $rdom:expr) => {{
++                #[cfg(feature = "diagnostics")]
++                if std::env::var_os("NUCLEUS_DIAGNOSTIC_C40_SOURCE_ARGS").is_some() {
++                    use std::sync::atomic::{AtomicUsize, Ordering};
++                    static PRINTED: AtomicUsize = AtomicUsize::new(0);
++                    if PRINTED.fetch_add(1, Ordering::Relaxed) < 128 {
++                        let a = $lhs;
++                        let b = $rhs;
++                        let domain_shape = |ty: &TypeValue| match ty {
++                            TypeValue::Term(c) => format!("term:{:?}:env={}", c.expr, c.env.id()),
++                            TypeValue::Pi { .. } => "typed-pi".to_owned(),
++                            TypeValue::Sort(_) => "sort".to_owned(),
++                        };
++                        let captured_source = |c: &Closure| match self.expressions.get(c.expr) {
++                            Some(Expr::BVar(index)) => match c.env.lookup_binding_ref(*index) {
++                                Some(EnvBinding::Closure(bound)) =>
++                                    format!("closure:{:?}:env={}:levels={:?}",bound.expr,bound.env.id(),bound.levels),
++                                Some(EnvBinding::Free(free)) => format!("free:{free:?}"),
++                                Some(EnvBinding::Neutral(neutral)) => format!("neutral:{:?}",neutral.head),
++                                Some(EnvBinding::NatLit(n)) => format!("nat:{n:?}"),
++                                None => "unbound".to_owned(),
++                            },
++                            _ => "not-bvar".to_owned(),
++                        };
++                        eprintln!(
++                            "NUCLEUS_C40_SOURCE_ARGS:head={:?}:spine={}:arg={}:stage={}:depth={depth}:budget={budget}:left_expr={:?}:left_env={}:left_levels={:?}:right_expr={:?}:right_env={}:right_levels={:?}:left_domain={}:right_domain={}:left_binding={}:right_binding={}",
++                            left.head, left.spine.len(), $index, $stage,
++                            a.expr, a.env.id(), a.levels, b.expr, b.env.id(), b.levels,
++                            domain_shape(&$ldom), domain_shape(&$rdom),
++                            captured_source(a),captured_source(b),
++                        );
++                    }
++                }
++            }};
++        }
+         if (!crate::run_flags::present(crate::run_flags::Flag::ExperimentalRelevance))
+             || depth != context.len() || budget < 512
+             || left.spine.is_empty() || left.spine.len() > 6
+@@ -4928,11 +4967,17 @@
+             let mut lf=probe;
+             let Some(larg_ty)=self.infer_exact_closure_in_context(
+                 larg,context,&mut lf,0,
+-            ) else {c39_fail!("left-argument-inference", arg)};
++            ) else {
++                c40_source_args!("left-argument-inference",arg,larg,rarg,ldom,rdom);
++                c39_fail!("left-argument-inference", arg)
++            };
+             let mut rf=probe;
+             let Some(rarg_ty)=self.infer_exact_closure_in_context(
+                 rarg,context,&mut rf,0,
+-            ) else {c39_fail!("right-argument-inference", arg)};
++            ) else {
++                c40_source_args!("right-argument-inference",arg,larg,rarg,ldom,rdom);
++                c39_fail!("right-argument-inference", arg)
++            };
+             let check_ty=|actual:&TypeValue,expected:&TypeValue| {
+                 crate::convert::convert_with_policy_in_context(
+                     self,actual,expected,probe.min(512),
+@@ -4955,15 +5000,87 @@
+             };
+             if prop_domain(&ldom) && prop_domain(&rdom) {
+                 skipped_proof=true;
+-            } else if !crate::convert::convert_with_policy_in_context(
+-                self,
+-                &TypeValue::Term(larg.clone()),
+-                &TypeValue::Term(rarg.clone()),
+-                probe.min(512),
+-                crate::convert::DeltaPolicy::PreferredOnly,
+-                depth,context,
+-            ).is_proven() {
+-                c39_fail!("data-argument-conversion", arg);
++            } else {
++                let data_equal=crate::convert::convert_with_policy_in_context(
++                    self,
++                    &TypeValue::Term(larg.clone()),
++                    &TypeValue::Term(rarg.clone()),
++                    probe.min(512),
++                    crate::convert::DeltaPolicy::PreferredOnly,
++                    depth,context,
++                ).is_proven();
++                // C41 bounded discriminator: recheck the *same* exact data
++                // equality with available caller fuel, never treating a
++                // timeout as equality. Completely dormant unless selected.
++                // Each expanded comparison still needs a checked converter
++                // result, including every dependent argument premise.
++                #[cfg(feature="diagnostics")]
++                let (data_equal, c41_retried)=if !data_equal
++                    && std::env::var_os("NUCLEUS_DIAGNOSTIC_C41_RETRY_TYPED_DATA").is_some()
++                    && arg<=3
++                {
++                    let cap=std::env::var("NUCLEUS_DIAGNOSTIC_C41_RETRY_BUDGET")
++                        .ok().and_then(|raw|raw.parse::<usize>().ok())
++                        .filter(|cap|*cap>=8192&&*cap<=262144)
++                        .unwrap_or(8192);
++                    let improved=crate::convert::convert_with_policy_in_context(
++                        self,
++                        &TypeValue::Term(larg.clone()),
++                        &TypeValue::Term(rarg.clone()),
++                        budget.min(cap),
++                        crate::convert::DeltaPolicy::PreferredOnly,
++                        depth,context,
++                    ).is_proven();
++                    (improved,true)
++                }else{(data_equal,false)};
++                #[cfg(feature="diagnostics")]
++                if c41_retried {
++                    use std::sync::atomic::{AtomicUsize,Ordering};
++                    static REPORTED:AtomicUsize=AtomicUsize::new(0);
++                    if REPORTED.fetch_add(1,Ordering::Relaxed)<32 {
++                        eprintln!("NUCLEUS_C41_RETRY_TYPED_DATA:head={:?}:arg={arg}:depth={depth}:budget={budget}:proved={data_equal}",left.head);
++                    }
++                }
++                if !data_equal {
++                    #[cfg(feature="diagnostics")]
++                    if depth==0 && std::env::var_os("NUCLEUS_DIAGNOSTIC_C42_STUCK_EXPOSURE").is_some() {
++                        use std::sync::atomic::{AtomicUsize,Ordering};
++                        static SEEN:AtomicUsize=AtomicUsize::new(0);
++                        if SEEN.fetch_add(1,Ordering::Relaxed)==0 {
++                            let machine=self.machine();
++                            let summary=|v:Judgment<Value>|match v {
++                                Judgment::Proven{value:Value::Neutral(n),..}=>format!("neutral:{:?}:spine={}",n.head,n.spine.len()),
++                                Judgment::Proven{value:Value::StuckProjection{type_name,index,..},..}=>format!("projection:{type_name:?}:{index}"),
++                                Judgment::Proven{value:Value::NatLit(n),..}=>format!("nat:{n:?}"),
++                                Judgment::Proven{value:Value::Lam{..},..}=>"lambda".to_owned(),
++                                Judgment::Proven{value:Value::Pi{..},..}=>"pi".to_owned(),
++                                Judgment::Proven{value:Value::Sort(_),..}=>"sort".to_owned(),
++                                Judgment::Unknown{residual}=>format!("unknown:{}",residual.0),
++                                Judgment::Refuted{obstruction}=>format!("refuted:{}",obstruction.0),
++                            };
++                            for fuel in [8192, 262144] {
++                                let left_exposure=machine.expose_for_conversion(
++                                    larg.clone(),crate::machine::Transparency::Full,fuel);
++                                let right_exposure=machine.expose_for_conversion(
++                                    rarg.clone(),crate::machine::Transparency::Full,fuel);
++                                if let Some(Value::Neutral(n))=right_exposure.proven_value() {
++                                    for (slot,subterm) in n.spine.iter().enumerate() {
++                                        eprintln!("NUCLEUS_C42_RECURSOR_ARG:fuel={fuel}:slot={slot}:expr={:?}:env={}:source={:?}",
++                                            subterm.expr,subterm.env.id(),self.expressions.get(subterm.expr));
++                                        if slot+1==n.spine.len() {
++                                            let major=machine.expose_for_conversion(
++                                                subterm.clone(),crate::machine::Transparency::Full,fuel);
++                                            eprintln!("NUCLEUS_C42_RECURSOR_MAJOR:fuel={fuel}:{}",summary(major));
++                                        }
++                                    }
++                                }
++                                eprintln!("NUCLEUS_C42_STUCK_EXPOSURE:arg={arg}:fuel={fuel}:left={}:right={}",summary(left_exposure),summary(right_exposure));
++                            }
++                        }
++                    }
++                    c40_source_args!("data-argument-conversion",arg,larg,rarg,ldom,rdom);
++                    c39_fail!("data-argument-conversion", arg);
++                }
+             }
+             let next = |body:PiBody,arg:&Closure| -> Option<TypeValue> {
+                 match body {
