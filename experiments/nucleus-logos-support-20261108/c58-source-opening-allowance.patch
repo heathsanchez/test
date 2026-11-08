@@ -1,0 +1,33 @@
+--- a/metatron-kernel/src/convert.rs
++++ b/metatron-kernel/src/convert.rs
+@@ -3323,13 +3323,29 @@
+     match value {
+         Value::Sort(level) => Some(TypeValue::Sort(level.clone())),
+         Value::Pi { domain, body } => {
+             let free = fresh_local(depth)?;
+-            let allowance = (*remaining).min(1024);
++            let default_allowance = (*remaining).min(1024);
++            #[cfg(feature="diagnostics")]
++            let c58_active = std::env::var_os("NUCLEUS_DIAGNOSTIC_C58_OPENING_4096").is_some()
++                && crate::typecheck::c56_source_root_active();
++            #[cfg(feature="diagnostics")]
++            let allowance = if c58_active { (*remaining).min(4096) } else { default_allowance };
++            #[cfg(not(feature="diagnostics"))]
++            let allowance = default_allowance;
+             let mut opening_budget = allowance;
+             let safe = source_opening_avoids_capture(checker, body, free, &mut opening_budget);
+             *remaining -= allowance - opening_budget;
++            #[cfg(feature="diagnostics")]
++            if c58_active {
++                use std::sync::atomic::{AtomicUsize,Ordering};
++                static EVENTS: AtomicUsize = AtomicUsize::new(0);
++                let seq=EVENTS.fetch_add(1,Ordering::Relaxed);
++                if seq<32 || (seq+1).is_power_of_two() {
++                    eprintln!("NUCLEUS_C58_OPEN:seq={seq}:source_expr={:?}:source_env={}:depth={depth}:allowance={allowance}:spent={}:remaining={}:safe={safe}",body.expr,body.env.id(),allowance-opening_budget,*remaining);
++                }
++            }
+             if !safe { return None; }
+             Some(TypeValue::Pi {
+                 domain: Box::new(TypeValue::Term(domain.clone())),
+                 body: Box::new(TypeValue::Term(body.under_free(free))),
+                 binder: free,
