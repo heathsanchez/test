@@ -47,6 +47,18 @@ jobs:
           grep -q 'error:' forged.log
           cat forged.log
           echo 'FORGED_NEGATIVE_REJECTED'
+      - name: Forged finite-domain certificate must be rejected
+        working-directory: experiments/nucleus-certified-decide-20261109
+        run: |
+          set -euo pipefail
+          if lake env lean ForgedFinite.lean > forged-finite.log 2>&1; then
+            cat forged-finite.log
+            echo 'UNSOUND_FINITE_CERTIFICATE_ACCEPTED'
+            exit 1
+          fi
+          grep -q 'error:' forged-finite.log
+          cat forged-finite.log
+          echo 'FORGED_FINITE_REJECTED'
       - name: Frozen C64 evidence and five adversarial mutation controls
         run: |
           set -euo pipefail
@@ -69,3 +81,4 @@ jobs:
           path: |
             experiments/nucleus-certified-decide-20261109/axioms.log
             experiments/nucleus-certified-decide-20261109/forged.log
+            experiments/nucleus-certified-decide-20261109/forged-finite.log
