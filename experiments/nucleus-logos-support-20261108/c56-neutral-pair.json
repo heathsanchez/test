@@ -1,0 +1,505 @@
+{
+  "diagnostic": "C56 source-qualified neutral pair snapshot",
+  "steps_per_case": 262144,
+  "original_artifact_id": 13276400289,
+  "proof_rules_changed": false,
+  "partial_values_are_proofs": false,
+  "cases": [
+    {
+      "case": "fueled-chain",
+      "source_sha256": "e5ca34489fc7b8ee13b1e7f09f76247ab7b01dd1a752a13cc8b796c569e1401a",
+      "first_failed_root": 10707,
+      "first_failed_boundary": {
+        "source_name": "chain9_datF",
+        "stage": "theorem.value",
+        "verdict": "UNKNOWN",
+        "reason": "application-function-type"
+      },
+      "verdict": "UNKNOWN",
+      "observations": {
+        "neutral_pair_samples": [],
+        "rigid_type_samples": [],
+        "qualified_pair_events_logged": 0,
+        "rigid_events_logged": 0,
+        "sampled_not_full_census": true,
+        "partial_values_are_proofs": false
+      }
+    },
+    {
+      "case": "grind-ring-5",
+      "source_sha256": "e9c394e0ff311fd10f60dee2433a530f16e82354c32d6588a8775baa06fd221f",
+      "first_failed_root": 156494,
+      "first_failed_boundary": {
+        "source_name": "_private.Init.Data.Int.LemmasAux.0.Int.blt'_eq_true._proof_1_4",
+        "stage": "theorem.value",
+        "verdict": "UNKNOWN",
+        "reason": "application-function-type"
+      },
+      "verdict": "UNKNOWN",
+      "observations": {
+        "neutral_pair_samples": [
+          {
+            "seq": 0,
+            "depth": 0,
+            "context_depth": 0,
+            "budget": 503,
+            "left": "const:NameId(511):qualified=false:arity=0:major=none",
+            "right": "const:NameId(490):qualified=true:arity=5:major=expr=ExprId(4):env=31861879",
+            "native_names": {
+              "490": "Decidable.rec",
+              "511": "Bool.true"
+            }
+          },
+          {
+            "seq": 1,
+            "depth": 0,
+            "context_depth": 0,
+            "budget": 503,
+            "left": "const:NameId(511):qualified=false:arity=0:major=none",
+            "right": "const:NameId(490):qualified=true:arity=5:major=expr=ExprId(4):env=31861879",
+            "native_names": {
+              "490": "Decidable.rec",
+              "511": "Bool.true"
+            }
+          },
+          {
+            "seq": 2,
+            "depth": 4,
+            "context_depth": 4,
+            "budget": 55,
+            "left": "const:NameId(1920):qualified=false:arity=1:major=expr=ExprId(2):env=31863028",
+            "right": "const:NameId(1922):qualified=true:arity=4:major=expr=ExprId(4):env=31866966",
+            "native_names": {
+              "1920": "Int.ofNat",
+              "1922": "Int.rec"
+            }
+          },
+          {
+            "seq": 3,
+            "depth": 4,
+            "context_depth": 4,
+            "budget": 43,
+            "left": "const:NameId(1920):qualified=false:arity=1:major=expr=ExprId(2):env=31863028",
+            "right": "const:NameId(1922):qualified=true:arity=4:major=expr=ExprId(4):env=31866966",
+            "native_names": {
+              "1920": "Int.ofNat",
+              "1922": "Int.rec"
+            }
+          },
+          {
+            "seq": 4,
+            "depth": 0,
+            "context_depth": 0,
+            "budget": 43,
+            "left": "const:NameId(1920):qualified=false:arity=1:major=expr=ExprId(2):env=31863028",
+            "right": "const:NameId(1922):qualified=true:arity=4:major=expr=ExprId(4):env=31866966",
+            "native_names": {
+              "1920": "Int.ofNat",
+              "1922": "Int.rec"
+            }
+          },
+          {
+            "seq": 5,
+            "depth": 4,
+            "context_depth": 4,
+            "budget": 54,
+            "left": "const:NameId(1920):qualified=false:arity=1:major=expr=ExprId(2):env=31863028",
+            "right": "const:NameId(1922):qualified=true:arity=4:major=expr=ExprId(4):env=31866966",
+            "native_names": {
+              "1920": "Int.ofNat",
+              "1922": "Int.rec"
+            }
+          },
+          {
+            "seq": 6,
+            "depth": 4,
+            "context_depth": 4,
+            "budget": 55,
+            "left": "const:NameId(1920):qualified=false:arity=1:major=expr=ExprId(2):env=31863028",
+            "right": "const:NameId(1922):qualified=true:arity=4:major=expr=ExprId(4):env=31871320",
+            "native_names": {
+              "1920": "Int.ofNat",
+              "1922": "Int.rec"
+            }
+          },
+          {
+            "seq": 7,
+            "depth": 4,
+            "context_depth": 4,
+            "budget": 43,
+            "left": "const:NameId(1920):qualified=false:arity=1:major=expr=ExprId(2):env=31863028",
+            "right": "const:NameId(1922):qualified=true:arity=4:major=expr=ExprId(4):env=31871320",
+            "native_names": {
+              "1920": "Int.ofNat",
+              "1922": "Int.rec"
+            }
+          },
+          {
+            "seq": 8,
+            "depth": 0,
+            "context_depth": 0,
+            "budget": 43,
+            "left": "const:NameId(1920):qualified=false:arity=1:major=expr=ExprId(2):env=31863028",
+            "right": "const:NameId(1922):qualified=true:arity=4:major=expr=ExprId(4):env=31871320",
+            "native_names": {
+              "1920": "Int.ofNat",
+              "1922": "Int.rec"
+            }
+          },
+          {
+            "seq": 9,
+            "depth": 4,
+            "context_depth": 4,
+            "budget": 54,
+            "left": "const:NameId(1920):qualified=false:arity=1:major=expr=ExprId(2):env=31863028",
+            "right": "const:NameId(1922):qualified=true:arity=4:major=expr=ExprId(4):env=31871320",
+            "native_names": {
+              "1920": "Int.ofNat",
+              "1922": "Int.rec"
+            }
+          },
+          {
+            "seq": 10,
+            "depth": 4,
+            "context_depth": 4,
+            "budget": 106,
+            "left": "const:NameId(1920):qualified=false:arity=1:major=expr=ExprId(2):env=31863393",
+            "right": "const:NameId(1922):qualified=true:arity=4:major=expr=ExprId(4):env=31872106",
+            "native_names": {
+              "1920": "Int.ofNat",
+              "1922": "Int.rec"
+            }
+          },
+          {
+            "seq": 11,
+            "depth": 4,
+            "context_depth": 4,
+            "budget": 89,
+            "left": "const:NameId(1920):qualified=false:arity=1:major=expr=ExprId(2):env=31863393",
+            "right": "const:NameId(1922):qualified=true:arity=4:major=expr=ExprId(4):env=31872106",
+            "native_names": {
+              "1920": "Int.ofNat",
+              "1922": "Int.rec"
+            }
+          },
+          {
+            "seq": 12,
+            "depth": 4,
+            "context_depth": 4,
+            "budget": 117,
+            "left": "const:NameId(1920):qualified=false:arity=1:major=expr=ExprId(2):env=31863393",
+            "right": "const:NameId(1922):qualified=true:arity=4:major=expr=ExprId(4):env=31873113",
+            "native_names": {
+              "1920": "Int.ofNat",
+              "1922": "Int.rec"
+            }
+          },
+          {
+            "seq": 13,
+            "depth": 4,
+            "context_depth": 4,
+            "budget": 96,
+            "left": "const:NameId(99):qualified=false:arity=4:major=expr=ExprId(2):env=31871826",
+            "right": "const:NameId(147):qualified=true:arity=5:major=expr=ExprId(3):env=31871474",
+            "native_names": {
+              "99": "PProd.mk",
+              "147": "List.rec"
+            }
+          },
+          {
+            "seq": 14,
+            "depth": 4,
+            "context_depth": 4,
+            "budget": 137,
+            "left": "const:NameId(99):qualified=false:arity=4:major=expr=ExprId(2):env=31871826",
+            "right": "const:NameId(147):qualified=true:arity=5:major=expr=ExprId(3):env=31871474",
+            "native_names": {
+              "99": "PProd.mk",
+              "147": "List.rec"
+            }
+          },
+          {
+            "seq": 15,
+            "depth": 4,
+            "context_depth": 4,
+            "budget": 309,
+            "left": "const:NameId(1922):qualified=true:arity=4:major=expr=ExprId(4):env=31873599",
+            "right": "proj:NameId(98):field=0:arity=0:major=none",
+            "native_names": {
+              "98": "PProd",
+              "1922": "Int.rec"
+            }
+          },
+          {
+            "seq": 16,
+            "depth": 4,
+            "context_depth": 4,
+            "budget": 21,
+            "left": "const:NameId(99):qualified=false:arity=4:major=expr=ExprId(2):env=31871826",
+            "right": "const:NameId(147):qualified=true:arity=5:major=expr=ExprId(3):env=31871474",
+            "native_names": {
+              "99": "PProd.mk",
+              "147": "List.rec"
+            }
+          },
+          {
+            "seq": 17,
+            "depth": 4,
+            "context_depth": 4,
+            "budget": 56,
+            "left": "const:NameId(1922):qualified=true:arity=4:major=expr=ExprId(4):env=31873047",
+            "right": "proj:NameId(98):field=0:arity=0:major=none",
+            "native_names": {
+              "98": "PProd",
+              "1922": "Int.rec"
+            }
+          },
+          {
+            "seq": 18,
+            "depth": 4,
+            "context_depth": 4,
+            "budget": 44,
+            "left": "const:NameId(1922):qualified=true:arity=4:major=expr=ExprId(4):env=31873047",
+            "right": "proj:NameId(98):field=0:arity=0:major=none",
+            "native_names": {
+              "98": "PProd",
+              "1922": "Int.rec"
+            }
+          },
+          {
+            "seq": 19,
+            "depth": 0,
+            "context_depth": 0,
+            "budget": 44,
+            "left": "const:NameId(1922):qualified=true:arity=4:major=expr=ExprId(4):env=31873047",
+            "right": "proj:NameId(98):field=0:arity=0:major=none",
+            "native_names": {
+              "98": "PProd",
+              "1922": "Int.rec"
+            }
+          },
+          {
+            "seq": 31,
+            "depth": 4,
+            "context_depth": 4,
+            "budget": 36,
+            "left": "const:NameId(99):qualified=false:arity=4:major=expr=ExprId(2):env=31871826",
+            "right": "const:NameId(147):qualified=true:arity=5:major=expr=ExprId(3):env=31871474",
+            "native_names": {
+              "99": "PProd.mk",
+              "147": "List.rec"
+            }
+          },
+          {
+            "seq": 63,
+            "depth": 4,
+            "context_depth": 4,
+            "budget": 145,
+            "left": "proj:NameId(98):field=0:arity=0:major=none",
+            "right": "const:NameId(1922):qualified=true:arity=4:major=expr=ExprId(4):env=31891345",
+            "native_names": {
+              "98": "PProd",
+              "1922": "Int.rec"
+            }
+          },
+          {
+            "seq": 127,
+            "depth": 4,
+            "context_depth": 4,
+            "budget": 95,
+            "left": "const:NameId(1922):qualified=true:arity=4:major=expr=ExprId(4):env=31951170",
+            "right": "const:NameId(1921):qualified=false:arity=1:major=expr=ExprId(2):env=31951214",
+            "native_names": {
+              "1921": "Int.negSucc",
+              "1922": "Int.rec"
+            }
+          }
+        ],
+        "rigid_type_samples": [],
+        "qualified_pair_events_logged": 23,
+        "rigid_events_logged": 0,
+        "sampled_not_full_census": true,
+        "partial_values_are_proofs": false
+      }
+    },
+    {
+      "case": "magma-list-pair-n7",
+      "source_sha256": "abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35",
+      "first_failed_root": 8837,
+      "first_failed_boundary": {
+        "source_name": "countermodel",
+        "stage": "definition.value",
+        "verdict": "UNKNOWN",
+        "reason": "application-function-type"
+      },
+      "verdict": "UNKNOWN",
+      "observations": {
+        "neutral_pair_samples": [
+          {
+            "seq": 0,
+            "depth": 0,
+            "context_depth": 0,
+            "budget": 503,
+            "left": "const:NameId(169):qualified=false:arity=0:major=none",
+            "right": "const:NameId(147):qualified=true:arity=5:major=expr=ExprId(11):env=70432",
+            "native_names": {
+              "147": "Decidable.rec",
+              "169": "Bool.true"
+            }
+          },
+          {
+            "seq": 1,
+            "depth": 0,
+            "context_depth": 0,
+            "budget": 503,
+            "left": "const:NameId(169):qualified=false:arity=0:major=none",
+            "right": "const:NameId(147):qualified=true:arity=5:major=expr=ExprId(11):env=70432",
+            "native_names": {
+              "147": "Decidable.rec",
+              "169": "Bool.true"
+            }
+          },
+          {
+            "seq": 2,
+            "depth": 0,
+            "context_depth": 0,
+            "budget": 260755,
+            "left": "const:NameId(169):qualified=false:arity=0:major=none",
+            "right": "const:NameId(147):qualified=true:arity=5:major=expr=ExprId(11):env=70432",
+            "native_names": {
+              "147": "Decidable.rec",
+              "169": "Bool.true"
+            }
+          }
+        ],
+        "rigid_type_samples": [],
+        "qualified_pair_events_logged": 3,
+        "rigid_events_logged": 0,
+        "sampled_not_full_census": true,
+        "partial_values_are_proofs": false
+      }
+    },
+    {
+      "case": "magma-list-pair-n21",
+      "source_sha256": "b8279fa9189a203c6c11b04702c27c0f99a650b37f2b0165dd260b1d14e9ef84",
+      "first_failed_root": 8827,
+      "first_failed_boundary": {
+        "source_name": "countermodel",
+        "stage": "definition.value",
+        "verdict": "UNKNOWN",
+        "reason": "application-function-type"
+      },
+      "verdict": "UNKNOWN",
+      "observations": {
+        "neutral_pair_samples": [
+          {
+            "seq": 0,
+            "depth": 0,
+            "context_depth": 0,
+            "budget": 503,
+            "left": "const:NameId(169):qualified=false:arity=0:major=none",
+            "right": "const:NameId(147):qualified=true:arity=5:major=expr=ExprId(11):env=70195",
+            "native_names": {
+              "147": "Decidable.rec",
+              "169": "Bool.true"
+            }
+          },
+          {
+            "seq": 1,
+            "depth": 0,
+            "context_depth": 0,
+            "budget": 503,
+            "left": "const:NameId(169):qualified=false:arity=0:major=none",
+            "right": "const:NameId(147):qualified=true:arity=5:major=expr=ExprId(11):env=70195",
+            "native_names": {
+              "147": "Decidable.rec",
+              "169": "Bool.true"
+            }
+          },
+          {
+            "seq": 2,
+            "depth": 0,
+            "context_depth": 0,
+            "budget": 261299,
+            "left": "const:NameId(169):qualified=false:arity=0:major=none",
+            "right": "const:NameId(147):qualified=true:arity=5:major=expr=ExprId(11):env=70195",
+            "native_names": {
+              "147": "Decidable.rec",
+              "169": "Bool.true"
+            }
+          }
+        ],
+        "rigid_type_samples": [],
+        "qualified_pair_events_logged": 3,
+        "rigid_events_logged": 0,
+        "sampled_not_full_census": true,
+        "partial_values_are_proofs": false
+      }
+    },
+    {
+      "case": "magma-list-deep-n21",
+      "source_sha256": "b7a211699ab32a5d2397319702e2d5552f5796a6bdac990efa69fb186039f526",
+      "first_failed_root": 17864,
+      "first_failed_boundary": {
+        "source_name": "countermodel",
+        "stage": "definition.value",
+        "verdict": "UNKNOWN",
+        "reason": "unresolved-qualified-recursor-heads"
+      },
+      "verdict": "UNKNOWN",
+      "observations": {
+        "neutral_pair_samples": [
+          {
+            "seq": 0,
+            "depth": 1,
+            "context_depth": 1,
+            "budget": 258798,
+            "left": "const:NameId(296):qualified=false:arity=0:major=none",
+            "right": "const:NameId(274):qualified=true:arity=5:major=expr=ExprId(11):env=148629",
+            "native_names": {
+              "274": "Decidable.rec",
+              "296": "Bool.true"
+            }
+          }
+        ],
+        "rigid_type_samples": [],
+        "qualified_pair_events_logged": 1,
+        "rigid_events_logged": 0,
+        "sampled_not_full_census": true,
+        "partial_values_are_proofs": false
+      }
+    },
+    {
+      "case": "magma-list-deep-n36",
+      "source_sha256": "6669cee92ad330dada351ac9e63656f7e9e848dd70376f17030d64677f8c81ac",
+      "first_failed_root": 18985,
+      "first_failed_boundary": {
+        "source_name": "countermodel",
+        "stage": "definition.value",
+        "verdict": "UNKNOWN",
+        "reason": "application-function-type"
+      },
+      "verdict": "UNKNOWN",
+      "observations": {
+        "neutral_pair_samples": [],
+        "rigid_type_samples": [
+          {
+            "seq": 0,
+            "source_expr": 16406,
+            "source_env": 151861,
+            "context_depth": 2,
+            "remaining": 252654,
+            "exposed": "pi",
+            "other": "pi"
+          }
+        ],
+        "qualified_pair_events_logged": 0,
+        "rigid_events_logged": 1,
+        "sampled_not_full_census": true,
+        "partial_values_are_proofs": false
+      }
+    }
+  ],
+  "all_six_unknown": true,
+  "all_six_profiled": true
+}
