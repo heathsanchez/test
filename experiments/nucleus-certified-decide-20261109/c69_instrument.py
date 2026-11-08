@@ -112,7 +112,6 @@ replace_once(Path("src/machine.rs"),"""                    if let Some(reduction
                         #[cfg(feature="diagnostics")]
                         crate::diagnostics::c69_count(5);
                         if std::env::var_os("NUCLEUS_TRACE_NAT_IOTA")""")
-replace_once(Path("src/machine.rs"),"""                Expr::Proj {""", """                Expr::Proj {""") # no-op guard; projection counts handled below
 # Report the same worker's thread-local census through the C64 diagnostic runner.
 p=Path("experiments/nucleus-bool-recursor-eligibility-20261106/nucleus-diagnostic.rs")
 s=p.read_text()
