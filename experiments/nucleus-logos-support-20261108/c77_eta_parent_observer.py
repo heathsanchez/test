@@ -19,7 +19,7 @@ insert=r'''            // C77: source-frozen event28 only. BVar2 under the sourc
                         let parent = root.env.lookup(1);
                         let resolved = parent.as_ref().map(|b| match b {
                             EnvBinding::Closure(c)=>format!(
-                                "closure:expr={:?}:level_entries={}:env_fingerprint={}",
+                                "closure:expr={:?}:level_entries={}:env_fingerprint={:?}",
                                 c.expr,c.levels.entries().count(),
                                 c.env.diagnostic_content_fingerprint()),
                             EnvBinding::Neutral(n)=>format!(
