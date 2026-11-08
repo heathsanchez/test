@@ -1,0 +1,108 @@
+name: Nucleus C57 captured Decidable major trace
+on:
+  push:
+    branches: [research/nucleus-c57-decidable-major-20261109]
+    paths: ['.github/workflows/nucleus-c57-decidable-major-chain.yml']
+  workflow_dispatch:
+permissions: {contents: write, actions: read}
+jobs:
+  first-root:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RUST_MIN_STACK: '16777216'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore exact C56 native-qualified checker and original inputs
+        run: |
+          set -euo pipefail
+          mkdir -p candidate reports arena207
+          gh api repos/heathsanchez/test/actions/artifacts/13619579542/zip > c56.zip
+          printf '%s  %s\n' 324962074304fd397ed3b0f5b2301a6c58037e5cc99248b08c9a4120eecff25a c56.zip | sha256sum -c -
+          unzip -q c56.zip -d c56-receipt
+          cp c56-receipt/candidate/nucleus-diagnostic candidate/nucleus-diagnostic
+          cp c56-receipt/base/flags.json reports/flags.json
+          chmod +x candidate/nucleus-diagnostic
+          sha256sum candidate/nucleus-diagnostic > reports/binary.sha256
+          gh api repos/heathsanchez/test/actions/artifacts/13276400289/zip > arena207.zip
+          printf '%s  %s\n' a9582eadc0d9893cbe39e6bcfccd79bfaec2032838851b8a487c35df16096763 arena207.zip | sha256sum -c -
+          unzip -p arena207.zip lean-arena-tests.tar.gz | tar --no-same-owner -xzf - -C arena207
+          jq -e 'length==24 and ([.[]] | all(.=="1"))' reports/flags.json
+      - name: Trace actual captured Decidable major on four unchanged first failures
+        run: |
+          set -euo pipefail
+          mapfile -t selected < <(jq -r 'to_entries[] | "\(.key)=\(.value)"' reports/flags.json)
+          for spec in 'magma-list-pair-n7:8837' 'magma-list-pair-n21:8827' 'magma-list-deep-n21:17864' 'grind-ring-5:156494'; do
+            case_name="${spec%%:*}"
+            source_root="${spec##*:}"
+            source="arena207/good/perf/${case_name}.ndjson"
+            set +e
+            env "${selected[@]}" NUCLEUS_DIAGNOSTIC_C38_EARLY_TYPED_SPINE=1 \
+              NUCLEUS_DIAGNOSTIC_C47_PROFILE_EXPR="$source_root" \
+              NUCLEUS_DIAGNOSTIC_C55_APP_SHAPE=1 \
+              NUCLEUS_DIAGNOSTIC_C56_NEUTRAL_PAIR=1 \
+              NUCLEUS_TRACE_DECIDABLE_MAJOR_CHAIN=1 \
+              NUCLEUS_TRACE_DOWNSTREAM=1 \
+              timeout 220 candidate/nucleus-diagnostic 262144 \
+              < "$source" > "reports/${case_name}.stdout" 2> "reports/${case_name}.stderr"
+            verdict=$?
+            set -e
+            test "$verdict" -eq 2
+            test ! -s "reports/${case_name}.stdout"
+            rg -q '^NUCLEUS_C56_PAIR:' "reports/${case_name}.stderr"
+            rg -q '^NUCLEUS_DECIDABLE_MAJOR_CHAIN:' "reports/${case_name}.stderr"
+            printf '%s\t%s\t%s\t%s\t%s\n' \
+              "$case_name" "$source_root" \
+              "$(sha256sum "$source" | cut -d' ' -f1)" \
+              "$(rg -c '^NUCLEUS_C56_PAIR:' "reports/${case_name}.stderr")" \
+              "$(rg -c '^NUCLEUS_DECIDABLE_MAJOR_CHAIN:' "reports/${case_name}.stderr")" \
+              >> reports/c57-summary.tsv
+          done
+          printf 'Case\tFirst root\tOriginal source SHA256\tQualified pair events\tCaptured major traces\n' > reports/c57-header.tsv
+          sed -n '1,4p' reports/c57-summary.tsv
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib, json
+          roots = {'magma-list-pair-n7':8837,'magma-list-pair-n21':8827,'magma-list-deep-n21':17864,'grind-ring-5':156494}
+          cases = []
+          for line in Path('reports/c57-summary.tsv').read_text().splitlines():
+              name, root, digest, pair_count, chain_count = line.split('\t')
+              assert name in roots and int(root)==roots[name]
+              text = Path(f'reports/{name}.stderr').read_text(errors='replace')
+              events = [event for event in text.splitlines() if event.startswith('NUCLEUS_DECIDABLE_MAJOR_CHAIN:')]
+              assert int(chain_count)==len(events) and len(events)>0
+              assert int(pair_count)>0
+              cases.append({'case':name,'first_failed_root':int(root),'source_sha256':digest,
+                            'qualified_pair_count':int(pair_count),'major_chain_count':len(events),
+                            'traces_sha256':hashlib.sha256('\n'.join(events).encode()).hexdigest(),
+                            'major_chain_sample':[s[:4500] for s in events[:3]],'verdict':'UNKNOWN'})
+          assert set(roots)=={c['case'] for c in cases}
+          result={'diagnostic':'C57 captured Decidable major chain (C56 binary, no checker changes)',
+                  'parent_run':42486637106,'parent_artifact':13619579542,'original_artifact':13276400289,
+                  'standard_steps':262144,'proof_rules_changed':False,'partial_values_are_proofs':False,
+                  'cases':cases,'all_four_unknown':True}
+          Path('reports/c57-decidable-major.json').write_text(json.dumps(result,indent=2)+'\n')
+          PY
+      - name: Preserve positive or negative trace receipt
+        if: always()
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          if test -s reports/c57-decidable-major.json; then
+            cp reports/c57-decidable-major.json experiments/nucleus-logos-support-20261108/c57-decidable-major.json
+          else
+            jq -n '{status:"UNKNOWN_CI_FAILURE", qualified:false, standard_accepts:0}' \
+              > experiments/nucleus-logos-support-20261108/c57-decidable-major.json
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add experiments/nucleus-logos-support-20261108/c57-decidable-major.json
+          git commit -m 'C57 source-owned captured Decidable major trace, observer only'
+          git push origin HEAD:refs/heads/research/nucleus-c57-decidable-major-20261109
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-C57-decidable-major
+          retention-days: 60
+          path: reports/
