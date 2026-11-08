@@ -1,0 +1,123 @@
+name: Nucleus C67 six-case checked recursor boundary
+on:
+  push:
+    branches: [research/nucleus-c67-six-case-recursor-map-20261109]
+    paths: ['.github/workflows/nucleus-c67-six-case-recursor-map.yml']
+  workflow_dispatch:
+permissions: {contents: write, actions: read}
+jobs:
+  six-case-recursor-map:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RUST_MIN_STACK: '16777216'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore exact selected C58 binary and six frozen originals
+        run: |
+          set -euo pipefail
+          mkdir -p candidate base reports original
+          gh api repos/heathsanchez/test/actions/artifacts/13622452324/zip > c58.zip
+          printf '%s  %s\n' 63764179e4cfcd89cac50c8e200977c9169cab47e073086e463c86b3fbcfcadd c58.zip | sha256sum -c -
+          unzip -p c58.zip candidate/nucleus-diagnostic > candidate/nucleus-diagnostic
+          unzip -p c58.zip base/flags.json > base/flags.json
+          chmod +x candidate/nucleus-diagnostic
+          printf '%s  %s\n' 37b77b125745e7b3eabfbb0adba1da76ea27dac11d13efcc05586f0892b39e6f candidate/nucleus-diagnostic | sha256sum -c -
+          gh api repos/heathsanchez/test/actions/artifacts/13276400289/zip > originals.zip
+          printf '%s  %s\n' a9582eadc0d9893cbe39e6bcfccd79bfaec2032838851b8a487c35df16096763 originals.zip | sha256sum -c -
+          unzip -p originals.zip lean-arena-tests.tar.gz | tar --no-same-owner -xzf - -C original
+      - name: Six unchanged originals with exact source-root recursor observers
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib,json,os,re,subprocess
+          from pathlib import Path
+          cases=[
+            ('fueled-chain',10707,'e5ca34489fc7b8ee13b1e7f09f76247ab7b01dd1a752a13cc8b796c569e1401a'),
+            ('grind-ring-5',156494,'e9c394e0ff311fd10f60dee2433a530f16e82354c32d6588a8775baa06fd221f'),
+            ('magma-list-deep-n21',17864,'b7a211699ab32a5d2397319702e2d5552f5796a6bdac990efa69fb186039f526'),
+            ('magma-list-deep-n36',18985,'6669cee92ad330dada351ac9e63656f7e9e848dd70376f17030d64677f8c81ac'),
+            ('magma-list-pair-n21',8827,'b8279fa9189a203c6c11b04702c27c0f99a650b37f2b0165dd260b1d14e9ef84'),
+            ('magma-list-pair-n7',8837,'abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35'),
+          ]
+          flags=json.loads(Path('base/flags.json').read_text())
+          assert len(flags)==24 and set(flags.values())=={'1'}
+          results=[]
+          for case,root,digest in cases:
+            source=Path(f'original/good/perf/{case}.ndjson').read_bytes()
+            assert hashlib.sha256(source).hexdigest()==digest
+            names={0:''}
+            expressions={}
+            for line in source.splitlines():
+              d=json.loads(line)
+              if 'in' in d and 'str' in d:
+                v=d['str']; names[d['in']]=(names.get(v['pre'],'?')+'.' if v['pre'] else '')+v['str']
+              if 'ie' in d and 'bvar' in d:
+                expressions[d['ie']]=d['bvar']
+            env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+            env.update(flags)
+            env.update({
+              'NUCLEUS_ASSURANCE_SOURCE_OWNED_PROBE':'1',
+              'NUCLEUS_TRACE_DOWNSTREAM':'1',
+              'NUCLEUS_DIAGNOSTIC_C47_PROFILE_EXPR':str(root),
+              'NUCLEUS_DIAGNOSTIC_C55_APP_SHAPE':'1',
+              'NUCLEUS_DIAGNOSTIC_C56_NEUTRAL_PAIR':'1',
+            })
+            p=subprocess.run([str(Path('candidate/nucleus-diagnostic').resolve()),'262144'],
+              input=source,capture_output=True,env=env,timeout=180)
+            verdict={0:'ACCEPT',1:'REJECT',2:'UNKNOWN',3:'ERROR'}.get(p.returncode,'ERROR')
+            lines=p.stderr.decode(errors='replace').splitlines()
+            c55=[s for s in lines if s.startswith('NUCLEUS_C55_APP_SUMMARY:')]
+            c56=[s for s in lines if s.startswith('NUCLEUS_C56_PAIR:')]
+            assert verdict=='UNKNOWN',(case,verdict)
+            assert len(c55)==1,(case,len(c55))
+            first=None
+            if c56:
+              match=re.search(r'left=const:NameId\((\d+)\).*?right=const:NameId\((\d+)\):qualified=true:arity=(\d+):major=expr=ExprId\((\d+)\):env=(\d+)',c56[0])
+              assert match,(case,c56[0])
+              left,right,arity,major,env_id=map(int,match.groups())
+              first={'left_name':names.get(left), 'right_name':names.get(right),
+                'right_arity':arity,'major_expr':major,
+                'major_bvar':expressions.get(major),'captured_env_id':env_id}
+            is_shared=(first is not None and first['left_name']=='Bool.true'
+              and first['right_name']=='Decidable.rec' and first['right_arity']==5
+              and first['major_bvar']==2)
+            expected=case in ('grind-ring-5','magma-list-deep-n21','magma-list-pair-n21','magma-list-pair-n7')
+            assert is_shared==expected,(case,is_shared,expected,first)
+            Path('reports/c67-'+case+'.stderr').write_bytes(p.stderr)
+            results.append({'case':case,'source_sha256':digest,'source_root_expr':root,
+              'verdict':verdict,'first_neutral_pair':first,
+              'c56_sampled_event_count':len(c56),'shared_boundary_signature':is_shared,
+              'c55_summary':c55[0],'stderr_sha256':hashlib.sha256(p.stderr).hexdigest()})
+            print(case,verdict,'shared',is_shared,'c56_samples',len(c56),flush=True)
+          Path('reports/c67-six-case-recursor-map.json').write_text(json.dumps({
+            'experiment':'C67 independently replays six frozen standard-budget originals',
+            'selected_c58_binary_sha256':'37b77b125745e7b3eabfbb0adba1da76ea27dac11d13efcc05586f0892b39e6f',
+            'selected_c58_artifact':13622452324,'arena_originals_artifact':13276400289,
+            'budget':262144,'new_proof_rules':False,'source_inputs_modified':False,
+            'standard_accepts':0,'shared_decidable_bvar2_boundary_count':sum(x['shared_boundary_signature'] for x in results),
+            'interpretation':'diagnostic outer-boundary signature only; interior causes differ',
+            'records':results},indent=2)+'\n')
+          PY
+      - name: Commit bounded source-qualified positive or failure receipt
+        if: always()
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          if test -s reports/c67-six-case-recursor-map.json; then
+            cp reports/c67-six-case-recursor-map.json experiments/nucleus-logos-support-20261108/c67-six-case-recursor-map.json
+          else
+            printf '{"status":"UNKNOWN_CI_FAILURE","qualified":false,"standard_accepts":0}\n' > experiments/nucleus-logos-support-20261108/c67-six-case-recursor-map.json
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add experiments/nucleus-logos-support-20261108/c67-six-case-recursor-map.json
+          git commit -m 'C67 preserved six-original recursor boundary evidence'
+          git push origin HEAD:refs/heads/research/nucleus-c67-six-case-recursor-map-20261109
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-C67-six-case-recursor-map
+          retention-days: 60
+          path: reports/
