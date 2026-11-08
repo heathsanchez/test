@@ -1,0 +1,577 @@
+{
+  "diagnostic": "C55 read-only application function-type failure classification",
+  "steps_per_case": 262144,
+  "original_artifact_id": 13276400289,
+  "proof_rules_changed": false,
+  "observations_are_proofs": false,
+  "cases": [
+    {
+      "case": "fueled-chain",
+      "declaration_kind": "thm",
+      "source_sha256": "e5ca34489fc7b8ee13b1e7f09f76247ab7b01dd1a752a13cc8b796c569e1401a",
+      "first_failed_root": 10707,
+      "first_failed_boundary": {
+        "source_name": "chain9_datF",
+        "stage": "theorem.value",
+        "verdict": "UNKNOWN",
+        "reason": "application-function-type"
+      },
+      "verdict": "UNKNOWN",
+      "app_failure": {
+        "root": 10707,
+        "observed_events": 24,
+        "remaining": 0,
+        "root_result": "Unknown { residual: ResidualId(\"application-function-type\") }",
+        "sample_count": 20,
+        "sampled_states": [
+          {
+            "seq": 0,
+            "app": 4784,
+            "fun": 4778,
+            "arg": 4783,
+            "context_depth": 12,
+            "frame": 2809230,
+            "remaining": 5,
+            "state": "inference-unknown:conversion-exposure",
+            "source": ""
+          },
+          {
+            "seq": 1,
+            "app": 4791,
+            "fun": 4784,
+            "arg": 4790,
+            "context_depth": 12,
+            "frame": 2809230,
+            "remaining": 5,
+            "state": "inference-unknown:application-function-type",
+            "source": ""
+          },
+          {
+            "seq": 2,
+            "app": 4806,
+            "fun": 4805,
+            "arg": 4800,
+            "context_depth": 11,
+            "frame": 2809197,
+            "remaining": 5,
+            "state": "inference-unknown:application-function-type",
+            "source": ""
+          },
+          {
+            "seq": 3,
+            "app": 4826,
+            "fun": 4825,
+            "arg": 4820,
+            "context_depth": 8,
+            "frame": 2808845,
+            "remaining": 5,
+            "state": "inference-unknown:application-function-type",
+            "source": ""
+          },
+          {
+            "seq": 4,
+            "app": 7393,
+            "fun": 7390,
+            "arg": 7392,
+            "context_depth": 5,
+            "frame": 2807064,
+            "remaining": 5,
+            "state": "inference-unknown:application-function-type",
+            "source": ""
+          },
+          {
+            "seq": 5,
+            "app": 7403,
+            "fun": 7396,
+            "arg": 7402,
+            "context_depth": 4,
+            "frame": 2807034,
+            "remaining": 5,
+            "state": "inference-unknown:application-function-type",
+            "source": ""
+          },
+          {
+            "seq": 6,
+            "app": 7413,
+            "fun": 7406,
+            "arg": 7412,
+            "context_depth": 3,
+            "frame": 2807006,
+            "remaining": 5,
+            "state": "inference-unknown:application-function-type",
+            "source": ""
+          },
+          {
+            "seq": 7,
+            "app": 7417,
+            "fun": 7416,
+            "arg": 7415,
+            "context_depth": 2,
+            "frame": 2805049,
+            "remaining": 5,
+            "state": "inference-unknown:application-function-type",
+            "source": ""
+          },
+          {
+            "seq": 8,
+            "app": 7419,
+            "fun": 7418,
+            "arg": 3130,
+            "context_depth": 2,
+            "frame": 2805049,
+            "remaining": 5,
+            "state": "inference-unknown:application-function-type",
+            "source": ""
+          },
+          {
+            "seq": 9,
+            "app": 10701,
+            "fun": 7419,
+            "arg": 10700,
+            "context_depth": 2,
+            "frame": 2805049,
+            "remaining": 5,
+            "state": "inference-unknown:application-function-type",
+            "source": ""
+          },
+          {
+            "seq": 10,
+            "app": 10703,
+            "fun": 10701,
+            "arg": 10702,
+            "context_depth": 2,
+            "frame": 2805049,
+            "remaining": 5,
+            "state": "inference-unknown:application-function-type",
+            "source": ""
+          },
+          {
+            "seq": 11,
+            "app": 7406,
+            "fun": 4772,
+            "arg": 7405,
+            "context_depth": 3,
+            "frame": 2807006,
+            "remaining": 0,
+            "state": "inference-unknown:type-inference-budget",
+            "source": ""
+          },
+          {
+            "seq": 12,
+            "app": 7413,
+            "fun": 7406,
+            "arg": 7412,
+            "context_depth": 3,
+            "frame": 2807006,
+            "remaining": 0,
+            "state": "inference-unknown:application-function-type",
+            "source": ""
+          },
+          {
+            "seq": 13,
+            "app": 4998,
+            "fun": 4707,
+            "arg": 633,
+            "context_depth": 15,
+            "frame": 3824848,
+            "remaining": 0,
+            "state": "inference-unknown:conversion-budget-exhausted",
+            "source": ""
+          },
+          {
+            "seq": 14,
+            "app": 5007,
+            "fun": 4999,
+            "arg": 5006,
+            "context_depth": 15,
+            "frame": 3824848,
+            "remaining": 0,
+            "state": "inference-unknown:application-function-type",
+            "source": ""
+          },
+          {
+            "seq": 15,
+            "app": 5010,
+            "fun": 5009,
+            "arg": 4896,
+            "context_depth": 14,
+            "frame": 3823857,
+            "remaining": 0,
+            "state": "inference-unknown:application-function-type",
+            "source": ""
+          },
+          {
+            "seq": 16,
+            "app": 5260,
+            "fun": 5010,
+            "arg": 5259,
+            "context_depth": 14,
+            "frame": 3823857,
+            "remaining": 0,
+            "state": "inference-unknown:application-function-type",
+            "source": ""
+          },
+          {
+            "seq": 17,
+            "app": 5346,
+            "fun": 5344,
+            "arg": 5345,
+            "context_depth": 13,
+            "frame": 3821390,
+            "remaining": 0,
+            "state": "inference-unknown:application-function-type",
+            "source": ""
+          },
+          {
+            "seq": 18,
+            "app": 7620,
+            "fun": 7618,
+            "arg": 7619,
+            "context_depth": 8,
+            "frame": 3652118,
+            "remaining": 0,
+            "state": "inference-unknown:application-function-type",
+            "source": ""
+          },
+          {
+            "seq": 19,
+            "app": 7676,
+            "fun": 7633,
+            "arg": 7675,
+            "context_depth": 3,
+            "frame": 2868064,
+            "remaining": 0,
+            "state": "inference-unknown:application-function-type",
+            "source": ""
+          }
+        ],
+        "sample_is_complete": false
+      }
+    },
+    {
+      "case": "grind-ring-5",
+      "declaration_kind": "thm",
+      "source_sha256": "e9c394e0ff311fd10f60dee2433a530f16e82354c32d6588a8775baa06fd221f",
+      "first_failed_root": 156494,
+      "first_failed_boundary": {
+        "source_name": "_private.Init.Data.Int.LemmasAux.0.Int.blt'_eq_true._proof_1_4",
+        "stage": "theorem.value",
+        "verdict": "UNKNOWN",
+        "reason": "application-function-type"
+      },
+      "verdict": "UNKNOWN",
+      "app_failure": {
+        "root": 156494,
+        "observed_events": 15,
+        "remaining": 262018,
+        "root_result": "Unknown { residual: ResidualId(\"application-function-type\") }",
+        "sample_count": 15,
+        "sampled_states": [
+          {
+            "seq": 0,
+            "app": 156352,
+            "fun": 156342,
+            "arg": 156351,
+            "context_depth": 4,
+            "frame": 31844940,
+            "remaining": 3318,
+            "state": "inference-unknown:unresolved-qualified-recursor-heads",
+            "source": ""
+          },
+          {
+            "seq": 1,
+            "app": 156491,
+            "fun": 156355,
+            "arg": 156490,
+            "context_depth": 3,
+            "frame": 31844863,
+            "remaining": 3318,
+            "state": "inference-unknown:application-function-type",
+            "source": ""
+          },
+          {
+            "seq": 2,
+            "app": 156352,
+            "fun": 156342,
+            "arg": 156351,
+            "context_depth": 4,
+            "frame": 31844940,
+            "remaining": 3309,
+            "state": "inference-unknown:unresolved-qualified-recursor-heads",
+            "source": ""
+          },
+          {
+            "seq": 3,
+            "app": 94937,
+            "fun": 80453,
+            "arg": 73311,
+            "context_depth": 0,
+            "frame": 0,
+            "remaining": 3259,
+            "state": "inference-unknown:unresolved-qualified-recursor-heads",
+            "source": ""
+          },
+          {
+            "seq": 4,
+            "app": 94941,
+            "fun": 94937,
+            "arg": 94940,
+            "context_depth": 4,
+            "frame": 31944179,
+            "remaining": 3259,
+            "state": "inference-unknown:application-function-type",
+            "source": ""
+          },
+          {
+            "seq": 5,
+            "app": 156489,
+            "fun": 94941,
+            "arg": 156488,
+            "context_depth": 4,
+            "frame": 31944179,
+            "remaining": 3259,
+            "state": "inference-unknown:application-function-type",
+            "source": ""
+          },
+          {
+            "seq": 6,
+            "app": 94937,
+            "fun": 80453,
+            "arg": 73311,
+            "context_depth": 0,
+            "frame": 0,
+            "remaining": 262018,
+            "state": "inference-unknown:unresolved-qualified-recursor-heads",
+            "source": ""
+          },
+          {
+            "seq": 7,
+            "app": 94941,
+            "fun": 94937,
+            "arg": 94940,
+            "context_depth": 4,
+            "frame": 31944179,
+            "remaining": 262018,
+            "state": "inference-unknown:application-function-type",
+            "source": ""
+          },
+          {
+            "seq": 8,
+            "app": 156489,
+            "fun": 94941,
+            "arg": 156488,
+            "context_depth": 4,
+            "frame": 31944179,
+            "remaining": 262018,
+            "state": "inference-unknown:application-function-type",
+            "source": ""
+          },
+          {
+            "seq": 9,
+            "app": 94937,
+            "fun": 80453,
+            "arg": 73311,
+            "context_depth": 0,
+            "frame": 0,
+            "remaining": 3246,
+            "state": "inference-unknown:unresolved-qualified-recursor-heads",
+            "source": ""
+          },
+          {
+            "seq": 10,
+            "app": 94941,
+            "fun": 94937,
+            "arg": 94940,
+            "context_depth": 4,
+            "frame": 31944179,
+            "remaining": 3246,
+            "state": "inference-unknown:application-function-type",
+            "source": ""
+          },
+          {
+            "seq": 11,
+            "app": 156489,
+            "fun": 94941,
+            "arg": 156488,
+            "context_depth": 4,
+            "frame": 31944179,
+            "remaining": 3246,
+            "state": "inference-unknown:application-function-type",
+            "source": ""
+          },
+          {
+            "seq": 12,
+            "app": 94937,
+            "fun": 80453,
+            "arg": 73311,
+            "context_depth": 0,
+            "frame": 0,
+            "remaining": 3217,
+            "state": "inference-unknown:unresolved-qualified-recursor-heads",
+            "source": ""
+          },
+          {
+            "seq": 13,
+            "app": 94941,
+            "fun": 94937,
+            "arg": 94940,
+            "context_depth": 4,
+            "frame": 31944179,
+            "remaining": 3217,
+            "state": "inference-unknown:application-function-type",
+            "source": ""
+          },
+          {
+            "seq": 14,
+            "app": 156489,
+            "fun": 94941,
+            "arg": 156488,
+            "context_depth": 4,
+            "frame": 31944179,
+            "remaining": 3217,
+            "state": "inference-unknown:application-function-type",
+            "source": ""
+          }
+        ],
+        "sample_is_complete": true
+      }
+    },
+    {
+      "case": "magma-list-pair-n7",
+      "declaration_kind": "def",
+      "source_sha256": "abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35",
+      "first_failed_root": 8837,
+      "first_failed_boundary": {
+        "source_name": "countermodel",
+        "stage": "definition.value",
+        "verdict": "UNKNOWN",
+        "reason": "application-function-type"
+      },
+      "verdict": "UNKNOWN",
+      "app_failure": {
+        "root": 8837,
+        "observed_events": 1,
+        "remaining": 261687,
+        "root_result": "Unknown { residual: ResidualId(\"application-function-type\") }",
+        "sample_count": 1,
+        "sampled_states": [
+          {
+            "seq": 0,
+            "app": 8835,
+            "fun": 8805,
+            "arg": 8834,
+            "context_depth": 0,
+            "frame": 0,
+            "remaining": 261687,
+            "state": "inference-unknown:unresolved-qualified-recursor-heads",
+            "source": ""
+          }
+        ],
+        "sample_is_complete": true
+      }
+    },
+    {
+      "case": "magma-list-pair-n21",
+      "declaration_kind": "def",
+      "source_sha256": "b8279fa9189a203c6c11b04702c27c0f99a650b37f2b0165dd260b1d14e9ef84",
+      "first_failed_root": 8827,
+      "first_failed_boundary": {
+        "source_name": "countermodel",
+        "stage": "definition.value",
+        "verdict": "UNKNOWN",
+        "reason": "application-function-type"
+      },
+      "verdict": "UNKNOWN",
+      "app_failure": {
+        "root": 8827,
+        "observed_events": 1,
+        "remaining": 261783,
+        "root_result": "Unknown { residual: ResidualId(\"application-function-type\") }",
+        "sample_count": 1,
+        "sampled_states": [
+          {
+            "seq": 0,
+            "app": 8825,
+            "fun": 8795,
+            "arg": 8824,
+            "context_depth": 0,
+            "frame": 0,
+            "remaining": 261783,
+            "state": "inference-unknown:unresolved-qualified-recursor-heads",
+            "source": ""
+          }
+        ],
+        "sample_is_complete": true
+      }
+    },
+    {
+      "case": "magma-list-deep-n21",
+      "declaration_kind": "def",
+      "source_sha256": "b7a211699ab32a5d2397319702e2d5552f5796a6bdac990efa69fb186039f526",
+      "first_failed_root": 17864,
+      "first_failed_boundary": {
+        "source_name": "countermodel",
+        "stage": "definition.value",
+        "verdict": "UNKNOWN",
+        "reason": "unresolved-qualified-recursor-heads"
+      },
+      "verdict": "UNKNOWN",
+      "app_failure": {
+        "root": 17864,
+        "observed_events": 0,
+        "remaining": 258825,
+        "root_result": "Unknown { residual: ResidualId(\"unresolved-qualified-recursor-heads\") }",
+        "sample_count": 0,
+        "sampled_states": [],
+        "sample_is_complete": true
+      }
+    },
+    {
+      "case": "magma-list-deep-n36",
+      "declaration_kind": "def",
+      "source_sha256": "6669cee92ad330dada351ac9e63656f7e9e848dd70376f17030d64677f8c81ac",
+      "first_failed_root": 18985,
+      "first_failed_boundary": {
+        "source_name": "countermodel",
+        "stage": "definition.value",
+        "verdict": "UNKNOWN",
+        "reason": "application-function-type"
+      },
+      "verdict": "UNKNOWN",
+      "app_failure": {
+        "root": 18985,
+        "observed_events": 2,
+        "remaining": 255727,
+        "root_result": "Unknown { residual: ResidualId(\"application-function-type\") }",
+        "sample_count": 2,
+        "sampled_states": [
+          {
+            "seq": 0,
+            "app": 18974,
+            "fun": 18960,
+            "arg": 18973,
+            "context_depth": 1,
+            "frame": 150433,
+            "remaining": 255727,
+            "state": "inference-unknown:rigid-type-constructor-mismatch",
+            "source": ""
+          },
+          {
+            "seq": 1,
+            "app": 18982,
+            "fun": 18975,
+            "arg": 18981,
+            "context_depth": 1,
+            "frame": 150433,
+            "remaining": 255727,
+            "state": "inference-unknown:application-function-type",
+            "source": ""
+          }
+        ],
+        "sample_is_complete": true
+      }
+    }
+  ],
+  "all_six_unknown": true,
+  "all_six_root_classified": true
+}
