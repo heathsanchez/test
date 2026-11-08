@@ -13,6 +13,7 @@ import re
 import subprocess
 
 from probe_c50_loss_ledger import parse_loss_events, summarize_losses
+from probe_c51_exact_retries import parse_retries, summarize_retries
 
 
 N7_SHA256 = "abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35"
@@ -85,6 +86,7 @@ def main() -> None:
     parser.add_argument("--require-events", action="store_true")
     parser.add_argument("--c49-content-fingerprint", action="store_true")
     parser.add_argument("--c50-loss-ledger", action="store_true")
+    parser.add_argument("--c51-exact-retries", action="store_true")
     args = parser.parse_args()
     original = args.input.read_bytes()
     source_sha = hashlib.sha256(original).hexdigest()
@@ -103,6 +105,10 @@ def main() -> None:
         env["NUCLEUS_DIAGNOSTIC_C49_CONTENT_FINGERPRINT"] = "1"
     if args.c50_loss_ledger:
         env["NUCLEUS_DIAGNOSTIC_C50_STATE_LOSS"] = "1"
+    if args.c51_exact_retries:
+        if not args.c50_loss_ledger:
+            raise ValueError("C51 observer requires C50 source-loss events")
+        env["NUCLEUS_DIAGNOSTIC_C51_EXACT_RETRIES"] = "1"
     results = {}
     for label, steps in (("standard", 262144), ("accepted_diagnostic", 14155776)):
         run = subprocess.run(
@@ -123,6 +129,11 @@ def main() -> None:
         if args.c50_loss_ledger:
             losses = parse_loss_events(run.stderr)
             results[label]["c50_loss_events"] = losses
+        if args.c51_exact_retries:
+            retries = parse_retries(run.stderr)
+            if len(retries) != len(results[label]["c50_loss_events"]):
+                raise ValueError("C51 failure-root events do not match C50 failure exits")
+            results[label]["c51_failed_roots"] = retries
     if results["standard"]["verdict"] != "UNKNOWN":
         raise ValueError("C48 standard verdict changed unexpectedly")
     if results["accepted_diagnostic"]["verdict"] != "ACCEPT_DIAGNOSTIC_ONLY":
@@ -133,8 +144,8 @@ def main() -> None:
         "case": args.input.stem,
         "source_sha256": source_sha,
         "proof_rules_changed": False,
-        "standard": {k: v for k, v in results["standard"].items() if k not in ("events", "c50_loss_events")},
-        "accepted_diagnostic": {k: v for k, v in results["accepted_diagnostic"].items() if k not in ("events", "c50_loss_events")},
+        "standard": {k: v for k, v in results["standard"].items() if k not in ("events", "c50_loss_events", "c51_failed_roots")},
+        "accepted_diagnostic": {k: v for k, v in results["accepted_diagnostic"].items() if k not in ("events", "c50_loss_events", "c51_failed_roots")},
         "event_counts": {"standard": len(left), "accepted_diagnostic": len(right)},
         "first_divergence": first_divergence(left, right),
         "standard_first_64": left[:64],
@@ -153,6 +164,16 @@ def main() -> None:
             for label in ("standard", "accepted_diagnostic")
         }
         report["c50_partial_state_is_a_proof"] = False
+    if args.c51_exact_retries:
+        report["c51_exact_failed_root_retries"] = {
+            label: summarize_retries(results[label]["c51_failed_roots"])
+            for label in ("standard", "accepted_diagnostic")
+        }
+        report["c51_failure_requests"] = {
+            label: results[label]["c51_failed_roots"]
+            for label in ("standard", "accepted_diagnostic")
+        }
+        report["c51_partial_state_is_a_proof"] = False
     print(json.dumps(report, indent=2))
 
 
