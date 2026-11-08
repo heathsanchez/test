@@ -1,3 +1,5 @@
+import AaronsonAmbainis.Main
+
 /-!
 # Independent statement-entailment adapter for the Aaronson–Ambainis conjecture
 
@@ -16,8 +18,6 @@ Reproduction on a compatible toolchain:
 The definitions below do not refer to PSI's theorem statement. The bridge
 itself imports PSI's Main module as the premise to be audited.
 -/
-
-import AaronsonAmbainis.Main
 
 namespace IndependentAAAudit
 
