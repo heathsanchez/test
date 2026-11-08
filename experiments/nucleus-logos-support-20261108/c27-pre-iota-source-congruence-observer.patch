@@ -1,0 +1,58 @@
+--- a/src/convert.rs
++++ b/src/convert.rs
+@@ -1852,6 +1852,25 @@
+                     && checker.has_qualified_recursor(*name)
+                     && left.spine != right.spine
+                 {
++                    // C27 is an observer-only trial of a sufficient source
++                    // congruence certificate *before* speculative recursor
++                    // iota spends local conversion work. The trial cannot
++                    // grant an equality or modify the actual work allowance.
++                    #[cfg(feature="diagnostics")]
++                    if std::env::var_os("NUCLEUS_DIAGNOSTIC_PRE_IOTA_CONGRUENCE").is_some() {
++                        use std::sync::atomic::{AtomicUsize,Ordering};
++                        static TRIALS:AtomicUsize=AtomicUsize::new(0);
++                        if TRIALS.fetch_add(1,Ordering::Relaxed)<128 {
++                            let grant=current_budget.min(4096);
++                            let (proved,spent,first_failed)=diagnostic_pre_iota_source_congruence(
++                                checker,left,right,grant,
++                            );
++                            let identical=left.spine.iter().zip(&right.spine)
++                                .filter(|(a,b)|*a==*b).count();
++                            eprintln!("NUCLEUS_PRE_IOTA_CONGRUENCE:head={name:?}:depth={depth}:left_spine={}:right_spine={}:identical={identical}:grant={grant}:spent={spent}:proved={proved}:first_failed={first_failed:?}",
++                                left.spine.len(),right.spine.len());
++                        }
++                    }
+                     let mut available = current_budget;
+                     let mut reduced = None;
+                     for (is_left, candidate) in [(false, right), (true, left)] {
+@@ -2559,6 +2578,29 @@
+     Judgment::refuted("Nat-literal-non-Nat-head")
+ }
+ 
++// C27 observer: sufficient, immutable-source syntactic/substitution equality
++// of an entire neutral spine. It deliberately uses only the pure relational
++// source substitution checker, not congruence caches or source-equality
++// retention. This returns diagnostic data, never a conversion judgment.
++#[cfg(feature="diagnostics")]
++#[cold]
++#[inline(never)]
++fn diagnostic_pre_iota_source_congruence(
++    checker:&TypeChecker<'_>, left:&Neutral, right:&Neutral, budget:usize,
++) -> (bool,usize,Option<usize>) {
++    if left.head!=right.head || left.spine.len()!=right.spine.len() {
++        return (false,0,None);
++    }
++    let mut remaining=budget;
++    for (index,(a,b)) in left.spine.iter().zip(&right.spine).enumerate() {
++        if a==b {continue;}
++        if !checker.relational_source_substitution(a,b,&mut remaining) {
++            return (false,budget-remaining,Some(index));
++        }
++    }
++    (true,budget-remaining,None)
++}
++
+ // A sufficient source equality proof for an entire neutral receiver. Every
+ // child uses the same remaining allowance; no normalization or typing
+ // witness is borrowed from another receiver or context.
