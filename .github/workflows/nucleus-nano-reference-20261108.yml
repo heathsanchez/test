@@ -50,6 +50,15 @@ jobs:
             --valid-root arena207 \
             --bad-root original196 \
             --steps 262144 --timeout 60 | tee reports/c19-reference-results.json
+      - name: C20 value-versus-term core ablation on the same ten frozen exports
+        run: |
+          set -euo pipefail
+          python3 experiments/nucleus-logos-support-20261108/probe_c19_reference.py \
+            --binary nano-reference/target/release/nl-fast \
+            --valid-root arena207 \
+            --bad-root original196 \
+            --steps 262144 --timeout 60 --core term \
+            | tee reports/c20-term-core-results.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
