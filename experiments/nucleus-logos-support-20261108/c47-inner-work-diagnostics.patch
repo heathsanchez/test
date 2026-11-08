@@ -1,0 +1,146 @@
+--- a/src/diagnostics.rs
++++ b/src/diagnostics.rs
+@@ -4,7 +4,8 @@
+ //! thread-local so parallel tests and independent checker calls do not share
+ //! observation state.  Normal Arena builds omit this module and every update.
+ 
+-use std::cell::Cell;
++use std::cell::{Cell,RefCell};
++use std::collections::HashMap;
+ 
+ use crate::verdict::Verdict;
+ 
+@@ -27,6 +28,65 @@
+     static INDUCTIVE_SIGNATURES: Cell<u64> = const { Cell::new(0) };
+     static TYPE_JUDGMENTS: Cell<u64> = const { Cell::new(0) };
+     static CONVERSIONS: Cell<u64> = const { Cell::new(0) };
++    static C47_EXPOSURE_TRANSITIONS: Cell<u64> = const { Cell::new(0) };
++    static C47_REPLAY_RESERVATIONS: Cell<u64> = const { Cell::new(0) };
++    static C47_RECURSOR_WORKLIST_STEPS: Cell<u64> = const { Cell::new(0) };
++    static C47_CONVERSION_PAIRS: Cell<u64> = const { Cell::new(0) };
++    // Sampled source syntax only. Never enters a kernel rule, memo key or
++    // decision; bounded to avoid turning diagnosis into an O(work) hash map.
++    static C47_EXPOSURE_SAMPLES: RefCell<HashMap<u64,u64>> = RefCell::new(HashMap::new());
++}
++
++// Observation only: none of these counters is consulted to admit a proof,
++// allocate fuel, produce a constructor or shortcut a conversion.
++pub(crate) fn c47_reset() {
++    C47_EXPOSURE_TRANSITIONS.set(0);
++    C47_REPLAY_RESERVATIONS.set(0);
++    C47_RECURSOR_WORKLIST_STEPS.set(0);
++    C47_CONVERSION_PAIRS.set(0);
++    C47_EXPOSURE_SAMPLES.with(|samples|samples.borrow_mut().clear());
++}
++
++pub(crate) fn c47_exposure_transition(expression: u64) {
++    let n=C47_EXPOSURE_TRANSITIONS.get().saturating_add(1);
++    C47_EXPOSURE_TRANSITIONS.set(n);
++    if n%64==0 {
++        C47_EXPOSURE_SAMPLES.with(|samples| {
++            let mut saved=samples.borrow_mut();
++            if saved.len()<8192 || saved.contains_key(&expression) {
++                *saved.entry(expression).or_default()+=1;
++            }
++        });
++    }
++}
++
++pub(crate) fn c47_replay_reservation(count: usize) {
++    C47_REPLAY_RESERVATIONS.set(C47_REPLAY_RESERVATIONS.get().saturating_add(count as u64));
++}
++
++pub(crate) fn c47_recursor_worklist_step() {
++    C47_RECURSOR_WORKLIST_STEPS.set(C47_RECURSOR_WORKLIST_STEPS.get().saturating_add(1));
++}
++
++pub(crate) fn c47_conversion_pair() {
++    C47_CONVERSION_PAIRS.set(C47_CONVERSION_PAIRS.get().saturating_add(1));
++}
++
++pub(crate) fn c47_work_snapshot() -> (u64, u64, u64, u64) {
++    (
++        C47_EXPOSURE_TRANSITIONS.get(),
++        C47_REPLAY_RESERVATIONS.get(),
++        C47_RECURSOR_WORKLIST_STEPS.get(),
++        C47_CONVERSION_PAIRS.get(),
++    )
++}
++
++pub(crate) fn c47_top_source_exposures() -> Vec<(u64,u64)> {
++    let mut top=C47_EXPOSURE_SAMPLES.with(|samples|samples.borrow().iter()
++        .map(|(expr,hits)|(*expr,*hits)).collect::<Vec<_>>());
++    top.sort_unstable_by(|a,b|b.1.cmp(&a.1).then(a.0.cmp(&b.0)));
++    top.truncate(16);
++    top
+ }
+ 
+ pub(crate) fn reset() {
+--- a/src/machine.rs
++++ b/src/machine.rs
+@@ -1184,7 +1184,10 @@
+ 
+     fn reserve_replay_work(&self,cost:usize)->bool {
+         let Some(remaining)=self.exposure_fuel.get().and_then(|f|f.checked_sub(cost)) else {return false;};
+-        self.exposure_fuel.set(Some(remaining));true
++        self.exposure_fuel.set(Some(remaining));
++        #[cfg(feature="diagnostics")]
++        crate::diagnostics::c47_replay_reservation(cost);
++        true
+     }
+ 
+     // Reserve traversal/clone/hash work before allocating a source key.
+@@ -1601,6 +1604,8 @@
+                 return Judgment::unknown("reduction-budget-exhausted");
+             }
+             budget -= 1;
++            #[cfg(feature="diagnostics")]
++            crate::diagnostics::c47_exposure_transition(closure.expr.0);
+             if let Some(fuel) = self.exposure_fuel.get() { self.exposure_fuel.set(Some(fuel - 1)); }
+             if !visited.insert((self.authority, closure.expr, closure.env.id())) {
+                 return Judgment::unknown("reduction-cycle");
+@@ -3105,6 +3110,8 @@
+             let Some(fuel)=self.exposure_fuel.get() else { return false; };
+             if fuel == 0 { return false; }
+             self.exposure_fuel.set(Some(fuel-1));
++            #[cfg(feature="diagnostics")]
++            crate::diagnostics::c47_recursor_worklist_step();
+             true
+         };
+         let mut current=neutral.clone();
+--- a/src/convert.rs
++++ b/src/convert.rs
+@@ -164,6 +164,8 @@
+             return Judgment::unknown("conversion-budget-exhausted");
+         }
+         remaining -= 1;
++        #[cfg(feature="diagnostics")]
++        crate::diagnostics::c47_conversion_pair();
+         if !visited.insert((checker.authority(), left.clone(), right.clone())) {
+             continue;
+         }
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -527,10 +527,22 @@
+         if !self.formed_expected.borrow().contains(expected_source) {
+             return Judgment::unknown("expected-type-formation-warrant-missing");
+         }
++        #[cfg(feature="diagnostics")]
++        let c47_profile=std::env::var("NUCLEUS_DIAGNOSTIC_C47_PROFILE_EXPR")
++            .ok().and_then(|value|value.parse::<u64>().ok())==Some(expression.0);
++        #[cfg(feature="diagnostics")]
++        if c47_profile { crate::diagnostics::c47_reset(); }
+         let mut remaining = budget;
+         let result = self.check_with_formation(expression, expected, &[], &EnvFrame::empty(),
+             &mut remaining, self.delta_policy == crate::convert::DeltaPolicy::GuardedSemanticFallback,
+             &mut HashMap::new(), true);
++        #[cfg(feature="diagnostics")]
++        if c47_profile {
++            let (exposure,replay_key,recursor,conversion)=crate::diagnostics::c47_work_snapshot();
++            eprintln!("NUCLEUS_C47_INNER_WORK:expr={expression:?}:budget={budget}:outer_spent={}:outer_remaining={remaining}:exposure_transitions={exposure}:replay_reserved_units={replay_key}:recursor_worklist_steps={recursor}:conversion_pairs={conversion}:result={result:?}", budget.saturating_sub(remaining));
++            eprintln!("NUCLEUS_C47_HOT_SOURCE:expr={expression:?}:samples_every_64={:?}",
++                crate::diagnostics::c47_top_source_exposures());
++        }
+         #[cfg(feature = "diagnostics")]
+         if crate::run_flags::present(crate::run_flags::Flag::TraceLambdaTrialWork) {
+             let trials = self.lambda_trials.borrow();
