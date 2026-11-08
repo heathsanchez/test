@@ -20,12 +20,16 @@ theorem checked_decide_true_implies_proof {P : Prop} (d : Decidable P)
     (h : @decide P d = true) : P := by
   cases d with
   | isTrue proof => exact proof
-  | isFalse _ => simp at h
+  | isFalse refutation =>
+      simp at h
+      exact False.elim (refutation h)
 
 theorem checked_decide_false_implies_refutation {P : Prop} (d : Decidable P)
     (h : @decide P d = false) : ¬ P := by
   cases d with
-  | isTrue _ => simp at h
+  | isTrue proof =>
+      simp at h
+      exact False.elim (h proof)
   | isFalse refutation => exact refutation
 
 theorem finite_domain_isTrue {n : Nat} {P : Fin n → Prop}
