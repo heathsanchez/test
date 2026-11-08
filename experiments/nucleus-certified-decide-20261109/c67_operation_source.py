@@ -23,9 +23,9 @@ def report(src):
                    "value":int(d["value"]) if "value" in d else None}
             if entry["value"] is not None:
                 entry["value_source"]=c65.summarize(entry["value"],names,exprs)
+                owned=reach(exprs,entry["value"])
                 entry["literal_nat_values"]=sorted({
-                    str(e["natVal"]) for i,e in exprs.items()
-                    if "natVal" in e and i in reach(exprs,entry["value"])
+                    str(exprs[i]["natVal"]) for i in owned if "natVal" in exprs[i]
                 })
             owners[n]=entry
     for n in ("countermodel.op","countermodel.inst","EquationLHS"):
