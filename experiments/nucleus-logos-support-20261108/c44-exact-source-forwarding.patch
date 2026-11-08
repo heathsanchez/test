@@ -1,0 +1,155 @@
+--- a/src/machine.rs
++++ b/src/machine.rs
+@@ -366,6 +366,13 @@
+     worklist_major_probe: Cell<bool>,
+     source_major_cache_enabled: bool,
+     source_major_exposures: RefCell<HashMap<SourceMajorExposureKey, Value>>,
++    // C44: source-binding forwarding is a beta/environment lookup memo,
++    // never a reduced Value or a constructor witness. The map lives only
++    // as long as this immutable Machine and its source expression table.
++    source_forwarding_enabled: bool,
++    source_forwarded: RefCell<HashMap<Closure, Closure>>,
++    #[cfg(test)]
++    source_forward_hits: Cell<usize>,
+     #[cfg(test)]
+     source_major_cache_hits: Cell<usize>,
+     // Retain full certified replay keys on exact source handles. All fields
+@@ -409,6 +416,11 @@
+             source_major_cache_enabled: std::env::var("NUCLEUS_DIAGNOSTIC_C30_EXACT_MAJOR_CACHE")
+                 .ok().as_deref() == Some("1"),
+             source_major_exposures: RefCell::new(HashMap::new()),
++            source_forwarding_enabled: cfg!(feature="diagnostics")
++                && std::env::var_os("NUCLEUS_DIAGNOSTIC_C44_SOURCE_FORWARDING").is_some(),
++            source_forwarded: RefCell::new(HashMap::new()),
++            #[cfg(test)]
++            source_forward_hits: Cell::new(0),
+             #[cfg(test)]
+             source_major_cache_hits: Cell::new(0),
+             replay_source_handles: RefCell::new(HashMap::new()),
+@@ -1582,6 +1594,7 @@
+         mut visited: VisitSet,
+     ) -> Judgment<Exposure> {
+         let mut transitions = Vec::new();
++        let mut source_forwarding_path = Vec::<Closure>::new();
+ 
+         loop {
+             if budget == 0 || self.exposure_fuel.get() == Some(0) {
+@@ -1596,11 +1609,56 @@
+             let Some(expression) = self.expressions.get(closure.expr) else {
+                 return Judgment::unknown("missing-expression-during-reduction");
+             };
++            // Only an already traversed sequence of exact immutable BVar
++            // captures may be shortened. Stop at the first genuine source
++            // expression, before attempting *any* delta, iota, projection or
++            // value reduction. A pending application spine is left intact.
++            if !matches!(expression, Expr::BVar(_)) && !source_forwarding_path.is_empty() {
++                if self.source_forwarding_enabled && !record_witnesses
++                    && source_forwarding_path.len() >= 8
++                {
++                    let mut saved = self.source_forwarded.borrow_mut();
++                    // Pay for each original lookup on the cold path, then
++                    // retain only sparse exact source checkpoints. Keeping
++                    // every one-step forwarding costs more than it saves in
++                    // the large unchanged recursor/projection corpus.
++                    for earlier in source_forwarding_path.drain(..).step_by(8) {
++                        if saved.len() >= 4096 { break; }
++                        saved.entry(earlier).or_insert_with(||closure.clone());
++                    }
++                }
++                source_forwarding_path.clear();
++            }
+             match expression {
+                 Expr::BVar(index) => {
++                    if self.source_forwarding_enabled && !record_witnesses {
++                        let forwarded=self.source_forwarded.borrow().get(&closure).cloned();
++                        if let Some(actual)=forwarded {
++                            #[cfg(test)]
++                            self.source_forward_hits.set(self.source_forward_hits.get()+1);
++                            #[cfg(feature="diagnostics")]
++                            {
++                                use std::sync::atomic::{AtomicUsize,Ordering};
++                                static C44_HITS:AtomicUsize=AtomicUsize::new(0);
++                                let hits=C44_HITS.fetch_add(1,Ordering::Relaxed)+1;
++                                if hits.is_power_of_two() {
++                                    eprintln!("NUCLEUS_C44_SOURCE_FORWARD:hit_count={hits}:expr={:?}:source_env={}:terminal_expr={:?}:terminal_env={}",
++                                        closure.expr,closure.env.id(),actual.expr,actual.env.id());
++                                }
++                            }
++                            visited.clear();
++                            closure=actual;
++                            continue;
++                        }
++                    }
+                     if let Some(bound) = closure.env.lookup(*index) {
+                         match bound {
+                             EnvBinding::Closure(bound) => {
++                                if self.source_forwarding_enabled && !record_witnesses
++                                    && source_forwarding_path.len() < 128
++                                {
++                                    source_forwarding_path.push(closure.clone());
++                                }
+                                 visited.clear();
+                                 closure = bound;
+                                 continue;
+@@ -5042,3 +5100,61 @@
+         }
+     }
+ }
++
++#[cfg(test)]
++mod source_binding_forwarding_regression {
++    use super::*;
++
++    #[test]
++    fn exact_captured_bvar_chain_reuses_only_completed_source_forwarding() {
++        let mut expressions = IdTable::default();
++        expressions.insert(ExprId(0), Expr::BVar(0)).unwrap();
++        expressions.insert(ExprId(1), Expr::Const { name: NameId(101), levels: vec![] }).unwrap();
++        expressions.insert(ExprId(2), Expr::Const { name: NameId(102), levels: vec![] }).unwrap();
++        let levels = IdTable::default();
++        let cache = new_exposure_cache();
++        let mut machine = Machine::new(AuthorityId(881), &expressions, &levels, HashMap::new())
++            .with_exposure_cache(cache.clone());
++        machine.source_forwarding_enabled = true;
++        let chain = |constructor| {
++            let mut captured = Closure::new(constructor, EnvFrame::empty());
++            for _ in 0..90 {
++                captured = Closure::new(ExprId(0), EnvFrame::empty().extend(captured));
++            }
++            captured
++        };
++        let source = chain(ExprId(1));
++        let expected = Value::Neutral(Neutral {
++            head: NeutralHead::Const { name: NameId(101), levels: vec![] },
++            spine: vec![],
++        });
++        assert_eq!(
++            machine.expose_for_conversion(source.clone(), Transparency::Opaque, 512).proven_value(),
++            Some(&expected),
++            "source chain must be independently evaluable before any saved shortcut",
++        );
++        assert!(machine.source_forwarded.borrow().len() <= 16,
++            "the memo must retain a bounded number of path checkpoints, not every binder");
++        // Exclude the existing value cache: the new operation must retain
++        // only a fully traversed immutable source forwarding path, even if
++        // the later value itself remains an unfinished recursor.
++        cache.borrow_mut().values.clear();
++        assert_eq!(
++            machine.expose_for_conversion(source, Transparency::Opaque, 4).proven_value(),
++            Some(&expected),
++            "exact source forwarding should avoid replaying all 90 bindings",
++        );
++        assert!(machine.source_forward_hits.get()>0);
++        cache.borrow_mut().values.clear();
++        let different = chain(ExprId(2));
++        assert!(machine.expose_for_conversion(different.clone(), Transparency::Opaque, 4).is_unknown(),
++            "a distinct immutable capture must not inherit an earlier constructor");
++        assert!(matches!(machine.expose_for_conversion(different, Transparency::Opaque, 512).proven_value(),
++            Some(Value::Neutral(Neutral { head: NeutralHead::Const { name: NameId(102), .. }, spine })) if spine.is_empty()));
++        let trivial = Closure::new(ExprId(0), EnvFrame::empty().extend(
++            Closure::new(ExprId(1), EnvFrame::empty())));
++        assert_eq!(machine.expose_for_conversion(trivial.clone(), Transparency::Opaque, 16).proven_value(),Some(&expected));
++        assert!(!machine.source_forwarded.borrow().contains_key(&trivial),
++            "short binder substitutions must not consume the expensive cache");
++    }
++}
