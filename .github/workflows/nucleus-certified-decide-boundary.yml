@@ -20,7 +20,7 @@ jobs:
         with:
           lake-package-directory: experiments/nucleus-certified-decide-20261109
           auto-config: 'false'
-          build: 'true'
+          build: 'false'
           test: 'false'
           lint: 'false'
           use-github-cache: 'false'
@@ -28,6 +28,7 @@ jobs:
         working-directory: experiments/nucleus-certified-decide-20261109
         run: |
           set -euo pipefail
+          lake build NucleusDecide
           lake env lean NucleusDecide.lean 2>&1 | tee axioms.log
           if grep -E 'sorryAx|unapproved axiom' axioms.log; then
             echo 'INVALID_AXIOM_BOUNDARY'
