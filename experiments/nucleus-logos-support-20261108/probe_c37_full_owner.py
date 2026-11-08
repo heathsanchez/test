@@ -42,6 +42,22 @@ def parse_reason_event(line: str) -> dict | None:
     return result
 
 
+def reconcile_events(reasons: list[dict], c36: list[dict]) -> None:
+    """C36 caps its log at 128; C37's reason observer need not.
+
+    Only a saturated, exactly 128-record C36 log may have extra C37
+    events. Every observed C36 charge must still match its C37 audit.
+    """
+    if len(c36) > 128 or len(reasons) < len(c36):
+        raise ValueError("missing metered C37 replay audit")
+    if len(c36) < 128 and len(reasons) != len(c36):
+        raise ValueError("unexpected unmetered C37 replay audit")
+    for reason, charge in zip(reasons, c36):
+        if any(reason[key] != charge[key] for key in
+               ("depth", "head", "grant", "spent", "remaining")):
+            raise ValueError("C37 audit does not match C36 metered source result")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--binary", type=Path, required=True)
@@ -78,11 +94,7 @@ def main() -> None:
     c36 = [item for line in lines if (item := parse_record(line)) is not None]
     if case == "magma-list-pair-n7" and not reasons:
         raise ValueError("full-owner replay was not reached on original n7")
-    if len(reasons) != len(c36):
-        raise ValueError("unmatched C36 source-work and C37 reason records")
-    for reason, charge in zip(reasons, c36):
-        if any(reason[key] != charge[key] for key in ("depth", "head", "grant", "spent", "remaining")):
-            raise ValueError("C37 audit does not match C36 metered source result")
+    reconcile_events(reasons, c36)
     print(json.dumps({
         "case": case, "source_sha256": digest,
         "standard_steps": 262144, "selected_flags": 24,

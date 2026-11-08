@@ -2,7 +2,7 @@
 
 import unittest
 
-from probe_c37_full_owner import parse_reason_event
+from probe_c37_full_owner import parse_reason_event, reconcile_events
 
 
 class C37FullOwnerTests(unittest.TestCase):
@@ -32,6 +32,16 @@ class C37FullOwnerTests(unittest.TestCase):
             "NUCLEUS_C36_CROSS_HEAD_REPLAY:depth=0:side=right:"
             "head=NameId(147):grant=512:spent=512:remaining=100:outcome=unknown"
         ))
+
+    def test_existing_c36_logger_caps_at_128(self):
+        charge = {"depth": 0, "head": 147, "grant": 512,
+                  "spent": 512, "remaining": 100}
+        audit = {**charge, "reason": "nested-recursor-iota-budget"}
+        reconcile_events([audit] * 129, [charge] * 128)
+        with self.assertRaises(ValueError):
+            reconcile_events([audit] * 2, [charge])
+        with self.assertRaises(ValueError):
+            reconcile_events([audit] * 127, [charge] * 128)
 
 
 if __name__ == "__main__":
