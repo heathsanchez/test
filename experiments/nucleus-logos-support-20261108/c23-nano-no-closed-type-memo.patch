@@ -1,0 +1,31 @@
+diff --git a/src/value_checker/infer.rs b/src/value_checker/infer.rs
+--- a/src/value_checker/infer.rs
++++ b/src/value_checker/infer.rs
+@@ -213,8 +213,8 @@
+                 _ => self.type_of(v),
+             };
+         }
+         if e.closed() {
+-            if let Some(&Scoped { ty, uparams }) = self.t.infer_closed[Mode::Check].get(&(e, sub)) {
++            if false && let Some(&Scoped { ty, uparams }) = self.t.infer_closed[Mode::Check].get(&(e, sub)) {
+                 if uparams.is_empty() {
+                     stat!(self, closed_hit);
+                     return Ok(ty);
+@@ -335,7 +335,7 @@
+         let raw = (e, sub, env.key());
+         let mark = self.scoped;
+         if closed {
+-            if !self.bypassed()
++            if false && !self.bypassed()
+                 && let Some(&h) = self.t.infer_closed[Mode::Check].get(&(e, sub))
+                 && self.admit(h)
+             {
+@@ -343,7 +343,7 @@
+                 return Ok(h.ty);
+             }
+             stat!(self, closed_miss);
+-            if mode == Mode::Only
++            if false && mode == Mode::Only
+                 && !self.bypassed()
+                 && let Some(h) = self.t.infer_closed[Mode::Only].get(&(e, sub))
+             {
