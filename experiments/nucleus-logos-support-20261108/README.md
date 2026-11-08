@@ -348,10 +348,13 @@ gate failed and stopped before the expensive protected 403 regression.
 Hence there is **no C9 403 qualification** and no new ACCEPT. Running the
 resulting binary with selected flags and diagnostic tracing again showed
 `Nat.rec` major `Unknown("reduction-budget-exhausted")` and local fuel zero.
-Crucially, the failing registered `Nat.rec` call had a **caller-owned
-allowance of 504**, already below the previous 512 per-major ceiling.
-The C8b and C9 major-start/work traces were identical. Raising the inner
-ceiling cannot enlarge this 504-step call grant. C9 is a **REJECTED**
+Crucially, one logged **start** of registered `Nat.rec` had a caller-owned
+allowance of 504, already below the previous 512 per-major ceiling;
+the trace did not establish that this was the **terminal failing call**.
+C11 subsequently identified a different terminal event with a fresh
+124-step owner. The C8b and C9 major-start/work traces were identical.
+Raising the inner ceiling cannot enlarge the observed 504-step call grant;
+it also did not cure the unchanged test. C9 is a **REJECTED**
 hypothesis, NOT PROMOTED; next inspect the conversion-side grant/ownership
 and exact work already charged, rather than increasing another nested cap.
 
@@ -363,9 +366,9 @@ fallback `qualified_one_step_recursor_result` divides each available
 comparison allowance by two **before** attempting the source registered
 recursor. That loop currently attempts all nonempty constant applications,
 including those that do not have qualified recursor metadata, and still
-reserves half their available allowance. The final observed Nat.rec grant
-504 is numerically consistent with half an outer 1008 allowance, but
-the precise native caller remains to be measured before intervention.
+reserves half their available allowance. An observed Nat.rec start grant
+of 504 is numerically consistent with half an outer 1008 allowance, but
+the precise **terminal** native caller remains to be measured before intervention.
 
 C10 restores the original 512 per-major cap, the original 8192 exact-frame
 interner, and every selected inference/conversion rule. It adds only
@@ -411,7 +414,7 @@ the actual terminal owner's provenance. A C11 diagnostic should record
 the entry work grant at the precise failing `Nat.rec` event, plus its
 source branch, before modifying the budget scheduler.
 
-## C11 exact terminal recursor owner's provenance (DIAGNOSTIC CANDIDATE)
+## C11 exact terminal recursor owner's provenance (QUALIFIED DIAGNOSTIC)
 
 C11 extends only existing `TraceNestedRecursorIotaFailure` output at the
 two actual failure sites in `Machine::qualified_recursor_result`: record
@@ -426,5 +429,41 @@ the actual C10 binary because old failure events lack the owner's entry
 grant. The new branch must first make that exact test GREEN without
 changing the original UNKNOWN verdict, then pass all native/protected
 403 and adversarial/stack controls. Only the precise terminal owner
-trace can identify whether its 504-ish grant came from an RHS exposure
+trace can identify whether the failure came from an RHS exposure
 cap, major exposure cap, independent conversion owner or actual work.
+
+C11 [run #42435284307](https://github.com/heathsanchez/test/actions/runs/42435284307),
+commit `3e63826fde9b03b2795a01c7db79180840edceb6`, artifact `13598789887`,
+ZIP SHA256 `8ebe0fa4a9970bcab0af5ed1e4256a6c1b8a04e63df6413bc836c8db49f3b259`:
+native and adversarial tests passed, original `app-lam` all three ACCEPT,
+**403/403 protected verdicts matched** (240 ACCEPT, 150 REJECT, 13 UNKNOWN),
+and all six original valid inputs remained UNKNOWN under standard budget.
+On byte-exact original Magma n7, the actual recorded failure event was:
+
+```
+NUCLEUS_NESTED_REPLAY_FAILURE:stage=major:depth=0:head=NameId(66):entry_budget=124:owner_on_entry=None:major_expr=ExprId(11):major_env=49566:major=Unknown { residual: ResidualId("reduction-budget-exhausted") }:fuel=Some(0)
+```
+
+`NameId(66)` is source-qualified `Nat.rec`; its entry owns a **fresh 124-step
+allowance**. Thus 504 referred to a *different logged start*, not to the
+terminal observed failure. Direct local replay of the exact C11 compiled
+binary confirmed this failure with **only** the nested-failure diagnostic
+enabled; the replay-cache trace is not required to cause that observation.
+The event may still be a recoverable failed alternative in the overall proof
+conversion, rather than the unique final proof obstruction. It must not be
+promoted to a causal diagnosis without locating the caller and checking its
+role in the result.
+
+## C12 caller provenance with source-line evidence (CANDIDATE)
+
+Three qualified-recursor entry points gain Rust `#[track_caller]`; only the
+existing diagnostics-gated **failed-replay trace** prints the caller's source
+file/line and `completed` versus `one-step` goal. This does not adjust the
+work allowance, constructor witness, reduction, cache or verdict. The
+red-green test `probe_c10_route.py --require-owner-event --require-caller-event`
+was **RED** against the actual C11 compiled binary: unchanged n7 rc2,
+one owner event, zero caller events. `c12-caller-site.patch` applies with
+zero fuzz atop the exact C11 patch in a staged native build. The immediate
+question is whether the 124-step Nat.rec failure originated in same-head
+conversion's half-budget attempt, projection replay, or a separate caller;
+do not allocate more steps or infer a missing constructor in advance.
