@@ -1,5 +1,29 @@
 # Nucleus: LOGOS-inspired scope-support census (CANDIDATE, diagnostic only)
 
+## C31: actual source-owned PProd projection transitions; no completed fields (8 November 2026)
+
+**Status: WARRANTED_BOUNDED** as a diagnostics-only source/owner observation; **REJECTED** as support for caching a completed projected result or for a projection-dispatch-only solution. The six unchanged original valid UNKNOWNs remain unresolved under the standard **262144** judgment-step budget; complete Mathlib acceptance remains unproved.
+
+- **RED:** the exact C30 release binary from run #42451789400, SHA-256 `d6110d4da7929af194533a1f2a5a3134675b1f57857e92640be444f1a4436fe3`, returns rc2 on SHA-pinned original n7 with zero C31 projection records. The three new source-event parser tests pass, including rejection of unmetered/malformed records.
+- **GREEN:** [Actions run #42453017123](https://github.com/heathsanchez/test/actions/runs/42453017123), head `1715670a53ee414b534555e4a8e89bd5aee7fb29`, **SUCCESS**. Artifact ID `13607071298` independently downloaded: ZIP SHA-256 `290c5840a21384e2a8c8299af30ab0b1e2e15fc5eec8e303fd4c2e57fc203972`. Exact C31 patch SHA-256 `d1f2c67bed48d7b97230af610a80072e0a36cc8525a9c764b4a90f23b3a621bc`; actual compiled `src/machine.rs` SHA-256 `97bfdbccfe0c21f2e0e89bef19720c72fa7733be1bb635e68a805e3b73578bc5`. Rust native/forged-proof/adversarial checks and 14 Python tests passed. All three protected modes (default, C28-ON, C30-ON) preserve the independently frozen 403/403 source verdicts (240 ACCEPT, 150 REJECT, 13 UNKNOWN), and all six original valid targets remain rc2.
+- **Boundary:** `NUCLEUS_DIAGNOSTIC_C31_PROJECTED_TRANSITIONS=1` logs checked `Decidable.rec` (`NameId(147)`) **actual** PProd (`NameId(177)`) stuck/neutral projection-major transitions within the worklist, distinguishing a *deferred continuation* from a completed field or UNKNOWN. It records the original source closure/environment, lexical receiver, binder node when directly available, physical continuation depth, and inclusive shared-owner charge. It never produces a proof value or changes a source rule. This is **not** a census of projection events under all recursor heads, and `(source shape, origin)` is a diagnostic grouping, not a certified semantic/replay-key equivalence relation.
+
+| Unchanged Magma n7, 24 selected flags | Normal replay | Keyless diagnostic |
+|---|---:|---:|
+| Recorded actual PProd major transitions | 290 | 314 |
+| Distinct `(source shape, origin)` pairs | 267 | 246 |
+| Pairs observed more than once | 19 | 64 |
+| Worklist deferrals | **290** | **314** |
+| Completed projected results, as recorded | **0** | **0** |
+| Inclusive charged dispatch steps | 2,520 | 2,728 |
+| Highest observed continuation depth | 76 | 76 |
+| Original verdict | UNKNOWN | UNKNOWN |
+
+The repeated source identities include early `ExprId(744):env=69903` dispatches, each charged 12 steps; most later PProd receiver captures are **distinct binder nodes/environments**, typically charged eight steps for a deferral. All recorded events are *pending computations*, not completed constructor/field results; none authorizes a new cache hit. The 2.5–2.7k dispatch charges are **not** measured full-recursion work, savings, or a comparable budget-normalized performance statistic.
+
+**New decisive residual:** source-certified recursor continuation is where the substantial work is spent **after** the cheap PProd dispatch. An exact positive source-major cache (C30) or replaying incomplete projection-dispatch outputs (C31) does not close n7. The separate C32 experiment tests the *recursor-major local source-exposure request* cap (not C17's projection-field borrow), keeping the global owner, default cap, source iota rules and all 403 protected controls unchanged. If C32 also fails, pursue a source-owned resumable **recursor/projection worklist** or an independently verified typed value transport—not syntax-only or environment-quotiented reuse.
+
+
 ## C30: exact source-major exposure cache qualifies, but six original UNKNOWNs remain (8 November 2026)
 
 **Status: WARRANTED_BOUNDED** for the source-exact opt-in implementation, new native mode-isolation test and full protected regression; **REJECTED as an intervention that closes the original six**. Do not promote to the selected independent kernel.
