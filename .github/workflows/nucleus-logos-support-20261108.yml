@@ -1,6 +1,6 @@
-# C12: trace the caller of the precise failed registered recursor (diagnostic only).
-# C11 source and exact selected budget remain unchanged.
-name: Nucleus C12 registered recursor caller trace
+# C13: classify actual large-budget Decidable replay residual and source major.
+# Diagnostic-only source; selected input, flags and budget remain unchanged.
+name: Nucleus C13 source-qualified large replay residual
 on:
   push:
     branches: [research/nucleus-logos-support-20261108]
@@ -20,7 +20,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         with: {toolchain: '1.99.1'}
-      - name: Restore exact selected source and apply diagnostic-only C11 and C12 patches
+      - name: Restore exact selected source and apply diagnostic-only C11–C13 patches
         run: |
           set -euo pipefail
           mkdir -p base candidate reports original196 arena207
@@ -31,7 +31,8 @@ jobs:
           tar --no-same-owner -xzf base/candidate/source.tar.gz
           patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-logos-support-20261108/logos-projection-shadow.patch
           patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-logos-support-20261108/c12-caller-site.patch
-          sha256sum experiments/nucleus-logos-support-20261108/logos-projection-shadow.patch experiments/nucleus-logos-support-20261108/c12-caller-site.patch > reports/patch.sha256
+          patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-logos-support-20261108/c13-large-replay-residual.patch
+          sha256sum experiments/nucleus-logos-support-20261108/logos-projection-shadow.patch experiments/nucleus-logos-support-20261108/c12-caller-site.patch experiments/nucleus-logos-support-20261108/c13-large-replay-residual.patch > reports/patch.sha256
           find metatron-kernel/src -type f -print0 | sort -z | xargs -0 sha256sum > reports/source.sha256
           cargo check --locked --all-targets --features diagnostics --manifest-path metatron-kernel/Cargo.toml > reports/plain-build.log 2>&1 || { tail -n 100 reports/plain-build.log; exit 1; }
       - name: Native proof-obligation and adversarial controls
@@ -52,14 +53,14 @@ jobs:
           gh api repos/heathsanchez/test/actions/artifacts/13276400289/zip > arena207.zip
           printf '%s  %s\n' a9582eadc0d9893cbe39e6bcfccd79bfaec2032838851b8a487c35df16096763 arena207.zip | sha256sum -c -
           unzip -p arena207.zip lean-arena-tests.tar.gz | tar --no-same-owner -xzf - -C arena207
-      - name: C12 red-green gate on exact terminal recursor caller
+      - name: C13 red-green gate on large Decidable replay residual
         run: |
           set -euo pipefail
           python3 experiments/nucleus-logos-support-20261108/probe_c10_route.py \
             --binary candidate/metatron-kernel \
             --input arena207/good/perf/magma-list-pair-n7.ndjson \
             --flags base/flags.json \
-            --require-owner-event --require-caller-event | tee reports/c12-caller-probe.json
+            --require-owner-event --require-caller-event --require-large-replay-outcome | tee reports/c13-large-replay-probe.json
       - name: Exact chain9, isolated app-lam stack preflight and 403-outcome regression
         run: |
           set -euo pipefail
