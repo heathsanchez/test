@@ -68,8 +68,12 @@ jobs:
             arena207/good/perf/fueled-chain.ndjson > reports/c21-vstats.stdout 2> reports/c21-vstats.stderr
           grep -q '^vstats chain12_datF Stats ' reports/c21-vstats.stderr
           grep -E '^vstats (chain6_datF|chain9_datF|chain12|chain12_datF) Stats ' reports/c21-vstats.stderr > reports/c21-vstats-selected.txt
-          grep '^vstats chain12_datF Stats ' reports/c21-vstats-selected.txt | grep -Eq 'inst_hit: [1-9][0-9]*'
-          grep '^vstats chain12_datF Stats ' reports/c21-vstats-selected.txt | grep -Eq 'closed_hit: [1-9][0-9]*'
+          python3 experiments/nucleus-logos-support-20261108/vstats_contract.py \
+            --stats reports/c21-vstats.stderr --declaration chain12_datF --counter inst_hit --expect positive \
+            > reports/c21-inst-hit-contract.json
+          python3 experiments/nucleus-logos-support-20261108/vstats_contract.py \
+            --stats reports/c21-vstats.stderr --declaration chain12_datF --counter closed_hit --expect positive \
+            > reports/c21-closed-hit-contract.json
       - name: C22 ablate only untyped Pi instantiation memoization in reference
         run: |
           set -euo pipefail
@@ -85,8 +89,9 @@ jobs:
           printf '%s\n' "$c22_code" > reports/c22-fueled-chain.exit
           case "$c22_code" in 0|2|124) ;; *) echo 'Unexpected failure of unchanged valid source under memo-free reference'; exit 1 ;; esac
           if test "$c22_code" -ne 124; then
-            grep -q '^vstats chain12_datF Stats ' reports/c22-fueled-chain.stderr
-            grep '^vstats chain12_datF Stats ' reports/c22-fueled-chain.stderr | grep -q 'inst_hit: 0'
+            python3 experiments/nucleus-logos-support-20261108/vstats_contract.py \
+              --stats reports/c22-fueled-chain.stderr --declaration chain12_datF --counter inst_hit --expect zero \
+              > reports/c22-inst-hit-contract.json
           fi
       - name: C23 ablate only closed-expression type inference memo in pristine reference
         run: |
@@ -107,10 +112,9 @@ jobs:
           printf '%s\n' "$c23_code" > reports/c23-fueled-chain.exit
           case "$c23_code" in 0|2|124) ;; *) echo 'Unexpected failure of frozen valid source under closed-memo-free reference'; exit 1 ;; esac
           if test "$c23_code" -ne 124; then
-            grep -q '^vstats ' reports/c23-fueled-chain.stderr
-            if grep -Eq '^vstats .*closed_hit: [1-9][0-9]*' reports/c23-fueled-chain.stderr; then
-              echo 'Closed inference memo unexpectedly hit after isolated ablation'; exit 1
-            fi
+            python3 experiments/nucleus-logos-support-20261108/vstats_contract.py \
+              --stats reports/c23-fueled-chain.stderr --counter closed_hit --expect zero \
+              > reports/c23-closed-hit-contract.json
           fi
       - uses: actions/upload-artifact@v4
         if: always()
