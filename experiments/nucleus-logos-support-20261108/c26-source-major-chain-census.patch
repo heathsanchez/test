@@ -1,0 +1,95 @@
+--- a/src/machine.rs
++++ b/src/machine.rs
+@@ -1320,6 +1320,75 @@
+         false
+     }
+ 
++    // C26: diagnostic-only, unmetered classification of a source capture.
++    // The observer never supplies a Value, grants fuel, or participates in
++    // conversion: it only reports where an actual BVar->closure chain ends.
++    #[cfg(feature = "diagnostics")]
++    #[cold]
++    #[inline(never)]
++    fn diagnostic_source_major_chain(&self, source: &Closure) -> String {
++        let mut current = source.clone();
++        let mut visited = HashSet::new();
++        let mut hops = 0usize;
++        let mut max_index = 0u64;
++        loop {
++            if hops >= 65_536 {
++                return format!("hops={hops}:max_index={max_index}:terminal=limit:expr={:?}:env={}",
++                    current.expr, current.env.id());
++            }
++            if !visited.insert((current.expr, current.env.id())) {
++                return format!("hops={hops}:max_index={max_index}:terminal=cycle:expr={:?}:env={}",
++                    current.expr, current.env.id());
++            }
++            match self.expressions.get(current.expr) {
++                Some(Expr::BVar(index)) => {
++                    max_index = max_index.max(*index);
++                    match current.env.lookup_binding_ref(*index) {
++                        Some(EnvBinding::Closure(bound)) => {
++                            current = bound.clone();
++                            hops += 1;
++                        }
++                        Some(EnvBinding::Free(free)) => {
++                            return format!("hops={hops}:max_index={max_index}:terminal=free:{free:?}:env={}",
++                                current.env.id());
++                        }
++                        Some(EnvBinding::Neutral(neutral)) => {
++                            let qualified = matches!(&neutral.head,
++                                NeutralHead::Const { name, .. } if self.recursor_reductions.contains_key(name));
++                            return format!("hops={hops}:max_index={max_index}:terminal=neutral:{:?}:arity={}:recursor={qualified}:env={}",
++                                neutral.head, neutral.spine.len(), current.env.id());
++                        }
++                        Some(EnvBinding::NatLit(number)) => {
++                            return format!("hops={hops}:max_index={max_index}:terminal=natlit:limbs={}:env={}",
++                                number.limb_count(), current.env.id());
++                        }
++                        None => {
++                            return format!("hops={hops}:max_index={max_index}:terminal=unbound:index={index}:env={}",
++                                current.env.id());
++                        }
++                    }
++                }
++                Some(Expr::App { fun, .. }) => {
++                    // Syntax inspection only. Application heads are not
++                    // presumed constructors or normalized by the observer.
++                    let mut head = *fun;
++                    let mut arity = 1usize;
++                    while arity < 128 {
++                        let Some(Expr::App { fun, .. }) = self.expressions.get(head) else { break; };
++                        head = *fun;
++                        arity += 1;
++                    }
++                    return format!("hops={hops}:max_index={max_index}:terminal=app:arity={arity}:head={:?}:expr={:?}:env={}",
++                        self.expressions.get(head), current.expr, current.env.id());
++                }
++                terminal => {
++                    return format!("hops={hops}:max_index={max_index}:terminal={terminal:?}:expr={:?}:env={}",
++                        current.expr, current.env.id());
++                }
++            }
++        }
++    }
++
+     fn expose_uncached_internal_with_pending(
+         &self,
+         mut closure: Closure,
+@@ -2972,6 +3041,16 @@
+                 };
+                 let Some(value)=major_result.proven_value() else {
+                     #[cfg(feature="diagnostics")]
++                    if std::env::var_os("NUCLEUS_DIAGNOSTIC_MAJOR_CHAIN").is_some() {
++                        use std::sync::atomic::{AtomicUsize,Ordering};
++                        static PRINTED:AtomicUsize=AtomicUsize::new(0);
++                        if PRINTED.fetch_add(1,Ordering::Relaxed)<16 {
++                            let source=&neutral.spine[required-1];
++                            eprintln!("NUCLEUS_SOURCE_MAJOR_CHAIN:head={name:?}:depth={depth}:root_expr={:?}:root_env={}:{}",
++                                source.expr,source.env.id(),self.diagnostic_source_major_chain(source));
++                        }
++                    }
++                    #[cfg(feature="diagnostics")]
+                     if crate::run_flags::present(crate::run_flags::Flag::TraceNestedRecursorIotaFailure) {
+                         let major_source=&neutral.spine[required-1];
+                         eprintln!("NUCLEUS_NESTED_REPLAY_FAILURE:stage=major:depth={depth}:head={name:?}:entry_budget={budget}:owner_on_entry={owner_at_entry:?}:caller={caller}:replay_goal={replay_goal}:major_expr={:?}:major_env={}:major={major_result:?}:fuel={:?}",major_source.expr,major_source.env.id(),self.exposure_fuel.get());
