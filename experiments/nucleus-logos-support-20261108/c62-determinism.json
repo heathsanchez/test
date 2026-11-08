@@ -1,0 +1,90 @@
+{
+  "experiment": "C62 exact binary/input/flags first-failing-root determinism",
+  "source_sha256": "e9c394e0ff311fd10f60dee2433a530f16e82354c32d6588a8775baa06fd221f",
+  "standard_steps": 262144,
+  "replays_per_binary": 3,
+  "proof_rules_changed": false,
+  "selected_checker_changed": false,
+  "records": [
+    {
+      "binary": "c56",
+      "trial": 0,
+      "verdict": "UNKNOWN",
+      "boundary": {
+        "source_name": "_private.Init.Data.Nat.Div.Lemmas.0.Nat.div_le_iff_le_mul._proof_1_1",
+        "stage": "theorem.value",
+        "verdict": "UNKNOWN",
+        "reason": "application-function-type"
+      },
+      "stderr_sha256": "0b391f741d6717c1ff963062b818427320d11092df19d9b7be742103025562e0"
+    },
+    {
+      "binary": "c56",
+      "trial": 1,
+      "verdict": "UNKNOWN",
+      "boundary": {
+        "source_name": "_private.Init.Data.Nat.Div.Lemmas.0.Nat.div_le_iff_le_mul._proof_1_1",
+        "stage": "theorem.value",
+        "verdict": "UNKNOWN",
+        "reason": "application-function-type"
+      },
+      "stderr_sha256": "0b391f741d6717c1ff963062b818427320d11092df19d9b7be742103025562e0"
+    },
+    {
+      "binary": "c56",
+      "trial": 2,
+      "verdict": "UNKNOWN",
+      "boundary": {
+        "source_name": "_private.Init.Data.Int.LemmasAux.0.Int.blt'_eq_true._proof_1_4",
+        "stage": "theorem.value",
+        "verdict": "UNKNOWN",
+        "reason": "application-function-type"
+      },
+      "stderr_sha256": "295d4245cc935eccd785e0270dd7733644c5244f33ee1fd4c1f8f1b457519e09"
+    },
+    {
+      "binary": "c58",
+      "trial": 0,
+      "verdict": "UNKNOWN",
+      "boundary": {
+        "source_name": "_private.Init.Data.Nat.Div.Lemmas.0.Nat.div_le_iff_le_mul._proof_1_1",
+        "stage": "theorem.value",
+        "verdict": "UNKNOWN",
+        "reason": "application-function-type"
+      },
+      "stderr_sha256": "0b391f741d6717c1ff963062b818427320d11092df19d9b7be742103025562e0"
+    },
+    {
+      "binary": "c58",
+      "trial": 1,
+      "verdict": "UNKNOWN",
+      "boundary": {
+        "source_name": "_private.Init.Data.Nat.Div.Lemmas.0.Nat.div_le_iff_le_mul._proof_1_1",
+        "stage": "theorem.value",
+        "verdict": "UNKNOWN",
+        "reason": "application-function-type"
+      },
+      "stderr_sha256": "0b391f741d6717c1ff963062b818427320d11092df19d9b7be742103025562e0"
+    },
+    {
+      "binary": "c58",
+      "trial": 2,
+      "verdict": "UNKNOWN",
+      "boundary": {
+        "source_name": "_private.Init.Data.Int.LemmasAux.0.Int.blt'_eq_true._proof_1_4",
+        "stage": "theorem.value",
+        "verdict": "UNKNOWN",
+        "reason": "application-function-type"
+      },
+      "stderr_sha256": "b4a3d5c114ab3ba80ad0d293212e5d122b1af3dd20619a1d3bd6af7c145bfddf"
+    }
+  ],
+  "c56_distinct_boundaries": [
+    "{\"reason\": \"application-function-type\", \"source_name\": \"_private.Init.Data.Int.LemmasAux.0.Int.blt'_eq_true._proof_1_4\", \"stage\": \"theorem.value\", \"verdict\": \"UNKNOWN\"}",
+    "{\"reason\": \"application-function-type\", \"source_name\": \"_private.Init.Data.Nat.Div.Lemmas.0.Nat.div_le_iff_le_mul._proof_1_1\", \"stage\": \"theorem.value\", \"verdict\": \"UNKNOWN\"}"
+  ],
+  "c58_distinct_boundaries": [
+    "{\"reason\": \"application-function-type\", \"source_name\": \"_private.Init.Data.Int.LemmasAux.0.Int.blt'_eq_true._proof_1_4\", \"stage\": \"theorem.value\", \"verdict\": \"UNKNOWN\"}",
+    "{\"reason\": \"application-function-type\", \"source_name\": \"_private.Init.Data.Nat.Div.Lemmas.0.Nat.div_le_iff_le_mul._proof_1_1\", \"stage\": \"theorem.value\", \"verdict\": \"UNKNOWN\"}"
+  ]
+}
