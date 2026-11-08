@@ -1,0 +1,130 @@
+name: Nucleus C66 increased prefix capacity 4096
+on:
+  push:
+    branches: [research/nucleus-c66-prefix-cap-4096-20261109]
+    paths: ['.github/workflows/nucleus-c66-prefix-cap-4096.yml']
+  workflow_dispatch:
+permissions: {contents: write, actions: read}
+jobs:
+  prefix-census:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      GH_TOKEN: ${{ github.token }}
+      CARGO_INCREMENTAL: '0'
+      CARGO_BUILD_JOBS: '2'
+      RUST_MIN_STACK: '16777216'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Restore exact C58 C65 observer and single-variable C66 capacity
+        run: |
+          set -euo pipefail
+          mkdir -p base candidate reports arena207
+          gh api repos/heathsanchez/test/actions/artifacts/13609679273/zip > c37-qualified.zip
+          printf '%s  %s\n' fceddaca338ca36c2964edf0ec81b9e4acd0b66d938864ec5e7239f766e186c3 c37-qualified.zip | sha256sum -c -
+          unzip -p c37-qualified.zip candidate/source.tar.gz > c37-source.tar.gz
+          printf '%s  %s\n' bb64f47470f950f78e7fe4c659fbcb2a75d72e96831430ec1eb3562c55175152 c37-source.tar.gz | sha256sum -c -
+          unzip -p c37-qualified.zip base/flags.json > base/flags.json
+          tar --no-same-owner -xzf c37-source.tar.gz
+          for patch_name in c38-early-full-typed-spine.patch c39-typed-failure-stage.patch c40-c42-source-capture.patch c43-deep-exposure-guard.patch c44-exact-source-forwarding.patch c47-inner-work-diagnostics.patch c48-source-branch-divergence.patch c49-capture-content-fingerprint.patch c50-worklist-loss-diagnostics.patch; do
+            patch --fuzz=0 -p1 -d metatron-kernel < "experiments/nucleus-logos-support-20261108/$patch_name"
+            sha256sum "experiments/nucleus-logos-support-20261108/$patch_name" >> reports/patches.sha256
+          done
+          for patch_name in c55-app-failure-state.patch c56-neutral-pair-classification.patch c58-source-opening-allowance.patch c64-source-instance-observer.patch; do
+            patch --fuzz=0 -p1 -d . < "experiments/nucleus-logos-support-20261108/$patch_name"
+            sha256sum "experiments/nucleus-logos-support-20261108/$patch_name" >> reports/patches.sha256
+          done
+          patch --fuzz=0 -p1 -d . < experiments/nucleus-logos-support-20261108/c65-prefix-observer.patch
+          patch --fuzz=0 -p1 -d . < experiments/nucleus-logos-support-20261108/c66-prefix-cap-4096.patch
+          cargo check --locked --all-targets --features diagnostics --manifest-path metatron-kernel/Cargo.toml > reports/cargo-check.log 2>&1 || { tail -n 120 reports/cargo-check.log; exit 1; }
+      - name: Native and resumable-on forged-proof controls
+        run: |
+          set -euo pipefail
+          mapfile -t flags < <(jq -r 'to_entries[] | "\(.key)=\(.value)"' base/flags.json)
+          env "${flags[@]}" cargo test --locked --release --features diagnostics --manifest-path metatron-kernel/Cargo.toml > reports/native-tests.log 2>&1 || { tail -n 120 reports/native-tests.log; exit 1; }
+          env "${flags[@]}" NUCLEUS_EXPERIMENTAL_RESUMABLE_EXPOSURE=1 cargo test --locked --release --features diagnostics --manifest-path metatron-kernel/Cargo.toml > reports/native-tests-resume.log 2>&1 || { tail -n 120 reports/native-tests-resume.log; exit 1; }
+          cargo build --locked --release --features diagnostics --bin nucleus-diagnostic --manifest-path metatron-kernel/Cargo.toml > reports/release-build.log 2>&1 || { tail -n 120 reports/release-build.log; exit 1; }
+          cp metatron-kernel/target/release/nucleus-diagnostic candidate/nucleus-diagnostic
+          sha256sum candidate/* > reports/binaries.sha256
+      - name: C66 paired frozen n7 at unchanged budgets
+        run: |
+          set -euo pipefail
+          gh api repos/heathsanchez/test/actions/artifacts/13276400289/zip > arena207.zip
+          printf '%s  %s\n' a9582eadc0d9893cbe39e6bcfccd79bfaec2032838851b8a487c35df16096763 arena207.zip | sha256sum -c -
+          unzip -p arena207.zip lean-arena-tests.tar.gz | tar --no-same-owner -xzf - -C arena207
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib,json,os,subprocess
+          src=Path('arena207/good/perf/magma-list-pair-n7.ndjson').read_bytes()
+          digest=hashlib.sha256(src).hexdigest()
+          assert digest=='abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35'
+          flags=json.loads(Path('base/flags.json').read_text())
+          assert len(flags)==24 and set(flags.values())=={'1'}
+          records=[]
+          for budget,resume in [(262144,False),(262144,True),(1048576,True),
+                                (4194304,True),(8388608,True)]:
+            env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+            env.update(flags)
+            env.update({'NUCLEUS_ASSURANCE_SOURCE_OWNED_PROBE':'1',
+                        'NUCLEUS_DIAGNOSTIC_C38_EARLY_TYPED_SPINE':'1',
+                        'NUCLEUS_DIAGNOSTIC_C47_PROFILE_EXPR':'8837',
+                        'NUCLEUS_DIAGNOSTIC_C55_APP_SHAPE':'1',
+                        'NUCLEUS_DIAGNOSTIC_C56_NEUTRAL_PAIR':'1',
+                        'NUCLEUS_DIAGNOSTIC_C65_PREFIX_CENSUS':'1',
+                        'NUCLEUS_TRACE_DOWNSTREAM':'1'})
+            if resume:env['NUCLEUS_EXPERIMENTAL_RESUMABLE_EXPOSURE']='1'
+            proc=subprocess.run([str(Path('candidate/nucleus-diagnostic').resolve()),str(budget)],
+              input=src,capture_output=True,env=env,timeout=180)
+            verdict={0:'ACCEPT',1:'REJECT',2:'UNKNOWN',3:'ERROR'}.get(proc.returncode,'ERROR')
+            tag=str(budget)+('-resume' if resume else '-base')
+            Path('reports/c65-'+tag+'.stderr').write_bytes(proc.stderr)
+            lines=proc.stderr.decode(errors='replace').splitlines()
+            prefix=[s for s in lines if s.startswith('NUCLEUS_C65_PREFIX:')]
+            work=[s for s in lines if s.startswith('NUCLEUS_C47_INNER_WORK:')]
+            assert len(work)==1,(tag,len(work))
+            records.append({'budget':budget,'resumable':resume,'verdict':verdict,
+                'prefix_power2_samples':prefix,
+                'work':work[0],
+                'stderr_sha256':hashlib.sha256(proc.stderr).hexdigest()})
+            print(tag,verdict,'prefix',len(prefix),flush=True)
+            if not resume and budget==262144:
+              assert verdict=='UNKNOWN',(tag,verdict)
+          Path('reports/c66-prefix-cap-4096.json').write_text(json.dumps({
+            'experiment':'C66 single-variable resumable cache capacity 128 to 4096',
+            'source_sha256':digest,
+            'c37_artifact':13609679273,'arena_artifact':13276400289,
+            'proof_rules_changed':False,'selected_checker_changed':False,
+            'resumable_cache_capacity_original':128,'resumable_cache_capacity_candidate':4096,
+            'standard_budget':262144,'protected_403_not_run':True,
+            'records':records},indent=2)+'\n')
+          PY
+      - name: Preserve positive or negative source-qualified receipt
+        if: always()
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          if test -s reports/c66-prefix-cap-4096.json; then
+            cp reports/c66-prefix-cap-4096.json experiments/nucleus-logos-support-20261108/c66-prefix-cap-4096.json
+          else
+            jq -n \
+              --arg cargo "$(tail -n 45 reports/cargo-check.log 2>/dev/null || true)" \
+              --arg native "$(tail -n 45 reports/native-tests.log 2>/dev/null || true)" \
+              '{status:"UNKNOWN_CI_FAILURE",qualified:false,standard_accepts:0,cargo:$cargo,native:$native}' \
+              > experiments/nucleus-logos-support-20261108/c66-prefix-cap-4096.json
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add experiments/nucleus-logos-support-20261108/c66-prefix-cap-4096.json
+          git commit -m 'C66 one-variable cache capacity 4096 ablation'
+          git push origin HEAD:refs/heads/research/nucleus-c66-prefix-cap-4096-20261109
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-C66-prefix-cap-4096
+          retention-days: 60
+          path: |
+            reports/
+            candidate/
+            base/flags.json
