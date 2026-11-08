@@ -1,0 +1,57 @@
+--- a/src/machine.rs
++++ b/src/machine.rs
+@@ -1397,6 +1397,33 @@
+         }
+     }
+ 
++    // C29: source-only audit of the qualified-recursor worklist. This cannot
++    // grant a constructor, evaluate a major, change a result, or alter fuel.
++    // Keep allocation, source-chain traversal and formatting in a cold frame
++    // so the unselected native stack remains unchanged.
++    #[cfg(feature = "diagnostics")]
++    #[cold]
++    #[inline(never)]
++    fn diagnostic_c29_major_step(
++        &self, neutral: &Neutral, required: usize, depth: usize,
++        requested: bool, resumed: bool,
++    ) {
++        use std::sync::atomic::{AtomicUsize, Ordering};
++        static ENTRIES: AtomicUsize = AtomicUsize::new(0);
++        static DEEP_PRINTS: AtomicUsize = AtomicUsize::new(0);
++        let seq = ENTRIES.fetch_add(1, Ordering::Relaxed);
++        if seq >= 96 && (depth < 32 || DEEP_PRINTS.fetch_add(1, Ordering::Relaxed) >= 160) {
++            return;
++        }
++        let NeutralHead::Const { name, levels } = &neutral.head else { return; };
++        let source = &neutral.spine[required - 1];
++        eprintln!(
++            "NUCLEUS_C29_MAJOR_STEP:seq={seq}:head={:?}:depth={depth}:requested={requested}:resumed={resumed}:root_expr={:?}:root_env={}:spine={}:levels={}:remaining={:?}:source_chain={}",
++            name, source.expr, source.env.id(), neutral.spine.len(), levels.len(),
++            self.exposure_fuel.get(), self.diagnostic_source_major_chain(source)
++        );
++    }
++
+     fn expose_uncached_internal_with_pending(
+         &self,
+         mut closure: Closure,
+@@ -2971,6 +2998,20 @@
+             if neutral.spine.len() < required {
+                 return Judgment::unknown("nested-recursor-iota-arity");
+             }
++            #[cfg(feature = "diagnostics")]
++            {
++                // The source-recursion observer is selected by an explicit
++                // NameId and never changes the result path. One-time env
++                // reading avoids work on every protected native check.
++                static C29_HEAD: std::sync::OnceLock<Option<u64>> = std::sync::OnceLock::new();
++                if *C29_HEAD.get_or_init(|| std::env::var("NUCLEUS_DIAGNOSTIC_C29_HEAD")
++                    .ok().and_then(|value| value.parse::<u64>().ok())) == Some(name.0) {
++                    self.diagnostic_c29_major_step(
++                        neutral, required, depth, current_is_requested,
++                        established_major.is_some(),
++                    );
++                }
++            }
+             let mut major_value=if let Some(value)=established_major.take() { value } else {
+                 if no_replay_keys {
+                     #[cfg(feature="diagnostics")]
