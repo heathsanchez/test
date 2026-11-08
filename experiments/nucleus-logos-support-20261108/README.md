@@ -1,5 +1,15 @@
 # Nucleus: LOGOS-inspired scope-support census (CANDIDATE, diagnostic only)
 
+## C33: larger checked source-congruence trials plateau without acceptance (8 November 2026)
+
+**Status: WARRANTED_BOUNDED** diagnostic and protected regression; **REJECTED** as a scalar local-cap solution. [Actions run #42454604282](https://github.com/heathsanchez/test/actions/runs/42454604282) **SUCCESS**, artifact `13607069512`, verified ZIP SHA-256 `c32b128dfd7b9482a6eeca701564e6f5ef10587bbdf503b1a89ad10ce82a79bf`. Patch SHA-256 `21ea125d554cb31921a0abd7acf912601af5b711703fb460b220646331be2c8e`; exact compiled `src/convert.rs` SHA-256 `6c17dde081ad536489358b4db229191f993981340f733e3e2a88493a937e3c18`.
+
+- **Boundary:** the unchanged original Magma n7 input (SHA-256 `abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35`), 24 selected flags and standard global judgment budget 262,144. Diagnostic `NUCLEUS_DIAGNOSTIC_C33_SOURCE_CONGRUENCE_GRANT` varies only the *independently checked C28 relational source-congruence trial*; its actual spent steps are debited from its caller. No proof rule is weakened or broadened, and invalid caps fail closed.
+- **Seven original-source trials:** caps 512 / 768 / 1024 / 1536 / 2048 / 4096 / 8192 all returned **UNKNOWN**. Recorded source congruence successes 6/22, 7/22, 9/23, 10/23, 11/23, 11/23, 11/23 respectively. Successes plateau by cap 2048; the cap was genuinely exercised (max actual grant 3,849 at 4096 and 8192).
+- **New consequential distinction:** at cap 2048 all **12 failed** source-congruence trials left fewer than 128 local steps for checked recursor fallback, including **six zero-budget** failures. Larger trial allowances establish additional equalities but can starve the unchanged certified fallback; no complete acceptance results. This is an observed scheduling correlation, **not** a proof that fallback would succeed with reserved fuel.
+- **Protected outcome:** three default/C28/C30 modes preserved **403/403 exact prior verdicts** (240 ACCEPT, 150 REJECT, 13 UNKNOWN); no forged proof became ACCEPT; all six unchanged original valid targets remain UNKNOWN under the standard budget. Red gate: the previous C30 binary emitted no C33 source-cap records; parser and native source controls green.
+- **Residual / cheapest decisive next experiment:** C34 explicitly reserves a caller-owned fraction of comparison fuel before any C28 congruence trial, with actual work still fully charged. Test several fractions on frozen n7, preserve existing proof checks, and run the full protected corpus. This is **candidate scheduling**, not a qualified solution.
+
 ## C32: recursor-major source allowance sensitivity does not close n7 (8 November 2026)
 
 **Status: WARRANTED_BOUNDED** as a source-checked, fixed-global-owner diagnostic negative result; **REJECTED** as a scalar local-cap solution to original Magma n7. The six unchanged valid original UNKNOWNs remain open; do not promote this experimental cap to the selected checker.
