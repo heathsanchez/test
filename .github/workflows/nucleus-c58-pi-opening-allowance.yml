@@ -85,16 +85,17 @@ jobs:
               raise RuntimeError(f'deep-n36 changed to REJECT/ERROR ({run.returncode})')
           events=[line for line in run.stderr.decode(errors='replace').splitlines() if line.startswith('NUCLEUS_C58_OPEN:')]
           assert events, 'source-root opening trial not observed'
-          if run.returncode==2:
-              from probe_c52_six_loss_census import parse_downstream
-              assert parse_downstream(run.stderr)==prior['first_failed_boundary'], 'UNKNOWN boundary changed'
+          from probe_c52_six_loss_census import parse_downstream
+          trial_boundary=parse_downstream(run.stderr) if run.returncode==2 else None
           result={'diagnostic':'C58 single-variable Pi opening allowance 1024 to 4096',
                   'source_sha256':prior['source_sha256'],'original_root':prior['first_failed_root'],
                   'standard_budget':262144,'baseline_six_all_unknown':True,
                   'trial_case':'magma-list-deep-n36','trial_verdict':'ACCEPT' if run.returncode==0 else 'UNKNOWN',
                   'proof_rules_changed':False,'extra_fuel_granted':False,
                   'opening_events_count':len(events),'opening_event_samples':events[:32],
-                  'trial_boundary':prior['first_failed_boundary'] if run.returncode==2 else None,
+                  'baseline_boundary':prior['first_failed_boundary'],
+                  'trial_boundary':trial_boundary,
+                  'same_unknown_boundary':trial_boundary==prior['first_failed_boundary'] if run.returncode==2 else None,
                   'protected_403_not_run':True,'promoted_to_selected_checker':False}
           Path('reports/c58-pi-opening.json').write_text(json.dumps(result,indent=2)+'\n')
           print('C58',result['trial_verdict'],'opening events',len(events))
