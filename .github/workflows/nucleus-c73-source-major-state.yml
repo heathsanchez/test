@@ -1,0 +1,56 @@
+name: Nucleus C73 first unfinished recursor-major state
+on:
+  push:
+    branches:
+      - research/nucleus-c73-major-state-reuse-20261109
+    paths:
+      - '.github/workflows/nucleus-c73-source-major-state.yml'
+      - 'experiments/nucleus-logos-support-20261108/c73_major_state_ledger.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  exact-source-comparison:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Source-pin qualified independent Nucleus and immutable original input
+        run: |
+          set -euo pipefail
+          mkdir -p qualified arena207 reports
+          gh api repos/heathsanchez/test/actions/artifacts/13635933940/zip > c65.zip
+          printf '%s  %s\n' 3b6aec739fbba77a5b84671a4ae042d0ef146141086a13cfb8e46212fc855304 c65.zip | sha256sum -c -
+          unzip -q c65.zip -d qualified
+          test -x qualified/candidate/nucleus-diagnostic || chmod +x qualified/candidate/nucleus-diagnostic
+          jq -e 'length==24 and ([.[]]|all(.=="1"))' qualified/base/flags.json
+          gh api repos/heathsanchez/test/actions/artifacts/13276400289/zip > arena207.zip
+          printf '%s  %s\n' a9582eadc0d9893cbe39e6bcfccd79bfaec2032838851b8a487c35df16096763 arena207.zip | sha256sum -c -
+          unzip -p arena207.zip lean-arena-tests.tar.gz | tar --no-same-owner -xzf - -C arena207
+          test "$(sha256sum arena207/good/perf/magma-list-pair-n7.ndjson | cut -d' ' -f1)" = "abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35"
+      - name: Reuse C48/C49/C50 source-owned major and unfinished worklist observers
+        run: |
+          set -euo pipefail
+          python3 -m py_compile experiments/nucleus-logos-support-20261108/c73_major_state_ledger.py
+          python3 experiments/nucleus-logos-support-20261108/c73_major_state_ledger.py
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('reports/c73.json').read_text())
+          assert r['proof_rules_changed'] is False
+          assert r['selected_checker_changed'] is False
+          assert r['standard_accepts_new']==0
+          assert r['results']['standard-resume']['verdict']=='UNKNOWN'
+          assert r['results']['8m-resume']['verdict']=='ACCEPT'
+          assert r['same_binary_for_every_arm']
+          print('C73_EVIDENCE_ONLY_SUCCESS')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-c73-source-major-ledger
+          retention-days: 60
+          path: reports/
