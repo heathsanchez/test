@@ -364,6 +364,8 @@ jobs:
       - name: C37 exact residual with entire remaining standard-budget owner
         run: |
           set -euo pipefail
+          # C36's event logger is capped at 128; audit the full C37 reason stream
+          # and require an exact charged prefix match before recording a result.
           python3 -m unittest discover -s experiments/nucleus-logos-support-20261108 -p 'test_c37_*.py' -v
           for case in fueled-chain grind-ring-5 magma-list-pair-n7 magma-list-pair-n21 magma-list-deep-n21 magma-list-deep-n36; do
             python3 experiments/nucleus-logos-support-20261108/probe_c37_full_owner.py \
