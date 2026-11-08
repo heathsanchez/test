@@ -1,0 +1,78 @@
+--- a/src/machine.rs
++++ b/src/machine.rs
+@@ -144,6 +144,20 @@
+     exact: CompletedReplayKey,
+     digest: u64,
+ }
++// C53 diagnostic comparison only: an exact checked source request, bound to
++// all immutable source-map owners. It never authorizes reuse or conversion.
++#[cfg(feature="diagnostics")]
++#[derive(Clone,Eq,PartialEq)]
++struct C53SharedFailedRoot {
++    authority:AuthorityId,
++    modes:(bool,bool,bool),
++    owners:[usize;6],
++    goal:CheckedReplayGoal,
++    root:Neutral,
++    nat:Option<NatPrimitives>,
++    bools:Option<BoolPrimitives>,
++    quot:Option<(NameId,NameId,NameId,NameId)>,
++}
+ impl ReplayKey {
+     fn identity(key:&Rc<Self>)->usize {Rc::as_ptr(key) as usize}
+ }
+@@ -226,6 +240,10 @@
+     completed_replays:HashMap<u64,Vec<(Rc<ReplayKey>,Value)>>,
+     completed_replay_count:usize,
+     unfinished_prefixes:HashMap<ExposureProgressKey,ExposureProgress>,
++    // The exposure store is shared by fresh Machine instances created by
++    // TypeChecker::machine(). C51's machine-local observer missed this scope.
++    #[cfg(feature="diagnostics")]
++    c53_shared_failed_roots:Vec<C53SharedFailedRoot>,
+ }
+ impl ExposureCacheStore {
+     fn retain_exposure(&mut self,key:Rc<CachedExposureKey>,value:&Value,mut spend:impl FnMut()->bool) {
+@@ -3236,6 +3254,43 @@
+                                 "prior_failure":prior,
+                                 "stored_failed_roots":prior_count,
+                             }));
++                            // C53: do the same exact-source comparison where
++                            // the actual completed-replay cache lives, across
++                            // separately created immutable Machine values.
++                            // This ledger stores failed queries, NOT results.
++                            if std::env::var_os("NUCLEUS_DIAGNOSTIC_C53_SHARED_RETRIES").is_some() {
++                                let shared_root=C53SharedFailedRoot {
++                                    authority:self.authority,
++                                    modes:(self.demand_major,self.replay_projection_major,self.replay_neutral_projection),
++                                    owners:[
++                                        Rc::as_ptr(&self.definitions) as usize,
++                                        Rc::as_ptr(&self.recursor_reductions) as usize,
++                                        Rc::as_ptr(&self.projection_specs) as usize,
++                                        Rc::as_ptr(&self.singleton_recursor_reductions) as usize,
++                                        Rc::as_ptr(&self.nullary_minor_reductions) as usize,
++                                        Rc::as_ptr(&self.closed_nested_minor_reductions) as usize,
++                                    ],
++                                    goal,root:root.clone(),nat:self.nat_primitives.clone(),
++                                    bools:self.bool_primitives.clone(),
++                                    quot:self.quot_primitives.as_ref().map(|q|(q.type_name,q.mk,q.lift,q.ind)),
++                                };
++                                let (shared_cache,shared_prior,shared_count)=
++                                    if let Some(cache)=self.exposure_cache.as_ref() {
++                                        let mut store=cache.borrow_mut();
++                                        let roots=&mut store.c53_shared_failed_roots;
++                                        let prior=roots.iter().position(|prior|prior==&shared_root);
++                                        let count=roots.len();
++                                        if count<256 { roots.push(shared_root); }
++                                        (true,prior,count)
++                                    } else {(false,None,0)};
++                                eprintln!("NUCLEUS_C53_SHARED_FAILED:{}",serde_json::json!({
++                                    "seq":seq,"goal":replay_goal,"stage":$stage,
++                                    "recursor":source_head,"shared_cache":shared_cache,
++                                    "shared_failed_roots":shared_count,
++                                    "shared_prior_failure":shared_prior,
++                                    "machine_failed_roots":prior_count,
++                                }));
++                            }
+                         }
+                     }
+                 }
