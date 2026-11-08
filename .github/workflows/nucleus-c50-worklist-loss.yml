@@ -63,10 +63,20 @@ jobs:
             --flags base/flags.json --stderr-dir reports --require-events --c49-content-fingerprint --c50-loss-ledger | tee reports/c50-n7-comparison.json
           python3 -c 'import json; r=json.load(open("reports/c50-n7-comparison.json")); assert r["standard"]["verdict"]=="UNKNOWN"; assert r["accepted_diagnostic"]["verdict"]=="ACCEPT_DIAGNOSTIC_ONLY"; assert "c50_loss_summary" in r; print("C50 partial worklist summary", r["c50_loss_summary"])'
       - name: Preserve positive or negative source transition receipt
+        if: always()
         continue-on-error: true
         run: |
           set -euo pipefail
-          cp reports/c50-n7-comparison.json experiments/nucleus-logos-support-20261108/c50-n7-worklist-loss.json
+          if test -f reports/c50-n7-comparison.json; then
+            cp reports/c50-n7-comparison.json experiments/nucleus-logos-support-20261108/c50-n7-worklist-loss.json
+          else
+            jq -n \
+              --arg cargo "$(tail -n 60 reports/cargo-check.log 2>/dev/null || true)" \
+              --arg native "$(tail -n 60 reports/native-tests.log 2>/dev/null || true)" \
+              --arg build "$(tail -n 60 reports/release-build.log 2>/dev/null || true)" \
+              '{status:"UNKNOWN_CI_FAILURE", standard_accepts:0, cargo_log_tail:$cargo, native_log_tail:$native, build_log_tail:$build, qualified:false}' \
+              > experiments/nucleus-logos-support-20261108/c50-n7-worklist-loss.json
+          fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add experiments/nucleus-logos-support-20261108/c50-n7-worklist-loss.json
