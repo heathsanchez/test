@@ -1,0 +1,165 @@
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -2406,6 +2406,32 @@
+                 Judgment::unknown("type-inference-budget")
+             };
+         }
++        // LOGOS-inspired, strictly observation-only: compare the checked
++        // support projection and the COMPLETE actual context across frames.
++        // Never use the projection to return a typing judgment or to mutate
++        // the ordinary inference cache. This counter is run under a diagnostic
++        // flag and exists only to justify (or reject) a later actual reuse rule.
++        #[cfg(feature="diagnostics")]
++        let logos_projection=if std::env::var_os("NUCLEUS_LOGOS_SCOPE_PROBE").is_some()
++            && matches!(expression.0,2156|2157|2158|2339|4770)
++            && LOGOS_PROJECTION_SHADOW.with(|shadow|shadow.borrow().observed<40000)
++            && let (Some(flags),Some(epoch))=(crate::run_flags::captured_configuration(),self.binding_revocation_epoch.get())
++        {
++            let mut diagnostic_budget=4096;
++            self.complete_source_support(expression,&mut diagnostic_budget).and_then(|support|{
++                if support.is_empty()||support.len()>2{return None;}
++                let binding_nodes=support.iter().map(|index|{
++                    // A node ID alone carries no typing authority. Require the
++                    // registered source domain under its actual Γ prefix.
++                    self.checked_type_of_bound_source(frame,*index,context)?;
++                    Some(frame.lookup_with_node_id(*index)?.0)
++                }).collect::<Option<Vec<_>>>()?;
++                Some(LogosProjectionKey{
++                    checker:self as *const Self as usize,source:expression,
++                    binding_nodes,context:context.to_vec(),flags:Some(flags),epoch:Some(epoch),
++                })
++            })
++        }else{None};
+         #[cfg(feature="diagnostics")]
+         let shadow_key=if self.shadow_typing.borrow().enabled&&context.len()<=64{
+             let mut entries=self.level_substitution.iter().collect::<Vec<_>>();entries.sort_by_key(|(name,_)|name.0);
+@@ -2425,6 +2451,12 @@
+             cache.insert(key, value.clone());
+         }
+         #[cfg(feature="diagnostics")]
++        if let Some(key)=logos_projection{
++            LOGOS_PROJECTION_SHADOW.with(|shadow|{
++                shadow.borrow_mut().observe(key,frame.id(),result.proven_value());
++            });
++        }
++        #[cfg(feature="diagnostics")]
+         if let Some(key)=shadow_key{self.shadow_typing.borrow_mut().finish(key,result.is_proven());}
+         result
+     }
+@@ -8542,6 +8574,116 @@
+ }
+ impl ExactTypingMemo{fn clear(&mut self){for slot in self.slots.iter_mut(){*slot=None;}self.hand.fill(0);}}
+ 
++#[cfg(feature="diagnostics")]
++#[derive(Clone,Debug,Eq,Hash,PartialEq)]
++struct LogosProjectionKey{
++    checker:usize,source:ExprId,binding_nodes:Vec<u64>,context:Vec<TypeValue>,
++    flags:Option<[u64;2]>,epoch:Option<u64>,
++}
++#[cfg(feature="diagnostics")]
++struct LogosProjectionFact{frame:u64,result:TypeValue}
++#[cfg(feature="diagnostics")]
++#[derive(Default)]
++struct LogosProjectionShadow{
++    seen:HashMap<LogosProjectionKey,LogosProjectionFact>,
++    observed:usize,complete:usize,unknown:usize,capacity_rejections:usize,
++    cross_frame_same_result:usize,cross_frame_different_result:usize,
++    same_frame_prior:usize,
++    prior_sort:usize,prior_closed_term:usize,prior_captured_term:usize,prior_pi:usize,
++}
++#[cfg(feature="diagnostics")]
++impl LogosProjectionShadow{
++    fn observe(&mut self,key:LogosProjectionKey,frame:u64,result:Option<&TypeValue>)->bool{
++        self.observed+=1;
++        let Some(result)=result else{self.unknown+=1;return false;};
++        self.complete+=1;
++        if let Some(prior)=self.seen.get(&key){
++            if prior.frame==frame{self.same_frame_prior+=1;return false;}
++            if prior.result==*result{
++                self.cross_frame_same_result+=1;
++                match result{
++                    TypeValue::Sort(_)=>self.prior_sort+=1,
++                    TypeValue::Term(c)if c.env.id()==0=>self.prior_closed_term+=1,
++                    TypeValue::Term(_)=>self.prior_captured_term+=1,
++                    TypeValue::Pi{..}=>self.prior_pi+=1,
++                }
++                return true;
++            }
++            self.cross_frame_different_result+=1;
++            return false;
++        }
++        if self.seen.len()<20000{self.seen.insert(key,LogosProjectionFact{frame,result:result.clone()});}
++        else{self.capacity_rejections+=1;}
++        false
++    }
++}
++#[cfg(feature="diagnostics")]
++impl Drop for LogosProjectionShadow{
++    fn drop(&mut self){if self.observed!=0{
++        eprintln!("NUCLEUS_LOGOS_PROJECTION_SHADOW:{}",serde_json::json!({
++            "diagnostic_only":true,"acceptance_authority":false,
++            "full_context_in_key":true,"checked_support_required":true,
++            "observed":self.observed,"complete":self.complete,"unknown":self.unknown,
++            "distinct_keys":self.seen.len(),"capacity_rejections":self.capacity_rejections,
++            "cross_frame_same_result":self.cross_frame_same_result,
++            "cross_frame_different_result":self.cross_frame_different_result,
++            "same_frame_prior":self.same_frame_prior,
++            "prior_sort":self.prior_sort,"prior_closed_term":self.prior_closed_term,
++            "prior_captured_term":self.prior_captured_term,"prior_pi":self.prior_pi,
++        }));
++    }}
++}
++#[cfg(feature="diagnostics")]
++thread_local!{static LOGOS_PROJECTION_SHADOW:RefCell<LogosProjectionShadow>=RefCell::new(LogosProjectionShadow::default());}
++
++#[cfg(all(test,feature="diagnostics"))]
++mod logos_projection_shadow_controls {
++    use super::*;
++    fn sort() -> TypeValue { TypeValue::Sort(LevelTerm::Zero) }
++    fn key(binding:u64, context:Vec<TypeValue>) -> LogosProjectionKey {
++        LogosProjectionKey { checker:1, source:ExprId(2157), binding_nodes:vec![binding],
++            context, flags:Some([3,5]), epoch:Some(7) }
++    }
++    #[test]
++    fn completed_exact_result_is_observed_across_different_full_frames() {
++        let mut shadow=LogosProjectionShadow::default();
++        let k=key(10,vec![sort()]);
++        assert!(!shadow.observe(k.clone(),31,Some(&sort())));
++        assert!(shadow.observe(k,32,Some(&sort())));
++        assert_eq!(shadow.cross_frame_same_result,1);
++    }
++    #[test]
++    fn changed_binding_or_context_never_counts_as_safe_reuse() {
++        let mut shadow=LogosProjectionShadow::default();
++        assert!(!shadow.observe(key(10,vec![sort()]),31,Some(&sort())));
++        assert!(!shadow.observe(key(11,vec![sort()]),32,Some(&sort())));
++        assert!(!shadow.observe(key(10,vec![TypeValue::Sort(crate::level::succ(LevelTerm::Zero))]),33,Some(&sort())));
++        assert_eq!(shadow.cross_frame_same_result,0);
++    }
++    #[test]
++    fn failed_derivations_and_changed_results_do_not_authorize_same_result() {
++        let mut shadow=LogosProjectionShadow::default();
++        let k=key(10,vec![sort()]);
++        assert!(!shadow.observe(k.clone(),31,None));
++        assert!(!shadow.observe(k.clone(),32,Some(&sort())));
++        let other=TypeValue::Sort(crate::level::succ(LevelTerm::Zero));
++        assert!(!shadow.observe(k,33,Some(&other)));
++        assert_eq!(shadow.cross_frame_same_result,0);
++        assert_eq!(shadow.cross_frame_different_result,1);
++    }
++    #[test]
++    fn revocation_epoch_and_capability_configuration_are_separate() {
++        let mut shadow=LogosProjectionShadow::default();
++        let k=key(10,vec![sort()]);
++        assert!(!shadow.observe(k.clone(),31,Some(&sort())));
++        let mut newer=k.clone();newer.epoch=Some(8);
++        let mut altered=k;altered.flags=Some([3,6]);
++        assert!(!shadow.observe(newer,32,Some(&sort())));
++        assert!(!shadow.observe(altered,33,Some(&sort())));
++        assert_eq!(shadow.cross_frame_same_result,0);
++    }
++}
++
+ #[cfg(test)]
+ mod universe_parametric_source_controls {
+  use super::*;
