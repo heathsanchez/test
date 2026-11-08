@@ -1,0 +1,66 @@
+{
+  "diagnostic": "C59 C58 artifact forensics; no checker change",
+  "c58_run": 42493189434,
+  "c58_artifact_id": 13622452324,
+  "c58_binary_sha256": "37b77b125745e7b3eabfbb0adba1da76ea27dac11d13efcc05586f0892b39e6f",
+  "source_sha256": "6669cee92ad330dada351ac9e63656f7e9e848dd70376f17030d64677f8c81ac",
+  "original_262144": true,
+  "native_proof_controls_parent_passed": true,
+  "failed_c58_baseline_census_logs": [
+    {
+      "case": "fueled-chain",
+      "size": 25441,
+      "boundary": {
+        "source_name": "chain9_datF",
+        "stage": "theorem.value",
+        "verdict": "UNKNOWN",
+        "reason": "application-function-type"
+      },
+      "first_c56_pair": null
+    },
+    {
+      "case": "grind-ring-5",
+      "size": 21160,
+      "boundary": {
+        "source_name": "_private.Init.Data.Nat.Div.Lemmas.0.Nat.div_le_iff_le_mul._proof_1_1",
+        "stage": "theorem.value",
+        "verdict": "UNKNOWN",
+        "reason": "application-function-type"
+      },
+      "first_c56_pair": null
+    }
+  ],
+  "n36_attempts": [
+    {
+      "opening_allowance": 1024,
+      "verdict": "UNKNOWN",
+      "boundary": {
+        "source_name": "countermodel",
+        "stage": "definition.value",
+        "verdict": "UNKNOWN",
+        "reason": "application-function-type"
+      },
+      "opening_events": 0,
+      "opening_samples": [],
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "opening_allowance": 4096,
+      "verdict": "UNKNOWN",
+      "boundary": {
+        "source_name": "countermodel",
+        "stage": "definition.value",
+        "verdict": "UNKNOWN",
+        "reason": "unresolved-qualified-recursor-heads"
+      },
+      "opening_events": 2,
+      "opening_samples": [
+        "NUCLEUS_C58_OPEN:seq=0:source_expr=ExprId(15367):source_env=151867:depth=2:allowance=4096:spent=2645:remaining=253081:safe=true",
+        "NUCLEUS_C58_OPEN:seq=1:source_expr=ExprId(15367):source_env=151837:depth=1:allowance=4096:spent=18:remaining=255708:safe=true"
+      ],
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "selected_checker_changed": false,
+  "protected_403_not_run": true
+}
