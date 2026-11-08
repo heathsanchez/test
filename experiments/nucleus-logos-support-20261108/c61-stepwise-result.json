@@ -1,0 +1,42 @@
+{
+  "experiment": "C61 stepwise Bool constructor demand on unchanged original n7",
+  "c37_artifact": 13609679273,
+  "original_artifact": 13276400289,
+  "source_sha256": "abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35",
+  "steps": 262144,
+  "proof_rules_changed": false,
+  "new_equality_or_constructor_rules": false,
+  "protected_403_not_run": true,
+  "selected_checker_changed": false,
+  "records": [
+    {
+      "flag": "off",
+      "verdict": "UNKNOWN",
+      "boundary": {
+        "source_name": "countermodel",
+        "stage": "definition.value",
+        "verdict": "UNKNOWN",
+        "reason": "application-function-type"
+      },
+      "stepwise_events": [],
+      "stderr_sha256": "c44db83e4a017c1d971899d3769cc5b841bc86775834bd39bf8d2ee1ca5d9bec"
+    },
+    {
+      "flag": "on",
+      "verdict": "UNKNOWN",
+      "boundary": {
+        "source_name": "countermodel",
+        "stage": "definition.value",
+        "verdict": "UNKNOWN",
+        "reason": "application-function-type"
+      },
+      "stepwise_events": [
+        "NUCLEUS_C61_STEPWISE:head=Const { name: NameId(147), levels: [Succ(Zero)] }:budget=503:remaining=0:proved=false:changed=false",
+        "NUCLEUS_C61_STEPWISE:head=Const { name: NameId(147), levels: [Succ(Zero)] }:budget=503:remaining=0:proved=false:changed=false",
+        "NUCLEUS_C61_STEPWISE:head=Const { name: NameId(147), levels: [Succ(Zero)] }:budget=260755:remaining=0:proved=false:changed=false"
+      ],
+      "stderr_sha256": "472ffde3322bbd711ed57bef4eb80f4ac9068eafc454a32b1ee4d77e57fec9e4"
+    }
+  ],
+  "standard_accepts": 0
+}
