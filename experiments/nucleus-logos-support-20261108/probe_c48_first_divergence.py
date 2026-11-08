@@ -14,6 +14,7 @@ import subprocess
 
 from probe_c50_loss_ledger import parse_loss_events, summarize_losses
 from probe_c51_exact_retries import parse_retries, summarize_retries
+from probe_c53_shared_retries import parse_shared_retries, summarize_shared_retries
 
 
 N7_SHA256 = "abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35"
@@ -87,6 +88,7 @@ def main() -> None:
     parser.add_argument("--c49-content-fingerprint", action="store_true")
     parser.add_argument("--c50-loss-ledger", action="store_true")
     parser.add_argument("--c51-exact-retries", action="store_true")
+    parser.add_argument("--c53-shared-retries", action="store_true")
     args = parser.parse_args()
     original = args.input.read_bytes()
     source_sha = hashlib.sha256(original).hexdigest()
@@ -109,6 +111,10 @@ def main() -> None:
         if not args.c50_loss_ledger:
             raise ValueError("C51 observer requires C50 source-loss events")
         env["NUCLEUS_DIAGNOSTIC_C51_EXACT_RETRIES"] = "1"
+    if args.c53_shared_retries:
+        if not args.c51_exact_retries:
+            raise ValueError("C53 shared ledger requires the C51 exact-root control")
+        env["NUCLEUS_DIAGNOSTIC_C53_SHARED_RETRIES"] = "1"
     results = {}
     for label, steps in (("standard", 262144), ("accepted_diagnostic", 14155776)):
         run = subprocess.run(
@@ -134,6 +140,11 @@ def main() -> None:
             if len(retries) != len(results[label]["c50_loss_events"]):
                 raise ValueError("C51 failure-root events do not match C50 failure exits")
             results[label]["c51_failed_roots"] = retries
+        if args.c53_shared_retries:
+            shared = parse_shared_retries(run.stderr)
+            if len(shared) != len(results[label]["c51_failed_roots"]):
+                raise ValueError("C53 shared failures do not match C51 events")
+            results[label]["c53_shared_failed_roots"] = shared
     if results["standard"]["verdict"] != "UNKNOWN":
         raise ValueError("C48 standard verdict changed unexpectedly")
     if results["accepted_diagnostic"]["verdict"] != "ACCEPT_DIAGNOSTIC_ONLY":
@@ -144,8 +155,8 @@ def main() -> None:
         "case": args.input.stem,
         "source_sha256": source_sha,
         "proof_rules_changed": False,
-        "standard": {k: v for k, v in results["standard"].items() if k not in ("events", "c50_loss_events", "c51_failed_roots")},
-        "accepted_diagnostic": {k: v for k, v in results["accepted_diagnostic"].items() if k not in ("events", "c50_loss_events", "c51_failed_roots")},
+        "standard": {k: v for k, v in results["standard"].items() if k not in ("events", "c50_loss_events", "c51_failed_roots", "c53_shared_failed_roots")},
+        "accepted_diagnostic": {k: v for k, v in results["accepted_diagnostic"].items() if k not in ("events", "c50_loss_events", "c51_failed_roots", "c53_shared_failed_roots")},
         "event_counts": {"standard": len(left), "accepted_diagnostic": len(right)},
         "first_divergence": first_divergence(left, right),
         "standard_first_64": left[:64],
@@ -174,6 +185,16 @@ def main() -> None:
             for label in ("standard", "accepted_diagnostic")
         }
         report["c51_partial_state_is_a_proof"] = False
+    if args.c53_shared_retries:
+        report["c53_cross_machine_recurrence"] = {
+            label: summarize_shared_retries(results[label]["c53_shared_failed_roots"])
+            for label in ("standard", "accepted_diagnostic")
+        }
+        report["c53_shared_failed_requests"] = {
+            label: results[label]["c53_shared_failed_roots"]
+            for label in ("standard", "accepted_diagnostic")
+        }
+        report["c53_partial_state_is_a_proof"] = False
     print(json.dumps(report, indent=2))
 
 
