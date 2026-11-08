@@ -1,0 +1,92 @@
+name: Nucleus C55 application type origin
+on:
+  push:
+    branches: [research/nucleus-c55-app-type-origin-20261109]
+    paths: ['.github/workflows/nucleus-c55-app-type-origin.yml']
+  workflow_dispatch:
+permissions: {contents: write, actions: read}
+jobs:
+  origin:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 32
+    env:
+      GH_TOKEN: ${{ github.token }}
+      CARGO_INCREMENTAL: '0'
+      CARGO_BUILD_JOBS: '2'
+      RUST_MIN_STACK: '16777216'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Reconstruct exact source-qualified checker and observer-only C55
+        run: |
+          set -euo pipefail
+          mkdir -p base candidate reports arena207
+          gh api repos/heathsanchez/test/actions/artifacts/13609679273/zip > c37-qualified.zip
+          printf '%s  %s\n' fceddaca338ca36c2964edf0ec81b9e4acd0b66d938864ec5e7239f766e186c3 c37-qualified.zip | sha256sum -c -
+          unzip -p c37-qualified.zip candidate/source.tar.gz > c37-source.tar.gz
+          printf '%s  %s\n' bb64f47470f950f78e7fe4c659fbcb2a75d72e96831430ec1eb3562c55175152 c37-source.tar.gz | sha256sum -c -
+          unzip -p c37-qualified.zip base/flags.json > base/flags.json
+          tar --no-same-owner -xzf c37-source.tar.gz
+          for patch_name in c38-early-full-typed-spine.patch c39-typed-failure-stage.patch c40-c42-source-capture.patch c43-deep-exposure-guard.patch c44-exact-source-forwarding.patch c47-inner-work-diagnostics.patch c48-source-branch-divergence.patch c49-capture-content-fingerprint.patch c50-worklist-loss-diagnostics.patch; do
+            patch --fuzz=0 -p1 -d metatron-kernel < "experiments/nucleus-logos-support-20261108/$patch_name"
+            sha256sum "experiments/nucleus-logos-support-20261108/$patch_name" >> reports/patches.sha256
+          done
+          patch --fuzz=0 -p1 -d . < experiments/nucleus-logos-support-20261108/c55-app-failure-state.patch
+          sha256sum experiments/nucleus-logos-support-20261108/c55-app-failure-state.patch >> reports/patches.sha256
+          cargo check --locked --all-targets --features diagnostics --manifest-path metatron-kernel/Cargo.toml > reports/cargo-check.log 2>&1 || { tail -n 120 reports/cargo-check.log; exit 1; }
+      - name: Native proof rules and adversarial regressions
+        run: |
+          set -euo pipefail
+          mapfile -t flags < <(jq -r 'to_entries[] | "\(.key)=\(.value)"' base/flags.json)
+          env "${flags[@]}" cargo test --locked --release --features diagnostics --manifest-path metatron-kernel/Cargo.toml > reports/native-tests.log 2>&1 || { tail -n 120 reports/native-tests.log; exit 1; }
+          cargo build --locked --release --features diagnostics --bin nucleus-diagnostic --bin metatron-kernel --manifest-path metatron-kernel/Cargo.toml > reports/release-build.log 2>&1 || { tail -n 120 reports/release-build.log; exit 1; }
+          cp metatron-kernel/target/release/nucleus-diagnostic candidate/nucleus-diagnostic
+          cp metatron-kernel/target/release/metatron-kernel candidate/metatron-kernel
+          sha256sum candidate/* > reports/binaries.sha256
+      - name: Original six first-failure application-type states at standard budget
+        run: |
+          set -euo pipefail
+          gh api repos/heathsanchez/test/actions/artifacts/13276400289/zip > arena207.zip
+          printf '%s  %s\n' a9582eadc0d9893cbe39e6bcfccd79bfaec2032838851b8a487c35df16096763 arena207.zip | sha256sum -c -
+          unzip -p arena207.zip lean-arena-tests.tar.gz | tar --no-same-owner -xzf - -C arena207
+          PYTHONPATH=experiments/nucleus-logos-support-20261108 python3 -m unittest \
+            experiments/nucleus-logos-support-20261108/test_c50_loss_ledger.py \
+            experiments/nucleus-logos-support-20261108/test_c52_six_loss_census.py \
+            experiments/nucleus-logos-support-20261108/test_c54_first_failure_roots.py \
+            experiments/nucleus-logos-support-20261108/test_c55_app_failure_shape.py -v
+          python3 experiments/nucleus-logos-support-20261108/probe_c55_app_failure_shape.py \
+            --binary candidate/nucleus-diagnostic \
+            --arena arena207 --flags base/flags.json \
+            --c54 experiments/nucleus-logos-support-20261108/c54-first-failure-roots.json \
+            --logs reports --timeout 180 | tee reports/c55-app-type-origin.json
+          python3 -c 'import json; r=json.load(open("reports/c55-app-type-origin.json")); assert r["all_six_unknown"] and r["all_six_root_classified"] and len(r["cases"])==6; print("C55",[(c["case"], c["app_failure"]["observed_events"], [s["state"] for s in c["app_failure"]["sampled_states"][:5]]) for c in r["cases"]])'
+      - name: Preserve source-qualified positive or negative receipt
+        if: always()
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          if test -s reports/c55-app-type-origin.json; then
+            cp reports/c55-app-type-origin.json experiments/nucleus-logos-support-20261108/c55-app-type-origin.json
+          else
+            jq -n \
+              --arg cargo "$(tail -n 50 reports/cargo-check.log 2>/dev/null || true)" \
+              --arg native "$(tail -n 50 reports/native-tests.log 2>/dev/null || true)" \
+              --arg build "$(tail -n 50 reports/release-build.log 2>/dev/null || true)" \
+              '{status:"UNKNOWN_CI_FAILURE", standard_accepts:0, qualified:false, cargo_log_tail:$cargo, native_log_tail:$native, build_log_tail:$build}' \
+              > experiments/nucleus-logos-support-20261108/c55-app-type-origin.json
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add experiments/nucleus-logos-support-20261108/c55-app-type-origin.json
+          git commit -m 'C55 six source-frozen application-type origin states (observer only)'
+          git push origin HEAD:refs/heads/research/nucleus-c55-app-type-origin-20261109
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-C55-app-type-origin
+          retention-days: 60
+          path: |
+            reports/
+            candidate/
+            base/flags.json
