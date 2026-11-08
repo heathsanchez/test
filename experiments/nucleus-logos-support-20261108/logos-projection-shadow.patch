@@ -1,52 +1,50 @@
 --- a/src/typecheck.rs
 +++ b/src/typecheck.rs
-@@ -2406,6 +2406,32 @@
-                 Judgment::unknown("type-inference-budget")
-             };
-         }
-+        // LOGOS-inspired, strictly observation-only: compare the checked
-+        // support projection and the COMPLETE actual context across frames.
-+        // Never use the projection to return a typing judgment or to mutate
-+        // the ordinary inference cache. This counter is run under a diagnostic
-+        // flag and exists only to justify (or reject) a later actual reuse rule.
-+        #[cfg(feature="diagnostics")]
-+        let logos_projection=if std::env::var_os("NUCLEUS_LOGOS_SCOPE_PROBE").is_some()
-+            && matches!(expression.0,2156|2157|2158|2339|4770)
-+            && LOGOS_PROJECTION_SHADOW.with(|shadow|shadow.borrow().observed<40000)
-+            && let (Some(flags),Some(epoch))=(crate::run_flags::captured_configuration(),self.binding_revocation_epoch.get())
-+        {
-+            let mut diagnostic_budget=4096;
-+            self.complete_source_support(expression,&mut diagnostic_budget).and_then(|support|{
-+                if support.is_empty()||support.len()>2{return None;}
-+                let binding_nodes=support.iter().map(|index|{
-+                    // A node ID alone carries no typing authority. Require the
-+                    // registered source domain under its actual Γ prefix.
-+                    self.checked_type_of_bound_source(frame,*index,context)?;
-+                    Some(frame.lookup_with_node_id(*index)?.0)
-+                }).collect::<Option<Vec<_>>>()?;
-+                Some(LogosProjectionKey{
-+                    checker:self as *const Self as usize,source:expression,
-+                    binding_nodes,context:context.to_vec(),flags:Some(flags),epoch:Some(epoch),
-+                })
-+            })
-+        }else{None};
-         #[cfg(feature="diagnostics")]
-         let shadow_key=if self.shadow_typing.borrow().enabled&&context.len()<=64{
-             let mut entries=self.level_substitution.iter().collect::<Vec<_>>();entries.sort_by_key(|(name,_)|name.0);
-@@ -2425,6 +2451,12 @@
+@@ -2425,10 +2425,43 @@
              cache.insert(key, value.clone());
          }
          #[cfg(feature="diagnostics")]
-+        if let Some(key)=logos_projection{
-+            LOGOS_PROJECTION_SHADOW.with(|shadow|{
-+                shadow.borrow_mut().observe(key,frame.id(),result.proven_value());
-+            });
++        if std::env::var_os("NUCLEUS_LOGOS_SCOPE_PROBE").is_some(){
++            self.logos_observe_inference(expression,context,frame,result.proven_value());
 +        }
 +        #[cfg(feature="diagnostics")]
          if let Some(key)=shadow_key{self.shadow_typing.borrow_mut().finish(key,result.is_proven());}
          result
      }
-@@ -8542,6 +8574,116 @@
+ 
++    // The ordinary source inference path is deeply recursive on authentic
++    // Arena terms. Keep ALL observer-owned vectors/keys out of infer_in's
++    // stack frame, including in observer-OFF builds. An earlier candidate
++    // caused app-lam to abort from stack overflow despite an inactive flag.
++    // This is a diagnostic, never a way to return a type or an equality.
++    #[cfg(feature="diagnostics")]
++    #[cold]
++    #[inline(never)]
++    fn logos_observe_inference(&self,expression:ExprId,context:&[TypeValue],frame:&EnvFrame,result:Option<&TypeValue>){
++        if !matches!(expression.0,2156|2157|2158|2339|4770)
++            || LOGOS_PROJECTION_SHADOW.with(|shadow|shadow.borrow().observed>=40000)
++        {return;}
++        let (Some(flags),Some(epoch))=(crate::run_flags::captured_configuration(),self.binding_revocation_epoch.get())else{return;};
++        let mut diagnostic_budget=4096;
++        let Some(support)=self.complete_source_support(expression,&mut diagnostic_budget)else{return;};
++        if support.is_empty()||support.len()>2{return;}
++        let Some(binding_nodes)=support.iter().map(|index|{
++            self.checked_type_of_bound_source(frame,*index,context)?;
++            Some(frame.lookup_with_node_id(*index)?.0)
++        }).collect::<Option<Vec<_>>>()else{return;};
++        let key=LogosProjectionKey{
++            checker:self as *const Self as usize,source:expression,
++            binding_nodes,context:context.to_vec(),flags:Some(flags),epoch:Some(epoch),
++        };
++        LOGOS_PROJECTION_SHADOW.with(|shadow|{
++            shadow.borrow_mut().observe(key,frame.id(),result);
++        });
++    }
++
+     fn infer_uncached(
+         &self,
+         expression: ExprId,
+@@ -8542,6 +8575,129 @@
  }
  impl ExactTypingMemo{fn clear(&mut self){for slot in self.slots.iter_mut(){*slot=None;}self.hand.fill(0);}}
  
@@ -66,6 +64,8 @@
 +    cross_frame_same_result:usize,cross_frame_different_result:usize,
 +    same_frame_prior:usize,
 +    prior_sort:usize,prior_closed_term:usize,prior_captured_term:usize,prior_pi:usize,
++    changed_only_term_capture:usize,changed_term_levels:usize,
++    changed_term_expression:usize,changed_nonterm_shape:usize,
 +}
 +#[cfg(feature="diagnostics")]
 +impl LogosProjectionShadow{
@@ -86,6 +86,12 @@
 +                return true;
 +            }
 +            self.cross_frame_different_result+=1;
++            match (&prior.result,result){
++                (TypeValue::Term(a),TypeValue::Term(b))if a.expr==b.expr&&a.levels==b.levels=>self.changed_only_term_capture+=1,
++                (TypeValue::Term(a),TypeValue::Term(b))if a.expr==b.expr=>self.changed_term_levels+=1,
++                (TypeValue::Term(_),TypeValue::Term(_))=>self.changed_term_expression+=1,
++                _=>self.changed_nonterm_shape+=1,
++            }
 +            return false;
 +        }
 +        if self.seen.len()<20000{self.seen.insert(key,LogosProjectionFact{frame,result:result.clone()});}
@@ -106,6 +112,10 @@
 +            "same_frame_prior":self.same_frame_prior,
 +            "prior_sort":self.prior_sort,"prior_closed_term":self.prior_closed_term,
 +            "prior_captured_term":self.prior_captured_term,"prior_pi":self.prior_pi,
++            "changed_only_term_capture":self.changed_only_term_capture,
++            "changed_term_levels":self.changed_term_levels,
++            "changed_term_expression":self.changed_term_expression,
++            "changed_nonterm_shape":self.changed_nonterm_shape,
 +        }));
 +    }}
 +}
@@ -146,6 +156,7 @@
 +        assert!(!shadow.observe(k,33,Some(&other)));
 +        assert_eq!(shadow.cross_frame_same_result,0);
 +        assert_eq!(shadow.cross_frame_different_result,1);
++        assert_eq!(shadow.changed_nonterm_shape,1);
 +    }
 +    #[test]
 +    fn revocation_epoch_and_capability_configuration_are_separate() {
