@@ -1,0 +1,30 @@
+--- a/src/convert.rs
++++ b/src/convert.rs
+@@ -1856,7 +1856,8 @@
+                 {
+                     let cap=match std::env::var("NUCLEUS_DIAGNOSTIC_C36_CROSS_HEAD_GRANT") {
+                         Ok(s)=>match s.parse::<usize>() {
+-                            Ok(n) if matches!(n,512|2048|8192|32768|131072)=>n,
++                            Ok(n) if matches!(n,512|2048|8192|32768|131072)
++                                || (n==262144 && std::env::var_os("NUCLEUS_DIAGNOSTIC_C37_FULL_OWNER").is_some())=>n,
+                             _=>return Judgment::unknown("invalid-C36-cross-head-grant"),
+                         },
+                         Err(std::env::VarError::NotPresent)=>512,
+@@ -1880,6 +1881,17 @@
+                             Judgment::Unknown{..}=>"unknown",
+                             Judgment::Refuted{..}=>"refuted",
+                         };
++                        // C37: expose the exact fail-closed source residual
++                        // after metered replay. The observer supplies no
++                        // constructor, cache result, or additional fuel.
++                        if std::env::var_os("NUCLEUS_DIAGNOSTIC_C37_FULL_OWNER").is_some() {
++                            let reason=match &result {
++                                Judgment::Proven{..}=>"proven",
++                                Judgment::Unknown{residual}=>residual.0,
++                                Judgment::Refuted{obstruction}=>obstruction.0,
++                            };
++                            eprintln!("NUCLEUS_C37_ROOT_REASON:depth={depth}:head={name:?}:grant={grant}:spent={paid}:remaining={current_budget}:reason={reason}");
++                        }
+                         use std::sync::atomic::{AtomicUsize,Ordering};
+                         static PRINTED:AtomicUsize=AtomicUsize::new(0);
+                         if PRINTED.fetch_add(1,Ordering::Relaxed)<128 {

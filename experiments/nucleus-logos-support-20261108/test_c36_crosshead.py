@@ -3,9 +3,18 @@
 import unittest
 
 from probe_c36_crosshead import parse_record
+from qualify_c36 import unexpected_diagnostics
 
 
 class C36CrossHeadEvents(unittest.TestCase):
+    def test_canonical_nucleus_flags_are_not_diagnostics(self):
+        selected = {"NUCLEUS_SELECTED_A": "1", "NUCLEUS_SELECTED_B": "1"}
+        self.assertEqual(unexpected_diagnostics(dict(selected), selected), set())
+        extra = dict(selected)
+        extra["NUCLEUS_DIAGNOSTIC_C36_CROSS_HEAD_REPLAY"] = "1"
+        self.assertEqual(unexpected_diagnostics(extra, selected),
+                         {"NUCLEUS_DIAGNOSTIC_C36_CROSS_HEAD_REPLAY"})
+
     def test_metered_source_replay_event(self):
         event = parse_record(
             "NUCLEUS_C36_CROSS_HEAD_REPLAY:depth=0:side=right:head=NameId(147):"

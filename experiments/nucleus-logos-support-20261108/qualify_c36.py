@@ -7,6 +7,12 @@ import importlib.util
 from pathlib import Path
 
 
+def unexpected_diagnostics(environment: dict[str, str], selected: dict[str, str]) -> set[str]:
+    """Canonical selected NUCLEUS flags are authoritative, not stray probes."""
+    return {key for key in environment
+            if key.startswith("NUCLEUS_") and key not in selected}
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--grant", type=int, required=True,
@@ -20,7 +26,7 @@ def main() -> None:
     spec.loader.exec_module(module)
     if len(module.FLAGS) != 24 or set(module.FLAGS.values()) != {"1"}:
         raise ValueError("canonical 24-flag selection changed")
-    if any(key.startswith("NUCLEUS_") for key in module.ENV):
+    if unexpected_diagnostics(module.ENV, module.FLAGS):
         raise ValueError("canonical qualifier unexpectedly inherited a diagnostic")
     module.ENV["NUCLEUS_DIAGNOSTIC_C36_CROSS_HEAD_REPLAY"] = "1"
     module.ENV["NUCLEUS_DIAGNOSTIC_C36_CROSS_HEAD_GRANT"] = str(grant)

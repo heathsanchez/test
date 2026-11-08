@@ -1,9 +1,9 @@
-# C18 plus C25–C36: test source-checked cross-head recursor replay.
+# C18 plus C25–C37: test full remaining-owner source recursor replay.
 # No original input, global budget or default kernel flag changes.
-name: Nucleus C36 checked cross-head recursor replay
+name: Nucleus C37 full-owner recursor audit
 on:
   push:
-    branches: [research/nucleus-logos-support-20261108, research/nucleus-c36-crosshead-20261108]
+    branches: [research/nucleus-logos-support-20261108, research/nucleus-c36-crosshead-20261108, research/nucleus-c37-full-owner-20261108]
     paths: ['.github/workflows/nucleus-logos-support-20261108.yml']
   workflow_dispatch:
 permissions: {contents: read, actions: read}
@@ -49,7 +49,8 @@ jobs:
           patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-logos-support-20261108/c34-fallback-reserve-scheduling.patch
           patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-logos-support-20261108/c35-source-owned-metered-recursor-trials.patch
           patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-logos-support-20261108/c36-source-certified-cross-head-replay.patch
-          sha256sum experiments/nucleus-logos-support-20261108/logos-projection-shadow.patch experiments/nucleus-logos-support-20261108/c12-caller-site.patch experiments/nucleus-logos-support-20261108/c13-large-replay-residual.patch experiments/nucleus-logos-support-20261108/c14-projection-major-boundary.patch experiments/nucleus-logos-support-20261108/c15-bounded-projection-major.patch experiments/nucleus-logos-support-20261108/c16-metered-projection-borrow.patch experiments/nucleus-logos-support-20261108/c17-diagnostic-projection-cap.patch experiments/nucleus-logos-support-20261108/c18-projection-worklist-continuation.patch experiments/nucleus-logos-support-20261108/c25-source-checked-keyless-worklist.patch experiments/nucleus-logos-support-20261108/c26-source-major-chain-census.patch experiments/nucleus-logos-support-20261108/c27-pre-iota-source-congruence-observer.patch experiments/nucleus-logos-support-20261108/c28-source-certified-pre-iota-congruence.patch experiments/nucleus-logos-support-20261108/c29-source-state-worklist-observer.patch experiments/nucleus-logos-support-20261108/c30-exact-worklist-exposure-cache.patch experiments/nucleus-logos-support-20261108/c31-source-projection-transition-observer.patch experiments/nucleus-logos-support-20261108/c32-source-major-grant-diagnostic.patch experiments/nucleus-logos-support-20261108/c33-source-congruence-grant-diagnostic.patch experiments/nucleus-logos-support-20261108/c34-fallback-reserve-scheduling.patch experiments/nucleus-logos-support-20261108/c35-source-owned-metered-recursor-trials.patch experiments/nucleus-logos-support-20261108/c36-source-certified-cross-head-replay.patch > reports/patch.sha256
+          patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-logos-support-20261108/c37-full-owner-replay-reason.patch
+          sha256sum experiments/nucleus-logos-support-20261108/logos-projection-shadow.patch experiments/nucleus-logos-support-20261108/c12-caller-site.patch experiments/nucleus-logos-support-20261108/c13-large-replay-residual.patch experiments/nucleus-logos-support-20261108/c14-projection-major-boundary.patch experiments/nucleus-logos-support-20261108/c15-bounded-projection-major.patch experiments/nucleus-logos-support-20261108/c16-metered-projection-borrow.patch experiments/nucleus-logos-support-20261108/c17-diagnostic-projection-cap.patch experiments/nucleus-logos-support-20261108/c18-projection-worklist-continuation.patch experiments/nucleus-logos-support-20261108/c25-source-checked-keyless-worklist.patch experiments/nucleus-logos-support-20261108/c26-source-major-chain-census.patch experiments/nucleus-logos-support-20261108/c27-pre-iota-source-congruence-observer.patch experiments/nucleus-logos-support-20261108/c28-source-certified-pre-iota-congruence.patch experiments/nucleus-logos-support-20261108/c29-source-state-worklist-observer.patch experiments/nucleus-logos-support-20261108/c30-exact-worklist-exposure-cache.patch experiments/nucleus-logos-support-20261108/c31-source-projection-transition-observer.patch experiments/nucleus-logos-support-20261108/c32-source-major-grant-diagnostic.patch experiments/nucleus-logos-support-20261108/c33-source-congruence-grant-diagnostic.patch experiments/nucleus-logos-support-20261108/c34-fallback-reserve-scheduling.patch experiments/nucleus-logos-support-20261108/c35-source-owned-metered-recursor-trials.patch experiments/nucleus-logos-support-20261108/c36-source-certified-cross-head-replay.patch experiments/nucleus-logos-support-20261108/c37-full-owner-replay-reason.patch > reports/patch.sha256
           find metatron-kernel/src -type f -print0 | sort -z | xargs -0 sha256sum > reports/source.sha256
           cargo check --locked --all-targets --features diagnostics --manifest-path metatron-kernel/Cargo.toml > reports/plain-build.log 2>&1 || { tail -n 100 reports/plain-build.log; exit 1; }
       - name: Native proof-obligation and adversarial controls
@@ -345,6 +346,7 @@ jobs:
                 --stderr "reports/c36-$grant-$case.stderr" | tee "reports/c36-$grant-$case.json"
             done
           done
+
           # Flag-on protected coverage even if all diagnostic verdicts remain UNKNOWN.
           python3 experiments/nucleus-logos-support-20261108/qualify_c36.py --grant 32768 \
             > reports/c36-32768-protected.log 2>&1 || { tail -n 100 reports/c36-32768-protected.log; exit 1; }
@@ -357,6 +359,18 @@ jobs:
               mv reports/protected-403.json "reports/c36-$grant-protected-403.json"
               mv reports/logos-projection-summary.json "reports/c36-$grant-protected-summary.json"
             fi
+          done
+
+      - name: C37 exact residual with entire remaining standard-budget owner
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s experiments/nucleus-logos-support-20261108 -p 'test_c37_*.py' -v
+          for case in fueled-chain grind-ring-5 magma-list-pair-n7 magma-list-pair-n21 magma-list-deep-n21 magma-list-deep-n36; do
+            python3 experiments/nucleus-logos-support-20261108/probe_c37_full_owner.py \
+              --binary candidate/metatron-kernel \
+              --input "arena207/good/perf/$case.ndjson" \
+              --flags base/flags.json \
+              --stderr "reports/c37-$case.stderr" | tee "reports/c37-$case.json"
           done
 
       - name: C29 source-state census of keyless certified Decidable recursor worklist on frozen Magma n7
@@ -390,7 +404,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: nucleus-logos-support-C36-CROSS-HEAD-SOURCE-REPLAY
+          name: nucleus-logos-support-C37-FULL-OWNER-RECURSOR-REASON
           retention-days: 60
           path: |
             reports/
