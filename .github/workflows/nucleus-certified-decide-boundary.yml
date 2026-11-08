@@ -34,7 +34,26 @@ jobs:
             echo 'INVALID_AXIOM_BOUNDARY'
             exit 1
           fi
-          sha256sum NucleusDecide.lean ForgedIsFalse.lean lakefile.lean lean-toolchain
+          lake env lean NatSourceAdapter.lean 2>&1 | tee adapter-axioms.log
+          if grep -E 'sorryAx|unapproved axiom' adapter-axioms.log; then
+            echo 'UNAPPROVED_ADAPTER_AXIOM'
+            exit 1
+          fi
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          text=Path("adapter-axioms.log").read_text()
+          lines=[line for line in text.splitlines() if "depends on axioms:" in line]
+          assert len(lines)==4,lines
+          for line in lines:
+              m=re.search(r"depends on axioms: \[([^\]]+)\]",line)
+              if not m:raise AssertionError(line)
+              axioms={x.strip() for x in m.group(1).split(",")}
+              if not axioms <= {"propext","Quot.sound"}:
+                  raise AssertionError("unapproved axiom "+repr(axioms))
+          print("NATSOURCE_AXOIOM_WHITELISTED="+repr(sorted({"propext","Quot.sound"})))
+          PY
+          sha256sum NucleusDecide.lean NatSourceAdapter.lean ForgedIsFalse.lean ForgedFinite.lean lakefile.lean lean-toolchain
       - name: Forged isFalse constructor must be rejected
         working-directory: experiments/nucleus-certified-decide-20261109
         run: |
@@ -80,5 +99,6 @@ jobs:
           retention-days: 60
           path: |
             experiments/nucleus-certified-decide-20261109/axioms.log
+            experiments/nucleus-certified-decide-20261109/adapter-axioms.log
             experiments/nucleus-certified-decide-20261109/forged.log
             experiments/nucleus-certified-decide-20261109/forged-finite.log
