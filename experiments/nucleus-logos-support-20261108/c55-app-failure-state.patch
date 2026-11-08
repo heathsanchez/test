@@ -1,0 +1,79 @@
+--- a/metatron-kernel/src/typecheck.rs
++++ b/metatron-kernel/src/typecheck.rs
+@@ -75,6 +75,12 @@
+     static CAPTURE_SOURCE_FAILURE: RefCell<Option<Option<String>>> = const { RefCell::new(None) };
+ }
+ #[cfg(feature = "diagnostics")]
++thread_local! {
++    static C55_APP_PROFILE_ACTIVE: Cell<bool> = const { Cell::new(false) };
++}
++#[cfg(feature = "diagnostics")]
++static C55_APP_FAILURES: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
++#[cfg(feature = "diagnostics")]
+ struct CaptureSourceFailureScope(Option<Option<String>>);
+ #[cfg(feature = "diagnostics")]
+ impl CaptureSourceFailureScope {
+@@ -531,6 +537,14 @@
+         let c47_profile=std::env::var("NUCLEUS_DIAGNOSTIC_C47_PROFILE_EXPR")
+             .ok().and_then(|value|value.parse::<u64>().ok())==Some(expression.0);
+         #[cfg(feature="diagnostics")]
++        let c55_profile=c47_profile
++            && std::env::var_os("NUCLEUS_DIAGNOSTIC_C55_APP_SHAPE").is_some();
++        #[cfg(feature="diagnostics")]
++        if c55_profile {
++            C55_APP_FAILURES.store(0, std::sync::atomic::Ordering::Relaxed);
++            C55_APP_PROFILE_ACTIVE.with(|active| active.set(true));
++        }
++        #[cfg(feature="diagnostics")]
+         if c47_profile { crate::diagnostics::c47_reset(); }
+         #[cfg(feature="diagnostics")]
+         let c48_profile=c47_profile
+@@ -544,6 +558,14 @@
+         #[cfg(feature="diagnostics")]
+         if c48_profile { crate::diagnostics::c48_stop(); }
+         #[cfg(feature="diagnostics")]
++        if c55_profile {
++            C55_APP_PROFILE_ACTIVE.with(|active| active.set(false));
++            eprintln!(
++                "NUCLEUS_C55_APP_SUMMARY:expr={expression:?}:events={}:remaining={remaining}:result={result:?}",
++                C55_APP_FAILURES.load(std::sync::atomic::Ordering::Relaxed),
++            );
++        }
++        #[cfg(feature="diagnostics")]
+         if c47_profile {
+             let (exposure,replay_key,recursor,conversion)=crate::diagnostics::c47_work_snapshot();
+             eprintln!("NUCLEUS_C47_INNER_WORK:expr={expression:?}:budget={budget}:outer_spent={}:outer_remaining={remaining}:exposure_transitions={exposure}:replay_reserved_units={replay_key}:recursor_worklist_steps={recursor}:conversion_pairs={conversion}:result={result:?}", budget.saturating_sub(remaining));
+@@ -2708,6 +2730,33 @@
+                     Some((TypeValue::Term(domain.clone()), PiBody::Closure(body.clone())))
+                 });
+                 let Some((domain, body)) = checked_view else {
++                    #[cfg(feature="diagnostics")]
++                    if C55_APP_PROFILE_ACTIVE.with(Cell::get) {
++                        use std::sync::atomic::Ordering;
++                        let seq=C55_APP_FAILURES.fetch_add(1,Ordering::Relaxed);
++                        if seq<20 || (seq+1).is_power_of_two() {
++                            let (state,source)=match &function_type {
++                                Judgment::Unknown { residual } => (
++                                    format!("inference-unknown:{}",residual.0),String::new(),
++                                ),
++                                Judgment::Refuted { obstruction } => (
++                                    format!("inference-refuted:{}",obstruction.0),String::new(),
++                                ),
++                                Judgment::Proven { value:TypeValue::Term(source), .. } => (
++                                    "inference-proven-term".to_string(),
++                                    format!("expr={:?}:env={}",source.expr,source.env.id()),
++                                ),
++                                Judgment::Proven { value:TypeValue::Pi { .. }, .. } => (
++                                    "inference-proven-pi".to_string(),String::new(),
++                                ),
++                                Judgment::Proven { value:TypeValue::Sort(_), .. } => (
++                                    "inference-proven-sort".to_string(),String::new(),
++                                ),
++                            };
++                            eprintln!("NUCLEUS_C55_APP_FAILURE:seq={seq}:app={expression:?}:fun={fun:?}:arg={arg:?}:context_depth={}:frame={}:remaining={}:state={state}:source={source}",
++                                context.len(),frame.id(),*remaining);
++                        }
++                    }
+                     #[cfg(feature = "diagnostics")]
+                     if crate::run_flags::present(crate::run_flags::Flag::TraceApplicationFunctionType) {
+                         if expression.0 == 319836 && std::env::var_os("NUCLEUS_FINSUPP_NEXT_DIAG").is_some() {
