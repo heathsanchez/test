@@ -1,0 +1,80 @@
+--- a/src/convert.rs
++++ b/src/convert.rs
+@@ -1918,6 +1918,25 @@
+                     && checker.has_qualified_recursor(*name)
+                     && left.spine != right.spine
+                 {
++                    // C38: a stuck constructor demand is a valid neutral.
++                    // First check the existing *typed* same-head congruence
++                    // certificate with the full caller allowance; it checks
++                    // both argument telescopes and converts all data fields.
++                    // Only an actual Proven result can bypass source iota.
++                    #[cfg(feature="diagnostics")]
++                    if std::env::var_os("NUCLEUS_DIAGNOSTIC_C38_EARLY_TYPED_SPINE").is_some() {
++                        let proved=checker.certified_relevance_spine_congruence(
++                            left,right,context,current_budget,depth,
++                        );
++                        use std::sync::atomic::{AtomicUsize,Ordering};
++                        static C38_ATTEMPTS:AtomicUsize=AtomicUsize::new(0);
++                        if C38_ATTEMPTS.fetch_add(1,Ordering::Relaxed)<128 {
++                            eprintln!("NUCLEUS_C38_EARLY_ATTEMPT:head={name:?}:spine={}:depth={depth}:proved={proved}",left.spine.len());
++                        }
++                        if proved {
++                            return Judgment::proven((),"checked-full-typed-neutral-congruence");
++                        }
++                    }
+                     // C28 candidate, strictly opt-in: source-level
+                     // substitution congruence is sufficient for equality
+                     // of the same certified neutral head and every actual
+@@ -2042,6 +2061,13 @@
+                     }
+                     current_budget = available;
+                 }
++                #[cfg(feature="diagnostics")]
++                let c38_pretried=std::env::var_os("NUCLEUS_DIAGNOSTIC_C38_EARLY_TYPED_SPINE").is_some()
++                    && left.head==right.head
++                    && left.spine!=right.spine
++                    && matches!(&left.head,NeutralHead::Const{name,..}if checker.has_qualified_recursor(*name));
++                #[cfg(not(feature="diagnostics"))]
++                let c38_pretried=false;
+                 // Two different theorem constants may still be the same
+                 // proof by Lean's proof irrelevance, but ONLY after their
+                 // exact source application telescopes have independently
+@@ -2056,7 +2082,7 @@
+                 // dependent argument typing and data-argument congruence
+                 // are independently established. The source metadata is
+                 // the same authority used for ordinary application checks.
+-                if checker.certified_relevance_spine_congruence(
++                if !c38_pretried && checker.certified_relevance_spine_congruence(
+                     left,right,context,current_budget,depth,
+                 ) {
+                     return Judgment::proven((), "checked-prop-spine-congruence");
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -4977,7 +4977,25 @@
+                 }
+             }
+         }
+-        skipped_proof
++        // C38 experimental completeness: the verified prefix/data-argument
++        // congruence above is sufficient even if *no* proof argument was
++        // erased. Keeping that distinction previously made this certified
++        // checker return false on ordinary data-only same-head congruence.
++        // Both sides were independently typed against the same instantiated
++        // constant telescope; every non-proof argument was converted.
++        #[cfg(feature="diagnostics")]
++        let full_typed=std::env::var_os("NUCLEUS_DIAGNOSTIC_C38_EARLY_TYPED_SPINE").is_some();
++        #[cfg(not(feature="diagnostics"))]
++        let full_typed=false;
++        #[cfg(feature="diagnostics")]
++        if full_typed {
++            use std::sync::atomic::{AtomicUsize,Ordering};
++            static C38:AtomicUsize=AtomicUsize::new(0);
++            if C38.fetch_add(1,Ordering::Relaxed)<128 {
++                eprintln!("NUCLEUS_C38_TYPED_SPINE:head={lname:?}:spine={}:depth={depth}:proof_erasures={skipped_proof}:result=proven",left.spine.len());
++            }
++        }
++        skipped_proof||full_typed
+     }
+ 
+     pub(crate) fn proof_terms_same_proposition(
