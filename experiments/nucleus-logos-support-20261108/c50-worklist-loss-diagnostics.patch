@@ -1,0 +1,127 @@
+--- a/src/diagnostics.rs
++++ b/src/diagnostics.rs
+@@ -35,6 +35,7 @@
+     // C48 event sequences are scoped to one exact root proof judgment.
+     static C48_ACTIVE: Cell<bool> = const { Cell::new(false) };
+     static C48_EVENTS: Cell<u64> = const { Cell::new(0) };
++    static C50_LOSS_EVENTS: Cell<u64> = const { Cell::new(0) };
+     // Sampled source syntax only. Never enters a kernel rule, memo key or
+     // decision; bounded to avoid turning diagnosis into an O(work) hash map.
+     static C47_EXPOSURE_SAMPLES: RefCell<HashMap<u64,u64>> = RefCell::new(HashMap::new());
+@@ -54,9 +55,20 @@
+ // branch. It is not a source-constructor certificate by itself.
+ pub(crate) fn c48_start() {
+     C48_EVENTS.set(0);
++    C50_LOSS_EVENTS.set(0);
+     C48_ACTIVE.set(true);
+ }
+ 
++// Independent from C48's first-512 source-transition limit: failures at the
++// very end of the root judgment must remain observable. No kernel result or
++// fuel branch is permitted to read these counters.
++pub(crate) fn c50_loss_ticket() -> Option<u64> {
++    if !C48_ACTIVE.get() || C50_LOSS_EVENTS.get() >= 256 { return None; }
++    let seq = C50_LOSS_EVENTS.get();
++    C50_LOSS_EVENTS.set(seq + 1);
++    Some(seq)
++}
++
+ pub(crate) fn c48_stop() {
+     C48_ACTIVE.set(false);
+ }
+--- a/src/machine.rs
++++ b/src/machine.rs
+@@ -3161,6 +3161,49 @@
+         // Retain all local keys so pointer identities cannot be recycled.
+         // Exact structural comparison occurs only while interning a node.
+         let mut entered:HashMap<u64,Vec<Rc<ReplayKey>>>=HashMap::new();
++        // C50 diagnostic only: answer whether a failed subsidiary recursor
++        // actually discards pending certified-source worklist frames. An
++        // unfinished frame cannot be replayed as proof or cached as a value.
++        macro_rules! c50_loss {
++            ($stage:expr) => {{
++                #[cfg(feature="diagnostics")]
++                if std::env::var_os("NUCLEUS_DIAGNOSTIC_C50_STATE_LOSS").is_some() {
++                    if let Some(seq)=crate::diagnostics::c50_loss_ticket() {
++                        let mut finish=0usize;
++                        let mut major=0usize;
++                        let mut projected=0usize;
++                        for pending in &parents {
++                            match pending {
++                                Continuation::Finish(_)=>finish+=1,
++                                Continuation::Major(..)=>major+=1,
++                                Continuation::ProjectedMajor{..}=>projected+=1,
++                            }
++                        }
++                        let (recursor,major_expr,major_env)=match &current.head {
++                            NeutralHead::Const{name,..}=>{
++                                let required=self.recursor_reductions.get(name)
++                                    .map(|rule|rule.num_params.saturating_add(1)
++                                        .saturating_add(rule.rules.len())
++                                        .saturating_add(rule.num_indices)
++                                        .saturating_add(1));
++                                let source=required.and_then(|count|current.spine.get(count.saturating_sub(1)));
++                                (name.0,source.map(|c|c.expr.0).unwrap_or(0),
++                                    source.map(|c|c.env.id()).unwrap_or(0))
++                            }
++                            _=>(0,0,0),
++                        };
++                        eprintln!("NUCLEUS_C50_LOST:{}",serde_json::json!({
++                            "seq":seq,"stage":$stage,"recursor":recursor,
++                            "major_expr":major_expr,"major_env":major_env,
++                            "parents":parents.len(),"finish_parents":finish,
++                            "major_parents":major,"projected_parents":projected,
++                            "active":active.len(),"resolved":resolved.len(),
++                            "owner_remaining":self.exposure_fuel.get().unwrap_or(0),
++                        }));
++                    }
++                }
++            }};
++        }
+         // Finish both a selected rule and any result recursors before
+         // memoizing. Exact source closures, universes, and arguments form
+         // the key; no desired result or unrelated frame licenses reuse.
+@@ -3229,7 +3272,10 @@
+             }}
+         }
+         'evaluate: loop {
+-            if !spend() { return Judgment::unknown("nested-recursor-iota-budget"); }
++            if !spend() {
++                c50_loss!("owner-exhausted");
++                return Judgment::unknown("nested-recursor-iota-budget");
++            }
+             let neutral=&current;
+             #[cfg(feature="diagnostics")]
+             let depth=parents.len();
+@@ -3389,6 +3435,7 @@
+                     );
+                 }
+                 let Some(value)=major_result.proven_value() else {
++                    c50_loss!("major-exposure");
+                     #[cfg(feature="diagnostics")]
+                     if std::env::var_os("NUCLEUS_DIAGNOSTIC_MAJOR_CHAIN").is_some() {
+                         use std::sync::atomic::{AtomicUsize,Ordering};
+@@ -3562,6 +3609,7 @@
+                         }
+                     }
+                     let Some(value)=next.proven_value()else {
++                        c50_loss!("projected-source-field");
+                         return Judgment::unknown("projection-major-source-field-unavailable");
+                     };
+                     if value==&major_value {
+@@ -3586,6 +3634,7 @@
+                     }
+                 }
+                 other=>{
++                    c50_loss!("no-constructor");
+                     #[cfg(feature="diagnostics")]
+                     if crate::run_flags::present(crate::run_flags::Flag::TraceNestedRecursorIotaFailure) {
+                         use std::sync::atomic::{AtomicUsize,Ordering};
+@@ -3683,6 +3732,7 @@
+             let value=match exposed {
+                 Judgment::Proven{value,..}=>value,
+                 failure=>{
++                    c50_loss!("rhs-exposure");
+                     #[cfg(feature="diagnostics")]
+                     if crate::run_flags::present(crate::run_flags::Flag::TraceNestedRecursorIotaFailure) {
+                         eprintln!("NUCLEUS_NESTED_REPLAY_FAILURE:stage=rhs:depth={depth}:head={name:?}:entry_budget={budget}:owner_on_entry={owner_at_entry:?}:caller={caller}:replay_goal={replay_goal}:rhs={failure:?}:fuel={:?}",self.exposure_fuel.get());
