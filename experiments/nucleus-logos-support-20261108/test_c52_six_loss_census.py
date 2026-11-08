@@ -2,7 +2,7 @@
 
 import unittest
 
-from probe_c52_six_loss_census import declaration_root, frozen_case_names
+from probe_c52_six_loss_census import declaration_root, declaration_kind, frozen_case_names
 
 
 class C52SixLoss(unittest.TestCase):
@@ -16,8 +16,10 @@ class C52SixLoss(unittest.TestCase):
     def test_only_final_source_declaration_is_profiled(self):
         data = b'{"ie":37,"nat":8}\n{"def":{"value":37,"type":9}}\n'
         self.assertEqual(declaration_root(data), 37)
+        self.assertEqual(declaration_kind(data), "def")
         theorem = b'{"ie":12,"nat":8}\n{"thm":{"value":12,"type":9}}\n'
         self.assertEqual(declaration_root(theorem), 12)
+        self.assertEqual(declaration_kind(theorem), "thm")
         for bad in (b'{"def":{"value":37}}\n{"ie":39}\n',
                     b'{"ie":37}\n', b'{"def":{"value":"37"}}\n'):
             with self.assertRaises(ValueError):
