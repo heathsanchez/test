@@ -295,3 +295,11 @@ enabling another partial-prefix cache did not resolve the recursor residual.
 C8 is `CANDIDATE` pending native 403-vector, saturation, adversarial and
 six-original qualification. Increased memory retention alone cannot warrant
 new typing/equality authority.
+
+C8a [run #42433534691](https://github.com/heathsanchez/test/actions/runs/42433534691)
+failed at Rust **test-target compilation only**, after the library compiled:
+the two capacity-driven test loops inferred `usize` indices while `FreeId`
+requires `u64`. There is no kernel verdict from C8a. C8b makes both test
+loop indices explicitly `u64` with checked conversion; implementation and
+fixed selected source are otherwise unchanged. Full native qualification is
+still required.
