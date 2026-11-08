@@ -2,10 +2,17 @@
 
 import unittest
 
-from probe_c52_six_loss_census import declaration_root, declaration_kind, frozen_case_names
+from probe_c52_six_loss_census import declaration_root, declaration_kind, frozen_case_names, parse_downstream
 
 
 class C52SixLoss(unittest.TestCase):
+    def test_terminal_downstream_stage_is_an_actual_checker_verdict(self):
+        raw = b'NUCLEUS_DOWNSTREAM:name=theorem.x:stage=theorem.proposition:verdict=UNKNOWN:reason=formation-budget\n'
+        self.assertEqual(parse_downstream(raw)["stage"], "theorem.proposition")
+        for bad in (b"", b'NUCLEUS_DOWNSTREAM:name=x:stage=theorem.value:verdict=ACCEPT:reason=none\n'):
+            with self.assertRaises(ValueError):
+                parse_downstream(bad)
+
     def test_frozen_six_have_no_duplicate_or_missing_name(self):
         names = frozen_case_names()
         self.assertEqual(len(names), 6)
