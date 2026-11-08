@@ -19,10 +19,9 @@ s=p.read_text()
 assert "c69_counts" not in s
 s += r"""
 // C69 source cost attribution. Counts are local to the checking worker.
-use std::cell::RefCell;
 use std::sync::OnceLock;
 thread_local! {
-    static C69: RefCell<[u64;11]> = const {RefCell::new([0;11])};
+    static C69: std::cell::RefCell<[u64;11]> = const {std::cell::RefCell::new([0;11])};
 }
 pub fn c69_enabled()->bool {
     static ENABLED:OnceLock<bool>=OnceLock::new();
