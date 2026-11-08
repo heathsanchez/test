@@ -15,6 +15,12 @@
       "steps": 262144,
       "verdict": "UNKNOWN",
       "scope": "UNPROFILED_ENTRY_PATH",
+      "first_failed_boundary": {
+        "source_name": "chain9_datF",
+        "stage": "theorem.value",
+        "verdict": "UNKNOWN",
+        "reason": "application-function-type"
+      },
       "loss_summary": null,
       "first_64_losses": []
     },
@@ -26,6 +32,12 @@
       "steps": 262144,
       "verdict": "UNKNOWN",
       "scope": "UNPROFILED_ENTRY_PATH",
+      "first_failed_boundary": {
+        "source_name": "_private.Init.Data.Int.LemmasAux.0.Int.blt'_eq_true._proof_1_4",
+        "stage": "theorem.value",
+        "verdict": "UNKNOWN",
+        "reason": "application-function-type"
+      },
       "loss_summary": null,
       "first_64_losses": []
     },
@@ -37,6 +49,12 @@
       "steps": 262144,
       "verdict": "UNKNOWN",
       "scope": "C47_SOURCE_ROOT_PROFILED",
+      "first_failed_boundary": {
+        "source_name": "countermodel",
+        "stage": "definition.value",
+        "verdict": "UNKNOWN",
+        "reason": "application-function-type"
+      },
       "loss_summary": {
         "observed_failure_exits": 3,
         "with_pending_parents": 3,
@@ -99,6 +117,12 @@
       "steps": 262144,
       "verdict": "UNKNOWN",
       "scope": "C47_SOURCE_ROOT_PROFILED",
+      "first_failed_boundary": {
+        "source_name": "countermodel",
+        "stage": "definition.value",
+        "verdict": "UNKNOWN",
+        "reason": "application-function-type"
+      },
       "loss_summary": {
         "observed_failure_exits": 3,
         "with_pending_parents": 3,
@@ -161,6 +185,12 @@
       "steps": 262144,
       "verdict": "UNKNOWN",
       "scope": "C47_SOURCE_ROOT_PROFILED",
+      "first_failed_boundary": {
+        "source_name": "countermodel",
+        "stage": "definition.value",
+        "verdict": "UNKNOWN",
+        "reason": "unresolved-qualified-recursor-heads"
+      },
       "loss_summary": {
         "observed_failure_exits": 2,
         "with_pending_parents": 2,
@@ -209,6 +239,12 @@
       "steps": 262144,
       "verdict": "UNKNOWN",
       "scope": "C47_SOURCE_ROOT_PROFILED",
+      "first_failed_boundary": {
+        "source_name": "countermodel",
+        "stage": "definition.value",
+        "verdict": "UNKNOWN",
+        "reason": "application-function-type"
+      },
       "loss_summary": {
         "observed_failure_exits": 0,
         "with_pending_parents": 0,
