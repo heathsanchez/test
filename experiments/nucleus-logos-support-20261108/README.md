@@ -108,3 +108,32 @@ environment's `RUST_MIN_STACK` cannot repair this case. C3 tests an
 canonical flags and 403-case verdict comparison**. If this still fails, it
 must not be used for the selected kernel. Neither run closed any of the six
 original unchanged UNKNOWN exports under the standard budget.
+
+## C3 qualified and C4 provenance/closure audit, 8 November
+
+<https://github.com/heathsanchez/test/actions/runs/42430277247> is **SUCCESS**
+with observer artifact `13596963984`, ZIP SHA-256
+`b8750d7b04407de8dd981976e1763a9ecbb1b48a6e488adb284e4d528bc0afd3`.
+Its restored input source, standard 262,144 budget and 24 flags match the
+selected source. Native tests passed. `app-lam` independently ACCEPTed in
+pristine, observer OFF and observer ON. The full 403-case comparison matched
+the selected verdict vector exactly: **240 ACCEPT, 150 REJECT, 13 UNKNOWN**.
+All six unchanged originals remain UNKNOWN. The earlier stack-overflow
+regression is fixed in this *diagnostic build* by explicitly inlining
+`infer_uncached` again; neither the observer nor that optimization changes
+typing authority. No Arena/main implementation was selected or submitted.
+
+C3 retains the exact result-shape observation of 762 differences solely in
+captured type-result environments. However an additional provenance flaw in
+the *measurement key* remains: `self as *const Self as usize` is not a unique
+TypeChecker lifetime. Successive declarations can reuse the same address.
+The 762 cannot be promoted to within-owner reusable work without excluding
+this alias. C4 assigns each fresh checker instance a non-repeating diagnostic
+identifier, fails the observer closed if that ID space is exhausted, and
+rechecks its measured cross-frame coincidences. It additionally measures
+whether the **result type expression itself** has empty complete de Bruijn
+support. A closed result would make source-relative reclosure worth testing;
+an open or unsupported result must not be silently rewritten to empty Γ.
+No C4 observation has returned yet. C3 is `WARRANTED_BOUNDED` only for
+non-mutating observer qualification and its reported representation classes;
+actual cross-owner transport and six-case closure remain `UNKNOWN`.
