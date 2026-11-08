@@ -1,0 +1,78 @@
+diff --git a/metatron-kernel/src/convert.rs b/metatron-kernel/src/convert.rs
+index 5186800..f92ea53 100644
+--- a/metatron-kernel/src/convert.rs
++++ b/metatron-kernel/src/convert.rs
+@@ -2252,7 +2252,7 @@ fn compare_values_with_eta_charge(
+                 // Decidable/Bool recursor with a captured constructor major.
+                 // Never select the constructor from the expected Bool result.
+                 if current_budget >= 128 {
+-                    let candidate = |constructor: &Neutral, recursive: &Neutral| -> Option<Value> {
++                    let candidate = |constructor: &Neutral, recursive: &Neutral| -> Option<(Value,usize)> {
+                         let NeutralHead::Const { name, levels } = &constructor.head else {
+                             return None;
+                         };
+@@ -2264,9 +2264,33 @@ fn compare_values_with_eta_charge(
+                         {
+                             return None;
+                         }
+-                        let replay=checker.machine().qualified_nested_recursor_result(
+-                            recursive, current_budget,
+-                        );
++                        #[cfg(feature="diagnostics")]
++                        let stepwise=std::env::var_os("NUCLEUS_DIAGNOSTIC_C61_STEPWISE_BOOL_IOTA").is_some()
++                            && crate::typecheck::c56_source_root_active();
++                        #[cfg(feature="diagnostics")]
++                        let mut remaining=current_budget;
++                        #[cfg(feature="diagnostics")]
++                        let replay=if stepwise {
++                            checker.machine().qualified_one_step_recursor_result_metered(
++                                recursive,&mut remaining,
++                            )
++                        } else {
++                            checker.machine().qualified_nested_recursor_result(recursive,current_budget)
++                        };
++                        #[cfg(not(feature="diagnostics"))]
++                        let replay=checker.machine().qualified_nested_recursor_result(recursive,current_budget);
++                        #[cfg(not(feature="diagnostics"))]
++                        let remaining=current_budget;
++                        #[cfg(feature="diagnostics")]
++                        if stepwise {
++                            use std::sync::atomic::{AtomicUsize,Ordering};
++                            static C61_EVENTS:AtomicUsize=AtomicUsize::new(0);
++                            if C61_EVENTS.fetch_add(1,Ordering::Relaxed)<24 {
++                                eprintln!("NUCLEUS_C61_STEPWISE:head={:?}:budget={current_budget}:remaining={remaining}:proved={}:changed={}",
++                                    recursive.head,replay.is_proven(),
++                                    replay.proven_value().is_some_and(|v|v!=&Value::Neutral(recursive.clone())));
++                            }
++                        }
+                         #[cfg(feature="diagnostics")]
+                         if crate::run_flags::present(crate::run_flags::Flag::TraceReplayCache) {
+                             use std::sync::atomic::{AtomicUsize,Ordering};
+@@ -2276,22 +2300,22 @@ fn compare_values_with_eta_charge(
+                                 eprintln!("NUCLEUS_CONVERSION_RECURSOR_PROBE:route=certified-bool-constructor:head={:?}:depth={depth}:grant={current_budget}:proved={}:outcome={outcome}",recursive.head,replay.is_proven());
+                             }
+                         }
+-                        replay.proven_value().cloned()
++                        replay.proven_value().cloned().map(|value|(value,remaining))
+                     };
+-                    if let Some(result) = candidate(left, right) {
++                    if let Some((result,remaining)) = candidate(left, right) {
+                         if result != Value::Neutral(right.clone()) {
+                             return compare_values_with_eta_charge(
+                                 checker, &Value::Neutral(left.clone()), &result,
+-                                current_budget.saturating_sub(1),
++                                remaining.saturating_sub(1),
+                                 depth, context, work, proof_function_frees, eta_work,
+                             );
+                         }
+                     }
+-                    if let Some(result) = candidate(right, left) {
++                    if let Some((result,remaining)) = candidate(right, left) {
+                         if result != Value::Neutral(left.clone()) {
+                             return compare_values_with_eta_charge(
+                                 checker, &result, &Value::Neutral(right.clone()),
+-                                current_budget.saturating_sub(1),
++                                remaining.saturating_sub(1),
+                                 depth, context, work, proof_function_frees, eta_work,
+                             );
+                         }
