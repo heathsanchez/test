@@ -1,0 +1,62 @@
+name: PSI AA PR 2 exact-head verification
+
+on:
+  push:
+    branches:
+      - audit/psi-aa-pr2-head-20261109
+
+permissions:
+  contents: read
+
+concurrency:
+  group: psi-aa-pr2-exact-head
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    env:
+      LEAN_NUM_THREADS: "1"
+    steps:
+      - name: Check out the exact pull-request sources
+        shell: bash
+        run: |
+          git clone --quiet https://github.com/metalogiclabs/aaronson-ambainis.git psi
+          git -C psi checkout --quiet --detach 22b3602348a38aa9abe1328344c5a49666084681
+          test "$(git -C psi rev-parse HEAD)" = 22b3602348a38aa9abe1328344c5a49666084681
+          test "$(git -C psi hash-object audit/OriginalConjecture6.lean)" = 069169b140c4821bd30da2041b5b41288bb8657b
+          test "$(git -C psi hash-object Makefile)" = 61ce78a3bd5a52664fb752feeb392422cde161db
+          git -C psi status --short
+          python3 psi/scripts/source_digest.py psi AaronsonAmbainis
+
+      - name: Configure pinned Lean and Mathlib caches
+        uses: leanprover/lean-action@v1
+        with:
+          lake-package-directory: psi
+          use-github-cache: false
+          use-mathlib-cache: true
+          build: false
+          test: false
+          lint: false
+
+      - name: Compile exact PR bridge and replay the project
+        working-directory: psi
+        shell: bash
+        run: |
+          lean --version
+          make imports
+          make audit
+          make build
+          make axioms
+          make replay
+
+      - name: Preserve source and axiom reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: psi-aa-pr2-exact-head-reports
+          if-no-files-found: warn
+          path: |
+            psi/axiom-report.txt
+            psi/notes/source-audit.json
