@@ -12,6 +12,8 @@ from pathlib import Path
 import re
 import subprocess
 
+from probe_c50_loss_ledger import parse_loss_events, summarize_losses
+
 
 N7_SHA256 = "abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35"
 PREFIX = "NUCLEUS_C48_EVENT:"
@@ -82,6 +84,7 @@ def main() -> None:
     parser.add_argument("--stderr-dir", required=True, type=Path)
     parser.add_argument("--require-events", action="store_true")
     parser.add_argument("--c49-content-fingerprint", action="store_true")
+    parser.add_argument("--c50-loss-ledger", action="store_true")
     args = parser.parse_args()
     original = args.input.read_bytes()
     source_sha = hashlib.sha256(original).hexdigest()
@@ -98,6 +101,8 @@ def main() -> None:
     env["NUCLEUS_DIAGNOSTIC_C48_SOURCE_TRANSITIONS"] = "1"
     if args.c49_content_fingerprint:
         env["NUCLEUS_DIAGNOSTIC_C49_CONTENT_FINGERPRINT"] = "1"
+    if args.c50_loss_ledger:
+        env["NUCLEUS_DIAGNOSTIC_C50_STATE_LOSS"] = "1"
     results = {}
     for label, steps in (("standard", 262144), ("accepted_diagnostic", 14155776)):
         run = subprocess.run(
@@ -115,6 +120,9 @@ def main() -> None:
             "verdict": "ACCEPT_DIAGNOSTIC_ONLY" if run.returncode == 0 else "UNKNOWN",
             "events": events,
         }
+        if args.c50_loss_ledger:
+            losses = parse_loss_events(run.stderr)
+            results[label]["c50_loss_events"] = losses
     if results["standard"]["verdict"] != "UNKNOWN":
         raise ValueError("C48 standard verdict changed unexpectedly")
     if results["accepted_diagnostic"]["verdict"] != "ACCEPT_DIAGNOSTIC_ONLY":
@@ -125,8 +133,8 @@ def main() -> None:
         "case": args.input.stem,
         "source_sha256": source_sha,
         "proof_rules_changed": False,
-        "standard": {k: v for k, v in results["standard"].items() if k != "events"},
-        "accepted_diagnostic": {k: v for k, v in results["accepted_diagnostic"].items() if k != "events"},
+        "standard": {k: v for k, v in results["standard"].items() if k not in ("events", "c50_loss_events")},
+        "accepted_diagnostic": {k: v for k, v in results["accepted_diagnostic"].items() if k not in ("events", "c50_loss_events")},
         "event_counts": {"standard": len(left), "accepted_diagnostic": len(right)},
         "first_divergence": first_divergence(left, right),
         "standard_first_64": left[:64],
@@ -135,6 +143,16 @@ def main() -> None:
     if args.c49_content_fingerprint:
         report["c49_content_divergence"] = first_content_divergence(left, right)
         report["c49_fingerprints_observer_only"] = True
+    if args.c50_loss_ledger:
+        report["c50_loss_summary"] = {
+            label: summarize_losses(results[label]["c50_loss_events"])
+            for label in ("standard", "accepted_diagnostic")
+        }
+        report["c50_first_64_losses"] = {
+            label: results[label]["c50_loss_events"][:64]
+            for label in ("standard", "accepted_diagnostic")
+        }
+        report["c50_partial_state_is_a_proof"] = False
     print(json.dumps(report, indent=2))
 
 
