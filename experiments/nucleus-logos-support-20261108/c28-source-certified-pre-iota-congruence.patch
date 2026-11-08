@@ -1,0 +1,51 @@
+--- a/src/convert.rs
++++ b/src/convert.rs
+@@ -1852,6 +1852,31 @@
+                     && checker.has_qualified_recursor(*name)
+                     && left.spine != right.spine
+                 {
++                    // C28 candidate, strictly opt-in: source-level
++                    // substitution congruence is sufficient for equality
++                    // of the same certified neutral head and every actual
++                    // captured argument. Spend the trial's real source work
++                    // from this comparison allowance; failed trials always
++                    // return to the original checked recursor path.
++                    #[cfg(feature="diagnostics")]
++                    if std::env::var_os("NUCLEUS_EXPERIMENTAL_PRE_IOTA_SOURCE_CONGRUENCE").is_some()
++                        && current_budget >= 192
++                        && checker.machine().c28_source_congruence_has_no_owner()
++                    {
++                        let grant=current_budget.saturating_sub(1).min(512);
++                        let (proved,spent,first_failed)=diagnostic_pre_iota_source_congruence(
++                            checker,left,right,grant,
++                        );
++                        current_budget=current_budget.saturating_sub(spent.saturating_add(1));
++                        use std::sync::atomic::{AtomicUsize,Ordering};
++                        static PRINTED:AtomicUsize=AtomicUsize::new(0);
++                        if PRINTED.fetch_add(1,Ordering::Relaxed)<128 {
++                            eprintln!("NUCLEUS_C28_SOURCE_CONGRUENCE:head={name:?}:depth={depth}:grant={grant}:spent={spent}:remaining={current_budget}:proved={proved}:first_failed={first_failed:?}");
++                        }
++                        if proved {
++                            return Judgment::proven((),"checked-relational-source-neutral-congruence");
++                        }
++                    }
+                     // C27 is an observer-only trial of a sufficient source
+                     // congruence certificate *before* speculative recursor
+                     // iota spends local conversion work. The trial cannot
+--- a/src/machine.rs
++++ b/src/machine.rs
+@@ -1320,6 +1320,14 @@
+         false
+     }
+ 
++    // C28 only attempts source-equality work outside an existing recursive
++    // exposure owner. Otherwise the source trial would have to debit BOTH
++    // the parent's constructor allowance and the conversion allowance.
++    #[cfg(feature="diagnostics")]
++    pub(crate) fn c28_source_congruence_has_no_owner(&self) -> bool {
++        self.exposure_fuel.get().is_none()
++    }
++
+     // C26: diagnostic-only, unmetered classification of a source capture.
+     // The observer never supplies a Value, grants fuel, or participates in
+     // conversion: it only reports where an actual BVar->closure chain ends.
