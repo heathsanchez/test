@@ -45,7 +45,7 @@ jobs:
         continue-on-error: true
         run: |
           set -euo pipefail
-          if test -f reports/c52-all-six-loss.json; then
+          if test -s reports/c52-all-six-loss.json; then
             cp reports/c52-all-six-loss.json experiments/nucleus-logos-support-20261108/c52-all-six-loss.json
           else
             jq -n --arg cause "C52 no complete source-qualified report; inspect the workflow job" \
