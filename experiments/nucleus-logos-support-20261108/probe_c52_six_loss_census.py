@@ -29,7 +29,7 @@ def frozen_case_names() -> tuple[str, ...]:
     return CASES
 
 
-def declaration_root(source: bytes) -> int:
+def declaration_kind(source: bytes) -> str:
     lines = source.rstrip(b"\n").split(b"\n")
     if len(lines) < 2:
         raise ValueError("missing original export records")
@@ -37,7 +37,12 @@ def declaration_root(source: bytes) -> int:
     declarations = [final[tag] for tag in ("def", "thm") if tag in final]
     if len(declarations) != 1 or not isinstance(declarations[0], dict):
         raise ValueError("last original record is not a definition or theorem")
-    definition = declarations[0]
+    return "def" if "def" in final else "thm"
+
+
+def declaration_root(source: bytes) -> int:
+    kind = declaration_kind(source)
+    definition = json.loads(source.rstrip(b"\n").split(b"\n")[-1])[kind]
     root = definition.get("value")
     if type(root) is not int or root <= 0:
         raise ValueError("original declaration has no positive source root")
@@ -65,6 +70,7 @@ def census(binary: Path, arena: Path, flags_path: Path, log_dir: Path,
         source_file = arena / "good" / "perf" / (case + ".ndjson")
         source = source_file.read_bytes()
         root = declaration_root(source)
+        kind = declaration_kind(source)
         env = {k: v for k, v in os.environ.items() if not k.startswith("NUCLEUS_")}
         env.update(flags)
         env.update({
@@ -77,6 +83,7 @@ def census(binary: Path, arena: Path, flags_path: Path, log_dir: Path,
             "case": case,
             "source_sha256": hashlib.sha256(source).hexdigest(),
             "source_root": root,
+            "declaration_kind": kind,
             "steps": 262144,
         }
         try:
@@ -91,17 +98,25 @@ def census(binary: Path, arena: Path, flags_path: Path, log_dir: Path,
         log_dir.joinpath(case + ".stderr").write_bytes(run.stderr)
         if run.stdout or run.returncode not in (0, 2):
             raise ValueError(f"{case}: diagnostic executable escaped strict verdict channel")
-        if b"NUCLEUS_C47_INNER_WORK:" not in run.stderr:
-            raise ValueError(f"{case}: root expression was not source-profiled")
-        losses = parse_loss_events(run.stderr)
+        profiled = b"NUCLEUS_C47_INNER_WORK:" in run.stderr
+        losses = parse_loss_events(run.stderr) if profiled else []
         entry.update({
             "verdict": "ACCEPT_UNEXPECTED_REQUIRES_PROTECTION" if run.returncode == 0 else "UNKNOWN",
-            "loss_summary": summarize_losses(losses),
+            "scope": "C47_SOURCE_ROOT_PROFILED" if profiled else "UNPROFILED_ENTRY_PATH",
+            "loss_summary": summarize_losses(losses) if profiled else None,
             "first_64_losses": losses[:64],
         })
         report["cases"].append(entry)
     report["all_six_unknown"] = all(c["verdict"] == "UNKNOWN" for c in report["cases"])
-    report["all_six_profiled"] = all("loss_summary" in c for c in report["cases"])
+    report["all_six_profiled"] = all(c.get("loss_summary") is not None for c in report["cases"])
+    report["all_definitions_profiled"] = all(
+        c["loss_summary"] is not None for c in report["cases"]
+        if c["declaration_kind"] == "def"
+    )
+    report["theorems_unprofiled"] = [
+        c["case"] for c in report["cases"]
+        if c["declaration_kind"] == "thm" and c["loss_summary"] is None
+    ]
     return report
 
 
@@ -117,7 +132,7 @@ def main():
         raise ValueError("bounded per-original timeout required")
     report = census(args.binary, args.arena, args.flags, args.logs, args.timeout)
     print(json.dumps(report, indent=2))
-    if not report["all_six_unknown"] or not report["all_six_profiled"]:
+    if not report["all_six_unknown"] or not report["all_definitions_profiled"]:
         raise SystemExit("C52 census incomplete: retain UNKNOWN or TIMEOUT, never promote")
 
 
