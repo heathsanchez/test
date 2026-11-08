@@ -2,7 +2,7 @@
 
 import unittest
 
-from c35_probe import MARKER, parse_record
+from probe_c35_metered_recursor import MARKER, parse_record
 
 
 class C35MeteredRecursor(unittest.TestCase):
