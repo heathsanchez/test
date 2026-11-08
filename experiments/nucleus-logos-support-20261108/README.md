@@ -588,3 +588,24 @@ GREEN, original n7 verdict, all native/adversarial tests and 403 protected
 results. The 403 qualifier permits UNKNOWN to upgrade only for the six
 byte-hash-frozen independently valid inputs; all other changes fail closed.
 Until that run qualifies, **C15 has proved no acceptance or soundness result**.
+
+## C16 explicitly metered projection sub-owner (CANDIDATE)
+
+Source review found a concrete gap in C15's assumption: passing a
+`budget.min(512)` argument to `projection_value_for_conversion` is
+**not sufficient** to constrain nested `qualified_nested_recursor_result`,
+because an already-present `self.exposure_fuel` owner takes precedence.
+C15's 512 parameter can therefore leave the original 260,755 owner exposed
+to exhaustion. This is an implementation-level finding; C15's actual
+native verdict must still be read from its separate run.
+
+C16 wraps **only** the speculative projection field trial in the existing
+`MeteredConversionWork` accounting scope: borrow up to 512 remaining
+steps, temporarily set this as the nested owner, restore the old owner
+on exit, and debit exactly the actually spent steps. No new work allowance,
+constructor assumption, independent authority change, cache equivalence,
+or verdict exception is introduced. A diagnostic
+`NUCLEUS_PROJECTION_MAJOR_BORROWED` is the new red/green execution gate.
+The original six and all 403 protected verdicts remain mandatory. If a
+source projection needs over 512 steps to expose a real constructor, this
+candidate may remain UNKNOWN; it may not invent a constructor.
