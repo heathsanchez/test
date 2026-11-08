@@ -1,5 +1,5 @@
-# C3: force inlining of the mutual typing path to restore the selected
-# binary's one-frame recursion; app-lam is a preflight, never a waived case.
+# C4: unique checker-lifetime keys and independently checked result-source
+# closure support. C3 fixed the stack-frame regression and passed 403/403.
 name: Nucleus LOGOS support projected-typing observation
 on:
   push:
