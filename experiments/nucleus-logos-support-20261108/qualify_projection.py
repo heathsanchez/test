@@ -81,6 +81,16 @@ def main():
         print(json.dumps(row), flush=True)
     assert comparisons[0]["sha256"] == comparisons[1]["sha256"] == comparisons[2]["sha256"]
 
+    # A former observer build increased infer_in's recursive stack frame and
+    # aborted on this exact original despite the observer being disabled.
+    # Guard this independently of broad concurrency and inspect its stderr.
+    app_lam = Path("original196/good/perf/app-lam.ndjson")
+    assert digest(app_lam.read_bytes()) == "552d6e8398f579fcf59ab9abd8187fc7a8a037697da66c129aacb4cc1b9dd414"
+    stack_controls = [run_case(label, binary, app_lam, probe=probe, expected=0)
+                      for label, binary, probe in [("app-lam-pristine", BASELINE, False),
+                                                    ("app-lam-observer-off", CANDIDATE, False),
+                                                    ("app-lam-observer-on", CANDIDATE, True)]]
+
     # An independent protected receipt from the exact selected-source
     # artifact supplies the expected outcome for each unchanged original.
     baseline = json.loads(Path("base/reports/ordinary-403.json").read_text())
@@ -104,7 +114,7 @@ def main():
         return {"case": name, "rc": rc, "baseline": row["new"],
                 "sha256": row["input_sha256"], "seconds": round(time.monotonic() - start, 3)}
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
         for row in pool.map(replay, baseline):
             protected.append(row)
             if row["rc"] != row["baseline"]:
@@ -129,7 +139,8 @@ def main():
         "flags": FLAGS, "standard_budget": 262144,
         "baseline_binary_sha256": digest(BASELINE.read_bytes()),
         "candidate_binary_sha256": digest(CANDIDATE.read_bytes()),
-        "chain9": comparisons, "observations": observations,
+        "chain9": comparisons, "app_lam_stack_controls": stack_controls,
+        "observations": observations,
         "protected_count": len(protected),
         "protected_verdict_counts": dict(collections.Counter(row["rc"] for row in protected)),
         "six_original_unchanged": six,
