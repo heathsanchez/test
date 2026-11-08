@@ -1,0 +1,106 @@
+{
+  "experiment": "C63 source-frozen n7 geometric step-budget threshold",
+  "c58_artifact": 13622452324,
+  "original_artifact": 13276400289,
+  "source_sha256": "abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35",
+  "proof_rules_changed": false,
+  "selected_checker_changed": false,
+  "standard_budget": 262144,
+  "high_budget_diagnostic_only": true,
+  "budget_monotonicity_not_assumed": true,
+  "records": [
+    {
+      "steps": 262144,
+      "verdict": "UNKNOWN",
+      "elapsed_sec": 0.519,
+      "boundary": {
+        "source_name": "countermodel",
+        "stage": "definition.value",
+        "verdict": "UNKNOWN",
+        "reason": "application-function-type"
+      },
+      "c56_pairs": 3,
+      "major_chains": 3,
+      "stderr_sha256": "a28a4f9cc61f999c5f2ee4dd36aa0f181461494df70497d5a1d8c365626849d8"
+    },
+    {
+      "steps": 524288,
+      "verdict": "UNKNOWN",
+      "elapsed_sec": 0.669,
+      "boundary": {
+        "source_name": "countermodel",
+        "stage": "definition.value",
+        "verdict": "UNKNOWN",
+        "reason": "application-function-type"
+      },
+      "c56_pairs": 3,
+      "major_chains": 3,
+      "stderr_sha256": "7c3405da74877b348d81c7c22c8ee40078cbd96accc7724226f5b947361b2309"
+    },
+    {
+      "steps": 1048576,
+      "verdict": "UNKNOWN",
+      "elapsed_sec": 0.97,
+      "boundary": {
+        "source_name": "countermodel",
+        "stage": "definition.value",
+        "verdict": "UNKNOWN",
+        "reason": "application-function-type"
+      },
+      "c56_pairs": 3,
+      "major_chains": 3,
+      "stderr_sha256": "930667a120f863fe25e46b06b22876302150351a3c22341ea065cf06870be0d4"
+    },
+    {
+      "steps": 2097152,
+      "verdict": "UNKNOWN",
+      "elapsed_sec": 1.613,
+      "boundary": {
+        "source_name": "countermodel",
+        "stage": "definition.value",
+        "verdict": "UNKNOWN",
+        "reason": "application-function-type"
+      },
+      "c56_pairs": 3,
+      "major_chains": 3,
+      "stderr_sha256": "7cb05518b7e129b863ee821c00d51c6dba85a8b112968461fd31374f8d6927c8"
+    },
+    {
+      "steps": 4194304,
+      "verdict": "UNKNOWN",
+      "elapsed_sec": 2.816,
+      "boundary": {
+        "source_name": "countermodel",
+        "stage": "definition.value",
+        "verdict": "UNKNOWN",
+        "reason": "application-function-type"
+      },
+      "c56_pairs": 3,
+      "major_chains": 3,
+      "stderr_sha256": "e0487ac6d9defb695c852992f6abdb5d13381ab7b77eb77ab4953984cf07bda9"
+    },
+    {
+      "steps": 8388608,
+      "verdict": "UNKNOWN",
+      "elapsed_sec": 5.334,
+      "boundary": {
+        "source_name": "countermodel",
+        "stage": "definition.value",
+        "verdict": "UNKNOWN",
+        "reason": "application-function-type"
+      },
+      "c56_pairs": 3,
+      "major_chains": 3,
+      "stderr_sha256": "a24182645df7a96ca7ff99fc677b391901aeebe62d8c50bbeea14a1d666950ef"
+    },
+    {
+      "steps": 14155776,
+      "verdict": "ACCEPT",
+      "elapsed_sec": 2.8,
+      "boundary": null,
+      "c56_pairs": 4,
+      "major_chains": 2,
+      "stderr_sha256": "84f39d668cf1cac2e55dcb7f062c0055829a8808da8ec962fdfc96927d626417"
+    }
+  ]
+}
