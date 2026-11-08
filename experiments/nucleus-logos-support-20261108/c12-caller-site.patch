@@ -1,0 +1,52 @@
+--- a/src/machine.rs
++++ b/src/machine.rs
+@@ -2698,10 +2698,12 @@
+     /// Return the actual source RHS after the requested checked iota.
+     /// Nested majors still require constructor evidence; partial RHS values
+     /// never enter the completed replay memo.
++    #[track_caller]
+     pub(crate) fn qualified_one_step_recursor_result(&self,neutral:&Neutral,budget:usize)->Judgment<Value> {
+         self.qualified_recursor_result(neutral,budget,CheckedReplayGoal::OneStep)
+     }
+ 
++    #[track_caller]
+     pub(crate) fn qualified_nested_recursor_result(&self,neutral:&Neutral,budget:usize)->Judgment<Value> {
+         self.qualified_recursor_result(neutral,budget,CheckedReplayGoal::Completed)
+     }
+@@ -2742,6 +2744,7 @@
+         self.expose_internal_with_pending(field,Transparency::Full,self.exposure_fuel.get().unwrap_or(0).min(budget),false,true,pending).map(|x|x.value)
+     }
+ 
++    #[track_caller]
+     fn qualified_recursor_result(
+         &self,neutral:&Neutral,budget:usize,goal:CheckedReplayGoal,
+     ) -> Judgment<Value> {
+@@ -2751,6 +2754,10 @@
+         if budget < 48 { return Judgment::unknown("nested-recursor-iota-budget"); }
+         #[cfg(feature="diagnostics")]
+         let owner_at_entry=self.exposure_fuel.get();
++        #[cfg(feature="diagnostics")]
++        let caller=std::panic::Location::caller();
++        #[cfg(feature="diagnostics")]
++        let replay_goal=match goal {CheckedReplayGoal::Completed=>"completed",CheckedReplayGoal::OneStep=>"one-step"};
+         let previous=self.native_completion.replace(true);
+         let _native_scope=NativeCompletionScope{enabled:&self.native_completion,previous};
+         let _fuel_scope = if self.exposure_fuel.get().is_none() {
+@@ -2897,7 +2904,7 @@
+                     #[cfg(feature="diagnostics")]
+                     if crate::run_flags::present(crate::run_flags::Flag::TraceNestedRecursorIotaFailure) {
+                         let major_source=&neutral.spine[required-1];
+-                        eprintln!("NUCLEUS_NESTED_REPLAY_FAILURE:stage=major:depth={depth}:head={name:?}:entry_budget={budget}:owner_on_entry={owner_at_entry:?}:major_expr={:?}:major_env={}:major={major_result:?}:fuel={:?}",major_source.expr,major_source.env.id(),self.exposure_fuel.get());
++                        eprintln!("NUCLEUS_NESTED_REPLAY_FAILURE:stage=major:depth={depth}:head={name:?}:entry_budget={budget}:owner_on_entry={owner_at_entry:?}:caller={caller}:replay_goal={replay_goal}:major_expr={:?}:major_env={}:major={major_result:?}:fuel={:?}",major_source.expr,major_source.env.id(),self.exposure_fuel.get());
+                     }
+                     return Judgment::unknown("nested-recursor-iota-major-exposure");
+                 };
+@@ -3034,7 +3041,7 @@
+                 failure=>{
+                     #[cfg(feature="diagnostics")]
+                     if crate::run_flags::present(crate::run_flags::Flag::TraceNestedRecursorIotaFailure) {
+-                        eprintln!("NUCLEUS_NESTED_REPLAY_FAILURE:stage=rhs:depth={depth}:head={name:?}:entry_budget={budget}:owner_on_entry={owner_at_entry:?}:rhs={failure:?}:fuel={:?}",self.exposure_fuel.get());
++                        eprintln!("NUCLEUS_NESTED_REPLAY_FAILURE:stage=rhs:depth={depth}:head={name:?}:entry_budget={budget}:owner_on_entry={owner_at_entry:?}:caller={caller}:replay_goal={replay_goal}:rhs={failure:?}:fuel={:?}",self.exposure_fuel.get());
+                     }
+                     return failure;
+                 }
