@@ -48,7 +48,41 @@
              expressions,
              levels,
              environment,
-@@ -2425,10 +2443,60 @@
+@@ -2297,6 +2315,33 @@
+             let Some(support)=support else{return false};
+             pending.push((a.clone(), b.clone(), true));
+             for (left_index, right_index) in support {
++                // Stronger than FreeId coincidence or inferred type equality:
++                // both exact same-source occurrences read the very same
++                // immutable captured binding node. Their syntactic support
++                // and universe maps were certified above. The *entire*
++                // binding payload is therefore identical, even when the
++                // surrounding environments contain irrelevant extra frames.
++                // This skips redundant alias descent but never invents a
++                // source-equality certificate or changes recursor rules.
++                if !PARAMETRIC && a.expr==b.expr && left_index==right_index {
++                    if let (Some((x,_)),Some((y,_)))=(
++                        a.env.lookup_with_node_id(left_index),
++                        b.env.lookup_with_node_id(right_index),
++                    ) && x==y {
++                        let Some(cost)=left_index.checked_add(1)
++                            .and_then(|n|n.checked_mul(2))
++                            .and_then(|n|usize::try_from(n).ok()) else{return false};
++                        if *remaining<cost{return false;}
++                        *remaining-=cost;
++                        #[cfg(feature="diagnostics")]
++                        if std::env::var_os("NUCLEUS_LOGOS_SCOPE_PROBE").is_some(){
++                            LOGOS_PROJECTION_SHADOW.with(|shadow|{
++                                shadow.borrow_mut().fast_source_binding_node_skips+=1;
++                            });
++                        }
++                        continue;
++                    }
++                }
+                 let Some(lhs) = resolve(self, &a, left_index, remaining) else { return false };
+                 let Some(rhs) = resolve(self, &b, right_index, remaining) else { return false };
+                 match (lhs, rhs) {
+@@ -2425,10 +2470,60 @@
              cache.insert(key, value.clone());
          }
          #[cfg(feature="diagnostics")]
@@ -109,7 +143,7 @@
      fn infer_uncached(
          &self,
          expression: ExprId,
-@@ -5604,6 +5672,8 @@
+@@ -5604,6 +5699,8 @@
              return "origin-not-a-strict-extension".into();
          }
          let isolated=Self {
@@ -118,7 +152,7 @@
              expressions:self.expressions,
              levels:self.levels,
              environment:self.environment,
-@@ -5777,6 +5847,8 @@
+@@ -5777,6 +5874,8 @@
              return "source-origin-does-not-extend-caller".into();
          }
          let isolated = Self {
@@ -127,7 +161,7 @@
              expressions: self.expressions,
              levels: self.levels,
              environment: self.environment,
-@@ -5835,6 +5907,8 @@
+@@ -5835,6 +5934,8 @@
          // witness snapshot in an isolated checker, then discard all new
          // synthetic diagnostic certificates with that snapshot.
          let probe = Self {
@@ -136,7 +170,7 @@
              expressions: self.expressions,
              levels: self.levels,
              environment: self.environment,
-@@ -8542,6 +8616,242 @@
+@@ -8542,6 +8643,263 @@
  }
  impl ExactTypingMemo{fn clear(&mut self){for slot in self.slots.iter_mut(){*slot=None;}self.hand.fill(0);}}
  
@@ -201,6 +235,7 @@
 +    capture_result_open_same_nodes:usize,capture_result_open_changed_nodes:usize,
 +    prereuse_same_index_in_caller:usize,prereuse_member_only_in_caller:usize,
 +    prereuse_result_binding_absent_in_caller:usize,
++    fast_source_binding_node_skips:usize,
 +}
 +#[cfg(feature="diagnostics")]
 +impl LogosProjectionShadow{
@@ -277,6 +312,7 @@
 +            "prereuse_same_index_in_caller":self.prereuse_same_index_in_caller,
 +            "prereuse_member_only_in_caller":self.prereuse_member_only_in_caller,
 +            "prereuse_result_binding_absent_in_caller":self.prereuse_result_binding_absent_in_caller,
++            "fast_source_binding_node_skips":self.fast_source_binding_node_skips,
 +        }));
 +    }}
 +}
@@ -373,6 +409,25 @@
 +        let unrelated=EnvFrame::empty().extend_free(FreeId(7));
 +        assert_eq!(logos_result_node_membership_in_caller(&prior,&unrelated,&[1]),Some((false,false)));
 +        assert_eq!(logos_result_node_membership_in_caller(&prior,&base,&[3]),None);
++    }
++    #[test]
++    fn exact_source_conversion_skips_only_identical_used_binding_nodes() {
++        let mut expressions=IdTable::default();
++        expressions.insert(ExprId(0),Expr::BVar(1)).unwrap();
++        let levels=IdTable::default();
++        let environment=Environment::empty();
++        let checker=TypeChecker::new(&expressions,&levels,&environment);
++        let common=EnvFrame::empty().extend_free(FreeId(7));
++        let left=Closure::new(ExprId(0),common.extend_free(FreeId(8)));
++        let right=Closure::new(ExprId(0),common.extend_free(FreeId(9)));
++        assert_ne!(left.env.id(),right.env.id());
++        assert!(checker.exact_source_capture_identity(&left,&right,&mut 128));
++        let changed=Closure::new(ExprId(0),EnvFrame::empty()
++            .extend_free(FreeId(11)).extend_free(FreeId(9)));
++        assert!(!checker.exact_source_capture_identity(&left,&changed,&mut 128));
++        assert!(!checker.exact_source_capture_identity(&left,&right,&mut 0));
++        let missing=Closure::new(ExprId(0),EnvFrame::empty().extend_free(FreeId(8)));
++        assert!(!checker.exact_source_capture_identity(&left,&missing,&mut 128));
 +    }
 +}
 +
