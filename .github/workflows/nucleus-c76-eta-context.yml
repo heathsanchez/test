@@ -1,0 +1,105 @@
+name: Nucleus C76 captured Fin eta proof separator
+on:
+  push:
+    branches: [research/nucleus-c76-eta-context-separator-20261109]
+    paths:
+      - '.github/workflows/nucleus-c76-eta-context.yml'
+      - 'experiments/nucleus-logos-support-20261108/c76_eta_context.py'
+      - 'experiments/nucleus-c76-eta/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  source-and-proof:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install original-era Lean toolchain
+        uses: leanprover/lean-action@v1
+        with:
+          lake-package-directory: experiments/nucleus-c76-eta
+          auto-config: 'false'
+          build: 'false'
+          test: 'false'
+          lint: 'false'
+          use-github-cache: 'false'
+      - name: Prove conditional eta and reject incompatible captured functions
+        working-directory: experiments/nucleus-c76-eta
+        run: |
+          set -euo pipefail
+          lake build C76Eta
+          lake env lean C76Eta.lean 2>&1 | tee axioms.log
+          if grep -E 'depends on axioms:|sorryAx|unapproved axiom' axioms.log; then
+            echo 'C76_FORMAL_PROOF_HAS_AXIOMS'
+            exit 1
+          fi
+          test "$(grep -c 'does not depend on any axioms' axioms.log)" -eq 3
+          if lake env lean ForgedContext.lean > forged.log 2>&1; then
+            echo 'C76_WRONG_CONTEXT_WAS_ACCEPTED'
+            exit 1
+          fi
+          grep -q 'error:' forged.log
+          echo 'C76_FORGED_CONTEXT_REJECTED'
+          sha256sum C76Eta.lean ForgedContext.lean
+      - name: Authenticate frozen original Arena source and C74 native capture artifact
+        run: |
+          set -euo pipefail
+          mkdir -p frozen reports
+          gh api repos/heathsanchez/test/actions/artifacts/13276400289/zip > arena207.zip
+          printf '%s  %s\n' a9582eadc0d9893cbe39e6bcfccd79bfaec2032838851b8a487c35df16096763 arena207.zip | sha256sum -c -
+          unzip -p arena207.zip lean-arena-tests.tar.gz | tar --no-same-owner -xzf - -C frozen
+          test "$(sha256sum frozen/good/perf/magma-list-pair-n7.ndjson | cut -d' ' -f1)" = "abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35"
+          gh api repos/heathsanchez/test/actions/artifacts/13638376067/zip > c74.zip
+          printf '%s  %s\n' 64736108f4caed542f7d28bdd5207750770a616bc2308e97080e4ade52684a7e c74.zip | sha256sum -c -
+          unzip -Z1 c74.zip | grep -E '(^|/)c74.json$'
+          found="$(unzip -Z1 c74.zip | grep -E '(^|/)c74.json$' | head -1)"
+          test -n "$found"
+          unzip -p c74.zip "$found" > reports/c74.json
+      - name: Prove exact source eta shape and retain context-equivalence UNKNOWN
+        run: |
+          set -euo pipefail
+          python3 experiments/nucleus-logos-support-20261108/c76_eta_context.py \
+            frozen/good/perf/magma-list-pair-n7.ndjson reports/c74.json reports/c76.json
+          python3 - <<'PY'
+          import importlib.util,json
+          from pathlib import Path
+          f=Path('experiments/nucleus-logos-support-20261108/c76_eta_context.py')
+          spec=importlib.util.spec_from_file_location('c76_eta_context',f)
+          m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
+          original=Path('frozen/good/perf/magma-list-pair-n7.ndjson').read_bytes()
+          captured=json.loads(Path('reports/c74.json').read_text())
+          result=json.loads(Path('reports/c76.json').read_text())
+          assert result['source_beta_eta_shape']=='WARRANTED_SYNTACTIC'
+          assert result['captured_context_equivalence']=='UNKNOWN'
+          assert result['definitional_conversion_of_original_closures']=='NOT_PROVED'
+          assert result['verification_authority']=='NONE'
+          for tag,mutator in [
+              ('wrong_capture',lambda d:d['results']['standard']['contexts'][3]['sampled_binders'].__setitem__(0,[0,'closure:expr=ExprId(7369):levels=1:captured_env=282491'])),
+              ('false_accept',lambda d:d['results']['standard'].__setitem__('verdict','ACCEPT')),
+              ('changed_source',lambda d:d.__setitem__('source_sha256','0'*64)),
+          ]:
+              obj=json.loads(json.dumps(captured))
+              mutator(obj)
+              try: m.inspect(original,obj)
+              except (ValueError,AssertionError,IndexError,KeyError):
+                  print('C76_MUTANT_REFUSED',tag)
+              else:
+                  raise AssertionError('C76 falsely admitted '+tag)
+          try: m.inspect(original+b'\n',captured)
+          except (ValueError,AssertionError): print('C76_MUTANT_REFUSED source_bytes')
+          else:raise AssertionError('C76 changed bytes admitted')
+          print('C76_SOURCE_ETA_BOUNDED_ONLY')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-c76-eta-context
+          retention-days: 60
+          path: |
+            reports/
+            experiments/nucleus-c76-eta/axioms.log
+            experiments/nucleus-c76-eta/forged.log
