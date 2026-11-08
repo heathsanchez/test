@@ -542,3 +542,49 @@ was first tested RED against
 `probe_c10_route.py --require-projection-major-boundary` while returning
 unchanged n7 UNKNOWN. The new `c14-projection-major-boundary.patch` applies
 with zero fuzz on the fully pinned C13 source. It never grants a judgment.
+
+C14 [run #42437062148](https://github.com/heathsanchez/test/actions/runs/42437062148)
+**SUCCESS**, commit `52661464ca9bcdb0b19b7fd88f31f00cc8974339`,
+artifact `13599634775`, ZIP SHA256
+`5865815507eaa9e232cb5b5415b8096c291ed4acb0289e961811b8ba5e33aefe`.
+Native/adversarial tests passed; all 403/403 protected source outcomes matched
+240 ACCEPT, 150 REJECT, 13 UNKNOWN, including original `app-lam`
+three-way ACCEPT. All six unchanged valid original cases remain UNKNOWN at
+262,144 steps. The actual source-qualified large-budget `Decidable.rec`
+failure now identifies its exhausted value:
+
+```
+head=NameId(147):entry_budget=260755:caller=src/convert.rs:2046:54:
+replay_goal=completed:depth=2:step=1:owner_on_entry=None:
+major=neutral=Const { name: NameId(147), levels: [Succ(Zero)] }:
+arity=5:qualified=true:fuel=Some(0)
+```
+
+The 130,377-step one-step attempt fails the same way. This is not evidence
+of an ineligible four-argument Bool recursor or an invented constructor.
+**The projection resolver returned a source-qualified five-argument
+Decidable recursor, but had drained the common work owner before the
+qualified recursor worklist could continue.** C14 is WARRANTED_BOUNDED as
+diagnostic evidence only; the actual source proof remains UNKNOWN.
+
+## C15 finite speculative projection grant (CANDIDATE)
+
+The single operational source change caps only the *speculative*
+`projection_value_for_conversion` trial **inside an existing qualified
+recursor major worklist** at 512 of the owner's remaining steps, without
+creating new work. The same source constructor, rule checks, original
+captures, shared owner and result-verdict logic remain authoritative.
+This is analogous in purpose, not in implementation, to nano-lean v0.3.2's
+targeted cost reductions for deep List reductions (exact commit
+`54ce971a5ac2513a1bac0ac9bca73f672196c0f2`, 5 November).
+Nano-lean's independent `mk_pi` interning and `inst_pi` exact
+codomain memo are separate ideas, not yet imported or validated here.
+
+Native `probe_c10_route.py --allow-accepted --require-bounded-projection`
+returned **RED** on the actual C14 release binary, unchanged n7 UNKNOWN:
+no C15 bounded-projection event. The C15 source patch applies with zero
+fuzz to C14's exact source. The next GitHub run must show this event
+GREEN, original n7 verdict, all native/adversarial tests and 403 protected
+results. The 403 qualifier permits UNKNOWN to upgrade only for the six
+byte-hash-frozen independently valid inputs; all other changes fail closed.
+Until that run qualifies, **C15 has proved no acceptance or soundness result**.
