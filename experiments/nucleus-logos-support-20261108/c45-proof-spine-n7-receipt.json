@@ -1,0 +1,90 @@
+{
+  "case": "magma-list-pair-n7",
+  "source_sha256": "abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35",
+  "budget": 262144,
+  "proof_rules_changed": false,
+  "verdict": "UNKNOWN",
+  "children": [
+    {
+      "argument": 8749,
+      "context_len": 0,
+      "domain": "Term(Closure { expr: ExprId(2), env: EnvFrame { id: 0, .. }, levels: LevelSubstitution([]) })",
+      "expression": 8754,
+      "function": 6104,
+      "remaining": 262052,
+      "result": "Proven { value: (), warrant: WarrantId(\"guarded-relational-conversion\") }"
+    },
+    {
+      "argument": 8795,
+      "context_len": 0,
+      "domain": "Term(Closure { expr: ExprId(7295), env: EnvFrame { id: 69584, .. }, levels: LevelSubstitution([]) })",
+      "expression": 8796,
+      "function": 8774,
+      "remaining": 261706,
+      "result": "Proven { value: (), warrant: WarrantId(\"formed-expected-lambda-checking\") }"
+    },
+    {
+      "argument": 8796,
+      "context_len": 0,
+      "domain": "Term(Closure { expr: ExprId(503), env: EnvFrame { id: 69553, .. }, levels: LevelSubstitution([]) })",
+      "expression": 8797,
+      "function": 8754,
+      "remaining": 261706,
+      "result": "Proven { value: (), warrant: WarrantId(\"guarded-relational-conversion\") }"
+    },
+    {
+      "argument": 8796,
+      "context_len": 0,
+      "domain": "Term(Closure { expr: ExprId(503), env: EnvFrame { id: 69916, .. }, levels: LevelSubstitution([]) })",
+      "expression": 8799,
+      "function": 8798,
+      "remaining": 261693,
+      "result": "Proven { value: (), warrant: WarrantId(\"guarded-relational-conversion\") }"
+    },
+    {
+      "argument": 8799,
+      "context_len": 0,
+      "domain": "Term(Closure { expr: ExprId(1), env: EnvFrame { id: 69915, .. }, levels: LevelSubstitution([(NameId(18), Succ(Zero))]) })",
+      "expression": 8800,
+      "function": 971,
+      "remaining": 261693,
+      "result": "Proven { value: (), warrant: WarrantId(\"guarded-relational-conversion\") }"
+    },
+    {
+      "argument": 624,
+      "context_len": 0,
+      "domain": "Term(Closure { expr: ExprId(6), env: EnvFrame { id: 69966, .. }, levels: LevelSubstitution([(NameId(18), Succ(Zero))]) })",
+      "expression": 8801,
+      "function": 8800,
+      "remaining": 261692,
+      "result": "Proven { value: (), warrant: WarrantId(\"guarded-relational-conversion\") }"
+    },
+    {
+      "argument": 8801,
+      "context_len": 0,
+      "domain": "Term(Closure { expr: ExprId(0), env: EnvFrame { id: 0, .. }, levels: LevelSubstitution([(NameId(2), Zero)]) })",
+      "expression": 8802,
+      "function": 5109,
+      "remaining": 261692,
+      "result": "Proven { value: (), warrant: WarrantId(\"guarded-relational-conversion\") }"
+    },
+    {
+      "argument": 1477,
+      "context_len": 0,
+      "domain": "Term(Closure { expr: ExprId(1), env: EnvFrame { id: 69968, .. }, levels: LevelSubstitution([(NameId(2), Zero)]) })",
+      "expression": 8803,
+      "function": 8802,
+      "remaining": 261687,
+      "result": "Unknown { residual: ResidualId(\"unresolved-qualified-recursor-heads\") }"
+    },
+    {
+      "argument": 8803,
+      "context_len": 0,
+      "domain": "Term(Closure { expr: ExprId(6049), env: EnvFrame { id: 69914, .. }, levels: LevelSubstitution([]) })",
+      "expression": 8804,
+      "function": 8797,
+      "remaining": 261687,
+      "result": "Unknown { residual: ResidualId(\"unresolved-qualified-recursor-heads\") }"
+    }
+  ]
+}
