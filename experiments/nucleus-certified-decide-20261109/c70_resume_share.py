@@ -70,13 +70,14 @@ change("    // Hash-cons only an exact source evaluator binding.",r"""    fn c70
 
     // Hash-cons only an exact source evaluator binding.""")
 
-change("                preserve_stuck_projection, pending,\n            );\n        };\n        let key = Rc::new",
-       "                preserve_stuck_projection, pending, VisitSet::new(),\n            );\n        };\n        let key = Rc::new")
+# Locate the first exact reducer invocation under its function name;
+# prior C38/C64 diagnostics changed surrounding lines, not its API role.
+first=s.index("return self.expose_uncached_internal_with_pending(")
+last=s.index(");",first)
+oldcall=s[first:last+2]
+assert oldcall.count("pending")==1 and "VisitSet::new()" not in oldcall,oldcall
+s=s[:first]+oldcall[:-2]+" VisitSet::new(),\n            );"+s[last+2:]
 
-original="""        let result = self.expose_uncached_internal_with_pending(
-            closure, transparency, budget, false,
-            preserve_stuck_projection, pending,
-        );"""
 candidate=r"""        let resume=std::env::var_os("NUCLEUS_C70_RESUME_PREFIX").is_some();
         let share=resume && std::env::var_os("NUCLEUS_C70_SHARE_COMPLETED").is_some();
         let mut prefix=C70Prefix{closure,pending,visited:VisitSet::new()};
@@ -176,7 +177,11 @@ candidate=r"""        let resume=std::env::var_os("NUCLEUS_C70_RESUME_PREFIX").i
                 }
             }
         }"""
-change(original,candidate)
+second=s.index("let result = self.expose_uncached_internal_with_pending(")
+tail=s.index(");",second)
+oldcall=s[second:tail+2]
+assert "closure" in oldcall and "pending" in oldcall,oldcall
+s=s[:second]+candidate+s[tail+2:]
 change("        mut pending: Vec<Closure>,\n    ) -> Judgment<Exposure> {\n        let mut visited = VisitSet::new();",
        "        mut pending: Vec<Closure>,\n        mut visited: VisitSet,\n    ) -> Judgment<Exposure> {")
 p.write_text(s)
