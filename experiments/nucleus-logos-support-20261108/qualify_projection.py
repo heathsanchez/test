@@ -22,6 +22,11 @@ CANDIDATE = Path("candidate/metatron-kernel").resolve()
 FLAGS = json.loads(Path("base/flags.json").read_text())
 ENV = {key: value for key, value in os.environ.items() if not key.startswith("NUCLEUS_")}
 ENV.update(FLAGS)
+# Explicitly opt in only for the C28 native source qualification replay.
+# Ordinary protected qualification still runs the selected 24-flag profile.
+C28_FLAG_ON = os.environ.get("C28_SOURCE_CONGRUENCE_OPT_IN") == "1"
+if C28_FLAG_ON:
+    ENV["NUCLEUS_EXPERIMENTAL_PRE_IOTA_SOURCE_CONGRUENCE"] = "1"
 SIX = {
     "fueled-chain": "e5ca34489fc7b8ee13b1e7f09f76247ab7b01dd1a752a13cc8b796c569e1401a",
     "grind-ring-5": "e9c394e0ff311fd10f60dee2433a530f16e82354c32d6588a8775baa06fd221f",
@@ -140,6 +145,7 @@ def main():
     observations = comparisons[-1]["observer"]
     summary = {
         "status": "CANDIDATE", "acceptance_authority": False,
+        "c28_source_congruence_flag_on": C28_FLAG_ON,
         "selected_artifact": 13520537513, "selected_commit": "018135224632f72ba06a2818132c3e857d67eaad",
         "flags": FLAGS, "standard_budget": 262144,
         "baseline_binary_sha256": digest(BASELINE.read_bytes()),
