@@ -30,7 +30,7 @@ jobs:
           set -euo pipefail
           lake build NucleusDecide
           lake env lean NucleusDecide.lean 2>&1 | tee axioms.log
-          if grep -E 'sorryAx|unapproved axiom' axioms.log; then
+          if grep -E 'depends on axioms:|sorryAx|unapproved axiom' axioms.log; then
             echo 'INVALID_AXIOM_BOUNDARY'
             exit 1
           fi
