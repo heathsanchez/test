@@ -272,3 +272,26 @@ No missing recursor equality or constructor may be invented from those
 diagnostics. The next decisive experiment must discriminate a legitimate
 source iota/major-constructor step from a rigid neutral whose equality needs
 a separately checked dependent-context proof. Preserve C6/C7 negatives.
+
+## C8 exact beta-frame retention capacity (PENDING)
+
+On unchanged `magma-list-pair-n7`, source-qualified diagnostics under the
+same 24 flags show repeated `NUCLEUS_BETA_BINDING_CACHE:capacity` events.
+The selected evaluator intentionally stops retaining *new* exact lambda/let
+argument frames after 8,192 entries; completed replay keys can then lose
+future matching allocation identities, even though an old retained entry
+remains protected. C8 changes **only** that bounded capacity to 32,768,
+updates its saturation controls, and tests whether better exact-source
+hash-consing prevents the nested List.rec major from exhausting its own
+shared exposure work owner. It neither assumes constructor iota nor changes
+recursor qualification, inference rules, truth values or the standard
+262,144-step limit. The C7 active capture shortcut is removed in C8 to
+isolate this variable; C7 remains separately reproducible at its pinned SHA.
+
+The existing `ExperimentalResumableExposure` flag was independently tried on
+the four unchanged Magma inputs: **all four remained UNKNOWN** with the
+same terminal reason categories. This is a separate negative result; merely
+enabling another partial-prefix cache did not resolve the recursor residual.
+C8 is `CANDIDATE` pending native 403-vector, saturation, adversarial and
+six-original qualification. Increased memory retention alone cannot warrant
+new typing/equality authority.
