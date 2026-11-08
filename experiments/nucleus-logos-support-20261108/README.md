@@ -725,3 +725,29 @@ event, and pass all native/adversarial plus 403/403 source-frozen protected
 outcomes before any bounded progress is claimed. The six valid original
 cases must become ACCEPT under 262144 for the primary objective; otherwise
 C18 is not a completed Nucleus kernel.
+
+C18 [run #42439294535](https://github.com/heathsanchez/test/actions/runs/42439294535)
+**SUCCESS**, commit `039c9eb71e5467d8e1ceb79ff9a0a46ebf77f1c4`,
+artifact `13600634247`, ZIP SHA256
+`78c258052e897b81fa3c2b21fc6804ec51c16ab9a86626207d775823bc230cae`.
+The original frozen n7 remains **UNKNOWN**, but the source-checked
+projection continuation executed (32 diagnostic records, capped for output)
+and projection-major exhaustion traces dropped from 7 to 1. All native and
+adversarial tests and the independently protected **403/403** suite passed
+with precisely **240 ACCEPT / 150 REJECT / 13 UNKNOWN**. All six unchanged
+valid originals remain UNKNOWN; Mathlib completion remains unproved.
+
+An additional identical-input, diagnostic-enabled C18 replay observed **622
+worklist recursor-major captures** (`Nat.rec` NameId66: 544;
+`Decidable.rec` NameId147: 64; `Bool.rec` NameId170: 14), versus 462
+in C17 (Nat:305, Decidable:106, Bool:51). C18's completed Bool comparison
+attempt failed with `nested-replay-key-work`, and its one-step alternative
+with `nested-recursor-iota-budget`. The lower n7 wall time (0.255 s versus
+0.47 s) reflects a different early UNKNOWN path, **not proof-efficiency or
+semantic-completeness improvement**. Therefore C18 is WARRANTED_BOUNDED
+only as source-checked control-flow implementation, but its proposed
+route to n7 acceptance is **REJECTED**; do not promote it into the selected
+kernel. The new bottleneck is worklist expansion on environment-dependent
+`Nat.rec` major subcomputations, including free/stuck majors. Any new
+sharing must retain binder/capture origin and never equate different
+environment frames merely because their syntax looks similar.
