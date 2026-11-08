@@ -1,0 +1,47 @@
+--- a/metatron-kernel/src/machine.rs
++++ b/metatron-kernel/src/machine.rs
+@@ -1021,6 +1021,17 @@
+                     native_completion:self.native_completion.get(),
+                 };
+                 if let Some(previous)=cache.borrow_mut().unfinished_prefixes.remove(&key){
++                    #[cfg(feature="diagnostics")]
++                    if std::env::var_os("NUCLEUS_DIAGNOSTIC_C65_PREFIX_CENSUS").is_some()
++                        && crate::typecheck::c56_source_root_active()
++                    {
++                        use std::sync::atomic::{AtomicUsize,Ordering};
++                        static HITS:AtomicUsize=AtomicUsize::new(0);
++                        let count=HITS.fetch_add(1,Ordering::Relaxed)+1;
++                        if count.is_power_of_two() {
++                            eprintln!("NUCLEUS_C65_PREFIX:kind=resume-hit:count={count}");
++                        }
++                    }
+                     progress=previous;
+                 }
+                 let mut advanced=false;
+@@ -1068,6 +1079,26 @@
+                 // only the normal evaluator may establish a value.
+                 if advanced && progress.visited.overflow.is_none() && progress.pending.len()<=32 {
+                     let mut entries=cache.borrow_mut();
++                    #[cfg(feature="diagnostics")]
++                    if std::env::var_os("NUCLEUS_DIAGNOSTIC_C65_PREFIX_CENSUS").is_some()
++                        && crate::typecheck::c56_source_root_active()
++                    {
++                        use std::sync::atomic::{AtomicUsize,Ordering};
++                        static STORES:AtomicUsize=AtomicUsize::new(0);
++                        static FULL:AtomicUsize=AtomicUsize::new(0);
++                        let size=entries.unfinished_prefixes.len();
++                        if size<128 {
++                            let count=STORES.fetch_add(1,Ordering::Relaxed)+1;
++                            if count.is_power_of_two() {
++                                eprintln!("NUCLEUS_C65_PREFIX:kind=store:count={count}:size_before={size}");
++                            }
++                        } else {
++                            let count=FULL.fetch_add(1,Ordering::Relaxed)+1;
++                            if count.is_power_of_two() {
++                                eprintln!("NUCLEUS_C65_PREFIX:kind=capacity-full:count={count}:size={size}");
++                            }
++                        }
++                    }
+                     if entries.unfinished_prefixes.len()<128 {
+                         entries.unfinished_prefixes.insert(key,progress.clone());
+                     }
