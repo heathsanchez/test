@@ -7,8 +7,7 @@ from pathlib import Path
 
 path=Path("metatron-kernel/src/machine.rs")
 src=path.read_text()
-needle="""        let Some(seq)=crate::diagnostics::c48_ticket() else { return; };
-        let c49_fingerprint="""
+needle="        let Some(seq)=crate::diagnostics::c48_ticket() else { return; };"
 assert src.count(needle)==1,("C74 source C48/C49 hook drift",src.count(needle))
 insert="""        let Some(seq)=crate::diagnostics::c48_ticket() else { return; };
         // Source-specific bounded observer; only reports actual captured
@@ -45,6 +44,6 @@ insert="""        let Some(seq)=crate::diagnostics::c48_ticket() else { return; 
                 "no_source_equality_or_proof_authority":true,
             }));
         }
-        let c49_fingerprint="""
+"""
 path.write_text(src.replace(needle,insert))
 print("C74_DIAGNOSTIC_CONTEXT_ONLY_PATCHED")
