@@ -20,16 +20,12 @@ theorem checked_decide_true_implies_proof {P : Prop} (d : Decidable P)
     (h : @decide P d = true) : P := by
   cases d with
   | isTrue proof => exact proof
-  | isFalse refutation =>
-      simp at h
-      exact False.elim (refutation h)
+  | isFalse _ => cases h
 
 theorem checked_decide_false_implies_refutation {P : Prop} (d : Decidable P)
     (h : @decide P d = false) : ¬ P := by
   cases d with
-  | isTrue proof =>
-      simp at h
-      exact False.elim (h proof)
+  | isTrue _ => cases h
   | isFalse refutation => exact refutation
 
 theorem finite_domain_isTrue {n : Nat} {P : Fin n → Prop}
@@ -44,6 +40,9 @@ theorem raw_true_cannot_certify_arbitrary_prop :
 
 end NucleusDecide
 
+#print axioms NucleusDecide.isTrue_evaluates_true
+#print axioms NucleusDecide.isFalse_evaluates_false
 #print axioms NucleusDecide.checked_decide_true_implies_proof
+#print axioms NucleusDecide.checked_decide_false_implies_refutation
 #print axioms NucleusDecide.finite_domain_isTrue
 #print axioms NucleusDecide.raw_true_cannot_certify_arbitrary_prop
