@@ -61,17 +61,29 @@ jobs:
           +      cubeVariance 1 p = (1 : ℝ) / 4 ∧
           +      cubeInfluence 1 p 0 = 1 := by
           +  let p : MvPolynomial (Fin 1) ℝ := MvPolynomial.X 0
-          +  have h_univ :
-          +      (Finset.univ : Finset (Fin 1 → Bool)) =
-          +        { (fun _ => false), (fun _ => true) } := by decide
-          +  refine ⟨p, ?_, ?_, ?_, ?_, ?_⟩
-          +  · simp [p]
-          +  · intro X
-          +    simp only [cubeValue, p, MvPolynomial.eval_X]
-          +    cases h : X 0 <;> simp [h]
-          +  · norm_num [cubeMean, cubeValue, p, h_univ]
-          +  · norm_num [cubeVariance, cubeMean, cubeValue, p, h_univ]
-          +  · norm_num [cubeInfluence, cubeValue, p, h_univ]
+          +  let x0 : Fin 1 → Bool := fun _ => false
+          +  let x1 : Fin 1 → Bool := fun _ => true
+          +  have h_univ : (Finset.univ : Finset (Fin 1 → Bool)) = {x0, x1} := by decide
+          +  have h_ne : x0 ≠ x1 := by decide
+          +  have hsum (F : (Fin 1 → Bool) → ℝ) :
+          +      (∑ X : Fin 1 → Bool, F X) = F x0 + F x1 := by
+          +    rw [h_univ]
+          +    simp [h_ne]
+          +  have hm : cubeMean 1 p = (1 : ℝ) / 2 := by
+          +    unfold cubeMean
+          +    rw [hsum]
+          +    norm_num [cubeValue, p, x0, x1]
+          +  have hv : cubeVariance 1 p = (1 : ℝ) / 4 := by
+          +    unfold cubeVariance
+          +    rw [hsum]
+          +    norm_num [cubeValue, p, x0, x1, hm]
+          +  have hi : cubeInfluence 1 p 0 = 1 := by
+          +    unfold cubeInfluence
+          +    rw [hsum]
+          +    norm_num [cubeValue, p, x0, x1]
+          +  refine ⟨p, by simp [p], ?_, hm, hv, hi⟩
+          +  intro X
+          +  cases h : X 0 <;> simp [cubeValue, p, h]
           +
            /-- A consumer of the original-form statement, without assuming the PSI theorem. -/
           PATCH
