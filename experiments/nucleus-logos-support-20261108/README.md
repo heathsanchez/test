@@ -145,3 +145,28 @@ observation-lifetime IDs. The correction assigns fresh identities to all
 five constructors, including nested diagnostic probes, and uses checked
 atomic increment so ID exhaustion disables observation. No native outcome
 was obtained from the failed build.
+
+## C4b qualified; C5 checks result-binding provenance
+
+[C4b run #42431001191](https://github.com/heathsanchez/test/actions/runs/42431001191)
+is **SUCCESS**; artifact `13597428263`, ZIP SHA-256
+`6573600bea6d6b6ee2dc75499f393a836a29b44de6fbd6422624930d0dd0afe5`.
+The original 403 verdicts matched identically (240 ACCEPT, 150 REJECT,
+13 UNKNOWN); all six unchanged originals remain UNKNOWN at 262,144 steps.
+Original `app-lam` ACCEPTed independently with selected, observer-OFF and
+observer-ON binaries. With lifetime-distinct checker IDs, all **762**
+cross-frame projected-key disagreements persisted within the same checker.
+Every resulting type expression was syntactically **open**: 0 closed,
+762 open, 0 support-unknown. This rules out empty-environment reclosure.
+
+C5 measures the narrower source-qualified condition without returning a
+cached value: for each open result expression, compute complete free de Bruijn
+support (bounded by 4,096 traversal units, 16 indices, max index 512), then
+compare the immutable `EnvFrame` node reached by *each used index* in the
+previous and current closure. Equal nodes prove identical captured bindings
+even where unused outer bindings differ; unequal or unavailable nodes are
+never considered proven-equivalent. Synthetic controls test an unchanged
+used binding, a changed used binding, and an out-of-range binding. The
+diagnostic does not alter kernel inference, conversion, admission, resources,
+or claims of full Mathlib acceptance. C5 is **CANDIDATE** pending native
+qualification, not a fix for the remaining six UNKNOWNs.
