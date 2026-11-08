@@ -1,0 +1,24 @@
+--- a/src/convert.rs
++++ b/src/convert.rs
+@@ -1863,7 +1863,20 @@
+                         && current_budget >= 192
+                         && checker.machine().c28_source_congruence_has_no_owner()
+                     {
+-                        let grant=current_budget.saturating_sub(1).min(512);
++                        // C33: bound the independently checked *source*
++                        // congruence trial, distinct from C17's projection
++                        // grant and C32's major-exposure request. Every
++                        // actual trial step is still debited below from the
++                        // current global conversion allowance.
++                        let cap=match std::env::var("NUCLEUS_DIAGNOSTIC_C33_SOURCE_CONGRUENCE_GRANT") {
++                            Ok(s)=>match s.parse::<usize>() {
++                                Ok(n) if (512..=8192).contains(&n)=>n,
++                                _=>return Judgment::unknown("invalid-C33-source-congruence-cap"),
++                            },
++                            Err(std::env::VarError::NotPresent)=>512,
++                            Err(_)=>return Judgment::unknown("invalid-C33-source-congruence-cap"),
++                        };
++                        let grant=current_budget.saturating_sub(1).min(cap);
+                         let (proved,spent,first_failed)=diagnostic_pre_iota_source_congruence(
+                             checker,left,right,grant,
+                         );
