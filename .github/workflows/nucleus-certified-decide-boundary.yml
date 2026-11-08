@@ -1,0 +1,70 @@
+name: Nucleus conditional Decidable certificate boundary V0
+on:
+  push:
+    branches: [research/nucleus-certified-decide-boundary-20261109]
+    paths:
+      - '.github/workflows/nucleus-certified-decide-boundary.yml'
+      - 'experiments/nucleus-certified-decide-20261109/**'
+  workflow_dispatch:
+
+permissions: {contents: read}
+
+jobs:
+  proof-and-boundary:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Formal Lean build at pinned exporter-era toolchain
+        uses: leanprover/lean-action@v1
+        with:
+          lake-package-directory: experiments/nucleus-certified-decide-20261109
+          auto-config: 'false'
+          build: 'true'
+          test: 'false'
+          lint: 'false'
+          use-github-cache: 'false'
+      - name: Independent Lean source and explicit axiom inspection
+        working-directory: experiments/nucleus-certified-decide-20261109
+        run: |
+          set -euo pipefail
+          lake env lean NucleusDecide.lean 2>&1 | tee axioms.log
+          if grep -E 'sorryAx|unapproved axiom' axioms.log; then
+            echo 'INVALID_AXIOM_BOUNDARY'
+            exit 1
+          fi
+          sha256sum NucleusDecide.lean ForgedIsFalse.lean lakefile.lean lean-toolchain
+      - name: Forged isFalse constructor must be rejected
+        working-directory: experiments/nucleus-certified-decide-20261109
+        run: |
+          set -euo pipefail
+          if lake env lean ForgedIsFalse.lean > forged.log 2>&1; then
+            cat forged.log
+            echo 'UNSOUND_FORGERY_ACCEPTED'
+            exit 1
+          fi
+          grep -q 'error:' forged.log
+          cat forged.log
+          echo 'FORGED_NEGATIVE_REJECTED'
+      - name: Frozen C64 evidence and five adversarial mutation controls
+        run: |
+          set -euo pipefail
+          python3 -m unittest -v experiments/nucleus-certified-decide-20261109/audit_c64.py
+          python3 - <<'PY'
+          import importlib.util,json,pathlib
+          p=pathlib.Path('experiments/nucleus-certified-decide-20261109/audit_c64.py')
+          spec=importlib.util.spec_from_file_location('audit_c64',p)
+          m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
+          data=json.loads(m.RECEIPT.read_text())
+          print('NUCLEUS_C64_BOUNDARY='+json.dumps(m.classify(data),sort_keys=True))
+          PY
+          sha256sum experiments/nucleus-logos-support-20261108/c64-source-instance.json
+      - name: Preserve technical evidence
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-certified-decide-v0
+          retention-days: 60
+          path: |
+            experiments/nucleus-certified-decide-20261109/axioms.log
+            experiments/nucleus-certified-decide-20261109/forged.log
