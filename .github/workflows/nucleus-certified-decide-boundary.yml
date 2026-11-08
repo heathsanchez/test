@@ -96,6 +96,19 @@ jobs:
           grep -q 'error:' forged-finite.log
           cat forged-finite.log
           echo 'FORGED_FINITE_REJECTED'
+      - name: Source-qualified alternative n7 algebraic proof (no Arena substitution)
+        working-directory: experiments/nucleus-certified-decide-20261109
+        run: |
+          set -euo pipefail
+          /usr/bin/time -f 'N7_ALGEBRAIC_LEAN_WALL_SEC=%e' \
+            lake env lean MagmaN7Algebraic.lean 2>&1 | tee magma-algebraic.log
+          if grep -E 'sorryAx|error:|unsolved goals' magma-algebraic.log; then
+            echo 'INVALID_ALGEBRAIC_PROOF'
+            exit 1
+          fi
+          grep -q 'algebraicCountermodel' magma-algebraic.log
+          sha256sum MagmaN7Algebraic.lean
+          echo 'N7_ALGEBRAIC_SOURCE_PROOF_CHECKED__ARENA_ORIGINAL_UNCHANGED'
       - name: Frozen C64 evidence and five adversarial mutation controls
         run: |
           set -euo pipefail
@@ -118,5 +131,6 @@ jobs:
           path: |
             experiments/nucleus-certified-decide-20261109/axioms.log
             experiments/nucleus-certified-decide-20261109/adapter-axioms.log
+            experiments/nucleus-certified-decide-20261109/magma-algebraic.log
             experiments/nucleus-certified-decide-20261109/forged.log
             experiments/nucleus-certified-decide-20261109/forged-finite.log
