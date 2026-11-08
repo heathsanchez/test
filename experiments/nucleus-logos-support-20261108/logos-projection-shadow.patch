@@ -48,7 +48,7 @@
              expressions,
              levels,
              environment,
-@@ -2425,10 +2443,57 @@
+@@ -2425,10 +2443,60 @@
              cache.insert(key, value.clone());
          }
          #[cfg(feature="diagnostics")]
@@ -89,9 +89,12 @@
 +            shadow.borrow_mut().observe(key,frame.id(),result,|left,right|{
 +                let mut budget=4096;
 +                let support=self.complete_source_support(left.expr,&mut budget)?;
-+                if support.is_empty(){return Some((true,true));}
++                if support.is_empty(){return Some((true,true,false,false));}
 +                if support.len()>16||support.iter().any(|i|*i>512){return None;}
-+                logos_result_nodes_equal(left,right,&support).map(|same|(false,same))
++                let same=logos_result_nodes_equal(left,right,&support)?;
++                let (input_same_index,input_contains_all)=
++                    logos_result_node_membership_in_caller(left,frame,&support)?;
++                Some((false,same,input_same_index,input_contains_all))
 +            });
 +        });
 +    }
@@ -106,7 +109,7 @@
      fn infer_uncached(
          &self,
          expression: ExprId,
-@@ -5604,6 +5669,8 @@
+@@ -5604,6 +5672,8 @@
              return "origin-not-a-strict-extension".into();
          }
          let isolated=Self {
@@ -115,7 +118,7 @@
              expressions:self.expressions,
              levels:self.levels,
              environment:self.environment,
-@@ -5777,6 +5844,8 @@
+@@ -5777,6 +5847,8 @@
              return "source-origin-does-not-extend-caller".into();
          }
          let isolated = Self {
@@ -124,7 +127,7 @@
              expressions: self.expressions,
              levels: self.levels,
              environment: self.environment,
-@@ -5835,6 +5904,8 @@
+@@ -5835,6 +5907,8 @@
          // witness snapshot in an isolated checker, then discard all new
          // synthetic diagnostic certificates with that snapshot.
          let probe = Self {
@@ -133,7 +136,7 @@
              expressions: self.expressions,
              levels: self.levels,
              environment: self.environment,
-@@ -8542,6 +8613,197 @@
+@@ -8542,6 +8616,242 @@
  }
  impl ExactTypingMemo{fn clear(&mut self){for slot in self.slots.iter_mut(){*slot=None;}self.hand.fill(0);}}
  
@@ -157,6 +160,33 @@
 +    }
 +    Some(true)
 +}
++// Observe a *predictive* prerequisite: whether all bindings a prior type
++// closure actually reads are already reachable from the new caller's input
++// frame. The current result is not used in this computation. A positive
++// answer is a necessary structural condition, NOT a transported type proof.
++#[cfg(feature="diagnostics")]
++fn logos_result_node_membership_in_caller(
++    prior:&Closure,caller:&EnvFrame,support:&[u64],
++)->Option<(bool,bool)>{
++    let mut same_index=true;
++    let mut all_present=true;
++    for index in support{
++        let id=prior.env.lookup_with_node_id(*index)?.0;
++        if caller.lookup_with_node_id(*index).map(|(node,_)|node)!=Some(id){
++            same_index=false;
++        }
++        let mut found=false;
++        for current_index in 0..=512u64{
++            match caller.lookup_with_node_id(current_index){
++                Some((node,_))if node==id=>{found=true;break},
++                Some(_)=>{},
++                None=>break,
++            }
++        }
++        if !found{all_present=false;}
++    }
++    Some((same_index,all_present))
++}
 +#[cfg(feature="diagnostics")]
 +#[derive(Default)]
 +struct LogosProjectionShadow{
@@ -169,10 +199,12 @@
 +    changed_term_expression:usize,changed_nonterm_shape:usize,
 +    capture_result_closed:usize,capture_result_open:usize,capture_result_unknown:usize,
 +    capture_result_open_same_nodes:usize,capture_result_open_changed_nodes:usize,
++    prereuse_same_index_in_caller:usize,prereuse_member_only_in_caller:usize,
++    prereuse_result_binding_absent_in_caller:usize,
 +}
 +#[cfg(feature="diagnostics")]
 +impl LogosProjectionShadow{
-+    fn observe<F:FnOnce(&Closure,&Closure)->Option<(bool,bool)>>(&mut self,key:LogosProjectionKey,
++    fn observe<F:FnOnce(&Closure,&Closure)->Option<(bool,bool,bool,bool)>>(&mut self,key:LogosProjectionKey,
 +        frame:u64,result:Option<&TypeValue>,capture_support:F)->bool{
 +        self.observed+=1;
 +        let Some(result)=result else{self.unknown+=1;return false;};
@@ -194,12 +226,15 @@
 +                (TypeValue::Term(a),TypeValue::Term(b))if a.expr==b.expr&&a.levels==b.levels=>{
 +                    self.changed_only_term_capture+=1;
 +                    match capture_support(a,b){
-+                        Some((true,_))=>self.capture_result_closed+=1,
-+                        Some((false,true))=>{
++                        Some((true,_,_,_))=>self.capture_result_closed+=1,
++                        Some((false,true,same_index,present))=>{
 +                            self.capture_result_open+=1;
 +                            self.capture_result_open_same_nodes+=1;
++                            if same_index{self.prereuse_same_index_in_caller+=1;}
++                            else if present{self.prereuse_member_only_in_caller+=1;}
++                            else{self.prereuse_result_binding_absent_in_caller+=1;}
 +                        },
-+                        Some((false,false))=>{
++                        Some((false,false,_,_))=>{
 +                            self.capture_result_open+=1;
 +                            self.capture_result_open_changed_nodes+=1;
 +                        },
@@ -239,6 +274,9 @@
 +            "capture_result_unknown":self.capture_result_unknown,
 +            "capture_result_open_same_nodes":self.capture_result_open_same_nodes,
 +            "capture_result_open_changed_nodes":self.capture_result_open_changed_nodes,
++            "prereuse_same_index_in_caller":self.prereuse_same_index_in_caller,
++            "prereuse_member_only_in_caller":self.prereuse_member_only_in_caller,
++            "prereuse_result_binding_absent_in_caller":self.prereuse_result_binding_absent_in_caller,
 +        }));
 +    }}
 +}
@@ -307,10 +345,10 @@
 +        let k=key(10,vec![sort()]);
 +        let before=TypeValue::Term(Closure::new(ExprId(74),EnvFrame::empty().extend_free(FreeId(7))));
 +        let after=TypeValue::Term(Closure::new(ExprId(74),EnvFrame::empty().extend_free(FreeId(8))));
-+        assert!(!shadow.observe(k.clone(),31,Some(&before),|_,_|Some((true,true))));
++        assert!(!shadow.observe(k.clone(),31,Some(&before),|_,_|Some((true,true,false,false))));
 +        assert!(!shadow.observe(k,32,Some(&after),|a,b|{
 +            assert_eq!(a.expr,ExprId(74));assert_eq!(b.expr,ExprId(74));
-+            Some((true,true))
++            Some((true,true,false,false))
 +        }));
 +        assert_eq!(shadow.changed_only_term_capture,1);
 +        assert_eq!(shadow.capture_result_closed,1);
@@ -325,6 +363,16 @@
 +        assert_eq!(logos_result_nodes_equal(&left,&right,&[1]),Some(true));
 +        assert_eq!(logos_result_nodes_equal(&left,&right,&[0]),Some(false));
 +        assert_eq!(logos_result_nodes_equal(&left,&right,&[2]),None);
++    }
++    #[test]
++    fn prior_result_support_must_be_accessible_in_new_caller() {
++        let base=EnvFrame::empty().extend_free(FreeId(7));
++        let prior=Closure::new(ExprId(74),base.extend_free(FreeId(8)));
++        assert_eq!(logos_result_node_membership_in_caller(&prior,&prior.env,&[1]),Some((true,true)));
++        assert_eq!(logos_result_node_membership_in_caller(&prior,&base,&[1]),Some((false,true)));
++        let unrelated=EnvFrame::empty().extend_free(FreeId(7));
++        assert_eq!(logos_result_node_membership_in_caller(&prior,&unrelated,&[1]),Some((false,false)));
++        assert_eq!(logos_result_node_membership_in_caller(&prior,&base,&[3]),None);
 +    }
 +}
 +
