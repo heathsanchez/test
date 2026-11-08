@@ -1,4 +1,4 @@
-name: PSI AA PR 2 exact-head verification
+name: PSI AA PR 2 exact-head verification (with coordinate witness)
 
 on:
   push:
@@ -23,9 +23,9 @@ jobs:
         shell: bash
         run: |
           git clone --quiet https://github.com/metalogiclabs/aaronson-ambainis.git psi
-          git -C psi checkout --quiet --detach 22b3602348a38aa9abe1328344c5a49666084681
-          test "$(git -C psi rev-parse HEAD)" = 22b3602348a38aa9abe1328344c5a49666084681
-          test "$(git -C psi hash-object audit/OriginalConjecture6.lean)" = 069169b140c4821bd30da2041b5b41288bb8657b
+          git -C psi checkout --quiet --detach ed3e0b1c6b480f6a21cb9c6cb5cb8215656e2611
+          test "$(git -C psi rev-parse HEAD)" = ed3e0b1c6b480f6a21cb9c6cb5cb8215656e2611
+          test "$(git -C psi hash-object audit/OriginalConjecture6.lean)" = b84925bbe3b0fbfe8f056c6c858f388d83197828
           test "$(git -C psi hash-object Makefile)" = 61ce78a3bd5a52664fb752feeb392422cde161db
           git -C psi status --short
           python3 psi/scripts/source_digest.py psi AaronsonAmbainis
@@ -40,56 +40,6 @@ jobs:
           test: false
           lint: false
 
-      - name: Apply isolated sanity witness and compile exact pinned source
-        working-directory: psi
-        shell: bash
-        run: |
-          git apply --recount <<'PATCH'
-          diff --git a/audit/OriginalConjecture6.lean b/audit/OriginalConjecture6.lean
-          --- a/audit/OriginalConjecture6.lean
-          +++ b/audit/OriginalConjecture6.lean
-          @@ -70,3 +70,28 @@
-             simpa only [cubeInfluence, cubeValue] using hi
-           
-          +/-- A non-vacuous 0/1-cube witness: coordinate projection has mean 1/2,
-          +variance 1/4 and unscaled squared bit-flip influence 1. -/
-          +private theorem coordinate_sanity :
-          +    ∃ p : MvPolynomial (Fin 1) ℝ,
-          +      p.totalDegree = 1 ∧
-          +      (∀ X : Fin 1 → Bool, 0 ≤ cubeValue 1 p X ∧ cubeValue 1 p X ≤ 1) ∧
-          +      cubeMean 1 p = (1 : ℝ) / 2 ∧
-          +      cubeVariance 1 p = (1 : ℝ) / 4 ∧
-          +      cubeInfluence 1 p 0 = 1 := by
-          +  let p : MvPolynomial (Fin 1) ℝ := MvPolynomial.X 0
-          +  let x0 : Fin 1 → Bool := fun _ => false
-          +  let x1 : Fin 1 → Bool := fun _ => true
-          +  have h_univ : (Finset.univ : Finset (Fin 1 → Bool)) = {x0, x1} := by decide
-          +  have h_ne : x0 ≠ x1 := by decide
-          +  have hsum (F : (Fin 1 → Bool) → ℝ) :
-          +      (∑ X : Fin 1 → Bool, F X) = F x0 + F x1 := by
-          +    rw [h_univ]
-          +    simp [h_ne]
-          +  have hm : cubeMean 1 p = (1 : ℝ) / 2 := by
-          +    unfold cubeMean
-          +    rw [hsum]
-          +    norm_num [cubeValue, p, x0, x1]
-          +  have hv : cubeVariance 1 p = (1 : ℝ) / 4 := by
-          +    unfold cubeVariance
-          +    rw [hsum]
-          +    norm_num [cubeValue, p, x0, x1, hm]
-          +  have hi : cubeInfluence 1 p 0 = 1 := by
-          +    unfold cubeInfluence
-          +    rw [hsum]
-          +    norm_num [cubeValue, p, x0, x1]
-          +  refine ⟨p, by simp [p], ?_, hm, hv, hi⟩
-          +  intro X
-          +  cases h : X 0 <;> simp [cubeValue, p, h]
-          +
-           /-- A consumer of the original-form statement, without assuming the PSI theorem. -/
-          PATCH
-          lake build AaronsonAmbainis.Main
-          lake env lean audit/OriginalConjecture6.lean
-
       - name: Compile exact PR bridge and replay the project
         working-directory: psi
         shell: bash
@@ -97,7 +47,9 @@ jobs:
           lean --version
           make imports
           make audit
-          lake env lean audit/OriginalConjecture6.lean
+          make build
+          make axioms
+          make replay
 
       - name: Preserve source and axiom reports
         if: always()
