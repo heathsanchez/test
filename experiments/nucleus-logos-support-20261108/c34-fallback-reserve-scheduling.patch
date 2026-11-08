@@ -1,0 +1,37 @@
+--- a/src/convert.rs
++++ b/src/convert.rs
+@@ -1876,7 +1876,23 @@
+                             Err(std::env::VarError::NotPresent)=>512,
+                             Err(_)=>return Judgment::unknown("invalid-C33-source-congruence-cap"),
+                         };
+-                        let grant=current_budget.saturating_sub(1).min(cap);
++                        // C34 diagnostic: reserve an explicit fraction of
++                        // the *same* caller allowance for the certified
++                        // recursor fallback.  A failed sufficient source
++                        // congruence trial can otherwise spend nearly all
++                        // local fuel before that fallback gets a chance.
++                        // Only the trial scheduling changes; the source
++                        // congruence checker and iota proof rules do not.
++                        let reserve_divisor=match std::env::var("NUCLEUS_DIAGNOSTIC_C34_FALLBACK_RESERVE_DIVISOR") {
++                            Ok(s)=>match s.parse::<usize>() {
++                                Ok(n) if matches!(n,2|3|4|8)=>n,
++                                _=>return Judgment::unknown("invalid-C34-reserve-divisor"),
++                            },
++                            Err(std::env::VarError::NotPresent)=>0,
++                            Err(_)=>return Judgment::unknown("invalid-C34-reserve-divisor"),
++                        };
++                        let reserve=if reserve_divisor==0 {0} else {current_budget/reserve_divisor};
++                        let grant=current_budget.saturating_sub(reserve.saturating_add(1)).min(cap);
+                         let (proved,spent,first_failed)=diagnostic_pre_iota_source_congruence(
+                             checker,left,right,grant,
+                         );
+@@ -1885,6 +1901,9 @@
+                         static PRINTED:AtomicUsize=AtomicUsize::new(0);
+                         if PRINTED.fetch_add(1,Ordering::Relaxed)<128 {
+                             eprintln!("NUCLEUS_C28_SOURCE_CONGRUENCE:head={name:?}:depth={depth}:grant={grant}:spent={spent}:remaining={current_budget}:proved={proved}:first_failed={first_failed:?}");
++                            if reserve_divisor!=0 {
++                                eprintln!("NUCLEUS_C34_FALLBACK_RESERVE:head={name:?}:depth={depth}:divisor={reserve_divisor}:reserve={reserve}:cap={cap}:grant={grant}:spent={spent}:remaining={current_budget}:proved={proved}");
++                            }
+                         }
+                         if proved {
+                             return Judgment::proven((),"checked-relational-source-neutral-congruence");
