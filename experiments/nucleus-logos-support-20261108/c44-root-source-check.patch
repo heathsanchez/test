@@ -1,0 +1,43 @@
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -3126,6 +3126,21 @@
+         }
+         let ordinary = match inferred {
+             Judgment::Proven { value, .. } => {
++                // C44: observe the *necessary* n7 `And.intro` first-proof
++                // argument's independently inferred type before checking
++                // its source conversion. No alternative proof is admitted.
++                #[cfg(feature = "diagnostics")]
++                if expression.0 == 8804 && context.is_empty() && frame.id() == 0
++                    && std::env::var_os("NUCLEUS_DIAGNOSTIC_C44_ROOT_ARGUMENT").is_some()
++                {
++                    eprintln!("NUCLEUS_C44_INFERRED_ARG:{}", serde_json::json!({
++                        "expression": expression.0,
++                        "context_len": context.len(),
++                        "remaining": *remaining,
++                        "inferred": format!("{value:?}").chars().take(1800).collect::<String>(),
++                        "expected": format!("{expected:?}").chars().take(1800).collect::<String>(),
++                    }));
++                }
+                 let conversion = crate::convert::convert_with_policy_in_context(
+                     self,
+                     &value,
+@@ -3805,6 +3820,18 @@
+             Judgment::Refuted { obstruction } => Judgment::Refuted { obstruction },
+             Judgment::Unknown { residual } => Judgment::Unknown { residual },
+         };
++        #[cfg(feature = "diagnostics")]
++        if expression.0 == 8804 && context.is_empty() && frame.id() == 0
++            && std::env::var_os("NUCLEUS_DIAGNOSTIC_C44_ROOT_ARGUMENT").is_some()
++        {
++            eprintln!("NUCLEUS_C44_ROOT_CHECK:{}", serde_json::json!({
++                "expression": expression.0,
++                "context_len": context.len(),
++                "remaining": *remaining,
++                "result": format!("{ordinary:?}").chars().take(1400).collect::<String>(),
++                "expected": format!("{expected:?}").chars().take(1800).collect::<String>(),
++            }));
++        }
+         // A source lambda may be checked against an already established Pi
+         // at any lexical depth. Eligibility depends on syntax and typing,
+         // never an expression ID, theorem name or benchmark family.
