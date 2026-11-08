@@ -40,6 +40,7 @@ jobs:
           done
           python3 -m py_compile experiments/nucleus-certified-decide-20261109/c69_instrument.py
           python3 experiments/nucleus-certified-decide-20261109/c69_instrument.py
+          grep -n -C 9 'expose_uncached_internal_with_pending' metatron-kernel/src/machine.rs | head -n 100
           python3 -m py_compile experiments/nucleus-certified-decide-20261109/c70_resume_share.py
           python3 experiments/nucleus-certified-decide-20261109/c70_resume_share.py
           cargo check --locked --all-targets --features diagnostics --manifest-path metatron-kernel/Cargo.toml > reports/cargo-check.log 2>&1 || { tail -n 120 reports/cargo-check.log; exit 1; }
