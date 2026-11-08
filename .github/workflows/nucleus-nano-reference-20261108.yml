@@ -116,6 +116,34 @@ jobs:
               --stats reports/c23-fueled-chain.stderr --counter closed_hit --expect zero \
               > reports/c23-closed-hit-contract.json
           fi
+      - name: C24 test the two independent reference memo ablations together
+        run: |
+          set -euo pipefail
+          test "$(git -C nano-reference rev-parse HEAD)" = '54ce971a5ac2513a1bac0ac9bca73f672196c0f2'
+          git -C nano-reference apply --reverse --check "$GITHUB_WORKSPACE/experiments/nucleus-logos-support-20261108/c23-nano-no-closed-type-memo.patch"
+          git -C nano-reference apply --reverse "$GITHUB_WORKSPACE/experiments/nucleus-logos-support-20261108/c23-nano-no-closed-type-memo.patch"
+          git -C nano-reference diff --exit-code
+          git -C nano-reference apply --check "$GITHUB_WORKSPACE/experiments/nucleus-logos-support-20261108/c22-nano-no-inst-pi-memo.patch"
+          git -C nano-reference apply "$GITHUB_WORKSPACE/experiments/nucleus-logos-support-20261108/c22-nano-no-inst-pi-memo.patch"
+          git -C nano-reference apply --check "$GITHUB_WORKSPACE/experiments/nucleus-logos-support-20261108/c23-nano-no-closed-type-memo.patch"
+          git -C nano-reference apply "$GITHUB_WORKSPACE/experiments/nucleus-logos-support-20261108/c23-nano-no-closed-type-memo.patch"
+          git -C nano-reference diff -- src/value_checker/infer.rs > reports/c24-combined-source-diff.patch
+          cargo build --locked --release --features vstats --manifest-path nano-reference/Cargo.toml --bin nl-fast > reports/c24-build.log 2>&1 || { tail -n 100 reports/c24-build.log; exit 1; }
+          set +e
+          NL_VSTATS=1 timeout --signal=TERM --kill-after=3s 60s nano-reference/target/release/nl-fast --steps 262144 -j1 -q \
+            arena207/good/perf/fueled-chain.ndjson > reports/c24-fueled-chain.stdout 2> reports/c24-fueled-chain.stderr
+          c24_code=$?
+          set -e
+          printf '%s\n' "$c24_code" > reports/c24-fueled-chain.exit
+          case "$c24_code" in 0|2|124) ;; *) echo 'Unexpected failure of unchanged valid original under combined reference memo ablations'; exit 1 ;; esac
+          if test "$c24_code" -ne 124; then
+            python3 experiments/nucleus-logos-support-20261108/vstats_contract.py \
+              --stats reports/c24-fueled-chain.stderr --counter inst_hit --expect zero \
+              > reports/c24-inst-hit-contract.json
+            python3 experiments/nucleus-logos-support-20261108/vstats_contract.py \
+              --stats reports/c24-fueled-chain.stderr --counter closed_hit --expect zero \
+              > reports/c24-closed-hit-contract.json
+          fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:
