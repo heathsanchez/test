@@ -808,7 +808,7 @@ ahead of time. Therefore direct predictive cross-frame type reuse is
 **REJECTED**, including source-support-key weakening; do not rerun it.
 Magma recursor and grind arithmetic work remain separate UNKNOWNs.
 
-## C20 reference core-mode ablation (CANDIDATE, awaiting native verdict)
+## C20 reference core-mode ablation (WARRANTED_BOUNDED differential)
 
 The same exact nano-lean source and ten frozen exports now replay both
 its default value checker and its distinct `--term-core` checker, with
@@ -821,7 +821,37 @@ is supplied only for the term ablation; source hash checks, explicit
 unqualified verdict labels, and forged control failure gates remain.
 The workflow modification at
 [commit 6ceae9e](https://github.com/heathsanchez/test/commit/6ceae9e4851401cad1b0d8979c61853c682f0337)
-was submitted, but no GitHub Actions result has been inspected;
-C20 remains **UNKNOWN / UNQUALIFIED**. Only after the pinned native
-run is observed may this discriminate the next Nucleus patch.
+[C20 run #42440338082](https://github.com/heathsanchez/test/actions/runs/42440338082)
+is **SUCCESS** at workflow commit
+`6ceae9e4851401cad1b0d8979c61853c682f0337`, artifact
+`13601467155`, downloaded and SHA256-verified ZIP
+`5e4cee34d5dd2d768f70338e59734e9ebc838f4cecf0e598ec565f63dba7837c`.
+Both exact baseline-value and counterfactual term core compiled and completed
+the identical ten SHA256-pinned original exports, same external
+`--steps 262144` argument. On `fueled-chain`, default value-core
+`REFERENCE_ACCEPT_UNQUALIFIED` (200 declarations, ~31.6 ms),
+but term-core `REFERENCE_UNKNOWN` (four source declarations
+`chain6_datF`, `chain9_datF`, `chain12`, `chain12_datF` exhausted
+declaration work budgets, 200 declarations total). The other five original
+valid cases were UNKNOWN in both modes. All four forged controls were
+REJECT_UNQUALIFIED in both modes. The term-core result is not an unsafe
+accept, and the lack of trusted prelude remains; neither is an independent
+proof warrant.
+
+**WARRANTED_BOUNDED conclusion**: the value-checking architecture materially
+affects this exact case under nano-lean's own resource meter. This does
+**not** isolate which value-core component is causal: NbE, value
+interning, projection-aware inference, Pi codomain memoization,
+guarded derivations, and scheduling all differ. It does **not** imply
+that copying nano's checker or a single optimization would safely close
+Nucleus. Prior Nucleus C5/C6 predictive cache transport was already
+REJECTED; no source-unsafe frame quotient is now admissible.
+
+Next cheapest decisive experiment should isolate *one* exact source
+reference mechanism inside value core, e.g. instrumentation of
+`NL_VSTATS` per-source declaration counters before considering a
+single guarded Nucleus value-level operation. The full Nucleus
+primary/secondary completion obligations remain unchanged: **six
+original valid cases UNKNOWN at standard 262144, complete Mathlib
+unproved**.
 
