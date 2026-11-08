@@ -1,6 +1,51 @@
 --- a/src/typecheck.rs
 +++ b/src/typecheck.rs
-@@ -2425,10 +2425,50 @@
+@@ -1,8 +1,15 @@
+ use std::cell::{RefCell,Cell};
+ use std::collections::{hash_map::Entry, HashMap};
+ use std::rc::Rc;
++#[cfg(feature="diagnostics")]
++use std::sync::atomic::{AtomicU64, Ordering};
+ use crate::machine::{ExposureCache, new_exposure_cache};
+ 
++// An address is not an owner identity: the checker slot can be reused for a
++// later declaration with a different environment. Never equate their facts.
++#[cfg(feature="diagnostics")]
++static NEXT_LOGOS_OBSERVER_CHECKER:AtomicU64=AtomicU64::new(1);
++
+ use crate::environment::Environment;
+ use crate::id::{ExprId, IdTable, LevelId, NameId};
+ use crate::judgment::Judgment;
+@@ -127,6 +134,8 @@
+ struct ParametricSourceSupport { captures:Vec<(u64,u64)>, levels:Vec<(LevelId,LevelId)> }
+ 
+ pub struct TypeChecker<'a> {
++    #[cfg(feature="diagnostics")]
++    logos_observer_checker:Option<u64>,
+     expressions: &'a IdTable<ExprId, Expr>,
+     levels: &'a IdTable<LevelId, Level>,
+     environment: &'a Environment,
+@@ -195,6 +204,9 @@
+         environment: &'a Environment,
+     ) -> Self {
+         Self {
++            #[cfg(feature="diagnostics")]
++            logos_observer_checker:NEXT_LOGOS_OBSERVER_CHECKER.fetch_update(
++                Ordering::Relaxed,Ordering::Relaxed,|id|id.checked_add(1)).ok(),
+             expressions,
+             levels,
+             environment,
+@@ -229,6 +241,9 @@
+         level_substitution: HashMap<NameId, LevelTerm>,
+     ) -> Self {
+         Self {
++            #[cfg(feature="diagnostics")]
++            logos_observer_checker:NEXT_LOGOS_OBSERVER_CHECKER.fetch_update(
++                Ordering::Relaxed,Ordering::Relaxed,|id|id.checked_add(1)).ok(),
+             expressions,
+             levels,
+             environment,
+@@ -2425,10 +2440,54 @@
              cache.insert(key, value.clone());
          }
          #[cfg(feature="diagnostics")]
@@ -24,7 +69,8 @@
 +        if !matches!(expression.0,2156|2157|2158|2339|4770)
 +            || LOGOS_PROJECTION_SHADOW.with(|shadow|shadow.borrow().observed>=40000)
 +        {return;}
-+        let (Some(flags),Some(epoch))=(crate::run_flags::captured_configuration(),self.binding_revocation_epoch.get())else{return;};
++        let (Some(checker),Some(flags),Some(epoch))=(self.logos_observer_checker,
++            crate::run_flags::captured_configuration(),self.binding_revocation_epoch.get())else{return;};
 +        let mut diagnostic_budget=4096;
 +        let Some(support)=self.complete_source_support(expression,&mut diagnostic_budget)else{return;};
 +        if support.is_empty()||support.len()>2{return;}
@@ -33,11 +79,14 @@
 +            Some(frame.lookup_with_node_id(*index)?.0)
 +        }).collect::<Option<Vec<_>>>()else{return;};
 +        let key=LogosProjectionKey{
-+            checker:self as *const Self as usize,source:expression,
++            checker,source:expression,
 +            binding_nodes,context:context.to_vec(),flags:Some(flags),epoch:Some(epoch),
 +        };
 +        LOGOS_PROJECTION_SHADOW.with(|shadow|{
-+            shadow.borrow_mut().observe(key,frame.id(),result);
++            shadow.borrow_mut().observe(key,frame.id(),result,|target|{
++                let mut budget=4096;
++                self.complete_source_support(target,&mut budget).map(|s|s.is_empty())
++            });
 +        });
 +    }
 +
@@ -51,14 +100,14 @@
      fn infer_uncached(
          &self,
          expression: ExprId,
-@@ -8542,6 +8582,129 @@
+@@ -8542,6 +8601,164 @@
  }
  impl ExactTypingMemo{fn clear(&mut self){for slot in self.slots.iter_mut(){*slot=None;}self.hand.fill(0);}}
  
 +#[cfg(feature="diagnostics")]
 +#[derive(Clone,Debug,Eq,Hash,PartialEq)]
 +struct LogosProjectionKey{
-+    checker:usize,source:ExprId,binding_nodes:Vec<u64>,context:Vec<TypeValue>,
++    checker:u64,source:ExprId,binding_nodes:Vec<u64>,context:Vec<TypeValue>,
 +    flags:Option<[u64;2]>,epoch:Option<u64>,
 +}
 +#[cfg(feature="diagnostics")]
@@ -73,10 +122,12 @@
 +    prior_sort:usize,prior_closed_term:usize,prior_captured_term:usize,prior_pi:usize,
 +    changed_only_term_capture:usize,changed_term_levels:usize,
 +    changed_term_expression:usize,changed_nonterm_shape:usize,
++    capture_result_closed:usize,capture_result_open:usize,capture_result_unknown:usize,
 +}
 +#[cfg(feature="diagnostics")]
 +impl LogosProjectionShadow{
-+    fn observe(&mut self,key:LogosProjectionKey,frame:u64,result:Option<&TypeValue>)->bool{
++    fn observe<F:FnOnce(ExprId)->Option<bool>>(&mut self,key:LogosProjectionKey,
++        frame:u64,result:Option<&TypeValue>,closed_source:F)->bool{
 +        self.observed+=1;
 +        let Some(result)=result else{self.unknown+=1;return false;};
 +        self.complete+=1;
@@ -94,7 +145,14 @@
 +            }
 +            self.cross_frame_different_result+=1;
 +            match (&prior.result,result){
-+                (TypeValue::Term(a),TypeValue::Term(b))if a.expr==b.expr&&a.levels==b.levels=>self.changed_only_term_capture+=1,
++                (TypeValue::Term(a),TypeValue::Term(b))if a.expr==b.expr&&a.levels==b.levels=>{
++                    self.changed_only_term_capture+=1;
++                    match closed_source(a.expr){
++                        Some(true)=>self.capture_result_closed+=1,
++                        Some(false)=>self.capture_result_open+=1,
++                        None=>self.capture_result_unknown+=1,
++                    }
++                },
 +                (TypeValue::Term(a),TypeValue::Term(b))if a.expr==b.expr=>self.changed_term_levels+=1,
 +                (TypeValue::Term(_),TypeValue::Term(_))=>self.changed_term_expression+=1,
 +                _=>self.changed_nonterm_shape+=1,
@@ -123,6 +181,9 @@
 +            "changed_term_levels":self.changed_term_levels,
 +            "changed_term_expression":self.changed_term_expression,
 +            "changed_nonterm_shape":self.changed_nonterm_shape,
++            "capture_result_closed":self.capture_result_closed,
++            "capture_result_open":self.capture_result_open,
++            "capture_result_unknown":self.capture_result_unknown,
 +        }));
 +    }}
 +}
@@ -141,26 +202,26 @@
 +    fn completed_exact_result_is_observed_across_different_full_frames() {
 +        let mut shadow=LogosProjectionShadow::default();
 +        let k=key(10,vec![sort()]);
-+        assert!(!shadow.observe(k.clone(),31,Some(&sort())));
-+        assert!(shadow.observe(k,32,Some(&sort())));
++        assert!(!shadow.observe(k.clone(),31,Some(&sort()),|_|None));
++        assert!(shadow.observe(k,32,Some(&sort()),|_|None));
 +        assert_eq!(shadow.cross_frame_same_result,1);
 +    }
 +    #[test]
 +    fn changed_binding_or_context_never_counts_as_safe_reuse() {
 +        let mut shadow=LogosProjectionShadow::default();
-+        assert!(!shadow.observe(key(10,vec![sort()]),31,Some(&sort())));
-+        assert!(!shadow.observe(key(11,vec![sort()]),32,Some(&sort())));
-+        assert!(!shadow.observe(key(10,vec![TypeValue::Sort(crate::level::succ(LevelTerm::Zero))]),33,Some(&sort())));
++        assert!(!shadow.observe(key(10,vec![sort()]),31,Some(&sort()),|_|None));
++        assert!(!shadow.observe(key(11,vec![sort()]),32,Some(&sort()),|_|None));
++        assert!(!shadow.observe(key(10,vec![TypeValue::Sort(crate::level::succ(LevelTerm::Zero))]),33,Some(&sort()),|_|None));
 +        assert_eq!(shadow.cross_frame_same_result,0);
 +    }
 +    #[test]
 +    fn failed_derivations_and_changed_results_do_not_authorize_same_result() {
 +        let mut shadow=LogosProjectionShadow::default();
 +        let k=key(10,vec![sort()]);
-+        assert!(!shadow.observe(k.clone(),31,None));
-+        assert!(!shadow.observe(k.clone(),32,Some(&sort())));
++        assert!(!shadow.observe(k.clone(),31,None,|_|None));
++        assert!(!shadow.observe(k.clone(),32,Some(&sort()),|_|None));
 +        let other=TypeValue::Sort(crate::level::succ(LevelTerm::Zero));
-+        assert!(!shadow.observe(k,33,Some(&other)));
++        assert!(!shadow.observe(k,33,Some(&other),|_|None));
 +        assert_eq!(shadow.cross_frame_same_result,0);
 +        assert_eq!(shadow.cross_frame_different_result,1);
 +        assert_eq!(shadow.changed_nonterm_shape,1);
@@ -169,12 +230,35 @@
 +    fn revocation_epoch_and_capability_configuration_are_separate() {
 +        let mut shadow=LogosProjectionShadow::default();
 +        let k=key(10,vec![sort()]);
-+        assert!(!shadow.observe(k.clone(),31,Some(&sort())));
++        assert!(!shadow.observe(k.clone(),31,Some(&sort()),|_|None));
 +        let mut newer=k.clone();newer.epoch=Some(8);
 +        let mut altered=k;altered.flags=Some([3,6]);
-+        assert!(!shadow.observe(newer,32,Some(&sort())));
-+        assert!(!shadow.observe(altered,33,Some(&sort())));
++        assert!(!shadow.observe(newer,32,Some(&sort()),|_|None));
++        assert!(!shadow.observe(altered,33,Some(&sort()),|_|None));
 +        assert_eq!(shadow.cross_frame_same_result,0);
++    }
++    #[test]
++    fn different_checker_lifetimes_cannot_share_a_projected_fact() {
++        let mut shadow=LogosProjectionShadow::default();
++        let k=key(10,vec![sort()]);
++        assert!(!shadow.observe(k.clone(),31,Some(&sort()),|_|None));
++        let mut later=k;later.checker=2;
++        assert!(!shadow.observe(later,32,Some(&sort()),|_|None));
++        assert_eq!(shadow.cross_frame_same_result,0);
++    }
++    #[test]
++    fn syntactically_closed_result_is_separately_measured_not_assumed() {
++        let mut shadow=LogosProjectionShadow::default();
++        let k=key(10,vec![sort()]);
++        let before=TypeValue::Term(Closure::new(ExprId(74),EnvFrame::empty().extend_free(FreeId(7))));
++        let after=TypeValue::Term(Closure::new(ExprId(74),EnvFrame::empty().extend_free(FreeId(8))));
++        assert!(!shadow.observe(k.clone(),31,Some(&before),|_|Some(true)));
++        assert!(!shadow.observe(k,32,Some(&after),|expr|{
++            assert_eq!(expr,ExprId(74));Some(true)
++        }));
++        assert_eq!(shadow.changed_only_term_capture,1);
++        assert_eq!(shadow.capture_result_closed,1);
++        assert_eq!(shadow.capture_result_open,0);
 +    }
 +}
 +
