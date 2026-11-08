@@ -1,0 +1,19 @@
+--- a/src/machine.rs
++++ b/src/machine.rs
+@@ -895,7 +895,15 @@
+         preserve_stuck_projection: bool,
+         pending: Vec<Closure>,
+     ) -> Judgment<Exposure> {
+-        if self.exposure_fuel.get().is_some() && self.exposure_depth.get() >= 64 { return Judgment::unknown("constructor-demand-depth-exhausted"); }
++        // C43 diagnostic: test whether the unchanged qualified recursor
++        // evaluation is stopped by this host recursion guard rather than
++        // semantic source work. The fuel meter and all iota premises remain
++        // unchanged. Deep exposure is strictly opt-in.
++        #[cfg(feature="diagnostics")]
++        let exposure_limit=if std::env::var_os("NUCLEUS_DIAGNOSTIC_C43_DEEP_EXPOSURE").is_some(){128}else{64};
++        #[cfg(not(feature="diagnostics"))]
++        let exposure_limit=64;
++        if self.exposure_fuel.get().is_some() && self.exposure_depth.get() >= exposure_limit { return Judgment::unknown("constructor-demand-depth-exhausted"); }
+         self.exposure_depth.set(self.exposure_depth.get() + 1);
+         let _fuel_scope = ExposureFuelScope { fuel: &self.exposure_fuel, depth: &self.exposure_depth, owner: false };
+         if budget == 0 || self.exposure_fuel.get() == Some(0) {
