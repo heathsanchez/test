@@ -1,0 +1,61 @@
+name: Nucleus C65 frozen n7 source-certificate inventory
+on:
+  push:
+    branches: [research/nucleus-certified-decide-boundary-20261109]
+    paths:
+      - '.github/workflows/nucleus-c65-source-inventory.yml'
+      - 'experiments/nucleus-certified-decide-20261109/c65_source_inventory.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  source-inventory:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Recover canonical original Arena207 fixture and require exact zip hash
+        run: |
+          set -euo pipefail
+          mkdir -p frozen out
+          gh api repos/heathsanchez/test/actions/artifacts/13276400289/zip > arena207.zip
+          printf '%s  %s\n' a9582eadc0d9893cbe39e6bcfccd79bfaec2032838851b8a487c35df16096763 arena207.zip | sha256sum -c -
+          unzip -p arena207.zip lean-arena-tests.tar.gz | tar --no-same-owner -xzf - -C frozen
+          sha256sum frozen/good/perf/magma-list-pair-n7.ndjson
+          test "$(sha256sum frozen/good/perf/magma-list-pair-n7.ndjson | cut -d' ' -f1)" = "abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35"
+      - name: Extract actual source-owned Decidable spine and obligation data
+        run: |
+          set -euo pipefail
+          python3 experiments/nucleus-certified-decide-20261109/c65_source_inventory.py \
+            frozen/good/perf/magma-list-pair-n7.ndjson out/c65-source.json
+          python3 - <<'PY'
+          from pathlib import Path
+          import importlib.util,json
+          module=Path("experiments/nucleus-certified-decide-20261109/c65_source_inventory.py")
+          spec=importlib.util.spec_from_file_location("c65",module)
+          m=importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(m)
+          inp=Path("frozen/good/perf/magma-list-pair-n7.ndjson").read_bytes()
+          result=json.loads(Path("out/c65-source.json").read_text())
+          assert result["source_sha256"]==m.EXPECTED_SOURCE
+          assert result["verification_reuse_authority"]=="NONE"
+          assert result["nucleus_standard_verdict"]=="UNKNOWN"
+          assert set(result["roots"])=={str(x) for x in m.ROOTS}
+          for label,raw in [("changed_source",inp+b"\n"),("modified_owner",inp.replace(b"countermodel",b"countermodex",1))]:
+              try:
+                  m.report(raw)
+              except ValueError:
+                  print("C65_CONTROL_REJECTED",label)
+              else:
+                  raise AssertionError("modified source passed: "+label)
+          print("C65_EVIDENCE_ONLY_SUCCESS")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-c65-n7-source-obligation
+          retention-days: 60
+          path: out/
