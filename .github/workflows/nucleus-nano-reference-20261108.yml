@@ -1,0 +1,58 @@
+# C19: external reference observation only. No Nucleus kernel authority change.
+name: Nucleus C19 pinned nano-lean reference comparison
+on:
+  push:
+    branches: [research/nucleus-logos-support-20261108]
+    paths: ['.github/workflows/nucleus-nano-reference-20261108.yml']
+  workflow_dispatch:
+permissions: {contents: read, actions: read}
+jobs:
+  reference-comparison:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      GH_TOKEN: ${{ github.token }}
+      CARGO_INCREMENTAL: '0'
+      CARGO_BUILD_JOBS: '2'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: sdiehl/nano-lean
+          ref: 54ce971a5ac2513a1bac0ac9bca73f672196c0f2
+          path: nano-reference
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Rebuild external reference at its exact SHA; preserve separate trust model
+        run: |
+          set -euo pipefail
+          mkdir -p reports original196 arena207
+          test "$(git -C nano-reference rev-parse HEAD)" = '54ce971a5ac2513a1bac0ac9bca73f672196c0f2'
+          cargo build --locked --release --manifest-path nano-reference/Cargo.toml --bin nl-fast > reports/reference-build.log 2>&1 || { tail -n 100 reports/reference-build.log; exit 1; }
+          sha256sum nano-reference/target/release/nl-fast > reports/reference-binary.sha256
+          nano-reference/target/release/nl-fast --help > reports/reference-cli.txt
+      - name: Restore frozen original valid and forged exports
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/11272848230/zip > original196.zip
+          printf '%s  %s\n' f6cd590db7f6fb92b8d1b3ca87231d4b0f521f085d73f93abd005f5caaff86d2 original196.zip | sha256sum -c -
+          unzip -p original196.zip lean-arena-tests.tar.gz | tar --no-same-owner -xzf - -C original196
+          gh api repos/heathsanchez/test/actions/artifacts/13276400289/zip > arena207.zip
+          printf '%s  %s\n' a9582eadc0d9893cbe39e6bcfccd79bfaec2032838851b8a487c35df16096763 arena207.zip | sha256sum -c -
+          unzip -p arena207.zip lean-arena-tests.tar.gz | tar --no-same-owner -xzf - -C arena207
+      - name: Revalidate harness guards and compare 6 valid with 4 forged
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s experiments/nucleus-logos-support-20261108 -p 'test_*.py' -v > reports/harness-tests.log 2>&1 || { tail -n 100 reports/harness-tests.log; exit 1; }
+          python3 experiments/nucleus-logos-support-20261108/probe_c19_reference.py \
+            --binary nano-reference/target/release/nl-fast \
+            --valid-root arena207 \
+            --bad-root original196 \
+            --steps 262144 --timeout 60 | tee reports/c19-reference-results.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-C19-nano-reference-UNQUALIFIED
+          retention-days: 60
+          path: reports/
