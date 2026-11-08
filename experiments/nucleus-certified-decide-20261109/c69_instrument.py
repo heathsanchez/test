@@ -86,13 +86,17 @@ insert='''            #[cfg(feature="diagnostics")]
 chunk=chunk.replace(anchor,insert+anchor)
 p.write_text(body[:start]+chunk+body[end:])
 
-# Report the same worker's thread-local census through the C64 diagnostic runner.
-p=Path("experiments/nucleus-bool-recursor-eligibility-20261106/nucleus-diagnostic.rs")
+# Locate the binary actually compiled from the authenticated C37 source
+# archive. The research-tree example under experiments is not this binary.
+candidates=list((ROOT/"src").rglob("nucleus-diagnostic.rs"))
+assert len(candidates)==1,("actual diagnostic binary source missing/ambiguous",candidates)
+p=candidates[0]
 s=p.read_text()
-assert "diagnostic_steps={steps}" in s
+assert "diagnostic_steps={steps}" in s,("diagnostic output anchor missing",p)
+assert s.count('eprintln!("diagnostic_steps={steps}:verdict={verdict:?}");')==1
 s=s.replace('eprintln!("diagnostic_steps={steps}:verdict={verdict:?}");',
 '''#[cfg(feature="diagnostics")]
  metatron_kernel::diagnostics::c69_report();
  eprintln!("diagnostic_steps={steps}:verdict={verdict:?}");''')
 p.write_text(s)
-print("C69_INSTRUMENT_APPLIED_NO_PROOF_RULE_CHANGED")
+print("C69_INSTRUMENT_APPLIED_NO_PROOF_RULE_CHANGED:binary="+str(p))
