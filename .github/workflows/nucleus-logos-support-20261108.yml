@@ -1,6 +1,6 @@
-# C16: actually borrow/cap the nested recursor's speculative projection owner.
-# Candidate reduction scheduler; selected source/flags/standard budget unchanged.
-name: Nucleus C16 metered projection-major borrow
+# C17: diagnostic cap sweep under source-checked shared-owner accounting.
+# No original input, global budget or default kernel flag changes.
+name: Nucleus C17 source-qualified projection cap sweep
 on:
   push:
     branches: [research/nucleus-logos-support-20261108]
@@ -20,7 +20,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         with: {toolchain: '1.99.1'}
-      - name: Restore exact selected source and apply source-qualified C11–C16 patches
+      - name: Restore exact selected source and apply source-qualified C11–C17 patches
         run: |
           set -euo pipefail
           mkdir -p base candidate reports original196 arena207
@@ -35,7 +35,8 @@ jobs:
           patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-logos-support-20261108/c14-projection-major-boundary.patch
           patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-logos-support-20261108/c15-bounded-projection-major.patch
           patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-logos-support-20261108/c16-metered-projection-borrow.patch
-          sha256sum experiments/nucleus-logos-support-20261108/logos-projection-shadow.patch experiments/nucleus-logos-support-20261108/c12-caller-site.patch experiments/nucleus-logos-support-20261108/c13-large-replay-residual.patch experiments/nucleus-logos-support-20261108/c14-projection-major-boundary.patch experiments/nucleus-logos-support-20261108/c15-bounded-projection-major.patch experiments/nucleus-logos-support-20261108/c16-metered-projection-borrow.patch > reports/patch.sha256
+          patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-logos-support-20261108/c17-diagnostic-projection-cap.patch
+          sha256sum experiments/nucleus-logos-support-20261108/logos-projection-shadow.patch experiments/nucleus-logos-support-20261108/c12-caller-site.patch experiments/nucleus-logos-support-20261108/c13-large-replay-residual.patch experiments/nucleus-logos-support-20261108/c14-projection-major-boundary.patch experiments/nucleus-logos-support-20261108/c15-bounded-projection-major.patch experiments/nucleus-logos-support-20261108/c16-metered-projection-borrow.patch experiments/nucleus-logos-support-20261108/c17-diagnostic-projection-cap.patch > reports/patch.sha256
           find metatron-kernel/src -type f -print0 | sort -z | xargs -0 sha256sum > reports/source.sha256
           cargo check --locked --all-targets --features diagnostics --manifest-path metatron-kernel/Cargo.toml > reports/plain-build.log 2>&1 || { tail -n 100 reports/plain-build.log; exit 1; }
       - name: Native proof-obligation and adversarial controls
@@ -56,14 +57,13 @@ jobs:
           gh api repos/heathsanchez/test/actions/artifacts/13276400289/zip > arena207.zip
           printf '%s  %s\n' a9582eadc0d9893cbe39e6bcfccd79bfaec2032838851b8a487c35df16096763 arena207.zip | sha256sum -c -
           unzip -p arena207.zip lean-arena-tests.tar.gz | tar --no-same-owner -xzf - -C arena207
-      - name: C16 red-green gate on borrowed nested source work owner
+      - name: C17 red-green grant sweep on frozen original Magma n7
         run: |
           set -euo pipefail
-          python3 experiments/nucleus-logos-support-20261108/probe_c10_route.py \
+          python3 experiments/nucleus-logos-support-20261108/sweep_c17_projection.py \
             --binary candidate/metatron-kernel \
             --input arena207/good/perf/magma-list-pair-n7.ndjson \
-            --flags base/flags.json \
-            --allow-accepted --require-bounded-projection --require-borrowed-owner | tee reports/c16-borrowed-projection-probe.json
+            --flags base/flags.json | tee reports/c17-projection-cap-sweep.json
       - name: Exact chain9, isolated app-lam stack preflight and 403-outcome regression
         run: |
           set -euo pipefail
@@ -72,7 +72,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: nucleus-logos-support-C16-CANDIDATE
+          name: nucleus-logos-support-C17-CANDIDATE
           retention-days: 60
           path: |
             reports/
