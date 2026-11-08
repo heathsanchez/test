@@ -1,0 +1,43 @@
+{
+  "experiment": "C43 opt-in machine::expose_internal depth guard 64 -> 128",
+  "date": "2026-11-08",
+  "branch": "research/nucleus-c40-c42-source-major-20261108",
+  "base": "fc6e7f6a2257fec51abf84d764038b0a5b9454df",
+  "patch_sha256": "54fe542bea622ef2eff2fe8e1583a62ddd754995997b8784cc453b34dbd2e601",
+  "runtime": "Rust 1.99.1, cargo build --locked --release --features diagnostics",
+  "config": "C39 selected 24 flags plus NUCLEUS_DIAGNOSTIC_C38_EARLY_TYPED_SPINE=1 and NUCLEUS_DIAGNOSTIC_C43_DEEP_EXPOSURE=1; exact original NDJSON; timeout 90s per proof; 262144 judgment steps",
+  "verdicts": [
+    [
+      "magma-list-pair-n7",
+      "UNKNOWN",
+      2
+    ],
+    [
+      "magma-list-pair-n21",
+      "UNKNOWN",
+      2
+    ],
+    [
+      "magma-list-deep-n21",
+      "UNKNOWN",
+      2
+    ],
+    [
+      "magma-list-deep-n36",
+      "UNKNOWN",
+      2
+    ],
+    [
+      "fueled-chain",
+      "UNKNOWN",
+      2
+    ],
+    [
+      "grind-ring-5",
+      "UNKNOWN",
+      2
+    ]
+  ],
+  "additional_n7": "With NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE=1, top-level expression 8835 function 8805 still UNKNOWN (unresolved-qualified-recursor-heads) with remaining 261687.",
+  "classification": "REJECTED as six-case closure; depth guard extension alone insufficient; no proof-rule change, and no protected 403 qualification was run on opt-in C43"
+}
