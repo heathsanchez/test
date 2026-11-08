@@ -1,0 +1,24 @@
+--- a/src/machine.rs
++++ b/src/machine.rs
+@@ -2922,8 +2922,19 @@
+                 // constructor. Select only a registered field of the actual
+                 // source constructor; no desired result chooses a rule.
+                 // Recursive exposures and replays share this work owner's fuel.
+-                for _ in 0..16 {
+-                    if !spend(){return Judgment::unknown("projection-major-replay-budget");}
++                for step in 0..16 {
++                    if !spend(){
++                        #[cfg(feature="diagnostics")]
++                        if crate::run_flags::present(crate::run_flags::Flag::TraceNestedRecursorIotaFailure) {
++                            let shape=match &major_value {
++                                Value::StuckProjection{type_name,index,structure,spine}=>format!("stuck-projection:type={type_name:?}:index={index}:source={:?}:frame={}:applied={}",structure.expr,structure.env.id(),spine.len()),
++                                Value::Neutral(n)=>format!("neutral={:?}:arity={}:qualified={}",n.head,n.spine.len(),matches!(&n.head,NeutralHead::Const{name,..} if self.recursor_reductions.contains_key(name))),
++                                _=>format!("{major_value:?}").chars().take(340).collect::<String>(),
++                            };
++                            eprintln!("NUCLEUS_PROJECTION_MAJOR_EXHAUSTED:head={name:?}:entry_budget={budget}:caller={caller}:replay_goal={replay_goal}:depth={depth}:step={step}:owner_on_entry={owner_at_entry:?}:major={shape}:fuel={:?}",self.exposure_fuel.get());
++                        }
++                        return Judgment::unknown("projection-major-replay-budget");
++                    }
+                     let next=match &major_value {
+                         Value::StuckProjection{type_name,index,structure,spine}=>{
+                             self.projection_value_for_conversion(
