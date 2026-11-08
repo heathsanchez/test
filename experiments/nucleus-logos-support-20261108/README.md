@@ -800,11 +800,28 @@ valid cases remain UNKNOWN in Nucleus, and full Mathlib is still unproved.
 C19 yields a decisive separation of residual families rather than an
 external shortcut: the reference checker has a cheap route on
 `fueled-chain` that Nucleus lacks, but it too exhausts all five
-grind/Magma cases at the nominal limit. Next cheapest experiment is
-a bounded, source-origin-preserving typed support/closure audit on the
-unchanged `fueled-chain`, **not** blanket cross-frame cache
-key weakening. C11 earlier found 762 nominally repeated source support
-keys across captured frames without a single identical full closure.
-Any proposed transport must verify all live binder/capture identities
-and replay type correctness independently before reuse. Magma recursor
-and grind arithmetic work remain separate UNKNOWN obligations.
+grind/Magma cases at the nominal limit. The earlier C5/C6 audits provide an important stronger negative
+control: all 762 apparent type-result support matches were equivalent
+only after both inferences had completed; none of their required
+captured bindings was available from the *next inference caller frame*
+ahead of time. Therefore direct predictive cross-frame type reuse is
+**REJECTED**, including source-support-key weakening; do not rerun it.
+Magma recursor and grind arithmetic work remain separate UNKNOWNs.
+
+## C20 reference core-mode ablation (CANDIDATE, awaiting native verdict)
+
+The same exact nano-lean source and ten frozen exports now replay both
+its default value checker and its distinct `--term-core` checker, with
+the same external 262144-step setting, to determine whether the
+reference's cheap `fueled-chain` acceptance depends on value-level
+semantics (NbE, interned neutrals and Pi instantiation). This is a
+causal-discriminator experiment, **not** a proposed source-soundness
+substitution. A RED-first/GREEN local unit test confirms `--term-core`
+is supplied only for the term ablation; source hash checks, explicit
+unqualified verdict labels, and forged control failure gates remain.
+The workflow modification at
+[commit 6ceae9e](https://github.com/heathsanchez/test/commit/6ceae9e4851401cad1b0d8979c61853c682f0337)
+was submitted, but no GitHub Actions result has been inspected;
+C20 remains **UNKNOWN / UNQUALIFIED**. Only after the pinned native
+run is observed may this discriminate the next Nucleus patch.
+
