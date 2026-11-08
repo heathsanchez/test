@@ -46,11 +46,16 @@ def classify_exit(rc: int) -> str:
 
 
 def run(binary: Path, path: Path, expected_digest: str, expected: str,
-        steps: int, timeout: int) -> dict:
+        steps: int, timeout: int, core: str = "value") -> dict:
+    if core not in ("value", "term"):
+        raise ValueError("only the declared reference cores may be compared")
     data = path.read_bytes()
     verify_payload(str(path), data, expected_digest)
     command = [str(binary.resolve()), "--steps", str(steps), "-j", "1",
-               "--quiet", str(path.resolve())]
+               "--quiet"]
+    if core == "term":
+        command.append("--term-core")
+    command.append(str(path.resolve()))
     started = time.monotonic()
     try:
         process = subprocess.run(command, capture_output=True, timeout=timeout)
@@ -80,12 +85,13 @@ def main() -> int:
     parser.add_argument("--bad-root", type=Path, required=True)
     parser.add_argument("--steps", type=int, default=262144)
     parser.add_argument("--timeout", type=int, default=60)
+    parser.add_argument("--core", choices=("value", "term"), default="value")
     args = parser.parse_args()
     if args.steps <= 0 or args.timeout <= 0:
         raise SystemExit("C19 requires finite positive work and wall budgets")
     records = [
         run(args.binary, args.valid_root / "good/perf" / (name + ".ndjson"),
-            digest, "VALID", args.steps, args.timeout)
+            digest, "VALID", args.steps, args.timeout, core=args.core)
         for name, digest in GOOD.items()
     ]
     records.extend(
@@ -98,6 +104,7 @@ def main() -> int:
     report = {
         "reference": "sdiehl/nano-lean",
         "reference_commit": REFERENCE_SHA,
+        "reference_core": args.core,
         "verdict_authority": False,
         "trusted_prelude": False,
         "work_units_comparable_to_nucleus": False,
