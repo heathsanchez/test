@@ -1,5 +1,27 @@
 # Nucleus: LOGOS-inspired scope-support census (CANDIDATE, diagnostic only)
 
+## C30: exact source-major exposure cache qualifies, but six original UNKNOWNs remain (8 November 2026)
+
+**Status: WARRANTED_BOUNDED** for the source-exact opt-in implementation, new native mode-isolation test and full protected regression; **REJECTED as an intervention that closes the original six**. Do not promote to the selected independent kernel.
+
+- **Root source distinction.** `expose_internal_with_pending` excludes the ordinary successful-exposure cache whenever the checked recursor worklist temporarily sets `native_completion=false`. C30 introduced a *separate per-immutable-Machine cache* keyed by exact source closure, full captured `EnvFrame` identity, instantiated universes, transparency, original pending spine and projection-preservation mode. It is used only while `worklist_major_probe=true` and `native_completion=false`; source work is debited from the existing owner for lookup and insertion. Only independently exposed stable source `NatLit`, `Sort`, `Lam`, `Pi`, rigid free values, or non-definition/non-recursor/non-native const heads may be retained. No suspended projection, incomplete native/registered recursor, UNKNOWN, desired constructor or inferred cross-frame equality is cached.
+- **RED** against exact C29 binary SHA-256 `a6e38e5f9540b33ae298103031f6a6ae14810734e35b6a943fa947670d686776`: original `magma-list-pair-n7`, exact canonical 24 flags plus `NUCLEUS_DIAGNOSTIC_C30_EXACT_MAJOR_CACHE=1`, returned rc2 with zero C30 markers.
+- **GREEN:** [Actions run #42451789400](https://github.com/heathsanchez/test/actions/runs/42451789400), workflow head `7a113235ae5d99106ab854247b87fe9bd26a783c`, artifact `13605794413` independently downloaded; archive SHA-256 `b574888e9503fb443f9980176e4a33776fce137885e08f0a547d9f9284d9ecbd`. C30 patch SHA-256 `fd9a863eab747ec2e91d2d99c946fd97c6b4a2524b1d5a4903fd6402862e79ee`, actual compiled `src/machine.rs` SHA-256 `61ba8643588ea2c40c87222228fe44b779bbaef95053deca7fbb62678fe2e6c2`, release binary SHA-256 `d6110d4da7929af194533a1f2a5a3134675b1f57857e92640be444f1a4436fe3`. All Rust native, proof-obligation, forged-proof and adversarial tests passed; the new `source_major_cache_is_exact_and_mode_isolated` test passed. Original `app-lam` accepted under pristine, observer-off and observer-on controls.
+- Default, C28-congruence-ON and **C30-cache-ON** each preserved all **403/403** exact source-frozen protected verdicts: **240 ACCEPT, 150 REJECT, 13 UNKNOWN**; no unexpected changed verdict and **0/6 unchanged original valid UNKNOWNs closed**. Every original had rc2 at the standard **262144** judgment-step budget. Neither complete Mathlib nor a leaderboard improvement is established.
+
+| Exact unchanged original | C30 rc | Last logged global exact-cache hit threshold | Source form of last logged hit |
+|---|---:|---|---|
+| fueled-chain | 2 | no hits | none |
+| grind-ring-5 | 2 | 2,048 (thus 2,048–4,095 hits) | `BVar 0` / `BVar 1` |
+| magma-list-pair-n7 | 2 | 1 (exactly one) | source application `ExprId(446)` |
+| magma-list-pair-n21 | 2 | 1 (exactly one) | source application `ExprId(442)` |
+| magma-list-deep-n21 | 2 | 4 (thus 4–7) | `BVar 1` |
+| magma-list-deep-n36 | 2 | 4 (thus 4–7) | `BVar 1` |
+
+The source forms were independently resolved against the *same unchanged NDJSON* expressions, not inferred from counter names. The opt-in cache primarily hits **cheap bound-variable lookups**; it does **not** show sharing of the costly projection/checked-recursor transitions identified by C29. In the single concurrent 403-case qualification, six-original runtime sums were **48.751 s default vs 49.612 s C30-ON**; this is not a controlled performance comparison and supplies no speedup warrant. Counted `store_count` markers also represent power-of-two sampled, global instrumentation across Machines, not a proof of source-semantic equivalence across environments.
+
+**New decisive residual:** expensive `Decidable.rec`/`PProd` projections traverse **distinct exact captured states**, or unfinished reduction phases, so exact positive cache reuse cannot discharge them. A simple bigger cache or syntax-only key would repeat prior negative experiments. The next minimal experiment is an *owner-local checked-transition ledger* for n7 that associates each actual projection receiver with its immutable binder/universe origin, continuation phase, completed constructor-or-UNKNOWN status and charged owner delta. Test whether the expensive repeated transitions have genuinely identical source-captured obligations; if none do, build a resumable source iota/projection continuation instead of memoizing unrelated contexts.
+
 ## C29: qualified source-state audit; 0/6 original UNKNOWNs closed (8 November 2026)
 
 **Status:** WARRANTED as a *diagnostic observation*; REJECTED as a shortcut via syntax-only memo/cycle detection; all six unchanged original proofs remain UNKNOWN.
