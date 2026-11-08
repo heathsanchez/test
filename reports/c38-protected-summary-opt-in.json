@@ -1,0 +1,234 @@
+{
+  "status": "CANDIDATE",
+  "acceptance_authority": false,
+  "c28_source_congruence_flag_on": false,
+  "c30_exact_major_cache_flag_on": false,
+  "selected_artifact": 13520537513,
+  "selected_commit": "018135224632f72ba06a2818132c3e857d67eaad",
+  "flags": {
+    "NUCLEUS_EXPERIMENTAL_CERTIFIED_QUOT_IOTA": "1",
+    "NUCLEUS_EXPERIMENTAL_CONTEXT_BINDER": "1",
+    "NUCLEUS_EXPERIMENTAL_DEMAND_MAJOR": "1",
+    "NUCLEUS_EXPERIMENTAL_EXPECTED_LAMBDA": "1",
+    "NUCLEUS_EXPERIMENTAL_FORMED_PROP_DOMAIN_RETRY": "1",
+    "NUCLEUS_EXPERIMENTAL_POLYMORPHIC_PROP_IRREL": "1",
+    "NUCLEUS_EXPERIMENTAL_PROJECTION_CONTEXT": "1",
+    "NUCLEUS_EXPERIMENTAL_PROJECTION_CROSSFRAME_512": "1",
+    "NUCLEUS_EXPERIMENTAL_PROP_SINGLETON_2P1F": "1",
+    "NUCLEUS_EXPERIMENTAL_RELEVANCE": "1",
+    "NUCLEUS_EXPERIMENTAL_REPLAY_NEUTRAL_PROJECTION": "1",
+    "NUCLEUS_EXPERIMENTAL_REPLAY_PROJECTION_MAJOR": "1",
+    "NUCLEUS_EXPERIMENTAL_SOURCE_PAIR_DEPTH8": "1",
+    "NUCLEUS_EXPERIMENTAL_SOURCE_PROOF_IRREL": "1",
+    "NUCLEUS_EXPERIMENTAL_SUBSTITUTION_RECLOSURE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_DATA_CONGRUENCE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_LINEAGE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_PROJECTION_SPINE": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_RECEIVER": "1",
+    "NUCLEUS_EXPERIMENTAL_TYPED_VALUE_NORMALIZATION": "1",
+    "NUCLEUS_EXPERIMENTAL_DEFERRED_PROJECTION_CONGRUENCE": "1",
+    "NUCLEUS_EXPERIMENTAL_DISTINCT_CONST_PROOF_IRREL": "1",
+    "NUCLEUS_EXPERIMENTAL_EXACT_CAPTURE_SEMANTIC_RETRY": "1",
+    "NUCLEUS_EXPERIMENTAL_QUOTIENT_PROJECTION_BRIDGE": "1"
+  },
+  "standard_budget": 262144,
+  "baseline_binary_sha256": "d3e024777287f950d87bb20ba8bd02754b49a2660b52f88b96603fd89eb7883c",
+  "candidate_binary_sha256": "33e69dc33f4894fb1354cd02b5d9568f975fdb898bad8dcdf75e79444b77764b",
+  "chain9": [
+    {
+      "case": "chain9-pristine",
+      "rc": 2,
+      "sha256": "78dfd772d8a1e6b91484434718af521885fec1386c7a841b70a12e0a7c2f56a3",
+      "seconds": 19.877,
+      "binary_sha256": "d3e024777287f950d87bb20ba8bd02754b49a2660b52f88b96603fd89eb7883c",
+      "observer": []
+    },
+    {
+      "case": "chain9-observer-off",
+      "rc": 2,
+      "sha256": "78dfd772d8a1e6b91484434718af521885fec1386c7a841b70a12e0a7c2f56a3",
+      "seconds": 23.488,
+      "binary_sha256": "33e69dc33f4894fb1354cd02b5d9568f975fdb898bad8dcdf75e79444b77764b",
+      "observer": []
+    },
+    {
+      "case": "chain9-observer-on",
+      "rc": 2,
+      "sha256": "78dfd772d8a1e6b91484434718af521885fec1386c7a841b70a12e0a7c2f56a3",
+      "seconds": 31.036,
+      "binary_sha256": "33e69dc33f4894fb1354cd02b5d9568f975fdb898bad8dcdf75e79444b77764b",
+      "observer": [
+        {
+          "acceptance_authority": false,
+          "capacity_rejections": 14419,
+          "capture_result_closed": 0,
+          "capture_result_open": 762,
+          "capture_result_open_changed_nodes": 0,
+          "capture_result_open_same_nodes": 762,
+          "capture_result_unknown": 0,
+          "changed_nonterm_shape": 0,
+          "changed_only_term_capture": 762,
+          "changed_term_expression": 0,
+          "changed_term_levels": 0,
+          "checked_support_required": true,
+          "complete": 35181,
+          "cross_frame_different_result": 762,
+          "cross_frame_same_result": 0,
+          "diagnostic_only": true,
+          "distinct_keys": 20000,
+          "full_context_in_key": true,
+          "observed": 35181,
+          "prereuse_member_only_in_caller": 0,
+          "prereuse_result_binding_absent_in_caller": 762,
+          "prereuse_same_index_in_caller": 0,
+          "prior_captured_term": 0,
+          "prior_closed_term": 0,
+          "prior_pi": 0,
+          "prior_sort": 0,
+          "same_frame_prior": 0,
+          "unknown": 0
+        }
+      ]
+    }
+  ],
+  "app_lam_stack_controls": [
+    {
+      "case": "app-lam-pristine",
+      "rc": 0,
+      "sha256": "552d6e8398f579fcf59ab9abd8187fc7a8a037697da66c129aacb4cc1b9dd414",
+      "seconds": 3.656,
+      "binary_sha256": "d3e024777287f950d87bb20ba8bd02754b49a2660b52f88b96603fd89eb7883c",
+      "observer": []
+    },
+    {
+      "case": "app-lam-observer-off",
+      "rc": 0,
+      "sha256": "552d6e8398f579fcf59ab9abd8187fc7a8a037697da66c129aacb4cc1b9dd414",
+      "seconds": 3.238,
+      "binary_sha256": "33e69dc33f4894fb1354cd02b5d9568f975fdb898bad8dcdf75e79444b77764b",
+      "observer": []
+    },
+    {
+      "case": "app-lam-observer-on",
+      "rc": 0,
+      "sha256": "552d6e8398f579fcf59ab9abd8187fc7a8a037697da66c129aacb4cc1b9dd414",
+      "seconds": 5.859,
+      "binary_sha256": "33e69dc33f4894fb1354cd02b5d9568f975fdb898bad8dcdf75e79444b77764b",
+      "observer": [
+        {
+          "acceptance_authority": false,
+          "capacity_rejections": 0,
+          "capture_result_closed": 0,
+          "capture_result_open": 0,
+          "capture_result_open_changed_nodes": 0,
+          "capture_result_open_same_nodes": 0,
+          "capture_result_unknown": 0,
+          "changed_nonterm_shape": 0,
+          "changed_only_term_capture": 0,
+          "changed_term_expression": 0,
+          "changed_term_levels": 0,
+          "checked_support_required": true,
+          "complete": 2,
+          "cross_frame_different_result": 0,
+          "cross_frame_same_result": 0,
+          "diagnostic_only": true,
+          "distinct_keys": 2,
+          "full_context_in_key": true,
+          "observed": 2,
+          "prereuse_member_only_in_caller": 0,
+          "prereuse_result_binding_absent_in_caller": 0,
+          "prereuse_same_index_in_caller": 0,
+          "prior_captured_term": 0,
+          "prior_closed_term": 0,
+          "prior_pi": 0,
+          "prior_sort": 0,
+          "same_frame_prior": 0,
+          "unknown": 0
+        }
+      ]
+    }
+  ],
+  "observations": [
+    {
+      "acceptance_authority": false,
+      "capacity_rejections": 14419,
+      "capture_result_closed": 0,
+      "capture_result_open": 762,
+      "capture_result_open_changed_nodes": 0,
+      "capture_result_open_same_nodes": 762,
+      "capture_result_unknown": 0,
+      "changed_nonterm_shape": 0,
+      "changed_only_term_capture": 762,
+      "changed_term_expression": 0,
+      "changed_term_levels": 0,
+      "checked_support_required": true,
+      "complete": 35181,
+      "cross_frame_different_result": 762,
+      "cross_frame_same_result": 0,
+      "diagnostic_only": true,
+      "distinct_keys": 20000,
+      "full_context_in_key": true,
+      "observed": 35181,
+      "prereuse_member_only_in_caller": 0,
+      "prereuse_result_binding_absent_in_caller": 762,
+      "prereuse_same_index_in_caller": 0,
+      "prior_captured_term": 0,
+      "prior_closed_term": 0,
+      "prior_pi": 0,
+      "prior_sort": 0,
+      "same_frame_prior": 0,
+      "unknown": 0
+    }
+  ],
+  "protected_count": 403,
+  "protected_verdict_counts": {
+    "1": 150,
+    "0": 240,
+    "2": 13
+  },
+  "six_newly_accepted": [],
+  "six_original_unchanged": {
+    "fueled-chain": {
+      "case": "arena207/good/perf/fueled-chain.ndjson",
+      "rc": 2,
+      "baseline": 2,
+      "sha256": "e5ca34489fc7b8ee13b1e7f09f76247ab7b01dd1a752a13cc8b796c569e1401a",
+      "seconds": 28.18
+    },
+    "grind-ring-5": {
+      "case": "arena207/good/perf/grind-ring-5.ndjson",
+      "rc": 2,
+      "baseline": 2,
+      "sha256": "e9c394e0ff311fd10f60dee2433a530f16e82354c32d6588a8775baa06fd221f",
+      "seconds": 92.119
+    },
+    "magma-list-pair-n7": {
+      "case": "arena207/good/perf/magma-list-pair-n7.ndjson",
+      "rc": 2,
+      "baseline": 2,
+      "sha256": "abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35",
+      "seconds": 0.496
+    },
+    "magma-list-pair-n21": {
+      "case": "arena207/good/perf/magma-list-pair-n21.ndjson",
+      "rc": 2,
+      "baseline": 2,
+      "sha256": "b8279fa9189a203c6c11b04702c27c0f99a650b37f2b0165dd260b1d14e9ef84",
+      "seconds": 0.442
+    },
+    "magma-list-deep-n21": {
+      "case": "arena207/good/perf/magma-list-deep-n21.ndjson",
+      "rc": 2,
+      "baseline": 2,
+      "sha256": "b7a211699ab32a5d2397319702e2d5552f5796a6bdac990efa69fb186039f526",
+      "seconds": 1.17
+    },
+    "magma-list-deep-n36": {
+      "case": "arena207/good/perf/magma-list-deep-n36.ndjson",
+      "rc": 2,
+      "baseline": 2,
+      "sha256": "6669cee92ad330dada351ac9e63656f7e9e848dd70376f17030d64677f8c81ac",
+      "seconds": 1.472
+    }
+  }
+}
