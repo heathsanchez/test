@@ -1,12 +1,14 @@
-name: Nucleus C69 source primitive versus recursor cost census
+name: Nucleus C69 source work census
 on:
   push:
-    branches: [research/nucleus-certified-decide-boundary-20261109]
-    paths: ['.github/workflows/nucleus-c69-cost-census.yml','experiments/nucleus-certified-decide-20261109/c69_instrument.py']
+    branches:
+      - research/nucleus-certified-decide-boundary-20261109
   workflow_dispatch:
-permissions: {contents: read, actions: read}
+permissions:
+  contents: read
+  actions: read
 jobs:
-  pi-opening:
+  source-cost:
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
