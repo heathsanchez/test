@@ -1,0 +1,147 @@
+--- a/src/machine.rs
++++ b/src/machine.rs
+@@ -102,6 +102,11 @@
+ /// declared authority are part of the key; budget is an exploration limit,
+ /// not a semantic hypothesis about the normalized value.
+ pub(crate) type ExposureCacheKey = (AuthorityId, Closure, Transparency, bool, Vec<Closure>);
++// A major probe deliberately suspends native completion. Completed source
++// values obtained in that mode must not enter the ordinary exposure cache,
++// whose entries assume native completion is enabled. The immutable Machine
++// owns this separate exact-capture cache; its reduction maps cannot change.
++type SourceMajorExposureKey = (Closure, Transparency, bool, Vec<Closure>);
+ // Retain the immutable registered-rule map while pointer identity is a key.
+ // An address alone could alias a later allocation after the old map drops.
+ #[derive(Clone)]
+@@ -359,6 +364,10 @@
+     // During that *single* major probe, retain the source application for
+     // the certified worklist instead of recursively spending its owner here.
+     worklist_major_probe: Cell<bool>,
++    source_major_cache_enabled: bool,
++    source_major_exposures: RefCell<HashMap<SourceMajorExposureKey, Value>>,
++    #[cfg(test)]
++    source_major_cache_hits: Cell<usize>,
+     // Retain full certified replay keys on exact source handles. All fields
+     // omitted from the handle are immutable for the lifetime of this Machine.
+     // Weak aliases cannot make an incomplete key outlive its actual replay
+@@ -397,6 +406,11 @@
+             exposure_depth: Cell::new(0),
+             native_completion: Cell::new(true),
+             worklist_major_probe: Cell::new(false),
++            source_major_cache_enabled: std::env::var("NUCLEUS_DIAGNOSTIC_C30_EXACT_MAJOR_CACHE")
++                .ok().as_deref() == Some("1"),
++            source_major_exposures: RefCell::new(HashMap::new()),
++            #[cfg(test)]
++            source_major_cache_hits: Cell::new(0),
+             replay_source_handles: RefCell::new(HashMap::new()),
+             #[cfg(test)]
+             replay_key_builds: Cell::new(0),
+@@ -887,11 +901,71 @@
+         if budget == 0 || self.exposure_fuel.get() == Some(0) {
+             return Judgment::unknown("reduction-budget-exhausted");
+         }
++        // Worklist major exposure intentionally has native completion OFF:
++        // registered recursors are returned to the checked continuation.
++        // Cache only an exact, successful, source-stable value in this same
++        // mode and this same immutable Machine, never an unfinished recursor,
++        // a suspended projection, an opaque delta, or an UNKNOWN. No target
++        // value, conversion goal or source-syntax-only identity is used.
++        let mut budget=budget;
++        let source_major_key=if self.source_major_cache_enabled
++            && !record_witnesses && !self.native_completion.get()
++            && self.worklist_major_probe.get() && self.exposure_fuel.get().is_some()
++            && budget>1
++        {
++            let charge=1usize.saturating_add(pending.len());
++            if budget>charge && self.reserve_replay_work(charge) {
++                budget-=charge;
++                let key=(closure.clone(),transparency,preserve_stuck_projection,pending.clone());
++                if let Some(value)=self.source_major_exposures.borrow().get(&key).cloned(){
++                    #[cfg(test)]
++                    self.source_major_cache_hits.set(self.source_major_cache_hits.get()+1);
++                    #[cfg(feature="diagnostics")]
++                    {
++                        use std::sync::atomic::{AtomicUsize,Ordering};
++                        static HITS:AtomicUsize=AtomicUsize::new(0);
++                        let n=HITS.fetch_add(1,Ordering::Relaxed)+1;
++                        if n.is_power_of_two(){eprintln!("NUCLEUS_C30_EXACT_MAJOR_CACHE:hit_count={n}:expr={:?}:env={}",closure.expr,closure.env.id());}
++                    }
++                    return Judgment::proven(Exposure{value,transitions:Vec::new()},"exact-source-major-exposure");
++                }
++                Some(key)
++            }else{None}
++        }else{None};
+         let Some(cache) = self.exposure_cache.as_ref().filter(|_| !record_witnesses && self.native_completion.get()) else {
+-            return self.expose_uncached_internal_with_pending(
++            let result=self.expose_uncached_internal_with_pending(
+                 closure, transparency, budget, record_witnesses,
+                 preserve_stuck_projection, pending, VisitSet::new(),
+             );
++            if let Some(key)=source_major_key {
++                if let Some(value)=result.proven_value().map(|v|&v.value) {
++                    let rigid=match value {
++                        Value::NatLit(_)|Value::Sort(_)|Value::Pi{..}|Value::Lam{..}=>true,
++                        Value::Neutral(n)=>match &n.head {
++                            NeutralHead::Free(_)=>true,
++                            NeutralHead::Const{name,..}=>!self.definitions.contains_key(name)
++                                && !self.recursor_reductions.contains_key(name)
++                                && !self.unfinished_native_capture(value),
++                            NeutralHead::Projection{..}=>false,
++                        },
++                        Value::StuckProjection{..}=>false,
++                    };
++                    if rigid && self.reserve_replay_work(1usize.saturating_add(key.3.len())) {
++                        let mut saved=self.source_major_exposures.borrow_mut();
++                        if saved.len()<4096 {
++                            saved.entry(key).or_insert_with(||value.clone());
++                            #[cfg(feature="diagnostics")]
++                            {
++                                use std::sync::atomic::{AtomicUsize,Ordering};
++                                static STORES:AtomicUsize=AtomicUsize::new(0);
++                                let n=STORES.fetch_add(1,Ordering::Relaxed)+1;
++                                if n.is_power_of_two(){eprintln!("NUCLEUS_C30_EXACT_MAJOR_CACHE:store_count={n}");}
++                            }
++                        }
++                    }
++                }
++            }
++            return result;
+         };
+         let key = Rc::new(CachedExposureKey::new((
+             self.authority, closure.clone(), transparency,
+@@ -4423,6 +4497,36 @@
+   let value=Neutral{head:NeutralHead::Const{name:NameId(5),levels:vec![]},spine:vec![Closure::new(ExprId(a),EnvFrame::empty()),Closure::new(ExprId(b),EnvFrame::empty())]};
+   Closure::new(ExprId(6),EnvFrame::empty().extend_neutral(value))
+  }
++ #[test]fn source_major_cache_is_exact_and_mode_isolated(){
++  let es=expressions();let ls=IdTable::default();
++  let mut m=Machine::new(AuthorityId(1),&es,&ls,HashMap::new())
++   .with_nat_primitives(Some(primitives())).with_exposure_cache(new_exposure_cache());
++  m.source_major_cache_enabled=true;
++  m.native_completion.set(false);
++  m.worklist_major_probe.set(true);
++  m.exposure_fuel.set(Some(2048));
++  let original=Closure::new(ExprId(3),EnvFrame::empty());
++  let other=Closure::new(ExprId(4),EnvFrame::empty());
++  assert_eq!(m.expose_for_conversion(original.clone(),Transparency::Full,64).proven_value(),Some(&Value::NatLit(number("5"))));
++  assert_eq!(m.source_major_exposures.borrow().len(),1);
++  assert_eq!(m.expose_for_conversion(original.clone(),Transparency::Full,64).proven_value(),Some(&Value::NatLit(number("5"))));
++  assert_eq!(m.source_major_cache_hits.get(),1);
++  assert_eq!(m.expose_for_conversion(other,Transparency::Full,64).proven_value(),Some(&Value::NatLit(number("2"))));
++  assert_eq!(m.source_major_cache_hits.get(),1);
++  let different_capture=Closure::new(ExprId(3),EnvFrame::empty().extend_free(FreeId(99)));
++  assert_eq!(m.expose_for_conversion(different_capture,Transparency::Full,64).proven_value(),Some(&Value::NatLit(number("5"))));
++  assert_eq!(m.source_major_cache_hits.get(),1);
++  assert_eq!(m.source_major_exposures.borrow().len(),3);
++  m.native_completion.set(true);
++  assert_eq!(m.expose_for_conversion(original.clone(),Transparency::Full,64).proven_value(),Some(&Value::NatLit(number("5"))));
++  assert_eq!(m.source_major_cache_hits.get(),1);
++  m.native_completion.set(false);
++  m.worklist_major_probe.set(false);
++  assert_eq!(m.expose_for_conversion(original,Transparency::Full,64).proven_value(),Some(&Value::NatLit(number("5"))));
++  assert_eq!(m.source_major_cache_hits.get(),1);
++  m.exposure_fuel.set(Some(0));
++  assert!(m.expose_for_conversion(Closure::new(ExprId(3),EnvFrame::empty()),Transparency::Full,64).is_unknown());
++ }
+  #[test]fn captured_subtraction_resumes_before_predecessor(){
+   let es=expressions();let ls=IdTable::default();let m=Machine::new(AuthorityId(1),&es,&ls,HashMap::new()).with_nat_primitives(Some(primitives())).with_exposure_cache(new_exposure_cache());
+   for(a,b,want)in[(1,1,"0"),(3,4,"2"),(4,3,"0")]{let result=m.expose(captured(a,b),Transparency::Reducible,128);assert_eq!(result.proven_value(),Some(&Value::NatLit(number(want))),"{result:?}");}
