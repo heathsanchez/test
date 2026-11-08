@@ -1,0 +1,105 @@
+name: Nucleus C63 original n7 exact budget threshold
+on:
+  push:
+    branches: [research/nucleus-c63-n7-budget-threshold-20261109]
+    paths: ['.github/workflows/nucleus-c63-n7-budget-threshold.yml']
+  workflow_dispatch:
+permissions: {contents: write, actions: read}
+jobs:
+  threshold:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RUST_MIN_STACK: '16777216'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore exact C58 binary and original arena207 bytes
+        run: |
+          set -euo pipefail
+          mkdir -p binary arena207 reports
+          gh api repos/heathsanchez/test/actions/artifacts/13622452324/zip > c58.zip
+          printf '%s  %s\n' 63764179e4cfcd89cac50c8e200977c9169cab47e073086e463c86b3fbcfcadd c58.zip | sha256sum -c -
+          unzip -p c58.zip candidate/nucleus-diagnostic > binary/nucleus-diagnostic
+          chmod +x binary/nucleus-diagnostic
+          printf '%s  %s\n' 37b77b125745e7b3eabfbb0adba1da76ea27dac11d13efcc05586f0892b39e6f binary/nucleus-diagnostic | sha256sum -c -
+          unzip -p c58.zip base/flags.json > binary/flags.json
+          gh api repos/heathsanchez/test/actions/artifacts/13276400289/zip > arena207.zip
+          printf '%s  %s\n' a9582eadc0d9893cbe39e6bcfccd79bfaec2032838851b8a487c35df16096763 arena207.zip | sha256sum -c -
+          unzip -p arena207.zip lean-arena-tests.tar.gz | tar --no-same-owner -xzf - -C arena207
+      - name: Exact-original geometric budget sweep, no checker changes
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib,json,os,subprocess,sys,time
+          sys.path.insert(0,'experiments/nucleus-logos-support-20261108')
+          from probe_c52_six_loss_census import parse_downstream
+          data=json.loads(Path('experiments/nucleus-logos-support-20261108/c56-neutral-pair.json').read_text())
+          expected={r['case']:r for r in data['cases']}['magma-list-pair-n7']
+          source=Path('arena207/good/perf/magma-list-pair-n7.ndjson').read_bytes()
+          digest=hashlib.sha256(source).hexdigest()
+          assert digest=='abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35'
+          assert digest==expected['source_sha256']
+          flags=json.loads(Path('binary/flags.json').read_text())
+          assert len(flags)==24 and set(flags.values())=={'1'}
+          records=[]
+          for steps in (262144,524288,1048576,2097152,4194304,8388608,14155776):
+            env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+            env.update(flags)
+            env.update({'NUCLEUS_DIAGNOSTIC_C38_EARLY_TYPED_SPINE':'1',
+                        'NUCLEUS_DIAGNOSTIC_C47_PROFILE_EXPR':str(expected['first_failed_root']),
+                        'NUCLEUS_DIAGNOSTIC_C55_APP_SHAPE':'1',
+                        'NUCLEUS_DIAGNOSTIC_C56_NEUTRAL_PAIR':'1',
+                        'NUCLEUS_TRACE_DECIDABLE_MAJOR_CHAIN':'1',
+                        'NUCLEUS_TRACE_DOWNSTREAM':'1'})
+            started=time.monotonic()
+            try:
+              run=subprocess.run([str(Path('binary/nucleus-diagnostic').resolve()),str(steps)],
+                  input=source,capture_output=True,env=env,timeout=260)
+              elapsed=round(time.monotonic()-started,3)
+              verdict={0:'ACCEPT',1:'REJECT',2:'UNKNOWN',3:'ERROR'}.get(run.returncode,'ERROR')
+              stderr=run.stderr
+            except subprocess.TimeoutExpired as exc:
+              elapsed=round(time.monotonic()-started,3)
+              verdict='TIMEOUT'
+              stderr=exc.stderr or b''
+            Path(f'reports/n7-{steps}.stderr').write_bytes(stderr)
+            event_lines=stderr.decode(errors='replace').splitlines()
+            records.append({'steps':steps,'verdict':verdict,'elapsed_sec':elapsed,
+              'boundary':parse_downstream(stderr) if verdict=='UNKNOWN' else None,
+              'c56_pairs':sum(s.startswith('NUCLEUS_C56_PAIR:') for s in event_lines),
+              'major_chains':sum(s.startswith('NUCLEUS_DECIDABLE_MAJOR_CHAIN:') for s in event_lines),
+              'stderr_sha256':hashlib.sha256(stderr).hexdigest()})
+            print(steps,verdict,elapsed,'sec',records[-1]['boundary'],flush=True)
+            if verdict in ('REJECT','ERROR','TIMEOUT'):break
+          result={'experiment':'C63 source-frozen n7 geometric step-budget threshold',
+            'c58_artifact':13622452324,'original_artifact':13276400289,
+            'source_sha256':digest,'proof_rules_changed':False,'selected_checker_changed':False,
+            'standard_budget':262144,'high_budget_diagnostic_only':True,
+            'budget_monotonicity_not_assumed':True,'records':records}
+          Path('reports/c63-n7-budget-threshold.json').write_text(json.dumps(result,indent=2)+'\n')
+          assert records[0]['verdict']=='UNKNOWN'
+          assert records[-1]['steps']==14155776 and records[-1]['verdict']=='ACCEPT'
+          PY
+      - name: Preserve evidence with fail-closed CI receipt
+        if: always()
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          if test -s reports/c63-n7-budget-threshold.json; then
+            cp reports/c63-n7-budget-threshold.json experiments/nucleus-logos-support-20261108/c63-n7-budget-threshold.json
+          else
+            jq -n '{status:"UNKNOWN_CI_FAILURE",qualified:false}' > experiments/nucleus-logos-support-20261108/c63-n7-budget-threshold.json
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add experiments/nucleus-logos-support-20261108/c63-n7-budget-threshold.json
+          git commit -m 'C63 record original n7 budget sweep with exact source and binary'
+          git push origin HEAD:refs/heads/research/nucleus-c63-n7-budget-threshold-20261109
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-C63-n7-budget-threshold
+          retention-days: 60
+          path: reports/
