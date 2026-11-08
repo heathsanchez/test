@@ -273,16 +273,16 @@ diagnostics. The next decisive experiment must discriminate a legitimate
 source iota/major-constructor step from a rigid neutral whose equality needs
 a separately checked dependent-context proof. Preserve C6/C7 negatives.
 
-## C8 exact beta-frame retention capacity (PENDING)
+## C8 exact beta-frame retention capacity (REJECTED AS CLOSURE)
 
 On unchanged `magma-list-pair-n7`, source-qualified diagnostics under the
 same 24 flags show repeated `NUCLEUS_BETA_BINDING_CACHE:capacity` events.
 The selected evaluator intentionally stops retaining *new* exact lambda/let
 argument frames after 8,192 entries; completed replay keys can then lose
 future matching allocation identities, even though an old retained entry
-remains protected. C8 changes **only** that bounded capacity to 32,768,
-updates its saturation controls, and tests whether better exact-source
-hash-consing prevents the nested List.rec major from exhausting its own
+remains protected. C8 changed **only** that bounded capacity to 32,768,
+updated its saturation controls, and tested whether better exact-source
+hash-consing prevents the nested recursor major from exhausting its own
 shared exposure work owner. It neither assumes constructor iota nor changes
 recursor qualification, inference rules, truth values or the standard
 262,144-step limit. The C7 active capture shortcut is removed in C8 to
@@ -292,14 +292,49 @@ The existing `ExperimentalResumableExposure` flag was independently tried on
 the four unchanged Magma inputs: **all four remained UNKNOWN** with the
 same terminal reason categories. This is a separate negative result; merely
 enabling another partial-prefix cache did not resolve the recursor residual.
-C8 is `CANDIDATE` pending native 403-vector, saturation, adversarial and
-six-original qualification. Increased memory retention alone cannot warrant
-new typing/equality authority.
+Increased memory retention alone cannot warrant new typing/equality authority.
 
 C8a [run #42433534691](https://github.com/heathsanchez/test/actions/runs/42433534691)
 failed at Rust **test-target compilation only**, after the library compiled:
 the two capacity-driven test loops inferred `usize` indices while `FreeId`
 requires `u64`. There is no kernel verdict from C8a. C8b makes both test
 loop indices explicitly `u64` with checked conversion; implementation and
-fixed selected source are otherwise unchanged. Full native qualification is
-still required.
+fixed selected source are otherwise unchanged.
+
+C8b [run #42433650321](https://github.com/heathsanchez/test/actions/runs/42433650321),
+commit `bd8537cb30120321ef5235adf61a14fb043398b1`, artifact `13598407840`,
+ZIP SHA256 `99531196e726a95d42bab72db417c79fd249a2a7cdb21b8bb32ad0b2f3ce0f96`:
+native saturation and adversarial controls passed; **403/403 protected
+verdicts preserved (240 ACCEPT / 150 REJECT / 13 UNKNOWN)**, unchanged
+`app-lam` ACCEPT in all three preflights, unchanged chain9 UNKNOWN in all
+three. **All six unchanged originals remain UNKNOWN** at standard budget;
+in particular n7 stays UNKNOWN at 0.449 s. Replaying that exact C8b binary
+with selected flags and diagnostic trace still reported 32 capped
+`NUCLEUS_BETA_BINDING_CACHE:capacity` events and the same failure of a
+qualified `Nat.rec` major when its nested work owner reached zero.
+Therefore 32,768-entry retention is not a closure, and the candidate is
+**NOT PROMOTED**. It does not prove unlimited retention would never help.
+
+## C9 nested registered-major exposure (CANDIDATE)
+
+The native `magma-list-pair-n7` trace was mapped against the original
+`lean4export` name table: `NameId(147)=Decidable.rec`, `NameId(170)=Bool.rec`,
+and `NameId(66)=Nat.rec`. The observed dependency is
+`Decidable.rec -> Bool.rec -> Nat.rec`. The last fails while exposing its
+captured major: `Unknown("reduction-budget-exhausted")`, with its **local**
+shared owner at zero but more than 261,000 global typechecker steps left.
+This is a candidate *operational* obstruction, not evidence that any
+constructor or equality should be presumed.
+
+C9 changes exactly one operational parameter: both branches of the same
+registered-recursor major-probe site increase the per-exposure cap from
+512 to 2,048, still bounded by the caller's same shared owner. The C8
+retention-cap change and the C7 active source-capture shortcut are both
+absent. The native red test `probe_c9_n7.py` checks byte-exact original
+n7, all 24 selected flags, 262,144 overall steps and requires exit 0;
+the unchanged C8b candidate fails it with exit 2 (observed RED).
+Only if native C9 succeeds will the original 403-case protected replay
+run; its fail-closed harness permits **UNKNOWN -> ACCEPT solely for the six
+known-valid original inputs**, never changes to any other verdict and never
+changes an original ACCEPT or REJECT. Test-only protocol changes cannot
+grant kernel authority. C9 is not warranted or promoted before the run.
