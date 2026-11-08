@@ -629,3 +629,49 @@ zero borrowed-owner events). C16's separate GitHub run must become GREEN
 with the actual metered owner and pass all protected cases before it is
 considered qualified. This prevents C15's shallow-argument marker from
 being misinterpreted as actual nested fuel containment.
+
+C16 [run #42437765990](https://github.com/heathsanchez/test/actions/runs/42437765990)
+**SUCCESS**, commit `071d370c7a0a33bc151bcd1ea8ce2984e5f92541`,
+artifact `13600078686`, ZIP SHA256
+`d2118eb3147c8f115499647edc9a79085c306f16fb1411198ff73393b72e7829`.
+Its original n7 source still returns UNKNOWN. Native/adversarial passed,
+all 403/403 protected outcomes matched 240 ACCEPT / 150 REJECT / 13 UNKNOWN,
+and **none of the six valid original inputs upgraded**. A source-qualified
+completed Decidable replay under the full 260755 comparison allowance
+reached depth **66** before `projection-major-replay-budget`, and its 130377
+one-step alternative reached depth **52**. The trace proves a real borrowed
+projection owner at 512 with parent grants 260632, 260084 and 259536,
+charged across successive nested recursors. C15's one-step reached depth
+54 with no actual sub-owner cap; neither demonstrates monotone progress
+to constructor or a full proof. C16 is WARRANTED_BOUNDED as a checked,
+regression-qualified *operational* implementation, **not promoted** to
+Nucleus's selected kernel because the original six still fail.
+
+The remaining decisive question is whether 512 is a badly chosen local
+bound or whether this source chain fundamentally needs a resumable
+projection/recursor continuation or exact source-derived rule sharing.
+Evaluate several honest local grants under the same **global** 262144 owner,
+using the identical original n7, before altering proof semantics or
+building a complex cache.
+
+## C17 source-pinned borrowed-grant sweep (CANDIDATE)
+
+One diagnostics-only setting `NUCLEUS_DIAGNOSTIC_PROJECTION_GRANT` selects
+a finite borrowed grant in the range 48..8192, preserving the independent
+registered recursor/projection checks, the single shared 262144-step owner,
+and default 512 when unset. Invalid or non-Unicode values yield UNKNOWN.
+The sweep evaluates 64, 96, 128, 192, 256, 384, 512, 768, 1024, 2048,
+4096 and 8192 against the same exact original Magma n7 SHA256
+`abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35`,
+plus one malformed-cap control. Every trial must be ACCEPT or UNKNOWN,
+never REJECT, timeout, or uncharged larger grant. The ordinary 403 protected
+suite still runs with the unmodified 24 selected flags and default 512.
+No cap-specific ACCEPT would qualify for release before a separate full
+403 native/adversarial run with that exact frozen cap.
+
+The exact C16 native release binary was tested **RED** on the C17 sweep:
+it ignores the new grant setting and still logs 512 even when asked for 64.
+The C17 diagnostic source patch applies with zero fuzz over C16. A run
+passing the sweep would establish actual parameter sensitivity only; this
+experiment seeks an original unchanged ACCEPT or a reason to reject grant
+tuning and move to deferred projection/reduction rule sharing.
