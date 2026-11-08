@@ -1,0 +1,63 @@
+--- a/src/convert.rs
++++ b/src/convert.rs
+@@ -1844,6 +1844,60 @@
+                         continue;
+                     }
+                 }
++                // C36: at a different-head comparison, the actual captured
++                // source recursor may still reduce to a constructor. Unlike
++                // same-head C28/C35 trials, this directly tests the final
++                // Bool.true versus Decidable.rec obstruction. The expected
++                // side never chooses a constructor or reduction rule.
++                #[cfg(feature="diagnostics")]
++                if left.head != right.head
++                    && current_budget >= 256
++                    && std::env::var_os("NUCLEUS_DIAGNOSTIC_C36_CROSS_HEAD_REPLAY").is_some()
++                {
++                    let cap=match std::env::var("NUCLEUS_DIAGNOSTIC_C36_CROSS_HEAD_GRANT") {
++                        Ok(s)=>match s.parse::<usize>() {
++                            Ok(n) if matches!(n,512|2048|8192|32768|131072)=>n,
++                            _=>return Judgment::unknown("invalid-C36-cross-head-grant"),
++                        },
++                        Err(std::env::VarError::NotPresent)=>512,
++                        Err(_)=>return Judgment::unknown("invalid-C36-cross-head-grant"),
++                    };
++                    let mut replayed=None;
++                    for (is_left,candidate) in [(false,right),(true,left)] {
++                        let NeutralHead::Const{name,..}=&candidate.head else {continue};
++                        if !checker.has_qualified_recursor(*name) {continue;}
++                        if current_budget<256 {break;}
++                        let grant=current_budget.min(cap);
++                        let mut remaining=grant;
++                        let result=checker.machine().qualified_one_step_recursor_result_metered(
++                            candidate,&mut remaining,
++                        );
++                        let paid=grant.saturating_sub(remaining);
++                        current_budget=current_budget.saturating_sub(paid.saturating_add(1));
++                        let outcome=match &result {
++                            Judgment::Proven{value,..} if matches!(value,Value::Neutral(n) if n==candidate)=>"same",
++                            Judgment::Proven{..}=>"changed",
++                            Judgment::Unknown{..}=>"unknown",
++                            Judgment::Refuted{..}=>"refuted",
++                        };
++                        use std::sync::atomic::{AtomicUsize,Ordering};
++                        static PRINTED:AtomicUsize=AtomicUsize::new(0);
++                        if PRINTED.fetch_add(1,Ordering::Relaxed)<128 {
++                            eprintln!("NUCLEUS_C36_CROSS_HEAD_REPLAY:depth={depth}:side={}:head={name:?}:grant={grant}:spent={paid}:remaining={current_budget}:outcome={outcome}",
++                                if is_left {"left"} else {"right"});
++                        }
++                        if let Judgment::Proven{value,..}=result
++                            && !matches!(&value,Value::Neutral(n) if n==candidate)
++                        {
++                            replayed=Some((is_left,value));
++                            break;
++                        }
++                    }
++                    if let Some((is_left,value))=replayed {
++                        if is_left {current_left=value;} else {current_right=value;}
++                        continue;
++                    }
++                }
+                 // A registered recursor with an actual constructor major is
+                 // reducible even when both applications retain the same head.
+                 // Replay source iota before treating its arguments as rigid.
