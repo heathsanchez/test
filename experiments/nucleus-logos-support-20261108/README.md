@@ -84,3 +84,27 @@ diagnostic key construction to a `#[cold] #[inline(never)]` method and adds a
 single-case observer-OFF/ON stack preflight before any broad replay. Until
 that native replay passes, V2 is a **CANDIDATE**, not a regression-qualified
 repair. The first trial remains `REJECTED` for release use.
+
+## V2 result and C3 stack-frame experiment, 8 November
+
+[Run #42429803743](https://github.com/heathsanchez/test/actions/runs/42429803743)
+compiled, passed native tests and restored both pinned corpora. All three
+chain9 verdicts stayed UNKNOWN. The new source-qualified observer counted
+**762/762** cross-frame differences in which both result closures had the
+**same source expression and identical level substitution**, and only their
+captured `EnvFrame` identity differed. No `Sort`, `Pi`, expression or universe
+variation contributed to those 762. This makes **checked, source-relative
+reclosure** the narrowest interesting typed-reuse hypothesis. It is not a
+proof that these closures are interchangeable, and no verdict was promoted.
+
+The V2 candidate still aborted `app-lam` with the observer **OFF**, so it
+remains `REJECTED` as a full protected build. Native ELF disassembly identifies
+the compilation mechanism: the selected build's `infer_in` used one 0x508-byte
+stack frame with `infer_uncached` inlined, whereas V2 compiled `infer_in`
+(0x348) and `infer_uncached` (0x508) as separate mutually recursive frames.
+The relevant thread config explicitly fixes a 64 MiB stack, so changing the
+environment's `RUST_MIN_STACK` cannot repair this case. C3 tests an
+`#[inline(always)]` hint on `infer_uncached` with **unchanged source proofs,
+canonical flags and 403-case verdict comparison**. If this still fails, it
+must not be used for the selected kernel. Neither run closed any of the six
+original unchanged UNKNOWN exports under the standard budget.
