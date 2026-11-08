@@ -9,6 +9,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import subprocess
 
 
@@ -17,6 +18,25 @@ PREFIX = "NUCLEUS_C48_EVENT:"
 STAGES = {"enter", "major-result", "projected-major", "constructor"}
 LIMIT = 512
 COMPARE_FIELDS = ("stage", "recursor", "major_expr", "major_env", "depth", "detail")
+
+
+def first_content_divergence(failed: list[dict], accepted: list[dict]) -> dict:
+    """Observer-only source-content grouping; no digest licenses a proof."""
+    shared = 0
+    for left, right in zip(failed, accepted):
+        left_detail = re.sub(r"env=\d+", "env=<capture>", left["detail"])
+        right_detail = re.sub(r"env=\d+", "env=<capture>", right["detail"])
+        fields = ("stage", "recursor", "major_expr", "depth", "major_env_content_fingerprint")
+        if any(left.get(f) != right.get(f) for f in fields) or left_detail != right_detail:
+            break
+        shared += 1
+    return {
+        "shared_prefix": shared,
+        "failed_next": failed[shared] if shared < len(failed) else None,
+        "accepted_next": accepted[shared] if shared < len(accepted) else None,
+        "possibly_truncated": len(failed) >= LIMIT or len(accepted) >= LIMIT,
+        "hash_is_not_source_equality": True,
+    }
 
 
 def parse_trace(stderr: bytes) -> list[dict]:
@@ -61,6 +81,7 @@ def main() -> None:
     parser.add_argument("--flags", required=True, type=Path)
     parser.add_argument("--stderr-dir", required=True, type=Path)
     parser.add_argument("--require-events", action="store_true")
+    parser.add_argument("--c49-content-fingerprint", action="store_true")
     args = parser.parse_args()
     original = args.input.read_bytes()
     source_sha = hashlib.sha256(original).hexdigest()
@@ -75,6 +96,8 @@ def main() -> None:
     env["NUCLEUS_DIAGNOSTIC_C38_EARLY_TYPED_SPINE"] = "1"
     env["NUCLEUS_DIAGNOSTIC_C47_PROFILE_EXPR"] = "8837"
     env["NUCLEUS_DIAGNOSTIC_C48_SOURCE_TRANSITIONS"] = "1"
+    if args.c49_content_fingerprint:
+        env["NUCLEUS_DIAGNOSTIC_C49_CONTENT_FINGERPRINT"] = "1"
     results = {}
     for label, steps in (("standard", 262144), ("accepted_diagnostic", 14155776)):
         run = subprocess.run(
@@ -109,6 +132,9 @@ def main() -> None:
         "standard_first_64": left[:64],
         "accepted_first_64": right[:64],
     }
+    if args.c49_content_fingerprint:
+        report["c49_content_divergence"] = first_content_divergence(left, right)
+        report["c49_fingerprints_observer_only"] = True
     print(json.dumps(report, indent=2))
 
 
