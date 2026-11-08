@@ -1,0 +1,128 @@
+name: Nucleus n7 exact-source alternate-proof replay
+on:
+  push:
+    branches: [research/nucleus-certified-decide-boundary-20261109]
+    paths:
+      - '.github/workflows/nucleus-n7-algebraic-replay.yml'
+      - 'experiments/nucleus-certified-decide-20261109/MagmaN7Algebraic.lean'
+      - 'experiments/nucleus-certified-decide-20261109/lakefile.lean'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  n7-comparison:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: leanprover/lean-action@v1
+        with:
+          lake-package-directory: experiments/nucleus-certified-decide-20261109
+          auto-config: 'false'
+          build: 'false'
+          test: 'false'
+          lint: 'false'
+          use-github-cache: 'false'
+      - name: Build original-source Lean module with official trusted kernel
+        run: |
+          set -euo pipefail
+          cd experiments/nucleus-certified-decide-20261109
+          lake build MagmaN7Algebraic
+          lake env lean MagmaN7Algebraic.lean > ../../magma-native-proof.log 2>&1
+          if grep -E 'sorryAx|error:|unsolved goals' ../../magma-native-proof.log;then
+            cat ../../magma-native-proof.log
+            exit 1
+          fi
+          grep -q "'algebraicCountermodel' depends on axioms: \[propext\]" ../../magma-native-proof.log
+          cat ../../magma-native-proof.log
+      - name: Build commit-pinned exporter under exact original Lean 4.34.1
+        run: |
+          set -euo pipefail
+          mkdir exporter
+          git -C exporter init
+          git -C exporter remote add origin https://github.com/leanprover/lean4export.git
+          git -C exporter fetch --depth=1 origin 076e8e57707e813375e8f9da8bf989799ace9680
+          git -C exporter checkout --detach FETCH_HEAD
+          test "$(git -C exporter rev-parse HEAD)" = 076e8e57707e813375e8f9da8bf989799ace9680
+          printf 'leanprover/lean4:v4.34.1\n' > exporter/lean-toolchain
+          (cd exporter && lake update && lake build lean4export)
+          test -x exporter/.lake/build/bin/lean4export
+      - name: Export genuine algebraic proof without altering original Arena bytes
+        run: |
+          set -euo pipefail
+          mkdir -p matrix
+          cd experiments/nucleus-certified-decide-20261109
+          lake env "${GITHUB_WORKSPACE}/exporter/.lake/build/bin/lean4export" MagmaN7Algebraic -- algebraicCountermodel > "${GITHUB_WORKSPACE}/matrix/algebraic.ndjson"
+          cd "${GITHUB_WORKSPACE}"
+          python3 - <<'PY'
+          import json,hashlib
+          from pathlib import Path
+          data=Path('matrix/algebraic.ndjson').read_bytes()
+          assert len(data)>1000
+          header=json.loads(data.splitlines()[0])['meta']
+          assert header['format']['version']=='3.1.0',header
+          assert header['lean']['githash']=='5045d0056413266e57c625dcd7c365b10e377c52',header
+          out={'source':'alternative_magma_proof','format':header['format']['version'],
+               'lean':header['lean']['version'],'bytes':len(data),
+               'sha256':hashlib.sha256(data).hexdigest(),
+               'original_export_changed':False}
+          Path('matrix/export.json').write_text(json.dumps(out,indent=2)+'\n')
+          print('N7_ALTERNATE_EXPORT='+json.dumps(out,sort_keys=True))
+          PY
+      - name: Download immutable original input and qualified C64 Nucleus binary
+        run: |
+          set -euo pipefail
+          gh api repos/heathsanchez/test/actions/artifacts/13624008553/zip > c64.zip
+          printf '%s  %s\n' b44234d55da77bd1273c06a0e46e64cfb5f30bb4cf576d5bf630db5d6c00b5eb c64.zip | sha256sum -c -
+          mkdir -p qualified original
+          unzip -q c64.zip -d qualified
+          chmod +x qualified/candidate/nucleus-diagnostic
+          gh api repos/heathsanchez/test/actions/artifacts/13276400289/zip > arena207.zip
+          printf '%s  %s\n' a9582eadc0d9893cbe39e6bcfccd79bfaec2032838851b8a487c35df16096763 arena207.zip | sha256sum -c -
+          unzip -p arena207.zip lean-arena-tests.tar.gz | tar --no-same-owner -xzf - -C original
+          test "$(sha256sum original/good/perf/magma-list-pair-n7.ndjson | cut -d' ' -f1)" = abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35
+          jq -e 'length==24 and ([.[]]|all(.=="1"))' qualified/base/flags.json
+      - name: Independent Nucleus original vs alternative proof at 262144
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,hashlib,os,pathlib,subprocess,time
+          B=pathlib.Path('qualified/candidate/nucleus-diagnostic').resolve()
+          flags=json.loads(pathlib.Path('qualified/base/flags.json').read_text())
+          base={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+          base.update(flags)
+          results=[]
+          for label,path in [('original','original/good/perf/magma-list-pair-n7.ndjson'),
+                             ('algebraic','matrix/algebraic.ndjson')]:
+            src=pathlib.Path(path).read_bytes()
+            rows=[]
+            for trial in range(3):
+              start=time.monotonic()
+              p=subprocess.run([str(B),'262144'],input=src,
+                     capture_output=True,env=base,timeout=120)
+              verdict={0:'ACCEPT',1:'REJECT',2:'UNKNOWN',3:'ERROR'}.get(p.returncode,'ERROR')
+              rows.append({'trial':trial,'verdict':verdict,'exit':p.returncode,
+                     'wall_seconds':round(time.monotonic()-start,5),
+                     'stderr_sha256':hashlib.sha256(p.stderr).hexdigest()})
+            results.append({'name':label,'input_sha256':hashlib.sha256(src).hexdigest(),
+                            'source_bytes':len(src),'replays':rows})
+            print('N7_REPLAY='+json.dumps(results[-1],sort_keys=True),flush=True)
+          assert all(x['verdict']=='UNKNOWN' for x in results[0]['replays']),"original baseline drift"
+          assert all(x['verdict'] in ('ACCEPT','UNKNOWN') for x in results[1]['replays']),"valid alternate rejected or errored"
+          out={'kernel_source':'C64 qualified binary artifact 13624008553',
+               'standard_budget':262144,'source_mutated':False,'results':results,
+               'arena_original_new_accepts':0}
+          pathlib.Path('matrix/replay.json').write_text(json.dumps(out,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-n7-algebraic-replay
+          retention-days: 60
+          path: |
+            matrix/export.json
+            matrix/replay.json
+            magma-native-proof.log
