@@ -694,3 +694,34 @@ range cannot close n7 under the standard global 262144-step allowance.
 No grant-tuned kernel is promoted, and neither complete Mathlib nor six-case
 closure is claimed. The next experiment must test *structural sharing or
 resumption of source-certified work*, not another cap sweep.
+
+## C18 checked projection continuation (CANDIDATE, UNQUALIFIED)
+
+A replay of the unmodified original n7 with the C17 native binary and the
+same 24 flags produced **462 actual recursor-major captures** (`NameId(66)`
+305, `NameId(147)` 106, `NameId(170)` 51), with only one logged completed
+replay hit. This is evidence of repeated checked recursor work; it does
+**not** prove equivalent captured environments or authorize generalized
+memoization. The current field-probe recursively invokes its own recursor
+evaluator even when the caller already holds a checked recursor worklist.
+
+C18 tests exactly one alternative: when a stuck source projection's actual
+receiver exposes a *registered recursor*, suspend its source projection
+and check that receiver using the existing worklist and global fuel owner.
+Only after the receiver produces the *actual checked source constructor*
+may C18 match its registered projection type, constructor and exact arity,
+select its independently registered field, apply the original pending
+spine, and resume the parent. If any step cannot be source-confirmed,
+return UNKNOWN. Other projections take the old C16 metered fallback.
+No constructor is inferred from expected Bool, no new rewrite authority,
+and no budget increase is permitted.
+
+Native `probe_c18_projection_worklist.py` was run against the exact C17
+release binary: **RED**, original n7 UNKNOWN, zero deferred-projection
+events and seven projection-major exhaustions. The C18 source diff applies
+with **zero fuzz** to the C17 source. The GitHub candidate must first
+compile, become GREEN on its new `NUCLEUS_PROJECTION_MAJOR_WORKLIST_DEFERRED`
+event, and pass all native/adversarial plus 403/403 source-frozen protected
+outcomes before any bounded progress is claimed. The six valid original
+cases must become ACCEPT under 262144 for the primary objective; otherwise
+C18 is not a completed Nucleus kernel.
