@@ -1,0 +1,28 @@
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -2747,6 +2747,25 @@
+                 let argument_judgment=self.check_with_formation(
+                     *arg, &domain, context, frame, remaining, true, cache, true,
+                 );
++                // C45: identify the first necessary n7 proof-application
++                // argument that cannot be checked. This is strictly an
++                // observer: existing source typing and fuel are unchanged.
++                #[cfg(feature = "diagnostics")]
++                if std::env::var_os("NUCLEUS_DIAGNOSTIC_C45_PROOF_SPINE").is_some()
++                    && context.is_empty() && frame.id() == 0
++                    && matches!(expression.0,
++                        8754 | 8796 | 8797 | 8799 | 8800 | 8801 | 8802 | 8803 | 8804)
++                {
++                    eprintln!("NUCLEUS_C45_PROOF_ARG:{}", serde_json::json!({
++                        "expression": expression.0,
++                        "function": fun.0,
++                        "argument": arg.0,
++                        "context_len": context.len(),
++                        "remaining": *remaining,
++                        "result": format!("{argument_judgment:?}").chars().take(1800).collect::<String>(),
++                        "domain": format!("{domain:?}").chars().take(1800).collect::<String>(),
++                    }));
++                }
+                 #[cfg(feature="diagnostics")]
+                 if crate::run_flags::present(crate::run_flags::Flag::TraceAppDomainObligation)
+                     && matches!(argument_judgment,Judgment::Unknown {..})
