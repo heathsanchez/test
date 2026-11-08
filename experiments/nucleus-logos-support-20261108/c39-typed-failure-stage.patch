@@ -1,0 +1,120 @@
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -4856,30 +4856,48 @@
+         budget: usize,
+         depth: usize,
+     ) -> bool {
++        // C39: only classify a failed source-typed certificate. A reason is
++        // never used to construct a proof, branch, or value.
++        macro_rules! c39_fail {
++            ($stage:literal, $arg:expr) => {{
++                #[cfg(feature = "diagnostics")]
++                if std::env::var_os("NUCLEUS_DIAGNOSTIC_C39_TYPED_FAILURE").is_some() {
++                    use std::sync::atomic::{AtomicUsize, Ordering};
++                    static PRINTED: AtomicUsize = AtomicUsize::new(0);
++                    if PRINTED.fetch_add(1, Ordering::Relaxed) < 256 {
++                        eprintln!(
++                            "NUCLEUS_C39_TYPED_FAILURE:head={:?}:spine={}:depth={depth}:budget={budget}:arg={}:stage={}",
++                            left.head, left.spine.len(), $arg, $stage,
++                        );
++                    }
++                }
++                return false;
++            }};
++        }
+         if (!crate::run_flags::present(crate::run_flags::Flag::ExperimentalRelevance))
+             || depth != context.len() || budget < 512
+             || left.spine.is_empty() || left.spine.len() > 6
+             || left.spine.len() != right.spine.len()
+         {
+-            return false;
++            c39_fail!("entry-guard", 0);
+         }
+         // No potential saving exists if every captured argument closure is
+         // already byte-identical, so avoid expensive dependent inference.
+         if left.spine.iter().zip(&right.spine).all(|(a,b)|a==b) {
+-            return false;
++            c39_fail!("identical-spines", 0);
+         }
+         let (
+             NeutralHead::Const { name: lname, levels: llevels },
+             NeutralHead::Const { name: rname, levels: rlevels },
+-        ) = (&left.head, &right.head) else { return false };
++        ) = (&left.head, &right.head) else { c39_fail!("different-head-shape", 0) };
+         if lname != rname || llevels.len() != rlevels.len() {
+-            return false;
++            c39_fail!("different-head-or-universe-arity", 0);
+         }
+         if !llevels.iter().zip(rlevels).all(|(a,b)|
+             crate::level::level_equal(a.clone(), b.clone(), budget.min(256)).is_proven()
+-        ) { return false; }
+-        let Some(decl) = self.environment.get(*lname) else { return false };
+-        if decl.level_params.len() != llevels.len() { return false; }
++        ) { c39_fail!("universe-equality", 0); }
++        let Some(decl) = self.environment.get(*lname) else { c39_fail!("source-declaration", 0) };
++        if decl.level_params.len() != llevels.len() { c39_fail!("universe-parameters", 0); }
+         let ty_for = |levels: &Vec<LevelTerm>| TypeValue::Term(
+             Closure::with_levels(
+                 decl.ty, EnvFrame::empty(), LevelSubstitution::new(
+@@ -4891,13 +4909,13 @@
+         let mut rhs_type=ty_for(rlevels);
+         let probe=budget.min(2048);
+         let mut skipped_proof=false;
+-        for (larg,rarg) in left.spine.iter().zip(&right.spine) {
++        for (arg,(larg,rarg)) in left.spine.iter().zip(&right.spine).enumerate() {
+             let Some((ldom,lbody))=self.pi_view(
+                 Judgment::proven(lhs_type,"relevance-typed-function"),probe,
+-            ) else { return false };
++            ) else { c39_fail!("left-pi", arg) };
+             let Some((rdom,rbody))=self.pi_view(
+                 Judgment::proven(rhs_type,"relevance-typed-function"),probe,
+-            ) else { return false };
++            ) else { c39_fail!("right-pi", arg) };
+             // The residual telescopes remain definitionally equal: they
+             // begin at one formed constant signature with equal universe
+             // instances. Every preceding argument was independently typed
+@@ -4910,20 +4928,19 @@
+             let mut lf=probe;
+             let Some(larg_ty)=self.infer_exact_closure_in_context(
+                 larg,context,&mut lf,0,
+-            ) else {return false};
++            ) else {c39_fail!("left-argument-inference", arg)};
+             let mut rf=probe;
+             let Some(rarg_ty)=self.infer_exact_closure_in_context(
+                 rarg,context,&mut rf,0,
+-            ) else {return false};
++            ) else {c39_fail!("right-argument-inference", arg)};
+             let check_ty=|actual:&TypeValue,expected:&TypeValue| {
+                 crate::convert::convert_with_policy_in_context(
+                     self,actual,expected,probe.min(512),
+                     crate::convert::DeltaPolicy::PreferredOnly,depth,context,
+                 ).is_proven()
+             };
+-            if !check_ty(&larg_ty,&ldom) || !check_ty(&rarg_ty,&rdom) {
+-                return false;
+-            }
++            if !check_ty(&larg_ty,&ldom) { c39_fail!("left-argument-type", arg); }
++            if !check_ty(&rarg_ty,&rdom) { c39_fail!("right-argument-type", arg); }
+             let prop_domain=|dom:&TypeValue| {
+                 let TypeValue::Term(c)=dom else {return false};
+                 let mut f=probe;
+@@ -4946,7 +4963,7 @@
+                 crate::convert::DeltaPolicy::PreferredOnly,
+                 depth,context,
+             ).is_proven() {
+-                return false;
++                c39_fail!("data-argument-conversion", arg);
+             }
+             let next = |body:PiBody,arg:&Closure| -> Option<TypeValue> {
+                 match body {
+@@ -4959,8 +4976,8 @@
+                     )),
+                 }
+             };
+-            let Some(lty)=next(lbody,larg) else {return false};
+-            let Some(rty)=next(rbody,rarg) else {return false};
++            let Some(lty)=next(lbody,larg) else {c39_fail!("left-body-instantiation", arg)};
++            let Some(rty)=next(rbody,rarg) else {c39_fail!("right-body-instantiation", arg)};
+             lhs_type=lty;
+             rhs_type=rty;
+         }

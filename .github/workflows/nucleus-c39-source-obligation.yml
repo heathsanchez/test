@@ -1,0 +1,77 @@
+# C39: classify first failed type-certified congruence obligations; no rule change.
+name: Nucleus C39 source obligation classifier
+on:
+  push:
+    branches: [research/nucleus-c39-source-obligation-20261108]
+    paths: ['.github/workflows/nucleus-c39-source-obligation.yml']
+  workflow_dispatch:
+permissions: {contents: read, actions: read}
+jobs:
+  classify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      GH_TOKEN: ${{ github.token }}
+      CARGO_INCREMENTAL: '0'
+      CARGO_BUILD_JOBS: '2'
+      RUST_MIN_STACK: '16777216'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Restore qualified C37 and apply C38/C39 exact patches
+        run: |
+          set -euo pipefail
+          mkdir -p base candidate pristine reports arena207
+          gh api repos/heathsanchez/test/actions/artifacts/13609679273/zip > c37-qualified.zip
+          printf '%s  %s\n' fceddaca338ca36c2964edf0ec81b9e4acd0b66d938864ec5e7239f766e186c3 c37-qualified.zip | sha256sum -c -
+          unzip -p c37-qualified.zip candidate/source.tar.gz > c37-source.tar.gz
+          printf '%s  %s\n' bb64f47470f950f78e7fe4c659fbcb2a75d72e96831430ec1eb3562c55175152 c37-source.tar.gz | sha256sum -c -
+          unzip -p c37-qualified.zip base/flags.json > base/flags.json
+          unzip -p c37-qualified.zip candidate/metatron-kernel > pristine/metatron-kernel
+          chmod +x pristine/metatron-kernel
+          tar --no-same-owner -xzf c37-source.tar.gz
+          patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-logos-support-20261108/c38-early-full-typed-spine.patch
+          patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-logos-support-20261108/c39-typed-failure-stage.patch
+          sha256sum experiments/nucleus-logos-support-20261108/c{38,39}-*.patch > reports/patches.sha256
+          find metatron-kernel/src -type f -print0 | sort -z | xargs -0 sha256sum > reports/source.sha256
+          cargo check --locked --all-targets --features diagnostics --manifest-path metatron-kernel/Cargo.toml > reports/build-check.log 2>&1 || { tail -n 90 reports/build-check.log; exit 1; }
+      - name: Native forged-proof controls and diagnostic binary
+        run: |
+          set -euo pipefail
+          mapfile -t flags < <(jq -r 'to_entries[] | "\(.key)=\(.value)"' base/flags.json)
+          env "${flags[@]}" cargo test --locked --features diagnostics --manifest-path metatron-kernel/Cargo.toml > reports/native-tests.log 2>&1 || { tail -n 100 reports/native-tests.log; exit 1; }
+          cargo build --locked --release --features diagnostics --bin metatron-kernel --manifest-path metatron-kernel/Cargo.toml > reports/release-build.log 2>&1 || { tail -n 100 reports/release-build.log; exit 1; }
+          cp metatron-kernel/target/release/metatron-kernel candidate/metatron-kernel
+          sha256sum candidate/metatron-kernel > reports/binary.sha256
+      - name: RED/GREEN immutable-original diagnosis
+        run: |
+          set -euo pipefail
+          gh api repos/heathsanchez/test/actions/artifacts/13276400289/zip > arena207.zip
+          printf '%s  %s\n' a9582eadc0d9893cbe39e6bcfccd79bfaec2032838851b8a487c35df16096763 arena207.zip | sha256sum -c -
+          unzip -p arena207.zip lean-arena-tests.tar.gz | tar --no-same-owner -xzf - -C arena207
+          PYTHONPATH=experiments/nucleus-logos-support-20261108 python3 -m unittest experiments/nucleus-logos-support-20261108/test_c39_typed_failure.py -v
+          set +e
+          python3 experiments/nucleus-logos-support-20261108/probe_c39_typed_failure.py \
+            --binary pristine/metatron-kernel --input arena207/good/perf/magma-list-deep-n36.ndjson \
+            --flags base/flags.json --require-observation > reports/c39-red.log 2>&1
+          red_rc=$?
+          set -e
+          test "$red_rc" -ne 0
+          grep -q 'C39 diagnostic was not exercised' reports/c39-red.log
+          for case in magma-list-deep-n36 magma-list-deep-n21 magma-list-pair-n7 magma-list-pair-n21 fueled-chain grind-ring-5; do
+            python3 experiments/nucleus-logos-support-20261108/probe_c39_typed_failure.py \
+              --binary candidate/metatron-kernel --input "arena207/good/perf/$case.ndjson" \
+              --flags base/flags.json --require-observation \
+              --stderr "reports/c39-$case.stderr" | tee "reports/c39-$case.json"
+          done
+          python3 -c 'import glob,json; d=[json.load(open(f)) for f in glob.glob("reports/c39-*.json")]; print("C39_FIRST_SOURCE_OBLIGATIONS",[(x["case"],x["verdict"],x["failure_stages"]) for x in d])'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-C39-source-typed-failure-stage
+          retention-days: 60
+          path: |
+            reports/
+            candidate/
+            base/flags.json
