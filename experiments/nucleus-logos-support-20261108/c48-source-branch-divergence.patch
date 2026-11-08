@@ -1,0 +1,169 @@
+--- a/src/diagnostics.rs
++++ b/src/diagnostics.rs
+@@ -31,8 +31,11 @@
+     static C47_EXPOSURE_TRANSITIONS: Cell<u64> = const { Cell::new(0) };
+     static C47_REPLAY_RESERVATIONS: Cell<u64> = const { Cell::new(0) };
+     static C47_RECURSOR_WORKLIST_STEPS: Cell<u64> = const { Cell::new(0) };
+     static C47_CONVERSION_PAIRS: Cell<u64> = const { Cell::new(0) };
++    // C48 event sequences are scoped to one exact root proof judgment.
++    static C48_ACTIVE: Cell<bool> = const { Cell::new(false) };
++    static C48_EVENTS: Cell<u64> = const { Cell::new(0) };
+     // Sampled source syntax only. Never enters a kernel rule, memo key or
+     // decision; bounded to avoid turning diagnosis into an O(work) hash map.
+     static C47_EXPOSURE_SAMPLES: RefCell<HashMap<u64,u64>> = RefCell::new(HashMap::new());
+ }
+@@ -46,8 +49,30 @@
+     C47_CONVERSION_PAIRS.set(0);
+     C47_EXPOSURE_SAMPLES.with(|samples|samples.borrow_mut().clear());
+ }
+ 
++// Observer-only: this sequence never enters a proof, reduction, cache or fuel
++// branch. It is not a source-constructor certificate by itself.
++pub(crate) fn c48_start() {
++    C48_EVENTS.set(0);
++    C48_ACTIVE.set(true);
++}
++
++pub(crate) fn c48_stop() {
++    C48_ACTIVE.set(false);
++}
++
++pub(crate) fn c48_enabled() -> bool {
++    C48_ACTIVE.get() && C48_EVENTS.get() < 512
++}
++
++pub(crate) fn c48_ticket() -> Option<u64> {
++    if !c48_enabled() { return None; }
++    let seq = C48_EVENTS.get();
++    C48_EVENTS.set(seq + 1);
++    Some(seq)
++}
++
+ pub(crate) fn c47_exposure_transition(expression: u64) {
+     let n=C47_EXPOSURE_TRANSITIONS.get().saturating_add(1);
+     C47_EXPOSURE_TRANSITIONS.set(n);
+     if n%64==0 {
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -531,13 +531,20 @@
+         let c47_profile=std::env::var("NUCLEUS_DIAGNOSTIC_C47_PROFILE_EXPR")
+             .ok().and_then(|value|value.parse::<u64>().ok())==Some(expression.0);
+         #[cfg(feature="diagnostics")]
+         if c47_profile { crate::diagnostics::c47_reset(); }
++        #[cfg(feature="diagnostics")]
++        let c48_profile=c47_profile
++            && std::env::var_os("NUCLEUS_DIAGNOSTIC_C48_SOURCE_TRANSITIONS").is_some();
++        #[cfg(feature="diagnostics")]
++        if c48_profile { crate::diagnostics::c48_start(); }
+         let mut remaining = budget;
+         let result = self.check_with_formation(expression, expected, &[], &EnvFrame::empty(),
+             &mut remaining, self.delta_policy == crate::convert::DeltaPolicy::GuardedSemanticFallback,
+             &mut HashMap::new(), true);
+         #[cfg(feature="diagnostics")]
++        if c48_profile { crate::diagnostics::c48_stop(); }
++        #[cfg(feature="diagnostics")]
+         if c47_profile {
+             let (exposure,replay_key,recursor,conversion)=crate::diagnostics::c47_work_snapshot();
+             eprintln!("NUCLEUS_C47_INNER_WORK:expr={expression:?}:budget={budget}:outer_spent={}:outer_remaining={remaining}:exposure_transitions={exposure}:replay_reserved_units={replay_key}:recursor_worklist_steps={recursor}:conversion_pairs={conversion}:result={result:?}", budget.saturating_sub(remaining));
+             eprintln!("NUCLEUS_C47_HOT_SOURCE:expr={expression:?}:samples_every_64={:?}",
+--- a/src/machine.rs
++++ b/src/machine.rs
+@@ -3036,8 +3036,25 @@
+     pub(crate) fn qualified_nested_recursor_result(&self,neutral:&Neutral,budget:usize)->Judgment<Value> {
+         self.qualified_recursor_result(neutral,budget,CheckedReplayGoal::Completed)
+     }
+ 
++    #[cfg(feature="diagnostics")]
++    fn diagnostic_c48_source_event(
++        &self,stage:&str,name:NameId,source:&Closure,depth:usize,detail:&str,
++    ) {
++        let Some(seq)=crate::diagnostics::c48_ticket() else { return; };
++        eprintln!("NUCLEUS_C48_EVENT:{}",serde_json::json!({
++            "seq":seq,
++            "stage":stage,
++            "recursor":name.0,
++            "major_expr":source.expr.0,
++            "major_env":source.env.id(),
++            "depth":depth,
++            "owner_remaining":self.exposure_fuel.get().unwrap_or(0),
++            "detail":detail.chars().take(400).collect::<String>(),
++        }));
++    }
++
+     fn checked_neutral_projection_result(&self,neutral:&Neutral,budget:usize)->Judgment<Value>{
+         // This operation selects only an actual field of the actual result
+         // of an independently registered source recursor. Neither a desired
+         // constructor nor the surrounding equality chooses a branch.
+@@ -3224,8 +3241,15 @@
+                 .saturating_add(1);
+             if neutral.spine.len() < required {
+                 return Judgment::unknown("nested-recursor-iota-arity");
+             }
++            #[cfg(feature="diagnostics")]
++            if crate::diagnostics::c48_enabled() {
++                self.diagnostic_c48_source_event(
++                    "enter",*name,&neutral.spine[required-1],depth,
++                    if established_major.is_some() {"reused-major"} else {"probe-major"},
++                );
++            }
+             #[cfg(feature = "diagnostics")]
+             {
+                 // The source-recursion observer is selected by an explicit
+                 // NameId and never changes the result path. One-time env
+@@ -3340,8 +3364,24 @@
+                         self.expose(neutral.spine[required-1].clone(),
+                             Transparency::Full,source_major_budget)
+                     }
+                 };
++                #[cfg(feature="diagnostics")]
++                if crate::diagnostics::c48_enabled() {
++                    let detail=match major_result.proven_value() {
++                        Some(Value::Neutral(n))=>format!("neutral:{:?}:arity={}",n.head,n.spine.len()),
++                        Some(Value::StuckProjection{type_name,index,structure,..})=>
++                            format!("projection:{type_name:?}:field={index}:source={:?}:env={}",structure.expr,structure.env.id()),
++                        Some(Value::NatLit(n))=>format!("nat:limbs={}",n.limb_count()),
++                        Some(Value::Lam{..})=>"lambda".to_owned(),
++                        Some(Value::Pi{..})=>"pi".to_owned(),
++                        Some(Value::Sort(_))=>"sort".to_owned(),
++                        None=>format!("failure:{major_result:?}"),
++                    };
++                    self.diagnostic_c48_source_event(
++                        "major-result",*name,&neutral.spine[required-1],depth,&detail,
++                    );
++                }
+                 let Some(value)=major_result.proven_value() else {
+                     #[cfg(feature="diagnostics")]
+                     if std::env::var_os("NUCLEUS_DIAGNOSTIC_MAJOR_CHAIN").is_some() {
+                         use std::sync::atomic::{AtomicUsize,Ordering};
+@@ -3433,8 +3473,15 @@
+                                     if PRINTED.fetch_add(1,Ordering::Relaxed)<32 {
+                                         eprintln!("NUCLEUS_PROJECTION_MAJOR_WORKLIST_DEFERRED:recursor={name:?}:receiver={:?}:index={index}:depth={depth}:fuel={:?}",nested.head,self.exposure_fuel.get());
+                                     }
+                                 }
++                                #[cfg(feature="diagnostics")]
++                                if crate::diagnostics::c48_enabled() {
++                                    self.diagnostic_c48_source_event(
++                                        "projected-major",*name,structure,depth,
++                                        &format!("field={index}:owner={type_name:?}"),
++                                    );
++                                }
+                                 parents.push(Continuation::ProjectedMajor{
+                                     parent:current.clone(),requested:current_is_requested,
+                                     type_name:*type_name,index:*index,spine:spine.clone(),
+                                 });
+@@ -3569,8 +3616,15 @@
+                 if levels[index] != *actual {
+                     return Judgment::unknown("nested-recursor-iota-constructor-level-mismatch");
+                 }
+             }
++            #[cfg(feature="diagnostics")]
++            if crate::diagnostics::c48_enabled() {
++                self.diagnostic_c48_source_event(
++                    "constructor",*name,&neutral.spine[required-1],depth,
++                    &format!("actual={constructor:?}:rhs={:?}",rule.rhs),
++                );
++            }
+             let substitution = reduction.level_params.iter().copied()
+                 .zip(levels.iter().cloned()).collect::<Vec<_>>();
+             let mut result = Closure::with_levels(
+                 rule.rhs, EnvFrame::empty(), LevelSubstitution::new(substitution),
