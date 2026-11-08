@@ -467,3 +467,43 @@ zero fuzz atop the exact C11 patch in a staged native build. The immediate
 question is whether the 124-step Nat.rec failure originated in same-head
 conversion's half-budget attempt, projection replay, or a separate caller;
 do not allocate more steps or infer a missing constructor in advance.
+
+C12 [run #42436047149](https://github.com/heathsanchez/test/actions/runs/42436047149)
+**SUCCESS**, commit `1ba04a3c9543275cc7ed0e701132cefc784c0913`,
+artifact `13599332984`, ZIP SHA256
+`36393d0bc4dd2887cef9476d59a2bb947736d1046d7dbc104bfd6e0b8f068d2f`:
+native/adversarial tests and the C12 red-green caller assertion passed;
+all **403/403** protected verdicts matched 240 ACCEPT / 150 REJECT /
+13 UNKNOWN, original `app-lam` three-way ACCEPT, and **all six** original
+valid inputs remain UNKNOWN at 262,144 steps. The exact original n7
+failure entry states:
+
+```
+head=NameId(66):entry_budget=124:owner_on_entry=None:caller=src/convert.rs:1862:30:replay_goal=one-step
+```
+
+This is the **same-head conversion fallback's speculative one-step
+replay**, with its own half-budget grant. It cannot be equated with the
+terminal unsolved equality. The final main comparison, independently
+observed with `TraceNeutralHeads`, instead has source `Bool.true`
+(`NameId(169)`) on one side and a five-argument source-qualified
+`Decidable.rec` (`NameId(147)`) on the other, including a 260,755-step
+comparison allowance. The native `TraceDecidableMajorChain` diagnostic
+follows 41 consecutive same-recursor major layers and then a five-argument
+`Bool.rec` (`NameId(170)`), whose major exposes to `Bool.true`. That
+diagnostic gives each step its own up-to-256-step exposure, not a single
+metered certificate, so it **does not prove** that the complete large-budget
+replay succeeds or that the 41-layer path can be collapsed safely.
+
+## C13 full-budget replay residual (CANDIDATE)
+
+The next smallest decisive test is to log the exact `Judgment` residual of
+the **large-budget certified Bool-vs-Decidable comparison**, and, if its
+source-qualified recursor replay reaches the registered-rule test, the
+actual exposed nonconstructor or unmatched constructor name/arity.
+Existing `TraceReplayCache` and `TraceNestedRecursorIotaFailure` remain
+diagnostic-only. The C13 protocol must first fail against C12's exact
+binary, then pass unchanged input/native/adversarial/403 controls. No
+recursor certificate or desired Bool constructor may be inferred from the
+trace. This replaces the C11 local Nat.rec side-probe hypothesis, while
+preserving C11/C12 as negative causal-lineage evidence.
