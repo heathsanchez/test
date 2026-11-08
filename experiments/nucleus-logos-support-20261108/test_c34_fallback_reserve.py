@@ -2,7 +2,7 @@
 
 import unittest
 
-from c34_probe import MARKER, parse_reserve
+from probe_c34_fallback_reserve import MARKER, parse_reserve
 
 
 class C34SourceOwnedReservation(unittest.TestCase):
