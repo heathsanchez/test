@@ -751,3 +751,28 @@ kernel. The new bottleneck is worklist expansion on environment-dependent
 `Nat.rec` major subcomputations, including free/stuck majors. Any new
 sharing must retain binder/capture origin and never equate different
 environment frames merely because their syntax looks similar.
+
+## C19 pinned nano-lean differential reference (CANDIDATE, ADVISORY ONLY)
+
+The next least-assumptive architecture check uses the actual upstream
+`sdiehl/nano-lean` v0.3.2 commit
+`54ce971a5ac2513a1bac0ac9bca73f672196c0f2` in a **separate binary**,
+against the six SHA256-frozen original valid exports and four SHA256-frozen
+forged controls. Its local harness has RED-first/green tests for immutable
+input digests and for refusing to treat exit-zero as a Nucleus warrant.
+No Nucleus implementation, selected flags, standard kernel work budget or
+protected verdict is changed. Its `--steps=262144` units belong to the
+external implementation and are **not** equal to Nucleus work units.
+
+Upstream's [trust-model documentation](https://github.com/sdiehl/nano-lean/blob/54ce971a5ac2513a1bac0ac9bca73f672196c0f2/docs/TRUST.md)
+explicitly requires a trusted reference prelude to prevent an attacker
+from redefining certain primitive bodies under their existing types.
+The C19 fixture replay does not supply such a source-qualified prelude;
+thus even a reference checker `ACCEPT` is only an architectural observation,
+not independently WARRANTED proof or permission to reuse its trust model.
+If the reference accepts a forged test, fail the run and retain the
+separating witness. If it accepts valid n7 within its own resource metric,
+investigate **value-level interning, certified rule derivation and closure
+support** as an architectural path, not as an unverified target-driven
+shortcut. If the source format fails import, report a compatibility
+obstruction without inferring proof failure.
