@@ -776,3 +776,35 @@ investigate **value-level interning, certified rule derivation and closure
 support** as an architectural path, not as an unverified target-driven
 shortcut. If the source format fails import, report a compatibility
 obstruction without inferring proof failure.
+
+
+C19 [run #42439880259](https://github.com/heathsanchez/test/actions/runs/42439880259)
+**SUCCESS**, candidate workflow commit `a6ecd5b7b8d5f438919c4ae013a6ad1a7c42d9b9`,
+artifact `13601481355`, ZIP SHA256
+`8341d4e81bfd023c69a890fcb545df6aab2c995b4f130aef3259d5a20efd9b9c`.
+All ten frozen source input hashes were verified. At nano-lean's own
+`--steps 262144` limit, the untouched `fueled-chain` reference input
+was `REFERENCE_ACCEPT_UNQUALIFIED` (200 declarations, ~31.6 ms), while
+`grind-ring-5`, `magma-list-pair-n7`, `magma-list-pair-n21`,
+`magma-list-deep-n21`, and `magma-list-deep-n36` were each
+`REFERENCE_UNKNOWN` due to a declaration work budget exhaustion.
+The four frozen forged controls
+`nat-rec-k-lie`, `rec-missing-ih`, `nat-lit-add-bad`, and
+`proj-of-stuck-prop` were `REFERENCE_REJECT_UNQUALIFIED`.
+This does not qualify nano-lean as an independent source-sound checker:
+the reference run omitted its required trusted prelude, and its step
+unit is incomparable to Nucleus's 262144 work charges. Consequently
+**zero Nucleus cases are promoted by C19**, all six unchanged original
+valid cases remain UNKNOWN in Nucleus, and full Mathlib is still unproved.
+
+C19 yields a decisive separation of residual families rather than an
+external shortcut: the reference checker has a cheap route on
+`fueled-chain` that Nucleus lacks, but it too exhausts all five
+grind/Magma cases at the nominal limit. Next cheapest experiment is
+a bounded, source-origin-preserving typed support/closure audit on the
+unchanged `fueled-chain`, **not** blanket cross-frame cache
+key weakening. C11 earlier found 762 nominally repeated source support
+keys across captured frames without a single identical full closure.
+Any proposed transport must verify all live binder/capture identities
+and replay type correctness independently before reuse. Magma recursor
+and grind arithmetic work remain separate UNKNOWN obligations.
