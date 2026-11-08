@@ -589,6 +589,19 @@ results. The 403 qualifier permits UNKNOWN to upgrade only for the six
 byte-hash-frozen independently valid inputs; all other changes fail closed.
 Until that run qualifies, **C15 has proved no acceptance or soundness result**.
 
+C15 [run #42437592021](https://github.com/heathsanchez/test/actions/runs/42437592021)
+**SUCCESS**, commit `43eff6619a37a4d2f94f6979b7821d4149abeb0b`,
+artifact `13600118180`, ZIP SHA256
+`c8c6c89a45e2448e8b30039cb77c34fca77be1277dbad02f0f25844dac175aed`.
+Native/adversarial passed, 403/403 protected matched 240 ACCEPT / 150 REJECT /
+13 UNKNOWN, exact `app-lam` three-way ACCEPT. All six original valid cases
+remain UNKNOWN. The *large-budget completed* Magma n7 replay changed from
+C14 `projection-major-replay-budget` at worklist depth 2 to
+`nested-recursor-iota-budget` after additional source-qualified worklist
+continuations; the separate 130,377-step one-step attempt reached depth
+**54** before owner exhaustion. This is genuine deeper diagnostic progress
+but **zero new original ACCEPTs**. C15 does not prove a true borrowed cap.
+
 ## C16 explicitly metered projection sub-owner (CANDIDATE)
 
 Source review found a concrete gap in C15's assumption: passing a
@@ -609,3 +622,10 @@ or verdict exception is introduced. A diagnostic
 The original six and all 403 protected verdicts remain mandatory. If a
 source projection needs over 512 steps to expose a real constructor, this
 candidate may remain UNKNOWN; it may not invent a constructor.
+
+C16 red/green prerequisite was confirmed **RED** on the exact C15 native
+release binary (unchanged n7, rc=2, bounded-projection records present,
+zero borrowed-owner events). C16's separate GitHub run must become GREEN
+with the actual metered owner and pass all protected cases before it is
+considered qualified. This prevents C15's shallow-argument marker from
+being misinterpreted as actual nested fuel containment.
