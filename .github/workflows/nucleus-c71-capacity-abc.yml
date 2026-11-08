@@ -1,0 +1,121 @@
+name: Nucleus C71 original n7 three-arm prefix capacity A/B/C
+on:
+  push:
+    branches: [research/nucleus-c71-capacity-abc-20261109]
+    paths: ['.github/workflows/nucleus-c71-capacity-abc.yml']
+  workflow_dispatch:
+permissions: {contents: read, actions: read}
+jobs:
+  prefix-census:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      GH_TOKEN: ${{ github.token }}
+      CARGO_INCREMENTAL: '0'
+      CARGO_BUILD_JOBS: '2'
+      RUST_MIN_STACK: '16777216'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Restore exact C58 C65 observer and single-variable C66 capacity
+        run: |
+          set -euo pipefail
+          mkdir -p base candidate reports arena207
+          gh api repos/heathsanchez/test/actions/artifacts/13609679273/zip > c37-qualified.zip
+          printf '%s  %s\n' fceddaca338ca36c2964edf0ec81b9e4acd0b66d938864ec5e7239f766e186c3 c37-qualified.zip | sha256sum -c -
+          unzip -p c37-qualified.zip candidate/source.tar.gz > c37-source.tar.gz
+          printf '%s  %s\n' bb64f47470f950f78e7fe4c659fbcb2a75d72e96831430ec1eb3562c55175152 c37-source.tar.gz | sha256sum -c -
+          unzip -p c37-qualified.zip base/flags.json > base/flags.json
+          tar --no-same-owner -xzf c37-source.tar.gz
+          for patch_name in c38-early-full-typed-spine.patch c39-typed-failure-stage.patch c40-c42-source-capture.patch c43-deep-exposure-guard.patch c44-exact-source-forwarding.patch c47-inner-work-diagnostics.patch c48-source-branch-divergence.patch c49-capture-content-fingerprint.patch c50-worklist-loss-diagnostics.patch; do
+            patch --fuzz=0 -p1 -d metatron-kernel < "experiments/nucleus-logos-support-20261108/$patch_name"
+            sha256sum "experiments/nucleus-logos-support-20261108/$patch_name" >> reports/patches.sha256
+          done
+          for patch_name in c55-app-failure-state.patch c56-neutral-pair-classification.patch c58-source-opening-allowance.patch c64-source-instance-observer.patch; do
+            patch --fuzz=0 -p1 -d . < "experiments/nucleus-logos-support-20261108/$patch_name"
+            sha256sum "experiments/nucleus-logos-support-20261108/$patch_name" >> reports/patches.sha256
+          done
+          patch --fuzz=0 -p1 -d . < experiments/nucleus-logos-support-20261108/c65-prefix-observer.patch
+          patch --fuzz=0 -p1 -d . < experiments/nucleus-logos-support-20261108/c66-prefix-cap-4096.patch
+          cargo check --locked --all-targets --features diagnostics --manifest-path metatron-kernel/Cargo.toml > reports/cargo-check.log 2>&1 || { tail -n 120 reports/cargo-check.log; exit 1; }
+      - name: Build C66 4096-capacity observer (full native qualification remains separate)
+        run: |
+          set -euo pipefail
+          cargo build --locked --release --features diagnostics --bin nucleus-diagnostic --manifest-path metatron-kernel/Cargo.toml > reports/release-build.log 2>&1 || { tail -n 120 reports/release-build.log; exit 1; }
+          cp metatron-kernel/target/release/nucleus-diagnostic candidate/nucleus-diagnostic
+          sha256sum candidate/* > reports/binaries.sha256
+          gh api repos/heathsanchez/test/actions/artifacts/13635933940/zip > c65.zip
+          printf '%s  %s\n' 3b6aec739fbba77a5b84671a4ae042d0ef146141086a13cfb8e46212fc855304 c65.zip | sha256sum -c -
+          mkdir -p c65
+          unzip -q c65.zip -d c65
+          chmod +x c65/candidate/nucleus-diagnostic
+          cmp c65/base/flags.json base/flags.json
+      - name: Paired frozen n7 and malformed controls, same budget A/B/C
+        run: |
+          set -euo pipefail
+          gh api repos/heathsanchez/test/actions/artifacts/13276400289/zip > arena207.zip
+          printf '%s  %s\n' a9582eadc0d9893cbe39e6bcfccd79bfaec2032838851b8a487c35df16096763 arena207.zip | sha256sum -c -
+          unzip -p arena207.zip lean-arena-tests.tar.gz | tar --no-same-owner -xzf - -C arena207
+          python3 - <<'PY'
+          import pathlib,hashlib,json,os,time,subprocess,statistics
+          root=pathlib.Path('arena207')
+          original=(root/'good/perf/magma-list-pair-n7.ndjson').read_bytes()
+          assert hashlib.sha256(original).hexdigest()=='abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35'
+          flags=json.loads(pathlib.Path('base/flags.json').read_text())
+          assert len(flags)==24 and set(flags.values())=={'1'}
+          arms=[
+            ('A_original_no_resume','c65/candidate/nucleus-diagnostic',False),
+            ('B_resume_128','c65/candidate/nucleus-diagnostic',True),
+            ('C_resume_4096','candidate/nucleus-diagnostic',True),
+          ]
+          cases=[('n7','good/perf/magma-list-pair-n7.ndjson','valid'),
+                 ('nat-rec','bad/bugs/nat-rec-rules.ndjson','invalid'),
+                 ('orphan-rec','bad/bugs/orphan-rec.ndjson','invalid')]
+          rows=[]
+          for name,binary,resume in arms:
+            for case,path,kind in cases:
+              data=(root/path).read_bytes()
+              trials=3 if case=='n7' else 1
+              for index in range(trials):
+                env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+                env.update(flags)
+                if resume:env['NUCLEUS_EXPERIMENTAL_RESUMABLE_EXPOSURE']='1'
+                begin=time.monotonic()
+                proc=subprocess.run([str(pathlib.Path(binary).resolve()),'262144'],
+                      input=data,capture_output=True,env=env,timeout=120)
+                elapsed=time.monotonic()-begin
+                verdict={0:'ACCEPT',1:'REJECT',2:'UNKNOWN',3:'ERROR'}.get(proc.returncode,'ERROR')
+                row=dict(arm=name,case=case,trial=index,verdict=verdict,
+                    wall_seconds=round(elapsed,5),source_sha256=hashlib.sha256(data).hexdigest(),
+                    stderr_sha256=hashlib.sha256(proc.stderr).hexdigest())
+                print('C71_ABC='+json.dumps(row,sort_keys=True),flush=True)
+                rows.append(row)
+                assert (kind=='valid' and verdict in ('ACCEPT','UNKNOWN')) or (kind=='invalid' and verdict in ('REJECT','UNKNOWN')),('incompatible verdict',row)
+          for arm,_,_ in arms[:2]:
+            assert all(r['verdict']=='UNKNOWN' for r in rows if r['arm']==arm and r['case']=='n7'), 'baseline drift'
+          for arm,_,resume in arms[1:]:
+            p=subprocess.run([str(pathlib.Path(_).resolve()),'8388608'],
+                input=original,capture_output=True,
+                env={**{k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')},
+                     **flags,'NUCLEUS_EXPERIMENTAL_RESUMABLE_EXPOSURE':'1'},timeout=180)
+            verdict={0:'ACCEPT',1:'REJECT',2:'UNKNOWN',3:'ERROR'}.get(p.returncode,'ERROR')
+            assert verdict in ('ACCEPT','UNKNOWN')
+            print('C71_HIGH_DIAGNOSTIC='+json.dumps({'arm':arm,'verdict':verdict}),flush=True)
+          pathlib.Path('reports/c71-abc.json').write_text(json.dumps({
+            'experiment':'C71 source-fixed original A no-resume B 128-slot C 4096-slot',
+            'original_sha256':hashlib.sha256(original).hexdigest(),
+            'standard_budget':262144,'rules_changed':False,
+            'selected_checker_changed':False,'full_403_protected_not_run':True,
+            'all_native_gated_elsewhere':True,'rows':rows
+          },indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-C71-original-capacity-abc
+          retention-days: 60
+          path: |
+            reports/
+            candidate/
+            base/flags.json
