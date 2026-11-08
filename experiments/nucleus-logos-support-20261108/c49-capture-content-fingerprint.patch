@@ -1,0 +1,144 @@
+--- a/src/machine.rs
++++ b/src/machine.rs
+@@ -3042,12 +3042,19 @@
+         &self,stage:&str,name:NameId,source:&Closure,depth:usize,detail:&str,
+     ) {
+         let Some(seq)=crate::diagnostics::c48_ticket() else { return; };
++        // C49 diagnostic grouping only. A hash collision, a lexical binder
++        // origin difference, or an incomplete traversal must never provide
++        // proof, conversion, or completed-cache authority.
++        let c49_fingerprint=if std::env::var_os("NUCLEUS_DIAGNOSTIC_C49_CONTENT_FINGERPRINT").is_some() {
++            source.env.diagnostic_content_fingerprint()
++        } else { None };
+         eprintln!("NUCLEUS_C48_EVENT:{}",serde_json::json!({
+             "seq":seq,
+             "stage":stage,
+             "recursor":name.0,
+             "major_expr":source.expr.0,
+             "major_env":source.env.id(),
++            "major_env_content_fingerprint":c49_fingerprint,
+             "depth":depth,
+             "owner_remaining":self.exposure_fuel.get().unwrap_or(0),
+             "detail":detail.chars().take(400).collect::<String>(),
+--- a/src/value.rs
++++ b/src/value.rs
+@@ -182,6 +182,89 @@
+             EnvNode::Extend { id, .. } => *id,
+         }
+     }
++
++    /// C49 observer only. Hash the *contents* of a captured environment,
++    /// recursively including closures, neutrals, universes, and free names.
++    /// This fingerprint is a diagnostic grouping hint, NEVER an equality or
++    /// binder-origin certificate. It is deliberately bounded and fail-closed.
++    #[cfg(feature = "diagnostics")]
++    pub(crate) fn diagnostic_content_fingerprint(&self) -> Option<u64> {
++        use std::collections::hash_map::DefaultHasher;
++        enum Node<'a> {
++            Frame(&'a EnvFrame),
++            Binding(&'a EnvBinding),
++            Closure(&'a Closure),
++            Neutral(&'a Neutral),
++        }
++        let mut hasher = DefaultHasher::new();
++        let mut pending = vec![Node::Frame(self)];
++        let mut inspected = 0usize;
++        while let Some(node) = pending.pop() {
++            inspected += 1;
++            if inspected > 8192 { return None; }
++            match node {
++                Node::Frame(frame) => match frame.0.as_ref() {
++                    EnvNode::Empty => 0u8.hash(&mut hasher),
++                    EnvNode::Extend { parent, value, .. } => {
++                        1u8.hash(&mut hasher);
++                        pending.push(Node::Frame(parent));
++                        pending.push(Node::Binding(value));
++                    }
++                },
++                Node::Binding(binding) => match binding {
++                    EnvBinding::Closure(capture) => {
++                        2u8.hash(&mut hasher);
++                        pending.push(Node::Closure(capture));
++                    }
++                    EnvBinding::Neutral(neutral) => {
++                        3u8.hash(&mut hasher);
++                        pending.push(Node::Neutral(neutral));
++                    }
++                    EnvBinding::Free(free) => {
++                        4u8.hash(&mut hasher);
++                        free.hash(&mut hasher);
++                    }
++                    EnvBinding::NatLit(number) => {
++                        5u8.hash(&mut hasher);
++                        number.hash(&mut hasher);
++                    }
++                },
++                Node::Closure(capture) => {
++                    6u8.hash(&mut hasher);
++                    capture.expr.hash(&mut hasher);
++                    // Hash of a substitution is its structural-entry digest,
++                    // not its Rc address (never used as checker authority).
++                    capture.levels.hash(&mut hasher);
++                    pending.push(Node::Frame(&capture.env));
++                }
++                Node::Neutral(neutral) => {
++                    7u8.hash(&mut hasher);
++                    match &neutral.head {
++                        NeutralHead::Free(free) => {
++                            8u8.hash(&mut hasher);
++                            free.hash(&mut hasher);
++                        }
++                        NeutralHead::Const { name, levels } => {
++                            9u8.hash(&mut hasher);
++                            name.hash(&mut hasher);
++                            levels.hash(&mut hasher);
++                        }
++                        NeutralHead::Projection { type_name, index, structure } => {
++                            10u8.hash(&mut hasher);
++                            type_name.hash(&mut hasher);
++                            index.hash(&mut hasher);
++                            pending.push(Node::Neutral(structure));
++                        }
++                    }
++                    neutral.spine.len().hash(&mut hasher);
++                    for capture in neutral.spine.iter().rev() {
++                        pending.push(Node::Closure(capture));
++                    }
++                }
++            }
++        }
++        Some(hasher.finish())
++    }
+ }
+ 
+ impl Default for EnvFrame {
+@@ -616,3 +699,29 @@
+         }).unwrap().join().unwrap();
+     }
+ }
++
++#[cfg(all(test, feature = "diagnostics"))]
++mod c49_diagnostic_content_fingerprint_controls {
++    use super::*;
++
++    #[test]
++    fn identical_rebuilt_captures_share_only_a_diagnostic_fingerprint() {
++        let first = EnvFrame::empty().extend(Closure::new(ExprId(5), EnvFrame::empty()));
++        let second = EnvFrame::empty().extend(Closure::new(ExprId(5), EnvFrame::empty()));
++        assert_ne!(first.id(), second.id());
++        assert_ne!(first, second, "binder-origin identities must remain distinct");
++        assert_eq!(first.diagnostic_content_fingerprint(), second.diagnostic_content_fingerprint());
++        let altered = EnvFrame::empty().extend(Closure::new(ExprId(6), EnvFrame::empty()));
++        assert_ne!(first.diagnostic_content_fingerprint(), altered.diagnostic_content_fingerprint());
++    }
++
++    #[test]
++    fn distinct_lexical_frees_and_native_numbers_do_not_merge() {
++        let left = EnvFrame::empty().extend_free(FreeId(3));
++        let right = EnvFrame::empty().extend_free(FreeId(4));
++        assert_ne!(left.diagnostic_content_fingerprint(), right.diagnostic_content_fingerprint());
++        let one = EnvFrame::empty().extend_nat_literal(BigNat::parse_decimal("1").unwrap());
++        let two = EnvFrame::empty().extend_nat_literal(BigNat::parse_decimal("2").unwrap());
++        assert_ne!(one.diagnostic_content_fingerprint(), two.diagnostic_content_fingerprint());
++    }
++}
