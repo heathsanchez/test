@@ -43,8 +43,8 @@ struct C70Prefix {
 }
 struct ClockExposure {value:Value,referenced:bool}""")
 
-change("    completed_replay_count:usize,\n}",
-       "    completed_replay_count:usize,\n    c70_prefixes:HashMap<C70Key,C70Prefix>,\n    c70_completed:HashMap<C70Key,Value>,\n}")
+change("    completed_replay_count:usize,",
+       "    completed_replay_count:usize,\n    c70_prefixes:HashMap<C70Key,C70Prefix>,\n    c70_completed:HashMap<C70Key,Value>,")
 change("struct VisitSet {\n","#[derive(Clone)]\nstruct VisitSet {\n")
 
 change("    // Hash-cons only an exact source evaluator binding.",r"""    fn c70_key(&self,closure:&Closure,transparency:Transparency,
