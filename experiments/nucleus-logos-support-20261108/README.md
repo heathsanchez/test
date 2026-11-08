@@ -507,3 +507,38 @@ binary, then pass unchanged input/native/adversarial/403 controls. No
 recursor certificate or desired Bool constructor may be inferred from the
 trace. This replaces the C11 local Nat.rec side-probe hypothesis, while
 preserving C11/C12 as negative causal-lineage evidence.
+
+C13 [run #42436611602](https://github.com/heathsanchez/test/actions/runs/42436611602)
+**SUCCESS**, commit `2313b6b662766538b1b9c07e7c0f8b392c2378db`,
+artifact `13600380201`, ZIP SHA256
+`4675382817ad54d6220db4618988fc8f207a96ae8951f19495a98b9f8d1eb881`.
+Native/adversarial and **403/403** protected passed; original `app-lam`
+accepted all three ways; all six original valid inputs remain UNKNOWN.
+The source-qualified large-budget **completed** replay returned
+`projection-major-replay-budget` with a 260,755-step caller grant;
+the subsequent one-step replay with grant 130,377 returned the **same**
+residual. Smaller attempts (503 and 251 grants) also returned it.
+This disproves the hypothesis that only the earlier 124-step speculative
+`Nat.rec` probe caused failure. The real independent task is to determine
+which *actual source value* was still being resolved when the shared
+major-projection work owner depleted; neither increased top-level fuel
+nor a presumed Bool constructor is warranted.
+
+C13's additional diagnostic records many other `Nat.rec` attempts on
+free local major variables, which safely remain UNKNOWN even though their
+shared owners retain work. The `Nat.rec` 124 event remains a distinct
+speculative failure; it is not the 260,755-step `Decidable.rec` residual.
+
+## C14 exhausted major source shape (CANDIDATE)
+
+At the existing `projection-major-replay-budget` return site, record
+`step`, current source result shape, recursor head, root caller and
+entry budget only under `TraceNestedRecursorIotaFailure`. The read-only
+probe must determine whether the owner ran dry **before inspecting an
+already-available constructor**, during a pending source projection,
+or while carrying another qualified recursor. Distinguish these cases
+before moving even an operational debit. The exact C13 native binary
+was first tested RED against
+`probe_c10_route.py --require-projection-major-boundary` while returning
+unchanged n7 UNKNOWN. The new `c14-projection-major-boundary.patch` applies
+with zero fuzz on the fully pinned C13 source. It never grants a judgment.
