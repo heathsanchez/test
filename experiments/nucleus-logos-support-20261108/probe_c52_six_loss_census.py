@@ -34,9 +34,10 @@ def declaration_root(source: bytes) -> int:
     if len(lines) < 2:
         raise ValueError("missing original export records")
     final = json.loads(lines[-1])
-    definition = final.get("def")
-    if not isinstance(definition, dict):
-        raise ValueError("last original record is not a declaration")
+    declarations = [final[tag] for tag in ("def", "thm") if tag in final]
+    if len(declarations) != 1 or not isinstance(declarations[0], dict):
+        raise ValueError("last original record is not a definition or theorem")
+    definition = declarations[0]
     root = definition.get("value")
     if type(root) is not int or root <= 0:
         raise ValueError("original declaration has no positive source root")
