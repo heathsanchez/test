@@ -39,7 +39,7 @@ jobs:
             --binary c50/candidate/nucleus-diagnostic \
             --arena arena207 --flags c50/base/flags.json --logs reports --timeout 180 \
             | tee reports/c52-all-six-loss.json
-          python3 -c 'import json; r=json.load(open("reports/c52-all-six-loss.json")); assert r["all_six_unknown"] and r["all_definitions_profiled"] and len(r["cases"])==6; print("C52", [(x["case"],x["scope"],x["loss_summary"]) for x in r["cases"]])'
+          python3 -c 'import json; r=json.load(open("reports/c52-all-six-loss.json")); assert r["all_six_unknown"] and r["all_definitions_profiled"] and len(r["cases"])==6 and all(x.get("first_failed_boundary",{}).get("verdict")=="UNKNOWN" for x in r["cases"]); print("C52", [(x["case"],x["first_failed_boundary"],x["loss_summary"]) for x in r["cases"]])'
       - name: Preserve positive or negative all-six receipt
         if: always()
         continue-on-error: true
