@@ -411,7 +411,7 @@
              spine:vec![closed(0),closed(0),Closure::new(ExprId(1),first_frame)]};
          assert!(machine.qualified_nested_recursor_result(&inner,128).is_proven());
 -        for index in 0..8193 {
-+        for index in 0..Machine::exact_beta_binding_capacity()+1 {
++        for index in 0..u64::try_from(Machine::exact_beta_binding_capacity()).unwrap()+1 {
              let distinct=Closure::new(ExprId(2),EnvFrame::empty().extend_free(FreeId(1000+index)));
              machine.bind_captured_argument(&binder,distinct);
          }
@@ -420,7 +420,7 @@
          let changed_argument=Closure::with_levels(argument.expr,argument.env.clone(),changed_levels);
          assert_ne!(first.id(),machine.bind_captured_argument(&binder,changed_argument).id());
 -        for i in 0..8192 {
-+        for i in 0..Machine::exact_beta_binding_capacity() {
++        for i in 0..u64::try_from(Machine::exact_beta_binding_capacity()).unwrap() {
              let distinct=Closure::new(argument.expr,EnvFrame::empty().extend_free(FreeId(i)));
              machine.bind_captured_argument(&binder,distinct);
          }
