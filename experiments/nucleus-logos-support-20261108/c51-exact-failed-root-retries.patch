@@ -1,0 +1,67 @@
+--- a/src/machine.rs
++++ b/src/machine.rs
+@@ -380,6 +380,10 @@
+     // Weak aliases cannot make an incomplete key outlive its actual replay
+     // owner or prevent independently tested forced-digest collision checks.
+     replay_source_handles: RefCell<HashMap<ReplaySourceHandle,std::rc::Weak<ReplayKey>>>,
++    // C51 observer only: exact failed source requests within this immutable
++    // machine. No constructor, conversion or completed-replay authority.
++    #[cfg(feature="diagnostics")]
++    c51_failed_exact_roots: RefCell<Vec<(Neutral,CheckedReplayGoal)>>,
+     #[cfg(test)]
+     replay_key_builds: Cell<usize>,
+     exposure_cache: Option<ExposureCache>,
+@@ -419,6 +423,8 @@
+             source_forwarding_enabled: cfg!(feature="diagnostics")
+                 && std::env::var_os("NUCLEUS_DIAGNOSTIC_C44_SOURCE_FORWARDING").is_some(),
+             source_forwarded: RefCell::new(HashMap::new()),
++            #[cfg(feature="diagnostics")]
++            c51_failed_exact_roots: RefCell::new(Vec::new()),
+             #[cfg(test)]
+             source_forward_hits: Cell::new(0),
+             #[cfg(test)]
+@@ -3111,6 +3117,11 @@
+         let caller=std::panic::Location::caller();
+         #[cfg(feature="diagnostics")]
+         let replay_goal=match goal {CheckedReplayGoal::Completed=>"completed",CheckedReplayGoal::OneStep=>"one-step"};
++        #[cfg(feature="diagnostics")]
++        let c51_entry_root=std::env::var_os("NUCLEUS_DIAGNOSTIC_C51_EXACT_RETRIES")
++            .map(|_|neutral.clone());
++        #[cfg(feature="diagnostics")]
++        let c51_entry_owner=owner_at_entry.unwrap_or(budget);
+         let previous=self.native_completion.replace(true);
+         let _native_scope=NativeCompletionScope{enabled:&self.native_completion,previous};
+         // Diagnostic isolation only: replay an actual certified iota path
+@@ -3200,6 +3211,32 @@
+                             "active":active.len(),"resolved":resolved.len(),
+                             "owner_remaining":self.exposure_fuel.get().unwrap_or(0),
+                         }));
++                        // C51 compares full Neutral equality (all captured
++                        // source closures, lexical env IDs, universes and
++                        // spine), not a fingerprint or a desired result.
++                        #[cfg(feature="diagnostics")]
++                        if let Some(root)=c51_entry_root.as_ref() {
++                            let (prior,prior_count)={
++                                let mut failed=self.c51_failed_exact_roots.borrow_mut();
++                                let prior=failed.iter().position(|(saved,saved_goal)|
++                                    *saved_goal==goal && saved==root);
++                                let count=failed.len();
++                                if count<256 {failed.push((root.clone(),goal));}
++                                (prior,count)
++                            };
++                            let source_head=match &root.head {
++                                NeutralHead::Const{name,..}=>name.0,
++                                _=>0,
++                            };
++                            eprintln!("NUCLEUS_C51_FAILED_ROOT:{}",serde_json::json!({
++                                "seq":seq,"stage":$stage,"recursor":source_head,
++                                "goal":replay_goal,"entry_budget":budget,
++                                "entry_owner":c51_entry_owner,
++                                "spine_len":root.spine.len(),
++                                "prior_failure":prior,
++                                "stored_failed_roots":prior_count,
++                            }));
++                        }
+                     }
+                 }
+             }};
