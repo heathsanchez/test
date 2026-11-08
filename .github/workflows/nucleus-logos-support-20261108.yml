@@ -49,7 +49,7 @@ jobs:
           gh api repos/heathsanchez/test/actions/artifacts/13276400289/zip > arena207.zip
           printf '%s  %s\n' a9582eadc0d9893cbe39e6bcfccd79bfaec2032838851b8a487c35df16096763 arena207.zip | sha256sum -c -
           unzip -p arena207.zip lean-arena-tests.tar.gz | tar --no-same-owner -xzf - -C arena207
-      - name: Exact chain9 paired trace and full 403-outcome regression
+      - name: Exact chain9, isolated app-lam stack preflight and 403-outcome regression
         run: |
           set -euo pipefail
           python3 -m unittest discover -s experiments/nucleus-logos-support-20261108 -p 'test_*.py' -v > reports/python-tests.log 2>&1 || { tail -n 80 reports/python-tests.log; exit 1; }
