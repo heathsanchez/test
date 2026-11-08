@@ -3,7 +3,7 @@
 import json
 import unittest
 
-from probe_c48_first_divergence import parse_trace, first_divergence
+from probe_c48_first_divergence import parse_trace, first_divergence, first_content_divergence
 
 
 def line(sequence, stage, detail="probe", major=4677):
@@ -46,6 +46,16 @@ class ExactSourceTransitionTests(unittest.TestCase):
     def test_missing_observation_is_not_a_qualification(self):
         self.assertEqual(parse_trace(b"diagnostic_steps=262144:verdict=Unknown"), [])
         self.assertIsNone(first_divergence([], [])["failed_next"])
+
+    def test_c49_does_not_confuse_environment_allocation_ids_with_content(self):
+        shared = json.loads(line(0, "major-result", "projection:env=7").split(b":", 1)[1])
+        same = dict(shared, major_env=999, detail="projection:env=888")
+        shared["major_env_content_fingerprint"] = 12345
+        same["major_env_content_fingerprint"] = 12345
+        self.assertEqual(first_content_divergence([shared], [same])["shared_prefix"], 1)
+        changed = dict(same, major_env_content_fingerprint=67890)
+        self.assertEqual(first_content_divergence([shared], [changed])["shared_prefix"], 0)
+        self.assertTrue(first_content_divergence([shared], [same])["hash_is_not_source_equality"])
 
 
 if __name__ == "__main__":
