@@ -1,0 +1,88 @@
+name: cFS public-safe host readiness
+
+on:
+  push:
+    branches:
+      - research/cfs-host-readiness-20261109
+    paths:
+      - .github/workflows/cfs-host-readiness.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-cfs-host-smoke:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Qualify host IPC support
+        shell: bash
+        run: |
+          set -euo pipefail
+          uname -a
+          printf 'mqueue before: '
+          cat /proc/sys/fs/mqueue/msg_max
+          sudo sysctl -w fs.mqueue.msg_max=128
+          printf 'mqueue after: '
+          cat /proc/sys/fs/mqueue/msg_max
+          test "$(cat /proc/sys/fs/mqueue/msg_max)" -ge 128
+
+      - name: Reconstruct exact unmodified NASA source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none --depth=1 --branch dev https://github.com/nasa/cFS.git cfs
+          cd cfs
+          git fetch --depth=1 origin add5454113ad0c3d4c6e180af7fb0c60293f45f7
+          git checkout --detach add5454113ad0c3d4c6e180af7fb0c60293f45f7
+          git submodule update --init --recursive --jobs 6 --depth=1 --filter=blob:none
+          test "$(git rev-parse HEAD)" = add5454113ad0c3d4c6e180af7fb0c60293f45f7
+          test "$(git -C apps/cf rev-parse HEAD)" = 0dbc2b759b0343dcc64269b7754c9cddcab518cc
+          test -z "$(git -C apps/cf status --porcelain)"
+
+      - name: Build native cFS bundle
+        shell: bash
+        working-directory: cfs
+        run: |
+          set -euo pipefail
+          cmake --version
+          make native_std.prep
+          make -j4 native_std.install
+
+      - name: Run stock CF unit tests
+        shell: bash
+        working-directory: cfs
+        run: |
+          set -euo pipefail
+          ctest --test-dir build-native_std/native/default_cpu1 -R '^coverage-cf-' --output-on-failure
+
+      - name: Run untouched bundle to CF initialization
+        shell: bash
+        working-directory: cfs/build-native_std/exe/cpu1
+        run: |
+          set -euo pipefail
+          set +e
+          timeout --signal=INT --kill-after=3 25 ./core-cpu1 > cfs-startup.log 2>&1
+          rc=$?
+          set -e
+          echo "Core run exit status: $rc (timeout is expected if still running)"
+          tail -90 cfs-startup.log
+          if ! grep -q "CF Initialized" cfs-startup.log; then
+            echo "Missing stock CF initialization event" >&2
+            exit 1
+          fi
+          if grep -q "Cannot Create SB Pipe" cfs-startup.log; then
+            echo "Stock Software Bus startup failed" >&2
+            exit 1
+          fi
+          echo "PASS: unchanged cFS reached CF initialization on hosted runner"
+
+      - name: Retain stock startup log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cfs-public-safe-startup
+          path: cfs/build-native_std/exe/cpu1/cfs-startup.log
+          if-no-files-found: ignore
+          retention-days: 7
