@@ -59,6 +59,15 @@ jobs:
             --bad-root original196 \
             --steps 262144 --timeout 60 --core term \
             | tee reports/c20-term-core-results.json
+      - name: C21 observe source-pinned value-core activity without changing checking rules
+        run: |
+          set -euo pipefail
+          printf '%s  %s\n' e5ca34489fc7b8ee13b1e7f09f76247ab7b01dd1a752a13cc8b796c569e1401a arena207/good/perf/fueled-chain.ndjson | sha256sum -c -
+          cargo build --locked --release --features vstats --manifest-path nano-reference/Cargo.toml --bin nl-fast > reports/c21-vstats-build.log 2>&1 || { tail -n 100 reports/c21-vstats-build.log; exit 1; }
+          NL_VSTATS=1 nano-reference/target/release/nl-fast --steps 262144 -j1 -q \
+            arena207/good/perf/fueled-chain.ndjson > reports/c21-vstats.stdout 2> reports/c21-vstats.stderr
+          grep -q '^vstats total ' reports/c21-vstats.stderr
+          grep -E '^vstats (total |chain6_datF |chain9_datF |chain12 |chain12_datF )' reports/c21-vstats.stderr > reports/c21-vstats-selected.txt
       - uses: actions/upload-artifact@v4
         if: always()
         with:
