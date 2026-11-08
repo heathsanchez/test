@@ -1,0 +1,65 @@
+name: Nucleus C54 first failed declaration roots
+on:
+  push:
+    branches: [research/nucleus-c54-first-failure-roots-20261109]
+    paths: ['.github/workflows/nucleus-c54-first-failure-roots.yml']
+  workflow_dispatch:
+permissions: {contents: write, actions: read}
+jobs:
+  first-failure-roots:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 22
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore exact native-qualified C50 binary and six original cases
+        run: |
+          set -euo pipefail
+          mkdir -p c50 arena207 reports
+          gh api repos/heathsanchez/test/actions/artifacts/13616928035/zip > c50-qualified.zip
+          printf '%s  %s\n' c04171f1b37eff7093b19be69956354823317086334b6cfca1408e89b2148b9d c50-qualified.zip | sha256sum -c -
+          unzip -q c50-qualified.zip -d c50
+          chmod +x c50/candidate/nucleus-diagnostic
+          gh api repos/heathsanchez/test/actions/artifacts/13276400289/zip > arena207.zip
+          printf '%s  %s\n' a9582eadc0d9893cbe39e6bcfccd79bfaec2032838851b8a487c35df16096763 arena207.zip | sha256sum -c -
+          unzip -p arena207.zip lean-arena-tests.tar.gz | tar --no-same-owner -xzf - -C arena207
+      - name: Verify native source-name resolution and profile actual failed declarations
+        run: |
+          set -euo pipefail
+          PYTHONPATH=experiments/nucleus-logos-support-20261108 python3 -m unittest \
+            experiments/nucleus-logos-support-20261108/test_c50_loss_ledger.py \
+            experiments/nucleus-logos-support-20261108/test_c52_six_loss_census.py \
+            experiments/nucleus-logos-support-20261108/test_c54_first_failure_roots.py -v
+          python3 experiments/nucleus-logos-support-20261108/probe_c54_first_failure_roots.py \
+            --binary c50/candidate/nucleus-diagnostic \
+            --arena arena207 --flags c50/base/flags.json \
+            --c52 experiments/nucleus-logos-support-20261108/c52-all-six-loss.json \
+            --logs reports --timeout 180 \
+            | tee reports/c54-first-failure-roots.json
+          python3 -c 'import json; r=json.load(open("reports/c54-first-failure-roots.json")); assert r["all_six_unknown"] and r["all_six_profiled"] and len(r["cases"])==6; assert sum(c["root_was_mistargeted"] for c in r["cases"])==2; print("C54",[(c["case"],c["actual_first_failed_value_root"],c["loss_summary"]) for c in r["cases"]])'
+      - name: Preserve source-qualified positive or negative receipt
+        if: always()
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          if test -s reports/c54-first-failure-roots.json; then
+            cp reports/c54-first-failure-roots.json experiments/nucleus-logos-support-20261108/c54-first-failure-roots.json
+          else
+            jq -n --arg cause "C54 failed to qualify all source entry points; inspect job" \
+              '{status:"UNKNOWN_CI_FAILURE", standard_accepts:0, qualified:false, reason:$cause}' \
+              > experiments/nucleus-logos-support-20261108/c54-first-failure-roots.json
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add experiments/nucleus-logos-support-20261108/c54-first-failure-roots.json
+          git commit -m 'C54 first failing declaration source profile, not final-export root'
+          git push origin HEAD:refs/heads/research/nucleus-c54-first-failure-roots-20261109
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-C54-first-failure-roots
+          retention-days: 60
+          path: |
+            reports/
+            c50/base/flags.json
