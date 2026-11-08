@@ -354,3 +354,28 @@ The C8b and C9 major-start/work traces were identical. Raising the inner
 ceiling cannot enlarge this 504-step call grant. C9 is a **REJECTED**
 hypothesis, NOT PROMOTED; next inspect the conversion-side grant/ownership
 and exact work already charged, rather than increasing another nested cap.
+
+## C10 conversion-side budget route (DIAGNOSTIC CANDIDATE)
+
+Source audit found two independent calls in `convert.rs`: a certified Bool
+constructor may request a full checked nested-recursor replay, but the
+fallback `qualified_one_step_recursor_result` divides each available
+comparison allowance by two **before** attempting the source registered
+recursor. That loop currently attempts all nonempty constant applications,
+including those that do not have qualified recursor metadata, and still
+reserves half their available allowance. The final observed Nat.rec grant
+504 is numerically consistent with half an outer 1008 allowance, but
+the precise native caller remains to be measured before intervention.
+
+C10 restores the original 512 per-major cap, the original 8192 exact-frame
+interner, and every selected inference/conversion rule. It adds only
+diagnostic-gated descriptions of the *actual existing calls* to checked
+recursor replay: which side, source head, qualified metadata, outer budget,
+allocated probe, unused reserve and whether native replay proved a value.
+The diagnostic runs only with `NUCLEUS_TRACE_REPLAY_CACHE=1` on the
+byte-exact original n7. Test `probe_c10_route.py` was first observed RED
+on unchanged C9 binary: original still UNKNOWN, but zero route markers.
+If it turns green, protected 403 and all six byte-exact verdicts are
+replayed at the selected 24 flags. No trace can grant a new typing or
+equality result. The next change, if any, must be determined from this
+source-qualified caller work trace rather than guessed budget increases.
