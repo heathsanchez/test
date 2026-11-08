@@ -40,41 +40,31 @@ theorem raw_true_cannot_certify_arbitrary_prop :
 
 
 /-!
-A conditional finite certificate uses the source's actual Nat.allLTTR
-Boolean procedure. It is a semantic result about the proposition, NOT a claim
-that the runtime-tail-recursive procedure is definitionally equal to the
-non-tail-recursive kernel reduction of Nat.decidableBallLT.
+Independent, axiom-free finite certificate composition.
+This does not trust a list of Boolean observations: each leaf contains a
+typed Decidable and a checked equality showing its actual decision is true.
 -/
+inductive FinDecisionCertificate : (n : Nat) → (Fin n → Prop) → Type where
+  | nil {P : Fin 0 → Prop} : FinDecisionCertificate 0 P
+  | cons {n : Nat} {P : Fin (n + 1) → Prop}
+      (head : Decidable (P ⟨0, Nat.zero_lt_succ n⟩))
+      (headTrue : @decide (P ⟨0, Nat.zero_lt_succ n⟩) head = true)
+      (tail : FinDecisionCertificate n (fun i => P i.succ)) :
+      FinDecisionCertificate (n + 1) P
 
-theorem allLTTR_fin_sound {n : Nat} {P : Fin n → Prop} [DecidablePred P]
-    (certificate : Nat.allLTTR n (fun k hk => decide (P ⟨k, hk⟩)) = true) :
-    ∀ i : Fin n, P i := by
-  intro i
-  have h := (Nat.allLTTR_eq_true).mp certificate i.val i.isLt
-  exact of_decide_eq_true h
-
-theorem allLTTR_fin_complete {n : Nat} {P : Fin n → Prop} [DecidablePred P]
-    (all : ∀ i : Fin n, P i) :
-    Nat.allLTTR n (fun k hk => decide (P ⟨k, hk⟩)) = true := by
-  apply (Nat.allLTTR_eq_true).mpr
-  intro k hk
-  exact decide_eq_true (all ⟨k, hk⟩)
-
-theorem allLTTR_fin_agrees_with_decide {n : Nat} {P : Fin n → Prop}
-    [DecidablePred P] :
-    (Nat.allLTTR n (fun k hk => decide (P ⟨k, hk⟩)) = true) ↔
-      decide (∀ i : Fin n, P i) = true := by
-  constructor
-  · intro h
-    exact decide_eq_true (allLTTR_fin_sound h)
-  · intro h
-    exact allLTTR_fin_complete (of_decide_eq_true h)
-
-theorem seven_finite_certificate_positive :
-    Nat.allLTTR 7 (fun k _ => decide (k < 7)) = true := by
-  apply (allLTTR_fin_complete (P := fun i : Fin 7 => i.val < 7))
-  intro i
-  exact i.isLt
+theorem fin_certificate_sound {n : Nat} {P : Fin n → Prop}
+    (cert : FinDecisionCertificate n P) : ∀ i : Fin n, P i := by
+  induction cert with
+  | nil =>
+      intro i
+      exact Fin.elim0 i
+  | cons head headTrue tail ih =>
+      intro i
+      cases i using Fin.cases with
+      | zero =>
+          exact checked_decide_true_implies_proof head headTrue
+      | succ j =>
+          exact ih j
 
 end NucleusDecide
 
@@ -84,7 +74,4 @@ end NucleusDecide
 #print axioms NucleusDecide.checked_decide_false_implies_refutation
 #print axioms NucleusDecide.finite_domain_isTrue
 #print axioms NucleusDecide.raw_true_cannot_certify_arbitrary_prop
-#print axioms NucleusDecide.allLTTR_fin_sound
-#print axioms NucleusDecide.allLTTR_fin_complete
-#print axioms NucleusDecide.allLTTR_fin_agrees_with_decide
-#print axioms NucleusDecide.seven_finite_certificate_positive
+#print axioms NucleusDecide.fin_certificate_sound
