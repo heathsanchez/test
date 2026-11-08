@@ -1,6 +1,6 @@
-# C10: identify the source-qualified conversion caller's half-budget route
-# without changing the selected 262144-step theorem acceptance behavior.
-name: Nucleus C10 checked recursor conversion-budget trace
+# C11: include the precise failing registered-recursor owner's entry grant
+# and source stage without changing any 262144-step theorem decision.
+name: Nucleus C11 registered recursor terminal-owner trace
 on:
   push:
     branches: [research/nucleus-logos-support-20261108]
@@ -51,13 +51,14 @@ jobs:
           gh api repos/heathsanchez/test/actions/artifacts/13276400289/zip > arena207.zip
           printf '%s  %s\n' a9582eadc0d9893cbe39e6bcfccd79bfaec2032838851b8a487c35df16096763 arena207.zip | sha256sum -c -
           unzip -p arena207.zip lean-arena-tests.tar.gz | tar --no-same-owner -xzf - -C arena207
-      - name: C10 red-green gate on unchanged Magma n7 conversion trace
+      - name: C11 red-green gate on exact terminal recursor owner
         run: |
           set -euo pipefail
           python3 experiments/nucleus-logos-support-20261108/probe_c10_route.py \
             --binary candidate/metatron-kernel \
             --input arena207/good/perf/magma-list-pair-n7.ndjson \
-            --flags base/flags.json | tee reports/c10-route-probe.json
+            --flags base/flags.json \
+            --require-owner-event | tee reports/c11-owner-probe.json
       - name: Exact chain9, isolated app-lam stack preflight and 403-outcome regression
         run: |
           set -euo pipefail
