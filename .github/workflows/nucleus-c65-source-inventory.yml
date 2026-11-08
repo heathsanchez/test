@@ -6,6 +6,7 @@ on:
       - '.github/workflows/nucleus-c65-source-inventory.yml'
       - 'experiments/nucleus-certified-decide-20261109/c65_source_inventory.py'
       - 'experiments/nucleus-certified-decide-20261109/c66_instance_inputs.py'
+      - 'experiments/nucleus-certified-decide-20261109/c67_operation_source.py'
   workflow_dispatch:
 permissions:
   contents: read
@@ -34,6 +35,8 @@ jobs:
             frozen/good/perf/magma-list-pair-n7.ndjson out/c65-source.json
           python3 experiments/nucleus-certified-decide-20261109/c66_instance_inputs.py \
             frozen/good/perf/magma-list-pair-n7.ndjson out/c66-source-inputs.json
+          python3 experiments/nucleus-certified-decide-20261109/c67_operation_source.py \
+            frozen/good/perf/magma-list-pair-n7.ndjson out/c67-operation-source.json
           python3 - <<'PY'
           from pathlib import Path
           import importlib.util,json
