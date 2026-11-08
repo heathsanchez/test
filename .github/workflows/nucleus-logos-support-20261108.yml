@@ -1,6 +1,6 @@
-# C18: source-checked projection receiver in the existing recursor worklist.
+# C18 plus C25: source-checked projection receiver and a key-free replay diagnostic.
 # No original input, global budget or default kernel flag changes.
-name: Nucleus C18 source-qualified projection continuation
+name: Nucleus C25 source-qualified keyless-replay diagnostic
 on:
   push:
     branches: [research/nucleus-logos-support-20261108]
@@ -20,7 +20,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         with: {toolchain: '1.99.1'}
-      - name: Restore exact selected source and apply source-qualified C11–C18 patches
+      - name: Restore exact selected source and apply source-qualified C11–C18 and C25 patches
         run: |
           set -euo pipefail
           mkdir -p base candidate reports original196 arena207
@@ -37,7 +37,8 @@ jobs:
           patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-logos-support-20261108/c16-metered-projection-borrow.patch
           patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-logos-support-20261108/c17-diagnostic-projection-cap.patch
           patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-logos-support-20261108/c18-projection-worklist-continuation.patch
-          sha256sum experiments/nucleus-logos-support-20261108/logos-projection-shadow.patch experiments/nucleus-logos-support-20261108/c12-caller-site.patch experiments/nucleus-logos-support-20261108/c13-large-replay-residual.patch experiments/nucleus-logos-support-20261108/c14-projection-major-boundary.patch experiments/nucleus-logos-support-20261108/c15-bounded-projection-major.patch experiments/nucleus-logos-support-20261108/c16-metered-projection-borrow.patch experiments/nucleus-logos-support-20261108/c17-diagnostic-projection-cap.patch experiments/nucleus-logos-support-20261108/c18-projection-worklist-continuation.patch > reports/patch.sha256
+          patch --fuzz=0 -p1 -d metatron-kernel < experiments/nucleus-logos-support-20261108/c25-source-checked-keyless-worklist.patch
+          sha256sum experiments/nucleus-logos-support-20261108/logos-projection-shadow.patch experiments/nucleus-logos-support-20261108/c12-caller-site.patch experiments/nucleus-logos-support-20261108/c13-large-replay-residual.patch experiments/nucleus-logos-support-20261108/c14-projection-major-boundary.patch experiments/nucleus-logos-support-20261108/c15-bounded-projection-major.patch experiments/nucleus-logos-support-20261108/c16-metered-projection-borrow.patch experiments/nucleus-logos-support-20261108/c17-diagnostic-projection-cap.patch experiments/nucleus-logos-support-20261108/c18-projection-worklist-continuation.patch experiments/nucleus-logos-support-20261108/c25-source-checked-keyless-worklist.patch > reports/patch.sha256
           find metatron-kernel/src -type f -print0 | sort -z | xargs -0 sha256sum > reports/source.sha256
           cargo check --locked --all-targets --features diagnostics --manifest-path metatron-kernel/Cargo.toml > reports/plain-build.log 2>&1 || { tail -n 100 reports/plain-build.log; exit 1; }
       - name: Native proof-obligation and adversarial controls
@@ -65,6 +66,32 @@ jobs:
             --binary candidate/metatron-kernel \
             --input arena207/good/perf/magma-list-pair-n7.ndjson \
             --flags base/flags.json | tee reports/c18-projection-worklist.json
+      - name: C25 source-confirmed keyless recursor replay on four unchanged Magma originals
+        run: |
+          set -euo pipefail
+          mapfile -t flags < <(jq -r 'to_entries[] | "\(.key)=\(.value)"' base/flags.json)
+          printf 'name\tsha256\trc\tkeyless_records\n' > reports/c25-four-magma.tsv
+          for name in magma-list-pair-n7 magma-list-pair-n21 magma-list-deep-n21 magma-list-deep-n36; do
+            case "$name" in
+              magma-list-pair-n7)  digest='abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35' ;;
+              magma-list-pair-n21) digest='b8279fa9189a203c6c11b04702c27c0f99a650b37f2b0165dd260b1d14e9ef84' ;;
+              magma-list-deep-n21) digest='b7a211699ab32a5d2397319702e2d5552f5796a6bdac990efa69fb186039f526' ;;
+              magma-list-deep-n36) digest='6669cee92ad330dada351ac9e63656f7e9e848dd70376f17030d64677f8c81ac' ;;
+            esac
+            original="arena207/good/perf/$name.ndjson"
+            printf '%s  %s\n' "$digest" "$original" | sha256sum -c -
+            set +e
+            env "${flags[@]}" NUCLEUS_DIAGNOSTIC_NO_REPLAY_KEYS=1 \
+              timeout --signal=TERM --kill-after=3s 120s candidate/metatron-kernel \
+              < "$original" > "reports/c25-$name.stdout" 2> "reports/c25-$name.stderr"
+            rc=$?
+            set -e
+            case "$rc" in 0|2|124) ;; *) echo "Unexpected keyless native result: $name rc=$rc"; exit 1 ;; esac
+            records=$(grep -c '^NUCLEUS_REPLAY_KEYLESS_SOURCE:' "reports/c25-$name.stderr" || true)
+            test "$records" -gt 0 || { echo "Keyless source branch not exercised for $name"; exit 1; }
+            printf '%s\t%s\t%s\t%s\n' "$name" "$digest" "$rc" "$records" >> reports/c25-four-magma.tsv
+          done
+          sed -n '1,5p' reports/c25-four-magma.tsv
       - name: C17 grant sweep remains non-authoritative on original Magma n7
         run: |
           set -euo pipefail
@@ -80,7 +107,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: nucleus-logos-support-C18-CANDIDATE
+          name: nucleus-logos-support-C25-CANDIDATE
           retention-days: 60
           path: |
             reports/
