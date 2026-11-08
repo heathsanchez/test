@@ -170,3 +170,41 @@ used binding, a changed used binding, and an out-of-range binding. The
 diagnostic does not alter kernel inference, conversion, admission, resources,
 or claims of full Mathlib acceptance. C5 is **CANDIDATE** pending native
 qualification, not a fix for the remaining six UNKNOWNs.
+
+## C5 completed; all 762 captured result supports match
+
+[C5 run #42431647689](https://github.com/heathsanchez/test/actions/runs/42431647689)
+is **SUCCESS** at commit `f82a77c796c78f2ebfe298801899a48406e87897`.
+Artifact `13596809762` ZIP SHA-256
+`d04dbdd95b58f7955c0a287447a2e8568b525743a0103d7f2ae9ac96429ab49d`.
+Native tests passed. The original `app-lam` passed all three configurations.
+All 403 protected verdicts matched (240 ACCEPT / 150 REJECT / 13 UNKNOWN).
+All six original valid inputs remained UNKNOWN under the standard 262,144
+step limit.
+
+Of 762 cross-frame repeated projected keys, 762 current and previous results
+have **identical immutable binding node identities at every used free index
+of their result type expression**. All 762 results are syntactically open;
+0 capture-support failures, 0 changed used nodes, 0 genuinely closed results.
+Their whole captured `EnvFrame` identities nevertheless differ.
+The precise **WARRANTED_BOUNDED** conclusion is therefore a missed semantic
+equivalence opportunity in the *observed* results. It does not yet establish
+predictive, independently verified reuse: the current result environment
+cannot be inspected until after inference. C6 must test which of those 762
+could be certified from a previously typed result and source-checked caller
+frame *before* paying full inference. No claims of six-case completion or
+source-qualified complete Mathlib are warranted.
+
+## C6 pre-inference result capture availability (PENDING)
+
+The C5 comparisons knew *both* type-result closure environments only after
+running the expensive inference twice. C6 checks the predictive prerequisite
+using only the **previous** completed result and the **current caller's input
+frame**, available before a subsequent inference. For every proved-equal
+pair of result support node IDs, count whether each previously used node
+(a) is at the same de Bruijn position in the caller frame, (b) is somewhere
+else in the caller frame, or (c) is absent from it. An unavailable prior
+capture is separately unknown. Unit controls distinguish these categories.
+Membership or index identity here is **not** a transport proof, only a way
+to decide which safety condition can be cheaply checked before replay.
+No typing or conversion result is returned by this diagnostic.
