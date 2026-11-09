@@ -96,3 +96,30 @@ Python and native build tests. Its final comparison failed because Lean's
 qualified `NorthStar.*` names. This was a display-normalization failure,
 not an observed axiom-set discrepancy. An exact RED-then-GREEN regression
 was added; the complete corrected CI run remains a separate requirement.
+
+The corrected authentic-source workflow
+[#42722601844](https://github.com/heathsanchez/test/actions/runs/42722601844)
+passed, with a three-theorem independent inventory that matched Lean's
+oracle, Nucleus exit 0 on the authentic source and exit 1 when the
+`NorthStar.givenQ` declaration was removed. The preserved report artifact
+is [#13720858163](https://github.com/heathsanchez/test/actions/runs/42722601844/artifacts/13720858163).
+This is a **bounded exact-source finding**, not a general checker proof.
+
+## Third bounded experiment: proof acceptance is not claim adequacy
+
+`ClaimBoundary.lean` contains the deliberately weaker theorem
+`NorthStarClaim.checkedTheorem : ∀ R : Prop, True` and a separately
+Lean-checked `separation` theorem asserting
+`(∀ R : Prop, True) ∧ ¬(∀ R : Prop, R)`. The refutation uses the
+concrete instantiation `R := False`. The JSON contract explicitly
+identifies the stronger `∀ R : Prop, R` as a **synthetic** intended
+requirement, not a requirement sourced from a real owner or JPL.
+
+The same pinned Lean source pipeline will independently export only the
+weaker declaration for native Nucleus. If native ACCEPT coexists with
+Lean's axiom-free separation witness, it demonstrates a precise limit
+of the meaning of ACCEPT: a properly checked theorem need not entail
+an independently supplied requirement. It is **not** a Nucleus soundness
+failure, nor evidence that any authentic user intent has been established.
+Any alteration of the synthetic contract must invalidate this example's
+existing separation receipt rather than inheriting its status.

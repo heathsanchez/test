@@ -26,7 +26,7 @@ jobs:
           set -euo pipefail
           mkdir -p reports
           git rev-parse HEAD | tee reports/source-commit.txt
-          sha256sum experiments/nucleus-north-star-20261110/*.py experiments/nucleus-north-star-20261110/*.lean | tee reports/source-files.sha256
+          sha256sum experiments/nucleus-north-star-20261110/*.py experiments/nucleus-north-star-20261110/*.lean experiments/nucleus-north-star-20261110/synthetic_claim.json | tee reports/source-files.sha256
           python3 -m unittest discover -s experiments/nucleus-north-star-20261110 -p 'test_*.py' -v 2>&1 | tee reports/source-inventory-tests.log
       - name: Build independently configured Nucleus
         run: |
@@ -62,6 +62,25 @@ jobs:
         run: |
           set -euo pipefail
           python3 experiments/nucleus-north-star-20261110/assess_authentic.py reports/authentic.ndjson reports/reference-lean.log metatron-kernel/target/release/metatron-kernel reports/authentic-assessment.json 2>&1 | tee reports/assessment-run.log
+      - name: Compile synthetic claim-separation witness in Lean
+        run: |
+          set -euo pipefail
+          source "$HOME/.elan/env"
+          cd experiments/nucleus-north-star-20261110
+          lean -o ClaimBoundary.olean ClaimBoundary.lean 2>&1 | tee "$GITHUB_WORKSPACE/reports/synthetic-claim-lean.log"
+          sha256sum ClaimBoundary.lean ClaimBoundary.olean | tee "$GITHUB_WORKSPACE/reports/synthetic-claim-module.sha256"
+      - name: Export precisely the weaker checked proposition
+        run: |
+          set -euo pipefail
+          source "$HOME/.elan/env"
+          export LEAN_PATH="$GITHUB_WORKSPACE/experiments/nucleus-north-star-20261110:${LEAN_PATH:-}"
+          cd /tmp/lean4export
+          lake env .lake/build/bin/lean4export ClaimBoundary -- NorthStarClaim.checkedTheorem > "$GITHUB_WORKSPACE/reports/synthetic-checked.ndjson"
+          sha256sum "$GITHUB_WORKSPACE/reports/synthetic-checked.ndjson" | tee "$GITHUB_WORKSPACE/reports/synthetic-checked.sha256"
+      - name: Compare successful native check with formally separated synthetic intent
+        run: |
+          set -euo pipefail
+          python3 experiments/nucleus-north-star-20261110/assess_claim_fidelity.py reports/synthetic-checked.ndjson reports/synthetic-claim-lean.log experiments/nucleus-north-star-20261110/synthetic_claim.json metatron-kernel/target/release/metatron-kernel reports/synthetic-claim-assessment.json 2>&1 | tee reports/synthetic-claim-assessment-run.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
