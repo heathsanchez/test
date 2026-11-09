@@ -1,0 +1,342 @@
+{
+  "experiment": "C68 frozen two-original 2x8 cache-composition diagnostic",
+  "status": "WARRANTED_DIAGNOSTIC",
+  "budget": 262144,
+  "selected_c58_binary_sha256": "37b77b125745e7b3eabfbb0adba1da76ea27dac11d13efcc05586f0892b39e6f",
+  "selected_c58_artifact": 13622452324,
+  "originals_artifact": 13276400289,
+  "new_proof_rules": false,
+  "source_inputs_modified": false,
+  "protected_regression_run": false,
+  "diagnostic_only": true,
+  "dimensions_bit_order": [
+    "NUCLEUS_DIAGNOSTIC_C30_EXACT_MAJOR_CACHE",
+    "NUCLEUS_DIAGNOSTIC_C44_SOURCE_FORWARDING",
+    "NUCLEUS_EXPERIMENTAL_RESUMABLE_EXPOSURE"
+  ],
+  "standard_accepts": 0,
+  "unknown_count": 16,
+  "records": [
+    {
+      "case": "magma-list-pair-n7",
+      "mask": 0,
+      "features": {
+        "NUCLEUS_DIAGNOSTIC_C30_EXACT_MAJOR_CACHE": false,
+        "NUCLEUS_DIAGNOSTIC_C44_SOURCE_FORWARDING": false,
+        "NUCLEUS_EXPERIMENTAL_RESUMABLE_EXPOSURE": false
+      },
+      "source_sha256": "abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35",
+      "verdict": "UNKNOWN",
+      "exit_code": 2,
+      "outer_spent": 457,
+      "outer_remaining": 261687,
+      "exposure_transitions": 828695,
+      "replay_reserved_units": 26350,
+      "recursor_worklist_steps": 4666,
+      "conversion_pairs": 665,
+      "root_judgment_result": "Unknown { residual: ResidualId(\"application-function-type\") }",
+      "stderr_sha256": "42750e7ccecc47afd64642250b06195dbdf21ecf17c2bd3a0d4f36bac92c7889"
+    },
+    {
+      "case": "magma-list-pair-n7",
+      "mask": 1,
+      "features": {
+        "NUCLEUS_DIAGNOSTIC_C30_EXACT_MAJOR_CACHE": true,
+        "NUCLEUS_DIAGNOSTIC_C44_SOURCE_FORWARDING": false,
+        "NUCLEUS_EXPERIMENTAL_RESUMABLE_EXPOSURE": false
+      },
+      "source_sha256": "abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35",
+      "verdict": "UNKNOWN",
+      "exit_code": 2,
+      "outer_spent": 457,
+      "outer_remaining": 261687,
+      "exposure_transitions": 827266,
+      "replay_reserved_units": 27890,
+      "recursor_worklist_steps": 4658,
+      "conversion_pairs": 665,
+      "root_judgment_result": "Unknown { residual: ResidualId(\"application-function-type\") }",
+      "stderr_sha256": "633d40b4e96bd08208f654b00ca3b10a4dc44ff4febd2ae294e863dff0faa708"
+    },
+    {
+      "case": "magma-list-pair-n7",
+      "mask": 2,
+      "features": {
+        "NUCLEUS_DIAGNOSTIC_C30_EXACT_MAJOR_CACHE": false,
+        "NUCLEUS_DIAGNOSTIC_C44_SOURCE_FORWARDING": true,
+        "NUCLEUS_EXPERIMENTAL_RESUMABLE_EXPOSURE": false
+      },
+      "source_sha256": "abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35",
+      "verdict": "UNKNOWN",
+      "exit_code": 2,
+      "outer_spent": 457,
+      "outer_remaining": 261687,
+      "exposure_transitions": 828694,
+      "replay_reserved_units": 26350,
+      "recursor_worklist_steps": 4666,
+      "conversion_pairs": 665,
+      "root_judgment_result": "Unknown { residual: ResidualId(\"application-function-type\") }",
+      "stderr_sha256": "1cb740bc501430d29be06c0aba0d5023eb6c6885bb14d8b3f198ff7c79233105"
+    },
+    {
+      "case": "magma-list-pair-n7",
+      "mask": 3,
+      "features": {
+        "NUCLEUS_DIAGNOSTIC_C30_EXACT_MAJOR_CACHE": true,
+        "NUCLEUS_DIAGNOSTIC_C44_SOURCE_FORWARDING": true,
+        "NUCLEUS_EXPERIMENTAL_RESUMABLE_EXPOSURE": false
+      },
+      "source_sha256": "abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35",
+      "verdict": "UNKNOWN",
+      "exit_code": 2,
+      "outer_spent": 457,
+      "outer_remaining": 261687,
+      "exposure_transitions": 827262,
+      "replay_reserved_units": 27890,
+      "recursor_worklist_steps": 4658,
+      "conversion_pairs": 665,
+      "root_judgment_result": "Unknown { residual: ResidualId(\"application-function-type\") }",
+      "stderr_sha256": "dc89b8d4118def3ebd42a9ac80cfb08350e95f3413d63b2de24758100ad0b39d"
+    },
+    {
+      "case": "magma-list-pair-n7",
+      "mask": 4,
+      "features": {
+        "NUCLEUS_DIAGNOSTIC_C30_EXACT_MAJOR_CACHE": false,
+        "NUCLEUS_DIAGNOSTIC_C44_SOURCE_FORWARDING": false,
+        "NUCLEUS_EXPERIMENTAL_RESUMABLE_EXPOSURE": true
+      },
+      "source_sha256": "abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35",
+      "verdict": "UNKNOWN",
+      "exit_code": 2,
+      "outer_spent": 457,
+      "outer_remaining": 261687,
+      "exposure_transitions": 601711,
+      "replay_reserved_units": 25444,
+      "recursor_worklist_steps": 4544,
+      "conversion_pairs": 665,
+      "root_judgment_result": "Unknown { residual: ResidualId(\"application-function-type\") }",
+      "stderr_sha256": "5dc876e341ef4a7501801ba1ac27270f86297a86b798f7c2cbee48bc30431cb2"
+    },
+    {
+      "case": "magma-list-pair-n7",
+      "mask": 5,
+      "features": {
+        "NUCLEUS_DIAGNOSTIC_C30_EXACT_MAJOR_CACHE": true,
+        "NUCLEUS_DIAGNOSTIC_C44_SOURCE_FORWARDING": false,
+        "NUCLEUS_EXPERIMENTAL_RESUMABLE_EXPOSURE": true
+      },
+      "source_sha256": "abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35",
+      "verdict": "UNKNOWN",
+      "exit_code": 2,
+      "outer_spent": 457,
+      "outer_remaining": 261687,
+      "exposure_transitions": 600833,
+      "replay_reserved_units": 26755,
+      "recursor_worklist_steps": 4507,
+      "conversion_pairs": 665,
+      "root_judgment_result": "Unknown { residual: ResidualId(\"application-function-type\") }",
+      "stderr_sha256": "f9e115c0c875e3d957cc2cb1c67ebb39a09bf3e24b2f06adbcfae8fbd9243515"
+    },
+    {
+      "case": "magma-list-pair-n7",
+      "mask": 6,
+      "features": {
+        "NUCLEUS_DIAGNOSTIC_C30_EXACT_MAJOR_CACHE": false,
+        "NUCLEUS_DIAGNOSTIC_C44_SOURCE_FORWARDING": true,
+        "NUCLEUS_EXPERIMENTAL_RESUMABLE_EXPOSURE": true
+      },
+      "source_sha256": "abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35",
+      "verdict": "UNKNOWN",
+      "exit_code": 2,
+      "outer_spent": 457,
+      "outer_remaining": 261687,
+      "exposure_transitions": 601711,
+      "replay_reserved_units": 25444,
+      "recursor_worklist_steps": 4544,
+      "conversion_pairs": 665,
+      "root_judgment_result": "Unknown { residual: ResidualId(\"application-function-type\") }",
+      "stderr_sha256": "5dc876e341ef4a7501801ba1ac27270f86297a86b798f7c2cbee48bc30431cb2"
+    },
+    {
+      "case": "magma-list-pair-n7",
+      "mask": 7,
+      "features": {
+        "NUCLEUS_DIAGNOSTIC_C30_EXACT_MAJOR_CACHE": true,
+        "NUCLEUS_DIAGNOSTIC_C44_SOURCE_FORWARDING": true,
+        "NUCLEUS_EXPERIMENTAL_RESUMABLE_EXPOSURE": true
+      },
+      "source_sha256": "abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35",
+      "verdict": "UNKNOWN",
+      "exit_code": 2,
+      "outer_spent": 457,
+      "outer_remaining": 261687,
+      "exposure_transitions": 600833,
+      "replay_reserved_units": 26755,
+      "recursor_worklist_steps": 4507,
+      "conversion_pairs": 665,
+      "root_judgment_result": "Unknown { residual: ResidualId(\"application-function-type\") }",
+      "stderr_sha256": "f9e115c0c875e3d957cc2cb1c67ebb39a09bf3e24b2f06adbcfae8fbd9243515"
+    },
+    {
+      "case": "magma-list-pair-n21",
+      "mask": 0,
+      "features": {
+        "NUCLEUS_DIAGNOSTIC_C30_EXACT_MAJOR_CACHE": false,
+        "NUCLEUS_DIAGNOSTIC_C44_SOURCE_FORWARDING": false,
+        "NUCLEUS_EXPERIMENTAL_RESUMABLE_EXPOSURE": false
+      },
+      "source_sha256": "b8279fa9189a203c6c11b04702c27c0f99a650b37f2b0165dd260b1d14e9ef84",
+      "verdict": "UNKNOWN",
+      "exit_code": 2,
+      "outer_spent": 361,
+      "outer_remaining": 261783,
+      "exposure_transitions": 362448,
+      "replay_reserved_units": 30301,
+      "recursor_worklist_steps": 4811,
+      "conversion_pairs": 515,
+      "root_judgment_result": "Unknown { residual: ResidualId(\"application-function-type\") }",
+      "stderr_sha256": "f9f6ff20d6e3593b5155df1b110eb7d8ac0616b93af2461e55c1564521e9abcf"
+    },
+    {
+      "case": "magma-list-pair-n21",
+      "mask": 1,
+      "features": {
+        "NUCLEUS_DIAGNOSTIC_C30_EXACT_MAJOR_CACHE": true,
+        "NUCLEUS_DIAGNOSTIC_C44_SOURCE_FORWARDING": false,
+        "NUCLEUS_EXPERIMENTAL_RESUMABLE_EXPOSURE": false
+      },
+      "source_sha256": "b8279fa9189a203c6c11b04702c27c0f99a650b37f2b0165dd260b1d14e9ef84",
+      "verdict": "UNKNOWN",
+      "exit_code": 2,
+      "outer_spent": 361,
+      "outer_remaining": 261783,
+      "exposure_transitions": 360992,
+      "replay_reserved_units": 31890,
+      "recursor_worklist_steps": 4801,
+      "conversion_pairs": 515,
+      "root_judgment_result": "Unknown { residual: ResidualId(\"application-function-type\") }",
+      "stderr_sha256": "93cff67aa48322db5c565a656377204fce73a98d9bd6f6b61b41015fe95319f6"
+    },
+    {
+      "case": "magma-list-pair-n21",
+      "mask": 2,
+      "features": {
+        "NUCLEUS_DIAGNOSTIC_C30_EXACT_MAJOR_CACHE": false,
+        "NUCLEUS_DIAGNOSTIC_C44_SOURCE_FORWARDING": true,
+        "NUCLEUS_EXPERIMENTAL_RESUMABLE_EXPOSURE": false
+      },
+      "source_sha256": "b8279fa9189a203c6c11b04702c27c0f99a650b37f2b0165dd260b1d14e9ef84",
+      "verdict": "UNKNOWN",
+      "exit_code": 2,
+      "outer_spent": 361,
+      "outer_remaining": 261783,
+      "exposure_transitions": 360886,
+      "replay_reserved_units": 31014,
+      "recursor_worklist_steps": 4898,
+      "conversion_pairs": 515,
+      "root_judgment_result": "Unknown { residual: ResidualId(\"application-function-type\") }",
+      "stderr_sha256": "6d3eb23c6519d7001e0f33f3f01af95c6cc5756c2f2ce2165f27a0a1ce48434a"
+    },
+    {
+      "case": "magma-list-pair-n21",
+      "mask": 3,
+      "features": {
+        "NUCLEUS_DIAGNOSTIC_C30_EXACT_MAJOR_CACHE": true,
+        "NUCLEUS_DIAGNOSTIC_C44_SOURCE_FORWARDING": true,
+        "NUCLEUS_EXPERIMENTAL_RESUMABLE_EXPOSURE": false
+      },
+      "source_sha256": "b8279fa9189a203c6c11b04702c27c0f99a650b37f2b0165dd260b1d14e9ef84",
+      "verdict": "UNKNOWN",
+      "exit_code": 2,
+      "outer_spent": 361,
+      "outer_remaining": 261783,
+      "exposure_transitions": 359537,
+      "replay_reserved_units": 32492,
+      "recursor_worklist_steps": 4868,
+      "conversion_pairs": 515,
+      "root_judgment_result": "Unknown { residual: ResidualId(\"application-function-type\") }",
+      "stderr_sha256": "4075ea5dc04d1d191bbda9f9f92653beea2179c13e248967af1d76f8d0decd87"
+    },
+    {
+      "case": "magma-list-pair-n21",
+      "mask": 4,
+      "features": {
+        "NUCLEUS_DIAGNOSTIC_C30_EXACT_MAJOR_CACHE": false,
+        "NUCLEUS_DIAGNOSTIC_C44_SOURCE_FORWARDING": false,
+        "NUCLEUS_EXPERIMENTAL_RESUMABLE_EXPOSURE": true
+      },
+      "source_sha256": "b8279fa9189a203c6c11b04702c27c0f99a650b37f2b0165dd260b1d14e9ef84",
+      "verdict": "UNKNOWN",
+      "exit_code": 2,
+      "outer_spent": 361,
+      "outer_remaining": 261783,
+      "exposure_transitions": 276858,
+      "replay_reserved_units": 29603,
+      "recursor_worklist_steps": 4701,
+      "conversion_pairs": 515,
+      "root_judgment_result": "Unknown { residual: ResidualId(\"application-function-type\") }",
+      "stderr_sha256": "ce2894df091428633b92cfde9f7ba6b74620716484cc688cc82278ba0ea148ae"
+    },
+    {
+      "case": "magma-list-pair-n21",
+      "mask": 5,
+      "features": {
+        "NUCLEUS_DIAGNOSTIC_C30_EXACT_MAJOR_CACHE": true,
+        "NUCLEUS_DIAGNOSTIC_C44_SOURCE_FORWARDING": false,
+        "NUCLEUS_EXPERIMENTAL_RESUMABLE_EXPOSURE": true
+      },
+      "source_sha256": "b8279fa9189a203c6c11b04702c27c0f99a650b37f2b0165dd260b1d14e9ef84",
+      "verdict": "UNKNOWN",
+      "exit_code": 2,
+      "outer_spent": 361,
+      "outer_remaining": 261783,
+      "exposure_transitions": 275725,
+      "replay_reserved_units": 31143,
+      "recursor_worklist_steps": 4684,
+      "conversion_pairs": 515,
+      "root_judgment_result": "Unknown { residual: ResidualId(\"application-function-type\") }",
+      "stderr_sha256": "fc7e39b999d9280c8f9c5b2b191be6ef46316341e048762f907a7e070061160e"
+    },
+    {
+      "case": "magma-list-pair-n21",
+      "mask": 6,
+      "features": {
+        "NUCLEUS_DIAGNOSTIC_C30_EXACT_MAJOR_CACHE": false,
+        "NUCLEUS_DIAGNOSTIC_C44_SOURCE_FORWARDING": true,
+        "NUCLEUS_EXPERIMENTAL_RESUMABLE_EXPOSURE": true
+      },
+      "source_sha256": "b8279fa9189a203c6c11b04702c27c0f99a650b37f2b0165dd260b1d14e9ef84",
+      "verdict": "UNKNOWN",
+      "exit_code": 2,
+      "outer_spent": 361,
+      "outer_remaining": 261783,
+      "exposure_transitions": 274885,
+      "replay_reserved_units": 29957,
+      "recursor_worklist_steps": 4768,
+      "conversion_pairs": 515,
+      "root_judgment_result": "Unknown { residual: ResidualId(\"application-function-type\") }",
+      "stderr_sha256": "b1f143cf73924103549b7dbb3365ac6e5d3bcf3f4e7e3182a44e1598a6868c3f"
+    },
+    {
+      "case": "magma-list-pair-n21",
+      "mask": 7,
+      "features": {
+        "NUCLEUS_DIAGNOSTIC_C30_EXACT_MAJOR_CACHE": true,
+        "NUCLEUS_DIAGNOSTIC_C44_SOURCE_FORWARDING": true,
+        "NUCLEUS_EXPERIMENTAL_RESUMABLE_EXPOSURE": true
+      },
+      "source_sha256": "b8279fa9189a203c6c11b04702c27c0f99a650b37f2b0165dd260b1d14e9ef84",
+      "verdict": "UNKNOWN",
+      "exit_code": 2,
+      "outer_spent": 361,
+      "outer_remaining": 261783,
+      "exposure_transitions": 273697,
+      "replay_reserved_units": 31481,
+      "recursor_worklist_steps": 4760,
+      "conversion_pairs": 515,
+      "root_judgment_result": "Unknown { residual: ResidualId(\"application-function-type\") }",
+      "stderr_sha256": "f9ef4e1be79907d180d65c255f7868106c5789a20714bac16741d33a7fa275fb"
+    }
+  ],
+  "interpretation": "Only these two unchanged originals and three existing optional cache mechanisms; no inference about remaining four cases or full corpus."
+}
