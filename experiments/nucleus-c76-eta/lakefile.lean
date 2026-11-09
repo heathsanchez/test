@@ -6,3 +6,6 @@ lean_lib C76Eta where
 
 lean_lib C81NatCache where
   roots := #[`C81NatCache]
+
+lean_lib C83Fin7 where
+  roots := #[`C83Fin7]
