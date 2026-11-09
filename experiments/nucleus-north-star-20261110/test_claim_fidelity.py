@@ -8,7 +8,7 @@ from assess_claim_fidelity import require_exact_synthetic_contract, require_lean
 CONTRACT = {
     "schema": "nucleus-north-star-synthetic-claim-v1",
     "checked_declaration": "NorthStarClaim.checkedTheorem",
-    "checked_type": "∀ (R : Prop), True",
+    "checked_type": "∀ (R : Prop), R → R",
     "intended_type": "∀ (R : Prop), R",
     "separation_declaration": "NorthStarClaim.separation",
     "authorization": "SYNTHETIC_CONTROL_ONLY",
@@ -20,7 +20,7 @@ class TestClaimFidelityBoundary(unittest.TestCase):
         require_exact_synthetic_contract(CONTRACT)
 
     def test_modified_intent_cannot_inherit_separation_warrant(self):
-        altered = {**CONTRACT, "intended_type": "∀ (R : Prop), True"}
+        altered = {**CONTRACT, "intended_type": "∀ (R : Prop), R → R"}
         with self.assertRaises(AssertionError):
             require_exact_synthetic_contract(altered)
 

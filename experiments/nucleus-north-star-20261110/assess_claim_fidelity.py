@@ -12,7 +12,7 @@ from axiom_dependencies import trace_axioms
 EXPECTED_CONTRACT = {
     "schema": "nucleus-north-star-synthetic-claim-v1",
     "checked_declaration": "NorthStarClaim.checkedTheorem",
-    "checked_type": "∀ (R : Prop), True",
+    "checked_type": "∀ (R : Prop), R → R",
     "intended_type": "∀ (R : Prop), R",
     "separation_declaration": "NorthStarClaim.separation",
     "authorization": "SYNTHETIC_CONTROL_ONLY",

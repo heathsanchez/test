@@ -7,14 +7,14 @@ set_option autoImplicit false
 
 namespace NorthStarClaim
 
--- A correct but deliberately weak proposition.
-theorem checkedTheorem : ∀ (R : Prop), True := by
-  intro _
-  exact True.intro
+-- A correct but deliberately weak proposition: R follows *if assumed*.
+theorem checkedTheorem : ∀ (R : Prop), R → R := by
+  intro R h
+  exact h
 
 -- Constructive evidence: the checked proposition holds while the proposed
 -- stronger requirement fails, witnessed by instantiating R := False.
-theorem separation : (∀ (R : Prop), True) ∧ ¬ (∀ (R : Prop), R) := by
+theorem separation : (∀ (R : Prop), R → R) ∧ ¬ (∀ (R : Prop), R) := by
   constructor
   · exact checkedTheorem
   · intro h

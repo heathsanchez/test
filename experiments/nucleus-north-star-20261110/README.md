@@ -108,9 +108,9 @@ This is a **bounded exact-source finding**, not a general checker proof.
 ## Third bounded experiment: proof acceptance is not claim adequacy
 
 `ClaimBoundary.lean` contains the deliberately weaker theorem
-`NorthStarClaim.checkedTheorem : ∀ R : Prop, True` and a separately
+`NorthStarClaim.checkedTheorem : ∀ R : Prop, R → R` and a separately
 Lean-checked `separation` theorem asserting
-`(∀ R : Prop, True) ∧ ¬(∀ R : Prop, R)`. The refutation uses the
+`(∀ R : Prop, R → R) ∧ ¬(∀ R : Prop, R)`. The refutation uses the
 concrete instantiation `R := False`. The JSON contract explicitly
 identifies the stronger `∀ R : Prop, R` as a **synthetic** intended
 requirement, not a requirement sourced from a real owner or JPL.
@@ -123,3 +123,13 @@ an independently supplied requirement. It is **not** a Nucleus soundness
 failure, nor evidence that any authentic user intent has been established.
 Any alteration of the synthetic contract must invalidate this example's
 existing separation receipt rather than inheriting its status.
+
+The first synthetic-source workflow
+[#42723226035](https://github.com/heathsanchez/test/actions/runs/42723226035)
+compiled the genuine Lean separation theorem and exported the weaker
+proof, but the independent inventory returned UNKNOWN for an unresolved
+Lean `True` inductive reference. Its final assessment failed closed.
+This is a **supported-subset limitation of the experimental inventory**,
+not evidence of a checker soundness failure. The revised pure-implication
+source above uses only the previously accepted inventory forms; it is a
+new experiment requiring fresh full CI qualification.
