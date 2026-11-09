@@ -1,0 +1,361 @@
+{
+  "experiment": "C72 original C58 exact source hot-expression census",
+  "status": "WARRANTED_DIAGNOSTIC",
+  "budget": 262144,
+  "originals_artifact": 13276400289,
+  "selected_c58_sha256": "37b77b125745e7b3eabfbb0adba1da76ea27dac11d13efcc05586f0892b39e6f",
+  "source_inputs_modified": false,
+  "new_proof_rules": false,
+  "protected_full_corpus": false,
+  "standard_accepts": 0,
+  "samples_are_every_64_exposure_not_every_transition": true,
+  "records": [
+    {
+      "case": "magma-list-pair-n7",
+      "source_sha256": "abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35",
+      "verdict": "UNKNOWN",
+      "root_expr": 8837,
+      "first_neutral_pair": "NUCLEUS_C56_PAIR:seq=0:depth=0:context_depth=0:budget=503:left=const:NameId(169):qualified=false:arity=0:major=none:right=const:NameId(147):qualified=true:arity=5:major=expr=ExprId(11):env=275988",
+      "work": "NUCLEUS_C47_INNER_WORK:expr=ExprId(8837):budget=262144:outer_spent=457:outer_remaining=261687:exposure_transitions=828695:replay_reserved_units=26350:recursor_worklist_steps=4666:conversion_pairs=665:result=Unknown { residual: ResidualId(\"application-function-type\") }",
+      "exposure_transitions": 828695,
+      "sample_every": 64,
+      "sampled_top16": [
+        {
+          "expr": 1,
+          "sample_hits": 1004,
+          "tag": "bvar",
+          "head": null,
+          "syntax": 0
+        },
+        {
+          "expr": 6,
+          "sample_hits": 911,
+          "tag": "bvar",
+          "head": null,
+          "syntax": 1
+        },
+        {
+          "expr": 11,
+          "sample_hits": 581,
+          "tag": "bvar",
+          "head": null,
+          "syntax": 2
+        },
+        {
+          "expr": 7,
+          "sample_hits": 196,
+          "tag": "app",
+          "head": null,
+          "syntax": {
+            "arg": 1,
+            "fn": 6
+          }
+        },
+        {
+          "expr": 4678,
+          "sample_hits": 130,
+          "tag": "lam",
+          "head": null,
+          "syntax": {
+            "binderInfo": "default",
+            "body": 4677,
+            "name": 34,
+            "type": 342
+          }
+        },
+        {
+          "expr": 6087,
+          "sample_hits": 117,
+          "tag": "const",
+          "head": "Fin.val",
+          "syntax": {
+            "name": 1009,
+            "us": []
+          }
+        },
+        {
+          "expr": 4677,
+          "sample_hits": 114,
+          "tag": "proj",
+          "head": null,
+          "syntax": {
+            "idx": 0,
+            "struct": 1,
+            "typeName": 88
+          }
+        },
+        {
+          "expr": 9,
+          "sample_hits": 110,
+          "tag": "bvar",
+          "head": null,
+          "syntax": 3
+        },
+        {
+          "expr": 4679,
+          "sample_hits": 110,
+          "tag": "lam",
+          "head": null,
+          "syntax": {
+            "binderInfo": "default",
+            "body": 4678,
+            "name": 65,
+            "type": 204
+          }
+        },
+        {
+          "expr": 345,
+          "sample_hits": 105,
+          "tag": "const",
+          "head": "Fin.mk",
+          "syntax": {
+            "name": 89,
+            "us": []
+          }
+        },
+        {
+          "expr": 403,
+          "sample_hits": 102,
+          "tag": "app",
+          "head": "OfNat.mk",
+          "syntax": {
+            "arg": 204,
+            "fn": 402
+          }
+        },
+        {
+          "expr": 402,
+          "sample_hits": 97,
+          "tag": "const",
+          "head": "OfNat.mk",
+          "syntax": {
+            "name": 100,
+            "us": [
+              0
+            ]
+          }
+        },
+        {
+          "expr": 6088,
+          "sample_hits": 96,
+          "tag": "app",
+          "head": "Fin.val",
+          "syntax": {
+            "arg": 6083,
+            "fn": 6087
+          }
+        },
+        {
+          "expr": 397,
+          "sample_hits": 91,
+          "tag": "lam",
+          "head": null,
+          "syntax": {
+            "binderInfo": "default",
+            "body": 396,
+            "name": 3,
+            "type": 231
+          }
+        },
+        {
+          "expr": 405,
+          "sample_hits": 88,
+          "tag": "app",
+          "head": "OfNat.mk",
+          "syntax": {
+            "arg": 1,
+            "fn": 404
+          }
+        },
+        {
+          "expr": 395,
+          "sample_hits": 85,
+          "tag": "lam",
+          "head": null,
+          "syntax": {
+            "binderInfo": "instImplicit",
+            "body": 394,
+            "name": 34,
+            "type": 371
+          }
+        }
+      ],
+      "stderr_sha256": "20fd885eb0894f177f11864128f3438b2a5782530b096f1ba81871af31d44c7a"
+    },
+    {
+      "case": "magma-list-pair-n21",
+      "source_sha256": "b8279fa9189a203c6c11b04702c27c0f99a650b37f2b0165dd260b1d14e9ef84",
+      "verdict": "UNKNOWN",
+      "root_expr": 8827,
+      "first_neutral_pair": "NUCLEUS_C56_PAIR:seq=0:depth=0:context_depth=0:budget=503:left=const:NameId(169):qualified=false:arity=0:major=none:right=const:NameId(147):qualified=true:arity=5:major=expr=ExprId(11):env=69639",
+      "work": "NUCLEUS_C47_INNER_WORK:expr=ExprId(8827):budget=262144:outer_spent=361:outer_remaining=261783:exposure_transitions=362448:replay_reserved_units=30301:recursor_worklist_steps=4811:conversion_pairs=515:result=Unknown { residual: ResidualId(\"application-function-type\") }",
+      "exposure_transitions": 362448,
+      "sample_every": 64,
+      "sampled_top16": [
+        {
+          "expr": 6,
+          "sample_hits": 553,
+          "tag": "bvar",
+          "head": null,
+          "syntax": 1
+        },
+        {
+          "expr": 1,
+          "sample_hits": 350,
+          "tag": "bvar",
+          "head": null,
+          "syntax": 0
+        },
+        {
+          "expr": 11,
+          "sample_hits": 293,
+          "tag": "bvar",
+          "head": null,
+          "syntax": 2
+        },
+        {
+          "expr": 7,
+          "sample_hits": 79,
+          "tag": "app",
+          "head": null,
+          "syntax": {
+            "arg": 1,
+            "fn": 6
+          }
+        },
+        {
+          "expr": 9,
+          "sample_hits": 68,
+          "tag": "bvar",
+          "head": null,
+          "syntax": 3
+        },
+        {
+          "expr": 217,
+          "sample_hits": 68,
+          "tag": "const",
+          "head": "Nat.rec",
+          "syntax": {
+            "name": 66,
+            "us": [
+              1
+            ]
+          }
+        },
+        {
+          "expr": 226,
+          "sample_hits": 63,
+          "tag": "lam",
+          "head": null,
+          "syntax": {
+            "binderInfo": "default",
+            "body": 225,
+            "name": 14,
+            "type": 202
+          }
+        },
+        {
+          "expr": 7197,
+          "sample_hits": 62,
+          "tag": "lam",
+          "head": null,
+          "syntax": {
+            "binderInfo": "default",
+            "body": 7196,
+            "name": 65,
+            "type": 200
+          }
+        },
+        {
+          "expr": 7277,
+          "sample_hits": 56,
+          "tag": "lam",
+          "head": null,
+          "syntax": {
+            "binderInfo": "default",
+            "body": 7276,
+            "name": 1512,
+            "type": 7143
+          }
+        },
+        {
+          "expr": 218,
+          "sample_hits": 55,
+          "tag": "app",
+          "head": "Nat.rec",
+          "syntax": {
+            "arg": 9,
+            "fn": 217
+          }
+        },
+        {
+          "expr": 7195,
+          "sample_hits": 54,
+          "tag": "app",
+          "head": null,
+          "syntax": {
+            "arg": 6451,
+            "fn": 126
+          }
+        },
+        {
+          "expr": 553,
+          "sample_hits": 53,
+          "tag": "lam",
+          "head": null,
+          "syntax": {
+            "binderInfo": "default",
+            "body": 552,
+            "name": 15,
+            "type": 494
+          }
+        },
+        {
+          "expr": 547,
+          "sample_hits": 52,
+          "tag": "app",
+          "head": "Decidable.rec",
+          "syntax": {
+            "arg": 546,
+            "fn": 544
+          }
+        },
+        {
+          "expr": 6365,
+          "sample_hits": 51,
+          "tag": "lam",
+          "head": null,
+          "syntax": {
+            "binderInfo": "default",
+            "body": 6364,
+            "name": 1356,
+            "type": 200
+          }
+        },
+        {
+          "expr": 6495,
+          "sample_hits": 51,
+          "tag": "lam",
+          "head": null,
+          "syntax": {
+            "binderInfo": "default",
+            "body": 6494,
+            "name": 1423,
+            "type": 6449
+          }
+        },
+        {
+          "expr": 222,
+          "sample_hits": 48,
+          "tag": "app",
+          "head": null,
+          "syntax": {
+            "arg": 221,
+            "fn": 7
+          }
+        }
+      ],
+      "stderr_sha256": "3493aeae4311449fddda817c4976390f47078a67be2e4f37dfdd0897b3587049"
+    }
+  ]
+}
