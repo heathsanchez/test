@@ -1,0 +1,107 @@
+name: Nucleus C68 original-cache matrix
+on:
+  push:
+    branches: [research/nucleus-c68-cache-matrix-20261109]
+    paths: ['.github/workflows/nucleus-c68-cache-matrix.yml']
+  workflow_dispatch:
+permissions: {contents: write, actions: read}
+jobs:
+  source-qualified-cache-matrix:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RUST_MIN_STACK: '16777216'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore exact C58 selected checker and frozen original inputs
+        run: |
+          set -euo pipefail
+          mkdir -p candidate base reports original
+          gh api repos/heathsanchez/test/actions/artifacts/13622452324/zip > c58.zip
+          printf '%s  %s\n' 63764179e4cfcd89cac50c8e200977c9169cab47e073086e463c86b3fbcfcadd c58.zip | sha256sum -c -
+          unzip -p c58.zip candidate/nucleus-diagnostic > candidate/nucleus-diagnostic
+          unzip -p c58.zip base/flags.json > base/flags.json
+          chmod +x candidate/nucleus-diagnostic
+          printf '%s  %s\n' 37b77b125745e7b3eabfbb0adba1da76ea27dac11d13efcc05586f0892b39e6f candidate/nucleus-diagnostic | sha256sum -c -
+          gh api repos/heathsanchez/test/actions/artifacts/13276400289/zip > originals.zip
+          printf '%s  %s\n' a9582eadc0d9893cbe39e6bcfccd79bfaec2032838851b8a487c35df16096763 originals.zip | sha256sum -c -
+          unzip -p originals.zip lean-arena-tests.tar.gz | tar --no-same-owner -xzf - -C original
+      - name: Replay full 2 x 8 matrix at identical standard budget
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib,json,os,re,subprocess
+          from pathlib import Path
+          cases=[
+            ('magma-list-pair-n7',8837,'abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35'),
+            ('magma-list-pair-n21',8827,'b8279fa9189a203c6c11b04702c27c0f99a650b37f2b0165dd260b1d14e9ef84'),
+          ]
+          flags=json.loads(Path('base/flags.json').read_text())
+          assert len(flags)==24 and set(flags.values())=={'1'}
+          dimensions=['NUCLEUS_DIAGNOSTIC_C30_EXACT_MAJOR_CACHE',
+                      'NUCLEUS_DIAGNOSTIC_C44_SOURCE_FORWARDING',
+                      'NUCLEUS_EXPERIMENTAL_RESUMABLE_EXPOSURE']
+          measurements=[]
+          for case,root,digest in cases:
+            source=Path(f'original/good/perf/{case}.ndjson').read_bytes()
+            assert hashlib.sha256(source).hexdigest()==digest
+            for mask in range(8):
+              env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+              env.update(flags)
+              env.update({'NUCLEUS_ASSURANCE_SOURCE_OWNED_PROBE':'1',
+                          'NUCLEUS_DIAGNOSTIC_C47_PROFILE_EXPR':str(root)})
+              settings={name:bool(mask & (1<<i)) for i,name in enumerate(dimensions)}
+              env.update({name:'1' for name,enabled in settings.items() if enabled})
+              proc=subprocess.run([str(Path('candidate/nucleus-diagnostic').resolve()),'262144'],
+                input=source,capture_output=True,env=env,timeout=180)
+              verdict={0:'ACCEPT',1:'REJECT',2:'UNKNOWN',3:'ERROR'}.get(proc.returncode,'ERROR')
+              lines=proc.stderr.decode(errors='replace').splitlines()
+              work=[line for line in lines if line.startswith('NUCLEUS_C47_INNER_WORK:')]
+              assert len(work)==1,(case,mask,len(work),lines[-10:])
+              match=re.search(r'outer_spent=(\d+):outer_remaining=(\d+):exposure_transitions=(\d+):replay_reserved_units=(\d+):recursor_worklist_steps=(\d+):conversion_pairs=(\d+):result=(.+)',work[0])
+              assert match,(case,mask,work[0])
+              outer,remaining,exposures,reservations,steps,pairs=map(int,match.groups()[:6])
+              Path(f'reports/c68-{case}-{mask}.stderr').write_bytes(proc.stderr)
+              measurements.append({'case':case,'mask':mask,'features':settings,
+                'source_sha256':digest,'verdict':verdict,'exit_code':proc.returncode,
+                'outer_spent':outer,'outer_remaining':remaining,'exposure_transitions':exposures,
+                'replay_reserved_units':reservations,'recursor_worklist_steps':steps,
+                'conversion_pairs':pairs,'root_judgment_result':match.group(7),
+                'stderr_sha256':hashlib.sha256(proc.stderr).hexdigest()})
+              print(case,mask,verdict,'exposures',exposures,flush=True)
+          report={'experiment':'C68 frozen two-original 2x8 cache-composition diagnostic',
+            'status':'WARRANTED_DIAGNOSTIC','budget':262144,
+            'selected_c58_binary_sha256':'37b77b125745e7b3eabfbb0adba1da76ea27dac11d13efcc05586f0892b39e6f',
+            'selected_c58_artifact':13622452324,'originals_artifact':13276400289,
+            'new_proof_rules':False,'source_inputs_modified':False,'protected_regression_run':False,
+            'diagnostic_only':True,'dimensions_bit_order':dimensions,
+            'standard_accepts':sum(row['verdict']=='ACCEPT' for row in measurements),
+            'unknown_count':sum(row['verdict']=='UNKNOWN' for row in measurements),
+            'records':measurements,
+            'interpretation':'Only these two unchanged originals and three existing optional cache mechanisms; no inference about remaining four cases or full corpus.'}
+          Path('reports/c68-cache-matrix.json').write_text(json.dumps(report,indent=2)+'\n')
+          assert len(measurements)==16
+          assert all(row['verdict']=='UNKNOWN' for row in measurements),'unexpected verdict: preserve result for analysis'
+          PY
+      - name: Preserve complete local-comparison receipt in research branch
+        if: always()
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          if test -s reports/c68-cache-matrix.json; then
+            cp reports/c68-cache-matrix.json experiments/nucleus-logos-support-20261108/c68-cache-matrix.json
+          else
+            printf '{"status":"UNKNOWN_CI_FAILURE","qualified":false,"standard_accepts":0}\n' > experiments/nucleus-logos-support-20261108/c68-cache-matrix.json
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add experiments/nucleus-logos-support-20261108/c68-cache-matrix.json
+          git commit -m 'C68 preserve paired original cache-composition evidence'
+          git push origin HEAD:refs/heads/research/nucleus-c68-cache-matrix-20261109
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-C68-cache-matrix
+          retention-days: 60
+          path: reports/
