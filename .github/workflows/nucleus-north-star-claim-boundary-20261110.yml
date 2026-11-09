@@ -1,0 +1,43 @@
+name: Nucleus North Star claim boundary
+on:
+  push:
+    branches: [research/nucleus-north-star-claim-boundary-20261110]
+    paths:
+      - '.github/workflows/nucleus-north-star-claim-boundary-20261110.yml'
+      - 'metatron-kernel/tests/north_star_claim_boundary.rs'
+      - 'experiments/nucleus-north-star-20261110/README.md'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  assumption-boundary:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      CARGO_INCREMENTAL: '0'
+      CARGO_BUILD_JOBS: '2'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Freeze exact source identity
+        run: |
+          mkdir -p reports
+          git rev-parse HEAD | tee reports/source-commit.txt
+          sha256sum metatron-kernel/tests/north_star_claim_boundary.rs | tee reports/test-source.sha256
+          sha256sum metatron-kernel/src/{lib,checker,parser,verdict}.rs | tee reports/kernel-source.sha256
+      - name: Check assumption-boundary positives and forgeries
+        run: |
+          set -euo pipefail
+          cargo test --locked --manifest-path metatron-kernel/Cargo.toml --test north_star_claim_boundary -- --nocapture 2>&1 | tee reports/north-star-native.log
+      - name: Record the existing native library baseline
+        if: success()
+        run: |
+          set -euo pipefail
+          cargo test --locked --manifest-path metatron-kernel/Cargo.toml --lib 2>&1 | tee reports/nucleus-library.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-north-star-claim-boundary
+          retention-days: 60
+          path: reports/
