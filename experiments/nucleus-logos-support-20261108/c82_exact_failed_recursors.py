@@ -68,15 +68,15 @@ method=r"""    #[cfg(feature="diagnostics")]
             state.enters=state.enters.saturating_add(1);
             let owner=self.definitions.clone();
             let rules=self.recursor_reductions.clone();
-            let same=state.seen.iter_mut().find(|entry|
+            let same=state.seen.iter().position(|entry|
                 entry.authority==self.authority
                 && entry.goal==goal
                 && Rc::ptr_eq(&entry.definitions,&owner)
                 && Rc::ptr_eq(&entry.recursors,&rules)
                 && entry.root==*root);
-            if let Some(entry)=same {
+            if let Some(index)=same {
                 state.repeated=state.repeated.saturating_add(1);
-                if entry.failed {
+                if state.seen[index].failed {
                     state.failed_then_retried=state.failed_then_retried.saturating_add(1);
                 }
             } else if state.seen.len()<1024 {
