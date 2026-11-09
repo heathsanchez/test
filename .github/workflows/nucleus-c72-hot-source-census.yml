@@ -1,0 +1,126 @@
+name: Nucleus C72 frozen source exposure census
+on:
+  push:
+    branches: [research/nucleus-c72-hot-source-census-20261109]
+    paths: ['.github/workflows/nucleus-c72-hot-source-census.yml']
+  workflow_dispatch:
+permissions: {contents: write, actions: read}
+jobs:
+  sampled-hot-source:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RUST_MIN_STACK: '16777216'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore qualified source, frozen inputs and environment
+        run: |
+          set -euo pipefail
+          mkdir -p original selected base reports
+          gh api repos/heathsanchez/test/actions/artifacts/13609679273/zip > c37.zip
+          printf '%s  %s\n' fceddaca338ca36c2964edf0ec81b9e4acd0b66d938864ec5e7239f766e186c3 c37.zip | sha256sum -c -
+          unzip -p c37.zip base/flags.json > base/flags.json
+          gh api repos/heathsanchez/test/actions/artifacts/13622452324/zip > c58.zip
+          printf '%s  %s\n' 63764179e4cfcd89cac50c8e200977c9169cab47e073086e463c86b3fbcfcadd c58.zip | sha256sum -c -
+          unzip -p c58.zip candidate/nucleus-diagnostic > selected/nucleus-diagnostic
+          chmod +x selected/nucleus-diagnostic
+          printf '%s  %s\n' 37b77b125745e7b3eabfbb0adba1da76ea27dac11d13efcc05586f0892b39e6f selected/nucleus-diagnostic | sha256sum -c -
+          gh api repos/heathsanchez/test/actions/artifacts/13276400289/zip > originals.zip
+          printf '%s  %s\n' a9582eadc0d9893cbe39e6bcfccd79bfaec2032838851b8a487c35df16096763 originals.zip | sha256sum -c -
+          unzip -p originals.zip lean-arena-tests.tar.gz | tar --no-same-owner -xzf - -C original
+      - name: Annotate existing C47 source-expression samples
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import ast,hashlib,json,os,re,subprocess
+          from pathlib import Path
+          flags=json.loads(Path('base/flags.json').read_text())
+          assert len(flags)==24 and set(flags.values())=={'1'}
+          cases=[
+            ('magma-list-pair-n7',8837,'abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35'),
+            ('magma-list-pair-n21',8827,'b8279fa9189a203c6c11b04702c27c0f99a650b37f2b0165dd260b1d14e9ef84')]
+          def annotate_source(source,exposures):
+            names={0:''};expressions={}
+            for ln in source.splitlines():
+              obj=json.loads(ln)
+              if 'in' in obj:
+                atom=obj.get('str',obj.get('num'))
+                assert atom is not None
+                names[obj['in']]=(names[atom['pre']]+'.'+atom['str']).strip('.') if 'str' in atom else names[atom['pre']]+'.'+str(atom['i'])
+              if 'ie' in obj:expressions[obj['ie']]=obj
+            def name_of_head(i):
+              while 'app' in expressions[i]:i=expressions[i]['app']['fn']
+              obj=expressions[i]
+              return names.get(obj['const']['name']) if 'const' in obj else None
+            result=[]
+            for i,count in exposures:
+              assert isinstance(i,int) and isinstance(count,int) and i in expressions and count>0
+              obj=expressions[i]
+              tags=[key for key in obj if key!='ie']
+              assert len(tags)==1
+              tag=tags[0]
+              head=name_of_head(i) if tag in ('app','const') else None
+              result.append({'expr':i,'sample_hits':count,'tag':tag,'head':head,'syntax':obj[tag]})
+            return result
+          rows=[]
+          for case,root,source_hash in cases:
+            source=Path('original/good/perf/'+case+'.ndjson').read_bytes()
+            assert hashlib.sha256(source).hexdigest()==source_hash
+            env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+            env.update(flags)
+            env.update({'NUCLEUS_ASSURANCE_SOURCE_OWNED_PROBE':'1',
+              'NUCLEUS_DIAGNOSTIC_C47_PROFILE_EXPR':str(root),
+              'NUCLEUS_DIAGNOSTIC_C55_APP_SHAPE':'1',
+              'NUCLEUS_DIAGNOSTIC_C56_NEUTRAL_PAIR':'1'})
+            p=subprocess.run([str(Path('selected/nucleus-diagnostic').resolve()),'262144'],
+              input=source,capture_output=True,env=env,timeout=180)
+            verdict={0:'ACCEPT',1:'REJECT',2:'UNKNOWN',3:'ERROR'}.get(p.returncode,'ERROR')
+            log=p.stderr.decode(errors='replace').splitlines()
+            work=[x for x in log if x.startswith('NUCLEUS_C47_INNER_WORK:')]
+            pairs=[x for x in log if x.startswith('NUCLEUS_C56_PAIR:')]
+            hot=[x for x in log if x.startswith('NUCLEUS_C47_HOT_SOURCE:')]
+            assert verdict=='UNKNOWN' and len(work)==1 and len(hot)==1 and pairs,(case,verdict,work,hot)
+            samples=ast.literal_eval(hot[0].split(':samples_every_64=',1)[1])
+            assert 1<=len(samples)<=16 and samples==sorted(samples,key=lambda x:(-x[1],x[0])),samples
+            parsed=annotate_source(source,samples)
+            m=re.search(r'exposure_transitions=(\d+)',work[0])
+            assert m
+            exp=int(m.group(1))
+            assert sum(x['sample_hits'] for x in parsed)<=exp//64
+            rows.append({'case':case,'source_sha256':source_hash,'verdict':verdict,
+              'root_expr':root,'first_neutral_pair':pairs[0],'work':work[0],
+              'exposure_transitions':exp,'sample_every':64,'sampled_top16':parsed,
+              'stderr_sha256':hashlib.sha256(p.stderr).hexdigest()})
+            Path('reports/c72-'+case+'.stderr').write_bytes(p.stderr)
+            print(case,verdict,'top_source',[(x['expr'],x['sample_hits'],x['tag'],x['head']) for x in parsed],flush=True)
+          report={'experiment':'C72 original C58 exact source hot-expression census',
+            'status':'WARRANTED_DIAGNOSTIC','budget':262144,
+            'originals_artifact':13276400289,
+            'selected_c58_sha256':'37b77b125745e7b3eabfbb0adba1da76ea27dac11d13efcc05586f0892b39e6f',
+            'source_inputs_modified':False,'new_proof_rules':False,
+            'protected_full_corpus':False,'standard_accepts':0,
+            'samples_are_every_64_exposure_not_every_transition':True,'records':rows}
+          Path('reports/c72-hot-source-census.json').write_text(json.dumps(report,indent=2)+'\n')
+          PY
+      - name: Preserve source-qualified receipt, including failures
+        if: always()
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          if test -s reports/c72-hot-source-census.json; then
+            cp reports/c72-hot-source-census.json experiments/nucleus-logos-support-20261108/c72-hot-source-census.json
+          else
+            printf '{"status":"UNKNOWN_CI_FAILURE","qualified":false,"standard_accepts":0}\n' > experiments/nucleus-logos-support-20261108/c72-hot-source-census.json
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add experiments/nucleus-logos-support-20261108/c72-hot-source-census.json
+          git commit -m 'C72 retain sampled original source exposure map'
+          git push origin HEAD:refs/heads/research/nucleus-c72-hot-source-census-20261109
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-C72-hot-source-census
+          retention-days: 60
+          path: reports/
