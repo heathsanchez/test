@@ -1,0 +1,403 @@
+{
+  "experiment": "C84 exact closure identity census inside frozen first failing root",
+  "full_403_protected_corpus_not_run": true,
+  "new_cache_or_result_reuse": false,
+  "normal_kernel_proof_rules_changed": false,
+  "observer_off_on_equivalence": true,
+  "original_proofs_unchanged": true,
+  "original_standard_accepts": 0,
+  "rows": [
+    {
+      "baseline_observer_work_equal": true,
+      "case": "magma-list-pair-n7",
+      "observations": [
+        {
+          "exact_closure_census": null,
+          "first_c56_pair": "NUCLEUS_C56_PAIR:seq=0:depth=0:context_depth=0:budget=503:left=const:NameId(169):qualified=false:arity=0:major=none:right=const:NameId(147):qualified=true:arity=5:major=expr=ExprId(11):env=275988",
+          "observer": false,
+          "stderr_sha256": "fe10c9ac34d4a32d54cee665f6317cf2721e9d821e8e264d9c9feb13b61f7224",
+          "verdict": "UNKNOWN",
+          "work": {
+            "conversion_pairs": 665,
+            "exposure_transitions": 828695,
+            "outer_remaining": 261687,
+            "outer_spent": 457,
+            "recursor_worklist_steps": 4666,
+            "replay_reserved_units": 26350
+          }
+        },
+        {
+          "exact_closure_census": {
+            "capacity_overflow": 76920,
+            "exact_repeated_exposures": 63681,
+            "groups": [
+              [
+                1,
+                41297,
+                20180,
+                2119
+              ],
+              [
+                6,
+                39354,
+                13268,
+                855
+              ],
+              [
+                11,
+                19527,
+                11356,
+                855
+              ],
+              [
+                7,
+                6804,
+                5766,
+                14
+              ],
+              [
+                345,
+                4903,
+                2038,
+                855
+              ],
+              [
+                6087,
+                4203,
+                1954,
+                6
+              ],
+              [
+                4677,
+                4202,
+                3907,
+                3
+              ],
+              [
+                4678,
+                4202,
+                3767,
+                6
+              ],
+              [
+                547,
+                2300,
+                1752,
+                12
+              ],
+              [
+                7277,
+                1112,
+                688,
+                14
+              ],
+              [
+                6365,
+                1110,
+                688,
+                14
+              ],
+              [
+                218,
+                203,
+                172,
+                4
+              ]
+            ],
+            "monitored_expr_ids_only": true,
+            "same_expr_env_does_not_imply_same_pending_spine_or_proof_goal": true,
+            "top_exact": [
+              [
+                1,
+                276307,
+                2119
+              ],
+              [
+                1,
+                276262,
+                961
+              ],
+              [
+                1,
+                276311,
+                858
+              ],
+              [
+                1,
+                276331,
+                855
+              ],
+              [
+                6,
+                276313,
+                855
+              ],
+              [
+                6,
+                276333,
+                855
+              ],
+              [
+                6,
+                276397,
+                855
+              ],
+              [
+                6,
+                276399,
+                855
+              ],
+              [
+                6,
+                276401,
+                855
+              ],
+              [
+                6,
+                276403,
+                855
+              ],
+              [
+                6,
+                276405,
+                855
+              ],
+              [
+                6,
+                276407,
+                855
+              ],
+              [
+                6,
+                276409,
+                855
+              ],
+              [
+                11,
+                276336,
+                855
+              ],
+              [
+                345,
+                276409,
+                855
+              ],
+              [
+                1,
+                276217,
+                725
+              ]
+            ],
+            "unique_exact_expr_env_nodes": 65536,
+            "watch_transitions": 206137
+          },
+          "first_c56_pair": "NUCLEUS_C56_PAIR:seq=0:depth=0:context_depth=0:budget=503:left=const:NameId(169):qualified=false:arity=0:major=none:right=const:NameId(147):qualified=true:arity=5:major=expr=ExprId(11):env=275988",
+          "observer": true,
+          "stderr_sha256": "0c491cba6148f6d4f2b57d4033362f3b90a9c4f16d211efa8d297cf6b2e3f9b5",
+          "verdict": "UNKNOWN",
+          "work": {
+            "conversion_pairs": 665,
+            "exposure_transitions": 828695,
+            "outer_remaining": 261687,
+            "outer_spent": 457,
+            "recursor_worklist_steps": 4666,
+            "replay_reserved_units": 26350
+          }
+        }
+      ],
+      "original_sha256": "abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35",
+      "profile_expr": 8837
+    },
+    {
+      "baseline_observer_work_equal": true,
+      "case": "magma-list-pair-n21",
+      "observations": [
+        {
+          "exact_closure_census": null,
+          "first_c56_pair": "NUCLEUS_C56_PAIR:seq=0:depth=0:context_depth=0:budget=503:left=const:NameId(169):qualified=false:arity=0:major=none:right=const:NameId(147):qualified=true:arity=5:major=expr=ExprId(11):env=69639",
+          "observer": false,
+          "stderr_sha256": "24fa9fe76a35cef233706b54d2c49b5c38c9d35777f2a3f0d385153a0617f174",
+          "verdict": "UNKNOWN",
+          "work": {
+            "conversion_pairs": 515,
+            "exposure_transitions": 362448,
+            "outer_remaining": 261783,
+            "outer_spent": 361,
+            "recursor_worklist_steps": 4811,
+            "replay_reserved_units": 30301
+          }
+        },
+        {
+          "exact_closure_census": {
+            "capacity_overflow": 0,
+            "exact_repeated_exposures": 57439,
+            "groups": [
+              [
+                6,
+                35638,
+                8386,
+                210
+              ],
+              [
+                1,
+                23389,
+                9154,
+                496
+              ],
+              [
+                11,
+                17913,
+                8542,
+                210
+              ],
+              [
+                7,
+                4951,
+                3927,
+                14
+              ],
+              [
+                217,
+                3441,
+                1962,
+                14
+              ],
+              [
+                218,
+                3441,
+                1962,
+                14
+              ],
+              [
+                547,
+                2289,
+                1452,
+                12
+              ],
+              [
+                6365,
+                1885,
+                1004,
+                14
+              ],
+              [
+                7277,
+                1885,
+                1004,
+                14
+              ],
+              [
+                6087,
+                420,
+                420,
+                1
+              ]
+            ],
+            "monitored_expr_ids_only": true,
+            "same_expr_env_does_not_imply_same_pending_spine_or_proof_goal": true,
+            "top_exact": [
+              [
+                1,
+                70588,
+                496
+              ],
+              [
+                1,
+                69666,
+                288
+              ],
+              [
+                1,
+                70746,
+                271
+              ],
+              [
+                1,
+                71791,
+                235
+              ],
+              [
+                1,
+                70592,
+                211
+              ],
+              [
+                1,
+                71637,
+                211
+              ],
+              [
+                1,
+                70612,
+                210
+              ],
+              [
+                1,
+                71657,
+                210
+              ],
+              [
+                6,
+                70594,
+                210
+              ],
+              [
+                6,
+                70614,
+                210
+              ],
+              [
+                6,
+                70678,
+                210
+              ],
+              [
+                6,
+                70680,
+                210
+              ],
+              [
+                6,
+                70682,
+                210
+              ],
+              [
+                6,
+                70684,
+                210
+              ],
+              [
+                6,
+                70686,
+                210
+              ],
+              [
+                6,
+                70688,
+                210
+              ]
+            ],
+            "unique_exact_expr_env_nodes": 37813,
+            "watch_transitions": 95252
+          },
+          "first_c56_pair": "NUCLEUS_C56_PAIR:seq=0:depth=0:context_depth=0:budget=503:left=const:NameId(169):qualified=false:arity=0:major=none:right=const:NameId(147):qualified=true:arity=5:major=expr=ExprId(11):env=69639",
+          "observer": true,
+          "stderr_sha256": "08d346fdf65a9ec491282d45a5a1fedb847a7dc3640058d9203a377afbdd29bb",
+          "verdict": "UNKNOWN",
+          "work": {
+            "conversion_pairs": 515,
+            "exposure_transitions": 362448,
+            "outer_remaining": 261783,
+            "outer_spent": 361,
+            "recursor_worklist_steps": 4811,
+            "replay_reserved_units": 30301
+          }
+        }
+      ],
+      "original_sha256": "b8279fa9189a203c6c11b04702c27c0f99a650b37f2b0165dd260b1d14e9ef84",
+      "profile_expr": 8827
+    }
+  ],
+  "selected_C58_source_unchanged": true,
+  "standard_budget": 262144
+}
