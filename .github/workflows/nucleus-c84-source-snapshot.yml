@@ -1,0 +1,77 @@
+name: Nucleus C84 deterministic C65 reconstructed source snapshot
+on:
+  push:
+    branches:
+      - research/nucleus-c84-c65-source-snapshot-20261109
+    paths:
+      - '.github/workflows/nucleus-c84-source-snapshot.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  exact-source:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
+      CARGO_INCREMENTAL: '0'
+      CARGO_BUILD_JOBS: '2'
+      RUST_MIN_STACK: '16777216'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Restore exact C58 and add observer-only C65 prefix census
+        run: |
+          set -euo pipefail
+          mkdir -p base candidate reports arena207
+          gh api repos/heathsanchez/test/actions/artifacts/13609679273/zip > c37-qualified.zip
+          printf '%s  %s\n' fceddaca338ca36c2964edf0ec81b9e4acd0b66d938864ec5e7239f766e186c3 c37-qualified.zip | sha256sum -c -
+          unzip -p c37-qualified.zip candidate/source.tar.gz > c37-source.tar.gz
+          printf '%s  %s\n' bb64f47470f950f78e7fe4c659fbcb2a75d72e96831430ec1eb3562c55175152 c37-source.tar.gz | sha256sum -c -
+          unzip -p c37-qualified.zip base/flags.json > base/flags.json
+          tar --no-same-owner -xzf c37-source.tar.gz
+          for patch_name in c38-early-full-typed-spine.patch c39-typed-failure-stage.patch c40-c42-source-capture.patch c43-deep-exposure-guard.patch c44-exact-source-forwarding.patch c47-inner-work-diagnostics.patch c48-source-branch-divergence.patch c49-capture-content-fingerprint.patch c50-worklist-loss-diagnostics.patch; do
+            patch --fuzz=0 -p1 -d metatron-kernel < "experiments/nucleus-logos-support-20261108/$patch_name"
+            sha256sum "experiments/nucleus-logos-support-20261108/$patch_name" >> reports/patches.sha256
+          done
+          for patch_name in c55-app-failure-state.patch c56-neutral-pair-classification.patch c58-source-opening-allowance.patch c64-source-instance-observer.patch; do
+            patch --fuzz=0 -p1 -d . < "experiments/nucleus-logos-support-20261108/$patch_name"
+            sha256sum "experiments/nucleus-logos-support-20261108/$patch_name" >> reports/patches.sha256
+          done
+          patch --fuzz=0 -p1 -d . < experiments/nucleus-logos-support-20261108/c65-prefix-observer.patch
+          cargo check --locked --all-targets --features diagnostics --manifest-path metatron-kernel/Cargo.toml > reports/cargo-check.log 2>&1 || { tail -n 120 reports/cargo-check.log; exit 1; }
+      - name: Record exact source/prefix lineage for future source-native experiments
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          tar --sort=name --mtime='@0' --owner=0 --group=0 --numeric-owner \
+            --exclude='target' -czf out/c65-reconstructed-source.tar.gz metatron-kernel
+          sha256sum out/c65-reconstructed-source.tar.gz > out/c65-source.sha256
+          python3 - <<'PY'
+          import json,hashlib,pathlib,subprocess
+          manifest={
+             "experiment":"C84 reusable original C65 source reconstruction",
+             "source_archive":"c65-reconstructed-source.tar.gz",
+             "source_sha256":hashlib.sha256(pathlib.Path('out/c65-reconstructed-source.tar.gz').read_bytes()).hexdigest(),
+             "C37_archive_zip_sha256":"fceddaca338ca36c2964edf0ec81b9e4acd0b66d938864ec5e7239f766e186c3",
+             "C37_original_source_tar_sha256":"bb64f47470f950f78e7fe4c659fbcb2a75d72e96831430ec1eb3562c55175152",
+             "patches_sha256":pathlib.Path("reports/patches.sha256").read_text().splitlines(),
+             "built_with_rust":"1.99.1",
+             "cargo_check_passed":True,
+             "selected_checker_changed":False,
+             "proof_rules_changed":False,
+             "authorized_accepts":0,
+          }
+          pathlib.Path('out/manifest.json').write_text(json.dumps(manifest,indent=2,sort_keys=True)+'\n')
+          print("C84_EXACT_C65_SOURCE_SHA256="+manifest['source_sha256'])
+          PY
+          cp base/flags.json out/selected-flags.json
+          test "$(jq 'length' out/selected-flags.json)" -eq 24
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-C84-reconstructed-C65-source
+          retention-days: 90
+          path: out/
