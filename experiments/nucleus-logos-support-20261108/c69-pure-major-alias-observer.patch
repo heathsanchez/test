@@ -1,0 +1,42 @@
+--- a/metatron-kernel/src/convert.rs
++++ b/metatron-kernel/src/convert.rs
+@@ -3117,4 +3117,39 @@
+                         eprintln!("NUCLEUS_C56_PAIR:seq={seq}:depth={depth}:context_depth={}:budget={budget}:left={}:right={}",context.len(),describe(left),describe(right));
++                        // C69 observer only: walk exact, immutable BVar captures.
++                        // Do not expose a value, mutate a cache, pick an iota
++                        // branch, inspect the expected answer, or spend/renew
++                        // any checked work owner.
++                        if seq < 6 && std::env::var_os("NUCLEUS_DIAGNOSTIC_C69_PURE_ALIAS").is_some() {
++                            for (side, n) in [("left",left),("right",right)] {
++                                let Some(major)=n.spine.last() else {continue;};
++                                let mut cursor=major.clone();
++                                let mut seen=HashSet::<(u64,u64)>::new();
++                                let mut steps=Vec::<(u64,u64,u64)>::new();
++                                let terminal=loop {
++                                    if steps.len()>=256 {break "alias-hop-cap".to_string();}
++                                    if !seen.insert((cursor.expr.0,cursor.env.id())) {
++                                        break "exact-alias-cycle".to_string();
++                                    }
++                                    let Some(Expr::BVar(index))=checker.expression(cursor.expr) else {
++                                        break format!("source={:?}",checker.expression(cursor.expr));
++                                    };
++                                    match cursor.env.lookup_binding_ref(*index) {
++                                        Some(EnvBinding::Closure(next))=>{
++                                            steps.push((cursor.expr.0,cursor.env.id(),*index));
++                                            cursor=next.clone();
++                                        },
++                                        Some(EnvBinding::NatLit(number))=>break format!("native-nat={number:?}"),
++                                        Some(EnvBinding::Free(free))=>break format!("rigid-free={free:?}"),
++                                        Some(EnvBinding::Neutral(n))=>break format!("captured-neutral={:?}",n.head),
++                                        None=>break "unbound-bvar".to_string(),
++                                    }
++                                };
++                                let beginning=steps.iter().take(10).copied().collect::<Vec<_>>();
++                                let ending=steps.iter().rev().take(5).copied().collect::<Vec<_>>();
++                                eprintln!("NUCLEUS_C69_PURE_ALIAS:seq={seq}:side={side}:hops={}:start_expr={:?}:start_env={}:terminal_expr={:?}:terminal_env={}:terminal={terminal}:begin={beginning:?}:end_reversed={ending:?}",
++                                    steps.len(),major.expr,major.env.id(),cursor.expr,cursor.env.id());
++                            }
++                        }
+                     }
+                 }
+                 return Judgment::unknown("unresolved-qualified-recursor-heads");
