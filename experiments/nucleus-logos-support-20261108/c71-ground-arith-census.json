@@ -1,0 +1,99 @@
+{
+  "experiment": "C71 read-only native arithmetic groundness census",
+  "status": "WARRANTED_DIAGNOSTIC",
+  "budget": 262144,
+  "originals_artifact": 13276400289,
+  "selected_c58_binary_sha256": "37b77b125745e7b3eabfbb0adba1da76ea27dac11d13efcc05586f0892b39e6f",
+  "candidate_binary_sha256": "8ae4850259010d82706eb4ebf6e28d03f9e07b26aee5141b9d37ecabbd359b7c",
+  "new_proof_rules": false,
+  "source_inputs_modified": false,
+  "protected_full_corpus": false,
+  "standard_accepts": 0,
+  "diagnostic_only": true,
+  "records": [
+    {
+      "case": "magma-list-pair-n7",
+      "variant": "baseline",
+      "source_sha256": "abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35",
+      "exit_code": 2,
+      "verdict": "UNKNOWN",
+      "first_neutral_pair": "NUCLEUS_C56_PAIR:seq=0:depth=0:context_depth=0:budget=503:left=const:NameId(169):qualified=false:arity=0:major=none:right=const:NameId(147):qualified=true:arity=5:major=expr=ExprId(11):env=275988",
+      "work": "NUCLEUS_C47_INNER_WORK:expr=ExprId(8837):budget=262144:outer_spent=457:outer_remaining=261687:exposure_transitions=828695:replay_reserved_units=26350:recursor_worklist_steps=4666:conversion_pairs=665:result=Unknown { residual: ResidualId(\"application-function-type\") }",
+      "alias_events": [],
+      "arith_census": [],
+      "stderr_sha256": "20fd885eb0894f177f11864128f3438b2a5782530b096f1ba81871af31d44c7a"
+    },
+    {
+      "case": "magma-list-pair-n7",
+      "variant": "candidate-off",
+      "source_sha256": "abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35",
+      "exit_code": 2,
+      "verdict": "UNKNOWN",
+      "first_neutral_pair": "NUCLEUS_C56_PAIR:seq=0:depth=0:context_depth=0:budget=503:left=const:NameId(169):qualified=false:arity=0:major=none:right=const:NameId(147):qualified=true:arity=5:major=expr=ExprId(11):env=275988",
+      "work": "NUCLEUS_C47_INNER_WORK:expr=ExprId(8837):budget=262144:outer_spent=457:outer_remaining=261687:exposure_transitions=828695:replay_reserved_units=26350:recursor_worklist_steps=4666:conversion_pairs=665:result=Unknown { residual: ResidualId(\"application-function-type\") }",
+      "alias_events": [],
+      "arith_census": [],
+      "stderr_sha256": "20fd885eb0894f177f11864128f3438b2a5782530b096f1ba81871af31d44c7a"
+    },
+    {
+      "case": "magma-list-pair-n7",
+      "variant": "candidate-on",
+      "source_sha256": "abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35",
+      "exit_code": 2,
+      "verdict": "UNKNOWN",
+      "first_neutral_pair": "NUCLEUS_C56_PAIR:seq=0:depth=0:context_depth=0:budget=503:left=const:NameId(169):qualified=false:arity=0:major=none:right=const:NameId(147):qualified=true:arity=5:major=expr=ExprId(11):env=275988",
+      "work": "NUCLEUS_C47_INNER_WORK:expr=ExprId(8837):budget=262144:outer_spent=457:outer_remaining=261687:exposure_transitions=828695:replay_reserved_units=26350:recursor_worklist_steps=4666:conversion_pairs=665:result=Unknown { residual: ResidualId(\"application-function-type\") }",
+      "alias_events": [
+        "NUCLEUS_C69_PURE_ALIAS:seq=0:side=right:hops=2:start_expr=ExprId(11):start_env=275988:terminal_expr=ExprId(8796):terminal_env=0:terminal=source=Some(App { fun: ExprId(8774), arg: ExprId(8795) }):begin=[(11, 275988, 2), (1, 275983, 0)]:end_reversed=[(1, 275983, 0), (11, 275988, 2)]",
+        "NUCLEUS_C69_PURE_ALIAS:seq=1:side=right:hops=2:start_expr=ExprId(11):start_env=275988:terminal_expr=ExprId(8796):terminal_env=0:terminal=source=Some(App { fun: ExprId(8774), arg: ExprId(8795) }):begin=[(11, 275988, 2), (1, 275983, 0)]:end_reversed=[(1, 275983, 0), (11, 275988, 2)]",
+        "NUCLEUS_C69_PURE_ALIAS:seq=2:side=right:hops=2:start_expr=ExprId(11):start_env=275988:terminal_expr=ExprId(8796):terminal_env=0:terminal=source=Some(App { fun: ExprId(8774), arg: ExprId(8795) }):begin=[(11, 275988, 2), (1, 275983, 0)]:end_reversed=[(1, 275983, 0), (11, 275988, 2)]"
+      ],
+      "arith_census": [
+        "NUCLEUS_C71_ARITH_CENSUS:expr=ExprId(8837):attempts_mul_mod_other=[5198, 2600, 0]:ground_mul_mod_other=[5126, 2562, 0]:success_mul_mod_other=[5126, 2562, 0]"
+      ],
+      "stderr_sha256": "7dd3ed422b00fe91bbce7bd9c4ff7c27aed611efeeb5c98a00d343c0f681aa4f"
+    },
+    {
+      "case": "magma-list-pair-n21",
+      "variant": "baseline",
+      "source_sha256": "b8279fa9189a203c6c11b04702c27c0f99a650b37f2b0165dd260b1d14e9ef84",
+      "exit_code": 2,
+      "verdict": "UNKNOWN",
+      "first_neutral_pair": "NUCLEUS_C56_PAIR:seq=0:depth=0:context_depth=0:budget=503:left=const:NameId(169):qualified=false:arity=0:major=none:right=const:NameId(147):qualified=true:arity=5:major=expr=ExprId(11):env=69639",
+      "work": "NUCLEUS_C47_INNER_WORK:expr=ExprId(8827):budget=262144:outer_spent=361:outer_remaining=261783:exposure_transitions=362448:replay_reserved_units=30301:recursor_worklist_steps=4811:conversion_pairs=515:result=Unknown { residual: ResidualId(\"application-function-type\") }",
+      "alias_events": [],
+      "arith_census": [],
+      "stderr_sha256": "3493aeae4311449fddda817c4976390f47078a67be2e4f37dfdd0897b3587049"
+    },
+    {
+      "case": "magma-list-pair-n21",
+      "variant": "candidate-off",
+      "source_sha256": "b8279fa9189a203c6c11b04702c27c0f99a650b37f2b0165dd260b1d14e9ef84",
+      "exit_code": 2,
+      "verdict": "UNKNOWN",
+      "first_neutral_pair": "NUCLEUS_C56_PAIR:seq=0:depth=0:context_depth=0:budget=503:left=const:NameId(169):qualified=false:arity=0:major=none:right=const:NameId(147):qualified=true:arity=5:major=expr=ExprId(11):env=69639",
+      "work": "NUCLEUS_C47_INNER_WORK:expr=ExprId(8827):budget=262144:outer_spent=361:outer_remaining=261783:exposure_transitions=362448:replay_reserved_units=30301:recursor_worklist_steps=4811:conversion_pairs=515:result=Unknown { residual: ResidualId(\"application-function-type\") }",
+      "alias_events": [],
+      "arith_census": [],
+      "stderr_sha256": "3493aeae4311449fddda817c4976390f47078a67be2e4f37dfdd0897b3587049"
+    },
+    {
+      "case": "magma-list-pair-n21",
+      "variant": "candidate-on",
+      "source_sha256": "b8279fa9189a203c6c11b04702c27c0f99a650b37f2b0165dd260b1d14e9ef84",
+      "exit_code": 2,
+      "verdict": "UNKNOWN",
+      "first_neutral_pair": "NUCLEUS_C56_PAIR:seq=0:depth=0:context_depth=0:budget=503:left=const:NameId(169):qualified=false:arity=0:major=none:right=const:NameId(147):qualified=true:arity=5:major=expr=ExprId(11):env=69639",
+      "work": "NUCLEUS_C47_INNER_WORK:expr=ExprId(8827):budget=262144:outer_spent=361:outer_remaining=261783:exposure_transitions=362448:replay_reserved_units=30301:recursor_worklist_steps=4811:conversion_pairs=515:result=Unknown { residual: ResidualId(\"application-function-type\") }",
+      "alias_events": [
+        "NUCLEUS_C69_PURE_ALIAS:seq=0:side=right:hops=2:start_expr=ExprId(11):start_env=69639:terminal_expr=ExprId(8786):terminal_env=0:terminal=source=Some(App { fun: ExprId(8768), arg: ExprId(8785) }):begin=[(11, 69639, 2), (1, 69634, 0)]:end_reversed=[(1, 69634, 0), (11, 69639, 2)]",
+        "NUCLEUS_C69_PURE_ALIAS:seq=1:side=right:hops=2:start_expr=ExprId(11):start_env=69639:terminal_expr=ExprId(8786):terminal_env=0:terminal=source=Some(App { fun: ExprId(8768), arg: ExprId(8785) }):begin=[(11, 69639, 2), (1, 69634, 0)]:end_reversed=[(1, 69634, 0), (11, 69639, 2)]",
+        "NUCLEUS_C69_PURE_ALIAS:seq=2:side=right:hops=2:start_expr=ExprId(11):start_env=69639:terminal_expr=ExprId(8786):terminal_env=0:terminal=source=Some(App { fun: ExprId(8768), arg: ExprId(8785) }):begin=[(11, 69639, 2), (1, 69634, 0)]:end_reversed=[(1, 69634, 0), (11, 69639, 2)]"
+      ],
+      "arith_census": [
+        "NUCLEUS_C71_ARITH_CENSUS:expr=ExprId(8827):attempts_mul_mod_other=[840, 420, 0]:ground_mul_mod_other=[840, 420, 0]:success_mul_mod_other=[840, 420, 0]"
+      ],
+      "stderr_sha256": "b44ed69872385e8511872b520f228675985e5180a4f932282914492ac9441d96"
+    }
+  ]
+}
