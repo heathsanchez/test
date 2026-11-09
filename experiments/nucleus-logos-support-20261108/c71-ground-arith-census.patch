@@ -1,0 +1,100 @@
+--- a/src/diagnostics.rs
++++ b/src/diagnostics.rs
+@@ -32,6 +32,12 @@
+     static C47_REPLAY_RESERVATIONS: Cell<u64> = const { Cell::new(0) };
+     static C47_RECURSOR_WORKLIST_STEPS: Cell<u64> = const { Cell::new(0) };
+     static C47_CONVERSION_PAIRS: Cell<u64> = const { Cell::new(0) };
++    // C71: diagnostics-only native arithmetic calls. Kind 0 = Nat.mul,
++    // 1 = Nat.mod, 2 = other certified bounded Nat operation. No value or
++    // proof decision may consult these counters.
++    static C71_NATIVE_ATTEMPTS: Cell<[u64;3]> = const { Cell::new([0;3]) };
++    static C71_NATIVE_GROUND: Cell<[u64;3]> = const { Cell::new([0;3]) };
++    static C71_NATIVE_SUCCESS: Cell<[u64;3]> = const { Cell::new([0;3]) };
+     // C48 event sequences are scoped to one exact root proof judgment.
+     static C48_ACTIVE: Cell<bool> = const { Cell::new(false) };
+     static C48_EVENTS: Cell<u64> = const { Cell::new(0) };
+@@ -48,9 +54,34 @@
+     C47_REPLAY_RESERVATIONS.set(0);
+     C47_RECURSOR_WORKLIST_STEPS.set(0);
+     C47_CONVERSION_PAIRS.set(0);
++    C71_NATIVE_ATTEMPTS.set([0;3]);
++    C71_NATIVE_GROUND.set([0;3]);
++    C71_NATIVE_SUCCESS.set([0;3]);
+     C47_EXPOSURE_SAMPLES.with(|samples|samples.borrow_mut().clear());
+ }
+ 
++pub(crate) fn c71_native_attempt(kind: usize) {
++    let mut counts=C71_NATIVE_ATTEMPTS.get();
++    counts[kind]=counts[kind].saturating_add(1);
++    C71_NATIVE_ATTEMPTS.set(counts);
++}
++
++pub(crate) fn c71_native_ground(kind: usize) {
++    let mut counts=C71_NATIVE_GROUND.get();
++    counts[kind]=counts[kind].saturating_add(1);
++    C71_NATIVE_GROUND.set(counts);
++}
++
++pub(crate) fn c71_native_success(kind: usize) {
++    let mut counts=C71_NATIVE_SUCCESS.get();
++    counts[kind]=counts[kind].saturating_add(1);
++    C71_NATIVE_SUCCESS.set(counts);
++}
++
++pub(crate) fn c71_native_snapshot() -> ([u64;3],[u64;3],[u64;3]) {
++    (C71_NATIVE_ATTEMPTS.get(),C71_NATIVE_GROUND.get(),C71_NATIVE_SUCCESS.get())
++}
++
+ // Observer-only: this sequence never enters a proof, reduction, cache or fuel
+ // branch. It is not a source-constructor certificate by itself.
+ pub(crate) fn c48_start() {
+--- a/src/machine.rs
++++ b/src/machine.rs
+@@ -2355,6 +2355,12 @@
+             else if nat.modulo==Some(name) {crate::environment::NatOperation::Mod}
+             else {return None;};
+         if !levels.is_empty() || pending.len()!=2 {return None;}
++        #[cfg(feature="diagnostics")]
++        let c71_kind=if matches!(operation,crate::environment::NatOperation::Mul) {0}
++            else if matches!(operation,crate::environment::NatOperation::Mod) {1}
++            else {2};
++        #[cfg(feature="diagnostics")]
++        crate::diagnostics::c71_native_attempt(c71_kind);
+         // Native bit/division probes must not normalize large symbolic
+         // operand programs just to discover that no numeral is available.
+         let operand_budget = if matches!(operation,
+@@ -2370,6 +2376,8 @@
+             eprintln!("NUCLEUS_NATIVE_NAT_BITS_OPERANDS:operation={operation:?}:left={left:?}:right={right:?}");
+         }
+         let (Some(Value::NatLit(left)),Some(Value::NatLit(right)))=(left.proven_value().map(|e|&e.value),right.proven_value().map(|e|&e.value)) else{return None;};
++        #[cfg(feature="diagnostics")]
++        crate::diagnostics::c71_native_ground(c71_kind);
+         let mut work=budget;
+         let result=match operation {
+             crate::environment::NatOperation::Pow=>left.pow_bounded(right,&mut work),
+@@ -2381,7 +2389,11 @@
+             _=>return None,
+         };
+         Some(match result {
+-            Some(number)=>{pending.clear();Judgment::proven(Value::NatLit(number),"qualified-bounded-native-Nat-arithmetic")}
++            Some(number)=>{
++                #[cfg(feature="diagnostics")]
++                crate::diagnostics::c71_native_success(c71_kind);
++                pending.clear();Judgment::proven(Value::NatLit(number),"qualified-bounded-native-Nat-arithmetic")
++            }
+             None=>Judgment::unknown("native-Nat-arithmetic-budget"),
+         })
+     }
+--- a/src/typecheck.rs
++++ b/src/typecheck.rs
+@@ -575,6 +575,10 @@
+             eprintln!("NUCLEUS_C47_INNER_WORK:expr={expression:?}:budget={budget}:outer_spent={}:outer_remaining={remaining}:exposure_transitions={exposure}:replay_reserved_units={replay_key}:recursor_worklist_steps={recursor}:conversion_pairs={conversion}:result={result:?}", budget.saturating_sub(remaining));
+             eprintln!("NUCLEUS_C47_HOT_SOURCE:expr={expression:?}:samples_every_64={:?}",
+                 crate::diagnostics::c47_top_source_exposures());
++            if std::env::var_os("NUCLEUS_DIAGNOSTIC_C71_ARITH_CENSUS").is_some() {
++                let (attempts,ground,success)=crate::diagnostics::c71_native_snapshot();
++                eprintln!("NUCLEUS_C71_ARITH_CENSUS:expr={expression:?}:attempts_mul_mod_other={attempts:?}:ground_mul_mod_other={ground:?}:success_mul_mod_other={success:?}");
++            }
+         }
+         #[cfg(feature = "diagnostics")]
+         if crate::run_flags::present(crate::run_flags::Flag::TraceLambdaTrialWork) {
