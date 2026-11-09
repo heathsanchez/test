@@ -87,3 +87,12 @@ could promote this bounded finding. A zero explicit-axiom inventory is
 not a general Rust checker soundness theorem or an owner-authorized
 external claim. Existing MGSO reuse and the six-original campaign are
 unmodified.
+
+The first authentic-source workflow
+[#42721978497](https://github.com/heathsanchez/test/actions/runs/42721978497)
+compiled the Lean source, generated the NDJSON export, and passed the
+Python and native build tests. Its final comparison failed because Lean's
+`#print axioms` abbreviated local names while the export used fully
+qualified `NorthStar.*` names. This was a display-normalization failure,
+not an observed axiom-set discrepancy. An exact RED-then-GREEN regression
+was added; the complete corrected CI run remains a separate requirement.

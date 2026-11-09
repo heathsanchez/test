@@ -16,6 +16,12 @@ EXPECTED = {
     "NorthStar.independent": [],
 }
 
+# In this exact Lean source, #print axioms abbreviates names visible inside
+# namespace NorthStar. Only these four known, source-authored names are
+# expanded; unrelated or qualified names must never be guessed or rewritten.
+LEAN_ABBREVIATIONS = {name.rsplit(".", 1)[1]: name
+                      for name in EXPECTED["NorthStar.dependent"]}
+
 
 def lean_axioms(log: str, theorem: str) -> list[str]:
     escaped = re.escape(theorem)
@@ -24,7 +30,8 @@ def lean_axioms(log: str, theorem: str) -> list[str]:
         return []
     present = re.search(rf"'{escaped}' depends on axioms: \[([^\]]*)\]", log)
     if present:
-        return sorted(x.strip() for x in present.group(1).split(",") if x.strip())
+        printed = (x.strip() for x in present.group(1).split(","))
+        return sorted(LEAN_ABBREVIATIONS.get(x, x) for x in printed if x)
     raise AssertionError(f"Lean did not report an axiom set for {theorem}")
 
 
