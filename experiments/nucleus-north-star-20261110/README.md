@@ -131,5 +131,32 @@ proof, but the independent inventory returned UNKNOWN for an unresolved
 Lean `True` inductive reference. Its final assessment failed closed.
 This is a **supported-subset limitation of the experimental inventory**,
 not evidence of a checker soundness failure. The revised pure-implication
-source above uses only the previously accepted inventory forms; it is a
-new experiment requiring fresh full CI qualification.
+source above uses only the previously accepted inventory forms; it was
+therefore rerun independently before promotion.
+
+The corrected pure-implication experiment is **WARRANTED within its
+synthetic, exact-source boundary** by
+[#42723590865](https://github.com/heathsanchez/test/actions/runs/42723590865)
+on tested commit `44fbf6e1e8f902640a0e0e91d984eccd9d59045f`.
+The pinned Lean compilation checks the two axiom-free declarations,
+the source inventory returns BOUNDED with zero explicit axioms,
+and native Nucleus returns ACCEPT for the deliberately weaker theorem.
+The assessment reports `REFUTED_BY_LEAN_WITNESS` for only the synthetic
+stronger contract, and `UNKNOWN` for external owner intent. The complete
+18-file [artifact #13721736726](https://github.com/heathsanchez/test/actions/runs/42723590865/artifacts/13721736726)
+has SHA256 ZIP digest
+`a2181b0da3696e3a147b0a005d4b13488ce51829318d6878063d29cad26b0779`.
+All 16 local inventory/claim tests passed on that CI run. The first
+failed synthetic-source run remains a recorded UNKNOWN; do not silently
+transport its `True`-containing export as a certified inventory.
+
+## Reuse decision
+
+This establishes a reusable *distinction*, not a verified general
+claim-adequacy engine: native proof acceptance, exact explicit-axiom
+closure, synthetic logical entailment and owner-authorized intent are
+separate predicates. Future MGSO receipts may carry these as distinct,
+provenance-bound observations, while the Nucleus verdict remains purely
+the result of its original independent kernel check. No kernel caching,
+proof rules, Arena submission, six-UNKNOWN closure or Mathlib performance
+claim is modified or implied here.
