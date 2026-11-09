@@ -1,0 +1,55 @@
+name: Nucleus C81 authenticated-value cache conditional proof
+on:
+  push:
+    branches:
+      - research/nucleus-c81-verified-nat-cache-boundary-20261109
+    paths:
+      - '.github/workflows/nucleus-c81-verified-nat-cache.yml'
+      - 'experiments/nucleus-c76-eta/C81NatCache.lean'
+      - 'experiments/nucleus-c76-eta/ForgedNatOperation.lean'
+      - 'experiments/nucleus-c76-eta/lakefile.lean'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  original-source-logic:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Lean 4.34.1 original-era source semantics
+        uses: leanprover/lean-action@v1
+        with:
+          lake-package-directory: experiments/nucleus-c76-eta
+          auto-config: 'false'
+          build: 'false'
+          test: 'false'
+          lint: 'false'
+          use-github-cache: 'false'
+      - name: Verify conditional arithmetic certificate reuse and refusal cases
+        working-directory: experiments/nucleus-c76-eta
+        run: |
+          set -euo pipefail
+          lake build C81NatCache
+          lake env lean C81NatCache.lean 2>&1 | tee c81-axioms.log
+          if grep -E 'depends on axioms:|sorryAx|unapproved axiom' c81-axioms.log; then
+            echo 'UNPROVED_SOURCE_ARITHMETIC_TRANSPORT'
+            exit 1
+          fi
+          test "$(grep -c 'does not depend on any axioms' c81-axioms.log)" -eq 4
+          if lake env lean ForgedNatOperation.lean > c81-forgery.log 2>&1; then
+            echo 'UNSOUND_WRONG_OPERATION_CACHE_CLAIM_ADMITTED'
+            exit 1
+          fi
+          grep -q 'error:' c81-forgery.log
+          echo 'C81_CONDITIONAL_SOURCE_CACHE_AXIOM_FREE'
+          echo 'C81_RUST_IMPLEMENTATION_REFINEMENT_UNKNOWN'
+          sha256sum C81NatCache.lean ForgedNatOperation.lean lean-toolchain
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-C81-owner-qualified-cache-proof
+          retention-days: 60
+          path: |
+            experiments/nucleus-c76-eta/c81-axioms.log
+            experiments/nucleus-c76-eta/c81-forgery.log
