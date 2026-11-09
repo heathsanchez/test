@@ -1,0 +1,70 @@
+name: Nucleus North Star authentic Lean axiom boundary
+on:
+  push:
+    branches: [research/nucleus-north-star-claim-boundary-20261110]
+    paths:
+      - '.github/workflows/nucleus-north-star-authentic-axioms-20261110.yml'
+      - 'experiments/nucleus-north-star-20261110/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-qualified-axioms:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      CARGO_INCREMENTAL: '0'
+      CARGO_BUILD_JOBS: '2'
+      LEAN4EXPORT_SHA: '66f1fb4bc256072069767fce52d39480e4524869'
+      LEAN_TOOLCHAIN: 'leanprover/lean4:v4.34.1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Exact source identity and local inventory tests
+        run: |
+          set -euo pipefail
+          mkdir -p reports
+          git rev-parse HEAD | tee reports/source-commit.txt
+          sha256sum experiments/nucleus-north-star-20261110/*.py experiments/nucleus-north-star-20261110/*.lean | tee reports/source-files.sha256
+          python3 -m unittest discover -s experiments/nucleus-north-star-20261110 -p 'test_*.py' -v 2>&1 | tee reports/source-inventory-tests.log
+      - name: Build independently configured Nucleus
+        run: |
+          set -euo pipefail
+          cargo test --locked --manifest-path metatron-kernel/Cargo.toml --test north_star_claim_boundary 2>&1 | tee reports/native-boundary-tests.log
+          cargo build --locked --release --manifest-path metatron-kernel/Cargo.toml --bin metatron-kernel 2>&1 | tee reports/native-build.log
+          sha256sum metatron-kernel/target/release/metatron-kernel | tee reports/native-binary.sha256
+      - name: Compile authentic Lean source and record Lean axiom oracle
+        run: |
+          set -euo pipefail
+          curl -sSfL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          source "$HOME/.elan/env"
+          elan toolchain install "$LEAN_TOOLCHAIN"
+          elan default "$LEAN_TOOLCHAIN"
+          cd experiments/nucleus-north-star-20261110
+          lean -o AssumptionBoundary.olean AssumptionBoundary.lean 2>&1 | tee "$GITHUB_WORKSPACE/reports/reference-lean.log"
+          sha256sum AssumptionBoundary.lean AssumptionBoundary.olean | tee "$GITHUB_WORKSPACE/reports/lean-module.sha256"
+      - name: Pinned lean4export 3.1 source generation
+        run: |
+          set -euo pipefail
+          source "$HOME/.elan/env"
+          git init -q /tmp/lean4export
+          cd /tmp/lean4export
+          git remote add origin https://github.com/leanprover/lean4export
+          git fetch --depth 1 origin "$LEAN4EXPORT_SHA"
+          git checkout -q FETCH_HEAD
+          printf '%s\n' "$LEAN_TOOLCHAIN" > lean-toolchain
+          lake build
+          export LEAN_PATH="$GITHUB_WORKSPACE/experiments/nucleus-north-star-20261110:${LEAN_PATH:-}"
+          lake env .lake/build/bin/lean4export AssumptionBoundary -- NorthStar.dependent NorthStar.borrowed NorthStar.independent > "$GITHUB_WORKSPACE/reports/authentic.ndjson"
+          sha256sum "$GITHUB_WORKSPACE/reports/authentic.ndjson" | tee "$GITHUB_WORKSPACE/reports/lean-export.sha256"
+      - name: Independently inspect axiom closure and native verdict
+        run: |
+          set -euo pipefail
+          python3 experiments/nucleus-north-star-20261110/assess_authentic.py reports/authentic.ndjson reports/reference-lean.log metatron-kernel/target/release/metatron-kernel reports/authentic-assessment.json 2>&1 | tee reports/assessment-run.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-north-star-authentic-axioms
+          retention-days: 60
+          path: reports/

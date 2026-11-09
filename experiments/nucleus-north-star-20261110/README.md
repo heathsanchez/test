@@ -1,6 +1,6 @@
 # Nucleus North Star: scope of an ACCEPT
 
-**Status: CANDIDATE until native Actions tests run on the exact commit.**
+**First boundary: WARRANTED_BOUNDED** by [native run #42720315589](https://github.com/heathsanchez/test/actions/runs/42720315589) at commit `fbff72f815a0e93cfe850d921e83698b06a84d86` (3/3 specific checks; library 67 passed, 10 ignored). **Authentic-source extension: CANDIDATE until its separate exact-source run completes.**
 
 The user's North Star is to make our claims more truthful and to keep
 unexamined assumptions and false certainty visible. The smallest initial
@@ -61,3 +61,29 @@ For the active six-UNKNOWN campaign, the highest-return next diagnostic
 remains measuring expensive *completed* `Nat.rec`/`Decidable.rec` source
 closures with exact pending spine, typing goal and work owner. C84's cheap
 repeated BVars alone do not justify caching or change proof acceptance.
+
+## Second bounded experiment: authentic Lean source and transitive assumptions
+
+`AssumptionBoundary.lean` contains three genuine theorems:
+
+- `NorthStar.dependent : P`, using postulated `givenQ : Q` and
+  `implication : Q → P`;
+- `NorthStar.borrowed : P`, depending on the earlier theorem; and
+- `NorthStar.independent : ∀ R : Prop, R → R`, with no user axioms.
+
+The new workflow uses pinned Lean 4.34.1 and lean4export commit
+`66f1fb4bc256072069767fce52d39480e4524869`. It records Lean
+`#print axioms`, the exact NDJSON export, native Nucleus's exit code,
+and a separate Python source inventory. The source inventory follows
+the theorem type, proof, referenced theorem bodies, axiom types and
+explicit declarations; unrecognized expression constructors, missing
+declarations and duplicate JSON keys yield UNKNOWN. An omitted
+`givenQ` must remain non-ACCEPT in Nucleus and UNKNOWN in the inventory.
+
+The Python inventory intentionally has a narrower scope than Lean's
+own checker and **cannot authenticate** the exporter, source owner,
+toolchain or intended proposition. Only matched exact-source CI evidence
+could promote this bounded finding. A zero explicit-axiom inventory is
+not a general Rust checker soundness theorem or an owner-authorized
+external claim. Existing MGSO reuse and the six-original campaign are
+unmodified.
