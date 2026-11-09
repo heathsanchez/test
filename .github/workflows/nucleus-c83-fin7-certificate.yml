@@ -1,0 +1,55 @@
+name: Nucleus C83 original Fin7 finite decision certificate basis
+on:
+  push:
+    branches:
+      - research/nucleus-c83-fin7-decision-table-20261109
+    paths:
+      - '.github/workflows/nucleus-c83-fin7-certificate.yml'
+      - 'experiments/nucleus-c76-eta/C83Fin7.lean'
+      - 'experiments/nucleus-c76-eta/ForgedFin7.lean'
+      - 'experiments/nucleus-c76-eta/lakefile.lean'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-source-closed-cases:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up original Lean 4.34.1
+        uses: leanprover/lean-action@v1
+        with:
+          lake-package-directory: experiments/nucleus-c76-eta
+          auto-config: 'false'
+          build: 'false'
+          test: 'false'
+          lint: 'false'
+          use-github-cache: 'false'
+      - name: Check 49 closed Fin7 decisions are definitionally valid
+        working-directory: experiments/nucleus-c76-eta
+        run: |
+          set -euo pipefail
+          lake build C83Fin7
+          lake env lean C83Fin7.lean 2>&1 | tee c83-axioms.log
+          if grep -E 'depends on axioms:|sorryAx|unapproved axiom|error:' c83-axioms.log; then
+            echo 'C83_SOURCE_TABLE_NOT_DEFINITIONALLY_VERIFIED'
+            exit 1
+          fi
+          test "$(grep -c 'does not depend on any axioms' c83-axioms.log)" -eq 49
+          if lake env lean ForgedFin7.lean > c83-forged.log 2>&1; then
+            echo 'C83_FORGED_FIN_EQUALITY_ACCEPTED'
+            exit 1
+          fi
+          grep -q 'error:' c83-forged.log
+          echo 'C83_SOURCE_FIN7_49_CASES_AXIOM_FREE'
+          echo 'C83_ALL_ORIGINAL_N7_STANDARD_ACCEPTS=0'
+          sha256sum C83Fin7.lean ForgedFin7.lean lean-toolchain
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-C83-fin7-definitional-certificate
+          retention-days: 60
+          path: |
+            experiments/nucleus-c76-eta/c83-axioms.log
+            experiments/nucleus-c76-eta/c83-forged.log
