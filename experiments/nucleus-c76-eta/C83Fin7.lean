@@ -156,6 +156,13 @@ theorem case_6_5 : decide ((6 : Fin 7) = (5 : Fin 7)) = false := by
 theorem case_6_6 : decide ((6 : Fin 7) = (6 : Fin 7)) = true := by
   rfl
 
+-- Explicit Eq.refl tests whether two selected source decisions reduce
+-- definitionally, rather than relying only on the rfl tactic.
+theorem direct_same : decide ((0 : Fin 7) = (0 : Fin 7)) = true :=
+  Eq.refl _
+theorem direct_distinct : decide ((0 : Fin 7) = (1 : Fin 7)) = false :=
+  Eq.refl _
+
 end C83Fin7
 
 
@@ -208,3 +215,5 @@ end C83Fin7
 #print axioms C83Fin7.case_6_4
 #print axioms C83Fin7.case_6_5
 #print axioms C83Fin7.case_6_6
+#print axioms C83Fin7.direct_same
+#print axioms C83Fin7.direct_distinct
