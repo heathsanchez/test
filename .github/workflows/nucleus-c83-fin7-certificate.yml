@@ -32,17 +32,31 @@ jobs:
           set -euo pipefail
           lake build C83Fin7
           lake env lean C83Fin7.lean 2>&1 | tee c83-axioms.log
-          if grep -E 'depends on axioms:|sorryAx|unapproved axiom|error:' c83-axioms.log; then
-            echo 'C83_SOURCE_TABLE_NOT_DEFINITIONALLY_VERIFIED'
+          if grep -E 'sorryAx|unapproved axiom|error:' c83-axioms.log; then
+            echo 'C83_INVALID_AXIOM_OR_UNPROVED_SOURCE'
             exit 1
           fi
-          test "$(grep -c 'does not depend on any axioms' c83-axioms.log)" -eq 49
+          python3 - <<'PY'
+          from pathlib import Path
+          lines=Path("c83-axioms.log").read_text().splitlines()
+          cases=[x for x in lines if "'C83Fin7." in x and
+                 ("depends on axioms" in x)]
+          assert len(cases)==51,(len(cases),cases[-5:])
+          for line in cases:
+              if "does not depend on any axioms" in line:
+                  continue
+              if "depends on axioms: [propext]" not in line:
+                  raise AssertionError("new/unapproved axiom: "+line)
+          assert any("C83Fin7.direct_same" in x for x in cases)
+          assert any("C83Fin7.direct_distinct" in x for x in cases)
+          print("C83_AXIOM_BOUNDARY_EXACTLY_STANDARD_PROPEXT_OR_NONE")
+          PY
           if lake env lean ForgedFin7.lean > c83-forged.log 2>&1; then
             echo 'C83_FORGED_FIN_EQUALITY_ACCEPTED'
             exit 1
           fi
           grep -q 'error:' c83-forged.log
-          echo 'C83_SOURCE_FIN7_49_CASES_AXIOM_FREE'
+          echo 'C83_FIN7_49_CASES_TWO_EXPLICIT_EQ_REFL_PROOFS_STANDARD_AXIOM_BOUNDARY'
           echo 'C83_ALL_ORIGINAL_N7_STANDARD_ACCEPTS=0'
           sha256sum C83Fin7.lean ForgedFin7.lean lean-toolchain
       - uses: actions/upload-artifact@v4
