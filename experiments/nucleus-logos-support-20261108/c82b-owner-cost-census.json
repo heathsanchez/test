@@ -1,0 +1,639 @@
+{
+  "continuation_implemented": false,
+  "diagnostics_only": true,
+  "experiment": "C82b local owner costs at exact previously-failed root reentries",
+  "interpretation": "Local owner decreases are not independently attributable speedups under nested/shared scopes.",
+  "new_proof_rules": false,
+  "original_source_sha256": "abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35",
+  "original_source_unchanged": true,
+  "parent_c82_source_branch": "research/nucleus-c82-exact-retry-census-20261109",
+  "protected_403_not_run": true,
+  "rows": [
+    {
+      "budget": 262144,
+      "entry_to_failure_local_deltas": [
+        {
+          "entry_effective_allowance": 503,
+          "failed_stage": "owner-exhausted",
+          "key_slot": 0,
+          "local_owner_decrease_before_failure": 503,
+          "nested_or_overlapping_work_possible": true,
+          "owner_remaining_on_failure": 0
+        },
+        {
+          "entry_effective_allowance": 503,
+          "failed_stage": "owner-exhausted",
+          "key_slot": 0,
+          "local_owner_decrease_before_failure": 503,
+          "nested_or_overlapping_work_possible": true,
+          "owner_remaining_on_failure": 0
+        },
+        {
+          "entry_effective_allowance": 130377,
+          "failed_stage": "owner-exhausted",
+          "key_slot": 1,
+          "local_owner_decrease_before_failure": 130377,
+          "nested_or_overlapping_work_possible": true,
+          "owner_remaining_on_failure": 0
+        }
+      ],
+      "events": [
+        {
+          "effective_allowance": 503,
+          "exact_key_slot": 0,
+          "incoming_owner": null,
+          "kind": "enter",
+          "known_prior": false,
+          "previously_failed": false,
+          "request_budget": 503,
+          "seq": 1
+        },
+        {
+          "exact_key_slot": 0,
+          "kind": "failure",
+          "owner_remaining": 0,
+          "previously_failed": false,
+          "seq": 1,
+          "stage": "owner-exhausted"
+        },
+        {
+          "effective_allowance": 251,
+          "exact_key_slot": 1,
+          "incoming_owner": null,
+          "kind": "enter",
+          "known_prior": false,
+          "previously_failed": false,
+          "request_budget": 251,
+          "seq": 2
+        },
+        {
+          "effective_allowance": 503,
+          "exact_key_slot": 0,
+          "incoming_owner": null,
+          "kind": "enter",
+          "known_prior": true,
+          "previously_failed": true,
+          "request_budget": 503,
+          "seq": 3
+        },
+        {
+          "exact_key_slot": 0,
+          "kind": "failure",
+          "owner_remaining": 0,
+          "previously_failed": true,
+          "seq": 2,
+          "stage": "owner-exhausted"
+        },
+        {
+          "effective_allowance": 251,
+          "exact_key_slot": 1,
+          "incoming_owner": null,
+          "kind": "enter",
+          "known_prior": true,
+          "previously_failed": false,
+          "request_budget": 251,
+          "seq": 4
+        },
+        {
+          "effective_allowance": 260755,
+          "exact_key_slot": 0,
+          "incoming_owner": null,
+          "kind": "enter",
+          "known_prior": true,
+          "previously_failed": true,
+          "request_budget": 260755,
+          "seq": 5
+        },
+        {
+          "effective_allowance": 130377,
+          "exact_key_slot": 1,
+          "incoming_owner": null,
+          "kind": "enter",
+          "known_prior": true,
+          "previously_failed": false,
+          "request_budget": 130377,
+          "seq": 6
+        },
+        {
+          "exact_key_slot": 1,
+          "kind": "failure",
+          "owner_remaining": 0,
+          "previously_failed": false,
+          "seq": 3,
+          "stage": "owner-exhausted"
+        }
+      ],
+      "original_verdict": "UNKNOWN",
+      "owner_event_count": 9,
+      "resume": false,
+      "retry_events": [
+        {
+          "entry_seq": 3,
+          "key_slot": 0,
+          "prior_failed_owner_remaining": 0,
+          "prior_failed_stage": "owner-exhausted",
+          "retry_effective_allowance": 503,
+          "retry_incoming_owner": null
+        },
+        {
+          "entry_seq": 5,
+          "key_slot": 0,
+          "prior_failed_owner_remaining": 0,
+          "prior_failed_stage": "owner-exhausted",
+          "retry_effective_allowance": 260755,
+          "retry_incoming_owner": null
+        }
+      ],
+      "stderr_sha256": "85e3d77680998ff3b1e1302c17ca2e8a1e4708fc12a0711d15ef0eae9b6312f8"
+    },
+    {
+      "budget": 262144,
+      "entry_to_failure_local_deltas": [
+        {
+          "entry_effective_allowance": 503,
+          "failed_stage": "owner-exhausted",
+          "key_slot": 0,
+          "local_owner_decrease_before_failure": 503,
+          "nested_or_overlapping_work_possible": true,
+          "owner_remaining_on_failure": 0
+        },
+        {
+          "entry_effective_allowance": 503,
+          "failed_stage": "owner-exhausted",
+          "key_slot": 0,
+          "local_owner_decrease_before_failure": 503,
+          "nested_or_overlapping_work_possible": true,
+          "owner_remaining_on_failure": 0
+        },
+        {
+          "entry_effective_allowance": 130377,
+          "failed_stage": "owner-exhausted",
+          "key_slot": 1,
+          "local_owner_decrease_before_failure": 130377,
+          "nested_or_overlapping_work_possible": true,
+          "owner_remaining_on_failure": 0
+        }
+      ],
+      "events": [
+        {
+          "effective_allowance": 503,
+          "exact_key_slot": 0,
+          "incoming_owner": null,
+          "kind": "enter",
+          "known_prior": false,
+          "previously_failed": false,
+          "request_budget": 503,
+          "seq": 1
+        },
+        {
+          "exact_key_slot": 0,
+          "kind": "failure",
+          "owner_remaining": 0,
+          "previously_failed": false,
+          "seq": 1,
+          "stage": "owner-exhausted"
+        },
+        {
+          "effective_allowance": 251,
+          "exact_key_slot": 1,
+          "incoming_owner": null,
+          "kind": "enter",
+          "known_prior": false,
+          "previously_failed": false,
+          "request_budget": 251,
+          "seq": 2
+        },
+        {
+          "effective_allowance": 503,
+          "exact_key_slot": 0,
+          "incoming_owner": null,
+          "kind": "enter",
+          "known_prior": true,
+          "previously_failed": true,
+          "request_budget": 503,
+          "seq": 3
+        },
+        {
+          "exact_key_slot": 0,
+          "kind": "failure",
+          "owner_remaining": 0,
+          "previously_failed": true,
+          "seq": 2,
+          "stage": "owner-exhausted"
+        },
+        {
+          "effective_allowance": 251,
+          "exact_key_slot": 1,
+          "incoming_owner": null,
+          "kind": "enter",
+          "known_prior": true,
+          "previously_failed": false,
+          "request_budget": 251,
+          "seq": 4
+        },
+        {
+          "effective_allowance": 260755,
+          "exact_key_slot": 0,
+          "incoming_owner": null,
+          "kind": "enter",
+          "known_prior": true,
+          "previously_failed": true,
+          "request_budget": 260755,
+          "seq": 5
+        },
+        {
+          "effective_allowance": 130377,
+          "exact_key_slot": 1,
+          "incoming_owner": null,
+          "kind": "enter",
+          "known_prior": true,
+          "previously_failed": false,
+          "request_budget": 130377,
+          "seq": 6
+        },
+        {
+          "exact_key_slot": 1,
+          "kind": "failure",
+          "owner_remaining": 0,
+          "previously_failed": false,
+          "seq": 3,
+          "stage": "owner-exhausted"
+        }
+      ],
+      "original_verdict": "UNKNOWN",
+      "owner_event_count": 9,
+      "resume": true,
+      "retry_events": [
+        {
+          "entry_seq": 3,
+          "key_slot": 0,
+          "prior_failed_owner_remaining": 0,
+          "prior_failed_stage": "owner-exhausted",
+          "retry_effective_allowance": 503,
+          "retry_incoming_owner": null
+        },
+        {
+          "entry_seq": 5,
+          "key_slot": 0,
+          "prior_failed_owner_remaining": 0,
+          "prior_failed_stage": "owner-exhausted",
+          "retry_effective_allowance": 260755,
+          "retry_incoming_owner": null
+        }
+      ],
+      "stderr_sha256": "66d398f56eec98b0e6222a35ca51aa74ca7f259a55cc7d8a992677f8d173844d"
+    },
+    {
+      "budget": 4194304,
+      "entry_to_failure_local_deltas": [
+        {
+          "entry_effective_allowance": 503,
+          "failed_stage": "owner-exhausted",
+          "key_slot": 0,
+          "local_owner_decrease_before_failure": 503,
+          "nested_or_overlapping_work_possible": true,
+          "owner_remaining_on_failure": 0
+        },
+        {
+          "entry_effective_allowance": 503,
+          "failed_stage": "owner-exhausted",
+          "key_slot": 0,
+          "local_owner_decrease_before_failure": 503,
+          "nested_or_overlapping_work_possible": true,
+          "owner_remaining_on_failure": 0
+        },
+        {
+          "entry_effective_allowance": 4192915,
+          "failed_stage": "owner-exhausted",
+          "key_slot": 0,
+          "local_owner_decrease_before_failure": 4192915,
+          "nested_or_overlapping_work_possible": true,
+          "owner_remaining_on_failure": 0
+        },
+        {
+          "entry_effective_allowance": 2096457,
+          "failed_stage": "owner-exhausted",
+          "key_slot": 1,
+          "local_owner_decrease_before_failure": 2096457,
+          "nested_or_overlapping_work_possible": true,
+          "owner_remaining_on_failure": 0
+        }
+      ],
+      "events": [
+        {
+          "effective_allowance": 503,
+          "exact_key_slot": 0,
+          "incoming_owner": null,
+          "kind": "enter",
+          "known_prior": false,
+          "previously_failed": false,
+          "request_budget": 503,
+          "seq": 1
+        },
+        {
+          "exact_key_slot": 0,
+          "kind": "failure",
+          "owner_remaining": 0,
+          "previously_failed": false,
+          "seq": 1,
+          "stage": "owner-exhausted"
+        },
+        {
+          "effective_allowance": 251,
+          "exact_key_slot": 1,
+          "incoming_owner": null,
+          "kind": "enter",
+          "known_prior": false,
+          "previously_failed": false,
+          "request_budget": 251,
+          "seq": 2
+        },
+        {
+          "effective_allowance": 503,
+          "exact_key_slot": 0,
+          "incoming_owner": null,
+          "kind": "enter",
+          "known_prior": true,
+          "previously_failed": true,
+          "request_budget": 503,
+          "seq": 3
+        },
+        {
+          "exact_key_slot": 0,
+          "kind": "failure",
+          "owner_remaining": 0,
+          "previously_failed": true,
+          "seq": 2,
+          "stage": "owner-exhausted"
+        },
+        {
+          "effective_allowance": 251,
+          "exact_key_slot": 1,
+          "incoming_owner": null,
+          "kind": "enter",
+          "known_prior": true,
+          "previously_failed": false,
+          "request_budget": 251,
+          "seq": 4
+        },
+        {
+          "effective_allowance": 4192915,
+          "exact_key_slot": 0,
+          "incoming_owner": null,
+          "kind": "enter",
+          "known_prior": true,
+          "previously_failed": true,
+          "request_budget": 4192915,
+          "seq": 5
+        },
+        {
+          "exact_key_slot": 0,
+          "kind": "failure",
+          "owner_remaining": 0,
+          "previously_failed": true,
+          "seq": 3,
+          "stage": "owner-exhausted"
+        },
+        {
+          "effective_allowance": 2096457,
+          "exact_key_slot": 1,
+          "incoming_owner": null,
+          "kind": "enter",
+          "known_prior": true,
+          "previously_failed": false,
+          "request_budget": 2096457,
+          "seq": 6
+        },
+        {
+          "exact_key_slot": 1,
+          "kind": "failure",
+          "owner_remaining": 0,
+          "previously_failed": false,
+          "seq": 4,
+          "stage": "owner-exhausted"
+        }
+      ],
+      "original_verdict": "UNKNOWN",
+      "owner_event_count": 10,
+      "resume": true,
+      "retry_events": [
+        {
+          "entry_seq": 3,
+          "key_slot": 0,
+          "prior_failed_owner_remaining": 0,
+          "prior_failed_stage": "owner-exhausted",
+          "retry_effective_allowance": 503,
+          "retry_incoming_owner": null
+        },
+        {
+          "entry_seq": 5,
+          "key_slot": 0,
+          "prior_failed_owner_remaining": 0,
+          "prior_failed_stage": "owner-exhausted",
+          "retry_effective_allowance": 4192915,
+          "retry_incoming_owner": null
+        }
+      ],
+      "stderr_sha256": "ef4ed9b89f61d69c19f8a9b54a3c53ae02705a21f2cc355f79c34979f38658f9"
+    },
+    {
+      "budget": 8388608,
+      "entry_to_failure_local_deltas": [
+        {
+          "entry_effective_allowance": 503,
+          "failed_stage": "owner-exhausted",
+          "key_slot": 0,
+          "local_owner_decrease_before_failure": 503,
+          "nested_or_overlapping_work_possible": true,
+          "owner_remaining_on_failure": 0
+        },
+        {
+          "entry_effective_allowance": 503,
+          "failed_stage": "owner-exhausted",
+          "key_slot": 0,
+          "local_owner_decrease_before_failure": 503,
+          "nested_or_overlapping_work_possible": true,
+          "owner_remaining_on_failure": 0
+        },
+        {
+          "entry_effective_allowance": 503,
+          "failed_stage": "major-exposure",
+          "key_slot": 2,
+          "local_owner_decrease_before_failure": 503,
+          "nested_or_overlapping_work_possible": true,
+          "owner_remaining_on_failure": 0
+        },
+        {
+          "entry_effective_allowance": 251,
+          "failed_stage": "major-exposure",
+          "key_slot": 3,
+          "local_owner_decrease_before_failure": 251,
+          "nested_or_overlapping_work_possible": true,
+          "owner_remaining_on_failure": 0
+        },
+        {
+          "entry_effective_allowance": 503,
+          "failed_stage": "major-exposure",
+          "key_slot": 4,
+          "local_owner_decrease_before_failure": 503,
+          "nested_or_overlapping_work_possible": true,
+          "owner_remaining_on_failure": 0
+        },
+        {
+          "entry_effective_allowance": 251,
+          "failed_stage": "major-exposure",
+          "key_slot": 5,
+          "local_owner_decrease_before_failure": 251,
+          "nested_or_overlapping_work_possible": true,
+          "owner_remaining_on_failure": 0
+        }
+      ],
+      "events": [
+        {
+          "effective_allowance": 503,
+          "exact_key_slot": 0,
+          "incoming_owner": null,
+          "kind": "enter",
+          "known_prior": false,
+          "previously_failed": false,
+          "request_budget": 503,
+          "seq": 1
+        },
+        {
+          "exact_key_slot": 0,
+          "kind": "failure",
+          "owner_remaining": 0,
+          "previously_failed": false,
+          "seq": 1,
+          "stage": "owner-exhausted"
+        },
+        {
+          "effective_allowance": 251,
+          "exact_key_slot": 1,
+          "incoming_owner": null,
+          "kind": "enter",
+          "known_prior": false,
+          "previously_failed": false,
+          "request_budget": 251,
+          "seq": 2
+        },
+        {
+          "effective_allowance": 503,
+          "exact_key_slot": 0,
+          "incoming_owner": null,
+          "kind": "enter",
+          "known_prior": true,
+          "previously_failed": true,
+          "request_budget": 503,
+          "seq": 3
+        },
+        {
+          "exact_key_slot": 0,
+          "kind": "failure",
+          "owner_remaining": 0,
+          "previously_failed": true,
+          "seq": 2,
+          "stage": "owner-exhausted"
+        },
+        {
+          "effective_allowance": 251,
+          "exact_key_slot": 1,
+          "incoming_owner": null,
+          "kind": "enter",
+          "known_prior": true,
+          "previously_failed": false,
+          "request_budget": 251,
+          "seq": 4
+        },
+        {
+          "effective_allowance": 503,
+          "exact_key_slot": 2,
+          "incoming_owner": null,
+          "kind": "enter",
+          "known_prior": false,
+          "previously_failed": false,
+          "request_budget": 503,
+          "seq": 5
+        },
+        {
+          "exact_key_slot": 2,
+          "kind": "failure",
+          "owner_remaining": 0,
+          "previously_failed": false,
+          "seq": 3,
+          "stage": "major-exposure"
+        },
+        {
+          "effective_allowance": 251,
+          "exact_key_slot": 3,
+          "incoming_owner": null,
+          "kind": "enter",
+          "known_prior": false,
+          "previously_failed": false,
+          "request_budget": 251,
+          "seq": 6
+        },
+        {
+          "exact_key_slot": 3,
+          "kind": "failure",
+          "owner_remaining": 0,
+          "previously_failed": false,
+          "seq": 4,
+          "stage": "major-exposure"
+        },
+        {
+          "effective_allowance": 503,
+          "exact_key_slot": 4,
+          "incoming_owner": null,
+          "kind": "enter",
+          "known_prior": false,
+          "previously_failed": false,
+          "request_budget": 503,
+          "seq": 7
+        },
+        {
+          "exact_key_slot": 4,
+          "kind": "failure",
+          "owner_remaining": 0,
+          "previously_failed": false,
+          "seq": 5,
+          "stage": "major-exposure"
+        },
+        {
+          "effective_allowance": 251,
+          "exact_key_slot": 5,
+          "incoming_owner": null,
+          "kind": "enter",
+          "known_prior": false,
+          "previously_failed": false,
+          "request_budget": 251,
+          "seq": 8
+        },
+        {
+          "exact_key_slot": 5,
+          "kind": "failure",
+          "owner_remaining": 0,
+          "previously_failed": false,
+          "seq": 6,
+          "stage": "major-exposure"
+        }
+      ],
+      "original_verdict": "ACCEPT",
+      "owner_event_count": 14,
+      "resume": true,
+      "retry_events": [
+        {
+          "entry_seq": 3,
+          "key_slot": 0,
+          "prior_failed_owner_remaining": 0,
+          "prior_failed_stage": "owner-exhausted",
+          "retry_effective_allowance": 503,
+          "retry_incoming_owner": null
+        }
+      ],
+      "stderr_sha256": "3c43e2f1ddb7cd0acc05032ac0139e1d7e18bf9f985b39fc2ff3855d3cf5b7fb"
+    }
+  ],
+  "selected_checker_changed": false,
+  "standard_original_accepts": 0
+}
