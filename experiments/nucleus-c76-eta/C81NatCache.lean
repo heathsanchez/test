@@ -61,13 +61,9 @@ theorem numeric_operand_identity_matters :
 theorem exact_native_mul_replay (a b : Nat)
     (receipt : CompleteValue)
     (hop : receipt.op = .mul)
-    (ha : receipt.lhs = a) (hb : receipt.rhs = b)
-    (hr : receipt.result = a * b) :
+    (ha : receipt.lhs = a) (hb : receipt.rhs = b) :
     evaluate .mul a b = receipt.result := by
-  cases hop
-  cases ha
-  cases hb
-  exact receipt.completed
+  simpa only [hop, ha, hb] using receipt.completed
 
 #print axioms C81NatCache.reuse_only_under_exact_operands
 #print axioms C81NatCache.operation_identity_matters
