@@ -1,0 +1,72 @@
+name: Nucleus MGSO synthetic claim adequacy boundary
+on:
+  push:
+    branches: [research/nucleus-mgso-claim-boundary-20261110]
+    paths:
+      - '.github/workflows/nucleus-mgso-claim-boundary-20261110.yml'
+      - 'experiments/nucleus-north-star-20261110/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-native-mgso-claim:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      CARGO_INCREMENTAL: '0'
+      CARGO_BUILD_JOBS: '2'
+      LEAN4EXPORT_SHA: '66f1fb4bc256072069767fce52d39480e4524869'
+      LEAN_TOOLCHAIN: 'leanprover/lean4:v4.34.1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Freeze source and fail-closed claim unit tests
+        run: |
+          set -euo pipefail
+          mkdir -p reports
+          git rev-parse HEAD | tee reports/commit.txt
+          git rev-parse HEAD^{tree} | tee reports/source-tree.txt
+          sha256sum experiments/nucleus-north-star-20261110/*.py experiments/nucleus-north-star-20261110/*.lean experiments/nucleus-north-star-20261110/*.json | tee reports/source-files.sha256
+          python3 -m unittest discover -s experiments/nucleus-north-star-20261110 -p 'test_*.py' -v 2>&1 | tee reports/claim-tests.log
+      - name: Preserve existing MGSO native negative controls
+        run: |
+          set -euo pipefail
+          cargo test --locked --manifest-path metatron-kernel/Cargo.toml --test mgso_process 2>&1 | tee reports/mgso-process-tests.log
+          cargo test --locked --manifest-path metatron-kernel/Cargo.toml --test mgso_graph 2>&1 | tee reports/mgso-graph-tests.log
+          cargo build --locked --release --manifest-path metatron-kernel/Cargo.toml --bin metatron-kernel 2>&1 | tee reports/native-build.log
+          sha256sum metatron-kernel/target/release/metatron-kernel | tee reports/native-binary.sha256
+      - name: Compile exact synthetic source and separate false intended claim
+        run: |
+          set -euo pipefail
+          curl -sSfL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          source "$HOME/.elan/env"
+          elan toolchain install "$LEAN_TOOLCHAIN"
+          elan default "$LEAN_TOOLCHAIN"
+          cd experiments/nucleus-north-star-20261110
+          lean -o ClaimBoundary.olean ClaimBoundary.lean 2>&1 | tee "$GITHUB_WORKSPACE/reports/lean-claim-oracle.log"
+          sha256sum ClaimBoundary.lean ClaimBoundary.olean | tee "$GITHUB_WORKSPACE/reports/lean-claim-module.sha256"
+      - name: Generate authentic checked theorem with pinned lean4export
+        run: |
+          set -euo pipefail
+          source "$HOME/.elan/env"
+          git init -q /tmp/lean4export
+          cd /tmp/lean4export
+          git remote add origin https://github.com/leanprover/lean4export
+          git fetch --depth 1 origin "$LEAN4EXPORT_SHA"
+          git checkout -q FETCH_HEAD
+          printf '%s\n' "$LEAN_TOOLCHAIN" > lean-toolchain
+          lake build
+          export LEAN_PATH="$GITHUB_WORKSPACE/experiments/nucleus-north-star-20261110:${LEAN_PATH:-}"
+          lake env .lake/build/bin/lean4export ClaimBoundary -- NorthStarClaim.checkedTheorem > "$GITHUB_WORKSPACE/reports/synthetic-checked.ndjson"
+          sha256sum "$GITHUB_WORKSPACE/reports/synthetic-checked.ndjson" | tee "$GITHUB_WORKSPACE/reports/synthetic-checked.sha256"
+      - name: Independent MGSO historical-candidate and claim gate
+        run: |
+          set -euo pipefail
+          python3 experiments/nucleus-north-star-20261110/assess_mgso_claim.py reports/synthetic-checked.ndjson reports/lean-claim-oracle.log experiments/nucleus-north-star-20261110/synthetic_claim.json metatron-kernel/target/release/metatron-kernel reports/mgso-claim-assessment.json 2>&1 | tee reports/mgso-claim-assessment-run.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-mgso-synthetic-claim-boundary
+          retention-days: 60
+          path: reports/
