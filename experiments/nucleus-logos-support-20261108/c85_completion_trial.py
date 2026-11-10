@@ -17,7 +17,7 @@ def parse_c85_summary(lines):
     assert len(matching) == 1, "C85 selected root must emit exactly one report"
     data = json.loads(matching[0])
     needed = ("completed", "unique_exact", "repeated_exact", "repeated_inclusive_work",
-              "completed_inclusive_work", "one_step_exits", "cache_hits", "overflow",
+              "completed_inclusive_work", "one_step_exits", "cache_hits", "unkeyed_completions", "overflow",
               "limit", "goal_counts")
     assert all(name in data for name in needed), "C85 report incomplete"
     assert data["source_authority_preserved"] is True
@@ -32,6 +32,7 @@ def parse_c85_summary(lines):
     assert sum(data["goal_counts"].values()) == data["completed"]
     assert data["unique_exact"] + data["repeated_exact"] == data["completed"]
     assert data["repeated_inclusive_work"] <= data["completed_inclusive_work"]
+    data["exact_completion_coverage"] = data["unkeyed_completions"] == 0
     return data
 
 

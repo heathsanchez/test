@@ -19,7 +19,7 @@ class C85TrialContract(unittest.TestCase):
         data = load_trial().parse_c85_summary([
             'NUCLEUS_C85_COMPLETED:{"completed":3,"unique_exact":2,'
             '"repeated_exact":1,"repeated_inclusive_work":97,'
-            '"one_step_exits":5,"cache_hits":2,"overflow":0,'
+            '"one_step_exits":5,"cache_hits":2,"unkeyed_completions":0,"overflow":0,'
             '"limit":8192,"completed_inclusive_work":175,'
             '"goal_counts":{"Completed":2,"OneStep":1},'
             '"source_authority_preserved":true,"exact_structural_comparison":true,'
@@ -28,6 +28,20 @@ class C85TrialContract(unittest.TestCase):
         self.assertEqual(data["repeated_exact"], 1)
         self.assertEqual(data["repeated_inclusive_work"], 97)
         self.assertEqual(data["one_step_exits"], 5)
+        self.assertEqual(data["unkeyed_completions"], 0)
+        self.assertTrue(data["exact_completion_coverage"])
+
+    def test_keyless_completions_are_visible_as_incomplete_coverage(self):
+        line = ('NUCLEUS_C85_COMPLETED:{"completed":0,"unique_exact":0,'
+                '"repeated_exact":0,"repeated_inclusive_work":0,'
+                '"one_step_exits":0,"cache_hits":0,"unkeyed_completions":2,"overflow":0,'
+                '"limit":8192,"completed_inclusive_work":0,'
+                '"goal_counts":{"Completed":0,"OneStep":0},'
+                '"source_authority_preserved":true,"exact_structural_comparison":true,'
+                '"completed_only":true,"inclusive_cost_not_realizable_savings":true}')
+        data = load_trial().parse_c85_summary([line])
+        self.assertEqual(data["unkeyed_completions"], 2)
+        self.assertFalse(data["exact_completion_coverage"])
 
     def test_missing_or_duplicate_report_fails_closed(self):
         for lines in ([], ['NUCLEUS_C85_COMPLETED:{}'] * 2):

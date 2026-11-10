@@ -37,6 +37,7 @@ struct C85CompletionCensus {
     one_step_goal:u64,
     one_step_exits:u64,
     cache_hits:u64,
+    unkeyed_completions:u64,
     overflow:u64,
 }
 #[cfg(feature="diagnostics")]
@@ -83,6 +84,14 @@ fn c85_cache_hit() {
     });
 }
 #[cfg(feature="diagnostics")]
+fn c85_unkeyed_completion() {
+    if std::env::var_os("NUCLEUS_C85_COMPLETION_CENSUS").is_none() {return;}
+    C85_COMPLETIONS.with(|cell|{
+        let mut c=cell.borrow_mut();
+        c.unkeyed_completions=c.unkeyed_completions.saturating_add(1);
+    });
+}
+#[cfg(feature="diagnostics")]
 fn c85_one_step_exit() {
     if std::env::var_os("NUCLEUS_C85_COMPLETION_CENSUS").is_none() {return;}
     C85_COMPLETIONS.with(|cell|{
@@ -103,6 +112,7 @@ pub(crate) fn c85_completed_summary()->serde_json::Value {
             "goal_counts":{"Completed":c.completed_goal,"OneStep":c.one_step_goal},
             "one_step_exits":c.one_step_exits,
             "cache_hits":c.cache_hits,
+            "unkeyed_completions":c.unkeyed_completions,
             "overflow":c.overflow,
             "limit":8192,
             "source_authority_preserved":true,
@@ -117,19 +127,33 @@ pub(crate) fn c85_completed_summary()->serde_json::Value {
     anchor = "        let mut entered:HashMap<u64,Vec<Rc<ReplayKey>>>=HashMap::new();"
     replace_once(machine, anchor, anchor + "\n        #[cfg(feature=\"diagnostics\")]\n        let mut c85_started:HashMap<usize,usize>=HashMap::new();")
 
-    anchor = """                        Continuation::Finish(key) => {
-                            active.remove(&ReplayKey::identity(&key));"""
-    replace_once(machine, anchor, """                        Continuation::Finish(key) => {
+    # Exact C37 artifact includes a keyless option on some proof paths;
+    # current local diagnostic source may not. Select the actual frozen
+    # source shape, never assume that a missing key is an exact match.
+    source = machine.read_text()
+    if "Continuation::Finish(maybe_key) => {" in source:
+        anchor = "                        Continuation::Finish(maybe_key) => {"
+        replace_once(machine, anchor, anchor + """
+                            #[cfg(feature="diagnostics")]
+                            if maybe_key.is_none() {c85_unkeyed_completion();}""")
+        anchor = "                            if let Some(key)=maybe_key {"
+        replace_once(machine, anchor, anchor + """
+                                #[cfg(feature="diagnostics")]
+                                if let Some(start)=c85_started.remove(&ReplayKey::identity(&key)) {
+                                    c85_completed(&key,goal,start.saturating_sub(self.exposure_fuel.get().unwrap_or(0)));
+                                }""")
+        anchor = "                parents.push(Continuation::Finish(Some(key)));"
+    else:
+        anchor = "                        Continuation::Finish(key) => {"
+        replace_once(machine, anchor, anchor + """
                             #[cfg(feature="diagnostics")]
                             if let Some(start)=c85_started.remove(&ReplayKey::identity(&key)) {
                                 c85_completed(&key,goal,start.saturating_sub(self.exposure_fuel.get().unwrap_or(0)));
-                            }
-                            active.remove(&ReplayKey::identity(&key));""")
-
-    anchor = "                parents.push(Continuation::Finish(key));"
+                            }""")
+        anchor = "                parents.push(Continuation::Finish(key));"
     replace_once(machine, anchor, """                #[cfg(feature="diagnostics")]
                 c85_started.insert(identity,self.exposure_fuel.get().unwrap_or(0));
-                parents.push(Continuation::Finish(key));""")
+""" + anchor)
 
     anchor = """                        finish!('evaluate,value);
                     }
