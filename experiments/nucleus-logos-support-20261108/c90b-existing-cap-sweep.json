@@ -1,0 +1,248 @@
+{
+  "caps": [
+    512,
+    4096,
+    16384
+  ],
+  "experiment": "C90b existing exact C32 cap A/B on unchanged C89 ELF",
+  "full_403_protected_corpus_not_run": true,
+  "negative_controls": [
+    {
+      "sha256": "00f3560695f79944f1d45a217e12b0ad0aad30e2a5f038c20441783ea8a911bd",
+      "source": "bad/bugs/forged-quot-ind.ndjson",
+      "trials": [
+        {
+          "cap": 512,
+          "exit_code": 1
+        },
+        {
+          "cap": 4096,
+          "exit_code": 1
+        },
+        {
+          "cap": 16384,
+          "exit_code": 1
+        }
+      ]
+    },
+    {
+      "sha256": "5a49d132bb0c7dca091baa481333f5e97e390fde72c8ec18c6124a690ec47d7c",
+      "source": "bad/bugs/nat-rec-k-lie.ndjson",
+      "trials": [
+        {
+          "cap": 512,
+          "exit_code": 1
+        },
+        {
+          "cap": 4096,
+          "exit_code": 1
+        },
+        {
+          "cap": 16384,
+          "exit_code": 1
+        }
+      ]
+    },
+    {
+      "sha256": "934e59fdc4f2a978605c4a44e90b94b57e9940f3828620c0db337b7125cdd169",
+      "source": "bad/bugs/nat-rec-rules.ndjson",
+      "trials": [
+        {
+          "cap": 512,
+          "exit_code": 1
+        },
+        {
+          "cap": 4096,
+          "exit_code": 1
+        },
+        {
+          "cap": 16384,
+          "exit_code": 1
+        }
+      ]
+    },
+    {
+      "sha256": "8a240552317ba17d44d175c10531e5f988f55569db5eff734701735ce598fa73",
+      "source": "bad/bugs/rec-missing-ih.ndjson",
+      "trials": [
+        {
+          "cap": 512,
+          "exit_code": 1
+        },
+        {
+          "cap": 4096,
+          "exit_code": 1
+        },
+        {
+          "cap": 16384,
+          "exit_code": 1
+        }
+      ]
+    },
+    {
+      "sha256": "8874ecde1a57edbc52428cb7ea7c8834f74e623a164b0c0f69e78613effc0c56",
+      "source": "bad/bugs/nested-rec-rule-nfields.ndjson",
+      "trials": [
+        {
+          "cap": 512,
+          "exit_code": 1
+        },
+        {
+          "cap": 4096,
+          "exit_code": 1
+        },
+        {
+          "cap": 16384,
+          "exit_code": 1
+        }
+      ]
+    },
+    {
+      "sha256": "f3e9ff227b49feedb76e24332ec070498e9d82e4d04d371066dffc243a8de36b",
+      "source": "bad/bugs/large-elim-prop-bool.ndjson",
+      "trials": [
+        {
+          "cap": 512,
+          "exit_code": 1
+        },
+        {
+          "cap": 4096,
+          "exit_code": 1
+        },
+        {
+          "cap": 16384,
+          "exit_code": 1
+        }
+      ]
+    }
+  ],
+  "no_rust_patch": true,
+  "originals": [
+    {
+      "case": "magma-list-pair-n7",
+      "original_sha256": "abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35",
+      "tracked_work_identical": true,
+      "trials": [
+        {
+          "cap": 512,
+          "first_pair": "NUCLEUS_C56_PAIR:seq=0:depth=0:context_depth=0:budget=503:left=const:NameId(169):qualified=false:arity=0:major=none:right=const:NameId(147):qualified=true:arity=5:major=expr=ExprId(11):env=275988",
+          "major_budgets_ge_512": 57,
+          "major_owners_ge_4096": 54,
+          "max_sample_owner": 262122,
+          "source_major_samples": 128,
+          "stderr_sha256": "8169058fec320022706501087d25f29e545d6cf93a47f16331a53e33d6773df6",
+          "verdict": "UNKNOWN",
+          "work": {
+            "conversion_pairs": 665,
+            "exposure_transitions": 828695,
+            "outer_remaining": 261687,
+            "outer_spent": 457,
+            "recursor_worklist_steps": 4666,
+            "replay_reserved_units": 26350
+          }
+        },
+        {
+          "cap": 4096,
+          "first_pair": "NUCLEUS_C56_PAIR:seq=0:depth=0:context_depth=0:budget=503:left=const:NameId(169):qualified=false:arity=0:major=none:right=const:NameId(147):qualified=true:arity=5:major=expr=ExprId(11):env=275988",
+          "major_budgets_ge_512": 57,
+          "major_owners_ge_4096": 54,
+          "max_sample_owner": 262122,
+          "source_major_samples": 128,
+          "stderr_sha256": "d87bf2d987360b466ff5d65ad266b8139d4adc953f0559c41f52c33a8702442b",
+          "verdict": "UNKNOWN",
+          "work": {
+            "conversion_pairs": 665,
+            "exposure_transitions": 828695,
+            "outer_remaining": 261687,
+            "outer_spent": 457,
+            "recursor_worklist_steps": 4666,
+            "replay_reserved_units": 26350
+          }
+        },
+        {
+          "cap": 16384,
+          "first_pair": "NUCLEUS_C56_PAIR:seq=0:depth=0:context_depth=0:budget=503:left=const:NameId(169):qualified=false:arity=0:major=none:right=const:NameId(147):qualified=true:arity=5:major=expr=ExprId(11):env=275988",
+          "major_budgets_ge_512": 57,
+          "major_owners_ge_4096": 54,
+          "max_sample_owner": 262122,
+          "source_major_samples": 128,
+          "stderr_sha256": "c6ff937a903a8bab5e05ed44c942c62a01c44024ba5c0294d707644134b6a063",
+          "verdict": "UNKNOWN",
+          "work": {
+            "conversion_pairs": 665,
+            "exposure_transitions": 828695,
+            "outer_remaining": 261687,
+            "outer_spent": 457,
+            "recursor_worklist_steps": 4666,
+            "replay_reserved_units": 26350
+          }
+        }
+      ],
+      "verdicts_identical": true
+    },
+    {
+      "case": "magma-list-pair-n21",
+      "original_sha256": "b8279fa9189a203c6c11b04702c27c0f99a650b37f2b0165dd260b1d14e9ef84",
+      "tracked_work_identical": true,
+      "trials": [
+        {
+          "cap": 512,
+          "first_pair": "NUCLEUS_C56_PAIR:seq=0:depth=0:context_depth=0:budget=503:left=const:NameId(169):qualified=false:arity=0:major=none:right=const:NameId(147):qualified=true:arity=5:major=expr=ExprId(11):env=69639",
+          "major_budgets_ge_512": 48,
+          "major_owners_ge_4096": 45,
+          "max_sample_owner": 261278,
+          "source_major_samples": 128,
+          "stderr_sha256": "5933e6a4af27e3b92013e6427c1dc1d68b862bae02cfd7a5f325daa5fda87698",
+          "verdict": "UNKNOWN",
+          "work": {
+            "conversion_pairs": 515,
+            "exposure_transitions": 362448,
+            "outer_remaining": 261783,
+            "outer_spent": 361,
+            "recursor_worklist_steps": 4811,
+            "replay_reserved_units": 30301
+          }
+        },
+        {
+          "cap": 4096,
+          "first_pair": "NUCLEUS_C56_PAIR:seq=0:depth=0:context_depth=0:budget=503:left=const:NameId(169):qualified=false:arity=0:major=none:right=const:NameId(147):qualified=true:arity=5:major=expr=ExprId(11):env=69639",
+          "major_budgets_ge_512": 48,
+          "major_owners_ge_4096": 45,
+          "max_sample_owner": 261278,
+          "source_major_samples": 128,
+          "stderr_sha256": "188243981e32974dffbb6bb967cafb24c415eab4cbb7c12cbb3923c0ec488d57",
+          "verdict": "UNKNOWN",
+          "work": {
+            "conversion_pairs": 515,
+            "exposure_transitions": 362448,
+            "outer_remaining": 261783,
+            "outer_spent": 361,
+            "recursor_worklist_steps": 4811,
+            "replay_reserved_units": 30301
+          }
+        },
+        {
+          "cap": 16384,
+          "first_pair": "NUCLEUS_C56_PAIR:seq=0:depth=0:context_depth=0:budget=503:left=const:NameId(169):qualified=false:arity=0:major=none:right=const:NameId(147):qualified=true:arity=5:major=expr=ExprId(11):env=69639",
+          "major_budgets_ge_512": 48,
+          "major_owners_ge_4096": 45,
+          "max_sample_owner": 261278,
+          "source_major_samples": 128,
+          "stderr_sha256": "0d5fd62091f2310037c8ff44b7e2cded9cc810701c706faa065d2a653c2b2e78",
+          "verdict": "UNKNOWN",
+          "work": {
+            "conversion_pairs": 515,
+            "exposure_transitions": 362448,
+            "outer_remaining": 261783,
+            "outer_spent": 361,
+            "recursor_worklist_steps": 4811,
+            "replay_reserved_units": 30301
+          }
+        }
+      ],
+      "verdicts_identical": true
+    }
+  ],
+  "source_rules_unchanged": true,
+  "standard_budget": 262144
+}
