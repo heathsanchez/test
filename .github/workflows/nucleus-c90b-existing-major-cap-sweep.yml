@@ -1,0 +1,55 @@
+name: Nucleus C90b existing C32 source-major cap sweep
+on:
+  push:
+    branches: [research/nucleus-c90b-existing-cap-sweep-20261110]
+    paths:
+      - '.github/workflows/nucleus-c90b-existing-major-cap-sweep.yml'
+      - 'experiments/nucleus-logos-support-20261108/c90b_c32_cap_sweep.py'
+      - 'experiments/nucleus-logos-support-20261108/test_c90b_trial.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  unchanged-binary-cap-sweep:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RUST_MIN_STACK: '16777216'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore exact qualified checker and original/adversarial inputs
+        run: |
+          set -euo pipefail
+          mkdir -p base candidate reports arena207
+          gh api repos/heathsanchez/test/actions/artifacts/13728065122/zip > c89-qualified.zip
+          printf '%s  %s\n' 34ef856d93680bc8379c83cc5dfe23d9478d5e4d5e90932a5c0dc6423e41754f c89-qualified.zip | sha256sum -c -
+          unzip -p c89-qualified.zip candidate/nucleus-diagnostic > candidate/nucleus-diagnostic
+          chmod +x candidate/nucleus-diagnostic
+          printf '%s  %s\n' 0cf408f3d2eaa3143749493d53dd0b1a7a412ee9d353d2d7892dc8928f6e4d5c candidate/nucleus-diagnostic | sha256sum -c -
+          unzip -p c89-qualified.zip reports/c85.json > reports/c85.json
+          printf '%s  %s\n' 9d79c255f48d95cdc3a3ab298eba1b6bb6a519029f4f3aec1f54e96a311128a1 reports/c85.json | sha256sum -c -
+          unzip -p c89-qualified.zip reports/c89.json > reports/c89.json
+          printf '%s  %s\n' 6a193e633e0e13b9d2ad076f72eb52466b8f96343d1d2c98eb1ede1f61861a5b reports/c89.json | sha256sum -c -
+          unzip -p c89-qualified.zip base/flags.json > base/flags.json
+          gh api repos/heathsanchez/test/actions/artifacts/13276400289/zip > arena207.zip
+          printf '%s  %s\n' a9582eadc0d9893cbe39e6bcfccd79bfaec2032838851b8a487c35df16096763 arena207.zip | sha256sum -c -
+          unzip -p arena207.zip lean-arena-tests.tar.gz | tar --no-same-owner -xzf - -C arena207 \
+            good/perf/magma-list-pair-n7.ndjson good/perf/magma-list-pair-n21.ndjson \
+            bad/bugs/forged-quot-ind.ndjson bad/bugs/nat-rec-k-lie.ndjson \
+            bad/bugs/nat-rec-rules.ndjson bad/bugs/rec-missing-ih.ndjson \
+            bad/bugs/nested-rec-rule-nfields.ndjson bad/bugs/large-elim-prop-bool.ndjson
+          python3 -m unittest discover -s experiments/nucleus-logos-support-20261108 -p 'test_c90b_trial.py' -v
+      - name: Sweep C32 512 4096 16384 without changing checker source or ELF
+        run: |
+          set -euo pipefail
+          python3 experiments/nucleus-logos-support-20261108/c90b_c32_cap_sweep.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-C90b-original-source-cap-sweep
+          retention-days: 60
+          path: |
+            reports/
+            base/flags.json
