@@ -1,0 +1,89 @@
+name: Nucleus C89 pending Major source-origin census
+on:
+  push:
+    branches: [research/nucleus-c89-major-source-census-20261110]
+    paths:
+      - '.github/workflows/nucleus-c89-major-source-census.yml'
+      - 'experiments/nucleus-logos-support-20261108/c88_exact_pending_observer.py'
+      - 'experiments/nucleus-logos-support-20261108/c88_exact_pending_trial.py'
+      - 'experiments/nucleus-logos-support-20261108/test_c88_trial.py'
+      - 'experiments/nucleus-logos-support-20261108/c89_source_major_observer.py'
+      - 'experiments/nucleus-logos-support-20261108/c89_source_major_trial.py'
+      - 'experiments/nucleus-logos-support-20261108/test_c89_trial.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  exact-pending-census:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      GH_TOKEN: ${{ github.token }}
+      CARGO_INCREMENTAL: '0'
+      CARGO_BUILD_JOBS: '2'
+      RUST_MIN_STACK: '16777216'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Restore exact C58 and apply C84 C85 C87 C88 C89 read-only observers
+        run: |
+          set -euo pipefail
+          mkdir -p base candidate reports arena207
+          gh api repos/heathsanchez/test/actions/artifacts/13609679273/zip > c37-qualified.zip
+          printf '%s  %s\n' fceddaca338ca36c2964edf0ec81b9e4acd0b66d938864ec5e7239f766e186c3 c37-qualified.zip | sha256sum -c -
+          unzip -p c37-qualified.zip candidate/source.tar.gz > c37-source.tar.gz
+          printf '%s  %s\n' bb64f47470f950f78e7fe4c659fbcb2a75d72e96831430ec1eb3562c55175152 c37-source.tar.gz | sha256sum -c -
+          unzip -p c37-qualified.zip base/flags.json > base/flags.json
+          tar --no-same-owner -xzf c37-source.tar.gz
+          for patch_name in c38-early-full-typed-spine.patch c39-typed-failure-stage.patch c40-c42-source-capture.patch c43-deep-exposure-guard.patch c44-exact-source-forwarding.patch c47-inner-work-diagnostics.patch c48-source-branch-divergence.patch c49-capture-content-fingerprint.patch c50-worklist-loss-diagnostics.patch; do
+            patch --fuzz=0 -p1 -d metatron-kernel < "experiments/nucleus-logos-support-20261108/$patch_name"
+            sha256sum "experiments/nucleus-logos-support-20261108/$patch_name" >> reports/patches.sha256
+          done
+          for patch_name in c55-app-failure-state.patch c56-neutral-pair-classification.patch c58-source-opening-allowance.patch c64-source-instance-observer.patch; do
+            patch --fuzz=0 -p1 -d . < "experiments/nucleus-logos-support-20261108/$patch_name"
+            sha256sum "experiments/nucleus-logos-support-20261108/$patch_name" >> reports/patches.sha256
+          done
+          patch --fuzz=0 -p1 -d . < experiments/nucleus-logos-support-20261108/c65-prefix-observer.patch
+          python3 -m py_compile experiments/nucleus-logos-support-20261108/c82b_exact_retry_cost.py experiments/nucleus-logos-support-20261108/c84_exact_closure_observer.py experiments/nucleus-logos-support-20261108/c85_completion_observer.py experiments/nucleus-logos-support-20261108/c87_pending_major_observer.py experiments/nucleus-logos-support-20261108/c88_exact_pending_observer.py experiments/nucleus-logos-support-20261108/c88_exact_pending_trial.py experiments/nucleus-logos-support-20261108/c89_source_major_observer.py experiments/nucleus-logos-support-20261108/c89_source_major_trial.py
+          python3 -m unittest discover -s experiments/nucleus-logos-support-20261108 -p 'test_c8?_trial.py' -v
+          python3 experiments/nucleus-logos-support-20261108/c82b_exact_retry_cost.py
+          python3 experiments/nucleus-logos-support-20261108/c84_exact_closure_observer.py
+          python3 experiments/nucleus-logos-support-20261108/c85_completion_observer.py
+          python3 experiments/nucleus-logos-support-20261108/c87_pending_major_observer.py
+          python3 experiments/nucleus-logos-support-20261108/c88_exact_pending_observer.py
+          python3 experiments/nucleus-logos-support-20261108/c89_source_major_observer.py
+          cargo check --locked --all-targets --features diagnostics --manifest-path metatron-kernel/Cargo.toml > reports/cargo-check.log 2>&1 || { tail -n 120 reports/cargo-check.log; exit 1; }
+      - name: Compile source-qualified diagnostic checker
+        run: |
+          set -euo pipefail
+          cargo build --locked --release --features diagnostics --bin nucleus-diagnostic --manifest-path metatron-kernel/Cargo.toml > reports/release-build.log 2>&1 || { tail -n 125 reports/release-build.log; exit 1; }
+          cp metatron-kernel/target/release/nucleus-diagnostic candidate/nucleus-diagnostic
+          sha256sum candidate/nucleus-diagnostic > reports/binary.sha256
+      - name: Frozen n7 and n21 C84 through C89 exact comparison
+        run: |
+          set -euo pipefail
+          gh api repos/heathsanchez/test/actions/artifacts/13276400289/zip > arena207.zip
+          printf '%s  %s\n' a9582eadc0d9893cbe39e6bcfccd79bfaec2032838851b8a487c35df16096763 arena207.zip | sha256sum -c -
+          unzip -p arena207.zip lean-arena-tests.tar.gz | tar --no-same-owner -xzf - -C arena207
+          python3 experiments/nucleus-logos-support-20261108/c84_closure_trial.py
+          python3 experiments/nucleus-logos-support-20261108/c85_completion_trial.py
+          python3 experiments/nucleus-logos-support-20261108/c87_pending_major_trial.py
+          python3 experiments/nucleus-logos-support-20261108/c88_exact_pending_trial.py
+          python3 experiments/nucleus-logos-support-20261108/c89_source_major_trial.py
+      - name: Native original source and forged-proof regression
+        run: |
+          set -euo pipefail
+          mapfile -t flags < <(jq -r 'to_entries[] | "\(.key)=\(.value)"' base/flags.json)
+          env "${flags[@]}" cargo test --locked --release --features diagnostics --manifest-path metatron-kernel/Cargo.toml > reports/native-c89.log 2>&1 || { tail -n 125 reports/native-c89.log; exit 1; }
+          echo 'C89_NATIVE_BASELINE_PASSED'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-C89-major-source-census
+          retention-days: 60
+          path: |
+            reports/
+            candidate/
+            base/flags.json
