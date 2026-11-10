@@ -11,8 +11,9 @@ def apply_c90(source=Path("metatron-kernel/src/machine.rs")):
     text=source.read_text()
     begin="let major_result=if self.replay_projection_major {"
     end="let Some(value)=major_result.proven_value() else {"
-    assert text.count(begin)==1 and text.count(end)==1, "C90 major-exposure anchors drifted"
+    assert text.count(begin)==1, "C90 major-exposure start anchor drifted"
     start=text.index(begin)
+    assert end in text[start:], "C90 major-exposure end anchor drifted"
     stop=text.index(end,start)
     fragment=text[start:stop]
     assert fragment.count(".min(512)")==2 and ".min(4096)" not in fragment, "C90 baseline caps drifted"

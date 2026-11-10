@@ -8,7 +8,7 @@ from c90_major_allowance_trial import parse_work
 
 class C90PatchSafety(unittest.TestCase):
     def test_replaces_only_source_major_exposure_caps(self):
-        body = '''before min(512)\nlet major_result=if self.replay_projection_major {\n    expose.min(512)\n} else {\n    expose.min(512)\n};\nlet Some(value)=major_result.proven_value() else {\nafter min(512)\n'''
+        body = '''before min(512)\nlet Some(value)=major_result.proven_value() else {\nlet major_result=if self.replay_projection_major {\n    expose.min(512)\n} else {\n    expose.min(512)\n};\nlet Some(value)=major_result.proven_value() else {\nafter min(512)\n'''
         with tempfile.TemporaryDirectory() as folder:
             path = Path(folder) / "machine.rs"
             path.write_text(body)
