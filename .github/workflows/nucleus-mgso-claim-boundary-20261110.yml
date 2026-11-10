@@ -63,7 +63,7 @@ jobs:
       - name: Independent MGSO historical-candidate and claim gate
         run: |
           set -euo pipefail
-          python3 experiments/nucleus-north-star-20261110/assess_mgso_claim.py reports/synthetic-checked.ndjson reports/lean-claim-oracle.log experiments/nucleus-north-star-20261110/synthetic_claim.json metatron-kernel/target/release/metatron-kernel reports/mgso-claim-assessment.json 2>&1 | tee reports/mgso-claim-assessment-run.log
+          python3 experiments/nucleus-north-star-20261110/assess_mgso_claim.py reports/synthetic-checked.ndjson reports/lean-claim-oracle.log experiments/nucleus-north-star-20261110/synthetic_claim.json experiments/nucleus-north-star-20261110/ClaimBoundary.lean metatron-kernel/target/release/metatron-kernel reports/mgso-claim-assessment.json 2>&1 | tee reports/mgso-claim-assessment-run.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:

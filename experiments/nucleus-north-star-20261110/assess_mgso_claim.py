@@ -15,6 +15,36 @@ import tempfile
 from assess_claim_fidelity import assess
 
 
+# Exact source proved by the pinned Lean 4.34.1 workflow. This *synthetic*
+# witness may not be promoted under a changed proof file, even if the
+# separately exported weaker declaration has byte-identical NDJSON.
+PINNED_LEAN_WITNESS_SHA256 = (
+    "7765dedab06ed7d6fd83b3f8ed895f444a992506b7cab9c5084f8c94a99ff670"
+)
+
+
+def require_exact_lean_witness_source(source: bytes) -> str:
+    digest = hashlib.sha256(source).hexdigest()
+    assert digest == PINNED_LEAN_WITNESS_SHA256, (
+        "changed Lean separation witness needs new source-qualified adequacy evidence"
+    )
+    return digest
+
+
+def parse_synthetic_contract(raw: bytes) -> dict:
+    def unique_fields(pairs):
+        result = {}
+        for key, value in pairs:
+            if key in result:
+                raise ValueError(f"duplicate synthetic contract key: {key}")
+            result[key] = value
+        return result
+
+    contract = json.loads(raw, object_pairs_hook=unique_fields)
+    assert isinstance(contract, dict), "synthetic contract must be a JSON object"
+    return contract
+
+
 def _line_fields(stderr: str, prefix: str) -> dict[str, str]:
     matches = [line for line in stderr.splitlines() if line.startswith(prefix + ":")]
     assert len(matches) == 1, "missing, repeated or ambiguous MGSO observation"
@@ -52,7 +82,9 @@ def run_checker(binary: str, args: list[str], source: bytes) -> subprocess.Compl
     return subprocess.run([binary, *args], input=source, capture_output=True, timeout=90)
 
 
-def assess_mgso(raw: bytes, lean_log: str, contract: dict, binary: str) -> dict:
+def assess_mgso(raw: bytes, lean_log: str, contract: dict,
+                lean_source: bytes, binary: str) -> dict:
+    lean_source_sha256 = require_exact_lean_witness_source(lean_source)
     claim = assess(raw, lean_log, contract, binary)
     direct = run_checker(binary, [], raw)
     assert direct.returncode == 0, "fresh independent checker refused source"
@@ -89,18 +121,20 @@ def assess_mgso(raw: bytes, lean_log: str, contract: dict, binary: str) -> dict:
         "synthetic_intent_adequacy": "REFUTED_BY_LEAN_WITNESS",
         "real_owner_intent_adequacy": "UNKNOWN",
         "source_sha256": hashlib.sha256(raw).hexdigest(),
+        "lean_witness_source_sha256": lean_source_sha256,
         "observed_root_sha256": root_before,
     }
 
 
 def main(export_path: str, lean_log_path: str, contract_path: str,
-         binary: str, report_path: str) -> None:
+         lean_source_path: str, binary: str, report_path: str) -> None:
     report = {"status": "UNKNOWN", "real_owner_intent_adequacy": "UNKNOWN"}
     try:
         report = assess_mgso(
             pathlib.Path(export_path).read_bytes(),
             pathlib.Path(lean_log_path).read_text(),
-            json.loads(pathlib.Path(contract_path).read_text()),
+            parse_synthetic_contract(pathlib.Path(contract_path).read_bytes()),
+            pathlib.Path(lean_source_path).read_bytes(),
             binary,
         )
     except Exception as exc:

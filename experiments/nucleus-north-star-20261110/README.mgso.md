@@ -35,9 +35,24 @@ binary and isolated receipt graph; results never transport by assertion.
    observation for the checked theorem.
 6. The stronger synthetic requirement is **REFUTED**, real owner intent
    remains **UNKNOWN**, and no MGSO receipt or stored label can change either.
+7. The Lean separation file is bound to exact SHA256
+   `7765dedab06ed7d6fd83b3f8ed895f444a992506b7cab9c5084f8c94a99ff670`;
+   even changes outside the exported theorem withdraw the synthetic claim
+   warrant until new source qualification. Duplicate JSON contract keys
+   fail closed rather than being silently overwritten.
 
 **Safety boundary.** This is a test-only observational consumer gate, not
 an integrated authorization/resolver, signature, kernel verification,
 warm-skip path, general axiom inventory, six-original ACCEPT or Mathlib claim.
 The previous MGSO 208-case parity and source provenance remain as separate
 evidence, not silently inherited by a new code revision.
+
+**First CI qualification.** [Run #42726149316](https://github.com/heathsanchez/test/actions/runs/42726149316)
+at exact source `503da6ac9c1e6b54823adb25d4effa4372b122c8` SUCCESS:
+23 local claim tests, 12 native MGSO process and 13 graph tests, Lean
+axiom-free separation, authentic source export, ordinary/shadow ACCEPT,
+candidate-match inspection with authority none and stale input mutation.
+Artifact [#13722152644](https://github.com/heathsanchez/test/actions/runs/42726149316/artifacts/13722152644)
+SHA256 ZIP `4721c1a8e997603f32299bab485431216a829d11fcb3c6af88bd22841a9746f1`.
+That run precedes the independent witness-source/duplicate-key hardening;
+the latter requires its own fresh qualification.
