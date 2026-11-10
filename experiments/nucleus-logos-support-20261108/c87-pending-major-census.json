@@ -1,0 +1,132 @@
+{
+  "experiment": "C87 unfinished Major frame source-name census",
+  "full_403_protected_corpus_not_run": true,
+  "new_proof_rule_or_cache": false,
+  "original_proofs_and_C58_source_unchanged": true,
+  "original_standard_accepts": 0,
+  "rows": [
+    {
+      "case": "magma-list-pair-n7",
+      "events": [
+        {
+          "finish_parents": 2,
+          "major_const_names": {
+            "147": 1
+          },
+          "major_nonconst": 0,
+          "major_parents": 1,
+          "owner_remaining": 0,
+          "parents": 3,
+          "projected_parents": 0,
+          "seq": 0,
+          "stage": "owner-exhausted"
+        },
+        {
+          "finish_parents": 2,
+          "major_const_names": {
+            "147": 1
+          },
+          "major_nonconst": 0,
+          "major_parents": 1,
+          "owner_remaining": 0,
+          "parents": 3,
+          "projected_parents": 0,
+          "seq": 1,
+          "stage": "owner-exhausted"
+        },
+        {
+          "finish_parents": 34,
+          "major_const_names": {
+            "147": 31
+          },
+          "major_nonconst": 0,
+          "major_parents": 31,
+          "owner_remaining": 0,
+          "parents": 65,
+          "projected_parents": 0,
+          "seq": 2,
+          "stage": "owner-exhausted"
+        }
+      ],
+      "max_pending": {
+        "finish_parents": 34,
+        "major_const_names": {
+          "147": 31
+        },
+        "major_nonconst": 0,
+        "major_parents": 31,
+        "owner_remaining": 0,
+        "parents": 65,
+        "projected_parents": 0,
+        "seq": 2,
+        "stage": "owner-exhausted"
+      },
+      "observer_changed_original_work": false,
+      "original_sha256": "abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35",
+      "stderr_sha256": "8a6e14754dd1475fa46b9debecb686c3b5485bbb3f1c4ee08c19996ee31bf7e0",
+      "verdict": "UNKNOWN"
+    },
+    {
+      "case": "magma-list-pair-n21",
+      "events": [
+        {
+          "finish_parents": 2,
+          "major_const_names": {
+            "147": 1
+          },
+          "major_nonconst": 0,
+          "major_parents": 1,
+          "owner_remaining": 0,
+          "parents": 3,
+          "projected_parents": 0,
+          "seq": 0,
+          "stage": "owner-exhausted"
+        },
+        {
+          "finish_parents": 2,
+          "major_const_names": {
+            "147": 1
+          },
+          "major_nonconst": 0,
+          "major_parents": 1,
+          "owner_remaining": 0,
+          "parents": 3,
+          "projected_parents": 0,
+          "seq": 1,
+          "stage": "owner-exhausted"
+        },
+        {
+          "finish_parents": 59,
+          "major_const_names": {
+            "147": 57
+          },
+          "major_nonconst": 0,
+          "major_parents": 57,
+          "owner_remaining": 0,
+          "parents": 116,
+          "projected_parents": 0,
+          "seq": 2,
+          "stage": "owner-exhausted"
+        }
+      ],
+      "max_pending": {
+        "finish_parents": 59,
+        "major_const_names": {
+          "147": 57
+        },
+        "major_nonconst": 0,
+        "major_parents": 57,
+        "owner_remaining": 0,
+        "parents": 116,
+        "projected_parents": 0,
+        "seq": 2,
+        "stage": "owner-exhausted"
+      },
+      "observer_changed_original_work": false,
+      "original_sha256": "b8279fa9189a203c6c11b04702c27c0f99a650b37f2b0165dd260b1d14e9ef84",
+      "stderr_sha256": "45de2d008c85ef85b047e84638f45ecb22d80fb5971800cc6c18e5dfe694727b",
+      "verdict": "UNKNOWN"
+    }
+  ],
+  "standard_budget": 262144
+}
