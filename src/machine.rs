@@ -306,6 +306,59 @@ impl Drop for C94PhaseReceipt<'_> {
     }
 }
 
+// C95 counts charges while they are still owned by the original caller.
+// Categories are disjoint for one worklist's instrumentation; key_work is
+// separately reported as an inclusive counter and may overlap a stage when
+// that stage recursively enters a different qualified recursor owner.
+#[cfg(feature="diagnostics")]
+#[derive(Default)]
+struct C95StageCounts {
+    major: Cell<usize>, telescope: Cell<usize>, rhs: Cell<usize>, finish: Cell<usize>,
+}
+#[cfg(feature="diagnostics")]
+struct C95StageCharge<'a> {
+    fuel: &'a Cell<Option<usize>>, counter: &'a Cell<usize>, start: usize,
+}
+#[cfg(feature="diagnostics")]
+impl<'a> C95StageCharge<'a> {
+    fn new(fuel:&'a Cell<Option<usize>>,counter:&'a Cell<usize>)->Self {
+        Self { fuel,counter,start:fuel.get().unwrap_or(0) }
+    }
+}
+#[cfg(feature="diagnostics")]
+impl Drop for C95StageCharge<'_> {
+    fn drop(&mut self) {
+        let charge=self.start.saturating_sub(self.fuel.get().unwrap_or(0));
+        self.counter.set(self.counter.get().saturating_add(charge));
+    }
+}
+#[cfg(feature="diagnostics")]
+struct C95StageReceipt<'a> {
+    counts:&'a C95StageCounts, fuel:&'a Cell<Option<usize>>,
+    start:usize, key_start:usize, head:&'a NeutralHead,
+}
+#[cfg(feature="diagnostics")]
+impl Drop for C95StageReceipt<'_> {
+    fn drop(&mut self) {
+        use std::sync::atomic::{AtomicUsize,Ordering};
+        static PRINTED: AtomicUsize=AtomicUsize::new(0);
+        let remaining=self.fuel.get().unwrap_or(0);
+        let spent=self.start.saturating_sub(remaining);
+        if spent<8192 || PRINTED.fetch_add(1,Ordering::Relaxed)>=32 {return;}
+        let major_work=self.counts.major.get();
+        let telescope_work=self.counts.telescope.get();
+        let rhs_work=self.counts.rhs.get();
+        let finish_work=self.counts.finish.get();
+        let assigned=major_work.saturating_add(telescope_work)
+            .saturating_add(rhs_work).saturating_add(finish_work);
+        // If the assigned work exceeds spent, the Python conservation test
+        // rejects the observer: overlapping charge scopes are not evidence.
+        let other_work=spent.saturating_sub(assigned);
+        let key_work=REPLAY_KEY_WORK.load(Ordering::Relaxed).saturating_sub(self.key_start);
+        eprintln!("NUCLEUS_C95_PHASE:head={:?}:start={}:remaining={remaining}:major_work={major_work}:telescope_work={telescope_work}:rhs_work={rhs_work}:finish_work={finish_work}:other_work={other_work}:key_work={key_work}",self.head,self.start);
+    }
+}
+
 #[derive(Clone,Copy,Eq,PartialEq)]
 enum CheckedReplayGoal { Completed, OneStep }
 
@@ -856,7 +909,8 @@ impl<'a> Machine<'a> {
         let result=self.reserve_replay_key_inner(levels,spine,certificate);
         #[cfg(feature="diagnostics")]
         if std::env::var_os("NUCLEUS_TRACE_REPLAY_CACHE").is_some()
-            || std::env::var_os("NUCLEUS_C94_PHASE_TRACE").is_some() {
+            || std::env::var_os("NUCLEUS_C94_PHASE_TRACE").is_some()
+            || std::env::var_os("NUCLEUS_C95_PHASE_TRACE").is_some() {
             let used=before.unwrap_or(0).saturating_sub(self.exposure_fuel.get().unwrap_or(0));
             REPLAY_KEY_WORK.fetch_add(used,std::sync::atomic::Ordering::Relaxed);
         }
@@ -2249,6 +2303,15 @@ impl<'a> Machine<'a> {
             key_start:REPLAY_KEY_WORK.load(std::sync::atomic::Ordering::Relaxed),
             head:&neutral.head,
         });
+        #[cfg(feature="diagnostics")]
+        let c95_counts=C95StageCounts::default();
+        #[cfg(feature="diagnostics")]
+        let _c95_receipt=std::env::var_os("NUCLEUS_C95_PHASE_TRACE").map(|_|C95StageReceipt{
+            counts:&c95_counts,fuel:&self.exposure_fuel,
+            start:self.exposure_fuel.get().unwrap_or(0),
+            key_start:REPLAY_KEY_WORK.load(std::sync::atomic::Ordering::Relaxed),
+            head:&neutral.head,
+        });
         let spend = || {
             let Some(fuel)=self.exposure_fuel.get() else { return false; };
             if fuel == 0 { return false; }
@@ -2274,6 +2337,9 @@ impl<'a> Machine<'a> {
                 while let Some(continuation)=parents.pop() {
                     match continuation {
                         Continuation::Finish(key) => {
+                            #[cfg(feature="diagnostics")]
+                            let _c95_finish=_c95_receipt.as_ref().map(|_|C95StageCharge::new(
+                                &self.exposure_fuel,&c95_counts.finish));
                             #[cfg(feature="diagnostics")]
                             if _c94_receipt.is_some(){c94_counts.completed.set(c94_counts.completed.get()+1);}
                             active.remove(&ReplayKey::identity(&key));
@@ -2370,12 +2436,17 @@ impl<'a> Machine<'a> {
                 if _c94_receipt.is_some(){c94_counts.entered.set(c94_counts.entered.get()+1);}
                 entered.entry(key.digest).or_default().push(key.clone());
                 parents.push(Continuation::Finish(key));
-                let major_result=if self.replay_projection_major {
-                    self.expose_for_conversion(neutral.spine[required-1].clone(),
-                        Transparency::Full,self.exposure_fuel.get().unwrap_or(0).min(512))
-                } else {
-                    self.expose(neutral.spine[required-1].clone(),
-                        Transparency::Full,self.exposure_fuel.get().unwrap_or(0).min(512))
+                let major_result={
+                    #[cfg(feature="diagnostics")]
+                    let _c95_major=_c95_receipt.as_ref().map(|_|C95StageCharge::new(
+                        &self.exposure_fuel,&c95_counts.major));
+                    if self.replay_projection_major {
+                        self.expose_for_conversion(neutral.spine[required-1].clone(),
+                            Transparency::Full,self.exposure_fuel.get().unwrap_or(0).min(512))
+                    } else {
+                        self.expose(neutral.spine[required-1].clone(),
+                            Transparency::Full,self.exposure_fuel.get().unwrap_or(0).min(512))
+                    }
                 };
                 let Some(value)=major_result.proven_value() else {
                     #[cfg(feature="diagnostics")]
@@ -2473,6 +2544,9 @@ impl<'a> Machine<'a> {
 
             // The RHS is the independently checked recursor rule. Consume
             // exactly its declared binders. Unknown shapes do not grant iota.
+            #[cfg(feature="diagnostics")]
+            let _c95_telescope=_c95_receipt.as_ref().map(|_|C95StageCharge::new(
+                &self.exposure_fuel,&c95_counts.telescope));
             for arg in arguments {
                 if !spend() { return Judgment::unknown("nested-recursor-iota-budget"); }
                 let mut lets = 0usize;
@@ -2492,6 +2566,8 @@ impl<'a> Machine<'a> {
                     }
                 }
             }
+            #[cfg(feature="diagnostics")]
+            drop(_c95_telescope);
             #[cfg(feature = "diagnostics")]
             if std::env::var_os("NUCLEUS_TRACE_NESTED_RECURSOR_IOTA").is_some() {
                 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -2503,10 +2579,15 @@ impl<'a> Machine<'a> {
                     );
                 }
             }
-            let exposed=self.expose_internal_with_pending(
-                result, Transparency::Full, self.exposure_fuel.get().unwrap_or(0).min(512),
-                false, true, neutral.spine[required..].iter().rev().cloned().collect(),
-            ).map(|exposure| exposure.value);
+            let exposed={
+                #[cfg(feature="diagnostics")]
+                let _c95_rhs=_c95_receipt.as_ref().map(|_|C95StageCharge::new(
+                    &self.exposure_fuel,&c95_counts.rhs));
+                self.expose_internal_with_pending(
+                    result, Transparency::Full, self.exposure_fuel.get().unwrap_or(0).min(512),
+                    false, true, neutral.spine[required..].iter().rev().cloned().collect(),
+                ).map(|exposure| exposure.value)
+            };
             let value=match exposed {
                 Judgment::Proven{value,..}=>value,
                 failure=>{
