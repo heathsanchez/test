@@ -1,4 +1,4 @@
-name: PSI AA independent normalization experiment
+name: PSI AA PR2 normalized exact-head verification
 
 on:
   push:
@@ -23,8 +23,8 @@ jobs:
         shell: bash
         run: |
           git clone --quiet https://github.com/metalogiclabs/aaronson-ambainis.git psi
-          git -C psi checkout --quiet --detach ad311dc3cdf506ea6cbb20471fd01a5f5ab282a9
-          test "$(git -C psi rev-parse HEAD)" = ad311dc3cdf506ea6cbb20471fd01a5f5ab282a9
+          git -C psi checkout --quiet --detach 85adf55b3e9913ae2a239e3ccc1ca9285867bac2
+          test "$(git -C psi rev-parse HEAD)" = 85adf55b3e9913ae2a239e3ccc1ca9285867bac2
           test "$(git -C psi hash-object audit/OriginalConjecture6.lean)" = 75e547164b27cef7a8c3d57265df5f801282acc2
           test "$(git -C psi hash-object Makefile)" = 889c286a1120b2061e10c8c63a19921a3048e6dd
           git -C psi status --short
