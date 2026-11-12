@@ -111,6 +111,20 @@ impl EnvFrame {
         }
     }
 
+    /// Identify the immutable lexical binding without cloning its value.
+    /// For diagnostics only: node identity is not semantic equality of terms.
+    #[cfg(feature="diagnostics")]
+    pub(crate) fn diagnostic_binding_node_id(&self, mut index: u64) -> Option<u64> {
+        let mut frame=self;
+        loop {
+            match frame.0.as_ref() {
+                EnvNode::Empty => return None,
+                EnvNode::Extend {id,..} if index == 0 => return Some(*id),
+                EnvNode::Extend {parent,..} => {index=index.checked_sub(1)?;frame=parent;}
+            }
+        }
+    }
+
     pub fn id(&self) -> u64 {
         match self.0.as_ref() {
             EnvNode::Empty => 0,
