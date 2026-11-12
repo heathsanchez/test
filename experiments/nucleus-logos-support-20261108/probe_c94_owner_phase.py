@@ -19,7 +19,8 @@ SOURCE_HASHES = {
 }
 
 
-def replay(executable: Path, source: bytes, observer: bool) -> subprocess.CompletedProcess:
+def replay(executable: Path, source: bytes, observer: bool,
+           observer_flag: str = "NUCLEUS_C94_PHASE_TRACE") -> subprocess.CompletedProcess:
     env = {k: v for k, v in os.environ.items() if not k.startswith("NUCLEUS_")}
     env.update({
         "NUCLEUS_EXPERIMENTAL_RELEVANCE": "1",
@@ -27,7 +28,7 @@ def replay(executable: Path, source: bytes, observer: bool) -> subprocess.Comple
         "METATRON_KERNEL_DIAGNOSTICS": "1",
     })
     if observer:
-        env["NUCLEUS_C94_PHASE_TRACE"] = "1"
+        env[observer_flag] = "1"
     return subprocess.run([str(executable)], input=source, capture_output=True,
                           timeout=120, env=env, check=False)
 
