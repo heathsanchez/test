@@ -412,6 +412,78 @@ impl Drop for C96MajorReceipt<'_> {
     }
 }
 
+// C97: read-only census of the *loop iterations* paid for while exposing
+// actual source majors. An expression ID and frame ID describe the precise
+// source closure; neither implies equivalence with another closure.
+#[cfg(feature="diagnostics")]
+#[derive(Default,Clone)]
+struct C97Steps {
+    major_work:usize,
+    loops:usize,
+    unique_head_pending:usize,
+    repeat_head_pending:usize,
+    kinds:HashMap<u8,usize>,
+    heads:HashMap<(u8,u64),usize>,
+    repeated_heads:HashMap<(u8,u64),usize>,
+    node_env:HashMap<(u64,u64),usize>,
+}
+#[cfg(feature="diagnostics")]
+struct C97MajorActivity<'a> {active:&'a Cell<usize>}
+#[cfg(feature="diagnostics")]
+impl Drop for C97MajorActivity<'_> {
+    fn drop(&mut self) {self.active.set(self.active.get().saturating_sub(1));}
+}
+#[cfg(feature="diagnostics")]
+struct C97Receipt<'m,'a> {
+    machine:&'m Machine<'a>,start:usize,baseline:C97Steps,
+}
+#[cfg(feature="diagnostics")]
+impl Drop for C97Receipt<'_,'_> {
+    fn drop(&mut self) {
+        use std::sync::atomic::{AtomicUsize,Ordering};
+        static PRINTED:AtomicUsize=AtomicUsize::new(0);
+        let current=self.machine.c97_steps.borrow();
+        let spent=self.start.saturating_sub(self.machine.exposure_fuel.get().unwrap_or(0));
+        let loops=current.loops.saturating_sub(self.baseline.loops);
+        if spent<8192 || loops==0 || PRINTED.fetch_add(1,Ordering::Relaxed)>=32 {return;}
+        let major_work=current.major_work.saturating_sub(self.baseline.major_work);
+        let unique_head_pending=current.unique_head_pending.saturating_sub(self.baseline.unique_head_pending);
+        let repeat_head_pending=current.repeat_head_pending.saturating_sub(self.baseline.repeat_head_pending);
+        let node_env:Vec<_>=current.node_env.iter().filter_map(|(key,count)|{
+            let delta=count.saturating_sub(*self.baseline.node_env.get(key).unwrap_or(&0));
+            (delta>0).then_some(delta)
+        }).collect();
+        let repeat_node_env=node_env.iter().map(|count|count.saturating_sub(1)).sum::<usize>();
+        // This projection intentionally omits pending arguments, universe
+        // substitutions and reduction mode: it is *not* a sound cache key.
+        eprintln!("NUCLEUS_C97_OWNER:start={}:spent={spent}:major_work={major_work}:loops={loops}:unique_node_env={}:repeat_node_env={repeat_node_env}:unique_head_pending={unique_head_pending}:repeat_head_pending={repeat_head_pending}",self.start,node_env.len());
+        let mut kinds:Vec<_>=current.kinds.iter().filter_map(|(kind,count)|{
+            let delta=count.saturating_sub(*self.baseline.kinds.get(kind).unwrap_or(&0));
+            (delta>0).then_some((*kind,delta))
+        }).collect();
+        kinds.sort_by_key(|(kind,_)|*kind);
+        for (kind,count) in kinds {
+            eprintln!("NUCLEUS_C97_KIND:start={}:kind={kind}:count={count}",self.start);
+        }
+        let mut heads:Vec<_>=current.heads.iter().filter_map(|(key,count)|{
+            let delta=count.saturating_sub(*self.baseline.heads.get(key).unwrap_or(&0));
+            (delta>0).then_some((*key,delta))
+        }).collect();
+        heads.sort_by(|a,b|b.1.cmp(&a.1).then(a.0.cmp(&b.0)));
+        for ((kind,source),count) in heads.into_iter().take(20) {
+            eprintln!("NUCLEUS_C97_HEAD:start={}:kind={kind}:source={source}:count={count}",self.start);
+        }
+        let mut repeated:Vec<_>=current.repeated_heads.iter().filter_map(|(key,count)|{
+            let delta=count.saturating_sub(*self.baseline.repeated_heads.get(key).unwrap_or(&0));
+            (delta>0).then_some((*key,delta))
+        }).collect();
+        repeated.sort_by(|a,b|b.1.cmp(&a.1).then(a.0.cmp(&b.0)));
+        for ((kind,source),count) in repeated.into_iter().take(20) {
+            eprintln!("NUCLEUS_C97_REPEAT_HEAD:start={}:kind={kind}:source={source}:count={count}",self.start);
+        }
+    }
+}
+
 #[derive(Clone,Copy,Eq,PartialEq)]
 enum CheckedReplayGoal { Completed, OneStep }
 
@@ -434,6 +506,12 @@ pub struct Machine<'a> {
     neutral_projection_depth: Cell<usize>,
     exposure_fuel: Cell<Option<usize>>,
     exposure_depth: Cell<usize>,
+    #[cfg(feature="diagnostics")]
+    c97_major_active:Cell<usize>,
+    #[cfg(feature="diagnostics")]
+    c97_steps:RefCell<C97Steps>,
+    #[cfg(feature="diagnostics")]
+    c97_head_pending_seen:RefCell<HashSet<(Closure,Vec<Closure>,Transparency,bool)>>,
     #[cfg(test)]
     replay_key_builds: Cell<usize>,
     exposure_cache: Option<ExposureCache>,
@@ -465,6 +543,12 @@ impl<'a> Machine<'a> {
             neutral_projection_depth: Cell::new(0),
             exposure_fuel: Cell::new(None),
             exposure_depth: Cell::new(0),
+            #[cfg(feature="diagnostics")]
+            c97_major_active:Cell::new(0),
+            #[cfg(feature="diagnostics")]
+            c97_steps:RefCell::new(C97Steps::default()),
+            #[cfg(feature="diagnostics")]
+            c97_head_pending_seen:RefCell::new(HashSet::new()),
             #[cfg(test)]
             replay_key_builds: Cell::new(0),
             exposure_cache: None,
@@ -1121,6 +1205,32 @@ impl<'a> Machine<'a> {
             let Some(expression) = self.expressions.get(closure.expr) else {
                 return Judgment::unknown("missing-expression-during-reduction");
             };
+            #[cfg(feature="diagnostics")]
+            if self.c97_major_active.get()!=0 {
+                let (kind,source)=match expression {
+                    Expr::BVar(_)=>(0,closure.expr.0),
+                    Expr::App{..}=>(1,closure.expr.0),
+                    Expr::Lam{..}=>(2,closure.expr.0),
+                    Expr::Let{..}=>(3,closure.expr.0),
+                    Expr::Const{name,..}=>(4,name.0),
+                    Expr::Proj{..}=>(5,closure.expr.0),
+                    Expr::NatLit(_)=>(6,closure.expr.0),
+                    _=>(7,closure.expr.0),
+                };
+                let mut steps=self.c97_steps.borrow_mut();
+                steps.loops+=1;
+                // This is the entire local evaluator head and pending spine,
+                // not a proof that the enclosing worklist state is identical.
+                if self.c97_head_pending_seen.borrow_mut().insert((
+                    closure.clone(),pending.clone(),transparency,preserve_stuck_projection,
+                )) {steps.unique_head_pending+=1;} else {
+                    steps.repeat_head_pending+=1;
+                    *steps.repeated_heads.entry((kind,source)).or_default()+=1;
+                }
+                *steps.kinds.entry(kind).or_default()+=1;
+                *steps.heads.entry((kind,source)).or_default()+=1;
+                *steps.node_env.entry((closure.expr.0,closure.env.id())).or_default()+=1;
+            }
             match expression {
                 Expr::BVar(index) => {
                     if let Some(bound) = closure.env.lookup(*index) {
@@ -2372,6 +2482,11 @@ impl<'a> Machine<'a> {
             counts:&c96_counts,fuel:&self.exposure_fuel,
             start:self.exposure_fuel.get().unwrap_or(0),
         });
+        #[cfg(feature="diagnostics")]
+        let _c97_receipt=std::env::var_os("NUCLEUS_C97_MAJOR_STEP_TRACE").map(|_|C97Receipt{
+            machine:self,start:self.exposure_fuel.get().unwrap_or(0),
+            baseline:self.c97_steps.borrow().clone(),
+        });
         let spend = || {
             let Some(fuel)=self.exposure_fuel.get() else { return false; };
             if fuel == 0 { return false; }
@@ -2529,6 +2644,11 @@ impl<'a> Machine<'a> {
                     #[cfg(feature="diagnostics")]
                     let _c95_major=_c95_receipt.as_ref().map(|_|C95StageCharge::new(
                         &self.exposure_fuel,&c95_counts.major));
+                    #[cfg(feature="diagnostics")]
+                    let _c97_activity=_c97_receipt.as_ref().map(|_|{
+                        self.c97_major_active.set(self.c97_major_active.get()+1);
+                        C97MajorActivity{active:&self.c97_major_active}
+                    });
                     if self.replay_projection_major {
                         self.expose_for_conversion(neutral.spine[required-1].clone(),
                             Transparency::Full,self.exposure_fuel.get().unwrap_or(0).min(512))
@@ -2544,6 +2664,11 @@ impl<'a> Machine<'a> {
                         Some(Value::Neutral(n)) if matches!(&n.head,
                         NeutralHead::Const{name,..}if self.recursor_reductions.contains_key(name)));
                     c96_counts.record(key,spent,major_result.is_unknown(),nested,chain_steps);
+                }
+                #[cfg(feature="diagnostics")]
+                if _c97_receipt.is_some() {
+                    let spent=c96_before.saturating_sub(self.exposure_fuel.get().unwrap_or(0));
+                    self.c97_steps.borrow_mut().major_work+=spent;
                 }
                 let Some(value)=major_result.proven_value() else {
                     #[cfg(feature="diagnostics")]
