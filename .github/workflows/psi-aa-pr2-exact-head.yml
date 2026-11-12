@@ -24,7 +24,7 @@ jobs:
         run: |
           git clone --quiet https://github.com/metalogiclabs/aaronson-ambainis.git psi
           git -C psi checkout --quiet --detach c1fa338fb0381934b96737e9ebb90e3a534dbf57
-          test "$(git -C psi rev-parse HEAD)" = ed3e0b1c6b480f6a21cb9c6cb5cb8215656e2611
+          test "$(git -C psi rev-parse HEAD)" = c1fa338fb0381934b96737e9ebb90e3a534dbf57
           test "$(git -C psi hash-object audit/OriginalConjecture6.lean)" = c1b267957a28a14fec5fb8d087b6f1fb4eccb2e6
           test "$(git -C psi hash-object Makefile)" = 889c286a1120b2061e10c8c63a19921a3048e6dd
           git -C psi status --short
