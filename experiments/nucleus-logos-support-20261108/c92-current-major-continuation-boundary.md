@@ -98,3 +98,31 @@ collapsing different captured environments or suspended phases into one proof
 value. The correct factorization question is whether two computation states
 are equivalent for **every downstream source rule**, not whether they share a
 syntax node or eventually display the same constructor in a diagnostic.
+
+## C93: four-argument recursor fast-path hypothesis rejected (local negative)
+
+A conversion branch in `src/convert.rs` tries an explicit constructor-versus-
+registered-recursor replay only when the neutral recursor has **five** spine
+arguments. We hypothesized that this literal condition was excluding source-
+qualified four-argument `Bool.rec` proofs under a limited conversion budget.
+
+We built a *synthetic, registered-source-rule* Rust fixture: zero-parameter
+two-constructor recursor, four arguments (`motive, false minor, true minor,
+actual major`), genuine lambda RHS for each minor, with true and false
+constructor controls. The requested protected relation was a true constructor
+against a recursor whose actual major is true, using its registered rule.
+Before changing the implementation, the Rust test at budget 128 **failed**:
+`UNKNOWN / unresolved-qualified-recursor-heads`. A candidate replaced the
+literal five with an arity derived from the registered recursor metadata.
+The test **still failed** at budget 128. Both the original and the candidate
+returned PROVEN for budgets **256, 384, 512, 768, 1024 and 2048**, using the
+already existing source-checked fallback. Thus the tested arity change had
+**zero observed impact** on this fixture, and its initial red test was not a
+valid red/green proof of the proposed fix. The experimental source and test
+edits were removed; the production checker remains exactly C91.
+
+This rejects the *tested low-budget four-argument fast-path idea*, not all
+possible four-argument Bool recursor completeness gaps. It was an artificial
+local fixture, **not** an original Arena case, a Lean-export validation or a
+403-case qualification. Do not promote the candidate or claim the original six
+closed. Next work remains the actual owner-charged source continuation in C92.
