@@ -1,0 +1,53 @@
+name: Nucleus C91 independently checked Arena strict gates
+on:
+  push:
+    branches: [research/nucleus-context-warrant-20261113]
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  strict-gates:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      CARGO_INCREMENTAL: '0'
+      CARGO_BUILD_JOBS: '2'
+      NUCLEUS_EXPERIMENTAL_RELEVANCE: '1'
+      NUCLEUS_EXPERIMENTAL_EXPECTED_LAMBDA: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Qualify native source and protected Rust regressions
+        run: |
+          set -euo pipefail
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+      - name: Verify unchanged native Arena inputs and strict default-flag verdicts
+        env:
+          NUCLEUS_EXPERIMENTAL_RELEVANCE: ''
+          NUCLEUS_EXPERIMENTAL_EXPECTED_LAMBDA: ''
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib, os, subprocess
+
+          fixtures = Path('metatron-kernel/tests/fixtures')
+          cases = [
+              ('rec-rule-proof-irrel.ndjson', 'e144c9d6a65cc1fbd26a0875788306d72e7690eae61d12d2967a3c4ea7c3287c', 1),
+              ('rec-rule-proof-irrel-nested.ndjson', '61cff0dc13e0287cd21541543b63fc47aa89bebf14d30f14766b4d74f5c77c8c', 1),
+              ('rec-type-proof-irrel.ndjson', 'a366791c3deb8c259c8b5f03d61c5016879c1177756372fbd2302539d7c8e581', 1),
+              ('arena-bugs-rec-rule-wrong-arg-6c2d8216.ndjson', 'cf3b02e4dc0c8a3adcf912f09e81a2e467c7cc667b5c5c545b50ad03760eccc9', 1),
+              ('open-term-cache-context.ndjson', 'ebacb89b4e72a34aed58f4479e864f562c80ae110e26e7b839563e828cd08f07', 1),
+              ('arena-perf-prop-struct-projections-6c2d8216.ndjson', '20f2f293fb8e9b75da413b62a0ccc04390ec72594ff0d10c510150784952e8c0', 0),
+          ]
+          checker = Path('metatron-kernel/target/release/metatron-kernel')
+          env = {k: v for k, v in os.environ.items() if not k.startswith('NUCLEUS_')}
+          for name, expected_sha, expected_verdict in cases:
+              source = (fixtures / name).read_bytes()
+              assert hashlib.sha256(source).hexdigest() == expected_sha, name
+              outcome = subprocess.run([str(checker)], input=source,
+                                       capture_output=True, timeout=60, env=env)
+              assert outcome.returncode == expected_verdict, (name, outcome.returncode, outcome.stderr[-300:])
+              print(name, 'ACCEPT' if expected_verdict == 0 else 'REJECT')
+          PY
