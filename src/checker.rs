@@ -1970,6 +1970,237 @@ fn recursor_rule_drops_required_minor_argument(
     })
 }
 
+/// A reduction rule for a nonrecursive, unindexed, one-field Bool record must
+/// pass the *bound constructor field* to its minor premise. In particular,
+/// `fun motive minor b => minor true` is not a permissible iota rule for
+/// `mk (b : Bool)`. This is a negative-only structural contradiction: it does
+/// not recognize a new inductive family or authorize any recursor reduction.
+fn recursor_rule_substitutes_bool_field(
+    export: &ResolvedExport,
+    block: &InductiveBlock,
+) -> bool {
+    let ([inductive], [constructor], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return false;
+    };
+    if inductive.num_params != 0
+        || inductive.num_indices != 0
+        || inductive.num_nested != 0
+        || inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+        || constructor.is_unsafe
+        || constructor.num_params != 0
+        || constructor.num_fields != 1
+        || constructor.inductive != inductive.name
+        || constructor.index != 0
+        || recursor.is_unsafe
+        || recursor.k
+        || recursor.num_params != 0
+        || recursor.num_indices != 0
+        || recursor.num_motives != 1
+        || recursor.num_minors != 1
+        || recursor.all != [inductive.name]
+        || !name_is_child_str(export, recursor.name, inductive.name, "rec")
+    {
+        return false;
+    }
+    let Some((fields, result)) = pi_spine(export, constructor.ty, 1) else {
+        return false;
+    };
+    let Some(Expr::Const { name: bool_name, levels }) = export.exprs.get(fields[0]) else {
+        return false;
+    };
+    if !levels.is_empty()
+        || !name_is_root_str(export, *bool_name, "Bool")
+        || !is_empty_constant(export, result, inductive.name)
+    {
+        return false;
+    }
+    let [rule] = recursor.rules.as_slice() else {
+        return false;
+    };
+    if rule.constructor != constructor.name || rule.num_fields != 1 {
+        return false;
+    }
+    let Some((_, rhs)) = lam_spine(export, rule.rhs, 3) else {
+        return false;
+    };
+    let (minor, arguments) = application_spine(export, rhs);
+    if !is_bvar(export, minor, 1) {
+        return false;
+    }
+    let [argument] = arguments.as_slice() else {
+        return false;
+    };
+    matches!(export.exprs.get(*argument), Some(Expr::Const { name, levels })
+        if levels.is_empty()
+            && (name_is_child_str(export, *name, *bool_name, "true")
+                || name_is_child_str(export, *name, *bool_name, "false")))
+}
+
+/// Extract an index-preserving, already *certified* Bool constructor applied
+/// to a concrete Boolean. A syntax-only lookup in the unverified export is
+/// insufficient: the installed projection obligation is our source warrant.
+fn certified_index_preserving_bool_witness(
+    export: &ResolvedExport,
+    environment: &Environment,
+    value: ExprId,
+) -> Option<(NameId, NameId, NameId)> {
+    let (head, args) = application_spine(export, value);
+    let [argument] = args.as_slice() else { return None; };
+    let Some(Expr::Const { name: constructor_name, levels }) = export.exprs.get(head) else {
+        return None;
+    };
+    if !levels.is_empty() || environment.get(*constructor_name).is_none() { return None; }
+    let Some(Expr::Const { name: bool_value_name, levels }) = export.exprs.get(*argument) else {
+        return None;
+    };
+    if !levels.is_empty() || environment.get(*bool_value_name).is_none() { return None; }
+    // The previously installed certificate narrows the owner search before
+    // reading export declarations; on large exports this avoids a full scan
+    // for ordinary constructor applications unrelated to indexed proofs.
+    let projection_specs = environment.shared_projection_specs();
+    let owner = projection_specs.iter().find_map(|(name, spec)|
+        (spec.constructor == *constructor_name
+            && spec.num_params == 0
+            && spec.field_types.len() == 1).then_some(*name))?;
+    let (inductive, constructor) = export.declarations.iter().find_map(|declaration| {
+        let Declaration::Inductive(block) = declaration else { return None; };
+        let ([inductive], [constructor]) = (block.types.as_slice(), block.constructors.as_slice()) else {
+            return None;
+        };
+        (inductive.name == owner && constructor.name == *constructor_name)
+            .then_some((inductive, constructor))
+    })?;
+    let spec = projection_specs.get(&inductive.name)?;
+    if spec.constructor != constructor.name
+        || spec.num_params != 0
+        || spec.field_types.len() != 1
+        || environment.get(inductive.name).is_none()
+        || inductive.num_params != 0
+        || inductive.num_indices != 1
+        || constructor.num_fields != 1
+    { return None; }
+    let (fields, result) = pi_spine(export, constructor.ty, 1)?;
+    let Some(Expr::Const { name: bool_type, levels }) = export.exprs.get(fields[0]) else {
+        return None;
+    };
+    let (result_head, result_args) = application_spine(export, result);
+    if !levels.is_empty() || !name_is_root_str(export, *bool_type, "Bool")
+        || !is_empty_constant(export, result_head, inductive.name)
+        || !matches!(result_args.as_slice(), [index] if is_bvar(export, *index, 0))
+        || !(name_is_child_str(export, *bool_value_name, *bool_type, "true")
+            || name_is_child_str(export, *bool_value_name, *bool_type, "false"))
+    { return None; }
+    Some((inductive.name, *bool_type, *bool_value_name))
+}
+
+/// Reject an explicitly ill-typed `@id T (mk b)` in a recursor rule or type,
+/// but only if `id` has its checked polymorphic identity signature and `mk b`
+/// belongs to a previously certified index-preserving Bool family. The two
+/// contradictions are: T is headed by a rigid bound motive (not the family),
+/// or T is that family at the *other* concrete Boolean index. Neither is
+/// rescued by proof irrelevance, which equates proofs only at the same type.
+fn recursor_contains_refuted_identity_argument(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+) -> bool {
+    let ([inductive], [recursor]) = (block.types.as_slice(), block.recursors.as_slice()) else {
+        return false;
+    };
+    // A bounded negative-only audit of nonrecursive, fieldless families.
+    // It does not admit any positive recursor authority or reinterpret binder
+    // contexts as equivalent merely because their proof bodies look alike.
+    if inductive.is_recursive
+        || inductive.num_nested != 0
+        || block.constructors.is_empty()
+        || block.constructors.len() > 2
+        || block.constructors.iter().any(|c| c.num_fields != 0)
+    { return false; }
+
+    fn refuted_at(
+        export: &ResolvedExport,
+        environment: &Environment,
+        expression: ExprId,
+    ) -> bool {
+        let (head, arguments) = application_spine(export, expression);
+        let [claimed_type, witness] = arguments.as_slice() else { return false; };
+        let Some(Expr::Const { name: identity, levels }) = export.exprs.get(head) else {
+            return false;
+        };
+        if !name_is_root_str(export, *identity, "id") { return false; }
+        let Some(identity_decl) = environment.get(*identity) else { return false; };
+        if levels.len() != identity_decl.level_params.len() || levels.len() != 1 {
+            return false;
+        }
+        let Some((domains, result)) = pi_spine(export, identity_decl.ty, 2) else {
+            return false;
+        };
+        if !matches!(export.exprs.get(domains[0]), Some(Expr::Sort(_)))
+            || !is_bvar(export, domains[1], 0)
+            || !is_bvar(export, result, 1)
+        { return false; }
+        let Some((family, bool_type, actual_index)) =
+            certified_index_preserving_bool_witness(export, environment, *witness)
+        else { return false; };
+        let (type_head, type_arguments) = application_spine(export, *claimed_type);
+        if matches!(export.exprs.get(type_head), Some(Expr::BVar(_))) {
+            return true; // Rigid source motive vs. the certified concrete family.
+        }
+        if !is_empty_constant(export, type_head, family) { return false; }
+        let [expected_index] = type_arguments.as_slice() else { return false; };
+        let Some(Expr::Const { name: expected_index_name, levels }) = export.exprs.get(*expected_index) else {
+            return false;
+        };
+        if !levels.is_empty() || environment.get(*expected_index_name).is_none() {
+            return false;
+        }
+        // The constructor's checked Boolean family is shared; distinct
+        // `.true`/`.false` constants of that type do not definitionally agree.
+        let actual_is_true = name_is_child_str(export, actual_index, bool_type, "true");
+        let expected_is_true = name_is_child_str(export, *expected_index_name, bool_type, "true");
+        let expected_is_false = name_is_child_str(export, *expected_index_name, bool_type, "false");
+        actual_index != *expected_index_name && ((actual_is_true && expected_is_false) || (!actual_is_true && expected_is_true))
+    }
+
+    fn walk(
+        export: &ResolvedExport,
+        environment: &Environment,
+        expression: ExprId,
+        seen: &mut HashSet<ExprId>,
+        remaining: &mut usize,
+    ) -> bool {
+        if *remaining == 0 || !seen.insert(expression) { return false; }
+        *remaining -= 1;
+        if refuted_at(export, environment, expression) { return true; }
+        match export.exprs.get(expression) {
+            Some(Expr::App { fun, arg }) =>
+                walk(export, environment, *fun, seen, remaining)
+                    || walk(export, environment, *arg, seen, remaining),
+            Some(Expr::Lam { domain, body } | Expr::Pi { domain, body }) =>
+                walk(export, environment, *domain, seen, remaining)
+                    || walk(export, environment, *body, seen, remaining),
+            Some(Expr::Let { ty, value, body }) =>
+                walk(export, environment, *ty, seen, remaining)
+                    || walk(export, environment, *value, seen, remaining)
+                    || walk(export, environment, *body, seen, remaining),
+            Some(Expr::Proj { structure, .. }) => walk(export, environment, *structure, seen, remaining),
+            _ => false,
+        }
+    }
+
+    let mut remaining = 8_192;
+    let mut seen = HashSet::new();
+    walk(export, environment, recursor.ty, &mut seen, &mut remaining)
+        || recursor.rules.iter().any(|rule|
+            walk(export, environment, rule.rhs, &mut seen, &mut remaining))
+}
+
 fn expression_head_uses_indexed_k_recursor(
     export: &ResolvedExport,
     mut expression: ExprId,
@@ -2333,6 +2564,168 @@ fn fixed_bool_indexed_recursor_rule(
     }
 }
 
+/// Positive-only admission for `I : Bool -> Prop` with exactly one constructor
+/// `mk (b : Bool) : I b`. The field is recoverable from the index, which
+/// justifies large elimination; a generic indexed proposition does not have
+/// that permission. All four recursor telescope positions and the exported
+/// iota rule are compared against the independently derived binder positions.
+fn check_index_preserving_bool_proposition(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    let ([inductive], [constructor], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return Err(Verdict::Unknown);
+    };
+    if inductive.num_params != 0
+        || inductive.num_indices != 1
+        || inductive.num_nested != 0
+        || inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+        || !inductive.level_params.is_empty()
+        || inductive.all != [inductive.name]
+        || inductive.constructors != [constructor.name]
+        || constructor.index != 0
+        || constructor.inductive != inductive.name
+        || constructor.num_params != 0
+        || constructor.num_fields != 1
+        || constructor.is_unsafe
+        || !constructor.level_params.is_empty()
+        || recursor.is_unsafe
+        || recursor.k
+        || recursor.num_params != 0
+        || recursor.num_indices != 1
+        || recursor.num_motives != 1
+        || recursor.num_minors != 1
+        || recursor.all != [inductive.name]
+        || recursor.rules.len() != 1
+        || recursor.rules[0].constructor != constructor.name
+        || recursor.rules[0].num_fields != 1
+        || recursor.level_params.len() != 1
+        || !name_is_child_str(export, constructor.name, inductive.name, "mk")
+        || !name_is_child_str(export, recursor.name, inductive.name, "rec")
+        || !inductive_arity_metadata_is_well_formed(export, inductive)
+        || !recursor_metadata_admissible(
+            export, inductive, &block.constructors, recursor, false, true,
+        )
+    {
+        return Err(Verdict::Unknown);
+    }
+
+    let Some((index_domains, inductive_sort)) = pi_spine(export, inductive.ty, 1) else {
+        return Err(Verdict::Unknown);
+    };
+    let [bool_index_type] = index_domains.as_slice() else {
+        return Err(Verdict::Unknown);
+    };
+    if !is_bool_constant(export, *bool_index_type) || !is_prop_sort(export, inductive_sort) {
+        return Err(Verdict::Unknown);
+    }
+    let Some((constructor_fields, constructed)) = pi_spine(export, constructor.ty, 1) else {
+        return Err(Verdict::Unknown);
+    };
+    let (constructed_head, constructed_args) = application_spine(export, constructed);
+    if constructor_fields != index_domains
+        || !is_empty_constant(export, constructed_head, inductive.name)
+        || !matches!(constructed_args.as_slice(), [index] if is_bvar(export, *index, 0))
+    {
+        return Err(Verdict::Unknown);
+    }
+
+    let Some((rec_domains, rec_result)) = pi_spine(export, recursor.ty, 4) else {
+        return Err(Verdict::Unknown);
+    };
+    let [motive, minor, index, target] = rec_domains.as_slice() else {
+        return Err(Verdict::Unknown);
+    };
+    let Some((motive_domains, motive_sort)) = pi_spine(export, *motive, 2) else {
+        return Err(Verdict::Unknown);
+    };
+    let (motive_target_head, motive_target_args) = application_spine(export, motive_domains[1]);
+    if motive_domains[0] != *bool_index_type
+        || !is_empty_constant(export, motive_target_head, inductive.name)
+        || !matches!(motive_target_args.as_slice(), [arg] if is_bvar(export, *arg, 0))
+        || !is_sort_parameter(export, motive_sort, recursor.level_params[0])
+    {
+        return Err(Verdict::Unknown);
+    }
+    let Some((minor_fields, minor_result)) = pi_spine(export, *minor, 1) else {
+        return Err(Verdict::Unknown);
+    };
+    let (minor_head, minor_args) = application_spine(export, minor_result);
+    let [minor_index, minor_constructed] = minor_args.as_slice() else {
+        return Err(Verdict::Unknown);
+    };
+    let (minor_ctor, minor_ctor_args) = application_spine(export, *minor_constructed);
+    if minor_fields[0] != *bool_index_type
+        || !is_bvar(export, minor_head, 1)
+        || !is_bvar(export, *minor_index, 0)
+        || !is_empty_constant(export, minor_ctor, constructor.name)
+        || !matches!(minor_ctor_args.as_slice(), [field] if is_bvar(export, *field, 0))
+        || *index != *bool_index_type
+    {
+        return Err(Verdict::Unknown);
+    }
+    let (target_head, target_args) = application_spine(export, *target);
+    let (result_head, result_args) = application_spine(export, rec_result);
+    if !is_empty_constant(export, target_head, inductive.name)
+        || !matches!(target_args.as_slice(), [arg] if is_bvar(export, *arg, 0))
+        || !is_bvar(export, result_head, 3)
+        || !matches!(result_args.as_slice(), [arg, target]
+            if is_bvar(export, *arg, 1) && is_bvar(export, *target, 0))
+    {
+        return Err(Verdict::Unknown);
+    }
+    let Some((_, rule_body)) = lam_spine(export, recursor.rules[0].rhs, 3) else {
+        return Err(Verdict::Unknown);
+    };
+    if !is_bvar_application(export, rule_body, 1, 0) {
+        return Err(Verdict::Unknown);
+    }
+
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    derivation.promote_all(
+        export,
+        [
+            derived_type(inductive.name, inductive.ty),
+            derived_constructor(constructor),
+            derived_recursor(recursor),
+        ],
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    let environment = derivation.finish();
+    let rule_checker = TypeChecker::with_level_substitution(
+        &export.exprs,
+        &export.levels,
+        &environment,
+        parameter_substitution(&recursor.level_params),
+    )
+    .with_delta_policy(delta_policy);
+    if !matches!(rule_checker.infer(recursor.rules[0].rhs, limits.judgment_steps), Judgment::Proven { .. }) {
+        return Err(Verdict::Unknown);
+    }
+    let environment = environment
+        .install_projection_spec(
+            inductive.name,
+            ProjectionSpec {
+                constructor: constructor.name,
+                num_params: 0,
+                field_types: constructor_fields.iter().copied().map(ProjectionFieldType::Derived).collect(),
+                eta_expandable: false,
+            },
+        )
+        .map_err(|_| Verdict::Reject)?;
+    install_certified_recursor_reduction(environment, &block.constructors, recursor)
+}
+
 fn check_exact_fixed_bool_indexed(
     export: &ResolvedExport,
     environment: &Environment,
@@ -2525,6 +2918,8 @@ fn check_inductive(
     }
 
     if recursor_rule_drops_required_minor_argument(export, block)
+        || recursor_rule_substitutes_bool_field(export, block)
+        || recursor_contains_refuted_identity_argument(export, environment, block)
         || proof_dependent_result_sort_is_definitely_malformed(export, block)
     {
         return Err(Verdict::Reject);
@@ -2555,6 +2950,18 @@ fn check_inductive(
     // authority; well-formed but unsupported recursors remain UNKNOWN.
     if owned_single_type_recursor_metadata_is_definitely_malformed(export, block) {
         return Err(Verdict::Reject);
+    }
+
+    if let ([inductive], [constructor]) = (block.types.as_slice(), block.constructors.as_slice())
+        && inductive.num_params == 0
+        && inductive.num_indices == 1
+        && constructor.num_fields == 1
+        && pi_spine(export, inductive.ty, 1).is_some_and(|(domains, result)|
+            is_bool_constant(export, domains[0]) && is_prop_sort(export, result))
+    {
+        return check_index_preserving_bool_proposition(
+            export, environment, block, limits, delta_policy,
+        );
     }
 
     // G16-001 is deliberately routed by its earned name before constructor
@@ -3582,7 +3989,11 @@ fn generic_prop_singleton_large_elim_candidate(
         return false;
     };
 
-    if inductive.num_params > 64 || constructor.num_fields > 64
+    // An Arena `Wide` proposition has 200 proof fields. The bound is a
+    // resource guard, not a soundness premise: admission below still checks
+    // each field as a proposition, the source-derived recursor telescope,
+    // the exact iota rule, and the inferred exported rule term.
+    if inductive.num_params > 64 || constructor.num_fields > 256
         || inductive.num_indices != 0 || inductive.num_nested != 0
         || inductive.is_recursive || inductive.is_reflexive || inductive.is_unsafe
         || constructor.is_unsafe || recursor.is_unsafe
