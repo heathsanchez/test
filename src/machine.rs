@@ -359,6 +359,59 @@ impl Drop for C95StageReceipt<'_> {
     }
 }
 
+// Source-capture histogram: an ExprId is a label for diagnosis, not an
+// equivalence proof. Distinct EnvFrames are never merged by this observer.
+#[cfg(feature="diagnostics")]
+#[derive(Default)]
+struct C96MajorGroup {
+    count:usize,charged:usize,unknown:usize,nested:usize,
+    chain_steps:usize,chain_max:usize,chain_capped:usize,
+}
+#[cfg(feature="diagnostics")]
+#[derive(Default)]
+struct C96MajorCounts {
+    demands:Cell<usize>, charged:Cell<usize>,
+    groups:RefCell<HashMap<(u64,u64,u64),C96MajorGroup>>,
+}
+#[cfg(feature="diagnostics")]
+impl C96MajorCounts {
+    fn record(&self,key:(u64,u64,u64),work:usize,unknown:bool,nested:bool,chain_steps:usize) {
+        self.demands.set(self.demands.get()+1);
+        self.charged.set(self.charged.get().saturating_add(work));
+        let mut groups=self.groups.borrow_mut();
+        let group=groups.entry(key).or_default();
+        group.count+=1;group.charged=group.charged.saturating_add(work);
+        group.unknown+=usize::from(unknown);group.nested+=usize::from(nested);
+        group.chain_steps=group.chain_steps.saturating_add(chain_steps);
+        group.chain_max=group.chain_max.max(chain_steps);
+        group.chain_capped+=usize::from(chain_steps==4096);
+    }
+}
+#[cfg(feature="diagnostics")]
+struct C96MajorReceipt<'a> {
+    counts:&'a C96MajorCounts,fuel:&'a Cell<Option<usize>>,
+    start:usize,
+}
+#[cfg(feature="diagnostics")]
+impl Drop for C96MajorReceipt<'_> {
+    fn drop(&mut self) {
+        use std::sync::atomic::{AtomicUsize,Ordering};
+        static PRINTED:AtomicUsize=AtomicUsize::new(0);
+        let spent=self.start.saturating_sub(self.fuel.get().unwrap_or(0));
+        if spent<8192 || self.counts.demands.get()<10
+            || PRINTED.fetch_add(1,Ordering::Relaxed)>=32 {return;}
+        let major_work=self.counts.charged.get();
+        eprintln!("NUCLEUS_C96_OWNER:start={}:spent={spent}:major_work={major_work}:demands={}",self.start,self.counts.demands.get());
+        let mut groups:Vec<_>=self.counts.groups.borrow().iter()
+            .map(|(key,value)|(*key,value.count,value.charged,value.unknown,value.nested,
+                value.chain_steps,value.chain_max,value.chain_capped)).collect();
+        groups.sort_by(|a,b|b.2.cmp(&a.2));
+        for ((recursor,kind,bound_expr),count,charged,unknown,nested,chain_steps,chain_max,chain_capped) in groups.into_iter().take(16) {
+            eprintln!("NUCLEUS_C96_MAJOR:start={}:recursor={recursor}:kind={kind}:bound_expr={bound_expr}:count={count}:charged={charged}:unknown={unknown}:nested={nested}:chain_steps={chain_steps}:chain_max={chain_max}:chain_capped={chain_capped}",self.start);
+        }
+    }
+}
+
 #[derive(Clone,Copy,Eq,PartialEq)]
 enum CheckedReplayGoal { Completed, OneStep }
 
@@ -2312,6 +2365,13 @@ impl<'a> Machine<'a> {
             key_start:REPLAY_KEY_WORK.load(std::sync::atomic::Ordering::Relaxed),
             head:&neutral.head,
         });
+        #[cfg(feature="diagnostics")]
+        let c96_counts=C96MajorCounts::default();
+        #[cfg(feature="diagnostics")]
+        let _c96_receipt=std::env::var_os("NUCLEUS_C96_MAJOR_TRACE").map(|_|C96MajorReceipt{
+            counts:&c96_counts,fuel:&self.exposure_fuel,
+            start:self.exposure_fuel.get().unwrap_or(0),
+        });
         let spend = || {
             let Some(fuel)=self.exposure_fuel.get() else { return false; };
             if fuel == 0 { return false; }
@@ -2436,6 +2496,35 @@ impl<'a> Machine<'a> {
                 if _c94_receipt.is_some(){c94_counts.entered.set(c94_counts.entered.get()+1);}
                 entered.entry(key.digest).or_default().push(key.clone());
                 parents.push(Continuation::Finish(key));
+                #[cfg(feature="diagnostics")]
+                let c96_key=if _c96_receipt.is_some() {
+                    let major=&neutral.spine[required-1];
+                    let (kind,bound_expr)=match self.expressions.get(major.expr) {
+                        Some(Expr::BVar(index))=>match major.env.lookup_binding_ref(*index) {
+                            Some(EnvBinding::Closure(bound))=>(0,bound.expr.0),
+                            Some(EnvBinding::Neutral(Neutral{head:NeutralHead::Const{name,..},..}))=>(1,name.0),
+                            Some(EnvBinding::Neutral(_))=>(2,0),
+                            Some(EnvBinding::Free(free))=>(3,free.0),
+                            Some(EnvBinding::NatLit(_))=>(4,0),
+                            None=>(5,major.expr.0),
+                        },
+                        _=>(6,major.expr.0),
+                    };
+                    // Read-only source BVar-to-closure walk: the closure chain
+                    // may be shared but has no inferred semantic equality.
+                    // Hard cap keeps an adversarial cyclic source bounded.
+                    let mut link=major;
+                    let mut chain_steps=0;
+                    while chain_steps<4096 {
+                        let Some(Expr::BVar(index))=self.expressions.get(link.expr) else {break};
+                        let Some(EnvBinding::Closure(next))=link.env.lookup_binding_ref(*index) else {break};
+                        link=next;
+                        chain_steps+=1;
+                    }
+                    Some(((name.0,kind,bound_expr),chain_steps))
+                }else{None};
+                #[cfg(feature="diagnostics")]
+                let c96_before=self.exposure_fuel.get().unwrap_or(0);
                 let major_result={
                     #[cfg(feature="diagnostics")]
                     let _c95_major=_c95_receipt.as_ref().map(|_|C95StageCharge::new(
@@ -2448,6 +2537,14 @@ impl<'a> Machine<'a> {
                             Transparency::Full,self.exposure_fuel.get().unwrap_or(0).min(512))
                     }
                 };
+                #[cfg(feature="diagnostics")]
+                if let Some((key,chain_steps))=c96_key {
+                    let spent=c96_before.saturating_sub(self.exposure_fuel.get().unwrap_or(0));
+                    let nested=matches!(major_result.proven_value(),
+                        Some(Value::Neutral(n)) if matches!(&n.head,
+                        NeutralHead::Const{name,..}if self.recursor_reductions.contains_key(name)));
+                    c96_counts.record(key,spent,major_result.is_unknown(),nested,chain_steps);
+                }
                 let Some(value)=major_result.proven_value() else {
                     #[cfg(feature="diagnostics")]
                     if std::env::var_os("NUCLEUS_TRACE_NESTED_RECURSOR_IOTA_FAILURE").is_some() {
