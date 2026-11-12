@@ -1,0 +1,22 @@
+name: PSI AA PR2 audit coverage
+on:
+  push:
+    branches:
+      - audit/psi-aa-normalization-20261113
+permissions:
+  contents: read
+jobs:
+  verify-coverage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact source with audit fix
+        run: |
+          git clone --quiet https://github.com/metalogiclabs/aaronson-ambainis.git psi
+          git -C psi checkout --quiet --detach 38caf363eae7e2f8b722bd2fe5f862ce1e244490
+          test "$(git -C psi rev-parse HEAD)" = 38caf363eae7e2f8b722bd2fe5f862ce1e244490
+      - name: Check coverage and absence of forbidden constructs
+        working-directory: psi
+        run: |
+          make audit
+          python3 -c 'import json; r=json.load(open("notes/source-audit.json")); assert r["files_scanned"] == 87, r; assert not (r["findings"] or r["parse_errors"] or r["hole_errors"]), r; print("PR2 independent audit file included; 87 files, zero findings")'
