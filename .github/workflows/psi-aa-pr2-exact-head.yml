@@ -1,15 +1,15 @@
-name: PSI AA PR 2 exact-head verification (with coordinate witness)
+name: PSI AA independent normalization experiment
 
 on:
   push:
     branches:
-      - audit/psi-aa-pr2-head-20261109
+      - audit/psi-aa-normalization-20261113
 
 permissions:
   contents: read
 
 concurrency:
-  group: psi-aa-pr2-exact-head
+  group: psi-aa-normalization
   cancel-in-progress: true
 
 jobs:
@@ -23,10 +23,10 @@ jobs:
         shell: bash
         run: |
           git clone --quiet https://github.com/metalogiclabs/aaronson-ambainis.git psi
-          git -C psi checkout --quiet --detach ed3e0b1c6b480f6a21cb9c6cb5cb8215656e2611
+          git -C psi checkout --quiet --detach c1fa338fb0381934b96737e9ebb90e3a534dbf57
           test "$(git -C psi rev-parse HEAD)" = ed3e0b1c6b480f6a21cb9c6cb5cb8215656e2611
-          test "$(git -C psi hash-object audit/OriginalConjecture6.lean)" = b84925bbe3b0fbfe8f056c6c858f388d83197828
-          test "$(git -C psi hash-object Makefile)" = 61ce78a3bd5a52664fb752feeb392422cde161db
+          test "$(git -C psi hash-object audit/OriginalConjecture6.lean)" = c1b267957a28a14fec5fb8d087b6f1fb4eccb2e6
+          test "$(git -C psi hash-object Makefile)" = 889c286a1120b2061e10c8c63a19921a3048e6dd
           git -C psi status --short
           python3 psi/scripts/source_digest.py psi AaronsonAmbainis
 
@@ -55,7 +55,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: psi-aa-pr2-exact-head-reports
+          name: psi-aa-normalization-reports
           if-no-files-found: warn
           path: |
             psi/axiom-report.txt
