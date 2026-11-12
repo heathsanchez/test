@@ -265,6 +265,47 @@ impl Drop for ReplayWorkTrace<'_>{fn drop(&mut self){
     }
 }}
 
+// Read-only, owner-local phase receipts. This observer never creates a source
+// value, a replay key or a type judgment; in particular a pending continuation
+// is not a cacheable completed result.
+#[cfg(feature="diagnostics")]
+#[derive(Default)]
+struct C94PhaseCounts {
+    entered: Cell<usize>, resumed: Cell<usize>, completed: Cell<usize>,
+    local_hits: Cell<usize>, global_hits: Cell<usize>, max_depth: Cell<usize>,
+    last_major_expr: Cell<u64>, last_major_frame: Cell<u64>, last_head: Cell<u64>,
+    bvar_majors: Cell<usize>, bvar_repeats: Cell<usize>,
+    bvar_bindings: RefCell<HashSet<(ExprId,u64)>>,
+}
+#[cfg(feature="diagnostics")]
+struct C94PhaseReceipt<'a> {
+    counts: &'a C94PhaseCounts, fuel: &'a Cell<Option<usize>>,
+    start: usize, key_start: usize, head: &'a NeutralHead,
+}
+#[cfg(feature="diagnostics")]
+impl Drop for C94PhaseReceipt<'_> {
+    fn drop(&mut self) {
+        use std::sync::atomic::{AtomicUsize,Ordering};
+        static PRINTED: AtomicUsize = AtomicUsize::new(0);
+        // Restrict receipts to consequential owner calls, not tiny speculative
+        // side probes. No decision depends on this output filter.
+        if self.start < 8192 || self.counts.entered.get() == 0
+            || PRINTED.fetch_add(1,Ordering::Relaxed) >= 32 { return; }
+        let remaining = self.fuel.get().unwrap_or(0);
+        let key_work=REPLAY_KEY_WORK.load(Ordering::Relaxed).saturating_sub(self.key_start);
+        eprintln!(
+            "NUCLEUS_C94_PHASE:head={:?}:start={}:remaining={remaining}:key_work={key_work}:entered={}:resumed={}:completed={}:local_hits={}:global_hits={}:max_depth={}:bvar_majors={}:bvar_repeats={}:last_head={}:last_major_expr={}:last_major_frame={}",
+            self.head, self.start, self.counts.entered.get(),
+            self.counts.resumed.get(), self.counts.completed.get(),
+            self.counts.local_hits.get(), self.counts.global_hits.get(),
+            self.counts.max_depth.get(),
+            self.counts.bvar_majors.get(), self.counts.bvar_repeats.get(),
+            self.counts.last_head.get(),
+            self.counts.last_major_expr.get(), self.counts.last_major_frame.get(),
+        );
+    }
+}
+
 #[derive(Clone,Copy,Eq,PartialEq)]
 enum CheckedReplayGoal { Completed, OneStep }
 
@@ -814,7 +855,8 @@ impl<'a> Machine<'a> {
         let before=self.exposure_fuel.get();
         let result=self.reserve_replay_key_inner(levels,spine,certificate);
         #[cfg(feature="diagnostics")]
-        if std::env::var_os("NUCLEUS_TRACE_REPLAY_CACHE").is_some() {
+        if std::env::var_os("NUCLEUS_TRACE_REPLAY_CACHE").is_some()
+            || std::env::var_os("NUCLEUS_C94_PHASE_TRACE").is_some() {
             let used=before.unwrap_or(0).saturating_sub(self.exposure_fuel.get().unwrap_or(0));
             REPLAY_KEY_WORK.fetch_add(used,std::sync::atomic::Ordering::Relaxed);
         }
@@ -2198,6 +2240,15 @@ impl<'a> Machine<'a> {
             fuel:&self.exposure_fuel,start:self.exposure_fuel.get().unwrap_or(0),
             key_start:REPLAY_KEY_WORK.load(std::sync::atomic::Ordering::Relaxed),head:&neutral.head,
         });
+        #[cfg(feature="diagnostics")]
+        let c94_counts=C94PhaseCounts::default();
+        #[cfg(feature="diagnostics")]
+        let _c94_receipt=std::env::var_os("NUCLEUS_C94_PHASE_TRACE").map(|_|C94PhaseReceipt{
+            counts:&c94_counts,fuel:&self.exposure_fuel,
+            start:self.exposure_fuel.get().unwrap_or(0),
+            key_start:REPLAY_KEY_WORK.load(std::sync::atomic::Ordering::Relaxed),
+            head:&neutral.head,
+        });
         let spend = || {
             let Some(fuel)=self.exposure_fuel.get() else { return false; };
             if fuel == 0 { return false; }
@@ -2223,11 +2274,15 @@ impl<'a> Machine<'a> {
                 while let Some(continuation)=parents.pop() {
                     match continuation {
                         Continuation::Finish(key) => {
+                            #[cfg(feature="diagnostics")]
+                            if _c94_receipt.is_some(){c94_counts.completed.set(c94_counts.completed.get()+1);}
                             active.remove(&ReplayKey::identity(&key));
                             self.cache_completed_replay(key.clone(),&value);
                             if self.reserve_replay_value_clone(&value) {resolved.insert(ReplayKey::identity(&key),value.clone());}
                         }
                         Continuation::Major(parent,requested) => {
+                            #[cfg(feature="diagnostics")]
+                            if _c94_receipt.is_some(){c94_counts.resumed.set(c94_counts.resumed.get()+1);}
                             current=parent;
                             current_is_requested=requested;
                             established_major=Some(value);
@@ -2240,6 +2295,8 @@ impl<'a> Machine<'a> {
         }
         'evaluate: loop {
             if !spend() { return Judgment::unknown("nested-recursor-iota-budget"); }
+            #[cfg(feature="diagnostics")]
+            if _c94_receipt.is_some(){c94_counts.max_depth.set(c94_counts.max_depth.get().max(parents.len()));}
             let neutral=&current;
             #[cfg(feature="diagnostics")]
             let depth=parents.len();
@@ -2259,6 +2316,23 @@ impl<'a> Machine<'a> {
             if neutral.spine.len() < required {
                 return Judgment::unknown("nested-recursor-iota-arity");
             }
+            #[cfg(feature="diagnostics")]
+            if _c94_receipt.is_some() {
+                let major=&neutral.spine[required-1];
+                c94_counts.last_head.set(name.0);
+                c94_counts.last_major_expr.set(major.expr.0);
+                c94_counts.last_major_frame.set(major.env.id());
+                // A resumed parent already owns its established major; it is
+                // not a second demand for the source binding.
+                if established_major.is_none()
+                    && let Some(Expr::BVar(index))=self.expressions.get(major.expr)
+                    && let Some(binding)=major.env.diagnostic_binding_node_id(*index) {
+                    c94_counts.bvar_majors.set(c94_counts.bvar_majors.get()+1);
+                    if !c94_counts.bvar_bindings.borrow_mut().insert((major.expr,binding)) {
+                        c94_counts.bvar_repeats.set(c94_counts.bvar_repeats.get()+1);
+                    }
+                }
+            }
             let mut major_value=if let Some(value)=established_major.take() { value } else {
                 let Some(candidate)=self.completed_replay_key(*name,levels,&neutral.spine) else {return Judgment::unknown("nested-replay-key-work");};
                 let mut key=candidate;
@@ -2269,11 +2343,17 @@ impl<'a> Machine<'a> {
                     }
                 }
                 let identity=ReplayKey::identity(&key);
-                if let Some(value)=resolved.remove(&identity) {finish!('evaluate,value);}
+                if let Some(value)=resolved.remove(&identity) {
+                    #[cfg(feature="diagnostics")]
+                    if _c94_receipt.is_some(){c94_counts.local_hits.set(c94_counts.local_hits.get()+1);}
+                    finish!('evaluate,value);
+                }
                 // Interface checks above precede every lookup. A completed
                 // value is actual source RHS, never a desired constructor.
                 match self.lookup_completed_replay(&key) {
                     Judgment::Proven{value:Some(value),..}=>{
+                        #[cfg(feature="diagnostics")]
+                        if _c94_receipt.is_some(){c94_counts.global_hits.set(c94_counts.global_hits.get()+1);}
                         #[cfg(feature="diagnostics")]
                         if std::env::var_os("NUCLEUS_TRACE_REPLAY_CACHE").is_some() {
                             use std::sync::atomic::{AtomicUsize,Ordering};
@@ -2286,6 +2366,8 @@ impl<'a> Machine<'a> {
                     failure=>return failure.map(|_|unreachable!()),
                 }
                 if !active.insert(identity) {return Judgment::unknown("nested-recursor-iota-cycle");}
+                #[cfg(feature="diagnostics")]
+                if _c94_receipt.is_some(){c94_counts.entered.set(c94_counts.entered.get()+1);}
                 entered.entry(key.digest).or_default().push(key.clone());
                 parents.push(Continuation::Finish(key));
                 let major_result=if self.replay_projection_major {
