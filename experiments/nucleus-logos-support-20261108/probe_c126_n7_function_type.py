@@ -244,7 +244,11 @@ def main():
         if args.conversion_trace:
             stages = parse_conversion_stages(observed.stderr, exact_edges)
             assert any(s["stage"] == "infer" for s in stages), ("inference receipt absent", budget)
-            assert any(s["stage"] == "convert" for s in stages), ("conversion receipt absent", budget)
+            # A type-inference UNKNOWN must *not* invent a conversion call.
+            # Conversion is attempted only on a PROVEN inferred type.
+            if any(s["stage"] == "infer" and s["state"] == "PROVEN" for s in stages):
+                assert any(s["stage"] == "convert" for s in stages), (
+                    "proven inference without expected conversion receipt", budget)
             row["source_arg_conversion_stages"] = stages[:24]
         observations.append(row)
     print(json.dumps({"status": "CANDIDATE_C105_SURROGATE_NATIVE_REPLAY",
