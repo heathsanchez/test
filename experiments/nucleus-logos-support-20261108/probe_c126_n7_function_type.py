@@ -74,12 +74,16 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("binary", type=Path)
     parser.add_argument("source", type=Path)
+    parser.add_argument("--budgets", nargs="+", type=int, default=BUDGETS,
+                        help="source-native diagnostic budget ladder; original C126 pair is the default")
     args = parser.parse_args()
     source = args.source.read_bytes()
     validate_source(source)
     binary = args.binary.resolve()
     observations = []
-    for budget in BUDGETS:
+    assert all(budget > 0 for budget in args.budgets), "budgets must be positive"
+    assert len(args.budgets) == len(set(args.budgets)), "repeated budgets obscure the ladder"
+    for budget in args.budgets:
         silent = run(binary, source, budget, False)
         observed = run(binary, source, budget, True)
         assert (silent.returncode, silent.stdout) == (observed.returncode, observed.stdout), (
