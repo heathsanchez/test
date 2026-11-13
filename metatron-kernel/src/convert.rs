@@ -1912,8 +1912,28 @@ fn compare_values(
                                 }
                                 let probe = available / 2;
                                 available -= probe;
-                                if let Judgment::Proven { value, .. } = checker.machine()
-                                    .qualified_one_step_recursor_result(candidate, probe)
+                                let step = checker.machine()
+                                    .qualified_one_step_recursor_result(candidate, probe);
+                                #[cfg(feature="diagnostics")]
+                                if std::env::var_os("NUCLEUS_C135_RECURSOR_TRIAL").is_some()
+                                    && C134_CAPTURED_CONVERSION_OWNER.with(|cell|cell.get()>0)
+                                    && matches!(&candidate.head, NeutralHead::Const { name, .. } if name.0==147)
+                                    && candidate.spine.len()==5
+                                {
+                                    let outcome=match &step {
+                                        Judgment::Proven { .. }=>"PROVEN",
+                                        Judgment::Unknown { .. }=>"UNKNOWN",
+                                        Judgment::Refuted { .. }=>"REFUTED",
+                                    };
+                                    let obstruction=match &step {
+                                        Judgment::Unknown { residual }=>format!("{residual:?}"),
+                                        Judgment::Refuted { obstruction }=>format!("{obstruction:?}"),
+                                        _=>String::new(),
+                                    };
+                                    eprintln!("NUCLEUS_C135_RECURSOR_TRIAL:side={}:probe={probe}:remaining_after_reservation={available}:outcome={outcome}:obstruction={obstruction}",
+                                        if is_left {"left"} else {"right"});
+                                }
+                                if let Judgment::Proven { value, .. } = step
                                     && !matches!(&value, Value::Neutral(n) if n == candidate)
                                 {
                                     reduced = Some((is_left, value));
