@@ -18,6 +18,7 @@ PREFIX = "NUCLEUS_C126_N7_HEAD:"
 BUDGETS = (65_536, 14_155_776)
 KEYS = {"application", "function", "argument", "before", "after", "context",
         "pi_head", "type_proven"}
+EDGE_PREFIX = "NUCLEUS_C129_APP_EDGE:"
 
 
 def parse_traces(stderr: bytes):
@@ -40,6 +41,32 @@ def parse_traces(stderr: bytes):
                      "pi_head": fields["pi_head"] == "true",
                      "type_proven": fields["type_proven"] == "true",
                      "type_preview": value[:800]})
+    return rows
+
+
+def source_app_edges(source: bytes):
+    """The exact exported AST, not guessed function-spine associations."""
+    return {row["ie"]: row["app"] for line in source.splitlines()
+            if (row := json.loads(line)).get("ie") is not None
+            and isinstance(row.get("app"), dict)}
+
+
+def parse_app_edges(stderr: bytes, source_edges):
+    rows = []
+    for line in stderr.decode(errors="replace").splitlines():
+        if not line.startswith(EDGE_PREFIX):
+            continue
+        fields = dict(item.split("=", 1) for item in line[len(EDGE_PREFIX):].split(":"))
+        app, fun, arg = (int(fields[key]) for key in ("app", "fun", "arg"))
+        assert source_edges.get(app) == {"fn": fun, "arg": arg}, line
+        before, after = int(fields["before"]), int(fields["after"])
+        assert before >= after >= 0, line
+        assert fields["pi_head"] in ("true", "false"), line
+        assert fields["type_proven"] in ("true", "false"), line
+        rows.append({"app": app, "fun": fun, "arg": arg, "context": int(fields["context"]),
+                     "charged": before - after, "before": before, "after": after,
+                     "pi_head": fields["pi_head"] == "true",
+                     "type_proven": fields["type_proven"] == "true"})
     return rows
 
 
@@ -78,7 +105,7 @@ def summarize_owner_traces(stderr: bytes):
 
 
 def run(binary: Path, source: bytes, budget: int, trace: bool,
-        owner_trace: bool = False):
+        owner_trace: bool = False, app_trace: bool = False):
     env = {k: v for k, v in os.environ.items() if not k.startswith("NUCLEUS_")}
     env.update(NUCLEUS_EXPERIMENTAL_RELEVANCE="1",
                NUCLEUS_EXPERIMENTAL_DEMAND_MAJOR="1")
@@ -93,6 +120,8 @@ def run(binary: Path, source: bytes, budget: int, trace: bool,
                        NUCLEUS_C97_MAJOR_STEP_TRACE="1",
                        NUCLEUS_TRACE_NESTED_RECURSOR_IOTA_FAILURE="1",
                        NUCLEUS_TRACE_NESTED_RECURSOR_IOTA="1")
+        if app_trace:
+            env["NUCLEUS_C129_APP_EDGE"] = "1"
     process = subprocess.run([str(binary), str(budget)], input=source,
                              stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                              env=env, timeout=240)
@@ -109,16 +138,19 @@ def main():
                         help="source-native diagnostic budget ladder; original C126 pair is the default")
     parser.add_argument("--owner-trace", action="store_true",
                         help="C128 read-only nested recursor owner phase/cost receipts")
+    parser.add_argument("--app-trace", action="store_true",
+                        help="C129 read-only source application dependency chain")
     args = parser.parse_args()
     source = args.source.read_bytes()
     validate_source(source)
+    exact_edges = source_app_edges(source)
     binary = args.binary.resolve()
     observations = []
     assert all(budget > 0 for budget in args.budgets), "budgets must be positive"
     assert len(args.budgets) == len(set(args.budgets)), "repeated budgets obscure the ladder"
     for budget in args.budgets:
         silent = run(binary, source, budget, False)
-        observed = run(binary, source, budget, True, args.owner_trace)
+        observed = run(binary, source, budget, True, args.owner_trace, args.app_trace)
         assert (silent.returncode, silent.stdout) == (observed.returncode, observed.stdout), (
             "observer changed the checker verdict or output", budget)
         heads = parse_traces(observed.stderr)
@@ -136,6 +168,11 @@ def main():
                                                  if "NUCLEUS_DOWNSTREAM:" in s][-2:]}
         if args.owner_trace:
             row["owner_trace"] = summarize_owner_traces(observed.stderr)
+        if args.app_trace:
+            edges = parse_app_edges(observed.stderr, exact_edges)
+            assert any(e["app"] == 8805 for e in edges), ("source 8805 edge absent", budget)
+            row["source_app_edges"] = edges[:512]
+            row["source_app_edge_count"] = len(edges)
         observations.append(row)
     print(json.dumps({"status": "CANDIDATE_C105_SURROGATE_NATIVE_REPLAY",
                       "lineage": "C105 descendant, not recovered C124/C125b source",
