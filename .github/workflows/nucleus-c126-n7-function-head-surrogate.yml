@@ -129,6 +129,14 @@ jobs:
             "$RUNNER_TEMP/c126-original196/good/perf/magma-list-pair-n7.ndjson" \
             --budgets 65536 14155776 --owner-route-trace \
             | tee "$RUNNER_TEMP/c136-n7-exact-owner-route.json"
+      - name: C137 compare deferred worklist inside exact second capture
+        run: |
+          set -euo pipefail
+          python3 experiments/nucleus-logos-support-20261108/probe_c126_n7_function_type.py \
+            metatron-kernel/target/release/nucleus-budget-sweep \
+            "$RUNNER_TEMP/c126-original196/good/perf/magma-list-pair-n7.ndjson" \
+            --budgets 65536 14155776 --owner-worklist-trace \
+            | tee "$RUNNER_TEMP/c137-n7-exact-owner-worklist.json"
       - name: Preserve source-native discriminator receipt
         if: always()
         uses: actions/upload-artifact@v4
@@ -146,4 +154,5 @@ jobs:
             ${{ runner.temp }}/c134-n7-second-captured-owner.json
             ${{ runner.temp }}/c135-n7-captured-recursor-trial.json
             ${{ runner.temp }}/c136-n7-exact-owner-route.json
+            ${{ runner.temp }}/c137-n7-exact-owner-worklist.json
           if-no-files-found: ignore
