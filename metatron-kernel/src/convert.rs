@@ -612,11 +612,29 @@ fn convert_in_context_with_congruence(
                 }
                 let cheap_left =
                     machine.expose_for_conversion(left.clone(), if unfold_parent { Transparency::Full } else { Transparency::Reducible }, remaining);
+                #[cfg(feature="diagnostics")]
+                let c140_rhs = c138_exact_pair
+                    && std::env::var_os("NUCLEUS_C140_EXACT_RHS_WORK").is_some();
+                #[cfg(feature="diagnostics")]
+                let c140_key_start=if c140_rhs {machine.c140_start_rhs_work()}else{0};
                 let cheap_right = machine.expose_for_conversion(
                     right.clone(),
                     if unfold_parent { Transparency::Full } else { Transparency::Reducible },
                     remaining,
                 );
+                #[cfg(feature="diagnostics")]
+                if c140_rhs {
+                    let (steps,recursor_calls,key_work)=machine.c140_finish_rhs_work(c140_key_start);
+                    let (head,arity)=match cheap_right.proven_value() {
+                        Some(Value::Neutral(Neutral {head:NeutralHead::Const{name,..},spine})) =>
+                            (format!("Const{}",name.0),spine.len()),
+                        Some(_)=>("OtherValue".to_owned(),0),
+                        None=>("OtherUnproven".to_owned(),0),
+                    };
+                    let outcome=if cheap_right.is_proven() {"PROVEN"}
+                        else if cheap_right.is_unknown() {"UNKNOWN"}else{"REFUTED"};
+                    eprintln!("NUCLEUS_C140_RHS:source=8799:env=0:budget={remaining}:outcome={outcome}:head={head}:arity={arity}:steps={steps}:recursor_calls={recursor_calls}:key_work={key_work}");
+                }
                 c136_route!("cheap-exposure-attempted");
                 #[cfg(feature="diagnostics")]
                 if c138_exact_pair {
