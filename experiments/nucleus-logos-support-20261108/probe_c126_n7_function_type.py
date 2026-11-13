@@ -32,6 +32,7 @@ C136_ROUTE_PREFIX = "NUCLEUS_C136_ROUTE:"
 C137_WORK_PREFIX = "NUCLEUS_C137_WORK:"
 C138_DEFERRED_PREFIX = "NUCLEUS_C138_DEFERRED:"
 C139_COMPARE_PREFIX = "NUCLEUS_C139_COMPARE:"
+C140_RHS_PREFIX = "NUCLEUS_C140_RHS:"
 
 
 def parse_traces(stderr: bytes):
@@ -334,6 +335,29 @@ def parse_c139_value_comparison(stderr: bytes):
     return rows
 
 
+def parse_c140_rhs_exposure(stderr: bytes):
+    """One exact right-hand exposure; no positive-value equality assumed."""
+    rows = []
+    for line in stderr.decode(errors="replace").splitlines():
+        if not line.startswith(C140_RHS_PREFIX):
+            continue
+        fields = dict(part.split("=", 1) for part in
+                      line[len(C140_RHS_PREFIX):].split(":"))
+        assert fields["source"] == "8799" and fields["env"] == "0", line
+        assert fields["outcome"] in {"PROVEN", "UNKNOWN", "REFUTED"}, line
+        assert fields["head"].startswith(("Const", "Other")), line
+        row = {"source": 8799, "env": 0,
+               "budget": int(fields["budget"]), "outcome": fields["outcome"],
+               "head": fields["head"]}
+        for key in ("arity", "steps", "recursor_calls", "key_work"):
+            row[key] = int(fields[key])
+            assert row[key] >= 0, line
+        assert row["budget"] > 0, line
+        rows.append(row)
+    assert len(rows) <= 1, "more than one exact C140 right-hand owner"
+    return rows
+
+
 def validate_source(source: bytes):
     assert hashlib.sha256(source).hexdigest() == SOURCE_SHA256, "frozen N7 hash mismatch"
     app = None
@@ -374,7 +398,8 @@ def run(binary: Path, source: bytes, budget: int, trace: bool,
         app_arg_trace: bool = False, inner_infer_trace: bool = False,
         recursor_owner_trace: bool = False, recursor_trial_trace: bool = False,
         owner_route_trace: bool = False, owner_worklist_trace: bool = False,
-        deferred_rule_trace: bool = False, value_comparison_trace: bool = False):
+        deferred_rule_trace: bool = False, value_comparison_trace: bool = False,
+        rhs_exposure_work_trace: bool = False):
     env = {k: v for k, v in os.environ.items() if not k.startswith("NUCLEUS_")}
     env.update(NUCLEUS_EXPERIMENTAL_RELEVANCE="1",
                NUCLEUS_EXPERIMENTAL_DEMAND_MAJOR="1")
@@ -400,18 +425,22 @@ def run(binary: Path, source: bytes, budget: int, trace: bool,
         if inner_infer_trace:
             env["NUCLEUS_C133_ARG_CONVERT"] = "1"
         if (recursor_owner_trace or recursor_trial_trace or owner_route_trace or
-                owner_worklist_trace or deferred_rule_trace or value_comparison_trace):
+                owner_worklist_trace or deferred_rule_trace or value_comparison_trace or
+                rhs_exposure_work_trace):
             env["NUCLEUS_C134_RECURSOR_OWNER"] = "1"
         if recursor_trial_trace:
             env["NUCLEUS_C135_RECURSOR_TRIAL"] = "1"
         if owner_route_trace:
             env["NUCLEUS_C136_OWNER_ROUTE"] = "1"
-        if owner_worklist_trace or deferred_rule_trace or value_comparison_trace:
+        if (owner_worklist_trace or deferred_rule_trace or value_comparison_trace or
+                rhs_exposure_work_trace):
             env["NUCLEUS_C137_OWNER_WORKLIST"] = "1"
-        if deferred_rule_trace or value_comparison_trace:
+        if deferred_rule_trace or value_comparison_trace or rhs_exposure_work_trace:
             env["NUCLEUS_C138_DEFERRED_ROUTE"] = "1"
         if value_comparison_trace:
             env["NUCLEUS_C139_EXACT_COMPARE"] = "1"
+        if rhs_exposure_work_trace:
+            env["NUCLEUS_C140_EXACT_RHS_WORK"] = "1"
     process = subprocess.run([str(binary), str(budget)], input=source,
                              stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                              env=env, timeout=240)
@@ -450,6 +479,8 @@ def main():
                         help="C138 only the first blocking C137 deferred equality's rule stages")
     parser.add_argument("--value-comparison-trace", action="store_true",
                         help="C139 exact blocked value comparison's nested rule and head stages")
+    parser.add_argument("--rhs-exposure-work-trace", action="store_true",
+                        help="C140 exact C139 right-hand evaluator loop, replay and key work")
     args = parser.parse_args()
     source = args.source.read_bytes()
     validate_source(source)
@@ -465,7 +496,8 @@ def main():
                        args.app_arg_trace, args.inner_infer_trace,
                        args.recursor_owner_trace, args.recursor_trial_trace,
                        args.owner_route_trace, args.owner_worklist_trace,
-                       args.deferred_rule_trace, args.value_comparison_trace)
+                       args.deferred_rule_trace, args.value_comparison_trace,
+                       args.rhs_exposure_work_trace)
         assert (silent.returncode, silent.stdout) == (observed.returncode, observed.stdout), (
             "observer changed the checker verdict or output", budget)
         heads = parse_traces(observed.stderr)
@@ -520,7 +552,8 @@ def main():
             row["source_1477_ast"] = source_rows[0]
         if (args.recursor_owner_trace or args.recursor_trial_trace or
                 args.owner_route_trace or args.owner_worklist_trace or
-                args.deferred_rule_trace or args.value_comparison_trace):
+                args.deferred_rule_trace or args.value_comparison_trace or
+                args.rhs_exposure_work_trace):
             traced = parse_c134_owner_traces(observed.stderr)
             assert traced["owner"], ("exact captured conversion owner absent", budget)
             row["second_captured_conversion_owner"] = traced
@@ -534,11 +567,11 @@ def main():
                 "exact captured conversion route absent", budget)
             row["second_captured_conversion_route"] = route
         if (args.owner_worklist_trace or args.deferred_rule_trace or
-                args.value_comparison_trace):
+                args.value_comparison_trace or args.rhs_exposure_work_trace):
             entries = parse_c137_worklist(observed.stderr)
             assert entries, ("exact captured deferred worklist absent", budget)
             row["second_captured_conversion_worklist"] = entries
-        if args.deferred_rule_trace or args.value_comparison_trace:
+        if args.deferred_rule_trace or args.value_comparison_trace or args.rhs_exposure_work_trace:
             entries = row["second_captured_conversion_worklist"]
             assert len(entries) >= 3 and entries[2]["pop"] == 2, entries
             assert entries[2]["left"].startswith("Expr1@Env66182@Levels"), entries[2]
@@ -551,6 +584,12 @@ def main():
             assert rows and rows[0]["depth"] == 0, (
                 "C139 exact comparison entry absent", budget)
             row["second_deferred_value_comparison"] = rows
+        if args.rhs_exposure_work_trace:
+            rows = parse_c140_rhs_exposure(observed.stderr)
+            assert len(rows) == 1, ("C140 exact RHS observer absent", budget)
+            assert rows[0]["budget"] == row["second_deferred_conversion_route"][1]["remaining"], (
+                "C140 right-hand allowance differs from C138", budget)
+            row["second_deferred_rhs_exposure_work"] = rows[0]
         observations.append(row)
     if args.app_arg_trace and len(observations) == 2:
         low, high = observations
