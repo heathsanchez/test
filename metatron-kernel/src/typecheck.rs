@@ -2283,7 +2283,25 @@ impl<'a> TypeChecker<'a> {
                 }
             }
         }
+        // C131: read-only source argument inference receipt. The C130
+        // application owner is Expr8805=App(8753,8804), in the empty context.
+        // Do not conflate a proven inferred type with a proven conversion.
+        #[cfg(feature="diagnostics")]
+        let c131_before = *remaining;
         let inferred = self.infer_in(expression, context, frame, remaining, cache);
+        #[cfg(feature="diagnostics")]
+        if std::env::var_os("NUCLEUS_C131_ARG_CONVERT").is_some()
+            && expression.0==8804 && context.is_empty()
+        {
+            let state = match &inferred {
+                Judgment::Proven { .. } => "PROVEN",
+                Judgment::Unknown { .. } => "UNKNOWN",
+                Judgment::Refuted { .. } => "REFUTED",
+            };
+            let inferred_preview=format!("{inferred:?}").chars().take(900).collect::<String>();
+            let expected_preview=format!("{expected:?}").chars().take(900).collect::<String>();
+            eprintln!("NUCLEUS_C131_ARG_INFER:expr=8804:context=0:frame={}:before={c131_before}:after={}:state={state}:inferred={inferred_preview}:expected={expected_preview}",frame.id(),*remaining);
+        }
         #[cfg(feature="diagnostics")]
         if std::env::var_os("NUCLEUS_TRACE_BIDIR_BODY_GAP").is_some()
             && context.len()==5
@@ -2305,6 +2323,18 @@ impl<'a> TypeChecker<'a> {
                     context.len(),
                     context,
                 );
+                #[cfg(feature="diagnostics")]
+                if std::env::var_os("NUCLEUS_C131_ARG_CONVERT").is_some()
+                    && expression.0==8804 && context.is_empty()
+                {
+                    let state=match &conversion {
+                        Judgment::Proven { .. } => "PROVEN",
+                        Judgment::Unknown { .. } => "UNKNOWN",
+                        Judgment::Refuted { .. } => "REFUTED",
+                    };
+                    let preview=format!("{conversion:?}").chars().take(900).collect::<String>();
+                    eprintln!("NUCLEUS_C131_ARG_CONVERT:expr=8804:context=0:frame={}:fuel={}:state={state}:judgment={preview}",frame.id(),*remaining);
+                }
                 #[cfg(feature = "diagnostics")]
                 if std::env::var_os("NUCLEUS_TRACE_FAILED_RECEIVER_CONVERSION").is_some()
                     && matches!(&conversion, Judgment::Unknown { residual }
