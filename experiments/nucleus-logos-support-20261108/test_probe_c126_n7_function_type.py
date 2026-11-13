@@ -2,7 +2,9 @@
 
 import unittest
 
-from probe_c126_n7_function_type import parse_traces, summarize_owner_traces
+from probe_c126_n7_function_type import (
+    parse_traces, summarize_owner_traces, parse_app_edges,
+)
 
 
 class C126TraceTests(unittest.TestCase):
@@ -42,6 +44,16 @@ class C126TraceTests(unittest.TestCase):
         self.assertEqual(summary["c97_repeated_node_env"], 7)
         self.assertEqual(summary["c97_repeated_head_pending"], 4)
         self.assertEqual(summary["counts"]["NUCLEUS_NESTED_REPLAY_FAILURE"], 1)
+
+    def test_app_chain_cannot_invent_or_change_a_source_edge(self):
+        source = {8805: {"fn": 8753, "arg": 8804}}
+        valid = ("NUCLEUS_C129_APP_EDGE:app=8805:fun=8753:arg=8804:"
+                 "before=65500:after=65400:context=0:pi_head=false:type_proven=false\n")
+        result = parse_app_edges(valid.encode(), source)
+        self.assertEqual(result[0]["charged"], 100)
+        self.assertEqual(result[0]["app"], 8805)
+        with self.assertRaises(AssertionError):
+            parse_app_edges(valid.replace("arg=8804", "arg=8803").encode(), source)
 
 
 if __name__ == "__main__":
