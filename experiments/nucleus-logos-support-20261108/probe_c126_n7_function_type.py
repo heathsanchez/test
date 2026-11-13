@@ -36,6 +36,7 @@ C140_RHS_PREFIX = "NUCLEUS_C140_RHS:"
 C141_CACHE_PREFIX = "NUCLEUS_C141_CACHE:"
 C142_MISS_PREFIX = "NUCLEUS_C142_MISS:"
 C143_HEAD_PREFIX = "NUCLEUS_C143_HEADS:"
+C145_ACTION_PREFIX = "NUCLEUS_C145_ACTIONS:"
 
 
 def parse_traces(stderr: bytes):
@@ -464,6 +465,32 @@ def parse_c143_head_reuse_sample(stderr: bytes):
     return rows
 
 
+def parse_c145_action_mix(stderr: bytes):
+    """Count real evaluator head actions; never promote counts to equality."""
+    rows = []
+    constructors = ("bvar", "app", "lam", "let", "proj", "const", "natlit", "other")
+    bindings = ("bvar_closure", "bvar_free", "bvar_nat", "bvar_neutral", "bvar_unbound")
+    for line in stderr.decode(errors="replace").splitlines():
+        if not line.startswith(C145_ACTION_PREFIX):
+            continue
+        fields = dict(part.split("=", 1) for part in
+                      line[len(C145_ACTION_PREFIX):].split(":"))
+        assert (int(fields["source"]), int(fields["env"])) == (8799, 0), line
+        assert fields["scope"] in ("true", "false"), line
+        assert int(fields["authority"]) >= 0 and int(fields["budget"]) > 0, line
+        counts = {name: int(fields[name]) for name in constructors + bindings +
+                  ("total", "lam_beta", "lam_rigid")}
+        assert all(n >= 0 for n in counts.values()), line
+        assert sum(counts[k] for k in constructors) == counts["total"], line
+        assert sum(counts[k] for k in bindings) == counts["bvar"], line
+        assert counts["lam_beta"] + counts["lam_rigid"] == counts["lam"], line
+        rows.append({"source": 8799, "env": 0, "authority": int(fields["authority"]),
+                     "scope": fields["scope"] == "true", "budget": int(fields["budget"]),
+                     **counts})
+        assert len(rows) <= 8, "unexpectedly broad C145 source census"
+    return rows
+
+
 def validate_source(source: bytes):
     assert hashlib.sha256(source).hexdigest() == SOURCE_SHA256, "frozen N7 hash mismatch"
     app = None
@@ -508,7 +535,8 @@ def run(binary: Path, source: bytes, budget: int, trace: bool,
         rhs_exposure_work_trace: bool = False,
         cache_provenance_trace: bool = False,
         exact_miss_cost_trace: bool = False,
-        head_reuse_sample_trace: bool = False):
+        head_reuse_sample_trace: bool = False,
+        head_action_mix_trace: bool = False):
     env = {k: v for k, v in os.environ.items() if not k.startswith("NUCLEUS_")}
     env.update(NUCLEUS_EXPERIMENTAL_RELEVANCE="1",
                NUCLEUS_EXPERIMENTAL_DEMAND_MAJOR="1")
@@ -562,6 +590,8 @@ def run(binary: Path, source: bytes, budget: int, trace: bool,
             env["NUCLEUS_C142_EXACT_MISS_COST"] = "1"
         if head_reuse_sample_trace:
             env["NUCLEUS_C143_HEAD_REUSE_SAMPLE"] = "1"
+        if head_action_mix_trace:
+            env["NUCLEUS_C145_ACTIONS"] = "1"
     process = subprocess.run([str(binary), str(budget)], input=source,
                              stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                              env=env, timeout=240)
@@ -608,7 +638,11 @@ def main():
                         help="C142 source-qualified per-miss evaluator work and fuel ledger")
     parser.add_argument("--head-reuse-sample-trace", action="store_true",
                         help="C143 bounded head ExprId census and immutable closure-revisit sample")
+    parser.add_argument("--head-action-mix-trace", action="store_true",
+                        help="C145 disjoint source head constructors and dynamic BVar outcomes")
     args = parser.parse_args()
+    if args.head_action_mix_trace:
+        args.head_reuse_sample_trace = True
     source = args.source.read_bytes()
     validate_source(source)
     exact_edges = source_app_edges(source)
@@ -625,7 +659,8 @@ def main():
                        args.owner_route_trace, args.owner_worklist_trace,
                        args.deferred_rule_trace, args.value_comparison_trace,
                        args.rhs_exposure_work_trace, args.cache_provenance_trace,
-                       args.exact_miss_cost_trace, args.head_reuse_sample_trace)
+                       args.exact_miss_cost_trace, args.head_reuse_sample_trace,
+                       args.head_action_mix_trace)
         assert (silent.returncode, silent.stdout) == (observed.returncode, observed.stdout), (
             "observer changed the checker verdict or output", budget)
         heads = parse_traces(observed.stderr)
@@ -748,6 +783,15 @@ def main():
             assert reuse and any(r["budget"] > 8_388_608 for r in reuse) == (
                 budget > 8_388_608), ("C143 exact high producer census absent", budget)
             row["exact_rhs_head_reuse_sample"] = reuse
+        if args.head_action_mix_trace:
+            actions = parse_c145_action_mix(observed.stderr)
+            assert actions and len(actions) == len(reuse), (
+                "C145 action-mix census absent or mismatched", budget)
+            for counted, sampled in zip(actions, reuse):
+                assert (counted["budget"], counted["scope"], counted["total"]) == (
+                    sampled["budget"], sampled["scope"], sampled["total"]), (
+                    "C145 changes C143 exact source-head count", budget)
+            row["exact_rhs_head_actions"] = actions
         observations.append(row)
     if args.app_arg_trace and len(observations) == 2:
         low, high = observations

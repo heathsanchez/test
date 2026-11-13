@@ -660,6 +660,12 @@ impl Drop for ExposureFuelScope<'_> {
 struct C143HeadStats {
     total:usize,
     by_expr:HashMap<ExprId,usize>,
+    // C145: disjoint source expression kinds and actual bound-value outcomes.
+    // The full captured lexical environment remains semantically authoritative.
+    by_kind:[usize;8],
+    bvar_kind:[usize;5],
+    lam_beta:usize,
+    lam_rigid:usize,
     sample_steps:usize,
     sample_seen:HashSet<Closure>,
     sample_repeats:usize,
@@ -667,9 +673,23 @@ struct C143HeadStats {
 }
 #[cfg(feature="diagnostics")]
 impl C143HeadStats {
-    fn record(&mut self,closure:&Closure) {
+    fn record(&mut self,closure:&Closure,expression:Option<&Expr>,pending:&[Closure]) {
         self.total+=1;
         *self.by_expr.entry(closure.expr).or_default()+=1;
+        let kind=match expression {
+            Some(Expr::BVar(_))=>0,
+            Some(Expr::App{..})=>1,
+            Some(Expr::Lam{..})=>2,
+            Some(Expr::Let{..})=>3,
+            Some(Expr::Proj{..})=>4,
+            Some(Expr::Const{..})=>5,
+            Some(Expr::NatLit(_))=>6,
+            _=>7,
+        };
+        self.by_kind[kind]+=1;
+        if kind==2 {
+            if pending.is_empty() {self.lam_rigid+=1;}else{self.lam_beta+=1;}
+        }
         // Stable inclusion for a given immutable source closure; deliberately
         // no claim of statistical randomness or semantic state equality.
         let mix=(closure.expr.0 as u64).wrapping_mul(0x9e3779b97f4a7c15)
@@ -708,6 +728,8 @@ pub struct Machine<'a> {
     c142_recursor_calls_total:Cell<usize>,
     #[cfg(feature="diagnostics")]
     c143_head_active:Cell<bool>,
+    #[cfg(feature="diagnostics")]
+    c145_head_active:Cell<bool>,
     #[cfg(feature="diagnostics")]
     c143_head_stats:RefCell<C143HeadStats>,
     #[cfg(test)]
@@ -759,6 +781,8 @@ impl<'a> Machine<'a> {
             c142_recursor_calls_total:Cell::new(0),
             #[cfg(feature="diagnostics")]
             c143_head_active:Cell::new(false),
+            #[cfg(feature="diagnostics")]
+            c145_head_active:Cell::new(false),
             #[cfg(feature="diagnostics")]
             c143_head_stats:RefCell::new(C143HeadStats::default()),
             #[cfg(test)]
@@ -1190,8 +1214,12 @@ impl<'a> Machine<'a> {
             && !self.c143_head_active.get()
             && std::env::var_os("NUCLEUS_C143_HEAD_REUSE_SAMPLE").is_some();
         #[cfg(feature="diagnostics")]
+        let c145_selected=c143_selected
+            && std::env::var_os("NUCLEUS_C145_ACTIONS").is_some();
+        #[cfg(feature="diagnostics")]
         if c143_selected {
             self.c143_head_active.set(true);
+            self.c145_head_active.set(c145_selected);
             *self.c143_head_stats.borrow_mut()=C143HeadStats::default();
         }
         let result = self.expose_uncached_internal_with_pending(
@@ -1201,7 +1229,16 @@ impl<'a> Machine<'a> {
         #[cfg(feature="diagnostics")]
         if c143_selected {
             self.c143_head_active.set(false);
+            self.c145_head_active.set(false);
             let stats=std::mem::take(&mut *self.c143_head_stats.borrow_mut());
+            if c145_selected {
+                let k=stats.by_kind;
+                let b=stats.bvar_kind;
+                let scope=self.c140_rhs_work_active.get()!=0;
+                eprintln!("NUCLEUS_C145_ACTIONS:source=8799:env=0:authority={}:scope={scope}:budget={budget}:total={}:bvar={}:app={}:lam={}:let={}:proj={}:const={}:natlit={}:other={}:bvar_closure={}:bvar_free={}:bvar_nat={}:bvar_neutral={}:bvar_unbound={}:lam_beta={}:lam_rigid={}",
+                    self.authority.0,stats.total,k[0],k[1],k[2],k[3],k[4],k[5],k[6],k[7],
+                    b[0],b[1],b[2],b[3],b[4],stats.lam_beta,stats.lam_rigid);
+            }
             let mut top:Vec<_>=stats.by_expr.into_iter().collect();
             top.sort_unstable_by(|a,b|b.1.cmp(&a.1).then_with(||a.0.0.cmp(&b.0.0)));
             let top=top.into_iter().take(8)
@@ -1524,7 +1561,8 @@ impl<'a> Machine<'a> {
             self.c142_head_steps_total.set(self.c142_head_steps_total.get()+1);
             #[cfg(feature="diagnostics")]
             if self.c143_head_active.get() {
-                self.c143_head_stats.borrow_mut().record(&closure);
+                self.c143_head_stats.borrow_mut().record(
+                    &closure,self.expressions.get(closure.expr),&pending);
             }
             if !visited.insert((self.authority, closure.expr, closure.env.id())) {
                 return Judgment::unknown("reduction-cycle");
@@ -1561,7 +1599,19 @@ impl<'a> Machine<'a> {
             }
             match expression {
                 Expr::BVar(index) => {
-                    if let Some(bound) = closure.env.lookup(*index) {
+                    let bound=closure.env.lookup(*index);
+                    #[cfg(feature="diagnostics")]
+                    if self.c145_head_active.get() {
+                        let kind=match bound.as_ref() {
+                            Some(EnvBinding::Closure(_))=>0,
+                            Some(EnvBinding::Free(_))=>1,
+                            Some(EnvBinding::NatLit(_))=>2,
+                            Some(EnvBinding::Neutral(_))=>3,
+                            None=>4,
+                        };
+                        self.c143_head_stats.borrow_mut().bvar_kind[kind]+=1;
+                    }
+                    if let Some(bound) = bound {
                         match bound {
                             EnvBinding::Closure(bound) => {
                                 visited.clear();

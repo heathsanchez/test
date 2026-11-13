@@ -298,6 +298,27 @@ class C126TraceTests(unittest.TestCase):
                 with self.assertRaises(AssertionError):
                     parse_c143_head_reuse_sample(good.replace(old, new))
 
+    def test_c145_action_counts_must_conserve_full_head_visits(self):
+        from probe_c126_n7_function_type import parse_c145_action_mix
+        good = (
+            'NUCLEUS_C145_ACTIONS:source=8799:env=0:authority=386:'
+            'scope=false:budget=14155490:total=100:'
+            'bvar=31:app=37:lam=17:let=1:proj=7:const=6:natlit=1:other=0:'
+            'bvar_closure=27:bvar_free=2:bvar_nat=1:bvar_neutral=0:'
+            'bvar_unbound=1:lam_beta=15:lam_rigid=2\n'
+        ).encode()
+        rows = parse_c145_action_mix(good)
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]['total'], 100)
+        self.assertEqual(rows[0]['bvar_closure'], 27)
+        for old, new in ((b'env=0', b'env=1'),
+                         (b'bvar_closure=27', b'bvar_closure=28'),
+                         (b'lam_beta=15', b'lam_beta=16'),
+                         (b'const=6', b'const=7')):
+            with self.subTest(field=old):
+                with self.assertRaises(AssertionError):
+                    parse_c145_action_mix(good.replace(old, new))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -7,6 +7,7 @@ on:
       - .github/workflows/nucleus-c126-n7-function-head-surrogate.yml
       - metatron-kernel/src/typecheck.rs
       - metatron-kernel/src/convert.rs
+      - metatron-kernel/src/machine.rs
       - experiments/nucleus-logos-support-20261108/probe_c126_n7_function_type.py
       - experiments/nucleus-logos-support-20261108/test_probe_c126_n7_function_type.py
       - experiments/nucleus-logos-support-20261108/probe_c144_hot_ast.py
@@ -30,7 +31,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with: {toolchain: '1.99.1'}
       - name: Check exact-source receipt parser
-        run: PYTHONPATH=experiments/nucleus-logos-support-20261108 python3 -m unittest experiments.nucleus-logos-support-20261108.test_probe_c126_n7_function_type experiments.nucleus-logos-support-20261108.test_probe_c144_hot_ast
+        run: PYTHONPATH=experiments/nucleus-logos-support-20261108 python3 -B -m unittest experiments.nucleus-logos-support-20261108.test_probe_c126_n7_function_type experiments.nucleus-logos-support-20261108.test_probe_c144_hot_ast
       - name: Obtain exact frozen original Arena N7
         run: |
           set -euo pipefail
@@ -193,6 +194,16 @@ jobs:
             "$RUNNER_TEMP/c126-original196/good/perf/magma-list-pair-n7.ndjson" \
             --budgets 65536 14155776 --head-reuse-sample-trace \
             | tee "$RUNNER_TEMP/c143-n7-exact-head-reuse-sample.json"
+      - name: C145 exact high producer source action and binding outcome census
+        run: |
+          set -euo pipefail
+          python3 experiments/nucleus-logos-support-20261108/probe_c126_n7_function_type.py \
+            metatron-kernel/target/release/nucleus-budget-sweep \
+            "$RUNNER_TEMP/c126-original196/good/perf/magma-list-pair-n7.ndjson" \
+            --budgets 65536 14155776 --head-action-mix-trace \
+            | tee "$RUNNER_TEMP/c145-n7-exact-head-actions.json"
+      - name: C145 read-only diagnostics native checker regression
+        run: cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml --features diagnostics -q
       - name: Preserve source-native discriminator receipt
         if: always()
         uses: actions/upload-artifact@v4
@@ -218,4 +229,5 @@ jobs:
             ${{ runner.temp }}/c142-n7-exact-miss-cost.json
             ${{ runner.temp }}/c143-n7-exact-head-reuse-sample.json
             ${{ runner.temp }}/c144-n7-hot-source-ast.json
+            ${{ runner.temp }}/c145-n7-exact-head-actions.json
           if-no-files-found: ignore
