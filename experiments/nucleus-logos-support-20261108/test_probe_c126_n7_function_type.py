@@ -7,7 +7,7 @@ from probe_c126_n7_function_type import (
     parse_conversion_stages, parse_inner_arg_edges, parse_c133_stages,
     parse_c134_owner_traces, parse_c135_trials, parse_c136_routes,
     parse_c137_worklist, parse_c138_deferred_route, parse_c139_value_comparison,
-    parse_c140_rhs_exposure,
+    parse_c140_rhs_exposure, parse_c141_cache_provenance,
 )
 
 
@@ -230,6 +230,36 @@ class C126TraceTests(unittest.TestCase):
             parse_c140_rhs_exposure(good.replace(b'source=8799', b'source=8798'))
         with self.assertRaises(AssertionError):
             parse_c140_rhs_exposure(good.replace(b'recursor_calls=3', b'recursor_calls=-1'))
+
+    def test_c141_cache_receipt_requires_exact_qualified_key(self):
+        good = (
+            'NUCLEUS_C141_CACHE:event=lookup-miss:source=8799:env=0:'
+            'levels=0:authority=21:transparency=Reducible:pending=0:'
+            'preserve=true:digest=123:scope=false:budget=12000:'
+            'head=None:published=false\n'
+            'NUCLEUS_C141_CACHE:event=publication:source=8799:env=0:'
+            'levels=0:authority=21:transparency=Reducible:pending=0:'
+            'preserve=true:digest=123:scope=false:budget=12000:'
+            'head=Const169A0:published=true\n'
+            'NUCLEUS_C141_CACHE:event=lookup-hit:source=8799:env=0:'
+            'levels=0:authority=21:transparency=Reducible:pending=0:'
+            'preserve=true:digest=123:scope=true:budget=14155490:'
+            'head=Const169A0:published=true\n'
+        ).encode()
+        rows = parse_c141_cache_provenance(good)
+        self.assertEqual([r['event'] for r in rows],
+                         ['lookup-miss', 'publication', 'lookup-hit'])
+        self.assertEqual(len({r['digest'] for r in rows}), 1)
+        self.assertEqual(rows[-1]['scope'], True)
+        self.assertEqual(rows[-1]['head'], 'Const169A0')
+        for old, new in ((b'source=8799', b'source=8798'),
+                         (b'pending=0', b'pending=1'),
+                         (b'preserve=true', b'preserve=false'),
+                         (b'levels=0', b'levels=1'),
+                         (b'published=true', b'published=maybe')):
+            with self.subTest(field=old):
+                with self.assertRaises(AssertionError):
+                    parse_c141_cache_provenance(good.replace(old, new, 1))
 
 
 if __name__ == "__main__":
