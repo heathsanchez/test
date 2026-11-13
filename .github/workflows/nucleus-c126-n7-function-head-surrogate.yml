@@ -80,6 +80,14 @@ jobs:
             "$RUNNER_TEMP/c126-original196/good/perf/magma-list-pair-n7.ndjson" \
             --budgets 65536 14155776 --arg-trace \
             | tee "$RUNNER_TEMP/c130-n7-argument-obligation.json"
+      - name: C131 separate exact-source argument inference from conversion
+        run: |
+          set -euo pipefail
+          python3 experiments/nucleus-logos-support-20261108/probe_c126_n7_function_type.py \
+            metatron-kernel/target/release/nucleus-budget-sweep \
+            "$RUNNER_TEMP/c126-original196/good/perf/magma-list-pair-n7.ndjson" \
+            --budgets 65536 14155776 --conversion-trace \
+            | tee "$RUNNER_TEMP/c131-n7-argument-conversion-stages.json"
       - name: Preserve source-native discriminator receipt
         if: always()
         uses: actions/upload-artifact@v4
@@ -91,4 +99,5 @@ jobs:
             ${{ runner.temp }}/c128-n7-major-owner-trace.json
             ${{ runner.temp }}/c129-n7-application-chain.json
             ${{ runner.temp }}/c130-n7-argument-obligation.json
+            ${{ runner.temp }}/c131-n7-argument-conversion-stages.json
           if-no-files-found: ignore
