@@ -2311,6 +2311,23 @@ impl<'a> TypeChecker<'a> {
         #[cfg(feature="diagnostics")]
         let c131_before = *remaining;
         let inferred = self.infer_in(expression, context, frame, remaining, cache);
+        // C133: exact nested argument of source App8803=App(8802,1477).
+        // Separate source type inference from conversion; no verdict changes.
+        #[cfg(feature="diagnostics")]
+        if std::env::var_os("NUCLEUS_C133_ARG_CONVERT").is_some()
+            && expression.0==1477 && context.is_empty()
+        {
+            let state=match &inferred {
+                Judgment::Proven {..}=>"PROVEN",
+                Judgment::Unknown {..}=>"UNKNOWN",
+                Judgment::Refuted {..}=>"REFUTED",
+            };
+            let actual=format!("{inferred:?}").replace('\n'," ")
+                .chars().take(800).collect::<String>();
+            let expected_preview=format!("{expected:?}").replace('\n'," ")
+                .chars().take(800).collect::<String>();
+            eprintln!("NUCLEUS_C133_ARG_INFER:expr=1477:context=0:frame={}:before={c131_before}:after={}:state={state}:inferred={actual}:expected={expected_preview}",frame.id(),*remaining);
+        }
         #[cfg(feature="diagnostics")]
         if std::env::var_os("NUCLEUS_C131_ARG_CONVERT").is_some()
             && expression.0==8804 && context.is_empty()
@@ -2345,6 +2362,19 @@ impl<'a> TypeChecker<'a> {
                     context.len(),
                     context,
                 );
+                #[cfg(feature="diagnostics")]
+                if std::env::var_os("NUCLEUS_C133_ARG_CONVERT").is_some()
+                    && expression.0==1477 && context.is_empty()
+                {
+                    let state=match &conversion {
+                        Judgment::Proven {..}=>"PROVEN",
+                        Judgment::Unknown {..}=>"UNKNOWN",
+                        Judgment::Refuted {..}=>"REFUTED",
+                    };
+                    let preview=format!("{conversion:?}").replace('\n'," ")
+                        .chars().take(800).collect::<String>();
+                    eprintln!("NUCLEUS_C133_ARG_CONVERT:expr=1477:context=0:frame={}:fuel={}:state={state}:judgment={preview}",frame.id(),*remaining);
+                }
                 #[cfg(feature="diagnostics")]
                 if std::env::var_os("NUCLEUS_C131_ARG_CONVERT").is_some()
                     && expression.0==8804 && context.is_empty()
