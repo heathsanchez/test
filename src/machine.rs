@@ -2650,6 +2650,63 @@ impl<'a> Machine<'a> {
                         eprintln!("NUCLEUS_C161_PROP_EXPR:rank={rank}:expr={}:members={members}",expr.0);
                     }
                 }
+                // C162: source-only dependency census, never a semantic
+                // cache key. Frozen original N7 ExprId(9) is BVar(3), and
+                // the independently traversed original ExprId(7218) Pi
+                // syntax has free outer BVars {4,5}. Count retained exact
+                // immutable binding-node identities at those indices. The
+                // workflow independently checks the two support sets from
+                // the frozen original export before accepting this receipt.
+                if std::env::var_os("NUCLEUS_C162_PROP_CAPTURE_SUPPORT").is_some() {
+                    let mut projected:HashMap<(ExprId,LevelSubstitution,Vec<u64>),usize>=HashMap::new();
+                    let mut binding_nodes:HashMap<(ExprId,u64),HashSet<u64>>=HashMap::new();
+                    let mut per_source:HashMap<ExprId,usize>=HashMap::new();
+                    let mut omitted=0usize;
+                    let mut other=0usize;
+                    for value in e.first.values() {
+                        let Value::Neutral(Neutral{
+                            head:NeutralHead::Const{name,levels},spine
+                        })=value else {other+=1;continue};
+                        if name.0!=146 || !levels.is_empty() || spine.len()!=2 {
+                            other+=1;continue;
+                        }
+                        let prop=&spine[0];
+                        let indices:&[u64]=match prop.expr.0 {
+                            9=>&[3],7218=>&[4,5],_=>{other+=1;continue},
+                        };
+                        let mut captured=Vec::with_capacity(indices.len());
+                        for &index in indices {
+                            let Some(node_id)=prop.env.diagnostic_binding_node_id(index) else {
+                                omitted+=1;
+                                captured.clear();
+                                break;
+                            };
+                            captured.push(node_id);
+                            binding_nodes.entry((prop.expr,index)).or_default().insert(node_id);
+                        }
+                        if captured.len()!=indices.len(){continue}
+                        *projected.entry((prop.expr,prop.levels.clone(),captured)).or_default()+=1;
+                        *per_source.entry(prop.expr).or_default()+=1;
+                    }
+                    let repeated=projected.values().filter(|&&n|n>1).count();
+                    let largest=projected.values().copied().max().unwrap_or(0);
+                    let classes=projected.len();
+                    let mut classes_per_source:HashMap<ExprId,usize>=HashMap::new();
+                    for (key,_) in &projected {
+                        *classes_per_source.entry(key.0).or_default()+=1;
+                    }
+                    eprintln!("NUCLEUS_C162_PROP_CAPTURE:source=8799:env=0:authority={}:budget={budget}:full_keys={}:classified={}:other={other}:missing_binding={omitted}:projected_exact_groups={classes}:repeated_projected_groups={repeated}:largest_projected_group={largest}:expr9_members={}:expr9_projected_groups={}:expr7218_members={}:expr7218_projected_groups={}",
+                        self.authority.0,e.first.len(),
+                        per_source.get(&ExprId(9)).copied().unwrap_or(0),
+                        classes_per_source.get(&ExprId(9)).copied().unwrap_or(0),
+                        per_source.get(&ExprId(7218)).copied().unwrap_or(0),
+                        classes_per_source.get(&ExprId(7218)).copied().unwrap_or(0));
+                    let mut positions=binding_nodes.into_iter().collect::<Vec<_>>();
+                    positions.sort_unstable_by_key(|((expr,index),_)|(expr.0,*index));
+                    for ((expr,index),nodes) in positions {
+                        eprintln!("NUCLEUS_C162_BINDING_POS:expr={}:index={index}:distinct_nodes={}",expr.0,nodes.len());
+                    }
+                }
                 if std::env::var_os("NUCLEUS_C157_BINDING_ORIGIN_GROUPS").is_some() {
                     let mut nodes:HashMap<u64,(usize,Value,usize)>=HashMap::new();
                     let mut bound_exprs:HashMap<ExprId,usize>=HashMap::new();
