@@ -5,7 +5,7 @@ import unittest
 from probe_c126_n7_function_type import (
     parse_traces, summarize_owner_traces, parse_app_edges, parse_arg_obligations,
     parse_conversion_stages, parse_inner_arg_edges, parse_c133_stages,
-    parse_c134_owner_traces, parse_c135_trials,
+    parse_c134_owner_traces, parse_c135_trials, parse_c136_routes,
 )
 
 
@@ -154,6 +154,18 @@ class C126TraceTests(unittest.TestCase):
         self.assertEqual([r['probe'] for r in rows], [32625, 7077752])
         with self.assertRaises(AssertionError):
             parse_c135_trials(sample.replace(b'side=right', b'side=left', 1))
+
+    def test_c136_only_exact_owner_route_stages(self):
+        sample = (
+            'NUCLEUS_C136_ROUTE:event=pop:remaining=65264\n'
+            'NUCLEUS_C136_ROUTE:event=cheap-exposure-attempted:remaining=65250\n'
+            'NUCLEUS_C136_ROUTE:event=cheap-comparison-proven:remaining=14155000\n'
+        ).encode()
+        rows = parse_c136_routes(sample)
+        self.assertEqual([r['event'] for r in rows],
+                         ['pop', 'cheap-exposure-attempted', 'cheap-comparison-proven'])
+        with self.assertRaises(AssertionError):
+            parse_c136_routes(sample.replace(b'event=pop', b'event=made-up', 1))
 
 
 if __name__ == "__main__":
