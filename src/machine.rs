@@ -21,6 +21,57 @@ pub enum Transparency {
     Full,
 }
 
+// C149: bounded source-native rehearsal for a one-step BVar transport lemma.
+// This does not authorize a cache of completed Exposure values: it only checks
+// that distinct unused top frames can address the same immutable lower node.
+#[cfg(test)]
+mod binding_node_transport_tests {
+    use super::*;
+
+    #[test]
+    fn same_used_binding_node_ignores_distinct_unused_outer_frames() {
+        let mut exprs=IdTable::default();
+        exprs.insert(ExprId(0),Expr::BVar(1)).unwrap();
+        exprs.insert(ExprId(1),Expr::NatLit(BigNat::parse_decimal("9").unwrap())).unwrap();
+        exprs.insert(ExprId(2),Expr::NatLit(BigNat::parse_decimal("8").unwrap())).unwrap();
+        let levels=IdTable::default();
+        let machine=Machine::new(AuthorityId(1),&exprs,&levels,HashMap::new());
+
+        let root=EnvFrame::empty().extend_free(FreeId(7));
+        let left=root.extend_free(FreeId(100));
+        let right=root.extend_free(FreeId(200));
+        let different=EnvFrame::empty().extend_free(FreeId(8))
+            .extend_free(FreeId(100));
+        assert_ne!(left.id(),right.id(),"outer environments must actually differ");
+        let target=left.lookup_with_node_id(1).unwrap().0;
+        assert_eq!(target,right.lookup_with_node_id(1).unwrap().0);
+        assert_ne!(target,different.lookup_with_node_id(1).unwrap().0);
+
+        // Pending arguments are retained, not projected away.  The same
+        // lexical binding resolves to the same neutral application spine.
+        let pending=vec![Closure::new(ExprId(2),EnvFrame::empty())];
+        let exposed=|env,pending|machine.expose_internal_with_pending(
+            Closure::new(ExprId(0),env),Transparency::Full,32,
+            true,false,pending);
+        let a=exposed(left,pending.clone());
+        let b=exposed(right,pending.clone());
+        let control=exposed(different,pending);
+        assert!(a.is_proven() && b.is_proven() && control.is_proven());
+        assert_eq!(a.proven_value(),b.proven_value());
+        assert_ne!(a.proven_value(),control.proven_value(),
+            "a different actual binding must remain distinguishable");
+
+        // A captured closure is also retained by the shared lower node;
+        // the BVar jump yields that captured term, not an outer-frame term.
+        let closed=Closure::new(ExprId(1),EnvFrame::empty());
+        let shared=EnvFrame::empty().extend(closed);
+        let c=exposed(shared.extend_free(FreeId(101)),vec![]);
+        let d=exposed(shared.extend_free(FreeId(202)),vec![]);
+        assert_eq!(c.proven_value(),d.proven_value());
+        assert!(matches!(c.proven_value(),Some(Exposure{value:Value::NatLit(_),..})));
+    }
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum TransitionWitness {
     Beta,
