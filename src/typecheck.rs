@@ -1898,6 +1898,28 @@ impl<'a> TypeChecker<'a> {
                 let argument_judgment=self.check_with_formation(
                     *arg, &domain, context, frame, remaining, true, cache, true,
                 );
+                // C132: enumerate real nested source argument-check judgments
+                // under the C131 inference owner. No accepted equality is
+                // inferred from shared syntax, replay counts or these logs.
+                #[cfg(feature="diagnostics")]
+                if std::env::var_os("NUCLEUS_C132_APP_ARG").is_some()
+                    && (8700..=8804).contains(&expression.0)
+                    && context.len()<=3
+                {
+                    use std::sync::atomic::{AtomicUsize,Ordering};
+                    static COUNT:AtomicUsize=AtomicUsize::new(0);
+                    if COUNT.fetch_add(1,Ordering::Relaxed)<1024 {
+                        let state=match &argument_judgment {
+                            Judgment::Proven {..}=>"PROVEN",
+                            Judgment::Unknown {..}=>"UNKNOWN",
+                            Judgment::Refuted {..}=>"REFUTED",
+                        };
+                        let preview=format!("{argument_judgment:?}").replace('\n'," ")
+                            .chars().take(300).collect::<String>();
+                        eprintln!("NUCLEUS_C132_APP_ARG:app={}:fun={}:arg={}:context={}:before={c126_before}:after={}:state={state}:judgment={preview}",
+                            expression.0,fun.0,arg.0,context.len(),*remaining);
+                    }
+                }
                 // C130: isolate the source argument proof obligation of
                 // App(8753, 8804) before its result propagates to App 8835.
                 // Read-only; never treats UNKNOWN as an admissible argument.
