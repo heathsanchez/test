@@ -13,16 +13,28 @@ from pathlib import Path
 import subprocess
 
 from probe_c94_owner_phase import SOURCE_HASHES, replay
-from probe_c104_major_exposure_ledger import CONTROLS, operation_line
 
 
 SOURCE = "magma-list-pair-n21"
 PREFIX = "NUCLEUS_C125_PROJ_BINDING:"
+CONTROLS = (
+    ("nucleus-universe-reconcile-20261104/inputs/renamed-pprod-forged-fields.ndjson",
+     "33993418d305e980e224d6102be1c8c23ccce00a406616ba6d6", 1),
+    ("nucleus-universe-reconcile-20261104/inputs/renamed-pprod-forged-motive.ndjson",
+     "2eb5034aa01b1591cc99577bacc50095e3d8e80709172175f569e1f481f680de", 2),
+    ("nucleus-quotient-reuse-20261104/heldout/mutated.ndjson",
+     "a4425142910417814594d555ccec8ac1b29bbe8d18f12993f20fa1c0253fd692", 1),
+)
 NUMBER_FIELDS = (
     "owner_start", "spent", "depth", "recursor", "terminal_expr",
     "terminal_env", "terminal_levels", "links", "target_expr",
     "binding_node", "payload_expr", "payload_env", "payload_levels",
 )
+
+
+def operation_line(run):
+    return next((line for line in reversed(run.stderr.splitlines())
+                 if line.startswith(b'{"declarations":')), None)
 
 
 def source_bytes(path: Path) -> bytes:
