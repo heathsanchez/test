@@ -72,6 +72,14 @@ jobs:
             "$RUNNER_TEMP/c126-original196/good/perf/magma-list-pair-n7.ndjson" \
             --budgets 65536 14155776 --app-trace \
             | tee "$RUNNER_TEMP/c129-n7-application-chain.json"
+      - name: C130 source argument obligation at the first type divergence
+        run: |
+          set -euo pipefail
+          python3 experiments/nucleus-logos-support-20261108/probe_c126_n7_function_type.py \
+            metatron-kernel/target/release/nucleus-budget-sweep \
+            "$RUNNER_TEMP/c126-original196/good/perf/magma-list-pair-n7.ndjson" \
+            --budgets 65536 14155776 --arg-trace \
+            | tee "$RUNNER_TEMP/c130-n7-argument-obligation.json"
       - name: Preserve source-native discriminator receipt
         if: always()
         uses: actions/upload-artifact@v4
@@ -82,4 +90,5 @@ jobs:
             ${{ runner.temp }}/c127-n7-function-head-ladder.json
             ${{ runner.temp }}/c128-n7-major-owner-trace.json
             ${{ runner.temp }}/c129-n7-application-chain.json
+            ${{ runner.temp }}/c130-n7-argument-obligation.json
           if-no-files-found: ignore
