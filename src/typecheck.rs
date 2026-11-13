@@ -1794,6 +1794,8 @@ impl<'a> TypeChecker<'a> {
                     })
             }
             Expr::App { fun, arg } => {
+                #[cfg(feature = "diagnostics")]
+                let c126_before = *remaining;
                 let function_type = self.infer_in(*fun, context, frame, remaining, cache);
                 if let Judgment::Refuted { obstruction } = &function_type {
                     return Judgment::Refuted {
@@ -1812,6 +1814,25 @@ impl<'a> TypeChecker<'a> {
                     let Value::Pi { domain, body } = reduced.proven_value()? else { return None };
                     Some((TypeValue::Term(domain.clone()), PiBody::Closure(body.clone())))
                 });
+                // C126 research-only: witness the actual source App 8835
+                // function-type head before the existing Pi/UNKNOWN decision.
+                // Neither the term nor the budget is modified or memoized.
+                #[cfg(feature = "diagnostics")]
+                if std::env::var_os("NUCLEUS_C126_N7_TYPE_HEAD").is_some()
+                    && expression == ExprId(8835)
+                    && *fun == ExprId(8805)
+                    && *arg == ExprId(8834)
+                {
+                    use std::sync::atomic::{AtomicUsize, Ordering};
+                    static SEEN: AtomicUsize = AtomicUsize::new(0);
+                    if SEEN.fetch_add(1, Ordering::Relaxed) < 64 {
+                        let type_summary = format!("{function_type:?}")
+                            .replace('\n', " ").chars().take(800).collect::<String>();
+                        eprintln!("NUCLEUS_C126_N7_HEAD:application=8835:function=8805:argument=8834:before={c126_before}:after={}:context={}:pi_head={}:type_proven={}:type={type_summary}",
+                            *remaining, context.len(), checked_view.is_some(),
+                            function_type.is_proven());
+                    }
+                }
                 let Some((domain, body)) = checked_view else {
                     #[cfg(feature = "diagnostics")]
                     if std::env::var_os("NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE").is_some() {
