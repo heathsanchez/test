@@ -96,6 +96,14 @@ jobs:
             "$RUNNER_TEMP/c126-original196/good/perf/magma-list-pair-n7.ndjson" \
             --budgets 65536 14155776 --app-arg-trace \
             | tee "$RUNNER_TEMP/c132-n7-inner-argument-edges.json"
+      - name: C133 source Expr1477 inference versus conversion boundary
+        run: |
+          set -euo pipefail
+          python3 experiments/nucleus-logos-support-20261108/probe_c126_n7_function_type.py \
+            metatron-kernel/target/release/nucleus-budget-sweep \
+            "$RUNNER_TEMP/c126-original196/good/perf/magma-list-pair-n7.ndjson" \
+            --budgets 65536 14155776 --inner-infer-trace \
+            | tee "$RUNNER_TEMP/c133-n7-source-1477-stages.json"
       - name: Preserve source-native discriminator receipt
         if: always()
         uses: actions/upload-artifact@v4
@@ -109,4 +117,5 @@ jobs:
             ${{ runner.temp }}/c130-n7-argument-obligation.json
             ${{ runner.temp }}/c131-n7-argument-conversion-stages.json
             ${{ runner.temp }}/c132-n7-inner-argument-edges.json
+            ${{ runner.temp }}/c133-n7-source-1477-stages.json
           if-no-files-found: ignore
