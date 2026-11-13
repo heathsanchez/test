@@ -688,11 +688,20 @@ struct C143HeadStats {
     c147_overflow:bool,
     c147_full:HashSet<(ExprId,u64)>,
     c147_projected:HashSet<(ExprId,u64)>,
+    // C148: select complete *binding-node groups*, keeping universe levels
+    // and full pending spine in both compared observation keys. Still no replay.
+    c148_target_total:usize,
+    c148_sampled:usize,
+    c148_pending_nonempty:usize,
+    c148_missing:usize,
+    c148_overflow:bool,
+    c148_full:HashSet<(Closure,Vec<Closure>)>,
+    c148_projected:HashSet<(ExprId,crate::value::LevelSubstitution,u64,Vec<Closure>)>,
 }
 #[cfg(feature="diagnostics")]
 impl C143HeadStats {
     fn record(&mut self,closure:&Closure,expression:Option<&Expr>,pending:&[Closure],
-        projection_sample:bool,upper_bound_census:bool) {
+        projection_sample:bool,upper_bound_census:bool,binding_group_sample:bool) {
         self.total+=1;
         *self.by_expr.entry(closure.expr).or_default()+=1;
         let kind=match expression {
@@ -757,6 +766,35 @@ impl C143HeadStats {
                 } else {self.c147_missing+=1;}
             }
         }
+        if binding_group_sample && matches!(closure.expr.0,6|11)
+            && let Some(Expr::BVar(index))=expression {
+            self.c148_target_total+=1;
+            if let Some(binding_node)=closure.env.diagnostic_binding_node_id(*index) {
+                // Sample by the *projected class*, never the full environment.
+                // Thus every visit to a selected (ExprId, used binding) is
+                // included even when the lexical outer frames are different.
+                let class_mix=(closure.expr.0 as u64).wrapping_mul(0x9e3779b97f4a7c15)
+                    ^ binding_node.wrapping_mul(0xbf58476d1ce4e5b9);
+                if class_mix&15==0 {
+                    self.c148_sampled+=1;
+                    if !pending.is_empty() {self.c148_pending_nonempty+=1;}
+                    if !self.c148_overflow {
+                        let full=(closure.clone(),pending.to_vec());
+                        let projected=(closure.expr,closure.levels.clone(),binding_node,
+                            pending.to_vec());
+                        if (!self.c148_full.contains(&full)
+                            && self.c148_full.len()>=200_000)
+                            || (!self.c148_projected.contains(&projected)
+                                && self.c148_projected.len()>=200_000) {
+                            self.c148_overflow=true;
+                        } else {
+                            self.c148_full.insert(full);
+                            self.c148_projected.insert(projected);
+                        }
+                    }
+                }
+            } else {self.c148_missing+=1;}
+        }
         if mix&255!=0 {return}
         self.sample_steps+=1;
         if self.sample_seen.contains(closure) {self.sample_repeats+=1;return}
@@ -797,6 +835,8 @@ pub struct Machine<'a> {
     c146_head_active:Cell<bool>,
     #[cfg(feature="diagnostics")]
     c147_head_active:Cell<bool>,
+    #[cfg(feature="diagnostics")]
+    c148_head_active:Cell<bool>,
     #[cfg(feature="diagnostics")]
     c143_head_stats:RefCell<C143HeadStats>,
     #[cfg(test)]
@@ -854,6 +894,8 @@ impl<'a> Machine<'a> {
             c146_head_active:Cell::new(false),
             #[cfg(feature="diagnostics")]
             c147_head_active:Cell::new(false),
+            #[cfg(feature="diagnostics")]
+            c148_head_active:Cell::new(false),
             #[cfg(feature="diagnostics")]
             c143_head_stats:RefCell::new(C143HeadStats::default()),
             #[cfg(test)]
@@ -1294,11 +1336,15 @@ impl<'a> Machine<'a> {
         let c147_selected=c143_selected
             && std::env::var_os("NUCLEUS_C147_BINDING_UPPER").is_some();
         #[cfg(feature="diagnostics")]
+        let c148_selected=c143_selected
+            && std::env::var_os("NUCLEUS_C148_BINDING_GROUP").is_some();
+        #[cfg(feature="diagnostics")]
         if c143_selected {
             self.c143_head_active.set(true);
             self.c145_head_active.set(c145_selected);
             self.c146_head_active.set(c146_selected);
             self.c147_head_active.set(c147_selected);
+            self.c148_head_active.set(c148_selected);
             *self.c143_head_stats.borrow_mut()=C143HeadStats::default();
         }
         let result = self.expose_uncached_internal_with_pending(
@@ -1311,7 +1357,18 @@ impl<'a> Machine<'a> {
             self.c145_head_active.set(false);
             self.c146_head_active.set(false);
             self.c147_head_active.set(false);
+            self.c148_head_active.set(false);
             let stats=std::mem::take(&mut *self.c143_head_stats.borrow_mut());
+            if c148_selected {
+                let full_unique=stats.c148_full.len();
+                let projected_unique=stats.c148_projected.len();
+                eprintln!("NUCLEUS_C148_GROUP:source=8799:env=0:authority={}:scope={}:budget={budget}:head_total={}:target_total={}:sampled={}:pending_nonempty={}:missing={}:overflow={}:full_unique={full_unique}:projected_unique={projected_unique}:full_repeats={}:projected_repeats={}",
+                    self.authority.0,self.c140_rhs_work_active.get()!=0,stats.total,
+                    stats.c148_target_total,stats.c148_sampled,stats.c148_pending_nonempty,
+                    stats.c148_missing,stats.c148_overflow,
+                    stats.c148_sampled.saturating_sub(full_unique),
+                    stats.c148_sampled.saturating_sub(projected_unique));
+            }
             if c147_selected {
                 let full_unique=stats.c147_full.len();
                 let projected_unique=stats.c147_projected.len();
@@ -1668,7 +1725,8 @@ impl<'a> Machine<'a> {
             if self.c143_head_active.get() {
                 self.c143_head_stats.borrow_mut().record(
                     &closure,self.expressions.get(closure.expr),&pending,
-                    self.c146_head_active.get(),self.c147_head_active.get());
+                    self.c146_head_active.get(),self.c147_head_active.get(),
+                    self.c148_head_active.get());
             }
             if !visited.insert((self.authority, closure.expr, closure.env.id())) {
                 return Judgment::unknown("reduction-cycle");

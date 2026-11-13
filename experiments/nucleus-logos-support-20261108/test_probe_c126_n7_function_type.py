@@ -365,6 +365,30 @@ class C126TraceTests(unittest.TestCase):
         self.assertEqual(parse_c147_binding_upper_bound(incomplete)[0]['status'],
                          'UNKNOWN_OVERFLOW')
 
+    def test_c148_binding_group_sample_preserves_levels_and_pending(self):
+        from probe_c126_n7_function_type import parse_c148_binding_group_sample
+        good = (
+            'NUCLEUS_C148_GROUP:source=8799:env=0:authority=386:'
+            'scope=false:budget=14155490:head_total=12761384:'
+            'target_total=1400538:sampled=80000:pending_nonempty=17000:'
+            'missing=0:overflow=false:full_unique=50000:projected_unique=48000:'
+            'full_repeats=30000:projected_repeats=32000\n'
+        ).encode()
+        row = parse_c148_binding_group_sample(good)[0]
+        self.assertEqual(row['exact_context_additional_collisions'], 2000)
+        self.assertEqual(row['status'], 'COMPLETE_GROUP_SAMPLE_ONLY')
+        for old, new in ((b'env=0', b'env=1'),
+                         (b'projected_unique=48000', b'projected_unique=50001'),
+                         (b'projected_repeats=32000', b'projected_repeats=32001'),
+                         (b'pending_nonempty=17000', b'pending_nonempty=80001'),
+                         (b'sampled=80000', b'sampled=1400539')):
+            with self.subTest(field=old):
+                with self.assertRaises(AssertionError):
+                    parse_c148_binding_group_sample(good.replace(old, new))
+        self.assertEqual(parse_c148_binding_group_sample(
+            good.replace(b'overflow=false', b'overflow=true'))[0]['status'],
+            'UNKNOWN_OVERFLOW')
+
 
 if __name__ == "__main__":
     unittest.main()

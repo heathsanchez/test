@@ -39,6 +39,7 @@ C143_HEAD_PREFIX = "NUCLEUS_C143_HEADS:"
 C145_ACTION_PREFIX = "NUCLEUS_C145_ACTIONS:"
 C146_BINDING_PREFIX = "NUCLEUS_C146_BINDING:"
 C147_UPPER_PREFIX = "NUCLEUS_C147_UPPER:"
+C148_GROUP_PREFIX = "NUCLEUS_C148_GROUP:"
 
 
 def parse_traces(stderr: bytes):
@@ -563,6 +564,41 @@ def parse_c147_binding_upper_bound(stderr: bytes):
     return rows
 
 
+def parse_c148_binding_group_sample(stderr: bytes):
+    """Group-complete deterministic sample; full universe and pending context retained."""
+    rows = []
+    keys = ("head_total", "target_total", "sampled", "pending_nonempty",
+            "missing", "full_unique", "projected_unique", "full_repeats",
+            "projected_repeats")
+    for line in stderr.decode(errors="replace").splitlines():
+        if not line.startswith(C148_GROUP_PREFIX):
+            continue
+        fields = dict(part.split("=", 1) for part in
+                      line[len(C148_GROUP_PREFIX):].split(":"))
+        assert (int(fields["source"]), int(fields["env"])) == (8799, 0), line
+        assert fields["scope"] in ("true", "false"), line
+        assert int(fields["authority"]) >= 0 and int(fields["budget"]) > 0, line
+        assert fields["overflow"] in ("true", "false"), line
+        counts = {key: int(fields[key]) for key in keys}
+        assert all(n >= 0 for n in counts.values()), line
+        assert 0 <= counts["missing"] <= counts["target_total"] <= counts["head_total"], line
+        assert 0 <= counts["pending_nonempty"] <= counts["sampled"] <= counts["target_total"], line
+        assert counts["projected_unique"] <= counts["full_unique"] <= counts["sampled"], line
+        complete = fields["overflow"] == "false"
+        if complete:
+            assert counts["full_unique"] + counts["full_repeats"] == counts["sampled"], line
+            assert counts["projected_unique"] + counts["projected_repeats"] == counts["sampled"], line
+            assert counts["projected_repeats"] >= counts["full_repeats"], line
+        rows.append({"source": 8799, "env": 0, "authority": int(fields["authority"]),
+                     "scope": fields["scope"] == "true", "budget": int(fields["budget"]),
+                     "overflow": not complete, "status": "COMPLETE_GROUP_SAMPLE_ONLY"
+                     if complete else "UNKNOWN_OVERFLOW", **counts,
+                     "exact_context_additional_collisions": counts["full_unique"]
+                     - counts["projected_unique"]})
+        assert len(rows) <= 8, "unexpectedly broad C148 source sample"
+    return rows
+
+
 def validate_source(source: bytes):
     assert hashlib.sha256(source).hexdigest() == SOURCE_SHA256, "frozen N7 hash mismatch"
     app = None
@@ -610,7 +646,8 @@ def run(binary: Path, source: bytes, budget: int, trace: bool,
         head_reuse_sample_trace: bool = False,
         head_action_mix_trace: bool = False,
         binding_projection_trace: bool = False,
-        binding_upper_bound_trace: bool = False):
+        binding_upper_bound_trace: bool = False,
+        binding_group_sample_trace: bool = False):
     env = {k: v for k, v in os.environ.items() if not k.startswith("NUCLEUS_")}
     env.update(NUCLEUS_EXPERIMENTAL_RELEVANCE="1",
                NUCLEUS_EXPERIMENTAL_DEMAND_MAJOR="1")
@@ -670,6 +707,8 @@ def run(binary: Path, source: bytes, budget: int, trace: bool,
             env["NUCLEUS_C146_BINDING_PROJECTED"] = "1"
         if binding_upper_bound_trace:
             env["NUCLEUS_C147_BINDING_UPPER"] = "1"
+        if binding_group_sample_trace:
+            env["NUCLEUS_C148_BINDING_GROUP"] = "1"
     process = subprocess.run([str(binary), str(budget)], input=source,
                              stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                              env=env, timeout=240)
@@ -722,12 +761,16 @@ def main():
                         help="C146 compare exact and projected binding+pending sampled keys")
     parser.add_argument("--binding-upper-bound-trace", action="store_true",
                         help="C147 all hot BVar1/2 revisits with optimistic context-free key")
+    parser.add_argument("--binding-group-sample-trace", action="store_true",
+                        help="C148 full groups of bound nodes with complete levels and pending")
     args = parser.parse_args()
     if args.binding_projection_trace:
         args.head_action_mix_trace = True
     if args.head_action_mix_trace:
         args.head_reuse_sample_trace = True
     if args.binding_upper_bound_trace:
+        args.head_reuse_sample_trace = True
+    if args.binding_group_sample_trace:
         args.head_reuse_sample_trace = True
     source = args.source.read_bytes()
     validate_source(source)
@@ -747,7 +790,8 @@ def main():
                        args.rhs_exposure_work_trace, args.cache_provenance_trace,
                        args.exact_miss_cost_trace, args.head_reuse_sample_trace,
                        args.head_action_mix_trace, args.binding_projection_trace,
-                       args.binding_upper_bound_trace)
+                       args.binding_upper_bound_trace,
+                       args.binding_group_sample_trace)
         assert (silent.returncode, silent.stdout) == (observed.returncode, observed.stdout), (
             "observer changed the checker verdict or output", budget)
         heads = parse_traces(observed.stderr)
@@ -908,6 +952,22 @@ def main():
                 assert upper["status"] == "COMPLETE_UPPER_BOUND_ONLY", (
                     "C147 bounds unavailable: key-set overflow", budget)
             row["exact_rhs_binding_optimistic_upper"] = uppers
+        if args.binding_group_sample_trace:
+            groups = parse_c148_binding_group_sample(observed.stderr)
+            assert groups and len(groups) == len(reuse), (
+                "C148 full-group source sample absent", budget)
+            for group, sampled in zip(groups, reuse):
+                assert (group["budget"], group["scope"], group["head_total"]) == (
+                    sampled["budget"], sampled["scope"], sampled["total"]), (
+                    "C148 exact source-head mismatch", budget)
+                assert group["target_total"] == sum(
+                    entry["count"] for entry in sampled["top"]
+                    if entry["expr"] in (6, 11)), (
+                    "C148 BVar target source count inconsistent", budget)
+                assert group["missing"] == 0 and group["status"] == (
+                    "COMPLETE_GROUP_SAMPLE_ONLY"), (
+                    "C148 could not complete binding-group sample", budget)
+            row["exact_rhs_binding_group_sample"] = groups
         observations.append(row)
     if args.app_arg_trace and len(observations) == 2:
         low, high = observations

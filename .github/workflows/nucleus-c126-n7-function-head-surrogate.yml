@@ -218,6 +218,14 @@ jobs:
             "$RUNNER_TEMP/c126-original196/good/perf/magma-list-pair-n7.ndjson" \
             --budgets 65536 14155776 --binding-upper-bound-trace \
             | tee "$RUNNER_TEMP/c147-n7-optimistic-binding-upper.json"
+      - name: C148 selected complete binding-node groups with levels and pending
+        run: |
+          set -euo pipefail
+          python3 experiments/nucleus-logos-support-20261108/probe_c126_n7_function_type.py \
+            metatron-kernel/target/release/nucleus-budget-sweep \
+            "$RUNNER_TEMP/c126-original196/good/perf/magma-list-pair-n7.ndjson" \
+            --budgets 65536 14155776 --binding-group-sample-trace \
+            | tee "$RUNNER_TEMP/c148-n7-binding-group-context.json"
       - name: C145 read-only diagnostics native checker regression
         # The checked-relevance signature suite intentionally fails with
         # NUCLEUS_EXPERIMENTAL_RELEVANCE unset (see its dedicated red control).
@@ -251,4 +259,5 @@ jobs:
             ${{ runner.temp }}/c145-n7-exact-head-actions.json
             ${{ runner.temp }}/c146-n7-binding-projection.json
             ${{ runner.temp }}/c147-n7-optimistic-binding-upper.json
+            ${{ runner.temp }}/c148-n7-binding-group-context.json
           if-no-files-found: ignore
