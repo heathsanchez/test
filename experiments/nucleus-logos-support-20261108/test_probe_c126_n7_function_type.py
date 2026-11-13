@@ -3,7 +3,7 @@
 import unittest
 
 from probe_c126_n7_function_type import (
-    parse_traces, summarize_owner_traces, parse_app_edges,
+    parse_traces, summarize_owner_traces, parse_app_edges, parse_arg_obligations,
 )
 
 
@@ -54,6 +54,18 @@ class C126TraceTests(unittest.TestCase):
         self.assertEqual(result[0]["app"], 8805)
         with self.assertRaises(AssertionError):
             parse_app_edges(valid.replace("arg=8804", "arg=8803").encode(), source)
+
+    def test_app_argument_obligation_must_match_source_and_charge(self):
+        sample = ("NUCLEUS_C130_APP_ARG:app=8805:fun=8753:arg=8804:"
+                  "before=65500:after=65260:context=0:state=UNKNOWN:"
+                  "judgment=Unknown { residual: ResidualId(\"unresolved-qualified-recursor-heads\") }\n")
+        result = parse_arg_obligations(sample.encode(),
+                                       {8805: {"fn": 8753, "arg": 8804}})
+        self.assertEqual(result[0]["charged"], 240)
+        self.assertEqual(result[0]["state"], "UNKNOWN")
+        with self.assertRaises(AssertionError):
+            parse_arg_obligations(sample.replace("fun=8753", "fun=8752").encode(),
+                                  {8805: {"fn": 8753, "arg": 8804}})
 
 
 if __name__ == "__main__":
