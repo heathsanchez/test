@@ -1794,8 +1794,6 @@ impl<'a> TypeChecker<'a> {
                     })
             }
             Expr::App { fun, arg } => {
-                #[cfg(feature = "diagnostics")]
-                let c126_before = *remaining;
                 let function_type = self.infer_in(*fun, context, frame, remaining, cache);
                 if let Judgment::Refuted { obstruction } = &function_type {
                     return Judgment::Refuted {
@@ -1814,43 +1812,6 @@ impl<'a> TypeChecker<'a> {
                     let Value::Pi { domain, body } = reduced.proven_value()? else { return None };
                     Some((TypeValue::Term(domain.clone()), PiBody::Closure(body.clone())))
                 });
-                // C126 research-only: witness the actual source App 8835
-                // function-type head before the existing Pi/UNKNOWN decision.
-                // Neither the term nor the budget is modified or memoized.
-                #[cfg(feature = "diagnostics")]
-                if std::env::var_os("NUCLEUS_C126_N7_TYPE_HEAD").is_some()
-                    && expression == ExprId(8835)
-                    && *fun == ExprId(8805)
-                    && *arg == ExprId(8834)
-                {
-                    use std::sync::atomic::{AtomicUsize, Ordering};
-                    static SEEN: AtomicUsize = AtomicUsize::new(0);
-                    if SEEN.fetch_add(1, Ordering::Relaxed) < 64 {
-                        let type_summary = format!("{function_type:?}")
-                            .replace('\n', " ").chars().take(800).collect::<String>();
-                        eprintln!("NUCLEUS_C126_N7_HEAD:application=8835:function=8805:argument=8834:before={c126_before}:after={}:context={}:pi_head={}:type_proven={}:type={type_summary}",
-                            *remaining, context.len(), checked_view.is_some(),
-                            function_type.is_proven());
-                    }
-                }
-                // C129 read-only source-application chain, with AST identity
-                // cross-checked against the frozen NDJSON in the probe.
-                // Source ID is solely a diagnostic filter, never a rule.
-                #[cfg(feature = "diagnostics")]
-                if std::env::var_os("NUCLEUS_C129_APP_EDGE").is_some()
-                    && (8700..=8835).contains(&expression.0)
-                    && context.len() <= 3
-                {
-                    use std::sync::atomic::{AtomicUsize, Ordering};
-                    static SEEN: AtomicUsize = AtomicUsize::new(0);
-                    if expression == ExprId(8805)
-                        || SEEN.fetch_add(1, Ordering::Relaxed) < 512
-                    {
-                        eprintln!("NUCLEUS_C129_APP_EDGE:app={}:fun={}:arg={}:before={c126_before}:after={}:context={}:pi_head={}:type_proven={}",
-                            expression.0, fun.0, arg.0, *remaining, context.len(),
-                            checked_view.is_some(), function_type.is_proven());
-                    }
-                }
                 let Some((domain, body)) = checked_view else {
                     #[cfg(feature = "diagnostics")]
                     if std::env::var_os("NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE").is_some() {
@@ -1898,47 +1859,6 @@ impl<'a> TypeChecker<'a> {
                 let argument_judgment=self.check_with_formation(
                     *arg, &domain, context, frame, remaining, true, cache, true,
                 );
-                // C132: enumerate real nested source argument-check judgments
-                // under the C131 inference owner. No accepted equality is
-                // inferred from shared syntax, replay counts or these logs.
-                #[cfg(feature="diagnostics")]
-                if std::env::var_os("NUCLEUS_C132_APP_ARG").is_some()
-                    && (8700..=8804).contains(&expression.0)
-                    && context.len()<=3
-                {
-                    use std::sync::atomic::{AtomicUsize,Ordering};
-                    static COUNT:AtomicUsize=AtomicUsize::new(0);
-                    if COUNT.fetch_add(1,Ordering::Relaxed)<1024 {
-                        let state=match &argument_judgment {
-                            Judgment::Proven {..}=>"PROVEN",
-                            Judgment::Unknown {..}=>"UNKNOWN",
-                            Judgment::Refuted {..}=>"REFUTED",
-                        };
-                        let preview=format!("{argument_judgment:?}").replace('\n'," ")
-                            .chars().take(300).collect::<String>();
-                        eprintln!("NUCLEUS_C132_APP_ARG:app={}:fun={}:arg={}:context={}:before={c126_before}:after={}:state={state}:judgment={preview}",
-                            expression.0,fun.0,arg.0,context.len(),*remaining);
-                    }
-                }
-                // C130: isolate the source argument proof obligation of
-                // App(8753, 8804) before its result propagates to App 8835.
-                // Read-only; never treats UNKNOWN as an admissible argument.
-                #[cfg(feature = "diagnostics")]
-                if std::env::var_os("NUCLEUS_C130_APP_ARG").is_some()
-                    && expression == ExprId(8805)
-                    && *fun == ExprId(8753)
-                    && *arg == ExprId(8804)
-                {
-                    let state = match &argument_judgment {
-                        Judgment::Proven { .. } => "PROVEN",
-                        Judgment::Unknown { .. } => "UNKNOWN",
-                        Judgment::Refuted { .. } => "REFUTED",
-                    };
-                    let preview = format!("{argument_judgment:?}")
-                        .replace('\n', " ").chars().take(500).collect::<String>();
-                    eprintln!("NUCLEUS_C130_APP_ARG:app=8805:fun=8753:arg=8804:before={c126_before}:after={}:context={}:state={state}:judgment={preview}",
-                        *remaining, context.len());
-                }
                 #[cfg(feature="diagnostics")]
                 if std::env::var_os("NUCLEUS_TRACE_APP_DOMAIN_OBLIGATION").is_some()
                     && matches!(argument_judgment,Judgment::Unknown {..})
@@ -2305,42 +2225,7 @@ impl<'a> TypeChecker<'a> {
                 }
             }
         }
-        // C131: read-only source argument inference receipt. The C130
-        // application owner is Expr8805=App(8753,8804), in the empty context.
-        // Do not conflate a proven inferred type with a proven conversion.
-        #[cfg(feature="diagnostics")]
-        let c131_before = *remaining;
         let inferred = self.infer_in(expression, context, frame, remaining, cache);
-        // C133: exact nested argument of source App8803=App(8802,1477).
-        // Separate source type inference from conversion; no verdict changes.
-        #[cfg(feature="diagnostics")]
-        if std::env::var_os("NUCLEUS_C133_ARG_CONVERT").is_some()
-            && expression.0==1477 && context.is_empty()
-        {
-            let state=match &inferred {
-                Judgment::Proven {..}=>"PROVEN",
-                Judgment::Unknown {..}=>"UNKNOWN",
-                Judgment::Refuted {..}=>"REFUTED",
-            };
-            let actual=format!("{inferred:?}").replace('\n'," ")
-                .chars().take(800).collect::<String>();
-            let expected_preview=format!("{expected:?}").replace('\n'," ")
-                .chars().take(800).collect::<String>();
-            eprintln!("NUCLEUS_C133_ARG_INFER:expr=1477:context=0:frame={}:before={c131_before}:after={}:state={state}:inferred={actual}:expected={expected_preview}",frame.id(),*remaining);
-        }
-        #[cfg(feature="diagnostics")]
-        if std::env::var_os("NUCLEUS_C131_ARG_CONVERT").is_some()
-            && expression.0==8804 && context.is_empty()
-        {
-            let state = match &inferred {
-                Judgment::Proven { .. } => "PROVEN",
-                Judgment::Unknown { .. } => "UNKNOWN",
-                Judgment::Refuted { .. } => "REFUTED",
-            };
-            let inferred_preview=format!("{inferred:?}").chars().take(900).collect::<String>();
-            let expected_preview=format!("{expected:?}").chars().take(900).collect::<String>();
-            eprintln!("NUCLEUS_C131_ARG_INFER:expr=8804:context=0:frame={}:before={c131_before}:after={}:state={state}:inferred={inferred_preview}:expected={expected_preview}",frame.id(),*remaining);
-        }
         #[cfg(feature="diagnostics")]
         if std::env::var_os("NUCLEUS_TRACE_BIDIR_BODY_GAP").is_some()
             && context.len()==5
@@ -2362,31 +2247,6 @@ impl<'a> TypeChecker<'a> {
                     context.len(),
                     context,
                 );
-                #[cfg(feature="diagnostics")]
-                if std::env::var_os("NUCLEUS_C133_ARG_CONVERT").is_some()
-                    && expression.0==1477 && context.is_empty()
-                {
-                    let state=match &conversion {
-                        Judgment::Proven {..}=>"PROVEN",
-                        Judgment::Unknown {..}=>"UNKNOWN",
-                        Judgment::Refuted {..}=>"REFUTED",
-                    };
-                    let preview=format!("{conversion:?}").replace('\n'," ")
-                        .chars().take(800).collect::<String>();
-                    eprintln!("NUCLEUS_C133_ARG_CONVERT:expr=1477:context=0:frame={}:fuel={}:state={state}:judgment={preview}",frame.id(),*remaining);
-                }
-                #[cfg(feature="diagnostics")]
-                if std::env::var_os("NUCLEUS_C131_ARG_CONVERT").is_some()
-                    && expression.0==8804 && context.is_empty()
-                {
-                    let state=match &conversion {
-                        Judgment::Proven { .. } => "PROVEN",
-                        Judgment::Unknown { .. } => "UNKNOWN",
-                        Judgment::Refuted { .. } => "REFUTED",
-                    };
-                    let preview=format!("{conversion:?}").chars().take(900).collect::<String>();
-                    eprintln!("NUCLEUS_C131_ARG_CONVERT:expr=8804:context=0:frame={}:fuel={}:state={state}:judgment={preview}",frame.id(),*remaining);
-                }
                 #[cfg(feature = "diagnostics")]
                 if std::env::var_os("NUCLEUS_TRACE_FAILED_RECEIVER_CONVERSION").is_some()
                     && matches!(&conversion, Judgment::Unknown { residual }

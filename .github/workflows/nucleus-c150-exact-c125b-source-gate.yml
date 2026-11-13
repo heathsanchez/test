@@ -1,0 +1,96 @@
+name: Nucleus C150 recovered C125b source gate
+
+on:
+  push:
+    branches: [research/nucleus-c150-exact-c125b-native-20261114]
+    paths:
+      - .github/workflows/nucleus-c150-exact-c125b-source-gate.yml
+      - metatron-kernel/src/convert.rs
+      - metatron-kernel/src/machine.rs
+      - metatron-kernel/src/typecheck.rs
+      - metatron-kernel/examples/nucleus_budget_ladder.rs
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  exact-source-and-forgery:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RUST_MIN_STACK: '67108864'
+      NUCLEUS_EXPERIMENTAL_RELEVANCE: '1'
+      NUCLEUS_EXPERIMENTAL_EXPECTED_LAMBDA: '1'
+      NUCLEUS_EXPERIMENTAL_DEMAND_MAJOR: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Verify byte identity of recovered C125b checker sources
+        run: |
+          set -euo pipefail
+          printf '%s  %s\n' \
+            3699afdb1967b4b86f5593019ede9cd6c1c6ea3d7213427e1b01306aa5d0a047 metatron-kernel/src/machine.rs \
+            c3d47f4be05dbdcc1ba99eb668fe4cd32873f4e7d8b1b95480f6c1e943bd7f88 metatron-kernel/src/convert.rs \
+            d16b882835a6ccf79adf97191640c37b526ea0d74b7aadcbb6e2a425779c0eb6 metatron-kernel/src/typecheck.rs \
+            ad5161dc49851ea5b7be34263496502309fd6f6958df4e3c6b5a1e6d885d7894 metatron-kernel/examples/nucleus_budget_ladder.rs \
+            | sha256sum -c -
+      - name: Obtain immutable original Arena 196-case input artifact
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/c150-original196"
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/11272848230/zip > "$RUNNER_TEMP/c150-original196.zip"
+          printf '%s  %s\n' f6cd590db7f6fb92b8d1b3ca87231d4b0f521f085d73f93abd005f5caaff86d2 "$RUNNER_TEMP/c150-original196.zip" | sha256sum -c -
+          unzip -p "$RUNNER_TEMP/c150-original196.zip" lean-arena-tests.tar.gz | tar --no-same-owner -xzf - -C "$RUNNER_TEMP/c150-original196"
+          printf '%s  %s\n' abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35 "$RUNNER_TEMP/c150-original196/good/perf/magma-list-pair-n7.ndjson" | sha256sum -c -
+      - name: Build exact recovered source with diagnostics
+        run: |
+          cargo build --locked --release --manifest-path metatron-kernel/Cargo.toml --features diagnostics --example nucleus_budget_ladder
+      - name: Check same-source N7 low/high and three pinned forgery controls
+        run: |
+          set -euo pipefail
+          python3 - "$RUNNER_TEMP/c150-original196/good/perf/magma-list-pair-n7.ndjson" <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+          import subprocess
+          import sys
+
+          binary = Path('metatron-kernel/target/release/examples/nucleus_budget_ladder').resolve()
+          source = Path(sys.argv[1]).read_bytes()
+          assert hashlib.sha256(source).hexdigest() == 'abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35'
+          verdicts = []
+          for budget, expected, word in ((65536, 2, 'Unknown'), (14155776, 0, 'Accept')):
+              proc = subprocess.run([str(binary), str(budget)], input=source,
+                                    capture_output=True, timeout=180, check=False)
+              assert proc.returncode == expected, (budget, proc.returncode, proc.stderr[-1000:])
+              assert not proc.stdout, (budget, proc.stdout[-1000:])
+              assert f'C107_BUDGET:steps={budget}:verdict={word}'.encode() in proc.stderr
+              verdicts.append({'budget': budget, 'exit': proc.returncode})
+
+          fixtures = (
+              ('nucleus-universe-reconcile-20261104/inputs/renamed-pprod-forged-fields.ndjson',
+               '33993418d305e980e224d6102be2fc61ee9c02be1c8c23ccce00a406616ba6d6', 1),
+              ('nucleus-universe-reconcile-20261104/inputs/renamed-pprod-forged-motive.ndjson',
+               '2eb5034aa01b1591cc99577bacc50095e3d8e80709172175f569e1f481f680de', 2),
+              ('nucleus-quotient-reuse-20261104/heldout/mutated.ndjson',
+               'a4425142910417814594d555ccec8ac1b29bbe8d18f12993f20fa1c0253fd692', 1),
+          )
+          for rel, digest, expected in fixtures:
+              payload = (Path('experiments') / rel).read_bytes()
+              assert hashlib.sha256(payload).hexdigest() == digest, rel
+              proc = subprocess.run([str(binary), '65536'], input=payload,
+                                    capture_output=True, timeout=90, check=False)
+              assert proc.returncode == expected, (rel, proc.returncode, proc.stderr[-1000:])
+              assert not proc.stdout, (rel, proc.stdout[-1000:])
+              verdicts.append({'forged': rel, 'exit': proc.returncode})
+          print(json.dumps({'source': 'exact-C125b d8be1443f2f1352634aaf333a282f32e7ec8a719',
+                            'original_input': 'sha256:abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35',
+                            'verdicts': verdicts}, sort_keys=True))
+          PY
+      - name: Run exact-source native Rust tests with selected research flags
+        run: cargo test --locked --manifest-path metatron-kernel/Cargo.toml --features diagnostics
