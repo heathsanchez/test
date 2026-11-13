@@ -1768,6 +1768,10 @@ struct C153NestedCounts {
     calls:usize, proven:usize, unknown:usize,
     leaf_calls:usize, leaf_proven:usize, leaf_potentially_cacheable:usize,
     leaf_head_work:usize, max_leaf_head_work:usize,
+    // C154: nonleaf intervals overlap their descendants; do not sum them.
+    nonleaf_calls:usize, nonleaf_proven:usize, nonleaf_max_head_work:usize,
+    nonleaf_ge_64:usize, nonleaf_ge_1024:usize, nonleaf_ge_65536:usize,
+    already_cached_hits:usize,
 }
 
 pub struct Machine<'a> {
@@ -2277,6 +2281,14 @@ impl<'a> Machine<'a> {
                 counts.leaf_potentially_cacheable+=usize::from(eligible);
                 counts.leaf_head_work+=work;
                 counts.max_leaf_head_work=counts.max_leaf_head_work.max(work);
+            } else {
+                let work=after.saturating_sub(before);
+                counts.nonleaf_calls+=1;
+                counts.nonleaf_proven+=usize::from(result.is_proven());
+                counts.nonleaf_max_head_work=counts.nonleaf_max_head_work.max(work);
+                counts.nonleaf_ge_64+=usize::from(work>=64);
+                counts.nonleaf_ge_1024+=usize::from(work>=1024);
+                counts.nonleaf_ge_65536+=usize::from(work>=65536);
             }
         }
         #[cfg(feature="diagnostics")]
@@ -2349,6 +2361,12 @@ impl<'a> Machine<'a> {
         });
         if let Some(value) = cached {
             #[cfg(feature="diagnostics")]
+            if self.c153_producer_active.get()>0
+                && std::env::var_os("NUCLEUS_C154_NONLEAF_COST").is_some()
+            {
+                self.c153_nested.borrow_mut().already_cached_hits+=1;
+            }
+            #[cfg(feature="diagnostics")]
             c151_event("lookup-hit",Some(&value),true);
             if let Some(fuel) = self.exposure_fuel.get() { self.exposure_fuel.set(Some(fuel.saturating_sub(1))); }
             #[cfg(feature = "diagnostics")]
@@ -2391,6 +2409,11 @@ impl<'a> Machine<'a> {
             eprintln!("NUCLEUS_C153_NESTED:source=8799:env=0:authority={}:budget={budget}:calls={}:proven={}:unknown={}:leaf_calls={}:leaf_proven={}:leaf_potentially_cacheable={}:leaf_head_work={}:max_leaf_head_work={}",
                 self.authority.0,c.calls,c.proven,c.unknown,c.leaf_calls,c.leaf_proven,
                 c.leaf_potentially_cacheable,c.leaf_head_work,c.max_leaf_head_work);
+            if std::env::var_os("NUCLEUS_C154_NONLEAF_COST").is_some() {
+                eprintln!("NUCLEUS_C154_NONLEAF:source=8799:env=0:authority={}:budget={budget}:nonleaf_calls={}:nonleaf_proven={}:nonleaf_max_head_work={}:ge64={}:ge1024={}:ge65536={}:already_cached_hits={}",
+                    self.authority.0,c.nonleaf_calls,c.nonleaf_proven,c.nonleaf_max_head_work,
+                    c.nonleaf_ge_64,c.nonleaf_ge_1024,c.nonleaf_ge_65536,c.already_cached_hits);
+            }
         }
         #[cfg(feature="diagnostics")]
         if let Some(before)=c152_before {
