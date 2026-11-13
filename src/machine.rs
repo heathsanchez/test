@@ -681,11 +681,18 @@ struct C143HeadStats {
     // distinction would be an unsound observational quotient.
     c146_full:HashSet<(Closure,Vec<Closure>)>,
     c146_projected:HashSet<(ExprId,crate::value::LevelSubstitution,u64,Vec<Closure>)>,
+    // C147: intentionally optimistic context-erased census over *all*
+    // visits to BVar1/2. Never use these keys to replay a checked result.
+    c147_target_total:usize,
+    c147_missing:usize,
+    c147_overflow:bool,
+    c147_full:HashSet<(ExprId,u64)>,
+    c147_projected:HashSet<(ExprId,u64)>,
 }
 #[cfg(feature="diagnostics")]
 impl C143HeadStats {
     fn record(&mut self,closure:&Closure,expression:Option<&Expr>,pending:&[Closure],
-        projection_sample:bool) {
+        projection_sample:bool,upper_bound_census:bool) {
         self.total+=1;
         *self.by_expr.entry(closure.expr).or_default()+=1;
         let kind=match expression {
@@ -730,6 +737,26 @@ impl C143HeadStats {
                 }
             }
         }
+        if upper_bound_census && matches!(closure.expr.0,6|11)
+            && let Some(Expr::BVar(index))=expression {
+            self.c147_target_total+=1;
+            if !self.c147_overflow {
+                if let Some(binding_node)=closure.env.diagnostic_binding_node_id(*index) {
+                    let full=(closure.expr,closure.env.id());
+                    let projected=(closure.expr,binding_node);
+                    // This cap bounds diagnostic allocation.  Overflow is an
+                    // explicit UNKNOWN, never a partially complete census.
+                    if (!self.c147_full.contains(&full) && self.c147_full.len()>=1_600_000)
+                        || (!self.c147_projected.contains(&projected)
+                            && self.c147_projected.len()>=1_600_000) {
+                        self.c147_overflow=true;
+                    } else {
+                        self.c147_full.insert(full);
+                        self.c147_projected.insert(projected);
+                    }
+                } else {self.c147_missing+=1;}
+            }
+        }
         if mix&255!=0 {return}
         self.sample_steps+=1;
         if self.sample_seen.contains(closure) {self.sample_repeats+=1;return}
@@ -768,6 +795,8 @@ pub struct Machine<'a> {
     c145_head_active:Cell<bool>,
     #[cfg(feature="diagnostics")]
     c146_head_active:Cell<bool>,
+    #[cfg(feature="diagnostics")]
+    c147_head_active:Cell<bool>,
     #[cfg(feature="diagnostics")]
     c143_head_stats:RefCell<C143HeadStats>,
     #[cfg(test)]
@@ -823,6 +852,8 @@ impl<'a> Machine<'a> {
             c145_head_active:Cell::new(false),
             #[cfg(feature="diagnostics")]
             c146_head_active:Cell::new(false),
+            #[cfg(feature="diagnostics")]
+            c147_head_active:Cell::new(false),
             #[cfg(feature="diagnostics")]
             c143_head_stats:RefCell::new(C143HeadStats::default()),
             #[cfg(test)]
@@ -1260,10 +1291,14 @@ impl<'a> Machine<'a> {
         let c146_selected=c145_selected
             && std::env::var_os("NUCLEUS_C146_BINDING_PROJECTED").is_some();
         #[cfg(feature="diagnostics")]
+        let c147_selected=c143_selected
+            && std::env::var_os("NUCLEUS_C147_BINDING_UPPER").is_some();
+        #[cfg(feature="diagnostics")]
         if c143_selected {
             self.c143_head_active.set(true);
             self.c145_head_active.set(c145_selected);
             self.c146_head_active.set(c146_selected);
+            self.c147_head_active.set(c147_selected);
             *self.c143_head_stats.borrow_mut()=C143HeadStats::default();
         }
         let result = self.expose_uncached_internal_with_pending(
@@ -1275,7 +1310,19 @@ impl<'a> Machine<'a> {
             self.c143_head_active.set(false);
             self.c145_head_active.set(false);
             self.c146_head_active.set(false);
+            self.c147_head_active.set(false);
             let stats=std::mem::take(&mut *self.c143_head_stats.borrow_mut());
+            if c147_selected {
+                let full_unique=stats.c147_full.len();
+                let projected_unique=stats.c147_projected.len();
+                let eligible=stats.c147_target_total.saturating_sub(stats.c147_missing);
+                let scope=self.c140_rhs_work_active.get()!=0;
+                eprintln!("NUCLEUS_C147_UPPER:source=8799:env=0:authority={}:scope={scope}:budget={budget}:head_total={}:target_total={}:missing={}:overflow={}:full_unique={full_unique}:projected_unique={projected_unique}:full_repeats={}:projected_repeats={}",
+                    self.authority.0,stats.total,stats.c147_target_total,
+                    stats.c147_missing,stats.c147_overflow,
+                    eligible.saturating_sub(full_unique),
+                    eligible.saturating_sub(projected_unique));
+            }
             if c146_selected {
                 let full_unique=stats.c146_full.len();
                 let projected_unique=stats.c146_projected.len();
@@ -1621,7 +1668,7 @@ impl<'a> Machine<'a> {
             if self.c143_head_active.get() {
                 self.c143_head_stats.borrow_mut().record(
                     &closure,self.expressions.get(closure.expr),&pending,
-                    self.c146_head_active.get());
+                    self.c146_head_active.get(),self.c147_head_active.get());
             }
             if !visited.insert((self.authority, closure.expr, closure.env.id())) {
                 return Judgment::unknown("reduction-cycle");
