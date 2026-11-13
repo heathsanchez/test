@@ -203,7 +203,10 @@ jobs:
             --budgets 65536 14155776 --head-action-mix-trace \
             | tee "$RUNNER_TEMP/c145-n7-exact-head-actions.json"
       - name: C145 read-only diagnostics native checker regression
-        run: cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml --features diagnostics -q
+        # The checked-relevance signature suite intentionally fails with
+        # NUCLEUS_EXPERIMENTAL_RELEVANCE unset (see its dedicated red control).
+        # Reuse the source-qualified native checker gate's explicit modes.
+        run: NUCLEUS_EXPERIMENTAL_RELEVANCE=1 NUCLEUS_EXPERIMENTAL_EXPECTED_LAMBDA=1 cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml --features diagnostics -q
       - name: Preserve source-native discriminator receipt
         if: always()
         uses: actions/upload-artifact@v4
