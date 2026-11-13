@@ -1771,6 +1771,10 @@ pub struct Machine<'a> {
     exposure_fuel: Cell<Option<usize>>,
     exposure_depth: Cell<usize>,
     #[cfg(feature="diagnostics")]
+    c152_head_active:Cell<usize>,
+    #[cfg(feature="diagnostics")]
+    c152_head_kinds:RefCell<[usize;8]>,
+    #[cfg(feature="diagnostics")]
     c97_major_active:Cell<usize>,
     #[cfg(feature="diagnostics")]
     c97_steps:RefCell<C97Steps>,
@@ -1827,6 +1831,10 @@ impl<'a> Machine<'a> {
             neutral_projection_depth: Cell::new(0),
             exposure_fuel: Cell::new(None),
             exposure_depth: Cell::new(0),
+            #[cfg(feature="diagnostics")]
+            c152_head_active:Cell::new(0),
+            #[cfg(feature="diagnostics")]
+            c152_head_kinds:RefCell::new([0;8]),
             #[cfg(feature="diagnostics")]
             c97_major_active:Cell::new(0),
             #[cfg(feature="diagnostics")]
@@ -2301,10 +2309,35 @@ impl<'a> Machine<'a> {
         }
         #[cfg(feature="diagnostics")]
         c151_event("lookup-miss",None,false);
+        #[cfg(feature="diagnostics")]
+        let c152_exact=c151_exact
+            && std::env::var_os("NUCLEUS_C152_EXACT_HEAD_COST").is_some();
+        #[cfg(feature="diagnostics")]
+        let c152_before=if c152_exact {
+            self.c152_head_active.set(self.c152_head_active.get()+1);
+            Some(*self.c152_head_kinds.borrow())
+        } else {None};
         let result = self.expose_uncached_internal_with_pending(
             closure, transparency, budget, false,
             preserve_stuck_projection, pending,
         );
+        #[cfg(feature="diagnostics")]
+        if let Some(before)=c152_before {
+            self.c152_head_active.set(self.c152_head_active.get().saturating_sub(1));
+            let after=*self.c152_head_kinds.borrow();
+            let kinds:[usize;8]=std::array::from_fn(|i|after[i].saturating_sub(before[i]));
+            let total=kinds.iter().sum::<usize>();
+            let outcome=if result.is_proven(){"PROVEN"}
+                else if result.is_unknown(){"UNKNOWN"} else {"REFUTED"};
+            let head=match result.proven_value().map(|e|&e.value) {
+                Some(Value::Neutral(Neutral{head:NeutralHead::Const{name,..},spine})) =>
+                    format!("Const{}A{}",name.0,spine.len()),
+                Some(_)=>"OtherValue".to_owned(),
+                None=>"None".to_owned(),
+            };
+            eprintln!("NUCLEUS_C152_HEADS:source=8799:env=0:authority={}:budget={budget}:outcome={outcome}:head={head}:total={total}:bvar={}:app={}:lam={}:const={}:proj={}:nat={}:let={}:other={}",
+                self.authority.0,kinds[0],kinds[1],kinds[2],kinds[3],kinds[4],kinds[5],kinds[6],kinds[7]);
+        }
         #[cfg(feature="diagnostics")]
         c151_event(if result.is_proven(){"uncached-proven"}
             else if result.is_unknown(){"uncached-unknown"}
@@ -2634,6 +2667,20 @@ impl<'a> Machine<'a> {
             }
             budget -= 1;
             if let Some(fuel) = self.exposure_fuel.get() { self.exposure_fuel.set(Some(fuel - 1)); }
+            #[cfg(feature="diagnostics")]
+            if self.c152_head_active.get()>0 {
+                let kind=match self.expressions.get(closure.expr) {
+                    Some(Expr::BVar(_))=>0,
+                    Some(Expr::App{..})=>1,
+                    Some(Expr::Lam{..})=>2,
+                    Some(Expr::Const{..})=>3,
+                    Some(Expr::Proj{..})=>4,
+                    Some(Expr::NatLit(_))=>5,
+                    Some(Expr::Let{..})=>6,
+                    _=>7,
+                };
+                self.c152_head_kinds.borrow_mut()[kind]+=1;
+            }
             if !visited.insert((self.authority, closure.expr, closure.env.id())) {
                 return Judgment::unknown("reduction-cycle");
             }
