@@ -2,7 +2,7 @@
 
 import unittest
 
-from probe_c126_n7_function_type import parse_traces
+from probe_c126_n7_function_type import parse_traces, summarize_owner_traces
 
 
 class C126TraceTests(unittest.TestCase):
@@ -27,6 +27,21 @@ class C126TraceTests(unittest.TestCase):
         ).encode()
         with self.assertRaises(AssertionError):
             parse_traces(invalid)
+
+    def test_owner_summary_keeps_resource_counters_separate_from_typing(self):
+        sample = (
+            "NUCLEUS_C97_OWNER:start=1000:spent=300:major_work=200:loops=45:"
+            "unique_node_env=20:repeat_node_env=5:unique_head_pending=15:repeat_head_pending=3\n"
+            "NUCLEUS_C97_OWNER:start=2000:spent=100:major_work=80:loops=12:"
+            "unique_node_env=10:repeat_node_env=2:unique_head_pending=8:repeat_head_pending=1\n"
+            "NUCLEUS_NESTED_REPLAY_FAILURE:depth=2:head=NameId(147):major=Unknown\n"
+        ).encode()
+        summary = summarize_owner_traces(sample)
+        self.assertEqual(summary["c97_total_spent"], 400)
+        self.assertEqual(summary["c97_max_spent"], 300)
+        self.assertEqual(summary["c97_repeated_node_env"], 7)
+        self.assertEqual(summary["c97_repeated_head_pending"], 4)
+        self.assertEqual(summary["counts"]["NUCLEUS_NESTED_REPLAY_FAILURE"], 1)
 
 
 if __name__ == "__main__":
