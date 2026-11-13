@@ -1762,6 +1762,14 @@ impl Drop for ExposureFuelScope<'_> {
     fn drop(&mut self) { self.depth.set(self.depth.get().saturating_sub(1)); if self.owner { self.fuel.set(None); } }
 }
 
+#[cfg(feature="diagnostics")]
+#[derive(Default)]
+struct C153NestedCounts {
+    calls:usize, proven:usize, unknown:usize,
+    leaf_calls:usize, leaf_proven:usize, leaf_potentially_cacheable:usize,
+    leaf_head_work:usize, max_leaf_head_work:usize,
+}
+
 pub struct Machine<'a> {
     authority: AuthorityId,
     demand_major: bool,
@@ -1774,6 +1782,12 @@ pub struct Machine<'a> {
     c152_head_active:Cell<usize>,
     #[cfg(feature="diagnostics")]
     c152_head_kinds:RefCell<[usize;8]>,
+    #[cfg(feature="diagnostics")]
+    c153_producer_active:Cell<usize>,
+    #[cfg(feature="diagnostics")]
+    c153_entry_serial:Cell<usize>,
+    #[cfg(feature="diagnostics")]
+    c153_nested:RefCell<C153NestedCounts>,
     #[cfg(feature="diagnostics")]
     c97_major_active:Cell<usize>,
     #[cfg(feature="diagnostics")]
@@ -1835,6 +1849,12 @@ impl<'a> Machine<'a> {
             c152_head_active:Cell::new(0),
             #[cfg(feature="diagnostics")]
             c152_head_kinds:RefCell::new([0;8]),
+            #[cfg(feature="diagnostics")]
+            c153_producer_active:Cell::new(0),
+            #[cfg(feature="diagnostics")]
+            c153_entry_serial:Cell::new(0),
+            #[cfg(feature="diagnostics")]
+            c153_nested:RefCell::new(C153NestedCounts::default()),
             #[cfg(feature="diagnostics")]
             c97_major_active:Cell::new(0),
             #[cfg(feature="diagnostics")]
@@ -2209,6 +2229,16 @@ impl<'a> Machine<'a> {
         preserve_stuck_projection: bool,
         pending: Vec<Closure>,
     ) -> Judgment<Exposure> {
+        // C153 records *completed invocation intervals*, not matching head
+        // revisits. Leaf intervals are disjoint, so their work is not counted
+        // twice. This is an observer; it does not change or populate caches.
+        #[cfg(feature="diagnostics")]
+        let c153_entry=if self.c153_producer_active.get()>0 {
+            let serial=self.c153_entry_serial.get()+1;
+            self.c153_entry_serial.set(serial);
+            let heads=self.c152_head_kinds.borrow().iter().sum::<usize>();
+            Some((serial,heads))
+        } else {None};
         #[cfg(feature="diagnostics")]
         let c117_call=(self.c117_completed_entry_enabled && self.c115_major_active.get()!=0)
             .then(||{
@@ -2226,6 +2256,29 @@ impl<'a> Machine<'a> {
             });
         let result=self.expose_internal_with_pending_impl(
             closure,transparency,budget,record_witnesses,preserve_stuck_projection,pending);
+        #[cfg(feature="diagnostics")]
+        if let Some((serial,before))=c153_entry {
+            let leaf=self.c153_entry_serial.get()==serial;
+            let after=self.c152_head_kinds.borrow().iter().sum::<usize>();
+            let eligible=!record_witnesses && result.proven_value().is_some_and(|e|{
+                !(self.demand_major && matches!(&e.value,
+                    Value::Neutral(Neutral{head:NeutralHead::Const{name,..},..})
+                    if self.recursor_reductions.contains_key(name))
+                    && !self.recursor_has_immutable_local_major(&e.value))
+            });
+            let mut counts=self.c153_nested.borrow_mut();
+            counts.calls+=1;
+            counts.proven+=usize::from(result.is_proven());
+            counts.unknown+=usize::from(result.is_unknown());
+            if leaf {
+                let work=after.saturating_sub(before);
+                counts.leaf_calls+=1;
+                counts.leaf_proven+=usize::from(result.is_proven());
+                counts.leaf_potentially_cacheable+=usize::from(eligible);
+                counts.leaf_head_work+=work;
+                counts.max_leaf_head_work=counts.max_leaf_head_work.max(work);
+            }
+        }
         #[cfg(feature="diagnostics")]
         if let Some((state,cached,entry_bvar))=c117_call {
             let eligible=if record_witnesses {None} else {
@@ -2317,10 +2370,28 @@ impl<'a> Machine<'a> {
             self.c152_head_active.set(self.c152_head_active.get()+1);
             Some(*self.c152_head_kinds.borrow())
         } else {None};
+        #[cfg(feature="diagnostics")]
+        let c153_exact=c152_exact
+            && self.c153_producer_active.get()==0
+            && std::env::var_os("NUCLEUS_C153_NESTED_COMPLETIONS").is_some();
+        #[cfg(feature="diagnostics")]
+        if c153_exact {
+            self.c153_producer_active.set(self.c153_producer_active.get()+1);
+            self.c153_entry_serial.set(0);
+            *self.c153_nested.borrow_mut()=C153NestedCounts::default();
+        }
         let result = self.expose_uncached_internal_with_pending(
             closure, transparency, budget, false,
             preserve_stuck_projection, pending,
         );
+        #[cfg(feature="diagnostics")]
+        if c153_exact {
+            self.c153_producer_active.set(self.c153_producer_active.get().saturating_sub(1));
+            let c=self.c153_nested.borrow();
+            eprintln!("NUCLEUS_C153_NESTED:source=8799:env=0:authority={}:budget={budget}:calls={}:proven={}:unknown={}:leaf_calls={}:leaf_proven={}:leaf_potentially_cacheable={}:leaf_head_work={}:max_leaf_head_work={}",
+                self.authority.0,c.calls,c.proven,c.unknown,c.leaf_calls,c.leaf_proven,
+                c.leaf_potentially_cacheable,c.leaf_head_work,c.max_leaf_head_work);
+        }
         #[cfg(feature="diagnostics")]
         if let Some(before)=c152_before {
             self.c152_head_active.set(self.c152_head_active.get().saturating_sub(1));
