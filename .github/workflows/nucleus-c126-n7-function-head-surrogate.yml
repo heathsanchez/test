@@ -88,6 +88,14 @@ jobs:
             "$RUNNER_TEMP/c126-original196/good/perf/magma-list-pair-n7.ndjson" \
             --budgets 65536 14155776 --conversion-trace \
             | tee "$RUNNER_TEMP/c131-n7-argument-conversion-stages.json"
+      - name: C132 classify nested source argument judgments inside N7 inference
+        run: |
+          set -euo pipefail
+          python3 experiments/nucleus-logos-support-20261108/probe_c126_n7_function_type.py \
+            metatron-kernel/target/release/nucleus-budget-sweep \
+            "$RUNNER_TEMP/c126-original196/good/perf/magma-list-pair-n7.ndjson" \
+            --budgets 65536 14155776 --app-arg-trace \
+            | tee "$RUNNER_TEMP/c132-n7-inner-argument-edges.json"
       - name: Preserve source-native discriminator receipt
         if: always()
         uses: actions/upload-artifact@v4
@@ -100,4 +108,5 @@ jobs:
             ${{ runner.temp }}/c129-n7-application-chain.json
             ${{ runner.temp }}/c130-n7-argument-obligation.json
             ${{ runner.temp }}/c131-n7-argument-conversion-stages.json
+            ${{ runner.temp }}/c132-n7-inner-argument-edges.json
           if-no-files-found: ignore
