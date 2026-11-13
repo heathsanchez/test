@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 88091)
-Total output lines: 6633
-
 use std::cell::RefCell;
 use std::collections::{hash_map::Entry, HashMap};
 use std::rc::Rc;
@@ -1654,7 +1651,3622 @@ impl<'a> TypeChecker<'a> {
             },
             Expr::BVar(index) => {
                 if let Some(EnvBinding::NatLit(_)) = frame.lookup(*index) {
-                    let Some(nat) = self.en…48091 tokens truncated…ments = Vec::new();
+                    let Some(nat) = self.environment.nat_primitives() else { return Judgment::unknown("native-nat-binding-without-qualified-Nat"); };
+                    return Judgment::proven(TypeValue::Term(self.closure(nat.type_expr,EnvFrame::empty())),"qualified-native-Nat-binding-type");
+                }
+                let Some(offset) = usize::try_from(*index).ok() else {
+                    return Judgment::refuted("unbound-bvar");
+                };
+                if let Some(checked)=self.checked_type_of_bound_source(
+                    frame,*index,context,
+                ){
+                    return Judgment::proven(checked,"source-checked-lexical-binding");
+                }
+                // Canonical binder transport with an explicit source witness.
+                // The checker creates lexical FreeId(k) exactly when opening
+                // context entry k. If the captured frame exposes one of these
+                // canonical locals, its type is context[k], not necessarily
+                // the type of the most recent binder at de Bruijn position k.
+                //
+                // Crucially, noncanonical source-derived/synthetic IDs still
+                // use the original type-inference procedure. Those frames
+                // have NOT supplied this exact binder correspondence. This
+                // is not an equality between FreeIds or between data terms.
+                if std::env::var_os("NUCLEUS_EXPERIMENTAL_CONTEXT_BINDER").is_some()
+                    && let Some(EnvBinding::Free(free)) = frame.lookup(*index)
+                    && let Ok(canonical_index) = usize::try_from(free.0)
+                    && let Some(qualified_type) = context.get(canonical_index)
+                {
+                    #[cfg(feature = "diagnostics")]
+                    if std::env::var_os("NUCLEUS_TRACE_CONTEXT_BINDER").is_some() {
+                        if context.len().checked_sub(offset + 1) != Some(canonical_index) {
+                            use std::sync::atomic::{AtomicUsize, Ordering};
+                            static WITNESSES: AtomicUsize = AtomicUsize::new(0);
+                            if WITNESSES.fetch_add(1, Ordering::Relaxed) < 80 {
+                                eprintln!(
+                                    "NUCLEUS_CONTEXT_BINDER_TRANSPORT:expr={expression:?}:bvar={index}:free={free:?}:context={}:frame={}:source_type={qualified_type:?}",
+                                    context.len(),frame.id(),
+                                );
+                            }
+                        }
+                    }
+                    Judgment::proven(qualified_type.clone(), "source-captured-canonical-binder-type")
+                } else {
+                    context.iter().rev().nth(offset).cloned()
+                        .map(|value| Judgment::proven(value, "context-lookup"))
+                        .unwrap_or_else(|| Judgment::refuted("unbound-bvar"))
+                }
+            }
+            Expr::Sort(level) => match self.instantiate(*level, *remaining) {
+                Ok(level) => Judgment::proven(TypeValue::Sort(succ(level)), "sort-inference"),
+                Err(()) => Judgment::unknown("unresolved-sort-level"),
+            },
+            Expr::Const { name, levels } => {
+                let Some(declaration) = self.environment.get(*name) else {
+                    return Judgment::refuted("unknown-constant");
+                };
+                if levels.len() != declaration.level_params.len() {
+                    return Judgment::refuted("constant-level-arity");
+                }
+                let mut substitution = Vec::with_capacity(levels.len());
+                for (parameter, level) in declaration.level_params.iter().zip(levels) {
+                    let Ok(level) = self.instantiate(*level, *remaining) else {
+                        return Judgment::unknown("polymorphic-constant-instantiation");
+                    };
+                    substitution.push((*parameter, level));
+                }
+                Judgment::proven(
+                    TypeValue::Term(Closure::with_levels(
+                        declaration.ty,
+                        EnvFrame::empty(),
+                        LevelSubstitution::new(substitution),
+                    )),
+                    "constant-type",
+                )
+            }
+            Expr::Pi { domain, body } => {
+                let domain_type = self.infer_in(*domain, context, frame, remaining, cache);
+                let domain_sort = match self.sort_level(domain_type, *remaining) {
+                    Judgment::Proven { value, .. } => value,
+                    Judgment::Refuted { obstruction } => {
+                        return Judgment::Refuted { obstruction };
+                    }
+                    Judgment::Unknown { residual } => return Judgment::Unknown { residual },
+                };
+                let domain_value = TypeValue::Term(self.closure(*domain, frame.clone()));
+                let mut extended = context.to_vec();
+                extended.push(domain_value);
+                let Some(free) = fresh_local(context.len()) else {
+                    return Judgment::unknown("binder-depth-overflow");
+                };
+                let body_frame = self.checked_source_frame(
+                    expression, CheckedFrameRole::InferPi, frame,
+                    TypeValue::Term(self.closure(*domain,frame.clone())), &extended,
+                    CheckedFrameBinding::Free(free),
+                );
+                let body_type = self.infer_in(*body, &extended, &body_frame, remaining, cache);
+                let body_sort = match self.sort_level(body_type, *remaining) {
+                    Judgment::Proven { value, .. } => value,
+                    Judgment::Refuted { obstruction } => {
+                        return Judgment::Refuted { obstruction };
+                    }
+                    Judgment::Unknown { residual } => return Judgment::Unknown { residual },
+                };
+                Judgment::proven(
+                    TypeValue::Sort(imax(domain_sort, body_sort)),
+                    "pi-sort-inference",
+                )
+            }
+            Expr::Lam { domain, body } => {
+                let domain_type = self.infer_in(*domain, context, frame, remaining, cache);
+                match self.sort_level(domain_type, *remaining) {
+                    Judgment::Proven { .. } => {}
+                    Judgment::Refuted { obstruction } => {
+                        return Judgment::Refuted { obstruction };
+                    }
+                    Judgment::Unknown { residual } => return Judgment::Unknown { residual },
+                }
+                let domain_type = TypeValue::Term(self.closure(*domain, frame.clone()));
+                let mut extended = context.to_vec();
+                extended.push(domain_type.clone());
+                let Some(free) = fresh_local(context.len()) else {
+                    return Judgment::unknown("binder-depth-overflow");
+                };
+                let body_frame = self.checked_source_frame(
+                    expression, CheckedFrameRole::InferLambda, frame, domain_type.clone(),
+                    &extended, CheckedFrameBinding::Free(free),
+                );
+                #[cfg(feature="diagnostics")]
+                if std::env::var_os("NUCLEUS_TRACE_SOURCE_PROOF_BETA").is_some()
+                    && matches!((expression.0,domain.0),
+                        (7143,7074)|(6897,6828)|(5728,5659)|(5725,5656))
+                {
+                    eprintln!(
+                        "NUCLEUS_SOURCE_BINDER_INTRO:route=infer:lambda={expression:?}:ctx={}:free={free:?}:binding_node={}:source_frame={}:domain={domain:?}",
+                        context.len(),body_frame.id(),frame.id(),
+                    );
+                }
+                self.infer_in(*body, &extended, &body_frame, remaining, cache)
+                    .map(|body_type| TypeValue::Pi {
+                        domain: Box::new(domain_type),
+                        body: Box::new(body_type),
+                        binder: free,
+                    })
+            }
+            Expr::App { fun, arg } => {
+                #[cfg(feature = "diagnostics")]
+                let c126_before = *remaining;
+                let function_type = self.infer_in(*fun, context, frame, remaining, cache);
+                if let Judgment::Refuted { obstruction } = &function_type {
+                    return Judgment::Refuted {
+                        obstruction: *obstruction,
+                    };
+                }
+                let ordinary_view = self.pi_view(function_type.clone(), *remaining);
+                let checked_view = ordinary_view.or_else(|| {
+                    if self.delta_policy != crate::convert::DeltaPolicy::GuardedSemanticFallback {
+                        return None;
+                    }
+                    let TypeValue::Term(term) = function_type.proven_value()? else { return None };
+                    let reduced = crate::convert::checked_source_type_value(
+                        self, term.clone(), context, *remaining,
+                    );
+                    let Value::Pi { domain, body } = reduced.proven_value()? else { return None };
+                    Some((TypeValue::Term(domain.clone()), PiBody::Closure(body.clone())))
+                });
+                // C126 research-only: witness the actual source App 8835
+                // function-type head before the existing Pi/UNKNOWN decision.
+                // Neither the term nor the budget is modified or memoized.
+                #[cfg(feature = "diagnostics")]
+                if std::env::var_os("NUCLEUS_C126_N7_TYPE_HEAD").is_some()
+                    && expression == ExprId(8835)
+                    && *fun == ExprId(8805)
+                    && *arg == ExprId(8834)
+                {
+                    use std::sync::atomic::{AtomicUsize, Ordering};
+                    static SEEN: AtomicUsize = AtomicUsize::new(0);
+                    if SEEN.fetch_add(1, Ordering::Relaxed) < 64 {
+                        let type_summary = format!("{function_type:?}")
+                            .replace('\n', " ").chars().take(800).collect::<String>();
+                        eprintln!("NUCLEUS_C126_N7_HEAD:application=8835:function=8805:argument=8834:before={c126_before}:after={}:context={}:pi_head={}:type_proven={}:type={type_summary}",
+                            *remaining, context.len(), checked_view.is_some(),
+                            function_type.is_proven());
+                    }
+                }
+                // C129 read-only source-application chain, with AST identity
+                // cross-checked against the frozen NDJSON in the probe.
+                // Source ID is solely a diagnostic filter, never a rule.
+                #[cfg(feature = "diagnostics")]
+                if std::env::var_os("NUCLEUS_C129_APP_EDGE").is_some()
+                    && (8700..=8835).contains(&expression.0)
+                    && context.len() <= 3
+                {
+                    use std::sync::atomic::{AtomicUsize, Ordering};
+                    static SEEN: AtomicUsize = AtomicUsize::new(0);
+                    if expression == ExprId(8805)
+                        || SEEN.fetch_add(1, Ordering::Relaxed) < 512
+                    {
+                        eprintln!("NUCLEUS_C129_APP_EDGE:app={}:fun={}:arg={}:before={c126_before}:after={}:context={}:pi_head={}:type_proven={}",
+                            expression.0, fun.0, arg.0, *remaining, context.len(),
+                            checked_view.is_some(), function_type.is_proven());
+                    }
+                }
+                let Some((domain, body)) = checked_view else {
+                    #[cfg(feature = "diagnostics")]
+                    if std::env::var_os("NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE").is_some() {
+                        let mut reducible = None;
+                        let mut full = None;
+                        if let Judgment::Proven {
+                            value: TypeValue::Term(closure),
+                            ..
+                        } = &function_type
+                        {
+                            reducible = Some(
+                                self.machine()
+                                    .expose(
+                                        closure.clone(),
+                                        Transparency::Reducible,
+                                        (*remaining).min(4096),
+                                    ),
+                            );
+                            full = Some(
+                                self.machine()
+                                    .expose(
+                                        closure.clone(),
+                                        Transparency::Full,
+                                        (*remaining).min(4096),
+                                    ),
+                            );
+                        }
+                        eprintln!(
+                            "NUCLEUS_APPLICATION_FUNCTION_TYPE:application={:?}:function={:?}:argument={:?}:context_len={}:frame={}:remaining={}:function_type={:?}:reducible={:?}:full={:?}",
+                            expression,
+                            fun,
+                            arg,
+                            context.len(),
+                            frame.id(),
+                            *remaining,
+                            function_type,
+                            reducible,
+                            full,
+                        );
+                    }
+                    return Judgment::unknown("application-function-type");
+                };
+                // Proven function inference in the checked caller Γ yields
+                // a formed Pi domain; pi_view only exposes that proved type.
+                let argument_judgment=self.check_with_formation(
+                    *arg, &domain, context, frame, remaining, true, cache, true,
+                );
+                #[cfg(feature="diagnostics")]
+                if std::env::var_os("NUCLEUS_TRACE_APP_DOMAIN_OBLIGATION").is_some()
+                    && matches!(argument_judgment,Judgment::Unknown {..})
+                    && (context.len()==4 || context.len()==11)
+                {
+                    use std::sync::atomic::{AtomicUsize,Ordering};
+                    static TRACED:AtomicUsize=AtomicUsize::new(0);
+                    if TRACED.fetch_add(1,Ordering::Relaxed)<24 {
+                        let binding=match self.expressions.get(*arg){
+                            Some(Expr::BVar(i))=>frame.lookup_with_node_id(*i),
+                            _=>None,
+                        };
+                        eprintln!(
+                            "NUCLEUS_APP_DOMAIN_OBLIGATION:application={expression:?}:function={fun:?}:argument={arg:?}:argument_shape={:?}:argument_binding={binding:?}:expected_domain={domain:?}:judgment={argument_judgment:?}:context_depth={}:frame={}:remaining={}:source_head={:?}",
+                            self.expressions.get(*arg),context.len(),frame.id(),
+                            *remaining,self.expressions.get(*fun),
+                        );
+                    }
+                }
+                match argument_judgment {
+                    Judgment::Proven { .. } => {
+                        // The function was checked under a fresh local above, and
+                        // the argument was checked against its domain. Re-infer a
+                        // literal lambda body in the substituted environment:
+                        // its inferred Pi body is open, not a constant codomain.
+                        if let PiBody::Fixed(binder, inferred_body) = &body
+                            && (!matches!(self.expressions.get(*fun), Some(Expr::Lam { .. }))
+                                || self.type_depends_on_free(
+                                    inferred_body,
+                                    *binder,
+                                    (*remaining).min(4096),
+                                ) != Some(false))
+                            && let Some(instantiated) = self.infer_literal_beta_spine(
+                                expression, context, frame, remaining, cache,
+                            )
+                        {
+                            return instantiated;
+                        }
+                        let result = match body {
+                            PiBody::Fixed(binder, inferred_body) => {
+                                let actual = self.closure(*arg, frame.clone());
+                                let Some(type_value) = self.instantiate_fixed_pi_body(
+                                    &inferred_body, binder, &actual, remaining,
+                                ) else {
+                                    return Judgment::unknown("fixed-pi-binder-substitution");
+                                };
+                                type_value
+                            }
+                            PiBody::Closure(body) => {
+                                let actual=self.closure(*arg,frame.clone());
+                                let typed_frame=body.env.extend(actual);
+                                self.retain_checked_elimination(
+                                    &typed_frame,domain.clone(),context,
+                                );
+                                TypeValue::Term(Closure::with_levels(
+                                    body.expr,typed_frame,body.levels,
+                                ))
+                            },
+                        };
+                        Judgment::proven(result, "application-type-instantiation")
+                    }
+                    Judgment::Refuted { obstruction } => Judgment::Refuted { obstruction },
+                    Judgment::Unknown { residual } => Judgment::Unknown { residual },
+                }
+            }
+            Expr::Proj {
+                type_name,
+                index,
+                structure,
+            } => {
+                let specs = self.environment.projection_specs();
+                let Some(spec) = specs.get(type_name) else {
+                    return Judgment::unknown("unsupported-projection");
+                };
+                let Ok(index) = usize::try_from(*index) else {
+                    return Judgment::refuted("projection-index-overflow");
+                };
+                let Some(field_type) = spec.field_types.get(index).cloned() else {
+                    return Judgment::refuted("projection-index-out-of-range");
+                };
+                let structure_type =
+                    match self.infer_in(*structure, context, frame, remaining, cache) {
+                        Judgment::Proven { value, .. } => value,
+                        Judgment::Refuted { obstruction } => {
+                            return Judgment::Refuted { obstruction };
+                        }
+                        Judgment::Unknown { residual } => return Judgment::Unknown { residual },
+                    };
+                let TypeValue::Term(structure_type) = structure_type else {
+                    return Judgment::refuted("projection-not-structure");
+                };
+                let exposed =
+                    self.machine()
+                        .expose(structure_type, Transparency::Reducible, *remaining);
+                let neutral = match exposed {
+                    Judgment::Proven {
+                        value: Value::Neutral(neutral),
+                        ..
+                    } => neutral,
+                    Judgment::Proven { .. } => {
+                        return Judgment::refuted("projection-not-structure");
+                    }
+                    Judgment::Refuted { obstruction } => {
+                        return Judgment::Refuted { obstruction };
+                    }
+                    Judgment::Unknown { residual } => return Judgment::Unknown { residual },
+                };
+                let NeutralHead::Const { name, levels } = neutral.head else {
+                    return Judgment::refuted("projection-not-structure");
+                };
+                if name != *type_name {
+                    return Judgment::refuted("projection-type-name-mismatch");
+                }
+
+                let field_type = match field_type {
+                    ProjectionFieldType::Parameter(parameter_index) => {
+                        let Some(field_type) = neutral.spine.get(parameter_index).cloned() else {
+                            return Judgment::refuted("projection-parameter-arity");
+                        };
+                        field_type
+                    }
+                    ProjectionFieldType::Derived(field_expression) => {
+                        if neutral.spine.len() < spec.num_params {
+                            return Judgment::refuted("projection-parameter-arity");
+                        }
+                        let Some(declaration) = self.environment.get(*type_name) else {
+                            return Judgment::unknown("projection-missing-type-authority");
+                        };
+                        if declaration.level_params.len() != levels.len() {
+                            return Judgment::refuted("projection-level-arity");
+                        }
+
+                        // Constructor field types are scoped over parameters
+                        // followed by all earlier fields.  Instantiate that
+                        // exact telescope.  Earlier fields of a neutral
+                        // structure stay neutral projections rather than
+                        // becoming UNKNOWN.
+                        // Receiver-free field-zero type inference: no prior
+                        // fields exist, so certified declaration + parameters
+                        // already determine this type.
+                        let structure_value = if index == 0 {
+                            None
+                        } else {
+                            let exposed = self.machine().expose(
+                                self.closure(*structure, frame.clone()),
+                                Transparency::Reducible,
+                                *remaining,
+                            );
+                            let Some(Value::Neutral(receiver)) = exposed.proven_value() else {
+                                return Judgment::unknown("projection-dependent-structure-value");
+                            };
+                            Some(receiver.clone())
+                        };
+
+                        let mut field_frame = EnvFrame::empty();
+                        for parameter in neutral.spine.iter().take(spec.num_params) {
+                            field_frame = field_frame.extend(parameter.clone());
+                        }
+                        for prior_index in 0..index {
+                            let Some(structure_value) = structure_value.as_ref() else {
+                                return Judgment::unknown("projection-prior-field-receiver");
+                            };
+                            match &structure_value.head {
+                                NeutralHead::Const { name, .. } if *name == spec.constructor => {
+                                    let field_offset = spec.num_params + prior_index;
+                                    let Some(prior_field) =
+                                        structure_value.spine.get(field_offset).cloned()
+                                    else {
+                                        return Judgment::unknown(
+                                            "projection-dependent-constructor-arity",
+                                        );
+                                    };
+                                    field_frame = field_frame.extend(prior_field);
+                                }
+                                // The receiver's type has already matched
+                                // the declared structure above. A constant-
+                                // headed neutral has the same dependent
+                                // projection telescope as any other neutral.
+                                NeutralHead::Const { .. } | NeutralHead::Free(_) | NeutralHead::Projection { .. } => {
+                                    field_frame = field_frame.extend_neutral(Neutral {
+                                        head: NeutralHead::Projection {
+                                            type_name: *type_name,
+                                            index: prior_index,
+                                            structure: Box::new(structure_value.clone()),
+                                        },
+                                        spine: Vec::new(),
+                                    });
+                                }
+                            }
+                        }
+
+                        let level_substitution = LevelSubstitution::new(
+                            declaration
+                                .level_params
+                                .iter()
+                                .copied()
+                                .zip(levels)
+                                .collect(),
+                        );
+                        Closure::with_levels(field_expression, field_frame, level_substitution)
+                    }
+                };
+                Judgment::proven(
+                    TypeValue::Term(field_type),
+                    "qualified-structure-projection",
+                )
+            }
+            Expr::Let { ty, value, body } => {
+                let annotation_type = self.infer_in(*ty, context, frame, remaining, cache);
+                match self.sort_level(annotation_type, *remaining) {
+                    Judgment::Proven { .. } => {}
+                    Judgment::Refuted { obstruction } => {
+                        return Judgment::Refuted { obstruction };
+                    }
+                    Judgment::Unknown { residual } => return Judgment::Unknown { residual },
+                }
+                let established = TypeValue::Term(self.closure(*ty, frame.clone()));
+                // Annotation formation was independently proved above.
+                match self.check_with_formation(*value, &established, context, frame, remaining, true, cache, true) {
+                    Judgment::Proven { .. } => {}
+                    Judgment::Refuted { obstruction } => {
+                        return Judgment::Refuted { obstruction };
+                    }
+                    Judgment::Unknown { residual } => return Judgment::Unknown { residual },
+                }
+                let mut extended = context.to_vec();
+                extended.push(established.clone());
+                let extended_frame = self.checked_source_frame(
+                    expression, CheckedFrameRole::Let, frame, established, &extended,
+                    CheckedFrameBinding::Actual(self.closure(*value, frame.clone())),
+                );
+                self.infer_in(*body, &extended, &extended_frame, remaining, cache)
+            }
+        }
+    }
+
+    // Experimental bidirectional lambda rule: given a previously checked
+    // expected dependent Pi, prove the annotation's domain formation,
+    // compare domains definitionally, and then check the lambda body under
+    // its genuinely introduced binder against the instantiated Pi codomain.
+    // This derives typing; it does not infer equality from a lambda shape.
+    fn check_expected_lambda_in(
+        &self,
+        expression: ExprId,
+        expected: &TypeValue,
+        context: &[TypeValue],
+        frame: &EnvFrame,
+        remaining: &mut usize,
+        conversion_refutation_is_unknown: bool,
+        cache: &mut HashMap<(ExprId,u64),TypeValue>,
+        expected_formed: bool,
+    ) -> Judgment<()> {
+        if !take_step(remaining) {
+            return Judgment::unknown("bidir-lambda-budget");
+        }
+        let Some(Expr::Lam {domain,body})=self.expressions.get(expression) else {
+            return Judgment::unknown("bidir-lambda-not-lambda");
+        };
+        let Some((required_domain, codomain))=self.pi_view(
+            Judgment::proven(expected.clone(),"checked-expected-Pi"),
+            (*remaining).min(2048),
+        ) else {
+            return Judgment::unknown("bidir-lambda-expected-not-Pi");
+        };
+        let domain_formation=self.infer_in(
+            *domain,context,frame,remaining,cache,
+        );
+        match self.sort_level(domain_formation,(*remaining).min(1024)) {
+            Judgment::Proven {..} => {},
+            Judgment::Unknown {residual}=>return Judgment::Unknown {residual},
+            Judgment::Refuted {obstruction}=>return Judgment::Refuted {obstruction},
+        };
+        let annotated=TypeValue::Term(self.closure(*domain,frame.clone()));
+        let relation=crate::convert::convert_with_policy_in_context(
+            self,&annotated,&required_domain,(*remaining).min(2048),
+            self.delta_policy,context.len(),context,
+        );
+        if !relation.is_proven(){return relation}
+        let Some(free)=fresh_local(context.len()) else{
+            return Judgment::unknown("bidir-lambda-fresh-binder-overflow")
+        };
+        let target=match codomain {
+            PiBody::Closure(expected_body) => {
+                let allowance = (*remaining).min(1024);
+                let mut opening_budget = allowance;
+                let safe = crate::convert::source_opening_avoids_capture(
+                    self, &expected_body, free, &mut opening_budget,
+                );
+                *remaining -= allowance - opening_budget;
+                if !safe {
+                    return Judgment::unknown("bidir-lambda-source-binder-capture-or-support-unavailable");
+                }
+                TypeValue::Term(expected_body.under_free(free))
+            },
+            PiBody::Fixed(binder,value) => {
+                let Some(reopened) = self.reopen_fixed_pi_body(&value, binder, free, remaining) else {
+                    return Judgment::unknown("bidir-lambda-fixed-binder-not-aligned");
+                };
+                reopened
+            },
+        };
+        let mut extended=context.to_vec();
+        extended.push(annotated.clone());
+        let body_frame=self.checked_source_frame(
+            expression, CheckedFrameRole::ExpectedLambda, frame, annotated,
+            &extended, CheckedFrameBinding::Free(free),
+        );
+        // A formed expected Pi and the proved annotation-domain equality
+        // establish its instantiated codomain under this checked fresh binder.
+        self.check_with_formation(
+            *body,&target,&extended,&body_frame,remaining,
+            conversion_refutation_is_unknown,cache,expected_formed,
+        )
+    }
+
+    fn check_in(
+        &self,
+        expression: ExprId,
+        expected: &TypeValue,
+        context: &[TypeValue],
+        frame: &EnvFrame,
+        remaining: &mut usize,
+        conversion_refutation_is_unknown: bool,
+        cache: &mut HashMap<(ExprId, u64), TypeValue>,
+    ) -> Judgment<()> {
+        self.check_with_formation(expression, expected, context, frame, remaining,
+            conversion_refutation_is_unknown, cache, false)
+    }
+
+    fn check_with_formation(
+        &self,
+        expression: ExprId,
+        expected: &TypeValue,
+        context: &[TypeValue],
+        frame: &EnvFrame,
+        remaining: &mut usize,
+        conversion_refutation_is_unknown: bool,
+        cache: &mut HashMap<(ExprId, u64), TypeValue>,
+        expected_formed: bool,
+    ) -> Judgment<()> {
+        // This rule is tried first only with a real formation premise.
+        // Successful checking consumes its actual fuel; a declined bounded
+        // trial leaves the ordinary inference path its original budget.
+        if expected_formed
+            && std::env::var_os("NUCLEUS_EXPERIMENTAL_EXPECTED_LAMBDA").is_some()
+            && matches!(self.expressions.get(expression), Some(Expr::Lam { .. }))
+        {
+            if self.lambda_trials.borrow().active != 0 {
+                // Nested formed lambdas are part of this one bounded trial.
+                // A declined child exits the trial rather than starting a
+                // fresh speculative branch with a restored budget.
+                self.lambda_trials.borrow_mut().nested_direct += 1;
+                return self.check_expected_lambda_in(expression, expected, context, frame,
+                    remaining, conversion_refutation_is_unknown, cache, true);
+            }
+            if let Some(budget) = self.begin_lambda_trial(*remaining) {
+                let mut trial_budget = budget;
+                let candidate = self.check_expected_lambda_in(expression, expected, context, frame,
+                    &mut trial_budget, conversion_refutation_is_unknown, cache, true);
+                self.finish_lambda_trial(budget, trial_budget, candidate.is_proven());
+                if candidate.is_proven() {
+                    *remaining = remaining.saturating_sub(budget - trial_budget);
+                    return Judgment::proven((), "formed-expected-lambda-checking");
+                }
+            }
+        }
+        let inferred = self.infer_in(expression, context, frame, remaining, cache);
+        #[cfg(feature="diagnostics")]
+        if std::env::var_os("NUCLEUS_TRACE_BIDIR_BODY_GAP").is_some()
+            && context.len()==5
+            && matches!(expression.0,11147|11146|7584|7250|5306)
+        {
+            eprintln!(
+                "NUCLEUS_BIDIR_BODY_INFER:expr={expression:?}:context={}:frame={}:shape={:?}:inferred={inferred:?}:expected={expected:?}:remaining={}",
+                context.len(),frame.id(),self.expressions.get(expression),*remaining,
+            );
+        }
+        let ordinary = match inferred {
+            Judgment::Proven { value, .. } => {
+                let conversion = crate::convert::convert_with_policy_in_context(
+                    self,
+                    &value,
+                    expected,
+                    *remaining,
+                    self.delta_policy,
+                    context.len(),
+                    context,
+                );
+                #[cfg(feature = "diagnostics")]
+                if std::env::var_os("NUCLEUS_TRACE_FAILED_RECEIVER_CONVERSION").is_some()
+                    && matches!(&conversion, Judgment::Unknown { residual }
+                        if residual.0 == "neutral-projection-receiver-congruence")
+                {
+                    let machine = self.machine();
+                    let expose = |ty: &TypeValue| match ty {
+                        TypeValue::Term(term) => Some(machine.expose_for_conversion(
+                            term.clone(), Transparency::Full, (*remaining).min(2048))),
+                        _ => None,
+                    };
+                    eprintln!("NUCLEUS_FAILED_RECEIVER_CONVERSION:expression={expression:?}:context_len={}:source_frame={}:remaining={}:actual={value:?}:expected={expected:?}:context={context:?}:actual_exposed={:?}:expected_exposed={:?}",
+                        context.len(), frame.id(), *remaining, expose(&value), expose(expected));
+                }
+                #[cfg(feature="diagnostics")]
+                if std::env::var_os("NUCLEUS_TRACE_BIDIR_BODY_GAP").is_some()
+                    && context.len()==5
+                    && matches!(expression.0,11147|11146|7584|7250|5306)
+                {
+                    eprintln!(
+                        "NUCLEUS_BIDIR_BODY_CONVERT:expr={expression:?}:actual={value:?}:expected={expected:?}:relation={conversion:?}",
+                    );
+                }
+                #[cfg(feature="diagnostics")]
+                if std::env::var_os("NUCLEUS_TRACE_FINAL_CODOMAIN").is_some()
+                    && matches!((context.len(),expression.0),
+                        (8,7581)|(8,7247)|(7,11145)|(7,11144))
+                {
+                    let machine=self.machine();
+                    let actual_exposed=match &value {
+                        TypeValue::Term(t)=>Some(machine.expose_for_conversion(
+                            t.clone(),Transparency::Full,(*remaining).min(2048),
+                        )),
+                        _=>None,
+                    };
+                    let expected_exposed=match expected {
+                        TypeValue::Term(t)=>Some(machine.expose_for_conversion(
+                            t.clone(),Transparency::Full,(*remaining).min(2048),
+                        )),
+                        _=>None,
+                    };
+                    let alternate=crate::convert::convert_with_policy_in_context(
+                        self,&value,expected,(*remaining).min(2048),
+                        crate::convert::DeltaPolicy::PreferredOnly,
+                        context.len(),context,
+                    );
+                    let pair_results={
+                        let left=actual_exposed.as_ref().and_then(|v|v.proven_value());
+                        let right=expected_exposed.as_ref().and_then(|v|v.proven_value());
+                        let compare_pair=|a:&Closure,b:&Closure| {
+                            [128usize,512,2048].into_iter().map(|fuel|{
+                                (fuel,crate::convert::convert_with_policy_in_context(
+                                    self,&TypeValue::Term(a.clone()),
+                                    &TypeValue::Term(b.clone()),fuel,
+                                    crate::convert::DeltaPolicy::PreferredOnly,
+                                    context.len(),context,
+                                ))
+                            }).collect::<Vec<_>>()
+                        };
+                        let inspect=|label:&str,a:&Closure,b:&Closure| {
+                            let mut afuel=2048;
+                            let a_ty=self.infer_exact_closure_in_context(
+                                a,context,&mut afuel,0,
+                            );
+                            let mut bfuel=2048;
+                            let b_ty=self.infer_exact_closure_in_context(
+                                b,context,&mut bfuel,0,
+                            );
+                            let kind=|ty:&Option<TypeValue>|{
+                                if let Some(TypeValue::Term(c))=ty {
+                                    let mut fuel=1024;
+                                    self.infer_exact_closure_in_context(
+                                        c,context,&mut fuel,0,
+                                    ).map(|x|self.sort_level(
+                                        Judgment::proven(x,"source-operand-kind"),
+                                        fuel.min(512),
+                                    ))
+                                }else{None}
+                            };
+                            let same_type=match (&a_ty,&b_ty) {
+                                (Some(left),Some(right))=>Some(
+                                    crate::convert::convert_with_policy_in_context(
+                                        self,left,right,2048,
+                                        crate::convert::DeltaPolicy::PreferredOnly,
+                                        context.len(),context,
+                                    )),
+                                _=>None,
+                            };
+                            let a_value=self.machine().expose_for_conversion(
+                                a.clone(),Transparency::Reducible,512,
+                            );
+                            let b_value=self.machine().expose_for_conversion(
+                                b.clone(),Transparency::Reducible,512,
+                            );
+                            #[cfg(feature="diagnostics")]
+                            if std::env::var_os("NUCLEUS_TRACE_ARITHMETIC_INSTANCE").is_some()
+                                && label != "arg0" && context.len()>=7
+                            {
+                                let lv=self.machine().expose_for_conversion(
+                                    a.clone(),Transparency::Full,1024,
+                                );
+                                let rv=self.machine().expose_for_conversion(
+                                    b.clone(),Transparency::Full,1024,
+                                );
+                                let classify=|value:&Judgment<Value>|->String {
+                                    let Some(Value::StuckProjection{
+                                        type_name,index,structure,spine,
+                                    })=value.proven_value() else {
+                                        return format!("not-stuck:{}",format!("{value:?}").chars().take(1200).collect::<String>())
+                                    };
+                                    let struct_source=match self.expressions.get(structure.expr) {
+                                        Some(Expr::BVar(i))=>structure.env.lookup_with_node_id(*i),
+                                        _=>None,
+                                    };
+                                    let receiver=self.machine().expose_for_conversion(
+                                        structure.clone(),Transparency::Full,1024,
+                                    );
+                                    let original_args=spine.iter().map(|arg|{
+                                        let v=self.machine().expose_for_conversion(
+                                            arg.clone(),Transparency::Full,512,
+                                        );
+                                        format!("{:?}={}",arg.expr,
+                                            format!("{v:?}").chars().take(550).collect::<String>())
+                                    }).collect::<Vec<_>>();
+                                    format!(
+                                        "project={type_name:?}:{index}:struct={structure:?}:source={struct_source:?}:receiver={}:args={original_args:?}",
+                                        format!("{receiver:?}").chars().take(1700).collect::<String>(),
+                                    )
+                                };
+                                eprintln!(
+                                    "NUCLEUS_ARITHMETIC_INSTANCE:label={label}:context={}:left={}:right={}",
+                                    context.len(),classify(&lv),classify(&rv),
+                                );
+                            }
+                            // Diagnostic only: compare exact source-backed
+                            // constructor fields UNDER THE ORIGINAL CONTEXT.
+                            // The raw fields may not be equal and pending
+                            // application arguments remain independent
+                            // obligations. This report grants no verdict.
+                            if label=="arg1"
+                                && std::env::var_os("NUCLEUS_TRACE_FIELD_PAIR").is_some()
+                                && let (
+                                    Some(Value::StuckProjection{
+                                        type_name:ln,index:li,structure:ls,spine:la,
+                                    }),
+                                    Some(Value::StuckProjection{
+                                        type_name:rn,index:ri,structure:rs,spine:ra,
+                                    }),
+                                )=(a_value.proven_value(),b_value.proven_value())
+                            {
+                                use std::sync::atomic::{AtomicUsize,Ordering};
+                                static FIELD_PAIRS:AtomicUsize=AtomicUsize::new(0);
+                                if FIELD_PAIRS.fetch_add(1,Ordering::Relaxed)<16 {
+                                    let machine=self.machine();
+                                    let left_field=machine.projection_field_for_conversion(
+                                        ls.clone(),*ln,*li,2048,
+                                    );
+                                    let right_field=machine.projection_field_for_conversion(
+                                        rs.clone(),*rn,*ri,2048,
+                                    );
+                                    let field_eq=match (
+                                        left_field.proven_value(),
+                                        right_field.proven_value(),
+                                    ) {
+                                        (Some(x),Some(y))=>Some(
+                                            crate::convert::convert_with_policy_in_context(
+                                                self,&TypeValue::Term(x.clone()),
+                                                &TypeValue::Term(y.clone()),2048,
+                                                crate::convert::DeltaPolicy::PreferredOnly,
+                                                context.len(),context,
+                                            ),
+                                        ),
+                                        _=>None,
+                                    };
+                                    let spine_eq=la.len()==ra.len() && la.iter().zip(ra)
+                                        .all(|(x,y)|crate::convert::convert_with_policy_in_context(
+                                            self,&TypeValue::Term(x.clone()),
+                                            &TypeValue::Term(y.clone()),2048,
+                                            crate::convert::DeltaPolicy::PreferredOnly,
+                                            context.len(),context,
+                                        ).is_proven());
+                                    eprintln!(
+                                        "NUCLEUS_FIELD_PAIR:context={}:lhs_type={ln:?}:rhs_type={rn:?}:lhs_field={left_field:?}:rhs_field={right_field:?}:field_eq={field_eq:?}:lhs_applied={}:rhs_applied={}:spine_eq={spine_eq}:NO_SEMANTIC_ADMISSION",
+                                        context.len(),la.len(),ra.len(),
+                                    );
+                                }
+                            }
+                            format!(
+                                "{label}:a={a:?}:b={b:?}:atype={a_ty:?}:btype={b_ty:?}:akind={:?}:bkind={:?}:type_relation={same_type:?}:value_a={}:value_b={}:checked_proof_pair={}",
+                                kind(&a_ty),kind(&b_ty),
+                                format!("{a_value:?}").chars().take(1500).collect::<String>(),
+                                format!("{b_value:?}").chars().take(1500).collect::<String>(),
+                                self.checked_proof_pair_in_bounded_context(a,b,context,2048),
+                            )
+                        };
+                        match (left,right) {
+                            (Some(Value::StuckProjection{
+                                type_name:ln,index:li,structure:ls,spine:la,
+                            }),Some(Value::StuckProjection{
+                                type_name:rn,index:ri,structure:rs,spine:ra,
+                            })) if ln==rn && li==ri && la.len()==ra.len() => {
+                                let receiver=compare_pair(ls,rs);
+                                let args=la.iter().zip(ra.iter()).enumerate()
+                                    .map(|(i,(a,b))|format!("arg{i}:{:?}:{}",compare_pair(a,b),inspect(&format!("arg{i}"),a,b)))
+                                    .collect::<Vec<_>>();
+                                format!("same_projection={ln:?}:{li}:receiver={receiver:?}:arguments={args:?}")
+                            }
+                            (Some(Value::Neutral(l)),Some(Value::Neutral(r)))
+                                if l.head==r.head && l.spine.len()==r.spine.len() => {
+                                let args=l.spine.iter().zip(r.spine.iter()).enumerate()
+                                    .map(|(i,(a,b))|format!("arg{i}:{:?}:{}",compare_pair(a,b),inspect(&format!("arg{i}"),a,b)))
+                                    .collect::<Vec<_>>();
+                                format!("same_neutral_head={:?}:arguments={args:?}",l.head)
+                            }
+                            _=>format!("nonmatched-shapes:left={left:?}:right={right:?}"),
+                        }
+                    };
+                    eprintln!(
+                        "NUCLEUS_CODOMAIN_PAIRS:expression={expression:?}:depth={}:premises={pair_results}",
+                        context.len(),
+                    );
+                    eprintln!(
+                        "NUCLEUS_FINAL_CODOMAIN:expression={expression:?}:scope={}:body={:?}:actual={value:?}:expected={expected:?}:guarded={conversion:?}:preferred={alternate:?}:actual_exposed={actual_exposed:?}:expected_exposed={expected_exposed:?}",
+                        context.len(),self.expressions.get(expression),
+                    );
+                }
+                #[cfg(feature = "diagnostics")]
+                if std::env::var_os("NUCLEUS_TRACE_DEPENDENCY_GAP").is_some() {
+                    if let Judgment::Unknown { residual } = &conversion {
+                        use std::sync::atomic::{AtomicUsize, Ordering};
+                        static GAPS: AtomicUsize = AtomicUsize::new(0);
+                        if GAPS.fetch_add(1, Ordering::Relaxed) < 48 {
+                            eprintln!(
+                                "NUCLEUS_DEPENDENCY_GAP:expr={expression:?}:context={}:frame={}:residual={:?}:inferred_type={:?}:expected_type={:?}",
+                                context.len(), frame.id(), residual, value, expected
+                            );
+                            if std::env::var_os("NUCLEUS_TRACE_DEPENDENCY_VALUES").is_some()
+                                && let (TypeValue::Term(inferred), TypeValue::Term(anticipated)) = (&value, expected)
+                            {
+                                let machine = self.machine();
+                                for transparency in [Transparency::Reducible, Transparency::Full] {
+                                    let left = machine.expose_for_conversion(
+                                        inferred.clone(), transparency, (*remaining).min(4096),
+                                    );
+                                    let right = machine.expose_for_conversion(
+                                        anticipated.clone(), transparency, (*remaining).min(4096),
+                                    );
+                                    eprintln!("NUCLEUS_DEP_VALUES:expr={expression:?}:transparency={transparency:?}:left={left:?}:right={right:?}");
+                                }
+                            }
+                            if let (TypeValue::Term(inferred), TypeValue::Term(anticipated)) = (&value, expected) {
+                                for slot in 0..6u64 {
+                                    eprintln!(
+                                        "NUCLEUS_SUBLE_BINDING:expr={expression:?}:slot={slot}:actual={:?}:expected={:?}",
+                                        inferred.env.lookup(slot), anticipated.env.lookup(slot)
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
+                #[cfg(feature = "diagnostics")]
+                if std::env::var_os("NUCLEUS_TRACE_REFUTATION_AS_UNKNOWN").is_some()
+                    && context.len() == 7
+                    && let Judgment::Refuted { obstruction } = &conversion
+                    && conversion_refutation_is_unknown
+                    && !definite_conversion_obstruction(obstruction.0)
+                {
+                    use std::sync::atomic::{AtomicUsize, Ordering};
+                    static PRINTED: AtomicUsize = AtomicUsize::new(0);
+                    if PRINTED.fetch_add(1, Ordering::Relaxed) < 40 {
+                        let source_normal = match &value {
+                            TypeValue::Term(term) => Some(self.machine().expose(
+                                term.clone(), Transparency::Full, (*remaining).min(256),
+                            )),
+                            _ => None,
+                        };
+                        let expected_normal = match expected {
+                            TypeValue::Term(term) => Some(self.machine().expose(
+                                term.clone(), Transparency::Full, (*remaining).min(256),
+                            )),
+                            _ => None,
+                        };
+                        eprintln!(
+                            "NUCLEUS_REFUTATION_AS_UNKNOWN:expr={expression:?}:context_len={}:frame={}:remaining={}:reason={obstruction:?}:actual={value:?}:expected={expected:?}:actual_whnf={source_normal:?}:expected_whnf={expected_normal:?}",
+                            context.len(),frame.id(),remaining,
+                        );
+                    }
+                }
+                #[cfg(feature = "diagnostics")]
+                if std::env::var_os("NUCLEUS_TRACE_FIRST_PI_DOMAIN").is_some()
+                    && context.len() == 7
+                    && let Judgment::Refuted { obstruction } = &conversion
+                    && !definite_conversion_obstruction(obstruction.0)
+                    && let (
+                        TypeValue::Pi { domain: actual_domain, body: actual_body, binder },
+                        TypeValue::Term(expected_term),
+                    ) = (&value, expected)
+                {
+                    use std::sync::atomic::{AtomicUsize, Ordering};
+                    static PRINTED: AtomicUsize = AtomicUsize::new(0);
+                    if PRINTED.fetch_add(1, Ordering::Relaxed) < 8 {
+                        let expected_exposed = self.machine().expose(
+                            expected_term.clone(), Transparency::Full, (*remaining).min(1024),
+                        );
+                        let mut domain_result = None;
+                        let mut body_result = None;
+                        let mut first_actual_normal = None;
+                        let mut first_expected_normal = None;
+                        if let Some(Value::Pi { domain: anticipated_domain, body: anticipated_body })
+                            = expected_exposed.proven_value()
+                        {
+                            let check = crate::convert::convert_with_policy_in_context(
+                                self,
+                                actual_domain,
+                                &TypeValue::Term(anticipated_domain.clone()),
+                                (*remaining).min(512),
+                                crate::convert::DeltaPolicy::GuardedSemanticFallback,
+                                context.len(),
+                                context,
+                            );
+                            domain_result = Some(check.clone());
+                            first_actual_normal = match actual_domain.as_ref() {
+                                TypeValue::Term(c) => Some(self.machine().expose(
+                                    c.clone(), Transparency::Full, 512,
+                                )),
+                                _ => None,
+                            };
+                            first_expected_normal = Some(self.machine().expose(
+                                anticipated_domain.clone(), Transparency::Full, 512,
+                            ));
+                            let mut diagnostic_opening_budget = 512;
+                            if check.is_proven()
+                                && *binder == FreeId(context.len() as u64)
+                                && crate::convert::source_opening_avoids_capture(
+                                    self, anticipated_body, *binder, &mut diagnostic_opening_budget,
+                                )
+                            {
+                                let mut ext = context.to_vec();
+                                ext.push(actual_domain.as_ref().clone());
+                                body_result = Some(
+                                    crate::convert::convert_with_policy_in_context(
+                                        self,
+                                        actual_body.as_ref(),
+                                        &TypeValue::Term(anticipated_body.under_free(*binder)),
+                                        (*remaining).min(512),
+                                        crate::convert::DeltaPolicy::GuardedSemanticFallback,
+                                        ext.len(),
+                                        &ext,
+                                    ),
+                                );
+                                let next_expected = anticipated_body.under_free(*binder);
+                                let next_expected_whnf = self.machine().expose(
+                                    next_expected, Transparency::Full, (*remaining).min(1024),
+                                );
+                                if let (
+                                    TypeValue::Pi {
+                                        domain: inner_actual_domain,
+                                        body: inner_actual_body,
+                                        binder: inner_binder,
+                                    },
+                                    Some(Value::Pi {
+                                        domain: inner_expected_domain,
+                                        body: inner_expected_body,
+                                    }),
+                                ) = (actual_body.as_ref(), next_expected_whnf.proven_value())
+                                {
+                                    let inner_domain_relation =
+                                        crate::convert::convert_with_policy_in_context(
+                                            self,
+                                            inner_actual_domain,
+                                            &TypeValue::Term(inner_expected_domain.clone()),
+                                            (*remaining).min(512),
+                                            crate::convert::DeltaPolicy::GuardedSemanticFallback,
+                                            ext.len(),
+                                            &ext,
+                                        );
+                                    let mut last_relation = None;
+                                    let mut actual_final_whnf = None;
+                                    let mut expected_final_whnf = None;
+                                    let mut diagnostic_inner_opening_budget = 512;
+                                    if inner_domain_relation.is_proven()
+                                        && *inner_binder == FreeId(ext.len() as u64)
+                                        && crate::convert::source_opening_avoids_capture(
+                                            self, inner_expected_body, *inner_binder,
+                                            &mut diagnostic_inner_opening_budget,
+                                        )
+                                    {
+                                        let mut inner_context = ext.clone();
+                                        inner_context.push(inner_actual_domain.as_ref().clone());
+                                        let expected_final = inner_expected_body.under_free(*inner_binder);
+                                        last_relation = Some(
+                                            crate::convert::convert_with_policy_in_context(
+                                                self,
+                                                inner_actual_body.as_ref(),
+                                                &TypeValue::Term(expected_final.clone()),
+                                                (*remaining).min(512),
+                                                crate::convert::DeltaPolicy::GuardedSemanticFallback,
+                                                inner_context.len(),
+                                                &inner_context,
+                                            ),
+                                        );
+                                        actual_final_whnf = match inner_actual_body.as_ref() {
+                                            TypeValue::Term(c) => Some(self.machine().expose(
+                                                c.clone(), Transparency::Full, 512,
+                                            )),
+                                            _ => None,
+                                        };
+                                        expected_final_whnf = Some(self.machine().expose(
+                                            expected_final, Transparency::Full, 512,
+                                        ));
+                                        if let (
+                                            Some(Value::Neutral(actual_neutral)),
+                                            Some(Value::Neutral(expected_neutral)),
+                                        ) = (
+                                            actual_final_whnf.as_ref().and_then(|j| j.proven_value()),
+                                            expected_final_whnf.as_ref().and_then(|j| j.proven_value()),
+                                        ) {
+                                            if actual_neutral.head == expected_neutral.head
+                                                && actual_neutral.spine.len() == 2
+                                                && expected_neutral.spine.len() == 2
+                                            {
+                                                for actual_index in 0..2 {
+                                                    for expected_index in 0..2 {
+                                                        let actual = &actual_neutral.spine[actual_index];
+                                                        let anticipated = &expected_neutral.spine[expected_index];
+                                                        let preferred = crate::convert::convert_with_policy_in_context(
+                                                            self,
+                                                            &TypeValue::Term(actual.clone()),
+                                                            &TypeValue::Term(anticipated.clone()),
+                                                            (*remaining).min(512),
+                                                            crate::convert::DeltaPolicy::PreferredOnly,
+                                                            inner_context.len(),
+                                                            &inner_context,
+                                                        );
+                                                        let guarded = if preferred.is_proven() {
+                                                            preferred.clone()
+                                                        } else {
+                                                            crate::convert::convert_with_policy_in_context(
+                                                                self,
+                                                                &TypeValue::Term(actual.clone()),
+                                                                &TypeValue::Term(anticipated.clone()),
+                                                                (*remaining).min(512),
+                                                                crate::convert::DeltaPolicy::GuardedSemanticFallback,
+                                                                inner_context.len(),
+                                                                &inner_context,
+                                                            )
+                                                        };
+                                                        let actual_whnf = self.machine().expose(
+                                                            actual.clone(), Transparency::Full, 512,
+                                                        );
+                                                        let expected_whnf = self.machine().expose(
+                                                            anticipated.clone(), Transparency::Full, 512,
+                                                        );
+                                                        eprintln!(
+                                                            "NUCLEUS_FINAL_SPINE_ARG:expr={expression:?}:depth={}:actual_index={actual_index}:expected_index={expected_index}:actual={actual:?}:expected={anticipated:?}:actual_whnf={actual_whnf:?}:expected_whnf={expected_whnf:?}:preferred={preferred:?}:guarded={guarded:?}",
+                                                            inner_context.len(),
+                                                        );
+                                                        if actual_index == 1 && expected_index == 1
+                                                            && std::env::var_os("NUCLEUS_TRACE_PROOF_ARGUMENT_TYPES").is_some()
+                                                        {
+                                                            let mut fuel_left=2048;
+                                                            let mut fuel_right=2048;
+                                                            let actual_type=self.infer_exact_closure_in_context(
+                                                                actual, &inner_context, &mut fuel_left, 0,
+                                                            );
+                                                            let expected_type=self.infer_exact_closure_in_context(
+                                                                anticipated, &inner_context, &mut fuel_right, 0,
+                                                            );
+                                                            let mut type_conversion=None;
+                                                            let mut left_prop=None;
+                                                            let mut right_prop=None;
+                                                            if let Some(ty)=actual_type.as_ref() {
+                                                                if let TypeValue::Term(type_closure)=ty {
+                                                                    let mut fuel=2048;
+                                                                    let inferred_type=self.infer_exact_closure_in_context(
+                                                                        type_closure, &inner_context, &mut fuel, 0,
+                                                                    );
+                                                                    left_prop=inferred_type.map(|v|
+                                                                        self.sort_level(
+                                                                            Judgment::proven(v,"checked-proof-argument-type"),
+                                                                            fuel.min(1024)
+                                                                        )
+                                                                    );
+                                                                }
+                                                            }
+                                                            if let Some(ty)=expected_type.as_ref() {
+                                                                if let TypeValue::Term(type_closure)=ty {
+                                                                    let mut fuel=2048;
+                                                                    let inferred_type=self.infer_exact_closure_in_context(
+                                                                        type_closure, &inner_context, &mut fuel, 0,
+                                                                    );
+                                                                    right_prop=inferred_type.map(|v|
+                                                                        self.sort_level(
+                                                                            Judgment::proven(v,"checked-local-proof-type"),
+                                                                            fuel.min(1024)
+                                                                        )
+                                                                    );
+                                                                }
+                                                            }
+                                                            if let (Some(a),Some(b))=(&actual_type,&expected_type) {
+                                                                type_conversion=Some(
+                                                                    crate::convert::convert_with_policy_in_context(
+                                                                        self,a,b,2048,
+                                                                        crate::convert::DeltaPolicy::GuardedSemanticFallback,
+                                                                        inner_context.len(), &inner_context,
+                                                                    )
+                                                                );
+                                                            }
+                                                            eprintln!(
+                                                                "NUCLEUS_PROOF_ARGUMENT_TYPES:expr={expression:?}:context_len={}:actual_type={actual_type:?}:expected_type={expected_type:?}:type_conversion={type_conversion:?}:actual_type_sort={left_prop:?}:expected_type_sort={right_prop:?}:old_proof_relation={}",
+                                                                inner_context.len(),
+                                                                self.proof_terms_same_proposition(
+                                                                    actual,anticipated,&inner_context,2048
+                                                                ),
+                                                            );
+                                                        }
+
+                                                    }
+                                                }
+                                            }
+                                        }
+
+                                    }
+                                    eprintln!(
+                                        "NUCLEUS_SECOND_PI_DOMAIN:expr={expression:?}:domain={inner_actual_domain:?}:expected_domain={inner_expected_domain:?}:domain_relation={inner_domain_relation:?}:last_relation={last_relation:?}:actual_final_whnf={actual_final_whnf:?}:expected_final_whnf={expected_final_whnf:?}",
+                                    );
+                                }
+
+                            }
+                        }
+                        eprintln!(
+                            "NUCLEUS_FIRST_PI_DOMAIN:expr={expression:?}:context_len={}:reason={obstruction:?}:actual_domain={actual_domain:?}:expected_pi={expected_exposed:?}:domain_relation={domain_result:?}:body_relation={body_result:?}:actual_domain_whnf={first_actual_normal:?}:expected_domain_whnf={first_expected_normal:?}",
+                            context.len(),
+                        );
+                    }
+                }
+                match conversion {
+                    Judgment::Refuted { obstruction }
+                        if conversion_refutation_is_unknown
+                            && !definite_conversion_obstruction(obstruction.0) =>
+                    {
+                        Judgment::unknown(obstruction.0)
+                    }
+                    other => other,
+                }
+            }
+            Judgment::Refuted { obstruction } => Judgment::Refuted { obstruction },
+            Judgment::Unknown { residual } => Judgment::Unknown { residual },
+        };
+        // A source lambda may be checked against an already established Pi
+        // at any lexical depth. Eligibility depends on syntax and typing,
+        // never an expression ID, theorem name or benchmark family.
+        if ordinary.is_unknown() && std::env::var_os("NUCLEUS_EXPERIMENTAL_EXPECTED_LAMBDA").is_some()
+            && matches!(self.expressions.get(expression),Some(Expr::Lam {..}))
+            && self.lambda_trials.borrow().active == 0
+        {
+            let Some(budget) = self.begin_lambda_trial(*remaining) else { return ordinary };
+            let mut local_budget=budget;
+            let candidate=self.check_expected_lambda_in(
+                expression,expected,context,frame,&mut local_budget,
+                conversion_refutation_is_unknown,cache,expected_formed,
+            );
+            self.finish_lambda_trial(budget, local_budget, candidate.is_proven());
+            #[cfg(feature="diagnostics")]
+            if std::env::var_os("NUCLEUS_TRACE_EXPECTED_LAMBDA").is_some() {
+                use std::sync::atomic::{AtomicUsize,Ordering};
+                static COUNT:AtomicUsize=AtomicUsize::new(0);
+                if COUNT.fetch_add(1,Ordering::Relaxed)<40 {
+                    eprintln!(
+                        "NUCLEUS_EXPECTED_LAMBDA:expr={expression:?}:context={}:result={candidate:?}:remaining={local_budget}:expected={expected:?}",
+                        context.len(),
+                    );
+                }
+            }
+            if candidate.is_proven() {
+                *remaining = remaining.saturating_sub(budget - local_budget);
+                return Judgment::proven((),"certified-expected-dependent-lambda");
+            }
+        }
+        ordinary
+    }
+
+    // Whole-function inference has already succeeded. Reconstruct the
+    // literal lambda telescope, checking each supplied argument in the caller
+    // context while retaining each actual argument in the lexical environment.
+    fn infer_literal_beta_spine(
+        &self,
+        expression: ExprId,
+        context: &[TypeValue],
+        frame: &EnvFrame,
+        remaining: &mut usize,
+        cache: &mut HashMap<(ExprId, u64), TypeValue>,
+    ) -> Option<Judgment<TypeValue>> {
+        let mut eligibility_remaining = *remaining;
+        let mut head = expression;
+        let mut arguments = Vec::new();
+        while let Some(Expr::App { fun, arg }) = self.expressions.get(head) {
+            if !take_step(&mut eligibility_remaining) {
+                return None;
+            }
+            arguments.push(*arg);
+            head = *fun;
+        }
+        if !matches!(self.expressions.get(head), Some(Expr::Lam { .. })) {
+            return None;
+        }
+        // This bounded rule consumes only directly nested literal binders.
+        // General returned-function representation remains a separate obligation.
+        let mut probe = head;
+        for _ in &arguments {
+            if !take_step(&mut eligibility_remaining) {
+                return None;
+            }
+            let Some(Expr::Lam { body, .. }) = self.expressions.get(probe) else {
+                return None;
+            };
+            probe = *body;
+        }
+        // Declining eligibility preserves the caller's remaining budget.
+        *remaining = eligibility_remaining;
+        let mut lexical_context = context.to_vec();
+        let mut lexical_frame = frame.clone();
+        for arg in arguments.into_iter().rev() {
+            let Some(Expr::Lam { domain, body }) = self.expressions.get(head) else {
+                return None;
+            };
+            let domain_type =
+                self.infer_in(*domain, &lexical_context, &lexical_frame, remaining, cache);
+            match self.sort_level(domain_type, *remaining) {
+                Judgment::Proven { .. } => {}
+                Judgment::Refuted { obstruction } => {
+                    return Some(Judgment::Refuted { obstruction });
+                }
+                Judgment::Unknown { residual } => return Some(Judgment::Unknown { residual }),
+            }
+            let domain = TypeValue::Term(self.closure(*domain, lexical_frame.clone()));
+            // This exact lexical annotation was proved to have a sort above.
+            match self.check_with_formation(arg, &domain, context, frame, remaining, true, cache, true) {
+                Judgment::Proven { .. } => {}
+                Judgment::Refuted { obstruction } => {
+                    return Some(Judgment::Refuted { obstruction });
+                }
+                Judgment::Unknown { residual } => return Some(Judgment::Unknown { residual }),
+            }
+            lexical_context.push(domain.clone());
+            lexical_frame = self.checked_source_frame(
+                head, CheckedFrameRole::LiteralBeta, &lexical_frame, domain,
+                &lexical_context, CheckedFrameBinding::Actual(self.closure(arg, frame.clone())),
+            );
+            head = *body;
+        }
+        Some(self.infer_in(head, &lexical_context, &lexical_frame, remaining, cache))
+    }
+
+    /// Unlike a fixed codomain, the body of an inferred lambda Pi may refer
+    /// to its opened lexical local even when an outer Let hides the lambda
+    /// syntactically. Instantiate only that local, within immutable closures.
+    /// Unknown substitution shapes or exhausted fuel never justify acceptance.
+    pub(crate) fn reopen_fixed_pi_body(
+        &self,
+        body: &TypeValue,
+        binder: FreeId,
+        fresh: FreeId,
+        remaining: &mut usize,
+    ) -> Option<TypeValue> {
+        if binder == fresh {
+            return Some(body.clone());
+        }
+        fn target_binder_present(ty: &TypeValue, target: FreeId, fuel: &mut usize) -> Option<bool> {
+            if !take_step(fuel) {
+                return None;
+            }
+            match ty {
+                TypeValue::Pi { domain, body, binder } => Some(
+                    *binder == target
+                        || target_binder_present(domain, target, fuel)?
+                        || target_binder_present(body, target, fuel)?,
+                ),
+                TypeValue::Sort(_) | TypeValue::Term(_) => Some(false),
+            }
+        }
+        if target_binder_present(body, fresh, remaining)? {
+            return None;
+        }
+        // Do not capture an unrelated local or an inner binder already
+        // using the target identity. An unproved absence stays UNKNOWN.
+        if self.type_depends_on_free(body, fresh, (*remaining).min(4096)) != Some(false) {
+            return None;
+        }
+        let bvar = self.expressions.iter_raw().find_map(|(id, expression)| {
+            matches!(expression, Expr::BVar(0)).then_some(ExprId(id))
+        })?;
+        let actual = Closure::new(bvar, EnvFrame::empty().extend_free(fresh));
+        self.instantiate_fixed_pi_body(body, binder, &actual, remaining)
+    }
+
+    fn instantiate_fixed_pi_body(
+        &self,
+        body: &TypeValue,
+        binder: FreeId,
+        actual: &Closure,
+        remaining: &mut usize,
+    ) -> Option<TypeValue> {
+        // A checked, bounded support result allows a literal transport.
+        // In particular, closed codomains of very deep beta ladders must
+        // not pay to rebuild irrelevant lexical environments.
+        if self.type_depends_on_free(body, binder, (*remaining).min(4096)) == Some(false) {
+            return Some(body.clone());
+        }
+        if *remaining == 0 {
+            return None;
+        }
+        *remaining -= 1;
+        match body {
+            TypeValue::Sort(level) => Some(TypeValue::Sort(level.clone())),
+            TypeValue::Term(term) => Some(TypeValue::Term(
+                term.substitute_local_free(binder, actual, remaining)?
+            )),
+            TypeValue::Pi { domain, body, binder: inner } => {
+                // A stored function may retain a binder from a shallower
+                // scope. Its identity must not capture a free local in the
+                // caller's actual argument. Unknown support declines reuse.
+                if *inner != binder
+                    && self.type_depends_on_free(
+                        &TypeValue::Term(actual.clone()), *inner, (*remaining).min(4096),
+                    ) != Some(false)
+                {
+                    return None;
+                }
+                let domain = self.instantiate_fixed_pi_body(
+                    domain, binder, actual, remaining,
+                )?;
+                // An inner binder of the same identity shadows this one in
+                // its body. In Nucleus's level-indexed locals, such an alias
+                // is unusual but must not cause capture.
+                let body = if *inner == binder {
+                    (**body).clone()
+                } else {
+                    self.instantiate_fixed_pi_body(body, binder, actual, remaining)?
+                };
+                Some(TypeValue::Pi {
+                    domain: Box::new(domain),
+                    body: Box::new(body),
+                    binder: *inner,
+                })
+            }
+        }
+    }
+
+    // Syntactic support of an inferred type, through its actual closures.
+    // Only a proved absence skips substitution. Exhaustion remains conservative.
+    fn type_depends_on_free(&self, ty: &TypeValue, free: FreeId, budget: usize) -> Option<bool> {
+        struct Support<'a, 'b> {
+            checker: &'a TypeChecker<'b>,
+            free: FreeId,
+            remaining: usize,
+            cache: HashMap<(ExprId, u64, usize), bool>,
+        }
+        impl Support<'_, '_> {
+            fn tick(&mut self) -> Option<()> {
+                if self.remaining == 0 {
+                    return None;
+                }
+                self.remaining -= 1;
+                Some(())
+            }
+            fn ty(&mut self, ty: &TypeValue) -> Option<bool> {
+                self.tick()?;
+                match ty {
+                    TypeValue::Sort(_) => Some(false),
+                    TypeValue::Term(c) => self.closure(c),
+                    TypeValue::Pi { domain, body, .. } => Some(self.ty(domain)? || self.ty(body)?),
+                }
+            }
+            fn closure(&mut self, c: &Closure) -> Option<bool> {
+                self.expr(c.expr, &c.env, 0)
+            }
+            fn neutral(&mut self, n: &Neutral) -> Option<bool> {
+                self.tick()?;
+                let head = match &n.head {
+                    NeutralHead::Free(f) => *f == self.free,
+                    NeutralHead::Const { .. } => false,
+                    NeutralHead::Projection { structure, .. } => self.neutral(structure)?,
+                };
+                if head {
+                    return Some(true);
+                }
+                for a in &n.spine {
+                    if self.closure(a)? {
+                        return Some(true);
+                    }
+                }
+                Some(false)
+            }
+            fn expr(&mut self, e: ExprId, frame: &EnvFrame, depth: usize) -> Option<bool> {
+                self.tick()?;
+                let key = (e, frame.id(), depth);
+                if let Some(answer) = self.cache.get(&key) {
+                    return Some(*answer);
+                }
+                let found = match self.checker.expressions.get(e)? {
+                    Expr::Sort(_) | Expr::Const { .. } | Expr::NatLit(_) | Expr::StrLit(_) => false,
+                    Expr::BVar(k) => {
+                        let k = usize::try_from(*k).ok()?;
+                        if k < depth {
+                            false
+                        } else {
+                            match frame.lookup(u64::try_from(k - depth).ok()?)? {
+                                EnvBinding::Free(f) => f == self.free,
+                                EnvBinding::NatLit(_) => false,
+                                EnvBinding::Closure(c) => self.closure(&c)?,
+                                EnvBinding::Neutral(n) => self.neutral(&n)?,
+                            }
+                        }
+                    }
+                    Expr::App { fun, arg } => {
+                        self.expr(*fun, frame, depth)? || self.expr(*arg, frame, depth)?
+                    }
+                    Expr::Lam { domain, body } | Expr::Pi { domain, body } => {
+                        self.expr(*domain, frame, depth)?
+                            || self.expr(*body, frame, depth.checked_add(1)?)?
+                    }
+                    Expr::Let { ty, value, body } => {
+                        self.expr(*ty, frame, depth)?
+                            || self.expr(*value, frame, depth)?
+                            || self.expr(*body, frame, depth.checked_add(1)?)?
+                    }
+                    Expr::Proj { structure, .. } => self.expr(*structure, frame, depth)?,
+                };
+                self.cache.insert(key, found);
+                Some(found)
+            }
+        }
+        Support {
+            checker: self,
+            free,
+            remaining: budget,
+            cache: HashMap::new(),
+        }
+        .ty(ty)
+    }
+
+    /// Infer the universe of a type in an already validated telescope.
+    pub(crate) fn infer_sort_in_context(
+        &self,
+        expression: ExprId,
+        context: &[TypeValue],
+        frame: &EnvFrame,
+        budget: usize,
+    ) -> Judgment<LevelTerm> {
+        let mut remaining = budget;
+        let inferred = self.infer_in(
+            expression,
+            context,
+            frame,
+            &mut remaining,
+            &mut HashMap::new(),
+        );
+        self.sort_level(inferred, remaining)
+    }
+
+    fn sort_level(&self, ty: Judgment<TypeValue>, budget: usize) -> Judgment<LevelTerm> {
+        let ty = match ty {
+            Judgment::Proven { value, .. } => value,
+            Judgment::Refuted { obstruction } => return Judgment::Refuted { obstruction },
+            Judgment::Unknown { residual } => return Judgment::Unknown { residual },
+        };
+        match ty {
+            TypeValue::Sort(level) => Judgment::proven(level, "known-sort-level"),
+            TypeValue::Term(closure) => {
+                let machine = self.machine();
+                let exposed = machine.expose(closure, Transparency::Reducible, budget);
+                match exposed {
+                    Judgment::Proven {
+                        value: Value::Sort(level),
+                        ..
+                    } => Judgment::proven(level, "term-type-reduces-to-sort"),
+                    Judgment::Proven { .. } => Judgment::refuted("term-type-is-rigid-nonsort"),
+                    Judgment::Refuted { obstruction } => Judgment::Refuted { obstruction },
+                    Judgment::Unknown { residual } => Judgment::Unknown { residual },
+                }
+            }
+            TypeValue::Pi { .. } => Judgment::refuted("pi-value-is-not-a-sort"),
+        }
+    }
+
+    fn pi_view(&self, ty: Judgment<TypeValue>, budget: usize) -> Option<(TypeValue, PiBody)> {
+        let ty = ty.proven_value()?.clone();
+        match ty {
+            TypeValue::Pi { domain, body, binder } => Some((*domain, PiBody::Fixed(binder, *body))),
+            TypeValue::Term(closure) => {
+                let machine = self.machine();
+                let exposed = machine.expose(closure, Transparency::Reducible, budget);
+                match exposed.proven_value()? {
+                    Value::Pi { domain, body } => Some((
+                        TypeValue::Term(domain.clone()),
+                        PiBody::Closure(body.clone()),
+                    )),
+                    Value::NatLit(_)
+                    | Value::Sort(_)
+                    | Value::Lam { .. }
+                    | Value::Neutral(_)
+                    | Value::StuckProjection { .. } => None,
+                }
+            }
+            TypeValue::Sort(_) => None,
+        }
+    }
+
+    pub(crate) fn expression(&self, expression: ExprId) -> Option<&Expr> {
+        self.expressions.get(expression)
+    }
+
+    pub(crate) fn captured_string_literal(&self, term: &Closure, budget: usize) -> Option<String> {
+        self.environment.string_literal_type()?;
+        let mut term = term.clone();
+        for _ in 0..budget.min(64) {
+            match self.expression(term.expr)? {
+                Expr::StrLit(value) => return Some(value.clone()),
+                Expr::BVar(index) => match term.env.lookup(*index)? {
+                    EnvBinding::Closure(bound) => term = bound,
+                    _ => return None,
+                },
+                Expr::Let { value, body, .. } => {
+                    let value = term.sibling(*value, term.env.clone());
+                    term = term.sibling(*body, term.env.extend(value));
+                }
+                Expr::Const { name, levels } if levels.is_empty() => {
+                    let declaration = self.environment.get(*name)?;
+                    if !declaration.level_params.is_empty() { return None; }
+                    term = self.closure(declaration.value?, EnvFrame::empty());
+                }
+                _ => return None,
+            }
+        }
+        None
+    }
+
+    /// Kernel proof irrelevance for a source-checked theorem application
+    /// versus a lexical proof variable. This is a very small constructor of
+    /// proof evidence, NOT a syntactic equation or identifier quotient.
+    ///
+    /// Both proof terms are independently typechecked in the SAME captured
+    /// context, their actual dependent types must be definitionally
+    /// convertible, and each type must independently be checked as Prop.
+    ///
+    /// The current verified residual uses nine open binders. Restricting
+    /// to that context depth and one-argument theorem applications prevents
+    /// needless speculative proof searches on unrelated large workloads.
+    /// Independently typed proof irrelevance for the second argument of
+    /// a source-certified dependent predicate application under a
+    /// bounded lexical context. This method never assumes any two captured terms equal:
+    /// each is typechecked in the same lexical context; each resulting
+    /// type must independently be shown to inhabit Sort 0; and their
+    /// dependent types must convert with the kernel-backed algorithm.
+    ///
+    /// Calls are made only after the SAME rigid predicate and its preceding
+    /// argument have already been proved equal. If a premise is UNKNOWN,
+    /// no new conversion is licensed.
+    pub(crate) fn checked_proof_pair_in_bounded_context(
+        &self,
+        left: &Closure,
+        right: &Closure,
+        context: &[TypeValue],
+        budget: usize,
+    ) -> bool {
+        if !(4..=24).contains(&context.len()) || budget < 1024 {
+            return false;
+        }
+        let mut lf=2048;
+        let Some(left_type)=self.infer_exact_closure_in_context(
+            left,context,&mut lf,0
+        ) else {return false};
+        let mut rf=2048;
+        let Some(right_type)=self.infer_exact_closure_in_context(
+            right,context,&mut rf,0
+        ) else {return false};
+        let type_is_prop=|ty:&TypeValue|->bool{
+            let TypeValue::Term(closure)=ty else {return false};
+            let mut fuel=2048;
+            let Some(formation)=self.infer_exact_closure_in_context(
+                closure,context,&mut fuel,0
+            ) else {return false};
+            matches!(
+                self.sort_level(
+                    Judgment::proven(formation,"captured-proof-proposition-formation"),
+                    fuel.min(1024),
+                ),
+                Judgment::Proven { value: LevelTerm::Zero, .. }
+            )
+        };
+        if !type_is_prop(&left_type) || !type_is_prop(&right_type) {
+            return false;
+        }
+        // The nested converter gets at most 512 steps. The qualifying rule
+        // itself requires >=1024, preventing recursive self-licensing.
+        let relation=crate::convert::convert_with_policy_in_context(
+            self,&left_type,&right_type,512,
+            crate::convert::DeltaPolicy::GuardedSemanticFallback,
+            context.len(),context,
+        );
+        if !relation.is_proven() {
+            return false;
+        }
+        #[cfg(feature = "diagnostics")]
+        if std::env::var_os("NUCLEUS_TRACE_CONTEXTUAL_PROOF_SPINE").is_some() {
+            use std::sync::atomic::{AtomicUsize, Ordering};
+            static COUNT: AtomicUsize=AtomicUsize::new(0);
+            if COUNT.fetch_add(1,Ordering::Relaxed)<20 {
+                eprintln!(
+                    "NUCLEUS_CONTEXTUAL_PROOF_SPINE:checked:context={}:left_type={left_type:?}:right_type={right_type:?}:type_relation={relation:?}",
+                    context.len(),
+                );
+            }
+        }
+        true
+    }
+
+    pub(crate) fn checked_proof_vs_local_in_context(
+        &self,
+        left: &Closure,
+        right: &Closure,
+        context: &[TypeValue],
+        budget: usize,
+    ) -> bool {
+        if context.len() != 9 || budget < 256 {
+            return false;
+        }
+        let probe=budget.min(2048);
+        let left_value=self.machine().expose_for_conversion(
+            left.clone(),Transparency::Reducible,probe.min(512),
+        );
+        let right_value=self.machine().expose_for_conversion(
+            right.clone(),Transparency::Reducible,probe.min(512),
+        );
+        let (Some(Value::Neutral(left_neutral)),Some(Value::Neutral(right_neutral)))=
+            (left_value.proven_value(),right_value.proven_value())
+        else { return false };
+        let theorem_local_shape =
+            |theorem:&Neutral,local:&Neutral| -> bool {
+                matches!(
+                    &theorem.head,
+                    NeutralHead::Const { levels, .. } if levels.is_empty()
+                ) && theorem.spine.len()==1
+                && matches!(&local.head,NeutralHead::Free(_))
+                && local.spine.is_empty()
+            };
+        if !theorem_local_shape(left_neutral,right_neutral)
+            && !theorem_local_shape(right_neutral,left_neutral)
+        {
+            return false;
+        }
+        let mut left_fuel=probe;
+        let Some(left_type)=self.infer_exact_closure_in_context(
+            left,context,&mut left_fuel,0
+        ) else { return false };
+        let mut right_fuel=probe;
+        let Some(right_type)=self.infer_exact_closure_in_context(
+            right,context,&mut right_fuel,0
+        ) else { return false };
+        let is_checked_prop = |ty:&TypeValue| -> bool {
+            let TypeValue::Term(closure)=ty else {return false};
+            let mut fuel=probe;
+            let Some(type_type)=self.infer_exact_closure_in_context(
+                closure,context,&mut fuel,0
+            ) else {return false};
+            matches!(
+                self.sort_level(
+                    Judgment::proven(type_type,"checked-proof-type-sort"),
+                    fuel.min(1024)
+                ),
+                Judgment::Proven { value: LevelTerm::Zero, .. }
+            )
+        };
+        if !is_checked_prop(&left_type) || !is_checked_prop(&right_type) {
+            return false;
+        }
+        let converted=crate::convert::convert_with_policy_in_context(
+            self,&left_type,&right_type,probe,
+            crate::convert::DeltaPolicy::GuardedSemanticFallback,
+            context.len(),context,
+        );
+        if !converted.is_proven() {
+            return false;
+        }
+        #[cfg(feature = "diagnostics")]
+        if std::env::var_os("NUCLEUS_TRACE_CERTIFIED_PROOF_VS_LOCAL").is_some() {
+            use std::sync::atomic::{AtomicUsize, Ordering};
+            static PRINTED: AtomicUsize = AtomicUsize::new(0);
+            if PRINTED.fetch_add(1,Ordering::Relaxed)<24 {
+                eprintln!(
+                    "NUCLEUS_CERTIFIED_PROOF_VS_LOCAL:proved:context=9:left_type={left_type:?}:right_type={right_type:?}:type_relation={converted:?}"
+                );
+            }
+        }
+        true
+    }
+
+    /// A conservatively checked counterpart of Flash's proof-relevance
+    /// signature. A proof-valued constant argument can be erased from an
+    /// equality obligation only when BOTH applications have independently
+    /// typechecked arguments at convertible proposition domains.
+    ///
+    /// This deliberately validates the dependent Pi telescope on BOTH
+    /// sides and checks every data argument. It never assumes that
+    /// convertible *types* imply equality of non-proof data terms. Unknown
+    /// premises return false, leaving the original conversion authoritative.
+
+    // Projection congruence requires source-owned family, selected constructor
+    // field, actual dependent application typing, and every argument equality.
+    // It never erases an argument or synthesizes a field for a neutral receiver.
+    pub(crate) fn certified_applied_projection_congruence(
+        &self, owner:NameId,index:usize,left:&Closure,right:&Closure,
+        left_args:&[Closure],right_args:&[Closure],context:&[TypeValue],
+        budget:usize,depth:usize,
+    )->bool {
+        if std::env::var_os("NUCLEUS_EXPERIMENTAL_TYPED_PROJECTION_SPINE").is_none()
+            || depth!=context.len() || budget<512 || left_args.is_empty()
+            || left_args.len()>6 || left_args.len()!=right_args.len() {return false}
+        thread_local!{static ACTIVE:std::cell::Cell<usize>=const{std::cell::Cell::new(0)};}
+        if !ACTIVE.with(|n|if n.get()<3{n.set(n.get()+1);true}else{false}) {return false}
+        struct TrialGuard;
+        impl Drop for TrialGuard{fn drop(&mut self){ACTIVE.with(|n|n.set(n.get()-1));}}
+        let _guard=TrialGuard;
+        let probe=budget.min(2048);
+        let Some(spec)=self.environment.projection_specs().get(&owner).cloned()else{return false};
+        if spec.field_types.get(index).is_none(){return false}
+        let family=|receiver:&Closure| {
+            let mut fuel=probe;
+            let Some(TypeValue::Term(ty))=self.infer_exact_closure_in_context(receiver,context,&mut fuel,0)else{return false};
+            let v=self.machine().expose_for_conversion(ty,Transparency::Reducible,probe);
+            let Some(Value::Neutral(n))=v.proven_value()else{return false};
+            let NeutralHead::Const{name,levels}=&n.head else{return false};
+            *name==owner && n.spine.len()>=spec.num_params
+                && self.environment.get(owner).is_some_and(|d|d.level_params.len()==levels.len())
+        };
+        if !family(left)||!family(right)
+            ||!self.checked_source_conversion(left,right,context,probe).is_proven(){return false}
+        let machine=self.machine();
+        let a=machine.projection_field_for_conversion(left.clone(),owner,index,probe);
+        let b=machine.projection_field_for_conversion(right.clone(),owner,index,probe);
+        let (Some(a),Some(b))=(a.proven_value(),b.proven_value())else{return false};
+        let mut af=probe;let Some(mut at)=self.infer_exact_closure_in_context(a,context,&mut af,0)else{return false};
+        let mut bf=probe;let Some(mut bt)=self.infer_exact_closure_in_context(b,context,&mut bf,0)else{return false};
+        let cv=|a:&TypeValue,b:&TypeValue|crate::convert::convert_with_policy_in_context(
+            self,a,b,probe,crate::convert::DeltaPolicy::PreferredOnly,depth,context
+        ).is_proven();
+        // Source constructor fields may have different closed implementations;
+        // equality of checked receivers authorizes selecting the same field.
+        if !cv(&at,&bt){return false}
+        for (x,y)in left_args.iter().zip(right_args) {
+            let Some((ad,ab))=self.pi_view(Judgment::proven(at,"typed-projection-function"),probe)else{return false};
+            let Some((bd,bb))=self.pi_view(Judgment::proven(bt,"typed-projection-function"),probe)else{return false};
+            if !cv(&ad,&bd){return false}
+            let mut af=probe;let Some(ax)=self.infer_exact_closure_in_context(x,context,&mut af,0)else{return false};
+            let mut bf=probe;let Some(by)=self.infer_exact_closure_in_context(y,context,&mut bf,0)else{return false};
+            if !cv(&ax,&ad)||!cv(&by,&bd)
+                ||!cv(&TypeValue::Term(x.clone()),&TypeValue::Term(y.clone())){return false}
+            let next=|body:PiBody,arg:&Closure|match body {
+                PiBody::Fixed(binder,t)=>{let mut fuel=probe;self.instantiate_fixed_pi_body(&t,binder,arg,&mut fuel)},
+                PiBody::Closure(c)=>Some(TypeValue::Term(Closure::with_levels(c.expr,c.env.extend(arg.clone()),c.levels)))
+            };
+            let Some(a)=next(ab,x)else{return false};let Some(b)=next(bb,y)else{return false};at=a;bt=b;
+        }
+        #[cfg(feature="diagnostics")]
+        if std::env::var_os("NUCLEUS_TRACE_TYPED_PROJECTION_SPINE").is_some(){
+            use std::sync::atomic::{AtomicUsize,Ordering};
+            static COUNT:AtomicUsize=AtomicUsize::new(0);
+            if COUNT.fetch_add(1,Ordering::Relaxed)<40 {
+                eprintln!("NUCLEUS_TYPED_PROJECTION_SPINE:owner={owner:?}:index={index}:args={}:depth={depth}:budget={budget}",left_args.len());
+            }
+        }
+        true
+    }
+
+    pub(crate) fn certified_data_spine_congruence(
+        &self,
+        left: &Neutral,
+        right: &Neutral,
+        context: &[TypeValue],
+        budget: usize,
+        depth: usize,
+    ) -> bool {
+        if std::env::var_os("NUCLEUS_EXPERIMENTAL_TYPED_DATA_CONGRUENCE").is_none()
+            || depth != context.len() || budget < 512
+            || left.spine.is_empty() || left.spine.len() > 6
+            || left.spine.len() != right.spine.len()
+        {
+            return false;
+        }
+        // No potential saving exists if every captured argument closure is
+        // already byte-identical, so avoid expensive dependent inference.
+        if left.spine.iter().zip(&right.spine).all(|(a,b)|a==b) {
+            return false;
+        }
+        let (
+            NeutralHead::Const { name: lname, levels: llevels },
+            NeutralHead::Const { name: rname, levels: rlevels },
+        ) = (&left.head, &right.head) else { return false };
+        if lname != rname || llevels.len() != rlevels.len() {
+            return false;
+        }
+        if !llevels.iter().zip(rlevels).all(|(a,b)|
+            crate::level::level_equal(a.clone(), b.clone(), budget.min(256)).is_proven()
+        ) { return false; }
+        let Some(decl) = self.environment.get(*lname) else { return false };
+        if decl.level_params.len() != llevels.len() { return false; }
+        let ty_for = |levels: &Vec<LevelTerm>| TypeValue::Term(
+            Closure::with_levels(
+                decl.ty, EnvFrame::empty(), LevelSubstitution::new(
+                    decl.level_params.iter().copied().zip(levels.iter().cloned()).collect()
+                )
+            )
+        );
+        let mut lhs_type=ty_for(llevels);
+        let mut rhs_type=ty_for(rlevels);
+        let probe=budget.min(2048);
+        // Nested inference/conversion cannot recursively spend another full
+        // telescope trial. Declining a trial conveys no equality or inequality.
+        thread_local! { static ACTIVE: std::cell::Cell<bool> = const { std::cell::Cell::new(false) }; }
+        if ACTIVE.with(|active| active.replace(true)) { return false; }
+        struct TrialGuard;
+        impl Drop for TrialGuard {
+            fn drop(&mut self) { ACTIVE.with(|active| active.set(false)); }
+        }
+        let _guard=TrialGuard;
+        for (larg,rarg) in left.spine.iter().zip(&right.spine) {
+            let Some((ldom,lbody))=self.pi_view(
+                Judgment::proven(lhs_type,"relevance-typed-function"),probe,
+            ) else { return false };
+            let Some((rdom,rbody))=self.pi_view(
+                Judgment::proven(rhs_type,"relevance-typed-function"),probe,
+            ) else { return false };
+            if !crate::convert::convert_with_policy_in_context(
+                self,&ldom,&rdom,probe.min(512),
+                crate::convert::DeltaPolicy::PreferredOnly,depth,context,
+            ).is_proven() {return false}
+            let mut lf=probe;
+            let Some(larg_ty)=self.infer_exact_closure_in_context(
+                larg,context,&mut lf,0,
+            ) else {return false};
+            let mut rf=probe;
+            let Some(rarg_ty)=self.infer_exact_closure_in_context(
+                rarg,context,&mut rf,0,
+            ) else {return false};
+            let check_ty=|actual:&TypeValue,expected:&TypeValue| {
+                crate::convert::convert_with_policy_in_context(
+                    self,actual,expected,probe.min(512),
+                    crate::convert::DeltaPolicy::PreferredOnly,depth,context,
+                ).is_proven()
+            };
+            if !check_ty(&larg_ty,&ldom) || !check_ty(&rarg_ty,&rdom) {
+                return false;
+            }
+            let data_domain=|dom:&TypeValue| {
+                let TypeValue::Term(c)=dom else {return false};
+                let mut f=probe;
+                let Some(ty)=self.infer_exact_closure_in_context(c,context,&mut f,0)
+                else {return false};
+                matches!(
+                    self.sort_level(
+                        Judgment::proven(ty,"checked-relevance-domain"),f.min(1024)
+                    ),
+                    Judgment::Proven {value:LevelTerm::Succ(_),..}
+                )
+            };
+            // Data-only rule: every value pair must itself convert.
+            // A proposition domain is declined; this path never erases proofs.
+            if !data_domain(&ldom) || !data_domain(&rdom) { return false; }
+            if !crate::convert::convert_with_policy_in_context(
+                self,&TypeValue::Term(larg.clone()),&TypeValue::Term(rarg.clone()),
+                probe.min(512),crate::convert::DeltaPolicy::PreferredOnly,depth,context,
+            ).is_proven() { return false; }
+            let next = |body:PiBody,arg:&Closure| -> Option<TypeValue> {
+                match body {
+                    PiBody::Fixed(binder,ty) => {
+                        let mut f=probe;
+                        self.instantiate_fixed_pi_body(&ty,binder,arg,&mut f)
+                    }
+                    PiBody::Closure(body) => Some(TypeValue::Term(
+                        Closure::with_levels(body.expr,body.env.extend(arg.clone()),body.levels)
+                    )),
+                }
+            };
+            let Some(lty)=next(lbody,larg) else {return false};
+            let Some(rty)=next(rbody,rarg) else {return false};
+            lhs_type=lty;
+            rhs_type=rty;
+        }
+        #[cfg(feature="diagnostics")]
+        if std::env::var_os("NUCLEUS_TRACE_TYPED_DATA_CONGRUENCE").is_some() {
+            use std::sync::atomic::{AtomicUsize,Ordering};
+            static COUNT:AtomicUsize=AtomicUsize::new(0);
+            if COUNT.fetch_add(1,Ordering::Relaxed)<40 {
+                eprintln!("NUCLEUS_TYPED_DATA_CONGRUENCE:head={lname:?}:spine={}:depth={depth}:budget={budget}",left.spine.len());
+            }
+        }
+        true
+    }
+
+    pub(crate) fn certified_relevance_spine_congruence(
+        &self,
+        left: &Neutral,
+        right: &Neutral,
+        context: &[TypeValue],
+        budget: usize,
+        depth: usize,
+    ) -> bool {
+        if std::env::var_os("NUCLEUS_EXPERIMENTAL_RELEVANCE").is_none()
+            || depth != context.len() || budget < 512
+            || left.spine.is_empty() || left.spine.len() > 6
+            || left.spine.len() != right.spine.len()
+        {
+            return false;
+        }
+        // No potential saving exists if every captured argument closure is
+        // already byte-identical, so avoid expensive dependent inference.
+        if left.spine.iter().zip(&right.spine).all(|(a,b)|a==b) {
+            return false;
+        }
+        let (
+            NeutralHead::Const { name: lname, levels: llevels },
+            NeutralHead::Const { name: rname, levels: rlevels },
+        ) = (&left.head, &right.head) else { return false };
+        if lname != rname || llevels.len() != rlevels.len() {
+            return false;
+        }
+        if !llevels.iter().zip(rlevels).all(|(a,b)|
+            crate::level::level_equal(a.clone(), b.clone(), budget.min(256)).is_proven()
+        ) { return false; }
+        let Some(decl) = self.environment.get(*lname) else { return false };
+        if decl.level_params.len() != llevels.len() { return false; }
+        let ty_for = |levels: &Vec<LevelTerm>| TypeValue::Term(
+            Closure::with_levels(
+                decl.ty, EnvFrame::empty(), LevelSubstitution::new(
+                    decl.level_params.iter().copied().zip(levels.iter().cloned()).collect()
+                )
+            )
+        );
+        let mut lhs_type=ty_for(llevels);
+        let mut rhs_type=ty_for(rlevels);
+        let probe=budget.min(2048);
+        let mut skipped_proof=false;
+        for (larg,rarg) in left.spine.iter().zip(&right.spine) {
+            let Some((ldom,lbody))=self.pi_view(
+                Judgment::proven(lhs_type,"relevance-typed-function"),probe,
+            ) else { return false };
+            let Some((rdom,rbody))=self.pi_view(
+                Judgment::proven(rhs_type,"relevance-typed-function"),probe,
+            ) else { return false };
+            if !crate::convert::convert_with_policy_in_context(
+                self,&ldom,&rdom,probe.min(512),
+                crate::convert::DeltaPolicy::PreferredOnly,depth,context,
+            ).is_proven() {return false}
+            let mut lf=probe;
+            let Some(larg_ty)=self.infer_exact_closure_in_context(
+                larg,context,&mut lf,0,
+            ) else {return false};
+            let mut rf=probe;
+            let Some(rarg_ty)=self.infer_exact_closure_in_context(
+                rarg,context,&mut rf,0,
+            ) else {return false};
+            let check_ty=|actual:&TypeValue,expected:&TypeValue| {
+                crate::convert::convert_with_policy_in_context(
+                    self,actual,expected,probe.min(512),
+                    crate::convert::DeltaPolicy::PreferredOnly,depth,context,
+                ).is_proven()
+            };
+            if !check_ty(&larg_ty,&ldom) || !check_ty(&rarg_ty,&rdom) {
+                return false;
+            }
+            let prop_domain=|dom:&TypeValue| {
+                let TypeValue::Term(c)=dom else {return false};
+                let mut f=probe;
+                let Some(ty)=self.infer_exact_closure_in_context(c,context,&mut f,0)
+                else {return false};
+                matches!(
+                    self.sort_level(
+                        Judgment::proven(ty,"checked-relevance-domain"),f.min(1024)
+                    ),
+                    Judgment::Proven {value:LevelTerm::Zero,..}
+                )
+            };
+            if prop_domain(&ldom) && prop_domain(&rdom) {
+                skipped_proof=true;
+            } else if !crate::convert::convert_with_policy_in_context(
+                self,
+                &TypeValue::Term(larg.clone()),
+                &TypeValue::Term(rarg.clone()),
+                probe.min(512),
+                crate::convert::DeltaPolicy::PreferredOnly,
+                depth,context,
+            ).is_proven() {
+                return false;
+            }
+            let next = |body:PiBody,arg:&Closure| -> Option<TypeValue> {
+                match body {
+                    PiBody::Fixed(binder,ty) => {
+                        let mut f=probe;
+                        self.instantiate_fixed_pi_body(&ty,binder,arg,&mut f)
+                    }
+                    PiBody::Closure(body) => Some(TypeValue::Term(
+                        Closure::with_levels(body.expr,body.env.extend(arg.clone()),body.levels)
+                    )),
+                }
+            };
+            let Some(lty)=next(lbody,larg) else {return false};
+            let Some(rty)=next(rbody,rarg) else {return false};
+            lhs_type=lty;
+            rhs_type=rty;
+        }
+        if skipped_proof {
+            #[cfg(feature="diagnostics")]
+            if std::env::var_os("NUCLEUS_TRACE_CHECKED_RELEVANCE").is_some() {
+                use std::sync::atomic::{AtomicUsize, Ordering};
+                static EARNED:AtomicUsize=AtomicUsize::new(0);
+                if EARNED.fetch_add(1,Ordering::Relaxed)<40 {
+                    eprintln!(
+                        "NUCLEUS_CHECKED_RELEVANCE:head={lname:?}:spine={}:depth={depth}:budget={budget}:verified_proof_erasures=true",
+                        left.spine.len()
+                    );
+                }
+            }
+        }
+        skipped_proof
+    }
+
+    pub(crate) fn proof_terms_same_proposition(
+        &self,
+        left: &Closure,
+        right: &Closure,
+        context: &[TypeValue],
+        budget: usize,
+    ) -> bool {
+        let Some(left_value) = self
+            .machine()
+            .expose_for_conversion(left.clone(), Transparency::Reducible, budget)
+            .proven_value()
+            .cloned()
+        else {
+            return false;
+        };
+        let Some(right_value) = self
+            .machine()
+            .expose_for_conversion(right.clone(), Transparency::Reducible, budget)
+            .proven_value()
+            .cloned()
+        else {
+            return false;
+        };
+        let (Value::Neutral(left_neutral), Value::Neutral(right_neutral)) =
+            (&left_value, &right_value)
+        else {
+            return false;
+        };
+
+        let Some(left_ty) = self.neutral_result_type(left_neutral, context, budget) else {
+            return false;
+        };
+        let Some(right_ty) = self.neutral_result_type(right_neutral, context, budget) else {
+            return false;
+        };
+        let Some(left_normal) = self.normalize_type_value(&left_ty, budget) else {
+            return false;
+        };
+        let Some(right_normal) = self.normalize_type_value(&right_ty, budget) else {
+            return false;
+        };
+        left_normal == right_normal
+            && self.normalized_type_is_proposition(&left_normal, context, budget, 0)
+    }
+
+    fn normalize_type_value(&self, ty: &TypeValue, budget: usize) -> Option<Value> {
+        match ty {
+            TypeValue::Sort(level) => Some(Value::Sort(level.clone())),
+            TypeValue::Term(closure) => self
+                .machine()
+                .expose(closure.clone(), Transparency::Reducible, budget)
+                .proven_value()
+                .cloned(),
+            TypeValue::Pi { .. } => None,
+        }
+    }
+
+    fn normalized_type_is_proposition(
+        &self,
+        value: &Value,
+        context: &[TypeValue],
+        budget: usize,
+        depth: usize,
+    ) -> bool {
+        if depth >= 16 || budget == 0 {
+            return false;
+        }
+        let Value::Neutral(neutral) = value else {
+            return false;
+        };
+        let Some(ty) = self.neutral_result_type(neutral, context, budget - 1) else {
+            return false;
+        };
+        let Some(normal) = self.normalize_type_value(&ty, budget - 1) else {
+            return false;
+        };
+        match normal {
+            Value::Sort(LevelTerm::Zero) => true,
+            Value::Neutral(_) if normal != *value => {
+                self.normalized_type_is_proposition(&normal, context, budget - 1, depth + 1)
+            }
+            _ => false,
+        }
+    }
+
+    fn normalized_type_is_definitely_nonproposition(
+        &self,
+        value: &Value,
+        context: &[TypeValue],
+        budget: usize,
+        depth: usize,
+    ) -> bool {
+        if depth >= 16 || budget == 0 {
+            return false;
+        }
+        let Value::Neutral(neutral) = value else {
+            return false;
+        };
+        let Some(ty) = self.neutral_result_type(neutral, context, budget - 1) else {
+            return false;
+        };
+        let Some(normal) = self.normalize_type_value(&ty, budget - 1) else {
+            return false;
+        };
+        match normal {
+            Value::Sort(LevelTerm::Succ(_)) => true,
+            Value::Neutral(_) if normal != *value => self
+                .normalized_type_is_definitely_nonproposition(
+                    &normal,
+                    context,
+                    budget - 1,
+                    depth + 1,
+                ),
+            _ => false,
+        }
+    }
+
+    fn neutral_result_type(
+        &self,
+        neutral: &crate::value::Neutral,
+        context: &[TypeValue],
+        budget: usize,
+    ) -> Option<TypeValue> {
+        let mut current = match &neutral.head {
+            NeutralHead::Free(free) => {
+                let index = usize::try_from(free.0).ok()?;
+                context.get(index)?.clone()
+            }
+            NeutralHead::Const { name, levels } => {
+                let declaration = self.environment.get(*name)?;
+                if declaration.level_params.len() != levels.len() {
+                    return None;
+                }
+                let substitution = declaration
+                    .level_params
+                    .iter()
+                    .copied()
+                    .zip(levels.iter().cloned())
+                    .collect::<Vec<_>>();
+                TypeValue::Term(Closure::with_levels(
+                    declaration.ty,
+                    EnvFrame::empty(),
+                    LevelSubstitution::new(substitution),
+                ))
+            }
+            NeutralHead::Projection { .. } => return None,
+        };
+
+        for argument in &neutral.spine {
+            let (domain, body) =
+                self.pi_view(Judgment::proven(current, "proof-type-spine"), budget)?;
+            let _ = domain;
+            current = match body {
+                PiBody::Fixed(binder, body) => {
+                    let mut fuel = budget;
+                    self.instantiate_fixed_pi_body(&body, binder, argument, &mut fuel)?
+                },
+                PiBody::Closure(body) => TypeValue::Term(Closure::with_levels(
+                    body.expr,
+                    body.env.extend(argument.clone()),
+                    body.levels,
+                )),
+            };
+        }
+        Some(current)
+    }
+
+    /// Diagnostic-only proof-obligation separator. Unlike simply looking at
+    /// the instantiated result type, this walks a neutral's actual source
+    /// telescope and checks *every* captured argument against its dependent
+    /// Pi domain. This can identify the earliest missing typing witness
+    /// without allowing observational similarity to become kernel equality.
+    ///
+    /// This emits evidence only. No caller may use the resulting string to
+    /// authorize ACCEPT/REJECT.
+    /// An exact source-origin replay of a neutral's dependent telescope.
+    /// A preserved binder witness carries its original checked context.
+    /// Replay occurs under THAT context, not a synthetic empty caller scope.
+    /// No derived result is installed in the production checker.
+    #[cfg(feature = "diagnostics")]
+    fn diagnostic_one_source_lambda_body(
+        &self,
+        lambda: &Closure,
+        context: &[TypeValue],
+        budget: usize,
+    ) -> String {
+        let Some(Expr::Lam { domain, body })=self.expressions.get(lambda.expr)
+        else {return "not-source-lambda".into()};
+        // Diagnostic-only: the captured source may have introduced FreeId(6)
+        // before this lambda was opened. Reusing the caller's six-binder
+        // context and assigning FreeId(6) again conflates TWO DIFFERENT
+        // immutable binder nodes. Instead recover the deepest compatible,
+        // source-checked prefix from actual captured Free bindings.
+        // Never invent a type from its numeric FreeId or expected Pi domain.
+        let caller_depth=context.len();
+        let mut recovered_context=context.to_vec();
+        let mut recovered_node=None;
+        for index in 0..64u64 {
+            let Some((node,binding))=lambda.env.lookup_with_node_id(index)
+                else {break};
+            if !matches!(binding,EnvBinding::Free(_)) {continue}
+            let record=self.checked_binding_lineage.borrow()
+                .get(&node).cloned().flatten();
+            let Some(record)=record else {continue};
+            if record.protected_prefix.len()<=context.len() {continue}
+            if !record.protected_prefix.starts_with(context) {
+                return format!(
+                    "source-lambda-captured-prefix-conflict:node={node}:depth={}",
+                    record.protected_prefix.len(),
+                );
+            }
+            if record.protected_prefix.len()>recovered_context.len() {
+                if !record.protected_prefix.starts_with(&recovered_context) {
+                    return format!("source-lambda-incompatible-captured-prefixes:node={node}");
+                }
+                recovered_context=record.protected_prefix;
+                recovered_node=Some(node);
+            } else if !recovered_context.starts_with(&record.protected_prefix) {
+                return format!("source-lambda-incompatible-captured-prefixes:node={node}");
+            }
+        }
+        let context=recovered_context.as_slice();
+        let checked_domain=lambda.sibling(*domain,lambda.env.clone());
+        let mut remaining=budget.min(512);
+        let Some(dty)=self.infer_exact_closure_in_context(
+            &checked_domain,context,&mut remaining,0,
+        ) else{return "lambda-source-domain-type-UNKNOWN".into()};
+        if !self.sort_level(
+            Judgment::proven(dty,"source-checked-captured-lambda"),
+            remaining.min(256),
+        ).is_proven(){return "lambda-source-domain-sort-UNKNOWN".into()}
+        let Some(fresh)=u64::try_from(context.len()).ok().map(FreeId)
+        else{return "lambda-source-binder-overflow".into()};
+        let mut extended=context.to_vec();
+        extended.push(TypeValue::Term(checked_domain.clone()));
+        let frame=lambda.env.extend_free(fresh);
+        self.retain_checked_elimination(
+            &frame,TypeValue::Term(checked_domain),&extended,
+        );
+        let body_source=lambda.sibling(*body,frame);
+        let exposed=self.machine().expose(
+            body_source.clone(),Transparency::Opaque,remaining.min(512),
+        );
+        // Separate the source-bound *proof/data* classification from the
+        // η binder introduced after it. A FreeId in a proof argument is
+        // not licensed for erasure until the enclosing proposition and any
+        // replacement proof are checked in the same source scope.
+        let extra=FreeId(u64::try_from(caller_depth).unwrap_or(u64::MAX));
+        let extra_domain_kind=context.get(caller_depth).and_then(|ty| {
+            let TypeValue::Term(closure)=ty else {return None};
+            let mut fuel=512;
+            let kind=self.infer_exact_closure_in_context(
+                closure,&context[..caller_depth],&mut fuel,0,
+            )?;
+            Some(self.sort_level(Judgment::proven(kind,"source-binder-domain-kind"),512))
+        });
+        let detail=match exposed.proven_value() {
+            Some(Value::Neutral(n)) => {
+                let argument_census=n.spine.iter().enumerate().take(8)
+                    .map(|(position,arg)| {
+                        let support=self.type_depends_on_free(
+                            &TypeValue::Term(arg.clone()),extra,1024,
+                        );
+                        let mut fuel=1024;
+                        let actual_ty=self.infer_exact_closure_in_context(
+                            arg,&extended,&mut fuel,0,
+                        );
+                        let argument_type_sort=actual_ty.as_ref().and_then(|ty| {
+                            let TypeValue::Term(t)=ty else {return None};
+                            let mut inner_fuel=512;
+                            let kind=self.infer_exact_closure_in_context(
+                                t,&extended,&mut inner_fuel,0,
+                            )?;
+                            Some(self.sort_level(Judgment::proven(kind,"exact-argument-kind"),512))
+                        });
+                        format!("{position}:depends-on-source={support:?}:type-kind={argument_type_sort:?}")
+                    }).collect::<Vec<_>>();
+                let telescope=self.diagnostic_neutral_source_telescope_inner(
+                    n,&extended,remaining.min(512),false,
+                );
+                format!("source-argument-census={argument_census:?}:telescope={telescope}")
+            }
+            other=>format!("source-body-not-neutral:{other:?}"),
+        };
+        format!("source-lambda-domain-formed:body={:?}:source-context={}:opened-context={}:source-node={recovered_node:?}:extra-domain-kind={extra_domain_kind:?}:source-obligation={detail}",
+            body_source.expr,context.len(),extended.len())
+    }
+
+    #[cfg(feature = "diagnostics")]
+    fn diagnostic_lambda_source_premises(
+        &self,
+        lambda: &Closure,
+        context: &[TypeValue],
+        expected_type: &TypeValue,
+        budget: usize,
+    ) -> String {
+        let Some(Expr::Lam { domain, body }) = self.expressions.get(lambda.expr)
+        else { return "not-source-lambda".into() };
+        let mut remaining=budget.min(512);
+        let domain= lambda.sibling(*domain, lambda.env.clone());
+        let Some(domain_type)=self.infer_exact_closure_in_context(
+            &domain,context,&mut remaining,0,
+        ) else {
+            return format!("lambda-domain-untyped:source={:?}:frame={}",
+                domain.expr,domain.env.id());
+        };
+        let domain_sort=self.sort_level(
+            Judgment::proven(domain_type,"source-lambda-domain"),
+            remaining.min(256),
+        );
+        if !domain_sort.is_proven() {
+            return format!("lambda-domain-not-established-sort:source={:?}:sort={domain_sort:?}",
+                domain.expr);
+        }
+        let Some(free_id)=u64::try_from(context.len()).ok().map(FreeId)
+        else {return "lambda-binder-depth-overflow".into()};
+        let mut body_context=context.to_vec();
+        body_context.push(TypeValue::Term(domain.clone()));
+        let body_frame=lambda.env.extend_free(free_id);
+        self.retain_checked_elimination(
+            &body_frame,TypeValue::Term(domain.clone()),&body_context,
+        );
+        let body_term=lambda.sibling(*body,body_frame);
+        let mut body_budget=remaining.min(512);
+        let body_type=self.infer_exact_closure_in_context(
+            &body_term,&body_context,&mut body_budget,0,
+        );
+        let failing_app=if body_type.is_none() {
+            if let Some(Expr::App { fun, arg }) =
+                self.expressions.get(body_term.expr)
+            {
+                let f=body_term.sibling(*fun,body_term.env.clone());
+                let a=body_term.sibling(*arg,body_term.env.clone());
+                let mut fbudget=256;
+                let fty=self.infer_exact_closure_in_context(
+                    &f,&body_context,&mut fbudget,0,
+                );
+                let mut abudget=256;
+                let aty=self.infer_exact_closure_in_context(
+                    &a,&body_context,&mut abudget,0,
+                );
+                let fview=fty.as_ref().and_then(|ty| self.pi_view(
+                    Judgment::proven(ty.clone(),"checked-source-lambda-function"),
+                    fbudget.min(256),
+                ));
+                let binding = if let Some(Expr::BVar(index)) =
+                    self.expressions.get(f.expr)
+                {
+                    let source=f.env.lookup_with_node_id(*index);
+                    let certificate=self.checked_type_of_bound_source(
+                        &f.env,*index,&body_context,
+                    );
+                    format!("function-bvar={index}:source={source:?}:certificate={certificate:?}")
+                } else {
+                    format!("function-source={:?}",self.expressions.get(f.expr))
+                };
+                let source_chain = if fty.is_none() {
+                    let mut cursor=f.clone();
+                    let mut seen=std::collections::HashSet::new();
+                    let mut chain=Vec::new();
+                    for _ in 0..12 {
+                        if !seen.insert((cursor.expr,cursor.env.id())) {
+                            chain.push("cycle".to_owned()); break;
+                        }
+                        match self.expressions.get(cursor.expr) {
+                            Some(Expr::BVar(index)) => {
+                                let bound=cursor.env.lookup_with_node_id(*index);
+                                let (node,entry)=match bound {
+                                    Some(pair)=>pair,
+                                    None=>{
+                                        chain.push(format!("unbound:{index}")); break;
+                                    }
+                                };
+                                let record=self.checked_binding_lineage.borrow()
+                                    .get(&node).cloned().flatten();
+                                let scope=record.as_ref().map(|w|
+                                    (w.protected_prefix.len(),
+                                     body_context.starts_with(&w.protected_prefix))
+                                );
+                                chain.push(format!("BVar({index})@{}:node={node}:scope={scope:?}:value={entry:?}",
+                                    cursor.env.id()));
+                                if let EnvBinding::Closure(next)=entry {
+                                    cursor=next;
+                                } else {break}
+                            }
+                            other=>{
+                                chain.push(format!("first-source-leaf:{:?}:shape={other:?}",cursor.expr));
+                                break;
+                            }
+                        }
+                    }
+                    chain.join(" -> ").chars().take(2600).collect::<String>()
+                } else {
+                    "function-type-certified".into()
+                };
+                // Candidate η transport: the function behind body BVar1
+                // comes from the OUTER capture, before the new lambda binder.
+                // Verify its actual type under the same origin, then compare
+                // it to the declared dependent minor-argument type. Neither
+                // a source eta shape nor the recursor's expected type is by
+                // itself a typing certificate.
+                let eta_type_probe = if matches!(
+                    self.expressions.get(*arg),Some(Expr::BVar(0))
+                ) && matches!(
+                    self.expressions.get(*fun),Some(Expr::BVar(1))
+                ) {
+                    let mut captured=f.clone();
+                    let mut valid=true;
+                    for _ in 0..16 {
+                        let Some(Expr::BVar(idx))=self.expressions.get(captured.expr)
+                        else {break};
+                        match captured.env.lookup(*idx) {
+                            Some(EnvBinding::Closure(next))=>captured=next,
+                            _=>{valid=false;break}
+                        }
+                    }
+                    if valid {
+                        // The captured function retains a distinct, source-checked
+                        // local after the six-binder caller prefix. Reconstruct
+                        // the original context for typing; never compare terms
+                        // under a guessed FreeId-equivalent scope.
+                        let mut source_context=context.to_vec();
+                        let mut origin_nodes=Vec::new();
+                        let mut compatible=true;
+                        for index in 0..64u64 {
+                            let Some((node,binding))=captured.env.lookup_with_node_id(index)
+                                else {break};
+                            if !matches!(binding,EnvBinding::Free(_)) {continue}
+                            let record=self.checked_binding_lineage.borrow()
+                                .get(&node).cloned().flatten();
+                            let Some(record)=record else {continue};
+                            if record.protected_prefix.len()<=context.len() {continue}
+                            if !record.protected_prefix.starts_with(context) {
+                                compatible=false;break
+                            }
+                            if record.protected_prefix.len()>source_context.len() {
+                                if !record.protected_prefix.starts_with(&source_context) {
+                                    compatible=false;break
+                                }
+                                source_context=record.protected_prefix;
+                            } else if !source_context.starts_with(&record.protected_prefix) {
+                                compatible=false;break
+                            }
+                            origin_nodes.push(node);
+                        }
+                        let mut budget=2048;
+                        let source_ty=if compatible {
+                            self.infer_exact_closure_in_context(
+                                &captured,&source_context,&mut budget,0,
+                            )
+                        } else { None };
+                        // Comparison in the extended source scope is only a
+                        // DIAGNOSTIC. Even if proven, shrinking back to the
+                        // six-binder caller requires source-term strengthening
+                        // or an independently checked substitution witness.
+                        let relation=source_ty.as_ref().map(|ty|
+                            crate::convert::convert_with_policy_in_context(
+                                self,ty,expected_type,budget.min(512),
+                                crate::convert::DeltaPolicy::PreferredOnly,
+                                source_context.len(),&source_context,
+                            )
+                        );
+                        // η works relative to the *fresh* binder opened
+                        // by this minor lambda. It need not eliminate a
+                        // different, earlier captured binder. Keep the latter
+                        // in the source context and test the actual typed η
+                        // premise there, without authorizing caller-scope reuse.
+                        let eta_free=FreeId(u64::try_from(source_context.len()).unwrap_or(u64::MAX));
+                        let eta_fresh_absent=self.type_depends_on_free(
+                            &TypeValue::Term(captured.clone()),eta_free,2048,
+                        );
+                        let mut eta_fuel=2048;
+                        let eta_minor_ty=if compatible {
+                            self.infer_exact_closure_in_context(
+                                lambda,&source_context,&mut eta_fuel,0,
+                            )
+                        } else {None};
+                        let eta_type_relation=match (&eta_minor_ty,&source_ty) {
+                            (Some(left),Some(right))=>Some(
+                                crate::convert::convert_with_policy_in_context(
+                                    self,left,right,eta_fuel.min(512),
+                                    crate::convert::DeltaPolicy::PreferredOnly,
+                                    source_context.len(),&source_context,
+                                )),
+                            _=>None,
+                        };
+                        let eta_term_relation=if compatible &&
+                            eta_fresh_absent==Some(false) &&
+                            eta_minor_ty.is_some() && source_ty.is_some()
+                        {
+                            Some(crate::convert::convert_with_policy_in_context(
+                                self,&TypeValue::Term(lambda.clone()),
+                                &TypeValue::Term(captured.clone()),512,
+                                crate::convert::DeltaPolicy::PreferredOnly,
+                                source_context.len(),&source_context,
+                            ))
+                        } else {None};
+                        // Source-bound proof h : P may be eliminated only by
+                        // an actually available checked proof of P at the
+                        // six-binder caller, never by fabricating one.
+                        let source_proposition=source_context.get(context.len());
+                        let mut caller_proof_candidates=Vec::new();
+                        if let Some(proposition)=source_proposition {
+                            for (i,caller_ty) in context.iter().enumerate() {
+                                let eq=crate::convert::convert_with_policy_in_context(
+                                    self,caller_ty,proposition,512,
+                                    crate::convert::DeltaPolicy::PreferredOnly,
+                                    context.len(),context,
+                                );
+                                if eq.is_proven() {
+                                    caller_proof_candidates.push(format!("FreeId({i}):type-equal"));
+                                }
+                            }
+                        }
+                        let mut captured_proof_candidates=Vec::new();
+                        if let Some(proposition)=source_proposition {
+                            for (label,frame) in [
+                                ("minor", &lambda.env),("captured-function", &captured.env),
+                            ] {
+                                for index in 0..32u64 {
+                                    let Some((node,binding))=frame.lookup_with_node_id(index)
+                                        else {break};
+                                    if node == 0 {continue}
+                                    let candidate_ty=match binding {
+                                        EnvBinding::Free(id) if id.0 < context.len() as u64 =>
+                                            self.checked_type_of_bound_source(frame,index,context)
+                                                .or_else(||context.get(id.0 as usize).cloned()),
+                                        EnvBinding::Closure(value) => {
+                                            let mut fuel=512;
+                                            self.infer_exact_closure_in_context(
+                                                &value,context,&mut fuel,0,
+                                            )
+                                        },
+                                        _=>None,
+                                    };
+                                    if let Some(candidate_ty)=candidate_ty {
+                                        let eq=crate::convert::convert_with_policy_in_context(
+                                            self,&candidate_ty,proposition,256,
+                                            crate::convert::DeltaPolicy::PreferredOnly,
+                                            context.len(),context,
+                                        );
+                                        if eq.is_proven() {
+                                            captured_proof_candidates.push(
+                                                format!("{label}:index={index}:node={node}:same-P")
+                                            );
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        // Decisive proof-parametricity separator. Hypothetically
+                        // open a SECOND proof binder h' : P after the original
+                        // checked source h : P; both contexts are well-formed
+                        // only when P : Prop independently checks at the
+                        // original six-binder prefix. Replacing h by h' must
+                        // preserve typing, and comparison must be established
+                        // by conversion, never by merely classifying arguments.
+                        let proof_parametricity=(|| -> String {
+                            if !compatible || source_context.len()!=context.len()+1 {
+                                return "source-context-incompatible".into()
+                            }
+                            let Some(prop)=source_proposition.cloned() else {
+                                return "source-proposition-not-found".into()
+                            };
+                            let TypeValue::Term(p_term)=&prop else {
+                                return "source-proposition-not-term".into()
+                            };
+                            let mut sort_fuel=1024;
+                            let Some(ptype)=self.infer_exact_closure_in_context(
+                                p_term,context,&mut sort_fuel,0,
+                            ) else{return "source-proposition-not-formed".into()};
+                            let psort=self.sort_level(
+                                Judgment::proven(ptype,"parametricity-source-proposition"),
+                                sort_fuel.min(512),
+                            );
+                            if !matches!(psort,Judgment::Proven {value:LevelTerm::Zero,..}) {
+                                return format!("source-proposition-not-Prop:{psort:?}")
+                            }
+                            let Some((raw,_))=self.expressions.iter_raw()
+                                .find(|(_,e)|matches!(e,Expr::BVar(0))) else {
+                                return "no-bvar-zero-expression".into()
+                            };
+                            let source_h=FreeId(context.len() as u64);
+                            let second_h=FreeId(source_context.len() as u64);
+                            let replacement_frame=EnvFrame::empty().extend_free(second_h);
+                            let replacement=Closure::new(ExprId(raw),replacement_frame.clone());
+                            let mut double_proof_context=source_context.clone();
+                            double_proof_context.push(prop.clone());
+                            self.retain_checked_elimination(
+                                &replacement_frame,prop.clone(),&double_proof_context,
+                            );
+                            let mut subst_fuel=8192;
+                            let Some(instantiated)=captured.substitute_local_free(
+                                source_h,&replacement,&mut subst_fuel,
+                            ) else{return "capture-safe-substitution-unknown".into()};
+                            let mut original_fuel=2048;
+                            let original_ty=self.infer_exact_closure_in_context(
+                                &captured,&double_proof_context,&mut original_fuel,0,
+                            );
+                            let mut substituted_fuel=2048;
+                            let substituted_ty=self.infer_exact_closure_in_context(
+                                &instantiated,&double_proof_context,&mut substituted_fuel,0,
+                            );
+                            let type_equal=match (&original_ty,&substituted_ty) {
+                                (Some(l),Some(r))=>Some(
+                                    crate::convert::convert_with_policy_in_context(
+                                        self,l,r,512,crate::convert::DeltaPolicy::PreferredOnly,
+                                        double_proof_context.len(),&double_proof_context,
+                                    )),
+                                _=>None,
+                            };
+                            let term_equal=if type_equal.as_ref().is_some_and(|j|j.is_proven()) {
+                                Some(crate::convert::convert_with_policy_in_context(
+                                    self,&TypeValue::Term(captured.clone()),
+                                    &TypeValue::Term(instantiated.clone()),2048,
+                                    crate::convert::DeltaPolicy::PreferredOnly,
+                                    double_proof_context.len(),&double_proof_context,
+                                ))
+                            } else {None};
+                            format!(
+                                "ctx={}:h={source_h:?}:h2={second_h:?}:subst-remaining={subst_fuel}:original-type={}:replaced-type={}:types-convert={type_equal:?}:terms-convert={term_equal:?}",
+                                double_proof_context.len(),original_ty.is_some(),
+                                substituted_ty.is_some(),
+                            )
+                        })();
+                        let extra=FreeId(u64::try_from(context.len()).unwrap_or(u64::MAX));
+                        let source_uses_extra=self.type_depends_on_free(
+                            &TypeValue::Term(captured.clone()),extra,2048,
+                        );
+                        let source_type_uses_extra=source_ty.as_ref().and_then(|ty|
+                            self.type_depends_on_free(ty,extra,2048)
+                        );
+                        let expected_uses_extra=self.type_depends_on_free(
+                            expected_type,extra,2048,
+                        );
+                        let first_source_body=self.diagnostic_one_source_lambda_body(
+                            &captured,context,remaining.min(512),
+                        );
+                        format!("eta-source={:?}:source-scope={}:origin-nodes={origin_nodes:?}:compatible={compatible}:source-type={source_ty:?}:source-vs-expected-in-source={relation:?}:eta-fresh={eta_free:?}:eta-fresh-absent={eta_fresh_absent:?}:eta-minor-type={eta_minor_ty:?}:eta-types-convert={eta_type_relation:?}:eta-terms-convert={eta_term_relation:?}:caller-proof-candidates={caller_proof_candidates:?}:captured-proof-candidates={captured_proof_candidates:?}:proof-parametricity={proof_parametricity}:extra-free={extra:?}:source-term-dep={source_uses_extra:?}:source-type-dep={source_type_uses_extra:?}:expected-type-dep={expected_uses_extra:?}:remaining={budget}:next={first_source_body}",
+                            captured.expr,source_context.len())
+                    } else {"eta-source-binding-unavailable".into()}
+                } else {"not-eta-source-shape".into()};
+                format!("lambda-body-app:fun={:?}:fun_type={fty:?}:arg={:?}:arg_type={aty:?}:pi_view_present={}:{}:source_chain={source_chain}:eta_obligation={eta_type_probe}",
+                    f.expr,a.expr,fview.is_some(),binding)
+            } else { "lambda-body-not-app".to_owned() }
+        } else { "lambda-body-typed".to_owned() };
+        format!(
+            "lambda-domain-sort=PROVEN:ctx={}:opened={free_id:?}:body_expr={:?}:body_shape={:?}:body_type={body_type:?}:remaining={body_budget}:subjudgment={failing_app}",
+            context.len(),body_term.expr,self.expressions.get(body_term.expr),
+        )
+    }
+
+    /// Same exact origin witness can also be used to *diagnose* the complete
+    /// enclosing recursor telescope. The origin is selected by an actual
+    /// source-bound Free node inside the leaf, not by matching recursor names.
+    /// This does not create a transport from the source scope to the caller.
+    #[cfg(feature = "diagnostics")]
+    fn diagnostic_outer_telescope_at_leaf_origin(
+        &self,
+        outer: &Neutral,
+        leaf: &Neutral,
+        caller_context: &[TypeValue],
+        budget: usize,
+    ) -> String {
+        let mut origin: Option<Vec<TypeValue>> = None;
+        for arg in &leaf.spine {
+            let Some(Expr::BVar(index)) = self.expressions.get(arg.expr) else {
+                continue;
+            };
+            let Some((node_id, EnvBinding::Free(_))) =
+                arg.env.lookup_with_node_id(*index) else { continue };
+            let witness = self.checked_binding_lineage.borrow()
+                .get(&node_id).cloned().flatten();
+            let Some(witness) = witness else { continue };
+            let prefix = witness.protected_prefix;
+            if !prefix.starts_with(caller_context) {
+                return format!("origin-context-not-a-caller-extension:node={node_id}");
+            }
+            if let Some(prior) = &origin {
+                if !(prior.starts_with(&prefix) || prefix.starts_with(prior)) {
+                    return format!("multiple-incompatible-checked-origins:node={node_id}");
+                }
+            }
+            if origin.as_ref().is_none_or(|v| prefix.len()>v.len()) {
+                origin=Some(prefix);
+            }
+        }
+        let Some(origin) = origin else { return "origin-not-certified".into() };
+        if origin.len()<=caller_context.len() {
+            return "origin-not-a-strict-extension".into();
+        }
+        let isolated=Self {
+            expressions:self.expressions,
+            levels:self.levels,
+            environment:self.environment,
+            level_substitution:self.level_substitution.clone(),
+            delta_policy:self.delta_policy,
+            exposure_cache:new_exposure_cache(),
+            closed_spine_eligibility: RefCell::new(HashMap::new()),
+            source_support: RefCell::new(HashMap::new()),
+            paired_source_support: RefCell::new(HashMap::new()),
+            checked_frames: RefCell::new(HashMap::new()),
+            source_opening_proofs:RefCell::new(HashMap::new()),
+            formed_expected: RefCell::new(std::collections::HashSet::new()),
+            lambda_trials: RefCell::new(LambdaTrialState::default()),
+            checked_binding_lineage:Rc::new(RefCell::new(
+                self.checked_binding_lineage.borrow().clone(),
+            )),
+            strict_origin_probe:true,
+        };
+        // The directly visible leaf determines a checked six-binder
+        // prefix. The fourth outer recursor argument is a lambda that closes
+        // over a function; follow its ACTUAL BVar bindings to find an
+        // additional source-checked proof binder. This is a context JOIN,
+        // never permission to manufacture a missing proof or to identify
+        // different local variables. This entire replay remains diagnostic.
+        let mut joined=origin.clone();
+        let mut join_trace=Vec::new();
+        if let Some(minor)=outer.spine.get(3) {
+            if let Some(Expr::Lam {body,..})=self.expressions.get(minor.expr) {
+                if let Some(Expr::App {fun,..})=self.expressions.get(*body) {
+                    let mut cursor=minor.sibling(
+                        *fun,minor.env.extend_free(FreeId(u64::MAX)),
+                    );
+                    for _ in 0..16 {
+                        if let Some(Expr::BVar(index))=self.expressions.get(cursor.expr) {
+                            let Some((node,binding))=cursor.env.lookup_with_node_id(*index)
+                                else {join_trace.push("unbound-capture".to_owned());break};
+                            join_trace.push(format!("capture-node={node}"));
+                            if let EnvBinding::Closure(next)=binding {
+                                cursor=next;
+                                continue
+                            }
+                            join_trace.push("nonclosure-capture".to_owned());
+                            break
+                        }
+                        if !matches!(self.expressions.get(cursor.expr),Some(Expr::Lam {..})) {
+                            join_trace.push("captured-function-not-source-lambda".to_owned());
+                            break
+                        }
+                        join_trace.push(format!("source-function={:?}",cursor.expr));
+                        for index in 0..64u64 {
+                            let Some((node,binding))=cursor.env.lookup_with_node_id(index)
+                                else {break};
+                            if !matches!(binding,EnvBinding::Free(_)){continue}
+                            let record=self.checked_binding_lineage.borrow()
+                                .get(&node).cloned().flatten();
+                            let Some(record)=record else {continue};
+                            let prefix=record.protected_prefix;
+                            if prefix.len()>joined.len() {
+                                if !prefix.starts_with(&joined) {
+                                    join_trace.push(format!("incompatible-source-node={node}"));
+                                    return format!("source_origin_depth={}:result={result}:joined-source-scope-CONFLICT",
+                                        origin.len(),result=isolated.diagnostic_neutral_source_telescope_inner(
+                                            outer,&origin,budget.min(1024),false,
+                                        ));
+                                }
+                                join_trace.push(format!("joined-node={node}:depth={}",prefix.len()));
+                                joined=prefix;
+                            } else if !joined.starts_with(&prefix) {
+                                return "joined-source-prefix-CONFLICT".into()
+                            }
+                        }
+                        break
+                    }
+                }
+            }
+        }
+        let joined_replay=if joined.len()>origin.len() {
+            Some(isolated.diagnostic_neutral_source_telescope_inner(
+                outer,&joined,budget.min(1024),false,
+            ))
+        } else {None};
+        // Once every dependent recursor argument is source-typed, inspect
+        // the ACTUAL major and existing certified recursor-iota interface.
+        // This is a decisive separator: source typing alone cannot license
+        // a constructor iota reduction on an unknown major.
+        let qualified_major = if joined_replay.as_ref().is_some_and(|s|
+            s.starts_with("all-source-arguments-checked"))
+        {
+            let certified=match &outer.head {
+                NeutralHead::Const{name,..} =>
+                    isolated.environment.recursor_reduction(*name).is_some(),
+                _=>false,
+            };
+            let major=outer.spine.last().map(|c|
+                isolated.machine().expose(
+                    c.clone(),Transparency::Full,512,
+                ));
+            let iota=isolated.machine().qualified_nested_recursor_result(
+                outer,512,
+            );
+            format!("certified={certified}:major={}:registered-iota={}",
+                format!("{major:?}").chars().take(1800).collect::<String>(),
+                format!("{iota:?}").chars().take(1000).collect::<String>())
+        } else {"recursor-not-fully-source-typed".into()};
+        let result=isolated.diagnostic_neutral_source_telescope_inner(
+            outer,&origin,budget.min(1024),false,
+        );
+        format!(
+            "joined_source_depth={}:joined_telescope={joined_replay:?}:major_obligation={qualified_major}:join_trace={join_trace:?}:source_origin_depth={}:outer_arity={}:result={result}",
+            joined.len(),origin.len(),outer.spine.len(),
+        )
+    }
+
+    #[cfg(feature = "diagnostics")]
+    fn diagnostic_neutral_origin_replay(
+        &self,
+        neutral: &Neutral,
+        caller_context: &[TypeValue],
+        budget: usize,
+    ) -> String {
+        let mut candidate: Option<Vec<TypeValue>> = None;
+        for arg in &neutral.spine {
+            let Some(Expr::BVar(index)) = self.expressions.get(arg.expr) else {
+                continue;
+            };
+            let Some((node_id, EnvBinding::Free(_))) =
+                arg.env.lookup_with_node_id(*index)
+            else {
+                continue;
+            };
+            let record = self.checked_binding_lineage.borrow()
+                .get(&node_id).cloned().flatten();
+            let Some(record) = record else { continue };
+            // The candidate is from the exact immutable binder node.
+            // It must extend (not replace) the caller's already checked
+            // prefix. Conflicting origin contexts cannot be spliced.
+            if !record.protected_prefix.starts_with(caller_context) {
+                return format!("origin-prefix-conflict:node={node_id}");
+            }
+            if let Some(prior) = &candidate {
+                if prior.len() > record.protected_prefix.len()
+                    && !prior.starts_with(&record.protected_prefix)
+                {
+                    return format!("incompatible-origin-scopes:node={node_id}");
+                }
+                if record.protected_prefix.len() > prior.len()
+                    && !record.protected_prefix.starts_with(prior)
+                {
+                    return format!("incompatible-origin-scopes:node={node_id}");
+                }
+            }
+            if candidate.as_ref()
+                .is_none_or(|p| record.protected_prefix.len() > p.len())
+            {
+                candidate = Some(record.protected_prefix);
+            }
+        }
+        let Some(origin) = candidate else {
+            return "no-source-checked-origin-prefix".into();
+        };
+        if origin.len() <= caller_context.len() {
+            return "source-origin-does-not-extend-caller".into();
+        }
+        let isolated = Self {
+            expressions: self.expressions,
+            levels: self.levels,
+            environment: self.environment,
+            level_substitution: self.level_substitution.clone(),
+            delta_policy: self.delta_policy,
+            exposure_cache: new_exposure_cache(),
+            closed_spine_eligibility: RefCell::new(HashMap::new()),
+            source_support: RefCell::new(HashMap::new()),
+            paired_source_support: RefCell::new(HashMap::new()),
+            checked_frames: RefCell::new(HashMap::new()),
+            source_opening_proofs:RefCell::new(HashMap::new()),
+            formed_expected: RefCell::new(std::collections::HashSet::new()),
+            lambda_trials: RefCell::new(LambdaTrialState::default()),
+            checked_binding_lineage: Rc::new(RefCell::new(
+                self.checked_binding_lineage.borrow().clone(),
+            )),
+            strict_origin_probe: true,
+        };
+        let replay = isolated.diagnostic_neutral_source_telescope_inner(
+            neutral, &origin, budget.min(1024), false,
+        );
+        format!("source_origin_depth={}:typed_replay={}", origin.len(), replay)
+    }
+
+    #[cfg(feature = "diagnostics")]
+    pub(crate) fn diagnostic_neutral_source_telescope(
+        &self,
+        neutral: &Neutral,
+        context: &[TypeValue],
+        budget: usize,
+    ) -> String {
+        self.diagnostic_neutral_source_telescope_inner(
+            neutral, context, budget, true,
+        )
+    }
+
+    #[cfg(feature = "diagnostics")]
+    fn diagnostic_neutral_source_telescope_inner(
+        &self,
+        neutral: &Neutral,
+        context: &[TypeValue],
+        budget: usize,
+        follow_source_leaf: bool,
+    ) -> String {
+        // Diagnostic evaluation must not mutate the live checker's typed
+        // binding ledger or reduction cache. Start from the same checked
+        // witness snapshot in an isolated checker, then discard all new
+        // synthetic diagnostic certificates with that snapshot.
+        let probe = Self {
+            expressions: self.expressions,
+            levels: self.levels,
+            environment: self.environment,
+            level_substitution: self.level_substitution.clone(),
+            delta_policy: self.delta_policy,
+            exposure_cache: new_exposure_cache(),
+            closed_spine_eligibility: RefCell::new(HashMap::new()),
+            source_support: RefCell::new(HashMap::new()),
+            paired_source_support: RefCell::new(HashMap::new()),
+            checked_frames: RefCell::new(HashMap::new()),
+            source_opening_proofs:RefCell::new(HashMap::new()),
+            formed_expected: RefCell::new(std::collections::HashSet::new()),
+            lambda_trials: RefCell::new(LambdaTrialState::default()),
+            checked_binding_lineage: Rc::new(RefCell::new(
+                self.checked_binding_lineage.borrow().clone(),
+            )),
+            strict_origin_probe: self.strict_origin_probe,
+        };
+        let mut remaining = budget.min(1024);
+        let mut current = match &neutral.head {
+            NeutralHead::Const { name, levels } => {
+                let Some(decl) = probe.environment.get(*name) else {
+                    return format!("missing-declaration:head={name:?}");
+                };
+                if decl.level_params.len() != levels.len() {
+                    return format!("universe-arity:head={name:?}");
+                }
+                TypeValue::Term(Closure::with_levels(
+                    decl.ty,
+                    EnvFrame::empty(),
+                    LevelSubstitution::new(
+                        decl.level_params.iter().copied()
+                            .zip(levels.iter().cloned()).collect(),
+                    ),
+                ))
+            }
+            NeutralHead::Free(free) => {
+                let Some(ty) = usize::try_from(free.0).ok()
+                    .and_then(|i| context.get(i)).cloned()
+                else {
+                    return format!("missing-typed-local:free={free:?}");
+                };
+                ty
+            }
+            NeutralHead::Projection { .. } => {
+                return "neutral-projection-telescope-not-yet-qualified".into();
+            }
+        };
+        for (position, actual_arg) in neutral.spine.iter().enumerate() {
+            let Some((domain, body)) = probe.pi_view(
+                Judgment::proven(current.clone(), "source-typed-telescope"),
+                remaining.min(512),
+            ) else {
+                return format!(
+                    "first-missing-pi:argument={position}:function_type={current:?}"
+                );
+            };
+            let Some(actual_type) = probe.infer_exact_closure_in_context(
+                actual_arg, context, &mut remaining, 0,
+            ) else {
+                // Chase only the *actual* captured BVar bindings, never
+                // equate de Bruijn indices across separately captured frames.
+                // A first incomplete typing judgment is not a refutation.
+                let mut cursor = actual_arg.clone();
+                let mut seen = std::collections::HashSet::new();
+                let mut stages = Vec::new();
+                let warrant_status = |node: u64| -> String {
+                    let ledger = probe.checked_binding_lineage.borrow();
+                    match ledger.get(&node) {
+                        None => "absent".to_owned(),
+                        Some(None) => "conflicting".to_owned(),
+                        Some(Some(w)) if context.starts_with(&w.protected_prefix) =>
+                            format!("matched:prefix={}", w.protected_prefix.len()),
+                        Some(Some(w)) =>
+                            format!("scope-mismatch:expected-prefix={}:actual={}",
+                                w.protected_prefix.len(), context.len()),
+                    }
+                };
+                for _ in 0..12 {
+                    if !seen.insert((cursor.expr, cursor.env.id())) {
+                        stages.push("binding-cycle".to_owned());
+                        break;
+                    }
+                    match probe.expressions.get(cursor.expr) {
+                        Some(Expr::BVar(index)) => {
+                            let known_type = probe.checked_type_of_bound_source(
+                                &cursor.env, *index, context,
+                            );
+                            match cursor.env.lookup_with_node_id(*index) {
+                                Some((node, EnvBinding::Closure(next))) => {
+                                    stages.push(format!(
+                                        "BVar({index}):node={node}:cert={}:warrant={}:next={:?}@{}",
+                                        known_type.is_some(), warrant_status(node),
+                                        next.expr, next.env.id(),
+                                    ));
+                                    cursor = next;
+                                }
+                                Some((node, binding)) => {
+                                    stages.push(format!(
+                                        "BVar({index}):node={node}:cert={}:warrant={}:terminal={binding:?}",
+                                        known_type.is_some(), warrant_status(node),
+                                    ));
+                                    break;
+                                }
+                                None => {
+                                    stages.push(format!("BVar({index}):unbound"));
+                                    break;
+                                }
+                            }
+                        }
+                        other => {
+                            let app_obligation = if let Some(Expr::App { fun, arg }) = other {
+                                let f = cursor.sibling(*fun, cursor.env.clone());
+                                let a = cursor.sibling(*arg, cursor.env.clone());
+                                let mut fuel = 256;
+                                let fty = probe.infer_exact_closure_in_context(
+                                    &f, context, &mut fuel, 0,
+                                );
+                                match fty {
+                                    None => "first_app_function_type=UNKNOWN".to_owned(),
+                                    Some(function_type) => {
+                                        match probe.pi_view(
+                                            Judgment::proven(
+                                                function_type, "diagnostic-typed-function",
+                                            ),
+                                            fuel.min(256),
+                                        ) {
+                                            None => "first_app_pi_view=UNKNOWN".to_owned(),
+                                            Some((domain, _)) => {
+                                                let aty = probe.infer_exact_closure_in_context(
+                                                    &a, context, &mut fuel, 0,
+                                                );
+                                                match aty {
+                                                    None => {
+                                                        let origin=match probe.expressions.get(a.expr) {
+                                                            Some(Expr::BVar(index))=>{
+                                                                let binding=a.env.lookup_with_node_id(*index);
+                                                                let checked=probe.checked_type_of_bound_source(
+                                                                    &a.env,*index,context,
+                                                                );
+                                                                let scope=binding.as_ref().and_then(|(node,_)|
+                                                                    probe.checked_binding_lineage.borrow()
+                                                                        .get(node).cloned()
+                                                                ).flatten().map(|w| {
+                                                                    let first_difference=(0..w.protected_prefix.len().min(context.len()))
+                                                                        .find(|&i|context[i]!=w.protected_prefix[i]);
+                                                                    let conversion=first_difference.map(|idx| {
+                                                                        let relation=crate::convert::convert_with_policy_in_context(
+                                                                            &probe,
+                                                                            &context[idx],&w.protected_prefix[idx],
+                                                                            256,
+                                                                            crate::convert::DeltaPolicy::GuardedSemanticFallback,
+                                                                            idx,&context[..idx],
+                                                                        );
+                                                                        format!("position={idx}:relation={relation:?}:new={:?}:source={:?}",
+                                                                            context[idx],w.protected_prefix[idx])
+                                                                    });
+                                                                    if std::env::var_os("NUCLEUS_TRACE_ORIGIN_REPLAY").is_some() {
+                                                                        use std::sync::atomic::{AtomicUsize, Ordering};
+                                                                        static SCOPE:AtomicUsize=AtomicUsize::new(0);
+                                                                        if SCOPE.fetch_add(1,Ordering::Relaxed)<24 {
+                                                                            eprintln!(
+                                                                                "NUCLEUS_SOURCE_SCOPE_SEPARATOR:arg={:?}:original_depth={}:candidate_depth={}:first_difference={first_difference:?}:conversion={conversion:?}",
+                                                                                a.expr,w.protected_prefix.len(),context.len(),
+                                                                            );
+                                                                        }
+                                                                    }
+                                                                    (w.protected_prefix.len(),
+                                                                    context.starts_with(&w.protected_prefix),
+                                                                    first_difference,conversion)
+                                                                });
+                                                                format!("BVar({index}):binding={binding:?}:checked_type={checked:?}:scope={scope:?}")
+                                                            }
+                                                            other=>format!("source={other:?}"),
+                                                        };
+                                                        format!("first_app_argument_type=UNKNOWN:arg={:?}:required_domain={domain:?}:origin={origin}",a.expr)
+                                                    }
+                                                    Some(actual) => {
+                                                        let judgment =
+                                                            crate::convert::convert_with_policy_in_context(
+                                                                &probe, &actual, &domain,
+                                                                fuel.min(256),
+                                                                crate::convert::DeltaPolicy::PreferredOnly,
+                                                                context.len(), context,
+                                                            );
+                                                        format!(
+                                                            "first_app_argument_domain={judgment:?}:actual={actual:?}:domain={domain:?}"
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            } else if matches!(other, Some(Expr::Lam { .. })) {
+                                probe.diagnostic_lambda_source_premises(
+                                    &cursor, context, &domain, remaining.min(512),
+                                )
+                            } else {
+                                "non-application-source-leaf".to_owned()
+                            };
+                            let neutral_probe = probe.machine().expose(
+                                cursor.clone(), Transparency::Opaque, 256,
+                            );
+                            let neutral_premise = if follow_source_leaf {
+                                match neutral_probe.proven_value() {
+                                    Some(Value::Neutral(value)) => {
+                                        // One additional source telescope is
+                                        // allowed, but cannot recursively call
+                                        // itself on another untyped leaf.
+                                        let ordinary =
+                                            probe.diagnostic_neutral_source_telescope_inner(
+                                                value, context, 512, false,
+                                            );
+                                        let original =
+                                            probe.diagnostic_neutral_origin_replay(
+                                                value, context, 512,
+                                            );
+                                        let enclosing =
+                                            probe.diagnostic_outer_telescope_at_leaf_origin(
+                                                neutral, value, context, 1024,
+                                            );
+                                        #[cfg(feature = "diagnostics")]
+                                        if std::env::var_os("NUCLEUS_TRACE_ORIGIN_REPLAY").is_some()
+                                        {
+                                            use std::sync::atomic::{AtomicUsize, Ordering};
+                                            static ORIGIN_COUNT: AtomicUsize = AtomicUsize::new(0);
+                                            if ORIGIN_COUNT.fetch_add(1, Ordering::Relaxed) < 48 {
+                                                eprintln!(
+                                                    "NUCLEUS_ORIGIN_REPLAY:head={:?}:arity={}:caller_depth={}:result={}",
+                                                    value.head, value.spine.len(), context.len(), original
+                                                );
+                                                eprintln!(
+                                                    "NUCLEUS_OUTER_ORIGIN_REPLAY:head={:?}:arity={}:caller_depth={}:result={}",
+                                                    neutral.head, neutral.spine.len(), context.len(), enclosing
+                                                );
+                                            }
+                                        }
+                                        format!("caller={ordinary}:origin={original}:enclosing={enclosing}")
+                                    }
+                                    other => format!("no-opaque-neutral={other:?}"),
+                                }
+                            } else {
+                                "nested-source-probe-disabled".to_owned()
+                            };
+                            let neutral_premise: String =
+                                neutral_premise.chars().take(1300).collect();
+                            stages.push(format!(
+                                "source_leaf={:?}@{}:shape={other:?}:typing={app_obligation}:opaque_telescope={neutral_premise}",
+                                cursor.expr, cursor.env.id(),
+                            ));
+                            break;
+                        }
+                    }
+                }
+                let origin = stages.join(" -> ");
+                return format!(
+                    "first-untyped-argument:argument={position}:closure={actual_arg:?}:expected_domain={domain:?}:context_depth={}:origin={origin}",
+                    context.len(),
+                );
+            };
+            let relation = crate::convert::convert_with_policy_in_context(
+                &probe, &actual_type, &domain,
+                remaining.min(256),
+                crate::convert::DeltaPolicy::PreferredOnly,
+                context.len(), context,
+            );
+            if !relation.is_proven() {
+                return format!(
+                    "first-undischarged-domain:argument={position}:actual={actual_type:?}:required={domain:?}:relation={relation:?}:context_depth={}",
+                    context.len(),
+                );
+            }
+            current = match body {
+                PiBody::Fixed(free, body_type) => {
+                    let Some(instantiated) = probe.instantiate_fixed_pi_body(
+                        &body_type, free, actual_arg, &mut remaining,
+                    ) else {
+                        return format!(
+                            "first-unresolved-dependent-substitution:argument={position}:binder={free:?}:body={body_type:?}"
+                        );
+                    };
+                    instantiated
+                }
+                PiBody::Closure(body_closure) => {
+                    TypeValue::Term(Closure::with_levels(
+                        body_closure.expr,
+                        body_closure.env.extend(actual_arg.clone()),
+                        body_closure.levels,
+                    ))
+                }
+            };
+        }
+        let result_kind = probe.sort_level(
+            Judgment::proven(current.clone(), "checked-neutral-telescope"),
+            remaining.min(256),
+        );
+        format!(
+            "all-source-arguments-checked:arity={}:result_type={current:?}:result_sort={result_kind:?}",
+            neutral.spine.len(),
+        )
+    }
+
+    pub(crate) fn rule_k_reduce_neutral(
+        &self,
+        neutral: &Neutral,
+        context: &[TypeValue],
+        budget: usize,
+    ) -> RuleKAttempt {
+        if budget < 8 {
+            return RuleKAttempt::NotApplicable;
+        }
+        let NeutralHead::Const { name, levels } = &neutral.head else {
+            return RuleKAttempt::NotApplicable;
+        };
+        let Some(reduction) = self.environment.recursor_reduction(*name) else {
+            if std::env::var_os("NUCLEUS_TRACE_RULE_K").is_some() {
+                eprintln!("NUCLEUS_RULE_K:head={}:stage=no-reduction", name.0);
+            }
+            return RuleKAttempt::NotApplicable;
+        };
+        if std::env::var_os("NUCLEUS_TRACE_RULE_K").is_some() {
+            eprintln!(
+                "NUCLEUS_RULE_K:head={}:stage=found:k={}:rules={}:spine={}:params={}:indices={}",
+                name.0,
+                reduction.k,
+                reduction.rules.len(),
+                neutral.spine.len(),
+                reduction.num_params,
+                reduction.num_indices
+            );
+        }
+        let [rule] = reduction.rules.as_slice() else {
+            return RuleKAttempt::NotApplicable;
+        };
+        if std::env::var_os("NUCLEUS_TRACE_RULE_K").is_some() {
+            eprintln!(
+                "NUCLEUS_RULE_K:head={}:stage=rule:fields={}:rule_params={}:level_params={}:head_levels={}",
+                name.0,
+                rule.num_fields,
+                rule.num_params,
+                reduction.level_params.len(),
+                levels.len()
+            );
+        }
+        if !reduction.k
+            || rule.num_fields != 0
+            || rule.num_params != reduction.num_params
+            || reduction.level_params.len() != levels.len()
+        {
+            if std::env::var_os("NUCLEUS_TRACE_RULE_K").is_some() {
+                eprintln!("NUCLEUS_RULE_K:head={}:stage=guard-failed", name.0);
+            }
+            return RuleKAttempt::NotApplicable;
+        }
+
+        let required = reduction
+            .num_params
+            .saturating_add(1)
+            .saturating_add(reduction.rules.len())
+            .saturating_add(reduction.num_indices)
+            .saturating_add(1);
+        if neutral.spine.len() != required {
+            return RuleKAttempt::NotApplicable;
+        }
+
+        // Rule K is licensed by the certified recursor interface itself:
+        // after applying every recursor argument except the final major, the
+        // remaining Pi domain is the exact type that a replacement constructor
+        // must inhabit. This avoids reconstructing a local variable's type from
+        // incidental FreeId numbering.
+        let declaration = match self.environment.get(*name) {
+            Some(declaration) if declaration.level_params.len() == levels.len() => declaration,
+            _ => return RuleKAttempt::NotApplicable,
+        };
+        let substitutions = declaration
+            .level_params
+            .iter()
+            .copied()
+            .zip(levels.iter().cloned())
+            .collect::<Vec<_>>();
+        let mut current = TypeValue::Term(Closure::with_levels(
+            declaration.ty,
+            EnvFrame::empty(),
+            LevelSubstitution::new(substitutions),
+        ));
+        for argument in &neutral.spine[..neutral.spine.len().saturating_sub(1)] {
+            let Some((_domain, body)) = self.pi_view(
+                Judgment::proven(current, "rule-k-recursor-spine"),
+                budget / 4,
+            ) else {
+                if std::env::var_os("NUCLEUS_TRACE_RULE_K").is_some() {
+                    eprintln!(
+                        "NUCLEUS_RULE_K:head={}:stage=recursor-spine-type-missing",
+                        name.0
+                    );
+                }
+                return RuleKAttempt::NotApplicable;
+            };
+            current = match body {
+                PiBody::Fixed(binder, body) => {
+                    let mut fuel = budget;
+                    let Some(instantiated) = self.instantiate_fixed_pi_body(
+                        &body, binder, argument, &mut fuel,
+                    ) else {
+                        return RuleKAttempt::NotApplicable;
+                    };
+                    instantiated
+                },
+                PiBody::Closure(body) => TypeValue::Term(Closure::with_levels(
+                    body.expr,
+                    body.env.extend(argument.clone()),
+                    body.levels,
+                )),
+            };
+        }
+        let Some((target_domain, _body)) =
+            self.pi_view(Judgment::proven(current, "rule-k-final-domain"), budget / 4)
+        else {
+            if std::env::var_os("NUCLEUS_TRACE_RULE_K").is_some() {
+                eprintln!("NUCLEUS_RULE_K:head={}:stage=target-domain-missing", name.0);
+            }
+            return RuleKAttempt::NotApplicable;
+        };
+        if std::env::var_os("NUCLEUS_TRACE_RULE_K").is_some() {
+            eprintln!("NUCLEUS_RULE_K:head={}:stage=target-domain-ok", name.0);
+        }
+
+        let mut constructor_levels = Vec::with_capacity(rule.constructor_level_params.len());
+        for parameter in &rule.constructor_level_params {
+            let Some(index) = reduction
+                .level_params
+                .iter()
+                .position(|candidate| candidate == parameter)
+            else {
+                if std::env::var_os("NUCLEUS_TRACE_RULE_K").is_some() {
+                    eprintln!(
+                        "NUCLEUS_RULE_K:head={}:stage=constructor-level-map-missing:param={}",
+                        name.0, parameter.0
+                    );
+                }
+                return RuleKAttempt::NotApplicable;
+            };
+            constructor_levels.push(levels[index].clone());
+        }
+        let constructor = Neutral {
+            head: NeutralHead::Const {
+                name: rule.constructor,
+                levels: constructor_levels,
+            },
+            spine: neutral.spine[..rule.num_params].to_vec(),
+        };
+        let Some(constructor_type) = self.neutral_result_type(&constructor, context, budget / 4)
+        else {
+            if std::env::var_os("NUCLEUS_TRACE_RULE_K").is_some() {
+                eprintln!(
+                    "NUCLEUS_RULE_K:head={}:stage=constructor-type-missing",
+                    name.0
+                );
+            }
+            return RuleKAttempt::NotApplicable;
+        };
+        if std::env::var_os("NUCLEUS_TRACE_RULE_K").is_some() {
+            eprintln!("NUCLEUS_RULE_K:head={}:stage=constructor-type-ok", name.0);
+        }
+
+        let compatibility = crate::convert::convert_with_policy_in_context(
+            self,
+            &target_domain,
+            &constructor_type,
+            budget / 2,
+            crate::convert::DeltaPolicy::GuardedSemanticFallback,
+            context.len(),
+            context,
+        );
+        if std::env::var_os("NUCLEUS_TRACE_RULE_K").is_some() {
+            eprintln!(
+                "NUCLEUS_RULE_K:head={}:stage=compatibility:result={compatibility:?}",
+                name.0
+            );
+        }
+        match compatibility {
+            Judgment::Proven { .. } => {
+                let substitutions = reduction
+                    .level_params
+                    .iter()
+                    .copied()
+                    .zip(levels.iter().cloned())
+                    .collect::<Vec<_>>();
+                let mut result = Closure::with_levels(
+                    rule.rhs,
+                    EnvFrame::empty(),
+                    LevelSubstitution::new(substitutions),
+                );
+                let prefix_len = reduction.num_params + 1 + reduction.rules.len();
+                for argument in &neutral.spine[..prefix_len] {
+                    loop {
+                        match self.expression(result.expr) {
+                            Some(Expr::Lam { body, .. }) => {
+                                result = result.sibling(*body, result.env.extend(argument.clone()));
+                                break;
+                            }
+                            Some(Expr::Let { value, body, .. }) => {
+                                let value = result.sibling(*value, result.env.clone());
+                                result = result.sibling(*body, result.env.extend(value));
+                            }
+                            _ => return RuleKAttempt::NotApplicable,
+                        }
+                    }
+                }
+                if std::env::var_os("NUCLEUS_TRACE_RULE_K").is_some() {
+                    eprintln!("NUCLEUS_RULE_K:head={}:stage=reduced", name.0);
+                }
+                RuleKAttempt::Reduced(result)
+            }
+            Judgment::Refuted { obstruction }
+                if matches!(
+                    obstruction.0,
+                    "distinct-canonical-universes"
+                        | "distinct-Nat-literals"
+                        | "rigid-value-constructor-mismatch"
+                ) =>
+            {
+                RuleKAttempt::DefiniteMismatch
+            }
+            Judgment::Refuted { .. } | Judgment::Unknown { .. } => RuleKAttempt::NotApplicable,
+        }
+    }
+
+    pub(crate) fn certified_stuck_nonproof_recursor_on_local(
+        &self,
+        neutral: &Neutral,
+        context: &[TypeValue],
+        budget: usize,
+    ) -> bool {
+        let NeutralHead::Const { name, levels } = &neutral.head else {
+            return false;
+        };
+        let Some(reduction) = self.environment.recursor_reduction(*name) else {
+            return false;
+        };
+        if reduction.k || reduction.level_params.len() != levels.len() {
+            return false;
+        }
+        let required = reduction
+            .num_params
+            .saturating_add(1)
+            .saturating_add(reduction.rules.len())
+            .saturating_add(reduction.num_indices)
+            .saturating_add(1);
+        if neutral.spine.len() != required {
+            return false;
+        }
+        if !neutral
+            .spine
+            .last()
+            .is_some_and(|target| self.closure_resolves_to_free(target, budget.min(4096)))
+        {
+            return false;
+        }
+        let Some(result_type) = self.neutral_result_type(neutral, context, budget) else {
+            return false;
+        };
+        self.normalize_type_value(&result_type, budget)
+            .is_some_and(|normalized| {
+                self.normalized_type_is_definitely_nonproposition(&normalized, context, budget, 0)
+            })
+    }
+
+    fn closure_resolves_to_free(&self, closure: &Closure, budget: usize) -> bool {
+        let mut current = closure.clone();
+        for _ in 0..budget {
+            match self.expression(current.expr) {
+                Some(Expr::BVar(index)) => match current.env.lookup(*index) {
+                    Some(EnvBinding::Closure(bound)) => current = bound,
+                    Some(EnvBinding::Free(_)) => return true,
+                    Some(EnvBinding::Neutral(Neutral {
+                        head: NeutralHead::Free(_),
+                        spine,
+                    })) => return spine.is_empty(),
+                    Some(EnvBinding::Neutral(_)) | Some(EnvBinding::NatLit(_)) | None => return false,
+                },
+                Some(Expr::Let { value, body, .. }) => {
+                    let value = current.sibling(*value, current.env.clone());
+                    current = current.sibling(*body, current.env.extend(value));
+                }
+                _ => return false,
+            }
+        }
+        false
+    }
+
+    pub(crate) fn is_certified_constructor(&self, name: NameId) -> bool {
+        self.environment.is_certified_constructor(name)
+    }
+
+    pub(crate) fn has_qualified_recursor(&self, name: NameId) -> bool {
+        self.environment.recursor_reduction(name).is_some()
+    }
+
+    pub(crate) fn eta_projection_spec_for_constructor(
+        &self,
+        constructor: NameId,
+    ) -> Option<(NameId, usize, usize)> {
+        let specs = self.environment.projection_specs();
+        let mut matches = specs
+            .into_iter()
+            .filter(|(_, spec)| spec.eta_expandable && spec.constructor == constructor);
+        let (type_name, spec) = matches.next()?;
+        if matches.next().is_some() {
+            return None;
+        }
+        Some((type_name, spec.num_params, spec.field_types.len()))
+    }
+
+    pub(crate) fn non_eta_structure_for_constructor(
+        &self,
+        constructor: NameId,
+    ) -> Option<(NameId, usize)> {
+        let specs = self.environment.projection_specs();
+        let mut matches = specs
+            .into_iter()
+            .filter(|(_, spec)| !spec.eta_expandable && spec.constructor == constructor);
+        let (type_name, spec) = matches.next()?;
+        if matches.next().is_some() {
+            return None;
+        }
+        Some((type_name, spec.num_params + spec.field_types.len()))
+    }
+
+    pub(crate) fn is_non_eta_structure_type(&self, type_name: NameId) -> bool {
+        self.environment
+            .projection_specs()
+            .get(&type_name)
+            .is_some_and(|spec| !spec.eta_expandable)
+    }
+
+    pub(crate) fn certified_eta_projection_field(
+        &self,
+        field: &Closure,
+        type_name: NameId,
+        index: usize,
+        target: &crate::value::Neutral,
+        num_params: usize,
+        budget: usize,
+    ) -> bool {
+        let mut closure = field.clone();
+        let mut arguments = Vec::new();
         let (projection, levels) = loop {
             let Some(expression) = self.expressions.get(closure.expr) else {
                 return false;
