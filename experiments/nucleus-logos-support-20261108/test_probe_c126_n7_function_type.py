@@ -4,7 +4,7 @@ import unittest
 
 from probe_c126_n7_function_type import (
     parse_traces, summarize_owner_traces, parse_app_edges, parse_arg_obligations,
-    parse_conversion_stages, parse_inner_arg_edges,
+    parse_conversion_stages, parse_inner_arg_edges, parse_c133_stages,
 )
 
 
@@ -110,6 +110,22 @@ class C126TraceTests(unittest.TestCase):
         self.assertEqual([item["state"] for item in result], ["PROVEN", "UNKNOWN"])
         with self.assertRaises(AssertionError):
             parse_inner_arg_edges(sample.replace(b"arg=8803", b"arg=8802"), source)
+
+    def test_c133_exact_inner_arg_inference_before_conversion(self):
+        source = {8803: {"fn": 8802, "arg": 1477}}
+        sample = (
+            "NUCLEUS_C133_ARG_INFER:expr=1477:context=0:frame=0:before=65282:"
+            "after=65281:state=PROVEN:inferred=Proven { value: Term(Closure(...)) }:"
+            "expected=Term(Closure(...))\n"
+            "NUCLEUS_C133_ARG_CONVERT:expr=1477:context=0:frame=0:fuel=65281:"
+            "state=UNKNOWN:judgment=Unknown { residual: unresolved-qualified-recursor-heads }\n"
+        ).encode()
+        rows = parse_c133_stages(sample, source)
+        self.assertEqual([r["state"] for r in rows], ["PROVEN", "UNKNOWN"])
+        self.assertEqual(rows[0]["charged"], 1)
+        self.assertEqual(rows[1]["stage"], "convert")
+        with self.assertRaises(AssertionError):
+            parse_c133_stages(sample.replace(b"expr=1477", b"expr=1478"), source)
 
 
 if __name__ == "__main__":
