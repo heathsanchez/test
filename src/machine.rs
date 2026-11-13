@@ -2566,6 +2566,55 @@ impl<'a> Machine<'a> {
                         eprintln!("NUCLEUS_C157_BOUND_EXPR:rank={rank}:expr={}:members={members}",expr.0);
                     }
                 }
+                if std::env::var_os("NUCLEUS_C158_BVAR_CHAIN_GRAPH").is_some() {
+                    let mut global_nodes=HashSet::new();
+                    let mut terminal_closures:HashMap<Closure,usize>=HashMap::new();
+                    let mut total_steps=0usize;
+                    let mut max_steps=0usize;
+                    let mut repeated_node_visits=0usize;
+                    let mut paths_reaching_expr1=0usize;
+                    let mut terminals_nonbvar=0usize;
+                    let mut terminals_nonclosure=0usize;
+                    let mut terminals_unbound=0usize;
+                    let mut cycles=0usize;
+                    let mut capped=0usize;
+                    let mut terminal_exprs:HashMap<ExprId,usize>=HashMap::new();
+                    for (key,_) in &e.first {
+                        let mut cursor=key.exact.1.clone();
+                        let mut seen=HashSet::new();
+                        let mut steps=0usize;
+                        let mut reached1=false;
+                        let mut ended=false;
+                        for _ in 0..4096 {
+                            if cursor.expr==ExprId(1) {reached1=true;}
+                            if !seen.insert((cursor.expr,cursor.env.id(),cursor.levels.clone())) {
+                                cycles+=1;ended=true;break;
+                            }
+                            let Some(Expr::BVar(index))=self.expressions.get(cursor.expr) else {
+                                terminals_nonbvar+=1;ended=true;break;
+                            };
+                            let Some((node,binding))=cursor.env.lookup_with_node_id(*index) else {
+                                terminals_unbound+=1;ended=true;break;
+                            };
+                            repeated_node_visits+=usize::from(!global_nodes.insert(node));
+                            steps+=1;
+                            match binding {
+                                EnvBinding::Closure(next)=>cursor=next,
+                                _=>{terminals_nonclosure+=1;ended=true;break;}
+                            }
+                        }
+                        if !ended {capped+=1;}
+                        paths_reaching_expr1+=usize::from(reached1);
+                        total_steps+=steps;
+                        max_steps=max_steps.max(steps);
+                        *terminal_exprs.entry(cursor.expr).or_default()+=1;
+                        *terminal_closures.entry(cursor).or_default()+=1;
+                    }
+                    let max_terminal_class=terminal_closures.values().copied().max().unwrap_or(0);
+                    let largest_terminal_expr_class=terminal_exprs.values().copied().max().unwrap_or(0);
+                    eprintln!("NUCLEUS_C158_CHAIN:source=8799:env=0:authority={}:budget={budget}:starts={}:sum_steps={total_steps}:max_steps={max_steps}:unique_binding_nodes={}:repeated_node_visits={repeated_node_visits}:reached_expr1={paths_reaching_expr1}:nonbvar={terminals_nonbvar}:nonclosure={terminals_nonclosure}:unbound={terminals_unbound}:cycles={cycles}:capped={capped}:terminal_closure_classes={}:largest_terminal_class={max_terminal_class}:terminal_expr_classes={}:largest_terminal_expr_class={largest_terminal_expr_class}",
+                        self.authority.0,e.first.len(),global_nodes.len(),terminal_closures.len(),terminal_exprs.len());
+                }
             }
         }
         #[cfg(feature="diagnostics")]
