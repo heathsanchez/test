@@ -652,6 +652,36 @@ impl Drop for ExposureFuelScope<'_> {
     fn drop(&mut self) { self.depth.set(self.depth.get().saturating_sub(1)); if self.owner { self.fuel.set(None); } }
 }
 
+// C143 diagnostic census. Every expression ID is counted exactly, but the
+// bounded source-closure sample is only a workload classifier, not a checked
+// reduction key (pending spine and transparency are not represented here).
+#[cfg(feature="diagnostics")]
+#[derive(Default)]
+struct C143HeadStats {
+    total:usize,
+    by_expr:HashMap<ExprId,usize>,
+    sample_steps:usize,
+    sample_seen:HashSet<Closure>,
+    sample_repeats:usize,
+    sample_overflow:usize,
+}
+#[cfg(feature="diagnostics")]
+impl C143HeadStats {
+    fn record(&mut self,closure:&Closure) {
+        self.total+=1;
+        *self.by_expr.entry(closure.expr).or_default()+=1;
+        // Stable inclusion for a given immutable source closure; deliberately
+        // no claim of statistical randomness or semantic state equality.
+        let mix=(closure.expr.0 as u64).wrapping_mul(0x9e3779b97f4a7c15)
+            ^ closure.env.id().wrapping_mul(0xbf58476d1ce4e5b9);
+        if mix&255!=0 {return}
+        self.sample_steps+=1;
+        if self.sample_seen.contains(closure) {self.sample_repeats+=1;return}
+        if self.sample_seen.len()>=131_072 {self.sample_overflow+=1;return}
+        self.sample_seen.insert(closure.clone());
+    }
+}
+
 pub struct Machine<'a> {
     authority: AuthorityId,
     demand_major: bool,
@@ -676,6 +706,10 @@ pub struct Machine<'a> {
     c142_head_steps_total:Cell<usize>,
     #[cfg(feature="diagnostics")]
     c142_recursor_calls_total:Cell<usize>,
+    #[cfg(feature="diagnostics")]
+    c143_head_active:Cell<bool>,
+    #[cfg(feature="diagnostics")]
+    c143_head_stats:RefCell<C143HeadStats>,
     #[cfg(test)]
     replay_key_builds: Cell<usize>,
     exposure_cache: Option<ExposureCache>,
@@ -723,6 +757,10 @@ impl<'a> Machine<'a> {
             c142_head_steps_total:Cell::new(0),
             #[cfg(feature="diagnostics")]
             c142_recursor_calls_total:Cell::new(0),
+            #[cfg(feature="diagnostics")]
+            c143_head_active:Cell::new(false),
+            #[cfg(feature="diagnostics")]
+            c143_head_stats:RefCell::new(C143HeadStats::default()),
             #[cfg(test)]
             replay_key_builds: Cell::new(0),
             exposure_cache: None,
@@ -1147,10 +1185,31 @@ impl<'a> Machine<'a> {
             self.c142_recursor_calls_total.get(),
             REPLAY_KEY_WORK.load(std::sync::atomic::Ordering::Relaxed),
             self.exposure_fuel.get());
+        #[cfg(feature="diagnostics")]
+        let c143_selected = c142_exact && budget>=65_000
+            && !self.c143_head_active.get()
+            && std::env::var_os("NUCLEUS_C143_HEAD_REUSE_SAMPLE").is_some();
+        #[cfg(feature="diagnostics")]
+        if c143_selected {
+            self.c143_head_active.set(true);
+            *self.c143_head_stats.borrow_mut()=C143HeadStats::default();
+        }
         let result = self.expose_uncached_internal_with_pending(
             closure, transparency, budget, false,
             preserve_stuck_projection, pending,
         );
+        #[cfg(feature="diagnostics")]
+        if c143_selected {
+            self.c143_head_active.set(false);
+            let stats=std::mem::take(&mut *self.c143_head_stats.borrow_mut());
+            let mut top:Vec<_>=stats.by_expr.into_iter().collect();
+            top.sort_unstable_by(|a,b|b.1.cmp(&a.1).then_with(||a.0.0.cmp(&b.0.0)));
+            let top=top.into_iter().take(8)
+                .map(|(expr,count)|format!("Expr{}@{count}",expr.0))
+                .collect::<Vec<_>>().join(",");
+            let scope=self.c140_rhs_work_active.get()!=0;
+            eprintln!("NUCLEUS_C143_HEADS:source=8799:env=0:authority={}:scope={scope}:budget={budget}:total={}:sample_steps={}:sample_unique={}:sample_repeats={}:sample_overflow={}:top={top}",self.authority.0,stats.total,stats.sample_steps,stats.sample_seen.len(),stats.sample_repeats,stats.sample_overflow);
+        }
         #[cfg(feature="diagnostics")]
         if c142_exact {
             let steps=self.c142_head_steps_total.get().saturating_sub(c142_before.0);
@@ -1463,6 +1522,10 @@ impl<'a> Machine<'a> {
             }
             #[cfg(feature="diagnostics")]
             self.c142_head_steps_total.set(self.c142_head_steps_total.get()+1);
+            #[cfg(feature="diagnostics")]
+            if self.c143_head_active.get() {
+                self.c143_head_stats.borrow_mut().record(&closure);
+            }
             if !visited.insert((self.authority, closure.expr, closure.env.id())) {
                 return Judgment::unknown("reduction-cycle");
             }
