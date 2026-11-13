@@ -35,6 +35,7 @@ C139_COMPARE_PREFIX = "NUCLEUS_C139_COMPARE:"
 C140_RHS_PREFIX = "NUCLEUS_C140_RHS:"
 C141_CACHE_PREFIX = "NUCLEUS_C141_CACHE:"
 C142_MISS_PREFIX = "NUCLEUS_C142_MISS:"
+C143_HEAD_PREFIX = "NUCLEUS_C143_HEADS:"
 
 
 def parse_traces(stderr: bytes):
@@ -429,6 +430,40 @@ def parse_c142_exact_miss_cost(stderr: bytes):
     return rows
 
 
+def parse_c143_head_reuse_sample(stderr: bytes):
+    """Sampled exact closures and full ExprId counts; neither implies convertibility."""
+    rows = []
+    for line in stderr.decode(errors="replace").splitlines():
+        if not line.startswith(C143_HEAD_PREFIX):
+            continue
+        fields = dict(part.split("=", 1) for part in
+                      line[len(C143_HEAD_PREFIX):].split(":"))
+        assert int(fields["source"]) == 8799 and int(fields["env"]) == 0, line
+        assert int(fields["authority"]) >= 0 and fields["scope"] in {"true", "false"}, line
+        total = int(fields["total"])
+        sampled = int(fields["sample_steps"])
+        unique, repeats, overflow = (int(fields[k]) for k in
+                                      ("sample_unique", "sample_repeats", "sample_overflow"))
+        assert total >= sampled >= 0 and unique >= 0 and repeats >= 0 and overflow >= 0, line
+        assert sampled == unique + repeats + overflow, line
+        top = []
+        for entry in fields["top"].split(","):
+            if not entry:
+                continue
+            match = re.fullmatch(r"Expr(\d+)@(\d+)", entry)
+            assert match, line
+            top.append({"expr": int(match.group(1)), "count": int(match.group(2))})
+        assert len(top) <= 8 and all(item["count"] > 0 for item in top), line
+        assert sum(item["count"] for item in top) <= total, line
+        rows.append({"source": 8799, "env": 0, "authority": int(fields["authority"]),
+                     "scope": fields["scope"] == "true", "budget": int(fields["budget"]),
+                     "total": total, "sample_steps": sampled, "sample_unique": unique,
+                     "sample_repeats": repeats, "sample_overflow": overflow,
+                     "top": top})
+        assert rows[-1]["budget"] > 0 and len(rows) <= 8, line
+    return rows
+
+
 def validate_source(source: bytes):
     assert hashlib.sha256(source).hexdigest() == SOURCE_SHA256, "frozen N7 hash mismatch"
     app = None
@@ -472,7 +507,8 @@ def run(binary: Path, source: bytes, budget: int, trace: bool,
         deferred_rule_trace: bool = False, value_comparison_trace: bool = False,
         rhs_exposure_work_trace: bool = False,
         cache_provenance_trace: bool = False,
-        exact_miss_cost_trace: bool = False):
+        exact_miss_cost_trace: bool = False,
+        head_reuse_sample_trace: bool = False):
     env = {k: v for k, v in os.environ.items() if not k.startswith("NUCLEUS_")}
     env.update(NUCLEUS_EXPERIMENTAL_RELEVANCE="1",
                NUCLEUS_EXPERIMENTAL_DEMAND_MAJOR="1")
@@ -499,17 +535,19 @@ def run(binary: Path, source: bytes, budget: int, trace: bool,
             env["NUCLEUS_C133_ARG_CONVERT"] = "1"
         if (recursor_owner_trace or recursor_trial_trace or owner_route_trace or
                 owner_worklist_trace or deferred_rule_trace or value_comparison_trace or
-                rhs_exposure_work_trace or cache_provenance_trace or exact_miss_cost_trace):
+                rhs_exposure_work_trace or cache_provenance_trace or exact_miss_cost_trace
+                or head_reuse_sample_trace):
             env["NUCLEUS_C134_RECURSOR_OWNER"] = "1"
         if recursor_trial_trace:
             env["NUCLEUS_C135_RECURSOR_TRIAL"] = "1"
         if owner_route_trace:
             env["NUCLEUS_C136_OWNER_ROUTE"] = "1"
         if (owner_worklist_trace or deferred_rule_trace or value_comparison_trace or
-                rhs_exposure_work_trace or cache_provenance_trace or exact_miss_cost_trace):
+                rhs_exposure_work_trace or cache_provenance_trace or exact_miss_cost_trace
+                or head_reuse_sample_trace):
             env["NUCLEUS_C137_OWNER_WORKLIST"] = "1"
         if (deferred_rule_trace or value_comparison_trace or rhs_exposure_work_trace
-                or cache_provenance_trace or exact_miss_cost_trace):
+                or cache_provenance_trace or exact_miss_cost_trace or head_reuse_sample_trace):
             env["NUCLEUS_C138_DEFERRED_ROUTE"] = "1"
         if value_comparison_trace:
             env["NUCLEUS_C139_EXACT_COMPARE"] = "1"
@@ -518,10 +556,12 @@ def run(binary: Path, source: bytes, budget: int, trace: bool,
         if cache_provenance_trace:
             env["NUCLEUS_C140_EXACT_RHS_WORK"] = "1"
             env["NUCLEUS_C141_EXACT_CACHE"] = "1"
-        if exact_miss_cost_trace:
+        if exact_miss_cost_trace or head_reuse_sample_trace:
             env["NUCLEUS_C140_EXACT_RHS_WORK"] = "1"
             env["NUCLEUS_C141_EXACT_CACHE"] = "1"
             env["NUCLEUS_C142_EXACT_MISS_COST"] = "1"
+        if head_reuse_sample_trace:
+            env["NUCLEUS_C143_HEAD_REUSE_SAMPLE"] = "1"
     process = subprocess.run([str(binary), str(budget)], input=source,
                              stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                              env=env, timeout=240)
@@ -566,6 +606,8 @@ def main():
                         help="C141 exact right-hand exposure cache hit, miss and publication lineage")
     parser.add_argument("--exact-miss-cost-trace", action="store_true",
                         help="C142 source-qualified per-miss evaluator work and fuel ledger")
+    parser.add_argument("--head-reuse-sample-trace", action="store_true",
+                        help="C143 bounded head ExprId census and immutable closure-revisit sample")
     args = parser.parse_args()
     source = args.source.read_bytes()
     validate_source(source)
@@ -583,7 +625,7 @@ def main():
                        args.owner_route_trace, args.owner_worklist_trace,
                        args.deferred_rule_trace, args.value_comparison_trace,
                        args.rhs_exposure_work_trace, args.cache_provenance_trace,
-                       args.exact_miss_cost_trace)
+                       args.exact_miss_cost_trace, args.head_reuse_sample_trace)
         assert (silent.returncode, silent.stdout) == (observed.returncode, observed.stdout), (
             "observer changed the checker verdict or output", budget)
         heads = parse_traces(observed.stderr)
@@ -640,7 +682,7 @@ def main():
                 args.owner_route_trace or args.owner_worklist_trace or
                 args.deferred_rule_trace or args.value_comparison_trace or
                 args.rhs_exposure_work_trace or args.cache_provenance_trace or
-                args.exact_miss_cost_trace):
+                args.exact_miss_cost_trace or args.head_reuse_sample_trace):
             traced = parse_c134_owner_traces(observed.stderr)
             assert traced["owner"], ("exact captured conversion owner absent", budget)
             row["second_captured_conversion_owner"] = traced
@@ -655,13 +697,14 @@ def main():
             row["second_captured_conversion_route"] = route
         if (args.owner_worklist_trace or args.deferred_rule_trace or
                 args.value_comparison_trace or args.rhs_exposure_work_trace or
-                args.cache_provenance_trace or args.exact_miss_cost_trace):
+                args.cache_provenance_trace or args.exact_miss_cost_trace or
+                args.head_reuse_sample_trace):
             entries = parse_c137_worklist(observed.stderr)
             assert entries, ("exact captured deferred worklist absent", budget)
             row["second_captured_conversion_worklist"] = entries
         if (args.deferred_rule_trace or args.value_comparison_trace or
                 args.rhs_exposure_work_trace or args.cache_provenance_trace or
-                args.exact_miss_cost_trace):
+                args.exact_miss_cost_trace or args.head_reuse_sample_trace):
             entries = row["second_captured_conversion_worklist"]
             assert len(entries) >= 3 and entries[2]["pop"] == 2, entries
             assert entries[2]["left"].startswith("Expr1@Env66182@Levels"), entries[2]
@@ -685,7 +728,7 @@ def main():
             assert cache_rows and any(r["scope"] for r in cache_rows), (
                 "C141 exact scoped exposure absent", budget)
             row["exact_rhs_cache_provenance"] = cache_rows
-        if args.exact_miss_cost_trace:
+        if args.exact_miss_cost_trace or args.head_reuse_sample_trace:
             cache_rows = parse_c141_cache_provenance(observed.stderr)
             assert any(r["scope"] for r in cache_rows), (
                 "C142 companion source cache trace absent", budget)
@@ -700,6 +743,11 @@ def main():
                            for r in cache_rows), (
                     "C142 diagnostic expected prior C141 scoped hit", budget)
             row["exact_rhs_miss_cost"] = cost_rows
+        if args.head_reuse_sample_trace:
+            reuse = parse_c143_head_reuse_sample(observed.stderr)
+            assert reuse and any(r["budget"] > 8_388_608 for r in reuse) == (
+                budget > 8_388_608), ("C143 exact high producer census absent", budget)
+            row["exact_rhs_head_reuse_sample"] = reuse
         observations.append(row)
     if args.app_arg_trace and len(observations) == 2:
         low, high = observations
