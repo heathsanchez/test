@@ -1,8 +1,8 @@
-name: Nucleus C161 Decidable isTrue proposition closure distinction census
+name: Nucleus C162 original proposition binding-support projection census
 
 on:
   push:
-    branches: [research/nucleus-c161-istrue-proposition-bindings-20261114]
+    branches: [research/nucleus-c162-proposition-binding-support-20261114]
     paths:
       - .github/workflows/nucleus-c150-exact-c125b-source-gate.yml
       - metatron-kernel/src/convert.rs
@@ -29,11 +29,11 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         with: {toolchain: '1.99.1'}
-      - name: Verify recovered C125b source with C159 safety and C160-C161 observers
+      - name: Verify recovered C125b source with C159 safety and C160-C162 observers
         run: |
           set -euo pipefail
           printf '%s  %s\n' \
-            79ef6870b9331ec01ec53f31734d1515644e9bfbf5b66d3dd51bfef3cb07132c metatron-kernel/src/machine.rs \
+            4075ac70b737b648424a521c5a7b77f232fd0a7b4ed3761192db3c7e56246905 metatron-kernel/src/machine.rs \
             c3d47f4be05dbdcc1ba99eb668fe4cd32873f4e7d8b1b95480f6c1e943bd7f88 metatron-kernel/src/convert.rs \
             d16b882835a6ccf79adf97191640c37b526ea0d74b7aadcbb6e2a425779c0eb6 metatron-kernel/src/typecheck.rs \
             ad5161dc49851ea5b7be34263496502309fd6f6958df4e3c6b5a1e6d885d7894 metatron-kernel/examples/nucleus_budget_ladder.rs \
@@ -627,13 +627,97 @@ jobs:
                             'original_sha256':'abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35',
                             'receipts':receipts},sort_keys=True))
           PY
+      - name: C162 classify only source-supported proposition capture nodes
+        run: |
+          set -euo pipefail
+          python3 - "$RUNNER_TEMP/c150-original196/good/perf/magma-list-pair-n7.ndjson" <<'PY' | tee "$RUNNER_TEMP/c162-proposition-support.json"
+          import functools
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+          import re
+          import subprocess
+          import sys
+
+          source=Path(sys.argv[1]).read_bytes()
+          assert hashlib.sha256(source).hexdigest()=='abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35'
+          expressions={a['ie']:a for line in source.splitlines() if 'ie' in (a:=json.loads(line))}
+          @functools.lru_cache(None)
+          def support(e,depth=0):
+              a=expressions[e]
+              if 'bvar' in a:
+                  k=a['bvar']
+                  return frozenset([k-depth]) if k>=depth else frozenset()
+              if 'app' in a:
+                  return support(a['app']['fn'],depth)|support(a['app']['arg'],depth)
+              if 'lam' in a or 'forallE' in a:
+                  b=a.get('lam',a.get('forallE'))
+                  return support(b['type'],depth)|support(b['body'],depth+1)
+              if 'letE' in a:
+                  b=a['letE']
+                  return support(b['type'],depth)|support(b['value'],depth)|support(b['body'],depth+1)
+              if 'proj' in a:return support(a['proj']['struct'],depth)
+              assert any(k in a for k in ('const','sort','natVal')),a
+              return frozenset()
+          asserted_support={9:[3],7218:[4,5]}
+          assert {e:sorted(support(e)) for e in asserted_support}==asserted_support
+          assert expressions[9]['bvar']==3 and 'forallE' in expressions[7218]
+
+          binary=Path('metatron-kernel/target/release/examples/nucleus_budget_ladder').resolve()
+          base_env=dict(os.environ,NUCLEUS_C151_EXACT_CACHE='1',NUCLEUS_C152_EXACT_HEAD_COST='1',
+                        NUCLEUS_C153_NESTED_COMPLETIONS='1',NUCLEUS_C154_NONLEAF_COST='1',
+                        NUCLEUS_C155_EXPENSIVE_EXACT_KEYS='1')
+          base_env.pop('NUCLEUS_C162_PROP_CAPTURE_SUPPORT',None)
+          marked_env=dict(base_env,NUCLEUS_C162_PROP_CAPTURE_SUPPORT='1')
+          pattern=re.compile(r'^NUCLEUS_C162_PROP_CAPTURE:source=8799:env=0:authority=(\d+):budget=(\d+):full_keys=(\d+):classified=(\d+):other=(\d+):missing_binding=(\d+):projected_exact_groups=(\d+):repeated_projected_groups=(\d+):largest_projected_group=(\d+):expr9_members=(\d+):expr9_projected_groups=(\d+):expr7218_members=(\d+):expr7218_projected_groups=(\d+)$')
+          position_pattern=re.compile(r'^NUCLEUS_C162_BINDING_POS:expr=(\d+):index=(\d+):distinct_nodes=(\d+)$')
+          receipts=[]
+          for budget,expected in ((65536,2),(14155776,0)):
+              plain=subprocess.run([str(binary),str(budget)],input=source,capture_output=True,env=base_env,timeout=240,check=False)
+              marked=subprocess.run([str(binary),str(budget)],input=source,capture_output=True,env=marked_env,timeout=240,check=False)
+              assert (plain.returncode,marked.returncode)==(expected,expected)
+              assert plain.stdout==marked.stdout==b''
+              lines=marked.stderr.splitlines()
+              markers=[line.decode() for line in lines if line.startswith(b'NUCLEUS_C162_PROP_CAPTURE:')]
+              positions=[line.decode() for line in lines if line.startswith(b'NUCLEUS_C162_BINDING_POS:')]
+              stripped=b'\n'.join(line for line in lines if not line.startswith((b'NUCLEUS_C162_PROP_CAPTURE:',b'NUCLEUS_C162_BINDING_POS:')))
+              assert stripped==b'\n'.join(plain.stderr.splitlines()),budget
+              assert len(markers)==(4 if budget==65536 else 3),(budget,markers)
+              events=[]
+              for marker in markers:
+                  match=pattern.fullmatch(marker);assert match,marker
+                  auth,allow,full,n,other,missing,groups,repeated,largest,m9,g9,m7218,g7218=map(int,match.groups())
+                  assert auth==386 and allow>0 and n+other+missing==full
+                  assert 0<=repeated<=groups<=n and 0<=largest<=n
+                  assert m9+m7218==n and 0<=g9<=m9 and 0<=g7218<=m7218
+                  assert g9+g7218==groups
+                  events.append({'allowance':allow,'full_exact_keys':full,'classified':n,
+                                 'other':other,'missing_binding':missing,'projected_exact_groups':groups,
+                                 'repeated_projected_groups':repeated,'largest_projected_group':largest,
+                                 'expr9_members':m9,'expr9_projected_groups':g9,
+                                 'expr7218_members':m7218,'expr7218_projected_groups':g7218})
+              if budget==65536:assert all(e['full_exact_keys']==0 for e in events)
+              if budget==14155776:assert sorted(e['full_exact_keys'] for e in events)==[0,0,407]
+              position=[]
+              for line in positions:
+                  match=position_pattern.fullmatch(line);assert match,line
+                  expr,index,nodes=map(int,match.groups())
+                  assert index in asserted_support.get(expr,[]) and 0<nodes<=407
+                  position.append({'source_expr':expr,'binding_index':index,'distinct_nodes':nodes})
+              assert len(position)==(0 if budget==65536 else 3)
+              receipts.append({'budget':budget,'exit':expected,'attempts':events,'binding_positions':position})
+          print(json.dumps({'source':'exact C125b d8be1443f2f1352634aaf333a282f32e7ec8a719',
+                            'original_sha256':'abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35',
+                            'source_free_bvar_support':asserted_support,'receipts':receipts},sort_keys=True))
+          PY
       - name: Run exact-source native Rust tests with selected research flags
         run: cargo test --locked --manifest-path metatron-kernel/Cargo.toml --features diagnostics
-      - name: Preserve exact native C161 proposition-field receipts and earlier regressions
+      - name: Preserve exact native C162 proposition-support receipts and earlier regressions
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: nucleus-c161-istrue-field-distinction-receipt
+          name: nucleus-c162-proposition-capture-support-receipt
           path: |
             ${{ runner.temp }}/c151-cache-receipt.json
             ${{ runner.temp }}/c152-head-cost.json
@@ -645,4 +729,5 @@ jobs:
             ${{ runner.temp }}/c158-forwarding-paths.json
             ${{ runner.temp }}/c160-value-head-families.json
             ${{ runner.temp }}/c161-istrue-fields.json
+            ${{ runner.temp }}/c162-proposition-support.json
           if-no-files-found: ignore
