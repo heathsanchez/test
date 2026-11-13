@@ -30,6 +30,7 @@ C134_RECURSOR_PREFIX = "NUCLEUS_C134_RECURSOR:"
 C135_TRIAL_PREFIX = "NUCLEUS_C135_RECURSOR_TRIAL:"
 C136_ROUTE_PREFIX = "NUCLEUS_C136_ROUTE:"
 C137_WORK_PREFIX = "NUCLEUS_C137_WORK:"
+C138_DEFERRED_PREFIX = "NUCLEUS_C138_DEFERRED:"
 
 
 def parse_traces(stderr: bytes):
@@ -275,6 +276,36 @@ def parse_c137_worklist(stderr: bytes):
     return rows
 
 
+def parse_c138_deferred_route(stderr: bytes):
+    """Rule stages for only the second deferred pair of the C137 source owner."""
+    valid = {"pop", "same-value", "exact-source-capture", "left-eta", "right-eta",
+             "checked-same-proposition", "checked-proof-local", "unit-like-free",
+             "proof-free", "fixed-proof-function", "opaque-congruence",
+             "rigid-application-congruence", "lazy-delta-conversion",
+             "cheap-exposure-attempted", "cheap-exposure-status",
+             "cheap-exposure-unknown", "cheap-comparison-proven",
+             "cheap-comparison-unknown", "full-comparison-proven",
+             "full-exposure-unknown", "full-comparison-unknown"}
+    route = []
+    for line in stderr.decode(errors="replace").splitlines():
+        if not line.startswith(C138_DEFERRED_PREFIX):
+            continue
+        fields = dict(part.split("=", 1) for part in
+                      line[len(C138_DEFERRED_PREFIX):].split(":"))
+        assert fields.get("event") in valid, line
+        row = {"event": fields["event"], "remaining": int(fields["remaining"])}
+        assert row["remaining"] >= 0, line
+        if row["event"] == "cheap-exposure-status":
+            assert fields.get("left") in {"PROVEN", "UNKNOWN"}, line
+            assert fields.get("right") in {"PROVEN", "UNKNOWN"}, line
+            row.update(left=fields["left"], right=fields["right"])
+        route.append(row)
+    if route:
+        assert route[0]["event"] == "pop", route
+        assert len([r for r in route if r["event"] == "pop"]) == 1, route
+    return route
+
+
 def validate_source(source: bytes):
     assert hashlib.sha256(source).hexdigest() == SOURCE_SHA256, "frozen N7 hash mismatch"
     app = None
@@ -314,7 +345,8 @@ def run(binary: Path, source: bytes, budget: int, trace: bool,
         arg_trace: bool = False, conversion_trace: bool = False,
         app_arg_trace: bool = False, inner_infer_trace: bool = False,
         recursor_owner_trace: bool = False, recursor_trial_trace: bool = False,
-        owner_route_trace: bool = False, owner_worklist_trace: bool = False):
+        owner_route_trace: bool = False, owner_worklist_trace: bool = False,
+        deferred_rule_trace: bool = False):
     env = {k: v for k, v in os.environ.items() if not k.startswith("NUCLEUS_")}
     env.update(NUCLEUS_EXPERIMENTAL_RELEVANCE="1",
                NUCLEUS_EXPERIMENTAL_DEMAND_MAJOR="1")
@@ -339,14 +371,17 @@ def run(binary: Path, source: bytes, budget: int, trace: bool,
             env["NUCLEUS_C132_APP_ARG"] = "1"
         if inner_infer_trace:
             env["NUCLEUS_C133_ARG_CONVERT"] = "1"
-        if recursor_owner_trace or recursor_trial_trace or owner_route_trace or owner_worklist_trace:
+        if (recursor_owner_trace or recursor_trial_trace or owner_route_trace or
+                owner_worklist_trace or deferred_rule_trace):
             env["NUCLEUS_C134_RECURSOR_OWNER"] = "1"
         if recursor_trial_trace:
             env["NUCLEUS_C135_RECURSOR_TRIAL"] = "1"
         if owner_route_trace:
             env["NUCLEUS_C136_OWNER_ROUTE"] = "1"
-        if owner_worklist_trace:
+        if owner_worklist_trace or deferred_rule_trace:
             env["NUCLEUS_C137_OWNER_WORKLIST"] = "1"
+        if deferred_rule_trace:
+            env["NUCLEUS_C138_DEFERRED_ROUTE"] = "1"
     process = subprocess.run([str(binary), str(budget)], input=source,
                              stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                              env=env, timeout=240)
@@ -381,6 +416,8 @@ def main():
                         help="C136 positive source conversion rule inside exact second capture")
     parser.add_argument("--owner-worklist-trace", action="store_true",
                         help="C137 exact deferred worklist identities inside second capture")
+    parser.add_argument("--deferred-rule-trace", action="store_true",
+                        help="C138 only the first blocking C137 deferred equality's rule stages")
     args = parser.parse_args()
     source = args.source.read_bytes()
     validate_source(source)
@@ -395,7 +432,8 @@ def main():
                        args.app_trace, args.arg_trace, args.conversion_trace,
                        args.app_arg_trace, args.inner_infer_trace,
                        args.recursor_owner_trace, args.recursor_trial_trace,
-                       args.owner_route_trace, args.owner_worklist_trace)
+                       args.owner_route_trace, args.owner_worklist_trace,
+                       args.deferred_rule_trace)
         assert (silent.returncode, silent.stdout) == (observed.returncode, observed.stdout), (
             "observer changed the checker verdict or output", budget)
         heads = parse_traces(observed.stderr)
@@ -449,7 +487,8 @@ def main():
             assert len(source_rows) == 1, "source Expr1477 not uniquely represented"
             row["source_1477_ast"] = source_rows[0]
         if (args.recursor_owner_trace or args.recursor_trial_trace or
-                args.owner_route_trace or args.owner_worklist_trace):
+                args.owner_route_trace or args.owner_worklist_trace or
+                args.deferred_rule_trace):
             traced = parse_c134_owner_traces(observed.stderr)
             assert traced["owner"], ("exact captured conversion owner absent", budget)
             row["second_captured_conversion_owner"] = traced
@@ -462,10 +501,18 @@ def main():
             assert any(step["event"] == "pop" for step in route), (
                 "exact captured conversion route absent", budget)
             row["second_captured_conversion_route"] = route
-        if args.owner_worklist_trace:
+        if args.owner_worklist_trace or args.deferred_rule_trace:
             entries = parse_c137_worklist(observed.stderr)
             assert entries, ("exact captured deferred worklist absent", budget)
             row["second_captured_conversion_worklist"] = entries
+        if args.deferred_rule_trace:
+            entries = row["second_captured_conversion_worklist"]
+            assert len(entries) >= 3 and entries[2]["pop"] == 2, entries
+            assert entries[2]["left"].startswith("Expr1@Env66182@Levels"), entries[2]
+            assert entries[2]["right"].startswith("Expr8799@Env0@Levels"), entries[2]
+            route = parse_c138_deferred_route(observed.stderr)
+            assert route, ("C138 second deferred equality trace absent", budget)
+            row["second_deferred_conversion_route"] = route
         observations.append(row)
     if args.app_arg_trace and len(observations) == 2:
         low, high = observations
