@@ -121,6 +121,14 @@ jobs:
             "$RUNNER_TEMP/c126-original196/good/perf/magma-list-pair-n7.ndjson" \
             --budgets 65536 14155776 --recursor-trial-trace \
             | tee "$RUNNER_TEMP/c135-n7-captured-recursor-trial.json"
+      - name: C136 identify positive rule within exact captured conversion
+        run: |
+          set -euo pipefail
+          python3 experiments/nucleus-logos-support-20261108/probe_c126_n7_function_type.py \
+            metatron-kernel/target/release/nucleus-budget-sweep \
+            "$RUNNER_TEMP/c126-original196/good/perf/magma-list-pair-n7.ndjson" \
+            --budgets 65536 14155776 --owner-route-trace \
+            | tee "$RUNNER_TEMP/c136-n7-exact-owner-route.json"
       - name: Preserve source-native discriminator receipt
         if: always()
         uses: actions/upload-artifact@v4
@@ -137,4 +145,5 @@ jobs:
             ${{ runner.temp }}/c133-n7-source-1477-stages.json
             ${{ runner.temp }}/c134-n7-second-captured-owner.json
             ${{ runner.temp }}/c135-n7-captured-recursor-trial.json
+            ${{ runner.temp }}/c136-n7-exact-owner-route.json
           if-no-files-found: ignore
