@@ -319,6 +319,29 @@ class C126TraceTests(unittest.TestCase):
                 with self.assertRaises(AssertionError):
                     parse_c145_action_mix(good.replace(old, new))
 
+    def test_c146_projected_binding_receipt_is_bounded_and_conserving(self):
+        from probe_c126_n7_function_type import parse_c146_binding_projection
+        good = (
+            'NUCLEUS_C146_BINDING:source=8799:env=0:authority=386:'
+            'scope=false:budget=14155490:head_total=12761384:'
+            'bvar_total=2694572:target_total=2495694:sampled=4096:'
+            'sample_missing=0:sample_overflow=0:pending_nonempty=128:'
+            'full_unique=3500:projected_unique=3400:'
+            'full_repeats=596:projected_repeats=696\n'
+        ).encode()
+        row = parse_c146_binding_projection(good)[0]
+        self.assertEqual(row['projected_unique'], 3400)
+        self.assertEqual(row['cross_frame_collapse'], 100)
+        self.assertEqual(row['projected_repeats'] - row['full_repeats'], 100)
+        for old, new in ((b'env=0', b'env=1'),
+                         (b'projected_unique=3400', b'projected_unique=3501'),
+                         (b'projected_repeats=696', b'projected_repeats=695'),
+                         (b'sampled=4096', b'sampled=4097'),
+                         (b'target_total=2495694', b'target_total=2694573')):
+            with self.subTest(field=old):
+                with self.assertRaises(AssertionError):
+                    parse_c146_binding_projection(good.replace(old, new))
+
 
 if __name__ == "__main__":
     unittest.main()

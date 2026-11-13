@@ -37,6 +37,7 @@ C141_CACHE_PREFIX = "NUCLEUS_C141_CACHE:"
 C142_MISS_PREFIX = "NUCLEUS_C142_MISS:"
 C143_HEAD_PREFIX = "NUCLEUS_C143_HEADS:"
 C145_ACTION_PREFIX = "NUCLEUS_C145_ACTIONS:"
+C146_BINDING_PREFIX = "NUCLEUS_C146_BINDING:"
 
 
 def parse_traces(stderr: bytes):
@@ -491,6 +492,41 @@ def parse_c145_action_mix(stderr: bytes):
     return rows
 
 
+def parse_c146_binding_projection(stderr: bytes):
+    """A sampled workload quotient, never a certificate to reuse a value."""
+    rows = []
+    keys = ("head_total", "bvar_total", "target_total", "sampled",
+            "sample_missing", "sample_overflow", "pending_nonempty",
+            "full_unique", "projected_unique", "full_repeats",
+            "projected_repeats")
+    for line in stderr.decode(errors="replace").splitlines():
+        if not line.startswith(C146_BINDING_PREFIX):
+            continue
+        fields = dict(part.split("=", 1) for part in
+                      line[len(C146_BINDING_PREFIX):].split(":"))
+        assert (int(fields["source"]), int(fields["env"])) == (8799, 0), line
+        assert fields["scope"] in ("true", "false"), line
+        assert int(fields["authority"]) >= 0 and int(fields["budget"]) > 0, line
+        counts = {key: int(fields[key]) for key in keys}
+        assert all(n >= 0 for n in counts.values()), line
+        total = counts["sampled"]
+        eligible = total - counts["sample_missing"] - counts["sample_overflow"]
+        assert (0 <= counts["target_total"] <= counts["bvar_total"]
+                <= counts["head_total"]), line
+        assert 0 <= counts["pending_nonempty"] <= total <= counts["target_total"], line
+        assert 0 <= eligible <= total, line
+        assert counts["full_unique"] + counts["full_repeats"] == eligible, line
+        assert counts["projected_unique"] + counts["projected_repeats"] == eligible, line
+        assert counts["projected_unique"] <= counts["full_unique"], line
+        assert counts["projected_repeats"] >= counts["full_repeats"], line
+        rows.append({"source": 8799, "env": 0, "authority": int(fields["authority"]),
+                     "scope": fields["scope"] == "true", "budget": int(fields["budget"]),
+                     **counts, "cross_frame_collapse": counts["full_unique"]
+                     - counts["projected_unique"]})
+        assert len(rows) <= 8, "unexpectedly broad C146 source census"
+    return rows
+
+
 def validate_source(source: bytes):
     assert hashlib.sha256(source).hexdigest() == SOURCE_SHA256, "frozen N7 hash mismatch"
     app = None
@@ -536,7 +572,8 @@ def run(binary: Path, source: bytes, budget: int, trace: bool,
         cache_provenance_trace: bool = False,
         exact_miss_cost_trace: bool = False,
         head_reuse_sample_trace: bool = False,
-        head_action_mix_trace: bool = False):
+        head_action_mix_trace: bool = False,
+        binding_projection_trace: bool = False):
     env = {k: v for k, v in os.environ.items() if not k.startswith("NUCLEUS_")}
     env.update(NUCLEUS_EXPERIMENTAL_RELEVANCE="1",
                NUCLEUS_EXPERIMENTAL_DEMAND_MAJOR="1")
@@ -592,6 +629,8 @@ def run(binary: Path, source: bytes, budget: int, trace: bool,
             env["NUCLEUS_C143_HEAD_REUSE_SAMPLE"] = "1"
         if head_action_mix_trace:
             env["NUCLEUS_C145_ACTIONS"] = "1"
+        if binding_projection_trace:
+            env["NUCLEUS_C146_BINDING_PROJECTED"] = "1"
     process = subprocess.run([str(binary), str(budget)], input=source,
                              stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                              env=env, timeout=240)
@@ -640,7 +679,11 @@ def main():
                         help="C143 bounded head ExprId census and immutable closure-revisit sample")
     parser.add_argument("--head-action-mix-trace", action="store_true",
                         help="C145 disjoint source head constructors and dynamic BVar outcomes")
+    parser.add_argument("--binding-projection-trace", action="store_true",
+                        help="C146 compare exact and projected binding+pending sampled keys")
     args = parser.parse_args()
+    if args.binding_projection_trace:
+        args.head_action_mix_trace = True
     if args.head_action_mix_trace:
         args.head_reuse_sample_trace = True
     source = args.source.read_bytes()
@@ -660,7 +703,7 @@ def main():
                        args.deferred_rule_trace, args.value_comparison_trace,
                        args.rhs_exposure_work_trace, args.cache_provenance_trace,
                        args.exact_miss_cost_trace, args.head_reuse_sample_trace,
-                       args.head_action_mix_trace)
+                       args.head_action_mix_trace, args.binding_projection_trace)
         assert (silent.returncode, silent.stdout) == (observed.returncode, observed.stdout), (
             "observer changed the checker verdict or output", budget)
         heads = parse_traces(observed.stderr)
@@ -792,6 +835,20 @@ def main():
                     sampled["budget"], sampled["scope"], sampled["total"]), (
                     "C145 changes C143 exact source-head count", budget)
             row["exact_rhs_head_actions"] = actions
+        if args.binding_projection_trace:
+            projections = parse_c146_binding_projection(observed.stderr)
+            assert projections and len(projections) == len(actions), (
+                "C146 source binding census absent or mismatched", budget)
+            for binding, counted, sampled in zip(projections, actions, reuse):
+                assert (binding["budget"], binding["scope"], binding["head_total"],
+                        binding["bvar_total"]) == (
+                        counted["budget"], counted["scope"], counted["total"],
+                        counted["bvar"]), "C146 inconsistent with C145 conserved heads"
+                assert binding["target_total"] == sum(
+                    entry["count"] for entry in sampled["top"]
+                    if entry["expr"] in (1, 6, 11)), (
+                    "C146 three source BVars do not conserve C143 ID counts", budget)
+            row["exact_rhs_binding_projection_sample"] = projections
         observations.append(row)
     if args.app_arg_trace and len(observations) == 2:
         low, high = observations
