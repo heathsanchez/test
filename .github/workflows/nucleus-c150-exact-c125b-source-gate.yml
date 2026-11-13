@@ -1,8 +1,8 @@
-name: Nucleus C157 exact expensive BVar binding-origin audit
+name: Nucleus C158 exact BVar forwarding graph census
 
 on:
   push:
-    branches: [research/nucleus-c157-binding-origin-20261114]
+    branches: [research/nucleus-c158-bvar-forwarding-graph-20261114]
     paths:
       - .github/workflows/nucleus-c150-exact-c125b-source-gate.yml
       - metatron-kernel/src/convert.rs
@@ -29,11 +29,11 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         with: {toolchain: '1.99.1'}
-      - name: Verify recovered C125b source plus the diagnostic-only C157 machine
+      - name: Verify recovered C125b source plus the diagnostic-only C158 machine
         run: |
           set -euo pipefail
           printf '%s  %s\n' \
-            ed703288ab221c789d663ff70122adb43b3284eadb4a5e841c3c4bdecc34cb28 metatron-kernel/src/machine.rs \
+            500c97fec317ab2029cc179ea4554e4f32ef1e3f2c55eca5b1afe5351e9efcda metatron-kernel/src/machine.rs \
             c3d47f4be05dbdcc1ba99eb668fe4cd32873f4e7d8b1b95480f6c1e943bd7f88 metatron-kernel/src/convert.rs \
             d16b882835a6ccf79adf97191640c37b526ea0d74b7aadcbb6e2a425779c0eb6 metatron-kernel/src/typecheck.rs \
             ad5161dc49851ea5b7be34263496502309fd6f6958df4e3c6b5a1e6d885d7894 metatron-kernel/examples/nucleus_budget_ladder.rs \
@@ -441,13 +441,69 @@ jobs:
                             'original_sha256':'abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35',
                             'receipts':receipts},sort_keys=True))
           PY
+      - name: C158 actual immutable BVar forwarding paths and shared suffixes
+        run: |
+          set -euo pipefail
+          python3 - "$RUNNER_TEMP/c150-original196/good/perf/magma-list-pair-n7.ndjson" <<'PY' | tee "$RUNNER_TEMP/c158-forwarding-paths.json"
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+          import re
+          import subprocess
+          import sys
+
+          source=Path(sys.argv[1]).read_bytes()
+          assert hashlib.sha256(source).hexdigest()=='abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35'
+          binary=Path('metatron-kernel/target/release/examples/nucleus_budget_ladder').resolve()
+          base_env=dict(os.environ,NUCLEUS_C151_EXACT_CACHE='1',NUCLEUS_C152_EXACT_HEAD_COST='1',
+                        NUCLEUS_C153_NESTED_COMPLETIONS='1',NUCLEUS_C154_NONLEAF_COST='1',
+                        NUCLEUS_C155_EXPENSIVE_EXACT_KEYS='1',NUCLEUS_C156_HEAVY_SHAPE_GROUPS='1',
+                        NUCLEUS_C157_BINDING_ORIGIN_GROUPS='1')
+          base_env.pop('NUCLEUS_C158_BVAR_CHAIN_GRAPH',None)
+          marked_env=dict(base_env,NUCLEUS_C158_BVAR_CHAIN_GRAPH='1')
+          pattern=re.compile(r'^NUCLEUS_C158_CHAIN:source=8799:env=0:authority=(\d+):budget=(\d+):starts=(\d+):sum_steps=(\d+):max_steps=(\d+):unique_binding_nodes=(\d+):repeated_node_visits=(\d+):reached_expr1=(\d+):nonbvar=(\d+):nonclosure=(\d+):unbound=(\d+):cycles=(\d+):capped=(\d+):terminal_closure_classes=(\d+):largest_terminal_class=(\d+):terminal_expr_classes=(\d+):largest_terminal_expr_class=(\d+)$')
+          receipts=[]
+          for budget,expected in ((65536,2),(14155776,0)):
+              plain=subprocess.run([str(binary),str(budget)],input=source,capture_output=True,env=base_env,timeout=240,check=False)
+              marked=subprocess.run([str(binary),str(budget)],input=source,capture_output=True,env=marked_env,timeout=240,check=False)
+              assert (plain.returncode,marked.returncode)==(expected,expected)
+              assert plain.stdout==marked.stdout==b''
+              lines=marked.stderr.splitlines()
+              markers=[line.decode() for line in lines if line.startswith(b'NUCLEUS_C158_CHAIN:')]
+              stripped=b'\n'.join(line for line in lines if not line.startswith(b'NUCLEUS_C158_CHAIN:'))
+              assert stripped==b'\n'.join(plain.stderr.splitlines()),budget
+              assert markers,('missing C158 source-locked marker',budget)
+              checks=[]
+              for marker in markers:
+                  match=pattern.fullmatch(marker)
+                  assert match,marker
+                  auth,allowance,starts,total,maxsteps,nodes,repeats,expr1,nonbvar,nonclosure,unbound,cycles,capped,terminal_closures,largest_terminal,terminal_exprs,largest_expr=map(int,match.groups())
+                  assert auth==386 and nodes+repeats==total and maxsteps<=total
+                  assert nonbvar+nonclosure+unbound+cycles+capped==starts
+                  assert 0<=expr1<=starts and 0<=largest_terminal<=starts
+                  assert 0<=terminal_closures<=starts and 0<=terminal_exprs<=starts and 0<=largest_expr<=starts
+                  checks.append({'allowance':allowance,'starts':starts,'sum_binding_steps':total,
+                                 'max_binding_steps':maxsteps,'unique_binding_nodes':nodes,
+                                 'shared_node_revisits':repeats,'reached_source_expr1':expr1,
+                                 'nonbvar_terminations':nonbvar,'nonclosure_terminations':nonclosure,
+                                 'unbound_terminations':unbound,'cycles':cycles,'capped':capped,
+                                 'distinct_terminal_closures':terminal_closures,
+                                 'largest_terminal_closure_class':largest_terminal,
+                                 'distinct_terminal_exprs':terminal_exprs,
+                                 'largest_terminal_expr_class':largest_expr})
+              receipts.append({'budget':budget,'exit':expected,'forwarding':checks})
+          print(json.dumps({'source':'exact C125b d8be1443f2f1352634aaf333a282f32e7ec8a719',
+                            'original_sha256':'abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35',
+                            'receipts':receipts},sort_keys=True))
+          PY
       - name: Run exact-source native Rust tests with selected research flags
         run: cargo test --locked --manifest-path metatron-kernel/Cargo.toml --features diagnostics
-      - name: Preserve exact native binding-origin receipt
+      - name: Preserve exact native forwarding graph receipt
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: nucleus-c157-binding-origin-receipt
+          name: nucleus-c158-forwarding-graph-receipt
           path: |
             ${{ runner.temp }}/c151-cache-receipt.json
             ${{ runner.temp }}/c152-head-cost.json
@@ -456,4 +512,5 @@ jobs:
             ${{ runner.temp }}/c155-exact-heavy-keys.json
             ${{ runner.temp }}/c156-shape-groups.json
             ${{ runner.temp }}/c157-binding-nodes.json
+            ${{ runner.temp }}/c158-forwarding-paths.json
           if-no-files-found: ignore
