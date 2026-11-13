@@ -201,6 +201,51 @@ pub(crate) fn new_exposure_cache() -> ExposureCache {
     Rc::new(RefCell::new(ExposureCacheStore::default()))
 }
 
+#[cfg(test)]
+mod c159_captured_binding_distinction_tests {
+    use super::*;
+    use crate::nat::BigNat;
+
+    #[test]
+    fn identical_bvar_source_distinguishes_values_but_transports_a_shared_binding() {
+        let mut expressions=IdTable::default();
+        expressions.insert(ExprId(0),Expr::BVar(2)).unwrap();
+        let levels=IdTable::default();
+        let one=BigNat::parse_decimal("1").unwrap();
+        let two=BigNat::parse_decimal("2").unwrap();
+
+        // The captured BVar(2) forwarder has a *different immutable value*
+        // in these two inner environments. It is the same source syntax.
+        let inner_one=EnvFrame::empty().extend_nat_literal(one.clone())
+            .extend_free(FreeId(71)).extend_free(FreeId(72));
+        let inner_two=EnvFrame::empty().extend_nat_literal(two.clone())
+            .extend_free(FreeId(71)).extend_free(FreeId(72));
+        let shared=EnvFrame::empty().extend(Closure::new(ExprId(0),inner_one));
+        let different=EnvFrame::empty().extend(Closure::new(ExprId(0),inner_two));
+        let outer_a=shared.extend_free(FreeId(81)).extend_free(FreeId(82));
+        let outer_b=shared.extend_free(FreeId(83)).extend_free(FreeId(84));
+        let outer_c=different.extend_free(FreeId(81)).extend_free(FreeId(82));
+
+        assert_ne!(outer_a.id(),outer_b.id());
+        assert_eq!(outer_a.lookup_with_node_id(2).unwrap().0,
+                   outer_b.lookup_with_node_id(2).unwrap().0,
+                   "the captured binding node survives irrelevant outer frames");
+        assert_ne!(outer_a.lookup_with_node_id(2).unwrap().0,
+                   outer_c.lookup_with_node_id(2).unwrap().0,
+                   "same BVar source does not merge distinct captured binders");
+
+        let cache=new_exposure_cache();
+        let machine=Machine::new(AuthorityId(1),&expressions,&levels,HashMap::new())
+            .with_exposure_cache(cache);
+        let eval=|env|machine.expose(Closure::new(ExprId(0),env),Transparency::Full,64);
+        assert_eq!(eval(outer_a.clone()).proven_value(),Some(&Value::NatLit(one.clone())));
+        assert_eq!(eval(outer_c.clone()).proven_value(),Some(&Value::NatLit(two)));
+        assert_eq!(eval(outer_b).proven_value(),Some(&Value::NatLit(one.clone())));
+        assert_eq!(eval(outer_a).proven_value(),Some(&Value::NatLit(one)),
+                   "replaying an exact closure must not import a distinct value");
+    }
+}
+
 type VisitKey = (AuthorityId, ExprId, u64);
 const INLINE_VISIT_CAPACITY: usize = 8;
 
