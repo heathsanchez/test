@@ -4,7 +4,7 @@ import unittest
 
 from probe_c126_n7_function_type import (
     parse_traces, summarize_owner_traces, parse_app_edges, parse_arg_obligations,
-    parse_conversion_stages,
+    parse_conversion_stages, parse_inner_arg_edges,
 )
 
 
@@ -95,6 +95,21 @@ class C126TraceTests(unittest.TestCase):
         self.assertEqual(len(stages), 1)
         self.assertEqual(stages[0]["stage"], "infer")
         self.assertEqual(stages[0]["state"], "UNKNOWN")
+
+    def test_c132_inner_argument_edges_are_source_checked(self):
+        source = {8753: {"fn": 8750, "arg": 8752},
+                  8804: {"fn": 8753, "arg": 8803}}
+        sample = (
+            "NUCLEUS_C132_APP_ARG:app=8753:fun=8750:arg=8752:context=0:"
+            "before=65500:after=65470:state=PROVEN:judgment=Proven { value: () }\n"
+            "NUCLEUS_C132_APP_ARG:app=8804:fun=8753:arg=8803:context=0:"
+            "before=65470:after=65280:state=UNKNOWN:judgment=Unknown { residual: x }\n"
+        ).encode()
+        result = parse_inner_arg_edges(sample, source)
+        self.assertEqual([item["app"] for item in result], [8753, 8804])
+        self.assertEqual([item["state"] for item in result], ["PROVEN", "UNKNOWN"])
+        with self.assertRaises(AssertionError):
+            parse_inner_arg_edges(sample.replace(b"arg=8803", b"arg=8802"), source)
 
 
 if __name__ == "__main__":
