@@ -23,6 +23,8 @@ ARG_PREFIX = "NUCLEUS_C130_APP_ARG:"
 CONVERSION_INFER_PREFIX = "NUCLEUS_C131_ARG_INFER:"
 CONVERSION_RELATION_PREFIX = "NUCLEUS_C131_ARG_CONVERT:"
 INNER_ARG_PREFIX = "NUCLEUS_C132_APP_ARG:"
+INNER_INFER_PREFIX = "NUCLEUS_C133_ARG_INFER:"
+INNER_CONVERSION_PREFIX = "NUCLEUS_C133_ARG_CONVERT:"
 
 
 def parse_traces(stderr: bytes):
@@ -147,6 +149,38 @@ def parse_inner_arg_edges(stderr: bytes, source_edges):
     return rows
 
 
+def parse_c133_stages(stderr: bytes, source_edges):
+    """The exact 8803→1477 source argument, without assuming conversion ran."""
+    assert source_edges.get(8803) == {"fn": 8802, "arg": 1477}
+    rows = []
+    for line in stderr.decode(errors="replace").splitlines():
+        if line.startswith(INNER_INFER_PREFIX):
+            record, desc = line[len(INNER_INFER_PREFIX):].split(":inferred=", 1)
+            inferred, expected = desc.split(":expected=", 1)
+            stage = "infer"
+        elif line.startswith(INNER_CONVERSION_PREFIX):
+            record, judgment = line[len(INNER_CONVERSION_PREFIX):].split(":judgment=", 1)
+            stage = "convert"
+        else:
+            continue
+        fields = dict(piece.split("=", 1) for piece in record.split(":"))
+        assert int(fields["expr"]) == 1477 and int(fields["context"]) == 0, line
+        state = fields["state"]
+        assert state in ("PROVEN", "UNKNOWN", "REFUTED"), line
+        row = {"stage": stage, "state": state, "frame": int(fields["frame"])}
+        if stage == "infer":
+            assert inferred.startswith(state.title()), line
+            before, after = int(fields["before"]), int(fields["after"])
+            assert before >= after >= 0, line
+            row.update(before=before, after=after, charged=before-after,
+                       inferred_preview=inferred[:800], expected_preview=expected[:800])
+        else:
+            assert judgment.startswith(state.title()), line
+            row.update(fuel=int(fields["fuel"]), judgment_preview=judgment[:800])
+        rows.append(row)
+    return rows
+
+
 def validate_source(source: bytes):
     assert hashlib.sha256(source).hexdigest() == SOURCE_SHA256, "frozen N7 hash mismatch"
     app = None
@@ -184,7 +218,7 @@ def summarize_owner_traces(stderr: bytes):
 def run(binary: Path, source: bytes, budget: int, trace: bool,
         owner_trace: bool = False, app_trace: bool = False,
         arg_trace: bool = False, conversion_trace: bool = False,
-        app_arg_trace: bool = False):
+        app_arg_trace: bool = False, inner_infer_trace: bool = False):
     env = {k: v for k, v in os.environ.items() if not k.startswith("NUCLEUS_")}
     env.update(NUCLEUS_EXPERIMENTAL_RELEVANCE="1",
                NUCLEUS_EXPERIMENTAL_DEMAND_MAJOR="1")
@@ -207,6 +241,8 @@ def run(binary: Path, source: bytes, budget: int, trace: bool,
             env["NUCLEUS_C131_ARG_CONVERT"] = "1"
         if app_arg_trace:
             env["NUCLEUS_C132_APP_ARG"] = "1"
+        if inner_infer_trace:
+            env["NUCLEUS_C133_ARG_CONVERT"] = "1"
     process = subprocess.run([str(binary), str(budget)], input=source,
                              stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                              env=env, timeout=240)
@@ -231,6 +267,8 @@ def main():
                         help="C131 separate source argument type inference and conversion")
     parser.add_argument("--app-arg-trace", action="store_true",
                         help="C132 read-only nested application argument judgment census")
+    parser.add_argument("--inner-infer-trace", action="store_true",
+                        help="C133 read-only exact inner argument Expr1477 inference and conversion")
     args = parser.parse_args()
     source = args.source.read_bytes()
     validate_source(source)
@@ -243,7 +281,7 @@ def main():
         silent = run(binary, source, budget, False)
         observed = run(binary, source, budget, True, args.owner_trace,
                        args.app_trace, args.arg_trace, args.conversion_trace,
-                       args.app_arg_trace)
+                       args.app_arg_trace, args.inner_infer_trace)
         assert (silent.returncode, silent.stdout) == (observed.returncode, observed.stdout), (
             "observer changed the checker verdict or output", budget)
         heads = parse_traces(observed.stderr)
@@ -284,6 +322,18 @@ def main():
             assert inner_args, ("no source-native inner argument judgments", budget)
             row["inner_source_arg_edges"] = inner_args[:1024]
             row["inner_source_arg_count"] = len(inner_args)
+        if args.inner_infer_trace:
+            stages = parse_c133_stages(observed.stderr, exact_edges)
+            assert any(s["stage"] == "infer" for s in stages), (
+                "source Expr1477 type inference absent", budget)
+            if any(s["stage"] == "infer" and s["state"] == "PROVEN" for s in stages):
+                assert any(s["stage"] == "convert" for s in stages), (
+                    "proven inner inference but no conversion receipt", budget)
+            row["source_1477_stages"] = stages[:24]
+            source_rows = [json.loads(line) for line in source.splitlines()
+                           if json.loads(line).get("ie") == 1477]
+            assert len(source_rows) == 1, "source Expr1477 not uniquely represented"
+            row["source_1477_ast"] = source_rows[0]
         observations.append(row)
     if args.app_arg_trace and len(observations) == 2:
         low, high = observations
