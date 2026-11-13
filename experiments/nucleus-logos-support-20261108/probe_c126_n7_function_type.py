@@ -29,6 +29,7 @@ C134_OWNER_PREFIX = "NUCLEUS_C134_OWNER:"
 C134_RECURSOR_PREFIX = "NUCLEUS_C134_RECURSOR:"
 C135_TRIAL_PREFIX = "NUCLEUS_C135_RECURSOR_TRIAL:"
 C136_ROUTE_PREFIX = "NUCLEUS_C136_ROUTE:"
+C137_WORK_PREFIX = "NUCLEUS_C137_WORK:"
 
 
 def parse_traces(stderr: bytes):
@@ -251,6 +252,29 @@ def parse_c136_routes(stderr: bytes):
     return rows
 
 
+def parse_c137_worklist(stderr: bytes):
+    """Only exact-owner worklist entries; do not quotient captured environments."""
+    rows = []
+    for line in stderr.decode(errors="replace").splitlines():
+        if not line.startswith(C137_WORK_PREFIX):
+            continue
+        record, pair = line[len(C137_WORK_PREFIX):].split(":left=", 1)
+        left, right = pair.split(":right=", 1)
+        fields = dict(item.split("=", 1) for item in record.split(":"))
+        pop, remaining, depth, pending = (int(fields[k]) for k in
+                                          ("pop", "remaining", "depth", "pending"))
+        assert pop == len(rows), line
+        assert remaining >= 0 and depth >= 0 and pending >= 0, line
+        assert left and right, line
+        rows.append({"pop": pop, "remaining": remaining,
+                     "depth": depth, "pending": pending,
+                     "left": left[:450], "right": right[:450]})
+    if rows:
+        assert rows[0]["left"].startswith("Expr110@Env66182@Levels"), rows[0]
+        assert rows[0]["right"].startswith("Expr1@Env66180@Levels"), rows[0]
+    return rows
+
+
 def validate_source(source: bytes):
     assert hashlib.sha256(source).hexdigest() == SOURCE_SHA256, "frozen N7 hash mismatch"
     app = None
@@ -290,7 +314,7 @@ def run(binary: Path, source: bytes, budget: int, trace: bool,
         arg_trace: bool = False, conversion_trace: bool = False,
         app_arg_trace: bool = False, inner_infer_trace: bool = False,
         recursor_owner_trace: bool = False, recursor_trial_trace: bool = False,
-        owner_route_trace: bool = False):
+        owner_route_trace: bool = False, owner_worklist_trace: bool = False):
     env = {k: v for k, v in os.environ.items() if not k.startswith("NUCLEUS_")}
     env.update(NUCLEUS_EXPERIMENTAL_RELEVANCE="1",
                NUCLEUS_EXPERIMENTAL_DEMAND_MAJOR="1")
@@ -315,12 +339,14 @@ def run(binary: Path, source: bytes, budget: int, trace: bool,
             env["NUCLEUS_C132_APP_ARG"] = "1"
         if inner_infer_trace:
             env["NUCLEUS_C133_ARG_CONVERT"] = "1"
-        if recursor_owner_trace or recursor_trial_trace or owner_route_trace:
+        if recursor_owner_trace or recursor_trial_trace or owner_route_trace or owner_worklist_trace:
             env["NUCLEUS_C134_RECURSOR_OWNER"] = "1"
         if recursor_trial_trace:
             env["NUCLEUS_C135_RECURSOR_TRIAL"] = "1"
         if owner_route_trace:
             env["NUCLEUS_C136_OWNER_ROUTE"] = "1"
+        if owner_worklist_trace:
+            env["NUCLEUS_C137_OWNER_WORKLIST"] = "1"
     process = subprocess.run([str(binary), str(budget)], input=source,
                              stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                              env=env, timeout=240)
@@ -353,6 +379,8 @@ def main():
                         help="C135 certified recursor step outcome inside exact C134 owner")
     parser.add_argument("--owner-route-trace", action="store_true",
                         help="C136 positive source conversion rule inside exact second capture")
+    parser.add_argument("--owner-worklist-trace", action="store_true",
+                        help="C137 exact deferred worklist identities inside second capture")
     args = parser.parse_args()
     source = args.source.read_bytes()
     validate_source(source)
@@ -367,7 +395,7 @@ def main():
                        args.app_trace, args.arg_trace, args.conversion_trace,
                        args.app_arg_trace, args.inner_infer_trace,
                        args.recursor_owner_trace, args.recursor_trial_trace,
-                       args.owner_route_trace)
+                       args.owner_route_trace, args.owner_worklist_trace)
         assert (silent.returncode, silent.stdout) == (observed.returncode, observed.stdout), (
             "observer changed the checker verdict or output", budget)
         heads = parse_traces(observed.stderr)
@@ -420,7 +448,8 @@ def main():
                            if json.loads(line).get("ie") == 1477]
             assert len(source_rows) == 1, "source Expr1477 not uniquely represented"
             row["source_1477_ast"] = source_rows[0]
-        if args.recursor_owner_trace or args.recursor_trial_trace or args.owner_route_trace:
+        if (args.recursor_owner_trace or args.recursor_trial_trace or
+                args.owner_route_trace or args.owner_worklist_trace):
             traced = parse_c134_owner_traces(observed.stderr)
             assert traced["owner"], ("exact captured conversion owner absent", budget)
             row["second_captured_conversion_owner"] = traced
@@ -433,6 +462,10 @@ def main():
             assert any(step["event"] == "pop" for step in route), (
                 "exact captured conversion route absent", budget)
             row["second_captured_conversion_route"] = route
+        if args.owner_worklist_trace:
+            entries = parse_c137_worklist(observed.stderr)
+            assert entries, ("exact captured deferred worklist absent", budget)
+            row["second_captured_conversion_worklist"] = entries
         observations.append(row)
     if args.app_arg_trace and len(observations) == 2:
         low, high = observations
