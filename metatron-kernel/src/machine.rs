@@ -666,6 +666,12 @@ pub struct Machine<'a> {
     c97_steps:RefCell<C97Steps>,
     #[cfg(feature="diagnostics")]
     c97_head_pending_seen:RefCell<HashSet<(Closure,Vec<Closure>,Transparency,bool)>>,
+    #[cfg(feature="diagnostics")]
+    c140_rhs_work_active:Cell<usize>,
+    #[cfg(feature="diagnostics")]
+    c140_rhs_head_steps:Cell<usize>,
+    #[cfg(feature="diagnostics")]
+    c140_rhs_recursor_calls:Cell<usize>,
     #[cfg(test)]
     replay_key_builds: Cell<usize>,
     exposure_cache: Option<ExposureCache>,
@@ -703,6 +709,12 @@ impl<'a> Machine<'a> {
             c97_steps:RefCell::new(C97Steps::default()),
             #[cfg(feature="diagnostics")]
             c97_head_pending_seen:RefCell::new(HashSet::new()),
+            #[cfg(feature="diagnostics")]
+            c140_rhs_work_active:Cell::new(0),
+            #[cfg(feature="diagnostics")]
+            c140_rhs_head_steps:Cell::new(0),
+            #[cfg(feature="diagnostics")]
+            c140_rhs_recursor_calls:Cell::new(0),
             #[cfg(test)]
             replay_key_builds: Cell::new(0),
             exposure_cache: None,
@@ -810,6 +822,22 @@ impl<'a> Machine<'a> {
     ) -> Judgment<Value> {
         self.expose_internal(closure, transparency, budget, false, true)
             .map(|exposure| exposure.value)
+    }
+
+    // C140 read-only meter for the already source-qualified exact deferred
+    // right operand. Counts work, not definitional-equality certificates.
+    #[cfg(feature="diagnostics")]
+    pub(crate) fn c140_start_rhs_work(&self)->usize {
+        self.c140_rhs_head_steps.set(0);
+        self.c140_rhs_recursor_calls.set(0);
+        self.c140_rhs_work_active.set(self.c140_rhs_work_active.get()+1);
+        REPLAY_KEY_WORK.load(std::sync::atomic::Ordering::Relaxed)
+    }
+    #[cfg(feature="diagnostics")]
+    pub(crate) fn c140_finish_rhs_work(&self,key_start:usize)->(usize,usize,usize) {
+        self.c140_rhs_work_active.set(self.c140_rhs_work_active.get().saturating_sub(1));
+        (self.c140_rhs_head_steps.get(),self.c140_rhs_recursor_calls.get(),
+            REPLAY_KEY_WORK.load(std::sync::atomic::Ordering::Relaxed).saturating_sub(key_start))
     }
 
     /// Unfold exactly the definition at an application's head, then resume
@@ -1352,6 +1380,10 @@ impl<'a> Machine<'a> {
             }
             budget -= 1;
             if let Some(fuel) = self.exposure_fuel.get() { self.exposure_fuel.set(Some(fuel - 1)); }
+            #[cfg(feature="diagnostics")]
+            if self.c140_rhs_work_active.get()!=0 {
+                self.c140_rhs_head_steps.set(self.c140_rhs_head_steps.get()+1);
+            }
             if !visited.insert((self.authority, closure.expr, closure.env.id())) {
                 return Judgment::unknown("reduction-cycle");
             }
@@ -2598,6 +2630,10 @@ impl<'a> Machine<'a> {
     fn qualified_recursor_result(
         &self,neutral:&Neutral,budget:usize,goal:CheckedReplayGoal,
     ) -> Judgment<Value> {
+        #[cfg(feature="diagnostics")]
+        if self.c140_rhs_work_active.get()!=0 {
+            self.c140_rhs_recursor_calls.set(self.c140_rhs_recursor_calls.get()+1);
+        }
         // Exposure and replay consume the same owner's work allowance. A
         // child never receives a fresh budget, and this scope does not reset
         // an allowance already owned by a surrounding constructor demand.
