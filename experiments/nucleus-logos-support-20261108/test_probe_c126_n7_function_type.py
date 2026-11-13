@@ -5,6 +5,7 @@ import unittest
 from probe_c126_n7_function_type import (
     parse_traces, summarize_owner_traces, parse_app_edges, parse_arg_obligations,
     parse_conversion_stages, parse_inner_arg_edges, parse_c133_stages,
+    parse_c134_owner_traces,
 )
 
 
@@ -126,6 +127,19 @@ class C126TraceTests(unittest.TestCase):
         self.assertEqual(rows[1]["stage"], "convert")
         with self.assertRaises(AssertionError):
             parse_c133_stages(sample.replace(b"expr=1477", b"expr=1478"), source)
+
+    def test_c134_recursor_obligation_has_exact_captured_owner(self):
+        sample = (
+            "NUCLEUS_C134_RECURSOR:budget=64000:depth=0:left_spine=5:"
+            "right_spine=4:left=Const(NameId(40)):right=Const(NameId(41))\n"
+            "NUCLEUS_C134_OWNER:actual=110:actual_env=66182:expected=1:"
+            "expected_env=66180:budget=65264:outcome=UNKNOWN\n"
+        ).encode()
+        rows = parse_c134_owner_traces(sample)
+        self.assertEqual(rows["owner"][0]["outcome"], "UNKNOWN")
+        self.assertEqual(rows["recursor"][0]["left_spine"], 5)
+        with self.assertRaises(AssertionError):
+            parse_c134_owner_traces(sample.replace(b"actual_env=66182", b"actual_env=66181"))
 
 
 if __name__ == "__main__":
