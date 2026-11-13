@@ -2691,12 +2691,13 @@ impl<'a> Machine<'a> {
                     let repeated=projected.values().filter(|&&n|n>1).count();
                     let largest=projected.values().copied().max().unwrap_or(0);
                     let classes=projected.len();
+                    let classified=per_source.values().copied().sum::<usize>();
                     let mut classes_per_source:HashMap<ExprId,usize>=HashMap::new();
                     for (key,_) in &projected {
                         *classes_per_source.entry(key.0).or_default()+=1;
                     }
                     eprintln!("NUCLEUS_C162_PROP_CAPTURE:source=8799:env=0:authority={}:budget={budget}:full_keys={}:classified={}:other={other}:missing_binding={omitted}:projected_exact_groups={classes}:repeated_projected_groups={repeated}:largest_projected_group={largest}:expr9_members={}:expr9_projected_groups={}:expr7218_members={}:expr7218_projected_groups={}",
-                        self.authority.0,e.first.len(),
+                        self.authority.0,e.first.len(),classified,
                         per_source.get(&ExprId(9)).copied().unwrap_or(0),
                         classes_per_source.get(&ExprId(9)).copied().unwrap_or(0),
                         per_source.get(&ExprId(7218)).copied().unwrap_or(0),

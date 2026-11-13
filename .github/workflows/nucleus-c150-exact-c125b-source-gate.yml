@@ -33,7 +33,7 @@ jobs:
         run: |
           set -euo pipefail
           printf '%s  %s\n' \
-            4075ac70b737b648424a521c5a7b77f232fd0a7b4ed3761192db3c7e56246905 metatron-kernel/src/machine.rs \
+            ccfe6a359724ca9ca70da817222e43e9c6af6d7ce49d30b329d8ef25c3d44f4c metatron-kernel/src/machine.rs \
             c3d47f4be05dbdcc1ba99eb668fe4cd32873f4e7d8b1b95480f6c1e943bd7f88 metatron-kernel/src/convert.rs \
             d16b882835a6ccf79adf97191640c37b526ea0d74b7aadcbb6e2a425779c0eb6 metatron-kernel/src/typecheck.rs \
             ad5161dc49851ea5b7be34263496502309fd6f6958df4e3c6b5a1e6d885d7894 metatron-kernel/examples/nucleus_budget_ladder.rs \
