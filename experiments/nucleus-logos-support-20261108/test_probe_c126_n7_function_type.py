@@ -5,7 +5,7 @@ import unittest
 from probe_c126_n7_function_type import (
     parse_traces, summarize_owner_traces, parse_app_edges, parse_arg_obligations,
     parse_conversion_stages, parse_inner_arg_edges, parse_c133_stages,
-    parse_c134_owner_traces,
+    parse_c134_owner_traces, parse_c135_trials,
 )
 
 
@@ -140,6 +140,20 @@ class C126TraceTests(unittest.TestCase):
         self.assertEqual(rows["recursor"][0]["left_spine"], 5)
         with self.assertRaises(AssertionError):
             parse_c134_owner_traces(sample.replace(b"actual_env=66182", b"actual_env=66181"))
+
+    def test_c135_recursor_trial_preserves_reserved_budget_and_result(self):
+        sample = (
+            'NUCLEUS_C135_RECURSOR_TRIAL:side=right:probe=32625:'
+            'remaining_after_reservation=32625:outcome=UNKNOWN:'
+            'obstruction=ResidualId("recursor-unresolved")\n'
+            'NUCLEUS_C135_RECURSOR_TRIAL:side=right:probe=7077752:'
+            'remaining_after_reservation=7077752:outcome=PROVEN:obstruction=\n'
+        ).encode()
+        rows = parse_c135_trials(sample)
+        self.assertEqual([r['outcome'] for r in rows], ['UNKNOWN', 'PROVEN'])
+        self.assertEqual([r['probe'] for r in rows], [32625, 7077752])
+        with self.assertRaises(AssertionError):
+            parse_c135_trials(sample.replace(b'side=right', b'side=left', 1))
 
 
 if __name__ == "__main__":
