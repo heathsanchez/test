@@ -4,6 +4,7 @@ import unittest
 
 from probe_c126_n7_function_type import (
     parse_traces, summarize_owner_traces, parse_app_edges, parse_arg_obligations,
+    parse_conversion_stages,
 )
 
 
@@ -66,6 +67,23 @@ class C126TraceTests(unittest.TestCase):
         with self.assertRaises(AssertionError):
             parse_arg_obligations(sample.replace("fun=8753", "fun=8752").encode(),
                                   {8805: {"fn": 8753, "arg": 8804}})
+
+    def test_c131_argument_inference_and_conversion_are_independent_stages(self):
+        sample = (
+            "NUCLEUS_C131_ARG_INFER:expr=8804:context=0:frame=11:before=65534:"
+            "after=65332:state=PROVEN:inferred=Proven { value: Term(Closure(...)) }:"
+            "expected=Term(Closure(...))\n"
+            "NUCLEUS_C131_ARG_CONVERT:expr=8804:context=0:frame=11:fuel=65332:"
+            "state=UNKNOWN:judgment=Unknown { residual: unresolved-qualified-recursor-heads }\n"
+        ).encode()
+        stages = parse_conversion_stages(sample, {8805: {"fn": 8753, "arg": 8804}})
+        self.assertEqual([row["stage"] for row in stages], ["infer", "convert"])
+        self.assertEqual([row["state"] for row in stages], ["PROVEN", "UNKNOWN"])
+        self.assertEqual(stages[0]["charged"], 202)
+        self.assertEqual(stages[1]["fuel"], 65332)
+        with self.assertRaises(AssertionError):
+            parse_conversion_stages(sample.replace(b"expr=8804", b"expr=8803"),
+                                    {8805: {"fn": 8753, "arg": 8804}})
 
 
 if __name__ == "__main__":
