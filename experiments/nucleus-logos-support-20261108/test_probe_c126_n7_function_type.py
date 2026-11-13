@@ -8,7 +8,7 @@ from probe_c126_n7_function_type import (
     parse_c134_owner_traces, parse_c135_trials, parse_c136_routes,
     parse_c137_worklist, parse_c138_deferred_route, parse_c139_value_comparison,
     parse_c140_rhs_exposure, parse_c141_cache_provenance,
-    parse_c142_exact_miss_cost,
+    parse_c142_exact_miss_cost, parse_c143_head_reuse_sample,
 )
 
 
@@ -278,6 +278,25 @@ class C126TraceTests(unittest.TestCase):
             parse_c142_exact_miss_cost(good.replace(b'env=0', b'env=1'))
         with self.assertRaises(AssertionError):
             parse_c142_exact_miss_cost(good.replace(b'fuel_after=0', b'fuel_after=65251'))
+
+    def test_c143_source_heads_are_only_candidate_reuse_not_certificates(self):
+        good = (
+            'NUCLEUS_C143_HEADS:source=8799:env=0:authority=386:'
+            'scope=false:budget=14155490:total=12761384:'
+            'sample_steps=50211:sample_unique=384:sample_repeats=49827:'
+            'sample_overflow=0:top=Expr1@2200000,Expr2@1100000\n'
+        ).encode()
+        row = parse_c143_head_reuse_sample(good)[0]
+        self.assertEqual(row['total'], 12761384)
+        self.assertEqual(row['sample_unique'] + row['sample_repeats'],
+                         row['sample_steps'])
+        self.assertEqual(row['top'][0], {'expr': 1, 'count': 2200000})
+        for old, new in ((b'env=0', b'env=1'),
+                         (b'sample_repeats=49827', b'sample_repeats=49828'),
+                         (b'top=Expr1', b'top=Name1')):
+            with self.subTest(field=old):
+                with self.assertRaises(AssertionError):
+                    parse_c143_head_reuse_sample(good.replace(old, new))
 
 
 if __name__ == "__main__":
