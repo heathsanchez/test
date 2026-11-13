@@ -137,6 +137,14 @@ jobs:
             "$RUNNER_TEMP/c126-original196/good/perf/magma-list-pair-n7.ndjson" \
             --budgets 65536 14155776 --owner-worklist-trace \
             | tee "$RUNNER_TEMP/c137-n7-exact-owner-worklist.json"
+      - name: C138 stage and outcome of first blocking deferred equality
+        run: |
+          set -euo pipefail
+          python3 experiments/nucleus-logos-support-20261108/probe_c126_n7_function_type.py \
+            metatron-kernel/target/release/nucleus-budget-sweep \
+            "$RUNNER_TEMP/c126-original196/good/perf/magma-list-pair-n7.ndjson" \
+            --budgets 65536 14155776 --deferred-rule-trace \
+            | tee "$RUNNER_TEMP/c138-n7-second-deferred-rule.json"
       - name: Preserve source-native discriminator receipt
         if: always()
         uses: actions/upload-artifact@v4
@@ -155,4 +163,5 @@ jobs:
             ${{ runner.temp }}/c135-n7-captured-recursor-trial.json
             ${{ runner.temp }}/c136-n7-exact-owner-route.json
             ${{ runner.temp }}/c137-n7-exact-owner-worklist.json
+            ${{ runner.temp }}/c138-n7-second-deferred-rule.json
           if-no-files-found: ignore
