@@ -1774,6 +1774,33 @@ struct C153NestedCounts {
     already_cached_hits:usize,
 }
 
+#[cfg(feature="diagnostics")]
+#[derive(Default)]
+struct C155ExpensiveExactCounts {
+    // Only proven nonleaf calls with >=65,536 observed head entries are kept.
+    // The full cache key compares authority, closure/environment/levels,
+    // transparency, projection policy, and every pending argument closure.
+    first:HashMap<Rc<CachedExposureKey>,Value>,
+    calls:usize, repeated:usize, result_conflicts:usize,
+    repeated_work_overlapping:usize, repeated_max_work:usize,
+    repeated_intervals:Vec<(usize,usize)>,
+}
+#[cfg(feature="diagnostics")]
+impl C155ExpensiveExactCounts {
+    fn max_disjoint_repeated_work(&self)->usize {
+        let mut intervals=self.repeated_intervals.clone();
+        intervals.sort_unstable_by_key(|&(_,end)|end);
+        let mut best=vec![0usize;intervals.len()+1];
+        for i in 1..=intervals.len() {
+            let (start,end)=intervals[i-1];
+            // Earlier nonoverlapping intervals end no later than start.
+            let prior=intervals[..i-1].partition_point(|&(_,prior_end)|prior_end<=start);
+            best[i]=best[i-1].max(best[prior].saturating_add(end.saturating_sub(start)));
+        }
+        *best.last().unwrap_or(&0)
+    }
+}
+
 pub struct Machine<'a> {
     authority: AuthorityId,
     demand_major: bool,
@@ -1792,6 +1819,8 @@ pub struct Machine<'a> {
     c153_entry_serial:Cell<usize>,
     #[cfg(feature="diagnostics")]
     c153_nested:RefCell<C153NestedCounts>,
+    #[cfg(feature="diagnostics")]
+    c155_expensive:RefCell<C155ExpensiveExactCounts>,
     #[cfg(feature="diagnostics")]
     c97_major_active:Cell<usize>,
     #[cfg(feature="diagnostics")]
@@ -1859,6 +1888,8 @@ impl<'a> Machine<'a> {
             c153_entry_serial:Cell::new(0),
             #[cfg(feature="diagnostics")]
             c153_nested:RefCell::new(C153NestedCounts::default()),
+            #[cfg(feature="diagnostics")]
+            c155_expensive:RefCell::new(C155ExpensiveExactCounts::default()),
             #[cfg(feature="diagnostics")]
             c97_major_active:Cell::new(0),
             #[cfg(feature="diagnostics")]
@@ -2244,6 +2275,15 @@ impl<'a> Machine<'a> {
             Some((serial,heads))
         } else {None};
         #[cfg(feature="diagnostics")]
+        let c155_key=if self.c153_producer_active.get()>0
+            && std::env::var_os("NUCLEUS_C155_EXPENSIVE_EXACT_KEYS").is_some()
+        {
+            Some(Rc::new(CachedExposureKey::new((
+                self.authority,closure.clone(),transparency,
+                preserve_stuck_projection,pending.clone(),
+            ))))
+        } else {None};
+        #[cfg(feature="diagnostics")]
         let c117_call=(self.c117_completed_entry_enabled && self.c115_major_active.get()!=0)
             .then(||{
                 let state=(closure.clone(),pending.clone(),transparency,preserve_stuck_projection);
@@ -2289,6 +2329,22 @@ impl<'a> Machine<'a> {
                 counts.nonleaf_ge_64+=usize::from(work>=64);
                 counts.nonleaf_ge_1024+=usize::from(work>=1024);
                 counts.nonleaf_ge_65536+=usize::from(work>=65536);
+                if work>=65536 {
+                    if let (Some(key),Some(exposure))=(c155_key,result.proven_value()) {
+                        let mut exact=self.c155_expensive.borrow_mut();
+                        exact.calls+=1;
+                        if let Some(first)=exact.first.get(&key) {
+                            let conflict=first!=&exposure.value;
+                            exact.repeated+=1;
+                            exact.result_conflicts+=usize::from(conflict);
+                            exact.repeated_work_overlapping+=work;
+                            exact.repeated_max_work=exact.repeated_max_work.max(work);
+                            exact.repeated_intervals.push((before,after));
+                        } else {
+                            exact.first.insert(key,exposure.value.clone());
+                        }
+                    }
+                }
             }
         }
         #[cfg(feature="diagnostics")]
@@ -2397,6 +2453,9 @@ impl<'a> Machine<'a> {
             self.c153_producer_active.set(self.c153_producer_active.get()+1);
             self.c153_entry_serial.set(0);
             *self.c153_nested.borrow_mut()=C153NestedCounts::default();
+            if std::env::var_os("NUCLEUS_C155_EXPENSIVE_EXACT_KEYS").is_some() {
+                *self.c155_expensive.borrow_mut()=C155ExpensiveExactCounts::default();
+            }
         }
         let result = self.expose_uncached_internal_with_pending(
             closure, transparency, budget, false,
@@ -2413,6 +2472,13 @@ impl<'a> Machine<'a> {
                 eprintln!("NUCLEUS_C154_NONLEAF:source=8799:env=0:authority={}:budget={budget}:nonleaf_calls={}:nonleaf_proven={}:nonleaf_max_head_work={}:ge64={}:ge1024={}:ge65536={}:already_cached_hits={}",
                     self.authority.0,c.nonleaf_calls,c.nonleaf_proven,c.nonleaf_max_head_work,
                     c.nonleaf_ge_64,c.nonleaf_ge_1024,c.nonleaf_ge_65536,c.already_cached_hits);
+            }
+            if std::env::var_os("NUCLEUS_C155_EXPENSIVE_EXACT_KEYS").is_some() {
+                let e=self.c155_expensive.borrow();
+                eprintln!("NUCLEUS_C155_EXACT:source=8799:env=0:authority={}:budget={budget}:calls={}:unique={}:repeated={}:conflicts={}:repeated_work_overlapping={}:max_repeated_work={}:best_disjoint_repeated_work={}",
+                    self.authority.0,e.calls,e.first.len(),e.repeated,
+                    e.result_conflicts,e.repeated_work_overlapping,e.repeated_max_work,
+                    e.max_disjoint_repeated_work());
             }
         }
         #[cfg(feature="diagnostics")]
