@@ -22,6 +22,7 @@ EDGE_PREFIX = "NUCLEUS_C129_APP_EDGE:"
 ARG_PREFIX = "NUCLEUS_C130_APP_ARG:"
 CONVERSION_INFER_PREFIX = "NUCLEUS_C131_ARG_INFER:"
 CONVERSION_RELATION_PREFIX = "NUCLEUS_C131_ARG_CONVERT:"
+INNER_ARG_PREFIX = "NUCLEUS_C132_APP_ARG:"
 
 
 def parse_traces(stderr: bytes):
@@ -124,6 +125,28 @@ def parse_conversion_stages(stderr: bytes, source_edges):
     return rows
 
 
+def parse_inner_arg_edges(stderr: bytes, source_edges):
+    """Only accept real AST application edges and actual argument judgments."""
+    rows = []
+    for line in stderr.decode(errors="replace").splitlines():
+        if not line.startswith(INNER_ARG_PREFIX):
+            continue
+        record, judgment = line[len(INNER_ARG_PREFIX):].split(":judgment=", 1)
+        fields = dict(item.split("=", 1) for item in record.split(":"))
+        app, fun, arg = (int(fields[k]) for k in ("app", "fun", "arg"))
+        assert 8700 <= app <= 8804, line
+        assert source_edges.get(app) == {"fn": fun, "arg": arg}, line
+        state = fields["state"]
+        assert state in ("PROVEN", "UNKNOWN", "REFUTED") and judgment.startswith(state.title()), line
+        before, after = int(fields["before"]), int(fields["after"])
+        assert before >= after >= 0, line
+        rows.append({"app": app, "fun": fun, "arg": arg,
+                     "context": int(fields["context"]), "state": state,
+                     "before": before, "after": after, "charged": before - after,
+                     "judgment_preview": judgment[:300]})
+    return rows
+
+
 def validate_source(source: bytes):
     assert hashlib.sha256(source).hexdigest() == SOURCE_SHA256, "frozen N7 hash mismatch"
     app = None
@@ -160,7 +183,8 @@ def summarize_owner_traces(stderr: bytes):
 
 def run(binary: Path, source: bytes, budget: int, trace: bool,
         owner_trace: bool = False, app_trace: bool = False,
-        arg_trace: bool = False, conversion_trace: bool = False):
+        arg_trace: bool = False, conversion_trace: bool = False,
+        app_arg_trace: bool = False):
     env = {k: v for k, v in os.environ.items() if not k.startswith("NUCLEUS_")}
     env.update(NUCLEUS_EXPERIMENTAL_RELEVANCE="1",
                NUCLEUS_EXPERIMENTAL_DEMAND_MAJOR="1")
@@ -181,6 +205,8 @@ def run(binary: Path, source: bytes, budget: int, trace: bool,
             env["NUCLEUS_C130_APP_ARG"] = "1"
         if conversion_trace:
             env["NUCLEUS_C131_ARG_CONVERT"] = "1"
+        if app_arg_trace:
+            env["NUCLEUS_C132_APP_ARG"] = "1"
     process = subprocess.run([str(binary), str(budget)], input=source,
                              stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                              env=env, timeout=240)
@@ -203,6 +229,8 @@ def main():
                         help="C130 read-only source application argument obligation")
     parser.add_argument("--conversion-trace", action="store_true",
                         help="C131 separate source argument type inference and conversion")
+    parser.add_argument("--app-arg-trace", action="store_true",
+                        help="C132 read-only nested application argument judgment census")
     args = parser.parse_args()
     source = args.source.read_bytes()
     validate_source(source)
@@ -214,7 +242,8 @@ def main():
     for budget in args.budgets:
         silent = run(binary, source, budget, False)
         observed = run(binary, source, budget, True, args.owner_trace,
-                       args.app_trace, args.arg_trace, args.conversion_trace)
+                       args.app_trace, args.arg_trace, args.conversion_trace,
+                       args.app_arg_trace)
         assert (silent.returncode, silent.stdout) == (observed.returncode, observed.stdout), (
             "observer changed the checker verdict or output", budget)
         heads = parse_traces(observed.stderr)
@@ -250,7 +279,23 @@ def main():
                 assert any(s["stage"] == "convert" for s in stages), (
                     "proven inference without expected conversion receipt", budget)
             row["source_arg_conversion_stages"] = stages[:24]
+        if args.app_arg_trace:
+            inner_args = parse_inner_arg_edges(observed.stderr, exact_edges)
+            assert inner_args, ("no source-native inner argument judgments", budget)
+            row["inner_source_arg_edges"] = inner_args[:1024]
+            row["inner_source_arg_count"] = len(inner_args)
         observations.append(row)
+    if args.app_arg_trace and len(observations) == 2:
+        low, high = observations
+        def by_source(row):
+            return {entry["app"]: entry["state"] for entry in row["inner_source_arg_edges"]}
+        left, right = by_source(low), by_source(high)
+        difference = [{"app": app, "standard": left[app], "diagnostic": right[app]}
+                      for app in sorted(left.keys() & right.keys()) if left[app] != right[app]]
+        # No common-edge divergence is itself useful negative evidence:
+        # inference may fail along a function-type route instead.
+        observations.append({"c132_cross_budget_common_edges": len(left.keys() & right.keys()),
+                             "c132_inner_argument_divergences": difference})
     print(json.dumps({"status": "CANDIDATE_C105_SURROGATE_NATIVE_REPLAY",
                       "lineage": "C105 descendant, not recovered C124/C125b source",
                       "source": "original unchanged magma-list-pair-n7",
