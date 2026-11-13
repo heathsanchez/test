@@ -9,6 +9,8 @@ on:
       - metatron-kernel/src/convert.rs
       - experiments/nucleus-logos-support-20261108/probe_c126_n7_function_type.py
       - experiments/nucleus-logos-support-20261108/test_probe_c126_n7_function_type.py
+      - experiments/nucleus-logos-support-20261108/probe_c144_hot_ast.py
+      - experiments/nucleus-logos-support-20261108/test_probe_c144_hot_ast.py
   workflow_dispatch:
 
 permissions:
@@ -28,7 +30,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with: {toolchain: '1.99.1'}
       - name: Check exact-source receipt parser
-        run: PYTHONPATH=experiments/nucleus-logos-support-20261108 python3 -m unittest experiments.nucleus-logos-support-20261108.test_probe_c126_n7_function_type
+        run: PYTHONPATH=experiments/nucleus-logos-support-20261108 python3 -m unittest experiments.nucleus-logos-support-20261108.test_probe_c126_n7_function_type experiments.nucleus-logos-support-20261108.test_probe_c144_hot_ast
       - name: Obtain exact frozen original Arena N7
         run: |
           set -euo pipefail
@@ -37,6 +39,12 @@ jobs:
           printf '%s  %s\n' f6cd590db7f6fb92b8d1b3ca87231d4b0f521f085d73f93abd005f5caaff86d2 "$RUNNER_TEMP/c126-original196.zip" | sha256sum -c -
           unzip -p "$RUNNER_TEMP/c126-original196.zip" lean-arena-tests.tar.gz | tar --no-same-owner -xzf - -C "$RUNNER_TEMP/c126-original196"
           printf '%s  %s\n' abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35 "$RUNNER_TEMP/c126-original196/good/perf/magma-list-pair-n7.ndjson" | sha256sum -c -
+      - name: C144 resolve hot evaluator head IDs to frozen N7 source AST
+        run: |
+          set -euo pipefail
+          python3 experiments/nucleus-logos-support-20261108/probe_c144_hot_ast.py \
+            "$RUNNER_TEMP/c126-original196/good/perf/magma-list-pair-n7.ndjson" \
+            | tee "$RUNNER_TEMP/c144-n7-hot-source-ast.json"
       - name: Build source checker budget ladder with diagnostics only
         run: |
           set -euo pipefail
@@ -209,4 +217,5 @@ jobs:
             ${{ runner.temp }}/c141-n7-exact-cache-provenance.json
             ${{ runner.temp }}/c142-n7-exact-miss-cost.json
             ${{ runner.temp }}/c143-n7-exact-head-reuse-sample.json
+            ${{ runner.temp }}/c144-n7-hot-source-ast.json
           if-no-files-found: ignore
