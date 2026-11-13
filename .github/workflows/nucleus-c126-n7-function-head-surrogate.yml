@@ -1,0 +1,57 @@
+name: Nucleus C126 N7 typed function-head discriminator (surrogate)
+
+on:
+  push:
+    branches: [research/nucleus-c125-c105-surrogate-ci-20261114]
+    paths:
+      - .github/workflows/nucleus-c126-n7-function-head-surrogate.yml
+      - metatron-kernel/src/typecheck.rs
+      - experiments/nucleus-logos-support-20261108/probe_c126_n7_function_type.py
+      - experiments/nucleus-logos-support-20261108/test_probe_c126_n7_function_type.py
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  original-n7-head:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RUST_MIN_STACK: '67108864'
+      CARGO_INCREMENTAL: '0'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Check exact-source receipt parser
+        run: PYTHONPATH=experiments/nucleus-logos-support-20261108 python3 -m unittest experiments.nucleus-logos-support-20261108.test_probe_c126_n7_function_type
+      - name: Obtain exact frozen original Arena N7
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/c126-original196"
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/11272848230/zip > "$RUNNER_TEMP/c126-original196.zip"
+          printf '%s  %s\n' f6cd590db7f6fb92b8d1b3ca87231d4b0f521f085d73f93abd005f5caaff86d2 "$RUNNER_TEMP/c126-original196.zip" | sha256sum -c -
+          unzip -p "$RUNNER_TEMP/c126-original196.zip" lean-arena-tests.tar.gz | tar --no-same-owner -xzf - -C "$RUNNER_TEMP/c126-original196"
+          printf '%s  %s\n' abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35 "$RUNNER_TEMP/c126-original196/good/perf/magma-list-pair-n7.ndjson" | sha256sum -c -
+      - name: Build source checker budget ladder with diagnostics only
+        run: |
+          set -euo pipefail
+          install -Dm644 experiments/nucleus-budget-sweep-20261105.rs metatron-kernel/src/bin/nucleus-budget-sweep.rs
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml --features diagnostics --bin nucleus-budget-sweep
+      - name: Measure actual application 8835 function type at low and high budgets
+        run: |
+          set -euo pipefail
+          python3 experiments/nucleus-logos-support-20261108/probe_c126_n7_function_type.py \
+            metatron-kernel/target/release/nucleus-budget-sweep \
+            "$RUNNER_TEMP/c126-original196/good/perf/magma-list-pair-n7.ndjson" \
+            | tee "$RUNNER_TEMP/c126-n7-function-head.json"
+      - name: Preserve source-native discriminator receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-c126-n7-function-head-surrogate
+          path: ${{ runner.temp }}/c126-n7-function-head.json
+          if-no-files-found: ignore
