@@ -533,24 +533,33 @@ jobs:
               tops=[line.decode() for line in lines if line.startswith(b'NUCLEUS_C160_HEAD:')]
               stripped=b'\n'.join(line for line in lines if not line.startswith((b'NUCLEUS_C160_RESULT_HEADS:',b'NUCLEUS_C160_HEAD:')))
               assert stripped==b'\n'.join(plain.stderr.splitlines()),budget
-              assert len(markers)==1,('missing/extra C160 source-locked summary',budget,markers)
-              match=head_pattern.fullmatch(markers[0]);assert match,markers[0]
-              auth,allowance,full,classes,largest,repeated,mixed=map(int,match.groups())
-              assert auth==386 and allowance>0 and 0<=mixed<=repeated<=classes<=full
-              assert 0<=largest<=full and len(tops)==min(12,classes)
-              if budget==65536:assert full==0
-              if budget==14155776:assert full==407
+              # Source N7 triggers two short 507-grant attempts in both
+              # budgets, then two long attempts at low and one at high.
+              # An observer marker belongs to EACH attempt, not the whole
+              # imported NDJSON file. Keep their provenance disjoint.
+              assert len(markers)==(4 if budget==65536 else 3),('missing/extra C160 source-locked summaries',budget,markers)
+              heads=[]
+              for marker in markers:
+                  match=head_pattern.fullmatch(marker);assert match,marker
+                  auth,allowance,full,classes,largest,repeated,mixed=map(int,match.groups())
+                  assert auth==386 and allowance>0 and 0<=mixed<=repeated<=classes<=full
+                  assert 0<=largest<=full
+                  heads.append({'allowance':allowance,'full_exact_keys':full,'head_shape_groups':classes,
+                                'largest_group':largest,'repeated_groups':repeated,
+                                'strict_value_mixed_groups':mixed})
+              if budget==65536:assert all(h['full_exact_keys']==0 for h in heads)
+              if budget==14155776:assert sorted(h['full_exact_keys'] for h in heads)==[0,0,407]
+              assert len(tops)==sum(min(12,h['head_shape_groups']) for h in heads)
               top=[]
               for line in tops:
                   match=top_pattern.fullmatch(line);assert match,line
                   rank,key,members,conflicts=match.groups()
-                  assert int(rank)==len(top) and 0<int(members)<=full and 0<=int(conflicts)<int(members)
+                  assert 0<=int(rank)<12 and 0<int(members)<=407 and 0<=int(conflicts)<int(members)
                   top.append({'rank':int(rank),'head_shape':key,'members':int(members),
                               'strict_value_conflicts':int(conflicts)})
+              largest=max((h['largest_group'] for h in heads),default=0)
               assert not top or top[0]['members']==largest
-              receipts.append({'budget':budget,'exit':expected,'full_exact_keys':full,'head_shape_groups':classes,
-                               'largest_group':largest,'repeated_groups':repeated,'strict_value_mixed_groups':mixed,
-                               'top':top})
+              receipts.append({'budget':budget,'exit':expected,'attempts':heads,'top':top})
           print(json.dumps({'source':'exact C125b d8be1443f2f1352634aaf333a282f32e7ec8a719',
                             'original_sha256':'abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35',
                             'receipts':receipts},sort_keys=True))
