@@ -186,7 +186,26 @@ fn convert_in_context_with_congruence(
 
     while let Some((left, right, depth, local_context)) = work.pop() {
         let context = local_context.as_slice();
+        #[cfg(feature="diagnostics")]
+        let c136_exact_pair = std::env::var_os("NUCLEUS_C136_OWNER_ROUTE").is_some()
+            && C134_CAPTURED_CONVERSION_OWNER.with(|cell|cell.get()>0)
+            && depth==0 && context.is_empty()
+            && matches!((&left,&right), (TypeValue::Term(actual),TypeValue::Term(expected))
+                if actual.expr.0==110 && actual.env.id()==66182
+                && expected.expr.0==1 && expected.env.id()==66180);
+        // C136 is observer-only and lexically scoped to the exact source
+        // capture. Earlier successes at different environments are excluded.
+        macro_rules! c136_route {
+            ($event:literal) => {
+                #[cfg(feature="diagnostics")]
+                if c136_exact_pair {
+                    eprintln!("NUCLEUS_C136_ROUTE:event={}:remaining={remaining}", $event);
+                }
+            };
+        }
+        c136_route!("pop");
         if left == right {
+            c136_route!("same-value");
             continue;
         }
         if remaining == 0 {
@@ -209,7 +228,10 @@ fn convert_in_context_with_congruence(
             let mut trial = allowance;
             let identical = checker.exact_source_capture_identity(lhs, rhs, &mut trial);
             remaining -= allowance.saturating_sub(trial);
-            if identical { continue; }
+            if identical {
+                c136_route!("exact-source-capture");
+                continue;
+            }
         }
 
         // Residual-generated function eta capability.  This is deliberately
@@ -219,6 +241,7 @@ fn convert_in_context_with_congruence(
         // available, is a separately guarded typed-binder consequence below.
         if let (TypeValue::Term(left_term), TypeValue::Term(right_term)) = (&left, &right) {
             if let Some(contracted) = eta_contract(checker, left_term, depth) {
+                c136_route!("left-eta");
                 work.push((
                     TypeValue::Term(contracted),
                     TypeValue::Term(right_term.clone()),
@@ -228,6 +251,7 @@ fn convert_in_context_with_congruence(
                 continue;
             }
             if let Some(contracted) = eta_contract(checker, right_term, depth) {
+                c136_route!("right-eta");
                 work.push((
                     TypeValue::Term(left_term.clone()),
                     TypeValue::Term(contracted),
@@ -241,6 +265,7 @@ fn convert_in_context_with_congruence(
         if let (TypeValue::Term(left_term), TypeValue::Term(right_term)) = (&left, &right)
             && checker.proof_terms_same_proposition(left_term, right_term, context, remaining)
         {
+            c136_route!("checked-same-proposition");
             continue;
         }
 
@@ -251,18 +276,21 @@ fn convert_in_context_with_congruence(
             && let (TypeValue::Term(lhs),TypeValue::Term(rhs))=(&left,&right)
             && checker.checked_proof_vs_local_in_context(lhs,rhs,context,remaining)
         {
+            c136_route!("checked-proof-local");
             continue;
         }
 
         if let (TypeValue::Term(left_term), TypeValue::Term(right_term)) = (&left, &right)
             && unit_like_free_pair(checker, left_term, right_term, &unit_like_frees, remaining)
         {
+            c136_route!("unit-like-free");
             continue;
         }
 
         if let (TypeValue::Term(left_term), TypeValue::Term(right_term)) = (&left, &right)
             && proof_free_pair(checker, left_term, right_term, &proof_frees, remaining)
         {
+            c136_route!("proof-free");
             continue;
         }
 
@@ -275,6 +303,7 @@ fn convert_in_context_with_congruence(
                 remaining,
             )
         {
+            c136_route!("fixed-proof-function");
             continue;
         }
 
@@ -408,6 +437,7 @@ fn convert_in_context_with_congruence(
                         })
                         ))
                     {
+                        c136_route!("opaque-congruence");
                         continue;
                     }
                 }
@@ -416,6 +446,7 @@ fn convert_in_context_with_congruence(
                         rigid_application_head_congruence(checker, &left, &right, remaining)
                 {
                     if congruence.is_proven() {
+                        c136_route!("rigid-application-congruence");
                         continue;
                     }
                     // Unequal arguments are not an inequality proof for a
@@ -488,7 +519,10 @@ fn convert_in_context_with_congruence(
                                 &mut work,
                                 &mut proof_function_frees,
                             ) {
-                                Judgment::Proven { .. } => continue,
+                                Judgment::Proven { .. } => {
+                                    c136_route!("lazy-delta-conversion");
+                                    continue;
+                                }
                                 Judgment::Refuted { obstruction } => {
                                     return Judgment::Refuted { obstruction };
                                 }
@@ -512,9 +546,11 @@ fn convert_in_context_with_congruence(
                     if unfold_parent { Transparency::Full } else { Transparency::Reducible },
                     remaining,
                 );
+                c136_route!("cheap-exposure-attempted");
                 let (Some(cheap_left), Some(cheap_right)) =
                     (cheap_left.proven_value(), cheap_right.proven_value())
                 else {
+                    c136_route!("cheap-exposure-unknown");
                     #[cfg(feature="diagnostics")]
                     if std::env::var_os("NUCLEUS_TRACE_LITERAL_CONVERSION").is_some() {
                         eprintln!("NUCLEUS_LITERAL_CONVERSION:left={left:?}:syntax={:?}:result={cheap_left:?}:right={right:?}:syntax={:?}:result={cheap_right:?}",checker.expression(left.expr),checker.expression(right.expr));
@@ -531,7 +567,9 @@ fn convert_in_context_with_congruence(
                     &mut work,
                     &mut proof_function_frees,
                 ) {
-                    Judgment::Proven { .. } => {}
+                    Judgment::Proven { .. } => {
+                        c136_route!("cheap-comparison-proven");
+                    }
                     Judgment::Refuted { .. }
                         if delta_policy == DeltaPolicy::GuardedSemanticFallback =>
                     {
@@ -554,7 +592,9 @@ fn convert_in_context_with_congruence(
                             &mut work,
                             &mut proof_function_frees,
                         ) {
-                            Judgment::Proven { .. } => {}
+                            Judgment::Proven { .. } => {
+                                c136_route!("full-comparison-proven");
+                            }
                             Judgment::Refuted { obstruction } => {
                                 return Judgment::Refuted { obstruction };
                             }
