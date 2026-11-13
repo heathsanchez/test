@@ -342,6 +342,29 @@ class C126TraceTests(unittest.TestCase):
                 with self.assertRaises(AssertionError):
                     parse_c146_binding_projection(good.replace(old, new))
 
+    def test_c147_optimistic_all_visit_receipt_cannot_claim_semantic_reuse(self):
+        from probe_c126_n7_function_type import parse_c147_binding_upper_bound
+        good = (
+            'NUCLEUS_C147_UPPER:source=8799:env=0:authority=386:'
+            'scope=false:budget=14155490:head_total=12761384:'
+            'target_total=1400538:missing=0:overflow=false:'
+            'full_unique=100000:projected_unique=90000:'
+            'full_repeats=1300538:projected_repeats=1310538\n'
+        ).encode()
+        rows = parse_c147_binding_upper_bound(good)
+        self.assertEqual(rows[0]['optimistic_additional_key_merges'], 10000)
+        self.assertEqual(rows[0]['status'], 'COMPLETE_UPPER_BOUND_ONLY')
+        for old, new in ((b'source=8799', b'source=8798'),
+                         (b'projected_unique=90000', b'projected_unique=100001'),
+                         (b'projected_repeats=1310538', b'projected_repeats=1310539'),
+                         (b'full_repeats=1300538', b'full_repeats=1300537')):
+            with self.subTest(field=old):
+                with self.assertRaises(AssertionError):
+                    parse_c147_binding_upper_bound(good.replace(old, new))
+        incomplete = good.replace(b'overflow=false', b'overflow=true')
+        self.assertEqual(parse_c147_binding_upper_bound(incomplete)[0]['status'],
+                         'UNKNOWN_OVERFLOW')
+
 
 if __name__ == "__main__":
     unittest.main()
