@@ -8,6 +8,7 @@ from probe_c126_n7_function_type import (
     parse_c134_owner_traces, parse_c135_trials, parse_c136_routes,
     parse_c137_worklist, parse_c138_deferred_route, parse_c139_value_comparison,
     parse_c140_rhs_exposure, parse_c141_cache_provenance,
+    parse_c142_exact_miss_cost,
 )
 
 
@@ -260,6 +261,23 @@ class C126TraceTests(unittest.TestCase):
             with self.subTest(field=old):
                 with self.assertRaises(AssertionError):
                     parse_c141_cache_provenance(good.replace(old, new, 1))
+
+    def test_c142_exact_miss_meter_counts_work_not_equality(self):
+        good = (
+            'NUCLEUS_C142_MISS:source=8799:env=0:authority=386:'
+            'transparency=Reducible:levels=0:pending=0:preserve=true:'
+            'scope=false:budget=65250:outcome=PROVEN:head=Const147A5:'
+            'steps=60444:recursor_calls=1:key_work=33:'
+            'fuel_before=65250:fuel_after=0\n'
+        ).encode()
+        rows = parse_c142_exact_miss_cost(good)
+        self.assertEqual(rows[0]['steps'], 60444)
+        self.assertEqual(rows[0]['head'], 'Const147A5')
+        self.assertEqual(rows[0]['charged_fuel'], 65250)
+        with self.assertRaises(AssertionError):
+            parse_c142_exact_miss_cost(good.replace(b'env=0', b'env=1'))
+        with self.assertRaises(AssertionError):
+            parse_c142_exact_miss_cost(good.replace(b'fuel_after=0', b'fuel_after=65251'))
 
 
 if __name__ == "__main__":
