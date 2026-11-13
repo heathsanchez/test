@@ -183,9 +183,32 @@ fn convert_in_context_with_congruence(
     let mut proof_frees = HashMap::new();
     let mut proof_function_frees = HashMap::new();
     let mut lazy_head_delta_used = false;
+    #[cfg(feature="diagnostics")]
+    let c137_owner = std::env::var_os("NUCLEUS_C137_OWNER_WORKLIST").is_some()
+        && C134_CAPTURED_CONVERSION_OWNER.with(|cell|cell.get()>0)
+        && initial_depth==0 && context.is_empty()
+        && matches!((left,right), (TypeValue::Term(actual),TypeValue::Term(expected))
+            if actual.expr.0==110 && actual.env.id()==66182
+            && expected.expr.0==1 && expected.env.id()==66180);
+    #[cfg(feature="diagnostics")]
+    let mut c137_pop_index=0usize;
 
     while let Some((left, right, depth, local_context)) = work.pop() {
         let context = local_context.as_slice();
+        #[cfg(feature="diagnostics")]
+        if c137_owner {
+            if c137_pop_index < 256 {
+                let describe=|value:&TypeValue| match value {
+                    TypeValue::Term(term)=>format!("Expr{}@Env{}@Levels{:?}",
+                        term.expr.0,term.env.id(),term.levels),
+                    TypeValue::Sort(level)=>format!("Sort({level:?})"),
+                    TypeValue::Pi {..}=>"Pi".to_owned(),
+                };
+                eprintln!("NUCLEUS_C137_WORK:pop={c137_pop_index}:remaining={remaining}:depth={depth}:pending={}:left={}:right={}",
+                    work.len(),describe(&left),describe(&right));
+            }
+            c137_pop_index+=1;
+        }
         #[cfg(feature="diagnostics")]
         let c136_exact_pair = std::env::var_os("NUCLEUS_C136_OWNER_ROUTE").is_some()
             && C134_CAPTURED_CONVERSION_OWNER.with(|cell|cell.get()>0)
