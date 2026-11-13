@@ -672,6 +672,10 @@ pub struct Machine<'a> {
     c140_rhs_head_steps:Cell<usize>,
     #[cfg(feature="diagnostics")]
     c140_rhs_recursor_calls:Cell<usize>,
+    #[cfg(feature="diagnostics")]
+    c142_head_steps_total:Cell<usize>,
+    #[cfg(feature="diagnostics")]
+    c142_recursor_calls_total:Cell<usize>,
     #[cfg(test)]
     replay_key_builds: Cell<usize>,
     exposure_cache: Option<ExposureCache>,
@@ -715,6 +719,10 @@ impl<'a> Machine<'a> {
             c140_rhs_head_steps:Cell::new(0),
             #[cfg(feature="diagnostics")]
             c140_rhs_recursor_calls:Cell::new(0),
+            #[cfg(feature="diagnostics")]
+            c142_head_steps_total:Cell::new(0),
+            #[cfg(feature="diagnostics")]
+            c142_recursor_calls_total:Cell::new(0),
             #[cfg(test)]
             replay_key_builds: Cell::new(0),
             exposure_cache: None,
@@ -1131,10 +1139,37 @@ impl<'a> Machine<'a> {
         }
         #[cfg(feature="diagnostics")]
         c141_event("lookup-miss",None,false);
+        #[cfg(feature="diagnostics")]
+        let c142_exact = c141_exact
+            && std::env::var_os("NUCLEUS_C142_EXACT_MISS_COST").is_some();
+        #[cfg(feature="diagnostics")]
+        let c142_before = (self.c142_head_steps_total.get(),
+            self.c142_recursor_calls_total.get(),
+            REPLAY_KEY_WORK.load(std::sync::atomic::Ordering::Relaxed),
+            self.exposure_fuel.get());
         let result = self.expose_uncached_internal_with_pending(
             closure, transparency, budget, false,
             preserve_stuck_projection, pending,
         );
+        #[cfg(feature="diagnostics")]
+        if c142_exact {
+            let steps=self.c142_head_steps_total.get().saturating_sub(c142_before.0);
+            let recursor_calls=self.c142_recursor_calls_total.get().saturating_sub(c142_before.1);
+            let key_work=REPLAY_KEY_WORK.load(std::sync::atomic::Ordering::Relaxed)
+                .saturating_sub(c142_before.2);
+            let fuel_before=c142_before.3.map_or_else(||"none".to_owned(),|n|n.to_string());
+            let fuel_after=self.exposure_fuel.get().map_or_else(||"none".to_owned(),|n|n.to_string());
+            let outcome=if result.is_proven() {"PROVEN"}
+                else if result.is_unknown() {"UNKNOWN"}else{"REFUTED"};
+            let head=match result.proven_value().map(|exposure| &exposure.value) {
+                Some(Value::Neutral(Neutral {head:NeutralHead::Const{name,..},spine})) =>
+                    format!("Const{}A{}",name.0,spine.len()),
+                Some(_)=>"OtherValue".to_owned(),
+                None=>"None".to_owned(),
+            };
+            let scope=self.c140_rhs_work_active.get()!=0;
+            eprintln!("NUCLEUS_C142_MISS:source=8799:env=0:authority={}:transparency={transparency:?}:levels=0:pending=0:preserve=true:scope={scope}:budget={budget}:outcome={outcome}:head={head}:steps={steps}:recursor_calls={recursor_calls}:key_work={key_work}:fuel_before={fuel_before}:fuel_after={fuel_after}",self.authority.0);
+        }
         #[cfg(feature="diagnostics")]
         c141_event(if result.is_proven() {"uncached-proven"}
             else if result.is_unknown() {"uncached-unknown"}
@@ -1426,6 +1461,8 @@ impl<'a> Machine<'a> {
             if self.c140_rhs_work_active.get()!=0 {
                 self.c140_rhs_head_steps.set(self.c140_rhs_head_steps.get()+1);
             }
+            #[cfg(feature="diagnostics")]
+            self.c142_head_steps_total.set(self.c142_head_steps_total.get()+1);
             if !visited.insert((self.authority, closure.expr, closure.env.id())) {
                 return Judgment::unknown("reduction-cycle");
             }
@@ -2676,6 +2713,8 @@ impl<'a> Machine<'a> {
         if self.c140_rhs_work_active.get()!=0 {
             self.c140_rhs_recursor_calls.set(self.c140_rhs_recursor_calls.get()+1);
         }
+        #[cfg(feature="diagnostics")]
+        self.c142_recursor_calls_total.set(self.c142_recursor_calls_total.get()+1);
         // Exposure and replay consume the same owner's work allowance. A
         // child never receives a fresh budget, and this scope does not reset
         // an allowance already owned by a surrounding constructor demand.
