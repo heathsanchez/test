@@ -85,6 +85,17 @@ class C126TraceTests(unittest.TestCase):
             parse_conversion_stages(sample.replace(b"expr=8804", b"expr=8803"),
                                     {8805: {"fn": 8753, "arg": 8804}})
 
+    def test_c131_inference_unknown_does_not_fabricate_conversion(self):
+        sample = (
+            "NUCLEUS_C131_ARG_INFER:expr=8804:context=0:frame=11:before=65534:"
+            "after=65332:state=UNKNOWN:inferred=Unknown { residual: type-head }:"
+            "expected=Term(Closure(...))\n"
+        ).encode()
+        stages = parse_conversion_stages(sample, {8805: {"fn": 8753, "arg": 8804}})
+        self.assertEqual(len(stages), 1)
+        self.assertEqual(stages[0]["stage"], "infer")
+        self.assertEqual(stages[0]["state"], "UNKNOWN")
+
 
 if __name__ == "__main__":
     unittest.main()
