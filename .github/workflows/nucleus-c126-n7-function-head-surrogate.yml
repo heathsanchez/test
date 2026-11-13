@@ -169,6 +169,14 @@ jobs:
             "$RUNNER_TEMP/c126-original196/good/perf/magma-list-pair-n7.ndjson" \
             --budgets 65536 14155776 --cache-provenance-trace \
             | tee "$RUNNER_TEMP/c141-n7-exact-cache-provenance.json"
+      - name: C142 meter exact repeated cache misses and earlier producer cost
+        run: |
+          set -euo pipefail
+          python3 experiments/nucleus-logos-support-20261108/probe_c126_n7_function_type.py \
+            metatron-kernel/target/release/nucleus-budget-sweep \
+            "$RUNNER_TEMP/c126-original196/good/perf/magma-list-pair-n7.ndjson" \
+            --budgets 65536 14155776 --exact-miss-cost-trace \
+            | tee "$RUNNER_TEMP/c142-n7-exact-miss-cost.json"
       - name: Preserve source-native discriminator receipt
         if: always()
         uses: actions/upload-artifact@v4
@@ -191,4 +199,5 @@ jobs:
             ${{ runner.temp }}/c139-n7-exact-value-comparison.json
             ${{ runner.temp }}/c140-n7-exact-rhs-exposure-work.json
             ${{ runner.temp }}/c141-n7-exact-cache-provenance.json
+            ${{ runner.temp }}/c142-n7-exact-miss-cost.json
           if-no-files-found: ignore
