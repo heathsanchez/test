@@ -277,6 +277,160 @@ struct C94PhaseCounts {
     bvar_majors: Cell<usize>, bvar_repeats: Cell<usize>,
     bvar_bindings: RefCell<HashSet<(ExprId,u64)>>,
 }
+// C104 is a read-only ledger of exact captured major exposure requests.
+// A previously Proven exposure need not be a completed constructor or even
+// cacheable; a repeated Closure is not an exact replay-key equivalence.
+#[cfg(feature="diagnostics")]
+#[derive(Default)]
+struct C104MajorGroup {
+    requests: usize,
+    charged: usize,
+    unresolved: usize,
+    nested: usize,
+    other_proven: usize,
+    had_proven: bool,
+}
+#[cfg(feature="diagnostics")]
+#[derive(Default)]
+struct C104MajorCounts {
+    requests: usize,
+    repeated: usize,
+    prior_proven: usize,
+    prior_unresolved: usize,
+    unresolved: usize,
+    nested: usize,
+    other_proven: usize,
+    repeat_spent: usize,
+    unresolved_spent: usize,
+    nested_spent: usize,
+    other_proven_spent: usize,
+    groups: HashMap<Closure,C104MajorGroup>,
+}
+#[cfg(feature="diagnostics")]
+impl C104MajorCounts {
+    fn record(&mut self,major:&Closure,spent:usize,proven:bool,nested:bool) {
+        self.requests+=1;
+        let group=self.groups.entry(major.clone()).or_default();
+        if group.requests>0 {
+            self.repeated+=1;
+            self.repeat_spent+=spent;
+            if group.had_proven {self.prior_proven+=1;}
+            else {self.prior_unresolved+=1;}
+        }
+        group.requests+=1;
+        group.charged+=spent;
+        if !proven {
+            self.unresolved+=1;
+            self.unresolved_spent+=spent;
+            group.unresolved+=1;
+        } else if nested {
+            self.nested+=1;
+            self.nested_spent+=spent;
+            group.nested+=1;
+        } else {
+            self.other_proven+=1;
+            self.other_proven_spent+=spent;
+            group.other_proven+=1;
+        }
+        group.had_proven|=proven;
+    }
+}
+#[cfg(feature="diagnostics")]
+struct C104MajorReceipt<'a> {
+    counts:&'a RefCell<C104MajorCounts>,fuel:&'a Cell<Option<usize>>,start:usize,
+}
+// A distinct C104 captured frame can resolve through a chain of immutable
+// source BVar bindings. C105 records the exact *terminal closure*, not an
+// inferred equality of different frames or an admissible proof cache key.
+#[cfg(feature="diagnostics")]
+#[derive(Default)]
+struct C105TerminalGroup {
+    requests:usize,charged:usize,had_proven:bool,
+}
+#[cfg(feature="diagnostics")]
+#[derive(Default)]
+struct C105TerminalCounts {
+    requests:usize,terminal_repeated:usize,
+    prior_proven:usize,prior_unresolved:usize,repeated_spent:usize,
+    chain_steps:usize,max_chain:usize,chain_capped:usize,
+    groups:HashMap<Closure,C105TerminalGroup>,
+}
+#[cfg(feature="diagnostics")]
+impl C105TerminalCounts {
+    fn record(&mut self,terminal:Closure,steps:usize,capped:bool,
+              spent:usize,proven:bool) {
+        self.requests+=1;
+        self.chain_steps+=steps;
+        self.max_chain=self.max_chain.max(steps);
+        self.chain_capped+=usize::from(capped);
+        let group=self.groups.entry(terminal).or_default();
+        if group.requests>0 {
+            self.terminal_repeated+=1;
+            self.repeated_spent+=spent;
+            if group.had_proven {self.prior_proven+=1;}
+            else {self.prior_unresolved+=1;}
+        }
+        group.requests+=1;
+        group.charged+=spent;
+        group.had_proven|=proven;
+    }
+}
+#[cfg(feature="diagnostics")]
+struct C105TerminalReceipt<'a> {
+    counts:&'a RefCell<C105TerminalCounts>,fuel:&'a Cell<Option<usize>>,start:usize,
+}
+#[cfg(feature="diagnostics")]
+impl Drop for C105TerminalReceipt<'_> {
+    fn drop(&mut self) {
+        use std::sync::atomic::{AtomicUsize,Ordering};
+        static PRINTED:AtomicUsize=AtomicUsize::new(0);
+        let counts=self.counts.borrow();
+        let spent=self.start.saturating_sub(self.fuel.get().unwrap_or(0));
+        if spent<8192 || counts.requests<10
+            || PRINTED.fetch_add(1,Ordering::Relaxed)>=32 {return;}
+        eprintln!(
+            "NUCLEUS_C105_TERMINAL_OWNER:start={}:spent={spent}:requests={}:terminal_unique={}:terminal_repeated={}:prior_proven={}:prior_unresolved={}:repeated_spent={}:chain_steps={}:max_chain={}:chain_capped={}",
+            self.start,counts.requests,counts.groups.len(),counts.terminal_repeated,
+            counts.prior_proven,counts.prior_unresolved,counts.repeated_spent,
+            counts.chain_steps,counts.max_chain,counts.chain_capped,
+        );
+        let mut groups:Vec<_>=counts.groups.iter().collect();
+        groups.sort_by(|a,b|b.1.charged.cmp(&a.1.charged));
+        for (terminal,group) in groups.into_iter().take(8) {
+            eprintln!(
+                "NUCLEUS_C105_TERMINAL_GROUP:start={}:expr={}:frame={}:requests={}:charged={}",
+                self.start,terminal.expr.0,terminal.env.id(),group.requests,group.charged,
+            );
+        }
+    }
+}
+#[cfg(feature="diagnostics")]
+impl Drop for C104MajorReceipt<'_> {
+    fn drop(&mut self) {
+        use std::sync::atomic::{AtomicUsize,Ordering};
+        static PRINTED:AtomicUsize=AtomicUsize::new(0);
+        let counts=self.counts.borrow();
+        let spent=self.start.saturating_sub(self.fuel.get().unwrap_or(0));
+        if spent<8192 || counts.requests<10
+            || PRINTED.fetch_add(1,Ordering::Relaxed)>=32 {return;}
+        eprintln!(
+            "NUCLEUS_C104_MAJOR_OWNER:start={}:spent={spent}:requests={}:unique={}:repeated={}:prior_proven={}:prior_unresolved={}:unresolved={}:nested={}:other_proven={}:repeat_spent={}:unresolved_spent={}:nested_spent={}:other_proven_spent={}",
+            self.start,counts.requests,counts.groups.len(),counts.repeated,
+            counts.prior_proven,counts.prior_unresolved,counts.unresolved,
+            counts.nested,counts.other_proven,counts.repeat_spent,
+            counts.unresolved_spent,counts.nested_spent,counts.other_proven_spent,
+        );
+        let mut groups:Vec<_>=counts.groups.iter().collect();
+        groups.sort_by(|a,b|b.1.charged.cmp(&a.1.charged));
+        for (major,group) in groups.into_iter().take(8) {
+            eprintln!(
+                "NUCLEUS_C104_MAJOR_GROUP:start={}:expr={}:frame={}:requests={}:charged={}:unresolved={}:nested={}:other_proven={}",
+                self.start,major.expr.0,major.env.id(),group.requests,group.charged,
+                group.unresolved,group.nested,group.other_proven,
+            );
+        }
+    }
+}
 #[cfg(feature="diagnostics")]
 struct C94PhaseReceipt<'a> {
     counts: &'a C94PhaseCounts, fuel: &'a Cell<Option<usize>>,
@@ -2453,12 +2607,28 @@ impl<'a> Machine<'a> {
             Some(ConstructorFuelScope { fuel: &self.exposure_fuel })
         } else { None };
         #[cfg(feature="diagnostics")]
+        let c125_owner_start = self.exposure_fuel.get().unwrap_or(0);
+        #[cfg(feature="diagnostics")]
         let _work_trace=std::env::var_os("NUCLEUS_TRACE_REPLAY_CACHE").map(|_|ReplayWorkTrace{
             fuel:&self.exposure_fuel,start:self.exposure_fuel.get().unwrap_or(0),
             key_start:REPLAY_KEY_WORK.load(std::sync::atomic::Ordering::Relaxed),head:&neutral.head,
         });
         #[cfg(feature="diagnostics")]
         let c94_counts=C94PhaseCounts::default();
+        #[cfg(feature="diagnostics")]
+        let c104_counts=RefCell::new(C104MajorCounts::default());
+        #[cfg(feature="diagnostics")]
+        let _c104_receipt=std::env::var_os("NUCLEUS_C104_MAJOR_EXPOSURE_TRACE").map(|_|C104MajorReceipt{
+            counts:&c104_counts,fuel:&self.exposure_fuel,
+            start:self.exposure_fuel.get().unwrap_or(0),
+        });
+        #[cfg(feature="diagnostics")]
+        let c105_counts=RefCell::new(C105TerminalCounts::default());
+        #[cfg(feature="diagnostics")]
+        let _c105_receipt=std::env::var_os("NUCLEUS_C105_TERMINAL_BINDING_TRACE").map(|_|C105TerminalReceipt{
+            counts:&c105_counts,fuel:&self.exposure_fuel,
+            start:self.exposure_fuel.get().unwrap_or(0),
+        });
         #[cfg(feature="diagnostics")]
         let _c94_receipt=std::env::var_os("NUCLEUS_C94_PHASE_TRACE").map(|_|C94PhaseReceipt{
             counts:&c94_counts,fuel:&self.exposure_fuel,
@@ -2664,6 +2834,68 @@ impl<'a> Machine<'a> {
                         Some(Value::Neutral(n)) if matches!(&n.head,
                         NeutralHead::Const{name,..}if self.recursor_reductions.contains_key(name)));
                     c96_counts.record(key,spent,major_result.is_unknown(),nested,chain_steps);
+                }
+                #[cfg(feature="diagnostics")]
+                if _c104_receipt.is_some() {
+                    let spent=c96_before.saturating_sub(self.exposure_fuel.get().unwrap_or(0));
+                    let result=major_result.proven_value();
+                    let nested=matches!(result,
+                        Some(Value::Neutral(n)) if matches!(&n.head,
+                            NeutralHead::Const{name,..} if self.recursor_reductions.contains_key(name)));
+                    c104_counts.borrow_mut().record(&neutral.spine[required-1],
+                        spent,result.is_some(),nested);
+                }
+                #[cfg(feature="diagnostics")]
+                if _c105_receipt.is_some() {
+                    // The same real immutable BVar closure chain audited by
+                    // C96. This read-only walk neither exposes a value nor
+                    // changes any source constructor/replay/fuel decision.
+                    let mut terminal=neutral.spine[required-1].clone();
+                    let mut steps=0usize;
+                    while steps<16 {
+                        let Some(Expr::BVar(index))=self.expressions.get(terminal.expr) else {break};
+                        let Some(EnvBinding::Closure(next))=terminal.env.lookup_binding_ref(*index) else {break};
+                        terminal=next.clone();
+                        steps+=1;
+                    }
+                    let spent=c96_before.saturating_sub(self.exposure_fuel.get().unwrap_or(0));
+                    c105_counts.borrow_mut().record(terminal,steps,steps==16,
+                        spent,major_result.proven_value().is_some());
+                }
+                // C125: observe, without exposing or reducing anything, the
+                // actual BVar(0) payload captured by source Proj 811 inside
+                // the source terminal App 7198. No source ID grants a kernel
+                // computation rule; this is a frozen-input research receipt.
+                #[cfg(feature="diagnostics")]
+                if std::env::var_os("NUCLEUS_C125_PROJ_BINDING_TRACE").is_some() {
+                    let mut terminal=neutral.spine[required-1].clone();
+                    let mut links=0usize;
+                    while links<16 {
+                        let Some(Expr::BVar(index))=self.expressions.get(terminal.expr) else {break};
+                        let Some(EnvBinding::Closure(next))=terminal.env.lookup_binding_ref(*index) else {break};
+                        terminal=next.clone();
+                        links+=1;
+                    }
+                    if terminal.expr.0==7198 {
+                        let spent=c96_before.saturating_sub(self.exposure_fuel.get().unwrap_or(0));
+                        let node=terminal.env.diagnostic_binding_node_id(0).unwrap_or(0);
+                        let binding=terminal.env.lookup_binding_ref(0);
+                        let (kind,payload_expr,payload_env,payload_levels)=match binding {
+                            Some(EnvBinding::Closure(c))=>("closure",c.expr.0,c.env.id(),c.levels.entries().count()),
+                            Some(EnvBinding::Free(_))=>("free",0,0,0),
+                            Some(EnvBinding::Neutral(_))=>("neutral",0,0,0),
+                            Some(EnvBinding::NatLit(_))=>("natlit",0,0,0),
+                            None=>("missing",0,0,0),
+                        };
+                        let outcome=match major_result.proven_value() {
+                            Some(Value::Neutral(n)) if matches!(&n.head,NeutralHead::Const{name,..}
+                                if self.recursor_reductions.contains_key(name))=>"nested",
+                            Some(_)=>"other-proven",
+                            None=>"unresolved",
+                        };
+                        eprintln!("NUCLEUS_C125_PROJ_BINDING:owner_start={c125_owner_start}:spent={spent}:depth={depth}:recursor={}:terminal_expr={}:terminal_env={}:terminal_levels={}:links={links}:target_expr=1:binding_node={node}:binding_kind={kind}:payload_expr={payload_expr}:payload_env={payload_env}:payload_levels={payload_levels}:outcome={outcome}:payload={binding:?}",
+                            name.0,terminal.expr.0,terminal.env.id(),terminal.levels.entries().count());
+                    }
                 }
                 #[cfg(feature="diagnostics")]
                 if _c97_receipt.is_some() {

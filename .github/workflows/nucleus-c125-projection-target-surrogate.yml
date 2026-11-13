@@ -1,0 +1,43 @@
+name: Nucleus C125 projection target surrogate (diagnostic only)
+
+on:
+  push:
+    branches:
+      - research/nucleus-c125-c105-surrogate-ci-20261114
+    paths:
+      - .github/workflows/nucleus-c125-projection-target-surrogate.yml
+      - metatron-kernel/src/machine.rs
+      - experiments/nucleus-logos-support-20261108/probe_c125_projection_target_surrogate.py
+      - experiments/nucleus-logos-support-20261108/c125-projection-target-surrogate-preflight.md
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-native-projection-target:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: '1.99.1'
+      - name: Build independent Nucleus with research diagnostics
+        run: cargo build --locked --manifest-path metatron-kernel/Cargo.toml --features diagnostics --bin metatron-kernel
+      - name: Source-pinned C125 surrogate and three forgery controls
+        run: |
+          set -euo pipefail
+          python3 experiments/nucleus-logos-support-20261108/probe_c125_projection_target_surrogate.py \
+            metatron-kernel/target/debug/metatron-kernel \
+            experiments/nucleus-coverage-evidence-20261104/inputs/magma-list-pair-n21.ndjson.zst \
+            | tee "$RUNNER_TEMP/c125-projection-target-receipt.json"
+      - name: Qualified diagnostic test suite
+        run: cargo test --locked --manifest-path metatron-kernel/Cargo.toml --features diagnostics
+      - name: Preserve bounded native receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-c125-surrogate-native-receipt
+          path: ${{ runner.temp }}/c125-projection-target-receipt.json
+          if-no-files-found: ignore
