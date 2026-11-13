@@ -6,6 +6,7 @@ from probe_c126_n7_function_type import (
     parse_traces, summarize_owner_traces, parse_app_edges, parse_arg_obligations,
     parse_conversion_stages, parse_inner_arg_edges, parse_c133_stages,
     parse_c134_owner_traces, parse_c135_trials, parse_c136_routes,
+    parse_c137_worklist,
 )
 
 
@@ -166,6 +167,20 @@ class C126TraceTests(unittest.TestCase):
                          ['pop', 'cheap-exposure-attempted', 'cheap-comparison-proven'])
         with self.assertRaises(AssertionError):
             parse_c136_routes(sample.replace(b'event=pop', b'event=made-up', 1))
+
+    def test_c137_worklist_keeps_source_closures_and_frames_distinct(self):
+        sample = (
+            'NUCLEUS_C137_WORK:pop=0:remaining=65264:depth=0:pending=0:'
+            'left=Expr110@Env66182@Levels[]:right=Expr1@Env66180@Levels[]\n'
+            'NUCLEUS_C137_WORK:pop=1:remaining=65260:depth=1:pending=2:'
+            'left=Expr42@Env90@Levels[]:right=Expr55@Env91@Levels[]\n'
+        ).encode()
+        rows = parse_c137_worklist(sample)
+        self.assertEqual([r['pop'] for r in rows], [0, 1])
+        self.assertEqual(rows[1]['pending'], 2)
+        self.assertEqual(rows[0]['left'], 'Expr110@Env66182@Levels[]')
+        with self.assertRaises(AssertionError):
+            parse_c137_worklist(sample.replace(b'Env66182', b'Env66181', 1))
 
 
 if __name__ == "__main__":
