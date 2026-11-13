@@ -27,6 +27,7 @@ pub enum Transparency {
 #[cfg(test)]
 mod binding_node_transport_tests {
     use super::*;
+    use crate::nat::BigNat;
 
     #[test]
     fn same_used_binding_node_ignores_distinct_unused_outer_frames() {
