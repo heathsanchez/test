@@ -76,6 +76,41 @@ thread_local! {
 #[cfg(feature="diagnostics")]
 thread_local! {
     static C134_CAPTURED_CONVERSION_OWNER: Cell<usize> = const { Cell::new(0) };
+    static C139_EXACT_DEFERRED_COMPARE_OWNER: Cell<usize> = const { Cell::new(0) };
+    static C139_EXACT_DEFERRED_COMPARE_EVENTS: Cell<usize> = const { Cell::new(0) };
+}
+
+// Read-only C139 diagnostic. Dynamic scope is entered exclusively for the
+// source-qualified second C137 work item, not inferred from a similar head.
+#[cfg(feature="diagnostics")]
+fn c139_value_event(stage:&str,left:&Value,right:&Value,budget:usize,depth:usize) {
+    if C139_EXACT_DEFERRED_COMPARE_OWNER.with(|cell|cell.get()==0) { return; }
+    let count=C139_EXACT_DEFERRED_COMPARE_EVENTS.with(|cell| {
+        let old=cell.get();cell.set(old+1);old
+    });
+    if count>=128 { return; }
+    let describe=|value:&Value| -> String {
+        match value {
+            Value::NatLit(_) => "NatLit".to_owned(),
+            Value::Sort(_) => "Sort".to_owned(),
+            Value::Pi {..} => "Pi".to_owned(),
+            Value::Lam {..} => "Lam".to_owned(),
+            Value::StuckProjection {type_name,index,spine,..} =>
+                format!("StuckProjection{}I{}A{}",type_name.0,index,spine.len()),
+            Value::Neutral(n) => {
+                let head=match &n.head {
+                    NeutralHead::Free(id)=>format!("Free{}",id.0),
+                    NeutralHead::Const {name,levels}=>
+                        format!("Const{}L{}",name.0,levels.len()),
+                    NeutralHead::Projection {type_name,index,..}=>
+                        format!("Projection{}I{}",type_name.0,index),
+                };
+                format!("Neutral{head}A{}",n.spine.len())
+            }
+        }
+    };
+    eprintln!("NUCLEUS_C139_COMPARE:stage={stage}:budget={budget}:depth={depth}:left={}:right={}",
+        describe(left),describe(right));
 }
 
 pub fn convert(
@@ -599,7 +634,15 @@ fn convert_in_context_with_congruence(
                     }
                     return Judgment::unknown("conversion-exposure");
                 };
-                match compare_values(
+                #[cfg(feature="diagnostics")]
+                let c139_scope = c138_exact_pair
+                    && std::env::var_os("NUCLEUS_C139_EXACT_COMPARE").is_some();
+                #[cfg(feature="diagnostics")]
+                if c139_scope {
+                    C139_EXACT_DEFERRED_COMPARE_OWNER.with(|cell|cell.set(cell.get()+1));
+                    C139_EXACT_DEFERRED_COMPARE_EVENTS.with(|cell|cell.set(0));
+                }
+                let comparison = compare_values(
                     checker,
                     cheap_left,
                     cheap_right,
@@ -608,7 +651,12 @@ fn convert_in_context_with_congruence(
                     context,
                     &mut work,
                     &mut proof_function_frees,
-                ) {
+                );
+                #[cfg(feature="diagnostics")]
+                if c139_scope {
+                    C139_EXACT_DEFERRED_COMPARE_OWNER.with(|cell|cell.set(cell.get()-1));
+                }
+                match comparison {
                     Judgment::Proven { .. } => {
                         c136_route!("cheap-comparison-proven");
                     }
@@ -1321,6 +1369,8 @@ fn compare_values(
     work: &mut Vec<(TypeValue, TypeValue, usize, Vec<TypeValue>)>,
     proof_function_frees: &mut HashMap<FreeId, (crate::id::NameId, Vec<crate::level::LevelTerm>)>,
 ) -> Judgment<()> {
+    #[cfg(feature="diagnostics")]
+    c139_value_event("enter",left,right,budget,depth);
     let mut current_left = left.clone();
     let mut current_right = right.clone();
     let mut current_budget = budget;
@@ -1831,6 +1881,8 @@ fn compare_values(
                 if checker.certified_relevance_spine_congruence(
                     left,right,context,current_budget,depth,
                 ) {
+                    #[cfg(feature="diagnostics")]
+                    c139_value_event("certified-relevance-PROVEN",&current_left,&current_right,current_budget,depth);
                     return Judgment::proven((), "checked-prop-spine-congruence");
                 }
                 // Lean proof irrelevance: two checked proof terms of the same
@@ -1839,6 +1891,8 @@ fn compare_values(
                 if certified_local_proof_irrelevance(
                     checker, left, right, context, current_budget, depth,
                 ) {
+                    #[cfg(feature="diagnostics")]
+                    c139_value_event("proof-irrelevance-PROVEN",&current_left,&current_right,current_budget,depth);
                     #[cfg(feature = "diagnostics")]
                     if std::env::var_os("NUCLEUS_TRACE_LOCAL_PROOF_IRREL").is_some() {
                         eprintln!("NUCLEUS_LOCAL_PROOF_IRREL:proved:depth={depth}:left={:?}:right={:?}",left.head,right.head);
@@ -1862,6 +1916,8 @@ fn compare_values(
                     work,
                     context,
                 ) {
+                    #[cfg(feature="diagnostics")]
+                    c139_value_event("structure-eta-PROVEN",&current_left,&current_right,current_budget,depth);
                     return Judgment::proven((), "certified-structure-eta");
                 }
                 if rigid_local_non_eta_constructor_mismatch(
@@ -1990,7 +2046,15 @@ fn compare_values(
                         }
                     }
                 }
-                match compare_neutral_heads(checker, left, right, current_budget, depth, context) {
+                let head_judgment=compare_neutral_heads(
+                    checker, left, right, current_budget, depth, context);
+                #[cfg(feature="diagnostics")]
+                c139_value_event(match &head_judgment {
+                    Judgment::Proven {..}=>"neutral-head-PROVEN",
+                    Judgment::Unknown {..}=>"neutral-head-UNKNOWN",
+                    Judgment::Refuted {..}=>"neutral-head-REFUTED",
+                },&current_left,&current_right,current_budget,depth);
+                match head_judgment {
                     Judgment::Proven { .. } => {}
                     other => {
                         // A retained registered recursor can still have an
@@ -2010,6 +2074,12 @@ fn compare_values(
                                 available -= probe;
                                 let step = checker.machine()
                                     .qualified_one_step_recursor_result(candidate, probe);
+                                #[cfg(feature="diagnostics")]
+                                c139_value_event(match &step {
+                                    Judgment::Proven {..}=>"recursor-trial-PROVEN",
+                                    Judgment::Unknown {..}=>"recursor-trial-UNKNOWN",
+                                    Judgment::Refuted {..}=>"recursor-trial-REFUTED",
+                                },&current_left,&current_right,probe,depth);
                                 #[cfg(feature="diagnostics")]
                                 if std::env::var_os("NUCLEUS_C135_RECURSOR_TRIAL").is_some()
                                     && C134_CAPTURED_CONVERSION_OWNER.with(|cell|cell.get()>0)
@@ -2038,10 +2108,16 @@ fn compare_values(
                             }
                         }
                         if let Some((is_left, value)) = reduced {
+                            #[cfg(feature="diagnostics")]
+                            c139_value_event("recursor-reduced",&current_left,&current_right,available,depth);
                             if is_left { current_left = value; } else { current_right = value; }
                             current_budget = available.saturating_sub(1);
                             continue;
                         }
+                        #[cfg(feature="diagnostics")]
+                        c139_value_event(if other.is_unknown() { "return-head-UNKNOWN" } else {
+                            "return-head-REFUTED"
+                        },&current_left,&current_right,available,depth);
                         return other;
                     }
                 }
@@ -2081,6 +2157,8 @@ fn compare_values(
                         context.to_vec(),
                     )
                 }));
+                #[cfg(feature="diagnostics")]
+                c139_value_event("neutral-spine-work",&current_left,&current_right,current_budget,depth);
             }
             (Value::Neutral(neutral), Value::Lam { domain, body })
             | (Value::Lam { domain, body }, Value::Neutral(neutral))
