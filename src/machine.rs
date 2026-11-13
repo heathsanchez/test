@@ -2479,6 +2479,46 @@ impl<'a> Machine<'a> {
                     self.authority.0,e.calls,e.first.len(),e.repeated,
                     e.result_conflicts,e.repeated_work_overlapping,e.repeated_max_work,
                     e.max_disjoint_repeated_work());
+                // C156 is *candidate discovery only*. The source-shape key
+                // intentionally omits captured environments; unlike C155's
+                // full key, shape equivalence MUST NOT authorize reuse.
+                if std::env::var_os("NUCLEUS_C156_HEAVY_SHAPE_GROUPS").is_some() {
+                    type ShapeKey=(ExprId,LevelSubstitution,Transparency,bool,Vec<(ExprId,LevelSubstitution)>);
+                    let mut shape:HashMap<ShapeKey,(usize,Value,usize)>=HashMap::new();
+                    let mut source_only:HashMap<(ExprId,usize),usize>=HashMap::new();
+                    for (key,value) in &e.first {
+                        let (_,closure,mode,preserve,pending)=&key.exact;
+                        *source_only.entry((closure.expr,pending.len())).or_default()+=1;
+                        let shape_key=(closure.expr,closure.levels.clone(),*mode,*preserve,
+                            pending.iter().map(|argument|(argument.expr,argument.levels.clone())).collect());
+                        use std::collections::hash_map::Entry;
+                        match shape.entry(shape_key) {
+                            Entry::Occupied(mut entry)=>{
+                                let (members,first,conflicts)=entry.get_mut();
+                                *members+=1;
+                                *conflicts+=usize::from(&*first!=value);
+                            }
+                            Entry::Vacant(entry)=>{entry.insert((1,value.clone(),0));}
+                        }
+                    }
+                    let groups=shape.len();
+                    let extras=e.first.len().saturating_sub(groups);
+                    let repeated=shape.values().filter(|(n,_,_)|*n>1).count();
+                    let conflicts=shape.values().filter(|(_,_,c)|*c>0).count();
+                    let uniform=shape.values().filter(|(n,_,c)|*n>1 && *c==0).count();
+                    let largest=shape.values().map(|(n,_,_)|*n).max().unwrap_or(0);
+                    let coarse_groups=source_only.len();
+                    let coarse_largest=source_only.values().copied().max().unwrap_or(0);
+                    eprintln!("NUCLEUS_C156_SHAPES:source=8799:env=0:authority={}:budget={budget}:full_keys={}:shape_groups={groups}:shape_extras={extras}:repeated_shape_groups={repeated}:uniform_result_shape_groups={uniform}:conflicting_result_shape_groups={conflicts}:largest_shape_group={largest}:coarse_groups={coarse_groups}:coarse_largest={coarse_largest}",
+                        self.authority.0,e.first.len());
+                    let mut top=shape.iter().filter(|(_, (n,_,_))|*n>1)
+                        .map(|(key,(n,_,conflicts))|(key.0.0,key.4.len(),*n,*conflicts))
+                        .collect::<Vec<_>>();
+                    top.sort_unstable_by(|a,b|b.2.cmp(&a.2).then_with(||a.0.cmp(&b.0)));
+                    for (rank,(expr,pending,members,conflicts)) in top.into_iter().take(5).enumerate(){
+                        eprintln!("NUCLEUS_C156_TOP:rank={rank}:expr={expr}:pending={pending}:members={members}:strict_value_conflicts={conflicts}");
+                    }
+                }
             }
         }
         #[cfg(feature="diagnostics")]
