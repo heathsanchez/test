@@ -7,6 +7,7 @@ from probe_c126_n7_function_type import (
     parse_conversion_stages, parse_inner_arg_edges, parse_c133_stages,
     parse_c134_owner_traces, parse_c135_trials, parse_c136_routes,
     parse_c137_worklist, parse_c138_deferred_route, parse_c139_value_comparison,
+    parse_c140_rhs_exposure,
 )
 
 
@@ -217,6 +218,18 @@ class C126TraceTests(unittest.TestCase):
             parse_c139_value_comparison(sample.replace(b'budget=65250', b'budget=0', 1))
         with self.assertRaises(AssertionError):
             parse_c139_value_comparison(sample.replace(b'neutral-head-UNKNOWN', b'neutral-head-MAYBE'))
+
+    def test_c140_exact_rhs_demand_work_retains_counter_boundaries(self):
+        good = ('NUCLEUS_C140_RHS:source=8799:env=0:budget=65250:'
+                'outcome=PROVEN:head=Const147:arity=5:steps=520:'
+                'recursor_calls=3:key_work=1024\n').encode()
+        rows = parse_c140_rhs_exposure(good)
+        self.assertEqual(rows[0]['steps'], 520)
+        self.assertEqual(rows[0]['head'], 'Const147')
+        with self.assertRaises(AssertionError):
+            parse_c140_rhs_exposure(good.replace(b'source=8799', b'source=8798'))
+        with self.assertRaises(AssertionError):
+            parse_c140_rhs_exposure(good.replace(b'recursor_calls=3', b'recursor_calls=-1'))
 
 
 if __name__ == "__main__":
