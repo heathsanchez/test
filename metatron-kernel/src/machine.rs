@@ -2564,6 +2564,52 @@ impl<'a> Machine<'a> {
                         eprintln!("NUCLEUS_C156_TOP:rank={rank}:expr={expr}:pending={pending}:members={members}:strict_value_conflicts={conflicts}");
                     }
                 }
+                // C160: classify only the observable *shape* of each already
+                // completed costly source Value. Never use this deliberately
+                // lossy partition to replay a Value, infer a constructor, or
+                // change the checker verdict. Captured proof fields remain
+                // distinct even when their head names happen to agree.
+                if std::env::var_os("NUCLEUS_C160_RESULT_HEAD_FAMILIES").is_some() {
+                    let mut groups:HashMap<String,(usize,Value,usize)>=HashMap::new();
+                    for value in e.first.values() {
+                        let key=match value {
+                            Value::Neutral(Neutral{head:NeutralHead::Const{name,levels},spine})=>
+                                format!("const{}_universes{}_arguments{}",name.0,levels.len(),spine.len()),
+                            Value::Neutral(Neutral{head:NeutralHead::Free(_),spine})=>
+                                format!("free_arguments{}",spine.len()),
+                            Value::Neutral(Neutral{head:NeutralHead::Projection{type_name,index,..},spine})=>
+                                format!("projection{}_field{}_arguments{}",type_name.0,index,spine.len()),
+                            Value::Lam{domain,body}=>
+                                format!("lambda_domain{}_body{}",domain.expr.0,body.expr.0),
+                            Value::Pi{domain,body}=>
+                                format!("pi_domain{}_body{}",domain.expr.0,body.expr.0),
+                            Value::NatLit(number)=>
+                                if number.is_zero(){"nat_zero".to_string()}else{"nat_nonzero".to_string()},
+                            Value::Sort(_)=>"sort".to_string(),
+                            Value::StuckProjection{type_name,index,spine,..}=>
+                                format!("stuck_projection{}_field{}_arguments{}",type_name.0,index,spine.len()),
+                        };
+                        use std::collections::hash_map::Entry;
+                        match groups.entry(key) {
+                            Entry::Occupied(mut entry)=>{
+                                let (members,first,conflicts)=entry.get_mut();
+                                *members+=1;
+                                *conflicts+=usize::from(&*first!=value);
+                            }
+                            Entry::Vacant(entry)=>{entry.insert((1,value.clone(),0));}
+                        }
+                    }
+                    let mut top=groups.into_iter().collect::<Vec<_>>();
+                    top.sort_unstable_by(|a,b|b.1.0.cmp(&a.1.0).then_with(||a.0.cmp(&b.0)));
+                    let largest=top.first().map(|(_, (n,_,_))|*n).unwrap_or(0);
+                    let nontrivial=top.iter().filter(|(_, (n,_,_))|*n>1).count();
+                    let mixed=top.iter().filter(|(_, (n,_,conflicts))|*n>1&&*conflicts>0).count();
+                    eprintln!("NUCLEUS_C160_RESULT_HEADS:source=8799:env=0:authority={}:budget={budget}:full_keys={}:head_shape_groups={}:largest_group={largest}:repeated_groups={nontrivial}:strict_value_mixed_groups={mixed}",
+                        self.authority.0,e.first.len(),top.len());
+                    for (rank,(key,(members,_,conflicts))) in top.into_iter().take(12).enumerate(){
+                        eprintln!("NUCLEUS_C160_HEAD:rank={rank}:key={key}:members={members}:strict_value_conflicts={conflicts}");
+                    }
+                }
                 if std::env::var_os("NUCLEUS_C157_BINDING_ORIGIN_GROUPS").is_some() {
                     let mut nodes:HashMap<u64,(usize,Value,usize)>=HashMap::new();
                     let mut bound_exprs:HashMap<ExprId,usize>=HashMap::new();
