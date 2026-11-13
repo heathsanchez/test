@@ -2519,6 +2519,53 @@ impl<'a> Machine<'a> {
                         eprintln!("NUCLEUS_C156_TOP:rank={rank}:expr={expr}:pending={pending}:members={members}:strict_value_conflicts={conflicts}");
                     }
                 }
+                if std::env::var_os("NUCLEUS_C157_BINDING_ORIGIN_GROUPS").is_some() {
+                    let mut nodes:HashMap<u64,(usize,Value,usize)>=HashMap::new();
+                    let mut bound_exprs:HashMap<ExprId,usize>=HashMap::new();
+                    let mut missing=0usize;
+                    let mut kinds=[0usize;4]; // Closure, Free, Neutral, NatLit
+                    for (key,value) in &e.first {
+                        let closure=&key.exact.1;
+                        // This is a read-only source-native BVar(2) test,
+                        // never a claim that matching binder nodes suffice.
+                        let Some(binding)=closure.env.lookup_binding_ref(2) else {
+                            missing+=1;continue;
+                        };
+                        match binding {
+                            EnvBinding::Closure(bound)=>{
+                                kinds[0]+=1;
+                                *bound_exprs.entry(bound.expr).or_default()+=1;
+                            }
+                            EnvBinding::Free(_)=>kinds[1]+=1,
+                            EnvBinding::Neutral(_)=>kinds[2]+=1,
+                            EnvBinding::NatLit(_)=>kinds[3]+=1,
+                        }
+                        let Some(node)=closure.env.diagnostic_binding_node_id(2) else {
+                            missing+=1;continue;
+                        };
+                        use std::collections::hash_map::Entry;
+                        match nodes.entry(node) {
+                            Entry::Occupied(mut entry)=>{
+                                let (members,first,conflicts)=entry.get_mut();
+                                *members+=1;
+                                *conflicts+=usize::from(&*first!=value);
+                            }
+                            Entry::Vacant(entry)=>{entry.insert((1,value.clone(),0));}
+                        }
+                    }
+                    let repeated=nodes.values().filter(|(n,_,_)|*n>1).count();
+                    let extras=nodes.values().map(|(n,_,_)|n.saturating_sub(1)).sum::<usize>();
+                    let conflicts=nodes.values().filter(|(_,_,c)|*c>0).count();
+                    let largest=nodes.values().map(|(n,_,_)|*n).max().unwrap_or(0);
+                    let max_bound_expr=bound_exprs.values().copied().max().unwrap_or(0);
+                    eprintln!("NUCLEUS_C157_BINDINGS:source=8799:env=0:authority={}:budget={budget}:full_keys={}:binding_nodes={}:binding_repeat_groups={repeated}:binding_extras={extras}:binding_conflict_groups={conflicts}:largest_binding_group={largest}:missing={missing}:closures={}:free={}:neutral={}:nat={}:bound_expr_classes={}:largest_bound_expr_class={max_bound_expr}",
+                        self.authority.0,e.first.len(),nodes.len(),kinds[0],kinds[1],kinds[2],kinds[3],bound_exprs.len());
+                    let mut top=bound_exprs.into_iter().collect::<Vec<_>>();
+                    top.sort_unstable_by(|a,b|b.1.cmp(&a.1).then_with(||a.0.0.cmp(&b.0.0)));
+                    for (rank,(expr,members)) in top.into_iter().take(5).enumerate() {
+                        eprintln!("NUCLEUS_C157_BOUND_EXPR:rank={rank}:expr={}:members={members}",expr.0);
+                    }
+                }
             }
         }
         #[cfg(feature="diagnostics")]
