@@ -19,6 +19,7 @@ BUDGETS = (65_536, 14_155_776)
 KEYS = {"application", "function", "argument", "before", "after", "context",
         "pi_head", "type_proven"}
 EDGE_PREFIX = "NUCLEUS_C129_APP_EDGE:"
+ARG_PREFIX = "NUCLEUS_C130_APP_ARG:"
 
 
 def parse_traces(stderr: bytes):
@@ -70,6 +71,27 @@ def parse_app_edges(stderr: bytes, source_edges):
     return rows
 
 
+def parse_arg_obligations(stderr: bytes, source_edges):
+    rows = []
+    for line in stderr.decode(errors="replace").splitlines():
+        if not line.startswith(ARG_PREFIX):
+            continue
+        record, judgment = line[len(ARG_PREFIX):].split(":judgment=", 1)
+        fields = dict(item.split("=", 1) for item in record.split(":"))
+        app, fun, arg = (int(fields[key]) for key in ("app", "fun", "arg"))
+        assert (app, fun, arg) == (8805, 8753, 8804), line
+        assert source_edges.get(app) == {"fn": fun, "arg": arg}, line
+        before, after = int(fields["before"]), int(fields["after"])
+        assert before >= after >= 0, line
+        state = fields["state"]
+        assert state in ("PROVEN", "UNKNOWN", "REFUTED"), line
+        assert judgment.startswith(state.title()), line
+        rows.append({"app": app, "fun": fun, "arg": arg, "context": int(fields["context"]),
+                     "before": before, "after": after, "charged": before - after,
+                     "state": state, "judgment_preview": judgment[:500]})
+    return rows
+
+
 def validate_source(source: bytes):
     assert hashlib.sha256(source).hexdigest() == SOURCE_SHA256, "frozen N7 hash mismatch"
     app = None
@@ -105,7 +127,8 @@ def summarize_owner_traces(stderr: bytes):
 
 
 def run(binary: Path, source: bytes, budget: int, trace: bool,
-        owner_trace: bool = False, app_trace: bool = False):
+        owner_trace: bool = False, app_trace: bool = False,
+        arg_trace: bool = False):
     env = {k: v for k, v in os.environ.items() if not k.startswith("NUCLEUS_")}
     env.update(NUCLEUS_EXPERIMENTAL_RELEVANCE="1",
                NUCLEUS_EXPERIMENTAL_DEMAND_MAJOR="1")
@@ -122,6 +145,8 @@ def run(binary: Path, source: bytes, budget: int, trace: bool,
                        NUCLEUS_TRACE_NESTED_RECURSOR_IOTA="1")
         if app_trace:
             env["NUCLEUS_C129_APP_EDGE"] = "1"
+        if arg_trace:
+            env["NUCLEUS_C130_APP_ARG"] = "1"
     process = subprocess.run([str(binary), str(budget)], input=source,
                              stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                              env=env, timeout=240)
@@ -140,6 +165,8 @@ def main():
                         help="C128 read-only nested recursor owner phase/cost receipts")
     parser.add_argument("--app-trace", action="store_true",
                         help="C129 read-only source application dependency chain")
+    parser.add_argument("--arg-trace", action="store_true",
+                        help="C130 read-only source application argument obligation")
     args = parser.parse_args()
     source = args.source.read_bytes()
     validate_source(source)
@@ -150,7 +177,8 @@ def main():
     assert len(args.budgets) == len(set(args.budgets)), "repeated budgets obscure the ladder"
     for budget in args.budgets:
         silent = run(binary, source, budget, False)
-        observed = run(binary, source, budget, True, args.owner_trace, args.app_trace)
+        observed = run(binary, source, budget, True, args.owner_trace,
+                       args.app_trace, args.arg_trace)
         assert (silent.returncode, silent.stdout) == (observed.returncode, observed.stdout), (
             "observer changed the checker verdict or output", budget)
         heads = parse_traces(observed.stderr)
@@ -173,6 +201,10 @@ def main():
             assert any(e["app"] == 8805 for e in edges), ("source 8805 edge absent", budget)
             row["source_app_edges"] = edges[:512]
             row["source_app_edge_count"] = len(edges)
+        if args.arg_trace:
+            obligations = parse_arg_obligations(observed.stderr, exact_edges)
+            assert obligations, ("source 8805 argument obligation absent", budget)
+            row["source_arg_obligations"] = obligations[:8]
         observations.append(row)
     print(json.dumps({"status": "CANDIDATE_C105_SURROGATE_NATIVE_REPLAY",
                       "lineage": "C105 descendant, not recovered C124/C125b source",
