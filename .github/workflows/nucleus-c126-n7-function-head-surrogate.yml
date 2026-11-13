@@ -56,6 +56,14 @@ jobs:
             "$RUNNER_TEMP/c126-original196/good/perf/magma-list-pair-n7.ndjson" \
             --budgets 65536 131072 262144 524288 1048576 2097152 4194304 8388608 14155776 \
             | tee "$RUNNER_TEMP/c127-n7-function-head-ladder.json"
+      - name: C128 read-only major-demand owner phase and repeat census
+        run: |
+          set -euo pipefail
+          python3 experiments/nucleus-logos-support-20261108/probe_c126_n7_function_type.py \
+            metatron-kernel/target/release/nucleus-budget-sweep \
+            "$RUNNER_TEMP/c126-original196/good/perf/magma-list-pair-n7.ndjson" \
+            --budgets 65536 14155776 --owner-trace \
+            | tee "$RUNNER_TEMP/c128-n7-major-owner-trace.json"
       - name: Preserve source-native discriminator receipt
         if: always()
         uses: actions/upload-artifact@v4
@@ -64,4 +72,5 @@ jobs:
           path: |
             ${{ runner.temp }}/c126-n7-function-head.json
             ${{ runner.temp }}/c127-n7-function-head-ladder.json
+            ${{ runner.temp }}/c128-n7-major-owner-trace.json
           if-no-files-found: ignore
