@@ -62,12 +62,20 @@ pub enum DeltaPolicy {
     GuardedSemanticFallback,
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature="diagnostics"))]
 use std::cell::Cell;
 
 #[cfg(test)]
 thread_local! {
     static TRUSTED_CONVERSION_CALLS: Cell<u64> = const { Cell::new(0) };
+}
+
+// C134 read-only provenance scope. Only the exact second captured
+// Expr1477 conversion may activate it; nested conversion probes inherit
+// the owner, but no type equality, cache or checker authority is gained.
+#[cfg(feature="diagnostics")]
+thread_local! {
+    static C134_CAPTURED_CONVERSION_OWNER: Cell<usize> = const { Cell::new(0) };
 }
 
 pub fn convert(
@@ -123,11 +131,32 @@ pub(crate) fn convert_with_policy_in_context(
     initial_depth: usize,
     context: &[TypeValue],
 ) -> Judgment<()> {
+    #[cfg(feature="diagnostics")]
+    let c134_owner = std::env::var_os("NUCLEUS_C134_RECURSOR_OWNER").is_some()
+        && initial_depth==0
+        && matches!((left,right), (TypeValue::Term(actual),TypeValue::Term(expected))
+            if actual.expr.0==110 && actual.env.id()==66182
+                && expected.expr.0==1 && expected.env.id()==66180);
+    #[cfg(feature="diagnostics")]
+    if c134_owner {
+        C134_CAPTURED_CONVERSION_OWNER.with(|cell|cell.set(cell.get()+1));
+    }
     let mut congruence_attempts = 32;
-    convert_in_context_with_congruence(
+    let result = convert_in_context_with_congruence(
         checker, left, right, budget, delta_policy, initial_depth, context, 0,
         &mut congruence_attempts,
-    )
+    );
+    #[cfg(feature="diagnostics")]
+    if c134_owner {
+        C134_CAPTURED_CONVERSION_OWNER.with(|cell|cell.set(cell.get()-1));
+        let outcome=match &result {
+            Judgment::Proven {..}=>"PROVEN",
+            Judgment::Unknown {..}=>"UNKNOWN",
+            Judgment::Refuted {..}=>"REFUTED",
+        };
+        eprintln!("NUCLEUS_C134_OWNER:actual=110:actual_env=66182:expected=1:expected_env=66180:budget={budget}:outcome={outcome}");
+    }
+    result
 }
 
 fn convert_in_context_with_congruence(
@@ -2505,6 +2534,15 @@ fn compare_neutral_heads(
                 !neutral.spine.is_empty()
                     && matches!(&neutral.head,NeutralHead::Const{name,..} if checker.has_qualified_recursor(*name))
             }) {
+                #[cfg(feature="diagnostics")]
+                if C134_CAPTURED_CONVERSION_OWNER.with(|cell|cell.get()>0) {
+                    use std::sync::atomic::{AtomicUsize,Ordering};
+                    static PRINTED:AtomicUsize=AtomicUsize::new(0);
+                    if PRINTED.fetch_add(1,Ordering::Relaxed)<24 {
+                        eprintln!("NUCLEUS_C134_RECURSOR:budget={budget}:depth={depth}:left_spine={}:right_spine={}:left={:?}:right={:?}",
+                            left.spine.len(),right.spine.len(),left.head,right.head);
+                    }
+                }
                 return Judgment::unknown("unresolved-qualified-recursor-heads");
             }
             Judgment::refuted("distinct-neutral-heads")
