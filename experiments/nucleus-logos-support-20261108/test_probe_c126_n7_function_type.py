@@ -6,7 +6,7 @@ from probe_c126_n7_function_type import (
     parse_traces, summarize_owner_traces, parse_app_edges, parse_arg_obligations,
     parse_conversion_stages, parse_inner_arg_edges, parse_c133_stages,
     parse_c134_owner_traces, parse_c135_trials, parse_c136_routes,
-    parse_c137_worklist, parse_c138_deferred_route,
+    parse_c137_worklist, parse_c138_deferred_route, parse_c139_value_comparison,
 )
 
 
@@ -199,6 +199,24 @@ class C126TraceTests(unittest.TestCase):
             parse_c138_deferred_route(sample.replace(b'event=pop', b'event=bogus', 1))
         with self.assertRaises(AssertionError):
             parse_c138_deferred_route(sample.replace(b'right=UNKNOWN', b'right=FALSE', 1))
+
+    def test_c139_preserves_exposed_value_kinds_and_checked_head_outcomes(self):
+        sample = (
+            'NUCLEUS_C139_COMPARE:stage=enter:budget=65250:depth=0:'
+            'left=NeutralConst169L0A0:right=NeutralConst147L1A5\n'
+            'NUCLEUS_C139_COMPARE:stage=neutral-head-UNKNOWN:budget=65250:depth=0:'
+            'left=NeutralConst169L0A0:right=NeutralConst147L1A5\n'
+            'NUCLEUS_C139_COMPARE:stage=recursor-trial-UNKNOWN:budget=32625:depth=0:'
+            'left=NeutralConst169L0A0:right=NeutralConst147L1A5\n'
+        ).encode()
+        rows = parse_c139_value_comparison(sample)
+        self.assertEqual([r['stage'] for r in rows],
+                         ['enter', 'neutral-head-UNKNOWN', 'recursor-trial-UNKNOWN'])
+        self.assertEqual(rows[0]['right'], 'NeutralConst147L1A5')
+        with self.assertRaises(AssertionError):
+            parse_c139_value_comparison(sample.replace(b'budget=65250', b'budget=0', 1))
+        with self.assertRaises(AssertionError):
+            parse_c139_value_comparison(sample.replace(b'neutral-head-UNKNOWN', b'neutral-head-MAYBE'))
 
 
 if __name__ == "__main__":
