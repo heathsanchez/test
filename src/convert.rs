@@ -216,6 +216,15 @@ fn convert_in_context_with_congruence(
             && matches!((&left,&right), (TypeValue::Term(actual),TypeValue::Term(expected))
                 if actual.expr.0==110 && actual.env.id()==66182
                 && expected.expr.0==1 && expected.env.id()==66180);
+        // C138 observes exactly the second queued obligation of C137's
+        // source-qualified conversion owner. It grants no conversion proof.
+        #[cfg(feature="diagnostics")]
+        let c138_exact_pair = c137_owner
+            && std::env::var_os("NUCLEUS_C138_DEFERRED_ROUTE").is_some()
+            && c137_pop_index==3 && depth==0 && context.is_empty()
+            && matches!((&left,&right), (TypeValue::Term(actual),TypeValue::Term(expected))
+                if actual.expr.0==1 && actual.env.id()==66182
+                && expected.expr.0==8799 && expected.env.id()==0);
         // C136 is observer-only and lexically scoped to the exact source
         // capture. Earlier successes at different environments are excluded.
         macro_rules! c136_route {
@@ -223,6 +232,10 @@ fn convert_in_context_with_congruence(
                 #[cfg(feature="diagnostics")]
                 if c136_exact_pair {
                     eprintln!("NUCLEUS_C136_ROUTE:event={}:remaining={remaining}", $event);
+                }
+                #[cfg(feature="diagnostics")]
+                if c138_exact_pair {
+                    eprintln!("NUCLEUS_C138_DEFERRED:event={}:remaining={remaining}", $event);
                 }
             };
         }
@@ -570,6 +583,12 @@ fn convert_in_context_with_congruence(
                     remaining,
                 );
                 c136_route!("cheap-exposure-attempted");
+                #[cfg(feature="diagnostics")]
+                if c138_exact_pair {
+                    let state = |proven:bool| if proven { "PROVEN" } else { "UNKNOWN" };
+                    eprintln!("NUCLEUS_C138_DEFERRED:event=cheap-exposure-status:remaining={remaining}:left={}:right={}",
+                        state(cheap_left.is_proven()),state(cheap_right.is_proven()));
+                }
                 let (Some(cheap_left), Some(cheap_right)) =
                     (cheap_left.proven_value(), cheap_right.proven_value())
                 else {
@@ -603,6 +622,10 @@ fn convert_in_context_with_congruence(
                         let (Some(full_left), Some(full_right)) =
                             (full_left.proven_value(), full_right.proven_value())
                         else {
+                            #[cfg(feature="diagnostics")]
+                            if c138_exact_pair {
+                                eprintln!("NUCLEUS_C138_DEFERRED:event=full-exposure-unknown:remaining={remaining}");
+                            }
                             return Judgment::unknown("full-conversion-exposure");
                         };
                         match compare_values(
@@ -622,6 +645,10 @@ fn convert_in_context_with_congruence(
                                 return Judgment::Refuted { obstruction };
                             }
                             Judgment::Unknown { residual } => {
+                                #[cfg(feature="diagnostics")]
+                                if c138_exact_pair {
+                                    eprintln!("NUCLEUS_C138_DEFERRED:event=full-comparison-unknown:remaining={remaining}");
+                                }
                                 return Judgment::Unknown { residual };
                             }
                         }
@@ -629,7 +656,13 @@ fn convert_in_context_with_congruence(
                     Judgment::Refuted { obstruction } => {
                         return Judgment::Refuted { obstruction };
                     }
-                    Judgment::Unknown { residual } => return Judgment::Unknown { residual },
+                    Judgment::Unknown { residual } => {
+                        #[cfg(feature="diagnostics")]
+                        if c138_exact_pair {
+                            eprintln!("NUCLEUS_C138_DEFERRED:event=cheap-comparison-unknown:remaining={remaining}");
+                        }
+                        return Judgment::Unknown { residual };
+                    }
                 }
             }
             (TypeValue::Term(term), other) | (other, TypeValue::Term(term)) => {
