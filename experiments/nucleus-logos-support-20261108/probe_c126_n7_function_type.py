@@ -20,6 +20,8 @@ KEYS = {"application", "function", "argument", "before", "after", "context",
         "pi_head", "type_proven"}
 EDGE_PREFIX = "NUCLEUS_C129_APP_EDGE:"
 ARG_PREFIX = "NUCLEUS_C130_APP_ARG:"
+CONVERSION_INFER_PREFIX = "NUCLEUS_C131_ARG_INFER:"
+CONVERSION_RELATION_PREFIX = "NUCLEUS_C131_ARG_CONVERT:"
 
 
 def parse_traces(stderr: bytes):
@@ -92,6 +94,36 @@ def parse_arg_obligations(stderr: bytes, source_edges):
     return rows
 
 
+def parse_conversion_stages(stderr: bytes, source_edges):
+    """C131 stage receipts; source identity and stage status are not verdicts."""
+    assert source_edges.get(8805) == {"fn": 8753, "arg": 8804}
+    rows = []
+    for line in stderr.decode(errors="replace").splitlines():
+        if line.startswith(CONVERSION_INFER_PREFIX):
+            record, descriptions = line[len(CONVERSION_INFER_PREFIX):].split(":inferred=", 1)
+            inferred, expected = descriptions.split(":expected=", 1)
+            fields = dict(item.split("=", 1) for item in record.split(":"))
+            assert int(fields["expr"]) == 8804 and int(fields["context"]) == 0, line
+            assert fields["state"] in ("PROVEN", "UNKNOWN", "REFUTED"), line
+            assert inferred.startswith(fields["state"].title()), line
+            before, after = int(fields["before"]), int(fields["after"])
+            assert before >= after >= 0, line
+            rows.append({"stage": "infer", "state": fields["state"],
+                         "frame": int(fields["frame"]), "before": before,
+                         "after": after, "charged": before - after,
+                         "inferred_preview": inferred[:700], "expected_preview": expected[:700]})
+        elif line.startswith(CONVERSION_RELATION_PREFIX):
+            record, judgment = line[len(CONVERSION_RELATION_PREFIX):].split(":judgment=", 1)
+            fields = dict(item.split("=", 1) for item in record.split(":"))
+            assert int(fields["expr"]) == 8804 and int(fields["context"]) == 0, line
+            assert fields["state"] in ("PROVEN", "UNKNOWN", "REFUTED"), line
+            assert judgment.startswith(fields["state"].title()), line
+            rows.append({"stage": "convert", "state": fields["state"],
+                         "frame": int(fields["frame"]), "fuel": int(fields["fuel"]),
+                         "judgment_preview": judgment[:700]})
+    return rows
+
+
 def validate_source(source: bytes):
     assert hashlib.sha256(source).hexdigest() == SOURCE_SHA256, "frozen N7 hash mismatch"
     app = None
@@ -128,7 +160,7 @@ def summarize_owner_traces(stderr: bytes):
 
 def run(binary: Path, source: bytes, budget: int, trace: bool,
         owner_trace: bool = False, app_trace: bool = False,
-        arg_trace: bool = False):
+        arg_trace: bool = False, conversion_trace: bool = False):
     env = {k: v for k, v in os.environ.items() if not k.startswith("NUCLEUS_")}
     env.update(NUCLEUS_EXPERIMENTAL_RELEVANCE="1",
                NUCLEUS_EXPERIMENTAL_DEMAND_MAJOR="1")
@@ -147,6 +179,8 @@ def run(binary: Path, source: bytes, budget: int, trace: bool,
             env["NUCLEUS_C129_APP_EDGE"] = "1"
         if arg_trace:
             env["NUCLEUS_C130_APP_ARG"] = "1"
+        if conversion_trace:
+            env["NUCLEUS_C131_ARG_CONVERT"] = "1"
     process = subprocess.run([str(binary), str(budget)], input=source,
                              stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                              env=env, timeout=240)
@@ -167,6 +201,8 @@ def main():
                         help="C129 read-only source application dependency chain")
     parser.add_argument("--arg-trace", action="store_true",
                         help="C130 read-only source application argument obligation")
+    parser.add_argument("--conversion-trace", action="store_true",
+                        help="C131 separate source argument type inference and conversion")
     args = parser.parse_args()
     source = args.source.read_bytes()
     validate_source(source)
@@ -178,7 +214,7 @@ def main():
     for budget in args.budgets:
         silent = run(binary, source, budget, False)
         observed = run(binary, source, budget, True, args.owner_trace,
-                       args.app_trace, args.arg_trace)
+                       args.app_trace, args.arg_trace, args.conversion_trace)
         assert (silent.returncode, silent.stdout) == (observed.returncode, observed.stdout), (
             "observer changed the checker verdict or output", budget)
         heads = parse_traces(observed.stderr)
@@ -205,6 +241,11 @@ def main():
             obligations = parse_arg_obligations(observed.stderr, exact_edges)
             assert obligations, ("source 8805 argument obligation absent", budget)
             row["source_arg_obligations"] = obligations[:8]
+        if args.conversion_trace:
+            stages = parse_conversion_stages(observed.stderr, exact_edges)
+            assert any(s["stage"] == "infer" for s in stages), ("inference receipt absent", budget)
+            assert any(s["stage"] == "convert" for s in stages), ("conversion receipt absent", budget)
+            row["source_arg_conversion_stages"] = stages[:24]
         observations.append(row)
     print(json.dumps({"status": "CANDIDATE_C105_SURROGATE_NATIVE_REPLAY",
                       "lineage": "C105 descendant, not recovered C124/C125b source",
