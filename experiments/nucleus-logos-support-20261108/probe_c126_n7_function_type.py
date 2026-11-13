@@ -27,6 +27,7 @@ INNER_INFER_PREFIX = "NUCLEUS_C133_ARG_INFER:"
 INNER_CONVERSION_PREFIX = "NUCLEUS_C133_ARG_CONVERT:"
 C134_OWNER_PREFIX = "NUCLEUS_C134_OWNER:"
 C134_RECURSOR_PREFIX = "NUCLEUS_C134_RECURSOR:"
+C135_TRIAL_PREFIX = "NUCLEUS_C135_RECURSOR_TRIAL:"
 
 
 def parse_traces(stderr: bytes):
@@ -208,6 +209,27 @@ def parse_c134_owner_traces(stderr: bytes):
     return {"owner": owner, "recursor": recursor}
 
 
+def parse_c135_trials(stderr: bytes):
+    """Evidence only for the checked one-step trial of source recursor NameId147."""
+    rows = []
+    for line in stderr.decode(errors="replace").splitlines():
+        if not line.startswith(C135_TRIAL_PREFIX):
+            continue
+        record, obstruction = line[len(C135_TRIAL_PREFIX):].split(":obstruction=", 1)
+        fields = dict(piece.split("=", 1) for piece in record.split(":"))
+        assert fields["side"] == "right", line
+        assert fields["outcome"] in ("PROVEN", "UNKNOWN", "REFUTED"), line
+        assert fields["outcome"] == "PROVEN" or obstruction, line
+        probe, remainder = (int(fields[key]) for key in
+                            ("probe", "remaining_after_reservation"))
+        assert probe >= 64 and remainder >= 0, line
+        rows.append({"side": fields["side"], "probe": probe,
+                     "remaining_after_reservation": remainder,
+                     "outcome": fields["outcome"],
+                     "obstruction_preview": obstruction[:400]})
+    return rows
+
+
 def validate_source(source: bytes):
     assert hashlib.sha256(source).hexdigest() == SOURCE_SHA256, "frozen N7 hash mismatch"
     app = None
@@ -246,7 +268,7 @@ def run(binary: Path, source: bytes, budget: int, trace: bool,
         owner_trace: bool = False, app_trace: bool = False,
         arg_trace: bool = False, conversion_trace: bool = False,
         app_arg_trace: bool = False, inner_infer_trace: bool = False,
-        recursor_owner_trace: bool = False):
+        recursor_owner_trace: bool = False, recursor_trial_trace: bool = False):
     env = {k: v for k, v in os.environ.items() if not k.startswith("NUCLEUS_")}
     env.update(NUCLEUS_EXPERIMENTAL_RELEVANCE="1",
                NUCLEUS_EXPERIMENTAL_DEMAND_MAJOR="1")
@@ -271,8 +293,10 @@ def run(binary: Path, source: bytes, budget: int, trace: bool,
             env["NUCLEUS_C132_APP_ARG"] = "1"
         if inner_infer_trace:
             env["NUCLEUS_C133_ARG_CONVERT"] = "1"
-        if recursor_owner_trace:
+        if recursor_owner_trace or recursor_trial_trace:
             env["NUCLEUS_C134_RECURSOR_OWNER"] = "1"
+        if recursor_trial_trace:
+            env["NUCLEUS_C135_RECURSOR_TRIAL"] = "1"
     process = subprocess.run([str(binary), str(budget)], input=source,
                              stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                              env=env, timeout=240)
@@ -301,6 +325,8 @@ def main():
                         help="C133 read-only exact inner argument Expr1477 inference and conversion")
     parser.add_argument("--recursor-owner-trace", action="store_true",
                         help="C134 exact second captured conversion owner and recursor mismatch")
+    parser.add_argument("--recursor-trial-trace", action="store_true",
+                        help="C135 certified recursor step outcome inside exact C134 owner")
     args = parser.parse_args()
     source = args.source.read_bytes()
     validate_source(source)
@@ -314,7 +340,7 @@ def main():
         observed = run(binary, source, budget, True, args.owner_trace,
                        args.app_trace, args.arg_trace, args.conversion_trace,
                        args.app_arg_trace, args.inner_infer_trace,
-                       args.recursor_owner_trace)
+                       args.recursor_owner_trace, args.recursor_trial_trace)
         assert (silent.returncode, silent.stdout) == (observed.returncode, observed.stdout), (
             "observer changed the checker verdict or output", budget)
         heads = parse_traces(observed.stderr)
@@ -367,10 +393,14 @@ def main():
                            if json.loads(line).get("ie") == 1477]
             assert len(source_rows) == 1, "source Expr1477 not uniquely represented"
             row["source_1477_ast"] = source_rows[0]
-        if args.recursor_owner_trace:
+        if args.recursor_owner_trace or args.recursor_trial_trace:
             traced = parse_c134_owner_traces(observed.stderr)
             assert traced["owner"], ("exact captured conversion owner absent", budget)
             row["second_captured_conversion_owner"] = traced
+        if args.recursor_trial_trace:
+            trials = parse_c135_trials(observed.stderr)
+            assert trials, ("exact captured recursor trial absent", budget)
+            row["second_captured_recursor_trials"] = trials
         observations.append(row)
     if args.app_arg_trace and len(observations) == 2:
         low, high = observations
