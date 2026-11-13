@@ -1,8 +1,8 @@
-name: Nucleus C158 exact BVar forwarding graph census
+name: Nucleus C159 exact captured-binder distinction regression
 
 on:
   push:
-    branches: [research/nucleus-c158-bvar-forwarding-graph-20261114]
+    branches: [research/nucleus-c159-binding-distinction-regression-20261114]
     paths:
       - .github/workflows/nucleus-c150-exact-c125b-source-gate.yml
       - metatron-kernel/src/convert.rs
@@ -29,11 +29,11 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         with: {toolchain: '1.99.1'}
-      - name: Verify recovered C125b source plus the diagnostic-only C158 machine
+      - name: Verify recovered C125b source with C159 test-only captured-binder regression
         run: |
           set -euo pipefail
           printf '%s  %s\n' \
-            500c97fec317ab2029cc179ea4554e4f32ef1e3f2c55eca5b1afe5351e9efcda metatron-kernel/src/machine.rs \
+            c0d8d88999ec966da692b9e94e58ca6f73338ae086749101538233935f7e0ce3 metatron-kernel/src/machine.rs \
             c3d47f4be05dbdcc1ba99eb668fe4cd32873f4e7d8b1b95480f6c1e943bd7f88 metatron-kernel/src/convert.rs \
             d16b882835a6ccf79adf97191640c37b526ea0d74b7aadcbb6e2a425779c0eb6 metatron-kernel/src/typecheck.rs \
             ad5161dc49851ea5b7be34263496502309fd6f6958df4e3c6b5a1e6d885d7894 metatron-kernel/examples/nucleus_budget_ladder.rs \
@@ -497,13 +497,16 @@ jobs:
                             'original_sha256':'abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35',
                             'receipts':receipts},sort_keys=True))
           PY
+      - name: C159 explicit source-shape distinction and shared binding transport test
+        run: |
+          cargo test --locked --manifest-path metatron-kernel/Cargo.toml --features diagnostics identical_bvar_source_distinguishes_values_but_transports_a_shared_binding
       - name: Run exact-source native Rust tests with selected research flags
         run: cargo test --locked --manifest-path metatron-kernel/Cargo.toml --features diagnostics
-      - name: Preserve exact native forwarding graph receipt
+      - name: Preserve exact native C159 protected regression receipts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: nucleus-c158-forwarding-graph-receipt
+          name: nucleus-c159-binding-distinction-receipt
           path: |
             ${{ runner.temp }}/c151-cache-receipt.json
             ${{ runner.temp }}/c152-head-cost.json
