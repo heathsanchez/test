@@ -34,6 +34,7 @@ C138_DEFERRED_PREFIX = "NUCLEUS_C138_DEFERRED:"
 C139_COMPARE_PREFIX = "NUCLEUS_C139_COMPARE:"
 C140_RHS_PREFIX = "NUCLEUS_C140_RHS:"
 C141_CACHE_PREFIX = "NUCLEUS_C141_CACHE:"
+C142_MISS_PREFIX = "NUCLEUS_C142_MISS:"
 
 
 def parse_traces(stderr: bytes):
@@ -391,6 +392,43 @@ def parse_c141_cache_provenance(stderr: bytes):
     return rows
 
 
+def parse_c142_exact_miss_cost(stderr: bytes):
+    """Read-only work per exact cache miss; no claim of resumability."""
+    rows = []
+    for line in stderr.decode(errors="replace").splitlines():
+        if not line.startswith(C142_MISS_PREFIX):
+            continue
+        fields = dict(part.split("=", 1) for part in
+                      line[len(C142_MISS_PREFIX):].split(":"))
+        assert (int(fields["source"]), int(fields["env"]),
+                int(fields["levels"]), int(fields["pending"])) == (8799, 0, 0, 0), line
+        assert fields["preserve"] == "true", line
+        assert fields["transparency"] in ("Full", "Reducible"), line
+        assert fields["scope"] in ("true", "false"), line
+        assert fields["outcome"] in ("PROVEN", "UNKNOWN", "REFUTED"), line
+        assert fields["head"].startswith(("Const", "Other", "None")), line
+        budget = int(fields["budget"])
+        steps, recursor_calls, key_work = (int(fields[k]) for k in
+                                            ("steps", "recursor_calls", "key_work"))
+        assert budget > 0 and steps >= 0 and recursor_calls >= 0 and key_work >= 0, line
+        before, after = fields["fuel_before"], fields["fuel_after"]
+        assert before == "none" or before.isdigit(), line
+        assert after == "none" or after.isdigit(), line
+        charged_fuel = None
+        if before != "none" and after != "none":
+            assert int(before) >= int(after), line
+            charged_fuel = int(before) - int(after)
+        rows.append({"source": 8799, "env": 0, "authority": int(fields["authority"]),
+                     "transparency": fields["transparency"], "scope": fields["scope"] == "true",
+                     "outcome": fields["outcome"], "head": fields["head"],
+                     "budget": budget, "steps": steps,
+                     "recursor_calls": recursor_calls, "key_work": key_work,
+                     "fuel_before": before, "fuel_after": after,
+                     "charged_fuel": charged_fuel})
+        assert len(rows) <= 1024, "unexpectedly broad exact miss trace"
+    return rows
+
+
 def validate_source(source: bytes):
     assert hashlib.sha256(source).hexdigest() == SOURCE_SHA256, "frozen N7 hash mismatch"
     app = None
@@ -433,7 +471,8 @@ def run(binary: Path, source: bytes, budget: int, trace: bool,
         owner_route_trace: bool = False, owner_worklist_trace: bool = False,
         deferred_rule_trace: bool = False, value_comparison_trace: bool = False,
         rhs_exposure_work_trace: bool = False,
-        cache_provenance_trace: bool = False):
+        cache_provenance_trace: bool = False,
+        exact_miss_cost_trace: bool = False):
     env = {k: v for k, v in os.environ.items() if not k.startswith("NUCLEUS_")}
     env.update(NUCLEUS_EXPERIMENTAL_RELEVANCE="1",
                NUCLEUS_EXPERIMENTAL_DEMAND_MAJOR="1")
@@ -460,17 +499,17 @@ def run(binary: Path, source: bytes, budget: int, trace: bool,
             env["NUCLEUS_C133_ARG_CONVERT"] = "1"
         if (recursor_owner_trace or recursor_trial_trace or owner_route_trace or
                 owner_worklist_trace or deferred_rule_trace or value_comparison_trace or
-                rhs_exposure_work_trace or cache_provenance_trace):
+                rhs_exposure_work_trace or cache_provenance_trace or exact_miss_cost_trace):
             env["NUCLEUS_C134_RECURSOR_OWNER"] = "1"
         if recursor_trial_trace:
             env["NUCLEUS_C135_RECURSOR_TRIAL"] = "1"
         if owner_route_trace:
             env["NUCLEUS_C136_OWNER_ROUTE"] = "1"
         if (owner_worklist_trace or deferred_rule_trace or value_comparison_trace or
-                rhs_exposure_work_trace or cache_provenance_trace):
+                rhs_exposure_work_trace or cache_provenance_trace or exact_miss_cost_trace):
             env["NUCLEUS_C137_OWNER_WORKLIST"] = "1"
         if (deferred_rule_trace or value_comparison_trace or rhs_exposure_work_trace
-                or cache_provenance_trace):
+                or cache_provenance_trace or exact_miss_cost_trace):
             env["NUCLEUS_C138_DEFERRED_ROUTE"] = "1"
         if value_comparison_trace:
             env["NUCLEUS_C139_EXACT_COMPARE"] = "1"
@@ -479,6 +518,10 @@ def run(binary: Path, source: bytes, budget: int, trace: bool,
         if cache_provenance_trace:
             env["NUCLEUS_C140_EXACT_RHS_WORK"] = "1"
             env["NUCLEUS_C141_EXACT_CACHE"] = "1"
+        if exact_miss_cost_trace:
+            env["NUCLEUS_C140_EXACT_RHS_WORK"] = "1"
+            env["NUCLEUS_C141_EXACT_CACHE"] = "1"
+            env["NUCLEUS_C142_EXACT_MISS_COST"] = "1"
     process = subprocess.run([str(binary), str(budget)], input=source,
                              stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                              env=env, timeout=240)
@@ -521,6 +564,8 @@ def main():
                         help="C140 exact C139 right-hand evaluator loop, replay and key work")
     parser.add_argument("--cache-provenance-trace", action="store_true",
                         help="C141 exact right-hand exposure cache hit, miss and publication lineage")
+    parser.add_argument("--exact-miss-cost-trace", action="store_true",
+                        help="C142 source-qualified per-miss evaluator work and fuel ledger")
     args = parser.parse_args()
     source = args.source.read_bytes()
     validate_source(source)
@@ -537,7 +582,8 @@ def main():
                        args.recursor_owner_trace, args.recursor_trial_trace,
                        args.owner_route_trace, args.owner_worklist_trace,
                        args.deferred_rule_trace, args.value_comparison_trace,
-                       args.rhs_exposure_work_trace, args.cache_provenance_trace)
+                       args.rhs_exposure_work_trace, args.cache_provenance_trace,
+                       args.exact_miss_cost_trace)
         assert (silent.returncode, silent.stdout) == (observed.returncode, observed.stdout), (
             "observer changed the checker verdict or output", budget)
         heads = parse_traces(observed.stderr)
@@ -593,7 +639,8 @@ def main():
         if (args.recursor_owner_trace or args.recursor_trial_trace or
                 args.owner_route_trace or args.owner_worklist_trace or
                 args.deferred_rule_trace or args.value_comparison_trace or
-                args.rhs_exposure_work_trace or args.cache_provenance_trace):
+                args.rhs_exposure_work_trace or args.cache_provenance_trace or
+                args.exact_miss_cost_trace):
             traced = parse_c134_owner_traces(observed.stderr)
             assert traced["owner"], ("exact captured conversion owner absent", budget)
             row["second_captured_conversion_owner"] = traced
@@ -608,12 +655,13 @@ def main():
             row["second_captured_conversion_route"] = route
         if (args.owner_worklist_trace or args.deferred_rule_trace or
                 args.value_comparison_trace or args.rhs_exposure_work_trace or
-                args.cache_provenance_trace):
+                args.cache_provenance_trace or args.exact_miss_cost_trace):
             entries = parse_c137_worklist(observed.stderr)
             assert entries, ("exact captured deferred worklist absent", budget)
             row["second_captured_conversion_worklist"] = entries
         if (args.deferred_rule_trace or args.value_comparison_trace or
-                args.rhs_exposure_work_trace or args.cache_provenance_trace):
+                args.rhs_exposure_work_trace or args.cache_provenance_trace or
+                args.exact_miss_cost_trace):
             entries = row["second_captured_conversion_worklist"]
             assert len(entries) >= 3 and entries[2]["pop"] == 2, entries
             assert entries[2]["left"].startswith("Expr1@Env66182@Levels"), entries[2]
@@ -637,6 +685,21 @@ def main():
             assert cache_rows and any(r["scope"] for r in cache_rows), (
                 "C141 exact scoped exposure absent", budget)
             row["exact_rhs_cache_provenance"] = cache_rows
+        if args.exact_miss_cost_trace:
+            cache_rows = parse_c141_cache_provenance(observed.stderr)
+            assert any(r["scope"] for r in cache_rows), (
+                "C142 companion source cache trace absent", budget)
+            row["exact_rhs_cache_provenance"] = cache_rows
+            cost_rows = parse_c142_exact_miss_cost(observed.stderr)
+            assert cost_rows, ("C142 exact miss cost absent", budget)
+            if budget == 65_536:
+                assert any(r["scope"] for r in cost_rows), (
+                    "C142 standard scoped miss cost absent", budget)
+            else:
+                assert any(r["scope"] and r["event"] == "lookup-hit"
+                           for r in cache_rows), (
+                    "C142 diagnostic expected prior C141 scoped hit", budget)
+            row["exact_rhs_miss_cost"] = cost_rows
         observations.append(row)
     if args.app_arg_trace and len(observations) == 2:
         low, high = observations
