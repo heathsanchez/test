@@ -35,6 +35,11 @@ jobs:
             experiments/nucleus-coverage-evidence-20261104/inputs/magma-list-pair-n21.ndjson.zst \
             | tee "$RUNNER_TEMP/c125-projection-target-receipt.json"
       - name: Qualified diagnostic test suite
+        # The checked-relevance positive is intentionally RED without this
+        # source-checked proof-irrelevance gate (see the dedicated qualification
+        # workflow); leave the preceding native probe on its own frozen flags.
+        env:
+          NUCLEUS_EXPERIMENTAL_RELEVANCE: '1'
         run: cargo test --locked --manifest-path metatron-kernel/Cargo.toml --features diagnostics
       - name: Preserve bounded native receipt
         if: always()
