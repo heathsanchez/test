@@ -25,6 +25,8 @@ CONVERSION_RELATION_PREFIX = "NUCLEUS_C131_ARG_CONVERT:"
 INNER_ARG_PREFIX = "NUCLEUS_C132_APP_ARG:"
 INNER_INFER_PREFIX = "NUCLEUS_C133_ARG_INFER:"
 INNER_CONVERSION_PREFIX = "NUCLEUS_C133_ARG_CONVERT:"
+C134_OWNER_PREFIX = "NUCLEUS_C134_OWNER:"
+C134_RECURSOR_PREFIX = "NUCLEUS_C134_RECURSOR:"
 
 
 def parse_traces(stderr: bytes):
@@ -181,6 +183,31 @@ def parse_c133_stages(stderr: bytes, source_edges):
     return rows
 
 
+def parse_c134_owner_traces(stderr: bytes):
+    """C134 never transports a receipt across a different captured pair."""
+    owner, recursor = [], []
+    for line in stderr.decode(errors="replace").splitlines():
+        if line.startswith(C134_OWNER_PREFIX):
+            fields = dict(p.split("=", 1) for p in line[len(C134_OWNER_PREFIX):].split(":"))
+            assert tuple(int(fields[k]) for k in
+                         ("actual", "actual_env", "expected", "expected_env")) == (
+                             110, 66182, 1, 66180), line
+            assert fields["outcome"] in ("PROVEN", "UNKNOWN", "REFUTED"), line
+            owner.append({"budget": int(fields["budget"]),
+                          "outcome": fields["outcome"]})
+        elif line.startswith(C134_RECURSOR_PREFIX):
+            record, heads = line[len(C134_RECURSOR_PREFIX):].split(":left=", 1)
+            left, right = heads.split(":right=", 1)
+            fields = dict(p.split("=", 1) for p in record.split(":"))
+            recursor.append({"budget": int(fields["budget"]),
+                             "depth": int(fields["depth"]),
+                             "left_spine": int(fields["left_spine"]),
+                             "right_spine": int(fields["right_spine"]),
+                             "left_head_preview": left[:550],
+                             "right_head_preview": right[:550]})
+    return {"owner": owner, "recursor": recursor}
+
+
 def validate_source(source: bytes):
     assert hashlib.sha256(source).hexdigest() == SOURCE_SHA256, "frozen N7 hash mismatch"
     app = None
@@ -218,7 +245,8 @@ def summarize_owner_traces(stderr: bytes):
 def run(binary: Path, source: bytes, budget: int, trace: bool,
         owner_trace: bool = False, app_trace: bool = False,
         arg_trace: bool = False, conversion_trace: bool = False,
-        app_arg_trace: bool = False, inner_infer_trace: bool = False):
+        app_arg_trace: bool = False, inner_infer_trace: bool = False,
+        recursor_owner_trace: bool = False):
     env = {k: v for k, v in os.environ.items() if not k.startswith("NUCLEUS_")}
     env.update(NUCLEUS_EXPERIMENTAL_RELEVANCE="1",
                NUCLEUS_EXPERIMENTAL_DEMAND_MAJOR="1")
@@ -243,6 +271,8 @@ def run(binary: Path, source: bytes, budget: int, trace: bool,
             env["NUCLEUS_C132_APP_ARG"] = "1"
         if inner_infer_trace:
             env["NUCLEUS_C133_ARG_CONVERT"] = "1"
+        if recursor_owner_trace:
+            env["NUCLEUS_C134_RECURSOR_OWNER"] = "1"
     process = subprocess.run([str(binary), str(budget)], input=source,
                              stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                              env=env, timeout=240)
@@ -269,6 +299,8 @@ def main():
                         help="C132 read-only nested application argument judgment census")
     parser.add_argument("--inner-infer-trace", action="store_true",
                         help="C133 read-only exact inner argument Expr1477 inference and conversion")
+    parser.add_argument("--recursor-owner-trace", action="store_true",
+                        help="C134 exact second captured conversion owner and recursor mismatch")
     args = parser.parse_args()
     source = args.source.read_bytes()
     validate_source(source)
@@ -281,7 +313,8 @@ def main():
         silent = run(binary, source, budget, False)
         observed = run(binary, source, budget, True, args.owner_trace,
                        args.app_trace, args.arg_trace, args.conversion_trace,
-                       args.app_arg_trace, args.inner_infer_trace)
+                       args.app_arg_trace, args.inner_infer_trace,
+                       args.recursor_owner_trace)
         assert (silent.returncode, silent.stdout) == (observed.returncode, observed.stdout), (
             "observer changed the checker verdict or output", budget)
         heads = parse_traces(observed.stderr)
@@ -334,6 +367,10 @@ def main():
                            if json.loads(line).get("ie") == 1477]
             assert len(source_rows) == 1, "source Expr1477 not uniquely represented"
             row["source_1477_ast"] = source_rows[0]
+        if args.recursor_owner_trace:
+            traced = parse_c134_owner_traces(observed.stderr)
+            assert traced["owner"], ("exact captured conversion owner absent", budget)
+            row["second_captured_conversion_owner"] = traced
         observations.append(row)
     if args.app_arg_trace and len(observations) == 2:
         low, high = observations
