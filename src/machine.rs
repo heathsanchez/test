@@ -1091,10 +1091,34 @@ impl<'a> Machine<'a> {
             self.authority, closure.clone(), transparency,
             preserve_stuck_projection, pending.clone(),
         )));
+        // C141 only observes the exact right-hand source closure found by
+        // C137–C140. The full cache key still includes authority, lexical
+        // closure, transparency, projection policy and pending closures.
+        #[cfg(feature="diagnostics")]
+        let c141_exact = std::env::var_os("NUCLEUS_C141_EXACT_CACHE").is_some()
+            && closure.expr.0 == 8799 && closure.env.id() == 0
+            && closure.levels.entries().next().is_none()
+            && preserve_stuck_projection && pending.is_empty();
+        #[cfg(feature="diagnostics")]
+        let c141_digest = key.digest;
+        #[cfg(feature="diagnostics")]
+        let c141_event = |event:&str,value:Option<&Value>,published:bool| {
+            if !c141_exact { return; }
+            let head = match value {
+                Some(Value::Neutral(Neutral {head:NeutralHead::Const{name,..},spine})) =>
+                    format!("Const{}A{}",name.0,spine.len()),
+                Some(_) => "OtherValue".to_owned(),
+                None => "None".to_owned(),
+            };
+            let scope = self.c140_rhs_work_active.get()!=0;
+            eprintln!("NUCLEUS_C141_CACHE:event={event}:source=8799:env=0:levels=0:authority={}:transparency={transparency:?}:pending=0:preserve=true:digest={c141_digest}:scope={scope}:budget={budget}:head={head}:published={published}",self.authority.0);
+        };
         let cached = cache.borrow_mut().values.get_mut(&key).map(|entry|{
             entry.referenced=true;entry.value.clone()
         });
         if let Some(value) = cached {
+            #[cfg(feature="diagnostics")]
+            c141_event("lookup-hit",Some(&value),true);
             if let Some(fuel) = self.exposure_fuel.get() { self.exposure_fuel.set(Some(fuel.saturating_sub(1))); }
             #[cfg(feature = "diagnostics")]
             if std::env::var_os("NUCLEUS_TRACE_EXPOSURE_CACHE").is_some() {
@@ -1105,10 +1129,17 @@ impl<'a> Machine<'a> {
                 "certified-cached-closure-exposure",
             );
         }
+        #[cfg(feature="diagnostics")]
+        c141_event("lookup-miss",None,false);
         let result = self.expose_uncached_internal_with_pending(
             closure, transparency, budget, false,
             preserve_stuck_projection, pending,
         );
+        #[cfg(feature="diagnostics")]
+        c141_event(if result.is_proven() {"uncached-proven"}
+            else if result.is_unknown() {"uncached-unknown"}
+            else {"uncached-refuted"},
+            result.proven_value().map(|exposure| &exposure.value),false);
         if let Some(established) = result.proven_value()
             // A certified recursor stopped because its major did not expose.
             // This is not a budget-independent normal form; permit a later
@@ -1119,6 +1150,8 @@ impl<'a> Machine<'a> {
                 && !self.recursor_has_immutable_local_major(&established.value))
         {
             let mut entries = cache.borrow_mut();
+            #[cfg(feature="diagnostics")]
+            let c141_provenance_key = c141_exact.then(||key.clone());
             // Optional cache maintenance shares the existing owner when
             // present, and otherwise uses this call's finite local allowance.
             // Exhaustion declines publication; the proved result is retained.
@@ -1128,6 +1161,15 @@ impl<'a> Machine<'a> {
                     if fuel==0{return false} self.exposure_fuel.set(Some(fuel-1));true
                 } else if local_work>0 {local_work-=1;true} else {false}
             });
+            #[cfg(feature="diagnostics")]
+            if let Some(provenance_key)=c141_provenance_key {
+                c141_event("publication",Some(&established.value),
+                    entries.values.contains_key(&provenance_key));
+            }
+        } else {
+            #[cfg(feature="diagnostics")]
+            c141_event("publication-skipped",
+                result.proven_value().map(|exposure| &exposure.value),false);
         }
         result
     }
