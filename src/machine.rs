@@ -677,8 +677,10 @@ struct C143HeadStats {
     c146_missing:usize,
     c146_overflow:usize,
     c146_pending_nonempty:usize,
-    c146_full:HashSet<(ExprId,u64,Vec<Closure>)>,
-    c146_projected:HashSet<(ExprId,u64,Vec<Closure>)>,
+    // Exact source closure includes its universe substitution; deleting that
+    // distinction would be an unsound observational quotient.
+    c146_full:HashSet<(Closure,Vec<Closure>)>,
+    c146_projected:HashSet<(ExprId,crate::value::LevelSubstitution,u64,Vec<Closure>)>,
 }
 #[cfg(feature="diagnostics")]
 impl C143HeadStats {
@@ -715,14 +717,14 @@ impl C143HeadStats {
                 if !pending.is_empty() {self.c146_pending_nonempty+=1;}
                 if let Some(Expr::BVar(index))=expression {
                     if let Some(binding_node)=closure.env.diagnostic_binding_node_id(*index) {
-                        let exact=(closure.expr,closure.env.id(),pending.to_vec());
+                        let exact=(closure.clone(),pending.to_vec());
                         if !self.c146_full.contains(&exact)
                             && self.c146_full.len()>=131_072 {
                             self.c146_overflow+=1;
                         } else {
                             self.c146_full.insert(exact);
-                            self.c146_projected.insert((closure.expr,binding_node,
-                                pending.to_vec()));
+                            self.c146_projected.insert((closure.expr,
+                                closure.levels.clone(),binding_node,pending.to_vec()));
                         }
                     } else {self.c146_missing+=1;}
                 }
