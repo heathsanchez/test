@@ -2263,10 +2263,32 @@ impl<'a> Machine<'a> {
             self.authority, closure.clone(), transparency,
             preserve_stuck_projection, pending.clone(),
         )));
+        // C151: recovered *C125b* source-only cache-provenance witness.
+        // Observe the same frozen N7 closure as C141's surrogate probe, but
+        // do not transfer its results or change any cache/budget semantics.
+        #[cfg(feature="diagnostics")]
+        let c151_exact = std::env::var_os("NUCLEUS_C151_EXACT_CACHE").is_some()
+            && closure.expr.0==8799 && closure.env.id()==0
+            && closure.levels.entries().next().is_none()
+            && preserve_stuck_projection && pending.is_empty();
+        #[cfg(feature="diagnostics")]
+        let c151_event = |event:&str,value:Option<&Value>,retained:bool| {
+            if !c151_exact{return;}
+            let head=match value {
+                Some(Value::Neutral(Neutral{head:NeutralHead::Const{name,..},spine})) =>
+                    format!("Const{}A{}",name.0,spine.len()),
+                Some(_) => "OtherValue".to_owned(),
+                None => "None".to_owned(),
+            };
+            eprintln!("NUCLEUS_C151_CACHE:event={event}:source=8799:env=0:levels=0:authority={}:transparency={transparency:?}:pending=0:preserve=true:budget={budget}:fuel={}:head={head}:retained={retained}",
+                self.authority.0,self.exposure_fuel.get().map_or_else(||"none".to_owned(),|v|v.to_string()));
+        };
         let cached = cache.borrow_mut().values.get_mut(&key).map(|entry|{
             entry.referenced=true;entry.value.clone()
         });
         if let Some(value) = cached {
+            #[cfg(feature="diagnostics")]
+            c151_event("lookup-hit",Some(&value),true);
             if let Some(fuel) = self.exposure_fuel.get() { self.exposure_fuel.set(Some(fuel.saturating_sub(1))); }
             #[cfg(feature = "diagnostics")]
             if std::env::var_os("NUCLEUS_TRACE_EXPOSURE_CACHE").is_some() {
@@ -2277,10 +2299,19 @@ impl<'a> Machine<'a> {
                 "certified-cached-closure-exposure",
             );
         }
+        #[cfg(feature="diagnostics")]
+        c151_event("lookup-miss",None,false);
         let result = self.expose_uncached_internal_with_pending(
             closure, transparency, budget, false,
             preserve_stuck_projection, pending,
         );
+        #[cfg(feature="diagnostics")]
+        c151_event(if result.is_proven(){"uncached-proven"}
+            else if result.is_unknown(){"uncached-unknown"}
+            else {"uncached-refuted"},
+            result.proven_value().map(|e|&e.value),false);
+        #[cfg(feature="diagnostics")]
+        let mut c151_eligible=false;
         if let Some(established) = result.proven_value()
             // A certified recursor stopped because its major did not expose.
             // This is not a budget-independent normal form; permit a later
@@ -2290,7 +2321,11 @@ impl<'a> Machine<'a> {
                     if self.recursor_reductions.contains_key(name))
                 && !self.recursor_has_immutable_local_major(&established.value))
         {
+            #[cfg(feature="diagnostics")]
+            {c151_eligible=true;}
             let mut entries = cache.borrow_mut();
+            #[cfg(feature="diagnostics")]
+            let c151_exact_key=c151_exact.then(||key.clone());
             // Optional cache maintenance shares the existing owner when
             // present, and otherwise uses this call's finite local allowance.
             // Exhaustion declines publication; the proved result is retained.
@@ -2300,6 +2335,16 @@ impl<'a> Machine<'a> {
                     if fuel==0{return false} self.exposure_fuel.set(Some(fuel-1));true
                 } else if local_work>0 {local_work-=1;true} else {false}
             });
+            #[cfg(feature="diagnostics")]
+            if let Some(exact_key)=c151_exact_key {
+                c151_event("publication",Some(&established.value),
+                    entries.values.contains_key(&exact_key));
+            }
+        }
+        #[cfg(feature="diagnostics")]
+        if c151_exact && !c151_eligible {
+            c151_event("publication-skipped",
+                result.proven_value().map(|e|&e.value),false);
         }
         result
     }
