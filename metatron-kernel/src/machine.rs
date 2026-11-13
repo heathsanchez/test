@@ -2610,6 +2610,46 @@ impl<'a> Machine<'a> {
                         eprintln!("NUCLEUS_C160_HEAD:rank={rank}:key={key}:members={members}:strict_value_conflicts={conflicts}");
                     }
                 }
+                // C161: C160's shared Decidable.isTrue head is not yet
+                // a semantic quotient. Check whether the proposition and
+                // proof closures inside each completed Value are actually
+                // identical in their fully captured source environments.
+                // These counts are read-only and do not invoke conversion.
+                if std::env::var_os("NUCLEUS_C161_ISTRUE_FIELD_DISTINCTIONS").is_some() {
+                    let mut propositions:HashMap<Closure,usize>=HashMap::new();
+                    let mut proof_closures=HashSet::new();
+                    let mut proposition_exprs:HashMap<ExprId,usize>=HashMap::new();
+                    let mut proposition_shapes:HashMap<(ExprId,LevelSubstitution),usize>=HashMap::new();
+                    let mut exact_pairs=HashSet::new();
+                    let mut unexpected=0usize;
+                    for value in e.first.values() {
+                        let Value::Neutral(Neutral{
+                            head:NeutralHead::Const{name,levels},spine
+                        })=value else {unexpected+=1;continue};
+                        if name.0!=146 || !levels.is_empty() || spine.len()!=2 {
+                            unexpected+=1;continue;
+                        }
+                        let proposition=spine[0].clone();
+                        let proof=spine[1].clone();
+                        *propositions.entry(proposition.clone()).or_default()+=1;
+                        *proposition_exprs.entry(proposition.expr).or_default()+=1;
+                        *proposition_shapes.entry((proposition.expr,proposition.levels.clone())).or_default()+=1;
+                        proof_closures.insert(proof.clone());
+                        exact_pairs.insert((proposition,proof));
+                    }
+                    let total=e.first.len().saturating_sub(unexpected);
+                    let prop_repeats=propositions.values().filter(|&&n|n>1).count();
+                    let largest_prop=propositions.values().copied().max().unwrap_or(0);
+                    let largest_source=proposition_exprs.values().copied().max().unwrap_or(0);
+                    eprintln!("NUCLEUS_C161_ISTRUE_FIELDS:source=8799:env=0:authority={}:budget={budget}:full_keys={}:actual_istrue={total}:unexpected={unexpected}:distinct_exact_propositions={}:repeated_exact_proposition_groups={prop_repeats}:largest_exact_proposition_group={largest_prop}:distinct_proposition_source_exprs={}:distinct_proposition_source_shapes={}:largest_proposition_source_expr_group={largest_source}:distinct_exact_proofs={}:distinct_exact_pairs={}",
+                        self.authority.0,e.first.len(),propositions.len(),proposition_exprs.len(),
+                        proposition_shapes.len(),proof_closures.len(),exact_pairs.len());
+                    let mut top=proposition_exprs.into_iter().collect::<Vec<_>>();
+                    top.sort_unstable_by(|a,b|b.1.cmp(&a.1).then_with(||a.0.0.cmp(&b.0.0)));
+                    for (rank,(expr,members)) in top.into_iter().take(8).enumerate(){
+                        eprintln!("NUCLEUS_C161_PROP_EXPR:rank={rank}:expr={}:members={members}",expr.0);
+                    }
+                }
                 if std::env::var_os("NUCLEUS_C157_BINDING_ORIGIN_GROUPS").is_some() {
                     let mut nodes:HashMap<u64,(usize,Value,usize)>=HashMap::new();
                     let mut bound_exprs:HashMap<ExprId,usize>=HashMap::new();
