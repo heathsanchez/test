@@ -670,10 +670,20 @@ struct C143HeadStats {
     sample_seen:HashSet<Closure>,
     sample_repeats:usize,
     sample_overflow:usize,
+    // C146 bounded *observation* of one binding-node quotient.  Neither key
+    // authorizes reusing a completed exposure or eliminating pending frames.
+    c146_target_total:usize,
+    c146_sampled:usize,
+    c146_missing:usize,
+    c146_overflow:usize,
+    c146_pending_nonempty:usize,
+    c146_full:HashSet<(ExprId,u64,Vec<Closure>)>,
+    c146_projected:HashSet<(ExprId,u64,Vec<Closure>)>,
 }
 #[cfg(feature="diagnostics")]
 impl C143HeadStats {
-    fn record(&mut self,closure:&Closure,expression:Option<&Expr>,pending:&[Closure]) {
+    fn record(&mut self,closure:&Closure,expression:Option<&Expr>,pending:&[Closure],
+        projection_sample:bool) {
         self.total+=1;
         *self.by_expr.entry(closure.expr).or_default()+=1;
         let kind=match expression {
@@ -694,6 +704,30 @@ impl C143HeadStats {
         // no claim of statistical randomness or semantic state equality.
         let mix=(closure.expr.0 as u64).wrapping_mul(0x9e3779b97f4a7c15)
             ^ closure.env.id().wrapping_mul(0xbf58476d1ce4e5b9);
+        // C146: all target visits are accounted for; the 1/256 predicate is
+        // deterministic in the *complete* immutable source closure, keeping
+        // exactly the same occurrences in the full and projected sets.
+        if projection_sample && matches!(expression,Some(Expr::BVar(_)))
+            && matches!(closure.expr.0,1|6|11) {
+            self.c146_target_total+=1;
+            if mix&255==0 {
+                self.c146_sampled+=1;
+                if !pending.is_empty() {self.c146_pending_nonempty+=1;}
+                if let Some(Expr::BVar(index))=expression {
+                    if let Some(binding_node)=closure.env.diagnostic_binding_node_id(*index) {
+                        let exact=(closure.expr,closure.env.id(),pending.to_vec());
+                        if !self.c146_full.contains(&exact)
+                            && self.c146_full.len()>=131_072 {
+                            self.c146_overflow+=1;
+                        } else {
+                            self.c146_full.insert(exact);
+                            self.c146_projected.insert((closure.expr,binding_node,
+                                pending.to_vec()));
+                        }
+                    } else {self.c146_missing+=1;}
+                }
+            }
+        }
         if mix&255!=0 {return}
         self.sample_steps+=1;
         if self.sample_seen.contains(closure) {self.sample_repeats+=1;return}
@@ -730,6 +764,8 @@ pub struct Machine<'a> {
     c143_head_active:Cell<bool>,
     #[cfg(feature="diagnostics")]
     c145_head_active:Cell<bool>,
+    #[cfg(feature="diagnostics")]
+    c146_head_active:Cell<bool>,
     #[cfg(feature="diagnostics")]
     c143_head_stats:RefCell<C143HeadStats>,
     #[cfg(test)]
@@ -783,6 +819,8 @@ impl<'a> Machine<'a> {
             c143_head_active:Cell::new(false),
             #[cfg(feature="diagnostics")]
             c145_head_active:Cell::new(false),
+            #[cfg(feature="diagnostics")]
+            c146_head_active:Cell::new(false),
             #[cfg(feature="diagnostics")]
             c143_head_stats:RefCell::new(C143HeadStats::default()),
             #[cfg(test)]
@@ -1217,9 +1255,13 @@ impl<'a> Machine<'a> {
         let c145_selected=c143_selected
             && std::env::var_os("NUCLEUS_C145_ACTIONS").is_some();
         #[cfg(feature="diagnostics")]
+        let c146_selected=c145_selected
+            && std::env::var_os("NUCLEUS_C146_BINDING_PROJECTED").is_some();
+        #[cfg(feature="diagnostics")]
         if c143_selected {
             self.c143_head_active.set(true);
             self.c145_head_active.set(c145_selected);
+            self.c146_head_active.set(c146_selected);
             *self.c143_head_stats.borrow_mut()=C143HeadStats::default();
         }
         let result = self.expose_uncached_internal_with_pending(
@@ -1230,7 +1272,21 @@ impl<'a> Machine<'a> {
         if c143_selected {
             self.c143_head_active.set(false);
             self.c145_head_active.set(false);
+            self.c146_head_active.set(false);
             let stats=std::mem::take(&mut *self.c143_head_stats.borrow_mut());
+            if c146_selected {
+                let full_unique=stats.c146_full.len();
+                let projected_unique=stats.c146_projected.len();
+                let eligible=stats.c146_sampled.saturating_sub(stats.c146_missing)
+                    .saturating_sub(stats.c146_overflow);
+                let scope=self.c140_rhs_work_active.get()!=0;
+                eprintln!("NUCLEUS_C146_BINDING:source=8799:env=0:authority={}:scope={scope}:budget={budget}:head_total={}:bvar_total={}:target_total={}:sampled={}:sample_missing={}:sample_overflow={}:pending_nonempty={}:full_unique={full_unique}:projected_unique={projected_unique}:full_repeats={}:projected_repeats={}",
+                    self.authority.0,stats.total,stats.by_kind[0],
+                    stats.c146_target_total,stats.c146_sampled,stats.c146_missing,
+                    stats.c146_overflow,stats.c146_pending_nonempty,
+                    eligible.saturating_sub(full_unique),
+                    eligible.saturating_sub(projected_unique));
+            }
             if c145_selected {
                 let k=stats.by_kind;
                 let b=stats.bvar_kind;
@@ -1562,7 +1618,8 @@ impl<'a> Machine<'a> {
             #[cfg(feature="diagnostics")]
             if self.c143_head_active.get() {
                 self.c143_head_stats.borrow_mut().record(
-                    &closure,self.expressions.get(closure.expr),&pending);
+                    &closure,self.expressions.get(closure.expr),&pending,
+                    self.c146_head_active.get());
             }
             if !visited.insert((self.authority, closure.expr, closure.env.id())) {
                 return Judgment::unknown("reduction-cycle");
