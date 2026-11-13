@@ -21,58 +21,6 @@ pub enum Transparency {
     Full,
 }
 
-// C149: bounded source-native rehearsal for a one-step BVar transport lemma.
-// This does not authorize a cache of completed Exposure values: it only checks
-// that distinct unused top frames can address the same immutable lower node.
-#[cfg(test)]
-mod binding_node_transport_tests {
-    use super::*;
-    use crate::nat::BigNat;
-
-    #[test]
-    fn same_used_binding_node_ignores_distinct_unused_outer_frames() {
-        let mut exprs=IdTable::default();
-        exprs.insert(ExprId(0),Expr::BVar(1)).unwrap();
-        exprs.insert(ExprId(1),Expr::NatLit(BigNat::parse_decimal("9").unwrap())).unwrap();
-        exprs.insert(ExprId(2),Expr::NatLit(BigNat::parse_decimal("8").unwrap())).unwrap();
-        let levels=IdTable::default();
-        let machine=Machine::new(AuthorityId(1),&exprs,&levels,HashMap::new());
-
-        let root=EnvFrame::empty().extend_free(FreeId(7));
-        let left=root.extend_free(FreeId(100));
-        let right=root.extend_free(FreeId(200));
-        let different=EnvFrame::empty().extend_free(FreeId(8))
-            .extend_free(FreeId(100));
-        assert_ne!(left.id(),right.id(),"outer environments must actually differ");
-        let target=left.lookup_with_node_id(1).unwrap().0;
-        assert_eq!(target,right.lookup_with_node_id(1).unwrap().0);
-        assert_ne!(target,different.lookup_with_node_id(1).unwrap().0);
-
-        // Pending arguments are retained, not projected away.  The same
-        // lexical binding resolves to the same neutral application spine.
-        let pending=vec![Closure::new(ExprId(2),EnvFrame::empty())];
-        let exposed=|env,pending|machine.expose_internal_with_pending(
-            Closure::new(ExprId(0),env),Transparency::Full,32,
-            true,false,pending);
-        let a=exposed(left,pending.clone());
-        let b=exposed(right,pending.clone());
-        let control=exposed(different,pending);
-        assert!(a.is_proven() && b.is_proven() && control.is_proven());
-        assert_eq!(a.proven_value(),b.proven_value());
-        assert_ne!(a.proven_value(),control.proven_value(),
-            "a different actual binding must remain distinguishable");
-
-        // A captured closure is also retained by the shared lower node;
-        // the BVar jump yields that captured term, not an outer-frame term.
-        let closed=Closure::new(ExprId(1),EnvFrame::empty());
-        let shared=EnvFrame::empty().extend(closed);
-        let c=exposed(shared.extend_free(FreeId(101)),vec![]);
-        let d=exposed(shared.extend_free(FreeId(202)),vec![]);
-        assert_eq!(c.proven_value(),d.proven_value());
-        assert!(matches!(c.proven_value(),Some(Exposure{value:Value::NatLit(_),..})));
-    }
-}
-
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum TransitionWitness {
     Beta,
@@ -301,6 +249,17 @@ impl VisitSet {
         self.len = 0;
         self.overflow = None;
     }
+    #[cfg(feature="diagnostics")]
+    fn diagnostic_keys(&self)->Vec<(u64,u64,u64)> {
+        let mut keys:Vec<_>=match &self.overflow {
+            Some(overflow)=>overflow.iter().map(|(authority,expr,env)|
+                (authority.0,expr.0,*env)).collect(),
+            None=>self.inline[..self.len].iter().filter_map(|key|key.map(
+                |(authority,expr,env)|(authority.0,expr.0,env))).collect(),
+        };
+        keys.sort_unstable();
+        keys
+    }
 }
 
 #[cfg(feature="diagnostics")]
@@ -430,6 +389,1084 @@ impl C105TerminalCounts {
 #[cfg(feature="diagnostics")]
 struct C105TerminalReceipt<'a> {
     counts:&'a RefCell<C105TerminalCounts>,fuel:&'a Cell<Option<usize>>,start:usize,
+}
+// C106 tests a smaller *candidate* support for the exact N21 source App
+// ExprId(7219). Its eight-node DAG has only BVars 2 and 4; all other nodes
+// are App or Const. Identity of those immutable lexical bindings, plus the
+// complete level substitution, is measured without quotienting Values or
+// importing a proof of contextual independence. Never use this as a cache.
+#[cfg(feature="diagnostics")]
+#[derive(Default)]
+struct C106SupportGroup {
+    requests:usize,charged:usize,had_proven:bool,
+}
+#[cfg(feature="diagnostics")]
+#[derive(Default)]
+struct C106SupportCounts {
+    requests:usize,target:usize,complete:usize,missing:usize,
+    pair_repeated:usize,node2_repeated:usize,node4_repeated:usize,
+    prior_proven:usize,prior_unresolved:usize,repeated_spent:usize,
+    pairs:HashMap<(u64,u64,LevelSubstitution),C106SupportGroup>,
+    node2:HashSet<(u64,LevelSubstitution)>,
+    node4:HashSet<(u64,LevelSubstitution)>,
+}
+#[cfg(feature="diagnostics")]
+impl C106SupportCounts {
+    fn record(&mut self,terminal:&Closure,spent:usize,proven:bool) {
+        self.requests+=1;
+        if terminal.expr!=ExprId(7219) {return;}
+        self.target+=1;
+        let (Some(node2),Some(node4))=(
+            terminal.env.diagnostic_binding_node_id(2),
+            terminal.env.diagnostic_binding_node_id(4),
+        ) else {self.missing+=1;return;};
+        self.complete+=1;
+        let levels=terminal.levels.clone();
+        if !self.node2.insert((node2,levels.clone())) {self.node2_repeated+=1;}
+        if !self.node4.insert((node4,levels.clone())) {self.node4_repeated+=1;}
+        let group=self.pairs.entry((node2,node4,levels)).or_default();
+        if group.requests>0 {
+            self.pair_repeated+=1;
+            self.repeated_spent+=spent;
+            if group.had_proven {self.prior_proven+=1;}
+            else {self.prior_unresolved+=1;}
+        }
+        group.requests+=1;
+        group.charged+=spent;
+        group.had_proven|=proven;
+    }
+}
+#[cfg(feature="diagnostics")]
+struct C106SupportReceipt<'a> {
+    counts:&'a RefCell<C106SupportCounts>,fuel:&'a Cell<Option<usize>>,start:usize,
+}
+// C109 asks which *source function* is bound at BVar(2) in N21's
+// ExprId(7219), after following actual immutable lexical BVar links.
+// Grouping by source ExprId deliberately drops environment/levels: this is
+// a program-shape census, emphatically not a semantic equivalence key.
+#[cfg(feature="diagnostics")]
+#[derive(Default)]
+struct C109FunctionGroup {requests:usize,associated_charge:usize}
+#[cfg(feature="diagnostics")]
+#[derive(Default)]
+struct C109FunctionCounts {
+    requests:usize,target:usize,closure:usize,free:usize,
+    neutral:usize,natlit:usize,missing:usize,
+    chain_steps:usize,max_chain:usize,chain_capped:usize,
+    source_repeated:usize,
+    groups:HashMap<(ExprId,u8),C109FunctionGroup>,
+}
+#[cfg(feature="diagnostics")]
+impl C109FunctionCounts {
+    fn record(&mut self,terminal:&Closure,spent:usize,expressions:&IdTable<ExprId,Expr>) {
+        self.requests+=1;
+        if terminal.expr!=ExprId(7219) {return;}
+        self.target+=1;
+        let Some(mut binding)=terminal.env.lookup_binding_ref(2) else {
+            self.missing+=1;return;
+        };
+        let mut steps=0;
+        let mut value;
+        loop {
+            if let EnvBinding::Closure(c)=binding {
+                value=c;
+                if steps<16
+                    && let Some(Expr::BVar(index))=expressions.get(value.expr)
+                    && let Some(next)=value.env.lookup_binding_ref(*index) {
+                    steps+=1;
+                    binding=next;
+                    continue;
+                }
+                if steps==16 && matches!(expressions.get(value.expr),Some(Expr::BVar(_))) {
+                    self.chain_capped+=1;
+                }
+                self.closure+=1;
+                let kind=match expressions.get(value.expr) {
+                    Some(Expr::BVar(_))=>0,Some(Expr::App{..})=>1,
+                    Some(Expr::Lam{..})=>2,Some(Expr::Let{..})=>3,
+                    Some(Expr::Const{..})=>4,Some(Expr::Proj{..})=>5,
+                    Some(Expr::NatLit(_))=>6,_=>7,
+                };
+                let group=self.groups.entry((value.expr,kind)).or_default();
+                if group.requests>0 {self.source_repeated+=1;}
+                group.requests+=1;
+                group.associated_charge+=spent;
+                break;
+            }
+            match binding {
+                EnvBinding::Free(_)=>self.free+=1,
+                EnvBinding::Neutral(_)=>self.neutral+=1,
+                EnvBinding::NatLit(_)=>self.natlit+=1,
+                EnvBinding::Closure(_)=>unreachable!(),
+            }
+            break;
+        }
+        self.chain_steps+=steps;
+        self.max_chain=self.max_chain.max(steps);
+    }
+}
+#[cfg(feature="diagnostics")]
+struct C109FunctionReceipt<'a> {
+    counts:&'a RefCell<C109FunctionCounts>,fuel:&'a Cell<Option<usize>>,start:usize,
+}
+// C110 adds the *actual free lexical captures* of C109's two repeated
+// source lambdas. These static support sets are pinned to the frozen N21
+// input by the source-only probe. A captured node-identity pair and exact
+// level substitution is an observational key, NOT a proved semantic key.
+#[cfg(feature="diagnostics")]
+#[derive(Default)]
+struct C110CaptureGroup {requests:usize,charged:usize}
+#[cfg(feature="diagnostics")]
+#[derive(Default)]
+struct C110CaptureCounts {
+    requests:usize,target:usize,complete:usize,missing:usize,unsupported:usize,
+    pair_repeated:usize,repeated_spent:usize,a_repeated:usize,b_repeated:usize,
+    pairs:HashMap<(ExprId,u64,u64,LevelSubstitution),C110CaptureGroup>,
+    node_a:HashSet<(ExprId,u64,LevelSubstitution)>,
+    node_b:HashSet<(ExprId,u64,LevelSubstitution)>,
+    single_repeats:HashMap<ExprId,(usize,usize)>,
+}
+#[cfg(feature="diagnostics")]
+impl C110CaptureCounts {
+    fn record(&mut self,terminal:&Closure,spent:usize,expressions:&IdTable<ExprId,Expr>) {
+        self.requests+=1;
+        if terminal.expr!=ExprId(7219) {return;}
+        self.target+=1;
+        let Some(mut binding)=terminal.env.lookup_binding_ref(2) else {
+            self.missing+=1;return;
+        };
+        let mut steps=0;
+        loop {
+            if let EnvBinding::Closure(value)=binding {
+                if steps<16
+                    && let Some(Expr::BVar(index))=expressions.get(value.expr)
+                    && let Some(next)=value.env.lookup_binding_ref(*index) {
+                    steps+=1;
+                    binding=next;
+                    continue;
+                }
+                let (first,second)=match value.expr {
+                    ExprId(7197)=>(1,3),
+                    ExprId(6303)=>(0,2),
+                    _=>{self.unsupported+=1;return;},
+                };
+                let (Some(node_a),Some(node_b))=(
+                    value.env.diagnostic_binding_node_id(first),
+                    value.env.diagnostic_binding_node_id(second),
+                ) else {self.missing+=1;return;};
+                self.complete+=1;
+                let levels=value.levels.clone();
+                let singles=self.single_repeats.entry(value.expr).or_default();
+                if !self.node_a.insert((value.expr,node_a,levels.clone())) {
+                    self.a_repeated+=1;
+                    singles.0+=1;
+                }
+                if !self.node_b.insert((value.expr,node_b,levels.clone())) {
+                    self.b_repeated+=1;
+                    singles.1+=1;
+                }
+                let key=(value.expr,node_a,node_b,levels);
+                let group=self.pairs.entry(key).or_default();
+                if group.requests>0 {
+                    self.pair_repeated+=1;
+                    self.repeated_spent+=spent;
+                }
+                group.requests+=1;
+                group.charged+=spent;
+                return;
+            }
+            self.missing+=1;
+            return;
+        }
+    }
+}
+#[cfg(feature="diagnostics")]
+struct C110CaptureReceipt<'a> {
+    counts:&'a RefCell<C110CaptureCounts>,fuel:&'a Cell<Option<usize>>,start:usize,
+}
+// C111 attributes actual caller-charged major-exposure attempts to the
+// checked recursor owner, result class and exact UNKNOWN residual. The
+// 512 local allowance is tested as a *measurement*, never raised here.
+#[cfg(feature="diagnostics")]
+#[derive(Clone,Copy,Default)]
+struct C111MajorGroup {
+    requests:usize,charged:usize,constructor:usize,nested:usize,
+    other:usize,unknown:usize,refuted:usize,
+}
+#[cfg(feature="diagnostics")]
+impl C111MajorGroup {
+    fn record(&mut self,spent:usize,kind:usize) {
+        self.requests+=1;
+        self.charged+=spent;
+        match kind {
+            0=>self.constructor+=1,1=>self.nested+=1,
+            2=>self.other+=1,3=>self.unknown+=1,
+            4=>self.refuted+=1,_=>unreachable!(),
+        }
+    }
+}
+#[cfg(feature="diagnostics")]
+#[derive(Default)]
+struct C111MajorCounts {
+    all:C111MajorGroup, at_least_512:usize,max_spent:usize,
+    heads:HashMap<u64,C111MajorGroup>,
+    buckets:[C111MajorGroup;6],
+    reasons:HashMap<&'static str,C111MajorGroup>,
+}
+#[cfg(feature="diagnostics")]
+impl C111MajorCounts {
+    fn record(&mut self,head:u64,spent:usize,kind:usize,reason:Option<&'static str>) {
+        self.all.record(spent,kind);
+        self.at_least_512+=usize::from(spent>=512);
+        self.max_spent=self.max_spent.max(spent);
+        self.heads.entry(head).or_default().record(spent,kind);
+        let bucket=match spent {0..=1=>0,2..=7=>1,8..=31=>2,
+            32..=127=>3,128..=511=>4,_=>5};
+        self.buckets[bucket].record(spent,kind);
+        if let Some(reason)=reason {self.reasons.entry(reason).or_default().record(spent,kind);}
+    }
+}
+#[cfg(feature="diagnostics")]
+struct C111MajorReceipt<'a> {
+    counts:&'a RefCell<C111MajorCounts>,fuel:&'a Cell<Option<usize>>,start:usize,
+}
+#[cfg(feature="diagnostics")]
+impl Drop for C111MajorReceipt<'_> {
+    fn drop(&mut self) {
+        use std::sync::atomic::{AtomicUsize,Ordering};
+        static PRINTED:AtomicUsize=AtomicUsize::new(0);
+        let counts=self.counts.borrow();
+        let spent=self.start.saturating_sub(self.fuel.get().unwrap_or(0));
+        if spent<8192 || counts.all.requests<10
+            || PRINTED.fetch_add(1,Ordering::Relaxed)>=32 {return;}
+        let all=&counts.all;
+        eprintln!("NUCLEUS_C111_MAJOR_OWNER:start={}:spent={spent}:requests={}:charged={}:constructor={}:nested={}:other={}:unknown={}:refuted={}:at_least_512={}:max_spent={}",
+            self.start,all.requests,all.charged,all.constructor,all.nested,all.other,
+            all.unknown,all.refuted,counts.at_least_512,counts.max_spent);
+        let mut heads:Vec<_>=counts.heads.iter().collect();
+        heads.sort_by_key(|(head,_)|**head);
+        for (head,g) in heads {
+            eprintln!("NUCLEUS_C111_MAJOR_GROUP:start={}:head={head}:requests={}:charged={}:constructor={}:nested={}:other={}:unknown={}:refuted={}",
+                self.start,g.requests,g.charged,g.constructor,g.nested,g.other,g.unknown,g.refuted);
+        }
+        for (bucket,g) in counts.buckets.iter().enumerate() {
+            eprintln!("NUCLEUS_C111_MAJOR_BUCKET:start={}:bucket={bucket}:requests={}:charged={}:constructor={}:nested={}:other={}:unknown={}:refuted={}",
+                self.start,g.requests,g.charged,g.constructor,g.nested,g.other,g.unknown,g.refuted);
+        }
+        let mut reasons:Vec<_>=counts.reasons.iter().collect();
+        reasons.sort_by(|a,b|b.1.charged.cmp(&a.1.charged).then(a.0.cmp(b.0)));
+        for (reason,g) in reasons {
+            eprintln!("NUCLEUS_C111_MAJOR_REASON:start={}:reason={reason}:requests={}:charged={}",
+                self.start,g.requests,g.charged);
+        }
+    }
+}
+// C112 follows only genuinely returned source-registered constructors from
+// their caller-charged major exposure through the *actual* selected source
+// rule and subsequent RHS result. Observation cannot select a constructor.
+#[cfg(feature="diagnostics")]
+#[derive(Default)]
+struct C112RuleGroup {
+    requests:usize,charged:usize,high_count:usize,high_charged:usize,
+    min_depth:usize,max_depth:usize,rhs_proven:usize,rhs_unknown:usize,rhs_nested:usize,
+}
+#[cfg(feature="diagnostics")]
+#[derive(Default)]
+struct C112RuleCounts {
+    constructor_results:usize,all:C112RuleGroup,
+    groups:HashMap<(u64,u64,u64),C112RuleGroup>,
+    high:Vec<(usize,u64,u64,u64,usize,usize,usize,bool,&'static str)>,
+}
+#[cfg(feature="diagnostics")]
+impl C112RuleCounts {
+    fn record(&mut self,recursor:u64,constructor:u64,rhs:u64,charge:usize,
+        depth:usize,major_parents:usize,requested:bool,outcome:&'static str,
+    ) {
+        let high=charge>=512;
+        for group in [&mut self.all,self.groups.entry((recursor,constructor,rhs)).or_default()] {
+            if group.requests==0 {group.min_depth=depth;}
+            group.requests+=1;
+            group.charged+=charge;
+            group.high_count+=usize::from(high);
+            if high {group.high_charged+=charge;}
+            group.min_depth=group.min_depth.min(depth);
+            group.max_depth=group.max_depth.max(depth);
+            group.rhs_proven+=usize::from(outcome!="unknown");
+            group.rhs_unknown+=usize::from(outcome=="unknown");
+            group.rhs_nested+=usize::from(outcome=="nested");
+        }
+        if high {self.high.push((self.all.requests,recursor,constructor,rhs,charge,
+            depth,major_parents,requested,outcome));}
+    }
+}
+#[cfg(feature="diagnostics")]
+struct C112RuleReceipt<'a> {
+    counts:&'a RefCell<C112RuleCounts>,fuel:&'a Cell<Option<usize>>,start:usize,
+}
+#[cfg(feature="diagnostics")]
+impl Drop for C112RuleReceipt<'_> {
+    fn drop(&mut self) {
+        use std::sync::atomic::{AtomicUsize,Ordering};
+        static PRINTED:AtomicUsize=AtomicUsize::new(0);
+        let counts=self.counts.borrow();
+        let spent=self.start.saturating_sub(self.fuel.get().unwrap_or(0));
+        if spent<8192 || counts.all.requests<10
+            || PRINTED.fetch_add(1,Ordering::Relaxed)>=32 {return;}
+        let all=&counts.all;
+        eprintln!("NUCLEUS_C112_RULE_OWNER:start={}:constructor_results={}:selected={}:charged={}:high_count={}:high_charged={}:rhs_proven={}:rhs_unknown={}",
+            self.start,counts.constructor_results,all.requests,all.charged,
+            all.high_count,all.high_charged,all.rhs_proven,all.rhs_unknown);
+        let mut groups:Vec<_>=counts.groups.iter().collect();
+        groups.sort_by_key(|(key,_)|**key);
+        for ((recursor,constructor,rhs),g) in groups {
+            eprintln!("NUCLEUS_C112_RULE_GROUP:start={}:recursor={recursor}:constructor={constructor}:rhs={rhs}:requests={}:charged={}:high_count={}:high_charged={}:min_depth={}:max_depth={}:rhs_proven={}:rhs_unknown={}:rhs_nested={}",
+                self.start,g.requests,g.charged,g.high_count,g.high_charged,
+                g.min_depth,g.max_depth,g.rhs_proven,g.rhs_unknown,g.rhs_nested);
+        }
+        for (seq,recursor,constructor,rhs,charge,depth,major_parents,requested,outcome) in &counts.high {
+            eprintln!("NUCLEUS_C112_RULE_HIGH:start={}:seq={seq}:recursor={recursor}:constructor={constructor}:rhs={rhs}:charge={charge}:depth={depth}:major_parents={major_parents}:requested={}:rhs_outcome={outcome}",
+                self.start,usize::from(*requested));
+        }
+    }
+}
+// C113 measures subsequent source-RHS work for the same high-charge C112
+// events, and marks an actual Continuation::Major pop. No inferred result
+// or syntactic equivalence influences execution.
+#[cfg(feature="diagnostics")]
+struct C113HighEvent {
+    recursor:u64,constructor:u64,rhs:u64,major:usize,
+    telescope:usize,rhs_work:usize,depth:usize,major_parents:usize,resumed:bool,
+}
+#[cfg(feature="diagnostics")]
+#[derive(Default)]
+struct C113HighCounts {events:Vec<C113HighEvent>}
+#[cfg(feature="diagnostics")]
+struct C113HighReceipt<'a> {
+    counts:&'a RefCell<C113HighCounts>,fuel:&'a Cell<Option<usize>>,start:usize,
+}
+#[cfg(feature="diagnostics")]
+impl Drop for C113HighReceipt<'_> {
+    fn drop(&mut self) {
+        use std::sync::atomic::{AtomicUsize,Ordering};
+        static PRINTED:AtomicUsize=AtomicUsize::new(0);
+        let events=&self.counts.borrow().events;
+        let spent=self.start.saturating_sub(self.fuel.get().unwrap_or(0));
+        if spent<8192 || events.len()<10
+            || PRINTED.fetch_add(1,Ordering::Relaxed)>=32 {return;}
+        eprintln!("NUCLEUS_C113_HIGH_OWNER:start={}:events={}:major_charge={}:telescope_charge={}:rhs_charge={}:resumed={}",
+            self.start,events.len(),events.iter().map(|e|e.major).sum::<usize>(),
+            events.iter().map(|e|e.telescope).sum::<usize>(),
+            events.iter().map(|e|e.rhs_work).sum::<usize>(),
+            events.iter().filter(|e|e.resumed).count());
+        for (idx,e) in events.iter().enumerate() {
+            eprintln!("NUCLEUS_C113_HIGH_EVENT:start={}:seq={}:recursor={}:constructor={}:rhs={}:major={}:telescope={}:rhs_work={}:depth={}:major_parents={}:resumed={}",
+                self.start,idx+1,e.recursor,e.constructor,e.rhs,e.major,
+                e.telescope,e.rhs_work,e.depth,e.major_parents,usize::from(e.resumed));
+        }
+    }
+}
+// C114 counts actual evaluator loop kinds while the original high-cost
+// major request runs. Loop counts are not fuel units: only the independent
+// inclusive major charge is conserved and compared against C113.
+#[cfg(feature="diagnostics")]
+struct C114HighEvent {
+    major:usize,loops:usize,unique:usize,repeat:usize,kinds:[usize;8],
+}
+#[cfg(feature="diagnostics")]
+#[derive(Default)]
+struct C114HighCounts { events:Vec<C114HighEvent> }
+#[cfg(feature="diagnostics")]
+struct C114HighReceipt<'a> {
+    counts:&'a RefCell<C114HighCounts>,fuel:&'a Cell<Option<usize>>,start:usize,
+}
+#[cfg(feature="diagnostics")]
+impl Drop for C114HighReceipt<'_> {
+    fn drop(&mut self) {
+        use std::sync::atomic::{AtomicUsize,Ordering};
+        static PRINTED:AtomicUsize=AtomicUsize::new(0);
+        let events=&self.counts.borrow().events;
+        let spent=self.start.saturating_sub(self.fuel.get().unwrap_or(0));
+        if spent<8192 || events.len()<10
+            || PRINTED.fetch_add(1,Ordering::Relaxed)>=32 {return;}
+        let total:usize=events.iter().map(|e|e.major).sum();
+        let loops:usize=events.iter().map(|e|e.loops).sum();
+        let unique:usize=events.iter().map(|e|e.unique).sum();
+        let repeat:usize=events.iter().map(|e|e.repeat).sum();
+        let kinds:[usize;8]=std::array::from_fn(|i|events.iter().map(|e|e.kinds[i]).sum());
+        eprintln!("NUCLEUS_C114_HIGH_OWNER:start={}:events={}:major_charge={total}:loops={loops}:unique={unique}:repeat={repeat}:k0={}:k1={}:k2={}:k3={}:k4={}:k5={}:k6={}:k7={}",
+            self.start,events.len(),kinds[0],kinds[1],kinds[2],kinds[3],kinds[4],kinds[5],kinds[6],kinds[7]);
+        for (idx,e) in events.iter().enumerate() {
+            let k=&e.kinds;
+            eprintln!("NUCLEUS_C114_HIGH_EVENT:start={}:seq={}:major={}:loops={}:unique={}:repeat={}:k0={}:k1={}:k2={}:k3={}:k4={}:k5={}:k6={}:k7={}",
+                self.start,idx+1,e.major,e.loops,e.unique,e.repeat,k[0],k[1],k[2],k[3],k[4],k[5],k[6],k[7]);
+        }
+    }
+}
+// C115: replay the *actual* BVar evaluator steps inside each C114 high-major
+// exposure, keeping the entire live head/pending state and the exact captured
+// lexical node separately. These identity censuses do not authorize reuse.
+#[cfg(feature="diagnostics")]
+struct C115BVarStep {
+    state:(Closure,Vec<Closure>,Transparency,bool),
+    node:Option<u64>,
+    kind:usize,
+    context:Option<C116BVarContext>,
+    c118_invocation:Option<usize>,
+    c118_fuel:Option<usize>,
+    c118_terminal:Option<C118Terminal>,
+    c119_context:Option<(usize,usize,Option<usize>)>,
+}
+#[cfg(feature="diagnostics")]
+struct C118Terminal {
+    result:Rc<Judgment<Exposure>>,
+    tail_work:Option<usize>,
+}
+#[cfg(feature="diagnostics")]
+struct C116BVarContext {
+    budget:usize,
+    fuel:Option<usize>,
+    witnesses:bool,
+    visits:Vec<(u64,u64,u64)>,
+    target:Option<Closure>,
+}
+#[cfg(feature="diagnostics")]
+#[derive(Default)]
+struct C115BVarHistogram {
+    bvar:usize,full_unique:usize,full_repeat:usize,
+    node_unique:usize,node_repeat:usize,node_missing:usize,
+    kinds:[usize;5],
+}
+#[cfg(feature="diagnostics")]
+impl C115BVarHistogram {
+    fn from_steps(steps:&[C115BVarStep])->Self {
+        let mut counts=Self::default();
+        let mut full=HashSet::new();
+        let mut nodes=HashSet::new();
+        for step in steps {
+            counts.bvar+=1;
+            counts.kinds[step.kind]+=1;
+            if full.insert(&step.state) {counts.full_unique+=1;} else {counts.full_repeat+=1;}
+            if let Some(node)=step.node {
+                if nodes.insert((step.state.0.expr.0,node)) {
+                    counts.node_unique+=1;
+                } else {counts.node_repeat+=1;}
+            } else {counts.node_missing+=1;}
+        }
+        counts
+    }
+}
+#[cfg(feature="diagnostics")]
+#[derive(Default)]
+struct C115BoundCounts {
+    events:Vec<C115BVarHistogram>,
+    across_full_seen:HashSet<(Closure,Vec<Closure>,Transparency,bool)>,
+    across_node_seen:HashSet<(u64,u64)>,
+    across_full_repeat:usize,
+    across_node_repeat:usize,
+    across_node_missing:usize,
+}
+#[cfg(feature="diagnostics")]
+impl C115BoundCounts {
+    fn record(&mut self, steps:&[C115BVarStep]) {
+        for step in steps {
+            if !self.across_full_seen.insert(step.state.clone()) {
+                self.across_full_repeat+=1;
+            }
+            if let Some(node)=step.node {
+                if !self.across_node_seen.insert((step.state.0.expr.0,node)) {
+                    self.across_node_repeat+=1;
+                }
+            } else {self.across_node_missing+=1;}
+        }
+        self.events.push(C115BVarHistogram::from_steps(steps));
+    }
+}
+// A repeated head is not yet a repeated completed evaluation. C116 asks how
+// many such heads still repeat when local limits, witness mode and exact
+// active visited identities are added. Global shared fuel is a separate
+// resource constraint, not an assertion of semantic inequality.
+#[cfg(feature="diagnostics")]
+#[derive(Default)]
+struct C116ContextCounts {
+    events:usize,bvar:usize,full_repeat:usize,budget_repeat:usize,
+    visit_repeat:usize,fuel_repeat:usize,target_mismatch:usize,
+    witness_true:usize,witness_false:usize,visit_nontrivial:usize,
+    full:HashMap<(Closure,Vec<Closure>,Transparency,bool),(usize,Option<Closure>)>,
+    budget:HashSet<((Closure,Vec<Closure>,Transparency,bool),usize,bool)>,
+    visits:HashSet<(((Closure,Vec<Closure>,Transparency,bool),usize,bool),Vec<(u64,u64,u64)>)>,
+    fuels:HashSet<((((Closure,Vec<Closure>,Transparency,bool),usize,bool),Vec<(u64,u64,u64)>),Option<usize>)>,
+}
+#[cfg(feature="diagnostics")]
+impl C116ContextCounts {
+    fn record(&mut self,steps:&[C115BVarStep]) {
+        self.events+=1;
+        for step in steps {
+            let ctx=step.context.as_ref().expect("C116 step carries source-native context");
+            self.bvar+=1;
+            if ctx.witnesses {self.witness_true+=1;} else {self.witness_false+=1;}
+            if ctx.visits.len()>1 {self.visit_nontrivial+=1;}
+            if let Some(prior)=self.full.get(&step.state) {
+                self.full_repeat+=1;
+                if *prior!=(step.kind,ctx.target.clone()) {self.target_mismatch+=1;}
+            } else {self.full.insert(step.state.clone(),(step.kind,ctx.target.clone()));}
+            let budget=(step.state.clone(),ctx.budget,ctx.witnesses);
+            if !self.budget.insert(budget.clone()) {self.budget_repeat+=1;}
+            let visit=(budget,ctx.visits.clone());
+            if !self.visits.insert(visit.clone()) {self.visit_repeat+=1;}
+            if !self.fuels.insert((visit,ctx.fuel)) {self.fuel_repeat+=1;}
+        }
+    }
+}
+#[cfg(feature="diagnostics")]
+struct C116ContextReceipt<'a> {
+    counts:&'a RefCell<C116ContextCounts>,fuel:&'a Cell<Option<usize>>,start:usize,
+}
+#[cfg(feature="diagnostics")]
+impl Drop for C116ContextReceipt<'_> {
+    fn drop(&mut self) {
+        use std::sync::atomic::{AtomicUsize,Ordering};
+        static PRINTED:AtomicUsize=AtomicUsize::new(0);
+        let c=self.counts.borrow();
+        let spent=self.start.saturating_sub(self.fuel.get().unwrap_or(0));
+        if spent<8192 || c.events<10 || PRINTED.fetch_add(1,Ordering::Relaxed)>=32 {return;}
+        eprintln!("NUCLEUS_C116_CONTEXT_OWNER:start={}:events={}:bvar={}:full_repeat={}:budget_repeat={}:visit_repeat={}:fuel_repeat={}:target_mismatch={}:witness_true={}:witness_false={}:visit_nontrivial={}",
+            self.start,c.events,c.bvar,c.full_repeat,c.budget_repeat,c.visit_repeat,
+            c.fuel_repeat,c.target_mismatch,c.witness_true,c.witness_false,c.visit_nontrivial);
+    }
+}
+// C117 tests an actual existing cache boundary: a completed exposure *call*
+// is not the same thing as an intermediate BVar loop state. Keep the two
+// identity sets separate until an exact source-qualified intersection exists.
+#[cfg(feature="diagnostics")]
+struct C117CompletedCall {
+    state:(Closure,Vec<Closure>,Transparency,bool),
+    eligible:Option<Value>,
+    unknown:bool,refuted:bool,cached:bool,entry_bvar:bool,
+}
+#[cfg(feature="diagnostics")]
+#[derive(Default)]
+struct C117CallCounts {
+    events:usize,calls:usize,eligible:usize,unknown:usize,refuted:usize,
+    cached_hits:usize,entry_bvar:usize,completed_repeated:usize,
+    completed_value_conflicts:usize,bvar:usize,bvar_repeated:usize,
+    completed:HashMap<(Closure,Vec<Closure>,Transparency,bool),Value>,
+    bvar_seen:HashSet<(Closure,Vec<Closure>,Transparency,bool)>,
+    bvar_states:Vec<(Closure,Vec<Closure>,Transparency,bool)>,
+    repeated_bvar_states:Vec<(Closure,Vec<Closure>,Transparency,bool)>,
+}
+#[cfg(feature="diagnostics")]
+impl C117CallCounts {
+    fn record(&mut self,calls:&[C117CompletedCall],steps:&[C115BVarStep]) {
+        self.events+=1;
+        for call in calls {
+            self.calls+=1;
+            self.unknown+=usize::from(call.unknown);
+            self.refuted+=usize::from(call.refuted);
+            self.cached_hits+=usize::from(call.cached);
+            self.entry_bvar+=usize::from(call.entry_bvar);
+            if let Some(value)=&call.eligible {
+                self.eligible+=1;
+                if let Some(previous)=self.completed.get(&call.state) {
+                    self.completed_repeated+=1;
+                    if previous!=value {self.completed_value_conflicts+=1;}
+                } else {self.completed.insert(call.state.clone(),value.clone());}
+            }
+        }
+        for step in steps {
+            self.bvar+=1;
+            if !self.bvar_seen.insert(step.state.clone()) {
+                self.bvar_repeated+=1;
+                self.repeated_bvar_states.push(step.state.clone());
+            }
+            self.bvar_states.push(step.state.clone());
+        }
+    }
+}
+#[cfg(feature="diagnostics")]
+struct C117CallReceipt<'a> {
+    counts:&'a RefCell<C117CallCounts>,fuel:&'a Cell<Option<usize>>,start:usize,
+}
+#[cfg(feature="diagnostics")]
+impl Drop for C117CallReceipt<'_> {
+    fn drop(&mut self) {
+        use std::sync::atomic::{AtomicUsize,Ordering};
+        static PRINTED:AtomicUsize=AtomicUsize::new(0);
+        let c=self.counts.borrow();
+        let spent=self.start.saturating_sub(self.fuel.get().unwrap_or(0));
+        if spent<8192 || c.events<10 || PRINTED.fetch_add(1,Ordering::Relaxed)>=32 {return;}
+        let bvar_entry_overlap=c.bvar_states.iter().filter(|s|c.completed.contains_key(*s)).count();
+        let repeated_bvar_entry_overlap=c.repeated_bvar_states.iter().filter(|s|c.completed.contains_key(*s)).count();
+        eprintln!("NUCLEUS_C117_CALL_OWNER:start={}:events={}:calls={}:eligible={}:unknown={}:refuted={}:cached_hits={}:entry_bvar={}:completed_repeated={}:completed_value_conflicts={}:bvar={}:bvar_repeated={}:bvar_entry_overlap={bvar_entry_overlap}:repeated_bvar_entry_overlap={repeated_bvar_entry_overlap}",
+            self.start,c.events,c.calls,c.eligible,c.unknown,c.refuted,c.cached_hits,
+            c.entry_bvar,c.completed_repeated,c.completed_value_conflicts,c.bvar,c.bvar_repeated);
+    }
+}
+// C118: complete only *real* source evaluator invocations. Every observed
+// intermediate BVar visit receives the actual terminal result and actual
+// remaining shared-work charge from its original invocation, with no replay.
+#[cfg(feature="diagnostics")]
+#[derive(Default)]
+struct C118SegmentCounts {
+    events:usize,bvar:usize,repeated:usize,
+    terminal_proven:usize,terminal_unknown:usize,terminal_refuted:usize,terminal_missing:usize,
+    repeat_same_result:usize,repeat_conflict:usize,
+    repeat_same_tail:usize,repeat_tail_conflict:usize,
+    repeat_tail_sum:usize,repeat_tail_min:usize,repeat_tail_max:usize,
+    repeat_tail_positive:usize,repeat_tail_zero:usize,
+    max_tail_source:u64,max_tail_node:u64,max_tail_pending:usize,
+    seen:HashMap<((Closure,Vec<Closure>,Transparency,bool),usize,bool,Vec<(u64,u64,u64)>),
+        (Option<Rc<Judgment<Exposure>>>,Option<usize>)>,
+}
+#[cfg(feature="diagnostics")]
+impl C118SegmentCounts {
+    fn record(&mut self,steps:&[C115BVarStep]) {
+        self.events+=1;
+        for step in steps {
+            self.bvar+=1;
+            let ctx=step.context.as_ref().expect("C118 requires exact captured local context");
+            let key=(step.state.clone(),ctx.budget,ctx.witnesses,ctx.visits.clone());
+            let current=step.c118_terminal.as_ref().map(|t|t.result.clone());
+            let tail=step.c118_terminal.as_ref().and_then(|t|t.tail_work);
+            match current.as_ref().map(|result|result.as_ref()) {
+                Some(Judgment::Proven{..})=>self.terminal_proven+=1,
+                Some(Judgment::Unknown{..})=>self.terminal_unknown+=1,
+                Some(Judgment::Refuted{..})=>self.terminal_refuted+=1,
+                None=>self.terminal_missing+=1,
+            }
+            if let Some((previous,prior_tail))=self.seen.get(&key) {
+                self.repeated+=1;
+                if previous==&current {self.repeat_same_result+=1;}
+                else {self.repeat_conflict+=1;}
+                if prior_tail==&tail {self.repeat_same_tail+=1;}
+                else {self.repeat_tail_conflict+=1;}
+                let charge=tail.unwrap_or(0);
+                self.repeat_tail_sum+=charge;
+                if self.repeated==1 {self.repeat_tail_min=charge;}
+                else {self.repeat_tail_min=self.repeat_tail_min.min(charge);}
+                if charge>0 {self.repeat_tail_positive+=1;}
+                else {self.repeat_tail_zero+=1;}
+                if charge>self.repeat_tail_max {
+                    self.repeat_tail_max=charge;
+                    self.max_tail_source=step.state.0.expr.0;
+                    self.max_tail_node=step.node.unwrap_or(0);
+                    self.max_tail_pending=step.state.1.len();
+                }
+            } else {self.seen.insert(key,(current,tail));}
+        }
+    }
+}
+#[cfg(feature="diagnostics")]
+struct C118SegmentReceipt<'a> {
+    counts:&'a RefCell<C118SegmentCounts>,fuel:&'a Cell<Option<usize>>,start:usize,
+}
+#[cfg(feature="diagnostics")]
+impl Drop for C118SegmentReceipt<'_> {
+    fn drop(&mut self) {
+        use std::sync::atomic::{AtomicUsize,Ordering};
+        static PRINTED:AtomicUsize=AtomicUsize::new(0);
+        let c=self.counts.borrow();
+        let spent=self.start.saturating_sub(self.fuel.get().unwrap_or(0));
+        if spent<8192 || c.events<10 || PRINTED.fetch_add(1,Ordering::Relaxed)>=32 {return;}
+        eprintln!("NUCLEUS_C118_SEGMENT_OWNER:start={}:events={}:bvar={}:repeated={}:terminal_proven={}:terminal_unknown={}:terminal_refuted={}:terminal_missing={}:repeat_same_result={}:repeat_conflict={}:repeat_same_tail={}:repeat_tail_conflict={}:repeat_tail_sum={}:repeat_tail_min={}:repeat_tail_max={}:repeat_tail_positive={}:repeat_tail_zero={}:max_tail_source={}:max_tail_node={}:max_tail_pending={}",
+            self.start,c.events,c.bvar,c.repeated,c.terminal_proven,c.terminal_unknown,
+            c.terminal_refuted,c.terminal_missing,c.repeat_same_result,c.repeat_conflict,
+            c.repeat_same_tail,c.repeat_tail_conflict,c.repeat_tail_sum,c.repeat_tail_min,
+            c.repeat_tail_max,c.repeat_tail_positive,c.repeat_tail_zero,
+            c.max_tail_source,c.max_tail_node,c.max_tail_pending);
+    }
+}
+#[cfg(feature="diagnostics")]
+struct C118InvocationScope<'a> {active:&'a Cell<Option<usize>>,previous:Option<usize>}
+#[cfg(feature="diagnostics")]
+impl Drop for C118InvocationScope<'_> {
+    fn drop(&mut self) {self.active.set(self.previous);}
+}
+// C119: the C116 local-state key is not assumed to include every ambient
+// evaluator guard. Compare the actual depth and owner work at repeat visits.
+#[cfg(feature="diagnostics")]
+#[derive(Default)]
+struct C119ContextCounts {
+    events:usize,bvar:usize,repeated:usize,
+    depth_equal:usize,depth_different:usize,
+    projection_equal:usize,projection_different:usize,
+    fuel_equal:usize,fuel_different:usize,
+    max_depth:usize,near_limit:usize,
+    witness_expr:u64,witness_depth_before:usize,witness_depth_after:usize,
+    seen:HashMap<((Closure,Vec<Closure>,Transparency,bool),usize,bool,Vec<(u64,u64,u64)>),
+        (usize,usize,Option<usize>)>,
+}
+#[cfg(feature="diagnostics")]
+impl C119ContextCounts {
+    fn record(&mut self,steps:&[C115BVarStep]) {
+        self.events+=1;
+        for step in steps {
+            self.bvar+=1;
+            let ctx=step.context.as_ref().expect("C119 requires exact captured local context");
+            let current=step.c119_context.expect("C119 requires actual dynamic context");
+            let key=(step.state.clone(),ctx.budget,ctx.witnesses,ctx.visits.clone());
+            self.max_depth=self.max_depth.max(current.0);
+            if current.0>=63 {self.near_limit+=1;}
+            if let Some(previous)=self.seen.get(&key) {
+                self.repeated+=1;
+                if previous.0==current.0 {self.depth_equal+=1;}
+                else {
+                    self.depth_different+=1;
+                    if self.depth_different==1 {
+                        self.witness_expr=step.state.0.expr.0;
+                        self.witness_depth_before=previous.0;
+                        self.witness_depth_after=current.0;
+                    }
+                }
+                if previous.1==current.1 {self.projection_equal+=1;}
+                else {self.projection_different+=1;}
+                if previous.2==current.2 {self.fuel_equal+=1;}
+                else {self.fuel_different+=1;}
+            } else {self.seen.insert(key,current);}
+        }
+    }
+}
+#[cfg(feature="diagnostics")]
+struct C119ContextReceipt<'a> {
+    counts:&'a RefCell<C119ContextCounts>,fuel:&'a Cell<Option<usize>>,start:usize,
+}
+#[cfg(feature="diagnostics")]
+impl Drop for C119ContextReceipt<'_> {
+    fn drop(&mut self) {
+        use std::sync::atomic::{AtomicUsize,Ordering};
+        static PRINTED:AtomicUsize=AtomicUsize::new(0);
+        let c=self.counts.borrow();
+        let spent=self.start.saturating_sub(self.fuel.get().unwrap_or(0));
+        if spent<8192 || c.events<10 || PRINTED.fetch_add(1,Ordering::Relaxed)>=32{return;}
+        eprintln!("NUCLEUS_C119_CONTEXT_OWNER:start={}:events={}:bvar={}:repeated={}:depth_equal={}:depth_different={}:projection_equal={}:projection_different={}:fuel_equal={}:fuel_different={}:max_depth={}:near_limit={}:witness_expr={}:witness_depth_before={}:witness_depth_after={}",
+            self.start,c.events,c.bvar,c.repeated,c.depth_equal,c.depth_different,
+            c.projection_equal,c.projection_different,c.fuel_equal,c.fuel_different,
+            c.max_depth,c.near_limit,c.witness_expr,c.witness_depth_before,c.witness_depth_after);
+    }
+}
+// C120: repeated interior tails share one monotonically decreasing owner
+// allowance. Their summed lengths double-count overlapping charged work.
+// Union actual [remaining, start) counter intervals within each owner.
+#[cfg(feature="diagnostics")]
+#[derive(Default)]
+struct C120SpanCounts {
+    events:usize,bvar:usize,repeated:usize,span_positive:usize,span_zero:usize,
+    sum:usize,spans:Vec<(usize,usize)>,
+    seen:HashSet<((Closure,Vec<Closure>,Transparency,bool),usize,bool,Vec<(u64,u64,u64)>)>,
+}
+#[cfg(feature="diagnostics")]
+impl C120SpanCounts {
+    fn record(&mut self,steps:&[C115BVarStep]) {
+        self.events+=1;
+        for step in steps {
+            self.bvar+=1;
+            let context=step.context.as_ref().expect("C120 requires captured C116 context");
+            let key=(step.state.clone(),context.budget,context.witnesses,context.visits.clone());
+            if !self.seen.insert(key) {
+                self.repeated+=1;
+                let start=step.c118_fuel.expect("C120 requires C118 actual fuel");
+                let charge=step.c118_terminal.as_ref()
+                    .and_then(|end|end.tail_work)
+                    .expect("C120 requires actual same-invocation terminal fuel");
+                self.sum+=charge;
+                if charge==0 {self.span_zero+=1;}
+                else {
+                    self.span_positive+=1;
+                    let low=start.checked_sub(charge).expect("non-monotonic owner-fuel trace");
+                    self.spans.push((low,start));
+                }
+            }
+        }
+    }
+    fn union_and_components(&self)->(usize,usize) {
+        let mut spans=self.spans.clone();
+        spans.sort_unstable();
+        let (mut total,mut components)=(0,0);
+        let mut current:Option<(usize,usize)>=None;
+        for (low,high) in spans {
+            if let Some((old_low,old_high))=current {
+                if low<=old_high {current=Some((old_low,old_high.max(high)));}
+                else {
+                    total+=old_high-old_low;
+                    components+=1;
+                    current=Some((low,high));
+                }
+            } else {current=Some((low,high));}
+        }
+        if let Some((low,high))=current {total+=high-low;components+=1;}
+        (total,components)
+    }
+}
+#[cfg(feature="diagnostics")]
+struct C120SpanReceipt<'a> {
+    counts:&'a RefCell<C120SpanCounts>,fuel:&'a Cell<Option<usize>>,start:usize,
+}
+#[cfg(feature="diagnostics")]
+impl Drop for C120SpanReceipt<'_> {
+    fn drop(&mut self) {
+        use std::sync::atomic::{AtomicUsize,Ordering};
+        static PRINTED:AtomicUsize=AtomicUsize::new(0);
+        let c=self.counts.borrow();
+        let spent=self.start.saturating_sub(self.fuel.get().unwrap_or(0));
+        if spent<8192 || c.events<10 || PRINTED.fetch_add(1,Ordering::Relaxed)>=32{return;}
+        let (union,components)=c.union_and_components();
+        eprintln!("NUCLEUS_C120_SPAN_OWNER:start={}:events={}:bvar={}:repeated={}:span_positive={}:span_zero={}:sum={}:union={}:overlap={}:components={}",
+            self.start,c.events,c.bvar,c.repeated,c.span_positive,c.span_zero,
+            c.sum,union,c.sum.saturating_sub(union),components);
+    }
+}
+// C121 observes the neglected 128..511-unit major requests, preserving the
+// registered source result and exact evaluator-kind delta on each live call.
+#[cfg(feature="diagnostics")]
+struct C121MidEvent {
+    recursor:u64,rhs:u64,constructor:u64,charge:usize,loops:usize,
+    depth:usize,major_parents:usize,requested:usize,outcome:usize,kinds:[usize;8],
+}
+#[cfg(feature="diagnostics")]
+#[derive(Default)]
+struct C121MidCounts {events:Vec<C121MidEvent>}
+#[cfg(feature="diagnostics")]
+struct C121MidReceipt<'a> {
+    counts:&'a RefCell<C121MidCounts>,fuel:&'a Cell<Option<usize>>,start:usize,
+}
+#[cfg(feature="diagnostics")]
+impl Drop for C121MidReceipt<'_> {
+    fn drop(&mut self) {
+        use std::sync::atomic::{AtomicUsize,Ordering};
+        static PRINTED:AtomicUsize=AtomicUsize::new(0);
+        let events=&self.counts.borrow().events;
+        let spent=self.start.saturating_sub(self.fuel.get().unwrap_or(0));
+        if spent<8192 || events.len()<10 || PRINTED.fetch_add(1,Ordering::Relaxed)>=32{return;}
+        let total:usize=events.iter().map(|e|e.charge).sum();
+        let loops:usize=events.iter().map(|e|e.loops).sum();
+        let kinds:[usize;8]=std::array::from_fn(|i|events.iter().map(|e|e.kinds[i]).sum());
+        let outcomes:[usize;5]=std::array::from_fn(|i|events.iter().filter(|e|e.outcome==i).count());
+        eprintln!("NUCLEUS_C121_MID_OWNER:start={}:events={}:major_charge={total}:loops={loops}:other_work={}:constructor={}:nested={}:other={}:unknown={}:refuted={}:k0={}:k1={}:k2={}:k3={}:k4={}:k5={}:k6={}:k7={}",
+            self.start,events.len(),total.saturating_sub(loops),outcomes[0],outcomes[1],outcomes[2],
+            outcomes[3],outcomes[4],kinds[0],kinds[1],kinds[2],kinds[3],
+            kinds[4],kinds[5],kinds[6],kinds[7]);
+        for (idx,e) in events.iter().enumerate() {
+            let k=&e.kinds;
+            eprintln!("NUCLEUS_C121_MID_EVENT:start={}:seq={}:recursor={}:rhs={}:constructor={}:charge={}:loops={}:depth={}:major_parents={}:requested={}:outcome={}:k0={}:k1={}:k2={}:k3={}:k4={}:k5={}:k6={}:k7={}",
+                self.start,idx+1,e.recursor,e.rhs,e.constructor,e.charge,e.loops,
+                e.depth,e.major_parents,e.requested,e.outcome,k[0],k[1],k[2],
+                k[3],k[4],k[5],k[6],k[7]);
+        }
+    }
+}
+// C122 observes registered source closures on both sides of each successful
+// nested-major transition. Frame/binding IDs are diagnostic identity only,
+// never evidence of equality between meaning-bearing captured values.
+#[cfg(feature="diagnostics")]
+struct C122SourceEvent {
+    seq:usize,recursor:u64,expr:u64,env:u64,expr_kind:usize,
+    binding:u64,bound_expr:u64,bound_env:u64,next_head:u64,next_arity:usize,
+    next_expr:u64,next_env:u64,next_expr_kind:usize,
+    next_binding:u64,next_bound_expr:u64,next_bound_env:u64,
+}
+#[cfg(feature="diagnostics")]
+struct C122SourceReceipt<'a> {
+    events:&'a RefCell<Vec<C122SourceEvent>>,fuel:&'a Cell<Option<usize>>,start:usize,
+}
+#[cfg(feature="diagnostics")]
+impl Drop for C122SourceReceipt<'_> {
+    fn drop(&mut self) {
+        use std::sync::atomic::{AtomicUsize,Ordering};
+        static PRINTED:AtomicUsize=AtomicUsize::new(0);
+        let events=self.events.borrow();
+        let spent=self.start.saturating_sub(self.fuel.get().unwrap_or(0));
+        if spent<8192 || events.len()<10 || PRINTED.fetch_add(1,Ordering::Relaxed)>=32{return;}
+        for e in events.iter() {
+            eprintln!("NUCLEUS_C122_NESTED_TRANSITION:start={}:seq={}:recursor={}:expr={}:env={}:expr_kind={}:binding={}:bound_expr={}:bound_env={}:next_head={}:next_arity={}:next_expr={}:next_env={}:next_expr_kind={}:next_binding={}:next_bound_expr={}:next_bound_env={}",
+                self.start,e.seq,e.recursor,e.expr,e.env,e.expr_kind,e.binding,
+                e.bound_expr,e.bound_env,e.next_head,e.next_arity,e.next_expr,
+                e.next_env,e.next_expr_kind,e.next_binding,e.next_bound_expr,
+                e.next_bound_env);
+        }
+    }
+}
+// C123 follows only immutable lexical BVar-to-closure links. The walk is
+// observational: it neither spends evaluator fuel nor proves a transport rule.
+#[cfg(feature="diagnostics")]
+struct C123BVarChainEvent {
+    seq:usize,hops:usize,terminal_expr:u64,terminal_env:u64,
+    terminal_kind:usize,terminal_bvar:u64,terminal_binding_kind:usize,
+    capped:usize,levels:usize,
+}
+#[cfg(feature="diagnostics")]
+struct C123BVarChainReceipt<'a> {
+    events:&'a RefCell<Vec<C123BVarChainEvent>>,
+    fuel:&'a Cell<Option<usize>>,start:usize,
+}
+#[cfg(feature="diagnostics")]
+impl Drop for C123BVarChainReceipt<'_> {
+    fn drop(&mut self) {
+        use std::sync::atomic::{AtomicUsize,Ordering};
+        static PRINTED:AtomicUsize=AtomicUsize::new(0);
+        let events=self.events.borrow();
+        let spent=self.start.saturating_sub(self.fuel.get().unwrap_or(0));
+        if spent<8192 || events.len()<10 || PRINTED.fetch_add(1,Ordering::Relaxed)>=32{return;}
+        for e in events.iter() {
+            eprintln!("NUCLEUS_C123_BVAR_CHAIN:start={}:seq={}:hops={}:terminal_expr={}:terminal_env={}:terminal_kind={}:terminal_bvar={}:terminal_binding_kind={}:capped={}:levels={}",
+                self.start,e.seq,e.hops,e.terminal_expr,e.terminal_env,
+                e.terminal_kind,e.terminal_bvar,e.terminal_binding_kind,
+                e.capped,e.levels);
+        }
+    }
+}
+// C124 describes the exact application skeleton at C123's source terminal,
+// and attributes only actually observed C97 App/Lam steps to each live major.
+#[cfg(feature="diagnostics")]
+struct C124AppProfileEvent {
+    seq:usize,root:u64,env:u64,arity:usize,head:u64,head_kind:usize,
+    head_binding:u64,head_bound_expr:u64,head_bound_env:u64,
+    outer_arg:u64,inner_arg:u64,outer_kind:usize,inner_kind:usize,
+    outer_body:u64,inner_body:u64,app:usize,lam:usize,root_app:usize,
+    top_app:u64,top_app_count:usize,top_lam:u64,top_lam_count:usize,
+}
+#[cfg(feature="diagnostics")]
+struct C124AppProfileReceipt<'a> {
+    events:&'a RefCell<Vec<C124AppProfileEvent>>,
+    fuel:&'a Cell<Option<usize>>,start:usize,
+}
+#[cfg(feature="diagnostics")]
+impl Drop for C124AppProfileReceipt<'_> {
+    fn drop(&mut self) {
+        use std::sync::atomic::{AtomicUsize,Ordering};
+        static PRINTED:AtomicUsize=AtomicUsize::new(0);
+        let events=self.events.borrow();
+        let spent=self.start.saturating_sub(self.fuel.get().unwrap_or(0));
+        if spent<8192 || events.len()<10 || PRINTED.fetch_add(1,Ordering::Relaxed)>=32{return;}
+        for e in events.iter() {
+            eprintln!("NUCLEUS_C124_APP_PROFILE:start={}:seq={}:root={}:env={}:arity={}:head={}:head_kind={}:head_binding={}:head_bound_expr={}:head_bound_env={}:outer_arg={}:inner_arg={}:outer_kind={}:inner_kind={}:outer_body={}:inner_body={}:app={}:lam={}:root_app={}:top_app={}:top_app_count={}:top_lam={}:top_lam_count={}",
+                self.start,e.seq,e.root,e.env,e.arity,e.head,e.head_kind,
+                e.head_binding,e.head_bound_expr,e.head_bound_env,e.outer_arg,
+                e.inner_arg,e.outer_kind,e.inner_kind,e.outer_body,e.inner_body,
+                e.app,e.lam,e.root_app,e.top_app,e.top_app_count,e.top_lam,e.top_lam_count);
+        }
+    }
+}
+#[cfg(feature="diagnostics")]
+struct C115BoundReceipt<'a> {
+    counts:&'a RefCell<C115BoundCounts>,fuel:&'a Cell<Option<usize>>,start:usize,
+}
+#[cfg(feature="diagnostics")]
+impl Drop for C115BoundReceipt<'_> {
+    fn drop(&mut self) {
+        use std::sync::atomic::{AtomicUsize,Ordering};
+        static PRINTED:AtomicUsize=AtomicUsize::new(0);
+        let counts=self.counts.borrow();
+        let events=&counts.events;
+        let spent=self.start.saturating_sub(self.fuel.get().unwrap_or(0));
+        if spent<8192 || events.len()<10
+            || PRINTED.fetch_add(1,Ordering::Relaxed)>=32 {return;}
+        let sum=|f:fn(&C115BVarHistogram)->usize|events.iter().map(f).sum::<usize>();
+        let bvar=sum(|e|e.bvar);
+        let full_unique=sum(|e|e.full_unique);
+        let full_repeat=sum(|e|e.full_repeat);
+        let node_unique=sum(|e|e.node_unique);
+        let node_repeat=sum(|e|e.node_repeat);
+        let node_missing=sum(|e|e.node_missing);
+        let kinds:[usize;5]=std::array::from_fn(|i|events.iter().map(|e|e.kinds[i]).sum());
+        let across_full_unique=counts.across_full_seen.len();
+        let across_full_repeat=counts.across_full_repeat;
+        let across_node_unique=counts.across_node_seen.len();
+        let across_node_repeat=counts.across_node_repeat;
+        let across_node_missing=counts.across_node_missing;
+        let cross_event_full=across_full_repeat.saturating_sub(full_repeat);
+        let cross_event_node=across_node_repeat.saturating_sub(node_repeat);
+        eprintln!("NUCLEUS_C115_BOUND_OWNER:start={}:events={}:bvar={bvar}:full_unique={full_unique}:full_repeat={full_repeat}:node_unique={node_unique}:node_repeat={node_repeat}:node_missing={node_missing}:across_full_unique={across_full_unique}:across_full_repeat={across_full_repeat}:across_node_unique={across_node_unique}:across_node_repeat={across_node_repeat}:across_node_missing={across_node_missing}:cross_event_full={cross_event_full}:cross_event_node={cross_event_node}:b0={}:b1={}:b2={}:b3={}:b4={}",
+            self.start,events.len(),kinds[0],kinds[1],kinds[2],kinds[3],kinds[4]);
+        for (idx,e) in events.iter().enumerate() {
+            eprintln!("NUCLEUS_C115_BOUND_EVENT:start={}:seq={}:bvar={}:full_unique={}:full_repeat={}:node_unique={}:node_repeat={}:node_missing={}:b0={}:b1={}:b2={}:b3={}:b4={}",
+                self.start,idx+1,e.bvar,e.full_unique,e.full_repeat,e.node_unique,
+                e.node_repeat,e.node_missing,e.kinds[0],e.kinds[1],e.kinds[2],e.kinds[3],e.kinds[4]);
+        }
+    }
+}
+#[cfg(feature="diagnostics")]
+impl Drop for C110CaptureReceipt<'_> {
+    fn drop(&mut self) {
+        use std::sync::atomic::{AtomicUsize,Ordering};
+        static PRINTED:AtomicUsize=AtomicUsize::new(0);
+        let counts=self.counts.borrow();
+        let spent=self.start.saturating_sub(self.fuel.get().unwrap_or(0));
+        if spent<8192 || counts.requests<10
+            || PRINTED.fetch_add(1,Ordering::Relaxed)>=32 {return;}
+        eprintln!(
+            "NUCLEUS_C110_CAPTURE_OWNER:start={}:spent={spent}:requests={}:target={}:complete={}:missing={}:unsupported={}:pair_unique={}:pair_repeated={}:repeated_spent={}:a_unique={}:a_repeated={}:b_unique={}:b_repeated={}",
+            self.start,counts.requests,counts.target,counts.complete,counts.missing,
+            counts.unsupported,counts.pairs.len(),counts.pair_repeated,counts.repeated_spent,
+            counts.node_a.len(),counts.a_repeated,counts.node_b.len(),counts.b_repeated,
+        );
+        let mut sources:HashMap<ExprId,(usize,usize,usize,usize)>=HashMap::new();
+        for ((source,_,_,_),group) in &counts.pairs {
+            let row=sources.entry(*source).or_default();
+            row.0+=group.requests;
+            row.1+=1;
+            row.2+=group.requests-1;
+            row.3+=group.charged;
+        }
+        let mut groups:Vec<_>=sources.into_iter().collect();
+        groups.sort_by_key(|(source,_)|*source);
+        for (source,(requests,unique,repeated,charged)) in groups {
+            let (a_repeated,b_repeated)=counts.single_repeats.get(&source).copied().unwrap_or_default();
+            eprintln!(
+                "NUCLEUS_C110_CAPTURE_GROUP:start={}:source={}:requests={requests}:unique={unique}:repeated={repeated}:charged={charged}:a_repeated={a_repeated}:b_repeated={b_repeated}",
+                self.start,source.0,
+            );
+        }
+    }
+}
+#[cfg(feature="diagnostics")]
+impl Drop for C109FunctionReceipt<'_> {
+    fn drop(&mut self) {
+        use std::sync::atomic::{AtomicUsize,Ordering};
+        static PRINTED:AtomicUsize=AtomicUsize::new(0);
+        let counts=self.counts.borrow();
+        let spent=self.start.saturating_sub(self.fuel.get().unwrap_or(0));
+        if spent<8192 || counts.requests<10
+            || PRINTED.fetch_add(1,Ordering::Relaxed)>=32 {return;}
+        eprintln!(
+            "NUCLEUS_C109_FUNCTION_OWNER:start={}:spent={spent}:requests={}:target={}:closure={}:free={}:neutral={}:natlit={}:missing={}:chain_steps={}:max_chain={}:chain_capped={}:source_unique={}:source_repeated={}",
+            self.start,counts.requests,counts.target,counts.closure,counts.free,
+            counts.neutral,counts.natlit,counts.missing,counts.chain_steps,
+            counts.max_chain,counts.chain_capped,counts.groups.len(),counts.source_repeated,
+        );
+        let mut groups:Vec<_>=counts.groups.iter().collect();
+        groups.sort_by(|a,b|b.1.requests.cmp(&a.1.requests).then(a.0.cmp(b.0)));
+        for ((source,kind),group) in groups.into_iter().take(32) {
+            eprintln!(
+                "NUCLEUS_C109_FUNCTION_GROUP:start={}:source={}:kind={kind}:requests={}:charged={}",
+                self.start,source.0,group.requests,group.associated_charge,
+            );
+        }
+    }
+}
+#[cfg(feature="diagnostics")]
+impl Drop for C106SupportReceipt<'_> {
+    fn drop(&mut self) {
+        use std::sync::atomic::{AtomicUsize,Ordering};
+        static PRINTED:AtomicUsize=AtomicUsize::new(0);
+        let counts=self.counts.borrow();
+        let spent=self.start.saturating_sub(self.fuel.get().unwrap_or(0));
+        if spent<8192 || counts.requests<10
+            || PRINTED.fetch_add(1,Ordering::Relaxed)>=32 {return;}
+        eprintln!(
+            "NUCLEUS_C106_SUPPORT_OWNER:start={}:spent={spent}:requests={}:target={}:complete={}:missing={}:pair_unique={}:pair_repeated={}:node2_unique={}:node2_repeated={}:node4_unique={}:node4_repeated={}:prior_proven={}:prior_unresolved={}:repeated_spent={}",
+            self.start,counts.requests,counts.target,counts.complete,counts.missing,
+            counts.pairs.len(),counts.pair_repeated,counts.node2.len(),
+            counts.node2_repeated,counts.node4.len(),counts.node4_repeated,
+            counts.prior_proven,counts.prior_unresolved,counts.repeated_spent,
+        );
+        let mut groups:Vec<_>=counts.pairs.iter().collect();
+        groups.sort_by(|a,b|b.1.charged.cmp(&a.1.charged));
+        for ((node2,node4,_levels),group) in groups.into_iter().take(8) {
+            eprintln!(
+                "NUCLEUS_C106_SUPPORT_GROUP:start={}:node2={node2}:node4={node4}:requests={}:charged={}",
+                self.start,group.requests,group.charged,
+            );
+        }
+    }
 }
 #[cfg(feature="diagnostics")]
 impl Drop for C105TerminalReceipt<'_> {
@@ -640,6 +1677,12 @@ impl Drop for C97MajorActivity<'_> {
     fn drop(&mut self) {self.active.set(self.active.get().saturating_sub(1));}
 }
 #[cfg(feature="diagnostics")]
+struct C115MajorActivity<'a> {active:&'a Cell<usize>}
+#[cfg(feature="diagnostics")]
+impl Drop for C115MajorActivity<'_> {
+    fn drop(&mut self) {self.active.set(self.active.get().saturating_sub(1));}
+}
+#[cfg(feature="diagnostics")]
 struct C97Receipt<'m,'a> {
     machine:&'m Machine<'a>,start:usize,baseline:C97Steps,
 }
@@ -679,6 +1722,21 @@ impl Drop for C97Receipt<'_,'_> {
         for ((kind,source),count) in heads.into_iter().take(20) {
             eprintln!("NUCLEUS_C97_HEAD:start={}:kind={kind}:source={source}:count={count}",self.start);
         }
+        // C108: the source ExprId(7219) carries a Nat.le.refl proof argument.
+        // A syntactic proof occurrence does not establish that the actual
+        // recursor-major evaluator forces it. Reuse C97's *already measured*
+        // immutable-source histogram to record demand, without touching the
+        // evaluator, work owner, captured binding or diagnostic counts.
+        if std::env::var_os("NUCLEUS_C108_PROOF_ARGUMENT_DEMAND_TRACE").is_some() {
+            let demand=|kind:u8,source:u64|current.heads.get(&(kind,source))
+                .copied().unwrap_or(0).saturating_sub(
+                    self.baseline.heads.get(&(kind,source)).copied().unwrap_or(0));
+            eprintln!(
+                "NUCLEUS_C108_PROOF_ARGUMENT_OWNER:start={}:spent={spent}:root={}:proof_app={}:succ_app={}:le_refl={}:nat_succ={}",
+                self.start,demand(1,7219),demand(1,6509),demand(1,1585),
+                demand(4,76),demand(4,64),
+            );
+        }
         let mut repeated:Vec<_>=current.repeated_heads.iter().filter_map(|(key,count)|{
             let delta=count.saturating_sub(*self.baseline.repeated_heads.get(key).unwrap_or(&0));
             (delta>0).then_some((*key,delta))
@@ -704,157 +1762,6 @@ impl Drop for ExposureFuelScope<'_> {
     fn drop(&mut self) { self.depth.set(self.depth.get().saturating_sub(1)); if self.owner { self.fuel.set(None); } }
 }
 
-// C143 diagnostic census. Every expression ID is counted exactly, but the
-// bounded source-closure sample is only a workload classifier, not a checked
-// reduction key (pending spine and transparency are not represented here).
-#[cfg(feature="diagnostics")]
-#[derive(Default)]
-struct C143HeadStats {
-    total:usize,
-    by_expr:HashMap<ExprId,usize>,
-    // C145: disjoint source expression kinds and actual bound-value outcomes.
-    // The full captured lexical environment remains semantically authoritative.
-    by_kind:[usize;8],
-    bvar_kind:[usize;5],
-    lam_beta:usize,
-    lam_rigid:usize,
-    sample_steps:usize,
-    sample_seen:HashSet<Closure>,
-    sample_repeats:usize,
-    sample_overflow:usize,
-    // C146 bounded *observation* of one binding-node quotient.  Neither key
-    // authorizes reusing a completed exposure or eliminating pending frames.
-    c146_target_total:usize,
-    c146_sampled:usize,
-    c146_missing:usize,
-    c146_overflow:usize,
-    c146_pending_nonempty:usize,
-    // Exact source closure includes its universe substitution; deleting that
-    // distinction would be an unsound observational quotient.
-    c146_full:HashSet<(Closure,Vec<Closure>)>,
-    c146_projected:HashSet<(ExprId,crate::value::LevelSubstitution,u64,Vec<Closure>)>,
-    // C147: intentionally optimistic context-erased census over *all*
-    // visits to BVar1/2. Never use these keys to replay a checked result.
-    c147_target_total:usize,
-    c147_missing:usize,
-    c147_overflow:bool,
-    c147_full:HashSet<(ExprId,u64)>,
-    c147_projected:HashSet<(ExprId,u64)>,
-    // C148: select complete *binding-node groups*, keeping universe levels
-    // and full pending spine in both compared observation keys. Still no replay.
-    c148_target_total:usize,
-    c148_sampled:usize,
-    c148_pending_nonempty:usize,
-    c148_missing:usize,
-    c148_overflow:bool,
-    c148_full:HashSet<(Closure,Vec<Closure>)>,
-    c148_projected:HashSet<(ExprId,crate::value::LevelSubstitution,u64,Vec<Closure>)>,
-}
-#[cfg(feature="diagnostics")]
-impl C143HeadStats {
-    fn record(&mut self,closure:&Closure,expression:Option<&Expr>,pending:&[Closure],
-        projection_sample:bool,upper_bound_census:bool,binding_group_sample:bool) {
-        self.total+=1;
-        *self.by_expr.entry(closure.expr).or_default()+=1;
-        let kind=match expression {
-            Some(Expr::BVar(_))=>0,
-            Some(Expr::App{..})=>1,
-            Some(Expr::Lam{..})=>2,
-            Some(Expr::Let{..})=>3,
-            Some(Expr::Proj{..})=>4,
-            Some(Expr::Const{..})=>5,
-            Some(Expr::NatLit(_))=>6,
-            _=>7,
-        };
-        self.by_kind[kind]+=1;
-        if kind==2 {
-            if pending.is_empty() {self.lam_rigid+=1;}else{self.lam_beta+=1;}
-        }
-        // Stable inclusion for a given immutable source closure; deliberately
-        // no claim of statistical randomness or semantic state equality.
-        let mix=(closure.expr.0 as u64).wrapping_mul(0x9e3779b97f4a7c15)
-            ^ closure.env.id().wrapping_mul(0xbf58476d1ce4e5b9);
-        // C146: all target visits are accounted for; the 1/256 predicate is
-        // deterministic in the *complete* immutable source closure, keeping
-        // exactly the same occurrences in the full and projected sets.
-        if projection_sample && matches!(expression,Some(Expr::BVar(_)))
-            && matches!(closure.expr.0,1|6|11) {
-            self.c146_target_total+=1;
-            if mix&255==0 {
-                self.c146_sampled+=1;
-                if !pending.is_empty() {self.c146_pending_nonempty+=1;}
-                if let Some(Expr::BVar(index))=expression {
-                    if let Some(binding_node)=closure.env.diagnostic_binding_node_id(*index) {
-                        let exact=(closure.clone(),pending.to_vec());
-                        if !self.c146_full.contains(&exact)
-                            && self.c146_full.len()>=131_072 {
-                            self.c146_overflow+=1;
-                        } else {
-                            self.c146_full.insert(exact);
-                            self.c146_projected.insert((closure.expr,
-                                closure.levels.clone(),binding_node,pending.to_vec()));
-                        }
-                    } else {self.c146_missing+=1;}
-                }
-            }
-        }
-        if upper_bound_census && matches!(closure.expr.0,6|11)
-            && let Some(Expr::BVar(index))=expression {
-            self.c147_target_total+=1;
-            if !self.c147_overflow {
-                if let Some(binding_node)=closure.env.diagnostic_binding_node_id(*index) {
-                    let full=(closure.expr,closure.env.id());
-                    let projected=(closure.expr,binding_node);
-                    // This cap bounds diagnostic allocation.  Overflow is an
-                    // explicit UNKNOWN, never a partially complete census.
-                    if (!self.c147_full.contains(&full) && self.c147_full.len()>=1_600_000)
-                        || (!self.c147_projected.contains(&projected)
-                            && self.c147_projected.len()>=1_600_000) {
-                        self.c147_overflow=true;
-                    } else {
-                        self.c147_full.insert(full);
-                        self.c147_projected.insert(projected);
-                    }
-                } else {self.c147_missing+=1;}
-            }
-        }
-        if binding_group_sample && matches!(closure.expr.0,6|11)
-            && let Some(Expr::BVar(index))=expression {
-            self.c148_target_total+=1;
-            if let Some(binding_node)=closure.env.diagnostic_binding_node_id(*index) {
-                // Sample by the *projected class*, never the full environment.
-                // Thus every visit to a selected (ExprId, used binding) is
-                // included even when the lexical outer frames are different.
-                let class_mix=(closure.expr.0 as u64).wrapping_mul(0x9e3779b97f4a7c15)
-                    ^ binding_node.wrapping_mul(0xbf58476d1ce4e5b9);
-                if class_mix&15==0 {
-                    self.c148_sampled+=1;
-                    if !pending.is_empty() {self.c148_pending_nonempty+=1;}
-                    if !self.c148_overflow {
-                        let full=(closure.clone(),pending.to_vec());
-                        let projected=(closure.expr,closure.levels.clone(),binding_node,
-                            pending.to_vec());
-                        if (!self.c148_full.contains(&full)
-                            && self.c148_full.len()>=200_000)
-                            || (!self.c148_projected.contains(&projected)
-                                && self.c148_projected.len()>=200_000) {
-                            self.c148_overflow=true;
-                        } else {
-                            self.c148_full.insert(full);
-                            self.c148_projected.insert(projected);
-                        }
-                    }
-                }
-            } else {self.c148_missing+=1;}
-        }
-        if mix&255!=0 {return}
-        self.sample_steps+=1;
-        if self.sample_seen.contains(closure) {self.sample_repeats+=1;return}
-        if self.sample_seen.len()>=131_072 {self.sample_overflow+=1;return}
-        self.sample_seen.insert(closure.clone());
-    }
-}
-
 pub struct Machine<'a> {
     authority: AuthorityId,
     demand_major: bool,
@@ -870,27 +1777,25 @@ pub struct Machine<'a> {
     #[cfg(feature="diagnostics")]
     c97_head_pending_seen:RefCell<HashSet<(Closure,Vec<Closure>,Transparency,bool)>>,
     #[cfg(feature="diagnostics")]
-    c140_rhs_work_active:Cell<usize>,
+    c115_major_active:Cell<usize>,
     #[cfg(feature="diagnostics")]
-    c140_rhs_head_steps:Cell<usize>,
+    c115_bvar_steps:RefCell<Vec<C115BVarStep>>,
     #[cfg(feature="diagnostics")]
-    c140_rhs_recursor_calls:Cell<usize>,
+    c116_context_enabled:bool,
     #[cfg(feature="diagnostics")]
-    c142_head_steps_total:Cell<usize>,
+    c117_completed_entry_enabled:bool,
     #[cfg(feature="diagnostics")]
-    c142_recursor_calls_total:Cell<usize>,
+    c117_completed_calls:RefCell<Vec<C117CompletedCall>>,
     #[cfg(feature="diagnostics")]
-    c143_head_active:Cell<bool>,
+    c118_interior_tail_enabled:bool,
     #[cfg(feature="diagnostics")]
-    c145_head_active:Cell<bool>,
+    c118_current_invocation:Cell<Option<usize>>,
     #[cfg(feature="diagnostics")]
-    c146_head_active:Cell<bool>,
+    c118_next_invocation:Cell<usize>,
     #[cfg(feature="diagnostics")]
-    c147_head_active:Cell<bool>,
+    c119_dynamic_context_enabled:bool,
     #[cfg(feature="diagnostics")]
-    c148_head_active:Cell<bool>,
-    #[cfg(feature="diagnostics")]
-    c143_head_stats:RefCell<C143HeadStats>,
+    c120_repeated_span_enabled:bool,
     #[cfg(test)]
     replay_key_builds: Cell<usize>,
     exposure_cache: Option<ExposureCache>,
@@ -929,27 +1834,29 @@ impl<'a> Machine<'a> {
             #[cfg(feature="diagnostics")]
             c97_head_pending_seen:RefCell::new(HashSet::new()),
             #[cfg(feature="diagnostics")]
-            c140_rhs_work_active:Cell::new(0),
+            c115_major_active:Cell::new(0),
             #[cfg(feature="diagnostics")]
-            c140_rhs_head_steps:Cell::new(0),
+            c115_bvar_steps:RefCell::new(Vec::new()),
             #[cfg(feature="diagnostics")]
-            c140_rhs_recursor_calls:Cell::new(0),
+            c116_context_enabled:std::env::var_os("NUCLEUS_C116_BVAR_CONTEXT_TRACE").is_some()
+                || std::env::var_os("NUCLEUS_C118_INTERIOR_TAIL_TRACE").is_some()
+                || std::env::var_os("NUCLEUS_C119_DYNAMIC_CONTEXT_TRACE").is_some()
+                || std::env::var_os("NUCLEUS_C120_REPEATED_SPAN_TRACE").is_some(),
             #[cfg(feature="diagnostics")]
-            c142_head_steps_total:Cell::new(0),
+            c117_completed_entry_enabled:std::env::var_os("NUCLEUS_C117_COMPLETED_ENTRY_TRACE").is_some(),
             #[cfg(feature="diagnostics")]
-            c142_recursor_calls_total:Cell::new(0),
+            c117_completed_calls:RefCell::new(Vec::new()),
             #[cfg(feature="diagnostics")]
-            c143_head_active:Cell::new(false),
+            c118_interior_tail_enabled:std::env::var_os("NUCLEUS_C118_INTERIOR_TAIL_TRACE").is_some()
+                || std::env::var_os("NUCLEUS_C120_REPEATED_SPAN_TRACE").is_some(),
             #[cfg(feature="diagnostics")]
-            c145_head_active:Cell::new(false),
+            c118_current_invocation:Cell::new(None),
             #[cfg(feature="diagnostics")]
-            c146_head_active:Cell::new(false),
+            c118_next_invocation:Cell::new(0),
             #[cfg(feature="diagnostics")]
-            c147_head_active:Cell::new(false),
+            c119_dynamic_context_enabled:std::env::var_os("NUCLEUS_C119_DYNAMIC_CONTEXT_TRACE").is_some(),
             #[cfg(feature="diagnostics")]
-            c148_head_active:Cell::new(false),
-            #[cfg(feature="diagnostics")]
-            c143_head_stats:RefCell::new(C143HeadStats::default()),
+            c120_repeated_span_enabled:std::env::var_os("NUCLEUS_C120_REPEATED_SPAN_TRACE").is_some(),
             #[cfg(test)]
             replay_key_builds: Cell::new(0),
             exposure_cache: None,
@@ -1057,22 +1964,6 @@ impl<'a> Machine<'a> {
     ) -> Judgment<Value> {
         self.expose_internal(closure, transparency, budget, false, true)
             .map(|exposure| exposure.value)
-    }
-
-    // C140 read-only meter for the already source-qualified exact deferred
-    // right operand. Counts work, not definitional-equality certificates.
-    #[cfg(feature="diagnostics")]
-    pub(crate) fn c140_start_rhs_work(&self)->usize {
-        self.c140_rhs_head_steps.set(0);
-        self.c140_rhs_recursor_calls.set(0);
-        self.c140_rhs_work_active.set(self.c140_rhs_work_active.get()+1);
-        REPLAY_KEY_WORK.load(std::sync::atomic::Ordering::Relaxed)
-    }
-    #[cfg(feature="diagnostics")]
-    pub(crate) fn c140_finish_rhs_work(&self,key_start:usize)->(usize,usize,usize) {
-        self.c140_rhs_work_active.set(self.c140_rhs_work_active.get().saturating_sub(1));
-        (self.c140_rhs_head_steps.get(),self.c140_rhs_recursor_calls.get(),
-            REPLAY_KEY_WORK.load(std::sync::atomic::Ordering::Relaxed).saturating_sub(key_start))
     }
 
     /// Unfold exactly the definition at an application's head, then resume
@@ -1310,6 +2201,52 @@ impl<'a> Machine<'a> {
         preserve_stuck_projection: bool,
         pending: Vec<Closure>,
     ) -> Judgment<Exposure> {
+        #[cfg(feature="diagnostics")]
+        let c117_call=(self.c117_completed_entry_enabled && self.c115_major_active.get()!=0)
+            .then(||{
+                let state=(closure.clone(),pending.clone(),transparency,preserve_stuck_projection);
+                let cached=!record_witnesses && budget>0
+                    && self.exposure_fuel.get()!=Some(0)
+                    && (self.exposure_fuel.get().is_none() || self.exposure_depth.get()<64)
+                    && self.exposure_cache.as_ref().is_some_and(|cache|
+                        cache.borrow().values.contains_key(&Rc::new(CachedExposureKey::new((
+                            self.authority,closure.clone(),transparency,
+                            preserve_stuck_projection,pending.clone(),
+                        )))));
+                let entry_bvar=matches!(self.expressions.get(closure.expr),Some(Expr::BVar(_)));
+                (state,cached,entry_bvar)
+            });
+        let result=self.expose_internal_with_pending_impl(
+            closure,transparency,budget,record_witnesses,preserve_stuck_projection,pending);
+        #[cfg(feature="diagnostics")]
+        if let Some((state,cached,entry_bvar))=c117_call {
+            let eligible=if record_witnesses {None} else {
+                result.proven_value().and_then(|exposure|{
+                    let value=&exposure.value;
+                    let unresolved=self.demand_major && matches!(value,
+                        Value::Neutral(Neutral{head:NeutralHead::Const{name,..},..})
+                            if self.recursor_reductions.contains_key(name))
+                        && !self.recursor_has_immutable_local_major(value);
+                    (!unresolved).then(||value.clone())
+                })
+            };
+            self.c117_completed_calls.borrow_mut().push(C117CompletedCall{
+                state,eligible,unknown:result.is_unknown(),refuted:result.is_refuted(),
+                cached,entry_bvar,
+            });
+        }
+        result
+    }
+
+    fn expose_internal_with_pending_impl(
+        &self,
+        closure: Closure,
+        transparency: Transparency,
+        budget: usize,
+        record_witnesses: bool,
+        preserve_stuck_projection: bool,
+        pending: Vec<Closure>,
+    ) -> Judgment<Exposure> {
         if self.exposure_fuel.get().is_some() && self.exposure_depth.get() >= 64 { return Judgment::unknown("constructor-demand-depth-exhausted"); }
         self.exposure_depth.set(self.exposure_depth.get() + 1);
         let _fuel_scope = ExposureFuelScope { fuel: &self.exposure_fuel, depth: &self.exposure_depth, owner: false };
@@ -1326,34 +2263,10 @@ impl<'a> Machine<'a> {
             self.authority, closure.clone(), transparency,
             preserve_stuck_projection, pending.clone(),
         )));
-        // C141 only observes the exact right-hand source closure found by
-        // C137–C140. The full cache key still includes authority, lexical
-        // closure, transparency, projection policy and pending closures.
-        #[cfg(feature="diagnostics")]
-        let c141_exact = std::env::var_os("NUCLEUS_C141_EXACT_CACHE").is_some()
-            && closure.expr.0 == 8799 && closure.env.id() == 0
-            && closure.levels.entries().next().is_none()
-            && preserve_stuck_projection && pending.is_empty();
-        #[cfg(feature="diagnostics")]
-        let c141_digest = key.digest;
-        #[cfg(feature="diagnostics")]
-        let c141_event = |event:&str,value:Option<&Value>,published:bool| {
-            if !c141_exact { return; }
-            let head = match value {
-                Some(Value::Neutral(Neutral {head:NeutralHead::Const{name,..},spine})) =>
-                    format!("Const{}A{}",name.0,spine.len()),
-                Some(_) => "OtherValue".to_owned(),
-                None => "None".to_owned(),
-            };
-            let scope = self.c140_rhs_work_active.get()!=0;
-            eprintln!("NUCLEUS_C141_CACHE:event={event}:source=8799:env=0:levels=0:authority={}:transparency={transparency:?}:pending=0:preserve=true:digest={c141_digest}:scope={scope}:budget={budget}:head={head}:published={published}",self.authority.0);
-        };
         let cached = cache.borrow_mut().values.get_mut(&key).map(|entry|{
             entry.referenced=true;entry.value.clone()
         });
         if let Some(value) = cached {
-            #[cfg(feature="diagnostics")]
-            c141_event("lookup-hit",Some(&value),true);
             if let Some(fuel) = self.exposure_fuel.get() { self.exposure_fuel.set(Some(fuel.saturating_sub(1))); }
             #[cfg(feature = "diagnostics")]
             if std::env::var_os("NUCLEUS_TRACE_EXPOSURE_CACHE").is_some() {
@@ -1364,127 +2277,10 @@ impl<'a> Machine<'a> {
                 "certified-cached-closure-exposure",
             );
         }
-        #[cfg(feature="diagnostics")]
-        c141_event("lookup-miss",None,false);
-        #[cfg(feature="diagnostics")]
-        let c142_exact = c141_exact
-            && std::env::var_os("NUCLEUS_C142_EXACT_MISS_COST").is_some();
-        #[cfg(feature="diagnostics")]
-        let c142_before = (self.c142_head_steps_total.get(),
-            self.c142_recursor_calls_total.get(),
-            REPLAY_KEY_WORK.load(std::sync::atomic::Ordering::Relaxed),
-            self.exposure_fuel.get());
-        #[cfg(feature="diagnostics")]
-        let c143_selected = c142_exact && budget>=65_000
-            && !self.c143_head_active.get()
-            && std::env::var_os("NUCLEUS_C143_HEAD_REUSE_SAMPLE").is_some();
-        #[cfg(feature="diagnostics")]
-        let c145_selected=c143_selected
-            && std::env::var_os("NUCLEUS_C145_ACTIONS").is_some();
-        #[cfg(feature="diagnostics")]
-        let c146_selected=c145_selected
-            && std::env::var_os("NUCLEUS_C146_BINDING_PROJECTED").is_some();
-        #[cfg(feature="diagnostics")]
-        let c147_selected=c143_selected
-            && std::env::var_os("NUCLEUS_C147_BINDING_UPPER").is_some();
-        #[cfg(feature="diagnostics")]
-        let c148_selected=c143_selected
-            && std::env::var_os("NUCLEUS_C148_BINDING_GROUP").is_some();
-        #[cfg(feature="diagnostics")]
-        if c143_selected {
-            self.c143_head_active.set(true);
-            self.c145_head_active.set(c145_selected);
-            self.c146_head_active.set(c146_selected);
-            self.c147_head_active.set(c147_selected);
-            self.c148_head_active.set(c148_selected);
-            *self.c143_head_stats.borrow_mut()=C143HeadStats::default();
-        }
         let result = self.expose_uncached_internal_with_pending(
             closure, transparency, budget, false,
             preserve_stuck_projection, pending,
         );
-        #[cfg(feature="diagnostics")]
-        if c143_selected {
-            self.c143_head_active.set(false);
-            self.c145_head_active.set(false);
-            self.c146_head_active.set(false);
-            self.c147_head_active.set(false);
-            self.c148_head_active.set(false);
-            let stats=std::mem::take(&mut *self.c143_head_stats.borrow_mut());
-            if c148_selected {
-                let full_unique=stats.c148_full.len();
-                let projected_unique=stats.c148_projected.len();
-                eprintln!("NUCLEUS_C148_GROUP:source=8799:env=0:authority={}:scope={}:budget={budget}:head_total={}:target_total={}:sampled={}:pending_nonempty={}:missing={}:overflow={}:full_unique={full_unique}:projected_unique={projected_unique}:full_repeats={}:projected_repeats={}",
-                    self.authority.0,self.c140_rhs_work_active.get()!=0,stats.total,
-                    stats.c148_target_total,stats.c148_sampled,stats.c148_pending_nonempty,
-                    stats.c148_missing,stats.c148_overflow,
-                    stats.c148_sampled.saturating_sub(full_unique),
-                    stats.c148_sampled.saturating_sub(projected_unique));
-            }
-            if c147_selected {
-                let full_unique=stats.c147_full.len();
-                let projected_unique=stats.c147_projected.len();
-                let eligible=stats.c147_target_total.saturating_sub(stats.c147_missing);
-                let scope=self.c140_rhs_work_active.get()!=0;
-                eprintln!("NUCLEUS_C147_UPPER:source=8799:env=0:authority={}:scope={scope}:budget={budget}:head_total={}:target_total={}:missing={}:overflow={}:full_unique={full_unique}:projected_unique={projected_unique}:full_repeats={}:projected_repeats={}",
-                    self.authority.0,stats.total,stats.c147_target_total,
-                    stats.c147_missing,stats.c147_overflow,
-                    eligible.saturating_sub(full_unique),
-                    eligible.saturating_sub(projected_unique));
-            }
-            if c146_selected {
-                let full_unique=stats.c146_full.len();
-                let projected_unique=stats.c146_projected.len();
-                let eligible=stats.c146_sampled.saturating_sub(stats.c146_missing)
-                    .saturating_sub(stats.c146_overflow);
-                let scope=self.c140_rhs_work_active.get()!=0;
-                eprintln!("NUCLEUS_C146_BINDING:source=8799:env=0:authority={}:scope={scope}:budget={budget}:head_total={}:bvar_total={}:target_total={}:sampled={}:sample_missing={}:sample_overflow={}:pending_nonempty={}:full_unique={full_unique}:projected_unique={projected_unique}:full_repeats={}:projected_repeats={}",
-                    self.authority.0,stats.total,stats.by_kind[0],
-                    stats.c146_target_total,stats.c146_sampled,stats.c146_missing,
-                    stats.c146_overflow,stats.c146_pending_nonempty,
-                    eligible.saturating_sub(full_unique),
-                    eligible.saturating_sub(projected_unique));
-            }
-            if c145_selected {
-                let k=stats.by_kind;
-                let b=stats.bvar_kind;
-                let scope=self.c140_rhs_work_active.get()!=0;
-                eprintln!("NUCLEUS_C145_ACTIONS:source=8799:env=0:authority={}:scope={scope}:budget={budget}:total={}:bvar={}:app={}:lam={}:let={}:proj={}:const={}:natlit={}:other={}:bvar_closure={}:bvar_free={}:bvar_nat={}:bvar_neutral={}:bvar_unbound={}:lam_beta={}:lam_rigid={}",
-                    self.authority.0,stats.total,k[0],k[1],k[2],k[3],k[4],k[5],k[6],k[7],
-                    b[0],b[1],b[2],b[3],b[4],stats.lam_beta,stats.lam_rigid);
-            }
-            let mut top:Vec<_>=stats.by_expr.into_iter().collect();
-            top.sort_unstable_by(|a,b|b.1.cmp(&a.1).then_with(||a.0.0.cmp(&b.0.0)));
-            let top=top.into_iter().take(8)
-                .map(|(expr,count)|format!("Expr{}@{count}",expr.0))
-                .collect::<Vec<_>>().join(",");
-            let scope=self.c140_rhs_work_active.get()!=0;
-            eprintln!("NUCLEUS_C143_HEADS:source=8799:env=0:authority={}:scope={scope}:budget={budget}:total={}:sample_steps={}:sample_unique={}:sample_repeats={}:sample_overflow={}:top={top}",self.authority.0,stats.total,stats.sample_steps,stats.sample_seen.len(),stats.sample_repeats,stats.sample_overflow);
-        }
-        #[cfg(feature="diagnostics")]
-        if c142_exact {
-            let steps=self.c142_head_steps_total.get().saturating_sub(c142_before.0);
-            let recursor_calls=self.c142_recursor_calls_total.get().saturating_sub(c142_before.1);
-            let key_work=REPLAY_KEY_WORK.load(std::sync::atomic::Ordering::Relaxed)
-                .saturating_sub(c142_before.2);
-            let fuel_before=c142_before.3.map_or_else(||"none".to_owned(),|n|n.to_string());
-            let fuel_after=self.exposure_fuel.get().map_or_else(||"none".to_owned(),|n|n.to_string());
-            let outcome=if result.is_proven() {"PROVEN"}
-                else if result.is_unknown() {"UNKNOWN"}else{"REFUTED"};
-            let head=match result.proven_value().map(|exposure| &exposure.value) {
-                Some(Value::Neutral(Neutral {head:NeutralHead::Const{name,..},spine})) =>
-                    format!("Const{}A{}",name.0,spine.len()),
-                Some(_)=>"OtherValue".to_owned(),
-                None=>"None".to_owned(),
-            };
-            let scope=self.c140_rhs_work_active.get()!=0;
-            eprintln!("NUCLEUS_C142_MISS:source=8799:env=0:authority={}:transparency={transparency:?}:levels=0:pending=0:preserve=true:scope={scope}:budget={budget}:outcome={outcome}:head={head}:steps={steps}:recursor_calls={recursor_calls}:key_work={key_work}:fuel_before={fuel_before}:fuel_after={fuel_after}",self.authority.0);
-        }
-        #[cfg(feature="diagnostics")]
-        c141_event(if result.is_proven() {"uncached-proven"}
-            else if result.is_unknown() {"uncached-unknown"}
-            else {"uncached-refuted"},
-            result.proven_value().map(|exposure| &exposure.value),false);
         if let Some(established) = result.proven_value()
             // A certified recursor stopped because its major did not expose.
             // This is not a budget-independent normal form; permit a later
@@ -1495,8 +2291,6 @@ impl<'a> Machine<'a> {
                 && !self.recursor_has_immutable_local_major(&established.value))
         {
             let mut entries = cache.borrow_mut();
-            #[cfg(feature="diagnostics")]
-            let c141_provenance_key = c141_exact.then(||key.clone());
             // Optional cache maintenance shares the existing owner when
             // present, and otherwise uses this call's finite local allowance.
             // Exhaustion declines publication; the proved result is retained.
@@ -1506,15 +2300,6 @@ impl<'a> Machine<'a> {
                     if fuel==0{return false} self.exposure_fuel.set(Some(fuel-1));true
                 } else if local_work>0 {local_work-=1;true} else {false}
             });
-            #[cfg(feature="diagnostics")]
-            if let Some(provenance_key)=c141_provenance_key {
-                c141_event("publication",Some(&established.value),
-                    entries.values.contains_key(&provenance_key));
-            }
-        } else {
-            #[cfg(feature="diagnostics")]
-            c141_event("publication-skipped",
-                result.proven_value().map(|exposure| &exposure.value),false);
         }
         result
     }
@@ -1751,6 +2536,43 @@ impl<'a> Machine<'a> {
 
     fn expose_uncached_internal_with_pending(
         &self,
+        closure: Closure,
+        transparency: Transparency,
+        budget: usize,
+        record_witnesses: bool,
+        preserve_stuck_projection: bool,
+        pending: Vec<Closure>,
+    ) -> Judgment<Exposure> {
+        #[cfg(feature="diagnostics")]
+        let c118_scope=(self.c118_interior_tail_enabled && self.c115_major_active.get()!=0)
+            .then(||{
+                let id=self.c118_next_invocation.get();
+                self.c118_next_invocation.set(id+1);
+                let previous=self.c118_current_invocation.replace(Some(id));
+                let start=self.c115_bvar_steps.borrow().len();
+                (id,start,C118InvocationScope{active:&self.c118_current_invocation,previous})
+            });
+        let result=self.expose_uncached_internal_with_pending_impl(
+            closure,transparency,budget,record_witnesses,preserve_stuck_projection,pending);
+        #[cfg(feature="diagnostics")]
+        if let Some((id,start,_scope))=c118_scope {
+            let fuel_end=self.exposure_fuel.get();
+            let terminal=Rc::new(result.clone());
+            for step in self.c115_bvar_steps.borrow_mut()[start..].iter_mut() {
+                if step.c118_invocation==Some(id) {
+                    step.c118_terminal=Some(C118Terminal{
+                        result:terminal.clone(),
+                        tail_work:step.c118_fuel.zip(fuel_end).map(|(start,end)|
+                            start.saturating_sub(end)),
+                    });
+                }
+            }
+        }
+        result
+    }
+
+    fn expose_uncached_internal_with_pending_impl(
+        &self,
         mut closure: Closure,
         transparency: Transparency,
         mut budget: usize,
@@ -1767,19 +2589,6 @@ impl<'a> Machine<'a> {
             }
             budget -= 1;
             if let Some(fuel) = self.exposure_fuel.get() { self.exposure_fuel.set(Some(fuel - 1)); }
-            #[cfg(feature="diagnostics")]
-            if self.c140_rhs_work_active.get()!=0 {
-                self.c140_rhs_head_steps.set(self.c140_rhs_head_steps.get()+1);
-            }
-            #[cfg(feature="diagnostics")]
-            self.c142_head_steps_total.set(self.c142_head_steps_total.get()+1);
-            #[cfg(feature="diagnostics")]
-            if self.c143_head_active.get() {
-                self.c143_head_stats.borrow_mut().record(
-                    &closure,self.expressions.get(closure.expr),&pending,
-                    self.c146_head_active.get(),self.c147_head_active.get(),
-                    self.c148_head_active.get());
-            }
             if !visited.insert((self.authority, closure.expr, closure.env.id())) {
                 return Judgment::unknown("reduction-cycle");
             }
@@ -1815,19 +2624,40 @@ impl<'a> Machine<'a> {
             }
             match expression {
                 Expr::BVar(index) => {
-                    let bound=closure.env.lookup(*index);
                     #[cfg(feature="diagnostics")]
-                    if self.c145_head_active.get() {
-                        let kind=match bound.as_ref() {
+                    if self.c115_major_active.get()!=0 {
+                        let kind=match closure.env.lookup_binding_ref(*index) {
                             Some(EnvBinding::Closure(_))=>0,
-                            Some(EnvBinding::Free(_))=>1,
-                            Some(EnvBinding::NatLit(_))=>2,
-                            Some(EnvBinding::Neutral(_))=>3,
+                            Some(EnvBinding::Neutral(_))=>1,
+                            Some(EnvBinding::Free(_))=>2,
+                            Some(EnvBinding::NatLit(_))=>3,
                             None=>4,
                         };
-                        self.c143_head_stats.borrow_mut().bvar_kind[kind]+=1;
+                        self.c115_bvar_steps.borrow_mut().push(C115BVarStep{
+                            state:(closure.clone(),pending.clone(),transparency,preserve_stuck_projection),
+                            node:closure.env.diagnostic_binding_node_id(*index),
+                            kind,
+                            context:self.c116_context_enabled.then(||C116BVarContext{
+                                budget,
+                                fuel:self.exposure_fuel.get(),
+                                witnesses:record_witnesses,
+                                visits:visited.diagnostic_keys(),
+                                target:match closure.env.lookup_binding_ref(*index) {
+                                    Some(EnvBinding::Closure(bound))=>Some(bound.clone()),
+                                    _=>None,
+                                },
+                            }),
+                            c118_invocation:self.c118_interior_tail_enabled
+                                .then(||self.c118_current_invocation.get()).flatten(),
+                            c118_fuel:self.c118_interior_tail_enabled
+                                .then(||self.exposure_fuel.get()).flatten(),
+                            c118_terminal:None,
+                            c119_context:self.c119_dynamic_context_enabled.then(||(
+                                self.exposure_depth.get(),self.neutral_projection_depth.get(),
+                                self.exposure_fuel.get())),
+                        });
                     }
-                    if let Some(bound) = bound {
+                    if let Some(bound) = closure.env.lookup(*index) {
                         match bound {
                             EnvBinding::Closure(bound) => {
                                 visited.clear();
@@ -3038,12 +3868,6 @@ impl<'a> Machine<'a> {
     fn qualified_recursor_result(
         &self,neutral:&Neutral,budget:usize,goal:CheckedReplayGoal,
     ) -> Judgment<Value> {
-        #[cfg(feature="diagnostics")]
-        if self.c140_rhs_work_active.get()!=0 {
-            self.c140_rhs_recursor_calls.set(self.c140_rhs_recursor_calls.get()+1);
-        }
-        #[cfg(feature="diagnostics")]
-        self.c142_recursor_calls_total.set(self.c142_recursor_calls_total.get()+1);
         // Exposure and replay consume the same owner's work allowance. A
         // child never receives a fresh budget, and this scope does not reset
         // an allowance already owned by a surrounding constructor demand.
@@ -3052,8 +3876,6 @@ impl<'a> Machine<'a> {
             self.exposure_fuel.set(Some(budget));
             Some(ConstructorFuelScope { fuel: &self.exposure_fuel })
         } else { None };
-        #[cfg(feature="diagnostics")]
-        let c125_owner_start = self.exposure_fuel.get().unwrap_or(0);
         #[cfg(feature="diagnostics")]
         let _work_trace=std::env::var_os("NUCLEUS_TRACE_REPLAY_CACHE").map(|_|ReplayWorkTrace{
             fuel:&self.exposure_fuel,start:self.exposure_fuel.get().unwrap_or(0),
@@ -3073,6 +3895,125 @@ impl<'a> Machine<'a> {
         #[cfg(feature="diagnostics")]
         let _c105_receipt=std::env::var_os("NUCLEUS_C105_TERMINAL_BINDING_TRACE").map(|_|C105TerminalReceipt{
             counts:&c105_counts,fuel:&self.exposure_fuel,
+            start:self.exposure_fuel.get().unwrap_or(0),
+        });
+        #[cfg(feature="diagnostics")]
+        let c106_counts=RefCell::new(C106SupportCounts::default());
+        #[cfg(feature="diagnostics")]
+        let _c106_receipt=std::env::var_os("NUCLEUS_C106_RELEVANT_BINDINGS_TRACE").map(|_|C106SupportReceipt{
+            counts:&c106_counts,fuel:&self.exposure_fuel,
+            start:self.exposure_fuel.get().unwrap_or(0),
+        });
+        #[cfg(feature="diagnostics")]
+        let c109_counts=RefCell::new(C109FunctionCounts::default());
+        #[cfg(feature="diagnostics")]
+        let _c109_receipt=std::env::var_os("NUCLEUS_C109_FUNCTION_BINDING_TRACE").map(|_|C109FunctionReceipt{
+            counts:&c109_counts,fuel:&self.exposure_fuel,
+            start:self.exposure_fuel.get().unwrap_or(0),
+        });
+        #[cfg(feature="diagnostics")]
+        let c110_counts=RefCell::new(C110CaptureCounts::default());
+        #[cfg(feature="diagnostics")]
+        let _c110_receipt=std::env::var_os("NUCLEUS_C110_FUNCTION_CAPTURE_TRACE").map(|_|C110CaptureReceipt{
+            counts:&c110_counts,fuel:&self.exposure_fuel,
+            start:self.exposure_fuel.get().unwrap_or(0),
+        });
+        #[cfg(feature="diagnostics")]
+        let c111_counts=RefCell::new(C111MajorCounts::default());
+        #[cfg(feature="diagnostics")]
+        let _c111_receipt=std::env::var_os("NUCLEUS_C111_CHARGED_MAJOR_OUTCOMES_TRACE").map(|_|C111MajorReceipt{
+            counts:&c111_counts,fuel:&self.exposure_fuel,
+            start:self.exposure_fuel.get().unwrap_or(0),
+        });
+        #[cfg(feature="diagnostics")]
+        let c112_counts=RefCell::new(C112RuleCounts::default());
+        #[cfg(feature="diagnostics")]
+        let _c112_receipt=std::env::var_os("NUCLEUS_C112_MAJOR_RULE_FRONTIER_TRACE").map(|_|C112RuleReceipt{
+            counts:&c112_counts,fuel:&self.exposure_fuel,
+            start:self.exposure_fuel.get().unwrap_or(0),
+        });
+        #[cfg(feature="diagnostics")]
+        let c113_counts=RefCell::new(C113HighCounts::default());
+        #[cfg(feature="diagnostics")]
+        let _c113_receipt=std::env::var_os("NUCLEUS_C113_POST_MAJOR_RHS_COST_TRACE").map(|_|C113HighReceipt{
+            counts:&c113_counts,fuel:&self.exposure_fuel,
+            start:self.exposure_fuel.get().unwrap_or(0),
+        });
+        #[cfg(feature="diagnostics")]
+        let c114_counts=RefCell::new(C114HighCounts::default());
+        #[cfg(feature="diagnostics")]
+        let _c114_receipt=std::env::var_os("NUCLEUS_C114_HIGH_MAJOR_STEP_TRACE").map(|_|C114HighReceipt{
+            counts:&c114_counts,fuel:&self.exposure_fuel,
+            start:self.exposure_fuel.get().unwrap_or(0),
+        });
+        #[cfg(feature="diagnostics")]
+        let c115_counts=RefCell::new(C115BoundCounts::default());
+        #[cfg(feature="diagnostics")]
+        let _c115_receipt=std::env::var_os("NUCLEUS_C115_BOUND_TRANSITION_IDENTITY_TRACE").map(|_|C115BoundReceipt{
+            counts:&c115_counts,fuel:&self.exposure_fuel,
+            start:self.exposure_fuel.get().unwrap_or(0),
+        });
+        #[cfg(feature="diagnostics")]
+        let c116_counts=RefCell::new(C116ContextCounts::default());
+        #[cfg(feature="diagnostics")]
+        let _c116_receipt=self.c116_context_enabled.then(||C116ContextReceipt{
+            counts:&c116_counts,fuel:&self.exposure_fuel,
+            start:self.exposure_fuel.get().unwrap_or(0),
+        });
+        #[cfg(feature="diagnostics")]
+        let c117_counts=RefCell::new(C117CallCounts::default());
+        #[cfg(feature="diagnostics")]
+        let _c117_receipt=self.c117_completed_entry_enabled.then(||C117CallReceipt{
+            counts:&c117_counts,fuel:&self.exposure_fuel,
+            start:self.exposure_fuel.get().unwrap_or(0),
+        });
+        #[cfg(feature="diagnostics")]
+        let c118_counts=RefCell::new(C118SegmentCounts::default());
+        #[cfg(feature="diagnostics")]
+        let _c118_receipt=self.c118_interior_tail_enabled.then(||C118SegmentReceipt{
+            counts:&c118_counts,fuel:&self.exposure_fuel,
+            start:self.exposure_fuel.get().unwrap_or(0),
+        });
+        #[cfg(feature="diagnostics")]
+        let c119_counts=RefCell::new(C119ContextCounts::default());
+        #[cfg(feature="diagnostics")]
+        let _c119_receipt=self.c119_dynamic_context_enabled.then(||C119ContextReceipt{
+            counts:&c119_counts,fuel:&self.exposure_fuel,
+            start:self.exposure_fuel.get().unwrap_or(0),
+        });
+        #[cfg(feature="diagnostics")]
+        let c120_counts=RefCell::new(C120SpanCounts::default());
+        #[cfg(feature="diagnostics")]
+        let _c120_receipt=self.c120_repeated_span_enabled.then(||C120SpanReceipt{
+            counts:&c120_counts,fuel:&self.exposure_fuel,
+            start:self.exposure_fuel.get().unwrap_or(0),
+        });
+        #[cfg(feature="diagnostics")]
+        let c121_counts=RefCell::new(C121MidCounts::default());
+        #[cfg(feature="diagnostics")]
+        let _c121_receipt=std::env::var_os("NUCLEUS_C121_MID_MAJOR_FRONTIER_TRACE").map(|_|C121MidReceipt{
+            counts:&c121_counts,fuel:&self.exposure_fuel,
+            start:self.exposure_fuel.get().unwrap_or(0),
+        });
+        #[cfg(feature="diagnostics")]
+        let c122_events=RefCell::new(Vec::<C122SourceEvent>::new());
+        #[cfg(feature="diagnostics")]
+        let _c122_receipt=std::env::var_os("NUCLEUS_C122_NESTED_SOURCE_TRANSITION_TRACE").map(|_|C122SourceReceipt{
+            events:&c122_events,fuel:&self.exposure_fuel,
+            start:self.exposure_fuel.get().unwrap_or(0),
+        });
+        #[cfg(feature="diagnostics")]
+        let c123_events=RefCell::new(Vec::<C123BVarChainEvent>::new());
+        #[cfg(feature="diagnostics")]
+        let _c123_receipt=std::env::var_os("NUCLEUS_C123_BVAR_CHAIN_TERMINAL_TRACE").map(|_|C123BVarChainReceipt{
+            events:&c123_events,fuel:&self.exposure_fuel,
+            start:self.exposure_fuel.get().unwrap_or(0),
+        });
+        #[cfg(feature="diagnostics")]
+        let c124_events=RefCell::new(Vec::<C124AppProfileEvent>::new());
+        #[cfg(feature="diagnostics")]
+        let _c124_receipt=std::env::var_os("NUCLEUS_C124_TERMINAL_APP_PROFILE").map(|_|C124AppProfileReceipt{
+            events:&c124_events,fuel:&self.exposure_fuel,
             start:self.exposure_fuel.get().unwrap_or(0),
         });
         #[cfg(feature="diagnostics")]
@@ -3113,6 +4054,8 @@ impl<'a> Machine<'a> {
         let mut current_is_requested=true;
         enum Continuation { Finish(Rc<ReplayKey>), Major(Neutral,bool) }
         let mut parents=Vec::new();
+        #[cfg(feature="diagnostics")]
+        let mut c113_awaiting_resume:Option<usize>=None;
         let mut established_major=None;
         let mut active=HashSet::new();
         let mut resolved:HashMap<usize,Value>=HashMap::new();
@@ -3140,6 +4083,12 @@ impl<'a> Machine<'a> {
                         Continuation::Major(parent,requested) => {
                             #[cfg(feature="diagnostics")]
                             if _c94_receipt.is_some(){c94_counts.resumed.set(c94_counts.resumed.get()+1);}
+                            #[cfg(feature="diagnostics")]
+                            if let Some(index)=c113_awaiting_resume.take() {
+                                if let Some(event)=c113_counts.borrow_mut().events.get_mut(index) {
+                                    event.resumed=true;
+                                }
+                            }
                             current=parent;
                             current_is_requested=requested;
                             established_major=Some(value);
@@ -3190,6 +4139,8 @@ impl<'a> Machine<'a> {
                     }
                 }
             }
+            #[cfg(feature="diagnostics")]
+            let mut c112_pending=None;
             let mut major_value=if let Some(value)=established_major.take() { value } else {
                 let Some(candidate)=self.completed_replay_key(*name,levels,&neutral.spine) else {return Judgment::unknown("nested-replay-key-work");};
                 let mut key=candidate;
@@ -3256,14 +4207,42 @@ impl<'a> Machine<'a> {
                 }else{None};
                 #[cfg(feature="diagnostics")]
                 let c96_before=self.exposure_fuel.get().unwrap_or(0);
+                #[cfg(feature="diagnostics")]
+                let c114_before=_c114_receipt.as_ref().map(|_|{
+                    let stats=self.c97_steps.borrow();
+                    (stats.loops,stats.unique_head_pending,stats.repeat_head_pending,
+                     std::array::from_fn::<_,8,_>(|i|
+                         stats.kinds.get(&(i as u8)).copied().unwrap_or(0)))
+                });
+                #[cfg(feature="diagnostics")]
+                let c121_before=_c121_receipt.as_ref().map(|_|{
+                    let stats=self.c97_steps.borrow();
+                    (stats.loops,std::array::from_fn::<_,8,_>(|i|
+                        stats.kinds.get(&(i as u8)).copied().unwrap_or(0)))
+                });
+                #[cfg(feature="diagnostics")]
+                let c122_source=_c122_receipt.as_ref()
+                    .map(|_|neutral.spine[required-1].clone());
+                #[cfg(feature="diagnostics")]
+                let c124_heads_before=_c124_receipt.as_ref().map(|_|self.c97_steps.borrow().heads.clone());
+                #[cfg(feature="diagnostics")]
+                let c115_before=(_c115_receipt.is_some() || _c116_receipt.is_some() || _c117_receipt.is_some() || _c118_receipt.is_some() || _c119_receipt.is_some() || _c120_receipt.is_some())
+                    .then(||self.c115_bvar_steps.borrow().len());
+                #[cfg(feature="diagnostics")]
+                let c117_before=_c117_receipt.as_ref().map(|_|self.c117_completed_calls.borrow().len());
                 let major_result={
                     #[cfg(feature="diagnostics")]
                     let _c95_major=_c95_receipt.as_ref().map(|_|C95StageCharge::new(
                         &self.exposure_fuel,&c95_counts.major));
                     #[cfg(feature="diagnostics")]
-                    let _c97_activity=_c97_receipt.as_ref().map(|_|{
+                    let _c97_activity=(_c97_receipt.is_some() || _c114_receipt.is_some() || _c121_receipt.is_some()).then(||{
                         self.c97_major_active.set(self.c97_major_active.get()+1);
                         C97MajorActivity{active:&self.c97_major_active}
+                    });
+                    #[cfg(feature="diagnostics")]
+                    let _c115_activity=(_c115_receipt.is_some() || _c116_receipt.is_some() || _c117_receipt.is_some() || _c118_receipt.is_some() || _c119_receipt.is_some() || _c120_receipt.is_some()).then(||{
+                        self.c115_major_active.set(self.c115_major_active.get()+1);
+                        C115MajorActivity{active:&self.c115_major_active}
                     });
                     if self.replay_projection_major {
                         self.expose_for_conversion(neutral.spine[required-1].clone(),
@@ -3273,6 +4252,213 @@ impl<'a> Machine<'a> {
                             Transparency::Full,self.exposure_fuel.get().unwrap_or(0).min(512))
                     }
                 };
+                #[cfg(feature="diagnostics")]
+                if let Some((before_loops,before_unique,before_repeat,before_kinds))=c114_before {
+                    let charged=c96_before.saturating_sub(self.exposure_fuel.get().unwrap_or(0));
+                    if charged>=512 && matches!(&major_result,Judgment::Proven{value:Value::Neutral(n),..}
+                        if matches!(&n.head,NeutralHead::Const{name,..}
+                            if reduction.rules.iter().any(|r|r.constructor==*name
+                                && n.spine.len()==r.num_params+r.num_fields))) {
+                        let stats=self.c97_steps.borrow();
+                        let kinds=std::array::from_fn(|i|stats.kinds.get(&(i as u8))
+                            .copied().unwrap_or(0).saturating_sub(before_kinds[i]));
+                        c114_counts.borrow_mut().events.push(C114HighEvent{
+                            major:charged,
+                            loops:stats.loops.saturating_sub(before_loops),
+                            unique:stats.unique_head_pending.saturating_sub(before_unique),
+                            repeat:stats.repeat_head_pending.saturating_sub(before_repeat),
+                            kinds,
+                        });
+                    }
+                }
+                #[cfg(feature="diagnostics")]
+                if let Some((before_loops,before_kinds))=c121_before {
+                    let charged=c96_before.saturating_sub(self.exposure_fuel.get().unwrap_or(0));
+                    if (128..512).contains(&charged) {
+                        let (outcome,constructor,rhs)=match &major_result {
+                            Judgment::Unknown{..}=>(3,0,0),
+                            Judgment::Refuted{..}=>(4,0,0),
+                            Judgment::Proven{value:Value::Neutral(n),..}=>{
+                                let source=match &n.head {NeutralHead::Const{name,..}=>Some(*name),_=>None};
+                                if source.is_some_and(|candidate|self.recursor_reductions.contains_key(&candidate)) {
+                                    (1,0,0)
+                                } else if let Some((actual,rule))=source.and_then(|actual|
+                                    reduction.rules.iter().find(|r|r.constructor==actual &&
+                                        n.spine.len()==r.num_params+r.num_fields).map(|r|(actual,r))) {
+                                    (0,actual.0,rule.rhs.0)
+                                } else {(2,0,0)}
+                            }
+                            Judgment::Proven{..}=>(2,0,0),
+                        };
+                        let stats=self.c97_steps.borrow();
+                        let kinds=std::array::from_fn(|i|stats.kinds.get(&(i as u8))
+                            .copied().unwrap_or(0).saturating_sub(before_kinds[i]));
+                        c121_counts.borrow_mut().events.push(C121MidEvent{
+                            recursor:name.0,rhs,constructor,charge:charged,
+                            loops:stats.loops.saturating_sub(before_loops),
+                            depth,major_parents:parents.iter().filter(|p|
+                                matches!(p,Continuation::Major(..))).count(),
+                            requested:usize::from(current_is_requested),outcome,kinds,
+                        });
+                    }
+                }
+                #[cfg(feature="diagnostics")]
+                if let Some(source)=c122_source {
+                    let charged=c96_before.saturating_sub(self.exposure_fuel.get().unwrap_or(0));
+                    if (128..512).contains(&charged)
+                        && let Judgment::Proven{value:Value::Neutral(nested),..}=&major_result
+                        && let NeutralHead::Const{name:next_name,..}=&nested.head
+                        && let Some(next_reduction)=self.recursor_reductions.get(next_name) {
+                        let next_required=next_reduction.num_params.saturating_add(1)
+                            .saturating_add(next_reduction.rules.len())
+                            .saturating_add(next_reduction.num_indices)
+                            .saturating_add(1);
+                        let inspect=|closure:&Closure| {
+                            let (kind,index)=match self.expressions.get(closure.expr) {
+                                Some(Expr::BVar(i))=>(0,Some(*i)),
+                                Some(Expr::Const{..})=>(1,None),
+                                Some(Expr::App{..})=>(2,None),
+                                Some(Expr::Lam{..})=>(3,None),
+                                Some(Expr::Pi{..})=>(4,None),
+                                Some(Expr::Let{..})=>(5,None),
+                                Some(Expr::Proj{..})=>(6,None),
+                                Some(Expr::Sort(..))=>(7,None),
+                                Some(Expr::NatLit(..))=>(8,None),
+                                Some(Expr::StrLit(..))=>(9,None),
+                                None=>(10,None),
+                            };
+                            let binding=index.and_then(|i|
+                                closure.env.diagnostic_binding_node_id(i)).unwrap_or(0);
+                            let (bound_expr,bound_env)=index.and_then(|i|
+                                closure.env.lookup_binding_ref(i)).and_then(|v|
+                                    match v {EnvBinding::Closure(c)=>Some((c.expr.0,c.env.id())),_=>None})
+                                .unwrap_or((0,0));
+                            (closure.expr.0,closure.env.id(),kind,binding,bound_expr,bound_env)
+                        };
+                        let (expr,env,expr_kind,binding,bound_expr,bound_env)=inspect(&source);
+                        let next_major=nested.spine.get(next_required.saturating_sub(1));
+                        let (next_expr,next_env,next_expr_kind,next_binding,next_bound_expr,next_bound_env)=
+                            next_major.map(&inspect).unwrap_or((0,0,10,0,0,0));
+                        c122_events.borrow_mut().push(C122SourceEvent{
+                            seq:c121_counts.borrow().events.len(),recursor:name.0,
+                            expr,env,expr_kind,binding,bound_expr,bound_env,
+                            next_head:next_name.0,next_arity:usize::from(next_major.is_some()),
+                            next_expr,next_env,next_expr_kind,next_binding,
+                            next_bound_expr,next_bound_env,
+                        });
+                        if _c123_receipt.is_some() {
+                            let mut link=&source;
+                            let mut hops=0usize;
+                            while hops<4096 {
+                                let Some(Expr::BVar(index))=self.expressions.get(link.expr) else {break};
+                                let Some(EnvBinding::Closure(next))=link.env.lookup_binding_ref(*index) else {break};
+                                link=next;
+                                hops+=1;
+                            }
+                            let (terminal_expr,terminal_env,terminal_kind,_,_,_)=inspect(link);
+                            let (terminal_bvar,terminal_binding_kind)=
+                                if let Some(Expr::BVar(index))=self.expressions.get(link.expr) {
+                                    let kind=if hops==4096 {6} else {
+                                        match link.env.lookup_binding_ref(*index) {
+                                            Some(EnvBinding::Closure(_))=>0,
+                                            Some(EnvBinding::Free(_))=>1,
+                                            Some(EnvBinding::Neutral(_))=>2,
+                                            Some(EnvBinding::NatLit(_))=>3,
+                                            None=>4,
+                                        }
+                                    };
+                                    (*index,kind)
+                                } else {(0,5)};
+                            c123_events.borrow_mut().push(C123BVarChainEvent{
+                                seq:c121_counts.borrow().events.len(),hops,
+                                terminal_expr,terminal_env,terminal_kind,
+                                terminal_bvar,terminal_binding_kind,
+                                capped:usize::from(hops==4096),
+                                levels:link.levels.entries().count(),
+                            });
+                        }
+                        if let Some(before)=c124_heads_before.as_ref() {
+                            // Traverse original immutable AST edges only; these
+                            // are not beta reductions or a rewritten closure.
+                            let mut link=&source;
+                            for _ in 0..4096 {
+                                let Some(Expr::BVar(index))=self.expressions.get(link.expr) else {break};
+                                let Some(EnvBinding::Closure(next))=link.env.lookup_binding_ref(*index) else {break};
+                                link=next;
+                            }
+                            let mut head_expr=link.expr;
+                            let mut args=Vec::new();
+                            while args.len()<128 {
+                                let Some(Expr::App{fun,arg})=self.expressions.get(head_expr) else {break};
+                                args.push(*arg);
+                                head_expr=*fun;
+                            }
+                            let (_,_,head_kind,head_binding,head_bound_expr,head_bound_env)=
+                                inspect(&link.sibling(head_expr,link.env.clone()));
+                            let arg_info=|idx:usize|{
+                                let Some(expr)=args.get(idx).copied() else{return (0,10,0)};
+                                let (_,_,kind,_,_,_)=inspect(&link.sibling(expr,link.env.clone()));
+                                let body=match self.expressions.get(expr) {
+                                    Some(Expr::Lam{body,..})=>body.0,
+                                    _=>0,
+                                };
+                                (expr.0,kind,body)
+                            };
+                            let (outer_arg,outer_kind,outer_body)=arg_info(0);
+                            let (inner_arg,inner_kind,inner_body)=arg_info(1);
+                            let stats=self.c97_steps.borrow();
+                            let (mut app,mut lam,mut top_app,mut top_lam)=(0,0,(0,0),(0,0));
+                            for (&(kind,expr),&count) in stats.heads.iter() {
+                                if kind!=1 && kind!=2 {continue;}
+                                let delta=count.saturating_sub(before.get(&(kind,expr)).copied().unwrap_or(0));
+                                let (total,top)=if kind==1 {(&mut app,&mut top_app)} else {(&mut lam,&mut top_lam)};
+                                *total+=delta;
+                                if delta>top.1 || (delta==top.1 && expr<top.0) {*top=(expr,delta);}
+                            }
+                            let root_app=stats.heads.get(&(1,link.expr.0)).copied().unwrap_or(0)
+                                .saturating_sub(before.get(&(1,link.expr.0)).copied().unwrap_or(0));
+                            c124_events.borrow_mut().push(C124AppProfileEvent{
+                                seq:c121_counts.borrow().events.len(),root:link.expr.0,env:link.env.id(),
+                                arity:args.len(),head:head_expr.0,head_kind,
+                                head_binding,head_bound_expr,head_bound_env,
+                                outer_arg,inner_arg,outer_kind,inner_kind,outer_body,inner_body,
+                                app,lam,root_app,top_app:top_app.0,top_app_count:top_app.1,
+                                top_lam:top_lam.0,top_lam_count:top_lam.1,
+                            });
+                        }
+                    }
+                }
+                #[cfg(feature="diagnostics")]
+                if let Some(before)=c115_before {
+                    let charged=c96_before.saturating_sub(self.exposure_fuel.get().unwrap_or(0));
+                    if charged>=512 && matches!(&major_result,Judgment::Proven{value:Value::Neutral(n),..}
+                        if matches!(&n.head,NeutralHead::Const{name,..}
+                            if reduction.rules.iter().any(|r|r.constructor==*name
+                                && n.spine.len()==r.num_params+r.num_fields))) {
+                        let steps=self.c115_bvar_steps.borrow();
+                        if _c115_receipt.is_some() {c115_counts.borrow_mut().record(&steps[before..]);}
+                        if _c116_receipt.is_some() {c116_counts.borrow_mut().record(&steps[before..]);}
+                        if let Some(start)=c117_before {
+                            let calls=self.c117_completed_calls.borrow();
+                            c117_counts.borrow_mut().record(&calls[start..],&steps[before..]);
+                        }
+                        if _c118_receipt.is_some() {
+                            c118_counts.borrow_mut().record(&steps[before..]);
+                        }
+                        if _c119_receipt.is_some() {
+                            c119_counts.borrow_mut().record(&steps[before..]);
+                        }
+                        if _c120_receipt.is_some() {
+                            c120_counts.borrow_mut().record(&steps[before..]);
+                        }
+                    }
+                    // Retain nested major observations for their parent's inclusive
+                    // slice, but release the complete stream at its outer boundary.
+                    if self.c115_major_active.get()==0 {
+                        self.c115_bvar_steps.borrow_mut().clear();
+                        if _c117_receipt.is_some() {self.c117_completed_calls.borrow_mut().clear();}
+                    }
+                }
                 #[cfg(feature="diagnostics")]
                 if let Some((key,chain_steps))=c96_key {
                     let spent=c96_before.saturating_sub(self.exposure_fuel.get().unwrap_or(0));
@@ -3292,7 +4478,39 @@ impl<'a> Machine<'a> {
                         spent,result.is_some(),nested);
                 }
                 #[cfg(feature="diagnostics")]
-                if _c105_receipt.is_some() {
+                if _c111_receipt.is_some() {
+                    let spent=c96_before.saturating_sub(self.exposure_fuel.get().unwrap_or(0));
+                    let (kind,reason)=match &major_result {
+                        Judgment::Unknown{residual}=>(3,Some(residual.0)),
+                        Judgment::Refuted{obstruction}=>(4,Some(obstruction.0)),
+                        Judgment::Proven{value:Value::Neutral(n),..}
+                            if matches!(&n.head,NeutralHead::Const{name,..}
+                                if self.recursor_reductions.contains_key(name))=>(1,None),
+                        Judgment::Proven{value:Value::Neutral(n),..}
+                            if matches!(&n.head,NeutralHead::Const{name,..}
+                                if reduction.rules.iter().any(|r|
+                                    r.constructor==*name && n.spine.len()==r.num_params+r.num_fields))=>(0,None),
+                        Judgment::Proven{..}=>(2,None),
+                    };
+                    c111_counts.borrow_mut().record(name.0,spent,kind,reason);
+                }
+                #[cfg(feature="diagnostics")]
+                if (_c112_receipt.is_some() || _c113_receipt.is_some())
+                    && matches!(&major_result,Judgment::Proven{value:Value::Neutral(n),..}
+                        if matches!(&n.head,NeutralHead::Const{name,..}
+                            if reduction.rules.iter().any(|r|r.constructor==*name
+                                && n.spine.len()==r.num_params+r.num_fields))) {
+                    if _c112_receipt.is_some() {
+                        c112_counts.borrow_mut().constructor_results+=1;
+                    }
+                    c112_pending=Some((
+                        c96_before.saturating_sub(self.exposure_fuel.get().unwrap_or(0)),
+                        depth,parents.iter().filter(|p|matches!(p,Continuation::Major(..))).count(),
+                        current_is_requested,
+                    ));
+                }
+                #[cfg(feature="diagnostics")]
+                if _c105_receipt.is_some() || _c106_receipt.is_some() || _c109_receipt.is_some() || _c110_receipt.is_some() {
                     // The same real immutable BVar closure chain audited by
                     // C96. This read-only walk neither exposes a value nor
                     // changes any source constructor/replay/fuel decision.
@@ -3305,42 +4523,19 @@ impl<'a> Machine<'a> {
                         steps+=1;
                     }
                     let spent=c96_before.saturating_sub(self.exposure_fuel.get().unwrap_or(0));
-                    c105_counts.borrow_mut().record(terminal,steps,steps==16,
-                        spent,major_result.proven_value().is_some());
-                }
-                // C125: observe, without exposing or reducing anything, the
-                // actual BVar(0) payload captured by source Proj 811 inside
-                // the source terminal App 7198. No source ID grants a kernel
-                // computation rule; this is a frozen-input research receipt.
-                #[cfg(feature="diagnostics")]
-                if std::env::var_os("NUCLEUS_C125_PROJ_BINDING_TRACE").is_some() {
-                    let mut terminal=neutral.spine[required-1].clone();
-                    let mut links=0usize;
-                    while links<16 {
-                        let Some(Expr::BVar(index))=self.expressions.get(terminal.expr) else {break};
-                        let Some(EnvBinding::Closure(next))=terminal.env.lookup_binding_ref(*index) else {break};
-                        terminal=next.clone();
-                        links+=1;
+                    let proven=major_result.proven_value().is_some();
+                    if _c105_receipt.is_some() {
+                        c105_counts.borrow_mut().record(terminal.clone(),steps,steps==16,
+                            spent,proven);
                     }
-                    if terminal.expr.0==7198 {
-                        let spent=c96_before.saturating_sub(self.exposure_fuel.get().unwrap_or(0));
-                        let node=terminal.env.diagnostic_binding_node_id(0).unwrap_or(0);
-                        let binding=terminal.env.lookup_binding_ref(0);
-                        let (kind,payload_expr,payload_env,payload_levels)=match binding {
-                            Some(EnvBinding::Closure(c))=>("closure",c.expr.0,c.env.id(),c.levels.entries().count()),
-                            Some(EnvBinding::Free(_))=>("free",0,0,0),
-                            Some(EnvBinding::Neutral(_))=>("neutral",0,0,0),
-                            Some(EnvBinding::NatLit(_))=>("natlit",0,0,0),
-                            None=>("missing",0,0,0),
-                        };
-                        let outcome=match major_result.proven_value() {
-                            Some(Value::Neutral(n)) if matches!(&n.head,NeutralHead::Const{name,..}
-                                if self.recursor_reductions.contains_key(name))=>"nested",
-                            Some(_)=>"other-proven",
-                            None=>"unresolved",
-                        };
-                        eprintln!("NUCLEUS_C125_PROJ_BINDING:owner_start={c125_owner_start}:spent={spent}:depth={depth}:recursor={}:terminal_expr={}:terminal_env={}:terminal_levels={}:links={links}:target_expr=1:binding_node={node}:binding_kind={kind}:payload_expr={payload_expr}:payload_env={payload_env}:payload_levels={payload_levels}:outcome={outcome}:payload={binding:?}",
-                            name.0,terminal.expr.0,terminal.env.id(),terminal.levels.entries().count());
+                    if _c106_receipt.is_some() {
+                        c106_counts.borrow_mut().record(&terminal,spent,proven);
+                    }
+                    if _c109_receipt.is_some() {
+                        c109_counts.borrow_mut().record(&terminal,spent,self.expressions);
+                    }
+                    if _c110_receipt.is_some() {
+                        c110_counts.borrow_mut().record(&terminal,spent,self.expressions);
                     }
                 }
                 #[cfg(feature="diagnostics")]
@@ -3447,6 +4642,8 @@ impl<'a> Machine<'a> {
             #[cfg(feature="diagnostics")]
             let _c95_telescope=_c95_receipt.as_ref().map(|_|C95StageCharge::new(
                 &self.exposure_fuel,&c95_counts.telescope));
+            #[cfg(feature="diagnostics")]
+            let c113_telescope_before=self.exposure_fuel.get().unwrap_or(0);
             for arg in arguments {
                 if !spend() { return Judgment::unknown("nested-recursor-iota-budget"); }
                 let mut lets = 0usize;
@@ -3468,6 +4665,8 @@ impl<'a> Machine<'a> {
             }
             #[cfg(feature="diagnostics")]
             drop(_c95_telescope);
+            #[cfg(feature="diagnostics")]
+            let c113_rhs_before=self.exposure_fuel.get().unwrap_or(0);
             #[cfg(feature = "diagnostics")]
             if std::env::var_os("NUCLEUS_TRACE_NESTED_RECURSOR_IOTA").is_some() {
                 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -3488,6 +4687,36 @@ impl<'a> Machine<'a> {
                     false, true, neutral.spine[required..].iter().rev().cloned().collect(),
                 ).map(|exposure| exposure.value)
             };
+            #[cfg(feature="diagnostics")]
+            if let Some((charge,major_depth,major_parents,requested))=c112_pending.take() {
+                let outcome=match &exposed {
+                    Judgment::Proven{value:Value::Neutral(n),..}
+                        if matches!(&n.head,NeutralHead::Const{name,..}
+                            if self.recursor_reductions.contains_key(name))=>"nested",
+                    Judgment::Proven{value:Value::Neutral(n),..}
+                        if matches!(&n.head,NeutralHead::Const{..})=>"constructor",
+                    Judgment::Proven{..}=>"other",
+                    _=>"unknown",
+                };
+                if _c112_receipt.is_some() {
+                    c112_counts.borrow_mut().record(name.0,constructor.0,rule.rhs.0,
+                        charge,major_depth,major_parents,requested,outcome);
+                }
+                if _c113_receipt.is_some() && charge>=512 {
+                    let mut counts=c113_counts.borrow_mut();
+                    let index=counts.events.len();
+                    counts.events.push(C113HighEvent{
+                        recursor:name.0,constructor:constructor.0,rhs:rule.rhs.0,
+                        major:charge,
+                        telescope:c113_telescope_before.saturating_sub(c113_rhs_before),
+                        rhs_work:c113_rhs_before.saturating_sub(self.exposure_fuel.get().unwrap_or(0)),
+                        depth:major_depth,major_parents,resumed:false,
+                    });
+                    if outcome=="constructor" && !requested && major_parents>0 {
+                        c113_awaiting_resume=Some(index);
+                    }
+                }
+            }
             let value=match exposed {
                 Judgment::Proven{value,..}=>value,
                 failure=>{
@@ -4342,6 +5571,27 @@ mod captured_beta_frame_tests {
 #[cfg(test)]
 mod exposure_clock_tests {
     use super::*;
+    #[test]
+    fn depth_limit_is_an_ambient_dependency_outside_a_captured_bvar_head() {
+        let mut expressions=IdTable::default();
+        expressions.insert(ExprId(0),Expr::BVar(0)).unwrap();
+        let levels=IdTable::default();
+        let machine=Machine::new(AuthorityId(1),&expressions,&levels,HashMap::new());
+        let closure=Closure::new(ExprId(0),EnvFrame::empty().extend_free(FreeId(12)));
+        // Same source/closure, pending spine, transparency, local allowance,
+        // projection mode, and global fuel. Only ambient evaluator depth varies.
+        machine.exposure_fuel.set(Some(128));
+        machine.exposure_depth.set(63);
+        let permitted=machine.expose(closure.clone(),Transparency::Full,128);
+        assert!(permitted.is_proven(),"63-level call should reach the captured BVar");
+        machine.exposure_fuel.set(Some(128));
+        machine.exposure_depth.set(64);
+        let limited=machine.expose(closure,Transparency::Full,128);
+        assert!(matches!(limited,Judgment::Unknown{..}),
+            "identical exposure request must respect the ambient depth guard");
+        machine.exposure_depth.set(0);
+        machine.exposure_fuel.set(None);
+    }
     #[test]
     fn clock_keys_preserve_capture_authority_and_exposure_modes() {
         let mut exprs=IdTable::default();exprs.insert(ExprId(0),Expr::BVar(0)).unwrap();
