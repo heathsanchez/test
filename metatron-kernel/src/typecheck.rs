@@ -1898,6 +1898,25 @@ impl<'a> TypeChecker<'a> {
                 let argument_judgment=self.check_with_formation(
                     *arg, &domain, context, frame, remaining, true, cache, true,
                 );
+                // C130: isolate the source argument proof obligation of
+                // App(8753, 8804) before its result propagates to App 8835.
+                // Read-only; never treats UNKNOWN as an admissible argument.
+                #[cfg(feature = "diagnostics")]
+                if std::env::var_os("NUCLEUS_C130_APP_ARG").is_some()
+                    && expression == ExprId(8805)
+                    && *fun == ExprId(8753)
+                    && *arg == ExprId(8804)
+                {
+                    let state = match &argument_judgment {
+                        Judgment::Proven { .. } => "PROVEN",
+                        Judgment::Unknown { .. } => "UNKNOWN",
+                        Judgment::Refuted { .. } => "REFUTED",
+                    };
+                    let preview = format!("{argument_judgment:?}")
+                        .replace('\n', " ").chars().take(500).collect::<String>();
+                    eprintln!("NUCLEUS_C130_APP_ARG:app=8805:fun=8753:arg=8804:before={c126_before}:after={}:context={}:state={state}:judgment={preview}",
+                        *remaining, context.len());
+                }
                 #[cfg(feature="diagnostics")]
                 if std::env::var_os("NUCLEUS_TRACE_APP_DOMAIN_OBLIGATION").is_some()
                     && matches!(argument_judgment,Judgment::Unknown {..})
