@@ -2507,6 +2507,36 @@ fn compare_neutral_heads(
             }) {
                 return Judgment::unknown("unresolved-qualified-recursor-heads");
             }
+            // C180: diagnostic-only, source-qualified proof telescope.
+            // A constructor proof and a theorem proof may be definitionally
+            // equal by proof irrelevance, but not from their names or shapes
+            // alone. Type every ORIGINAL captured argument first; this print
+            // grants no equality and does not change a verification verdict.
+            #[cfg(feature = "diagnostics")]
+            if std::env::var_os("NUCLEUS_C180_PERM_TELESCOPE").is_some()
+                && depth == 10 && context.len() == 10
+                && let (
+                    NeutralHead::Const { name: left_name, .. },
+                    NeutralHead::Const { name: right_name, .. },
+                ) = (&left.head, &right.head)
+                && left_name.0 == 73 && right_name.0 == 152
+            {
+                use std::sync::atomic::{AtomicUsize, Ordering};
+                static OBSERVED: AtomicUsize = AtomicUsize::new(0);
+                if OBSERVED.fetch_add(1, Ordering::Relaxed) < 6 {
+                    let left_result = checker.diagnostic_neutral_source_telescope(
+                        left, context, budget.min(1024),
+                    );
+                    let right_result = checker.diagnostic_neutral_source_telescope(
+                        right, context, budget.min(1024),
+                    );
+                    eprintln!(
+                        "NUCLEUS_C180_PERM_TELESCOPE:depth={depth}:budget={budget}:left={}:right={}",
+                        left_result.chars().take(3000).collect::<String>(),
+                        right_result.chars().take(3000).collect::<String>(),
+                    );
+                }
+            }
             Judgment::refuted("distinct-neutral-heads")
         }
     }
