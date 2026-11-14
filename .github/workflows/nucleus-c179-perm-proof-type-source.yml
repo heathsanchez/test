@@ -1,0 +1,87 @@
+name: Nucleus C179 exact List.Perm constructor/theorem source comparison
+on:
+  push:
+    branches: [research/nucleus-c170-pi-opening-wired-20261115]
+    paths: ['.github/workflows/nucleus-c179-perm-proof-type-source.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  decode:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Recover and hash-check reusable 402KB source prefix
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/c179"
+          gh api repos/heathsanchez/test/actions/artifacts/14136676807/zip > "$RUNNER_TEMP/c179.zip"
+          printf '%s  %s\n' 3d057e397b67df92a5c0758f1a4e971ac17e14df5e623f2a129a05ddda788453 "$RUNNER_TEMP/c179.zip" | sha256sum -c -
+          unzip -q "$RUNNER_TEMP/c179.zip" -d "$RUNNER_TEMP/c179"
+          printf '%s  %s\n' 856050129c6f620672154aab7df37c2ba73d777034d583739ebcb78a231cfd61 "$RUNNER_TEMP/c179/prefix.ndjson" | sha256sum -c -
+      - name: Decode original inductive group and prove syntax-level facts only
+        run: |
+          set -euo pipefail
+          python3 - "$RUNNER_TEMP/c179/prefix.ndjson" "$RUNNER_TEMP/c179/grouped.json" <<'PY'
+          import json,sys,pathlib,hashlib
+          src=pathlib.Path(sys.argv[1]);dst=pathlib.Path(sys.argv[2])
+          expr={};names={0:None};inductives=[];refl=[]
+          for n,line in enumerate(src.open(),1):
+              o=json.loads(line)
+              if 'in' in o:names[o['in']]=o
+              if 'ie' in o:expr[o['ie']]=(n,o)
+              if 'inductive' in o:
+                  inductives.append((n,o['inductive']))
+              if 'thm' in o and o['thm'].get('name')==152:
+                  refl.append((n,o['thm']))
+          def name(i,lim=50):
+              if i==0:return ''
+              if lim<=0:return '<depth>'
+              o=names.get(i)
+              if o is None:return '<missing:'+str(i)+'>'
+              if 'str' in o:return name(o['str']['pre'],lim-1)+'.'+o['str']['str']
+              if 'num' in o:return name(o['num']['pre'],lim-1)+'.'+str(o['num']['i'])
+              return '<unknown>'
+          def deco(i,lim=7):
+              pair=expr.get(i)
+              if not pair:return {'id':i,'missing':True}
+              ln,o=pair
+              k=next(k for k in o if k!='ie');v=o[k]
+              d={'id':i,'line':ln,'kind':k}
+              if k=='const':d.update(name=name(v['name']),levels=v['us'])
+              elif k=='bvar':d['index']=v
+              elif k=='sort':d['level']=v
+              elif k=='app' and lim>0:d.update(fn=deco(v['fn'],lim-1),arg=deco(v['arg'],lim-1))
+              elif k in ('forallE','lam') and lim>0:d.update(domain=deco(v['type'],lim-1),body=deco(v['body'],lim-1))
+              else:d['source']=str(v)[:1000]
+              return d
+          found=[]
+          for line,group in inductives:
+              for ctor in group.get('ctors',[]):
+                  if ctor.get('name')==73:
+                      owners=[t for t in group.get('types',[]) if t.get('name')==ctor.get('induct')]
+                      found.append({'line':line,'constructor':{**ctor,'qualified_name':name(73),'type_source':deco(ctor['type'])},
+                                    'owners':[{'name':name(t['name']),'type_source':deco(t['type']),'numParams':t.get('numParams'),
+                                               'numIndices':t.get('numIndices')} for t in owners]})
+          output={'scope':'source declarations only; instantiated proof-term type equality not yet checked',
+                  'prefix_sha256':hashlib.sha256(src.read_bytes()).hexdigest(),
+                  'nil_name':name(73),'refl_name':name(152),
+                  'nil_grouped_constructor':found,
+                  'refl_theorem':[{'line':ln,'name':name(d['name']),'level_params':d.get('levelParams'),
+                                   'type_source':deco(d['type']),'value_source':deco(d['value'],3)} for ln,d in refl],
+                  'captured_arguments':{str(i):deco(i) for i in (52,498,5)}}
+          dst.write_text(json.dumps(output,indent=2))
+          print('C179_SOURCE:'+json.dumps(output)[:28500],flush=True)
+          assert name(73).endswith('List.Perm.nil') and name(152).endswith('List.Perm.refl')
+          assert len(found)==1 and len(refl)==1,'source-owned constructor/theorem not fully located'
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-c179-source-provenance-perm-proof-candidate
+          path: ${{ runner.temp }}/c179/grouped.json
+          retention-days: 60
