@@ -1,0 +1,66 @@
+name: Nucleus C174 resolve exact recursor source names
+on:
+  push:
+    branches: [research/nucleus-c170-pi-opening-wired-20261115]
+    paths: ['.github/workflows/nucleus-c174-recursor-source-names.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  source:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Recover exact source and decode NameId 65 / 274 and recursor signatures
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/c174" "$RUNNER_TEMP/frozen"
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/11272848230/zip > "$RUNNER_TEMP/frozen.zip"
+          printf '%s  %s\n' f6cd590db7f6fb92b8d1b3ca87231d4b0f521f085d73f93abd005f5caaff86d2 "$RUNNER_TEMP/frozen.zip" | sha256sum -c -
+          unzip -p "$RUNNER_TEMP/frozen.zip" lean-arena-tests.tar.gz | tar --no-same-owner -xzf - -C "$RUNNER_TEMP/frozen"
+          printf '%s  %s\n' 6669cee92ad330dada351ac9e63656f7e9e848dd70376f17030d64677f8c81ac "$RUNNER_TEMP/frozen/good/perf/magma-list-deep-n36.ndjson" | sha256sum -c -
+          python3 - "$RUNNER_TEMP/frozen/good/perf/magma-list-deep-n36.ndjson" "$RUNNER_TEMP/c174/summary.json" <<'PY'
+          import json,pathlib,sys
+          inp=pathlib.Path(sys.argv[1]);out=pathlib.Path(sys.argv[2])
+          names={0:('root',None)}
+          recursors=[]; const_uses={65:0,274:0}
+          with inp.open() as f:
+              for line in f:
+                  o=json.loads(line)
+                  if 'in' in o:
+                      idx=o['in']
+                      if 'str' in o:names[idx]=('str',o['str'])
+                      elif 'num' in o:names[idx]=('num',o['num'])
+                  if 'recursor' in o and isinstance(o['recursor'],dict):
+                      recursors.append(o['recursor'])
+                  if 'const' in o and isinstance(o['const'],dict):
+                      n=o['const'].get('name')
+                      if n in const_uses: const_uses[n]+=1
+          def resolve(i,depth=0):
+              if depth>40:return f'<depth:{i}>'
+              if i==0:return ''
+              item=names.get(i)
+              if item is None:return f'<missing:{i}>'
+              kind,contents=item
+              if kind=='str':
+                  return resolve(contents['pre'],depth+1)+'.'+str(contents['str'])
+              return resolve(contents['pre'],depth+1)+'.'+str(contents['i'])
+          result={'scope':'source-qualified name decoding, no checker changes',
+              'name_count':len(names),'declaration_recursor_count':len(recursors),
+              'heads':{str(n):{'resolved':resolve(n),'const_occurrences':const_uses[n],
+               'recursors':[{'name':resolve(v['name']), 'fields':sorted(v.keys()),
+                 'source':v} for v in recursors if v.get('name')==n][:3]} for n in (65,274)}}
+          out.write_text(json.dumps(result,indent=2))
+          print(json.dumps(result)[:20000])
+          assert all(not v['resolved'].startswith('<missing') for v in result['heads'].values())
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-c174-source-resolved-recursor-heads
+          path: ${{ runner.temp }}/c174/summary.json
+          retention-days: 60
