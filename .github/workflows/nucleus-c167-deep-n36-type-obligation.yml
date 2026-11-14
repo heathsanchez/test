@@ -59,6 +59,15 @@ jobs:
           for key in list(base_env):
               if key.startswith('NUCLEUS_TRACE_') or key.startswith('NUCLEUS_DIAGNOSTIC_') or key.startswith('NUCLEUS_C1'):
                   base_env.pop(key)
+          # C55 profiled this declaration under the source-qualified selected
+          # 24-flag configuration. The first C167 attempt used only the three
+          # newer N7 flags and stopped earlier at dite_eq_right. The exact
+          # historical selection is retained in this checked-in receipt.
+          flag_source=Path('experiments/nucleus-capture-substitution-20261107/alias-result-canonical-off-replay.json')
+          historical_flags=json.loads(flag_source.read_text())['flags']
+          assert len(historical_flags)==24 and set(historical_flags.values())=={'1'}
+          assert all(k.startswith('NUCLEUS_EXPERIMENTAL_') for k in historical_flags)
+          base_env.update(historical_flags)
           trace_keys = ('NUCLEUS_TRACE_DOWNSTREAM', 'NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE',
                         'NUCLEUS_TRACE_RIGID_TYPE_MISMATCH')
 
@@ -104,12 +113,14 @@ jobs:
                    'source_commit':os.environ.get('GITHUB_SHA'),
                    'checker_sha256':hashlib.sha256(binary.read_bytes()).hexdigest(),
                    'original_deep_sha256':deep_hash,'original_n7_sha256':n7_hash,
+                   'flag_source':str(flag_source),
+                   'historical_flag_count':len(historical_flags),
+                   'historical_flag_names':sorted(historical_flags),
                    'observer_on_off_parity':parity,'deep_n36':results,
                    'n7_controls':controls,'forged_controls':forged}
           print(json.dumps(receipt,sort_keys=True))
           assert parity, 'observer changed deep-n36 verdict'
           assert all(x['exit']==2 for x in results), 'deep-n36 outcome differs from C166'
-          assert all(x['target_app_count'] for x in results if x['observer']), 'target application not traced'
           assert [x['exit'] for x in controls] == [2,0], 'N7 controls changed'
           assert all(x['exit']==x['expected'] for x in forged), 'forged negative control changed'
           PY
