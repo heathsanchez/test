@@ -1,0 +1,97 @@
+name: Nucleus C178 resolve divergent neutral constants and retain source prefix
+on:
+  push:
+    branches: [research/nucleus-c170-pi-opening-wired-20261115]
+    paths: ['.github/workflows/nucleus-c178-reconswap-neutral-constants.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  source:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Recover SHA-locked full Mathlib and truncate to exact theorem
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/c178"
+          gh api repos/heathsanchez/test/actions/artifacts/13231986845/zip > "$RUNNER_TEMP/c178/mathlib.zip"
+          printf '%s  %s\n' 3dd3fbb522816bdaa9d9cd2808196e075bfa27e3d6c82648731140594f87ce2b "$RUNNER_TEMP/c178/mathlib.zip" | sha256sum -c -
+          unzip -p "$RUNNER_TEMP/c178/mathlib.zip" mathlib.ndjson.zst | zstd -dc > "$RUNNER_TEMP/c178/mathlib.ndjson"
+          printf '%s  %s\n' 22c5de83469408950005589a3bc5ef5157c65549b5a802f85d567c29151306a6 "$RUNNER_TEMP/c178/mathlib.ndjson" | sha256sum -c -
+          python3 experiments/nucleus-recOnSwap-repair-20261104/extract_prefix.py "$RUNNER_TEMP/c178/mathlib.ndjson" "$RUNNER_TEMP/c178/prefix.ndjson"
+          printf '%s  %s\n' 856050129c6f620672154aab7df37c2ba73d777034d583739ebcb78a231cfd61 "$RUNNER_TEMP/c178/prefix.ndjson" | sha256sum -c -
+          rm "$RUNNER_TEMP/c178/mathlib.zip" "$RUNNER_TEMP/c178/mathlib.ndjson"
+      - name: Resolve exact divergent constants and source declaration authority
+        run: |
+          python3 - "$RUNNER_TEMP/c178/prefix.ndjson" "$RUNNER_TEMP/c178/summary.json" <<'PY'
+          import hashlib,json,pathlib,sys
+          inp=pathlib.Path(sys.argv[1]);out=pathlib.Path(sys.argv[2])
+          expr={};names={0:None};declarations=[]
+          for ln,line in enumerate(inp.open(),1):
+              obj=json.loads(line)
+              if 'ie' in obj:expr[obj['ie']]=(ln,obj)
+              if 'in' in obj:names[obj['in']]=obj
+              for kind in ('axiom','def','thm','opaque','quot','inductive','constructor','recursor'):
+                  if isinstance(obj.get(kind),dict):
+                      declarations.append((ln,kind,obj[kind]))
+          def name(i,depth=0):
+              if not i:return ''
+              if depth>80:return '<over-depth>'
+              v=names.get(i)
+              if not v:return '<missing-name:'+str(i)+'>'
+              if 'str' in v:
+                  b=v['str'];return name(b['pre'],depth+1)+'.'+b['str']
+              if 'num' in v:
+                  b=v['num'];return name(b['pre'],depth+1)+'.'+str(b['i'])
+              return '<unknown-name-kind>'
+          def source(eid,depth=0):
+              if eid not in expr:return {'expr':eid,'missing':True}
+              ln,obj=expr[eid];kind=next((k for k in obj if k!='ie'),None);value=obj[kind]
+              data={'expr':eid,'line':ln,'kind':kind}
+              if kind=='const':data.update(name_id=value['name'],name=name(value['name']),levels=value.get('us'))
+              elif kind=='bvar':data['index']=value
+              elif kind=='app' and depth<4:data.update(fn=source(value['fn'],depth+1),arg=source(value['arg'],depth+1))
+              elif kind in ('lam','forallE') and depth<4:data.update(domain=source(value['type'],depth+1),body=source(value['body'],depth+1))
+              elif kind=='sort':data['level']=value
+              else:data['source']=value if kind not in ('lam','forallE','app') else str(value)[:700]
+              return data
+          head_ids=(73,152)
+          const_records={}
+          for id in head_ids:
+              current=[]
+              for ln,kind,decl in declarations:
+                  if decl.get('name')==id:
+                      current.append({'line':ln,'kind':kind,'name':name(id),'levelParams':decl.get('levelParams'),
+                                      'type':source(decl['type']) if isinstance(decl.get('type'),int) else decl.get('type'),
+                                      'value':source(decl['value']) if isinstance(decl.get('value'),int) else None,
+                                      'keys':list(decl.keys())})
+              const_records[str(id)]=current
+          records={'scope':'exact source-owned constant names and declaration provenance, no equality assumption',
+                   'prefix_sha256':hashlib.sha256(inp.read_bytes()).hexdigest(),
+                   'source_names':{str(i):name(i) for i in head_ids},
+                   'declarations':const_records,
+                   'arguments':{str(i):source(i) for i in (52,498,5)},
+                   'conversion_shape':{'left_head':73,'left_arguments':[52],
+                                       'right_head':152,'right_arguments':[498,5],
+                                       'universe':'u#32','context_depth':10,
+                                       'original_application':6350,'function':6336,'argument':6349}}
+          out.write_text(json.dumps(records,indent=2))
+          print('C178_SUMMARY:'+json.dumps(records)[:26000])
+          assert all(not name(i).startswith('<missing') for i in head_ids)
+          assert all(const_records[str(i)] for i in head_ids),'original declaration identity unavailable'
+          assert records['prefix_sha256']=='856050129c6f620672154aab7df37c2ba73d777034d583739ebcb78a231cfd61'
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-c178-source-neutral-constants-and-pinned-prefix
+          path: |
+            ${{ runner.temp }}/c178/summary.json
+            ${{ runner.temp }}/c178/prefix.ndjson
+            ${{ runner.temp }}/c178/prefix.json
+          retention-days: 60
