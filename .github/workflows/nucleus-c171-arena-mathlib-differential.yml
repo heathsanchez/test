@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     env:
-      GH_TOKEN: \${{ github.token }}
+      GH_TOKEN: ${{ github.token }}
       RUST_MIN_STACK: '67108864'
     steps:
       - uses: actions/checkout@v4
@@ -90,13 +90,13 @@ jobs:
         if: always()
         with:
           name: nucleus-c171-portable-corpus
-          path: \${{ runner.temp }}/nucleus-qualification/
+          path: ${{ runner.temp }}/nucleus-qualification/
           retention-days: 60
   exact-mathlib:
     runs-on: ubuntu-24.04
     timeout-minutes: 55
     env:
-      GH_TOKEN: \${{ github.token }}
+      GH_TOKEN: ${{ github.token }}
       RUST_MIN_STACK: '67108864'
     steps:
       - uses: actions/checkout@v4
@@ -144,5 +144,5 @@ jobs:
         if: always()
         with:
           name: nucleus-c171-exact-mathlib
-          path: \${{ runner.temp }}/mathlib-evidence/
+          path: ${{ runner.temp }}/mathlib-evidence/
           retention-days: 60
