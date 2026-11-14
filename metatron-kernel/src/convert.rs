@@ -2712,7 +2712,25 @@ fn value_as_type(checker: &TypeChecker<'_>, value: &Value, depth: usize, remaini
         Value::Sort(level) => Some(TypeValue::Sort(level.clone())),
         Value::Pi { domain, body } => {
             let free = fresh_local(depth)?;
-            let allowance = (*remaining).min(1024);
+            // C170 diagnostic only: source-locked bounded allowance ladder.
+            // No production/default behavior change: without diagnostics and the
+            // explicit experimental flag, the historical cap is exactly 1024.
+            // The extra work is charged to the caller's *remaining* budget.
+            #[cfg(feature = "diagnostics")]
+            let cap = if body.expr == crate::id::ExprId(15367) && free == FreeId(2)
+                && std::env::var_os("NUCLEUS_C168_OPENING_REASON").is_some()
+            {
+                std::env::var("NUCLEUS_C170_OPENING_ALLOWANCE")
+                    .ok()
+                    .and_then(|s| s.parse::<usize>().ok())
+                    .filter(|n| (1024..=16384).contains(n))
+                    .unwrap_or(1024)
+            } else {
+                1024
+            };
+            #[cfg(not(feature = "diagnostics"))]
+            let cap = 1024;
+            let allowance = (*remaining).min(cap);
             let mut opening_budget = allowance;
             let safe = source_opening_avoids_capture(checker, body, free, &mut opening_budget);
             *remaining -= allowance - opening_budget;
