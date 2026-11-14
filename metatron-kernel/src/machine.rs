@@ -1858,6 +1858,13 @@ pub struct Machine<'a> {
     c152_head_active:Cell<usize>,
     #[cfg(feature="diagnostics")]
     c152_head_kinds:RefCell<[usize;8]>,
+    // C163 is observation only: count which *source* constants, projections,
+    // and native numerals account for the non-beta head visits in C152.
+    // No value is reused, specialized, or trusted from these counts.
+    #[cfg(feature="diagnostics")]
+    c163_nonbeta_hot_enabled:bool,
+    #[cfg(feature="diagnostics")]
+    c163_nonbeta_hot:RefCell<HashMap<(u8,u64),usize>>,
     #[cfg(feature="diagnostics")]
     c153_producer_active:Cell<usize>,
     #[cfg(feature="diagnostics")]
@@ -1927,6 +1934,10 @@ impl<'a> Machine<'a> {
             c152_head_active:Cell::new(0),
             #[cfg(feature="diagnostics")]
             c152_head_kinds:RefCell::new([0;8]),
+            #[cfg(feature="diagnostics")]
+            c163_nonbeta_hot_enabled:std::env::var_os("NUCLEUS_C163_NONBETA_HOT").is_some(),
+            #[cfg(feature="diagnostics")]
+            c163_nonbeta_hot:RefCell::new(HashMap::new()),
             #[cfg(feature="diagnostics")]
             c153_producer_active:Cell::new(0),
             #[cfg(feature="diagnostics")]
@@ -2490,6 +2501,9 @@ impl<'a> Machine<'a> {
             Some(*self.c152_head_kinds.borrow())
         } else {None};
         #[cfg(feature="diagnostics")]
+        let c163_before=(c152_exact && self.c163_nonbeta_hot_enabled)
+            .then(||self.c163_nonbeta_hot.borrow().clone());
+        #[cfg(feature="diagnostics")]
         let c153_exact=c152_exact
             && self.c153_producer_active.get()==0
             && std::env::var_os("NUCLEUS_C153_NESTED_COMPLETIONS").is_some();
@@ -2822,6 +2836,23 @@ impl<'a> Machine<'a> {
             };
             eprintln!("NUCLEUS_C152_HEADS:source=8799:env=0:authority={}:budget={budget}:outcome={outcome}:head={head}:total={total}:bvar={}:app={}:lam={}:const={}:proj={}:nat={}:let={}:other={}",
                 self.authority.0,kinds[0],kinds[1],kinds[2],kinds[3],kinds[4],kinds[5],kinds[6],kinds[7]);
+        }
+        #[cfg(feature="diagnostics")]
+        if let Some(before)=c163_before {
+            let after=self.c163_nonbeta_hot.borrow();
+            for (kind,label) in [(3u8,"const"),(4u8,"proj"),(5u8,"nat")] {
+                let mut entries=after.iter().filter_map(|(&(k,id),&count)| {
+                    if k!=kind {return None}
+                    let delta=count.saturating_sub(before.get(&(k,id)).copied().unwrap_or(0));
+                    (delta>0).then_some((id,delta))
+                }).collect::<Vec<_>>();
+                entries.sort_unstable_by(|a,b|b.1.cmp(&a.1).then_with(||a.0.cmp(&b.0)));
+                let total=entries.iter().map(|(_,count)|count).sum::<usize>();
+                let distinct=entries.len();
+                let top=entries.iter().take(12).map(|(id,count)|format!("{id}={count}"))
+                    .collect::<Vec<_>>().join(",");
+                eprintln!("NUCLEUS_C163_HOT:source=8799:env=0:authority={}:budget={budget}:kind={label}:total={total}:distinct={distinct}:top={top}",self.authority.0);
+            }
         }
         #[cfg(feature="diagnostics")]
         c151_event(if result.is_proven(){"uncached-proven"}
@@ -3165,6 +3196,16 @@ impl<'a> Machine<'a> {
                     _=>7,
                 };
                 self.c152_head_kinds.borrow_mut()[kind]+=1;
+                if self.c163_nonbeta_hot_enabled {
+                    let source=match self.expressions.get(closure.expr) {
+                        Some(Expr::Const{name,..})=>Some(name.0),
+                        Some(Expr::Proj{..}|Expr::NatLit(_))=>Some(closure.expr.0),
+                        _=>None,
+                    };
+                    if let Some(source)=source {
+                        *self.c163_nonbeta_hot.borrow_mut().entry((kind as u8,source)).or_default()+=1;
+                    }
+                }
             }
             if !visited.insert((self.authority, closure.expr, closure.env.id())) {
                 return Judgment::unknown("reduction-cycle");
