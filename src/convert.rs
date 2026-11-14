@@ -1963,6 +1963,19 @@ fn compare_values(
                     work,
                     context,
                 ) => {}
+            // C189 independently typed neutral-versus-source-lambda proof
+            // irrelevance, transplanted from the October source-qualified
+            // branch. Only actual source arguments, capture and proposition
+            // type conversion may authorize equality.
+            (Value::Neutral(neutral), Value::Lam { domain, body })
+            | (Value::Lam { domain, body }, Value::Neutral(neutral))
+                if checker.c189_certified_neutral_lambda_proof_irrelevance(
+                    neutral, domain, body, context, current_budget,
+                ) => {
+                    return Judgment::proven(
+                        (), "c189-independently-typed-source-proposition-proof-irrelevance",
+                    );
+                }
             _ => {
                 if std::env::var_os("NUCLEUS_TRACE_VALUE_MISMATCH").is_some() {
                     eprintln!(
