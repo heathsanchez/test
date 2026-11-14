@@ -215,6 +215,20 @@ fn convert_in_context_with_congruence(
             continue;
         }
 
+        // C182 isolated semantic candidate. Unlike normalization-based
+        // proof comparison, this requires actual source typing of BOTH
+        // captured proof terms, independently verified Prop formation and
+        // conversion of their exact instantiated types. No name/test dispatch.
+        if std::env::var_os("NUCLEUS_EXPERIMENTAL_C182_TYPED_PROOF_IRREL").is_some()
+            && depth == context.len()
+            && let (TypeValue::Term(lhs),TypeValue::Term(rhs))=(&left,&right)
+            && checker.c182_checked_proofs_same_proposition(
+                lhs,rhs,context,remaining,
+            )
+        {
+            continue;
+        }
+
         // Lean proof irrelevance after *independent* proposition formation
         // and exact type conversion. Unlike a FreeId shortcut this checks
         // the theorem application's argument before certifying a proof.
