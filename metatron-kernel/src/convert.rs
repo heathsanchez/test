@@ -2716,6 +2716,14 @@ fn value_as_type(checker: &TypeChecker<'_>, value: &Value, depth: usize, remaini
             let mut opening_budget = allowance;
             let safe = source_opening_avoids_capture(checker, body, free, &mut opening_budget);
             *remaining -= allowance - opening_budget;
+            #[cfg(feature="diagnostics")]
+            if std::env::var_os("NUCLEUS_C168_OPENING_REASON").is_some()
+                && body.expr == crate::id::ExprId(15367)
+                && free == FreeId(2)
+            {
+                eprintln!("NUCLEUS_C168_OPEN_RESULT:body={:?}:env={}:free={free:?}:depth={depth}:allowance={allowance}:spent={}:left={opening_budget}:safe={safe}",
+                    body.expr, body.env.id(), allowance-opening_budget);
+            }
             if !safe { return None; }
             Some(TypeValue::Pi {
                 domain: Box::new(TypeValue::Term(domain.clone())),
@@ -2753,39 +2761,82 @@ pub(crate) fn source_opening_avoids_capture(
 fn source_opening_avoids_capture_uncached(
     checker:&TypeChecker<'_>,body:&Closure,free:FreeId,budget:&mut usize,
 )->bool {
+    #[cfg(feature="diagnostics")]
+    let c168_trace=std::env::var_os("NUCLEUS_C168_OPENING_REASON").is_some()
+        && body.expr == crate::id::ExprId(15367) && free == FreeId(2);
     let mut pending = vec![(body.clone(), 1u64)];
     let mut visited = HashSet::new();
     let mut prepaid_root=true;
     while let Some((source, virtual_slots)) = pending.pop() {
         if prepaid_root {prepaid_root=false;}
         else {
-            if *budget == 0 { return false; }
+            if *budget == 0 {
+                #[cfg(feature="diagnostics")]
+                if c168_trace { eprintln!("NUCLEUS_C168_OPEN_BLOCK:reason=pending-node-budget:node={:?}:slots={virtual_slots}:left={budget}",source.expr); }
+                return false;
+            }
             *budget -= 1;
         }
         if !visited.insert((source.expr, source.env.id(), virtual_slots)) { continue; }
-        let Some(support) = checker.complete_source_support(source.expr, budget) else { return false; };
+        let Some(support) = checker.complete_source_support(source.expr, budget) else {
+            #[cfg(feature="diagnostics")]
+            if c168_trace { eprintln!("NUCLEUS_C168_OPEN_BLOCK:reason=source-support-unavailable:node={:?}:slots={virtual_slots}:left={budget}",source.expr); }
+            return false;
+        };
         for index in support {
             if index < virtual_slots { continue; }
             let index = index - virtual_slots;
-            let Some(cost) = index.checked_add(1).and_then(|n| usize::try_from(n).ok()) else { return false; };
-            if *budget < cost { return false; }
+            let Some(cost) = index.checked_add(1).and_then(|n| usize::try_from(n).ok()) else {
+                #[cfg(feature="diagnostics")]
+                if c168_trace { eprintln!("NUCLEUS_C168_OPEN_BLOCK:reason=binding-index-overflow:node={:?}:index={index}:left={budget}",source.expr); }
+                return false;
+            };
+            if *budget < cost {
+                #[cfg(feature="diagnostics")]
+                if c168_trace { eprintln!("NUCLEUS_C168_OPEN_BLOCK:reason=binding-lookup-budget:node={:?}:index={index}:cost={cost}:left={budget}",source.expr); }
+                return false;
+            }
             *budget -= cost;
-            let Some(binding) = source.env.lookup_binding_ref(index) else { return false; };
+            let Some(binding) = source.env.lookup_binding_ref(index) else {
+                #[cfg(feature="diagnostics")]
+                if c168_trace { eprintln!("NUCLEUS_C168_OPEN_BLOCK:reason=missing-binding:node={:?}:index={index}:env={}:left={budget}",source.expr,source.env.id()); }
+                return false;
+            };
             match binding {
-                EnvBinding::Free(actual) => { if *actual == free { return false; } }
+                EnvBinding::Free(actual) => {
+                    if *actual == free {
+                        #[cfg(feature="diagnostics")]
+                        if c168_trace { eprintln!("NUCLEUS_C168_OPEN_BLOCK:reason=actual-free-capture:node={:?}:index={index}:free={free:?}:left={budget}",source.expr); }
+                        return false;
+                    }
+                }
                 EnvBinding::Closure(captured) => pending.push((captured.clone(), 0)),
                 EnvBinding::NatLit(_) => {}
                 EnvBinding::Neutral(neutral) => {
                     let mut neutrals = vec![neutral];
                     while let Some(value) = neutrals.pop() {
-                        if *budget == 0 { return false; }
+                        if *budget == 0 {
+                            #[cfg(feature="diagnostics")]
+                            if c168_trace { eprintln!("NUCLEUS_C168_OPEN_BLOCK:reason=neutral-head-budget:node={:?}:left={budget}",source.expr); }
+                            return false;
+                        }
                         *budget -= 1;
                         match &value.head {
-                            NeutralHead::Free(actual) => { if *actual == free { return false; } }
+                            NeutralHead::Free(actual) => {
+                                if *actual == free {
+                                    #[cfg(feature="diagnostics")]
+                                    if c168_trace { eprintln!("NUCLEUS_C168_OPEN_BLOCK:reason=neutral-free-capture:node={:?}:free={free:?}:left={budget}",source.expr); }
+                                    return false;
+                                }
+                            }
                             NeutralHead::Projection { structure, .. } => neutrals.push(structure.as_ref()),
                             NeutralHead::Const { .. } => {}
                         }
-                        if *budget < value.spine.len() { return false; }
+                        if *budget < value.spine.len() {
+                            #[cfg(feature="diagnostics")]
+                            if c168_trace { eprintln!("NUCLEUS_C168_OPEN_BLOCK:reason=neutral-spine-budget:node={:?}:spine={}:left={budget}",source.expr,value.spine.len()); }
+                            return false;
+                        }
                         *budget -= value.spine.len();
                         pending.extend(value.spine.iter().map(|c| (c.clone(), 0)));
                     }
