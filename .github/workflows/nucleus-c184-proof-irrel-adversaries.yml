@@ -1,0 +1,81 @@
+name: Nucleus C184 adversarial source mutation controls for checked proof irrelevance
+on:
+  push:
+    branches: [research/nucleus-c182-typed-proof-irrel-20261115]
+    paths: ['.github/workflows/nucleus-c184-proof-irrel-adversaries.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  mutated-prefixes:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RUST_MIN_STACK: '67108864'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Fetch exact archived Mathlib prefix and compile experiment
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/c184"
+          gh api repos/heathsanchez/test/actions/artifacts/14136676807/zip > "$RUNNER_TEMP/c184/fixture.zip"
+          printf '%s  %s\n' 3d057e397b67df92a5c0758f1a4e971ac17e14df5e623f2a129a05ddda788453 "$RUNNER_TEMP/c184/fixture.zip" | sha256sum -c -
+          unzip -q "$RUNNER_TEMP/c184/fixture.zip" -d "$RUNNER_TEMP/c184"
+          printf '%s  %s\n' 856050129c6f620672154aab7df37c2ba73d777034d583739ebcb78a231cfd61 "$RUNNER_TEMP/c184/prefix.ndjson" | sha256sum -c -
+          cargo build --locked --release --manifest-path metatron-kernel/Cargo.toml
+          sha256sum metatron-kernel/target/release/metatron-kernel > "$RUNNER_TEMP/c184/binary.sha256"
+      - name: Replay original and four source edits with paired flags
+        run: |
+          python3 - "$RUNNER_TEMP/c184" <<'PY'
+          import copy,hashlib,json,os,pathlib,subprocess,sys
+          out=pathlib.Path(sys.argv[1]);original=(out/'prefix.ndjson').read_bytes()
+          lines=[json.loads(x) for x in original.splitlines()]
+          match=lambda f:[i for i,x in enumerate(lines) if f(x)]
+          groups=match(lambda x:'inductive' in x and any(c.get('name')==73 for c in x['inductive'].get('ctors',[])))
+          refl=match(lambda x:'thm' in x and x['thm'].get('name')==152)
+          target=match(lambda x:'thm' in x and x['thm'].get('name')==1038)
+          assert len(groups)==len(refl)==len(target)==1
+          assert lines[target[0]]['thm']['value']==6389
+          assert lines[refl[0]]['thm']['type']==880
+          assert lines[groups[0]]['inductive']['ctors'][0]['name']==73
+          assert lines[groups[0]]['inductive']['ctors'][0]['numFields']==0
+          cases={'unaltered':lines}
+          def mutate(label,func):
+              item=copy.deepcopy(lines);func(item);cases[label]=item
+          mutate('wrong-constructor-fields',lambda d:d[groups[0]]['inductive']['ctors'][0].__setitem__('numFields',1))
+          mutate('refl-theorem-universe-undeclared',lambda d:d[refl[0]]['thm'].__setitem__('levelParams',[]))
+          mutate('refl-theorem-wrong-type',lambda d:d[refl[0]]['thm'].__setitem__('type',395))
+          mutate('final-theorem-escaped-bvar-proof',lambda d:d[target[0]]['thm'].__setitem__('value',5))
+          cfg=json.loads(pathlib.Path('experiments/nucleus-capture-substitution-20261107/alias-result-canonical-off-replay.json').read_text())['flags']
+          assert len(cfg)==24 and set(cfg.values())=={'1'}
+          env0={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+          env0.update(cfg)
+          results=[]
+          for label,case in cases.items():
+              data=original if label=='unaltered' else b''.join((json.dumps(x,separators=(',',':'),ensure_ascii=False)+'\n').encode() for x in case)
+              for candidate in (False,True):
+                  env=dict(env0)
+                  if candidate:env['NUCLEUS_EXPERIMENTAL_C182_TYPED_PROOF_IRREL']='1'
+                  p=subprocess.run(['metatron-kernel/target/release/metatron-kernel'],input=data,capture_output=True,env=env,timeout=130)
+                  results.append(dict(case=label,mode='candidate' if candidate else 'baseline',exit=p.returncode,
+                                      input_sha256=hashlib.sha256(data).hexdigest(),
+                                      stderr_tail=p.stderr.decode(errors='replace')[-650:]))
+          (out/'report.json').write_text(json.dumps({'scope':'C184 mutated source controls, independent Lean verdict not established',
+                  'commit':os.environ.get('GITHUB_SHA'),'cases':results},indent=2))
+          print('C184_RESULTS:'+json.dumps(results)[:18000],flush=True)
+          orig=[r for r in results if r['case']=='unaltered']
+          assert [r['exit'] for r in orig]==[2,0]
+          assert all(r['exit']!=0 for r in results if r['case']!='unaltered'), 'candidate admitted a mutated export'
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-c184-mutated-source-negatives
+          path: |
+            ${{ runner.temp }}/c184/report.json
+            ${{ runner.temp }}/c184/binary.sha256
+          retention-days: 60
