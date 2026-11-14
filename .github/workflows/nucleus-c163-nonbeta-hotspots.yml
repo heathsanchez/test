@@ -1,0 +1,114 @@
+name: Nucleus C163 exact N7 nonbeta source-hotspot census
+
+on:
+  push:
+    branches: [research/nucleus-c163-nonbeta-source-hotspots-20261114]
+    paths:
+      - .github/workflows/nucleus-c163-nonbeta-hotspots.yml
+      - metatron-kernel/src/machine.rs
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  original-source-observer:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RUST_MIN_STACK: '67108864'
+      NUCLEUS_EXPERIMENTAL_RELEVANCE: '1'
+      NUCLEUS_EXPERIMENTAL_EXPECTED_LAMBDA: '1'
+      NUCLEUS_EXPERIMENTAL_DEMAND_MAJOR: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Retrieve frozen original 196-case Arena input
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/original196"
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/11272848230/zip > "$RUNNER_TEMP/original196.zip"
+          printf '%s  %s\n' f6cd590db7f6fb92b8d1b3ca87231d4b0f521f085d73f93abd005f5caaff86d2 "$RUNNER_TEMP/original196.zip" | sha256sum -c -
+          unzip -p "$RUNNER_TEMP/original196.zip" lean-arena-tests.tar.gz | tar --no-same-owner -xzf - -C "$RUNNER_TEMP/original196"
+          printf '%s  %s\n' abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35 "$RUNNER_TEMP/original196/good/perf/magma-list-pair-n7.ndjson" | sha256sum -c -
+      - name: Build native diagnostic checker
+        run: cargo build --locked --release --manifest-path metatron-kernel/Cargo.toml --features diagnostics --example nucleus_budget_ladder
+      - name: Run source-locked nonbeta ON/OFF and forgery gate
+        run: |
+          set -euo pipefail
+          python3 - "$RUNNER_TEMP/original196/good/perf/magma-list-pair-n7.ndjson" <<'PY' | tee "$RUNNER_TEMP/c163-source-hotspots.json"
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+          import re
+          import subprocess
+          import sys
+
+          source = Path(sys.argv[1]).read_bytes()
+          original_sha = 'abce636f6a7dd529c0dc6bbad8e7c8e2eaecfdda0d04c191d7f868e3a4468d35'
+          assert hashlib.sha256(source).hexdigest() == original_sha
+          binary = Path('metatron-kernel/target/release/examples/nucleus_budget_ladder').resolve()
+          base_env = dict(os.environ, NUCLEUS_C151_EXACT_CACHE='1', NUCLEUS_C152_EXACT_HEAD_COST='1')
+          base_env.pop('NUCLEUS_C163_NONBETA_HOT', None)
+          observe_env = dict(base_env, NUCLEUS_C163_NONBETA_HOT='1')
+          c152 = re.compile(r'^NUCLEUS_C152_HEADS:.*:budget=(\d+):.*:const=(\d+):proj=(\d+):nat=(\d+):let=\d+:other=\d+$')
+          c163 = re.compile(r'^NUCLEUS_C163_HOT:source=8799:env=0:authority=(\d+):budget=(\d+):kind=(const|proj|nat):total=(\d+):distinct=(\d+):top=([\d=,]*)$')
+          runs = []
+          for budget, expected in ((65536, 2), (14155776, 0)):
+              baseline = subprocess.run([str(binary), str(budget)], input=source, env=base_env,
+                                        capture_output=True, timeout=180, check=False)
+              observed = subprocess.run([str(binary), str(budget)], input=source, env=observe_env,
+                                        capture_output=True, timeout=180, check=False)
+              assert (baseline.returncode, observed.returncode) == (expected, expected)
+              assert baseline.stdout == observed.stdout == b''
+              retained = [line for line in observed.stderr.splitlines() if not line.startswith(b'NUCLEUS_C163_HOT:')]
+              assert b'\n'.join(retained) == b'\n'.join(baseline.stderr.splitlines()), budget
+              previous = [c152.fullmatch(line.decode()) for line in baseline.stderr.splitlines() if line.startswith(b'NUCLEUS_C152_HEADS:')]
+              assert previous and all(previous)
+              raw = [line.decode() for line in observed.stderr.splitlines() if line.startswith(b'NUCLEUS_C163_HOT:')]
+              assert len(raw) == len(previous) * 3, (budget, len(raw), len(previous))
+              calls = []
+              for offset, prior in enumerate(previous):
+                  allowed = dict(zip(('const', 'proj', 'nat'), map(int, prior.groups()[1:])))
+                  call = {}
+                  for line in raw[3*offset:3*offset+3]:
+                      match = c163.fullmatch(line)
+                      assert match, line
+                      authority, allowance, kind, total, distinct, top = match.groups()
+                      assert int(authority) == 386 and int(allowance) == int(prior.group(1))
+                      assert kind not in call and int(total) == allowed[kind]
+                      ranked = [] if not top else [(int(k), int(v)) for k,v in (x.split('=') for x in top.split(','))]
+                      assert len(ranked) == min(int(distinct),12)
+                      assert len({k for k,_ in ranked}) == len(ranked)
+                      assert sum(count for _,count in ranked) <= int(total)
+                      assert ranked == sorted(ranked,key=lambda item:(-item[1],item[0]))
+                      call[kind] = {'total': int(total), 'distinct': int(distinct), 'top': ranked}
+                  assert set(call) == set(allowed)
+                  calls.append({'allowance': int(prior.group(1)), 'heads': call})
+              if budget == 14155776:
+                  assert [calls[-1]['heads'][key]['total'] for key in ('const','proj','nat')] == [1504060,310927,103642]
+              runs.append({'budget':budget,'exit':expected,'calls':calls})
+          for rel, digest, expected in (
+              ('nucleus-universe-reconcile-20261104/inputs/renamed-pprod-forged-fields.ndjson', '33993418d305e980e224d6102be2fc61ee9c02be1c8c23ccce00a406616ba6d6', 1),
+              ('nucleus-universe-reconcile-20261104/inputs/renamed-pprod-forged-motive.ndjson', '2eb5034aa01b1591cc99577bacc50095e3d8e80709172175f569e1f481f680de', 2),
+              ('nucleus-quotient-reuse-20261104/heldout/mutated.ndjson', 'a4425142910417814594d555ccec8ac1b29bbe8d18f12993f20fa1c0253fd692', 1),
+          ):
+              candidate = (Path('experiments') / rel).read_bytes()
+              assert hashlib.sha256(candidate).hexdigest() == digest, rel
+              proc = subprocess.run([str(binary), '65536'], input=candidate, env=observe_env,
+                                    capture_output=True, timeout=90, check=False)
+              assert proc.returncode == expected and proc.stdout == b'', (rel,proc.returncode)
+          print(json.dumps({'source':'C162 exact recovered C125b', 'original_sha256':original_sha,
+                            'source_commit':os.environ.get('GITHUB_SHA'), 'runs':runs,
+                            'forged_exits':[1,2,1]}, sort_keys=True))
+          PY
+      - name: Native diagnostic regression
+        run: cargo test --locked --manifest-path metatron-kernel/Cargo.toml --features diagnostics --lib
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-c163-frozen-source-hotspots
+          path: ${{ runner.temp }}/c163-source-hotspots.json
