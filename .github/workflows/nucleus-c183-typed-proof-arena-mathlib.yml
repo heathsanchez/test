@@ -2,7 +2,7 @@ name: Nucleus C183 typed proof-irrelevance current Arena and complete Mathlib qu
 on:
   push:
     branches: [research/nucleus-c182-typed-proof-irrel-20261115]
-    paths: ['.github/workflows/nucleus-c183-arena-mathlib-differential.yml']
+    paths: ['.github/workflows/nucleus-c183-typed-proof-arena-mathlib.yml']
   workflow_dispatch:
 permissions:
   contents: read
