@@ -2507,6 +2507,30 @@ fn compare_neutral_heads(
             }) {
                 return Judgment::unknown("unresolved-qualified-recursor-heads");
             }
+            // C181: inspect both instantiated propositions and their exact
+            // conversion in a disposable checker snapshot. The result is a
+            // diagnostic string only; even Proven never authorizes equality.
+            #[cfg(feature = "diagnostics")]
+            if std::env::var_os("NUCLEUS_C181_PROP_TYPE_RELATION").is_some()
+                && depth == 10 && context.len() == 10
+                && let (
+                    NeutralHead::Const { name: left_name, .. },
+                    NeutralHead::Const { name: right_name, .. },
+                ) = (&left.head, &right.head)
+                && left_name.0 == 73 && right_name.0 == 152
+            {
+                use std::sync::atomic::{AtomicUsize, Ordering};
+                static OBSERVED: AtomicUsize = AtomicUsize::new(0);
+                if OBSERVED.fetch_add(1, Ordering::Relaxed) == 0 {
+                    let result = checker.diagnostic_c181_instantiated_proof_types(
+                        left, right, context, budget.min(2048),
+                    );
+                    eprintln!(
+                        "NUCLEUS_C181_PROP_TYPE_RELATION:depth={depth}:budget={budget}:{}",
+                        result.chars().take(7000).collect::<String>(),
+                    );
+                }
+            }
             // C180: diagnostic-only, source-qualified proof telescope.
             // A constructor proof and a theorem proof may be definitionally
             // equal by proof irrelevance, but not from their names or shapes
