@@ -1,0 +1,93 @@
+name: Nucleus C191 ablate historical neutral/lambda rule from Quotient repair
+on:
+  push:
+    branches: [research/nucleus-c190-quotient-iota-20261115]
+    paths: ['.github/workflows/nucleus-c191-quotient-ablation.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  ablation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RUST_MIN_STACK: '67108864'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Recover original 978KB prefix and build C190 checker
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/c191"
+          gh api repos/heathsanchez/test/actions/artifacts/14137666683/zip > "$RUNNER_TEMP/c191/archive.zip"
+          printf '%s  %s\n' 91e2decf7d5e8dc5792ce62e0f47b617cd35ed1857a7227bde3550f5bb55f499 "$RUNNER_TEMP/c191/archive.zip" | sha256sum -c -
+          unzip -q "$RUNNER_TEMP/c191/archive.zip" -d "$RUNNER_TEMP/c191"
+          printf '%s  %s\n' 4883dc9889b546a1117c25c266bae05a344b6609db5cbbfd846a8d7abc92a907 "$RUNNER_TEMP/c191/quotient-prefix.ndjson" | sha256sum -c -
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          sha256sum metatron-kernel/target/release/metatron-kernel > "$RUNNER_TEMP/c191/binary.sha256"
+      - name: Exact six-arm ablation and related forged cases
+        run: |
+          python3 - "$RUNNER_TEMP/c191" <<'PY'
+          import hashlib,json,os,pathlib,subprocess,sys,time
+          out=pathlib.Path(sys.argv[1]);data=(out/'quotient-prefix.ndjson').read_bytes()
+          flags=json.loads(pathlib.Path('experiments/nucleus-capture-substitution-20261107/alias-result-canonical-off-replay.json').read_text())['flags']
+          assert len(flags)==24 and set(flags.values())=={'1'}
+          base={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+          base.update(flags);base['NUCLEUS_EXPERIMENTAL_C182_TYPED_PROOF_IRREL']='1'
+          binary='metatron-kernel/target/release/metatron-kernel'
+          modes=[('C182',False,False,False),
+                 ('C182+C189',True,False,False),
+                 ('C182+iota',False,True,False),
+                 ('C182+contractor',False,False,True),
+                 ('C182+iota+contractor',False,True,True),
+                 ('C182+C189+iota',True,True,False)]
+          rows=[]
+          for label,nl,iota,contractor in modes:
+              env=dict(base);env['NUCLEUS_TRACE_DOWNSTREAM']='1'
+              if nl:env['NUCLEUS_EXPERIMENTAL_C189_NEUTRAL_LAMBDA_PROOF']='1'
+              if iota:env['NUCLEUS_EXPERIMENTAL_C190_QUOTIENT_IOTA']='1'
+              if contractor:env['NUCLEUS_EXPERIMENTAL_C190_QUOTIENT_CONTRACTOR']='1'
+              t=time.monotonic()
+              p=subprocess.run([binary],input=data,env=env,capture_output=True,timeout=150)
+              lines=p.stderr.decode(errors='replace').splitlines()
+              rows.append({'mode':label,'exit':p.returncode,
+                  'wall_s':round(time.monotonic()-t,4),
+                  'terminal':[x for x in lines if x.startswith('NUCLEUS_DOWNSTREAM:')][-2:],
+                  'stdout_sha256':hashlib.sha256(p.stdout).hexdigest()})
+          neg=[]
+          lines=data.splitlines(keepends=True)
+          target=[i for i,line in enumerate(lines) if isinstance((v:=json.loads(line)).get('thm'),dict) and v['thm'].get('name')==1911]
+          assert len(target)==1
+          bad=lines.copy();v=json.loads(bad[target[0]]);v['thm']['type']=5
+          bad[target[0]]=(json.dumps(v,separators=(',',':'))+'\n').encode()
+          inputs=[('forged-quotient-wrong-type',b''.join(bad))]
+          for name,sha in (
+              ('nucleus-universe-reconcile-20261104/inputs/renamed-pprod-forged-fields.ndjson','33993418d305e980e224d6102be1c8c23ccce00a406616ba6d6'),
+              ('nucleus-universe-reconcile-20261104/inputs/renamed-pprod-forged-motive.ndjson','2eb5034aa01b1591cc99577bacc50095e3d8e80709172175f569e1f481f680de'),
+              ('nucleus-quotient-reuse-20261104/heldout/mutated.ndjson','a4425142910417814594d555ccec8ac1b29bbe8d18f12993f20fa1c0253fd692')):
+              source=(pathlib.Path('experiments')/name).read_bytes()
+              assert hashlib.sha256(source).hexdigest()==sha
+              inputs.append((name,source))
+          for label,blob in inputs:
+              env=dict(base);env['NUCLEUS_EXPERIMENTAL_C190_QUOTIENT_IOTA']='1'
+              p=subprocess.run([binary],input=blob,env=env,capture_output=True,timeout=150)
+              neg.append({'case':label,'sha256':hashlib.sha256(blob).hexdigest(),'exit':p.returncode})
+          report={'scope':'source-pinned C191 no-C189 ablation, narrowest sufficient quotient iota',
+                  'commit':os.environ.get('GITHUB_SHA'),'arms':rows,'forged':neg}
+          (out/'report.json').write_text(json.dumps(report,indent=2))
+          print('C191_RESULT:'+json.dumps(report,ensure_ascii=False)[:18000],flush=True)
+          assert [r['exit'] for r in rows[:2]]==[2,2],'baseline/c189 unexpectedly changed'
+          assert all(r['exit'] in (0,2) for r in rows),'source valid incorrectly rejected'
+          assert all(x['exit']!=0 for x in neg),'minimal C190 iota accepted forgery'
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-c191-quotient-iota-minimal-ablation
+          path: |
+            ${{ runner.temp }}/c191/report.json
+            ${{ runner.temp }}/c191/binary.sha256
+          retention-days: 60
