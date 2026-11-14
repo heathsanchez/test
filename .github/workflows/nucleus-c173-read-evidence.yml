@@ -1,0 +1,56 @@
+name: Nucleus C173 reconcile qualified C171 and C172 receipts
+on:
+  push:
+    branches: [research/nucleus-c170-pi-opening-wired-20261115]
+    paths: ['.github/workflows/nucleus-c173-read-evidence.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  evidence:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch and verify immutable C171 and C172 artifacts
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/c173"
+          gh api repos/heathsanchez/test/actions/artifacts/14133729433/zip > "$RUNNER_TEMP/c171.zip"
+          gh api repos/heathsanchez/test/actions/artifacts/14133608215/zip > "$RUNNER_TEMP/c172.zip"
+          printf '%s  %s\n' 330bcddd56ffa1b9214840c3e687400265dc1cee06e6750fdb9138c06a331d7d "$RUNNER_TEMP/c171.zip" | sha256sum -c -
+          printf '%s  %s\n' 72e70e8819a60d24fcf8c032ca3810cde9a8dc5be9a6c298250cf8745d7bbf87 "$RUNNER_TEMP/c172.zip" | sha256sum -c -
+          unzip -l "$RUNNER_TEMP/c171.zip"
+          unzip -l "$RUNNER_TEMP/c172.zip"
+          unzip -p "$RUNNER_TEMP/c171.zip" summary.json > "$RUNNER_TEMP/c173/portable-summary.json"
+          unzip -p "$RUNNER_TEMP/c171.zip" verdicts.json > "$RUNNER_TEMP/c173/portable-verdicts.json"
+          unzip -p "$RUNNER_TEMP/c172.zip" summary.json > "$RUNNER_TEMP/c173/recursor-summary.json"
+      - name: Reconcile exact outstanding cases and recursor head data
+        run: |
+          python3 - "$RUNNER_TEMP/c173" <<'PY'
+          import collections,json,pathlib,sys
+          out=pathlib.Path(sys.argv[1])
+          rows=json.loads((out/'portable-verdicts.json').read_text())
+          c172=json.loads((out/'recursor-summary.json').read_text())
+          unknown=[{'corpus':r['corpus'],'case':r['case'],'sha256':r['sha256'],'terminal':r['terminal'][-220:]}
+                   for r in rows if r['actual']==2]
+          print('UNKNOWN CASES',json.dumps(unknown))
+          traces=[]
+          for r in c172['cases']:
+              if not r['trace']:continue
+              item={'budget':r['global_budget'],'replay_failures':r['replay_failures'],
+                    'first':r['failure_first'][:5],'last':r['failure_last'][-5:],
+                    'first_work':r['work_first'][:5],'last_work':r['work_last'][-5:]}
+              traces.append(item)
+              print('RECURSOR HEAD TRACE',json.dumps(item))
+          (out/'reconciled.json').write_text(json.dumps({'unknown':unknown,'recursor':traces},indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-c173-reconciled-source-receipts
+          path: ${{ runner.temp }}/c173/reconciled.json
+          retention-days: 60
