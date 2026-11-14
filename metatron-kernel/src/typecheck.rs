@@ -3675,6 +3675,69 @@ impl<'a> TypeChecker<'a> {
         skipped_proof
     }
 
+    // C181 read-only source-proof comparison. This probes the genuine
+    // captured arguments and their independently formed proposition types
+    // in an ISOLATED checker snapshot; it cannot introduce proof authority.
+    #[cfg(feature = "diagnostics")]
+    pub(crate) fn diagnostic_c181_instantiated_proof_types(
+        &self,
+        left: &Neutral,
+        right: &Neutral,
+        context: &[TypeValue],
+        budget: usize,
+    ) -> String {
+        let probe = Self {
+            expressions: self.expressions,
+            levels: self.levels,
+            environment: self.environment,
+            level_substitution: self.level_substitution.clone(),
+            delta_policy: self.delta_policy,
+            exposure_cache: new_exposure_cache(),
+            closed_spine_eligibility: RefCell::new(HashMap::new()),
+            source_support: RefCell::new(HashMap::new()),
+            paired_source_support: RefCell::new(HashMap::new()),
+            checked_frames: RefCell::new(HashMap::new()),
+            source_opening_proofs: RefCell::new(HashMap::new()),
+            formed_expected: RefCell::new(std::collections::HashSet::new()),
+            lambda_trials: RefCell::new(LambdaTrialState::default()),
+            checked_binding_lineage: Rc::new(RefCell::new(
+                self.checked_binding_lineage.borrow().clone(),
+            )),
+            strict_origin_probe: self.strict_origin_probe,
+        };
+        let allowance = budget.min(2048);
+        let lhs_telescope =
+            probe.diagnostic_neutral_source_telescope(left, context, allowance);
+        let rhs_telescope =
+            probe.diagnostic_neutral_source_telescope(right, context, allowance);
+        let lhs_type = probe.neutral_result_type(left, context, allowance);
+        let rhs_type = probe.neutral_result_type(right, context, allowance);
+        let prop_status = |ty: Option<&TypeValue>| -> String {
+            match ty {
+                Some(TypeValue::Term(c)) => format!(
+                    "{:?}",
+                    probe.checked_captured_prop_type_in_context(c, context, allowance),
+                ),
+                Some(other) => format!("not-an-instantiated-term:{other:?}"),
+                None => "result-type-UNKNOWN".to_owned(),
+            }
+        };
+        let lhs_prop = prop_status(lhs_type.as_ref());
+        let rhs_prop = prop_status(rhs_type.as_ref());
+        let relation = lhs_type.as_ref().zip(rhs_type.as_ref()).map(|(a,b)| {
+            crate::convert::convert_with_policy_in_context(
+                &probe,a,b,allowance,
+                crate::convert::DeltaPolicy::GuardedSemanticFallback,
+                context.len(),context,
+            )
+        });
+        format!(
+            "lhs_telescope={}:rhs_telescope={}:lhs_type={lhs_type:?}:rhs_type={rhs_type:?}:lhs_prop={lhs_prop}:rhs_prop={rhs_prop}:type_relation={relation:?}",
+            lhs_telescope.chars().take(800).collect::<String>(),
+            rhs_telescope.chars().take(800).collect::<String>(),
+        )
+    }
+
     pub(crate) fn proof_terms_same_proposition(
         &self,
         left: &Closure,
