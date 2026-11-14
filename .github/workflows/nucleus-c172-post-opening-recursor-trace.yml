@@ -1,0 +1,72 @@
+name: Nucleus C172 post-opening recursor-head read-only classification
+on:
+  push:
+    branches: [research/nucleus-c170-pi-opening-wired-20261115]
+    paths: ['.github/workflows/nucleus-c172-post-opening-recursor-trace.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  source-locked-trace:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: \${{ github.token }}
+      RUST_MIN_STACK: '67108864'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Check frozen source and compile diagnostic-only binary
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/c172" "$RUNNER_TEMP/source"
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/11272848230/zip > "$RUNNER_TEMP/source.zip"
+          printf '%s  %s\n' f6cd590db7f6fb92b8d1b3ca87231d4b0f521f085d73f93abd005f5caaff86d2 "$RUNNER_TEMP/source.zip" | sha256sum -c -
+          unzip -p "$RUNNER_TEMP/source.zip" lean-arena-tests.tar.gz | tar --no-same-owner -xzf - -C "$RUNNER_TEMP/source"
+          printf '%s  %s\n' 6669cee92ad330dada351ac9e63656f7e9e848dd70376f17030d64677f8c81ac "$RUNNER_TEMP/source/good/perf/magma-list-deep-n36.ndjson" | sha256sum -c -
+          cargo build --locked --release --manifest-path metatron-kernel/Cargo.toml --features diagnostics --example nucleus_budget_ladder
+      - name: Trace exact next recursor failure after safe source opening
+        run: |
+          set -euo pipefail
+          python3 - "$RUNNER_TEMP/source/good/perf/magma-list-deep-n36.ndjson" "$RUNNER_TEMP/c172" <<'PY'
+          import collections, hashlib, json, os, pathlib, re, subprocess, sys
+          source=pathlib.Path(sys.argv[1]).read_bytes()
+          out=pathlib.Path(sys.argv[2])
+          flags=json.loads(pathlib.Path('experiments/nucleus-capture-substitution-20261107/alias-result-canonical-off-replay.json').read_text())['flags']
+          assert len(flags)==24 and set(flags.values())=={'1'}
+          env_base={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+          env_base.update(flags)
+          bin=str(pathlib.Path('metatron-kernel/target/release/examples/nucleus_budget_ladder').resolve())
+          records=[]
+          for global_budget in (65536,262144):
+              for trace in (False,True):
+                  env=dict(env_base)
+                  env.update(NUCLEUS_C168_OPENING_REASON='1',NUCLEUS_C170_OPENING_ALLOWANCE='4096',NUCLEUS_TRACE_DOWNSTREAM='1')
+                  if trace:env.update(NUCLEUS_TRACE_NESTED_RECURSOR_IOTA_FAILURE='1',NUCLEUS_TRACE_REPLAY_CACHE='1')
+                  p=subprocess.run([bin,str(global_budget)],input=source,env=env,capture_output=True,timeout=150)
+                  lines=p.stderr.decode(errors='replace').splitlines()
+                  fails=[x for x in lines if x.startswith('NUCLEUS_NESTED_REPLAY_FAILURE:')]
+                  costs=[x for x in lines if x.startswith('NUCLEUS_REPLAY_WORK:')]
+                  openings=[x for x in lines if x.startswith('NUCLEUS_C168_OPEN_RESULT:')]
+                  terminal=[x for x in lines if x.startswith('NUCLEUS_DOWNSTREAM:')]
+                  row=dict(global_budget=global_budget,trace=trace,rc=p.returncode,raw_sha256=hashlib.sha256(p.stderr).hexdigest(),
+                           replay_failures=len(fails),replay_work=len(costs),opening=openings[-5:],
+                           failure_first=fails[:8],failure_last=fails[-12:],work_first=costs[:8],work_last=costs[-8:],
+                           final=terminal[-5:])
+                  records.append(row)
+          (out/'summary.json').write_text(json.dumps({'scope':'read-only bounded C172 recursor diagnosis, not checker promotion',
+              'commit':os.environ.get('GITHUB_SHA'),'binary_sha256':hashlib.sha256(pathlib.Path(bin).read_bytes()).hexdigest(),
+              'cases':records},indent=2))
+          print(json.dumps([{'global':r['global_budget'],'trace':r['trace'],'rc':r['rc'],
+                'failures':r['replay_failures'],'work':r['replay_work'],'last':r['final']} for r in records]))
+          assert all(r['rc']==2 for r in records),'whole original must remain UNKNOWN under source-tracing observation'
+          assert all(any('safe=true' in s and 'spent=2645' in s for s in r['opening']) for r in records),'expected checked safe opening not reached'
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-c172-post-opening-recursor-evidence
+          path: \${{ runner.temp }}/c172/
+          retention-days: 60
