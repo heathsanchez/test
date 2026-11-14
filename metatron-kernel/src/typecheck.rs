@@ -1,4 +1,18 @@
 use std::cell::RefCell;
+// C182 bounded non-authoritative reentrancy guard. A source-typed proof
+// conversion may recursively request type conversion of its own premises;
+// revisiting that rule declines instead of assuming the desired equality.
+thread_local! {
+    static C182_TYPED_PROOF_ACTIVE: std::cell::Cell<bool> =
+        const { std::cell::Cell::new(false) };
+}
+struct C182TypedProofScope;
+impl Drop for C182TypedProofScope {
+    fn drop(&mut self) {
+        C182_TYPED_PROOF_ACTIVE.with(|slot| slot.set(false));
+    }
+}
+
 use std::collections::{hash_map::Entry, HashMap};
 use std::rc::Rc;
 use crate::machine::{ExposureCache, new_exposure_cache};
@@ -3736,6 +3750,58 @@ impl<'a> TypeChecker<'a> {
             lhs_telescope.chars().take(800).collect::<String>(),
             rhs_telescope.chars().take(800).collect::<String>(),
         )
+    }
+
+    /// Experimental source-typed proof irrelevance.
+    ///
+    /// Only a checked proof of EACH original captured term, independent
+    /// formation of BOTH instantiated proposition types in Sort 0, and
+    /// conversion of those exact types warrant equality of their proof values.
+    /// Name, source expression shape, source hash or expected answer never
+    /// select a result. Incomplete premises conservatively fail this optional
+    /// route and leave ordinary conversion unchanged.
+    pub(crate) fn c182_checked_proofs_same_proposition(
+        &self, left: &Closure, right: &Closure,
+        context: &[TypeValue], budget: usize,
+    ) -> bool {
+        if budget < 256 || context.len() > 128 { return false; }
+        let entered = C182_TYPED_PROOF_ACTIVE.with(|slot| {
+            if slot.get() { false } else { slot.set(true); true }
+        });
+        if !entered { return false; }
+        let _scope = C182TypedProofScope;
+
+        let mut lfuel=budget.min(4096);
+        let mut rfuel=budget.min(4096);
+        let ltype=self.infer_exact_closure_in_context(
+            left, context, &mut lfuel, 0,
+        );
+        let rtype=self.infer_exact_closure_in_context(
+            right, context, &mut rfuel, 0,
+        );
+        let (Some(TypeValue::Term(lp)),Some(TypeValue::Term(rp)))=
+            (ltype.as_ref(),rtype.as_ref())
+        else { return false; };
+        if !self.checked_captured_prop_type_in_context(lp,context,budget.min(2048)).is_proven()
+            || !self.checked_captured_prop_type_in_context(rp,context,budget.min(2048)).is_proven()
+        { return false; }
+        let relation=crate::convert::convert_with_policy_in_context(
+            self,ltype.as_ref().expect("checked left"),
+            rtype.as_ref().expect("checked right"),
+            budget.min(4096),crate::convert::DeltaPolicy::GuardedSemanticFallback,
+            context.len(),context,
+        );
+        #[cfg(feature = "diagnostics")]
+        if std::env::var_os("NUCLEUS_C182_PROOF_OBSERVE").is_some()
+            && context.len()==10
+        {
+            use std::sync::atomic::{AtomicUsize, Ordering};
+            static PRINTED:AtomicUsize=AtomicUsize::new(0);
+            if PRINTED.fetch_add(1,Ordering::Relaxed)<20 {
+                eprintln!("NUCLEUS_C182_PROOF:context={}:source_l={:?}:source_r={:?}:left_type={ltype:?}:right_type={rtype:?}:conversion={relation:?}",context.len(),left.expr,right.expr);
+            }
+        }
+        relation.is_proven()
     }
 
     pub(crate) fn proof_terms_same_proposition(
