@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
-      GH_TOKEN: \${{ github.token }}
+      GH_TOKEN: ${{ github.token }}
       RUST_MIN_STACK: '67108864'
     steps:
       - uses: actions/checkout@v4
@@ -68,5 +68,5 @@ jobs:
         if: always()
         with:
           name: nucleus-c172-post-opening-recursor-evidence
-          path: \${{ runner.temp }}/c172/
+          path: ${{ runner.temp }}/c172/
           retention-days: 60
