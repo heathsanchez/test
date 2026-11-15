@@ -3191,8 +3191,17 @@ fn closed_field_enum_candidate(
         block.constructors.as_slice(),
         block.recursors.as_slice(),
     ) else {return false};
+    // C201 source qualification: finite Type-level enumerations of three or
+    // more nullary constructors may use this existing full source-derived
+    // inductive/recursor/iota validator. The flag selects the validation path;
+    // it cannot bypass constructor ownership, universes, or rule-body checks.
+    let nullary_source_candidate =
+        std::env::var_os("NUCLEUS_EXPERIMENTAL_C201_CLOSED_NULLARY_ENUM").is_some()
+        && constructors.len() >= 3
+        && constructors.iter().all(|ctor| ctor.num_fields == 0);
     if constructors.len() < 2 || constructors.len() > 16
-        || constructors.iter().all(|c| c.num_fields == 0) || inductive.num_params!=0
+        || (constructors.iter().all(|ctor| ctor.num_fields == 0) && !nullary_source_candidate)
+        || inductive.num_params!=0
         || inductive.num_indices!=0
         || inductive.num_nested!=0
         || inductive.is_recursive
