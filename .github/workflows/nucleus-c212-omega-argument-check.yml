@@ -4,6 +4,7 @@ on:
     branches: [research/nucleus-c212-source-field-reexpose-20261115]
     paths:
       - 'metatron-kernel/src/typecheck.rs'
+      - 'metatron-kernel/src/machine.rs'
       - '.github/workflows/nucleus-c212-omega-argument-check.yml'
   workflow_dispatch:
 permissions:
@@ -166,8 +167,15 @@ jobs:
           assert cases[2]['bool_major_events_count'] >= 1, 'exact Bool.rec major probe absent'
           assert cases[2]['nat_operand_events_count'] >= 2, 'actual source Nat.beq operand probes absent'
           assert cases[2]['nat_receiver_events_count'] >= 1, 'actual Nat.brecOn PProd receiver probe absent'
-          assert cases[2]['class_projection_events_count'] >= 2, 'actual Nat operand source projection receivers absent'
+          # Successful re-exposure removes the old StuckProjection shape,
+          # so the C211 diagnostic does not fire in this candidate by design.
+          assert any('slot=1:' in e and 'full=Proven { value: NatLit(BigNat([]))' in e
+                     for e in cases[2]['nat_operand_events']), 'OfNat zero field not source-resolved'
+          assert any('slot=0:' in e and 'head: Const { name: NameId(2005)' in e
+                     for e in cases[2]['nat_operand_events']), 'gcd operand did not advance to Decidable.rec'
           assert cases[2]['certified_field_reexpose_count'] >= 1, 'no source-qualified re-exposure observed'
+          assert any('replay=Proven' in e for e in cases[2]['certified_field_reexpose_events']), 'no successful source-qualified field replay'
+          assert cases[0]['stdout_sha256'] == cases[1]['stdout_sha256'], 'baseline/candidate stdout differs without source-qualified acceptance'
           PY
       - name: Drop reused prefix bytes before artifact upload
         if: always()
