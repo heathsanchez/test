@@ -5779,6 +5779,13 @@ impl<'a> TypeChecker<'a> {
         self.environment.is_certified_constructor(name)
     }
 
+    pub(crate) fn certified_recursor_constructor_shape(
+        &self,
+        name: NameId,
+    ) -> Option<(usize, usize)> {
+        self.environment.certified_recursor_constructor_shape(name)
+    }
+
     pub(crate) fn has_qualified_recursor(&self, name: NameId) -> bool {
         self.environment.recursor_reduction(name).is_some()
     }
