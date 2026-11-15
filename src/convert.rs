@@ -2345,15 +2345,27 @@ fn compare_nat_literal_neutral(
                     && sub_args.len() == 2 =>
                 {
                     sub_args.iter().map(|source| {
-                        let expr = checker.expression(source.expr);
-                        let binding = match expr {
-                            Some(Expr::BVar(index)) => source.env.lookup(*index),
-                            _ => None,
-                        };
-                        format!(
-                            "expr={:?}:node={expr:?}:frame={}:binding={binding:?}",
-                            source.expr, source.env.id(),
-                        )
+                        let mut current = source.clone();
+                        let mut chain = Vec::new();
+                        // Diagnostic-only read of immutable source captures.
+                        // Stop on symbolic, native, or non-BVar terminals;
+                        // never mutate a binding or infer numeral equality.
+                        for _ in 0..16 {
+                            let expr = checker.expression(current.expr);
+                            let binding = match expr {
+                                Some(Expr::BVar(index)) => current.env.lookup(*index),
+                                _ => None,
+                            };
+                            chain.push(format!(
+                                "expr={:?}:node={expr:?}:frame={}:binding={binding:?}",
+                                current.expr, current.env.id(),
+                            ));
+                            match binding {
+                                Some(EnvBinding::Closure(next)) => current = next,
+                                _ => break,
+                            }
+                        }
+                        chain.join(" -> ")
                     }).collect()
                 }
                 _ => Vec::new(),
