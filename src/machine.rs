@@ -3323,7 +3323,7 @@ impl<'a> Machine<'a> {
                                         neutral.spine.iter().rev().cloned().collect::<Vec<_>>();
                                     if let Some(Value::NatLit(number)) =
                                         self.try_native_nat_reduction(
-                                            *name, levels, &mut native_pending,
+                                            *name, &[], &mut native_pending,
                                             transparency, budget,
                                         )
                                     {
