@@ -6030,6 +6030,94 @@ mod captured_native_nat_replay_tests {
         assert!(machine.rule_constructor_application(&closure(1008),&reduction,Transparency::Opaque,128).is_none());
         assert_eq!(machine.qualified_nested_recursor_result(&delayed,8192).proven_value(),Some(&Value::NatLit(large.pred().unwrap())));
     }
+
+    #[test]
+    fn captured_registered_nat_sub_and_pred_complete_only_concrete_source_values() {
+        // A unit-level semantic regression for the exact shape observed in
+        // C195's unchanged Mathlib source: pred (sub 1 0), where the sub is
+        // already an immutable captured Neutral, not fresh App syntax.
+        // Production registration of sub/pred is independently source-checked.
+        let mut export = parse(Cursor::new(include_bytes!("../tests/fixtures/good-parameter-tree.ndjson")))
+            .unwrap().resolve().unwrap();
+        let Declaration::Inductive(block) = export.declarations[0].clone() else {
+            panic!("Nat block")
+        };
+        let sub_name = NameId(9000);
+        let pred_name = NameId(9001);
+        export.exprs.insert(ExprId(9000), Expr::NatLit(BigNat::parse_decimal("1").unwrap())).unwrap();
+        export.exprs.insert(ExprId(9001), Expr::NatLit(BigNat::zero())).unwrap();
+        export.exprs.insert(ExprId(9002), Expr::Const { name: pred_name, levels: vec![] }).unwrap();
+        export.exprs.insert(ExprId(9003), Expr::App { fun: ExprId(9002), arg: ExprId(5) }).unwrap();
+
+        let recursor = &block.recursors[0];
+        let nat = NatPrimitives {
+            type_name: block.types[0].name, type_expr: ExprId(1),
+            zero: block.constructors[0].name, succ: block.constructors[1].name,
+            recursor: recursor.name, add: None, mul: None, pow: None,
+            land: None, shift_right: None, div: None, modulo: None,
+            sub: Some(sub_name), pred: Some(pred_name),
+            virtual_bvar_zero: Some(ExprId(5)), ble: None, beq: None,
+        };
+        let machine = Machine::new(
+            AuthorityId(1), &export.exprs, &export.levels, HashMap::new(),
+        ).with_nat_primitives(Some(nat.clone())).with_exposure_cache(new_exposure_cache());
+
+        let source_sub = Neutral {
+            head: NeutralHead::Const { name: sub_name, levels: vec![] },
+            spine: vec![
+                Closure::new(ExprId(9000), EnvFrame::empty()),
+                Closure::new(ExprId(9001), EnvFrame::empty()),
+            ],
+        };
+        let sub_carrier = Closure::new(
+            ExprId(5), EnvFrame::empty().extend_neutral(source_sub.clone()),
+        );
+        let one = Value::NatLit(BigNat::parse_decimal("1").unwrap());
+        let zero = Value::NatLit(BigNat::zero());
+        assert_eq!(
+            machine.expose(sub_carrier, Transparency::Reducible, 128).proven_value(),
+            Some(&one), "captured registered Nat.sub 1 0 must reduce from real operands",
+        );
+        let pred_carrier = Closure::new(
+            ExprId(9003), EnvFrame::empty().extend_neutral(source_sub.clone()),
+        );
+        assert_eq!(
+            machine.expose(pred_carrier.clone(), Transparency::Reducible, 128).proven_value(),
+            Some(&zero), "registered Nat.pred must see completed captured Nat.sub",
+        );
+
+        // A symbolic source operand is not a numeral witness.
+        let symbolic_sub = Neutral {
+            head: NeutralHead::Const { name: sub_name, levels: vec![] },
+            spine: vec![
+                Closure::new(ExprId(5), EnvFrame::empty().extend_free(FreeId(99))),
+                Closure::new(ExprId(9001), EnvFrame::empty()),
+            ],
+        };
+        let symbolic_pred = Closure::new(
+            ExprId(9003), EnvFrame::empty().extend_neutral(symbolic_sub),
+        );
+        assert!(!matches!(
+            machine.expose(symbolic_pred, Transparency::Reducible, 128).proven_value(),
+            Some(Value::NatLit(_)),
+        ), "symbolic native subtraction must not be guessed numeric");
+
+        // Without source-qualified subtraction registration, no synthetic
+        // captured arithmetic may be treated as a numerical certificate.
+        let absent_sub = Machine::new(
+            AuthorityId(2), &export.exprs, &export.levels, HashMap::new(),
+        ).with_nat_primitives(Some(NatPrimitives { sub: None, ..nat }))
+            .with_exposure_cache(new_exposure_cache());
+        assert!(!matches!(
+            absent_sub.expose(pred_carrier.clone(), Transparency::Reducible, 128).proven_value(),
+            Some(Value::NatLit(_)),
+        ), "no source registration means no native numeral promotion");
+        assert!(
+            machine.expose(pred_carrier, Transparency::Reducible, 1).is_unknown(),
+            "exhausted fuel must not silently certify a native result",
+        );
+    }
+
 }
 
 #[cfg(test)]
