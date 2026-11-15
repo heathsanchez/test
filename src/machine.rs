@@ -2081,8 +2081,53 @@ impl<'a> Machine<'a> {
         transparency: Transparency,
         budget: usize,
     ) -> Judgment<Value> {
-        self.expose_internal(closure, transparency, budget, false, true)
-            .map(|exposure| exposure.value)
+        let conservative = self.expose_internal(
+            closure.clone(), transparency, budget, false, true,
+        ).map(|exposure| exposure.value);
+
+        // C212 opt-in research experiment. Conservative conversion exposure
+        // intentionally preserves some projections even when an independently
+        // registered source constructor could supply the actual field.
+        // Re-expose ONLY if field selection itself was certified from the
+        // source receiver (including its original lexical environment).
+        // No expected equality, proof, projected value, or guessed constructor
+        // participates in choosing the field. Default behavior is unchanged.
+        if std::env::var_os("NUCLEUS_EXPERIMENTAL_C212_CERTIFIED_FIELD_REEXPOSE").is_none()
+            || !matches!(transparency, Transparency::Full)
+            || budget < 64
+        {
+            return conservative;
+        }
+        let Some(Value::StuckProjection {
+            type_name, index, structure, ..
+        }) = conservative.proven_value() else {
+            return conservative;
+        };
+        let selected = self.projection_field_for_conversion(
+            structure.clone(), *type_name, *index, budget.min(4096),
+        );
+        if !selected.is_proven() {
+            return conservative;
+        }
+        // Let the original source expression, including every application
+        // following the projection, do its own constructor/field reduction.
+        // This keeps the actual pending spine and source substitutions intact.
+        let replay = self.expose_internal(
+            closure, transparency, budget.saturating_sub(1), false, false,
+        ).map(|exposure| exposure.value);
+        #[cfg(feature = "diagnostics")]
+        if std::env::var_os("NUCLEUS_TRACE_C212_CERTIFIED_FIELD_REEXPOSE").is_some() {
+            use std::sync::atomic::{AtomicUsize, Ordering};
+            static SELECTED: AtomicUsize = AtomicUsize::new(0);
+            if SELECTED.fetch_add(1, Ordering::Relaxed) < 32 {
+                eprintln!(
+                    "NUCLEUS_C212_CERTIFIED_FIELD_REEXPOSE:type={type_name:?}:index={index}:selected={}:replay={}:NO_GUESSED_CONSTRUCTOR",
+                    format!("{selected:?}").chars().take(1100).collect::<String>(),
+                    format!("{replay:?}").chars().take(1800).collect::<String>(),
+                );
+            }
+        }
+        if replay.is_proven() { replay } else { conservative }
     }
 
     /// Unfold exactly the definition at an application's head, then resume
