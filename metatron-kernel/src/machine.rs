@@ -2278,6 +2278,36 @@ impl<'a> Machine<'a> {
             field.clone(), Transparency::Reducible,
             budget.saturating_sub(1), false, true, pending.clone(),
         ).map(|exposure| exposure.value);
+        // C213 opt-in experiment: an actual source-selected field can
+        // conservatively expose to a neutral under Reducible while its Full
+        // source reduction has additional iota/delta structure. Test the
+        // bounded Full view before returning the cheap neutral, without
+        // using the opposing term to choose any reduction. Only the
+        // projected field certified above participates in the replay.
+        if std::env::var_os("NUCLEUS_EXPERIMENTAL_C213_FULL_SELECTED_FIELD").is_some()
+            && budget >= 64
+            && pending.is_empty()
+            && matches!(cheap.proven_value(),
+                Some(Value::Neutral(_)) | Some(Value::StuckProjection { .. }))
+        {
+            let full = self.expose_internal_with_pending(
+                field.clone(), Transparency::Full,
+                budget.saturating_sub(1).min(2048), false, true, pending.clone(),
+            ).map(|exposure| exposure.value);
+            #[cfg(feature = "diagnostics")]
+            if std::env::var_os("NUCLEUS_TRACE_C213_FULL_SELECTED_FIELD").is_some() {
+                use std::sync::atomic::{AtomicUsize, Ordering};
+                static FULL_SELECTED: AtomicUsize = AtomicUsize::new(0);
+                if FULL_SELECTED.fetch_add(1, Ordering::Relaxed) < 48 {
+                    eprintln!(
+                        "NUCLEUS_C213_FULL_SELECTED_FIELD:type={type_name:?}:field={index}:source={field:?}:cheap={}:full={}:NO_TARGET_DRIVEN_BRANCH",
+                        format!("{cheap:?}").chars().take(1700).collect::<String>(),
+                        format!("{full:?}").chars().take(2300).collect::<String>(),
+                    );
+                }
+            }
+            if full.is_proven() { return full; }
+        }
         if cheap.is_proven() {
             #[cfg(feature = "diagnostics")]
             if std::env::var_os("NUCLEUS_TRACE_PROJECTION_CHEAP").is_some() {
