@@ -1,0 +1,27 @@
+name: Nucleus C196 captured source-native reduction candidate
+on:
+  push:
+    branches: [research/nucleus-c196-captured-native-reduction-20261115]
+    paths:
+      - 'metatron-kernel/src/machine.rs'
+      - 'metatron-kernel/src/convert.rs'
+      - '.github/workflows/nucleus-c196-captured-native-reduction.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  captured-unit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      RUST_MIN_STACK: '67108864'
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Run exact captured native regression (expect red before C196 implementation)
+        run: |
+          set -euo pipefail
+          cargo test --locked --manifest-path metatron-kernel/Cargo.toml captured_registered_nat_sub_and_pred_complete_only_concrete_source_values -- --nocapture
