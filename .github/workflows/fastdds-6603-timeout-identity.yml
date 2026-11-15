@@ -1,0 +1,78 @@
+name: Fast DDS 6603 source-pinned timeout identity comparison
+
+on:
+  push:
+    branches: [research/fastdds-6603-type-identity-20261115]
+    paths:
+      - .github/workflows/fastdds-6603-timeout-identity.yml
+      - research/fastdds-6603-timeout-identity/**
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        arm: [upstream, preserve-advertised-identity]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install native build dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y ninja-build libasio-dev libtinyxml2-dev libfoonathan-memory-dev libssl-dev libsqlite3-dev
+
+      - name: Checkout exact maintainer source
+        run: |
+          mkdir -p evidence
+          git clone https://github.com/eProsima/Fast-DDS.git fastdds
+          git -C fastdds checkout --detach 3b4966787cc897a6287c3a6242b22a1dac874007
+          git -C fastdds submodule update --init --depth=1 thirdparty/fastcdr thirdparty/asio thirdparty/tinyxml2
+          test "$(git -C fastdds rev-parse HEAD)" = 3b4966787cc897a6287c3a6242b22a1dac874007
+          git -C fastdds rev-parse HEAD HEAD^{tree} > evidence/source.txt
+          git -C fastdds submodule status >> evidence/source.txt
+          c++ --version >> evidence/source.txt
+          cmake --version >> evidence/source.txt
+          sha256sum research/fastdds-6603-timeout-identity/* >> evidence/source.txt
+
+      - name: Apply single-variable local experimental intervention
+        if: matrix.arm == 'preserve-advertised-identity'
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('fastdds/src/cpp/rtps/builtin/discovery/endpoint/EDPSimpleListeners.cpp')
+          source = path.read_text()
+          before = 'data->type_information.clear();'
+          after = '/* Retain advertised TypeInformation for identity comparison after lookup failure. */'
+          assert source.count(before) == 2, source.count(before)
+          path.write_text(source.replace(before, after))
+          PY
+          git -C fastdds diff --check
+          git -C fastdds diff > evidence/experimental-intervention.patch
+
+      - name: Build source-native Fast DDS and common probe
+        run: |
+          set -o pipefail
+          cmake -S fastdds -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF -DTHIRDPARTY=ON -DTHIRDPARTY_UPDATE=OFF -DSECURITY=OFF -DCOMPILE_EXAMPLES=OFF -DCOMPILE_TOOLS=OFF 2>&1 | tee evidence/configure.log
+          cmake --build build --target fastdds -j 3 2>&1 | tee evidence/build.log
+          g++ -std=c++14 -O2 -DFASTDDS_DYN_LINK -DFASTCDR_DYN_LINK -I fastdds/include -I build/include -I fastdds/thirdparty/fastcdr/include -I build/thirdparty/fastcdr/include research/fastdds-6603-timeout-identity/TypeIdentityTimeoutProbe.cpp -L build/src/cpp -L build/thirdparty/fastcdr/src/cpp -Wl,-rpath,"$PWD/build/src/cpp:$PWD/build/thirdparty/fastcdr/src/cpp" -lfastdds -lfastcdr -pthread -o probe 2>&1 | tee evidence/probe-build.log
+          sha256sum build/src/cpp/libfastdds.so* build/thirdparty/fastcdr/src/cpp/libfastcdr.so* probe > evidence/binary-sha256.txt
+          ldd probe > evidence/probe-ldd.txt
+
+      - name: Run independent positive, negative and timeout controls
+        run: |
+          set -o pipefail
+          export LD_LIBRARY_PATH="$PWD/build/src/cpp:$PWD/build/thirdparty/fastcdr/src/cpp:${LD_LIBRARY_PATH:-}"
+          python3 research/fastdds-6603-timeout-identity/type_identity_timeout_probe.py "$PWD/probe" --evidence-dir "$PWD/evidence/probe-process-logs" 2>&1 | tee evidence/comparison.log
+
+      - name: Retain raw outcomes including failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fastdds-6603-${{ matrix.arm }}-native-evidence
+          path: evidence/
+          retention-days: 90
