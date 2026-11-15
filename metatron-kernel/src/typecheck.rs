@@ -2431,6 +2431,69 @@ impl<'a> TypeChecker<'a> {
                                                         let bool_replay = machine.qualified_nested_recursor_result(
                                                             bool_rec, 2048,
                                                         );
+
+                                                        // C210 is a source-only audit: the Nat.beq operands and
+                                                        // PProd receiver must themselves justify any later rule.
+                                                        if std::env::var_os("NUCLEUS_C210_NAT_BEQ_OPERANDS").is_some() {
+                                                            if let Some(Value::Neutral(nat_beq)) =
+                                                                bool_major_opaque.as_ref().and_then(|v| v.proven_value())
+                                                            {
+                                                                for (slot, nat_arg) in nat_beq.spine.iter().take(2).enumerate() {
+                                                                    let binding = match self.expressions.get(nat_arg.expr) {
+                                                                        Some(Expr::BVar(i)) => nat_arg.env.lookup_with_node_id(*i),
+                                                                        _ => None,
+                                                                    };
+                                                                    let exposed_opaque = machine.expose_for_conversion(
+                                                                        nat_arg.clone(), Transparency::Opaque, 512,
+                                                                    );
+                                                                    let exposed_full = machine.expose_for_conversion(
+                                                                        nat_arg.clone(), Transparency::Full, 2048,
+                                                                    );
+                                                                    eprintln!(
+                                                                        "NUCLEUS_C210_NAT_BEQ_OPERAND:slot={slot}:term={nat_arg:?}:syntax={:?}:binding={}:opaque={}:full={}:NO_SEMANTIC_ADMISSION",
+                                                                        self.expressions.get(nat_arg.expr),
+                                                                        format!("{binding:?}").chars().take(1200).collect::<String>(),
+                                                                        format!("{exposed_opaque:?}").chars().take(1600).collect::<String>(),
+                                                                        format!("{exposed_full:?}").chars().take(2200).collect::<String>(),
+                                                                    );
+                                                                }
+                                                            }
+                                                            if let Some(Value::StuckProjection {
+                                                                type_name, index, structure, spine,
+                                                            }) = bool_major_full.as_ref().and_then(|v| v.proven_value())
+                                                            {
+                                                                let revealed = machine.expose_for_conversion(
+                                                                    structure.clone(), Transparency::Full, 2048,
+                                                                );
+                                                                let selected = machine.projection_field_for_conversion(
+                                                                    structure.clone(), *type_name, *index, 4096,
+                                                                );
+                                                                eprintln!(
+                                                                    "NUCLEUS_C210_NAT_BRECON_RECEIVER:projection_type={type_name:?}:field={index}:structure={structure:?}:source_syntax={:?}:revealed={}:field_selection={}:projection_extra_spine={}:NO_SEMANTIC_ADMISSION",
+                                                                    self.expressions.get(structure.expr),
+                                                                    format!("{revealed:?}").chars().take(2600).collect::<String>(),
+                                                                    format!("{selected:?}").chars().take(1900).collect::<String>(),
+                                                                    format!("{spine:?}").chars().take(1600).collect::<String>(),
+                                                                );
+                                                                if let Some(Value::Neutral(receiver)) = revealed.proven_value() {
+                                                                    for (slot,arg) in receiver.spine.iter().take(3).enumerate() {
+                                                                        let opaque = machine.expose_for_conversion(
+                                                                            arg.clone(), Transparency::Opaque, 512,
+                                                                        );
+                                                                        let full = machine.expose_for_conversion(
+                                                                            arg.clone(), Transparency::Full, 1024,
+                                                                        );
+                                                                        eprintln!(
+                                                                            "NUCLEUS_C210_NAT_BRECON_ARGUMENT:slot={slot}:receiver_head={:?}:receiver_arity={}:source={arg:?}:syntax={:?}:opaque={}:full={}:NO_SEMANTIC_ADMISSION",
+                                                                            receiver.head, receiver.spine.len(),
+                                                                            self.expressions.get(arg.expr),
+                                                                            format!("{opaque:?}").chars().take(1100).collect::<String>(),
+                                                                            format!("{full:?}").chars().take(1800).collect::<String>(),
+                                                                        );
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
                                                         eprintln!(
                                                             "NUCLEUS_C209_BOOL_MAJOR:head={:?}:spine_len={}:source_major={bool_source_major:?}:source_syntax={:?}:source_binding={}:opaque={}:full={}:source_replay={}:continuation={:?}:NO_SEMANTIC_ADMISSION",
                                                             bool_rec.head, bool_rec.spine.len(),
