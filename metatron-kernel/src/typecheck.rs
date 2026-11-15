@@ -2450,6 +2450,48 @@ impl<'a> TypeChecker<'a> {
                                                                         nat_arg.clone(), Transparency::Full, 2048,
                                                                     );
 
+
+                                                                    // C214 source diagnostic after C212's guarded
+                                                                    // field re-exposure has made Coeffs.gcd's first
+                                                                    // Nat.beq operand an actual Decidable.rec. Only
+                                                                    // its recorded source major can choose a rule.
+                                                                    if std::env::var_os("NUCLEUS_C214_GCD_DECIDABLE_MAJOR").is_some()
+                                                                        && slot == 0
+                                                                        && let Some(Value::Neutral(gcd_decidable)) = exposed_full.proven_value()
+                                                                    {
+                                                                        let major = gcd_decidable.spine.last();
+                                                                        let binding = major.and_then(|arg|
+                                                                            match self.expressions.get(arg.expr) {
+                                                                                Some(Expr::BVar(i)) => arg.env.lookup_with_node_id(*i),
+                                                                                _ => None,
+                                                                            });
+                                                                        let opaque = major.map(|arg|machine.expose_for_conversion(
+                                                                            arg.clone(), Transparency::Opaque, 1024,
+                                                                        ));
+                                                                        let full = major.map(|arg|machine.expose_for_conversion(
+                                                                            arg.clone(), Transparency::Full, 2048,
+                                                                        ));
+                                                                        let rule = machine.qualified_nested_recursor_result(
+                                                                            gcd_decidable, 2048,
+                                                                        );
+                                                                        eprintln!(
+                                                                            "NUCLEUS_C214_GCD_DECIDABLE_MAJOR:head={:?}:arity={}:major={major:?}:major_syntax={:?}:binding={}:opaque={}:full={}:source_rule={}:NO_EXPECTED_BRANCH",
+                                                                            gcd_decidable.head,gcd_decidable.spine.len(),
+                                                                            major.and_then(|arg|self.expressions.get(arg.expr)),
+                                                                            format!("{binding:?}").chars().take(1600).collect::<String>(),
+                                                                            format!("{opaque:?}").chars().take(1800).collect::<String>(),
+                                                                            format!("{full:?}").chars().take(2300).collect::<String>(),
+                                                                            format!("{rule:?}").chars().take(2300).collect::<String>(),
+                                                                        );
+                                                                        if let Some(Value::Neutral(next)) =
+                                                                            full.as_ref().and_then(|v|v.proven_value())
+                                                                        {
+                                                                            eprintln!(
+                                                                                "NUCLEUS_C214_GCD_NEXT_NEUTRAL:head={:?}:arity={}:last_source={:?}:NO_EXPECTED_BRANCH",
+                                                                                next.head,next.spine.len(),next.spine.last(),
+                                                                            );
+                                                                        }
+                                                                    }
                                                                     // C211 diagnostic-only dictionary receiver audit:
                                                                     // resolve the ACTUAL source instance, never a
                                                                     // constructor picked by the wanted projection.
