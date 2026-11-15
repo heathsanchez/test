@@ -1,0 +1,101 @@
+name: Nucleus C218 completed source certificate retention A/B
+on:
+  push:
+    branches: [research/nucleus-c218-source-support-retention-20261115]
+    paths: ['.github/workflows/nucleus-c218-source-retention-ab-20261115.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  ab:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RUST_MIN_STACK: '67108864'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Build opt-in source and preserve SHA receipts
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/c218"
+          git rev-parse HEAD > "$RUNNER_TEMP/c218/commit.txt"
+          git rev-parse HEAD:metatron-kernel/src > "$RUNNER_TEMP/c218/source-tree.txt"
+          cargo test --locked --lib --manifest-path metatron-kernel/Cargo.toml
+          cargo build --locked --release --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel "$RUNNER_TEMP/c218/nucleus-release"
+          cargo build --locked --release --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel "$RUNNER_TEMP/c218/nucleus-diagnostics"
+          sha256sum "$RUNNER_TEMP/c218"/nucleus-* > "$RUNNER_TEMP/c218/binary-sha256.txt"
+      - name: Pin unchanged 208 original source export bytes
+        run: |
+          set -euo pipefail
+          gh api repos/heathsanchez/test/actions/artifacts/13126161718/zip > "$RUNNER_TEMP/c218/pinned208.zip"
+          printf '%s  %s\n' 462e31e21379054490570b465b46ece4fff878490d9ad7de6bbc73149d587f4c "$RUNNER_TEMP/c218/pinned208.zip" | sha256sum -c -
+      - name: Compare old cap and larger completed-certificate cap without changing steps
+        run: |
+          python3 - "$RUNNER_TEMP/c218" <<'PY'
+          import collections,concurrent.futures,hashlib,json,os,pathlib,re,subprocess,sys,time,zipfile
+          root=pathlib.Path(sys.argv[1]);z=zipfile.ZipFile(root/'pinned208.zip')
+          manifest={m['case']:m for m in json.loads(z.read('inputs-manifest.json'))}
+          flags=json.loads(pathlib.Path('experiments/nucleus-capture-substitution-20261107/alias-result-canonical-off-replay.json').read_text())['flags']
+          assert len(flags)==24 and set(flags.values())=={'1'}
+          env0={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+          env0.update(flags)
+          for f in ('C182_TYPED_PROOF_IRREL','C189_NEUTRAL_LAMBDA_PROOF','C190_QUOTIENT_IOTA','C199_TWO_PARAM_EIGHT_FIELD_RECORD','C201_CLOSED_NULLARY_ENUM','C216_RIGID_DATA_FUNCTION_CTOR'):
+              env0['NUCLEUS_EXPERIMENTAL_'+f]='1'
+          env1=env0.copy();env1['NUCLEUS_EXPERIMENTAL_C218_COMPLETED_SOURCE_CERT_RETENTION']='1'
+          labels=['perf/fueled-chain','perf/grind-ring-5','perf/magma-list-deep-n36','perf/magma-list-pair-n7','bugs/eta-ctor-alias']
+          jobs=[]
+          for label in labels:
+              m=manifest[label];data=z.read('inputs/'+m['relative_path'])
+              assert hashlib.sha256(data).hexdigest()==m['sha256']
+              for binary in ('release','diagnostics'):
+                  for mode,base in (('old8192',env0),('new65536',env1)):
+                      env=base.copy()
+                      if binary=='diagnostics':
+                          env['NUCLEUS_C217_OPENING_REASON']='1'
+                          env['NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE']='1'
+                          env['NUCLEUS_TRACE_DOWNSTREAM']='1'
+                      jobs.append((label,m['sha256'],m['expected'],data,binary,mode,env))
+          def replay(job):
+              label,digest,expected,data,binary,mode,env=job
+              start=time.perf_counter()
+              try:
+                  p=subprocess.run([str(root/('nucleus-'+binary))],input=data,capture_output=True,env=env,timeout=160)
+                  verdict=p.returncode;stderr=p.stderr.decode(errors='replace')
+              except subprocess.TimeoutExpired:
+                  verdict=124;stderr='timeout'
+              elapsed=time.perf_counter()-start
+              (root/(label.replace('/','-')+'-'+binary+'-'+mode+'.stderr')).write_text(stderr)
+              return dict(case=label,sha256=digest,expected=expected,binary=binary,mode=mode,
+                          verdict=verdict,wall_seconds=round(elapsed,3),
+                          source_support_unavailable=stderr.count('reason=source-support-unavailable'),
+                          binding_lookup_budget=stderr.count('reason=binding-lookup-budget'),
+                          actual_free_capture=stderr.count('reason=actual-free-capture'),
+                          opening_failures=stderr.count('NUCLEUS_C217_OPENING_FAILURE:'))
+          with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+              results=sorted(pool.map(replay,jobs),key=lambda r:(r['case'],r['binary'],r['mode']))
+          (root/'results.json').write_text(json.dumps(results,indent=2))
+          for r in results:print(json.dumps(r),flush=True)
+          for label in labels:
+              entries=[r for r in results if r['case']==label]
+              for binary in ('release','diagnostics'):
+                  modes={r['mode']:r for r in entries if r['binary']==binary}
+                  assert set(modes)=={'old8192','new65536'}
+                  for row in modes.values():
+                      assert row['verdict'] in (0,1,2)
+                      assert row['verdict'] in ((1,) if label=='bugs/eta-ctor-alias' else (0,2)),f'unsound verdict {label}'
+                  assert modes['old8192']['verdict']==(1 if label=='bugs/eta-ctor-alias' else 2)
+              for mode in ('old8192','new65536'):
+                  assert next(r['verdict'] for r in entries if r['mode']==mode and r['binary']=='release')==next(r['verdict'] for r in entries if r['mode']==mode and r['binary']=='diagnostics')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-c218-completed-source-certificate-ab
+          path: ${{ runner.temp }}/c218/
+          retention-days: 60
