@@ -3118,3 +3118,96 @@ mod unresolved_registered_recursor_controls {
         assert!(data.is_refuted(),"distinct certified Bool data must remain refuted: {data:?}");
     }
 }
+
+#[cfg(test)]
+mod c197_registered_nat_pred_conversion_controls {
+    use super::*;
+    use crate::environment::{ConstantDecl, Environment, NatPrimitives};
+    use crate::id::{IdTable, LevelId, NameId};
+    use crate::nat::BigNat;
+    use crate::syntax::Level;
+    use crate::value::EnvFrame;
+
+    #[test]
+    fn source_registered_nat_pred_converts_only_completed_captured_arithmetic() {
+        // The C195 original Mathlib trace presents literal zero against an
+        // already evaluated Nat.pred neutral whose single source argument is
+        // a captured neutral Nat.sub 1 0. This is a conversion regression;
+        // a synthetic fixture tests rule mechanics, not source admission.
+        let mut expressions = IdTable::default();
+        let mut levels = IdTable::default();
+        levels.insert(LevelId(0), Level::Zero).unwrap();
+        levels.insert(LevelId(1), Level::Succ(LevelId(0))).unwrap();
+        expressions.insert(ExprId(0), Expr::Sort(LevelId(1))).unwrap();
+        expressions.insert(ExprId(1), Expr::BVar(0)).unwrap();
+        expressions.insert(
+            ExprId(2), Expr::NatLit(BigNat::parse_decimal("1").unwrap())
+        ).unwrap();
+        expressions.insert(ExprId(3), Expr::NatLit(BigNat::zero())).unwrap();
+
+        let mut base = Environment::empty();
+        for name in (1..=6).map(NameId) {
+            base = base.extend(name, ConstantDecl::axiom(vec![], ExprId(0))).unwrap();
+        }
+        let primitives = NatPrimitives {
+            type_name: NameId(1), type_expr: ExprId(0),
+            zero: NameId(2), succ: NameId(3), recursor: NameId(4),
+            add: None, mul: None, pow: None, land: None, shift_right: None,
+            div: None, modulo: None, sub: Some(NameId(5)), pred: Some(NameId(6)),
+            virtual_bvar_zero: Some(ExprId(1)), ble: None, beq: None,
+        };
+        let registered = base.install_nat_primitives(primitives.clone()).unwrap();
+        let checker = TypeChecker::new(&expressions, &levels, &registered);
+
+        let sub = Neutral {
+            head: NeutralHead::Const { name: NameId(5), levels: vec![] },
+            spine: vec![
+                Closure::new(ExprId(2), EnvFrame::empty()),
+                Closure::new(ExprId(3), EnvFrame::empty()),
+            ],
+        };
+        let pred = Value::Neutral(Neutral {
+            head: NeutralHead::Const { name: NameId(6), levels: vec![] },
+            spine: vec![Closure::new(
+                ExprId(1), EnvFrame::empty().extend_neutral(sub),
+            )],
+        });
+        let zero = Value::NatLit(BigNat::zero());
+        let one = Value::NatLit(BigNat::parse_decimal("1").unwrap());
+        let compare = |checker: &TypeChecker<'_>, left: &Value, right: &Value, budget| {
+            compare_values(checker, left, right, budget, 0, &[],
+                &mut Vec::new(), &mut HashMap::new())
+        };
+        assert!(compare(&checker, &zero, &pred, 1).is_unknown(),
+            "cold low-fuel conversion must remain UNKNOWN");
+        assert!(compare(&checker, &zero, &pred, 128).is_proven(),
+            "registered Nat.pred (captured Nat.sub 1 0) must convert to zero");
+        assert!(compare(&checker, &one, &pred, 128).is_refuted(),
+            "completed source arithmetic must not collapse distinct numerals");
+
+        let symbolic_sub = Neutral {
+            head: NeutralHead::Const { name: NameId(5), levels: vec![] },
+            spine: vec![
+                Closure::new(
+                    ExprId(1), EnvFrame::empty().extend_free(FreeId(7)),
+                ),
+                Closure::new(ExprId(3), EnvFrame::empty()),
+            ],
+        };
+        let symbolic_pred = Value::Neutral(Neutral {
+            head: NeutralHead::Const { name: NameId(6), levels: vec![] },
+            spine: vec![Closure::new(
+                ExprId(1), EnvFrame::empty().extend_neutral(symbolic_sub),
+            )],
+        });
+        assert!(compare(&checker, &zero, &symbolic_pred, 128).is_unknown(),
+            "symbolic subtraction must not be invented or declared unequal");
+
+        let no_sub = base.install_nat_primitives(NatPrimitives {
+            sub: None, ..primitives
+        }).unwrap();
+        let checker_no_sub = TypeChecker::new(&expressions, &levels, &no_sub);
+        assert!(compare(&checker_no_sub, &zero, &pred, 128).is_unknown(),
+            "missing source-native subtraction authority must remain UNKNOWN");
+    }
+}
