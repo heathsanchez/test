@@ -3303,6 +3303,38 @@ impl<'a> Machine<'a> {
                                 return exposed(Value::NatLit(number), transitions);
                             }
                             EnvBinding::Neutral(mut neutral) => {
+                                // An environment binding can capture a source-native
+                                // Nat.sub application before its arguments become
+                                // concrete. Re-enter only the already registered
+                                // Nat.sub equation, with its original source
+                                // closures, and promote only a proved numeral.
+                                // Never infer a numeral from a symbolic operand,
+                                // unregistered function, or exhausted fuel.
+                                if pending.is_empty()
+                                    && let NeutralHead::Const { name, levels } = &neutral.head
+                                    && levels.is_empty()
+                                    && neutral.spine.len() == 2
+                                    && self.nat_primitives.as_ref().and_then(|nat| nat.sub) == Some(*name)
+                                {
+                                    // The native reducer consumes application
+                                    // arguments outside-in; neutral spines retain
+                                    // the opposite (source) order.
+                                    let mut native_pending =
+                                        neutral.spine.iter().rev().cloned().collect::<Vec<_>>();
+                                    if let Some(Value::NatLit(number)) =
+                                        self.try_native_nat_reduction(
+                                            *name, levels, &mut native_pending,
+                                            transparency, budget,
+                                        )
+                                    {
+                                        record_transition(
+                                            &mut transitions,
+                                            record_witnesses,
+                                            TransitionWitness::NatExtension,
+                                        );
+                                        return exposed(Value::NatLit(number), transitions);
+                                    }
+                                }
                                 append_pending(&mut neutral.spine, &mut pending);
                                 record_transition(
                                     &mut transitions,
