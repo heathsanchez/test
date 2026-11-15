@@ -2406,6 +2406,42 @@ impl<'a> TypeChecker<'a> {
                                                         });
                                                     let nested_replay =
                                                         machine.qualified_nested_recursor_result(nested, 2048);
+                                                    // C209 diagnostic-only: Bool.rec's source
+                                                    // rule consumes FOUR arguments. In this
+                                                    // observed five-argument spine, index 3
+                                                    // is the actual major and index 4 a tail.
+                                                    if std::env::var_os("NUCLEUS_C209_BOOL_MAJOR").is_some()
+                                                        && let Some(Value::Neutral(bool_rec)) =
+                                                            major_full.as_ref().and_then(|v| v.proven_value())
+                                                    {
+                                                        let bool_source_major = bool_rec.spine.get(3);
+                                                        let bool_major_opaque = bool_source_major.map(|arg|
+                                                            machine.expose_for_conversion(
+                                                                arg.clone(), Transparency::Opaque, 1024,
+                                                            ));
+                                                        let bool_major_full = bool_source_major.map(|arg|
+                                                            machine.expose_for_conversion(
+                                                                arg.clone(), Transparency::Full, 4096,
+                                                            ));
+                                                        let bool_major_binding = bool_source_major.and_then(|arg|
+                                                            match self.expressions.get(arg.expr) {
+                                                                Some(Expr::BVar(i)) => arg.env.lookup_with_node_id(*i),
+                                                                _ => None,
+                                                            });
+                                                        let bool_replay = machine.qualified_nested_recursor_result(
+                                                            bool_rec, 2048,
+                                                        );
+                                                        eprintln!(
+                                                            "NUCLEUS_C209_BOOL_MAJOR:head={:?}:spine_len={}:source_major={bool_source_major:?}:source_syntax={:?}:source_binding={}:opaque={}:full={}:source_replay={}:continuation={:?}:NO_SEMANTIC_ADMISSION",
+                                                            bool_rec.head, bool_rec.spine.len(),
+                                                            bool_source_major.and_then(|arg|self.expressions.get(arg.expr)),
+                                                            format!("{bool_major_binding:?}").chars().take(1400).collect::<String>(),
+                                                            format!("{bool_major_opaque:?}").chars().take(1600).collect::<String>(),
+                                                            format!("{bool_major_full:?}").chars().take(1900).collect::<String>(),
+                                                            format!("{bool_replay:?}").chars().take(1900).collect::<String>(),
+                                                            bool_rec.spine.get(4),
+                                                        );
+                                                    }
                                                     eprintln!(
                                                         "NUCLEUS_C208_DECIDABLE_MAJOR:path={path}:nested_source={nested_source:?}:nested_head={:?}:nested_arity={}:major_source={major:?}:major_syntax={:?}:major_binding={}:major_opaque={}:major_full={}:nested_replay={}:NO_SEMANTIC_ADMISSION",
                                                         nested.head, nested.spine.len(),
