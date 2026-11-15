@@ -65,7 +65,7 @@ jobs:
           bad[target[0]]=(json.dumps(v,separators=(',',':'))+'\n').encode()
           inputs=[('forged-quotient-wrong-type',b''.join(bad))]
           for name,sha in (
-              ('nucleus-universe-reconcile-20261104/inputs/renamed-pprod-forged-fields.ndjson','33993418d305e980e224d6102be1c8c23ccce00a406616ba6d6'),
+              ('nucleus-universe-reconcile-20261104/inputs/renamed-pprod-forged-fields.ndjson','33993418d305e980e224d6102be2fc61ee9c02be1c8c23ccce00a406616ba6d6'),
               ('nucleus-universe-reconcile-20261104/inputs/renamed-pprod-forged-motive.ndjson','2eb5034aa01b1591cc99577bacc50095e3d8e80709172175f569e1f481f680de'),
               ('nucleus-quotient-reuse-20261104/heldout/mutated.ndjson','a4425142910417814594d555ccec8ac1b29bbe8d18f12993f20fa1c0253fd692')):
               source=(pathlib.Path('experiments')/name).read_bytes()
