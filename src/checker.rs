@@ -3376,6 +3376,24 @@ fn generic_nonrecursive_type_candidate(export: &ResolvedExport, block: &Inductiv
             })
         });
 
+    // C199 research switch: select a source-defined two-parameter, eight-field
+    // nonrecursive record for the *existing* full generic inductive validator.
+    // Selection does not grant declaration, constructor, recursor, or iota
+    // authority. Every downstream obligation must still be independently proven.
+    let two_parameter_eight_field_record =
+        std::env::var_os("NUCLEUS_EXPERIMENTAL_C199_TWO_PARAM_EIGHT_FIELD_RECORD").is_some()
+        && inductive.num_params == 2
+        && constructor.num_params == 2
+        && constructor.num_fields == 8
+        && recursor.num_params == 2
+        && recursor.num_indices == 0
+        && recursor.num_motives == 1
+        && recursor.num_minors == 1
+        && pi_spine(export, constructor.ty, 10).is_some_and(|(domains, _)| {
+            domains[2..]
+                .iter()
+                .all(|field| !expression_contains_constant(export, *field, inductive.name))
+        });
     let relation_proof_structure = generic_relation_proof_record_candidate(export, block);
     let closed_pair_structure = closed_pair_record_candidate(export, block);
     let closed_record = inductive.num_params == 0 && constructor.num_params == 0
@@ -3391,6 +3409,7 @@ fn generic_nonrecursive_type_candidate(export: &ResolvedExport, block: &Inductiv
         && !decidable_dependent_intro
         && !closed_dependent_pair
         && !four_parameter_three_field_record
+        && !two_parameter_eight_field_record
         && !relation_proof_structure
         && !closed_pair_structure
         && !closed_record
