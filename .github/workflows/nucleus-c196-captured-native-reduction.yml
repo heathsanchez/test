@@ -26,8 +26,31 @@ jobs:
           set -euo pipefail
           cargo test --locked --manifest-path metatron-kernel/Cargo.toml captured_registered_nat_sub_and_pred_complete_only_concrete_source_values -- --nocapture
 
-      - name: Run complete existing kernel unit suite
-        run: cargo test --locked --manifest-path metatron-kernel/Cargo.toml
+  full-kernel-suite:
+    needs: captured-unit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      RUST_MIN_STACK: '67108864'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Run full kernel tests under authentic C193 candidate flags
+        run: |
+          python3 - <<'PY'
+          import json,os,subprocess
+          flags=json.load(open('experiments/nucleus-capture-substitution-20261107/alias-result-canonical-off-replay.json'))['flags']
+          assert len(flags)==24 and set(flags.values())=={'1'}
+          env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+          env.update(flags)
+          for key in ('NUCLEUS_EXPERIMENTAL_C182_TYPED_PROOF_IRREL',
+                      'NUCLEUS_EXPERIMENTAL_C189_NEUTRAL_LAMBDA_PROOF',
+                      'NUCLEUS_EXPERIMENTAL_C190_QUOTIENT_IOTA'):
+              env[key]='1'
+          subprocess.run(['cargo','test','--locked','--manifest-path',
+              'metatron-kernel/Cargo.toml'],env=env,check=True)
+          PY
   authentic-source-and-forgeries:
     needs: captured-unit
     runs-on: ubuntu-24.04
