@@ -3134,12 +3134,19 @@ fn fresh_local(depth: usize) -> Option<FreeId> {
 pub(crate) fn source_opening_avoids_capture(
     checker: &TypeChecker<'_>, body: &Closure, free: FreeId, budget: &mut usize,
 ) -> bool {
+    #[cfg(feature="diagnostics")]
+    let c217_initial_budget=*budget;
     // The exact lookup consumes the existing initial source-node step.
     // A miss carries that prepaid node into the original traversal once.
     if *budget==0{return false;}
     *budget-=1;
     if checker.has_source_opening_proof(body,free){return true;}
     let safe=source_opening_avoids_capture_uncached(checker,body,free,budget);
+    #[cfg(feature="diagnostics")]
+    if !safe && std::env::var_os("NUCLEUS_C217_OPENING_REASON").is_some() {
+        eprintln!("NUCLEUS_C217_OPENING_FAILURE:expr={:?}:frame={}:free={free:?}:allowance={c217_initial_budget}:remaining={}",
+            body.expr,body.env.id(),*budget);
+    }
     if safe{checker.retain_source_opening_proof(body,free);}
     safe
 }
@@ -3148,8 +3155,9 @@ fn source_opening_avoids_capture_uncached(
     checker:&TypeChecker<'_>,body:&Closure,free:FreeId,budget:&mut usize,
 )->bool {
     #[cfg(feature="diagnostics")]
-    let c168_trace=std::env::var_os("NUCLEUS_C168_OPENING_REASON").is_some()
-        && body.expr == crate::id::ExprId(15367) && free == FreeId(2);
+    let c168_trace=(std::env::var_os("NUCLEUS_C168_OPENING_REASON").is_some()
+        && body.expr == crate::id::ExprId(15367) && free == FreeId(2))
+        || std::env::var_os("NUCLEUS_C217_OPENING_REASON").is_some();
     let mut pending = vec![(body.clone(), 1u64)];
     let mut visited = HashSet::new();
     let mut prepaid_root=true;
