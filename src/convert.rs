@@ -2688,6 +2688,41 @@ fn compare_neutral_heads(
                 !neutral.spine.is_empty()
                     && matches!(&neutral.head,NeutralHead::Const{name,..} if checker.has_qualified_recursor(*name))
             }) {
+                // C203 is a bounded diagnostic only. The source-registered
+                // recursor remains UNKNOWN until its actual iota/typing
+                // premises are discharged; tracing supplies no authority.
+                #[cfg(feature = "diagnostics")]
+                if std::env::var_os("NUCLEUS_C203_TRACE_RECURSOR_HEADS").is_some()
+                    && (7..=11).contains(&context.len())
+                {
+                    use std::sync::atomic::{AtomicUsize, Ordering};
+                    static OBSERVATIONS: AtomicUsize = AtomicUsize::new(0);
+                    let sequence = OBSERVATIONS.fetch_add(1, Ordering::Relaxed);
+                    if sequence < 32 || (sequence < 8192 && sequence % 64 == 0) {
+                        eprintln!(
+                            "NUCLEUS_C203_RECURSOR_MISMATCH:sequence={sequence}:depth={depth}:context={}:budget={budget}:left_head={:?}:left_arity={}:right_head={:?}:right_arity={}:left_major={:?}:right_major={:?}",
+                            context.len(), left.head, left.spine.len(),
+                            right.head, right.spine.len(),
+                            left.spine.last().map(|c| (c.expr, c.env.id())),
+                            right.spine.last().map(|c| (c.expr, c.env.id())),
+                        );
+                        if sequence < 12 || sequence % 256 == 0 {
+                            for (side, neutral) in [("left", left), ("right", right)] {
+                                if !neutral.spine.is_empty()
+                                    && matches!(&neutral.head, NeutralHead::Const { name, .. }
+                                        if checker.has_qualified_recursor(*name))
+                                {
+                                    eprintln!(
+                                        "NUCLEUS_C203_RECURSOR_CHAIN:sequence={sequence}:side={side}:{}",
+                                        checker.diagnostic_captured_recursor_major_chain(
+                                            neutral, budget.min(4096)
+                                        ),
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
                 return Judgment::unknown("unresolved-qualified-recursor-heads");
             }
             // C181: inspect both instantiated propositions and their exact
