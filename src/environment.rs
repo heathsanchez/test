@@ -313,6 +313,27 @@ impl Environment {
             .any(|reduction| reduction.rules.iter().any(|rule| rule.constructor == name))
     }
 
+    /// Recover an admitted constructor's telescope from independently
+    /// validated recursor reductions. A declaration's name or claimed type
+    /// alone is not constructor authority. Ambiguous recorded shapes do not
+    /// authorize an elimination or a rigid mismatch.
+    pub(crate) fn certified_recursor_constructor_shape(
+        &self,
+        name: NameId,
+    ) -> Option<(usize, usize)> {
+        let mut shape = None;
+        for reduction in self.recursor_reductions.values() {
+            for rule in reduction.rules.iter().filter(|rule| rule.constructor == name) {
+                let candidate = (rule.num_params, rule.num_fields);
+                if shape.is_some_and(|previous| previous != candidate) {
+                    return None;
+                }
+                shape = Some(candidate);
+            }
+        }
+        shape
+    }
+
     pub fn install_projection_spec(
         &self,
         name: NameId,
@@ -641,6 +662,35 @@ impl Error for EnvironmentError {}
 #[cfg(test)]
 mod owned_append_tests {
     use super::*;
+    use crate::machine::RecursorRule;
+
+    #[test]
+    fn constructor_shape_requires_admitted_recursors_and_consistent_evidence() {
+        let mut env = Environment::empty();
+        for name in [NameId(1), NameId(2), NameId(3)] {
+            env = env.extend_owned(name, ConstantDecl::theorem(vec![], ExprId(0))).unwrap();
+        }
+        assert_eq!(env.certified_recursor_constructor_shape(NameId(1)), None);
+        let reduction = |num_fields| RecursorReduction {
+            k: false,
+            num_params: 0,
+            num_indices: 0,
+            level_params: vec![],
+            rules: vec![RecursorRule {
+                constructor: NameId(1),
+                constructor_level_params: vec![],
+                num_params: 0,
+                num_fields,
+                rhs: ExprId(1),
+            }],
+        };
+        env = env.install_recursor_reduction(NameId(2), reduction(1)).unwrap();
+        assert_eq!(env.certified_recursor_constructor_shape(NameId(1)), Some((0, 1)));
+        assert_eq!(env.certified_recursor_constructor_shape(NameId(3)), None);
+        env = env.install_recursor_reduction(NameId(3), reduction(2)).unwrap();
+        assert_eq!(env.certified_recursor_constructor_shape(NameId(1)), None);
+    }
+
     #[test]
     fn unique_owned_append_preserves_both_map_allocations_across_many_definitions() {
         let mut env=Environment::empty();let constants=Rc::as_ptr(&env.constants);let definitions=Rc::as_ptr(&env.definitions);
