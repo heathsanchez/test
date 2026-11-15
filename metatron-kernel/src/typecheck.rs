@@ -2378,6 +2378,46 @@ impl<'a> TypeChecker<'a> {
                                                 last,
                                             )
                                         } else { (None, None) };
+                                        // C208 diagnostic-only: a Decidable.rec can
+                                        // choose a rule only when its actual major
+                                        // has a source-certified Decidable constructor.
+                                        if std::env::var_os("NUCLEUS_C208_DECIDABLE_MAJOR").is_some()
+                                            && path.ends_with("/arg0")
+                                        {
+                                            use std::sync::atomic::{AtomicUsize, Ordering};
+                                            static DECIDABLE_SAMPLES: AtomicUsize = AtomicUsize::new(0);
+                                            if DECIDABLE_SAMPLES.fetch_add(1, Ordering::Relaxed) < 1 {
+                                                if let Some((nested_source, nested_value)) = last_argument.as_ref()
+                                                    && let Some(Value::Neutral(nested)) = nested_value.proven_value()
+                                                {
+                                                    let major = nested.spine.last();
+                                                    let major_opaque = major.map(|term|
+                                                        machine.expose_for_conversion(
+                                                            term.clone(), Transparency::Opaque, 1024,
+                                                        ));
+                                                    let major_full = major.map(|term|
+                                                        machine.expose_for_conversion(
+                                                            term.clone(), Transparency::Full, 4096,
+                                                        ));
+                                                    let major_binding = major.and_then(|term|
+                                                        match self.expressions.get(term.expr) {
+                                                            Some(Expr::BVar(i)) => term.env.lookup_with_node_id(*i),
+                                                            _ => None,
+                                                        });
+                                                    let nested_replay =
+                                                        machine.qualified_nested_recursor_result(nested, 2048);
+                                                    eprintln!(
+                                                        "NUCLEUS_C208_DECIDABLE_MAJOR:path={path}:nested_source={nested_source:?}:nested_head={:?}:nested_arity={}:major_source={major:?}:major_syntax={:?}:major_binding={}:major_opaque={}:major_full={}:nested_replay={}:NO_SEMANTIC_ADMISSION",
+                                                        nested.head, nested.spine.len(),
+                                                        major.and_then(|term|self.expressions.get(term.expr)),
+                                                        format!("{major_binding:?}").chars().take(1600).collect::<String>(),
+                                                        format!("{major_opaque:?}").chars().take(1600).collect::<String>(),
+                                                        format!("{major_full:?}").chars().take(1900).collect::<String>(),
+                                                        format!("{nested_replay:?}").chars().take(1900).collect::<String>(),
+                                                    );
+                                                }
+                                            }
+                                        }
                                         eprintln!(
                                             "NUCLEUS_C207_PAIR_RECEIVER:path={path}:type={type_name:?}:field={index}:structure={structure:?}:structure_expr={:?}:source_binding={}:revealed={}:replay={}:last_spine={}:field_selection={}:NO_SEMANTIC_ADMISSION",
                                             self.expressions.get(structure.expr),
