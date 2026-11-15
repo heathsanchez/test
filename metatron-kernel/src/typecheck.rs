@@ -6166,6 +6166,7 @@ fn definite_conversion_obstruction(obstruction: &str) -> bool {
             | "rule-k-target-mismatch"
             | "certified-stuck-recursor-mismatch"
             | "certified-constructor-argument-mismatch"
+            | "rigid-data-function-constructor-mismatch"
     )
 }
 
