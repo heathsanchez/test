@@ -2,7 +2,7 @@ name: Nucleus C192 test Quotient reduction, C189 proof irrelevance, and forgerie
 on:
   push:
     branches: [research/nucleus-c190-quotient-iota-20261115]
-    paths: ['.github/workflows/nucleus-c192-quotient-ablation.yml']
+    paths: ['.github/workflows/nucleus-c192-quotient-soundness.yml']
   workflow_dispatch:
 permissions:
   contents: read
