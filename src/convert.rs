@@ -2318,6 +2318,28 @@ fn compare_nat_literal_neutral(
             proof_function_frees,
         );
     }
+    // A source-registered native Nat.pred is a computation, not an
+    // unequal Nat constructor. Re-enter the exact captured application only
+    // when the checked native reducer supplies a concrete numeral; preserve
+    // UNKNOWN for symbolic inputs, absent authority, and exhausted fuel.
+    if primitives.pred == Some(*name) {
+        return match checker.machine().qualified_captured_nat_pred_result(
+            neutral, budget,
+        ) {
+            Judgment::Proven { value, .. } => compare_values(
+                checker,
+                &Value::NatLit(literal.clone()),
+                &value,
+                budget.saturating_sub(1),
+                depth,
+                context,
+                work,
+                proof_function_frees,
+            ),
+            Judgment::Refuted { .. } | Judgment::Unknown { .. } =>
+                Judgment::unknown("captured-native-Nat.pred-unresolved"),
+        };
+    }
     // C195 diagnostic-only: identify the exact source head at an inconclusive
     // numeral-vs-neutral comparison. Never affects a proof verdict.
     #[cfg(feature = "diagnostics")]
