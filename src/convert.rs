@@ -1160,9 +1160,10 @@ fn rigid_local_non_eta_constructor_mismatch(
 
 // A source-checked *data function* parameter cannot definitionally reduce to
 // a bare constructor function. This is deliberately narrower than unequal
-// neutral heads: the source must have admitted the one-field structure, its
-// constructor must be unapplied, and the bound variable's captured type must
-// independently be a Pi in a non-Prop sort. A proposition-valued function
+// neutral heads: the source must have admitted an independently qualified
+// one-field constructor recursor and an unapplied constructor, and the bound
+// variable's captured type must independently be a Pi in a non-Prop sort.
+// A proposition-valued function
 // would permit proof irrelevance and must never use this refutation.
 fn certified_rigid_data_function_constructor_mismatch(
     checker: &TypeChecker<'_>,
@@ -1179,12 +1180,16 @@ fn certified_rigid_data_function_constructor_mismatch(
     }
     let NeutralHead::Free(free) = &local.head else { return false };
     let NeutralHead::Const { name, .. } = &constructor.head else { return false };
-    let Some((_, num_params, num_fields)) =
-        checker.eta_projection_spec_for_constructor(*name)
-    else { return false };
-    // First experiment: only the source-certified constructor of an actual
-    // single-field, zero-parameter structure. Never identify a record value
-    // with its partially applied constructor function.
+    let shape = checker.certified_recursor_constructor_shape(*name);
+    #[cfg(feature = "diagnostics")]
+    if std::env::var_os("NUCLEUS_C216_TRACE").is_some() {
+        eprintln!("NUCLEUS_C216_SHAPE:ctor={name:?}:recursor={shape:?}:eta_projection={:?}",
+            checker.eta_projection_spec_for_constructor(*name));
+    }
+    let Some((num_params, num_fields)) = shape else { return false };
+    // First experiment: only the independently certified recursor's
+    // single-field, zero-parameter constructor. A matching name or a
+    // missing projection specification is not itself enough.
     if num_params != 0 || num_fields != 1 { return false; }
     let Ok(index) = usize::try_from(free.0) else { return false };
     let Some(TypeValue::Term(local_type)) = context.get(index) else { return false };
@@ -1194,10 +1199,14 @@ fn certified_rigid_data_function_constructor_mismatch(
     if !matches!(exposed.proven_value(), Some(Value::Pi { .. })) {
         return false;
     }
-    matches!(
-        checker.checked_captured_prop_type_in_context(local_type, context, budget.min(1024)),
-        Judgment::Refuted { obstruction } if obstruction.0 == "captured-proposition-sort-not-Prop"
-    )
+    let sort_judgment =
+        checker.checked_captured_prop_type_in_context(local_type, context, budget.min(1024));
+    #[cfg(feature = "diagnostics")]
+    if std::env::var_os("NUCLEUS_C216_TRACE").is_some() {
+        eprintln!("NUCLEUS_C216_TYPE:ctor={name:?}:sort_judgment={sort_judgment:?}");
+    }
+    matches!(sort_judgment,
+        Judgment::Refuted { obstruction } if obstruction.0 == "captured-proposition-sort-not-Prop")
 }
 
 fn distinct_non_eta_structure_locals(
