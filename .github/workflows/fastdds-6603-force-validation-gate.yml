@@ -1,0 +1,135 @@
+name: Fast DDS 6603 force type validation policy gate
+
+on:
+  push:
+    branches: [research/fastdds-6603-type-identity-20261115]
+    paths:
+      - .github/workflows/fastdds-6603-force-validation-gate.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  force-type-validation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        arm: [upstream, preserve-advertised-identity]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install native dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y ninja-build libasio-dev libtinyxml2-dev libfoonathan-memory-dev libssl-dev libsqlite3-dev
+
+      - name: Pin exact maintainer source and test lineage
+        run: |
+          mkdir -p evidence
+          git clone https://github.com/eProsima/Fast-DDS.git fastdds
+          git -C fastdds checkout --detach 3b4966787cc897a6287c3a6242b22a1dac874007
+          git -C fastdds submodule update --init --depth=1 thirdparty/fastcdr thirdparty/asio thirdparty/tinyxml2
+          test "$(git -C fastdds rev-parse HEAD)" = 3b4966787cc897a6287c3a6242b22a1dac874007
+          git -C fastdds rev-parse HEAD HEAD^{tree} > evidence/source-and-toolchain.txt
+          git -C fastdds submodule status >> evidence/source-and-toolchain.txt
+          c++ --version >> evidence/source-and-toolchain.txt
+          cmake --version >> evidence/source-and-toolchain.txt
+          sha256sum research/fastdds-6603-timeout-identity/* >> evidence/source-and-toolchain.txt
+
+      - name: Apply experimental identity preservation only to intervention arm
+        if: matrix.arm == 'preserve-advertised-identity'
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('fastdds/src/cpp/rtps/builtin/discovery/endpoint/EDPSimpleListeners.cpp')
+          source = path.read_text()
+          needle = 'data->type_information.clear();'
+          assert source.count(needle) == 2, source.count(needle)
+          path.write_text(source.replace(needle,
+              '/* Retain advertised TypeInformation for identity comparison after lookup failure. */'))
+          PY
+          git -C fastdds diff --check
+          git -C fastdds diff > evidence/experimental-intervention.patch
+
+      - name: Derive a policy-opt-in probe from unchanged shared source
+        run: |
+          cp research/fastdds-6603-timeout-identity/TypeIdentityTimeoutProbe.cpp default.cpp
+          python3 - <<'PY'
+          from pathlib import Path
+          source = Path('default.cpp').read_text()
+          anchor = '            reader_qos.durability().kind = TRANSIENT_LOCAL_DURABILITY_QOS;\n'
+          assert source.count(anchor) == 1, source.count(anchor)
+          insertion = (anchor +
+              '            reader_qos.type_consistency().m_force_type_validation = true;\n'
+              '            std::cout << "TYPE_ID_PROBE requested_force_type_validation="\n'
+              '                      << reader_qos.type_consistency().m_force_type_validation << std::endl;\n')
+          source = source.replace(anchor, insertion)
+          anchor2 = '            reader = subscriber->create_datareader(topic, reader_qos);\n'
+          assert source.count(anchor2) == 1, source.count(anchor2)
+          source = source.replace(anchor2, anchor2 +
+              '            if (reader && !reader->get_qos().type_consistency().m_force_type_validation)\n'
+              '            {\n'
+              '                std::cerr << "Reader did not retain force_type_validation=true\\n";\n'
+              '                return 11;\n'
+              '            }\n')
+          Path('strict.cpp').write_text(source)
+          PY
+          diff -u default.cpp strict.cpp > evidence/strict-reader-opt-in.patch || test "$?" -eq 1
+          sha256sum default.cpp strict.cpp > evidence/probe-sources-sha256.txt
+
+      - name: Build source-native Fast DDS and both QoS probes
+        run: |
+          set -o pipefail
+          cmake -S fastdds -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF -DTHIRDPARTY=ON -DTHIRDPARTY_UPDATE=OFF -DSECURITY=OFF -DCOMPILE_EXAMPLES=OFF -DCOMPILE_TOOLS=OFF 2>&1 | tee evidence/configure.log
+          cmake --build build --target fastdds -j 3 2>&1 | tee evidence/build.log
+          for mode in default strict; do
+            g++ -std=c++14 -O2 -DFASTDDS_DYN_LINK -DFASTCDR_DYN_LINK -I fastdds/include -I build/include -I fastdds/thirdparty/fastcdr/include -I build/thirdparty/fastcdr/include "$mode.cpp" -L build/src/cpp -L build/thirdparty/fastcdr/src/cpp -Wl,-rpath,"$PWD/build/src/cpp:$PWD/build/thirdparty/fastcdr/src/cpp" -lfastdds -lfastcdr -pthread -o "probe-$mode" 2>&1 | tee "evidence/$mode-build.log"
+          done
+          sha256sum build/src/cpp/libfastdds.so* build/thirdparty/fastcdr/src/cpp/libfastcdr.so* probe-* > evidence/binary-sha256.txt
+
+      - name: Compare default matching with explicit strict opt-in
+        env:
+          ARM: ${{ matrix.arm }}
+        run: |
+          set -o pipefail
+          export LD_LIBRARY_PATH="$PWD/build/src/cpp:$PWD/build/thirdparty/fastcdr/src/cpp:${LD_LIBRARY_PATH:-}"
+          python3 - <<'PY' 2>&1 | tee evidence/policy-comparison.log
+          import os
+          import pathlib
+          import sys
+          sys.path.insert(0, 'research/fastdds-6603-timeout-identity')
+          from type_identity_timeout_probe import run_case
+
+          arm = os.environ['ARM']
+          mismatched = (0, 1) if arm == 'upstream' else (0, 0)
+          cases = [
+              ('default', 'default mismatch after lookup starvation', 'int', 'bool', 6000, 181, mismatched),
+              ('strict', 'strict same type full information', 'int', 'int', 0, 182, (1, 1)),
+              ('strict', 'strict different type full information', 'int', 'bool', 0, 183, (0, 0)),
+          ]
+          for i in range(3):
+              cases.append(('strict', f'strict different type timeout trial {i+1}',
+                            'int', 'bool', 6000, 184 + i, mismatched))
+          results = []
+          for mode, name, writer_field, reader_field, flow, domain, expected in cases:
+              results.append(run_case(
+                  os.path.abspath(f'probe-{mode}'), name, writer_field,
+                  reader_field, flow, domain, expected,
+                  pathlib.Path(f'evidence/{mode}-{domain}-process-logs')))
+          print(f'OBSERVED STRICT POLICY: {arm} incompatible TypeIdentifier after lookup timeout ' +
+                ('(0,1) -- matching continues on reader despite force_type_validation=true' if arm == 'upstream'
+                 else '(0,0) -- no incompatible match with experimental identity preservation'), flush=True)
+          print(f'{arm}: {sum(results)}/{len(results)} comparisons reproduced the characterized outcome')
+          raise SystemExit(0 if all(results) else 1)
+          PY
+
+      - name: Preserve source, exact intervention, raw logs and failed gates
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fastdds-6603-force-policy-${{ matrix.arm }}
+          path: evidence/
+          retention-days: 90
