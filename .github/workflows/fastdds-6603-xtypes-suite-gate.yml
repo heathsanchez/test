@@ -1,0 +1,95 @@
+name: Fast DDS 6603 full official XTypes communication suite
+
+on:
+  push:
+    branches: [research/fastdds-6603-type-identity-20261115]
+    paths:
+      - .github/workflows/fastdds-6603-xtypes-suite-gate.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  official-xtypes-comparison:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      matrix:
+        arm: [upstream, policy-only-opt-in]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Native dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y ninja-build libasio-dev libtinyxml2-dev libfoonathan-memory-dev libssl-dev libsqlite3-dev libgtest-dev libgmock-dev
+
+      - name: Pin eProsima's unchanged source
+        run: |
+          mkdir -p evidence
+          git clone https://github.com/eProsima/Fast-DDS.git fastdds
+          git -C fastdds checkout --detach 3b4966787cc897a6287c3a6242b22a1dac874007
+          git -C fastdds submodule update --init --depth=1 thirdparty/fastcdr thirdparty/asio thirdparty/tinyxml2 thirdparty/dds-types-test
+          test "$(git -C fastdds rev-parse HEAD)" = 3b4966787cc897a6287c3a6242b22a1dac874007
+          git -C fastdds rev-parse HEAD HEAD^{tree} > evidence/source-and-toolchain.txt
+          git -C fastdds submodule status >> evidence/source-and-toolchain.txt
+          c++ --version >> evidence/source-and-toolchain.txt
+          cmake --version >> evidence/source-and-toolchain.txt
+          sha256sum research/fastdds-6603-timeout-identity/* >> evidence/source-and-toolchain.txt
+
+      - name: Require available type information only when reader opted in
+        if: matrix.arm == 'policy-only-opt-in'
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('fastdds/src/cpp/rtps/builtin/discovery/endpoint/EDP.cpp')
+          source = path.read_text()
+          anchor = ('    else\n'
+              '    {\n'
+              '        if (wdata->type_name != rdata->type_name)\n')
+          assert source.count(anchor) == 1, source.count(anchor)
+          guarded = ('    else\n'
+              '    {\n'
+              '        if (rdata->type_consistency.m_force_type_validation)\n'
+              '        {\n'
+              '            reason.set(MatchingFailureMask::different_typeinfo);\n'
+              '            return false;\n'
+              '        }\n'
+              '        if (wdata->type_name != rdata->type_name)\n')
+          path.write_text(source.replace(anchor, guarded))
+          PY
+          git -C fastdds diff --check
+          git -C fastdds diff > evidence/opt-in-policy-repair.patch
+
+      - name: Build eProsima's official XTypes communication tests
+        run: |
+          set -o pipefail
+          cmake -S fastdds -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON -DEPROSIMA_BUILD_TESTS=ON -DTHIRDPARTY=ON -DTHIRDPARTY_UPDATE=OFF -DSECURITY=OFF -DCOMPILE_EXAMPLES=OFF -DCOMPILE_TOOLS=OFF 2>&1 | tee evidence/configure.log
+          cmake --build build --target DDSXtypesCommunication -j 3 2>&1 | tee evidence/build.log
+          ctest --test-dir build -N -R '^DDSXtypesCommunication_' 2>&1 | tee evidence/registered-xtypes.txt
+          if ! grep -q 'Total Tests: 34' evidence/registered-xtypes.txt; then
+            echo 'Expected 34 source-defined XTypes communication cases' >&2
+            exit 1
+          fi
+
+      - name: Run all 34 official XTypes communication cases
+        run: |
+          set -o pipefail
+          set +e
+          ctest --test-dir build --output-on-failure -R '^DDSXtypesCommunication_' --timeout 150 2>&1 | tee evidence/official-xtypes-suite.log
+          suite_rc=${PIPESTATUS[0]}
+          set -e
+          if test -f build/Testing/Temporary/LastTest.log; then
+            cp build/Testing/Temporary/LastTest.log evidence/official-xtypes-raw.log
+          fi
+          exit "$suite_rc"
+
+      - name: Retain all raw outcomes including failed gates
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fastdds-6603-xtypes-${{ matrix.arm }}
+          path: evidence/
+          retention-days: 90
