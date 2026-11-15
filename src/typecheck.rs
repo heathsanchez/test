@@ -2449,6 +2449,49 @@ impl<'a> TypeChecker<'a> {
                                                                     let exposed_full = machine.expose_for_conversion(
                                                                         nat_arg.clone(), Transparency::Full, 2048,
                                                                     );
+
+                                                                    // C211 diagnostic-only dictionary receiver audit:
+                                                                    // resolve the ACTUAL source instance, never a
+                                                                    // constructor picked by the wanted projection.
+                                                                    if std::env::var_os("NUCLEUS_C211_CLASS_PROJECTION").is_some()
+                                                                        && let Some(Value::StuckProjection {
+                                                                            type_name, index, structure, spine,
+                                                                        }) = exposed_full.proven_value()
+                                                                    {
+                                                                        let receiver_binding = match self.expressions.get(structure.expr) {
+                                                                            Some(Expr::BVar(i)) => structure.env.lookup_with_node_id(*i),
+                                                                            _ => None,
+                                                                        };
+                                                                        let receiver_opaque = machine.expose_for_conversion(
+                                                                            structure.clone(), Transparency::Opaque, 512,
+                                                                        );
+                                                                        let receiver_full = machine.expose_for_conversion(
+                                                                            structure.clone(), Transparency::Full, 4096,
+                                                                        );
+                                                                        let receiver_delta = machine.expose_head_delta_for_conversion(
+                                                                            structure.clone(), 4096,
+                                                                        );
+                                                                        let field = machine.projection_field_for_conversion(
+                                                                            structure.clone(), *type_name, *index, 4096,
+                                                                        );
+                                                                        eprintln!(
+                                                                            "NUCLEUS_C211_CLASS_PROJECTION:operand={slot}:type_name={type_name:?}:index={index}:receiver={structure:?}:receiver_syntax={:?}:receiver_binding={}:opaque={}:full={}:head_delta={}:field={}:remaining_spine={}:NO_SEMANTIC_ADMISSION",
+                                                                            self.expressions.get(structure.expr),
+                                                                            format!("{receiver_binding:?}").chars().take(1600).collect::<String>(),
+                                                                            format!("{receiver_opaque:?}").chars().take(1600).collect::<String>(),
+                                                                            format!("{receiver_full:?}").chars().take(2100).collect::<String>(),
+                                                                            format!("{receiver_delta:?}").chars().take(2100).collect::<String>(),
+                                                                            format!("{field:?}").chars().take(2100).collect::<String>(),
+                                                                            format!("{spine:?}").chars().take(600).collect::<String>(),
+                                                                        );
+                                                                        if let Some(Value::Neutral(neutral)) = receiver_full.proven_value() {
+                                                                            eprintln!(
+                                                                                "NUCLEUS_C211_INSTANCE_HEAD:operand={slot}:actual_head={:?}:actual_arity={}:spine={}:NO_SEMANTIC_ADMISSION",
+                                                                                neutral.head, neutral.spine.len(),
+                                                                                format!("{:?}",neutral.spine).chars().take(2200).collect::<String>(),
+                                                                            );
+                                                                        }
+                                                                    }
                                                                     eprintln!(
                                                                         "NUCLEUS_C210_NAT_BEQ_OPERAND:slot={slot}:term={nat_arg:?}:syntax={:?}:binding={}:opaque={}:full={}:NO_SEMANTIC_ADMISSION",
                                                                         self.expressions.get(nat_arg.expr),
