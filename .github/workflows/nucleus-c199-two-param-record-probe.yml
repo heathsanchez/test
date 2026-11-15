@@ -1,0 +1,130 @@
+name: Nucleus C199 two-parameter eight-field source validator probe
+on:
+  push:
+    branches: [research/nucleus-c199-two-param-eight-field-probe-20261115]
+    paths: ['.github/workflows/nucleus-c199-two-param-record-probe.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  source-probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RUST_MIN_STACK: '67108864'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Recover C198 SHA-qualified original Mathlib inductive prefix
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/c199"
+          gh api repos/heathsanchez/test/actions/artifacts/14146013779/zip > "$RUNNER_TEMP/c199/prefix.zip"
+          printf '%s  %s\n' ac8f2fa8abc656cb3da3b3b37f13fde239c4576a3d82c0c145fd782998abd092 "$RUNNER_TEMP/c199/prefix.zip" | sha256sum -c -
+          unzip -p "$RUNNER_TEMP/c199/prefix.zip" locallyfinite-prefix.ndjson.zst | zstd -dc > "$RUNNER_TEMP/c199/locallyfinite-prefix.ndjson"
+          printf '%s  %s\n' 2833a44b446524b25c8053006a3684d0fdab5779d76ef17695cbd4763ec9a0cd "$RUNNER_TEMP/c199/locallyfinite-prefix.ndjson" | sha256sum -c -
+          test "$(stat -c %s "$RUNNER_TEMP/c199/locallyfinite-prefix.ndjson")" -eq 6119388
+      - name: Build unchanged C197 core plus C199 flag-gated selector
+        run: |
+          set -euo pipefail
+          cargo build --locked --release --manifest-path metatron-kernel/Cargo.toml
+          git rev-parse HEAD > "$RUNNER_TEMP/c199/commit.txt"
+          sha256sum metatron-kernel/target/release/metatron-kernel > "$RUNNER_TEMP/c199/binary.sha256"
+      - name: Test source-original baseline and selected validator with forged controls
+        run: |
+          python3 - "$RUNNER_TEMP/c199" <<'PY'
+          import hashlib,json,os,pathlib,subprocess,sys,time
+          out=pathlib.Path(sys.argv[1])
+          original=(out/'locallyfinite-prefix.ndjson').read_bytes()
+          flags=json.loads(pathlib.Path('experiments/nucleus-capture-substitution-20261107/alias-result-canonical-off-replay.json').read_text())['flags']
+          assert len(flags)==24 and set(flags.values())=={'1'}
+          base={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+          base.update(flags)
+          for k in ('NUCLEUS_EXPERIMENTAL_C182_TYPED_PROOF_IRREL',
+                    'NUCLEUS_EXPERIMENTAL_C189_NEUTRAL_LAMBDA_PROOF',
+                    'NUCLEUS_EXPERIMENTAL_C190_QUOTIENT_IOTA'):
+              base[k]='1'
+          base['NUCLEUS_TRACE_DOWNSTREAM']='1'
+          base['NUCLEUS_TRACE_GENERIC_NONREC']='1'
+          exe=str(pathlib.Path('metatron-kernel/target/release/metatron-kernel').resolve())
+          rows=[]
+          def run(label,payload,selected):
+              env=dict(base)
+              if selected:
+                  env['NUCLEUS_EXPERIMENTAL_C199_TWO_PARAM_EIGHT_FIELD_RECORD']='1'
+              t=time.monotonic()
+              try:
+                  p=subprocess.run([exe],input=payload,env=env,capture_output=True,timeout=240)
+                  verdict=p.returncode
+                  stderr=p.stderr.decode(errors='replace')
+              except subprocess.TimeoutExpired as e:
+                  verdict=124
+                  stderr=(e.stderr or b'').decode(errors='replace')+'\\nTIMEOUT'
+              diagnostic=[ln for ln in stderr.splitlines() if
+                  ln.startswith(('NUCLEUS_DOWNSTREAM:','NUCLEUS_GENERIC_NONREC:','NUCLEUS_GENERIC_CTOR:'))]
+              entry={'case':label,'selected':selected,'verdict':verdict,
+                     'elapsed_s':round(time.monotonic()-t,3),
+                     'sha256':hashlib.sha256(payload).hexdigest(),
+                     'diagnostic_last':diagnostic[-24:],
+                     'stderr_sha256':hashlib.sha256(stderr.encode()).hexdigest()}
+              rows.append(entry)
+              print('C199_CASE:'+json.dumps(entry,ensure_ascii=False)[:8000],flush=True)
+              return entry
+          baseline=run('original-off',original,False)
+          candidate=run('original-on',original,True)
+          forged_accepts=[]
+          if candidate['verdict']==0:
+              source_lines=original.splitlines(keepends=True)
+              assert len(source_lines)>=119100
+              source_line=source_lines[119099]
+              assert hashlib.sha256(source_line).hexdigest()=='2ea44c4b3c4893ed7ff38c00adfa57a6d70b60fdfd02b7adc440850bb263ddf9'
+              block=json.loads(source_line)['inductive']
+              assert block['types'][0]['numParams']==2
+              assert block['ctors'][0]['numFields']==8
+              mutations={
+                  'recursor-rule-fieldcount':('recs',0,'rules',0,'nfields',7),
+                  'recursor-rule-wrong-rhs':('recs',0,'rules',0,'rhs',105547),
+                  'recursor-type-wrong':('recs',0,'type',105547),
+                  'constructor-wrong-owner':('ctors',0,'induct',0),
+                  'constructor-wrong-index':('ctors',0,'cidx',1),
+                  'inductive-missing-owners':('types',0,'all',[]),
+                  'recursor-k-forged':('recs',0,'k',True),
+              }
+              for label,path in mutations.items():
+                  b=json.loads(source_line)
+                  current=b['inductive']
+                  for segment in path[:-2]:
+                      current=current[segment]
+                  current[path[-2]]=path[-1]
+                  mutated=list(source_lines)
+                  mutated[119099]=(json.dumps(b,separators=(',',':'))+'\n').encode()
+                  entry=run('forged-'+label,b''.join(mutated),True)
+                  if entry['verdict']==0:
+                      forged_accepts.append(label)
+          result={'source_sha256':'2833a44b446524b25c8053006a3684d0fdab5779d76ef17695cbd4763ec9a0cd',
+                  'source_full_sha256':'22c5de83469408950005589a3bc5ef5157c65549b5a802f85d567c29151306a6',
+                  'result':'CANDIDATE_ACCEPT' if candidate['verdict']==0 else 'UNKNOWN',
+                  'cases':rows,'forged_accepts':forged_accepts,
+                  'mutations_condition':'run only if genuine selector ACCEPT'}
+          (out/'report.json').write_text(json.dumps(result,indent=2)+'\n')
+          print('C199_REPORT:'+json.dumps(result,ensure_ascii=False)[:28000],flush=True)
+          assert baseline['verdict']==2
+          assert any('LocallyFiniteOrder:stage=inductive' in x for x in baseline['diagnostic_last'])
+          assert candidate['verdict'] in (0,2), 'C199 authentic source rejected or errored'
+          assert not forged_accepts, 'C199 forged inductive ACCEPT: '+','.join(forged_accepts)
+          PY
+      - name: Preserve proof receipt and remove transient input
+        if: always()
+        run: rm -f "$RUNNER_TEMP/c199/locallyfinite-prefix.ndjson" "$RUNNER_TEMP/c199/prefix.zip"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-c199-two-param-record-probe
+          path: |
+            ${{ runner.temp }}/c199/commit.txt
+            ${{ runner.temp }}/c199/binary.sha256
+            ${{ runner.temp }}/c199/report.json
+          retention-days: 60
