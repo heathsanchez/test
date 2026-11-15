@@ -1158,6 +1158,48 @@ fn rigid_local_non_eta_constructor_mismatch(
     )
 }
 
+// A source-checked *data function* parameter cannot definitionally reduce to
+// a bare constructor function. This is deliberately narrower than unequal
+// neutral heads: the source must have admitted the one-field structure, its
+// constructor must be unapplied, and the bound variable's captured type must
+// independently be a Pi in a non-Prop sort. A proposition-valued function
+// would permit proof irrelevance and must never use this refutation.
+fn certified_rigid_data_function_constructor_mismatch(
+    checker: &TypeChecker<'_>,
+    local: &Neutral,
+    constructor: &Neutral,
+    context: &[TypeValue],
+    budget: usize,
+    depth: usize,
+) -> bool {
+    if depth != context.len() || budget < 64
+        || !local.spine.is_empty() || !constructor.spine.is_empty()
+    {
+        return false;
+    }
+    let NeutralHead::Free(free) = &local.head else { return false };
+    let NeutralHead::Const { name, .. } = &constructor.head else { return false };
+    let Some((_, num_params, num_fields)) =
+        checker.eta_projection_spec_for_constructor(*name)
+    else { return false };
+    // First experiment: only the source-certified constructor of an actual
+    // single-field, zero-parameter structure. Never identify a record value
+    // with its partially applied constructor function.
+    if num_params != 0 || num_fields != 1 { return false; }
+    let Ok(index) = usize::try_from(free.0) else { return false };
+    let Some(TypeValue::Term(local_type)) = context.get(index) else { return false };
+    let exposed = checker.machine().expose(
+        local_type.clone(), Transparency::Reducible, budget.min(512),
+    );
+    if !matches!(exposed.proven_value(), Some(Value::Pi { .. })) {
+        return false;
+    }
+    matches!(
+        checker.checked_captured_prop_type_in_context(local_type, context, budget.min(1024)),
+        Judgment::Refuted { obstruction } if obstruction.0 == "captured-proposition-sort-not-Prop"
+    )
+}
+
 fn distinct_non_eta_structure_locals(
     checker: &TypeChecker<'_>,
     left: &Neutral,
@@ -2805,6 +2847,23 @@ fn compare_neutral_heads(
                         left_result.chars().take(3000).collect::<String>(),
                         right_result.chars().take(3000).collect::<String>(),
                     );
+                }
+            }
+            if std::env::var_os("NUCLEUS_EXPERIMENTAL_C216_RIGID_DATA_FUNCTION_CTOR").is_some() {
+                let certified = certified_rigid_data_function_constructor_mismatch(
+                    checker, left, right, context, budget, depth,
+                ) || certified_rigid_data_function_constructor_mismatch(
+                    checker, right, left, context, budget, depth,
+                );
+                #[cfg(feature = "diagnostics")]
+                if std::env::var_os("NUCLEUS_C216_TRACE").is_some() {
+                    eprintln!(
+                        "NUCLEUS_C216_RIGID_DATA_FUNCTION_CTOR:certified={certified}:left={:?}:right={:?}:depth={depth}:context={}:budget={budget}",
+                        left.head, right.head, context.len(),
+                    );
+                }
+                if certified {
+                    return Judgment::refuted("rigid-data-function-constructor-mismatch");
                 }
             }
             Judgment::refuted("distinct-neutral-heads")
