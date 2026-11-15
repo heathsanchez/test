@@ -2300,6 +2300,75 @@ impl<'a> TypeChecker<'a> {
                         format!("{expected:?}").chars().take(2200).collect::<String>(),
                     );
                 }
+                // C206 diagnostic-only: decompose the *instantiated* Eq Bool
+                // obligations at the first source Omega proof. Exposing and
+                // comparing subterms here never grants a checking judgment.
+                #[cfg(feature = "diagnostics")]
+                if std::env::var_os("NUCLEUS_C206_SUBTERM_AUDIT").is_some()
+                    && context.len() == 8
+                    && expression.0 == 108167
+                {
+                    use std::sync::atomic::{AtomicUsize, Ordering};
+                    static SAMPLED: AtomicUsize = AtomicUsize::new(0);
+                    if SAMPLED.fetch_add(1, Ordering::Relaxed) < 2 {
+                        if let (TypeValue::Term(actual), TypeValue::Term(required)) = (&value, expected) {
+                            let machine = self.machine();
+                            let mut batch = vec![("Eq".to_owned(), actual.clone(), required.clone())];
+                            for depth in 0..3 {
+                                let mut next = Vec::new();
+                                for (path, left, right) in batch.into_iter().take(8) {
+                                    let opaque_left = machine.expose_for_conversion(
+                                        left.clone(), Transparency::Opaque, 1024,
+                                    );
+                                    let opaque_right = machine.expose_for_conversion(
+                                        right.clone(), Transparency::Opaque, 1024,
+                                    );
+                                    let conversion = crate::convert::convert_with_policy_in_context(
+                                        self,
+                                        &TypeValue::Term(left.clone()),
+                                        &TypeValue::Term(right.clone()),
+                                        2048,
+                                        crate::convert::DeltaPolicy::PreferredOnly,
+                                        context.len(), context,
+                                    );
+                                    let full_left = if depth == 2 {
+                                        Some(machine.expose_for_conversion(
+                                            left.clone(), Transparency::Full, 1024,
+                                        ))
+                                    } else { None };
+                                    let full_right = if depth == 2 {
+                                        Some(machine.expose_for_conversion(
+                                            right.clone(), Transparency::Full, 1024,
+                                        ))
+                                    } else { None };
+                                    eprintln!(
+                                        "NUCLEUS_C206_SUBTERM_AUDIT:depth={depth}:path={path}:context={}:source_left={left:?}:source_right={right:?}:relation={conversion:?}:opaque_left={}:opaque_right={}:full_left={}:full_right={}:NO_SEMANTIC_ADMISSION",
+                                        context.len(),
+                                        format!("{opaque_left:?}").chars().take(1200).collect::<String>(),
+                                        format!("{opaque_right:?}").chars().take(1200).collect::<String>(),
+                                        format!("{full_left:?}").chars().take(1200).collect::<String>(),
+                                        format!("{full_right:?}").chars().take(1200).collect::<String>(),
+                                    );
+                                    if let (
+                                        Some(Value::Neutral(l)),
+                                        Some(Value::Neutral(r)),
+                                    ) = (opaque_left.proven_value(), opaque_right.proven_value()) {
+                                        if l.head == r.head && l.spine.len() == r.spine.len() {
+                                            for (i, (a, b)) in l.spine.iter().zip(&r.spine).enumerate() {
+                                                // Eq Bool: inspect the Boolean lhs (slot 1).
+                                                // Constraint.sat': inspect all three operands.
+                                                if (depth == 0 && i == 1) || (depth == 1 && i < 3) {
+                                                    next.push((format!("{path}/arg{i}"), a.clone(), b.clone()));
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                batch = next;
+                            }
+                        }
+                    }
+                }
                 #[cfg(feature = "diagnostics")]
                 if std::env::var_os("NUCLEUS_TRACE_FAILED_RECEIVER_CONVERSION").is_some()
                     && matches!(&conversion, Judgment::Unknown { residual }
