@@ -4444,6 +4444,44 @@ impl<'a> Machine<'a> {
     /// No equality is guessed: only the installed recursor metadata,
     /// literal zero major, original minor arguments, RHS syntax and
     /// universe substitution are allowed to produce the reduct.
+    /// Reduce a *materialized* source-native Nat.pred neutral during type
+    /// conversion. Its argument is the original immutable closure: no new
+    /// argument, numeral, or theorem-specific rule is manufactured.
+    ///
+    /// The native reducer is the same source-registered rule used when an
+    /// application is first evaluated. A symbolic or out-of-fuel argument
+    /// proves nothing; conversion must retain UNKNOWN in those cases.
+    pub(crate) fn qualified_captured_nat_pred_result(
+        &self,
+        neutral: &Neutral,
+        budget: usize,
+    ) -> Judgment<Value> {
+        if budget < 16 {
+            return Judgment::unknown("captured-native-Nat.pred-budget");
+        }
+        let (Some(nat), NeutralHead::Const { name, levels }) = (
+            self.nat_primitives.as_ref(),
+            &neutral.head,
+        ) else {
+            return Judgment::unknown("captured-native-Nat.pred-authority");
+        };
+        if nat.pred != Some(*name) || !levels.is_empty() || neutral.spine.len() != 1 {
+            return Judgment::unknown("captured-native-Nat.pred-interface");
+        }
+        let mut original_pending = neutral.spine.iter().rev().cloned().collect::<Vec<_>>();
+        match self.try_native_nat_reduction(
+            *name, &[], &mut original_pending, Transparency::Reducible,
+            budget.saturating_sub(1),
+        ) {
+            Some(Value::NatLit(number)) if original_pending.is_empty() => {
+                Judgment::proven(
+                    Value::NatLit(number), "qualified-captured-native-Nat.pred",
+                )
+            }
+            _ => Judgment::unknown("captured-native-Nat.pred-nonconcrete"),
+        }
+    }
+
     pub(crate) fn qualified_nat_zero_recursor_result(
         &self,
         neutral: &Neutral,
