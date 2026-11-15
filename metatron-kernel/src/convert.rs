@@ -2332,8 +2332,34 @@ fn compare_nat_literal_neutral(
                 Some(Expr::BVar(index)) => closure.env.lookup(*index),
                 _ => None,
             });
+            // Inspect the captured source operands, without evaluating or
+            // changing their bindings, to distinguish concrete from symbolic
+            // Nat.sub inputs at this exact Mathlib conversion frontier.
+            let native_sub = checker.nat_primitives().and_then(|nat| nat.sub);
+            let sub_operands: Vec<String> = match arg_binding.as_ref() {
+                Some(EnvBinding::Neutral(Neutral {
+                    head: NeutralHead::Const { name: sub_name, levels: sub_levels },
+                    spine: sub_args,
+                })) if Some(*sub_name) == native_sub
+                    && sub_levels.is_empty()
+                    && sub_args.len() == 2 =>
+                {
+                    sub_args.iter().map(|source| {
+                        let expr = checker.expression(source.expr);
+                        let binding = match expr {
+                            Some(Expr::BVar(index)) => source.env.lookup(*index),
+                            _ => None,
+                        };
+                        format!(
+                            "expr={:?}:node={expr:?}:frame={}:binding={binding:?}",
+                            source.expr, source.env.id(),
+                        )
+                    }).collect()
+                }
+                _ => Vec::new(),
+            };
             eprintln!(
-                "NUCLEUS_NAT_NONHEAD:depth={depth}:budget={budget}:context_len={}:literal={literal:?}:head={name:?}:levels={levels:?}:spine_len={}:native_pred={native_pred:?}:arg_expr_id={:?}:arg_expr_node={arg_expr:?}:arg_frame={:?}:arg_binding={arg_binding:?}:source_definition={}",
+                "NUCLEUS_NAT_NONHEAD:depth={depth}:budget={budget}:context_len={}:literal={literal:?}:head={name:?}:levels={levels:?}:spine_len={}:native_pred={native_pred:?}:native_sub={native_sub:?}:arg_expr_id={:?}:arg_expr_node={arg_expr:?}:arg_frame={:?}:arg_binding={arg_binding:?}:sub_operands={sub_operands:?}:source_definition={}",
                 context.len(), neutral.spine.len(),
                 captured_arg.map(|closure| closure.expr),
                 captured_arg.map(|closure| closure.env.id()),
