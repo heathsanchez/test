@@ -1,0 +1,150 @@
+name: Nucleus C197 captured source-native reduction candidate
+on:
+  push:
+    branches: [research/nucleus-c197-captured-native-reduction-20261115]
+    paths:
+      - 'metatron-kernel/src/machine.rs'
+      - 'metatron-kernel/src/convert.rs'
+      - '.github/workflows/nucleus-c197-source-pred-conversion.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  captured-unit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      RUST_MIN_STACK: '67108864'
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Run C197 literal versus registered pred and adversarial controls
+        run: |
+          set -euo pipefail
+          cargo test --locked --manifest-path metatron-kernel/Cargo.toml source_registered_nat_pred_converts_only_completed_captured_arithmetic -- --nocapture
+
+  full-kernel-suite:
+    needs: captured-unit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      RUST_MIN_STACK: '67108864'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Run full kernel tests under authentic C193 candidate flags
+        run: |
+          python3 - <<'PY'
+          import json,os,subprocess
+          flags=json.load(open('experiments/nucleus-capture-substitution-20261107/alias-result-canonical-off-replay.json'))['flags']
+          assert len(flags)==24 and set(flags.values())=={'1'}
+          env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+          env.update(flags)
+          for key in ('NUCLEUS_EXPERIMENTAL_C182_TYPED_PROOF_IRREL',
+                      'NUCLEUS_EXPERIMENTAL_C189_NEUTRAL_LAMBDA_PROOF',
+                      'NUCLEUS_EXPERIMENTAL_C190_QUOTIENT_IOTA'):
+              env[key]='1'
+          subprocess.run(['cargo','test','--locked','--manifest-path',
+              'metatron-kernel/Cargo.toml'],env=env,check=True)
+          PY
+  authentic-source-and-forgeries:
+    needs: captured-unit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RUST_MIN_STACK: '67108864'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Qualify original C194 Nat and C192 Quotient source prefixes
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/c197"
+          gh api repos/heathsanchez/test/actions/artifacts/14144179440/zip > "$RUNNER_TEMP/c197/nat-source.zip"
+          printf '%s  %s\n' 704a19eedc757f399d4119babbc550b26b4cf881321aae93d1d4ae27e67acf11 "$RUNNER_TEMP/c197/nat-source.zip" | sha256sum -c -
+          unzip -p "$RUNNER_TEMP/c197/nat-source.zip" nat-prefix.ndjson > "$RUNNER_TEMP/c197/nat.ndjson"
+          printf '%s  %s\n' 7767e7f90b3e24b30ecb5324f1117d6858b5f40653b31011ad1948eed747e8ea "$RUNNER_TEMP/c197/nat.ndjson" | sha256sum -c -
+          test "$(stat -c %s "$RUNNER_TEMP/c197/nat.ndjson")" -eq 5121623
+          gh api repos/heathsanchez/test/actions/artifacts/14137666683/zip > "$RUNNER_TEMP/c197/quot-source.zip"
+          printf '%s  %s\n' 91e2decf7d5e8dc5792ce62e0f47b617cd35ed1857a7227bde3550f5bb55f499 "$RUNNER_TEMP/c197/quot-source.zip" | sha256sum -c -
+          unzip -p "$RUNNER_TEMP/c197/quot-source.zip" quotient-prefix.ndjson > "$RUNNER_TEMP/c197/quot.ndjson"
+          printf '%s  %s\n' 4883dc9889b546a1117c25c266bae05a344b6609db5cbbfd846a8d7abc92a907 "$RUNNER_TEMP/c197/quot.ndjson" | sha256sum -c -
+          cargo build --locked --release --manifest-path metatron-kernel/Cargo.toml
+          sha256sum metatron-kernel/target/release/metatron-kernel > "$RUNNER_TEMP/c197/binary.sha256"
+      - name: Fresh-process source verdict and forged-proof gate
+        run: |
+          python3 - "$RUNNER_TEMP/c197" <<'PY'
+          import hashlib,json,os,pathlib,subprocess,sys,time
+          out=pathlib.Path(sys.argv[1])
+          flags=json.loads(pathlib.Path('experiments/nucleus-capture-substitution-20261107/alias-result-canonical-off-replay.json').read_text())['flags']
+          assert len(flags)==24 and set(flags.values())=={'1'}
+          env={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+          env.update(flags)
+          for key in ('NUCLEUS_EXPERIMENTAL_C182_TYPED_PROOF_IRREL',
+                      'NUCLEUS_EXPERIMENTAL_C189_NEUTRAL_LAMBDA_PROOF',
+                      'NUCLEUS_EXPERIMENTAL_C190_QUOTIENT_IOTA'):
+              env[key]='1'
+          env['NUCLEUS_TRACE_DOWNSTREAM']='1'
+          original_nat=(out/'nat.ndjson').read_bytes()
+          original_quot=(out/'quot.ndjson').read_bytes()
+          def forged_type(blob,name):
+              rows=blob.splitlines(keepends=True)
+              hits=[i for i,row in enumerate(rows)
+                    if isinstance((rec:=json.loads(row)).get('thm'),dict)
+                    and rec['thm'].get('name')==name]
+              assert len(hits)==1,(name,hits)
+              rec=json.loads(rows[hits[0]])
+              rec['thm']['type']=5
+              rows[hits[0]]=(json.dumps(rec,separators=(',',':'))+'\n').encode()
+              return b''.join(rows)
+          nat_bad=forged_type(original_nat,9950)
+          quot_bad=forged_type(original_quot,1911)
+          assert hashlib.sha256(quot_bad).hexdigest()=='c30193d0b41285bea2e7f8b282b5596dee782729b08c7e2f73c4b7917ffa4cc9'
+          cases=[('original-nat',original_nat,'original'),
+                 ('original-quotient',original_quot,'original'),
+                 ('forged-nat-type',nat_bad,'forgery'),
+                 ('forged-quot-type',quot_bad,'forgery')]
+          for rel,digest in (
+              ('nucleus-universe-reconcile-20261104/inputs/renamed-pprod-forged-fields.ndjson','33993418d305e980e224d6102be2fc61ee9c02be1c8c23ccce00a406616ba6d6'),
+              ('nucleus-universe-reconcile-20261104/inputs/renamed-pprod-forged-motive.ndjson','2eb5034aa01b1591cc99577bacc50095e3d8e80709172175f569e1f481f680de'),
+              ('nucleus-quotient-reuse-20261104/heldout/mutated.ndjson','a4425142910417814594d555ccec8ac1b29bbe8d18f12993f20fa1c0253fd692')):
+              blob=(pathlib.Path('experiments')/rel).read_bytes()
+              assert hashlib.sha256(blob).hexdigest()==digest
+              cases.append((rel,blob,'forgery'))
+          results=[]
+          for label,source,kind in cases:
+              started=time.monotonic()
+              run=subprocess.run(['metatron-kernel/target/release/metatron-kernel'],
+                      input=source,env=env,capture_output=True,timeout=240)
+              diagnostics=run.stderr.decode(errors='replace').splitlines()
+              row={'label':label,'kind':kind,'sha256':hashlib.sha256(source).hexdigest(),
+                   'exit':run.returncode,'elapsed_s':round(time.monotonic()-started,3),
+                   'terminal':[line for line in diagnostics
+                       if line.startswith('NUCLEUS_DOWNSTREAM:')][-4:],
+                   'stderr_sha256':hashlib.sha256(run.stderr).hexdigest()}
+              results.append(row)
+              print('C197_SOURCE_CASE:'+json.dumps(row),flush=True)
+          report={'scope':'C197 exact unchanged Nat and Quotient source; five forged controls',
+                  'commit':os.environ['GITHUB_SHA'],
+                  'full_mathlib_sha256':'22c5de83469408950005589a3bc5ef5157c65549b5a802f85d567c29151306a6',
+                  'original_nat_sha256':'7767e7f90b3e24b30ecb5324f1117d6858b5f40653b31011ad1948eed747e8ea',
+                  'cases':results}
+          (out/'source-report.json').write_text(json.dumps(report,indent=2))
+          assert results[0]['exit'] in (0,2),'original Nat source incorrectly rejected'
+          assert results[1]['exit']==0,'original Quotient positive regressed'
+          assert all(row['exit']!=0 for row in results[2:]),'forged source accepted'
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-c197-authentic-source-and-forgeries
+          path: |
+            ${{ runner.temp }}/c197/source-report.json
+            ${{ runner.temp }}/c197/binary.sha256
+          retention-days: 60
