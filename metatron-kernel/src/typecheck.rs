@@ -1281,7 +1281,10 @@ impl<'a> TypeChecker<'a> {
                 }
                 active.remove(&id);
                 let support: Vec<_> = support.into_iter().collect();
-                if self.source_support.borrow().len() < 8192 {
+                let retention_limit = if std::env::var_os(
+                    "NUCLEUS_EXPERIMENTAL_C218_COMPLETED_SOURCE_CERT_RETENTION",
+                ).is_some() { 65_536 } else { 8_192 };
+                if self.source_support.borrow().len() < retention_limit {
                     self.source_support.borrow_mut().insert(id, support.clone());
                 }
                 complete.insert(id, support);
@@ -6071,7 +6074,13 @@ impl<'a> TypeChecker<'a> {
 
     pub(crate) fn retain_source_opening_proof(&self,body:&Closure,free:FreeId) {
         let mut proofs=self.source_opening_proofs.borrow_mut();
-        if proofs.len()<8192 {
+        // Retain only completed, exact (source, frame, levels, free) proofs.
+        // The opt-in widens storage, not the source-traversal allowance or
+        // the conditions for a proof to enter this map.
+        let retention_limit = if std::env::var_os(
+            "NUCLEUS_EXPERIMENTAL_C218_COMPLETED_SOURCE_CERT_RETENTION",
+        ).is_some() { 65_536 } else { 8_192 };
+        if proofs.len()<retention_limit {
             proofs.entry((body.expr,body.env.id(),body.levels.identity(),free)).or_insert_with(||body.clone());
         }
     }
