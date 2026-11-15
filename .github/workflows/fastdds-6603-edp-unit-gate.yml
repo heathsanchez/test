@@ -1,0 +1,97 @@
+name: Fast DDS 6603 minimal EDP strict policy red-green gate
+
+on:
+  push:
+    branches: [research/fastdds-6603-type-identity-20261115]
+    paths:
+      - .github/workflows/fastdds-6603-edp-unit-gate.yml
+      - research/fastdds-6603-strict-contract/**
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  strict-policy-unit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        arm: [unmodified-red, guarded-green]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install native dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y ninja-build libasio-dev libtinyxml2-dev libfoonathan-memory-dev libssl-dev libsqlite3-dev
+
+      - name: Checkout exact eProsima master source
+        run: |
+          mkdir -p evidence
+          git clone https://github.com/eProsima/Fast-DDS.git fastdds
+          git -C fastdds checkout --detach 3b4966787cc897a6287c3a6242b22a1dac874007
+          git -C fastdds submodule update --init --depth=1 thirdparty/fastcdr thirdparty/asio thirdparty/tinyxml2
+          test "$(git -C fastdds rev-parse HEAD)" = 3b4966787cc897a6287c3a6242b22a1dac874007
+          git -C fastdds rev-parse HEAD HEAD^{tree} > evidence/source-and-toolchain.txt
+          git -C fastdds submodule status >> evidence/source-and-toolchain.txt
+          sha256sum research/fastdds-6603-strict-contract/EDPStrictPolicyProbe.cpp >> evidence/source-and-toolchain.txt
+          c++ --version >> evidence/source-and-toolchain.txt
+
+      - name: Apply five-line guard only in protected arm
+        if: matrix.arm == 'guarded-green'
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('fastdds/src/cpp/rtps/builtin/discovery/endpoint/EDP.cpp')
+          source = path.read_text()
+          before = ('    else\n'
+              '    {\n'
+              '        if (wdata->type_name != rdata->type_name)\n')
+          after = ('    else\n'
+              '    {\n'
+              '        if (rdata->type_consistency.m_force_type_validation)\n'
+              '        {\n'
+              '            reason.set(MatchingFailureMask::different_typeinfo);\n'
+              '            return false;\n'
+              '        }\n'
+              '        if (wdata->type_name != rdata->type_name)\n')
+          assert source.count(before) == 1, source.count(before)
+          path.write_text(source.replace(before, after))
+          PY
+          git -C fastdds diff --check
+          git -C fastdds diff > evidence/policy-guard.patch
+
+      - name: Build native library and direct matching regression
+        run: |
+          set -o pipefail
+          cmake -S fastdds -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF -DTHIRDPARTY=ON -DTHIRDPARTY_UPDATE=OFF -DSECURITY=OFF -DCOMPILE_EXAMPLES=OFF -DCOMPILE_TOOLS=OFF 2>&1 | tee evidence/configure.log
+          cmake --build build --target fastdds -j 3 2>&1 | tee evidence/build.log
+          g++ -std=c++14 -O2 -DFASTDDS_DYN_LINK -DFASTCDR_DYN_LINK -I fastdds/src/cpp -I fastdds/include -I build/include -I fastdds/thirdparty/fastcdr/include -I build/thirdparty/fastcdr/include research/fastdds-6603-strict-contract/EDPStrictPolicyProbe.cpp -L build/src/cpp -L build/thirdparty/fastcdr/src/cpp -Wl,-rpath,"$PWD/build/src/cpp:$PWD/build/thirdparty/fastcdr/src/cpp" -lfastdds -lfastcdr -pthread -o edp-strict-probe 2>&1 | tee evidence/probe-build.log
+          sha256sum edp-strict-probe build/src/cpp/libfastdds.so* > evidence/binary-sha256.txt
+
+      - name: Verify documented RED before guard and GREEN after guard
+        env:
+          ARM: ${{ matrix.arm }}
+        run: |
+          set +e
+          ./edp-strict-probe > evidence/policy-observation.log 2>&1
+          policy_rc=$?
+          set -e
+          cat evidence/policy-observation.log
+          if test "$ARM" = unmodified-red; then
+            test "$policy_rc" -eq 1
+            grep -qx 'EDP_POLICY_PROBE default_matches=1 strict_matches=1 strict_missing_typeinfo_reason=0' evidence/policy-observation.log
+          else
+            test "$policy_rc" -eq 0
+            grep -qx 'EDP_POLICY_PROBE default_matches=1 strict_matches=0 strict_missing_typeinfo_reason=1' evidence/policy-observation.log
+          fi
+
+      - name: Retain raw negative and positive outcomes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fastdds-6603-edp-${{ matrix.arm }}
+          path: evidence/
+          retention-days: 90
