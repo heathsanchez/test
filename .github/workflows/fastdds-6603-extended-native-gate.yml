@@ -24,7 +24,7 @@ jobs:
       - name: Native dependencies
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y ninja-build libasio-dev libtinyxml2-dev libfoonathan-memory-dev libssl-dev libsqlite3-dev libgtest-dev
+          sudo apt-get install -y ninja-build libasio-dev libtinyxml2-dev libfoonathan-memory-dev libssl-dev libsqlite3-dev libgtest-dev libgmock-dev
 
       - name: Pin eProsima's unchanged source
         run: |
