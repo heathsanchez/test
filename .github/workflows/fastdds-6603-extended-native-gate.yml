@@ -1,0 +1,116 @@
+name: Fast DDS 6603 repeated identity and official Case14 gate
+
+on:
+  push:
+    branches: [research/fastdds-6603-type-identity-20261115]
+    paths:
+      - .github/workflows/fastdds-6603-extended-native-gate.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  official-recovery-and-repeats:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    strategy:
+      fail-fast: false
+      matrix:
+        arm: [upstream, preserve-advertised-identity]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Native dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y ninja-build libasio-dev libtinyxml2-dev libfoonathan-memory-dev libssl-dev libsqlite3-dev libgtest-dev
+
+      - name: Pin eProsima's unchanged source
+        run: |
+          mkdir -p evidence
+          git clone https://github.com/eProsima/Fast-DDS.git fastdds
+          git -C fastdds checkout --detach 3b4966787cc897a6287c3a6242b22a1dac874007
+          git -C fastdds submodule update --init --depth=1 thirdparty/fastcdr thirdparty/asio thirdparty/tinyxml2 thirdparty/dds-types-test
+          test "$(git -C fastdds rev-parse HEAD)" = 3b4966787cc897a6287c3a6242b22a1dac874007
+          git -C fastdds rev-parse HEAD HEAD^{tree} > evidence/source-and-toolchain.txt
+          git -C fastdds submodule status >> evidence/source-and-toolchain.txt
+          c++ --version >> evidence/source-and-toolchain.txt
+          cmake --version >> evidence/source-and-toolchain.txt
+          sha256sum research/fastdds-6603-timeout-identity/* >> evidence/source-and-toolchain.txt
+
+      - name: Preserve advertised identity in the experimental arm only
+        if: matrix.arm == 'preserve-advertised-identity'
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('fastdds/src/cpp/rtps/builtin/discovery/endpoint/EDPSimpleListeners.cpp')
+          source = path.read_text()
+          needle = 'data->type_information.clear();'
+          assert source.count(needle) == 2, source.count(needle)
+          path.write_text(source.replace(needle,
+              '/* Retain advertised TypeInformation for identity comparison after lookup failure. */'))
+          PY
+          git -C fastdds diff --check
+          git -C fastdds diff > evidence/experimental-intervention.patch
+
+      - name: Build eProsima's official TypeLookup case
+        run: |
+          set -o pipefail
+          cmake -S fastdds -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON -DEPROSIMA_BUILD_TESTS=ON -DTHIRDPARTY=ON -DTHIRDPARTY_UPDATE=OFF -DSECURITY=OFF -DCOMPILE_EXAMPLES=OFF -DCOMPILE_TOOLS=OFF 2>&1 | tee evidence/configure.log
+          cmake --build build --target DDSXtypesCommunication -j 3 2>&1 | tee evidence/build.log
+          ctest --test-dir build -N -R 'Case14' 2>&1 | tee evidence/registered-case14.txt
+          if ! grep -q Case14 evidence/registered-case14.txt; then
+            echo 'Official Case14 not registered' >&2
+            exit 1
+          fi
+
+      - name: Run official same-type timeout and data-delivery recovery
+        run: |
+          set -o pipefail
+          ctest --test-dir build --output-on-failure -R 'Case14' --timeout 70 2>&1 | tee evidence/official-case14.log
+          cp build/Testing/Temporary/LastTest.log evidence/official-case14-raw.log
+
+      - name: Build the unchanged adversarial comparator
+        run: |
+          set -o pipefail
+          g++ -std=c++14 -O2 -DFASTDDS_DYN_LINK -DFASTCDR_DYN_LINK -I fastdds/include -I build/include -I fastdds/thirdparty/fastcdr/include -I build/thirdparty/fastcdr/include research/fastdds-6603-timeout-identity/TypeIdentityTimeoutProbe.cpp -L build/src/cpp -L build/thirdparty/fastcdr/src/cpp -Wl,-rpath,"$PWD/build/src/cpp:$PWD/build/thirdparty/fastcdr/src/cpp" -lfastdds -lfastcdr -pthread -o probe 2>&1 | tee evidence/probe-build.log
+          sha256sum build/src/cpp/libfastdds.so* build/thirdparty/fastcdr/src/cpp/libfastcdr.so* probe > evidence/binary-sha256.txt
+          ldd probe > evidence/probe-ldd.txt
+
+      - name: Three independent timeout identity replays
+        env:
+          ARM: ${{ matrix.arm }}
+        run: |
+          set -o pipefail
+          export LD_LIBRARY_PATH="$PWD/build/src/cpp:$PWD/build/thirdparty/fastcdr/src/cpp:${LD_LIBRARY_PATH:-}"
+          python3 - <<'PY' 2>&1 | tee evidence/repetitions-console.log
+          import os
+          import pathlib
+          import sys
+          sys.path.insert(0, 'research/fastdds-6603-timeout-identity')
+          from type_identity_timeout_probe import run_case
+
+          arm = os.environ['ARM']
+          # This is a baseline characterization, not a safe-behavior oracle:
+          # 0/1 documents the inconsistent one-sided match on upstream.
+          expected = (0, 1) if arm == 'upstream' else (0, 0)
+          results = []
+          for i in range(3):
+              domain = 171 + i
+              results.append(run_case(
+                  os.path.abspath('probe'),
+                  f'{arm} incompatibility after lookup timeout trial {i+1}',
+                  'int', 'bool', 6000, domain, expected,
+                  pathlib.Path(f'evidence/repetition-{i+1}')))
+          print(f'{arm}: {sum(results)}/3 repetitions matched characterized outcome', flush=True)
+          raise SystemExit(0 if all(results) else 1)
+          PY
+
+      - name: Retain all raw outcomes including failed gates
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fastdds-6603-extended-${{ matrix.arm }}
+          path: evidence/
+          retention-days: 90
