@@ -2723,6 +2723,34 @@ fn compare_neutral_heads(
                         }
                     }
                 }
+                // C204: source-ID-locked, diagnostic-only budget discrimination.
+                // A fresh Machine owns independent fuel for each replay; no
+                // observational result can influence this conversion verdict.
+                // On the pinned 4.34.1 export: 68 = List.rec, 92 = PProd.
+                #[cfg(feature = "diagnostics")]
+                if std::env::var_os("NUCLEUS_C204_LISTREC_LADDER").is_some()
+                    && context.len() == 8
+                    && matches!((&left.head, &right.head),
+                        (NeutralHead::Const { name: l, .. },
+                         NeutralHead::Const { name: r, .. })
+                        if l.0 == 68 && r.0 == 92)
+                {
+                    use std::sync::atomic::{AtomicUsize, Ordering};
+                    static SAMPLES: AtomicUsize = AtomicUsize::new(0);
+                    let sample = SAMPLES.fetch_add(1, Ordering::Relaxed);
+                    if sample < 3 {
+                        for allowance in [256usize, 1024, 4096, 16384] {
+                            let started = std::time::Instant::now();
+                            let result = checker.machine()
+                                .qualified_nested_recursor_result(left, allowance);
+                            eprintln!(
+                                "NUCLEUS_C204_LISTREC_LADDER:sample={sample}:context={}:depth={depth}:original_budget={budget}:allowance={allowance}:elapsed_s={:.6}:result={}",
+                                context.len(), started.elapsed().as_secs_f64(),
+                                format!("{result:?}").chars().take(1600).collect::<String>(),
+                            );
+                        }
+                    }
+                }
                 return Judgment::unknown("unresolved-qualified-recursor-heads");
             }
             // C181: inspect both instantiated propositions and their exact
