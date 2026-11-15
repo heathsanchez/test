@@ -6144,9 +6144,20 @@ mod captured_native_nat_replay_tests {
             absent_sub.expose(pred_carrier.clone(), Transparency::Reducible, 128).proven_value(),
             Some(Value::NatLit(_)),
         ), "no source registration means no native numeral promotion");
+        // A completed certified result may be reused across budgets; this is
+        // cache reuse, not a new low-fuel normalization proof.
+        assert_eq!(
+            machine.expose(pred_carrier.clone(), Transparency::Reducible, 1).proven_value(),
+            Some(&zero),
+            "retained certified values remain valid at smaller exploration budgets",
+        );
+        let cold_low_fuel = Machine::new(
+            AuthorityId(3), &export.exprs, &export.levels, HashMap::new(),
+        ).with_nat_primitives(machine.nat_primitives.clone())
+            .with_exposure_cache(new_exposure_cache());
         assert!(
-            machine.expose(pred_carrier, Transparency::Reducible, 1).is_unknown(),
-            "exhausted fuel must not silently certify a native result",
+            cold_low_fuel.expose(pred_carrier, Transparency::Reducible, 1).is_unknown(),
+            "cold exhausted fuel must not synthesize a new native result",
         );
     }
 
