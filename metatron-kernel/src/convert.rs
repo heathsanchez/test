@@ -2325,9 +2325,18 @@ fn compare_nat_literal_neutral(
         use std::sync::atomic::{AtomicUsize, Ordering};
         static TRACED: AtomicUsize = AtomicUsize::new(0);
         if TRACED.fetch_add(1, Ordering::Relaxed) < 64 {
+            let native_pred = checker.nat_primitives().and_then(|nat| nat.pred);
+            let captured_arg = neutral.spine.first();
+            let arg_expr = captured_arg.and_then(|closure| checker.expression(closure.expr));
+            let arg_binding = captured_arg.and_then(|closure| match arg_expr {
+                Some(Expr::BVar(index)) => closure.env.lookup(*index),
+                _ => None,
+            });
             eprintln!(
-                "NUCLEUS_NAT_NONHEAD:depth={depth}:budget={budget}:context_len={}:literal={literal:?}:head={name:?}:levels={levels:?}:spine_len={}:source_definition={}",
+                "NUCLEUS_NAT_NONHEAD:depth={depth}:budget={budget}:context_len={}:literal={literal:?}:head={name:?}:levels={levels:?}:spine_len={}:native_pred={native_pred:?}:arg_expr_id={:?}:arg_expr_node={arg_expr:?}:arg_frame={:?}:arg_binding={arg_binding:?}:source_definition={}",
                 context.len(), neutral.spine.len(),
+                captured_arg.map(|closure| closure.expr),
+                captured_arg.map(|closure| closure.env.id()),
                 checker.definition_value(*name).is_some(),
             );
         }
