@@ -1,0 +1,150 @@
+name: Fast DDS 6603 opt-in policy repair and Case14 gate
+
+on:
+  push:
+    branches: [research/fastdds-6603-type-identity-20261115]
+    paths:
+      - .github/workflows/fastdds-6603-policy-only-repair-gate.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  strict-policy-with-default-recovery:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Native dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y ninja-build libasio-dev libtinyxml2-dev libfoonathan-memory-dev libssl-dev libsqlite3-dev libgtest-dev libgmock-dev
+
+      - name: Pin eProsima's unchanged source
+        run: |
+          mkdir -p evidence
+          git clone https://github.com/eProsima/Fast-DDS.git fastdds
+          git -C fastdds checkout --detach 3b4966787cc897a6287c3a6242b22a1dac874007
+          git -C fastdds submodule update --init --depth=1 thirdparty/fastcdr thirdparty/asio thirdparty/tinyxml2 thirdparty/dds-types-test
+          test "$(git -C fastdds rev-parse HEAD)" = 3b4966787cc897a6287c3a6242b22a1dac874007
+          git -C fastdds rev-parse HEAD HEAD^{tree} > evidence/source-and-toolchain.txt
+          git -C fastdds submodule status >> evidence/source-and-toolchain.txt
+          c++ --version >> evidence/source-and-toolchain.txt
+          cmake --version >> evidence/source-and-toolchain.txt
+          sha256sum research/fastdds-6603-timeout-identity/* >> evidence/source-and-toolchain.txt
+
+      - name: Require available type information only when reader opted in
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('fastdds/src/cpp/rtps/builtin/discovery/endpoint/EDP.cpp')
+          source = path.read_text()
+          anchor = ('    else\n'
+              '    {\n'
+              '        if (wdata->type_name != rdata->type_name)\n')
+          assert source.count(anchor) == 1, source.count(anchor)
+          guarded = ('    else\n'
+              '    {\n'
+              '        if (rdata->type_consistency.m_force_type_validation)\n'
+              '        {\n'
+              '            reason.set(MatchingFailureMask::different_typeinfo);\n'
+              '            return false;\n'
+              '        }\n'
+              '        if (wdata->type_name != rdata->type_name)\n')
+          path.write_text(source.replace(anchor, guarded))
+          PY
+          git -C fastdds diff --check
+          git -C fastdds diff > evidence/opt-in-policy-repair.patch
+
+      - name: Build eProsima's official TypeLookup case
+        run: |
+          set -o pipefail
+          cmake -S fastdds -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON -DEPROSIMA_BUILD_TESTS=ON -DTHIRDPARTY=ON -DTHIRDPARTY_UPDATE=OFF -DSECURITY=OFF -DCOMPILE_EXAMPLES=OFF -DCOMPILE_TOOLS=OFF 2>&1 | tee evidence/configure.log
+          cmake --build build --target DDSXtypesCommunication -j 3 2>&1 | tee evidence/build.log
+          ctest --test-dir build -N -R 'Case14' 2>&1 | tee evidence/registered-case14.txt
+          if ! grep -q Case14 evidence/registered-case14.txt; then
+            echo 'Official Case14 not registered' >&2
+            exit 1
+          fi
+
+      - name: Run official same-type timeout and data-delivery recovery
+        run: |
+          set -o pipefail
+          set +e
+          ctest --test-dir build --output-on-failure -R 'Case14' --timeout 70 2>&1 | tee evidence/official-case14.log
+          case14_rc=${PIPESTATUS[0]}
+          set -e
+          cp build/Testing/Temporary/LastTest.log evidence/official-case14-raw.log
+          exit "$case14_rc"
+
+      - name: Build both default and explicit strict QoS comparators
+        run: |
+          set -o pipefail
+          cp research/fastdds-6603-timeout-identity/TypeIdentityTimeoutProbe.cpp default.cpp
+          python3 - <<'PY'
+          from pathlib import Path
+          source = Path('default.cpp').read_text()
+          anchor = '            reader_qos.durability().kind = TRANSIENT_LOCAL_DURABILITY_QOS;\n'
+          assert source.count(anchor) == 1, source.count(anchor)
+          source = source.replace(anchor, anchor +
+              '            reader_qos.type_consistency().m_force_type_validation = true;\n'
+              '            std::cout << "TYPE_ID_PROBE requested_force_type_validation="\n'
+              '                      << reader_qos.type_consistency().m_force_type_validation << std::endl;\n')
+          anchor2 = '            reader = subscriber->create_datareader(topic, reader_qos);\n'
+          assert source.count(anchor2) == 1, source.count(anchor2)
+          source = source.replace(anchor2, anchor2 +
+              '            if (reader && !reader->get_qos().type_consistency().m_force_type_validation)\n'
+              '            {\n'
+              '                std::cerr << "Reader did not retain force_type_validation=true\\n";\n'
+              '                return 11;\n'
+              '            }\n')
+          Path('strict.cpp').write_text(source)
+          PY
+          diff -u default.cpp strict.cpp > evidence/strict-reader-opt-in.patch || test "$?" -eq 1
+          sha256sum default.cpp strict.cpp > evidence/probe-sources-sha256.txt
+          for mode in default strict; do
+            g++ -std=c++14 -O2 -DFASTDDS_DYN_LINK -DFASTCDR_DYN_LINK -I fastdds/include -I build/include -I fastdds/thirdparty/fastcdr/include -I build/thirdparty/fastcdr/include "$mode.cpp" -L build/src/cpp -L build/thirdparty/fastcdr/src/cpp -Wl,-rpath,"$PWD/build/src/cpp:$PWD/build/thirdparty/fastcdr/src/cpp" -lfastdds -lfastcdr -pthread -o "probe-$mode" 2>&1 | tee "evidence/$mode-probe-build.log"
+          done
+          sha256sum build/src/cpp/libfastdds.so* build/thirdparty/fastcdr/src/cpp/libfastcdr.so* probe-* > evidence/binary-sha256.txt
+          ldd probe-strict > evidence/probe-ldd.txt
+
+      - name: Check default compatibility and enforce strict opt-in
+        run: |
+          set -o pipefail
+          export LD_LIBRARY_PATH="$PWD/build/src/cpp:$PWD/build/thirdparty/fastcdr/src/cpp:${LD_LIBRARY_PATH:-}"
+          python3 - <<'PY' 2>&1 | tee evidence/policy-and-regression-controls.log
+          import pathlib
+          import sys
+          sys.path.insert(0, 'research/fastdds-6603-timeout-identity')
+          from type_identity_timeout_probe import run_case
+
+          cases = [
+              ('default', 'default same-type normal', 'int', 'int', 0, 190, (1, 1)),
+              ('default', 'default incompatible normal', 'int', 'bool', 0, 191, (0, 0)),
+              ('default', 'default incompatible timeout retains documented name fallback',
+               'int', 'bool', 6000, 192, (0, 1)),
+              ('default', 'default same-type timeout recovers', 'int', 'int', 6000, 193, (1, 1)),
+              ('strict', 'strict same-type normal', 'int', 'int', 0, 194, (1, 1)),
+              ('strict', 'strict incompatible normal', 'int', 'bool', 0, 195, (0, 0)),
+          ]
+          for i in range(3):
+              cases.append(('strict', f'strict incompatible timeout trial {i+1}',
+                            'int', 'bool', 6000, 196 + i, (0, 0)))
+          results = [run_case(
+              str(pathlib.Path(f'probe-{mode}').resolve()), name, writer_field,
+              reader_field, flow, domain, expected,
+              pathlib.Path(f'evidence/{mode}-{domain}-process-logs'))
+              for mode, name, writer_field, reader_field, flow, domain, expected in cases]
+          print(f'policy-only: {sum(results)}/{len(results)} exact boundary controls passed', flush=True)
+          raise SystemExit(0 if all(results) else 1)
+          PY
+
+      - name: Retain all raw outcomes including failed gates
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fastdds-6603-policy-only-and-recovery
+          path: evidence/
+          retention-days: 90
