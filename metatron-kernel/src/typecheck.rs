@@ -2341,6 +2341,53 @@ impl<'a> TypeChecker<'a> {
                                             right.clone(), Transparency::Full, 1024,
                                         ))
                                     } else { None };
+                                    // C207 diagnostic-only: the source Pair.fst/.snd
+                                    // receiver, not the desired field, chooses the
+                                    // only permissible constructor/recursor branch.
+                                    if std::env::var_os("NUCLEUS_C207_PAIR_RECEIVER").is_some()
+                                        && depth == 2
+                                        && let Some(Value::StuckProjection {
+                                            type_name, index, structure, ..
+                                        }) = full_left.as_ref().and_then(|v| v.proven_value())
+                                    {
+                                        let revealed = machine.expose_for_conversion(
+                                            structure.clone(), Transparency::Full, 2048,
+                                        );
+                                        let selected = machine.projection_field_for_conversion(
+                                            structure.clone(), *type_name, *index, 4096,
+                                        );
+                                        let original_binding = match self.expressions.get(structure.expr) {
+                                            Some(Expr::BVar(i)) => structure.env.lookup_with_node_id(*i),
+                                            _ => None,
+                                        };
+                                        let (replay, last_argument) = if let Some(Value::Neutral(neutral)) =
+                                            revealed.proven_value()
+                                        {
+                                            let last = neutral.spine.last().map(|arg| {
+                                                (
+                                                    arg.clone(),
+                                                    machine.expose_for_conversion(
+                                                        arg.clone(), Transparency::Full, 2048,
+                                                    ),
+                                                )
+                                            });
+                                            (
+                                                Some(machine.qualified_nested_recursor_result(
+                                                    neutral, 4096,
+                                                )),
+                                                last,
+                                            )
+                                        } else { (None, None) };
+                                        eprintln!(
+                                            "NUCLEUS_C207_PAIR_RECEIVER:path={path}:type={type_name:?}:field={index}:structure={structure:?}:structure_expr={:?}:source_binding={}:revealed={}:replay={}:last_spine={}:field_selection={}:NO_SEMANTIC_ADMISSION",
+                                            self.expressions.get(structure.expr),
+                                            format!("{original_binding:?}").chars().take(1600).collect::<String>(),
+                                            format!("{revealed:?}").chars().take(1900).collect::<String>(),
+                                            format!("{replay:?}").chars().take(1900).collect::<String>(),
+                                            format!("{last_argument:?}").chars().take(1900).collect::<String>(),
+                                            format!("{selected:?}").chars().take(1900).collect::<String>(),
+                                        );
+                                    }
                                     eprintln!(
                                         "NUCLEUS_C206_SUBTERM_AUDIT:depth={depth}:path={path}:context={}:source_left={left:?}:source_right={right:?}:relation={conversion:?}:opaque_left={}:opaque_right={}:full_left={}:full_right={}:NO_SEMANTIC_ADMISSION",
                                         context.len(),
