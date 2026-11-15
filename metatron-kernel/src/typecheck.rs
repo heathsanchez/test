@@ -1873,6 +1873,19 @@ impl<'a> TypeChecker<'a> {
                 let argument_judgment=self.check_with_formation(
                     *arg, &domain, context, frame, remaining, true, cache, true,
                 );
+                // C205: report the exact source Pi-domain obligation. Logging
+                // cannot promote or change any Judgment.
+                #[cfg(feature="diagnostics")]
+                if std::env::var_os("NUCLEUS_C205_ARGUMENT_CHECK").is_some()
+                    && context.len() == 8
+                    && matches!(expression.0, 108168 | 108216 | 108213 | 108272)
+                {
+                    eprintln!(
+                        "NUCLEUS_C205_ARGUMENT_CHECK:phase=application:application={expression:?}:function={fun:?}:argument={arg:?}:context={}:frame={}:remaining={}:expected_domain={}:argument_judgment={argument_judgment:?}",
+                        context.len(), frame.id(), *remaining,
+                        format!("{domain:?}").chars().take(2200).collect::<String>(),
+                    );
+                }
                 #[cfg(feature="diagnostics")]
                 if std::env::var_os("NUCLEUS_TRACE_APP_DOMAIN_OBLIGATION").is_some()
                     && matches!(argument_judgment,Judgment::Unknown {..})
@@ -2240,6 +2253,20 @@ impl<'a> TypeChecker<'a> {
             }
         }
         let inferred = self.infer_in(expression, context, frame, remaining, cache);
+        // C205 diagnostic only: inspect the unmodified source-derived argument
+        // type before any conversion. Source IDs refer to pinned C202 NDJSON.
+        #[cfg(feature = "diagnostics")]
+        if std::env::var_os("NUCLEUS_C205_ARGUMENT_CHECK").is_some()
+            && context.len() == 8
+            && matches!(expression.0, 108167 | 108215 | 108271)
+        {
+            eprintln!(
+                "NUCLEUS_C205_ARGUMENT_CHECK:phase=infer:expression={expression:?}:context={}:frame={}:remaining={}:inferred={}:expected={}",
+                context.len(), frame.id(), *remaining,
+                format!("{inferred:?}").chars().take(2200).collect::<String>(),
+                format!("{expected:?}").chars().take(2200).collect::<String>(),
+            );
+        }
         #[cfg(feature="diagnostics")]
         if std::env::var_os("NUCLEUS_TRACE_BIDIR_BODY_GAP").is_some()
             && context.len()==5
@@ -2261,6 +2288,18 @@ impl<'a> TypeChecker<'a> {
                     context.len(),
                     context,
                 );
+                #[cfg(feature = "diagnostics")]
+                if std::env::var_os("NUCLEUS_C205_ARGUMENT_CHECK").is_some()
+                    && context.len() == 8
+                    && matches!(expression.0, 108167 | 108215 | 108271)
+                {
+                    eprintln!(
+                        "NUCLEUS_C205_ARGUMENT_CHECK:phase=conversion:expression={expression:?}:remaining={}:actual={}:expected={}:relation={conversion:?}",
+                        *remaining,
+                        format!("{value:?}").chars().take(2200).collect::<String>(),
+                        format!("{expected:?}").chars().take(2200).collect::<String>(),
+                    );
+                }
                 #[cfg(feature = "diagnostics")]
                 if std::env::var_os("NUCLEUS_TRACE_FAILED_RECEIVER_CONVERSION").is_some()
                     && matches!(&conversion, Judgment::Unknown { residual }
