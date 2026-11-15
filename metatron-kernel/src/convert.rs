@@ -2318,6 +2318,20 @@ fn compare_nat_literal_neutral(
             proof_function_frees,
         );
     }
+    // C195 diagnostic-only: identify the exact source head at an inconclusive
+    // numeral-vs-neutral comparison. Never affects a proof verdict.
+    #[cfg(feature = "diagnostics")]
+    if std::env::var_os("NUCLEUS_TRACE_NAT_NONHEAD").is_some() {
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        static TRACED: AtomicUsize = AtomicUsize::new(0);
+        if TRACED.fetch_add(1, Ordering::Relaxed) < 64 {
+            eprintln!(
+                "NUCLEUS_NAT_NONHEAD:depth={depth}:budget={budget}:context_len={}:literal={literal:?}:head={name:?}:levels={levels:?}:spine_len={}:source_definition={}",
+                context.len(), neutral.spine.len(),
+                checker.definition_value(*name).is_some(),
+            );
+        }
+    }
     Judgment::refuted("Nat-literal-non-Nat-head")
 }
 
