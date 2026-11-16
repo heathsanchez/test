@@ -1737,6 +1737,20 @@ impl<'a> TypeChecker<'a> {
         let mut c236 = C236InferTrace::begin(expression, context.len(), frame.id(), *remaining);
         let key = (expression, frame.id());
         if let Some(value) = cache.get(&key) {
+            // C240: opt-in reuse of an ALREADY-PROVEN result for a complete
+            // closed source spine (Const/Sort/literal/App only). The previous
+            // source check is retained by this judgment-local cache, whose
+            // exact original ExprId and frame are unchanged. A Pi-shaped
+            // result remains forbidden by the pre-existing fixed-binder guard.
+            // This is a cost-only proof reuse; never cache UNKNOWN/REFUTED.
+            #[cfg(feature = "diagnostics")]
+            if canonical && !matches!(value, TypeValue::Pi { .. })
+                && std::env::var_os("NUCLEUS_C240_CLOSED_PROOF_REUSE").is_some()
+            {
+                let reused = Judgment::proven(value.clone(), "complete-closed-source-inference-reuse");
+                c236.finish(&reused, *remaining);
+                return reused;
+            }
             let cached = if canonical && matches!(value, TypeValue::Pi { .. }) {
                 Judgment::unknown("closed-spine-returned-fixed-pi")
             } else if take_step(remaining) {
