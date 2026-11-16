@@ -8,6 +8,31 @@ use crate::syntax::Expr;
 use crate::typecheck::{RuleKAttempt, TypeChecker, TypeValue};
 use crate::value::{Closure, EnvBinding, FreeId, Neutral, NeutralHead, Value};
 
+// C244: source-owned direct captured constant equality. Only the syntactically
+// monomorphic head is admitted: its empty source universe arguments and lack
+// of bvars make its evaluation independent of the enclosing capture frame.
+// The other operand must be an actual captured Closure of exactly that head;
+// a Free local or any different source/name is never treated as equal.
+// This is beta substitution on immutable source, not an inferred equality.
+#[cfg(feature = "diagnostics")]
+fn c244_monomorphic_const_capture(
+    checker: &TypeChecker<'_>, direct: &Closure, captured_bvar: &Closure,
+) -> bool {
+    let Some(Expr::Const { name: direct_name, levels: direct_levels }) =
+        checker.expression(direct.expr) else { return false };
+    if !direct_levels.is_empty() { return false; }
+    let Some(Expr::BVar(index)) = checker.expression(captured_bvar.expr) else {
+        return false;
+    };
+    let Some(EnvBinding::Closure(binding)) =
+        captured_bvar.env.lookup_binding_ref(*index) else { return false };
+    matches!(
+        checker.expression(binding.expr),
+        Some(Expr::Const { name: captured_name, levels })
+            if captured_name == direct_name && levels.is_empty()
+    )
+}
+
 // C233 is an observation scope for the already-isolated C230 cold conversion
 // probe. It does not cache an outcome, charge or restore fuel, or decide a rule.
 #[cfg(feature = "diagnostics")]
@@ -287,6 +312,25 @@ fn convert_in_context_with_congruence(
             #[cfg(feature = "diagnostics")]
             c233_event("identity", &left, &right, depth, context.len(), remaining,
                 *congruence_attempts, "proven");
+            continue;
+        }
+        // C244 opt-in. The complete source identity of a monomorphic
+        // constant after direct BVar substitution is a definitional-equality
+        // certificate. Frame aliases with unrelated/free captures decline.
+        // A positive witness consumes no speculative reduction fuel.
+        #[cfg(feature = "diagnostics")]
+        if std::env::var_os("NUCLEUS_C244_DIRECT_CAPTURED_CONST").is_some()
+            && let (TypeValue::Term(a), TypeValue::Term(b)) = (&left, &right)
+            && (c244_monomorphic_const_capture(checker, a, b)
+                || c244_monomorphic_const_capture(checker, b, a))
+        {
+            use std::sync::atomic::{AtomicUsize, Ordering};
+            static ACCEPTED: AtomicUsize = AtomicUsize::new(0);
+            let n = ACCEPTED.fetch_add(1, Ordering::Relaxed) + 1;
+            if n <= 8 || n.is_power_of_two() {
+                eprintln!("NUCLEUS_C244_CAPTURE_PROVEN:count={n}:left={}:right={}:depth={depth}:ctx={}",
+                    c233_value_label(&left), c233_value_label(&right), context.len());
+            }
             continue;
         }
         if remaining == 0 {
