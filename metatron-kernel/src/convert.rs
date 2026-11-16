@@ -798,27 +798,52 @@ fn convert_in_context_with_congruence(
                     let Some(full) = full.proven_value() else {
                         return Judgment::unknown("full-conversion-exposure");
                     };
-                    let recovered = if depth == context.len() && value_as_type(checker, full, depth, &mut remaining).is_none() {
-                        checked_source_type_value(checker, term.clone(), context, remaining)
+                    // C241: a successfully source-checked Pi opening is
+                    // already a certificate for this exact Value, binder and
+                    // protected context. Previously a successful first trial
+                    // was discarded, then the identical opening was charged
+                    // AGAIN when producing the TypeValue. That second trial
+                    // could exhaust fuel and turn an exposed Pi into a spurious
+                    // rigid mismatch. Retain the actual certified TypeValue,
+                    // never an unverified syntactic Pi or equality assumption.
+                    let opened = if depth == context.len() {
+                        value_as_type(checker, full, depth, &mut remaining)
                     } else {
-                        Judgment::unknown("checked-source-type-recovery-not-needed")
+                        None
                     };
-                    #[cfg(feature="diagnostics")]
-                    if std::env::var_os("NUCLEUS_TRACE_SOURCE_TYPE_RECOVERY").is_some() {
-                        eprintln!("NUCLEUS_SOURCE_TYPE_RECOVERY:term={:?}:result={recovered:?}",term.expr);
-                    }
-                    let full = recovered.proven_value().unwrap_or(full);
-                    let Some(full) = value_as_type(checker, full, depth, &mut remaining) else {
+                    let converted = if let Some(opened) = opened {
                         #[cfg(feature="diagnostics")]
-                        if std::env::var_os("NUCLEUS_TRACE_RIGID_TYPE_MISMATCH").is_some() {
-                            eprintln!("NUCLEUS_RIGID_TYPE_MISMATCH:depth={depth}:context={}:exposed={full:?}:expected={other:?}:budget={remaining}",context.len());
-                            if let Value::Neutral(n)=full {
+                        if std::env::var_os("NUCLEUS_C241_TRACE").is_some() {
+                            eprintln!("NUCLEUS_C241_REUSED_CERTIFIED_PI:depth={depth}:ctx={}:left={remaining}",context.len());
+                        }
+                        Some(opened)
+                    } else {
+                        let recovered = if depth == context.len() {
+                            checked_source_type_value(checker, term.clone(), context, remaining)
+                        } else {
+                            Judgment::unknown("checked-source-type-recovery-not-needed")
+                        };
+                        #[cfg(feature="diagnostics")]
+                        if std::env::var_os("NUCLEUS_TRACE_SOURCE_TYPE_RECOVERY").is_some() {
+                            eprintln!("NUCLEUS_SOURCE_TYPE_RECOVERY:term={:?}:result={recovered:?}",term.expr);
+                        }
+                        let recovered_value = recovered.proven_value().unwrap_or(full);
+                        let converted = value_as_type(checker, recovered_value, depth, &mut remaining);
+                        #[cfg(feature="diagnostics")]
+                        if converted.is_none()
+                            && std::env::var_os("NUCLEUS_TRACE_RIGID_TYPE_MISMATCH").is_some()
+                        {
+                            eprintln!("NUCLEUS_RIGID_TYPE_MISMATCH:depth={depth}:context={}:exposed={recovered_value:?}:expected={other:?}:budget={remaining}",context.len());
+                            if let Value::Neutral(n) = recovered_value {
                                 eprintln!("NUCLEUS_RIGID_TYPE_MAJOR:{}",checker.diagnostic_captured_recursor_major_chain(n,remaining));
                             }
                         }
+                        converted
+                    };
+                    let Some(converted) = converted else {
                         return Judgment::refuted("rigid-type-constructor-mismatch");
                     };
-                    full
+                    converted
                 } else {
                     return Judgment::refuted("rigid-type-constructor-mismatch");
                 };
