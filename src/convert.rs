@@ -98,6 +98,43 @@ type ConversionVisitKey = (crate::machine::AuthorityId, TypeValue, TypeValue);
 const INLINE_CONVERSION_VISIT_CAPACITY: usize = 8;
 const CHEAP_PROJECTION_CONGRUENCE_BUDGET: usize = 64;
 
+// C234 isolates the speculative capture-trial budget policy. Preserve the
+// ordinary behavior unless the diagnostics-only experiment explicitly opts in.
+// A failed identity trial must not spend the eight units reserved for the
+// following normal conversion alternatives. This changes search scheduling,
+// not any source-equality rule or the requirements for a Proven result.
+fn source_capture_trial_allowance(remaining: usize, reserve_fallback: bool) -> usize {
+    if reserve_fallback {
+        remaining.saturating_sub(8).min(1024)
+    } else {
+        remaining.min(1024)
+    }
+}
+
+#[cfg(test)]
+mod c234_capture_reserve_tests {
+    use super::source_capture_trial_allowance;
+
+    #[test]
+    fn optional_capture_preserves_eight_fallback_units() {
+        for remaining in 9..=1033 {
+            let allowance = source_capture_trial_allowance(remaining, true);
+            assert!(allowance <= 1024);
+            assert!(remaining - allowance >= 8);
+        }
+        assert_eq!(source_capture_trial_allowance(9, true), 1);
+        assert_eq!(source_capture_trial_allowance(2, true), 0);
+        assert_eq!(source_capture_trial_allowance(1033, true), 1024);
+    }
+
+    #[test]
+    fn original_allowance_is_unchanged_without_the_flag() {
+        for remaining in [0, 1, 8, 9, 27, 1024, 1033, 4096] {
+            assert_eq!(source_capture_trial_allowance(remaining, false), remaining.min(1024));
+        }
+    }
+}
+
 struct ConversionVisitSet {
     inline: [Option<ConversionVisitKey>; INLINE_CONVERSION_VISIT_CAPACITY],
     len: usize,
@@ -274,10 +311,22 @@ fn convert_in_context_with_congruence(
             && remaining > 8 && *congruence_attempts > 0
         {
             *congruence_attempts -= 1;
-            let allowance = remaining.min(1024);
+            #[cfg(feature = "diagnostics")]
+            let reserve_fallback =
+                std::env::var_os("NUCLEUS_C234_CAPTURE_FALLBACK_RESERVE").is_some()
+                || (c233_trace_is_active()
+                    && std::env::var_os("NUCLEUS_C234_CAPTURE_PROBE_ONLY").is_some());
+            #[cfg(not(feature = "diagnostics"))]
+            let reserve_fallback = false;
+            let allowance = source_capture_trial_allowance(remaining, reserve_fallback);
             let mut trial = allowance;
             let identical = checker.exact_source_capture_identity(lhs, rhs, &mut trial);
             remaining -= allowance.saturating_sub(trial);
+            #[cfg(feature = "diagnostics")]
+            if reserve_fallback && c233_trace_is_active() {
+                eprintln!("NUCLEUS_C234_RESERVE:allowance={allowance}:left={}:right={}:remaining_after={remaining}:identity={identical}",
+                    c233_value_label(&left), c233_value_label(&right));
+            }
             #[cfg(feature = "diagnostics")]
             c233_event("capture", &left, &right, depth, context.len(), remaining,
                 *congruence_attempts, if identical { "proven" } else { "declined" });
