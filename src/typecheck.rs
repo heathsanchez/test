@@ -27,6 +27,104 @@ use crate::value::{
     Closure, EnvBinding, EnvFrame, FreeId, LevelSubstitution, Neutral, NeutralHead, Value,
 };
 
+
+#[cfg(feature = "diagnostics")]
+thread_local! {
+    // C236 records call ancestry, including successful intermediate inference,
+    // without caching or substituting any judgment. Only a source-pinned root
+    // Expr7199 with empty Gamma starts a trace; descendants inherit its scope.
+    static C236_INFER_STACK: RefCell<Vec<u64>> = const { RefCell::new(Vec::new()) };
+    static C236_INFER_SEQUENCE: std::cell::Cell<u64> =
+        const { std::cell::Cell::new(0) };
+}
+
+#[cfg(feature = "diagnostics")]
+fn c236_enabled() -> bool {
+    static ENABLED: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    *ENABLED.get_or_init(|| std::env::var_os("NUCLEUS_C236_INFER_ANCESTRY").is_some())
+}
+
+#[cfg(feature = "diagnostics")]
+struct C236InferTrace { id: Option<u64> }
+
+#[cfg(feature = "diagnostics")]
+impl C236InferTrace {
+    fn begin(expr: ExprId, ctx: usize, frame: u64, budget: usize) -> Self {
+        if !c236_enabled() {
+            return Self { id: None };
+        }
+        let parent = C236_INFER_STACK.with(|stack| stack.borrow().last().copied());
+        if parent.is_none() && !(expr.0 == 7199 && ctx == 0 && frame == 0) {
+            return Self { id: None };
+        }
+        let seq = C236_INFER_SEQUENCE.with(|counter| {
+            let n = counter.get();
+            counter.set(n + 1);
+            n
+        });
+        if seq >= 100_000 {
+            if seq == 100_000 {
+                eprintln!("NUCLEUS_C236_TRUNCATED:maximum=100000");
+            }
+            return Self { id: None };
+        }
+        let p = parent.map_or_else(|| "-".to_owned(), |id| id.to_string());
+        eprintln!("NUCLEUS_C236_ENTER:id={seq}:parent={p}:expr={}:frame={frame}:ctx={ctx}:budget={budget}", expr.0);
+        C236_INFER_STACK.with(|stack| stack.borrow_mut().push(seq));
+        Self { id: Some(seq) }
+    }
+
+    fn finish(&mut self, outcome: &Judgment<TypeValue>, remaining: usize) {
+        let Some(id) = self.id.take() else { return };
+        let (status, reason) = match outcome {
+            Judgment::Proven { warrant, .. } => ("PROVEN", warrant.0),
+            Judgment::Refuted { obstruction } => ("REFUTED", obstruction.0),
+            Judgment::Unknown { residual } => ("UNKNOWN", residual.0),
+        };
+        eprintln!("NUCLEUS_C236_EXIT:id={id}:status={status}:reason={reason}:left={remaining}");
+        C236_INFER_STACK.with(|stack| {
+            if stack.borrow_mut().pop() != Some(id) {
+                eprintln!("NUCLEUS_C236_SCOPE_INCOMPLETE:id={id}");
+            }
+        });
+    }
+}
+
+#[cfg(feature = "diagnostics")]
+impl Drop for C236InferTrace {
+    fn drop(&mut self) {
+        if let Some(id) = self.id.take() {
+            C236_INFER_STACK.with(|stack| {
+                stack.borrow_mut().pop();
+            });
+            eprintln!("NUCLEUS_C236_SCOPE_INCOMPLETE:id={id}");
+        }
+    }
+}
+
+#[cfg(feature = "diagnostics")]
+fn c236_check_conversion(
+    expression: ExprId, context: usize, frame: u64, remaining: usize,
+    actual: &TypeValue, expected: &TypeValue, result: &Judgment<()>,
+) {
+    if !c236_enabled() { return; }
+    let parent = C236_INFER_STACK.with(|stack| stack.borrow().last().copied());
+    let Some(parent) = parent else { return };
+    if expression.0 != 12 && expression.0 != 4861 && !result.is_unknown() {
+        return;
+    }
+    let (status, reason) = match result {
+        Judgment::Proven { warrant, .. } => ("PROVEN", warrant.0),
+        Judgment::Refuted { obstruction } => ("REFUTED", obstruction.0),
+        Judgment::Unknown { residual } => ("UNKNOWN", residual.0),
+    };
+    // Proven conversions and UNKNOWNs remain observation only. Printed types
+    // are bounded for artifact size; never parse truncated text as authority.
+    let lhs: String = format!("{actual:?}").chars().take(320).collect();
+    let rhs: String = format!("{expected:?}").chars().take(320).collect();
+    eprintln!("NUCLEUS_C236_CONVERSION:parent={parent}:expr={}:frame={frame}:ctx={context}:left={remaining}:status={status}:reason={reason}:actual={lhs}:expected={rhs}", expression.0);
+}
+
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub enum TypeValue {
     Sort(LevelTerm),
@@ -1635,16 +1733,20 @@ impl<'a> TypeChecker<'a> {
         let canonical = self.closed_spine_eligible(expression, (*remaining).min(4096)) == Some(true);
         let empty_frame = EnvFrame::empty();
         let (context, frame) = if canonical { (&[][..], &empty_frame) } else { (context, frame) };
+        #[cfg(feature = "diagnostics")]
+        let mut c236 = C236InferTrace::begin(expression, context.len(), frame.id(), *remaining);
         let key = (expression, frame.id());
         if let Some(value) = cache.get(&key) {
-            if canonical && matches!(value, TypeValue::Pi { .. }) {
-                return Judgment::unknown("closed-spine-returned-fixed-pi");
-            }
-            return if take_step(remaining) {
+            let cached = if canonical && matches!(value, TypeValue::Pi { .. }) {
+                Judgment::unknown("closed-spine-returned-fixed-pi")
+            } else if take_step(remaining) {
                 Judgment::proven(value.clone(), "shared-expression-inference")
             } else {
                 Judgment::unknown("type-inference-budget")
             };
+            #[cfg(feature = "diagnostics")]
+            c236.finish(&cached, *remaining);
+            return cached;
         }
         let result = self.infer_uncached(expression, context, frame, remaining, cache);
         // C223 diagnostic only: postorder, so a child that fails before an
@@ -1667,11 +1769,16 @@ impl<'a> TypeChecker<'a> {
         // This grammar cannot synthesize an opened lambda Pi. Do not extend
         // cross-scope reuse to that representation if a future rule adds it.
         if canonical && matches!(&result, Judgment::Proven { value: TypeValue::Pi { .. }, .. }) {
-            return Judgment::unknown("closed-spine-returned-fixed-pi");
+            let deferred = Judgment::unknown("closed-spine-returned-fixed-pi");
+            #[cfg(feature = "diagnostics")]
+            c236.finish(&deferred, *remaining);
+            return deferred;
         }
         if let Judgment::Proven { value, .. } = &result {
             cache.insert(key, value.clone());
         }
+        #[cfg(feature = "diagnostics")]
+        c236.finish(&result, *remaining);
         result
     }
 
@@ -2361,6 +2468,9 @@ impl<'a> TypeChecker<'a> {
                     context.len(),
                     context,
                 );
+                #[cfg(feature = "diagnostics")]
+                c236_check_conversion(expression, context.len(), frame.id(),
+                    *remaining, &value, expected, &conversion);
                 // C224 diagnostic-only isolated original source owner. All
                 // additional conversions are observations, NEVER a warrant
                 // for the production term judgment or a change to its fuel.
