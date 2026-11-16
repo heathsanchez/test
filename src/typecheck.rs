@@ -2411,10 +2411,18 @@ impl<'a> TypeChecker<'a> {
                             .filter(|n| (24..=64).contains(n))
                             .into_iter();
                         for allowance in budgets {
-                            let alternative = crate::convert::convert_with_policy_in_context(
+                            // C233 observes ONLY this cold original-source
+                            // diagnostic replay. Its return value remains
+                            // separate from the checker obligation above.
+                            let run = || crate::convert::convert_with_policy_in_context(
                                 self, &value, expected, allowance,
                                 self.delta_policy, context.len(), context,
                             );
+                            let alternative = if std::env::var_os("NUCLEUS_C233_BRANCH_PATH").is_some() {
+                                crate::convert::with_c233_trace(run)
+                            } else {
+                                run()
+                            };
                             let status = match &alternative {
                                 Judgment::Proven { warrant, .. } => format!("PROVEN:{}",warrant.0),
                                 Judgment::Refuted { obstruction } => format!("REFUTED:{}",obstruction.0),
