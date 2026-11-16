@@ -776,6 +776,38 @@ fn convert_in_context_with_congruence(
             }
             (TypeValue::Term(term), other) | (other, TypeValue::Term(term)) => {
                 let machine = checker.machine();
+                // C245 opt-in: recognize a *literal* Pi at the original
+                // source expression head without paying for a redundant
+                // evaluator traversal of its captured EnvFrame.
+                // machine.rs (Expr::Pi, pending.is_empty()) constructs
+                // precisely these same two sibling closures, so this
+                // neither synthesizes equality nor manufactures a Pi from a
+                // neutral/non-Pi head. Every binder opening and subsequent
+                // domain/codomain conversion remains checked below.
+                #[cfg(feature="diagnostics")]
+                let literal_pi = if std::env::var_os("NUCLEUS_C245_LITERAL_PI_HEAD").is_some()
+                    && matches!(&other, TypeValue::Pi { .. })
+                    && let Some(Expr::Pi {domain,body}) = checker.expression(term.expr)
+                {
+                    #[cfg(feature="diagnostics")]
+                    if std::env::var_os("NUCLEUS_C245_TRACE").is_some()
+                        && depth == context.len() && remaining <= 128
+                    {
+                        eprintln!("NUCLEUS_C245_SOURCE_PI:expr={:?}:frame={}:ctx={}:fuel={remaining}",
+                            term.expr,term.env.id(),context.len());
+                    }
+                    Some(Value::Pi {
+                        domain: term.sibling(*domain, term.env.clone()),
+                        body: term.sibling(*body, term.env.clone()),
+                    })
+                } else {None};
+                #[cfg(feature="diagnostics")]
+                let exposed = if let Some(head) = literal_pi {
+                    Judgment::proven(head, "same-source-literal-Pi-head")
+                } else {
+                    machine.expose(term.clone(), Transparency::Reducible, remaining)
+                };
+                #[cfg(not(feature="diagnostics"))]
                 let exposed = machine.expose(term.clone(), Transparency::Reducible, remaining);
                 let exposed = if exposed.is_unknown() && depth == context.len()
                     && delta_policy == DeltaPolicy::GuardedSemanticFallback
