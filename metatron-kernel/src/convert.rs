@@ -360,7 +360,13 @@ fn convert_in_context_with_congruence(
                 let mut unfold_parent = false;
                 // Positive congruence before unfolding. Failed premises only
                 // decline this rule; all nested probes share an attempt limit.
-                if congruence_depth < 16 && *congruence_attempts > 0 {
+                // C232 isolated scheduling ablation: the opaque-spine
+                // congruence probe is optional and *positive only*. When
+                // disabled, ordinary source-certified reduction and checking
+                // remain mandatory. No fuel, axiom, rule or verdict override.
+                if congruence_depth < 16 && *congruence_attempts > 0
+                    && std::env::var_os("NUCLEUS_EXPERIMENTAL_C232_SKIP_EAGER_OPAQUE_CONGRUENCE").is_none()
+                {
                     *congruence_attempts -= 1;
                     let probe_budget = remaining;
                     let opaque_left = machine.expose(left.clone(), Transparency::Opaque, probe_budget);
