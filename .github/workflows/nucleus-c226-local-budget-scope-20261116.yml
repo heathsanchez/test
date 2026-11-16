@@ -107,5 +107,5 @@ jobs:
         if: always()
         with:
           name: nucleus-c226-original-local-budget-scope
-          path: ${{ runner.temp }}/c225/
+          path: ${{ runner.temp }}/c226/
           retention-days: 60
