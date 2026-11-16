@@ -8,6 +8,92 @@ use crate::syntax::Expr;
 use crate::typecheck::{RuleKAttempt, TypeChecker, TypeValue};
 use crate::value::{Closure, EnvBinding, FreeId, Neutral, NeutralHead, Value};
 
+// C233 is an observation scope for the already-isolated C230 cold conversion
+// probe. It does not cache an outcome, charge or restore fuel, or decide a rule.
+#[cfg(feature = "diagnostics")]
+thread_local! {
+    static C233_TRACE_ACTIVE: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+    static C233_TRACE_COUNT: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
+#[cfg(feature = "diagnostics")]
+fn c233_trace_is_active() -> bool {
+    C233_TRACE_ACTIVE.with(std::cell::Cell::get)
+}
+
+#[cfg(feature = "diagnostics")]
+pub(crate) fn with_c233_trace<T>(run: impl FnOnce() -> T) -> T {
+    C233_TRACE_ACTIVE.with(|active| {
+        let prior = active.replace(true);
+        if !prior {
+            C233_TRACE_COUNT.with(|counter| counter.set(0));
+        }
+        let result = run();
+        active.set(prior);
+        result
+    })
+}
+
+#[cfg(feature = "diagnostics")]
+fn c233_value_label(value: &TypeValue) -> String {
+    match value {
+        TypeValue::Term(term) => format!(
+            "term{}@{}L{}",
+            term.expr.0, term.env.id(),
+            format!("{:?}", term.levels).replace(':', "_").chars().take(100).collect::<String>(),
+        ),
+        TypeValue::Pi { binder, .. } => format!("pi{binder:?}"),
+        TypeValue::Sort(level) => format!("sort{level:?}"),
+    }
+}
+
+#[cfg(feature = "diagnostics")]
+fn c233_event(
+    kind: &str, left: &TypeValue, right: &TypeValue,
+    depth: usize, context: usize, budget: usize, attempts: usize, outcome: &str,
+) {
+    if !c233_trace_is_active() {
+        return;
+    }
+    C233_TRACE_COUNT.with(|counter| {
+        let seq = counter.get();
+        if seq >= 512 {
+            if seq == 512 {
+                eprintln!("NUCLEUS_C233_TRUNCATED:maximum=512");
+                counter.set(513);
+            }
+            return;
+        }
+        counter.set(seq + 1);
+        eprintln!(
+            "NUCLEUS_C233_DECISION:seq={seq}:kind={kind}:left={}:right={}:budget={budget}:attempts={attempts}:outcome={outcome}:depth={depth}:ctx={context}",
+            c233_value_label(left), c233_value_label(right),
+        );
+    });
+}
+
+#[cfg(all(test, feature = "diagnostics"))]
+mod c233_trace_tests {
+    use super::*;
+
+    #[test]
+    fn observation_scope_restores_inactive_state() {
+        assert!(!c233_trace_is_active());
+        let observed = with_c233_trace(|| c233_trace_is_active());
+        assert!(observed);
+        assert!(!c233_trace_is_active());
+    }
+
+    #[test]
+    fn nested_scope_preserves_outer_scope() {
+        with_c233_trace(|| {
+            assert!(with_c233_trace(|| c233_trace_is_active()));
+            assert!(c233_trace_is_active());
+        });
+        assert!(!c233_trace_is_active());
+    }
+}
+
 type ConversionVisitKey = (crate::machine::AuthorityId, TypeValue, TypeValue);
 const INLINE_CONVERSION_VISIT_CAPACITY: usize = 8;
 const CHEAP_PROJECTION_CONGRUENCE_BUDGET: usize = 64;
@@ -157,14 +243,26 @@ fn convert_in_context_with_congruence(
 
     while let Some((left, right, depth, local_context)) = work.pop() {
         let context = local_context.as_slice();
+        #[cfg(feature = "diagnostics")]
+        c233_event("work", &left, &right, depth, context.len(), remaining,
+            *congruence_attempts, "pending");
         if left == right {
+            #[cfg(feature = "diagnostics")]
+            c233_event("identity", &left, &right, depth, context.len(), remaining,
+                *congruence_attempts, "proven");
             continue;
         }
         if remaining == 0 {
+            #[cfg(feature = "diagnostics")]
+            c233_event("budget", &left, &right, depth, context.len(), remaining,
+                *congruence_attempts, "unknown");
             return Judgment::unknown("conversion-budget-exhausted");
         }
         remaining -= 1;
         if !visited.insert((checker.authority(), left.clone(), right.clone())) {
+            #[cfg(feature = "diagnostics")]
+            c233_event("visit", &left, &right, depth, context.len(), remaining,
+                *congruence_attempts, "seen");
             continue;
         }
 
@@ -180,6 +278,9 @@ fn convert_in_context_with_congruence(
             let mut trial = allowance;
             let identical = checker.exact_source_capture_identity(lhs, rhs, &mut trial);
             remaining -= allowance.saturating_sub(trial);
+            #[cfg(feature = "diagnostics")]
+            c233_event("capture", &left, &right, depth, context.len(), remaining,
+                *congruence_attempts, if identical { "proven" } else { "declined" });
             if identical { continue; }
         }
 
@@ -291,6 +392,9 @@ fn convert_in_context_with_congruence(
                     binder: right_binder,
                 },
             ) => {
+                #[cfg(feature = "diagnostics")]
+                c233_event("pi-domain", &left_domain, &right_domain,
+                    depth, context.len(), remaining, *congruence_attempts, "open");
                 let Some(free) = fresh_local(depth) else {
                     return Judgment::unknown("binder-depth-overflow");
                 };
@@ -347,6 +451,12 @@ fn convert_in_context_with_congruence(
                 work.push((*left_domain, *right_domain, depth, local_context));
             }
             (TypeValue::Term(left), TypeValue::Term(right)) => {
+                #[cfg(feature = "diagnostics")]
+                if c233_trace_is_active() {
+                    c233_event("term-enter", &TypeValue::Term(left.clone()),
+                        &TypeValue::Term(right.clone()), depth, context.len(), remaining,
+                        *congruence_attempts, "compare");
+                }
                 if delta_policy == DeltaPolicy::GuardedSemanticFallback
                     && let (Some(left_literal), Some(right_literal)) = (
                         checker.captured_string_literal(&left, remaining),
@@ -367,10 +477,26 @@ fn convert_in_context_with_congruence(
                 if congruence_depth < 16 && *congruence_attempts > 0
                     && std::env::var_os("NUCLEUS_EXPERIMENTAL_C232_SKIP_EAGER_OPAQUE_CONGRUENCE").is_none()
                 {
+                    #[cfg(feature = "diagnostics")]
+                    if c233_trace_is_active() {
+                        c233_event("opaque-attempt", &TypeValue::Term(left.clone()),
+                            &TypeValue::Term(right.clone()), depth, context.len(), remaining,
+                            *congruence_attempts, "enter");
+                    }
                     *congruence_attempts -= 1;
                     let probe_budget = remaining;
                     let opaque_left = machine.expose(left.clone(), Transparency::Opaque, probe_budget);
                     let opaque_right = machine.expose(right.clone(), Transparency::Opaque, probe_budget);
+                    #[cfg(feature = "diagnostics")]
+                    if c233_trace_is_active() {
+                        let result = match (opaque_left.is_proven(), opaque_right.is_proven()) {
+                            (true, true) => "both-proven", (true, false) => "right-unavailable",
+                            (false, true) => "left-unavailable", (false, false) => "both-unavailable",
+                        };
+                        c233_event("opaque-expose", &TypeValue::Term(left.clone()),
+                            &TypeValue::Term(right.clone()), depth, context.len(), remaining,
+                            *congruence_attempts, result);
+                    }
                     if let (Some(Value::Neutral(lhs)), Some(Value::Neutral(rhs))) =
                         (opaque_left.proven_value(), opaque_right.proven_value())
                         && let (
@@ -399,6 +525,12 @@ fn convert_in_context_with_congruence(
                         })
                         ))
                     {
+                        #[cfg(feature = "diagnostics")]
+                        if c233_trace_is_active() {
+                            c233_event("opaque-congruence", &TypeValue::Term(left.clone()),
+                                &TypeValue::Term(right.clone()), depth, context.len(), remaining,
+                                *congruence_attempts, "proven");
+                        }
                         continue;
                     }
                 }
@@ -406,6 +538,14 @@ fn convert_in_context_with_congruence(
                     && let Some((rigid_head, congruence)) =
                         rigid_application_head_congruence(checker, &left, &right, remaining)
                 {
+                    #[cfg(feature = "diagnostics")]
+                    if c233_trace_is_active() {
+                        let outcome = if congruence.is_proven() { "proven" }
+                            else if congruence.is_refuted() { "refuted" } else { "unknown" };
+                        c233_event("rigid-congruence", &TypeValue::Term(left.clone()),
+                            &TypeValue::Term(right.clone()), depth, context.len(), remaining,
+                            *congruence_attempts, outcome);
+                    }
                     if congruence.is_proven() {
                         continue;
                     }
@@ -460,6 +600,12 @@ fn convert_in_context_with_congruence(
                         )
                     {
                         lazy_head_delta_used = true;
+                        #[cfg(feature = "diagnostics")]
+                        if c233_trace_is_active() {
+                            c233_event("lazy-delta", &TypeValue::Term(left.clone()),
+                                &TypeValue::Term(right.clone()), depth, context.len(), remaining,
+                                *congruence_attempts, "attempt");
+                        }
                         if std::env::var_os("NUCLEUS_TRACE_LAZY_DELTA").is_some() {
                             eprintln!(
                                 "NUCLEUS_LAZY_HEAD_DELTA:left={:?}:right={:?}:budget={remaining}",
@@ -503,6 +649,16 @@ fn convert_in_context_with_congruence(
                     if unfold_parent { Transparency::Full } else { Transparency::Reducible },
                     remaining,
                 );
+                #[cfg(feature = "diagnostics")]
+                if c233_trace_is_active() {
+                    let result = match (cheap_left.is_proven(), cheap_right.is_proven()) {
+                        (true, true) => "both-proven", (true, false) => "right-unavailable",
+                        (false, true) => "left-unavailable", (false, false) => "both-unavailable",
+                    };
+                    c233_event(if unfold_parent { "full-expose" } else { "reducible-expose" },
+                        &TypeValue::Term(left.clone()), &TypeValue::Term(right.clone()),
+                        depth, context.len(), remaining, *congruence_attempts, result);
+                }
                 let (Some(cheap_left), Some(cheap_right)) =
                     (cheap_left.proven_value(), cheap_right.proven_value())
                 else {
@@ -512,7 +668,7 @@ fn convert_in_context_with_congruence(
                     }
                     return Judgment::unknown("conversion-exposure");
                 };
-                match compare_values(
+                let comparison = compare_values(
                     checker,
                     cheap_left,
                     cheap_right,
@@ -521,7 +677,16 @@ fn convert_in_context_with_congruence(
                     context,
                     &mut work,
                     &mut proof_function_frees,
-                ) {
+                );
+                #[cfg(feature = "diagnostics")]
+                if c233_trace_is_active() {
+                    let outcome = if comparison.is_proven() { "proven" }
+                        else if comparison.is_refuted() { "refuted" } else { "unknown" };
+                    c233_event("value-comparison", &TypeValue::Term(left.clone()),
+                        &TypeValue::Term(right.clone()), depth, context.len(), remaining,
+                        *congruence_attempts, outcome);
+                }
+                match comparison {
                     Judgment::Proven { .. } => {}
                     Judgment::Refuted { .. }
                         if delta_policy == DeltaPolicy::GuardedSemanticFallback =>
