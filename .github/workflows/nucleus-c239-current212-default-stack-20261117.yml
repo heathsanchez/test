@@ -1,0 +1,57 @@
+name: Nucleus C239 current212 at qualified 128 MiB default
+on:
+  push:
+    branches: [research/nucleus-c239-qualified-128m-stack-20261117]
+    paths:
+      - '.github/workflows/nucleus-c239-current212-default-stack-20261117.yml'
+      - 'metatron-kernel/src/main.rs'
+      - 'metatron-kernel/scripts/c239_full_corpus_stack128.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  full-212:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Compile and test exact candidate Rust/Python source
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/c239"
+          git rev-parse HEAD > "$RUNNER_TEMP/c239/commit.txt"
+          git rev-parse HEAD:metatron-kernel/src > "$RUNNER_TEMP/c239/source-tree.txt"
+          python3 -m py_compile metatron-kernel/scripts/c239_full_corpus_stack128.py
+          (cd metatron-kernel && python3 -m unittest discover -s tests_py -v)
+          cargo test --locked --lib --manifest-path metatron-kernel/Cargo.toml
+          cargo test --locked --features diagnostics --lib --manifest-path metatron-kernel/Cargo.toml
+          cargo build --locked --release --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel "$RUNNER_TEMP/c239/nucleus"
+          sha256sum "$RUNNER_TEMP/c239/nucleus" > "$RUNNER_TEMP/c239/binary-sha256.txt"
+      - name: Recover original source/archive with immutable SHA-256
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh api repos/heathsanchez/test/actions/artifacts/14152050888/zip > "$RUNNER_TEMP/c239/current212.zip"
+          printf '%s  %s\n' 5bd679fe1f7a6988575ec469264b24cab8ddf465ae064bcb79d99541658acd2f "$RUNNER_TEMP/c239/current212.zip" | sha256sum -c -
+      - name: Require no regressions across every original source
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 metatron-kernel/scripts/c239_full_corpus_stack128.py \
+            --archive "$RUNNER_TEMP/c239/current212.zip" \
+            --checker "$RUNNER_TEMP/c239/nucleus" \
+            --flags experiments/nucleus-capture-substitution-20261107/alias-result-canonical-off-replay.json \
+            --out "$RUNNER_TEMP/c239"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-c239-complete-current212
+          path: ${{ runner.temp }}/c239/
+          retention-days: 60
