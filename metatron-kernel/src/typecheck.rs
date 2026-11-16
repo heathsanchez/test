@@ -1827,10 +1827,11 @@ impl<'a> TypeChecker<'a> {
                 let qualified_type =
                     TypeValue::Term(self.closure(primitives.type_expr, frame.clone()));
                 #[cfg(feature = "diagnostics")]
-                if std::env::var_os("NUCLEUS_C237_NAT_LITERAL_REUSE").is_some()
-                    && self.c237_qualified_nat_types.borrow().len() < 8192
-                {
-                    self.c237_qualified_nat_types.borrow_mut().insert(frame.id(), qualified_type.clone());
+                if std::env::var_os("NUCLEUS_C237_NAT_LITERAL_REUSE").is_some() {
+                    let mut cache = self.c237_qualified_nat_types.borrow_mut();
+                    if cache.len() < 8192 {
+                        cache.insert(frame.id(), qualified_type.clone());
+                    }
                 }
                 Judgment::proven(qualified_type, "qualified-Nat-literal-type")
             }
