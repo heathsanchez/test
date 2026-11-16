@@ -2376,7 +2376,9 @@ impl<'a> TypeChecker<'a> {
                     use std::sync::atomic::{AtomicUsize, Ordering};
                     static N: AtomicUsize = AtomicUsize::new(0);
                     let seq = N.fetch_add(1, Ordering::Relaxed);
-                    if seq < 4 {
+                    // Preserve all failed source-owner obligations, even
+                    // when earlier successful checks used the same ExprId.
+                    if seq < 4 || matches!(conversion, Judgment::Unknown { .. }) {
                         let res = match &conversion {
                             Judgment::Proven { warrant, .. } => format!("PROVEN:{}",warrant.0),
                             Judgment::Refuted { obstruction } => format!("REFUTED:{}",obstruction.0),
