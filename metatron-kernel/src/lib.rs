@@ -27,7 +27,21 @@ use verdict::Verdict;
 ///
 pub fn run<R: BufRead>(reader: R) -> Verdict {
     match parse(reader).and_then(|export| export.resolve()) {
-        Ok(export) => check_export(export, Limits::default()),
+        Ok(export) => {
+            // C225 diagnostic-only resource discrimination. A fresh checked
+            // source export uses precisely the same kernel; the optional
+            // increased budget is not the standard Arena/production policy.
+            #[cfg(feature = "diagnostics")]
+            let limits = std::env::var("NUCLEUS_C225_JUDGMENT_STEPS")
+                .ok()
+                .and_then(|n| n.parse::<usize>().ok())
+                .filter(|n| (65_536..=69_632).contains(n))
+                .map(|judgment_steps| Limits { judgment_steps })
+                .unwrap_or_default();
+            #[cfg(not(feature = "diagnostics"))]
+            let limits = Limits::default();
+            check_export(export, limits)
+        },
         Err(error) => {
             if std::env::var_os("NUCLEUS_TRACE_PARSE_ERROR").is_some() {
                 eprintln!("NUCLEUS_PARSE_ERROR: {error}");
