@@ -1228,6 +1228,13 @@ impl<'a> TypeChecker<'a> {
 
     // A complete structural support certificate carries no typing authority.
     pub(crate) fn complete_source_support(&self, expression: ExprId, remaining: &mut usize) -> Option<Vec<u64>> {
+        // C222 RESEARCH ABLATION ONLY: a previously completed immutable root
+        // support certificate may be re-read without the terminal per-index
+        // virtual work charge. This still clones the Vec (actual O(n) work);
+        // it is NOT a validated resource-cost improvement or production rule.
+        // Its purpose is to measure whether repeated final metering matters.
+        let c222_cached_root = std::env::var_os("NUCLEUS_EXPERIMENTAL_C222_CACHED_SUPPORT_METER_ABLATION").is_some()
+            && self.source_support.borrow().contains_key(&expression);
         #[cfg(feature="diagnostics")]
         let c221_start = *remaining;
         // Diagnostic-only classification; no acceptance or budget change.
@@ -1311,8 +1318,17 @@ impl<'a> TypeChecker<'a> {
             }
         }
         let Some(support) = complete.remove(&expression) else { c221_fail!("missing-root", expression, 0); };
-        if *remaining < support.len() { c221_fail!("final-charge-budget", expression, support.len()); }
-        *remaining -= support.len();
+        let charge = if c222_cached_root { 0 } else { support.len() };
+        #[cfg(feature="diagnostics")]
+        if c222_cached_root && std::env::var_os("NUCLEUS_C222_TRACE").is_some() {
+            use std::sync::atomic::{AtomicUsize, Ordering};
+            static LOG: AtomicUsize = AtomicUsize::new(0);
+            if LOG.fetch_add(1, Ordering::Relaxed) < 64 {
+                eprintln!("NUCLEUS_C222_CACHED_SUPPORT:root={expression:?}:len={}:previous_charge={}:current_charge={charge}:left={}",support.len(),support.len(),*remaining);
+            }
+        }
+        if *remaining < charge { c221_fail!("final-charge-budget", expression, charge); }
+        *remaining -= charge;
         Some(support)
     }
 
