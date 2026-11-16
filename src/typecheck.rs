@@ -2361,6 +2361,39 @@ impl<'a> TypeChecker<'a> {
                     context.len(),
                     context,
                 );
+                // C224 diagnostic-only isolated original source owner. All
+                // additional conversions are observations, NEVER a warrant
+                // for the production term judgment or a change to its fuel.
+                // ExprId 4771 belongs to the SHA-pinned genuine fueled-chain
+                // export; other exports never enable this environment flag.
+                #[cfg(feature="diagnostics")]
+                if std::env::var_os("NUCLEUS_C224_DECIDABLE_OWNER_LADDER").is_some()
+                    && expression.0 == 4771
+                    && context.len() == 8
+                    && let Judgment::Unknown { residual } = &conversion
+                {
+                    use std::sync::atomic::{AtomicUsize, Ordering};
+                    static SAMPLES: AtomicUsize = AtomicUsize::new(0);
+                    let sample = SAMPLES.fetch_add(1, Ordering::Relaxed);
+                    if sample < 2 {
+                        let a = format!("{value:?}").chars().take(1600).collect::<String>();
+                        let e = format!("{expected:?}").chars().take(1600).collect::<String>();
+                        eprintln!("NUCLEUS_C224_ORIGINAL:sample={sample}:expr={expression:?}:ctx={}:frame={}:left={}:reason={}:actual={a}:expected={e}",
+                            context.len(),frame.id(),*remaining,residual.0);
+                        for allowance in [27usize, 64, 128, 256, 1024, 4096] {
+                            let alternative = crate::convert::convert_with_policy_in_context(
+                                self, &value, expected, allowance,
+                                self.delta_policy, context.len(), context,
+                            );
+                            let status = match &alternative {
+                                Judgment::Proven { warrant, .. } => format!("PROVEN:{}",warrant.0),
+                                Judgment::Refuted { obstruction } => format!("REFUTED:{}",obstruction.0),
+                                Judgment::Unknown { residual } => format!("UNKNOWN:{}",residual.0),
+                            };
+                            eprintln!("NUCLEUS_C224_LADDER:sample={sample}:expr={expression:?}:fresh_budget={allowance}:result={status}");
+                        }
+                    }
+                }
                 #[cfg(feature="diagnostics")]
                 if std::env::var_os("NUCLEUS_C223_FIRST_OWNER").is_some()
                     && let Judgment::Unknown { residual } = &conversion
