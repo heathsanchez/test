@@ -2459,6 +2459,39 @@ impl<'a> TypeChecker<'a> {
         }
         let ordinary = match inferred {
             Judgment::Proven { value, .. } => {
+                // C244: source-locked, observation-only diagnostic for the
+                // dependent Pi conversion reached in the exact unchanged
+                // Fueled export under the separately tested lexical option.
+                // No probe result is used to decide the original judgment.
+                #[cfg(feature = "diagnostics")]
+                let c244_sample = {
+                    use std::sync::atomic::{AtomicUsize, Ordering};
+                    static SEEN: AtomicUsize = AtomicUsize::new(0);
+                    std::env::var_os("NUCLEUS_C244_PI_CONVERSION").is_some()
+                        && expression.0 == 4782 && context.len() == 9
+                        && *remaining <= 256
+                        && matches!(&value, TypeValue::Pi { .. })
+                        && matches!(expected, TypeValue::Term(term) if term.expr.0 == 439)
+                        && SEEN.fetch_add(1, Ordering::Relaxed) < 16
+                };
+                #[cfg(feature = "diagnostics")]
+                if c244_sample {
+                    eprintln!("NUCLEUS_C244_ORIGINAL:source=Expr4782:expected_source=Expr439:ctx={}:frame={}:fuel={}:actual={value:?}:expected={expected:?}",
+                        context.len(), frame.id(), *remaining);
+                    if let TypeValue::Term(term) = expected {
+                        eprintln!("NUCLEUS_C244_SOURCE_PI:expected_frame={}:syntax={:?}:bvar2_binding={:?}:body={:?}",
+                            term.env.id(), self.expressions.get(term.expr), term.env.lookup_with_node_id(2), self.expressions.get(ExprId(203)));
+                    }
+                }
+                #[cfg(feature = "diagnostics")]
+                let conversion = if c244_sample {
+                    crate::convert::with_c233_trace(|| crate::convert::convert_with_policy_in_context(
+                        self, &value, expected, *remaining, self.delta_policy, context.len(), context))
+                } else {
+                    crate::convert::convert_with_policy_in_context(
+                        self, &value, expected, *remaining, self.delta_policy, context.len(), context)
+                };
+                #[cfg(not(feature = "diagnostics"))]
                 let conversion = crate::convert::convert_with_policy_in_context(
                     self,
                     &value,
@@ -2468,6 +2501,23 @@ impl<'a> TypeChecker<'a> {
                     context.len(),
                     context,
                 );
+                #[cfg(feature = "diagnostics")]
+                if c244_sample {
+                    eprintln!("NUCLEUS_C244_ORIGINAL_RESULT:source=Expr4782:frame={}:fuel={}:result={conversion:?}",
+                        frame.id(), *remaining);
+                    if std::env::var_os("NUCLEUS_C244_EXTRA_PROBES").is_some() {
+                        // Explicit diagnostic alternate conversions may warm
+                        // caches; the whole-export result remains observational
+                        // and is always contrasted with a fresh unprobed process.
+                        for allowance in [64usize, 256, 2048, 8192] {
+                            let result = crate::convert::convert_with_policy_in_context(
+                                self, &value, expected, allowance,
+                                self.delta_policy, context.len(), context);
+                            eprintln!("NUCLEUS_C244_LOCAL_PROBE:source=Expr4782:ctx={}:frame={}:original_fuel={}:allowance={allowance}:result={result:?}",
+                                context.len(), frame.id(), *remaining);
+                        }
+                    }
+                }
                 #[cfg(feature = "diagnostics")]
                 c236_check_conversion(expression, context.len(), frame.id(),
                     *remaining, &value, expected, &conversion);
