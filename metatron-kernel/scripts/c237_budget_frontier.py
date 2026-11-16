@@ -12,6 +12,7 @@ from pathlib import Path
 import subprocess
 import time
 import zipfile
+from c236_infer_conversion_lineage import parse_trace
 
 C236_SHA = "52ff6dde90bab4a1bf084700287ca0915e0251ad67e4f1f6eab4d1090802fd0c"
 C236_BIN_SHA = "129ca2b623ab7e73a4352b6dd43c4b2afb02ea0d8c44e44a7365407487311ff1"
@@ -127,6 +128,26 @@ def main():
                 raise ValueError("Baseline changed from qualified C236")
             cases.append(result)
             print("C237_FRONTIER", json.dumps(result, sort_keys=True), flush=True)
+        # One further inference-ancestry replay at the exact supported C225
+        # ceiling distinguishes more global allowance from a remaining local
+        # conversion/exposure obstruction. Observer result never decides.
+        deep_env = env.copy()
+        deep_env["NUCLEUS_C225_JUDGMENT_STEPS"] = "69632"
+        deep_env["NUCLEUS_C236_INFER_ANCESTRY"] = "1"
+        deep = run(executable, original("good/perf/fueled-chain.ndjson"),
+                   deep_env, "original_69632_ancestry", args.out)
+        if deep["status"] != "completed" or deep["exit"] != 2 or not deep["terminal_original_unknown"]:
+            raise ValueError("High-budget source verdict changed: " + str(deep))
+        deep_trace = parse_trace((args.out / (deep["case"] + ".stderr")).read_text())
+        terminal_owners = deep_trace["target_owner_conversions"]
+        deep["trace_summary"] = {
+            "infer_calls": deep_trace["infer_calls"],
+            "unknown_infer_calls": deep_trace["unknown_infer_calls"],
+            "unknown_conversion_events": deep_trace["unknown_conversion_events"],
+            "target_owner_events_total": deep_trace["target_owner_events_total"],
+            "terminal_owner": terminal_owners[-1] if terminal_owners else None,
+        }
+        print("C237_CEILING_ANCESTRY", json.dumps(deep["trace_summary"], sort_keys=True), flush=True)
         protected = []
         for case in CONTROLS:
             raw_case = original(case)
@@ -154,7 +175,7 @@ def main():
         "genuine_export_sha256": FUELED_SHA,
         "experiment": "C225 diagnostic budget; same checker and original source",
         "no_semantic_rule_changed": True,
-        "frontier": cases, "protected": protected,
+        "frontier": cases, "high_budget_ancestry": deep, "protected": protected,
         "full_arena_completion": "UNKNOWN",
     }
     (args.out / "report.json").write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
