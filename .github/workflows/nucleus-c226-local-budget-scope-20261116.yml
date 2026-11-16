@@ -1,0 +1,111 @@
+name: Nucleus C226 exact local-budget scope discrimination
+on:
+  push:
+    branches: [research/nucleus-c226-local-budget-scope-20261116]
+    paths: ['.github/workflows/nucleus-c226-local-budget-scope-20261116.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  local-ladder:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RUST_MIN_STACK: '67108864'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Compile and test C226 source (no default semantic change)
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/c226"
+          git rev-parse HEAD | tee "$RUNNER_TEMP/c226/commit.txt"
+          git rev-parse HEAD:metatron-kernel/src | tee "$RUNNER_TEMP/c226/source-tree.txt"
+          cargo test --locked --lib --manifest-path metatron-kernel/Cargo.toml
+          cargo build --locked --release --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel "$RUNNER_TEMP/c226/nucleus"
+          sha256sum "$RUNNER_TEMP/c226/nucleus" > "$RUNNER_TEMP/c226/binary-sha256.txt"
+      - name: Recover independently pinned 212 unchanged Arena exports
+        run: |
+          set -euo pipefail
+          gh api repos/heathsanchez/test/actions/artifacts/14152050888/zip > "$RUNNER_TEMP/c226/current212.zip"
+          printf '%s  %s\n' 5bd679fe1f7a6988575ec469264b24cab8ddf465ae064bcb79d99541658acd2f "$RUNNER_TEMP/c226/current212.zip" | sha256sum -c -
+      - name: Source-pinned diagnostic whole-verdict budget ladder and forged controls
+        run: |
+          python3 - "$RUNNER_TEMP/c226" <<'PY'
+          import hashlib, json, os, pathlib, subprocess, sys, time, zipfile
+          out=pathlib.Path(sys.argv[1])
+          archive=zipfile.ZipFile(out/'current212.zip')
+          baseline={r['case']:r for r in json.loads(archive.read('current212.json'))}
+          assert len(baseline)==212
+          flags=json.loads(pathlib.Path('experiments/nucleus-capture-substitution-20261107/alias-result-canonical-off-replay.json').read_text())['flags']
+          assert len(flags)==24 and set(flags.values())=={'1'}
+          common={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+          common.update(flags)
+          for feature in ('C182_TYPED_PROOF_IRREL','C189_NEUTRAL_LAMBDA_PROOF','C190_QUOTIENT_IOTA','C199_TWO_PARAM_EIGHT_FIELD_RECORD','C201_CLOSED_NULLARY_ENUM','C216_RIGID_DATA_FUNCTION_CTOR'):
+              common['NUCLEUS_EXPERIMENTAL_'+feature]='1'
+          cases=[
+              'good/perf/fueled-chain.ndjson','good/perf/magma-list-pair-n7.ndjson',
+              'bad/bugs/eta-ctor-alias.ndjson',
+              'bad/bugs/rec-rule-proof-irrel.ndjson',
+              'bad/bugs/rec-rule-proof-irrel-nested.ndjson',
+              'bad/bugs/rec-type-proof-irrel.ndjson',
+              'bad/bugs/rec-rule-wrong-arg.ndjson',
+              'good/tutorial/119_reduceCtorParamRefl.mk.ndjson',
+              'good/tutorial/126_quotMkType.ndjson'
+          ]
+          rows=[]
+          for case in cases:
+              entry=baseline[case]
+              source=archive.read('inputs/'+case)
+              digest=hashlib.sha256(source).hexdigest()
+              assert digest==entry['sha256']
+              large=case.startswith('good/perf/')
+              budgets=[65536,65600,66048,69632] if large else [65536,69632]
+              outcomes=[]
+              for budget in budgets:
+                  env=common.copy()
+                  env['NUCLEUS_TRACE_DOWNSTREAM']='1'
+                  if case=='good/perf/fueled-chain.ndjson':
+                      env['NUCLEUS_C226_LOCAL_ALLOWANCE']='1'
+                  if budget>65536:
+                      env['NUCLEUS_C225_JUDGMENT_STEPS']=str(budget)
+                  start=time.monotonic()
+                  try:
+                      p=subprocess.run([str(out/'nucleus')],input=source,env=env,capture_output=True,timeout=180)
+                      verdict=p.returncode
+                      stderr=p.stderr.decode(errors='replace')
+                  except subprocess.TimeoutExpired:
+                      verdict=124
+                      stderr='TIMEOUT'
+                  (out/(case.replace('/','_')+f'_budget{budget}.stderr')).write_text(stderr)
+                  terminal=next((line for line in stderr.splitlines() if line.startswith('NUCLEUS_DOWNSTREAM:')),None)
+                  local=[line for line in stderr.splitlines() if line.startswith('NUCLEUS_C226_LOCAL:')]
+                  outcomes.append(dict(budget=budget,verdict=verdict,elapsed=round(time.monotonic()-start,3),terminal=terminal,local=local[:4]))
+              row=dict(case=case,expected=entry['expected'],prior=entry['actual'],sha256=digest,outcomes=outcomes)
+              print(json.dumps(row),flush=True)
+              rows.append(row)
+          (out/'summary.json').write_text(json.dumps(rows,indent=2))
+          for row in rows:
+              assert row['outcomes'][0]['verdict']==row['prior'],f'baseline drift {row["case"]}'
+              for obs in row['outcomes']:
+                  if row['prior']==row['expected']:
+                      assert obs['verdict']==row['expected'],f'protected verdict changed {row["case"]}: {obs}'
+                  else:
+                      assert row['expected']==0 and obs['verdict'] in (0,2),f'wrong decisive {row["case"]}: {obs}'
+          original=[r for r in rows if r['case']=='good/perf/fueled-chain.ndjson'][0]
+          gains=[(r['case'],o['budget']) for r in rows for o in r['outcomes'] if r['expected']==0 and r['prior']==2 and o['verdict']==0]
+          assert all(obs['local'] for obs in original['outcomes']), 'C226 local scope diagnostic missing'
+          record=dict(cases=len(rows),original_fueled=original['outcomes'],new_accepts=gains,all_controls_preserved=True)
+          print('C226_LOCAL_BUDGET_SCOPE',json.dumps(record),flush=True)
+          (out/'conclusion.json').write_text(json.dumps(record,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-c226-original-local-budget-scope
+          path: ${{ runner.temp }}/c225/
+          retention-days: 60
