@@ -3079,7 +3079,7 @@ fn value_as_type(checker: &TypeChecker<'_>, value: &Value, depth: usize, remaini
     match value {
         Value::Sort(level) => Some(TypeValue::Sort(level.clone())),
         Value::Pi { domain, body } => {
-            let free = fresh_local(depth)?;
+            let free = c220_value_pi_fresh_local(depth)?;
             // C170 diagnostic only: source-locked bounded allowance ladder.
             // No production/default behavior change: without diagnostics and the
             // explicit experimental flag, the historical cap is exactly 1024.
@@ -3126,6 +3126,40 @@ fn value_as_type(checker: &TypeChecker<'_>, value: &Value, depth: usize, remaini
 
 fn fresh_local(depth: usize) -> Option<FreeId> {
     u64::try_from(depth).ok().map(FreeId)
+}
+
+/*
+ * C220 opt-in identity discrimination.  This changes ONLY the local name
+ * minted for value-as-type Pi conversion; the established source-opening
+ * and capture proof is STILL REQUIRED.  Freshness alone does not establish
+ * source scope, typing or equality.  The upper-half namespace avoids
+ * ordinary depth locals and the MAX sentinel.  Unexpected collisions in
+ * imported closures remain subject to the unchanged capture check.
+ */
+fn c220_mint_unique_pi_id() -> Option<FreeId> {
+    use std::sync::atomic::{AtomicU64, Ordering};
+    static NEXT: AtomicU64 = AtomicU64::new(1u64 << 63);
+    NEXT.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |v| {
+        v.checked_add(1).filter(|next| *next < u64::MAX)
+    }).ok().map(FreeId)
+}
+
+fn c220_value_pi_fresh_local(depth: usize) -> Option<FreeId> {
+    let canonical = fresh_local(depth)?;
+    if std::env::var_os("NUCLEUS_EXPERIMENTAL_C220_UNIQUE_PI_BINDER").is_none() {
+        return Some(canonical);
+    }
+    if canonical.0 >= (1u64 << 63) { return None; }
+    let new = c220_mint_unique_pi_id()?;
+    #[cfg(feature = "diagnostics")]
+    if std::env::var_os("NUCLEUS_C220_TRACE").is_some() {
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        static REPORTED: AtomicUsize = AtomicUsize::new(0);
+        if REPORTED.fetch_add(1, Ordering::Relaxed) < 32 {
+            eprintln!("NUCLEUS_C220_BINDER:depth={depth}:canonical={canonical:?}:generated={new:?}:capture_check=retained");
+        }
+    }
+    Some(new)
 }
 
 // A source body still has its leading de Bruijn binder, so drop that
@@ -3407,5 +3441,26 @@ mod c197_registered_nat_pred_conversion_controls {
         let checker_no_sub = TypeChecker::new(&expressions, &levels, &no_sub);
         assert!(compare(&checker_no_sub, &zero, &pred, 128).is_unknown(),
             "missing source-native subtraction authority must remain UNKNOWN");
+    }
+}
+
+#[cfg(test)]
+mod c220_unique_pi_identity_controls {
+    use super::*;
+
+    #[test]
+    fn minted_names_are_distinct_and_do_not_disable_capture_checks() {
+        let first = c220_mint_unique_pi_id().expect("first");
+        let second = c220_mint_unique_pi_id().expect("second");
+        assert_ne!(first, second);
+        assert!(first.0 >= (1u64 << 63) && second.0 >= (1u64 << 63));
+        assert_ne!(first, FreeId(u64::MAX));
+        assert_ne!(first, fresh_local(0).unwrap());
+        let old = EnvFrame::empty();
+        let captured = old.extend_free(first);
+        let mut budget = 16;
+        assert_eq!(captured.certified_lexical_absence(first, 1, &mut budget), Some(false));
+        let mut budget = 16;
+        assert_eq!(old.certified_lexical_absence(first, 0, &mut budget), Some(true));
     }
 }
