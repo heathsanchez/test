@@ -2389,7 +2389,7 @@ impl<'a> TypeChecker<'a> {
                     }
                 }
                 #[cfg(feature="diagnostics")]
-                if std::env::var_os("NUCLEUS_C229_DECIDABLE_THRESHOLD").is_some()
+                if std::env::var_os("NUCLEUS_C230_SINGLE_BUDGET").is_some()
                     && ((expression.0 == 4771 && context.len() == 8)
                         || (expression.0 == 4777 && context.len() == 10))
                     && let Judgment::Unknown { residual } = &conversion
@@ -2400,9 +2400,17 @@ impl<'a> TypeChecker<'a> {
                     if sample < 2 {
                         let a = format!("{value:?}").chars().take(1600).collect::<String>();
                         let e = format!("{expected:?}").chars().take(1600).collect::<String>();
-                        eprintln!("NUCLEUS_C229_ORIGINAL:sample={sample}:expr={expression:?}:ctx={}:frame={}:left={}:reason={}:actual={a}:expected={e}",
+                        eprintln!("NUCLEUS_C230_ORIGINAL:sample={sample}:expr={expression:?}:ctx={}:frame={}:left={}:reason={}:actual={a}:expected={e}",
                             context.len(),frame.id(),*remaining,residual.0);
-                        for allowance in [24usize,25,26,27,28,29,30,31,32,33,35,37,40,44,48,56,64] {
+                        // One cold-origin conversion probe per independent checker
+                        // process: no earlier budget trial may prime the
+                        // conversion/exposure caches. Diagnostic result is
+                        // never substituted for the original verdict.
+                        let budgets = std::env::var("NUCLEUS_C230_SINGLE_BUDGET").ok()
+                            .and_then(|s| s.parse::<usize>().ok())
+                            .filter(|n| (24..=64).contains(n))
+                            .into_iter();
+                        for allowance in budgets {
                             let alternative = crate::convert::convert_with_policy_in_context(
                                 self, &value, expected, allowance,
                                 self.delta_policy, context.len(), context,
@@ -2412,7 +2420,7 @@ impl<'a> TypeChecker<'a> {
                                 Judgment::Refuted { obstruction } => format!("REFUTED:{}",obstruction.0),
                                 Judgment::Unknown { residual } => format!("UNKNOWN:{}",residual.0),
                             };
-                            eprintln!("NUCLEUS_C229_LADDER:sample={sample}:expr={expression:?}:fresh_budget={allowance}:result={status}");
+                            eprintln!("NUCLEUS_C230_LADDER:sample={sample}:expr={expression:?}:fresh_budget={allowance}:result={status}");
                         }
                     }
                 }
