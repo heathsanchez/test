@@ -3141,6 +3141,43 @@ pub(crate) fn source_opening_avoids_capture(
     if *budget==0{return false;}
     *budget-=1;
     if checker.has_source_opening_proof(body,free){return true;}
+    // C219 opt-in: an additional, independently justified sufficient proof.
+    // The source intrinsic BVar support must be complete, and its maximum
+    // free index minus the virtual binder must fit the original environment.
+    // Only then may an exhaustive lexical scan certify absence of this FreeId.
+    // No finding or proof is imported from nano-lean or the expected verdict.
+    if std::env::var_os("NUCLEUS_EXPERIMENTAL_C219_LEXICAL_ABSENCE").is_some() {
+        let allowance = (*budget).min(256);
+        let mut spare = allowance;
+        let support = checker.complete_source_support(body.expr, &mut spare);
+        let mut outcome = "source-support-unavailable";
+        if let Some(support) = support {
+            let min_direct = support.into_iter().filter(|&i| i > 0).max().unwrap_or(0);
+            match body.env.certified_lexical_absence(free, min_direct, &mut spare) {
+                Some(true) => {
+                    *budget -= allowance - spare;
+                    checker.retain_source_opening_proof(body,free);
+                    #[cfg(feature="diagnostics")]
+                    if std::env::var_os("NUCLEUS_C219_TRACE").is_some() {
+                        eprintln!("NUCLEUS_C219_OPEN:kind=lexical-certified:expr={:?}:frame={}:free={free:?}:spent={}",
+                            body.expr,body.env.id(),allowance-spare);
+                    }
+                    return true;
+                }
+                Some(false) => outcome = "lexical-capture-or-binding-gap",
+                None => outcome = "lexical-budget",
+            }
+        }
+        // Opt-in research work is charged even when the original path runs.
+        *budget -= allowance - spare;
+        #[cfg(feature="diagnostics")]
+        if std::env::var_os("NUCLEUS_C219_TRACE").is_some() {
+            eprintln!("NUCLEUS_C219_OPEN:kind=fallback:reason={outcome}:expr={:?}:frame={}:free={free:?}:spent={}",
+                body.expr,body.env.id(),allowance-spare);
+        }
+        #[cfg(not(feature="diagnostics"))]
+        let _ = outcome;
+    }
     let safe=source_opening_avoids_capture_uncached(checker,body,free,budget);
     #[cfg(feature="diagnostics")]
     if !safe && std::env::var_os("NUCLEUS_C217_OPENING_REASON").is_some() {
