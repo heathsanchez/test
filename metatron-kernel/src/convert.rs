@@ -3139,7 +3139,7 @@ fn fresh_local(depth: usize) -> Option<FreeId> {
 fn c220_mint_unique_pi_id() -> Option<FreeId> {
     use std::sync::atomic::{AtomicU64, Ordering};
     static NEXT: AtomicU64 = AtomicU64::new(1u64 << 63);
-    NEXT.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |v| {
+    NEXT.try_update(Ordering::Relaxed, Ordering::Relaxed, |v| {
         v.checked_add(1).filter(|next| *next < u64::MAX)
     }).ok().map(FreeId)
 }
@@ -3447,6 +3447,7 @@ mod c197_registered_nat_pred_conversion_controls {
 #[cfg(test)]
 mod c220_unique_pi_identity_controls {
     use super::*;
+    use crate::value::EnvFrame;
 
     #[test]
     fn minted_names_are_distinct_and_do_not_disable_capture_checks() {
