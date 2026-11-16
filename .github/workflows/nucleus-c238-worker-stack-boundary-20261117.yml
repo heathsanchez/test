@@ -1,0 +1,57 @@
+name: Nucleus C238 exact-original worker-stack boundary
+on:
+  push:
+    branches: [research/nucleus-c238-worker-stack-boundary-20261117]
+    paths:
+      - '.github/workflows/nucleus-c238-worker-stack-boundary-20261117.yml'
+      - 'metatron-kernel/src/main.rs'
+      - 'metatron-kernel/scripts/c238_worker_stack_boundary.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  source-qualified-stack-sweep:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RUST_MIN_STACK: '67108864'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Build checker; preserve Rust and Python tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/c238"
+          git rev-parse HEAD > "$RUNNER_TEMP/c238/commit.txt"
+          git rev-parse HEAD:metatron-kernel/src > "$RUNNER_TEMP/c238/source-tree.txt"
+          python3 -m py_compile metatron-kernel/scripts/c238_worker_stack_boundary.py
+          (cd metatron-kernel && python3 -m unittest discover -s tests_py -v)
+          cargo test --locked --lib --manifest-path metatron-kernel/Cargo.toml
+          cargo test --locked --features diagnostics --lib --manifest-path metatron-kernel/Cargo.toml
+          cargo build --locked --release --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel "$RUNNER_TEMP/c238/nucleus"
+      - name: Recover unchanged SHA-pinned source archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh api repos/heathsanchez/test/actions/artifacts/14152050888/zip > "$RUNNER_TEMP/c238/current212.zip"
+          printf '%s  %s\n' 5bd679fe1f7a6988575ec469264b24cab8ddf465ae064bcb79d99541658acd2f "$RUNNER_TEMP/c238/current212.zip" | sha256sum -c -
+      - name: Compare 64, 128, 256MiB without semantic or budget changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 metatron-kernel/scripts/c238_worker_stack_boundary.py \
+            --archive "$RUNNER_TEMP/c238/current212.zip" \
+            --checker "$RUNNER_TEMP/c238/nucleus" \
+            --flags experiments/nucleus-capture-substitution-20261107/alias-result-canonical-off-replay.json \
+            --out "$RUNNER_TEMP/c238"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-c238-worker-stack-boundary
+          path: ${{ runner.temp }}/c238/
+          retention-days: 60
