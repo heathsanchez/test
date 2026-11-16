@@ -31,9 +31,9 @@ CONTROLS = (
     "good/tutorial/126_quotMkType.ndjson",
 )
 TERMINAL = "NUCLEUS_DOWNSTREAM:name=chain6_datF:stage=theorem.value:verdict=UNKNOWN:reason=application-function-type"
-ENTER = re.compile(r"^NUCLEUS_C236_ENTER:id=(\\d+):parent=(-|\\d+):expr=(\\d+):frame=(\\d+):ctx=(\\d+):budget=(\\d+)$")
-EXIT = re.compile(r"^NUCLEUS_C236_EXIT:id=(\\d+):status=(PROVEN|REFUTED|UNKNOWN):reason=([^:]+):left=(\\d+)$")
-CONVERSION = re.compile(r"^NUCLEUS_C236_CONVERSION:parent=(\\d+):expr=(\\d+):frame=(\\d+):ctx=(\\d+):left=(\\d+):status=(PROVEN|REFUTED|UNKNOWN):reason=([^:]+):actual=(.*):expected=(.*)$")
+ENTER = re.compile(r"^NUCLEUS_C236_ENTER:id=(\d+):parent=(-|\d+):expr=(\d+):frame=(\d+):ctx=(\d+):budget=(\d+)$")
+EXIT = re.compile(r"^NUCLEUS_C236_EXIT:id=(\d+):status=(PROVEN|REFUTED|UNKNOWN):reason=([^:]+):left=(\d+)$")
+CONVERSION = re.compile(r"^NUCLEUS_C236_CONVERSION:parent=(\d+):expr=(\d+):frame=(\d+):ctx=(\d+):left=(\d+):status=(PROVEN|REFUTED|UNKNOWN):reason=([^:]+):actual=(.*):expected=(.*)$")
 
 def parse_trace(log: str) -> dict:
     if "NUCLEUS_C236_TRUNCATED" in log or "NUCLEUS_C236_SCOPE_INCOMPLETE" in log:
@@ -108,7 +108,7 @@ def parse_trace(log: str) -> dict:
     }
 
 def unit_tests():
-    log = "\\n".join([
+    log = "\n".join([
         "NUCLEUS_C236_ENTER:id=0:parent=-:expr=7199:frame=0:ctx=0:budget=65536",
         "NUCLEUS_C236_ENTER:id=1:parent=0:expr=12:frame=7:ctx=4:budget=100",
         "NUCLEUS_C236_EXIT:id=1:status=PROVEN:reason=shared-expression-inference:left=90",
@@ -120,7 +120,7 @@ def unit_tests():
     assert out["target_owner_conversions"][0]["ancestry"][0]["expr"] == 7199
     for broken in (log.replace("parent=0:expr=12", "parent=4:expr=12"),
                    log.replace("NUCLEUS_C236_EXIT:id=1:", "NUCLEUS_C236_EXIT:id=3:"),
-                   log + "\\nNUCLEUS_C236_TRUNCATED:maximum=100000"):
+                   log + "\nNUCLEUS_C236_TRUNCATED:maximum=100000"):
         try:
             parse_trace(broken)
         except ValueError:
@@ -217,7 +217,7 @@ def main():
         "original": original, "controls": controls,
         "next": "Locate the first source-authorized missing inference/conversion premise on a complete active ancestor path, then validate independently against the original Lean judgment.",
     }
-    (args.out / "report.json").write_text(json.dumps(report, indent=2, sort_keys=True) + "\\n")
+    (args.out / "report.json").write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
     print("C236_SUMMARY", json.dumps({
         "original_exits": [x["exit"] for x in original],
         "control_exits": [x["exit"] for x in controls],
