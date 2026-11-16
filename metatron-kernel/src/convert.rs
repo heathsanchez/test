@@ -812,11 +812,20 @@ fn convert_in_context_with_congruence(
                         None
                     };
                     let converted = if let Some(opened) = opened {
+                        // The baseline deliberately repeats the prior source
+                        // opening, preserving its exact old work/verdict path.
+                        // Only the candidate is allowed to retain the witness.
                         #[cfg(feature="diagnostics")]
-                        if std::env::var_os("NUCLEUS_C241_TRACE").is_some() {
-                            eprintln!("NUCLEUS_C241_REUSED_CERTIFIED_PI:depth={depth}:ctx={}:left={remaining}",context.len());
+                        if std::env::var_os("NUCLEUS_C241_REUSE_CERTIFIED_PI").is_some() {
+                            if std::env::var_os("NUCLEUS_C241_TRACE").is_some() {
+                                eprintln!("NUCLEUS_C241_REUSED_CERTIFIED_PI:depth={depth}:ctx={}:left={remaining}",context.len());
+                            }
+                            Some(opened)
+                        } else {
+                            value_as_type(checker, full, depth, &mut remaining)
                         }
-                        Some(opened)
+                        #[cfg(not(feature="diagnostics"))]
+                        { value_as_type(checker, full, depth, &mut remaining) }
                     } else {
                         let recovered = if depth == context.len() {
                             checked_source_type_value(checker, term.clone(), context, remaining)
