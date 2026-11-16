@@ -35,7 +35,7 @@ pub fn run<R: BufRead>(reader: R) -> Verdict {
             let limits = std::env::var("NUCLEUS_C225_JUDGMENT_STEPS")
                 .ok()
                 .and_then(|n| n.parse::<usize>().ok())
-                .filter(|n| (65_536..=69_632).contains(n))
+                .filter(|n| (65_536..=131_072).contains(n))
                 .map(|judgment_steps| Limits { judgment_steps })
                 .unwrap_or_default();
             #[cfg(not(feature = "diagnostics"))]
