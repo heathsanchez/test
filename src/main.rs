@@ -4,13 +4,14 @@ use std::process::ExitCode;
 fn main() -> ExitCode {
     // Exported binding DAGs can be deep even when inference is shared. Keep
     // the checker stack independent of the launcher's platform default.
-    // C238: observation-only bounded stack A/B. Default remains 64 MiB.
+    // C239: 128 MiB default after exact-source C238 64/128/256 MiB replay.
+    // The 64 MiB historical choice remains available as a negative control.
     // Increasing stack cannot turn an unproved typing judgment into a proof;
     // source inputs, checker rules, and step budget are unchanged.
     let worker_stack_mib = std::env::var("NUCLEUS_C238_STACK_MIB").ok()
         .and_then(|value| value.parse::<usize>().ok())
         .filter(|value| matches!(value, 64 | 128 | 256))
-        .unwrap_or(64);
+        .unwrap_or(128);
     match std::thread::Builder::new()
         .name("nucleus-checker".into())
         .stack_size(worker_stack_mib * 1024 * 1024)
