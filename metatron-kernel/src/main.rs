@@ -6,7 +6,11 @@ fn main() -> ExitCode {
     // the checker stack independent of the launcher's platform default.
     match std::thread::Builder::new()
         .name("nucleus-checker".into())
-        .stack_size(64 * 1024 * 1024)
+        // C238: genuine 4,000-lambda app-lam export overflows the prior 64-MiB
+        // evaluation thread. 128 MiB ACCEPTs the unchanged source on two
+        // earlier exact binaries; this changes resource capacity, not logic.
+        // Qualification must still cover the full original Arena corpus.
+        .stack_size(128 * 1024 * 1024)
         .spawn(check_input)
     {
         Ok(worker) => worker.join().unwrap_or(ExitCode::from(3)),
