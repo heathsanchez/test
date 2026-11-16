@@ -140,7 +140,7 @@ def run(checker: Path, source: bytes, environment: dict, directory: Path,
         "terminal_count": stderr.splitlines().count(TERMINAL),
         "source_sha256": hashlib.sha256(source).hexdigest(),
         "stderr_file": label + ".stderr",
-        "trace": parse_trace(stderr) if FLAG in environment else None,
+        "trace": parse_trace(stderr) if FLAG in environment and label.startswith("fueled_") else None,
     }
 
 def main():
