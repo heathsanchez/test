@@ -1228,20 +1228,41 @@ impl<'a> TypeChecker<'a> {
 
     // A complete structural support certificate carries no typing authority.
     pub(crate) fn complete_source_support(&self, expression: ExprId, remaining: &mut usize) -> Option<Vec<u64>> {
+        #[cfg(feature="diagnostics")]
+        let c221_start = *remaining;
+        // Diagnostic-only classification; no acceptance or budget change.
+        macro_rules! c221_fail {
+            ($reason:expr, $node:expr, $width:expr) => {{
+                #[cfg(feature="diagnostics")]
+                if std::env::var_os("NUCLEUS_C221_SUPPORT_REASON").is_some() {
+                    use std::sync::atomic::{AtomicUsize, Ordering};
+                    static REPORTS: AtomicUsize = AtomicUsize::new(0);
+                    let ordinal = REPORTS.fetch_add(1, Ordering::Relaxed);
+                    if ordinal < 300 || ordinal % 1000 == 0 {
+                        eprintln!(
+                            "NUCLEUS_C221_SUPPORT:reason={}:root={:?}:node={:?}:initial={}:remaining={}:support_len={}:ordinal={ordinal}",
+                            $reason, expression, $node, c221_start, *remaining, $width
+                        );
+                    }
+                }
+                return None;
+            }};
+        }
         let mut pending = vec![(expression, false)];
         let mut active = std::collections::HashSet::new();
         let mut complete = HashMap::<ExprId, Vec<u64>>::new();
         while let Some((id, finish)) = pending.pop() {
             if !finish {
-                if !take_step(remaining) { return None }
+                if !take_step(remaining) { c221_fail!("visit-budget", id, 0); }
                 if complete.contains_key(&id) { continue }
                 if let Some(support) = self.source_support.borrow().get(&id).cloned() {
                     complete.insert(id, support);
                     continue;
                 }
-                if !active.insert(id) { return None } // no cyclic coinduction
+                if !active.insert(id) { c221_fail!("cycle", id, 0); } // no cyclic coinduction
                 pending.push((id, true));
-                match self.expressions.get(id)? {
+                let Some(expr) = self.expressions.get(id) else { c221_fail!("missing-expression", id, 0); };
+                match expr {
                     Expr::App { fun, arg } => {
                         pending.push((*arg, false)); pending.push((*fun, false));
                     }
@@ -1258,16 +1279,18 @@ impl<'a> TypeChecker<'a> {
             } else {
                 let mut support = std::collections::BTreeSet::new();
                 let mut add = |child: ExprId, under_binder: bool| -> Option<()> {
-                    for index in complete.get(&child)? {
-                        if !take_step(remaining) { return None }
+                    let Some(child_support) = complete.get(&child) else { c221_fail!("missing-child", child, 0); };
+                    for index in child_support {
+                        if !take_step(remaining) { c221_fail!("merge-budget", child, support.len()); }
                         if !under_binder || *index > 0 {
                             support.insert(if under_binder { index - 1 } else { *index });
-                            if support.len() > 128 { return None }
+                            if support.len() > 128 { c221_fail!("wide-support", id, support.len()); }
                         }
                     }
                     Some(())
                 };
-                match self.expressions.get(id)? {
+                let Some(expr) = self.expressions.get(id) else { c221_fail!("missing-expression", id, 0); };
+                match expr {
                     Expr::BVar(index) => { support.insert(*index); }
                     Expr::App { fun, arg } => { add(*fun, false)?; add(*arg, false)?; }
                     Expr::Lam { domain, body } | Expr::Pi { domain, body } => {
@@ -1287,8 +1310,8 @@ impl<'a> TypeChecker<'a> {
                 complete.insert(id, support);
             }
         }
-        let support = complete.remove(&expression)?;
-        if *remaining < support.len() { return None }
+        let Some(support) = complete.remove(&expression) else { c221_fail!("missing-root", expression, 0); };
+        if *remaining < support.len() { c221_fail!("final-charge-budget", expression, support.len()); }
         *remaining -= support.len();
         Some(support)
     }
