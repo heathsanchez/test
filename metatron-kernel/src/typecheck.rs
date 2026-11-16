@@ -214,6 +214,11 @@ pub struct TypeChecker<'a> {
     closed_spine_eligibility: RefCell<HashMap<ExprId, bool>>,
     source_support: RefCell<HashMap<ExprId, Vec<u64>>>,
     paired_source_support: RefCell<HashMap<(ExprId, ExprId), Vec<(u64, u64)>>>,
+    // C237 diagnostic experiment. A proven Nat-literal source type can be
+    // reused only with an IDENTICAL original frame id and immutable Nat
+    // qualification; no closure/binder transport is assumed.
+    #[cfg(feature = "diagnostics")]
+    c237_qualified_nat_types: RefCell<HashMap<u64, TypeValue>>,
     checked_frames: RefCell<HashMap<CheckedFrameKey, EnvFrame>>,
     // Completed pure source-freshness proofs, local to these borrowed immutable
     // source tables. Retained closures pin frame and level allocation identity.
@@ -270,6 +275,8 @@ impl<'a> TypeChecker<'a> {
             closed_spine_eligibility: RefCell::new(HashMap::new()),
             source_support: RefCell::new(HashMap::new()),
             paired_source_support: RefCell::new(HashMap::new()),
+            #[cfg(feature = "diagnostics")]
+            c237_qualified_nat_types: RefCell::new(HashMap::new()),
             checked_frames: RefCell::new(HashMap::new()),
             source_opening_proofs:RefCell::new(HashMap::new()),
             formed_expected: RefCell::new(std::collections::HashSet::new()),
@@ -295,6 +302,8 @@ impl<'a> TypeChecker<'a> {
             closed_spine_eligibility: RefCell::new(HashMap::new()),
             source_support: RefCell::new(HashMap::new()),
             paired_source_support: RefCell::new(HashMap::new()),
+            #[cfg(feature = "diagnostics")]
+            c237_qualified_nat_types: RefCell::new(HashMap::new()),
             checked_frames: RefCell::new(HashMap::new()),
             source_opening_proofs:RefCell::new(HashMap::new()),
             formed_expected: RefCell::new(std::collections::HashSet::new()),
@@ -1735,6 +1744,20 @@ impl<'a> TypeChecker<'a> {
         let (context, frame) = if canonical { (&[][..], &empty_frame) } else { (context, frame) };
         #[cfg(feature = "diagnostics")]
         let mut c236 = C236InferTrace::begin(expression, context.len(), frame.id(), *remaining);
+        // C237 opt-in: exact-frame, proof-only Nat-literal type reuse.
+        // The first actual source inference MUST succeed and populate this
+        // frame's immutable Nat carrier. No synthetic equality or unknown
+        // promotion; the original procedure remains default.
+        #[cfg(feature = "diagnostics")]
+        if std::env::var_os("NUCLEUS_C237_NAT_LITERAL_REUSE").is_some()
+            && matches!(self.expressions.get(expression), Some(Expr::NatLit(_)))
+            && let Some(cached_nat_type) =
+                self.c237_qualified_nat_types.borrow().get(&frame.id()).cloned()
+        {
+            let reused = Judgment::proven(cached_nat_type, "checked-Nat-literal-type-reuse");
+            c236.finish(&reused, *remaining);
+            return reused;
+        }
         let key = (expression, frame.id());
         if let Some(value) = cache.get(&key) {
             let cached = if canonical && matches!(value, TypeValue::Pi { .. }) {
@@ -1801,10 +1824,15 @@ impl<'a> TypeChecker<'a> {
                 let Some(primitives) = self.environment.nat_primitives() else {
                     return Judgment::unknown("nat-literal-without-qualified-Nat");
                 };
-                Judgment::proven(
-                    TypeValue::Term(self.closure(primitives.type_expr, frame.clone())),
-                    "qualified-Nat-literal-type",
-                )
+                let qualified_type =
+                    TypeValue::Term(self.closure(primitives.type_expr, frame.clone()));
+                #[cfg(feature = "diagnostics")]
+                if std::env::var_os("NUCLEUS_C237_NAT_LITERAL_REUSE").is_some()
+                    && self.c237_qualified_nat_types.borrow().len() < 8192
+                {
+                    self.c237_qualified_nat_types.borrow_mut().insert(frame.id(), qualified_type.clone());
+                }
+                Judgment::proven(qualified_type, "qualified-Nat-literal-type")
             }
             Expr::StrLit(_) => match self.environment.string_literal_type() {
                 Some(ty)=>Judgment::proven(TypeValue::Term(self.closure(ty,EnvFrame::empty())),"qualified-native-String-literal-type"),
@@ -4355,6 +4383,8 @@ impl<'a> TypeChecker<'a> {
             closed_spine_eligibility: RefCell::new(HashMap::new()),
             source_support: RefCell::new(HashMap::new()),
             paired_source_support: RefCell::new(HashMap::new()),
+            #[cfg(feature = "diagnostics")]
+            c237_qualified_nat_types: RefCell::new(HashMap::new()),
             checked_frames: RefCell::new(HashMap::new()),
             source_opening_proofs: RefCell::new(HashMap::new()),
             formed_expected: RefCell::new(std::collections::HashSet::new()),
@@ -5245,6 +5275,8 @@ impl<'a> TypeChecker<'a> {
             closed_spine_eligibility: RefCell::new(HashMap::new()),
             source_support: RefCell::new(HashMap::new()),
             paired_source_support: RefCell::new(HashMap::new()),
+            #[cfg(feature = "diagnostics")]
+            c237_qualified_nat_types: RefCell::new(HashMap::new()),
             checked_frames: RefCell::new(HashMap::new()),
             source_opening_proofs:RefCell::new(HashMap::new()),
             formed_expected: RefCell::new(std::collections::HashSet::new()),
@@ -5409,6 +5441,8 @@ impl<'a> TypeChecker<'a> {
             closed_spine_eligibility: RefCell::new(HashMap::new()),
             source_support: RefCell::new(HashMap::new()),
             paired_source_support: RefCell::new(HashMap::new()),
+            #[cfg(feature = "diagnostics")]
+            c237_qualified_nat_types: RefCell::new(HashMap::new()),
             checked_frames: RefCell::new(HashMap::new()),
             source_opening_proofs:RefCell::new(HashMap::new()),
             formed_expected: RefCell::new(std::collections::HashSet::new()),
@@ -5458,6 +5492,8 @@ impl<'a> TypeChecker<'a> {
             closed_spine_eligibility: RefCell::new(HashMap::new()),
             source_support: RefCell::new(HashMap::new()),
             paired_source_support: RefCell::new(HashMap::new()),
+            #[cfg(feature = "diagnostics")]
+            c237_qualified_nat_types: RefCell::new(HashMap::new()),
             checked_frames: RefCell::new(HashMap::new()),
             source_opening_proofs:RefCell::new(HashMap::new()),
             formed_expected: RefCell::new(std::collections::HashSet::new()),
