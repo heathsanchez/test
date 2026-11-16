@@ -1,4 +1,5 @@
 name: Nucleus C226 exact local-budget scope discrimination
+# Preserve later failing source-owner observations, not merely the first four successes.
 on:
   push:
     branches: [research/nucleus-c226-local-budget-scope-20261116]
@@ -84,7 +85,7 @@ jobs:
                   (out/(case.replace('/','_')+f'_budget{budget}.stderr')).write_text(stderr)
                   terminal=next((line for line in stderr.splitlines() if line.startswith('NUCLEUS_DOWNSTREAM:')),None)
                   local=[line for line in stderr.splitlines() if line.startswith('NUCLEUS_C226_LOCAL:')]
-                  outcomes.append(dict(budget=budget,verdict=verdict,elapsed=round(time.monotonic()-start,3),terminal=terminal,local=local[:4]))
+                  outcomes.append(dict(budget=budget,verdict=verdict,elapsed=round(time.monotonic()-start,3),terminal=terminal,local=local[-12:]))
               row=dict(case=case,expected=entry['expected'],prior=entry['actual'],sha256=digest,outcomes=outcomes)
               print(json.dumps(row),flush=True)
               rows.append(row)
