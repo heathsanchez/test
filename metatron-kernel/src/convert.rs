@@ -3322,6 +3322,19 @@ fn value_as_type(checker: &TypeChecker<'_>, value: &Value, depth: usize, remaini
             let mut opening_budget = allowance;
             let safe = source_opening_avoids_capture(checker, body, free, &mut opening_budget);
             *remaining -= allowance - opening_budget;
+            // C242: observation only. The original Fueled source has a
+            // Value::Pi with body Expr203 in Gamma11. Record whether the
+            // genuine source capture check fails due to zero fuel, or after
+            // a nonzero source-support/capture attempt. No retry, no cache,
+            // no fuel restoration and no result selection from this trace.
+            #[cfg(feature="diagnostics")]
+            if std::env::var_os("NUCLEUS_C242_PI_OPENING_CAUSE").is_some()
+                && body.expr == crate::id::ExprId(203) && depth == 11
+            {
+                eprintln!("NUCLEUS_C242_PI_TRIAL:expr=203:depth={depth}:ctx_specific=yes:frame={}:free={}:allowance={allowance}:spent={}:left={}:safe={safe}:class={}",
+                    body.env.id(), free.0, allowance-opening_budget, *remaining,
+                    if safe { "proven" } else if allowance == 0 { "no-fuel" } else { "capture-or-support" });
+            }
             #[cfg(feature="diagnostics")]
             if std::env::var_os("NUCLEUS_C168_OPENING_REASON").is_some()
                 && body.expr == crate::id::ExprId(15367)
