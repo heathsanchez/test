@@ -1647,6 +1647,23 @@ impl<'a> TypeChecker<'a> {
             };
         }
         let result = self.infer_uncached(expression, context, frame, remaining, cache);
+        // C223 diagnostic only: postorder, so a child that fails before an
+        // enclosing application is observable as a distinct source owner.
+        // No theorem-name dispatch, inference change, or budget change.
+        #[cfg(feature="diagnostics")]
+        if std::env::var_os("NUCLEUS_C223_FIRST_OWNER").is_some()
+            && let Judgment::Unknown { residual } = &result
+        {
+            use std::sync::atomic::{AtomicUsize, Ordering};
+            static N: AtomicUsize = AtomicUsize::new(0);
+            let n = N.fetch_add(1, Ordering::Relaxed);
+            if n < 320 || n % 97 == 0 {
+                eprintln!(
+                    "NUCLEUS_C223_INFER_UNKNOWN:seq={n}:expr={expression:?}:frame={}:ctx={}:left={}:reason={}:source={:?}",
+                    frame.id(), context.len(), *remaining, residual.0, self.expressions.get(expression)
+                );
+            }
+        }
         // This grammar cannot synthesize an opened lambda Pi. Do not extend
         // cross-scope reuse to that representation if a future rule adds it.
         if canonical && matches!(&result, Judgment::Proven { value: TypeValue::Pi { .. }, .. }) {
@@ -1850,6 +1867,24 @@ impl<'a> TypeChecker<'a> {
                     Some((TypeValue::Term(domain.clone()), PiBody::Closure(body.clone())))
                 });
                 let Some((domain, body)) = checked_view else {
+                    #[cfg(feature="diagnostics")]
+                    if std::env::var_os("NUCLEUS_C223_FIRST_OWNER").is_some() {
+                        use std::sync::atomic::{AtomicUsize, Ordering};
+                        static APP: AtomicUsize = AtomicUsize::new(0);
+                        let n = APP.fetch_add(1, Ordering::Relaxed);
+                        if n < 192 || n % 61 == 0 {
+                            let cause = match &function_type {
+                                Judgment::Unknown { residual } => residual.0,
+                                Judgment::Refuted { obstruction } => obstruction.0,
+                                Judgment::Proven { .. } => "formed-function-type-without-certified-Pi",
+                            };
+                            eprintln!(
+                                "NUCLEUS_C223_APP_OWNER:seq={n}:application={expression:?}:function={fun:?}:argument={arg:?}:frame={}:ctx={}:left={}:function_cause={cause}:function_type={}",
+                                frame.id(), context.len(), *remaining,
+                                format!("{function_type:?}").chars().take(350).collect::<String>(),
+                            );
+                        }
+                    }
                     #[cfg(feature = "diagnostics")]
                     if std::env::var_os("NUCLEUS_TRACE_APPLICATION_FUNCTION_TYPE").is_some() {
                         let mut reducible = None;
@@ -2300,6 +2335,21 @@ impl<'a> TypeChecker<'a> {
                 context.len(),frame.id(),self.expressions.get(expression),*remaining,
             );
         }
+        // C223 diagnostic only: distinguish an argument whose own type cannot
+        // be inferred from a successfully inferred term whose type cannot be
+        // converted to the independently checked Pi-domain.
+        #[cfg(feature="diagnostics")]
+        if std::env::var_os("NUCLEUS_C223_FIRST_OWNER").is_some()
+            && let Judgment::Unknown { residual } = &inferred
+        {
+            use std::sync::atomic::{AtomicUsize, Ordering};
+            static CHK: AtomicUsize = AtomicUsize::new(0);
+            let n = CHK.fetch_add(1, Ordering::Relaxed);
+            if n < 160 || n % 71 == 0 {
+                eprintln!("NUCLEUS_C223_ARG_INFER_UNKNOWN:seq={n}:expr={expression:?}:frame={}:ctx={}:left={}:reason={}",
+                    frame.id(), context.len(), *remaining, residual.0);
+            }
+        }
         let ordinary = match inferred {
             Judgment::Proven { value, .. } => {
                 let conversion = crate::convert::convert_with_policy_in_context(
@@ -2311,6 +2361,18 @@ impl<'a> TypeChecker<'a> {
                     context.len(),
                     context,
                 );
+                #[cfg(feature="diagnostics")]
+                if std::env::var_os("NUCLEUS_C223_FIRST_OWNER").is_some()
+                    && let Judgment::Unknown { residual } = &conversion
+                {
+                    use std::sync::atomic::{AtomicUsize, Ordering};
+                    static CNV: AtomicUsize = AtomicUsize::new(0);
+                    let n = CNV.fetch_add(1, Ordering::Relaxed);
+                    if n < 160 || n % 71 == 0 {
+                        eprintln!("NUCLEUS_C223_ARG_CONVERSION_UNKNOWN:seq={n}:expr={expression:?}:frame={}:ctx={}:left={}:reason={}",
+                            frame.id(), context.len(), *remaining, residual.0);
+                    }
+                }
                 #[cfg(feature = "diagnostics")]
                 if std::env::var_os("NUCLEUS_C205_ARGUMENT_CHECK").is_some()
                     && context.len() == 8
