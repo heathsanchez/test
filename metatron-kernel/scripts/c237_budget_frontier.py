@@ -148,6 +148,32 @@ def main():
             "terminal_owner": terminal_owners[-1] if terminal_owners else None,
         }
         print("C237_CEILING_ANCESTRY", json.dumps(deep["trace_summary"], sort_keys=True), flush=True)
+        # Read-only candidate refinement: capture the actual reducible/full
+        # exposure and type constructor at the failing source-owned judgment.
+        # This result is not substituted for the checker verdict.
+        rigid_env = env.copy()
+        rigid_env["NUCLEUS_C225_JUDGMENT_STEPS"] = "69632"
+        rigid_env["NUCLEUS_TRACE_RIGID_TYPE_MISMATCH"] = "1"
+        rigid_env["NUCLEUS_C223_FIRST_OWNER"] = "1"
+        rigid = run(executable, original("good/perf/fueled-chain.ndjson"),
+                    rigid_env, "original_69632_rigid", args.out)
+        if rigid["status"] != "completed" or rigid["exit"] != 2 or not rigid["terminal_original_unknown"]:
+            raise ValueError("Rigid observation changed original source verdict")
+        rigid_lines = (args.out / (rigid["case"] + ".stderr")).read_text().splitlines()
+        mismatch_lines = [line for line in rigid_lines if line.startswith((
+            "NUCLEUS_RIGID_TYPE_MISMATCH:", "NUCLEUS_TYPE_EXPOSURE_UNKNOWN:",
+            "NUCLEUS_C223_APP_OWNER:", "NUCLEUS_C223_INFER_UNKNOWN:"
+        ))]
+        rigid["observed_mismatch_count"] = sum(
+            line.startswith("NUCLEUS_RIGID_TYPE_MISMATCH:") for line in mismatch_lines
+        )
+        rigid["first_observations"] = [line[:1400] for line in mismatch_lines[:30]]
+        rigid["last_observations"] = [line[:1400] for line in mismatch_lines[-30:]]
+        print("C237_RIGID_OBSERVATIONS", json.dumps({
+            "count": len(mismatch_lines),
+            "mismatch_count": rigid["observed_mismatch_count"],
+            "last": rigid["last_observations"][-8:]
+        }, sort_keys=True), flush=True)
         protected = []
         for case in CONTROLS:
             raw_case = original(case)
@@ -175,7 +201,8 @@ def main():
         "genuine_export_sha256": FUELED_SHA,
         "experiment": "C225 diagnostic budget; same checker and original source",
         "no_semantic_rule_changed": True,
-        "frontier": cases, "high_budget_ancestry": deep, "protected": protected,
+        "frontier": cases, "high_budget_ancestry": deep,
+        "rigid_observation": rigid, "protected": protected,
         "full_arena_completion": "UNKNOWN",
     }
     (args.out / "report.json").write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
