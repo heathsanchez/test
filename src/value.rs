@@ -125,6 +125,60 @@ impl EnvFrame {
         }
     }
 
+    /// C219 source-independent lexical-freshness certificate. Every source
+    /// expression uses de Bruijn indices, never direct FreeIds. After
+    /// separately establishing complete source support and enough lexical
+    /// bindings, no captured FreeId equal to needle means no old binding
+    /// can be captured by opening the fresh binder.
+    ///
+    /// Returns None on exhausted work, false on capture/missing bindings;
+    /// neither result authorizes any reduction or new type judgment.
+    pub(crate) fn certified_lexical_absence(
+        &self, needle: FreeId, min_direct: u64, remaining: &mut usize,
+    ) -> Option<bool> {
+        enum Scan<'a> { Frame(&'a EnvFrame), Neutral(&'a Neutral) }
+        let mut root = self;
+        let mut direct = 0u64;
+        while let EnvNode::Extend { parent, .. } = root.0.as_ref() {
+            if *remaining == 0 { return None; }
+            *remaining -= 1;
+            direct = direct.checked_add(1)?;
+            root = parent;
+        }
+        if direct < min_direct { return Some(false); }
+
+        let mut visited = std::collections::HashSet::<u64>::new();
+        let mut pending = vec![Scan::Frame(self)];
+        while let Some(item) = pending.pop() {
+            if *remaining == 0 { return None; }
+            *remaining -= 1;
+            match item {
+                Scan::Frame(frame) => {
+                    if !visited.insert(frame.id()) { continue; }
+                    if let EnvNode::Extend { parent, value, .. } = frame.0.as_ref() {
+                        pending.push(Scan::Frame(parent));
+                        match value {
+                            EnvBinding::Free(f) if *f == needle => return Some(false),
+                            EnvBinding::Closure(c) => pending.push(Scan::Frame(&c.env)),
+                            EnvBinding::Neutral(n) => pending.push(Scan::Neutral(n)),
+                            EnvBinding::Free(_) | EnvBinding::NatLit(_) => {}
+                        }
+                    }
+                }
+                Scan::Neutral(n) => {
+                    match &n.head {
+                        NeutralHead::Free(f) if *f == needle => return Some(false),
+                        NeutralHead::Projection { structure, .. } =>
+                            pending.push(Scan::Neutral(structure.as_ref())),
+                        NeutralHead::Const { .. } | NeutralHead::Free(_) => {}
+                    }
+                    for c in &n.spine { pending.push(Scan::Frame(&c.env)); }
+                }
+            }
+        }
+        Some(true)
+    }
+
     pub fn id(&self) -> u64 {
         match self.0.as_ref() {
             EnvNode::Empty => 0,
@@ -396,5 +450,52 @@ impl Closure {
             frames: std::collections::HashMap::new(),
         };
         s.closure(self).map(|(c, _)| c)
+    }
+}
+
+
+#[cfg(test)]
+mod c219_lexical_freshness_tests {
+    use super::*;
+
+    #[test]
+    fn requires_full_lexical_witness_and_sufficient_binding_depth() {
+        let empty = EnvFrame::empty();
+        let mut steps = 32;
+        assert_eq!(empty.certified_lexical_absence(FreeId(2), 0, &mut steps), Some(true));
+        let outer = empty.extend_free(FreeId(1));
+        let mut steps = 32;
+        assert_eq!(outer.certified_lexical_absence(FreeId(2), 1, &mut steps), Some(true));
+        let mut steps = 32;
+        assert_eq!(outer.certified_lexical_absence(FreeId(1), 1, &mut steps), Some(false));
+        let mut steps = 32;
+        assert_eq!(outer.certified_lexical_absence(FreeId(2), 2, &mut steps), Some(false));
+        let mut steps = 0;
+        assert_eq!(outer.certified_lexical_absence(FreeId(2), 1, &mut steps), None);
+    }
+
+    #[test]
+    fn follows_nested_captured_closures_and_neutral_spines() {
+        let empty = EnvFrame::empty();
+        let inner = empty.extend_free(FreeId(7));
+        let captured = empty.extend(Closure::new(ExprId(1), inner.clone()));
+        let mut steps = 64;
+        assert_eq!(captured.certified_lexical_absence(FreeId(7), 0, &mut steps), Some(false));
+        let neutral = Neutral {
+            head: NeutralHead::Projection {
+                type_name: NameId(1), index: 0,
+                structure: Box::new(Neutral {
+                    head: NeutralHead::Free(FreeId(9)), spine: vec![]
+                }),
+            },
+            spine: vec![Closure::new(ExprId(2), inner)],
+        };
+        let nested = empty.extend_neutral(neutral);
+        let mut steps = 64;
+        assert_eq!(nested.certified_lexical_absence(FreeId(7), 1, &mut steps), Some(false));
+        let mut steps = 64;
+        assert_eq!(nested.certified_lexical_absence(FreeId(9), 1, &mut steps), Some(false));
+        let mut steps = 64;
+        assert_eq!(nested.certified_lexical_absence(FreeId(10), 1, &mut steps), Some(true));
     }
 }
