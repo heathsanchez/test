@@ -33,6 +33,39 @@ fn c244_monomorphic_const_capture(
     )
 }
 
+#[cfg(all(test, feature = "diagnostics"))]
+mod c244_source_capture_tests {
+    use super::*;
+    use crate::environment::Environment;
+    use crate::id::{IdTable, LevelId, NameId};
+    use crate::syntax::Level;
+    use crate::value::EnvFrame;
+
+    #[test]
+    fn exact_monomorphic_capture_proven_and_mutants_declined() {
+        let mut expressions = IdTable::default();
+        expressions.insert(ExprId(1), Expr::Const { name: NameId(1), levels: vec![] }).unwrap();
+        expressions.insert(ExprId(10), Expr::BVar(0)).unwrap();
+        expressions.insert(ExprId(11), Expr::Const { name: NameId(2), levels: vec![] }).unwrap();
+        expressions.insert(ExprId(12), Expr::Const { name: NameId(1), levels: vec![LevelId(0)] }).unwrap();
+        expressions.insert(ExprId(13), Expr::BVar(1)).unwrap();
+        let levels = IdTable::<LevelId, Level>::default();
+        let env = Environment::empty();
+        let checker = TypeChecker::new(&expressions, &levels, &env);
+        let constant = Closure::new(ExprId(1), EnvFrame::empty());
+        let bound = |captured: Closure| Closure::new(ExprId(10), EnvFrame::empty().extend(captured));
+        assert!(c244_monomorphic_const_capture(&checker, &constant, &bound(constant.clone())));
+        assert!(!c244_monomorphic_const_capture(
+            &checker, &constant, &bound(Closure::new(ExprId(11), EnvFrame::empty()))));
+        assert!(!c244_monomorphic_const_capture(
+            &checker, &Closure::new(ExprId(12), EnvFrame::empty()), &bound(constant.clone())));
+        assert!(!c244_monomorphic_const_capture(
+            &checker, &constant, &Closure::new(ExprId(10), EnvFrame::empty().extend_free(FreeId(0)))));
+        assert!(!c244_monomorphic_const_capture(
+            &checker, &constant, &Closure::new(ExprId(13), EnvFrame::empty().extend(constant.clone()))));
+    }
+}
+
 // C233 is an observation scope for the already-isolated C230 cold conversion
 // probe. It does not cache an outcome, charge or restore fuel, or decide a rule.
 #[cfg(feature = "diagnostics")]
