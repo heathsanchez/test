@@ -1,0 +1,115 @@
+name: Nucleus C220 unique Pi-value binder A/B
+on:
+  push:
+    branches: [research/nucleus-c220-unique-value-binder-20261116]
+    paths: ['.github/workflows/nucleus-c220-unique-pi-binder-20261116.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  unique-ab:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RUST_MIN_STACK: '67108864'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Compile and test C220 source (no default semantic change)
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/c220"
+          git rev-parse HEAD | tee "$RUNNER_TEMP/c220/commit.txt"
+          git rev-parse HEAD:metatron-kernel/src | tee "$RUNNER_TEMP/c220/source-tree.txt"
+          cargo test --locked --lib --manifest-path metatron-kernel/Cargo.toml
+          cargo build --locked --release --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel "$RUNNER_TEMP/c220/nucleus"
+          sha256sum "$RUNNER_TEMP/c220/nucleus" > "$RUNNER_TEMP/c220/binary-sha256.txt"
+      - name: Recover independently pinned 212 unchanged Arena exports
+        run: |
+          set -euo pipefail
+          gh api repos/heathsanchez/test/actions/artifacts/14152050888/zip > "$RUNNER_TEMP/c220/current212.zip"
+          printf '%s  %s\n' 5bd679fe1f7a6988575ec469264b24cab8ddf465ae064bcb79d99541658acd2f "$RUNNER_TEMP/c220/current212.zip" | sha256sum -c -
+      - name: Same-binary flag OFF/ON, actual unique certificates and forged controls
+        run: |
+          python3 - "$RUNNER_TEMP/c220" <<'PY'
+          import hashlib, json, os, pathlib, re, subprocess, sys, time, zipfile
+          out=pathlib.Path(sys.argv[1])
+          archive=zipfile.ZipFile(out/'current212.zip')
+          baseline={r['case']:r for r in json.loads(archive.read('current212.json'))}
+          assert len(baseline)==212
+          flags=json.loads(pathlib.Path('experiments/nucleus-capture-substitution-20261107/alias-result-canonical-off-replay.json').read_text())['flags']
+          assert len(flags)==24 and set(flags.values())=={'1'}
+          common={k:v for k,v in os.environ.items() if not k.startswith('NUCLEUS_')}
+          common.update(flags)
+          for feature in ('C182_TYPED_PROOF_IRREL','C189_NEUTRAL_LAMBDA_PROOF','C190_QUOTIENT_IOTA','C199_TWO_PARAM_EIGHT_FIELD_RECORD','C201_CLOSED_NULLARY_ENUM','C216_RIGID_DATA_FUNCTION_CTOR'):
+              common['NUCLEUS_EXPERIMENTAL_'+feature]='1'
+          targets=[
+             'good/perf/fueled-chain.ndjson',
+             'good/perf/magma-list-pair-n7.ndjson',
+             'good/perf/grind-ring-5.ndjson',
+             'good/perf/magma-list-deep-n36.ndjson',
+             'bad/bugs/eta-ctor-alias.ndjson',
+             'bad/bugs/rec-rule-proof-irrel.ndjson',
+             'bad/bugs/rec-rule-proof-irrel-nested.ndjson',
+             'bad/bugs/rec-type-proof-irrel.ndjson',
+             'bad/bugs/rec-rule-wrong-arg.ndjson',
+             'good/tutorial/119_reduceCtorParamRefl.mk.ndjson',
+             'good/tutorial/126_quotMkType.ndjson',
+          ]
+          rows=[]
+          for case in targets:
+              entry=baseline[case]
+              source=archive.read('inputs/'+case)
+              digest=hashlib.sha256(source).hexdigest()
+              assert digest==entry['sha256']
+              results={}
+              for arm in ('baseline','unique'):
+                  env=common.copy()
+                  if arm=='unique':
+                      env['NUCLEUS_EXPERIMENTAL_C220_UNIQUE_PI_BINDER']='1'
+                      env['NUCLEUS_C220_TRACE']='1'
+                      env['NUCLEUS_C217_OPENING_REASON']='1'
+                  start=time.monotonic()
+                  try:
+                      p=subprocess.run([str(out/'nucleus')],input=source,env=env,capture_output=True,timeout=180)
+                      rc=p.returncode
+                      stderr=p.stderr.decode(errors='replace')
+                  except subprocess.TimeoutExpired:
+                      rc=124
+                      stderr='TIMEOUT'
+                  (out/(case.replace('/','_')+'_'+arm+'.stderr')).write_text(stderr)
+                  results[arm]=dict(verdict=rc,elapsed=round(time.monotonic()-start,3),
+                     unique_certified=stderr.count('NUCLEUS_C220_BINDER:'),
+                     unique_fallback=stderr.count('NUCLEUS_C168_OPEN_BLOCK:'),
+                     original_opening_failure=stderr.count('NUCLEUS_C168_OPEN_BLOCK:'),
+                     terminal=next((line for line in stderr.splitlines() if line.startswith('NUCLEUS_DOWNSTREAM:')),None))
+              row=dict(case=case,expected=entry['expected'],prior=entry['actual'],
+                 sha256=digest,**results)
+              print(json.dumps(row),flush=True)
+              rows.append(row)
+          (out/'summary.json').write_text(json.dumps(rows,indent=2))
+          for row in rows:
+              original=row['baseline']['verdict']
+              alternate=row['unique']['verdict']
+              expected=row['expected']
+              assert original==row['prior'],f'baseline drift {row["case"]}: {original} vs {row["prior"]}'
+              assert alternate in (expected,2),f'wrong decisive C220 verdict {row["case"]}'
+              if original==expected:
+                  assert alternate==expected,f'regression of protected decisive {row["case"]}'
+              assert alternate in (0,1,2) and original in (0,1,2)
+          gained=[r['case'] for r in rows if r['expected']==0 and r['baseline']['verdict']==2 and r['unique']['verdict']==0]
+          counts=dict(certified=sum(r['unique']['unique_certified'] for r in rows),fallback=sum(r['unique']['unique_fallback'] for r in rows),advanced=gained)
+          assert counts['certified']>0, 'C220 fresh Pi identity branch was not exercised'
+          print('C220_BOUNDARY_SUMMARY',json.dumps(counts),flush=True)
+          (out/'conclusion.json').write_text(json.dumps(counts,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-c220-source-unique-ab
+          path: ${{ runner.temp }}/c220/
+          retention-days: 60
