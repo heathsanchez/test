@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 55
     env:
-      GH_TOKEN: \${{ github.token }}
+      GH_TOKEN: ${{ github.token }}
       RUST_MIN_STACK: '67108864'
     steps:
       - uses: actions/checkout@v4
@@ -129,5 +129,5 @@ jobs:
         if: always()
         with:
           name: nucleus-c233-source-owned-decision-paths
-          path: \${{ runner.temp }}/c233/
+          path: ${{ runner.temp }}/c233/
           retention-days: 60
