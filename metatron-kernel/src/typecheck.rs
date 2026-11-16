@@ -2366,6 +2366,26 @@ impl<'a> TypeChecker<'a> {
                 // for the production term judgment or a change to its fuel.
                 // ExprId 4771 belongs to the SHA-pinned genuine fueled-chain
                 // export; other exports never enable this environment flag.
+                // C226 read-only compare of remaining LOCAL allowance under
+                // distinct per-declaration C225 budgets. No speculative
+                // normalization or changed checker resource accounting.
+                #[cfg(feature="diagnostics")]
+                if std::env::var_os("NUCLEUS_C226_LOCAL_ALLOWANCE").is_some()
+                    && expression.0 == 4771 && context.len() == 8
+                {
+                    use std::sync::atomic::{AtomicUsize, Ordering};
+                    static N: AtomicUsize = AtomicUsize::new(0);
+                    let seq = N.fetch_add(1, Ordering::Relaxed);
+                    if seq < 4 {
+                        let res = match &conversion {
+                            Judgment::Proven { warrant, .. } => format!("PROVEN:{}",warrant.0),
+                            Judgment::Refuted { obstruction } => format!("REFUTED:{}",obstruction.0),
+                            Judgment::Unknown { residual } => format!("UNKNOWN:{}",residual.0),
+                        };
+                        eprintln!("NUCLEUS_C226_LOCAL:seq={seq}:expr={expression:?}:ctx={}:frame={}:remaining={}:result={res}",
+                            context.len(),frame.id(),*remaining);
+                    }
+                }
                 #[cfg(feature="diagnostics")]
                 if std::env::var_os("NUCLEUS_C224_DECIDABLE_OWNER_LADDER").is_some()
                     && expression.0 == 4771
