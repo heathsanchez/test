@@ -1737,6 +1737,31 @@ impl<'a> TypeChecker<'a> {
         let mut c236 = C236InferTrace::begin(expression, context.len(), frame.id(), *remaining);
         let key = (expression, frame.id());
         if let Some(value) = cache.get(&key) {
+            // C252: only reuse a PREVIOUSLY-PROVEN closed source spine at
+            // zero remaining fuel, under the identical immutable expression
+            // and canonical empty source frame. No proof is fabricated: this
+            // very judgment-local cache was populated solely from Proven
+            // earlier during the same proof traversal. Never transport a
+            // fixed-binder Pi or an open-context result.
+            #[cfg(feature = "diagnostics")]
+            if canonical && *remaining == 0
+                && !matches!(value, TypeValue::Pi { .. })
+                && std::env::var_os("NUCLEUS_C252_ZERO_CLOSED_PROOF_REUSE").is_some()
+            {
+                if std::env::var_os("NUCLEUS_C252_TRACE").is_some() {
+                    use std::sync::atomic::{AtomicUsize, Ordering};
+                    static N: AtomicUsize = AtomicUsize::new(0);
+                    let n = N.fetch_add(1, Ordering::Relaxed);
+                    if n < 64 {
+                        eprintln!("NUCLEUS_C252_ZERO_CACHE:seq={n}:expr={expression:?}:frame={}:ctx={}:left={}",
+                            frame.id(), context.len(), *remaining);
+                    }
+                }
+                let reused = Judgment::proven(value.clone(), "checked-closed-source-zero-fuel-cache");
+                #[cfg(feature = "diagnostics")]
+                c236.finish(&reused, *remaining);
+                return reused;
+            }
             let cached = if canonical && matches!(value, TypeValue::Pi { .. }) {
                 Judgment::unknown("closed-spine-returned-fixed-pi")
             } else if take_step(remaining) {
