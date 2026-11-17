@@ -2573,6 +2573,32 @@ impl<'a> TypeChecker<'a> {
                         body_frame.id(),extended.len(),4096-allowance);
                 }
             }
+            // C259: read-only, exact-source residual discriminator. At the
+            // unchanged original Fueled export, C258's 8th typed body retry
+            // reaches the outer source Lambda Expr4832 and exhausts 4096.
+            // Recheck the SAME fully formed Gamma/codomain/binder at two
+            // fresh local allowances. Never use this diagnostic for ACCEPT.
+            #[cfg(feature="diagnostics")]
+            if expression.0 == 4832 && context.len() == 2
+                && independent.is_unknown()
+                && std::env::var_os("NUCLEUS_C259_OUTER_LAMBDA_LADDER").is_some()
+            {
+                for cap in [8192usize,16384usize] {
+                    let mut observed=cap;
+                    let mut source_cache=HashMap::new();
+                    let next=C258_BODY_RETRY_ACTIVE.with(|active| {
+                        let old=active.replace(true);
+                        let check=self.check_with_formation(
+                            *body,&target,&extended,&body_frame,
+                            &mut observed,conversion_refutation_is_unknown,
+                            &mut source_cache,expected_formed);
+                        active.set(old);
+                        check
+                    });
+                    eprintln!("NUCLEUS_C259_OUTER_BODY:lambda={expression:?}:body={body:?}:frame={}:ctx={}:allowance={cap}:spent={}:candidate={next:?}",
+                        body_frame.id(),extended.len(),cap-observed);
+                }
+            }
             if independent.is_proven() {
                 return Judgment::proven((),"formed-expected-lambda-independent-body-proof");
             }
