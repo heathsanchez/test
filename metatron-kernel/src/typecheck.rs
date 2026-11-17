@@ -2074,7 +2074,18 @@ impl<'a> TypeChecker<'a> {
                             else { state.c252_attempts += 1; true }
                         }
                     {
-                        let mut allowance = 256usize;
+                        // C254: one scoped A/B of the SAME checked argument
+                        // proof after C253 showed the Gamma7 source-capture
+                        // support traversal exhausting its 256 local units.
+                        // This is strictly a bounded fuel-policy change:
+                        // no equality, source, or result-selection rule changes.
+                        #[cfg(feature="diagnostics")]
+                        let allowance_cap = if std::env::var_os("NUCLEUS_C254_ARG_ALLOWANCE_512").is_some() {
+                            512usize
+                        } else { 256usize };
+                        #[cfg(not(feature="diagnostics"))]
+                        let allowance_cap = 256usize;
+                        let mut allowance = allowance_cap;
                         let mut proof_cache = HashMap::new();
                         let candidate = C252_ARGUMENT_RETRY_ACTIVE.with(|active| {
                             let old = active.replace(true);
@@ -2090,7 +2101,7 @@ impl<'a> TypeChecker<'a> {
                             let n=N.fetch_add(1,Ordering::Relaxed);
                             if n < 96 {
                                 eprintln!("NUCLEUS_C252_ARG_RETRY:seq={n}:application={expression:?}:argument={arg:?}:frame={}:ctx={}:spent={}:original={argument_judgment:?}:candidate={candidate:?}",
-                                    frame.id(),context.len(),256-allowance);
+                                    frame.id(),context.len(),allowance_cap-allowance);
                             }
                         }
                         if candidate.is_proven() { candidate } else { argument_judgment }
