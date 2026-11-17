@@ -2554,7 +2554,15 @@ impl<'a> TypeChecker<'a> {
                 else { state.c258_attempts += 1; true }
             }
         {
-            let mut allowance=4096usize;
+            // C260 resource-policy ablation: C259 independently proved the
+            // immutable outer lambda body in 4,494 units, beyond C258's
+            // 4,096. Change only this local allowance under an opt-in flag;
+            // preserve source formation, binder, conversion, quota and all
+            // acceptance rules. Neither ID nor theorem name selects it.
+            let allowance_cap=if std::env::var_os("NUCLEUS_C260_BODY_8192").is_some() {
+                8192usize
+            } else { 4096usize };
+            let mut allowance=allowance_cap;
             let mut independent_cache=HashMap::new();
             let independent=C258_BODY_RETRY_ACTIVE.with(|active| {
                 let old=active.replace(true);
@@ -2570,7 +2578,7 @@ impl<'a> TypeChecker<'a> {
                 let n=SEQ.fetch_add(1,Ordering::Relaxed);
                 if n<24 {
                     eprintln!("NUCLEUS_C258_BODY_RETRY:seq={n}:lambda={expression:?}:body={body:?}:frame={}:ctx={}:spent={}:original={result:?}:candidate={independent:?}",
-                        body_frame.id(),extended.len(),4096-allowance);
+                        body_frame.id(),extended.len(),allowance_cap-allowance);
                 }
             }
             // C259: read-only, exact-source residual discriminator. At the
