@@ -1963,6 +1963,16 @@ impl<'a> TypeChecker<'a> {
             }
             Expr::App { fun, arg } => {
                 let function_type = self.infer_in(*fun, context, frame, remaining, cache);
+                // C256 is a read-only, exact-source Γ6 application observer.
+                // It does not change evaluation, budgets, typing or verdicts.
+                #[cfg(feature="diagnostics")]
+                if std::env::var_os("NUCLEUS_C256_BODY_FIRST_APP").is_some()
+                    && context.len() == 6 && expression.0 == 4811
+                {
+                    eprintln!("NUCLEUS_C256_BODY_APP:stage=function-infer:app={expression:?}:fun={fun:?}:arg={arg:?}:frame={}:left={}:type={}",
+                        frame.id(),*remaining,
+                        format!("{function_type:?}").chars().take(450).collect::<String>());
+                }
                 if let Judgment::Refuted { obstruction } = &function_type {
                     return Judgment::Refuted {
                         obstruction: *obstruction,
@@ -2037,6 +2047,19 @@ impl<'a> TypeChecker<'a> {
                             reducible,
                             full,
                         );
+                    }
+                    #[cfg(feature="diagnostics")]
+                    if std::env::var_os("NUCLEUS_C256_BODY_FIRST_APP").is_some()
+                        && context.len() == 6
+                    {
+                        use std::sync::atomic::{AtomicUsize, Ordering};
+                        static FIRST: AtomicUsize = AtomicUsize::new(0);
+                        let n = FIRST.fetch_add(1,Ordering::Relaxed);
+                        if n < 48 {
+                            eprintln!("NUCLEUS_C256_BODY_APP:stage=no-proven-Pi:seq={n}:app={expression:?}:fun={fun:?}:arg={arg:?}:frame={}:left={}:cause={}",
+                                frame.id(),*remaining,
+                                format!("{function_type:?}").chars().take(450).collect::<String>());
+                        }
                     }
                     return Judgment::unknown("application-function-type");
                 };
@@ -2537,7 +2560,22 @@ impl<'a> TypeChecker<'a> {
                 }
             }
         }
+        #[cfg(feature="diagnostics")]
+        let c256_budget = if std::env::var_os("NUCLEUS_C256_BODY_FIRST_APP").is_some()
+            && expression.0 == 4811 && context.len() == 6
+        {
+            eprintln!("NUCLEUS_C256_BODY:stage=enter:expr={expression:?}:frame={}:left={}:shape={}",
+                frame.id(),*remaining,
+                format!("{:?}",self.expressions.get(expression)).chars().take(450).collect::<String>());
+            Some(*remaining)
+        } else { None };
         let inferred = self.infer_in(expression, context, frame, remaining, cache);
+        #[cfg(feature="diagnostics")]
+        if let Some(before)=c256_budget {
+            eprintln!("NUCLEUS_C256_BODY:stage=inferred:expr={expression:?}:frame={}:before={before}:after={}:result={}",
+                frame.id(),*remaining,
+                format!("{inferred:?}").chars().take(450).collect::<String>());
+        }
         // C205 diagnostic only: inspect the unmodified source-derived argument
         // type before any conversion. Source IDs refer to pinned C202 NDJSON.
         #[cfg(feature = "diagnostics")]
