@@ -2508,6 +2508,28 @@ impl<'a> TypeChecker<'a> {
                 } else {
                     conversion
                 };
+                // C248 read-only inspection of the next source-owned
+                // argument-domain obligation after C247's genuine Pi proof.
+                // The scoped source expression IDs are trace selectors only:
+                // independent conversion results NEVER replace the checker
+                // judgment. No rule, captured scope, or fuel limit changes.
+                #[cfg(feature = "diagnostics")]
+                if std::env::var_os("NUCLEUS_C248_POSTRETRY_DOMAIN").is_some()
+                    && expression.0 == 8 && context.len() == 11
+                    && matches!(expected, TypeValue::Term(c) if c.expr.0 == 10)
+                    && matches!(conversion, Judgment::Unknown { .. })
+                {
+                    eprintln!("NUCLEUS_C248_SOURCE_DOMAIN:expr={expression:?}:frame={}:ctx={}:fuel={}:original={conversion:?}:actual={value:?}:expected={expected:?}",
+                        frame.id(),context.len(),*remaining);
+                    if std::env::var_os("NUCLEUS_C248_EXTRA_PROBES").is_some() {
+                        for allowance in [8usize,16,32,64,128,256] {
+                            let candidate=crate::convert::convert_with_policy_in_context(
+                                self,&value,expected,allowance,self.delta_policy,context.len(),context);
+                            eprintln!("NUCLEUS_C248_DOMAIN_PROBE:expr=8:frame={}:ctx={}:original_fuel={}:allowance={allowance}:result={candidate:?}",
+                                frame.id(),context.len(),*remaining);
+                        }
+                    }
+                }
                 #[cfg(feature = "diagnostics")]
                 c236_check_conversion(expression, context.len(), frame.id(),
                     *remaining, &value, expected, &conversion);
