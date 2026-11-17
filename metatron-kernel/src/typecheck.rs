@@ -2506,6 +2506,32 @@ impl<'a> TypeChecker<'a> {
             eprintln!("NUCLEUS_C255_STAGE:seq={seq}:stage=body-check:body={body:?}:new_frame={}:judgment={result:?}:left={}",
                 body_frame.id(),*remaining);
         }
+        // C257 diagnostic only: the original, source-checked Γ6 Lambda body
+        // returned UNKNOWN. Replay that SAME source body under the SAME
+        // binder, expected codomain, levels and formation premises with an
+        // isolated 4,096-step allowance. Never replace the actual verdict.
+        // This opt-in experiment is not a resource-policy promotion; the
+        // isolated replay may affect diagnostics-side internal counters.
+        #[cfg(feature="diagnostics")]
+        if expression.0 == 4812 && context.len() == 5
+            && result.is_unknown()
+            && std::env::var_os("NUCLEUS_C257_BODY_PROOF_PROBE").is_some()
+        {
+            use std::sync::atomic::{AtomicUsize,Ordering};
+            static PROBES: AtomicUsize = AtomicUsize::new(0);
+            let n = PROBES.fetch_add(1,Ordering::Relaxed);
+            if n < 2 {
+                let mut allowance=4096usize;
+                let mut local_cache=HashMap::new();
+                let independent=self.check_with_formation(
+                    *body,&target,&extended,&body_frame,&mut allowance,
+                    conversion_refutation_is_unknown,&mut local_cache,expected_formed,
+                );
+                eprintln!(
+                    "NUCLEUS_C257_BODY_PROBE:seq={n}:lambda={expression:?}:body={body:?}:frame={}:ctx={}:original={result:?}:allowance=4096:spent={}:candidate={independent:?}",
+                    body_frame.id(),extended.len(),4096-allowance);
+            }
+        }
         result
     }
 
