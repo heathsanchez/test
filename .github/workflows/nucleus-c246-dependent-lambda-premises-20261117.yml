@@ -1,0 +1,57 @@
+name: Nucleus C246 formed dependent-lambda proof premise audit
+on:
+  push:
+    branches: [research/nucleus-c246-dependent-lambda-premises-20261117]
+    paths:
+      - '.github/workflows/nucleus-c246-dependent-lambda-premises-20261117.yml'
+      - 'metatron-kernel/src/typecheck.rs'
+      - 'metatron-kernel/scripts/c246_dependent_lambda_premises.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  exact-source-pi:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Test independent checker and compile bounded diagnostic
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/c246"
+          git rev-parse HEAD > "$RUNNER_TEMP/c246/commit.txt"
+          git rev-parse HEAD:metatron-kernel/src > "$RUNNER_TEMP/c246/source-tree.txt"
+          python3 -m py_compile metatron-kernel/scripts/c246_dependent_lambda_premises.py
+          (cd metatron-kernel && python3 -m unittest discover -s tests_py -v)
+          cargo test --locked --lib --manifest-path metatron-kernel/Cargo.toml
+          cargo test --locked --features diagnostics --lib --manifest-path metatron-kernel/Cargo.toml
+          cargo build --locked --release --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel "$RUNNER_TEMP/c246/nucleus"
+          sha256sum "$RUNNER_TEMP/c246/nucleus" > "$RUNNER_TEMP/c246/binary-sha256.txt"
+      - name: Recover exact unchanged official original archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh api repos/heathsanchez/test/actions/artifacts/14152050888/zip > "$RUNNER_TEMP/c246/current212.zip"
+          printf '%s  %s\n' 5bd679fe1f7a6988575ec469264b24cab8ddf465ae064bcb79d99541658acd2f "$RUNNER_TEMP/c246/current212.zip" | sha256sum -c -
+      - name: Trace exact Expr4782 expected-lambda quota and sound alternative proofs
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 metatron-kernel/scripts/c246_dependent_lambda_premises.py \
+            --archive "$RUNNER_TEMP/c246/current212.zip" \
+            --checker "$RUNNER_TEMP/c246/nucleus" \
+            --flags experiments/nucleus-capture-substitution-20261107/alias-result-canonical-off-replay.json \
+            --out "$RUNNER_TEMP/c246"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-c246-original-dependent-lambda-premises
+          path: ${{ runner.temp }}/c246/
+          retention-days: 60
