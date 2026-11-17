@@ -1737,9 +1737,29 @@ impl<'a> TypeChecker<'a> {
         let mut c236 = C236InferTrace::begin(expression, context.len(), frame.id(), *remaining);
         let key = (expression, frame.id());
         if let Some(value) = cache.get(&key) {
+            // C249: opt-in reuse of an existing PROVEN inference at the
+            // exact immutable source expression and existing protected frame.
+            // The same cache already grants this judgment after charging one
+            // redundant fuel unit. Zero-charge reuse changes scheduling only:
+            // it does not change cache keys, populate unknowns, introduce
+            // equality, or weaken the fixed-Pi-scope guard.
+            #[cfg(feature = "diagnostics")]
+            let qualified_reuse = std::env::var_os("NUCLEUS_C249_PROVEN_CACHE_REUSE").is_some();
+            #[cfg(not(feature = "diagnostics"))]
+            let qualified_reuse = false;
             let cached = if canonical && matches!(value, TypeValue::Pi { .. }) {
                 Judgment::unknown("closed-spine-returned-fixed-pi")
-            } else if take_step(remaining) {
+            } else if qualified_reuse || take_step(remaining) {
+                #[cfg(feature="diagnostics")]
+                if qualified_reuse && std::env::var_os("NUCLEUS_C249_TRACE").is_some() {
+                    use std::sync::atomic::{AtomicUsize,Ordering};
+                    static N:AtomicUsize=AtomicUsize::new(0);
+                    let n=N.fetch_add(1,Ordering::Relaxed);
+                    if n < 32 || n % 16384 == 0 {
+                        eprintln!("NUCLEUS_C249_EXACT_CACHE_REUSE:seq={n}:expr={expression:?}:frame={}:ctx={}:left={}",
+                            frame.id(),context.len(),*remaining);
+                    }
+                }
                 Judgment::proven(value.clone(), "shared-expression-inference")
             } else {
                 Judgment::unknown("type-inference-budget")
