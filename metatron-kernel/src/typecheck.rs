@@ -184,9 +184,16 @@ impl Drop for CaptureSourceFailureScope {
     fn drop(&mut self) { CAPTURE_SOURCE_FAILURE.with(|failure| { failure.replace(self.0.take()); }); }
 }
 
+#[cfg(feature="diagnostics")]
+thread_local! {
+    static C252_ARGUMENT_RETRY_ACTIVE: std::cell::Cell<bool> =
+        const { std::cell::Cell::new(false) };
+}
+
 #[derive(Clone, Default)]
 struct LambdaTrialState {
     quota: usize,
+    c252_attempts: usize,
     active: usize,
     started: usize,
     proven: usize,
@@ -2038,6 +2045,50 @@ impl<'a> TypeChecker<'a> {
                 let argument_judgment=self.check_with_formation(
                     *arg, &domain, context, frame, remaining, true, cache, true,
                 );
+                // C252 opt-in resource-policy experiment. The exact inferred
+                // function type has a source-certified dependent Pi domain,
+                // but the original argument check may be UNKNOWN solely
+                // because the shared judgment budget reached zero. Retry
+                // the SAME source argument, domain, frame and Gamma with
+                // 256 isolated steps. Only an actual Proven typing derivation
+                // may replace the UNKNOWN; no weakening or name dispatch.
+                //
+                // Per-judgment quota (64) and a reentrancy guard bound the
+                // additional work. The candidate is never a substitute for
+                // the independently checked function Pi or domain formation.
+                #[cfg(feature="diagnostics")]
+                let argument_judgment =
+                    if std::env::var_os("NUCLEUS_C252_ARGUMENT_PROOF_RETRY").is_some()
+                        && *remaining == 0 && argument_judgment.is_unknown()
+                        && (8..=24).contains(&context.len())
+                        && !C252_ARGUMENT_RETRY_ACTIVE.with(std::cell::Cell::get)
+                        && {
+                            let mut state = self.lambda_trials.borrow_mut();
+                            if state.c252_attempts >= 64 { false }
+                            else { state.c252_attempts += 1; true }
+                        }
+                    {
+                        let mut allowance = 256usize;
+                        let mut proof_cache = HashMap::new();
+                        let candidate = C252_ARGUMENT_RETRY_ACTIVE.with(|active| {
+                            let old = active.replace(true);
+                            let result = self.check_with_formation(
+                                *arg, &domain, context, frame,
+                                &mut allowance, true, &mut proof_cache, true);
+                            active.set(old);
+                            result
+                        });
+                        if std::env::var_os("NUCLEUS_C252_TRACE").is_some() {
+                            use std::sync::atomic::{AtomicUsize,Ordering};
+                            static N:AtomicUsize=AtomicUsize::new(0);
+                            let n=N.fetch_add(1,Ordering::Relaxed);
+                            if n < 96 {
+                                eprintln!("NUCLEUS_C252_ARG_RETRY:seq={n}:application={expression:?}:argument={arg:?}:frame={}:ctx={}:spent={}:original={argument_judgment:?}:candidate={candidate:?}",
+                                    frame.id(),context.len(),256-allowance);
+                            }
+                        }
+                        if candidate.is_proven() { candidate } else { argument_judgment }
+                    } else { argument_judgment };
                 // C205: report the exact source Pi-domain obligation. Logging
                 // cannot promote or change any Judgment.
                 #[cfg(feature="diagnostics")]
