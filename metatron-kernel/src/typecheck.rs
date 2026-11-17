@@ -2371,22 +2371,54 @@ impl<'a> TypeChecker<'a> {
         cache: &mut HashMap<(ExprId,u64),TypeValue>,
         expected_formed: bool,
     ) -> Judgment<()> {
+        // C255 is strictly a read-only stage trace of the authentic source
+        // Expr4812 bidirectional Lambda premise. No semantic rule, budget,
+        // alternate search or resource accounting is changed.
+        #[cfg(feature="diagnostics")]
+        let c255_seq = if expression == ExprId(4812) && context.len() == 5
+            && std::env::var_os("NUCLEUS_C255_LAMBDA_PREMISES").is_some()
+        {
+            use std::sync::atomic::{AtomicUsize,Ordering};
+            static N: AtomicUsize = AtomicUsize::new(0);
+            let n = N.fetch_add(1,Ordering::Relaxed);
+            (n < 64).then_some(n)
+        } else { None };
+        #[cfg(feature="diagnostics")]
+        if let Some(seq) = c255_seq {
+            eprintln!("NUCLEUS_C255_STAGE:seq={seq}:stage=start:expr={expression:?}:frame={}:ctx={}:left={}:expected_formed={expected_formed}",
+                frame.id(),context.len(),*remaining);
+        }
         if !take_step(remaining) {
             return Judgment::unknown("bidir-lambda-budget");
         }
         let Some(Expr::Lam {domain,body})=self.expressions.get(expression) else {
             return Judgment::unknown("bidir-lambda-not-lambda");
         };
-        let Some((required_domain, codomain))=self.pi_view(
+        let expected_view = self.pi_view(
             Judgment::proven(expected.clone(),"checked-expected-Pi"),
             (*remaining).min(2048),
-        ) else {
+        );
+        #[cfg(feature="diagnostics")]
+        if let Some(seq)=c255_seq {
+            eprintln!("NUCLEUS_C255_STAGE:seq={seq}:stage=expected-pi-view:found={}:left={}",
+                expected_view.is_some(),*remaining);
+        }
+        let Some((required_domain, codomain))=expected_view else {
             return Judgment::unknown("bidir-lambda-expected-not-Pi");
         };
         let domain_formation=self.infer_in(
             *domain,context,frame,remaining,cache,
         );
-        match self.sort_level(domain_formation,(*remaining).min(1024)) {
+        #[cfg(feature="diagnostics")]
+        if let Some(seq)=c255_seq {
+            eprintln!("NUCLEUS_C255_STAGE:seq={seq}:stage=domain-infer:judgment={domain_formation:?}:left={}",*remaining);
+        }
+        let domain_sort=self.sort_level(domain_formation,(*remaining).min(1024));
+        #[cfg(feature="diagnostics")]
+        if let Some(seq)=c255_seq {
+            eprintln!("NUCLEUS_C255_STAGE:seq={seq}:stage=domain-sort:judgment={domain_sort:?}:left={}",*remaining);
+        }
+        match domain_sort {
             Judgment::Proven {..} => {},
             Judgment::Unknown {residual}=>return Judgment::Unknown {residual},
             Judgment::Refuted {obstruction}=>return Judgment::Refuted {obstruction},
@@ -2396,6 +2428,10 @@ impl<'a> TypeChecker<'a> {
             self,&annotated,&required_domain,(*remaining).min(2048),
             self.delta_policy,context.len(),context,
         );
+        #[cfg(feature="diagnostics")]
+        if let Some(seq)=c255_seq {
+            eprintln!("NUCLEUS_C255_STAGE:seq={seq}:stage=annotation-domain:judgment={relation:?}:left={}",*remaining);
+        }
         if !relation.is_proven(){return relation}
         let Some(free)=fresh_local(context.len()) else{
             return Judgment::unknown("bidir-lambda-fresh-binder-overflow")
@@ -2408,12 +2444,22 @@ impl<'a> TypeChecker<'a> {
                     self, &expected_body, free, &mut opening_budget,
                 );
                 *remaining -= allowance - opening_budget;
+                #[cfg(feature="diagnostics")]
+                if let Some(seq)=c255_seq {
+                    eprintln!("NUCLEUS_C255_STAGE:seq={seq}:stage=source-opening:pi_body={:?}:captured_frame={}:binder={}:allowance={allowance}:spent={}:safe={safe}:left={}",
+                        expected_body.expr,expected_body.env.id(),free.0,
+                        allowance-opening_budget,*remaining);
+                }
                 if !safe {
                     return Judgment::unknown("bidir-lambda-source-binder-capture-or-support-unavailable");
                 }
                 TypeValue::Term(expected_body.under_free(free))
             },
             PiBody::Fixed(binder,value) => {
+                #[cfg(feature="diagnostics")]
+                if let Some(seq)=c255_seq {
+                    eprintln!("NUCLEUS_C255_STAGE:seq={seq}:stage=fixed-pi-binder:existing={}:desired={}:left={}",binder.0,free.0,*remaining);
+                }
                 let Some(reopened) = self.reopen_fixed_pi_body(&value, binder, free, remaining) else {
                     return Judgment::unknown("bidir-lambda-fixed-binder-not-aligned");
                 };
@@ -2428,10 +2474,16 @@ impl<'a> TypeChecker<'a> {
         );
         // A formed expected Pi and the proved annotation-domain equality
         // establish its instantiated codomain under this checked fresh binder.
-        self.check_with_formation(
+        let result=self.check_with_formation(
             *body,&target,&extended,&body_frame,remaining,
             conversion_refutation_is_unknown,cache,expected_formed,
-        )
+        );
+        #[cfg(feature="diagnostics")]
+        if let Some(seq)=c255_seq {
+            eprintln!("NUCLEUS_C255_STAGE:seq={seq}:stage=body-check:body={body:?}:new_frame={}:judgment={result:?}:left={}",
+                body_frame.id(),*remaining);
+        }
+        result
     }
 
     fn check_in(
