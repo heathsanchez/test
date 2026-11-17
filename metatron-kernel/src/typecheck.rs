@@ -2468,6 +2468,46 @@ impl<'a> TypeChecker<'a> {
                     context.len(),
                     context,
                 );
+                // C247 opt-in: original source-typed Pi formation and
+                // inference already succeeded. At the exhausted tail of a
+                // global judgment, optionally ask the SAME independent
+                // converter to prove the SAME two dependent types in the
+                // SAME immutable context with at most 128 local steps.
+                //
+                // The original UNKNOWN/REJECT stays authoritative unless
+                // that full conversion returns an actual Proven witness.
+                // No equality rule or external checker/oracle is added. This
+                // is an explicitly declared resource-policy experiment:
+                // local conversion work is not debited to judgment_steps,
+                // just as in the existing conversion caller.
+                #[cfg(feature = "diagnostics")]
+                let conversion = if std::env::var_os("NUCLEUS_C247_TYPED_PI_LOCAL_RETRY").is_some()
+                    && expected_formed
+                    && (1..128).contains(remaining)
+                    && matches!(&value, TypeValue::Pi { .. })
+                    && matches!(expected, TypeValue::Term(_))
+                    && conversion.is_unknown()
+                {
+                    let independent = crate::convert::convert_with_policy_in_context(
+                        self, &value, expected, 128, self.delta_policy,
+                        context.len(), context);
+                    if std::env::var_os("NUCLEUS_C247_TRACE").is_some() {
+                        use std::sync::atomic::{AtomicUsize, Ordering};
+                        static PRINTED: AtomicUsize = AtomicUsize::new(0);
+                        let n = PRINTED.fetch_add(1, Ordering::Relaxed);
+                        if n < 80 {
+                            eprintln!("NUCLEUS_C247_CONVERSION_RETRY:seq={n}:expr={expression:?}:frame={}:ctx={}:original_allowance={}:original={conversion:?}:candidate={independent:?}",
+                                frame.id(),context.len(),*remaining);
+                        }
+                    }
+                    if independent.is_proven() {
+                        independent
+                    } else {
+                        conversion
+                    }
+                } else {
+                    conversion
+                };
                 #[cfg(feature = "diagnostics")]
                 c236_check_conversion(expression, context.len(), frame.id(),
                     *remaining, &value, expected, &conversion);
