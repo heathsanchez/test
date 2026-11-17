@@ -2508,6 +2508,41 @@ impl<'a> TypeChecker<'a> {
                 } else {
                     conversion
                 };
+                // C250: original source-owned Pi-domain formation and actual
+                // argument inference are already complete. The judgment may
+                // have consumed its entire quota BEFORE the final equality
+                // premise, so a genuine definitional equality can return
+                // UNKNOWN at local zero fuel. The same independent converter
+                // may supply a fresh Proven witness for the SAME actual and
+                // expected captured types under the SAME protected Gamma.
+                //
+                // This is an opt-in resource-policy experiment, not a new
+                // defeq rule: it uses 16 extra local steps only at a completed
+                // type-formation boundary, and NEVER promotes an UNKNOWN or
+                // REJECT without a concrete proven conversion. Ordinary
+                // Nucleus behavior stays unchanged unless explicitly enabled.
+                #[cfg(feature = "diagnostics")]
+                let conversion = if std::env::var_os("NUCLEUS_C250_ZERO_DOMAIN_RETRY").is_some()
+                    && expected_formed
+                    && *remaining == 0
+                    && conversion.is_unknown()
+                    && matches!((&value, expected),
+                        (TypeValue::Term(_), TypeValue::Term(_)))
+                {
+                    let independent = crate::convert::convert_with_policy_in_context(
+                        self, &value, expected, 16, self.delta_policy,
+                        context.len(), context);
+                    if std::env::var_os("NUCLEUS_C250_TRACE").is_some() {
+                        use std::sync::atomic::{AtomicUsize, Ordering};
+                        static N: AtomicUsize = AtomicUsize::new(0);
+                        let n = N.fetch_add(1, Ordering::Relaxed);
+                        if n < 80 {
+                            eprintln!("NUCLEUS_C250_DOMAIN_RETRY:seq={n}:expr={expression:?}:frame={}:ctx={}:original={conversion:?}:candidate={independent:?}",
+                                frame.id(), context.len());
+                        }
+                    }
+                    if independent.is_proven() { independent } else { conversion }
+                } else { conversion };
                 #[cfg(feature = "diagnostics")]
                 c236_check_conversion(expression, context.len(), frame.id(),
                     *remaining, &value, expected, &conversion);
