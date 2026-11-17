@@ -3873,6 +3873,32 @@ impl<'a> TypeChecker<'a> {
         match ty {
             TypeValue::Pi { domain, body, binder } => Some((*domain, PiBody::Fixed(binder, *body))),
             TypeValue::Term(closure) => {
+                // C251 opt-in resource-only capability: a source literal Pi
+                // already owns an exact dependent domain and codomain under
+                // this captured environment and universe substitution.
+                // Machine::expose uses precisely the sibling closures below
+                // for the same original Expr::Pi with no applied spine.
+                // Checking an APPLICATION still requires a real typing proof
+                // of its actual argument; this merely exposes the Pi head.
+                #[cfg(feature="diagnostics")]
+                if budget == 0
+                    && std::env::var_os("NUCLEUS_C251_LITERAL_PI_VIEW").is_some()
+                    && let Some(Expr::Pi {domain,body}) = self.expressions.get(closure.expr)
+                {
+                    if std::env::var_os("NUCLEUS_C251_TRACE").is_some() {
+                        use std::sync::atomic::{AtomicUsize, Ordering};
+                        static N:AtomicUsize=AtomicUsize::new(0);
+                        let n=N.fetch_add(1,Ordering::Relaxed);
+                        if n < 100 {
+                            eprintln!("NUCLEUS_C251_LITERAL_PI:seq={n}:expr={:?}:frame={}:domain={domain:?}:body={body:?}:budget=0",
+                                closure.expr,closure.env.id());
+                        }
+                    }
+                    return Some((
+                        TypeValue::Term(closure.sibling(*domain,closure.env.clone())),
+                        PiBody::Closure(closure.sibling(*body,closure.env.clone()))
+                    ));
+                }
                 let machine = self.machine();
                 let exposed = machine.expose(closure, Transparency::Reducible, budget);
                 match exposed.proven_value()? {
