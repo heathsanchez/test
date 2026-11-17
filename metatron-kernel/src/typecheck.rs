@@ -188,12 +188,15 @@ impl Drop for CaptureSourceFailureScope {
 thread_local! {
     static C252_ARGUMENT_RETRY_ACTIVE: std::cell::Cell<bool> =
         const { std::cell::Cell::new(false) };
+    static C258_BODY_RETRY_ACTIVE: std::cell::Cell<bool> =
+        const { std::cell::Cell::new(false) };
 }
 
 #[derive(Clone, Default)]
 struct LambdaTrialState {
     quota: usize,
     c252_attempts: usize,
+    c258_attempts: usize,
     active: usize,
     started: usize,
     proven: usize,
@@ -2530,6 +2533,48 @@ impl<'a> TypeChecker<'a> {
                 eprintln!(
                     "NUCLEUS_C257_BODY_PROBE:seq={n}:lambda={expression:?}:body={body:?}:frame={}:ctx={}:original={result:?}:allowance=4096:spent={}:candidate={independent:?}",
                     body_frame.id(),extended.len(),4096-allowance);
+            }
+        }
+        // C258 experimental, OFF unless explicitly enabled. The only
+        // consequence promoted is an actual second type-derivation from
+        // the same original body, expected codomain, checked fresh source
+        // binder and unchanged context. No term-id/name selection and no
+        // external checker authority. A bounded fresh work allowance and
+        // per-declaration quota implement an explicit resource policy.
+        #[cfg(feature="diagnostics")]
+        if std::env::var_os("NUCLEUS_C258_FORMED_BODY_RETRY").is_some()
+            && expected_formed
+            && result.is_unknown()
+            && *remaining <= 2
+            && matches!(self.expressions.get(*body),Some(Expr::App { .. }))
+            && !C258_BODY_RETRY_ACTIVE.with(std::cell::Cell::get)
+            && {
+                let mut state=self.lambda_trials.borrow_mut();
+                if state.c258_attempts >= 8 { false }
+                else { state.c258_attempts += 1; true }
+            }
+        {
+            let mut allowance=4096usize;
+            let mut independent_cache=HashMap::new();
+            let independent=C258_BODY_RETRY_ACTIVE.with(|active| {
+                let old=active.replace(true);
+                let candidate=self.check_with_formation(
+                    *body,&target,&extended,&body_frame,&mut allowance,
+                    conversion_refutation_is_unknown,&mut independent_cache,expected_formed);
+                active.set(old);
+                candidate
+            });
+            if std::env::var_os("NUCLEUS_C258_TRACE").is_some() {
+                use std::sync::atomic::{AtomicUsize,Ordering};
+                static SEQ:AtomicUsize=AtomicUsize::new(0);
+                let n=SEQ.fetch_add(1,Ordering::Relaxed);
+                if n<24 {
+                    eprintln!("NUCLEUS_C258_BODY_RETRY:seq={n}:lambda={expression:?}:body={body:?}:frame={}:ctx={}:spent={}:original={result:?}:candidate={independent:?}",
+                        body_frame.id(),extended.len(),4096-allowance);
+                }
+            }
+            if independent.is_proven() {
+                return Judgment::proven((),"formed-expected-lambda-independent-body-proof");
             }
         }
         result
