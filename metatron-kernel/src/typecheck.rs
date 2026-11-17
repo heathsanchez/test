@@ -2060,7 +2060,13 @@ impl<'a> TypeChecker<'a> {
                 let argument_judgment =
                     if std::env::var_os("NUCLEUS_C252_ARGUMENT_PROOF_RETRY").is_some()
                         && *remaining == 0 && argument_judgment.is_unknown()
-                        && (8..=24).contains(&context.len())
+                        // C253 opt-in scope ablation: C252's independently
+                        // checked argument rule stops at Gamma8 even though
+                        // the genuine source enters Gamma7 next. Widen only
+                        // this cost-policy boundary, never the typing rules.
+                        && ((8..=24).contains(&context.len())
+                            || (std::env::var_os("NUCLEUS_C253_WIDEN_SCOPE").is_some()
+                                && context.len() <= 24))
                         && !C252_ARGUMENT_RETRY_ACTIVE.with(std::cell::Cell::get)
                         && {
                             let mut state = self.lambda_trials.borrow_mut();
