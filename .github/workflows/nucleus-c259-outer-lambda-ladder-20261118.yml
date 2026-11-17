@@ -1,0 +1,66 @@
+name: Nucleus C259 exact outer Lambda-body proof ladder (diagnostic)
+on:
+  push:
+    branches: [research/nucleus-c259-outer-lambda-budget-ladder-20261118]
+    paths:
+      - '.github/workflows/nucleus-c259-outer-lambda-ladder-20261118.yml'
+      - 'metatron-kernel/src/typecheck.rs'
+      - 'metatron-kernel/scripts/c259_outer_lambda_ladder.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  exact-body:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {toolchain: '1.99.1'}
+      - name: Verify code and build unchanged independent checker judgments
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/c259"
+          git rev-parse HEAD > "$RUNNER_TEMP/c259/commit.txt"
+          git rev-parse HEAD:metatron-kernel/src > "$RUNNER_TEMP/c259/source-tree.txt"
+          python3 -m py_compile metatron-kernel/scripts/c255_lambda_premise_replay.py metatron-kernel/scripts/c259_outer_lambda_ladder.py
+          (cd metatron-kernel && python3 -m unittest discover -s tests_py -v)
+          cargo test --locked --lib --manifest-path metatron-kernel/Cargo.toml
+          cargo test --locked --features diagnostics --lib --manifest-path metatron-kernel/Cargo.toml
+          cargo build --locked --release --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel "$RUNNER_TEMP/c259/nucleus"
+          sha256sum "$RUNNER_TEMP/c259/nucleus" > "$RUNNER_TEMP/c259/binary-sha256.txt"
+      - name: Recover immutable 212-case official source archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh api repos/heathsanchez/test/actions/artifacts/14152050888/zip > "$RUNNER_TEMP/c259/current212.zip"
+          printf '%s  %s\n' 5bd679fe1f7a6988575ec469264b24cab8ddf465ae064bcb79d99541658acd2f "$RUNNER_TEMP/c259/current212.zip" | sha256sum -c -
+      - name: Preserve C255 four original arms and 22 paired soundness controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 metatron-kernel/scripts/c255_lambda_premise_replay.py \
+            --archive "$RUNNER_TEMP/c259/current212.zip" \
+            --checker "$RUNNER_TEMP/c259/nucleus" \
+            --flags experiments/nucleus-capture-substitution-20261107/alias-result-canonical-off-replay.json \
+            --out "$RUNNER_TEMP/c259"
+      - name: Replay authentic Fueled outer Lambda 8k/16k and 22 controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 metatron-kernel/scripts/c259_outer_lambda_ladder.py \
+            --archive "$RUNNER_TEMP/c259/current212.zip" \
+            --checker "$RUNNER_TEMP/c259/nucleus" \
+            --flags experiments/nucleus-capture-substitution-20261107/alias-result-canonical-off-replay.json \
+            --out "$RUNNER_TEMP/c259"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-c259-outer-lambda-ladder-source-pinned
+          path: ${{ runner.temp }}/c259/
+          retention-days: 60
