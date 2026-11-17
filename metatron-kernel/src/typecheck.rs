@@ -2391,6 +2391,19 @@ impl<'a> TypeChecker<'a> {
         cache: &mut HashMap<(ExprId, u64), TypeValue>,
         expected_formed: bool,
     ) -> Judgment<()> {
+        // C246 is a read-only source-pinned inspection of the existing
+        // bidirectional lambda proof path. It does not change eligibility,
+        // fuel, rule order, or any original verdict.
+        #[cfg(feature="diagnostics")]
+        let c246_target = std::env::var_os("NUCLEUS_C246_LAMBDA_PREMISES").is_some()
+            && expression.0 == 4782 && context.len() == 9
+            && matches!(expected, TypeValue::Term(t) if t.expr.0 == 439);
+        #[cfg(feature="diagnostics")]
+        if c246_target {
+            let state = self.lambda_trials.borrow();
+            eprintln!("NUCLEUS_C246_LAMBDA_ENTER:source=4782:expected=439:frame={}:formed={expected_formed}:remaining={}:trial_quota={}:trial_active={}:started={}:proven={}:declined={}",
+                frame.id(),*remaining,state.quota,state.active,state.started,state.proven,state.declined);
+        }
         // This rule is tried first only with a real formation premise.
         // Successful checking consumes its actual fuel; a declined bounded
         // trial leaves the ordinary inference path its original budget.
@@ -2403,13 +2416,23 @@ impl<'a> TypeChecker<'a> {
                 // A declined child exits the trial rather than starting a
                 // fresh speculative branch with a restored budget.
                 self.lambda_trials.borrow_mut().nested_direct += 1;
-                return self.check_expected_lambda_in(expression, expected, context, frame,
+                let nested = self.check_expected_lambda_in(expression, expected, context, frame,
                     remaining, conversion_refutation_is_unknown, cache, true);
+                #[cfg(feature="diagnostics")]
+                if c246_target {
+                    eprintln!("NUCLEUS_C246_NESTED:source=4782:result={nested:?}:left={}",*remaining);
+                }
+                return nested;
             }
             if let Some(budget) = self.begin_lambda_trial(*remaining) {
                 let mut trial_budget = budget;
                 let candidate = self.check_expected_lambda_in(expression, expected, context, frame,
                     &mut trial_budget, conversion_refutation_is_unknown, cache, true);
+                #[cfg(feature="diagnostics")]
+                if c246_target {
+                    eprintln!("NUCLEUS_C246_TRIAL:source=4782:allowance={budget}:spent={}:result={candidate:?}",
+                        budget.saturating_sub(trial_budget));
+                }
                 self.finish_lambda_trial(budget, trial_budget, candidate.is_proven());
                 if candidate.is_proven() {
                     *remaining = remaining.saturating_sub(budget - trial_budget);
@@ -2417,7 +2440,15 @@ impl<'a> TypeChecker<'a> {
                 }
             }
         }
+        #[cfg(feature="diagnostics")]
+        if c246_target {
+            eprintln!("NUCLEUS_C246_FALLBACK:source=4782:frame={}:remaining={}",frame.id(),*remaining);
+        }
         let inferred = self.infer_in(expression, context, frame, remaining, cache);
+        #[cfg(feature="diagnostics")]
+        if c246_target {
+            eprintln!("NUCLEUS_C246_INFERRED:source=4782:left={}:result={inferred:?}",*remaining);
+        }
         // C205 diagnostic only: inspect the unmodified source-derived argument
         // type before any conversion. Source IDs refer to pinned C202 NDJSON.
         #[cfg(feature = "diagnostics")]
@@ -2468,6 +2499,21 @@ impl<'a> TypeChecker<'a> {
                     context.len(),
                     context,
                 );
+                #[cfg(feature = "diagnostics")]
+                if c246_target {
+                    eprintln!("NUCLEUS_C246_CONVERSION:source=4782:frame={}:fuel={}:result={conversion:?}",
+                        frame.id(),*remaining);
+                    if std::env::var_os("NUCLEUS_C246_BIDIR_PROBES").is_some() {
+                        for allowance in [31usize,64,256,2048] {
+                            let mut proof_fuel=allowance;
+                            let trial = self.check_expected_lambda_in(
+                                expression, expected, context, frame, &mut proof_fuel,
+                                conversion_refutation_is_unknown, cache, true);
+                            eprintln!("NUCLEUS_C246_PROBE:source=4782:frame={}:allowance={allowance}:spent={}:result={trial:?}",
+                                frame.id(),allowance.saturating_sub(proof_fuel));
+                        }
+                    }
+                }
                 #[cfg(feature = "diagnostics")]
                 c236_check_conversion(expression, context.len(), frame.id(),
                     *remaining, &value, expected, &conversion);
