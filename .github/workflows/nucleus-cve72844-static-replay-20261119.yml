@@ -51,6 +51,9 @@ jobs:
           cargo test --locked --manifest-path metatron-kernel/Cargo.toml --test end_to_end nested_block_cannot_claim_an_external_constructor_rule -- --exact --nocapture
           cargo test --locked --manifest-path metatron-kernel/Cargo.toml --test end_to_end beta_checked_definition_is_accepted -- --exact --nocapture
       - name: Full native test suite
+        # Integration tests run in Rust test threads, unlike the CLI's 128 MiB worker.
+        env:
+          RUST_MIN_STACK: '134217728'
         shell: bash
         run: |
           set -euo pipefail
