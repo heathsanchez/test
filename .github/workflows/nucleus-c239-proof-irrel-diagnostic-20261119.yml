@@ -49,11 +49,39 @@ jobs:
           printf 'baseline=%s\nc189_enabled=%s\nc182_enabled=%s\nc189_diagnostics=%s\n' "$baseline_rc" "$c189_rc" "$c182_rc" "$c189_instrumented_rc" | tee "$out/results.txt"
           for file in "$out/"*.log; do
             echo "=== $(basename "$file") ==="
-            rg 'test result:|rigid-value-constructor-mismatch|NUCLEUS_VALUE_MISMATCH:|NUCLEUS_SOURCE_PROOF_IRREL:' "$file" | tail -n 15 || true
+            grep -E 'test result:|rigid-value-constructor-mismatch|NUCLEUS_VALUE_MISMATCH:|NUCLEUS_SOURCE_PROOF_IRREL:' "$file" | tail -n 15 || true
           done
           test "$baseline_rc" -eq 101
-          rg -q '2 passed; 1 failed' "$out/default.log"
-          rg -q 'rigid-value-constructor-mismatch' "$out/default.log"
+          grep -Fq '2 passed; 1 failed' "$out/default.log"
+          grep -Fq 'rigid-value-constructor-mismatch' "$out/default.log"
+      - name: Gate-on release CLI must preserve bad REJECT and good ACCEPT
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo build --locked --release --manifest-path metatron-kernel/Cargo.toml
+          checker=metatron-kernel/target/release/metatron-kernel
+          out="$RUNNER_TEMP/nucleus-c239-proof"
+          set +e
+          NUCLEUS_EXPERIMENTAL_C189_NEUTRAL_LAMBDA_PROOF=1 "$checker" < metatron-kernel/tests/fixtures/bad-nested-unused-param.ndjson
+          bad_rc=$?
+          NUCLEUS_EXPERIMENTAL_C189_NEUTRAL_LAMBDA_PROOF=1 "$checker" < metatron-kernel/tests/fixtures/good-beta-definition.ndjson
+          good_rc=$?
+          set -e
+          printf 'source_shaped_bad=%s\nbenign_beta=%s\n' "$bad_rc" "$good_rc" | tee "$out/c189-cli-results.txt"
+          test "$bad_rc" -eq 1
+          test "$good_rc" -eq 0
+      - name: Full native suite with C189 gate only (not production)
+        shell: bash
+        run: |
+          set -euo pipefail
+          out="$RUNNER_TEMP/nucleus-c239-proof"
+          set +e
+          NUCLEUS_EXPERIMENTAL_C189_NEUTRAL_LAMBDA_PROOF=1 timeout 600 cargo test --locked --manifest-path metatron-kernel/Cargo.toml --no-fail-fast > "$out/c189-full-native.log" 2>&1
+          suite_rc=$?
+          set -e
+          printf 'c189_full_native=%s\n' "$suite_rc" | tee "$out/c189-full-native-status.txt"
+          grep -E 'test result:|FAILED|error: test failed|running [0-9]+ tests' "$out/c189-full-native.log" | tail -n 65 || true
+          test "$suite_rc" -eq 0
       - uses: actions/upload-artifact@v4
         if: always()
         with:
