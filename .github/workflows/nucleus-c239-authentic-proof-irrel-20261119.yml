@@ -1,0 +1,109 @@
+name: Nucleus C239 source-authentic Lean proof-irrelevance A/B
+on:
+  push:
+    branches: [research/nucleus-c239-proof-irrel-c189-diagnostic-20261119]
+    paths:
+      - '.github/workflows/nucleus-c239-authentic-proof-irrel-20261119.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  authentic-proof:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: leanprover/lean4export
+          ref: af5aa64bb914c3c2c781f378088dbd38acf4f804
+          path: exporter
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: '1.99.1'
+      - name: Pin C239 source, authentic Lean target, and exporter
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD:metatron-kernel/src)" = ac74a47a570babe5d7895fb74d2098831aa9a300
+          test "$(git rev-parse HEAD:.github/nucleus-c239-proof/ProofIrrel.lean)" = f5bb324d364ca2283ca1e6f2137b3cd1ebe9e092
+          test "$(git -C exporter rev-parse HEAD)" = af5aa64bb914c3c2c781f378088dbd38acf4f804
+          mkdir -p "$RUNNER_TEMP/nucleus-c239-authentic"
+          git rev-parse HEAD > "$RUNNER_TEMP/nucleus-c239-authentic/replay-head.txt"
+          git rev-parse HEAD:metatron-kernel/src > "$RUNNER_TEMP/nucleus-c239-authentic/checker-tree.txt"
+          sha256sum .github/nucleus-c239-proof/ProofIrrel.lean > "$RUNNER_TEMP/nucleus-c239-authentic/lean-source-sha256.txt"
+      - name: Compile actual Lean rfl theorem with historical 4.34 nightly
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -o "$RUNNER_TEMP/elan-init.sh"
+          sh "$RUNNER_TEMP/elan-init.sh" -y --default-toolchain none
+          export PATH="$HOME/.elan/bin:$PATH"
+          elan toolchain install leanprover/lean4:nightly-2026-07-27
+          elan default leanprover/lean4:nightly-2026-07-27
+          export ELAN_TOOLCHAIN=leanprover/lean4:nightly-2026-07-27
+          lean --version | tee "$RUNNER_TEMP/nucleus-c239-authentic/lean-version.txt"
+          cd "$GITHUB_WORKSPACE/.github/nucleus-c239-proof"
+          lean -o ProofIrrel.olean ProofIrrel.lean
+          test -s ProofIrrel.olean
+          sha256sum ProofIrrel.olean > "$RUNNER_TEMP/nucleus-c239-authentic/lean-olean-sha256.txt"
+      - name: Export genuine theorem and harmless control with pinned official exporter
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          export ELAN_TOOLCHAIN=leanprover/lean4:nightly-2026-07-27
+          cd exporter
+          lake build lean4export
+          cd "$GITHUB_WORKSPACE"
+          export LEAN_PATH="$GITHUB_WORKSPACE/.github/nucleus-c239-proof"
+          "$GITHUB_WORKSPACE/exporter/.lake/build/bin/lean4export" ProofIrrel -- ProofIrrel.app_proof_irrel > "$RUNNER_TEMP/nucleus-c239-authentic/ProofIrrel.ndjson"
+          "$GITHUB_WORKSPACE/exporter/.lake/build/bin/lean4export" ProofIrrel -- ProofIrrel.benign_true > "$RUNNER_TEMP/nucleus-c239-authentic/Benign.ndjson"
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          out = Path(os.environ["RUNNER_TEMP"]) / "nucleus-c239-authentic"
+          for name, theorem in [("ProofIrrel", "app_proof_irrel"), ("Benign", "benign_true")]:
+              p = out / (name + ".ndjson")
+              records = [json.loads(line) for line in p.open()]
+              assert records[0]["meta"]["format"]["version"] == "3.1.0"
+              names = {rec["in"]: rec["str"]["str"] for rec in records if "in" in rec and "str" in rec}
+              actual = {names.get(rec["thm"]["name"]) for rec in records if "thm" in rec}
+              assert theorem in actual, actual
+              print(name, "source-authentic", p.stat().st_size, "bytes", theorem, records[0]["meta"])
+          PY
+          sha256sum "$RUNNER_TEMP/nucleus-c239-authentic/"*.ndjson > "$RUNNER_TEMP/nucleus-c239-authentic/export-sha256.txt"
+      - name: Replay source-authentic Lean certificate with C189 off and on
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo build --locked --release --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          checker=metatron-kernel/target/release/metatron-kernel
+          out="$RUNNER_TEMP/nucleus-c239-authentic"
+          for module in ProofIrrel Benign; do
+            set +e
+            NUCLEUS_TRACE_DOWNSTREAM=1 NUCLEUS_TRACE_PARSE_ERROR=1 timeout 180 "$checker" < "$out/$module.ndjson" > "$out/$module-default.log" 2>&1
+            normal_rc=$?
+            NUCLEUS_EXPERIMENTAL_C189_NEUTRAL_LAMBDA_PROOF=1 NUCLEUS_TRACE_DOWNSTREAM=1 NUCLEUS_TRACE_PARSE_ERROR=1 timeout 180 "$checker" < "$out/$module.ndjson" > "$out/$module-c189.log" 2>&1
+            c189_rc=$?
+            set -e
+            printf '%s default=%s c189=%s\n' "$module" "$normal_rc" "$c189_rc" | tee -a "$out/verdicts.txt"
+            echo "$module DEFAULT termination:"
+            grep '^NUCLEUS_DOWNSTREAM:' "$out/$module-default.log" | tail -n 2 || true
+            echo "$module C189 termination:"
+            grep '^NUCLEUS_DOWNSTREAM:' "$out/$module-c189.log" | tail -n 2 || true
+            if [ "$module" = Benign ]; then
+              test "$normal_rc" -eq 0
+              test "$c189_rc" -eq 0
+            fi
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-c239-source-authentic-irrel-evidence
+          path: ${{ runner.temp }}/nucleus-c239-authentic/
+          retention-days: 90
+# Bounded research spike. Neither kernel source nor production flags are modified.
