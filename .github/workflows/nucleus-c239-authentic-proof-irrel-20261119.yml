@@ -29,7 +29,7 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD:metatron-kernel/src)" = ac74a47a570babe5d7895fb74d2098831aa9a300
-          test "$(git rev-parse HEAD:.github/nucleus-c239-proof/ProofIrrel.lean)" = 8df2e7c35ccd69859fd4fb7a32246940e207d769
+          test "$(git rev-parse HEAD:.github/nucleus-c239-proof/ProofIrrel.lean)" = 85a33c72daa9b3b3e5190d5f7e6aad2c62b2340b
           test "$(git -C exporter rev-parse HEAD)" = af5aa64bb914c3c2c781f378088dbd38acf4f804
           mkdir -p "$RUNNER_TEMP/nucleus-c239-authentic"
           git rev-parse HEAD > "$RUNNER_TEMP/nucleus-c239-authentic/replay-head.txt"
@@ -62,12 +62,15 @@ jobs:
           export LEAN_PATH="$GITHUB_WORKSPACE/.github/nucleus-c239-proof"
           "$GITHUB_WORKSPACE/exporter/.lake/build/bin/lean4export" ProofIrrel -- ProofIrrel.app_proof_irrel > "$RUNNER_TEMP/nucleus-c239-authentic/ProofIrrel.ndjson"
           "$GITHUB_WORKSPACE/exporter/.lake/build/bin/lean4export" ProofIrrel -- ProofIrrel.global_app_proof_irrel > "$RUNNER_TEMP/nucleus-c239-authentic/Global.ndjson"
+          "$GITHUB_WORKSPACE/exporter/.lake/build/bin/lean4export" ProofIrrel -- ProofIrrel.bound_q_global_f > "$RUNNER_TEMP/nucleus-c239-authentic/BoundQ.ndjson"
+          "$GITHUB_WORKSPACE/exporter/.lake/build/bin/lean4export" ProofIrrel -- ProofIrrel.global_q_bound_f > "$RUNNER_TEMP/nucleus-c239-authentic/BoundF.ndjson"
+          "$GITHUB_WORKSPACE/exporter/.lake/build/bin/lean4export" ProofIrrel -- ProofIrrel.bound_q_bound_f > "$RUNNER_TEMP/nucleus-c239-authentic/BoundQF.ndjson"
           "$GITHUB_WORKSPACE/exporter/.lake/build/bin/lean4export" ProofIrrel -- ProofIrrel.benign_true > "$RUNNER_TEMP/nucleus-c239-authentic/Benign.ndjson"
           python3 - <<'PY'
           import json, os
           from pathlib import Path
           out = Path(os.environ["RUNNER_TEMP"]) / "nucleus-c239-authentic"
-          for name, theorem in [("ProofIrrel", "app_proof_irrel"), ("Global", "global_app_proof_irrel"), ("Benign", "benign_true")]:
+          for name, theorem in [("ProofIrrel", "app_proof_irrel"), ("Global", "global_app_proof_irrel"), ("BoundQ", "bound_q_global_f"), ("BoundF", "global_q_bound_f"), ("BoundQF", "bound_q_bound_f"), ("Benign", "benign_true")]:
               p = out / (name + ".ndjson")
               records = [json.loads(line) for line in p.open()]
               assert records[0]["meta"]["format"]["version"] == "3.1.0"
@@ -84,7 +87,7 @@ jobs:
           cargo build --locked --release --features diagnostics --manifest-path metatron-kernel/Cargo.toml
           checker=metatron-kernel/target/release/metatron-kernel
           out="$RUNNER_TEMP/nucleus-c239-authentic"
-          for module in ProofIrrel Global Benign; do
+          for module in Global BoundQ BoundF BoundQF ProofIrrel Benign; do
             set +e
             NUCLEUS_TRACE_DOWNSTREAM=1 NUCLEUS_TRACE_VALUE_MISMATCH=1 NUCLEUS_TRACE_PARSE_ERROR=1 timeout 180 "$checker" < "$out/$module.ndjson" > "$out/$module-default.log" 2>&1
             normal_rc=$?
