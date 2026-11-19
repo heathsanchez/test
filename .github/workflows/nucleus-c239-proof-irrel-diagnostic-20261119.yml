@@ -1,0 +1,64 @@
+name: Nucleus C239 proof-irrelevance source-qualified diagnostic
+on:
+  push:
+    branches: [research/nucleus-c239-proof-irrel-c189-diagnostic-20261119]
+    paths:
+      - '.github/workflows/nucleus-c239-proof-irrel-diagnostic-20261119.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  c239-relevance:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      RUST_MIN_STACK: '134217728'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: '1.99.1'
+      - name: Pin qualified checker and unchanged failing source test
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD:metatron-kernel/src)" = ac74a47a570babe5d7895fb74d2098831aa9a300
+          test "$(git rev-parse HEAD:metatron-kernel/tests/checked_relevance_signature.rs)" = 77e68efa2635d260819b66fc32c04990ed7a3815
+          mkdir -p "$RUNNER_TEMP/nucleus-c239-proof"
+          git rev-parse HEAD > "$RUNNER_TEMP/nucleus-c239-proof/head.txt"
+          git rev-parse HEAD:metatron-kernel/src > "$RUNNER_TEMP/nucleus-c239-proof/source-tree.txt"
+          sha256sum metatron-kernel/tests/checked_relevance_signature.rs > "$RUNNER_TEMP/nucleus-c239-proof/test-sha256.txt"
+      - name: A/B reproduce default failure and probe separately gated evidence paths
+        shell: bash
+        run: |
+          set -euo pipefail
+          out="$RUNNER_TEMP/nucleus-c239-proof"
+          manifest=metatron-kernel/Cargo.toml
+          set +e
+          NUCLEUS_TRACE_VALUE_MISMATCH=1 cargo test --locked --manifest-path "$manifest" --test checked_relevance_signature -- --nocapture > "$out/default.log" 2>&1
+          baseline_rc=$?
+          NUCLEUS_EXPERIMENTAL_C189_NEUTRAL_LAMBDA_PROOF=1 cargo test --locked --manifest-path "$manifest" --test checked_relevance_signature -- --nocapture > "$out/c189-enabled.log" 2>&1
+          c189_rc=$?
+          NUCLEUS_EXPERIMENTAL_C182_TYPED_PROOF_IRREL=1 cargo test --locked --manifest-path "$manifest" --test checked_relevance_signature -- --nocapture > "$out/c182-enabled.log" 2>&1
+          c182_rc=$?
+          NUCLEUS_EXPERIMENTAL_C189_NEUTRAL_LAMBDA_PROOF=1 NUCLEUS_C189_TRACE=1 cargo test --locked --features diagnostics --manifest-path "$manifest" --test checked_relevance_signature distinct_proof_arguments_of_same_checked_proposition_are_convertible -- --exact --nocapture > "$out/c189-instrumented.log" 2>&1
+          c189_instrumented_rc=$?
+          set -e
+          printf 'baseline=%s\nc189_enabled=%s\nc182_enabled=%s\nc189_diagnostics=%s\n' "$baseline_rc" "$c189_rc" "$c182_rc" "$c189_instrumented_rc" | tee "$out/results.txt"
+          for file in "$out/"*.log; do
+            echo "=== $(basename "$file") ==="
+            rg 'test result:|rigid-value-constructor-mismatch|NUCLEUS_VALUE_MISMATCH:|NUCLEUS_SOURCE_PROOF_IRREL:' "$file" | tail -n 15 || true
+          done
+          test "$baseline_rc" -eq 101
+          rg -q '2 passed; 1 failed' "$out/default.log"
+          rg -q 'rigid-value-constructor-mismatch' "$out/default.log"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-c239-proof-irrel-ab-evidence
+          path: ${{ runner.temp }}/nucleus-c239-proof/
+          retention-days: 90
+# This is a diagnostic spike; the checker and the three original tests remain unchanged.
+# Optional environment gates are probes, not a promoted production fix.
