@@ -52,7 +52,8 @@ jobs:
           sh "$RUNNER_TEMP/elan-init.sh" -y --default-toolchain none
           export PATH="$HOME/.elan/bin:$PATH"
           elan toolchain install leanprover/lean4:nightly-2026-07-27
-          export LEAN_TOOLCHAIN=leanprover/lean4:nightly-2026-07-27
+          elan default leanprover/lean4:nightly-2026-07-27
+          export ELAN_TOOLCHAIN=leanprover/lean4:nightly-2026-07-27
           lean --version | tee "$RUNNER_TEMP/cve-authentic/lean-version.txt"
           cd exporter
           lake build lean4export
@@ -80,7 +81,7 @@ jobs:
             --volume "$GITHUB_WORKSPACE/brossard/millennium/lean4-p-is-not-np-certificate:/pnnp:ro" \
             --volume "$RUNNER_TEMP/cve-authentic:/out:rw" \
             --env ELAN_HOME=/elan \
-            --env LEAN_TOOLCHAIN=leanprover/lean4:nightly-2026-07-27 \
+            --env ELAN_TOOLCHAIN=leanprover/lean4:nightly-2026-07-27 \
             --env LEAN_PATH=/pnp:/pnnp \
             --env PATH=/elan/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
             --env HOME=/tmp \
