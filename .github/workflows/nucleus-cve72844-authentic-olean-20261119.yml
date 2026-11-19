@@ -86,7 +86,7 @@ jobs:
             --env PATH=/elan/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
             --env HOME=/tmp \
             nucleus-lean-export-sandbox:local \
-            /bin/bash -c 'set -euo pipefail; timeout 180 /exporter/lean4export PNP -- boom bogus_P_eq_NP > /out/PNP.ndjson; timeout 180 /exporter/lean4export PNNP -- boom bogus_P_neq_NP_direct bogus_P_neq_NP > /out/PNNP.ndjson'
+            /bin/bash -c 'set -euo pipefail; timeout 180 /exporter/lean4export PNP -- boom Complexity.bogus_P_eq_NP > /out/PNP.ndjson; timeout 180 /exporter/lean4export PNNP -- boom Complexity.bogus_P_neq_NP_direct Complexity.bogus_P_neq_NP > /out/PNNP.ndjson'
           python3 - <<'PY'
           import json
           from pathlib import Path
@@ -94,9 +94,16 @@ jobs:
           for module in ("PNP", "PNNP"):
               p = Path(os.environ["RUNNER_TEMP"]) / "cve-authentic" / (module + ".ndjson")
               assert p.stat().st_size > 0
-              first = json.loads(p.open().readline())
+              records = [json.loads(line) for line in p.open()]
+              first = records[0]
               assert first["meta"]["format"]["version"].startswith("3.")
-              print(module, "exported", p.stat().st_size, "bytes", first["meta"])
+              names = {rec["in"]: rec["str"]["str"] for rec in records if "in" in rec and "str" in rec}
+              theorem_names = {names.get(rec["thm"]["name"]) for rec in records if "thm" in rec}
+              final_theorem = "bogus_P_eq_NP" if module == "PNP" else "bogus_P_neq_NP"
+              assert {"boom", "bad", final_theorem}.issubset(theorem_names), theorem_names
+              assert {"P", "C", "W", "E"}.issubset(set(names.values()))
+              assert any("proj" in rec for rec in records)
+              print(module, "exported", p.stat().st_size, "bytes; terminal theorem", final_theorem, "present; metadata", first["meta"])
           PY
           sha256sum "$RUNNER_TEMP/cve-authentic/"*.ndjson > "$RUNNER_TEMP/cve-authentic/export-sha256.txt"
       - name: Replay exported original certificates against unchanged Nucleus
