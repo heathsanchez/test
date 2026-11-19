@@ -35,6 +35,7 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD:metatron-kernel/src)" = ac74a47a570babe5d7895fb74d2098831aa9a300
+          test "$(git rev-parse HEAD:.github/nucleus-cve72844/Benign.lean)" = f36166bd267267f3a0ecc5c0c37685dc5a6caaeb
           test "$(git -C brossard rev-parse HEAD)" = 0746387e8ed929e85f3f8a6753b0bff4040b008c
           test "$(git -C exporter rev-parse HEAD)" = af5aa64bb914c3c2c781f378088dbd38acf4f804
           test "$(git -C brossard rev-parse HEAD:millennium/lean4-p-is-np-certificate/PNP.olean)" = 35c830bf4edaf463d7d8dd57136fcc15643530cf
@@ -58,6 +59,9 @@ jobs:
           cd exporter
           lake build lean4export
           test -x .lake/build/bin/lean4export
+          cd "$GITHUB_WORKSPACE/.github/nucleus-cve72844"
+          lean -o Benign.olean Benign.lean
+          test -s Benign.olean
       - name: Build minimal sandbox dependencies (before untrusted certificate import)
         shell: bash
         run: |
@@ -79,19 +83,20 @@ jobs:
             --volume "$GITHUB_WORKSPACE/exporter/.lake/build/bin:/exporter:ro" \
             --volume "$GITHUB_WORKSPACE/brossard/millennium/lean4-p-is-np-certificate:/pnp:ro" \
             --volume "$GITHUB_WORKSPACE/brossard/millennium/lean4-p-is-not-np-certificate:/pnnp:ro" \
+            --volume "$GITHUB_WORKSPACE/.github/nucleus-cve72844:/benign:ro" \
             --volume "$RUNNER_TEMP/cve-authentic:/out:rw" \
             --env ELAN_HOME=/elan \
             --env ELAN_TOOLCHAIN=leanprover/lean4:nightly-2026-07-27 \
-            --env LEAN_PATH=/pnp:/pnnp \
+            --env LEAN_PATH=/pnp:/pnnp:/benign \
             --env PATH=/elan/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
             --env HOME=/tmp \
             nucleus-lean-export-sandbox:local \
-            /bin/bash -c 'set -euo pipefail; timeout 180 /exporter/lean4export PNP -- boom Complexity.bogus_P_eq_NP > /out/PNP.ndjson; timeout 180 /exporter/lean4export PNNP -- boom Complexity.bogus_P_neq_NP_direct Complexity.bogus_P_neq_NP > /out/PNNP.ndjson'
+            /bin/bash -c 'set -euo pipefail; timeout 180 /exporter/lean4export PNP -- boom Complexity.bogus_P_eq_NP > /out/PNP.ndjson; timeout 180 /exporter/lean4export PNNP -- boom Complexity.bogus_P_neq_NP_direct Complexity.bogus_P_neq_NP > /out/PNNP.ndjson; timeout 180 /exporter/lean4export Benign -- benign_true > /out/Benign.ndjson'
           python3 - <<'PY'
           import json
           from pathlib import Path
           import os
-          for module in ("PNP", "PNNP"):
+          for module in ("PNP", "PNNP", "Benign"):
               p = Path(os.environ["RUNNER_TEMP"]) / "cve-authentic" / (module + ".ndjson")
               assert p.stat().st_size > 0
               records = [json.loads(line) for line in p.open()]
@@ -99,11 +104,15 @@ jobs:
               assert first["meta"]["format"]["version"].startswith("3.")
               names = {rec["in"]: rec["str"]["str"] for rec in records if "in" in rec and "str" in rec}
               theorem_names = {names.get(rec["thm"]["name"]) for rec in records if "thm" in rec}
-              final_theorem = "bogus_P_eq_NP" if module == "PNP" else "bogus_P_neq_NP"
-              assert {"boom", "bad", final_theorem}.issubset(theorem_names), theorem_names
-              assert {"P", "C", "W", "E"}.issubset(set(names.values()))
-              assert any("proj" in rec for rec in records)
-              print(module, "exported", p.stat().st_size, "bytes; terminal theorem", final_theorem, "present; metadata", first["meta"])
+              if module == "Benign":
+                  assert "benign_true" in theorem_names, theorem_names
+                  print(module, "exported", p.stat().st_size, "bytes; benign theorem present; metadata", first["meta"])
+              else:
+                  final_theorem = "bogus_P_eq_NP" if module == "PNP" else "bogus_P_neq_NP"
+                  assert {"boom", "bad", final_theorem}.issubset(theorem_names), theorem_names
+                  assert {"P", "C", "W", "E"}.issubset(set(names.values()))
+                  assert any("proj" in rec for rec in records)
+                  print(module, "exported", p.stat().st_size, "bytes; terminal theorem", final_theorem, "present; metadata", first["meta"])
           PY
           sha256sum "$RUNNER_TEMP/cve-authentic/"*.ndjson > "$RUNNER_TEMP/cve-authentic/export-sha256.txt"
       - name: Replay exported original certificates against unchanged Nucleus
@@ -123,6 +132,12 @@ jobs:
               exit 1
             fi
           done
+          set +e
+          NUCLEUS_TRACE_PARSE_ERROR=1 timeout 180 "$checker" < "$RUNNER_TEMP/cve-authentic/Benign.ndjson" > "$RUNNER_TEMP/cve-authentic/Benign-checker-output.txt" 2>&1
+          benign_rc=$?
+          set -e
+          printf 'Benign historical-nightly control: checker exit %s (ACCEPT=0)\\n' "$benign_rc" | tee -a "$RUNNER_TEMP/cve-authentic/verdicts.txt"
+          test "$benign_rc" -eq 0
       - uses: actions/upload-artifact@v4
         if: always()
         with:
