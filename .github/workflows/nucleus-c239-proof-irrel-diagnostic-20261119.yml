@@ -7,6 +7,7 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+  actions: read
 jobs:
   c239-relevance:
     runs-on: ubuntu-24.04
@@ -82,6 +83,33 @@ jobs:
           printf 'c189_full_native=%s\n' "$suite_rc" | tee "$out/c189-full-native-status.txt"
           grep -E 'test result:|FAILED|error: test failed|running [0-9]+ tests' "$out/c189-full-native.log" | tail -n 65 || true
           test "$suite_rc" -eq 0
+      - name: Download previously frozen original CVE exports and matched benign control
+        uses: actions/download-artifact@v4
+        with:
+          name: nucleus-cve72844-original-olean-evidence
+          run-id: 44445975266
+          repository: heathsanchez/test
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/nucleus-c239-proof/exact-cve
+      - name: C189-enabled checker must still reject exact forged certificates
+        shell: bash
+        run: |
+          set -euo pipefail
+          out="$RUNNER_TEMP/nucleus-c239-proof"
+          evidence="$out/exact-cve"
+          test "$(sha256sum "$evidence/PNP.ndjson" | cut -d' ' -f1)" = 4a4078aa0c10b9566537e8e943d9cf8bdd70b7ac068b986432fc16620cc03802
+          test "$(sha256sum "$evidence/PNNP.ndjson" | cut -d' ' -f1)" = 894f8bd6fd3bd6463408971b9393fbf5dc8b7e3bbf778b35291aee2c746cbe9a
+          test "$(sha256sum "$evidence/Benign.ndjson" | cut -d' ' -f1)" = 72ee6ab16e9e5142b1e6171b918c422d3ca67f666a441e616f6d0112b0cd37c8
+          checker=metatron-kernel/target/release/metatron-kernel
+          test -x "$checker"
+          for module in PNP PNNP Benign; do
+            set +e
+            NUCLEUS_EXPERIMENTAL_C189_NEUTRAL_LAMBDA_PROOF=1 NUCLEUS_TRACE_PARSE_ERROR=1 timeout 180 "$checker" < "$evidence/$module.ndjson" > "$out/c189-$module-output.txt" 2>&1
+            rc=$?
+            set -e
+            printf '%s=%s\n' "$module" "$rc" | tee -a "$out/c189-exact-cve-results.txt"
+            if [ "$module" = Benign ]; then test "$rc" -eq 0; else test "$rc" -eq 1; fi
+          done
       - uses: actions/upload-artifact@v4
         if: always()
         with:
