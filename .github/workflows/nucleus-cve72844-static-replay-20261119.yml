@@ -1,0 +1,80 @@
+name: Nucleus CVE-2026-72844 static source-shape replay
+on:
+  push:
+    branches: [research/nucleus-cve72844-static-replay-20261119]
+    paths:
+      - '.github/workflows/nucleus-cve72844-static-replay-20261119.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  static-witness:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: '1.99.1'
+      - name: Pin unchanged checker and prior adversarial fixture
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD:metatron-kernel/src)" = ac74a47a570babe5d7895fb74d2098831aa9a300
+          test "$(git rev-parse HEAD:metatron-kernel/tests/fixtures/bad-nested-unused-param.ndjson)" = 2af92362d0e0d75d8f8064e8447ff5d38456cab5
+          test "$(git rev-parse HEAD:metatron-kernel/tests/fixtures/good-beta-definition.ndjson)" = b63a1b6a5a96b7be74e300a084c128e81b5eb54b
+          mkdir -p "$RUNNER_TEMP/cve72844"
+          git rev-parse HEAD > "$RUNNER_TEMP/cve72844/workflow-commit.txt"
+          git rev-parse HEAD:metatron-kernel/src > "$RUNNER_TEMP/cve72844/checker-source-tree.txt"
+          sha256sum metatron-kernel/tests/fixtures/bad-nested-unused-param.ndjson metatron-kernel/tests/fixtures/good-beta-definition.ndjson > "$RUNNER_TEMP/cve72844/input-sha256.txt"
+      - name: Verify CVE source-shape markers without executing hostile Lean
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          path = Path("metatron-kernel/tests/fixtures/bad-nested-unused-param.ndjson")
+          records = [json.loads(line) for line in path.read_text().splitlines()]
+          names = {r["in"]: r["str"]["str"] for r in records if "in" in r and "str" in r}
+          assert {"P", "C", "W", "E", "bad", "boom"}.issubset(set(names.values()))
+          assert any("proj" in r for r in records)
+          assert any("thm" in r and names.get(r["thm"]["name"]) == "boom" for r in records)
+          print("SOURCE-SHAPE CONFIRMED: P/C/W/E, projections, bad, boom")
+          PY
+      - name: Native named adversarial and benign tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo test --locked --manifest-path metatron-kernel/Cargo.toml --test end_to_end nested_block_cannot_claim_an_external_constructor_rule -- --exact --nocapture
+          cargo test --locked --manifest-path metatron-kernel/Cargo.toml --test end_to_end beta_checked_definition_is_accepted -- --exact --nocapture
+      - name: Full native test suite
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo test --locked --manifest-path metatron-kernel/Cargo.toml
+      - name: Independent checker CLI verdicts on immutable fixtures
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo build --locked --release --manifest-path metatron-kernel/Cargo.toml
+          checker=metatron-kernel/target/release/metatron-kernel
+          set +e
+          "$checker" < metatron-kernel/tests/fixtures/bad-nested-unused-param.ndjson
+          bad_rc=$?
+          "$checker" < metatron-kernel/tests/fixtures/good-beta-definition.ndjson
+          good_rc=$?
+          set -e
+          printf 'CVE source-shaped fixture: exit %s (REJECT=1)\nBenign beta definition: exit %s (ACCEPT=0)\n' "$bad_rc" "$good_rc" | tee "$RUNNER_TEMP/cve72844/verdicts.txt"
+          test "$bad_rc" -eq 1
+          test "$good_rc" -eq 0
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-cve72844-static-replay-evidence
+          path: ${{ runner.temp }}/cve72844/
+          retention-days: 90
+# This is a replay of the existing source-shaped #14576 fixture only.
+# It does NOT claim to have checked Brossard's PNP.olean or PNNP.olean.
