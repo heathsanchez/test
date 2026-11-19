@@ -7,6 +7,7 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+  actions: read
 jobs:
   authentic-proof:
     runs-on: ubuntu-24.04
@@ -104,6 +105,103 @@ jobs:
               test "$c189_rc" -eq 0
             fi
           done
+      - name: Replay authentic factorial under qualified C239 212-case flags
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD:experiments/nucleus-capture-substitution-20261107/alias-result-canonical-off-replay.json)" = 7b26987e4fc0609f45ef96775659eee145794675
+          python3 - <<'PY'
+          import json, os, subprocess
+          from pathlib import Path
+          out = Path(os.environ["RUNNER_TEMP"]) / "nucleus-c239-authentic"
+          checker = Path("metatron-kernel/target/release/metatron-kernel").resolve()
+          flags = json.loads(Path("experiments/nucleus-capture-substitution-20261107/alias-result-canonical-off-replay.json").read_text())["flags"]
+          assert len(flags) == 24 and set(flags.values()) == {"1"}
+          extras = ("C182_TYPED_PROOF_IRREL", "C189_NEUTRAL_LAMBDA_PROOF",
+                    "C190_QUOTIENT_IOTA", "C199_TWO_PARAM_EIGHT_FIELD_RECORD",
+                    "C201_CLOSED_NULLARY_ENUM", "C216_RIGID_DATA_FUNCTION_CTOR")
+          policy = dict(flags)
+          policy.update({"NUCLEUS_EXPERIMENTAL_" + flag: "1" for flag in extras})
+          policy["NUCLEUS_C234_CAPTURE_FALLBACK_RESERVE"] = "1"
+          modes = {
+              "default": {},
+              "c189": {"NUCLEUS_EXPERIMENTAL_C189_NEUTRAL_LAMBDA_PROOF": "1"},
+              "relevance": {"NUCLEUS_EXPERIMENTAL_RELEVANCE": "1"},
+              "relevance_c189": {"NUCLEUS_EXPERIMENTAL_RELEVANCE": "1",
+                                "NUCLEUS_EXPERIMENTAL_C189_NEUTRAL_LAMBDA_PROOF": "1"},
+              "qualified": policy,
+              "qualified_without_relevance": {k:v for k,v in policy.items() if k != "NUCLEUS_EXPERIMENTAL_RELEVANCE"},
+          }
+          cases = {
+              "Global": [1, 0, 0, 0, 0, 0],
+              "BoundQ": [1, 1, 0, 0, 0, 1],
+              "BoundF": [1, 0, 1, 0, 0, 0],
+              "BoundQF": [1, 1, 1, 1, 1, 1],
+              "ProofIrrel": [1, 1, 1, 1, 1, 1],
+              "Benign": [0, 0, 0, 0, 0, 0],
+          }
+          results = []
+          for name, expected in cases.items():
+              data = (out / (name + ".ndjson")).read_bytes()
+              for (mode, override), want in zip(modes.items(), expected):
+                  env = {k:v for k,v in os.environ.items() if not k.startswith("NUCLEUS_")}
+                  env.update(override)
+                  env["NUCLEUS_TRACE_DOWNSTREAM"] = "1"
+                  proc = subprocess.run([str(checker)], input=data, capture_output=True,
+                                        env=env, timeout=180, check=False)
+                  (out / f"{name}-{mode}-qualified.log").write_bytes(proc.stdout + proc.stderr)
+                  verdict = "ACCEPT" if proc.returncode == 0 else "REJECT"
+                  results.append(f"{name} {mode} rc={proc.returncode} {verdict}")
+                  assert proc.returncode == want, f"{name}/{mode}: got {proc.returncode}; expected {want}"
+          (out / "verdicts-qualified.txt").write_text("\n".join(results) + "\n")
+          print("\n".join(results))
+          PY
+      - name: Fetch exact 2026-11-19 original Lean forgery exports
+        uses: actions/download-artifact@v4
+        with:
+          name: nucleus-cve72844-original-olean-evidence
+          run-id: 44445975266
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/nucleus-c239-authentic/original-cve
+      - name: Replay pinned forged exports with qualified C239 flags
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, hashlib, os, subprocess
+          from pathlib import Path
+          out = Path(os.environ["RUNNER_TEMP"]) / "nucleus-c239-authentic"
+          originals = out / "original-cve"
+          checker = Path("metatron-kernel/target/release/metatron-kernel").resolve()
+          sha = {"PNP": "4a4078aa0c10b9566537e8e943d9cf8bdd70b7ac068b986432fc16620cc03802",
+                 "PNNP": "894f8bd6fd3bd6463408971b9393fbf5dc8b7e3bbf778b35291aee2c746cbe9a",
+                 "Benign": "72ee6ab16e9e5142b1e6171b918c422d3ca67f666a441e616f6d0112b0cd37c8"}
+          historical = json.loads(Path("experiments/nucleus-capture-substitution-20261107/alias-result-canonical-off-replay.json").read_text())["flags"]
+          extras = ("C182_TYPED_PROOF_IRREL", "C189_NEUTRAL_LAMBDA_PROOF",
+                    "C190_QUOTIENT_IOTA", "C199_TWO_PARAM_EIGHT_FIELD_RECORD",
+                    "C201_CLOSED_NULLARY_ENUM", "C216_RIGID_DATA_FUNCTION_CTOR")
+          qualified = dict(historical)
+          qualified.update({"NUCLEUS_EXPERIMENTAL_" + flag: "1" for flag in extras})
+          qualified["NUCLEUS_C234_CAPTURE_FALLBACK_RESERVE"] = "1"
+          modes = {"default": {}, "c189": {"NUCLEUS_EXPERIMENTAL_C189_NEUTRAL_LAMBDA_PROOF": "1"},
+                   "relevance": {"NUCLEUS_EXPERIMENTAL_RELEVANCE": "1"}, "qualified": qualified}
+          results = []
+          for name, expected_hash in sha.items():
+              data = (originals / (name + ".ndjson")).read_bytes()
+              assert hashlib.sha256(data).hexdigest() == expected_hash, name
+              for mode, overrides in modes.items():
+                  env = {k:v for k,v in os.environ.items() if not k.startswith("NUCLEUS_")}
+                  env.update(overrides)
+                  env["NUCLEUS_TRACE_DOWNSTREAM"] = "1"
+                  proc = subprocess.run([str(checker)], input=data, capture_output=True,
+                                        env=env, timeout=180, check=False)
+                  (out / f"CVE-{name}-{mode}.log").write_bytes(proc.stdout + proc.stderr)
+                  expected = 0 if name == "Benign" else 1
+                  results.append(f"original-{name} {mode} rc={proc.returncode}")
+                  assert proc.returncode == expected, f"{name}/{mode}: got {proc.returncode}; expected {expected}"
+          (out / "verdicts-cve-qualified.txt").write_text("\n".join(results) + "\n")
+          print("\n".join(results))
+          PY
       - uses: actions/upload-artifact@v4
         if: always()
         with:
