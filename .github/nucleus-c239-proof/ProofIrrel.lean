@@ -19,6 +19,20 @@ theorem global_app_proof_irrel :
     f0 (fun a : A0 => a) = f0 q0 := by
   rfl
 
+-- Two-by-two: same global A0; independently vary q and f binding origin.
+theorem bound_q_global_f (q : A0 → A0) :
+    f0 (fun a : A0 => a) = f0 q := by
+  rfl
+
+theorem global_q_bound_f (f : (A0 → A0) → Nat) :
+    f (fun a : A0 => a) = f q0 := by
+  rfl
+
+theorem bound_q_bound_f (q : A0 → A0)
+    (f : (A0 → A0) → Nat) :
+    f (fun a : A0 => a) = f q := by
+  rfl
+
 theorem benign_true : True := True.intro
 
 end ProofIrrel
