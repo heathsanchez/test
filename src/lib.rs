@@ -1,4 +1,4 @@
-use std::io::BufRead;
+use std::io::{BufRead, Cursor, Read};
 
 mod capability;
 pub mod checker;
@@ -9,6 +9,7 @@ pub mod environment;
 pub mod id;
 mod inductive;
 mod indexed_prop;
+mod renovation;
 pub mod judgment;
 pub mod level;
 pub mod machine;
@@ -25,7 +26,29 @@ use verdict::Verdict;
 
 /// Check one Arena export stream.
 ///
-pub fn run<R: BufRead>(reader: R) -> Verdict {
+pub fn run<R: BufRead>(mut reader: R) -> Verdict {
+    let mut header = String::new();
+    if reader.read_line(&mut header).is_err() {
+        return Verdict::Error;
+    }
+    let version = serde_json::from_str::<serde_json::Value>(&header).ok()
+        .and_then(|v| v.pointer("/meta/format/version").and_then(|x| x.as_str()).map(str::to_owned));
+    if version.as_deref() == Some("3.2.0") {
+        return match renovation::refute(reader) {
+            Ok(Some(reason)) => {
+                eprintln!("NUCLEUS_RENOVATION_REFUTATION: {reason}");
+                Verdict::Reject
+            }
+            Ok(None) => Verdict::Unknown,
+            Err(reason) => {
+                eprintln!("NUCLEUS_RENOVATION_ERROR: {reason}");
+                Verdict::Error
+            }
+        };
+    }
+    // The original 3.1 parser still receives the exact original byte stream,
+    // including the original header and newline. Never relabel a 3.2 stream.
+    let reader = Cursor::new(header.into_bytes()).chain(reader);
     match parse(reader).and_then(|export| export.resolve()) {
         Ok(export) => {
             // C225 diagnostic-only resource discrimination. A fresh checked
