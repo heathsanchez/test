@@ -63,7 +63,7 @@ fn leq(a:&U,b:&U,fuel:&mut Budget,depth:usize)->Option<bool>{
 
 type T=Rc<Term>;
 #[derive(Clone,Debug,Eq,PartialEq)]
-enum Term { V(usize), S(U), C(usize,Vec<U>), A(T,T), P(T,T), L(T,T) }
+enum Term { V(usize), S(U), C(usize,Vec<U>), A(T,T), P(T,T), L(T,T), Proj(usize,usize,T) }
 fn var(n:usize)->T{Rc::new(Term::V(n))}
 fn sort(u:U)->T{Rc::new(Term::S(u))}
 fn constant(n:usize,us:&[U])->T{Rc::new(Term::C(n,us.to_vec()))}
@@ -80,6 +80,7 @@ fn term_scope(t:&T,ps:&[usize])->bool{
         Term::S(u)=>scoped(u,ps),
         Term::C(_,us)=>us.iter().all(|u|scoped(u,ps)),
         Term::A(a,b)|Term::P(a,b)|Term::L(a,b)=>term_scope(a,ps)&&term_scope(b,ps),
+        Term::Proj(_,_,s)=>term_scope(s,ps),
     }
 }
 fn from_level(t:&Tables,id:usize,fuel:&mut Budget,depth:usize)->Option<U>{
@@ -102,6 +103,7 @@ fn from_expr(t:&Tables,id:usize,fuel:&mut Budget,depth:usize)->Option<T>{
         Expr::App(a,b)=>Term::A(from_expr(t,*a,fuel,depth+1)?,from_expr(t,*b,fuel,depth+1)?),
         Expr::Pi(a,b)=>Term::P(from_expr(t,*a,fuel,depth+1)?,from_expr(t,*b,fuel,depth+1)?),
         Expr::Lam(a,b)=>Term::L(from_expr(t,*a,fuel,depth+1)?,from_expr(t,*b,fuel,depth+1)?),
+        Expr::Proj(n,i,s)=>Term::Proj(*n,*i,from_expr(t,*s,fuel,depth+1)?),
     };
     Some(Rc::new(e))
 }
@@ -114,6 +116,7 @@ fn lift(t:&T,n:usize,cutoff:usize,fuel:&mut Budget,depth:usize)->Option<T>{
         Term::A(a,b)=>app(lift(a,n,cutoff,fuel,depth+1)?,lift(b,n,cutoff,fuel,depth+1)?),
         Term::P(a,b)=>pi(lift(a,n,cutoff,fuel,depth+1)?,lift(b,n,cutoff+1,fuel,depth+1)?),
         Term::L(a,b)=>lam(lift(a,n,cutoff,fuel,depth+1)?,lift(b,n,cutoff+1,fuel,depth+1)?),
+        Term::Proj(i,j,s)=>Rc::new(Term::Proj(*i,*j,lift(s,n,cutoff,fuel,depth+1)?)),
     })
 }
 // Capture-avoiding substitution removing the opened binder.
@@ -126,6 +129,7 @@ fn subst(t:&T,a:&T,binder:usize,fuel:&mut Budget,depth:usize)->Option<T>{
         Term::A(x,y)=>app(subst(x,a,binder,fuel,depth+1)?,subst(y,a,binder,fuel,depth+1)?),
         Term::P(x,y)=>pi(subst(x,a,binder,fuel,depth+1)?,subst(y,a,binder+1,fuel,depth+1)?),
         Term::L(x,y)=>lam(subst(x,a,binder,fuel,depth+1)?,subst(y,a,binder+1,fuel,depth+1)?),
+        Term::Proj(i,j,s)=>Rc::new(Term::Proj(*i,*j,subst(s,a,binder,fuel,depth+1)?)),
     })
 }
 fn as_sort(t:&T)->Option<U>{if let Term::S(u)=t.as_ref(){Some(u.clone())}else{None}}
@@ -179,7 +183,14 @@ fn fresh_motive(t:&Tables,ps:&[usize],name:usize)->bool{
     false
 }
 
-pub(super) fn block(t:&Tables,b:&Value)->Option<()>{
+// A family certificate is constructed only after checking the complete
+// source block, including constructor telescopes and every recursor rule.
+struct Family {
+    name:usize, declared:HashSet<usize>, universes:Vec<usize>,
+    ty:T, params:usize, fields:Vec<Vec<T>>, projections:bool,
+}
+pub(super) fn block(t:&Tables,b:&Value)->Option<()>{checked_family(t,b).map(|_|())}
+fn checked_family(t:&Tables,b:&Value)->Option<Family>{
     let mut fuel=Budget(100_000);
     need(keys(b,&["types","ctors","recs"]))?;
     let types=arr(b,"types")?;let constructors=arr(b,"ctors")?;let recs=arr(b,"recs")?;
@@ -203,7 +214,7 @@ pub(super) fn block(t:&Tables,b:&Value)->Option<()>{
     let us=ps.iter().map(|&u|param(u)).collect::<Vec<_>>();
     let ind_type=from_expr(t,num(ind,"type")?,&mut fuel,0)?;
     need(term_scope(&ind_type,&ps))?;
-    let (params,tail)=peel(ind_type,p)?;
+    let (params,tail)=peel(ind_type.clone(),p)?;
     let level=as_sort(&tail)?;
     let mut ctx=Vec::new();
     for d in &params{
@@ -265,8 +276,11 @@ pub(super) fn block(t:&Tables,b:&Value)->Option<()>{
         let rhs=wrap(&binders,apps(var(n-1-j+q),(0..q).map(|k|var(q-1-k))),true);
         need(from_expr(t,num(rule,"rhs")?,&mut fuel,0)?==rhs)?;
     }
-    Some(())
+    Some(Family{name:i,declared,universes:ps,ty:ind_type,params:p,fields,projections:f.projections})
 }
+
+mod projection;
+pub(in crate::renovation) use projection::projection_export;
 
 #[cfg(test)]
 mod tests{
