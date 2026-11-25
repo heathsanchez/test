@@ -25,7 +25,7 @@ pub(crate) fn probe_legacy<R: BufRead>(reader: &mut R) -> std::io::Result<(Vec<u
     let mut prefix = Vec::new();
     while prefix.len() < CAP {
         let start = prefix.len();
-        let n = reader.take((CAP - start) as u64).read_until(b'\n', &mut prefix)?;
+        let n = (&mut *reader).take((CAP - start) as u64).read_until(b'\n', &mut prefix)?;
         if n == 0 { break; }
         let line = &prefix[start..];
         if line.last() != Some(&b'\n') && prefix.len() == CAP { break; }
