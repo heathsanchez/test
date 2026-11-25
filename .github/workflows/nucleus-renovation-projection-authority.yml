@@ -30,6 +30,8 @@ jobs:
           mkdir -p "$OUT"
           git rev-parse HEAD > "$OUT/commit.txt"
           git rev-parse HEAD:metatron-kernel/src > "$OUT/source-tree.txt"
+          test "$(cat "$OUT/source-tree.txt")" = 362242c265ee2b1758645c78ad141ad78bf6f8c2
+          python3 metatron-kernel/scripts/renovation_gruszka_bridge_20261125.py
           cargo test --locked --manifest-path metatron-kernel/Cargo.toml -- --nocapture
           cargo build --locked --release --features diagnostics --manifest-path metatron-kernel/Cargo.toml
           sha256sum metatron-kernel/target/release/metatron-kernel > "$OUT/binary.txt"
@@ -79,22 +81,29 @@ jobs:
         run: |
           set -euxo pipefail
           python3 - <<'PY'
-          import copy,hashlib,json,os,subprocess,tarfile
+          import copy,hashlib,json,os,subprocess,tarfile,sys
           from pathlib import Path
           root=Path(os.environ["RUNNER_TEMP"])
           out=root/"projection-evidence"
           binary=Path("metatron-kernel/target/release/metatron-kernel").resolve()
           runner=root/"gruszka/scripts/arena-run"
           rows={x["name"]:x for x in json.loads((out/"beta-rows.json").read_text())}
+          sys.path.insert(0,str(Path("metatron-kernel/scripts").resolve()))
+          from renovation_gruszka_bridge_20261125 import bridge
           controls=[]
           def pack(src):
               return b"".join((json.dumps(r,separators=(",",":"),ensure_ascii=False)+"\n").encode() for r in src)
           def verify(name,raw,expected,must=False):
-              f=out/"control.ndjson"
-              f.write_bytes(raw)
+              inputs=out/"differential-inputs"
+              inputs.mkdir(exist_ok=True)
+              stem=name.replace("/","-").replace(":","-")
+              (inputs/(stem+".original.ndjson")).write_bytes(raw)
+              derived,receipt=bridge(raw)
+              f=inputs/(stem+".gruszka.ndjson")
+              f.write_bytes(derived)
               p=subprocess.run([str(binary)],input=raw,capture_output=True,timeout=60)
               q=subprocess.run(["sh",str(runner),str(f),"1"],capture_output=True,timeout=60)
-              result={"case":name,"expected":expected,"sha256":hashlib.sha256(raw).hexdigest(),"nucleus":p.returncode,"gruszka":q.returncode,"nucleus_diagnostic":p.stderr.decode(errors="replace")[-500:],"gruszka_diagnostic":(q.stdout+q.stderr).decode(errors="replace")[-500:],"must_decide":must}
+              result={"case":name,"expected":expected,"sha256":hashlib.sha256(raw).hexdigest(),"nucleus":p.returncode,"gruszka":q.returncode,"comparator_adapter":receipt,"nucleus_diagnostic":p.stderr.decode(errors="replace")[-500:],"gruszka_diagnostic":(q.stdout+q.stderr).decode(errors="replace")[-500:],"must_decide":must}
               controls.append(result)
               (out/"projection-controls.json").write_text(json.dumps(controls,indent=2))
               print("PROJECTION_CONTROL",json.dumps(result),flush=True)
@@ -145,7 +154,7 @@ jobs:
         run: |
           set -euxo pipefail
           python3 - <<'PY'
-          import copy,hashlib,json,os,subprocess,tarfile
+          import copy,hashlib,json,os,subprocess,tarfile,sys
           from pathlib import Path
           p=Path(os.environ["RUNNER_TEMP"])/"projection-evidence"
           report=json.loads((p/"prior-admission-summary.json").read_text())
