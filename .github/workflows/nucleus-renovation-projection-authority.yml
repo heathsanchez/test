@@ -13,6 +13,9 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
       RUST_MIN_STACK: '67108864'
+      NUCLEUS_EXPERIMENTAL_RELEVANCE: '1'
+      NUCLEUS_EXPERIMENTAL_EXPECTED_LAMBDA: '1'
+      NUCLEUS_EXPERIMENTAL_DEMAND_MAJOR: '1'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -46,6 +49,8 @@ jobs:
           p=root/"projection-evidence"
           with zipfile.ZipFile(root/"qualified.zip") as z:
               before=json.loads(z.read(next(n for n in z.namelist() if n.endswith("beta-rows.json"))))
+              prior=json.loads(z.read(next(n for n in z.namelist() if n.endswith("admission-summary.json"))))
+          (p/"prior-admission-summary.json").write_text(json.dumps(prior))
           before={x["name"]:x for x in before}
           rows=json.loads((p/"beta-rows.json").read_text())
           assert len(before)==len(rows)==319
@@ -136,6 +141,101 @@ jobs:
           print("PROJECTION_DIFFERENTIAL",json.dumps(report),flush=True)
           assert not (wrong or mismatch or unresolved or errors), report
           PY
+      - name: Preserve previous 51 positive and 230 adversarial controls
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          import copy,hashlib,json,os,subprocess,tarfile
+          from pathlib import Path
+          p=Path(os.environ["RUNNER_TEMP"])/"projection-evidence"
+          report=json.loads((p/"prior-admission-summary.json").read_text())
+          new={r["name"]:r for r in report["new_accepts"]}
+          binary=Path("metatron-kernel/target/release/metatron-kernel").resolve()
+          def serialize(rows):
+              return b"".join((json.dumps(r,sort_keys=True,ensure_ascii=False,separators=(",",":"))+"\n").encode() for r in rows)
+          observations=[]
+          def verify(name,raw,positive):
+              proc=subprocess.run([str(binary)],input=raw,capture_output=True,timeout=20)
+              row={"case":name,"sha256":hashlib.sha256(raw).hexdigest(),"exit":proc.returncode,"expected_accept":positive,"stderr":proc.stderr.decode(errors="replace")[-350:]}
+              observations.append(row)
+              (p/"mutation-rows.json").write_text(json.dumps(observations,indent=2)+"\n")
+              print("PARAMETRIC_CONTROL",json.dumps(row),flush=True)
+              assert (proc.returncode==0)==positive, row
+          with tarfile.open(p/"tests.tar.gz","r:gz") as tf:
+              for name,original in new.items():
+                  raw=tf.extractfile("good/"+name+".ndjson").read()
+                  assert hashlib.sha256(raw).hexdigest()==original["sha256"]
+                  src=[json.loads(l) for l in raw.splitlines()]
+                  # Original bytes were verified before decoding. Reordering
+                  # JSON object fields is intentionally not a semantic change.
+                  verify(name+":canonical-keys",serialize(src),True)
+                  def reverse_keys(x):
+                      if isinstance(x,dict):return {k:reverse_keys(v) for k,v in reversed(list(x.items()))}
+                      if isinstance(x,list):return [reverse_keys(v) for v in x]
+                      return x
+                  reordered=b"".join((json.dumps(reverse_keys(r),ensure_ascii=False,separators=(",",":"))+"\n").encode() for r in src)
+                  verify(name+":reverse-keys",reordered,True)
+                  renamed=copy.deepcopy(src)
+                  block=src[-1]["inductive"]
+                  reserved=set(block["types"][0]["levelParams"]+block["recs"][0]["levelParams"])
+                  for record in renamed:
+                      if "in" in record and "str" in record and record["in"] not in reserved and record["str"]["str"]!="rec":
+                          record["str"]["str"]="unseen_"+str(record["in"])+"_"+record["str"]["str"]
+                  verify(name+":renamed",serialize(renamed),True)
+                  def mutant(tag,edit):
+                      rows=copy.deepcopy(src)
+                      block=rows[-1]["inductive"]
+                      edit(block)
+                      verify(name+":"+tag,serialize(rows),False)
+                  mutant("recursor-minor-count",lambda b:b["recs"][0].__setitem__("numMinors",b["recs"][0]["numMinors"]+1))
+                  mutant("wrong-recursor-type",lambda b:b["recs"][0].__setitem__("type",b["types"][0]["type"]))
+                  mutant("recursor-name-alias",lambda b:b["recs"][0].__setitem__("name",b["types"][0]["name"]))
+                  mutant("wrong-recursive-metadata",lambda b:b["types"][0].__setitem__("isRec",True))
+                  mutant("wrong-k",lambda b:b["recs"][0].__setitem__("k",not b["recs"][0]["k"]))
+                  if src[-1]["inductive"]["ctors"]:
+                      mutant("wrong-constructor-type",lambda b:b["ctors"][0].__setitem__("type",b["types"][0]["type"]))
+                      mutant("wrong-constructor-fields",lambda b:b["ctors"][0].__setitem__("numFields",b["ctors"][0]["numFields"]+1))
+                      mutant("wrong-constructor-params",lambda b:b["ctors"][0].__setitem__("numParams",b["ctors"][0]["numParams"]+1))
+                  # Replace an actual source field or parameter domain by an
+                  # unbound index. Even a shared type DAG cannot authorize it.
+                  if block["types"][0]["numParams"]>0:
+                      rows=copy.deepcopy(src)
+                      table={r["ie"]:r for r in rows if "ie" in r}
+                      ty=table[block["types"][0]["type"]]["forallE"]["type"]
+                      table[ty].clear();table[ty].update({"ie":ty,"bvar":999})
+                      verify(name+":unbound-parameter-domain",serialize(rows),False)
+                  for j,ctor in enumerate(block["ctors"]):
+                      if ctor["numFields"]>0:
+                          rows=copy.deepcopy(src)
+                          table={r["ie"]:r for r in rows if "ie" in r}
+                          node=ctor["type"]
+                          for _ in range(ctor["numParams"]):
+                              node=table[node]["forallE"]["body"]
+                          ty=table[node]["forallE"]["type"]
+                          table[ty].clear();table[ty].update({"ie":ty,"bvar":999})
+                          verify(name+f":unbound-field-domain-{j}",serialize(rows),False)
+                  if src[-1]["inductive"]["recs"][0]["rules"]:
+                      mutant("wrong-rule-rhs",lambda b:b["recs"][0]["rules"][0].__setitem__("rhs",b["types"][0]["type"]))
+                      mutant("missing-rule",lambda b:b["recs"][0]["rules"].pop())
+                  hidden=copy.deepcopy(src)+[{"axiom":{}}]
+                  verify(name+":unchecked-appended-declaration",serialize(hidden),False)
+                  canonical=serialize(src)
+                  dup=canonical.replace(b'"numMotives":1',b'"numMotives":1,"numMotives":1')
+                  assert dup!=canonical
+                  verify(name+":duplicate-json-key",dup,False)
+                  alias=canonical.replace(b'"numMotives":1',b'"numMotives":1,"\\u006eumMotives":1')
+                  assert alias!=canonical
+                  verify(name+":duplicate-decoded-key",alias,False)
+          assert sum(r["expected_accept"] for r in observations)==51
+          print("PARAMETRIC_MUTATION_SUMMARY",json.dumps({"positive":51,"negative":len(observations)-51,"unexpected":0}),flush=True)
+          PY
+      - name: Exported dependent field substitutions and scrutinee separation
+        run: |
+          set -euxo pipefail
+          python3 metatron-kernel/scripts/renovation_dependent_projection_20261125.py \
+            --checker "$PWD/metatron-kernel/target/release/metatron-kernel" \
+            --comparator-runner "$RUNNER_TEMP/gruszka/scripts/arena-run" \
+            --out "$RUNNER_TEMP/projection-evidence"
       - name: Preserve all original 212 legacy kernel results
         run: |
           set -euxo pipefail
