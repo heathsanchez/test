@@ -1,0 +1,193 @@
+name: Pinned OpenAI matrix exponent audit
+on:
+  push:
+    branches: [research/openai-matrix-exponent-20261126]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  comparator:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    env:
+      OPENAI_MATH_SHA: 3344da59991ed94f9ba711217b29c1d760badfa6
+      COMPARATOR_SHA: d03acab154d269c06e60e4de7e4cc85deebff94b
+      LANDRUN_SHA: 5ed4a3db3a4ad930d577215c6b9abaa19df7f99f
+      LEAN4EXPORT_SHA: 076e8e57707e813375e8f9da8bf989799ace9680
+      NANODA_SHA: 37cb87b7e6cd6862ef2bd121faa9f4604f59fe96
+      GLIBC_TUNABLES: glibc.malloc.mmap_max=0:glibc.malloc.arena_max=1
+      LEAN_NUM_THREADS: 2
+    steps:
+      - name: Capture environment
+        run: |
+          mkdir -p evidence tooling
+          { uname -a; lscpu; free -h; df -h; rustc --version; cargo --version; } > evidence/environment.txt
+      - name: Install exact Lean toolchain
+        run: |
+          set -euxo pipefail
+          curl -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -o /tmp/elan-init.sh
+          sh /tmp/elan-init.sh -y --default-toolchain leanprover/lean4:v4.34.1
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Install source-pinned landrun
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.25.12'
+          cache: false
+      - name: Build source-pinned landrun
+        run: |
+          set -euxo pipefail
+          go install "github.com/zouuup/landrun/cmd/landrun@$LANDRUN_SHA" 2>&1 | tee evidence/landrun_install.log
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+          test -x "$(go env GOPATH)/bin/landrun"
+      - name: Clone exact OpenAI source and trusted evaluator
+        run: |
+          set -euxo pipefail
+          git clone --filter=blob:none --no-checkout --depth 1 https://github.com/openai/math.git upstream
+          git -C upstream sparse-checkout set lean
+          git -C upstream fetch --depth 1 origin "$OPENAI_MATH_SHA"
+          git -C upstream checkout --detach "$OPENAI_MATH_SHA"
+          test "$(git -C upstream rev-parse HEAD)" = "$OPENAI_MATH_SHA"
+          git clone https://github.com/leanprover/comparator.git tooling/comparator
+          git -C tooling/comparator checkout --detach "$COMPARATOR_SHA"
+          test "$(git -C tooling/comparator rev-parse HEAD)" = "$COMPARATOR_SHA"
+          cp upstream/lean/lean-toolchain tooling/comparator/lean-toolchain
+          sha256sum upstream/lean/lean-toolchain upstream/lean/lakefile.lean upstream/lean/lake-manifest.json upstream/lean/ComparatorChallenges/MatrixExponent.json upstream/lean/ComparatorChallenges/MatrixExponent.lean upstream/lean/OAI/LinearAlgebra/SpectralBooks/ExactExponent.lean > evidence/sha_before.txt
+          git -C upstream rev-parse HEAD > evidence/upstream_commit.txt
+          git -C tooling/comparator rev-parse HEAD > evidence/comparator_commit.txt
+          grep -F "$LEAN4EXPORT_SHA" tooling/comparator/lake-manifest.json
+          lean --version > evidence/lean_version.txt
+          lake --version > evidence/lake_version.txt
+      - name: Build pinned Comparator and lean4export
+        working-directory: tooling/comparator
+        run: |
+          set -euo pipefail
+          lake build lean4export comparator 2>&1 | tee "$GITHUB_WORKSPACE/evidence/comparator_build.log"
+          test -x .lake/build/bin/comparator
+          test -x .lake/packages/lean4export/.lake/build/bin/lean4export
+          git -C .lake/packages/lean4export rev-parse HEAD | tee "$GITHUB_WORKSPACE/evidence/lean4export_resolved_commit.txt"
+          grep -Fx "$LEAN4EXPORT_SHA" "$GITHUB_WORKSPACE/evidence/lean4export_resolved_commit.txt"
+          sha256sum .lake/build/bin/comparator .lake/packages/lean4export/.lake/build/bin/lean4export > "$GITHUB_WORKSPACE/evidence/evaluator_binary_hashes.txt"
+      - name: Resolve OpenAI dependencies and install Mathlib cache
+        working-directory: upstream/lean
+        run: |
+          set -euo pipefail
+          cp lake-manifest.json "$GITHUB_WORKSPACE/evidence/manifest_before.json"
+          lake update 2>&1 | tee "$GITHUB_WORKSPACE/evidence/openai_lake_update.log"
+          cp lake-manifest.json "$GITHUB_WORKSPACE/evidence/manifest_after.json"
+          for f in before after; do
+            jq -S '[.packages[] | {name,rev,url,subDir}] | sort_by(.name)' "$GITHUB_WORKSPACE/evidence/manifest_$f.json" > "$GITHUB_WORKSPACE/evidence/package_pins_$f.json"
+          done
+          diff -u "$GITHUB_WORKSPACE/evidence/package_pins_before.json" "$GITHUB_WORKSPACE/evidence/package_pins_after.json"
+          lake exe cache get 2>&1 | tee "$GITHUB_WORKSPACE/evidence/openai_cache_get.log"
+          sha256sum lake-manifest.json > "$GITHUB_WORKSPACE/evidence/manifest_after_hash.txt"
+          sha256sum ComparatorChallenges/MatrixExponent.json ComparatorChallenges/MatrixExponent.lean OAI/LinearAlgebra/SpectralBooks/ExactExponent.lean > "$GITHUB_WORKSPACE/evidence/reference_after_hashes.txt"
+      - name: Comparator verify three original reference theorems
+        working-directory: upstream/lean
+        run: |
+          set -euo pipefail
+          export COMPARATOR_LANDRUN="$(command -v landrun)"
+          export COMPARATOR_LEAN4EXPORT="$GITHUB_WORKSPACE/tooling/comparator/.lake/packages/lean4export/.lake/build/bin/lean4export"
+          "$COMPARATOR_LANDRUN" --help > "$GITHUB_WORKSPACE/evidence/landrun_help.txt" 2>&1 || true
+          lake env "$GITHUB_WORKSPACE/tooling/comparator/.lake/build/bin/comparator" ComparatorChallenges/MatrixExponent.json 2>&1 | tee "$GITHUB_WORKSPACE/evidence/comparator_three_targets.log"
+          echo COMPARATOR_THREE_TARGETS_ACCEPTED > "$GITHUB_WORKSPACE/evidence/comparator_verdict.txt"
+      - name: Build source-pinned second kernel NanoDa
+        run: |
+          set -euo pipefail
+          git clone https://github.com/ammkrn/nanoda_lib.git tooling/nanoda
+          git -C tooling/nanoda checkout --detach "$NANODA_SHA"
+          test "$(git -C tooling/nanoda rev-parse HEAD)" = "$NANODA_SHA"
+          git -C tooling/nanoda rev-parse HEAD > evidence/nanoda_commit.txt
+          (cd tooling/nanoda && cargo build --release) 2>&1 | tee evidence/nanoda_build.log
+          test -x tooling/nanoda/target/release/nanoda_bin
+          sha256sum tooling/nanoda/target/release/nanoda_bin > evidence/nanoda_binary_hash.txt
+      - name: Comparator plus NanoDa external kernel
+        working-directory: upstream/lean
+        run: |
+          set -euo pipefail
+          jq '. + {"enable_nanoda": true}' ComparatorChallenges/MatrixExponent.json > "$GITHUB_WORKSPACE/evidence/MatrixExponent.nanoda.json"
+          export COMPARATOR_LANDRUN="$(command -v landrun)"
+          export COMPARATOR_LEAN4EXPORT="$GITHUB_WORKSPACE/tooling/comparator/.lake/packages/lean4export/.lake/build/bin/lean4export"
+          export COMPARATOR_NANODA="$GITHUB_WORKSPACE/tooling/nanoda/target/release/nanoda_bin"
+          lake env "$GITHUB_WORKSPACE/tooling/comparator/.lake/build/bin/comparator" "$GITHUB_WORKSPACE/evidence/MatrixExponent.nanoda.json" 2>&1 | tee "$GITHUB_WORKSPACE/evidence/comparator_nanoda.log"
+          echo COMPARATOR_AND_NANODA_ACCEPTED > "$GITHUB_WORKSPACE/evidence/second_kernel_verdict.txt"
+      - name: Native exact roots and source-bound axiom audit
+        working-directory: upstream/lean
+        run: |
+          set -euo pipefail
+          E="$GITHUB_WORKSPACE/evidence"
+          cat > "$E/MatrixAudit.lean" <<'LEAN'
+          import OAI.LinearAlgebra.SpectralBooks.ExactExponent
+          #check OAI.LinearAlgebra.SpectralBooks.square_exponent
+          #print axioms OAI.LinearAlgebra.SpectralBooks.square_exponent
+          #check OAI.LinearAlgebra.SpectralBooks.formalOmega_square_eq_omega
+          #print axioms OAI.LinearAlgebra.SpectralBooks.formalOmega_square_eq_omega
+          #check OAI.LinearAlgebra.MatrixExponent.omega_eq
+          #print axioms OAI.LinearAlgebra.MatrixExponent.omega_eq
+          #check OAI.LinearAlgebra.SpectralBooks.dual_exponent
+          #print axioms OAI.LinearAlgebra.SpectralBooks.dual_exponent
+          #check OAI.LinearAlgebra.SpectralBooks.rectangular_exponent
+          #print axioms OAI.LinearAlgebra.SpectralBooks.rectangular_exponent
+          example (F : Type*) [Field F] :
+              OAI.LinearAlgebra.SpectralBooks.formalOmega F 1 1 1 = (9 : ℝ) / 4 :=
+            OAI.LinearAlgebra.SpectralBooks.square_exponent F
+          LEAN
+          lake build OAI.LinearAlgebra.SpectralBooks.ExactExponent 2>&1 | tee "$E/native_build.log"
+          lake env lean "$E/MatrixAudit.lean" 2>&1 | tee "$E/native_axioms.log"
+          if grep -E 'sorryAx|Lean.ofReduceBool|error:' "$E/native_axioms.log"; then exit 1; fi
+          sha256sum "$E/MatrixAudit.lean" "$E/native_axioms.log" > "$E/native_receipt_sha.txt"
+          cat > "$E/MatrixNegative.lean" <<'LEAN'
+          import OAI.LinearAlgebra.SpectralBooks.ExactExponent
+          example (F : Type*) [Field F] :
+              OAI.LinearAlgebra.SpectralBooks.formalOmega F 1 1 1 = (2 : ℝ) :=
+            OAI.LinearAlgebra.SpectralBooks.square_exponent F
+          LEAN
+          set +e
+          lake env lean "$E/MatrixNegative.lean" > "$E/native_negative.log" 2>&1
+          rc=$?
+          set -e
+          printf '%s\n' "$rc" > "$E/native_negative_exit.txt"
+          test "$rc" -eq 1
+          grep -i 'type mismatch' "$E/native_negative.log"
+      - name: Nucleus exact theorem export (bounded qualified launcher)
+        working-directory: upstream/lean
+        run: |
+          set -euo pipefail
+          E="$GITHUB_WORKSPACE/evidence"
+          NUCLEUS_SHA=578697991a903ab78d344aa71165d465bef3c3d7
+          export_bin="$GITHUB_WORKSPACE/tooling/comparator/.lake/packages/lean4export/.lake/build/bin/lean4export"
+          lake env "$export_bin" OAI.LinearAlgebra.SpectralBooks.ExactExponent -- OAI.LinearAlgebra.SpectralBooks.square_exponent > "$RUNNER_TEMP/square.ndjson"
+          test -s "$RUNNER_TEMP/square.ndjson"
+          sha256sum "$RUNNER_TEMP/square.ndjson" > "$E/nucleus_input_hash.txt"
+          wc -c "$RUNNER_TEMP/square.ndjson" > "$E/nucleus_input_bytes.txt"
+          git clone --filter=blob:none --no-checkout --depth 1 https://github.com/heathsanchez/test.git "$RUNNER_TEMP/nucleus"
+          git -C "$RUNNER_TEMP/nucleus" sparse-checkout set metatron-kernel
+          git -C "$RUNNER_TEMP/nucleus" fetch --depth 1 origin "$NUCLEUS_SHA"
+          git -C "$RUNNER_TEMP/nucleus" checkout --detach "$NUCLEUS_SHA"
+          test "$(git -C "$RUNNER_TEMP/nucleus" rev-parse HEAD)" = "$NUCLEUS_SHA"
+          echo "$NUCLEUS_SHA" > "$E/nucleus_commit.txt"
+          rustup toolchain install 1.99.1 --profile minimal
+          cargo +1.99.1 build --locked --release --features diagnostics --manifest-path "$RUNNER_TEMP/nucleus/metatron-kernel/Cargo.toml" 2>&1 | tee "$E/nucleus_build.log"
+          set +e
+          timeout 180s python3 "$RUNNER_TEMP/nucleus/metatron-kernel/arena.py" < "$RUNNER_TEMP/square.ndjson" > "$E/nucleus_stdout.log" 2> "$E/nucleus_stderr.log"
+          rc=$?
+          set -e
+          printf '%s\n' "$rc" > "$E/nucleus_raw_exit.txt"
+          case "$rc" in
+            0) echo ACCEPT;;
+            1) echo REJECT;;
+            2) echo UNKNOWN;;
+            124) echo UNKNOWN_TIMEOUT;;
+            *) echo ERROR;;
+          esac | tee "$E/nucleus_observation.txt"
+          if [ "$(wc -c < "$RUNNER_TEMP/square.ndjson")" -le 104857600 ]; then
+            gzip -c "$RUNNER_TEMP/square.ndjson" > "$E/square.ndjson.gz"
+          fi
+          git diff --exit-code -- ComparatorChallenges/MatrixExponent.lean ComparatorChallenges/MatrixExponent.json OAI/LinearAlgebra/SpectralBooks/ExactExponent.lean
+      - name: Retain all technical evidence even if checking fails
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: openai-matrix-exponent-audit
+          path: evidence/
+          if-no-files-found: warn
+          retention-days: 30
