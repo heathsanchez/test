@@ -20,6 +20,7 @@ enum NamePart { Str(String), Num(usize) }
 enum Expr {
     BVar(usize), Sort(usize), Const(usize, Vec<usize>),
     App(usize, usize), Pi(usize, usize), Lam(usize, usize),
+    Proj(usize, usize, usize),
 }
 struct Tables {
     names: Vec<Option<(usize,NamePart)>>,
@@ -111,6 +112,18 @@ impl Tables {
             if is_pi {Expr::Pi(d,b)} else {Expr::Lam(d,b)}
         } else { return None; };
         self.exprs.push(e);
+        Some(())
+    }
+    // Only the compositional declaration route admits projection records.
+    // The predecessor's standalone admission boundary remains unchanged.
+    fn add_projection(&mut self,row:&Value)->Option<()> {
+        need(keys(row,&["ie","proj"]))?;
+        let id=num(row,"ie")?;
+        let p=row.get("proj")?;
+        need(keys(p,&["typeName","idx","struct"]))?;
+        let name=num(p,"typeName")?;let i=num(p,"idx")?;let s=num(p,"struct")?;
+        need(id==self.exprs.len()&&self.valid_name(name)&&s<id)?;
+        self.exprs.push(Expr::Proj(name,i,s));
         Some(())
     }
     fn constant(&self,e:usize,name:usize)->bool {
@@ -225,6 +238,11 @@ pub(super) fn admits(rows:&[Value])->bool {
         t.block(b).or_else(||parametric::block(&t,b))
     }
     rows.len()<=MAX_RECORDS&&check(rows).is_some()
+}
+
+pub(super) fn projection_outcome(rows:&[Value])->Option<super::Outcome>{
+    if rows.len()>MAX_RECORDS{return None}
+    parametric::projection_export(rows)
 }
 
 #[cfg(test)]
