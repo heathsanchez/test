@@ -5,9 +5,39 @@
 //! init_K_target, init_projs_eta, check_large_elim, is_rec,
 //! mutual block flags and omission of small-elimination computation rules.
 use serde_json::Value;
-use std::{collections::HashSet, io::BufRead};
+use std::{collections::HashSet, io::{BufRead, Read}};
 
 type Checked<T> = Result<T, &'static str>;
+
+const FEATURE_KEYS: [&str; 5] = [
+    "isImpredicative", "isK", "hasProjections", "hasEta", "hasLargeElim",
+];
+
+pub(crate) fn has_feature_fields(item: &Value) -> bool {
+    FEATURE_KEYS.iter().any(|key| item.get(*key).is_some())
+}
+
+/// Inspect only a bounded initial prefix of a version-3.1 stream. Never
+/// rewrite its metadata or discard a byte. Later flagged blocks that were
+/// not observed here are refused by the legacy inductive parser.
+pub(crate) fn probe_legacy<R: BufRead>(reader: &mut R) -> std::io::Result<(Vec<u8>, bool)> {
+    const CAP: usize = 64 * 1024;
+    let mut prefix = Vec::new();
+    while prefix.len() < CAP {
+        let start = prefix.len();
+        let n = reader.take((CAP - start) as u64).read_until(b'\n', &mut prefix)?;
+        if n == 0 { break; }
+        let line = &prefix[start..];
+        if line.last() != Some(&b'\n') && prefix.len() == CAP { break; }
+        let Ok(row) = serde_json::from_slice::<Value>(line) else { break; };
+        if let Some(block) = row.get("inductive") {
+            let flagged = block.get("types").and_then(Value::as_array)
+                .is_some_and(|types| types.iter().any(has_feature_fields));
+            return Ok((prefix, flagged));
+        }
+    }
+    Ok((prefix, false))
+}
 
 #[derive(Clone, Copy)]
 struct Features {
