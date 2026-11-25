@@ -54,8 +54,8 @@ pub fn run<R: BufRead>(mut reader: R) -> Verdict {
                 eprintln!("NUCLEUS_RENOVATION_REFUTATION: {reason}");
                 Verdict::Reject
             }
-            Ok(renovation::Outcome::AcceptNullary) => {
-                eprintln!("NUCLEUS_RENOVATION_ADMISSION: complete-nullary-block");
+            Ok(renovation::Outcome::AcceptReconstructed) => {
+                eprintln!("NUCLEUS_RENOVATION_ADMISSION: complete-inductive-block");
                 Verdict::Accept
             }
             Ok(renovation::Outcome::Unknown) => Verdict::Unknown,
