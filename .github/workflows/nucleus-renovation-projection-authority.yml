@@ -12,6 +12,7 @@ jobs:
     timeout-minutes: 75
     env:
       GH_TOKEN: ${{ github.token }}
+      RUST_MIN_STACK: '67108864'
     steps:
       - uses: actions/checkout@v4
         with:
