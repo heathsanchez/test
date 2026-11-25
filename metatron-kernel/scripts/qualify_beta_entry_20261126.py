@@ -15,7 +15,7 @@ ARENA = "leanprover/lean-kernel-arena-beta"
 RUN = 45676210453
 REV = "ac0765f269b3cb5d4ed3744301aa59f4ee67ad10"
 ARTIFACTS = {
-    "results": (15053165516, "a381a71b2b6d2a8f198083b75eff42875932db81d6d2a342bf7dc21639332725"),
+    "results": (15053180500, "00ca60f1b74c74098153f57c6320c42d85db75d2b32a78755f0f58763086d399"),
     "tarball": (15051667460, "2fadb87d1906397c294f2eeb0aecbcc1004f4c4da1a0fe29669199dd4cbdffa6"),
 }
 
