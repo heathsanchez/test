@@ -43,13 +43,11 @@ pub fn run<R: BufRead>(mut reader: R) -> Verdict {
     };
     let tail = Cursor::new(prefix).chain(reader);
     if version.as_deref() == Some("3.2.0") || flagged {
-        let canonical_header = serde_json::from_str::<serde_json::Value>(&header)
-            .ok().is_some_and(|v| {
-                v.as_object().is_some_and(|m| m.len()==1 && m.contains_key("meta")) &&
-                serde_json::to_string(&v).ok().as_deref() ==
-                    Some(header.trim_end_matches(['\r','\n']))
-            });
-        return match renovation::check(tail, canonical_header) {
+        let verified_header = renovation::verified_header(&header);
+        if !verified_header {
+            return Verdict::Error;
+        }
+        return match renovation::check(tail, verified_header) {
             Ok(renovation::Outcome::Reject(reason)) => {
                 eprintln!("NUCLEUS_RENOVATION_REFUTATION: {reason}");
                 Verdict::Reject
