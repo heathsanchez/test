@@ -1,0 +1,86 @@
+name: Nucleus renovation feature-field dispatch and legacy parity
+on:
+  push:
+    branches: [research/nucleus-renovation-schema-dispatch-20261125]
+    paths:
+      - .github/workflows/nucleus-renovation-schema-dispatch.yml
+      - metatron-kernel/src/renovation.rs
+      - metatron-kernel/src/lib.rs
+      - metatron-kernel/src/parser.rs
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  schema:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: '1.99.1'
+      - name: Build and native fragment tests
+        run: |
+          set -euxo pipefail
+          mkdir -p "$RUNNER_TEMP/schema-evidence"
+          git rev-parse HEAD > "$RUNNER_TEMP/schema-evidence/commit.txt"
+          git rev-parse HEAD:metatron-kernel/src > "$RUNNER_TEMP/schema-evidence/source-tree.txt"
+          cargo test --locked --manifest-path metatron-kernel/Cargo.toml renovation::tests -- --nocapture
+          cargo build --locked --release --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+      - name: Verify mixed beta corpus with both header and field-based dispatch
+        run: |
+          set -euxo pipefail
+          python3 metatron-kernel/scripts/renovation_beta_baseline_20261125.py \
+            --checker "$PWD/metatron-kernel/target/release/metatron-kernel" \
+            --flags experiments/nucleus-capture-substitution-20261107/alias-result-canonical-off-replay.json \
+            --out "$RUNNER_TEMP/schema-evidence"
+          gh api repos/heathsanchez/test/actions/artifacts/14991899389/zip > "$RUNNER_TEMP/baseline-beta.zip"
+          printf '%s  %s\n' 9a69ea7cb32a5ceec467b893284a73c0f0f8dbb03f170b296ff3f323aeeb04fd "$RUNNER_TEMP/baseline-beta.zip" | sha256sum -c -
+          python3 - <<'PY'
+          import json,os,zipfile,collections
+          from pathlib import Path
+          root=Path(os.environ["RUNNER_TEMP"])
+          with zipfile.ZipFile(root/"baseline-beta.zip") as z:
+              old=json.loads(z.read(next(n for n in z.namelist() if n.endswith("beta-rows.json"))))
+          p=root/"schema-evidence"
+          rows=json.loads((p/"beta-rows.json").read_text())
+          previous={r["name"]:r for r in old}
+          assert len(rows)==len(previous)==319
+          assert all(r["sha256"]==previous[r["name"]]["sha256"] and r["expected"]==previous[r["name"]]["expected"] for r in rows)
+          untouched=[r for r in rows if previous[r["name"]]["observed"] in ("accept","reject")]
+          converted=[r for r in rows if r["format"]=="3.1.0" and previous[r["name"]]["observed"]=="error"]
+          new=[r for r in rows if r["format"]=="3.2.0"]
+          assert len(untouched)==40 and all(r["raw_exit"]==previous[r["name"]]["raw_exit"] for r in untouched)
+          assert len(converted)==178 and len(new)==101
+          assert all(r["observed"] in ("unknown","reject") for r in converted+new)
+          assert all(r["expected"]=="reject" for r in converted+new if r["observed"]=="reject")
+          counts=collections.Counter(r["observed"] for r in rows)
+          summary={"legacy_unchanged":len(untouched),"converted_count":len(converted),"explicit_new_count":len(new),
+                   "converted_outcomes":dict(collections.Counter(r["observed"] for r in converted)),
+                   "new_outcomes":dict(collections.Counter(r["observed"] for r in new)),
+                   "overall":dict(counts),"full_compatibility":False}
+          (p/"schema-summary.json").write_text(json.dumps(summary,indent=2)+"\n")
+          print("SCHEMA_SUMMARY",json.dumps(summary),flush=True)
+          assert counts=={"accept":29,"reject":49,"unknown":241}
+          PY
+      - name: Preserve historical 212-case qualified legacy verdict vector
+        run: |
+          set -euxo pipefail
+          gh api repos/heathsanchez/test/actions/artifacts/14152050888/zip > "$RUNNER_TEMP/current212.zip"
+          printf '%s  %s\n' 5bd679fe1f7a6988575ec469264b24cab8ddf465ae064bcb79d99541658acd2f "$RUNNER_TEMP/current212.zip" | sha256sum -c -
+          python3 metatron-kernel/scripts/c239_full_corpus_stack128.py \
+            --archive "$RUNNER_TEMP/current212.zip" \
+            --checker "$PWD/metatron-kernel/target/release/metatron-kernel" \
+            --flags experiments/nucleus-capture-substitution-20261107/alias-result-canonical-off-replay.json \
+            --out "$RUNNER_TEMP/schema-evidence"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-renovation-schema-evidence
+          path: ${{ runner.temp }}/schema-evidence/
+          if-no-files-found: error
