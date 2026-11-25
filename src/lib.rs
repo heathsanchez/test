@@ -33,8 +33,17 @@ pub fn run<R: BufRead>(mut reader: R) -> Verdict {
     }
     let version = serde_json::from_str::<serde_json::Value>(&header).ok()
         .and_then(|v| v.pointer("/meta/format/version").and_then(|x| x.as_str()).map(str::to_owned));
-    if version.as_deref() == Some("3.2.0") {
-        return match renovation::refute(reader) {
+    let (prefix, flagged) = if version.as_deref() == Some("3.1.0") {
+        match renovation::probe_legacy(&mut reader) {
+            Ok(result) => result,
+            Err(_) => return Verdict::Error,
+        }
+    } else {
+        (Vec::new(), false)
+    };
+    let tail = Cursor::new(prefix).chain(reader);
+    if version.as_deref() == Some("3.2.0") || flagged {
+        return match renovation::refute(tail) {
             Ok(Some(reason)) => {
                 eprintln!("NUCLEUS_RENOVATION_REFUTATION: {reason}");
                 Verdict::Reject
@@ -48,7 +57,7 @@ pub fn run<R: BufRead>(mut reader: R) -> Verdict {
     }
     // The original 3.1 parser still receives the exact original byte stream,
     // including the original header and newline. Never relabel a 3.2 stream.
-    let reader = Cursor::new(header.into_bytes()).chain(reader);
+    let reader = Cursor::new(header.into_bytes()).chain(tail);
     match parse(reader).and_then(|export| export.resolve()) {
         Ok(export) => {
             // C225 diagnostic-only resource discrimination. A fresh checked
