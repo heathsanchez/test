@@ -437,6 +437,11 @@ fn parse_theorem(value: &Value, line: usize) -> Result<Declaration, ParseError> 
 }
 
 fn parse_inductive(value: &Value, line: usize) -> Result<Declaration, ParseError> {
+    // The legacy checker must not silently ignore explicit renovated flags,
+    // even if the stream carries the old version number or a mixed schema.
+    if nested_array(value, "types", line)?.iter().any(crate::renovation::has_feature_fields) {
+        return Err(ParseError::UnsupportedFormat("renovated inductive fields on legacy path".to_owned()));
+    }
     let types = nested_array(value, "types", line)?
         .iter()
         .map(|item| {
