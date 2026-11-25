@@ -235,7 +235,7 @@ fn check_block(block: &Value, exprs: &[Value], levels: &[Option<Zeros>]) -> Chec
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub(crate) enum Outcome { AcceptNullary, Reject(&'static str), Unknown }
+pub(crate) enum Outcome { AcceptReconstructed, Reject(&'static str), Unknown }
 
 /// Read an already identified renovated stream. Preserve the old refutation
 /// fragment. ACCEPT only if a separate complete declaration reconstruction
@@ -273,7 +273,7 @@ pub(crate) fn check<R: BufRead>(reader: R, canonical_header: bool) -> Checked<Ou
         }
     }
     if whole_export.as_ref().is_some_and(|rows| nullary::admits(rows)) {
-        Ok(Outcome::AcceptNullary)
+        Ok(Outcome::AcceptReconstructed)
     } else {
         Ok(Outcome::Unknown)
     }
