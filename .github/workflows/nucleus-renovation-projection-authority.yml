@@ -1,7 +1,7 @@
 name: Nucleus checked family projection authority
 on:
   push:
-    branches: [research/nucleus-renovation-projection-authority-20261125]
+    branches: [research/nucleus-projection-comparator-recovery-20261125]
   workflow_dispatch:
 permissions:
   contents: read
@@ -26,7 +26,7 @@ jobs:
           mkdir -p "$OUT"
           git rev-parse HEAD > "$OUT/commit.txt"
           git rev-parse HEAD:metatron-kernel/src > "$OUT/source-tree.txt"
-          cargo test --locked --manifest-path metatron-kernel/Cargo.toml renovation:: -- --nocapture
+          cargo test --locked --manifest-path metatron-kernel/Cargo.toml -- --nocapture
           cargo build --locked --release --features diagnostics --manifest-path metatron-kernel/Cargo.toml
           sha256sum metatron-kernel/target/release/metatron-kernel > "$OUT/binary.txt"
       - name: Exact beta corpus and 105 protected decisions
@@ -62,11 +62,13 @@ jobs:
         run: |
           set -euxo pipefail
           git clone https://github.com/jasisz/gruszka "$RUNNER_TEMP/gruszka"
-          git -C "$RUNNER_TEMP/gruszka" checkout --detach ebc80dcb20786d4f25335146b8a9fe8f398843c1
-          test "$(git -C "$RUNNER_TEMP/gruszka" rev-parse HEAD)" = ebc80dcb20786d4f25335146b8a9fe8f398843c1
+          git -C "$RUNNER_TEMP/gruszka" checkout --detach 43d2d1277e6dfa72572caa871c67ef15f78193e9
+          test "$(git -C "$RUNNER_TEMP/gruszka" rev-parse HEAD)" = 43d2d1277e6dfa72572caa871c67ef15f78193e9
           cargo build --release --locked --manifest-path "$RUNNER_TEMP/gruszka/Cargo.toml"
-          cargo install susz --version 0.1.4 --locked --root "$RUNNER_TEMP/gruszka/.susz"
-          sha256sum "$RUNNER_TEMP/gruszka/target/release/gruszka" "$RUNNER_TEMP/gruszka/.susz/bin/susz" > "$RUNNER_TEMP/projection-evidence/comparator.txt"
+          cargo install susz --version 0.4.0 --locked --root "$RUNNER_TEMP/gruszka/.susz"
+          git -C "$RUNNER_TEMP/gruszka" rev-parse HEAD > "$RUNNER_TEMP/projection-evidence/comparator-commit.txt"
+          "$RUNNER_TEMP/gruszka/.susz/bin/susz" --version > "$RUNNER_TEMP/projection-evidence/packer-version.txt"
+          sha256sum "$RUNNER_TEMP/gruszka/Cargo.lock" "$RUNNER_TEMP/gruszka/target/release/gruszka" "$RUNNER_TEMP/gruszka/.susz/bin/susz" > "$RUNNER_TEMP/projection-evidence/comparator.txt"
       - name: Exact input differential and projection mutations
         run: |
           set -euxo pipefail
