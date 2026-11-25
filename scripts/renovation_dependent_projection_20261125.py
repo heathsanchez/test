@@ -13,6 +13,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+from renovation_gruszka_bridge_20261125 import bridge
 
 
 def var(n): return ("var", n)
@@ -173,9 +174,13 @@ def main():
         file = inputs / (name.replace(":", "-") + ".ndjson")
         file.write_bytes(raw)
         n = subprocess.run([str(a.checker)], input=raw, capture_output=True, timeout=60, env=env)
-        g = subprocess.run(["sh", str(a.comparator_runner), str(file), "1"], capture_output=True, timeout=60)
+        derived, receipt = bridge(raw)
+        comparator_file = file.with_suffix(".gruszka.ndjson")
+        comparator_file.write_bytes(derived)
+        g = subprocess.run(["sh", str(a.comparator_runner), str(comparator_file), "1"], capture_output=True, timeout=60)
         row = {"case": name, "sha256": hashlib.sha256(raw).hexdigest(), "expected": expected,
                "required": required, "nucleus": n.returncode, "gruszka": g.returncode,
+               "comparator_adapter": receipt,
                "nucleus_diagnostic": n.stderr.decode(errors="replace"),
                "gruszka_diagnostic": (g.stdout + g.stderr).decode(errors="replace")}
         rows.append(row)
