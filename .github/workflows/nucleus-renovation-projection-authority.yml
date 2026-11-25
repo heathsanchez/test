@@ -1,0 +1,152 @@
+name: Nucleus checked family projection authority
+on:
+  push:
+    branches: [research/nucleus-renovation-projection-authority-20261125]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  qualification:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: '1.99.1'
+      - name: Native build and dependent substitution controls
+        run: |
+          set -euxo pipefail
+          OUT="$RUNNER_TEMP/projection-evidence"
+          mkdir -p "$OUT"
+          git rev-parse HEAD > "$OUT/commit.txt"
+          git rev-parse HEAD:metatron-kernel/src > "$OUT/source-tree.txt"
+          cargo test --locked --manifest-path metatron-kernel/Cargo.toml renovation:: -- --nocapture
+          cargo build --locked --release --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          sha256sum metatron-kernel/target/release/metatron-kernel > "$OUT/binary.txt"
+      - name: Exact beta corpus and 105 protected decisions
+        run: |
+          set -euxo pipefail
+          python3 metatron-kernel/scripts/renovation_beta_baseline_20261125.py \
+            --checker "$PWD/metatron-kernel/target/release/metatron-kernel" \
+            --flags experiments/nucleus-capture-substitution-20261107/alias-result-canonical-off-replay.json \
+            --out "$RUNNER_TEMP/projection-evidence"
+          gh api repos/heathsanchez/test/actions/artifacts/14994672815/zip > "$RUNNER_TEMP/qualified.zip"
+          printf '%s  %s\n' a2db488be03c23f67e17a26067b6e8e9d40ca0c902bb4ffc862096b1083a68b4 "$RUNNER_TEMP/qualified.zip" | sha256sum -c -
+          python3 - <<'PY'
+          import collections,json,os,zipfile
+          from pathlib import Path
+          root=Path(os.environ["RUNNER_TEMP"])
+          p=root/"projection-evidence"
+          with zipfile.ZipFile(root/"qualified.zip") as z:
+              before=json.loads(z.read(next(n for n in z.namelist() if n.endswith("beta-rows.json"))))
+          before={x["name"]:x for x in before}
+          rows=json.loads((p/"beta-rows.json").read_text())
+          assert len(before)==len(rows)==319
+          assert {x["name"] for x in rows}==set(before)
+          assert all(x["sha256"]==before[x["name"]]["sha256"] and x["expected"]==before[x["name"]]["expected"] for x in rows)
+          protected=[x for x in rows if before[x["name"]]["observed"] in ("accept","reject")]
+          assert len(protected)==105 and all(x["raw_exit"]==before[x["name"]]["raw_exit"] for x in protected)
+          assert all(x["observed"]==x["expected"] or x["observed"]=="unknown" for x in rows)
+          new=[x for x in rows if x["observed"] in ("accept","reject") and before[x["name"]]["observed"]=="unknown"]
+          summary={"protected":len(protected),"counts":dict(collections.Counter(x["observed"] for x in rows)),"new_decisions":new,"wrong":0}
+          (p/"projection-summary.json").write_text(json.dumps(summary,indent=2))
+          print("PROJECTION_CORPUS",json.dumps(summary),flush=True)
+          PY
+      - name: Build pinned independent Gruszka comparator without PGO
+        run: |
+          set -euxo pipefail
+          git clone https://github.com/jasisz/gruszka "$RUNNER_TEMP/gruszka"
+          git -C "$RUNNER_TEMP/gruszka" checkout --detach ebc80dcb20786d4f25335146b8a9fe8f398843c1
+          test "$(git -C "$RUNNER_TEMP/gruszka" rev-parse HEAD)" = ebc80dcb20786d4f25335146b8a9fe8f398843c1
+          cargo build --release --locked --manifest-path "$RUNNER_TEMP/gruszka/Cargo.toml"
+          cargo install susz --version 0.1.4 --locked --root "$RUNNER_TEMP/gruszka/.susz"
+          sha256sum "$RUNNER_TEMP/gruszka/target/release/gruszka" "$RUNNER_TEMP/gruszka/.susz/bin/susz" > "$RUNNER_TEMP/projection-evidence/comparator.txt"
+      - name: Exact input differential and projection mutations
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          import copy,hashlib,json,os,subprocess,tarfile
+          from pathlib import Path
+          root=Path(os.environ["RUNNER_TEMP"])
+          out=root/"projection-evidence"
+          binary=Path("metatron-kernel/target/release/metatron-kernel").resolve()
+          runner=root/"gruszka/scripts/arena-run"
+          rows={x["name"]:x for x in json.loads((out/"beta-rows.json").read_text())}
+          controls=[]
+          def pack(src):
+              return b"".join((json.dumps(r,separators=(",",":"),ensure_ascii=False)+"\n").encode() for r in src)
+          def verify(name,raw,expected,must=False):
+              f=out/"control.ndjson"
+              f.write_bytes(raw)
+              p=subprocess.run([str(binary)],input=raw,capture_output=True,timeout=60)
+              q=subprocess.run(["sh",str(runner),str(f),"1"],capture_output=True,timeout=60)
+              result={"case":name,"expected":expected,"sha256":hashlib.sha256(raw).hexdigest(),"nucleus":p.returncode,"gruszka":q.returncode,"nucleus_diagnostic":p.stderr.decode(errors="replace")[-500:],"gruszka_diagnostic":(q.stdout+q.stderr).decode(errors="replace")[-500:],"must_decide":must}
+              controls.append(result)
+              (out/"projection-controls.json").write_text(json.dumps(controls,indent=2))
+              print("PROJECTION_CONTROL",json.dumps(result),flush=True)
+          def rename(src):
+              b=next(r["inductive"] for r in src if "inductive" in r)
+              names={b["types"][0]["name"]}
+              names.update(r[k]["name"] for r in src for k in ("def","thm") if k in r)
+              for r in src:
+                  if r.get("in") in names and "str" in r:
+                      r["str"]["str"]="ProjectionAuthorityRenamed_"+r["str"]["str"]
+              return src
+          cases=[("062_lAndLeft",0,True),("064_impAndLeft",1,True),("067_pBoxGet",0,False),("069_pAndNoEtaRight",0,False)]
+          with tarfile.open(out/"tests.tar.gz","r:gz") as tf:
+              for case,expected,must in cases:
+                  name="renovation/"+case
+                  raw=tf.extractfile(("good" if expected==0 else "bad")+"/"+name+".ndjson").read()
+                  assert hashlib.sha256(raw).hexdigest()==rows[name]["sha256"]
+                  verify(name,raw,expected,must)
+                  src=[json.loads(line) for line in raw.splitlines()]
+                  verify(name+":renamed",pack(rename(copy.deepcopy(src))),expected,must)
+                  if case=="062_lAndLeft":
+                      for idx in (999,1):
+                          bad=copy.deepcopy(src)
+                          ps=[r["proj"] for r in bad if "proj" in r]
+                          assert ps
+                          for p in ps:p["idx"]=idx
+                          verify(name+":index-"+str(idx),pack(bad),1,idx==999)
+                      bad=copy.deepcopy(src)
+                      b=next(r["inductive"] for r in bad if "inductive" in r)
+                      b["types"][0]["hasProjections"]=False
+                      b["types"][0]["hasEta"]=False
+                      verify(name+":permission-withdrawal",pack(bad),1)
+                  if case=="064_impAndLeft":
+                      bad=copy.deepcopy(src)
+                      b=next(r["inductive"] for r in bad if "inductive" in r)
+                      b["types"][0]["hasProjections"]=True
+                      verify(name+":forged-permission",pack(bad),1,True)
+          wrong=[x for x in controls if x["nucleus"] in (0,1) and x["nucleus"]!=x["expected"]]
+          mismatch=[x for x in controls if x["gruszka"]!=x["expected"]]
+          unresolved=[x for x in controls if x["must_decide"] and x["nucleus"]!=x["expected"]]
+          errors=[x for x in controls if x["nucleus"] not in (0,1,2)]
+          report={"controls":len(controls),"wrong":wrong,"comparator_mismatch":mismatch,"unresolved_required":unresolved,"errors":errors}
+          (out/"projection-differential-summary.json").write_text(json.dumps(report,indent=2))
+          print("PROJECTION_DIFFERENTIAL",json.dumps(report),flush=True)
+          assert not (wrong or mismatch or unresolved or errors), report
+          PY
+      - name: Preserve all original 212 legacy kernel results
+        run: |
+          set -euxo pipefail
+          gh api repos/heathsanchez/test/actions/artifacts/14152050888/zip > "$RUNNER_TEMP/current212.zip"
+          printf '%s  %s\n' 5bd679fe1f7a6988575ec469264b24cab8ddf465ae064bcb79d99541658acd2f "$RUNNER_TEMP/current212.zip" | sha256sum -c -
+          python3 metatron-kernel/scripts/c239_full_corpus_stack128.py \
+            --archive "$RUNNER_TEMP/current212.zip" \
+            --checker "$PWD/metatron-kernel/target/release/metatron-kernel" \
+            --flags experiments/nucleus-capture-substitution-20261107/alias-result-canonical-off-replay.json \
+            --out "$RUNNER_TEMP/projection-evidence"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-renovation-projection-evidence
+          path: ${{ runner.temp }}/projection-evidence/
+          if-no-files-found: error
+          retention-days: 30
