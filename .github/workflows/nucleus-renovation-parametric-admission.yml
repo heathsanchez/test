@@ -8,6 +8,9 @@ on:
       - metatron-kernel/src/renovation.rs
       - metatron-kernel/src/renovation/nullary.rs
       - metatron-kernel/src/renovation/nullary/parametric.rs
+      - metatron-kernel/src/renovation/unique_json.rs
+      - metatron-kernel/Cargo.toml
+      - metatron-kernel/Cargo.lock
   workflow_dispatch:
 permissions:
   contents: read
@@ -91,7 +94,15 @@ jobs:
                   raw=tf.extractfile("good/"+name+".ndjson").read()
                   assert hashlib.sha256(raw).hexdigest()==original["sha256"]
                   src=[json.loads(l) for l in raw.splitlines()]
-                  assert serialize(src)==raw
+                  # Original bytes were verified before decoding. Reordering
+                  # JSON object fields is intentionally not a semantic change.
+                  verify(name+":canonical-keys",serialize(src),True)
+                  def reverse_keys(x):
+                      if isinstance(x,dict):return {k:reverse_keys(v) for k,v in reversed(list(x.items()))}
+                      if isinstance(x,list):return [reverse_keys(v) for v in x]
+                      return x
+                  reordered=b"".join((json.dumps(reverse_keys(r),ensure_ascii=False,separators=(",",":"))+"\n").encode() for r in src)
+                  verify(name+":reverse-keys",reordered,True)
                   renamed=copy.deepcopy(src)
                   block=src[-1]["inductive"]
                   reserved=set(block["types"][0]["levelParams"]+block["recs"][0]["levelParams"])
@@ -136,11 +147,15 @@ jobs:
                       mutant("missing-rule",lambda b:b["recs"][0]["rules"].pop())
                   hidden=copy.deepcopy(src)+[{"axiom":{}}]
                   verify(name+":unchecked-appended-declaration",serialize(hidden),False)
-                  dup=raw.replace(b'"numMotives":1',b'"numMotives":1,"numMotives":1')
-                  assert dup!=raw
+                  canonical=serialize(src)
+                  dup=canonical.replace(b'"numMotives":1',b'"numMotives":1,"numMotives":1')
+                  assert dup!=canonical
                   verify(name+":duplicate-json-key",dup,False)
-          assert sum(r["expected_accept"] for r in observations)==17
-          print("PARAMETRIC_MUTATION_SUMMARY",json.dumps({"positive":17,"negative":len(observations)-17,"unexpected":0}),flush=True)
+                  alias=canonical.replace(b'"numMotives":1',b'"numMotives":1,"\\u006eumMotives":1')
+                  assert alias!=canonical
+                  verify(name+":duplicate-decoded-key",alias,False)
+          assert sum(r["expected_accept"] for r in observations)==51
+          print("PARAMETRIC_MUTATION_SUMMARY",json.dumps({"positive":51,"negative":len(observations)-51,"unexpected":0}),flush=True)
           PY
       - name: Preserve all original 212 legacy kernel results
         run: |
