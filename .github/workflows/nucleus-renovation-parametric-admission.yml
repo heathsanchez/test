@@ -1,0 +1,161 @@
+name: Nucleus renovated nonrecursive parametric admission
+on:
+  push:
+    branches: [research/nucleus-renovation-parametric-admission-20261125]
+    paths:
+      - .github/workflows/nucleus-renovation-parametric-admission.yml
+      - metatron-kernel/src/lib.rs
+      - metatron-kernel/src/renovation.rs
+      - metatron-kernel/src/renovation/nullary.rs
+      - metatron-kernel/src/renovation/nullary/parametric.rs
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  admission:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: '1.99.1'
+      - name: Verify source and compile native structural checker
+        run: |
+          set -euxo pipefail
+          OUT="$RUNNER_TEMP/parametric-evidence"
+          mkdir -p "$OUT"
+          git rev-parse HEAD > "$OUT/commit.txt"
+          git rev-parse HEAD:metatron-kernel/src > "$OUT/source-tree.txt"
+          git diff --stat fca1b4f0fab2bc347cf22da79418d0c975ce0926 -- metatron-kernel/src
+          cargo test --locked --manifest-path metatron-kernel/Cargo.toml renovation:: -- --nocapture
+          cargo build --locked --release --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+          sha256sum metatron-kernel/target/release/metatron-kernel > "$OUT/binary.txt"
+      - name: Check the entire exact beta corpus and protected previous decisions
+        run: |
+          set -euxo pipefail
+          python3 metatron-kernel/scripts/renovation_beta_baseline_20261125.py \
+            --checker "$PWD/metatron-kernel/target/release/metatron-kernel" \
+            --flags experiments/nucleus-capture-substitution-20261107/alias-result-canonical-off-replay.json \
+            --out "$RUNNER_TEMP/parametric-evidence"
+          gh api repos/heathsanchez/test/actions/artifacts/14994560511/zip > "$RUNNER_TEMP/schema-beta.zip"
+          printf '%s  %s\n' 66e5f9231532104ab9e088da32b173773145674646aef6a42723141575be92ac "$RUNNER_TEMP/schema-beta.zip" | sha256sum -c -
+          python3 - <<'PY'
+          import collections,json,os,zipfile
+          from pathlib import Path
+          root=Path(os.environ["RUNNER_TEMP"])
+          p=root/"parametric-evidence"
+          with zipfile.ZipFile(root/"schema-beta.zip") as z:
+              old=json.loads(z.read(next(n for n in z.namelist() if n.endswith("beta-rows.json"))))
+          rows=json.loads((p/"beta-rows.json").read_text())
+          prior={r["name"]:r for r in old}
+          assert len(prior)==len(rows)==319
+          assert all(r["sha256"]==prior[r["name"]]["sha256"] and r["expected"]==prior[r["name"]]["expected"] for r in rows)
+          assert all(r["raw_exit"]==prior[r["name"]]["raw_exit"] for r in rows if prior[r["name"]]["observed"] in ("accept","reject"))
+          new=[r for r in rows if r["observed"]=="accept" and prior[r["name"]]["observed"]=="unknown"]
+          assert len(new)==17 and all(r["expected"]=="accept" for r in new)
+          assert sum(r["format"]=="3.2.0" for r in new)==16
+          counts=collections.Counter(r["observed"] for r in rows)
+          assert counts=={"accept":56,"reject":49,"unknown":214}, counts
+          report={"new_accepts":new,"overall":dict(counts),"historical_decisives_preserved":88,"scope":"complete nonrecursive nonindexed parameterized single family","full_compatibility":False}
+          (p/"admission-summary.json").write_text(json.dumps(report,indent=2)+"\n")
+          print("PARAMETRIC_ADMISSION_SUMMARY",json.dumps(report),flush=True)
+          PY
+      - name: Verify renamed positive controls and independent structural mutants
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          import copy,hashlib,json,os,subprocess,tarfile
+          from pathlib import Path
+          p=Path(os.environ["RUNNER_TEMP"])/"parametric-evidence"
+          report=json.loads((p/"admission-summary.json").read_text())
+          new={r["name"]:r for r in report["new_accepts"]}
+          binary=Path("metatron-kernel/target/release/metatron-kernel").resolve()
+          def serialize(rows):
+              return b"".join((json.dumps(r,sort_keys=True,ensure_ascii=False,separators=(",",":"))+"\n").encode() for r in rows)
+          observations=[]
+          def verify(name,raw,positive):
+              proc=subprocess.run([str(binary)],input=raw,capture_output=True,timeout=20)
+              row={"case":name,"sha256":hashlib.sha256(raw).hexdigest(),"exit":proc.returncode,"expected_accept":positive,"stderr":proc.stderr.decode(errors="replace")[-350:]}
+              observations.append(row)
+              (p/"mutation-rows.json").write_text(json.dumps(observations,indent=2)+"\n")
+              print("PARAMETRIC_CONTROL",json.dumps(row),flush=True)
+              assert (proc.returncode==0)==positive, row
+          with tarfile.open(p/"tests.tar.gz","r:gz") as tf:
+              for name,original in new.items():
+                  raw=tf.extractfile("good/"+name+".ndjson").read()
+                  assert hashlib.sha256(raw).hexdigest()==original["sha256"]
+                  src=[json.loads(l) for l in raw.splitlines()]
+                  assert serialize(src)==raw
+                  renamed=copy.deepcopy(src)
+                  block=src[-1]["inductive"]
+                  reserved=set(block["types"][0]["levelParams"]+block["recs"][0]["levelParams"])
+                  for record in renamed:
+                      if "in" in record and "str" in record and record["in"] not in reserved and record["str"]["str"]!="rec":
+                          record["str"]["str"]="unseen_"+str(record["in"])+"_"+record["str"]["str"]
+                  verify(name+":renamed",serialize(renamed),True)
+                  def mutant(tag,edit):
+                      rows=copy.deepcopy(src)
+                      block=rows[-1]["inductive"]
+                      edit(block)
+                      verify(name+":"+tag,serialize(rows),False)
+                  mutant("recursor-minor-count",lambda b:b["recs"][0].__setitem__("numMinors",b["recs"][0]["numMinors"]+1))
+                  mutant("wrong-recursor-type",lambda b:b["recs"][0].__setitem__("type",b["types"][0]["type"]))
+                  mutant("recursor-name-alias",lambda b:b["recs"][0].__setitem__("name",b["types"][0]["name"]))
+                  mutant("wrong-recursive-metadata",lambda b:b["types"][0].__setitem__("isRec",True))
+                  mutant("wrong-k",lambda b:b["recs"][0].__setitem__("k",not b["recs"][0]["k"]))
+                  if src[-1]["inductive"]["ctors"]:
+                      mutant("wrong-constructor-type",lambda b:b["ctors"][0].__setitem__("type",b["types"][0]["type"]))
+                      mutant("wrong-constructor-fields",lambda b:b["ctors"][0].__setitem__("numFields",b["ctors"][0]["numFields"]+1))
+                      mutant("wrong-constructor-params",lambda b:b["ctors"][0].__setitem__("numParams",b["ctors"][0]["numParams"]+1))
+                  # Replace an actual source field or parameter domain by an
+                  # unbound index. Even a shared type DAG cannot authorize it.
+                  if block["types"][0]["numParams"]>0:
+                      rows=copy.deepcopy(src)
+                      table={r["ie"]:r for r in rows if "ie" in r}
+                      ty=table[block["types"][0]["type"]]["forallE"]["type"]
+                      table[ty].clear();table[ty].update({"ie":ty,"bvar":999})
+                      verify(name+":unbound-parameter-domain",serialize(rows),False)
+                  for j,ctor in enumerate(block["ctors"]):
+                      if ctor["numFields"]>0:
+                          rows=copy.deepcopy(src)
+                          table={r["ie"]:r for r in rows if "ie" in r}
+                          node=ctor["type"]
+                          for _ in range(ctor["numParams"]):
+                              node=table[node]["forallE"]["body"]
+                          ty=table[node]["forallE"]["type"]
+                          table[ty].clear();table[ty].update({"ie":ty,"bvar":999})
+                          verify(name+f":unbound-field-domain-{j}",serialize(rows),False)
+                  if src[-1]["inductive"]["recs"][0]["rules"]:
+                      mutant("wrong-rule-rhs",lambda b:b["recs"][0]["rules"][0].__setitem__("rhs",b["types"][0]["type"]))
+                      mutant("missing-rule",lambda b:b["recs"][0]["rules"].pop())
+                  hidden=copy.deepcopy(src)+[{"axiom":{}}]
+                  verify(name+":unchecked-appended-declaration",serialize(hidden),False)
+                  dup=raw.replace(b'"numMotives":1',b'"numMotives":1,"numMotives":1')
+                  assert dup!=raw
+                  verify(name+":duplicate-json-key",dup,False)
+          assert sum(r["expected_accept"] for r in observations)==17
+          print("PARAMETRIC_MUTATION_SUMMARY",json.dumps({"positive":17,"negative":len(observations)-17,"unexpected":0}),flush=True)
+          PY
+      - name: Preserve all original 212 legacy kernel results
+        run: |
+          set -euxo pipefail
+          gh api repos/heathsanchez/test/actions/artifacts/14152050888/zip > "$RUNNER_TEMP/current212.zip"
+          printf '%s  %s\n' 5bd679fe1f7a6988575ec469264b24cab8ddf465ae064bcb79d99541658acd2f "$RUNNER_TEMP/current212.zip" | sha256sum -c -
+          python3 metatron-kernel/scripts/c239_full_corpus_stack128.py \
+            --archive "$RUNNER_TEMP/current212.zip" \
+            --checker "$PWD/metatron-kernel/target/release/metatron-kernel" \
+            --flags experiments/nucleus-capture-substitution-20261107/alias-result-canonical-off-replay.json \
+            --out "$RUNNER_TEMP/parametric-evidence"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-renovation-parametric-evidence
+          path: ${{ runner.temp }}/parametric-evidence/
+          if-no-files-found: error
+          retention-days: 30
