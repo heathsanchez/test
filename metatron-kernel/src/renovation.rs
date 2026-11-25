@@ -1,11 +1,14 @@
 //! First source-defined fragment of the 3.2 kernel interface.
 //! A direct contradiction of an explicit feature's necessary conditions
-//! warrants rejection. Passing this fragment NEVER warrants acceptance.
+//! warrants rejection. Acceptance is separate: a whole-export declaration
+//! reconstruction must discharge every obligation of the admitted fragment.
 //! Rules from lean4#16595, beta toolchain 55bd690fabf6bef8dc50a63f4e3b34ce17556045:
 //! init_K_target, init_projs_eta, check_large_elim, is_rec,
 //! mutual block flags and omission of small-elimination computation rules.
 use serde_json::Value;
 use std::{collections::HashSet, io::{BufRead, Read}};
+
+mod nullary;
 
 type Checked<T> = Result<T, &'static str>;
 
@@ -231,9 +234,14 @@ fn check_block(block: &Value, exprs: &[Value], levels: &[Option<Zeros>]) -> Chec
     Ok(None)
 }
 
-/// Read an already identified 3.2 stream. All non-refuted inputs remain
-/// UNKNOWN until the typechecker consumes and validates the new feature facts.
-pub(crate) fn refute<R: BufRead>(reader: R) -> Checked<Option<&'static str>> {
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) enum Outcome { AcceptNullary, Reject(&'static str), Unknown }
+
+/// Read an already identified renovated stream. Preserve the old refutation
+/// fragment. ACCEPT only if a separate complete declaration reconstruction
+/// admits the entire canonical export; otherwise return UNKNOWN.
+pub(crate) fn check<R: BufRead>(reader: R, canonical_header: bool) -> Checked<Outcome> {
+    let mut whole_export = canonical_header.then(Vec::<Value>::new);
     let mut levels = vec![Some(ZERO)];
     let mut exprs = Vec::<Value>::new();
     let mut next_name = 1usize;
@@ -241,6 +249,16 @@ pub(crate) fn refute<R: BufRead>(reader: R) -> Checked<Option<&'static str>> {
         let text = line.map_err(|_| "input read error")?;
         let row: Value = serde_json::from_str(&text).map_err(|_| "invalid JSON")?;
         if !row.is_object() || row.get("meta").is_some() { return Err("invalid record"); }
+        // An exact canonical JSON round trip also excludes duplicate keys
+        // from the acceptance fragment (they would disappear in Value).
+        if let Some(rows) = whole_export.as_mut() {
+            if rows.len() < nullary::MAX_RECORDS &&
+                serde_json::to_string(&row).ok().as_deref() == Some(text.as_str()) {
+                rows.push(row.clone());
+            } else {
+                whole_export = None;
+            }
+        }
         if let Some(n) = row.get("in") {
             if integer(n)? != next_name { return Err("nonconsecutive name IDs"); }
             next_name = next_name.checked_add(1).ok_or("name ID overflow")?;
@@ -251,10 +269,14 @@ pub(crate) fn refute<R: BufRead>(reader: R) -> Checked<Option<&'static str>> {
             if integer(n)? != exprs.len() { return Err("nonconsecutive expression IDs"); }
             exprs.push(row);
         } else if let Some(block) = row.get("inductive") {
-            if let Some(reason) = check_block(block, &exprs, &levels)? { return Ok(Some(reason)); }
+            if let Some(reason) = check_block(block, &exprs, &levels)? { return Ok(Outcome::Reject(reason)); }
         }
     }
-    Ok(None)
+    if whole_export.as_ref().is_some_and(|rows| nullary::admits(rows)) {
+        Ok(Outcome::AcceptNullary)
+    } else {
+        Ok(Outcome::Unknown)
+    }
 }
 
 #[cfg(test)]
@@ -270,7 +292,7 @@ mod tests {
     }
     #[test]
     fn no_warrant_from_empty_or_malformed_new_input() {
-        assert_eq!(refute(std::io::Cursor::new(b"")), Ok(None));
-        assert!(refute(std::io::Cursor::new(b"{\"ie\":2,\"sort\":0}\n")).is_err());
+        assert_eq!(check(std::io::Cursor::new(b""), true), Ok(Outcome::Unknown));
+        assert!(check(std::io::Cursor::new(b"{\"ie\":2,\"sort\":0}\n"), true).is_err());
     }
 }
