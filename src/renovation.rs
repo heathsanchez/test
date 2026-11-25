@@ -9,6 +9,14 @@ use serde_json::Value;
 use std::{collections::HashSet, io::{BufRead, Read}};
 
 mod nullary;
+mod unique_json;
+
+pub(crate) fn verified_header(text:&str)->bool {
+    unique_json::parse(text).ok().is_some_and(|v| {
+        v.as_object().is_some_and(|m| m.len()==1 && m.contains_key("meta")) &&
+        matches!(v.pointer("/meta/format/version").and_then(Value::as_str), Some("3.1.0"|"3.2.0"))
+    })
+}
 
 type Checked<T> = Result<T, &'static str>;
 
@@ -239,21 +247,20 @@ pub(crate) enum Outcome { AcceptReconstructed, Reject(&'static str), Unknown }
 
 /// Read an already identified renovated stream. Preserve the old refutation
 /// fragment. ACCEPT only if a separate complete declaration reconstruction
-/// admits the entire canonical export; otherwise return UNKNOWN.
-pub(crate) fn check<R: BufRead>(reader: R, canonical_header: bool) -> Checked<Outcome> {
-    let mut whole_export = canonical_header.then(Vec::<Value>::new);
+/// admits the entire duplicate-free export; otherwise return UNKNOWN.
+pub(crate) fn check<R: BufRead>(reader: R, verified_header: bool) -> Checked<Outcome> {
+    let mut whole_export = verified_header.then(Vec::<Value>::new);
     let mut levels = vec![Some(ZERO)];
     let mut exprs = Vec::<Value>::new();
     let mut next_name = 1usize;
     for line in reader.lines() {
         let text = line.map_err(|_| "input read error")?;
-        let row: Value = serde_json::from_str(&text).map_err(|_| "invalid JSON")?;
+        let row = unique_json::parse(&text).map_err(|_| "invalid or duplicate-key JSON")?;
         if !row.is_object() || row.get("meta").is_some() { return Err("invalid record"); }
-        // An exact canonical JSON round trip also excludes duplicate keys
-        // from the acceptance fragment (they would disappear in Value).
+        // Object order is irrelevant, but every decoded key was checked
+        // for uniqueness before any admission or refutation is considered.
         if let Some(rows) = whole_export.as_mut() {
-            if rows.len() < nullary::MAX_RECORDS &&
-                serde_json::to_string(&row).ok().as_deref() == Some(text.as_str()) {
+            if rows.len() < nullary::MAX_RECORDS {
                 rows.push(row.clone());
             } else {
                 whole_export = None;
