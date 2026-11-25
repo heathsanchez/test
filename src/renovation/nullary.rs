@@ -8,18 +8,22 @@ use serde_json::Value;
 use std::collections::HashSet;
 use super::Features;
 
+mod parametric;
+
 pub(super) const MAX_RECORDS: usize = 4096;
 
 #[derive(Clone, Debug)]
-enum Level { Zero, Succ(usize), Param(usize) }
+enum Level { Zero, Succ(usize), Param(usize), Max(usize,usize), IMax(usize,usize) }
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+enum NamePart { Str(String), Num(usize) }
 #[derive(Clone, Debug)]
 enum Expr {
     BVar(usize), Sort(usize), Const(usize, Vec<usize>),
     App(usize, usize), Pi(usize, usize), Lam(usize, usize),
 }
 struct Tables {
-    names: Vec<Option<(usize,String)>>,
-    name_keys: HashSet<(usize,String)>,
+    names: Vec<Option<(usize,NamePart)>>,
+    name_keys: HashSet<(usize,NamePart)>,
     levels: Vec<Level>,
     exprs: Vec<Expr>,
 }
@@ -40,16 +44,21 @@ impl Tables {
     fn new()->Self { Self{names:vec![None],name_keys:HashSet::new(),levels:vec![Level::Zero],exprs:vec![]} }
     fn valid_name(&self,n:usize)->bool {n>0 && n<self.names.len()}
     fn name(&self,n:usize,p:usize,s:&str)->bool {
-        self.names.get(n).and_then(Option::as_ref).is_some_and(|(pre,str)|*pre==p&&str==s)
+        self.names.get(n).and_then(Option::as_ref).is_some_and(|(pre,part)|*pre==p&&matches!(part,NamePart::Str(v) if v==s))
     }
     fn add(&mut self,row:&Value)->Option<()> {
-        if keys(row,&["in","str"]) {
+        if keys(row,&["in","str"]) || keys(row,&["in","num"]) {
             need(num(row,"in")?==self.names.len())?;
-            let x=row.get("str")?;
-            need(keys(x,&["pre","str"]))?;
-            let pre=num(x,"pre")?;
+            let (pre,part)=if let Some(x)=row.get("str") {
+                need(keys(x,&["pre","str"]))?;
+                (num(x,"pre")?,NamePart::Str(x.get("str")?.as_str()?.to_owned()))
+            } else {
+                let x=row.get("num")?;
+                need(keys(x,&["pre","i"]))?;
+                (num(x,"pre")?,NamePart::Num(num(x,"i")?))
+            };
             need(pre<self.names.len())?;
-            let key=(pre,x.get("str")?.as_str()?.to_owned());
+            let key=(pre,part);
             need(self.name_keys.insert(key.clone()))?;
             self.names.push(Some(key));
             return Some(());
@@ -64,6 +73,15 @@ impl Tables {
             let x=num(row,"param")?;
             need(num(row,"il")?==self.levels.len()&&self.valid_name(x))?;
             self.levels.push(Level::Param(x));
+            return Some(());
+        }
+        if keys(row,&["il","max"]) || keys(row,&["il","imax"]) {
+            let is_max=row.get("max").is_some();
+            let v=arr(row,if is_max {"max"} else {"imax"})?;
+            need(v.len()==2)?;
+            let (a,b)=(nat(&v[0])?,nat(&v[1])?);
+            need(num(row,"il")?==self.levels.len()&&a<self.levels.len()&&b<self.levels.len())?;
+            self.levels.push(if is_max {Level::Max(a,b)} else {Level::IMax(a,b)});
             return Some(());
         }
         let id=num(row,"ie")?;
@@ -114,7 +132,7 @@ impl Tables {
         loop { match *self.levels.get(l)? {
             Level::Zero=>return Some(n),
             Level::Succ(x)=>{need(x<l)?; n=n.checked_add(1)?;l=x;},
-            Level::Param(_)=>return None,
+            Level::Param(_)|Level::Max(..)|Level::IMax(..)=>return None,
         }}
     }
     fn sort_of(&self,e:usize)->Option<usize> {
@@ -203,7 +221,8 @@ pub(super) fn admits(rows:&[Value])->bool {
         need(keys(block,&["inductive"]))?;
         let mut t=Tables::new();
         for row in tables { t.add(row)?; }
-        t.block(block.get("inductive")?)
+        let b=block.get("inductive")?;
+        t.block(b).or_else(||parametric::block(&t,b))
     }
     rows.len()<=MAX_RECORDS&&check(rows).is_some()
 }
