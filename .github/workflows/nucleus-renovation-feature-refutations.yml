@@ -1,0 +1,62 @@
+name: Nucleus beta 3.2 first feature refutations
+on:
+  push:
+    branches: [research/nucleus-renovation-feature-refutations-20261125]
+    paths:
+      - .github/workflows/nucleus-renovation-feature-refutations.yml
+      - metatron-kernel/src/renovation.rs
+      - metatron-kernel/src/lib.rs
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  feature-fragment:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 65
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: '1.99.1'
+      - name: Record source and qualify native refutation unit tests
+        run: |
+          set -euxo pipefail
+          mkdir -p "$RUNNER_TEMP/beta-evidence"
+          git rev-parse HEAD > "$RUNNER_TEMP/beta-evidence/commit.txt"
+          git rev-parse HEAD:metatron-kernel/src > "$RUNNER_TEMP/beta-evidence/source-tree.txt"
+          git diff --stat 5245b3b365e4f4293c570f615c6bcc4ee5e37518 -- metatron-kernel/src
+          cargo test --locked --manifest-path metatron-kernel/Cargo.toml renovation::tests -- --nocapture
+          cargo build --locked --release --features diagnostics --manifest-path metatron-kernel/Cargo.toml
+      - name: Exact beta source verdicts and preserve all UNKNOWNs
+        run: |
+          set -euxo pipefail
+          python3 metatron-kernel/scripts/renovation_beta_baseline_20261125.py \
+            --checker "$PWD/metatron-kernel/target/release/metatron-kernel" \
+            --flags experiments/nucleus-capture-substitution-20261107/alias-result-canonical-off-replay.json \
+            --out "$RUNNER_TEMP/beta-evidence"
+          python3 - <<'PY'
+          import json,os
+          from pathlib import Path
+          p=Path(os.environ["RUNNER_TEMP"])/"beta-evidence"
+          rows=json.loads((p/"beta-rows.json").read_text())
+          new=[r for r in rows if r["format"]=="3.2.0"]
+          assert len(new)==101
+          assert sum(r["expected"]=="accept" for r in new)==57
+          assert sum(r["expected"]=="reject" for r in new)==44
+          assert all(r["observed"] in ("unknown","reject") for r in new)
+          assert all(r["observed"]=="unknown" for r in new if r["expected"]=="accept")
+          assert sum(r["observed"]=="reject" for r in new)==33
+          assert sum(r["observed"]=="unknown" for r in new)==68
+          print("WARRANTED_BOUNDED_REFUTATIONS_ONLY",33,"UNKNOWN",68)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-renovation-feature-evidence
+          path: ${{ runner.temp }}/beta-evidence/
+          if-no-files-found: error
