@@ -281,6 +281,8 @@ pub(crate) fn check<R: BufRead>(reader: R, verified_header: bool) -> Checked<Out
     }
     if whole_export.as_ref().is_some_and(|rows| nullary::admits(rows)) {
         Ok(Outcome::AcceptReconstructed)
+    } else if let Some(outcome) = whole_export.as_ref().and_then(|rows| nullary::projection_outcome(rows)) {
+        Ok(outcome)
     } else {
         Ok(Outcome::Unknown)
     }
