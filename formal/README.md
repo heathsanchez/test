@@ -77,6 +77,6 @@ claimed.
 The pinned toolchain is Lean `v4.29.1`.
 
 ```sh
-cd metatron-kernel/formal
+cd formal
 lake build
 ```

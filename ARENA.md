@@ -3,11 +3,11 @@
 Nucleus is the independently implemented Rust checker in this directory. It
 is separate from the sokonanoda-derived MathGraph Flash checker.
 
-Build with Rust 1.99.1:
+Build from this standalone repository root with Rust 1.99.1:
 
 ```sh
-cargo build --locked --release --features diagnostics --manifest-path metatron-kernel/Cargo.toml
-python3 metatron-kernel/arena.py < export.ndjson
+cargo build --locked --release --features diagnostics
+python3 arena.py < export.ndjson
 ```
 
 The launcher freezes the qualified capability flags in `arena-flags.json`,
