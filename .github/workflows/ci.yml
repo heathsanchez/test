@@ -2,6 +2,18 @@ name: Nucleus CI
 
 on:
   push:
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'tests_py/**'
+      - 'scripts/**'
+      - 'evidence/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'arena.py'
+      - 'arena-flags.json'
+      - 'rust-toolchain.toml'
+      - '.github/workflows/ci.yml'
   pull_request:
   workflow_dispatch:
 
