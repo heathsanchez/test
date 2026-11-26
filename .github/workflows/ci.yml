@@ -28,7 +28,7 @@ jobs:
       - name: Rust regression tests
         run: |
           set -euo pipefail
-          cargo test --locked 2>&1 | tee "$RUNNER_TEMP/nucleus-rust-tests.log"
+          python3 scripts/test.py 2>&1 | tee "$RUNNER_TEMP/nucleus-rust-tests.log"
       - name: Build the original release configuration
         run: |
           set -euo pipefail

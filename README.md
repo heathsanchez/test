@@ -105,14 +105,15 @@ These are bounded test results; the rows overlap and must not be added.
 
 ```sh
 python3 scripts/verify_source_import.py
-RUST_MIN_STACK=67108864 cargo test --locked
+python3 scripts/test.py
 python3 -m unittest discover -s tests_py
 ```
 
 The import check compares runtime files to the original qualified snapshot.
 A deliberate checker change requires a new qualification and an explicit
-update of that baseline. The test workflow exercises the supported Rust and
-Python tests and the frozen launcher.
+update of that baseline. The Rust test runner supplies the three capability
+flags and stack allowance used by the original source qualification. The
+test workflow exercises the Rust and Python tests and the frozen launcher.
 
 The next technical objective is to reduce the renovation UNKNOWNs, one
 minimized unsupported input at a time, while preserving established decisions.

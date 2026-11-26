@@ -60,6 +60,13 @@ Standalone execution results will be recorded here after verification.
 
 ## What the evidence establishes
 
+The [initial migration attempt](https://github.com/heathsanchez/test/actions/runs/45731878394)
+stopped at a Rust proof-relevance regression because the standalone test setup
+omitted three capability flags from the original qualification workflow.
+`scripts/test.py` restores that exact test configuration and clears inherited
+checker flags. The runtime implementation and its frozen launch configuration
+remain bound to the original import manifest.
+
 The results establish the reported behavior on the exact tested inputs,
 source and configuration. They do not establish universal soundness, general
 format-3.2.0 completeness or full Mathlib acceptance. The abstract Lean model

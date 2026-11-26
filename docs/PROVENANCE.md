@@ -41,7 +41,7 @@ Nucleus.
 
 New standalone material consists of the README artwork, license text,
 contribution guidance, toolchain pin, CI, import identity check, recorded-corpus
-replay tool, qualification record and source history map. Build paths in the
+replay tool, qualified test runner, qualification record and source history map. Build paths in the
 Arena and formal-model documentation are adjusted for the repository root.
 
 ## Historical research tools
