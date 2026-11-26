@@ -56,13 +56,15 @@ Original artifact: `nucleus-beta-entry-evidence`, ID `15053582604`.
 SHA-256 d8a2cb8b5c92bb14dea63fb019086e6c7f8a6b6183d804681f53a50fb8c145ee
 ```
 
-Fresh standalone verification passed in [Actions run](https://github.com/heathsanchez/test/actions/runs/45732099858):
+The standalone build, tests and exact-input replay passed in [qualification run](https://github.com/heathsanchez/test/actions/runs/45732099858):
 
-- 358 Rust tests and 29 Python tests passed.
+- 358 Rust tests and 29 Python tests passed; 17 Rust tests remained ignored.
 - The original release build and public launcher passed.
 - All 356 exact beta inputs preserved their raw exit codes: 59 ACCEPT, 51 REJECT, 246 UNKNOWN.
 - All 138 renovation outcomes were preserved: 29 ACCEPT, 34 REJECT, 75 UNKNOWN.
 - The 28 runtime files and the 720-commit source extraction matched their recorded identities.
+
+The qualification run's final Git publication step was blocked by its job token's workflow-file permissions. The complete prepared commit was then published to the source branch through the repository connection. The subsequent [normal standalone CI run](https://github.com/heathsanchez/test/actions/runs/45732408667) passed every step, including the Rust tests, Python tests, release build and public launcher.
 
 Per-input results are recorded in [the migration receipt](../evidence/standalone-migration-20261126.json). The separate 212-input legacy qualification remains inherited from the original source run; it is not counted as a new standalone replay.
 
